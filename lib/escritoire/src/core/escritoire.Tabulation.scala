@@ -63,7 +63,7 @@ abstract class Tabulation[text: ClassTag]():
 
   def grid(width: Int)
     ( using style: TableStyle, metrics: Text is Measurable, textual: text is Textual )
-    ( using attenuation: Attenuation, hyphenation: polysyllabic.Hyphenation )
+    ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
   :   Grid[text] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):

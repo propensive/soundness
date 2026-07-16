@@ -36,52 +36,213 @@ import soundness.*
 
 import textMetrics.uniformMetric
 
+case class Person(name: Text, age: Int)
+
 object Tests extends Suite(m"Escritoire tests"):
+  val people: List[Person] = List(Person(t"Alice", 30), Person(t"Bob", 5))
+
+  def render[row](scaffold: Scaffold[row, Text], data: Seq[row], width: Int)
+     (using TableStyle, Attenuation^)
+  :   List[Text] =
+    scaffold.tabulate(data).grid(width).render.to(List)
+
   def run(): Unit =
-    test(m"Constrain to full width plus one is single line"):
-      Column.constrain(t"the quick brown fox", Breaks.Space, 20).left
-    . assert(_ == 1)
+    // ─── TextAlignment ──────────────────────────────────────────────────────
 
-    test(m"Constrain to full width is still single line"):
-      Column.constrain(t"the quick brown fox", Breaks.Space, 19).left
-    . assert(_ == 1)
+    test(m"Left alignment pads on the right"):
+      TextAlignment.Left.pad(t"hi", 6, true)
+    . assert(_ == t"hi    ")
 
-    test(m"Constrain to narrow column is two lines"):
-      Column.constrain(t"the quick brown fox", Breaks.Space, 18).left
-    . assert(_ == 2)
+    test(m"Right alignment pads on the left"):
+      TextAlignment.Right.pad(t"hi", 6, true)
+    . assert(_ == t"    hi")
 
-    test(m"Constrain to narrow column suggests better max"):
-      Column.constrain(t"the quick brown fox", Breaks.Space, 18).right
-    . assert(_ == 15)
+    test(m"Center alignment splits padding evenly"):
+      TextAlignment.Center.pad(t"hi", 6, true)
+    . assert(_ == t"  hi  ")
 
-    test(m"Constrain to very narrow column needs three lines"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 10).left
-    . assert(_ == 3)
+    test(m"Center alignment puts the extra space on the right"):
+      TextAlignment.Center.pad(t"hi", 7, true)
+    . assert(_ == t"  hi   ")
 
-    test(m"Constrain to very narrow column can shrink slightly further"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 10).right
-    . assert(_ == 9)
+    test(m"Justify spreads spaces between words on non-final lines"):
+      TextAlignment.Justify.pad(t"a b c", 9, false)
+    . assert(_ == t"a   b   c")
 
-    test(m"Constrain to narrowest column cannot do better"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 5).right
-    . assert(_ == 5)
+    test(m"Justify left-aligns the final line"):
+      TextAlignment.Justify.pad(t"a b c", 9, true)
+    . assert(_ == t"a b c    ")
 
-    test(m"Constrain to narrowest column needs four lines"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 5).left
-    . assert(_ == 4)
+    // ─── Column combinators ─────────────────────────────────────────────────
 
-    test(m"Slightly wider column does not help"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 6).left
-    . assert(_ == 4)
+    test(m"Column retitle changes the title"):
+      Column[Person, Text, Text](t"Name")(_.name).retitle(t"Forename").title
+    . assert(_ == t"Forename")
 
-    test(m"Even wider column does not help"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 8).left
-    . assert(_ == 4)
+    test(m"Column contramap adapts the row type"):
+      val nameColumn = Column[Person, Text, Text](t"Name")(_.name)
+      nameColumn.contramap[(Person, Int)](_(0)).get((Person(t"Zoe", 9), 1))
+    . assert(_ == t"Zoe")
 
-    test(m"Even wider column does not help and suggests max"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 8).right
-    . assert(_ == 5)
+    test(m"Int column is right-aligned by default"):
+      Column[Person, Int, Text](t"Age")(_.age).textAlign
+    . assert(_ == TextAlignment.Right)
 
-    test(m"Even wider column still does help"):
-      Column.constrain(t"the quick brown foxes", Breaks.Space, 9).left
-    . assert(_ == 3)
+    test(m"Text column is left-aligned by default"):
+      Column[Person, Text, Text](t"Name")(_.name).textAlign
+    . assert(_ == TextAlignment.Left)
+
+    // ─── Basic rendering ────────────────────────────────────────────────────
+
+    val scaffold =
+      Scaffold[Person, Text]
+        ( Column(t"Name")(_.name),
+          Column(t"Age")(_.age) )
+
+    test(m"Render a simple table with rounded borders"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(scaffold, people, 40)
+    . assert:
+        _ == List
+          ( t"╭───────┬─────╮",
+            t"│ Name  │ Age │",
+            t"├───────┼─────┤",
+            t"│ Alice │  30 │",
+            t"│ Bob   │   5 │",
+            t"╰───────┴─────╯" )
+
+    test(m"Render a simple table with the default thick border style"):
+      import tableStyles.defaultTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(scaffold, people, 40)
+    . assert:
+        _ == List
+          ( t"┏━━━━━━━┯━━━━━┓",
+            t"┃ Name  │ Age ┃",
+            t"┠───────┼─────┨",
+            t"┃ Alice │  30 ┃",
+            t"┃ Bob   │   5 ┃",
+            t"┗━━━━━━━┷━━━━━┛" )
+
+    test(m"Horizontal style has rules but no vertical lines"):
+      import tableStyles.horizontalTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(scaffold, people, 40)
+    . assert:
+        _ == List
+          ( t"╶─────────────╴",
+            t"  Name    Age  ",
+            t"╶─────────────╴",
+            t"  Alice    30  ",
+            t"  Bob       5  ",
+            t"╶─────────────╴" )
+
+    test(m"Minimal style has only a title rule"):
+      import tableStyles.minimalTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(scaffold, people, 40)
+    . assert:
+        _ == List
+          ( t"  Name    Age  ",
+            t"╶─────────────╴",
+            t"  Alice    30  ",
+            t"  Bob       5  " )
+
+    test(m"Number column right-aligns its values"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(scaffold, people, 40)(3)
+    . assert(_ == t"│ Alice │  30 │")
+
+    // ─── Paragraph wrapping ─────────────────────────────────────────────────
+
+    val wrapping =
+      Scaffold[Person, Text]
+        ( Column(t"Phrase", sizing = columnar.Paragraph)(_ => t"the quick brown fox"),
+          Column(t"Age")(_.age) )
+
+    test(m"A paragraph column wraps text across several lines"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(wrapping, List(Person(t"Alice", 30)), 18)
+    . assert:
+        _ == List
+          ( t"╭──────────┬─────╮",
+            t"│ Phrase   │ Age │",
+            t"├──────────┼─────┤",
+            t"│ the      │  30 │",
+            t"│ quick    │     │",
+            t"│ brown    │     │",
+            t"│ fox      │     │",
+            t"╰──────────┴─────╯" )
+
+    test(m"A wrapped cell increases the height of its whole row"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(wrapping, List(Person(t"Alice", 30)), 18).length
+    . assert(_ == 8)
+
+    // ─── Fixed-width truncation ─────────────────────────────────────────────
+
+    val truncating =
+      Scaffold[Person, Text]
+        ( Column(t"Fixed", sizing = columnar.Fixed(6))(_ => t"abcdefghij") )
+
+    test(m"A Fixed column truncates over-long cells with an ellipsis"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      render(truncating, List(Person(t"Alice", 30)), 40)(3)
+    . assert(_ == t"│ abcde… │")
+
+    // ─── Derivation ─────────────────────────────────────────────────────────
+
+    test(m"A case class table is derived with capitalized field-name titles"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to(List)
+    . assert:
+        _ == List
+          ( t"╭───────┬─────╮",
+            t"│ Name  │ Age │",
+            t"├───────┼─────┤",
+            t"│ Alice │  30 │",
+            t"│ Bob   │   5 │",
+            t"╰───────┴─────╯" )
+
+    test(m"TableRelabelling overrides a derived column title"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
+      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to(List).head
+    . assert(_ == t"╭───────────┬─────╮")
+
+    test(m"A sequence of integers can be tabulated directly"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      List(1, 22, 333).tabulation.grid(20).render.to(List)
+    . assert:
+        _ == List
+          ( t"╭─────╮",
+            t"│     │",
+            t"├─────┤",
+            t"│   1 │",
+            t"│  22 │",
+            t"│ 333 │",
+            t"╰─────╯" )
+
+    // ─── Attenuation ────────────────────────────────────────────────────────
+
+    test(m"failAttenuation raises a TableError when the table is too wide"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.failAttenuation
+      val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
+      safely(wide.tabulate(people).grid(5).render.to(List)).absent
+    . assert(_ == true)
+
+    test(m"ignoreAttenuation renders without raising when the table is too wide"):
+      import tableStyles.thinRoundedTableStyle
+      import columnAttenuation.ignoreAttenuation
+      val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
+      safely(wide.tabulate(people).grid(5).render.to(List)).absent
+    . assert(_ == false)
