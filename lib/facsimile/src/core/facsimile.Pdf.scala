@@ -36,8 +36,10 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 object Pdf:
   case class Version(major: Int, minor: Int)
@@ -333,18 +335,114 @@ extends caps.ExclusiveCapability:
   // filter chain, which stops at terminal image codecs. `/Length` may be indirect; filters in
   // a general stream may be too, so the chain inputs are resolved through this document.
   def payload(body: Cos.Body): Data raises PdfError =
-    val length = resolved(body.entries.at(t"Length").or(Cos.Nil)).long
-      . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Length")))).toInt
-
-    val raw = source.read(body.start, length)
-    if raw.length < length then abort(PdfError(PdfError.Reason.Truncated))
-
     val chain =
       Filter.chain
         ( body.entries.at(t"Filter").let(deepResolved(_)),
           body.entries.at(t"DecodeParms").let(deepResolved(_)) )
 
-    Filter.decode(raw, chain)
+    Filter.decode(raw(body), chain)
+
+  // A re-materializable streaming view of the decoded payload: each `apply()` mints a fresh
+  // pull endpoint reading the raw range in chunks and decoding through the filter chain, so
+  // a large image or embedded file is never materialized whole. The endpoint reads through
+  // this document, so — like everything that does — it cannot outlive the `open` scope.
+  def spring(body: Cos.Body)(using tactic: Tactic[PdfError]): Spring[Data]^{this, tactic} =
+    val chain =
+      Filter.chain
+        ( body.entries.at(t"Filter").let(deepResolved(_)),
+          body.entries.at(t"DecodeParms").let(deepResolved(_)) )
+
+    val steps = Filter.steps(chain)
+    val start = body.start
+    val end = payloadEnd(body)
+
+    new Spring[Data]:
+      def apply(): (Stream[Data] over Credit)^ =
+        pipeline(steps, Stream(ranges(start, end)))
+
+  // Interprets a streaming plan, minting each duct at its `via` call site.
+  private def pipeline(steps: List[Filter.Step^], consume stream: (Stream[Data] over Credit)^)
+  :   (Stream[Data] over Credit)^ =
+
+    steps match
+      case Filter.Step.Inflate :: rest =>
+        pipeline(rest, stream.via(turbulence.Zlib.compression.decompressor()))
+
+      case Filter.Step.Unlzw(earlyChange) :: rest =>
+        pipeline(rest, stream.via(turbulence.Lzw.decompressor(earlyChange)))
+
+      case Filter.Step.Gather(transform) :: rest =>
+        pipeline(rest, stream.via(Gathering(transform)))
+
+      case _ =>
+        stream
+
+  // Chunked positional reads over a raw range: the pull side of `spring`.
+  private def ranges(start: Long, end: Long): Iterator[Data]^{this} = new Iterator[Data]:
+    private var position: Long = start
+
+    def hasNext: Boolean = position < end
+
+    def next(): Data =
+      val length = (end - position).min(65536L).toInt
+      val chunk = source.read(position, length)
+      position = if chunk.length == 0 then end else position + chunk.length
+      chunk
+
+  // The undecoded payload: the range from the payload's start to its computed end.
+  private[facsimile] def raw(body: Cos.Body): Data raises PdfError =
+    source.read(body.start, (payloadEnd(body) - body.start).toInt)
+
+  // The exclusive end of the payload: `/Length` bytes when the declared length checks out —
+  // the `endstream` keyword must follow it — and otherwise, since wrong lengths abound in
+  // real files, the nearest `endstream`, less the end-of-line before it.
+  private def payloadEnd(body: Cos.Body): Long raises PdfError =
+    resolved(body.entries.at(t"Length").or(Cos.Nil)).long.let: length =>
+      if length >= 0 && body.start + length <= source.size
+         && endstreamFollows(body.start + length)
+      then body.start + length else Unset
+
+    . or:
+        val marker = t"endstream"
+        val chunkSize = 65536
+        var offset = body.start
+        var found: Optional[Long] = Unset
+
+        while found.absent && offset < source.size do
+          val chunk = source.read(offset, chunkSize + marker.length - 1)
+          var i = 0
+
+          while found.absent && i <= chunk.length - marker.length do
+            var j = 0
+            while j < marker.length && (chunk(i + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
+            if j == marker.length then found = offset + i else i += 1
+
+          offset += chunkSize
+
+        found.let: position =>
+          // The end-of-line before `endstream` belongs to the syntax, not the payload.
+          val windowStart = (position - 2).max(body.start)
+          val window = source.read(windowStart, (position - windowStart).toInt)
+          val last = if window.length >= 1 then window(window.length - 1) & 0xff else -1
+          val prior = if window.length >= 2 then window(window.length - 2) & 0xff else -1
+
+          if prior == 0x0d && last == 0x0a then position - 2
+          else if last == 0x0a || last == 0x0d then position - 1
+          else position
+
+        . or(abort(PdfError(PdfError.Reason.Truncated)))
+
+  private def endstreamFollows(position: Long): Boolean =
+    val marker = t"endstream"
+    val window = source.read(position, 24)
+    var i = 0
+
+    while i < window.length && CosLexer.whitespace(window(i) & 0xff) do i += 1
+
+    if i + marker.length > window.length then false else
+      var j = 0
+      while j < marker.length && (window(i + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
+      j == marker.length
 
   // Resolves a value and, one level down, the elements of an array or the values of a
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.
