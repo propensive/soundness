@@ -1927,6 +1927,17 @@ object stratiform extends Library:
   object records extends Component(core, polyvinyl.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // `BintelInlinable`, whose entry macro needs expansion-time instance
+  // evaluation (an in-macro staging compiler), kept out of `binary` so
+  // BinTEL users don't inherit the compiler jars unless they opt in.
+  object binaryStaged extends Component(binary):
+    override def scalaJs = false // expansion-time instance evaluation via staging
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
   // The Expr-level `Inlinable` typeclass and its expansion-time instance
   // evaluation (an in-macro staging compiler), kept out of `core` so
   // stratiform users don't inherit the compiler jars unless they opt in.
@@ -1945,8 +1956,10 @@ object stratiform extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core, base256, binary, records, time, http, eucalyptus.core)
-  object bench extends Benchmarks(core, quantitative.units, hellenism.core, ambience.core)
+  object test extends Tests(core, base256, binary, binaryStaged, records, time, http,
+      eucalyptus.core)
+  object bench extends Benchmarks(core, base256, binary, binaryStaged, quantitative.units,
+      hellenism.core, ambience.core)
 
 object superlunary extends Library:
   object core
