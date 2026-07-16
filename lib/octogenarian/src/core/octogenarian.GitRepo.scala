@@ -108,7 +108,7 @@ case class GitRepo(gitDir: Path on Linux):
       sh"$git $repoOptions config --get $variable".exec[Text]().as[value]
 
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
-    sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(GitTag.unsafe(_))
+    sh"$git $repoOptions tag".exec[Iterator[Text]]().to(List).map(GitTag.unsafe(_))
 
 
   def tag(name: GitTag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
@@ -153,7 +153,7 @@ case class GitRepo(gitDir: Path on Linux):
   def remotes()(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :   List[Remote] logs GitEvent =
 
-    val lines = sh"$git $repoOptions remote -v".exec[LazyList[Text]]()
+    val lines = sh"$git $repoOptions remote -v".exec[Iterator[Text]]()
 
     val grouped = lines.collect:
       case r"$name(\S+)\t$url(\S+) \($kind(fetch|push)\)" => (name, url, kind)
@@ -184,93 +184,81 @@ case class GitRepo(gitDir: Path on Linux):
 
   private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
 
-  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): LazyList[Commit] logs GitEvent =
-    def recur
-      ( stream:    LazyList[Text],
-        hash:      Optional[GitHash] = Unset,
-        tree:      Optional[GitHash] = Unset,
-        parents:   List[GitHash]     = Nil,
-        author:    Optional[Text]    = Unset,
-        committer: Optional[Text]    = Unset,
-        signature: List[Text]        = Nil,
-        lines:     List[Text]        = Nil )
-    :   LazyList[Commit] =
+  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Commit] logs GitEvent =
+    val lines =
+      sh"$git $repoOptions log --format=raw --color=never".exec[Iterator[Text]]().buffered
 
-      def commit(): LazyList[Commit] =
-        if hash.absent || tree.absent || author.absent || committer.absent then LazyList()
-        else unsafely:
-          val pem = parsePem(signature.join(t"\n"))
+    val commits = scala.collection.mutable.ListBuffer[Commit]()
 
-          LazyList:
-            Commit
-              ( hash.vouch,
-                tree.vouch,
-                parents.reverse,
-                author.vouch,
-                committer.vouch,
-                pem,
-                lines.reverse )
+    var hash:      Optional[GitHash] = Unset
+    var tree:      Optional[GitHash] = Unset
+    var parents:   List[GitHash]     = Nil
+    var author:    Optional[Text]    = Unset
+    var committer: Optional[Text]    = Unset
+    var signature: List[Text]        = Nil
+    var body:      List[Text]        = Nil
 
-      def read(stream: LazyList[Text], lines: List[Text]): (List[Text], LazyList[Text]) =
-        stream match
-          case r" $line(.*)" #:: tail => read(tail, line :: lines)
-          case _                      => (lines.reverse, stream)
+    def flush(): Unit =
+      if hash.present && tree.present && author.present && committer.present then unsafely:
+        commits +=
+          Commit
+            ( hash.vouch,
+              tree.vouch,
+              parents.reverse,
+              author.vouch,
+              committer.vouch,
+              parsePem(signature.join(t"\n")),
+              body.reverse )
 
-      stream match
-        case head #:: tail =>
-          head match
-            case t"" =>
-              recur(tail, hash, tree, parents, author, committer, signature, lines)
+    // A gpgsig block continues on the following one-space-indented lines.
+    def indented(): List[Text] =
+      val buffer = scala.collection.mutable.ListBuffer[Text]()
 
-            case r"commit $hash(.{40})" =>
-              commit() #::: recur(tail, GitHash.unsafe(hash), Unset, Nil, Unset, Unset, Nil, Nil)
+      while lines.hasNext && { lines.head match { case r" $line(.*)" => true; case _ => false } }
+      do lines.next() match
+        case r" $line(.*)" => buffer += line
+        case _             => ()
 
-            case r"tree $tree(.{40})" =>
-              recur(tail, hash, GitHash.unsafe(tree), parents, author, committer, signature, lines)
+      buffer.to(List)
 
-            case r"parent $parent(.{40})" =>
-              val parents2 = GitHash.unsafe(parent) :: parents
-              recur(tail, hash, tree, parents2, author, committer, signature, lines)
+    while lines.hasNext do lines.next() match
+      case t""                 => ()
 
-            case r"author $author(.*) $timestamp([0-9]+) $time(.....)" =>
-              recur(tail, hash, tree, parents, author, committer, signature, lines)
+      case r"commit $h(.{40})" =>
+        flush()
+        hash = GitHash.unsafe(h); tree = Unset; parents = Nil
+        author = Unset; committer = Unset; signature = Nil; body = Nil
 
-            case r"committer $committer(.*) $timestamp([0-9]+) $time(.....)" =>
-              recur(tail, hash, tree, parents, author, committer, signature, lines)
+      case r"tree $t(.{40})"                           => tree = GitHash.unsafe(t)
+      case r"parent $p(.{40})"                         => parents = GitHash.unsafe(p) :: parents
+      case r"author $a(.*) $ts([0-9]+) $tz(.....)"     => author = a
+      case r"committer $c(.*) $ts([0-9]+) $tz(.....)"  => committer = c
+      case r"gpgsig $start(.*)"                        => signature = start :: indented()
+      case r"    $line(.*)"                            => body = line :: body
+      case other                                      => ()
 
-            case r"gpgsig $start(.*)" =>
-              val (signature, rest) = read(tail, Nil)
-              recur(rest, hash, tree, parents, author, committer, start :: signature, lines)
-
-            case r"    $line(.*)" =>
-              recur(tail, hash, tree, parents, author, committer, signature, line :: lines)
-
-            case other =>
-              recur(tail, hash, tree, parents, author, committer, signature, lines)
-
-        case _ =>
-          commit()
-
-    recur(sh"$git $repoOptions log --format=raw --color=never".exec[LazyList[Text]]())
+    flush()
+    commits.to(List)
 
 
   def diff(refA: Refspec, refB: Refspec)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   LazyList[FileDiff] logs GitEvent =
+  :   List[FileDiff] logs GitEvent =
 
-    Patch.parse(sh"$git $repoOptions diff --no-color $refA $refB".exec[LazyList[Text]]())
+    Patch.parse(sh"$git $repoOptions diff --no-color $refA $refB".exec[Iterator[Text]]())
 
 
   def reflog(ref: Optional[Refspec] = Unset)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   LazyList[ReflogEntry] logs GitEvent =
+  :   List[ReflogEntry] logs GitEvent =
 
     val refArg = ref.lay(sh""): ref => sh"$ref"
     val format = t"--format=%H %gd %ct %gs"
 
-    sh"$git $repoOptions reflog show $format $refArg".exec[LazyList[Text]]().collect:
+    sh"$git $repoOptions reflog show $format $refArg".exec[Iterator[Text]]().collect:
       case r"$hash([a-f0-9]{40}) $selector(\S+) $time([0-9]+) $message(.*)" =>
         ReflogEntry(GitHash.unsafe(hash), selector, time.s.toLong, message)
+    . to(List)
 
 
   def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Tactic[ExecError])
@@ -340,13 +328,14 @@ case class GitRepo(gitDir: Path on Linux):
 
     def list(ref: Path on GitRefs = GitRefs.defaultNotes)
       ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-    :   LazyList[(GitHash, GitHash)] logs GitEvent =
+    :   List[(GitHash, GitHash)] logs GitEvent =
 
       val refArg = sh"--ref=${ref.encode}"
 
-      sh"$git $repoOptions notes $refArg list".exec[LazyList[Text]]().collect:
+      sh"$git $repoOptions notes $refArg list".exec[Iterator[Text]]().collect:
         case r"$noteHash([a-f0-9]{40}) $target([a-f0-9]{40})" =>
           (GitHash.unsafe(noteHash), GitHash.unsafe(target))
+      . to(List)
 
 
     def copy

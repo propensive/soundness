@@ -96,7 +96,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
       worktree.repo.revParse(Refspec.head())
 
     def patchFrom(lines: Text*): List[FileDiff] =
-      Patch.parse(lines.to(LazyList)).to(List)
+      Patch.parse(lines.iterator)
 
     // ----- Refspec validation (unit tests, no git) ------------------------
 

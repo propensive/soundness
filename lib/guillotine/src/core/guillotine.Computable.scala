@@ -48,11 +48,14 @@ object Stderr:
 case class Stderr(text: Text)
 
 object Computable:
-  given stream: LazyList[Text] is Computable =
-    // The legacy view of `lines()`: lazy, and laundering (a pure LazyList
-    // cannot carry the endpoint it pulls from) — the audited-bridge idiom. A
-    // read failure throws, as the `BufferedReader` this replaced did.
-    job => unsafely(LazyList.from(job.lines().records))
+  given lineStream: Buffering => (Iterator[Text] is Computable) =
+    // Line-oriented output as a single-consumer line iterator (the K-B
+    // adapter), replacing the memoizing `LazyList` bridge. `lines()` needs a
+    // `Tactic[StreamError]` and `.records` a `Buffering`; the endpoint the
+    // iterator pulls from is laundered to fit the pure `Self` slot, so the
+    // caller must drain it once. A read failure throws, as the `BufferedReader`
+    // this replaced did.
+    job => unsafely(job.lines().records.asInstanceOf[Iterator[Text]])
 
   given list: List[Text] is Computable = job => unsafely(job.lines().records.to(List))
 
@@ -60,8 +63,10 @@ object Computable:
 
   given string: String is Computable = _.text().s
 
-  given dataStream: (tactic: Tactic[StreamError]) => ((LazyList[Data] is Computable)^{tactic}) =
-    job => zephyrine.toLazyList(job.stdout())
+  given data: Buffering => (Data is Computable) =
+    // The whole of standard output as one block of bytes; the streaming byte
+    // endpoint is `Subprocess.stdout()` for callers who want it lazy.
+    job => unsafely(job.stdout().memoize)
 
   given exitStatus: Exit is Computable = _.status() match
     case 0     => Exit.Ok

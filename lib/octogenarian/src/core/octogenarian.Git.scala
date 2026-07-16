@@ -51,13 +51,33 @@ import symbolism.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 import GitError.Reason.*
 
 object Git:
-  def progress(process: Job[?, ?]): LazyList[Progress] =
-    safely[StreamError]:
-      zephyrine.toLazyList(process.stderr()).map(_.utf8).map(_.trim).flatMap(_.cut(r"[\n\r]")).collect:
+  // Drop consecutive equal values from a single-pass iterator — git repeats a
+  // progress percentage across many carriage-return updates. Replaces the
+  // LazyList-only `deduplicate` combinator, matching its consecutive semantics.
+  private def distinctConsecutive(iterator: Iterator[Progress]): Iterator[Progress] =
+    var previous: Optional[Progress] = Unset
+
+    iterator.filter: progress =>
+      (previous.absent || previous.vouch != progress).also { previous = progress }
+
+  def progress(process: Job[?, ?]): Iterator[Progress] =
+    import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
+    import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
+
+    // `delineate` splits on `\n`, `\r\n` and `\r`, so git's carriage-return
+    // progress updates each become their own line — subsuming the old manual
+    // `cut(r"[\n\r]")`. The stderr line iterator is laundered pure (exactly as
+    // the old `toLazyList` bridge did) so the progress iterator is a plain,
+    // single-owner value the fetching `Job` carries alongside its result.
+    val stages = safely[StreamError]:
+      val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)
+
+      lines.collect:
         case r"Receiving objects: *$pc(\d*)\%.*" => Progress.Receiving(pc.s.toInt/100.0)
         case r"Resolving deltas: *$pc(\d+)\%.*"  => Progress.Resolving(pc.s.toInt/100.0)
         case r"Unpacking objects: *$pc(\d+)\%.*" => Progress.Unpacking(pc.s.toInt/100.0)
@@ -68,8 +88,9 @@ object Git:
         case r"remote: *Compressing objects: *$pc(\d+)\%.*" =>
           Progress.RemoteCompressing(pc.s.toInt/100.0)
 
-    . or(LazyList())
-    . deduplicate
+    . or(Iterator.empty[Progress])
+
+    distinctConsecutive(stages)
 
 
   def init
