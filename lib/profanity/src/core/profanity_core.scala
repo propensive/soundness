@@ -63,6 +63,14 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
         processBuilder.inheritIO()
         if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
 
+        // Learn the real terminal size at session start: shells do not export
+        // `LINES`/`COLUMNS` by default, and without this probe the session would run
+        // on the 80×24 fallback until the first resize. Emitted only now, after raw
+        // mode is set, so the reply is neither echoed nor line-buffered; the keyboard
+        // pump parses it into a `WindowSize`, updating `knownRows`/`knownColumns`
+        // (and any driver re-tiles, exactly as for a resize).
+        terminal.stdio.out.print(Terminal.reportSize)
+
       block(using terminal)
 
     finally
