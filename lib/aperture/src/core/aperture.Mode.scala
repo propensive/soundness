@@ -37,8 +37,19 @@ package aperture
 // the `open` block. `&` composes dependently — `Read & Write` has
 // `Grants = Grant.Read & Grant.Write` — which keeps the grant set precise without any inline
 // expansion or macros.
+//
+// A composite mode is identified at runtime by the set of atomic modes it was composed from:
+// an `Openable` instance interrogates `atoms` (e.g. `mode.atoms.contains(Read)`) to translate
+// the mode into whatever operational terms its backend needs, such as OS open flags. Atomic
+// modes are global values, compared by reference.
 class Mode:
   type Grants <: Grant
 
+  def atoms: Set[Mode] = Set(this)
+
   infix def & (that: Mode): Mode granting (Grants & that.Grants) =
-    new Mode { type Grants = Mode.this.Grants & that.Grants }
+    val these = atoms
+
+    new Mode:
+      type Grants = Mode.this.Grants & that.Grants
+      override def atoms: Set[Mode] = these ++ that.atoms

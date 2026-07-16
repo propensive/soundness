@@ -143,6 +143,14 @@ object Tests extends Suite(m"Aperture Tests"):
       . map(_.message)
     . assert(_.nonEmpty)
 
+    test(m"A composite mode's atoms are its constituent atomic modes"):
+      (Read & Write & Exclusive).atoms
+    . assert(_ == Set(Read, Write, Exclusive))
+
+    test(m"An atomic mode's atoms are itself"):
+      Write.atoms
+    . assert(_ == Set(Write))
+
     test(m"A read operation with only the Write grant does not compile"):
       demilitarize:
         Ref(t"theta").open[Doc](Write) { handle ?=> handle.title }
