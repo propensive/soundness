@@ -76,7 +76,11 @@ object Cookie:
     given addable: Http.Response is Addable by Cookie.Value to Http.Response =
       Addable: (response, cookie) =>
         val header = Http.Header(t"set-cookie", cookie.show)
-        response.status(header :: response.textHeaders, response.body)
+
+        // `response` is pure here, so its body is pure; the seal only discharges
+        // the field's capture-polymorphic declared type (see `Protoresponse`).
+        val body = caps.unsafe.unsafeAssumePure(response.body)
+        response.status(header :: response.textHeaders, body)
 
     given decodable: List[Cookie.Value] is Decodable in Text = value =>
       value.cut(t"; ").flatMap:

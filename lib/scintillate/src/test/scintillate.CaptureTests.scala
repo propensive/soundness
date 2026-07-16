@@ -54,3 +54,17 @@ object CaptureTests extends Suite(m"Connection confinement tests"):
 
           ()
     . assert(_.nonEmpty)
+
+    // A streamed response body may retain the connection it answers (`Http.Response^
+    // {connection}`) but nothing else scoped: a body reading a *foreign* capability
+    // would outlive the handler through a stream the server never framed.
+    test(m"a response body may not capture a foreign stream"):
+      demilitarize:
+        def attempt(server: SocketServer, foreign: (Stream[Data] over Credit)^)
+          ( using Monitor, Probate, (HttpServerEvent is Loggable)^, Tactic[ServerError] )
+        :   Unit =
+          server.handle:
+            Http.Response(Http.Ok)(Http.Body.Flowing(() => foreign))
+
+          ()
+    . assert(_.nonEmpty)

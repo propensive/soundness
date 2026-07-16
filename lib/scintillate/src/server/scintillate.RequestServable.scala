@@ -39,6 +39,11 @@ import telekinesis.*
 import urticose.*
 
 trait RequestServable:
-  def handle(handle: HttpConnection ?=> Http.Response)(using Monitor, Probate)
+  // The handler's response may capture the connection it answers
+  // (`Http.Response^{connection}`): a streamed body — a chunked response, SSE,
+  // or an upgraded protocol's raw stream — legitimately reads the live request
+  // stream, and is written out by the server within the connection's lifetime.
+  def handle(handle: (connection: HttpConnection) ?=> Http.Response^{connection})
+    ( using Monitor, Probate )
     ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
   :   Service^

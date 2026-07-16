@@ -69,7 +69,8 @@ package httpServers:
     type Request = HttpConnection^
     type Response = Http.Response
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Server^ =
+    def server(port: TcpPort of port)(lambda: (request: Request) ?=> Response^{request})
+    :   Server^ =
       if native then SocketServer(port.number, local).handle(lambda)
       else HttpServer(port.number, local).handle(lambda)
 

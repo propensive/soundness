@@ -47,7 +47,8 @@ import urticose.*
 
 case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:
-  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Probate)
+  def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+    ( using Monitor, Probate )
     ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
   :   Service^ =
 

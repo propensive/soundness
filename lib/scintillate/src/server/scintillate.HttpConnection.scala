@@ -52,6 +52,15 @@ import vacuous.*
 import zephyrine.*
 
 object HttpConnection:
+  // A named SAM rather than a curried function type: the response the server writes
+  // out may capture the live connection (a streamed body reading the request stream),
+  // and a function type cannot take a `^` parameter (the `Spring` precedent). The
+  // tactic is a using-parameter, not a curried context-function result — a value of
+  // curried dependent context-function type is not yet supported — so nothing escapes
+  // `apply`; `connection.respond(response)` resolves the ambient `StreamError` tactic.
+  trait Respond:
+    def apply(response: Http.Response^)(using Tactic[StreamError]): Unit
+
   // Explicit `using` evidence instead of `logs`/`raises` sugar: the `respond` closure built
   // in the body cannot cross the nested context-function results the sugar desugars to (the
   // stacked-raises convention; see rep/DECISIONS.md).
@@ -106,57 +115,58 @@ object HttpConnection:
     val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
       exchange.getLocalAddress.nn.getPort
 
-    def respond(response: Http.Response): Unit raises StreamError =
-      var chunked = false
+    val respond: Respond^ = new Respond:
+      def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+        var chunked = false
 
-      response.textHeaders.each:
-        case Http.Header(key, value) =>
-          if key.lower == t"transfer-encoding" && value.lower == t"chunked" then chunked = true
+        response.textHeaders.each:
+          case Http.Header(key, value) =>
+            if key.lower == t"transfer-encoding" && value.lower == t"chunked" then chunked = true
 
-          exchange.getResponseHeaders.nn.add(key.s, value.s)
+            exchange.getResponseHeaders.nn.add(key.s, value.s)
 
-      val length = if chunked then 0 else response.body match
-        case Http.Body.Empty        => -1
-        case Http.Body.Fixed(data)  => data.length
-        case Http.Body.Flowing(_)   => 0
+        val length = if chunked then 0 else response.body match
+          case Http.Body.Empty        => -1
+          case Http.Body.Fixed(data)  => data.length
+          case Http.Body.Flowing(_)   => 0
 
-      exchange.sendResponseHeaders(response.status.code, length)
-      val responseBody = exchange.getResponseBody.nn
+        exchange.sendResponseHeaders(response.status.code, length)
+        val responseBody = exchange.getResponseBody.nn
 
-      var count: Int = 0
+        var count: Int = 0
 
-      response.body match
-        case Http.Body.Fixed(data) =>
-          try
-            responseBody.write(data.mutable(using Unsafe))
-            count += data.length
-            responseBody.flush()
-          catch case _: ji.IOException => abort(StreamError(count.b))
+        response.body match
+          case Http.Body.Fixed(data) =>
+            try
+              responseBody.write(data.mutable(using Unsafe))
+              count += data.length
+              responseBody.flush()
+            catch case _: ji.IOException => abort(StreamError(count.b))
 
-        case Http.Body.Flowing(source) =>
-          val stream = source()
+          case Http.Body.Flowing(source) =>
+            val stream = source()
 
-          def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
-            case size: Int =>
-              try
-                val window = stream.window(using Unsafe).asInstanceOf[Array[Byte]]
-                responseBody.write(window, stream.start, size)
-                count += size
-                responseBody.flush()
-              catch case _: ji.IOException => abort(StreamError(count.b))
+            def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
+              case size: Int =>
+                try
+                  val window = stream.window(using Unsafe).asInstanceOf[Array[Byte]]
+                  responseBody.write(window, stream.start, size)
+                  count += size
+                  responseBody.flush()
+                catch case _: ji.IOException => abort(StreamError(count.b))
 
-              stream.skip(size)
-              recur()
+                stream.skip(size)
+                recur()
 
-            case _ => ()
+              case _ => ()
 
-          recur()
+            recur()
 
-        case Http.Body.Empty =>
-          try responseBody.flush()
-          catch case _: ji.IOException => abort(StreamError(count.b))
+          case Http.Body.Empty =>
+            try responseBody.flush()
+            catch case _: ji.IOException => abort(StreamError(count.b))
 
-      exchange.close()
+        exchange.close()
 
     new HttpConnection(request, false, port, respond)
 
@@ -168,11 +178,10 @@ class HttpConnection
   (     request: Http.Request^,
     val tls:     Boolean,
     val port:    Int,
-    // Layered response-first: the eta-expansion of a `respond(response)(using Tactic)` local
-    // into a tactic-first nested context function would need the inner arrow to capture the
-    // outer tactic (the dependent-capture restriction); this way the capturing arrow is
-    // outermost.
-    val respond: Http.Response => Tactic[StreamError] ?=> Unit )
+    // The sink that writes the response to (and closes) the client connection. Its
+    // `apply` takes `Http.Response^`: the handler's response may capture this very
+    // connection — a streamed body reading the live request stream.
+    val respond: HttpConnection.Respond^ )
 extends Http.Request
   ( request.method,
     request.version,

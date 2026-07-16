@@ -53,8 +53,8 @@ import zephyrine.*
 // A raw-TCP HTTP/1.1 server backend, built on a `java.net.ServerSocket` rather
 // than `com.sun.net.httpserver`. Each accepted socket is handled on its own
 // Loom virtual thread (`daemon`). The handler API is identical to `HttpServer`'s
-// — a `HttpConnection ?=> Http.Response` — so the two backends are
-// interchangeable. The connection loop supports keep-alive and pipelining,
+// — a `(connection: HttpConnection) ?=> Http.Response^{connection}` — so the two
+// backends are interchangeable. The connection loop supports keep-alive and pipelining,
 // `Content-Length` and chunked request bodies, `100-continue`, request-size
 // limits, and `101` protocol upgrades. Supplying an `SSLContext` as `ssl` serves
 // over TLS instead of cleartext.
@@ -134,7 +134,7 @@ extends RequestServable:
     head.version == 1.1 && head.headers.exists: header =>
       header.key.lower == t"expect" && header.value.lower.contains(t"100-continue")
 
-  private def streaming(response: Http.Response): Boolean = response.body match
+  private def streaming(response: Http.Response^): Boolean = response.body match
     case Http.Body.Flowing(_) => true
     case _                    => false
 
@@ -152,7 +152,7 @@ extends RequestServable:
   // it is also the in-process entry point for tests and benchmarks, which feed a
   // `ByteArrayInputStream` of requests and capture the responses with no network
   // involvement. The caller owns the streams (closing, read timeouts).
-  def serveConnection(handler: HttpConnection ?=> Http.Response)
+  def serveConnection(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
     ( in: ji.InputStream, out: ji.OutputStream )
     ( using (HttpServerEvent is Loggable)^ )
   :   Unit =
@@ -205,20 +205,21 @@ extends RequestServable:
           var upgraded = false
           var keep = keepAlive(head)
 
-          def respond(response: Http.Response): Unit raises StreamError =
-            if response.status == Http.SwitchingProtocols then
-              // Switch to the upgraded protocol: write the handshake headers, then
-              // pipe its raw stream until it ends. This blocks for the lifetime of
-              // the upgraded connection (e.g. a WebSocket session).
-              upgraded = true
-              writeAll(out, Http.Response.serialize(response))
-            else
-              // A streaming body to a pre-1.1 client can't be chunked, so it must
-              // be delimited by closing the connection.
-              if head.version != 1.1 && streaming(response) then keep = false
-              val response2 = if keep then response else response + closeHeader
-              val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
-              writeAll(out, bytes)
+          val respond: HttpConnection.Respond^ = new HttpConnection.Respond:
+            def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+              if response.status == Http.SwitchingProtocols then
+                // Switch to the upgraded protocol: write the handshake headers, then
+                // pipe its raw stream until it ends. This blocks for the lifetime of
+                // the upgraded connection (e.g. a WebSocket session).
+                upgraded = true
+                writeAll(out, Http.Response.serialize(response))
+              else
+                // A streaming body to a pre-1.1 client can't be chunked, so it must
+                // be delimited by closing the connection.
+                if head.version != 1.1 && streaming(response) then keep = false
+                val response2 = if keep then response else response + closeHeader
+                val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
+                writeAll(out, bytes)
 
           val connection = new HttpConnection(request, ssl.present, port, respond)
           Log.fine(HttpServerEvent.Received(request))
@@ -269,7 +270,8 @@ extends RequestServable:
         var continue = true
         while continue && !cursor.finished do continue = serveRequest(cursor)
 
-  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Probate)
+  def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+    ( using Monitor, Probate )
     ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
   :   Service^ =
 

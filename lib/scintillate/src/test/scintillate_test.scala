@@ -158,12 +158,10 @@ object Tests extends Suite(m"Scintillate tests"):
           // Echo upgrade: the response body is the post-handshake request stream,
           // piped straight back out with no HTTP framing.
           val server = SocketServer(port).handle:
-            Http.Response(Http.SwitchingProtocols)
-              (Http.Body.Flowing:
-                // Sealed: the upgraded response's stream legitimately reads the live
-                // connection for the rest of the exchange; the pure-`Http.Body` handler
-                // shape cannot express that retention (see rep/DECISIONS.md, Phase 3b).
-                caps.unsafe.unsafeAssumePure(() => request.body()))
+            // The upgraded response's stream reads the live connection for the rest
+            // of the exchange; the handler result type `Http.Response^{connection}`
+            // expresses that retention honestly, so no seal is needed.
+            Http.Response(Http.SwitchingProtocols)(Http.Body.Flowing(() => request.body()))
 
           val response =
             rawRequest
