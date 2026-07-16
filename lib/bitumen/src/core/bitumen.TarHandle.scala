@@ -39,6 +39,7 @@ import aperture.*
 import contingency.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 // The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
 // sequential format, so `entries` streams lazily from the underlying source (memoized by the
@@ -69,7 +70,7 @@ extends Openable:
     val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 
     try
-      val entries = TarHandle.entries(in.lazyList[Data], flags)
+      val entries = TarHandle.entries(in.source[Data].toLazyList, flags)
       block(using new TarHandle(entries) with Granting[grants] {})
     finally in.close()
 
