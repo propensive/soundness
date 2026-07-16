@@ -55,12 +55,12 @@ object Resource:
 
   given source: [resource <: Resource]
   =>  ( classloader: Classloader, buffering: Buffering )
-  =>  resource is Source by Data over Credit =
+  =>  resource is Streamable by Data over Credit =
     // See `streamable` above: unscoped throwing tactic + pure classloader; laundered pure.
     caps.unsafe.unsafeAssumePure:
       given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
-      Source.inputStream.contramap: resource =>
+      Streamable.inputStream.contramap: resource =>
         classloader.inputStream(resource.path.encode)
 
   given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")

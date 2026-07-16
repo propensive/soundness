@@ -151,12 +151,12 @@ object Pem:
 
   // The armored form, one line at a time: the `serialize` counterpart for
   // streaming consumers (each line carries its terminator).
-  given streamable: Pem is Streamable by Text = pem =>
+  given streamable: Pem is Streamable by Text over Credit = pem =>
     def groups(index: Int): LazyList[Text] =
       if index >= pem.data.length then LazyList(t"-----END ${pem.label}-----\n")
       else t"${pem.data.slice(index, index + 48).serialize[Base64]}\n" #:: groups(index + 48)
 
-    t"-----BEGIN ${pem.label}-----\n" #:: LazyList.defer(groups(0))
+    Stream((t"-----BEGIN ${pem.label}-----\n" #:: LazyList.defer(groups(0))).iterator)
 
 case class Pem(label: PemLabel, data: Data):
   def serialize: Text =

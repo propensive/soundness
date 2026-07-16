@@ -47,6 +47,7 @@ import serpentine.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 object Tar:
   type Rules =
@@ -65,7 +66,7 @@ object Tar:
     val parent: Text = ".."
 
   object Entry:
-    def apply[data: Streamable by Data, instant: Abstractable across Instants to Long]
+    def apply[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
       ( name:  TarRef,
         data:  data,
         mode:  UnixMode          = UnixMode(),
@@ -77,7 +78,7 @@ object Tar:
       val mtimeU32: U32 =
         (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-      Entry.File(name, mode, user, group, mtimeU32, data.lazyList[Data])
+      Entry.File(name, mode, user, group, mtimeU32, data.source[Data].toLazyList)
 
     private[bitumen] val paxRef: TarRef =
       import strategies.throwUnsafely

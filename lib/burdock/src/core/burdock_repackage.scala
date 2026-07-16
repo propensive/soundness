@@ -100,7 +100,7 @@ def repackage(): Unit = application(Nil):
 
       // The bootstrap loader cannot be downloaded — it does the downloading — so
       // its bytes are force-included from burdock's own (boot) JAR on the classpath.
-      val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").lazyList[Data].read[Data]
+      val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").read[Data]
 
       // Unpublished dependencies are reconstructed from the build-time hard-links in
       // `~/.cache/burdock/<sha256>.jar` (see `externalize`); published ones resolve via

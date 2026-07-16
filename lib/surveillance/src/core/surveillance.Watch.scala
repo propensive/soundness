@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Watch:
@@ -60,15 +61,17 @@ object Watch:
 
       . to(Map)
 
-    val spool: Spool[WatchEvent] = Spool()
+    val spool: Relay[WatchEvent] = Relay()
 
     new Watch(spool, watcher.watch(directories, spool))
 
 // A `Watch` is the user-facing handle returned by registering one or more paths. Its `stream`
 // yields events as they occur, and `unregister` cancels the backend registration and terminates
 // the stream. The actual change-detection is delegated to a `Watcher` backend.
-class Watch(spool: Spool[WatchEvent], registration: Watcher.Registration):
-  def stream: LazyList[WatchEvent] = spool.stream
+class Watch(spool: Relay[WatchEvent], registration: Watcher.Registration):
+  // The legacy view of the event relay (the audited bridge): one lazy,
+  // single-owner drain of the shared queue, as before.
+  def stream: LazyList[WatchEvent] = LazyList.from(spool.stream.records)
 
   def unregister(): Unit =
     registration.cancel()

@@ -85,9 +85,9 @@ object HttpConnection:
     // The Source evidence closes over `unsafely`'s ThrowTactic, which is `caps.Unscoped`
     // (it throws in place, capturing nothing scoped), so it is truthfully sealed once here
     // rather than leaking out of the per-mint `unsafely` scope through the body thunk.
-    val source: ji.InputStream is Source by Data over Credit =
+    val source: ji.InputStream is Streamable by Data over Credit =
       unsafely:
-        caps.unsafe.unsafeAssumePure(summon[ji.InputStream is Source by Data over Credit])
+        caps.unsafe.unsafeAssumePure(summon[ji.InputStream is Streamable by Data over Credit])
 
     val request =
       Http.Request

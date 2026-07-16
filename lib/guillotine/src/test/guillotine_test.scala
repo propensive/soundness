@@ -386,13 +386,13 @@ object Tests extends Suite(m"Guillotine tests"):
     suite(m"Stdin and stderr"):
       test(m"pipe LazyList[Data] into stdin"):
         val proc = sh"cat".fork[Text]()
-        proc.stdin(LazyList(Data(104, 105, 10)))
+        proc.stdin(Stream(Data(104, 105, 10)))
         proc.await().trim
       . assert(_ == t"hi")
 
       test(m"read stderr from a forked job"):
         val proc = sh"sh -c 'echo err 1>&2; sleep 0.05'".fork[Unit]()
-        val bytes = proc.stderr().read[Data]
+        val bytes = proc.stderr().memoize
         proc.await()
         String(bytes.mutable(using Unsafe), "UTF-8").nn.trim
       . assert(_ == "err")

@@ -57,10 +57,14 @@ import probates.awaitProbate
 inline def more[value](using value: value aka "more"): value = value()
 
 extension [value](value: value)
-  // The legacy `LazyList` view of a streamable value (the kernel `.stream`
-  // builds a `zephyrine.Stream` instead). Named `lazyList` to free `stream`.
-  inline def lazyList[element]: LazyList[element] =
-    ${turbulence.internal.lazyList[value, element]('value)}
+  // A streamable value's pull endpoint: the fluent form of
+  // `Streamable.stream` (`file.source`, `entry.source`). (Named `source`
+  // because zephyrine's `.stream` constructor already owns that name under
+  // the flat `soundness.*` re-export.)
+  def source[element](using streamable: (value is Streamable by element over Credit)^)
+  :   (Stream[element] over Credit)^ =
+
+    streamable.stream(value)
 
   inline def read[result](using readable: (value is Readable to result)^): result =
     readable.read(value)
@@ -69,16 +73,18 @@ extension [value](value: value)
   def writeTo[target](target: target)[element]
     // Capture-polymorphic evidence: writers built from an `Emit[StreamError]` capture it; the
     // write completes within this call, so nothing is retained and the result stays `Unit`.
-    ( using streamable: (value is Streamable by element)^,
+    ( using streamable: (value is Streamable by element over Credit)^,
             writable:   (target is Writable by element)^ )
   :   Unit =
 
     writable.write(target, streamable.stream(value))
 
-extension [value: Streamable by Text](value: value)
-  def load[result <: Documentary](using loadable: (result is Loadable by Text)^)
+extension [value](value: value)
+  def load[result <: Documentary]
+    ( using streamable: (value is Streamable by Text over Credit)^,
+            loadable:   (result is Loadable by Text)^ )
   :   Document[result] =
-    loadable.load(value.lazyList[Text])
+    loadable.load(streamable.stream(value))
 
 extension [medium, transport](consume stream: (Stream[medium] over transport)^)
   // The detached pump: `pump` on its own parasite task, for fire-and-forget
@@ -268,10 +274,6 @@ package lineSeparation:
     case "\n"      => linefeedLineSeparation
     case _: String => adaptiveLinefeedLineSeparation
 
-def spool[item](using erased void: Void)[result](lambda: Spool[item] => result): result =
-  val spool: Spool[item] = Spool()
-  try lambda(spool) finally spool.stop()
-
 extension [element](stream: LazyList[element])
   def deduplicate: LazyList[element] =
     def recur(last: element, stream: LazyList[element]): LazyList[element] =
@@ -295,111 +297,9 @@ extension [element](stream: LazyList[element])
 
   def strict: LazyList[element] = stream.length yet stream
 
-  def multiplex(that: LazyList[element])(using Monitor): LazyList[element] =
-    LazyList.multiplex(stream, that)
-
-  def regulate(tap: Tap)(using Monitor): LazyList[element] =
-    def defer
-      ( active: Boolean,
-        stream: LazyList[Some[element] | Tap.Regulation],
-        buffer: List[element] )
-    :   LazyList[element] =
-
-      recur(active, stream, buffer)
-
-
-    @tailrec
-    def recur
-      ( active: Boolean, stream: LazyList[Some[element] | Tap.Regulation], buffer: List[element] )
-    :   LazyList[element] =
-
-      if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
-      else if stream.nil then LazyList()
-      else stream.head match
-        case Tap.Regulation.Start => recur(true, stream.tail, buffer)
-        case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
-
-        case Some(other) =>
-          if active then other.nn #:: defer(true, stream.tail, Nil)
-          else recur(false, stream.tail, other.nn :: buffer)
-
-    LazyList.defer(recur(true, stream.map(Some(_)).multiplex(tap.stream), Nil))
-
-  def cluster[duration: Abstractable across Durations to Long]
-    ( duration: duration, maxSize: Optional[Int] = Unset )
-    ( using Monitor )
-  :   LazyList[List[element]] =
-
-    val Limit = maxSize.or(Int.MaxValue)
-
-    def recur(stream: LazyList[element], list: List[element], count: Int): LazyList[List[element]] =
-      count match
-        case 0 =>
-          safely(async(stream.nil).await()) match
-            case false => recur(stream.tail, stream.head :: list, count + 1)
-            case true  => LazyList()
-            case _     => recur(stream, Nil, 0)
-
-        case Limit =>
-          list.reverse #:: recur(stream, Nil, 0)
-
-        case _ =>
-          safely(async(stream.nil).await(duration)) match
-            case false => recur(stream.tail, stream.head :: list, count + 1)
-            case true  => LazyList(list.reverse)
-            case _     => list.reverse #:: recur(stream, Nil, 0)
-
-    LazyList.defer(recur(stream, Nil, 0))
-
-
-  def parallelMap[element2](lambda: element => element2)(using Monitor): LazyList[element2] =
-
-    val out: Spool[element2] = Spool()
-
-    async:
-      stream.each: element =>
-        // Fan out: each element is mapped on its own supervised worker that puts the result
-        // into the
-        // spool. (`each`, not `map`: the source must be drained to actually spawn the workers.)
-        async(out.put(lambda(element)))
-        ()
-
-    out.stream
-
 extension (obj: LazyList.type)
-  def multiplex[element](streams: LazyList[element]*)(using Monitor): LazyList[element] =
-    multiplexer(streams*).stream
-
-  def multiplexer[element](streams: LazyList[element]*)(using monitor: Monitor): Multiplexer[Any, element]^{monitor} =
-    Multiplexer[Any, element]().tap: multiplexer =>
-      streams.zipWithIndex.each: (stream, index) =>
-        multiplexer.add(index, stream)
-
   def defer[element](stream: => LazyList[element]): LazyList[element] =
     (null.asInstanceOf[element] #:: stream).tail
-
-
-  def metronome[generic: Abstractable across Durations to Long](duration: generic)(using Monitor)
-  :   LazyList[Unit] =
-
-    val spool: Spool[Unit] = Spool()
-    val startTime: Long = jl.System.currentTimeMillis
-
-    // Ticking requires the `Monitor` (to `sleep`), which a pure lazy `Stream` cannot itself
-    // capture,
-    // so it runs as a supervised task that pushes ticks into a `Spool`. When the scope is torn
-    // down a
-    // cancelled `sleep` raises `AsyncError`; the spool is then stopped so the consumer's stream ends.
-    async:
-      @tailrec
-      def recur(iteration: Int): Unit =
-        sleep(startTime + duration.generic/1_000_000L*iteration)
-        spool.put(())
-        recur(iteration + 1)
-
-      try recur(0) catch case _: AsyncError => spool.stop()
-
-    spool.stream
 
 
 extension (stream: LazyList[Data])

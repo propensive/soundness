@@ -138,15 +138,17 @@ object JsonRpc:
     Promise[Unit]().tap(_.offer(()))
 
 trait JsonRpc extends Original:
-  private val channel: Spool[Json] = Spool()
+  private val channel: Relay[Json] = Relay()
 
   inline def client: Origin = ${obligatory.internal.client[Origin]('this)}
 
   def put(json: Json): Unit =
     channel.put(json)
 
-  def outgoing: LazyList[Json] = channel.stream
+  // Each accessor drains the shared queue through a fresh single-owner view
+  // (the audited bridge); use one or the other per instance, as before.
+  def outgoing: LazyList[Json] = LazyList.from(channel.stream.records)
 
   def stream: LazyList[Sse] =
-    channel.stream.map: json =>
+    LazyList.from(channel.stream.records).map: json =>
       Sse(data = List(json.encode))

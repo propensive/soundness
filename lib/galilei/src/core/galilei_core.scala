@@ -44,6 +44,7 @@ import serpentine.*
 import spectacular.*
 import symbolism.*
 import turbulence.{Aggregable, Streamable}
+import zephyrine.Credit
 import vacuous.*
 
 import IoError.{Operation, Reason}
@@ -77,14 +78,18 @@ extension [plane: Filesystem](path: Path on plane)
   // Write `content` to the file in its entirety as a single, direct operation: the whole file is
   // written at once, holding no handle and needing no scope — unlike streaming to a path, which
   // must be `open`ed and consumed within a scope.
-  def write[content: Streamable by Data as streamable](content: content): Unit raises IoError =
-    val bytes: Data = summon[Data is Aggregable by Data].aggregate(streamable.stream(content))
+  def write[content](content: content)
+    ( using streamable: (content is Streamable by Data over Credit)^ )
+  :   Unit raises IoError =
+    val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
     protect(Operation.Write)(jnf.Files.write(javaPath, bytes.mutable(using Unsafe)))
 
   // Append `content` to the file in its entirety as a single, direct operation, creating the file
   // if it does not exist — the eager counterpart of `Eof(path).open(content.writeTo(_))`.
-  def append[content: Streamable by Data as streamable](content: content): Unit raises IoError =
-    val bytes: Data = summon[Data is Aggregable by Data].aggregate(streamable.stream(content))
+  def append[content](content: content)
+    ( using streamable: (content is Streamable by Data over Credit)^ )
+  :   Unit raises IoError =
+    val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
 
     protect(Operation.Write):
       jnf.Files.write

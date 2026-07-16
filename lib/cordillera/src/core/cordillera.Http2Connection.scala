@@ -127,7 +127,7 @@ object Http2Connection:
 class Http2Stream(val id: Int):
   val headers: Promise[List[HpackEntry]] = Promise()
   val trailers: Promise[List[HpackEntry]] = Promise()
-  val body: Spool[Bytes] = Spool()
+  val body: Relay[Bytes] = Relay()
   // Untracked: written only by the connection's single reader daemon.
   @caps.unsafe.untrackedCaptures
   private var headersSeen: Boolean = false
@@ -159,7 +159,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
   private val streams: scc.TrieMap[Int, Http2Stream] = scc.TrieMap()
   private val nextId: juca.AtomicInteger = juca.AtomicInteger(1)
-  private val outbound: Spool[Frame] = Spool()
+  private val outbound: Relay[Frame] = Relay()
   private val started: Promise[Unit] = Promise()
 
   private def send(frame: Frame): Unit = outbound.put(frame)
@@ -189,13 +189,13 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
         // before they spawn: a daemon body may not capture the instance under
         // construction, and its context function must stay pure.
         val duplex0: Duplex = duplex
-        val outbound0: Spool[Frame] = outbound
+        val outbound0: Relay[Frame] = outbound
         val self: AnyRef = this.asInstanceOf[AnyRef]
 
         val writer = daemon:
           duplex0.send(zephyrine.Stream(connectionPreface))
 
-          outbound0.stream.each: frame =>
+          outbound0.stream.records.each: frame =>
             duplex0.send(zephyrine.Stream(frame.serialize))
 
         val frameReaderRef: AnyRef = FrameReader(duplex0.source).asInstanceOf[AnyRef]
@@ -257,7 +257,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     val stream = this.request(headerBlock, payload)
     val responseHeaders = stream.headers.await()
 
-    (stream, PseudoHeaders.response(responseHeaders, stream.body.stream))
+    (stream, PseudoHeaders.response(responseHeaders, LazyList.from(stream.body.stream.records)))
 
   def close(): Unit =
     send(Frame.GoAway(0, ErrorCode.NoError.code, IArray.empty[Byte]))

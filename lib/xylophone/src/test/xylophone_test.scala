@@ -77,7 +77,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Serialize document"):
         supervise:
-          unsafely(t"""<?xml  version="1.0"?><message>hello world</message>""".load[Xml].lazyList[Text].read[Text])
+          unsafely(t"""<?xml  version="1.0"?><message>hello world</message>""".load[Xml].read[Text])
       . assert(_ == t"""<?xml version="1.0"?><message>hello world</message>""")
 
     suite(m"`in Xml` decoder shorthand"):

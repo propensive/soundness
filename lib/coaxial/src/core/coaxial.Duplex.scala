@@ -35,7 +35,7 @@ package coaxial
 import anticipation.*
 import prepositional.*
 import rudiments.*
-import turbulence.Spool
+import turbulence.Relay
 import vacuous.*
 import zephyrine.*
 
@@ -45,13 +45,13 @@ object Duplex:
   // in-memory protocol tests rely on. Ends when a side's `close` stops its
   // outbound spool.
   def pair(): (Duplex, Duplex) =
-    val leftToRight: Spool[Data] = Spool()
-    val rightToLeft: Spool[Data] = Spool()
+    val leftToRight: Relay[Data] = Relay()
+    val rightToLeft: Relay[Data] = Relay()
 
-    def side(inbound: Spool[Data], outbound: Spool[Data]): Duplex = new Duplex:
+    def side(inbound: Relay[Data], outbound: Relay[Data]): Duplex = new Duplex:
       // Each memoized send is exposed as one refill window, preserving the
       // chunk boundaries the in-memory protocol tests rely on.
-      def source(using Buffering): (Stream[Data] over Credit)^ = inbound.stream.iterator.stream
+      def source(using Buffering): (Stream[Data] over Credit)^ = inbound.stream.records.stream
 
       def send(consume data: (Stream[Data] over Credit)^): Unit =
         outbound.put(data.memoize)

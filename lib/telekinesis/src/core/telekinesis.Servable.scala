@@ -77,15 +77,21 @@ object Servable:
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         Http.Ok(headers, Http.Body.Fixed(encodable.encode(value)))
 
-    case given (`media` is Streamable by Data) =>
+    case streamable: (`media` is Streamable by Data over Credit) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => value.lazyList[Data].iterator.stream))
+        Http.Ok(headers, Http.Body.Flowing(() => streamable.stream(value)))
 
-    case given (`media` is Streamable by Text) =>
+    case streamable: (`media` is Streamable by Text over Credit) =>
+      given encoder: hieroglyph.CharEncoder = compiletime.summonInline[hieroglyph.CharEncoder]
+      given buffering: zephyrine.Buffering = compiletime.summonInline[zephyrine.Buffering]
+
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => value.lazyList[Data].iterator.stream))
+
+        Http.Ok(headers, Http.Body.Flowing { () =>
+          streamable.stream(value).via(encoder).asInstanceOf[(Stream[Data] over Credit)^]
+        })
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response

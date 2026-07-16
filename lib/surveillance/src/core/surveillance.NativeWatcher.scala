@@ -109,7 +109,7 @@ object NativeWatcher extends Watcher:
       // failure mode: the operating system's watch limit (e.g. inotify `max_user_watches`).
       case _: ji.IOException            => abort(WatchError(WatchError.Reason.LimitExceeded))
 
-  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Spool[WatchEvent])
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
     val pathWatches: Set[PathWatch] = watchesMutex:
@@ -129,7 +129,7 @@ object NativeWatcher extends Watcher:
   private class PathWatch
     ( private[NativeWatcher] val key:    jnf.WatchKey,
       private[NativeWatcher] val base:   jnf.Path,
-                             val spool:  Spool[WatchEvent],
+                             val spool:  Relay[WatchEvent],
                              val filter: Text -> Boolean ):
 
     def put(event: jnf.WatchEvent[?]): Unit =

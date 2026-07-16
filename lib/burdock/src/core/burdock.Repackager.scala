@@ -204,8 +204,8 @@ object Repackager:
             // are needed (to rewrite the manifest and read the hash list); read those two. Drop any
             // bundled `burdock/Bootstrap.class` (an app whose `Main-Class` is `burdock.Bootstrap`
             // bundles burdock) since the bootstrap is force-included below, avoiding a duplicate.
-            if name == manifestName then manifestData = entry.lazyList[Data].read[Data]
-            else if name == resource then depsData = entry.lazyList[Data].read[Data]
+            if name == manifestName then manifestData = entry.read[Data]
+            else if name == resource then depsData = entry.read[Data]
             else if name == bootstrapName then ()
             else ownBuilder += entry
 
@@ -247,7 +247,7 @@ object Repackager:
           Zip.Entry(manifestName.as[Path on Zip], manifest2.serialize)
 
         val bootstrap: Zip.Entry =
-          Zip.Entry(bootstrapName.as[Path on Zip], () => LazyList(bootstrapClass))
+          Zip.Entry(bootstrapName.as[Path on Zip], bootstrapClass)
 
         // Keep the first occurrence of each entry name: the force-included bootstrap over any
         // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also

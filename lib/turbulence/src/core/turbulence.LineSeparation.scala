@@ -40,51 +40,13 @@ import prepositional.*
 import zephyrine.*
 
 object LineSeparation:
-  inline def readByte
-    ( inline  read:      => Byte,
-              next:      => Unit,
-      inline  mkNewline: => Unit,
-      inline  put: Byte  => Unit )
-    ( lineSeparators: LineSeparation )
-  :   Unit =
-
-    val action: Action = read match
-      case 10 =>
-        next
-
-        read match
-          case 13 => next; lineSeparators.lfcr
-          case ch => lineSeparators.lf
-
-      case 13 =>
-        next
-
-        read match
-          case 10 => next; lineSeparators.crlf
-          case ch => lineSeparators.cr
-
-      case ch =>
-        put(ch)
-        Action.Skip
-
-    action match
-      case Action.Nl   => mkNewline
-      case Action.NlCr => mkNewline; put(13)
-      case Action.NlLf => mkNewline; put(10)
-      case Action.CrNl => put(13); mkNewline
-      case Action.NlNl => mkNewline; mkNewline
-      case Action.Cr   => put(13)
-      case Action.Lf   => put(10)
-      case Action.LfNl => put(10); mkNewline
-      case Action.Skip => ()
-
-
   // Line splitting as a pipeline stage: a `LineSeparation` policy value applies
   // directly with `stream.via(policy)` (or the `.lines` combinators), yielding a
   // record stream on the boxed medium — one `Text` per line, without its
-  // terminator. The duct dispatches through the same `Action` table as
-  // `readByte` above, so each packaged policy behaves identically to the legacy
-  // reader. A separator's first char at a window boundary is carried in
+  // terminator. The duct dispatches through the `Action` table each packaged
+  // `LineSeparation` policy defines (`Nl`/`Cr`/`Lf`/…), so all the CR/LF/CRLF
+  // handling lives in one place. A separator's first char at a window boundary
+  // is carried in
   // `pending` (the two-char sequences resolve across windows); the incomplete
   // final line is carried in `partial` and emitted by `flush`, so an input
   // without a trailing separator still yields its last line, and an empty input

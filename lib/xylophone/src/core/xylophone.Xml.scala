@@ -1499,9 +1499,15 @@ object Xml extends Tag.Container
   // is built from the root element alone).
   given loadable: (schema: XmlSchema) => (tactic: Tactic[ParseError], tracking: PositionTracking)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
+    // The chunk iterator view of the pull endpoint (the audited bridge; the
+    // DOM loader's parser is iterator-fed).
+    val chunks =
+      zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+      . iterator
+
     val parser = tracking match
-      case PositionTracking.On  => XmlParser.fromIteratorTracked(stream.iterator)
-      case PositionTracking.Off => XmlParser.fromIterator(stream.iterator)
+      case PositionTracking.On  => XmlParser.fromIteratorTracked(chunks)
+      case PositionTracking.Off => XmlParser.fromIterator(chunks)
 
     val parsed = parser.parseXml(headers0 = true)
 
@@ -1532,8 +1538,8 @@ object Xml extends Tag.Container
 
   // `^{monitor}` only: `Probate` is not capture-tracked (see rep/REVIEW.md).
   given streamable: (monitor: Monitor, probate: Probate)
-  =>  ((Document[Xml] is Streamable by Text)^{monitor}) =
-    emit(_).to(LazyList)
+  =>  ((Document[Xml] is Streamable by Text over Credit)^{monitor}) =
+    document => zephyrine.Stream(emit(document))
 
   def emit(document: Document[Xml])
     ( using formatting: Formatting, monitor: Monitor, probate: Probate )

@@ -135,7 +135,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(_ == List())
 
     test(m"PEM streams its armored form"):
-      Pem.parse(request).lazyList[Text].join.trim
+      Pem.parse(request).read[Text].trim
     . assert(_ == request.trim)
 
     test(m"RSA roundtrip"):

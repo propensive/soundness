@@ -41,11 +41,12 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
+import zephyrine.Credit
 import vacuous.*
 
 object Manifest:
-  protected def parse[streamable: Streamable by Data](source: streamable): Manifest =
-    val java = juj.Manifest(source.lazyList[Data].inputStream)
+  protected def parse[streamable: Streamable by Data over Credit](source: streamable): Manifest =
+    val java = juj.Manifest(source.source[Data].inputStream)
 
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
@@ -53,7 +54,8 @@ object Manifest:
 
       . to(Map)
 
-  given streamable: Manifest is Streamable by Data = manifest => LazyList(manifest.serialize)
+  given streamable: Manifest is Streamable by Data over Credit = manifest =>
+    zephyrine.Stream(manifest.serialize)
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:

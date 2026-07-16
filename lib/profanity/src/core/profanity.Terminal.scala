@@ -41,6 +41,7 @@ import iridescence.*
 import parasite.*
 import rudiments.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Terminal:
@@ -73,10 +74,11 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
 
   export console.stdio.{in, out, err}
 
-  // The keyboard's escape-disambiguation timeout runs `async`, so the value retains the
-  // monitor; the field type declares the capture. (`Probate` is a plain trait, so it is not
-  // nameable in a capture set.)
-  val keyboard: Keyboard.Standard^{monitor} = Keyboard.Standard()
+  // ESC disambiguation consults the live reader — buffered input decides
+  // instantly and only a quiet line waits briefly (see `Keyboard.Lookahead`)
+  // — so the keyboard no longer runs `async` and retains no monitor.
+  val keyboard: Keyboard.Standard =
+    Keyboard.Standard()(using Keyboard.Lookahead.tty(console.stdio))
 
   private val metrics: Terminal.Metrics = Terminal.Metrics()
 
@@ -125,9 +127,14 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     val err = console.stdio.err
     val in = console.stdio.in
 
-  val events: Spool[TerminalEvent] = Spool()
+  val events: Relay[TerminalEvent] = Relay()
 
-  def eventIterator(): Iterator[TerminalEvent] = events.iterator
+  // A fresh single-owner drain of the shared event queue per call, batching
+  // queued events into windows across the producer boundary. Sealed: the
+  // `Interactivity` interface is pure-typed, exactly as `Spool.iterator` was
+  // before it — the endpoint is reachable only through this iterator.
+  def eventIterator(): Iterator[TerminalEvent] =
+    caps.unsafe.unsafeAssumePure(events.stream.records)
 
   // The handler is bound over block locals (not fields) so it stays pure: `Console.trap`
   // takes a pure `PartialFunction`, and a reference to `out` or `events` through `this`
@@ -159,7 +166,15 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     val keyboard0: AnyRef = keyboard.asInstanceOf[AnyRef]
     val events0 = events
     val metrics0 = metrics
-    val chars: LazyList[Char] = In.lazyList[Char]
+    // The terminal reads chars one at a time from the same stdio reader the
+    // `Lookahead` consults (the former element-typed `Streamable by Char`
+    // instance, now private to its one user).
+    val chars: LazyList[Char] =
+      def recur(): LazyList[Char] = console.stdio.readChar() match
+        case -1  => LazyList()
+        case int => int.toChar #:: recur()
+
+      LazyList.defer(recur())
 
     contain:
       case _ => events0.stop(); Remedy.Accept

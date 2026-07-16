@@ -41,14 +41,17 @@ import gesticulate.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
+import zephyrine.*
 
 trait Audible extends Typeclass:
   audible: Audible =>
     def name: Text
     def mediaType: MediaType
 
-    def read[input: Streamable by Data](source: input): Audio in Self raises AudioError =
-      val rawBytes: Array[Byte] = source.lazyList[Data].read[Data].javaInputStream.readAllBytes.nn
+    def read[input: Streamable by Data over Credit](source: input)
+    :   Audio in Self raises AudioError =
+      val rawBytes: Array[Byte] = source.read[Data].mutable(using Unsafe)
 
       val fileFormat: jss.AudioFileFormat =
         try jss.AudioSystem.getAudioFileFormat(ji.ByteArrayInputStream(rawBytes)).nn

@@ -62,7 +62,7 @@ case class Client(pid: Pid) extends Topical:
   // fiber and the invocation fiber, and a capability type argument cannot (the
   // fiber-crossing recipe; cast at both ends).
   val invocation: Promise[AnyRef] = Promise()
-  val bus: Spool[Topic] = Spool()
+  val bus: Relay[Topic] = Relay()
   val terminatePid: Promise[Pid] = Promise()
   val exitPromise: Promise[Exit] = Promise()
 

@@ -272,8 +272,8 @@ package filesystemBackends:
         try
           lambda:
             Handle
-              ( () => unsafely(Streamable.channel.stream(channel).lazyList[Data]),
-                data => unsafely(Writable.channel.write(channel, data)) )
-              ( () => unsafely(Source.channel.stream(channel)),
+              ( () => unsafely(zephyrine.toLazyList(Streamable.channel.stream(channel))),
+                data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.iterator))) )
+              ( () => unsafely(Streamable.channel.stream(channel)),
                 () => unsafely(Sink.channel.intake(channel)) )
         finally channel.close()
