@@ -30,7 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package facsimile
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, PdfError, PdfFile,
-    PdfFont, PdfInfo, PdfMatrix, PdfOperator, PdfRect, TextRun, pdf}
+import anticipation.*
+import quantitative.*
+
+// One show-text operation, decoded and positioned: its Unicode text, the font and effective
+// size it renders at, its baseline origin in unrotated page space, and its advance width —
+// all in typesafe points. A `TextRun` is a pure value and escapes the `open` scope.
+case class TextRun
+  ( text:  Text,
+    font:  PdfFont,
+    size:  Quantity[Points[1]],
+    x:     Quantity[Points[1]],
+    y:     Quantity[Points[1]],
+    width: Quantity[Points[1]] )

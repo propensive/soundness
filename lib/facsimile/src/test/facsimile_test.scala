@@ -414,6 +414,189 @@ object Tests extends Suite(m"Facsimile tests"):
           textOf(pdf.resolved(pdf(1, 0)(t"Greeting").or(Cos.Nil)))
       . assert(_ == t"hi")
 
+    // A one-page document with Helvetica as `/F1` and the given content stream.
+    def contentPage(content: Text): Data =
+      document
+        ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
+          t"<< /Type /Page /Parent 2 0 R /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>"
+          . in[Data],
+          t"<< /Length ${content.length} >>\nstream\n$content\nendstream".in[Data],
+          t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".in[Data] )
+
+    suite(m"Content operators"):
+      def operators(content: Text): List[PdfOperator] =
+        PdfFile(contentPage(content)).open():
+          pdf.pages(0).operators
+
+      test(m"a graphics-state and text block parses to typed operators"):
+        operators(t"q 1 0 0 1 50 60 cm BT /F1 12 Tf 72 720 Td (Hi) Tj ET Q").map(_.ordinal)
+      . assert: ordinals =>
+          ordinals == List(PdfOperator.Save, PdfOperator.Concat(PdfMatrix.Identity),
+              PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12), PdfOperator.Offset(72, 720),
+              PdfOperator.ShowText(IArray[Byte]()), PdfOperator.EndText, PdfOperator.Restore)
+            . map(_.ordinal)
+
+      test(m"cm carries its matrix"):
+        operators(t"2 0 0 2 10 20 cm")
+      . assert(_ == List(PdfOperator.Concat(PdfMatrix(2, 0, 0, 2, 10, 20))))
+
+      test(m"re carries its rectangle"):
+        operators(t"1 2 30 40 re f")
+      . assert(_ == List(PdfOperator.Rectangle(1, 2, 30, 40),
+          PdfOperator.Fill(PdfOperator.FillRule.NonZero)))
+
+      test(m"rg becomes an Srgb colour"):
+        operators(t"1 0 0.5 rg")
+      . assert(_ == List(PdfOperator.FillRgb(Srgb(1.0, 0.0, 0.5))))
+
+      test(m"a dash pattern parses"):
+        operators(t"[2 1] 0 d")
+      . assert(_ == List(PdfOperator.SetDashPattern(List(2.0, 1.0), 0.0)))
+
+      test(m"TJ mixes strings and kerning adjustments"):
+        operators(t"BT [(A) -500 (B)] TJ ET") match
+          case List(_, PdfOperator.ShowTexts(elements), _) =>
+            elements.map:
+              case value: Double => value
+              case data: Data    => String(data.mutable(using Unsafe), "UTF-8").tt
+
+          case _ =>
+            List()
+      . assert(_ == List(t"A", -500.0, t"B"))
+
+      test(m"unknown operators survive as Unrecognized"):
+        operators(t"BX /x 7 fancyNewOp EX")
+      . assert(_ == List(PdfOperator.BeginCompatibility,
+          PdfOperator.Unrecognized(t"fancyNewOp", List(Cos.Name(t"x"), Cos.Integral(7))),
+          PdfOperator.EndCompatibility))
+
+      test(m"a known operator with missing operands is an error"):
+        capture[PdfError](operators(t"w")).reason
+      . assert(_ == PdfError.Reason.MalformedOperator(t"w"))
+
+      test(m"an inline image folds into one operator"):
+        operators(t"BI /W 2 /H 2 /L 4 ID  EI") match
+          case List(PdfOperator.InlineImage(parameters, data)) =>
+            (parameters.at(t"W"), data.length)
+
+          case _ =>
+            (Unset, 0)
+      . assert(_ == (Cos.Integral(2), 4))
+
+    suite(m"Fonts"):
+      test(m"a standard-14 font is recognized with its metrics"):
+        PdfFile(contentPage(t"")).open():
+          val font = pdf.pages(0).fonts(t"F1")
+          (font.standard, font.width('A'))
+      . assert(_ == (PdfFont.Standard.Helvetica, 667.0))
+
+      test(m"declared widths override standard metrics"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /FirstChar 65 /Widths [800] >>"
+            . in[Data] )
+
+        PdfFile(doc).open():
+          val font = pdf.pages(0).fonts(t"F1")
+          (font.width('A'), font.width('B'))
+      . assert(_ == (800.0, 667.0))
+
+      test(m"differences remap codes through glyph names"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [65 /eacute] >> >>"
+            . in[Data] )
+
+        PdfFile(doc).open():
+          pdf.pages(0).fonts(t"F1").decode(data('A', 'B', 0x93))
+      . assert(_ == t"éB“")
+
+      test(m"a ToUnicode map takes precedence"):
+        val cmap = t"/CIDInit /ProcSet findresource begin begincmap 1 begincodespacerange <00> <FF> endcodespacerange 2 beginbfchar <41> <0042> endbfchar 1 beginbfrange <60> <62> <0070> endbfrange endcmap end"
+
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 5 0 R >>".in[Data],
+            t"<< /Length ${cmap.length} >>\nstream\n$cmap\nendstream".in[Data] )
+
+        PdfFile(doc).open():
+          pdf.pages(0).fonts(t"F1").decode(data('A', 0x60, 0x61, 0x62))
+      . assert(_ == t"Bpqr")
+
+      test(m"a Type0 font reads two-byte codes and CID widths"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+            t"<< /Type /Font /Subtype /Type0 /BaseFont /Test /Encoding /Identity-H /DescendantFonts [5 0 R] >>"
+            . in[Data],
+            t"<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Test /DW 750 /W [10 [600 650] 20 22 500] >>"
+            . in[Data] )
+
+        PdfFile(doc).open():
+          val font = pdf.pages(0).fonts(t"F1")
+          (font.codes(data(0, 10, 0, 11)), font.width(10), font.width(21), font.width(99))
+      . assert(_ == (List(10, 11), 600.0, 500.0, 750.0))
+
+    suite(m"Text extraction"):
+      def extracted(content: Text): Text =
+        PdfFile(contentPage(content)).open():
+          pdf.pages(0).text
+
+      test(m"a single show operation extracts its text"):
+        extracted(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")
+      . assert(_ == t"Hello")
+
+      test(m"a gap between shows on a baseline becomes a space"):
+        extracted(t"BT /F1 12 Tf 72 720 Td (Hello) Tj 100 0 Td (world) Tj ET")
+      . assert(_ == t"Hello world")
+
+      test(m"adjacent shows do not gain a space"):
+        extracted(t"BT /F1 12 Tf 72 720 Td (Hel) Tj (lo) Tj ET")
+      . assert(_ == t"Hello")
+
+      test(m"a baseline change becomes a newline"):
+        extracted(t"BT /F1 12 Tf 72 720 Td (one) Tj 0 -14 Td (two) Tj ET")
+      . assert(_ == t"one\ntwo")
+
+      test(m"T* advances by the leading"):
+        extracted(t"BT /F1 12 Tf 14 TL 72 720 Td (one) Tj T* (two) Tj ET")
+      . assert(_ == t"one\ntwo")
+
+      test(m"a large TJ adjustment reads as a space"):
+        extracted(t"BT /F1 12 Tf 72 720 Td [(Hello) -600 (world)] TJ ET")
+      . assert(_ == t"Hello world")
+
+      test(m"runs carry their positions in points"):
+        PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")).open():
+          pdf.pages(0).runs match
+            case List(run) => (run.x, run.y, run.size, run.text)
+            case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+                                  Quantity[Points[1]](0.0), t"")
+      . assert(_ == (Quantity[Points[1]](72.0), Quantity[Points[1]](720.0),
+          Quantity[Points[1]](12.0), t"Hello"))
+
+      test(m"the transformation matrix scales positions"):
+        PdfFile(contentPage(t"q 2 0 0 2 0 0 cm BT /F1 12 Tf 50 100 Td (X) Tj ET Q")).open():
+          pdf.pages(0).runs match
+            case List(run) => (run.x, run.size)
+            case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0))
+      . assert(_ == (Quantity[Points[1]](100.0), Quantity[Points[1]](24.0)))
+
+      test(m"text is a pure value and escapes the scope"):
+        val kept = PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Kept) Tj ET")).open():
+          pdf.pages(0).text
+
+        kept
+      . assert(_ == t"Kept")
+
     suite(m"Streaming payloads"):
       def drain(stream: (Stream[Data] over Credit)^): Data =
         val builder = Array.newBuilder[Byte]

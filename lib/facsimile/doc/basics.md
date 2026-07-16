@@ -71,6 +71,25 @@ pdfFile.open():
 A `Page` still resolves through the document, so — like the `Pdf` — it cannot leave the
 `open` block; everything extracted from it can.
 
+### Content, fonts and text
+
+A page's content parses into a typed operator AST, and its fonts — including embedded
+TrueType and OpenType programs, which surface as Phoenicia `Ttf`s — are materialized as pure
+values:
+
+```scala
+pdfFile.open():
+  val page = pdf.pages(0)
+  page.operators       // List[PdfOperator]: Concat(PdfMatrix(...)), ShowText(...), ...
+  page.fonts           // Map[Text, PdfFont], keyed by resource name
+  page.text            // the page's plain text, in content order
+  page.runs            // List[TextRun]: decoded text with font, size and position in points
+```
+
+Text extraction interprets the full text machinery — transformation and text matrices,
+character and word spacing, horizontal scaling, leading and kerning — decoding bytes through
+each font's `/ToUnicode` map, or its declared encoding and `/Differences`.
+
 ### Document structure
 
 Metadata and navigation structures are fully materialized as pure values:
