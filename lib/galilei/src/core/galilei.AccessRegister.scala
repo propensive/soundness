@@ -30,32 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package galilei
 
-export
-  galilei
-  . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
-      Creatable, create, created, CreateNonexistentParents, D, delete,
-      DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, DirectoryHandle,
-      DirectoryOpenable, Dos, Drive, Entry,
-      entry, executable, exists, Explorable, Fifo, file, File, FileOpenable,
-      FilesystemAttribute, FilesystemBackend,
-      Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
-      MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,
-      OverwritePreexisting, p, Platform, Posix, readable, size, Socket, Stat,
-      Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder, UnixEntry,
-      Volume, volume, Windows, WindowsEntry, wipe, writable, write }
+import anticipation.*
+import aperture.*
+import gossamer.*
 
-package interfaces.paths:
-  export
-    anticipation.interfaces.paths
-    . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }
+// The process-global register of open directory scopes, acquired when a directory is opened
+// and released when its scope ends. Conflicts are detected on the real (symlink-resolved)
+// path, over subtree overlap: any number of overlapping `Read` and `Write` opens may coexist,
+// but an `Exclusive` open conflicts with any other open of an overlapping subtree. No type
+// system can see that two independently-opened handles denote overlapping trees, so this is
+// checked at runtime, at the `open` call — the one place a conflict can be acted upon.
+//
+// This arbitrates only between scopes within one JVM: it says nothing about other processes
+// (OS advisory locks may complement it later), and file opens do not yet participate.
+object AccessRegister:
+  private case class Registration(real: Text, atoms: Set[Mode])
 
-package filesystemOptions:
-  export
-    galilei.filesystemOptions
-    . { copyAttributes, createNonexistentParents, deleteRecursively,
-        dereferenceSymlinks, moveAtomically, overwritePreexisting }
+  private var registrations: List[Registration] = Nil
 
-package filesystemTraversal:
-  export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}
+  // The filesystem root would defeat the `+ "/"` prefix test, so it is normalized to empty.
+  private def normalize(real: Text): Text = if real == t"/" then t"" else real
+
+  private def overlapping(left: Text, right: Text): Boolean =
+    left == right || left.starts(t"$right/") || right.starts(t"$left/")
+
+  def acquire(real: Text, atoms: Set[Mode]): Boolean = synchronized:
+    val real2 = normalize(real)
+
+    val conflict = registrations.exists: registration =>
+      overlapping(real2, registration.real)
+        && (atoms.contains(Exclusive) || registration.atoms.contains(Exclusive))
+
+    if conflict then false else
+      registrations ::= Registration(real2, atoms)
+      true
+
+  def release(real: Text, atoms: Set[Mode]): Unit = synchronized:
+    val real2 = normalize(real)
+
+    def remove(list: List[Registration]): List[Registration] = list match
+      case Nil                                                => Nil
+      case head :: tail if head == Registration(real2, atoms) => tail
+      case head :: tail                                       => head :: remove(tail)
+
+    registrations = remove(registrations)

@@ -84,3 +84,122 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           dest.open[File]()(file.stream.read[Data]).utf8
       . assert(_ == t"Hello world!")
+
+    suite(m"Opening directories"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.deleteRecursively.enabled
+
+      val dirLeaf: Text = Uuid().show
+      val root: Path on Linux = unsafely((% / "tmp" / dirLeaf).on[Linux])
+      unsafely(root.create[Directory]())
+
+      test(m"An opened directory can write and read back an entry"):
+        unsafely:
+          root.open[Directory](Read & Write): dir ?=>
+            val target = dir / "greeting.txt"
+            target.overwrite(t"Hello directory")
+            target.contents[Text]
+      . assert(_ == t"Hello directory")
+
+      test(m"An entry is extant after writing, and a missing one is not"):
+        unsafely:
+          root.open[Directory](): dir ?=>
+            ((dir / "greeting.txt").extant(), (dir / "missing.txt").extant())
+      . assert(_ == (true, false))
+
+      test(m"The entries of the directory root are listed"):
+        unsafely:
+          root.open[Directory](): dir ?=>
+            dir.base.entries.to(List).map(_.name)
+      . assert(_ == List(t"greeting.txt"))
+
+      test(m"A removed entry is no longer extant"):
+        unsafely:
+          root.open[Directory](Read & Write): dir ?=>
+            val doomed = dir / "doomed.txt"
+            doomed.overwrite(t"temporary")
+            doomed.remove()
+            doomed.extant()
+      . assert(_ == false)
+
+      test(m"Opening a non-directory raises IoError"):
+        import errorDiagnostics.emptyDiagnostics
+        unsafely:
+          val plainFile: Path on Linux = root / "plain.txt"
+          plainFile.write(t"not a directory")
+          capture[IoError](plainFile.open[Directory]() { () }).reason
+      . assert(_ == IoError.Reason.IsNotDirectory)
+
+      test(m"A write operation without the Write grant does not compile"):
+        demilitarize:
+          root.open[Directory](): dir ?=>
+            (dir / "nope.txt").overwrite(t"nope")
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"A dot-dot path element does not compile"):
+        demilitarize:
+          root.open[Directory](): dir ?=>
+            dir / ".."
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"A path from one directory cannot be written under another"):
+        demilitarize:
+          root.open[Directory](): first ?=>
+            root.open[Directory](Read & Write): second ?=>
+              (first / "stolen.txt").overwrite(t"nope")
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+    suite(m"The access register"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.deleteRecursively.enabled
+
+      val registerLeaf: Text = Uuid().show
+      val outer: Path on Linux = unsafely((% / "tmp" / registerLeaf).on[Linux])
+      val inner: Path on Linux = unsafely(outer / "nested")
+      val siblingLeaf: Text = t"$registerLeaf-sibling"
+      val sibling: Path on Linux = unsafely((% / "tmp" / siblingLeaf).on[Linux])
+      unsafely(inner.create[Directory]())
+      unsafely(sibling.create[Directory]())
+
+      test(m"Overlapping Read opens coexist"):
+        unsafely:
+          outer.open[Directory](): a ?=>
+            inner.open[Directory](): b ?=>
+              true
+      . assert(_ == true)
+
+      test(m"An Exclusive open conflicts with an overlapping open"):
+        import errorDiagnostics.emptyDiagnostics
+        unsafely:
+          capture[IoError]:
+            outer.open[Directory](): a ?=>
+              inner.open[Directory](Read & Exclusive) { () }
+          . reason
+      . assert(_ == IoError.Reason.Busy)
+
+      test(m"An open under an Exclusive open conflicts"):
+        import errorDiagnostics.emptyDiagnostics
+        unsafely:
+          capture[IoError]:
+            outer.open[Directory](Read & Exclusive): a ?=>
+              inner.open[Directory]() { () }
+          . reason
+      . assert(_ == IoError.Reason.Busy)
+
+      test(m"An Exclusive open of a sibling does not conflict"):
+        unsafely:
+          outer.open[Directory](Read & Exclusive): a ?=>
+            sibling.open[Directory](Read & Exclusive): b ?=>
+              true
+      . assert(_ == true)
+
+      test(m"An Exclusive scope is released when it ends"):
+        unsafely:
+          outer.open[Directory](Read & Exclusive) { () }
+          outer.open[Directory](Read & Exclusive) { true }
+      . assert(_ == true)

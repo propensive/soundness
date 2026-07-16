@@ -65,6 +65,9 @@ extension [target: Substantiable](value: target)
 // that gates read and write operations.
 transparent inline def file(using handle: galilei.Handle^): handle.type = handle
 
+// The contextual directory handle within an `open[Directory]` block.
+transparent inline def dir(using handle: galilei.DirectoryHandle^): handle.type = handle
+
 package filesystemTraversal:
   given preOrderTraversal: TraversalOrder = TraversalOrder.PreOrder
   given postOrderTraversal: TraversalOrder = TraversalOrder.PostOrder
