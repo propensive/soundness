@@ -40,6 +40,7 @@ import hypotenuse.*
 import parasite.*
 import quantitative.*
 import spectacular.*
+import turbulence.*
 import symbolism.*
 import vacuous.*
 
@@ -122,15 +123,37 @@ object Keyboard:
     case '6'       => Keypress.PageDown
     case _         => Keypress.Escape
 
-  class Standard()(using Monitor, Probate) extends Keyboard:
+  // Whether a just-read ESC begins an escape sequence: `true` when another
+  // character follows closely enough to belong to one. On a live terminal,
+  // already-buffered input decides INSTANTLY, with no timing heuristic at all
+  // — a terminal emits a whole sequence in a single write, so its bytes
+  // arrive together — and only a genuinely quiet line waits, up to the
+  // (short) deadline, before a bare ESC reports as the Escape key. The
+  // deadline exists solely for a sequence whose bytes straddle a packet
+  // boundary (a fragmented SSH write), so it can be far shorter than the
+  // 30ms every bare Escape formerly cost.
+  trait Lookahead:
+    def sequenceFollows(rest: LazyList[Char]): Boolean
+
+  object Lookahead:
+    // For pre-materialized input (tests, replays): a non-empty tail follows.
+    // Not for live input — emptiness would block on an unforced tail.
+    given immediate: Lookahead = !_.isEmpty
+
+    def tty(stdio: Stdio, deadline: Int = 10): Lookahead = rest =>
+      def wait(remaining: Int): Boolean =
+        stdio.ready() || remaining > 0 && { Thread.sleep(1); wait(remaining - 1) }
+
+      wait(deadline)
+
+  class Standard()(using lookahead: Lookahead) extends Keyboard:
     type Keypress = profanity.Keypress | TerminalInfo
 
     def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
       case '\u001b' #:: rest =>
-        safely(async(rest.head).await(30.0*Milli(Second))) match
-          case Unset => Keypress.Escape #:: process(rest)
-
-          case _ => rest match
+        if !lookahead.sequenceFollows(rest) then Keypress.Escape #:: process(rest)
+        else
+          rest match
             case 'O' #:: key #:: rest => Keypress.FunctionKey(key.toInt - 79) #:: process(rest)
 
             case '[' #:: rest => rest match
