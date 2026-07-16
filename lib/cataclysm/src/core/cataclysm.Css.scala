@@ -64,7 +64,7 @@ object Css:
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
 
-  given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text = css =>
+  given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text over Credit = css =>
     val producer = Producer[Text](4096)
 
     async:
