@@ -36,3 +36,7 @@ import prepositional.*
 import serpentine.*
 
 type TarRef = Relative on Tar
+
+// The contextual archive handle within an `open[Tar]` block, in the manner of galilei's `file`.
+// Transparent inline so the handle's precise (grant-refined, capturing) type is preserved.
+transparent inline def tar(using handle: TarHandle^): handle.type = handle
