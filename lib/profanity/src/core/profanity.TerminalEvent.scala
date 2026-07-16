@@ -49,6 +49,14 @@ enum TerminalInfo extends TerminalEvent:
   case GainFocus
   case Paste(text: Text)
 
+  // Where the terminal reported the cursor, in 1-based screen coordinates: the reply
+  // to the anchor query a resize sends before its size probe (classified by arrival
+  // order in the pump), or to a DECXCPR (`?`-prefixed) report, should a terminal
+  // volunteer one. A reflowing terminal keeps the cursor attached to the logical cell
+  // it was on, so after a resize this reveals where that cell landed — the datum an
+  // inline renderer needs to find its block again.
+  case CursorPosition(row: Int, column: Int)
+
   // A synthetic event an application can put onto the terminal's event spool to
   // wake the event loop and request a repaint — e.g. after a background task has
   // changed the layout.

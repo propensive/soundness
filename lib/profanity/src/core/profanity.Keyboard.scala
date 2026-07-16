@@ -187,19 +187,34 @@ object Keyboard:
                     Keyboard.csiu(sequence.to(List)) #:: process(tail)
 
                   case 'R' #:: tail =>
+                    // A cursor-position report. The plain form (`\e[<row>;<col>R`) is
+                    // the reply to a DSR `\e[6n` and decodes to `WindowSize` here — the
+                    // pump reclassifies it as a `CursorPosition` when an anchor query is
+                    // outstanding (they are indistinguishable at this level). The
+                    // `?`-prefixed DECXCPR form (`\e[?<row>;<col>[;<page>]R`), which a
+                    // terminal may volunteer, is unambiguous and decodes directly.
+                    //
                     // Explicit decoding rather than the `As[Int]` extractor: in a nested
                     // pattern the extractor's evidence is summoned against a skolem-typed
                     // scrutinee, which fails to unify under capture checking.
-                    val fields: List[Text] = sequence.map(_.show).join.cut(';').to(List)
+                    val raw: Text = sequence.map(_.show).join
+                    val query: Boolean = raw.starts(t"?")
+                    val fields: List[Text] = (if query then raw.skip(1) else raw).cut(';').to(List)
 
-                    val size: Optional[TerminalInfo.WindowSize] = fields match
+                    val report: Optional[TerminalInfo] = fields match
                       case List(rows, cols) =>
-                        safely(TerminalInfo.WindowSize(rows.as[Int], cols.as[Int]))
+                        safely:
+                          if query then TerminalInfo.CursorPosition(rows.as[Int], cols.as[Int])
+                          else TerminalInfo.WindowSize(rows.as[Int], cols.as[Int])
+
+                      // DECXCPR at VT level 4 appends the page number.
+                      case List(rows, cols, _) if query =>
+                        safely(TerminalInfo.CursorPosition(rows.as[Int], cols.as[Int]))
 
                       case _ =>
                         Unset
 
-                    size.lay(process(tail))(_ #:: process(tail))
+                    report.lay(process(tail))(_ #:: process(tail))
 
                   case 'O' #:: tail =>
                     TerminalInfo.LoseFocus #:: process(tail)

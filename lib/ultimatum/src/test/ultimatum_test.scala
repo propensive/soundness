@@ -333,7 +333,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.put(t"hi")
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Khi \r\n\e[2K   \r\e[3;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Khi\r\n\e[2K\r\e[3;1H\e[?25h")
 
       test(m"a growing block scrolls one more row into the dock"):
         val (bytes, stdio) = capturing()
@@ -343,7 +343,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[9999B\r\n\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\e[3;1H\e[2Kab\r\n\e[2Kcd\r\e[3;1H\e[?25h")
 
       // The block bottom-docks: shrinking moves it down (row 4) and clears the row it
       // vacated above (row 3).
@@ -355,7 +355,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[4;1H\e[2Kef \r\e[3;1H\e[2K\e[4;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[4;1H\e[2Kef\r\e[3;1H\e[2K\e[4;1H\e[?25h")
 
       test(m"the caret is placed at its absolute screen cell"):
         val (bytes, stdio) = capturing()
@@ -367,7 +367,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.showCaret(Sec, Sec)
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[4;2H\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Kab\r\n\e[2Kcd\r\e[4;2H\e[?25h")
 
       test(m"finish drops the cursor onto a fresh line below the block"):
         val (bytes, stdio) = capturing()
@@ -391,7 +391,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.invalidate()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
 
       // With `bottomDocked`, a resize never switches to top-anchoring: the block stays
       // docked and its rows are cleared at the bottom (row 3), not the top-left corner.
@@ -405,7 +405,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.invalidate()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kab\r\n\e[2Kcd\r\e[3;1H\e[?25h")
 
       // With `topAnchored`, the very first frame is pinned to rows 1..h (no bottom dock,
       // no scroll into scrollback).
@@ -416,7 +416,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = InlineRoot(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
 
       // With `fullscreen`, the first present enters the alternate screen buffer.
       test(m"fullscreen enters the alternate screen on the first present"):
@@ -426,7 +426,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = InlineRoot(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?1049h\e[?25l\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
+      . assert(_ == t"\e[?1049h\e[?25l\e[1;1H\e[2Kab\r\n\e[2Kcd\r\e[1;1H\e[?25h")
 
       // ...and leaves it again on finish, restoring the pre-session screen.
       test(m"fullscreen leaves the alternate screen on finish"):
@@ -451,7 +451,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[3;1H\e[2Kef \r\n\e[2K\e[3;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[3;1H\e[2Kef\r\n\e[2K\e[3;1H\e[?25h")
 
       // With `clampToScreen`, a growing block grows upward in place; it never scrolls the
       // screen into scrollback (no `\e[9999B`).
@@ -464,7 +464,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[3;1H\e[2Kab\r\n\e[2Kcd\r\e[3;1H\e[?25h")
 
     // A geometry-stable re-present diffs against the snapshot of what the last present
     // drew, overprinting only the damaged cells; an identical frame emits nothing.
