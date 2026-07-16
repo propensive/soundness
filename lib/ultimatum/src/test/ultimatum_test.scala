@@ -565,6 +565,207 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
     // The buffered fullscreen root: panels composite into its grid, and `flush`
     // presents each frame as one write, diffed against the previous present.
+    // A resize present recovers the block's position from the anchor reply (where the
+    // terminal moved the parked cursor during its reflow), clearing exactly from the
+    // residue's top instead of wiping the screen; an anchor that cannot be reconciled
+    // falls back to the historic behaviour.
+    suite(m"InlineRoot reflow recovery"):
+      def capturing(): (ji.ByteArrayOutputStream, Stdio) =
+        val bytes = ji.ByteArrayOutputStream()
+        (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap))
+
+      test(m"a shrink with an anchor clears from the recovered row and re-docks"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 6
+        val root = new InlineRoot(() => w, () => 4)
+        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
+        bytes.reset()
+        w = 4
+        root.invalidate()
+        root.anchor(2, 1)
+        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kabcd\r\n\e[2Khi\r\e[3;1H\e[?25h")
+
+      // The park sat past the wrap point of its own row ("abcdef" at width 4 wraps
+      // after "abcd"), so the two models predict different anchor columns: a reply in
+      // column 2 can only be the reflow model, whose sub-row offset is honoured.
+      test(m"the anchor column selects the reflow model"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 6
+        val root = new InlineRoot(() => w, () => 4)
+        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
+        root.showCaret(5.z, Prim)
+        root.flush()
+        bytes.reset()
+        w = 4
+        root.invalidate()
+        root.anchor(3, 2)
+        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kabcd\r\n\e[2Khi\r\e[3;4H\e[?25h")
+
+      // A reply in column 4 (the old column, clamped) can only be the truncate model:
+      // the cursor's row did not move, so the residue still starts at the old top.
+      test(m"the anchor column selects the truncate model"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 6
+        val root = new InlineRoot(() => w, () => 4)
+        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
+        root.showCaret(5.z, Prim)
+        root.flush()
+        bytes.reset()
+        w = 4
+        root.invalidate()
+        root.anchor(3, 4)
+        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kabcd\r\n\e[2Khi\r\e[3;4H\e[?25h")
+
+      // A reply matching neither model's column is unmodellable: fall back to the
+      // historic flip-and-clear.
+      test(m"an unmatchable anchor column falls back to the full clear"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 6
+        val root = new InlineRoot(() => w, () => 4)
+        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
+        root.showCaret(5.z, Prim)
+        root.flush()
+        bytes.reset()
+        w = 4
+        root.invalidate()
+        root.anchor(3, 3)
+        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kabcd\r\n\e[2Khi\r\e[1;4H\e[?25h")
+
+      test(m"a width growth recovers with both models in agreement"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 4
+        val root = new InlineRoot(() => w, () => 4)
+        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        bytes.reset()
+        w = 6
+        root.invalidate()
+        root.anchor(2, 1)
+        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kab\r\n\e[2Khi\r\e[3;1H\e[?25h")
+
+      // The anchor is consumed by the present that follows its resize: a later resize
+      // without a fresh reply cannot reuse it, and falls back.
+      test(m"a second resize without a fresh anchor falls back"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 6
+        val root = new InlineRoot(() => w, () => 4)
+        root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
+        w = 4
+        root.invalidate()
+        root.anchor(2, 1)
+        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
+        bytes.reset()
+        w = 3
+        root.invalidate()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab\r\n\e[2Khi\r\e[1;1H\e[?25h")
+
+      // A wide glyph that would straddle the new margin is pushed whole to the next
+      // sub-row, so "ab中" at width 3 occupies two physical rows in the reflow model.
+      test(m"a wide glyph is counted whole in the reflow prediction"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 4
+        val root = new InlineRoot(() => w, () => 4)
+        root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab中\nhi")
+        root.showCaret(Prim, Sec)
+        root.flush()
+        bytes.reset()
+        w = 3
+        root.invalidate()
+        root.anchor(4, 1)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[2;1H\e[0J\e[3;1H\e[2Kab\r\n\e[2Khi\r\e[4;1H\e[?25h")
+
+      // Trailing default-styled blanks are trimmed from a full-row render (`el(2)`
+      // has already cleared them), but a wide glyph's trailing sentinel is content:
+      // the row trims to include the whole glyph.
+      test(m"a row ending in a wide glyph trims to include the whole glyph"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(4, 4)
+        root.reframe(4, 1); root.move(Prim, Prim); root.put(t"a中"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[9999B\r\n\e[4;1H\e[2Ka中\r\e[4;1H\e[?25h")
+
+      // A styled blank is not a default cell: `el(2)` cannot reproduce it, so it is
+      // never trimmed and its SGR is emitted.
+      test(m"a styled trailing blank is not trimmed"):
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio =
+          Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
+        val root = InlineRoot(4, 4)
+        root.reframe(4, 1); root.move(Prim, Prim); root.put(e"a$Bold( )"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_.contains(t"\e[1m"))
+
+    // The driver-side plumbing: the anchor reply flows from the event stream to the
+    // inline root's resize recovery, and typing mid-resize never presents against
+    // stale geometry.
+    suite(m"Form resize plumbing"):
+      def capturing(): (ji.ByteArrayOutputStream, Stdio) =
+        val bytes = ji.ByteArrayOutputStream()
+        (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap))
+
+      test(m"a resize with an anchor reply recovers the block position"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var w = 6
+        val root = new InlineRoot(() => w, () => 4)
+
+        val events = new Iterator[TerminalEvent]:
+          private var remaining: List[() => TerminalEvent] = List(
+            () => Signal.Winch,
+            () => TerminalInfo.CursorPosition(2, 1),
+            () => { w = 4; TerminalInfo.WindowSize(4, 4) },
+            () => Keypress.Escape)
+
+          def hasNext = remaining.nonEmpty
+
+          def next() =
+            val head = remaining.head
+            remaining = remaining.tail
+            head()
+
+        Form(root, Mode.Inline, rank(panel()(Out.print(t"abcdef")))).run(events)
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_.contains(t"\e[2;1H\e[0J"))
+
+      // With a real debounce window, a keypress between the WINCH and the resize
+      // repaint updates the widget but presents nothing: the repaint coalesces into
+      // the (never-woken, here) deferred resize flush, so the initial frame's row
+      // draws are the only ones emitted.
+      test(m"typing during a pending resize does not present"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = new InlineRoot(() => 6, () => 4)
+
+        val events = List[TerminalEvent](
+          Signal.Winch,
+          Keypress.CharKey('x'),
+          Keypress.Escape)
+
+        Form(root, Mode.Inline, rank(editor()), debounce = 50).run(events.iterator)
+        String(bytes.toByteArray.nn, "UTF-8").tt.cut(t"\e[2K").length - 1
+      . assert(_ == 1)
+
     suite(m"ScreenRoot present"):
       def capturing(): (ji.ByteArrayOutputStream, Stdio) =
         val bytes = ji.ByteArrayOutputStream()

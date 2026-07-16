@@ -51,6 +51,22 @@ object Tmux:
           case char: Char => sh"tmux send-keys -t ${tmux.id} '$char'".exec[Unit]()
           case _          => panic(m"unreachable case")
 
+  // Resize the tmux window, delivering a SIGWINCH (and tmux's own reflow) to the
+  // application in the pane. Sessions in this rig are created detached with explicit
+  // `-x`/`-y`, i.e. manually sized, which is exactly the case `resize-window`
+  // controls. Note `Tmux.width`/`height` record the CREATION size; after a resize,
+  // read the live size from tmux itself if it matters.
+  def resize(width: Int, height: Int)(using tmux: Tmux)(using WorkingDirectory)
+  :   Unit raises TmuxError =
+
+    import logging.silentLogging
+
+    mitigate:
+      case ExecError(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
+
+    . protect:
+        sh"tmux resize-window -t ${tmux.id} -x $width -y $height".exec[Unit]()
+
   def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot raises TmuxError =
     import logging.silentLogging
 
