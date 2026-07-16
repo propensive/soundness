@@ -34,109 +34,51 @@ package facsimile
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import gossamer.*
-import quantitative.*
 import rudiments.*
 import vacuous.*
 
-object Page:
-  enum Rotation:
-    case None, Quarter, Half, ThreeQuarters
+// Lexes a decoded content stream — or the concatenation of a `/Contents` array, which the
+// specification requires to be treated as one stream — into instructions: operands followed
+// by an operator. The COS lexer serves unchanged (§7.8.2 shares the lexical grammar), with
+// reference lookahead disabled, since `R` here is an operator. Inline images, the one
+// lexical special case, are folded into a single `BI` instruction of dictionary-plus-bytes.
+private[facsimile] object ContentTokens:
+  case class Instruction(operands: List[Cos], operator: Text)
 
-  // The inheritable page-tree attributes (ISO 32000-2 §7.7.3.4): a child's own entry always
-  // wins over anything accumulated from its ancestors.
-  private[facsimile] case class Inherited
-    ( resources: Optional[Cos] = Unset,
-      mediaBox:  Optional[Cos] = Unset,
-      cropBox:   Optional[Cos] = Unset,
-      rotate:    Optional[Cos] = Unset ):
+  def read(data: Data): List[Instruction] raises PdfError =
+    val lexer = CosLexer(Scan(data))
+    val parser = CosParser(lexer, references = false)
+    val instructions = List.newBuilder[Instruction]
+    var done = false
 
-    def update(node: Map[Text, Cos]): Inherited =
-      Inherited
-        ( node.at(t"Resources").or(resources),
-          node.at(t"MediaBox").or(mediaBox),
-          node.at(t"CropBox").or(cropBox),
-          node.at(t"Rotate").or(rotate) )
+    while !done do
+      parser.instruction().let: (operands, operator) =>
+        if operator.s == "BI" then instructions += inlineImage(lexer, parser)
+        else instructions += Instruction(operands, operator)
 
-// A leaf of the page tree, with its inherited attributes applied. A `Page` resolves lazily
-// through the document, so it captures the `Pdf` and cannot outlive the `open` scope;
-// everything extracted from it — boxes, rotation, text — is pure and portable.
-class Page private[facsimile]
-  ( private[facsimile] val pdf: Pdf,
-    val index: Ordinal,
-    private[facsimile] val entries: Map[Text, Cos],
-    inherited: Page.Inherited ):
+      . or:
+          done = true
 
-  def dictionary: Map[Text, Cos] = entries
+    instructions.result()
 
-  // 1 default user-space unit is `userUnit`/72 inch; `/UserUnit` is not inheritable.
-  def userUnit: Double raises PdfError =
-    entries.at(t"UserUnit").let(pdf.resolved(_).double).or(1.0)
+  // `BI <key value ...> ID <bytes> EI`: the keys parse as ordinary tokens up to the `ID`
+  // operator, the payload is consumed at the byte level, and the closing `EI` is checked.
+  private def inlineImage(lexer: CosLexer, parser: CosParser): Instruction raises PdfError =
+    val entries = parser.instruction().let: (operands, operator) =>
+      if operator.s != "ID" then abort(PdfError(PdfError.Reason.MalformedOperator(t"BI")))
 
-  def mediaBox: PdfRect raises PdfError =
-    box(entries.at(t"MediaBox").or(inherited.mediaBox))
-    . or(abort(PdfError(PdfError.Reason.MissingEntry(t"MediaBox"))))
+      operands.grouped(2).to(List).flatMap:
+        case List(Cos.Name(key), value) => List(key -> value)
+        case _                          => List()
 
-  def cropBox: PdfRect raises PdfError =
-    box(entries.at(t"CropBox").or(inherited.cropBox)).or(mediaBox)
+      . to(Map)
 
-  // The bleed, trim and art boxes are not inheritable and default to the crop box.
-  def bleedBox: PdfRect raises PdfError = box(entries.at(t"BleedBox")).or(cropBox)
-  def trimBox: PdfRect raises PdfError = box(entries.at(t"TrimBox")).or(cropBox)
-  def artBox: PdfRect raises PdfError = box(entries.at(t"ArtBox")).or(cropBox)
+    . or(abort(PdfError(PdfError.Reason.MalformedOperator(t"BI"))))
 
-  def rotation: Page.Rotation raises PdfError =
-    val degrees = entries.at(t"Rotate").or(inherited.rotate).let(pdf.resolved(_).long).or(0L)
+    val length = entries.at(t"L").or(entries.at(t"Length")).let(_.long).let(_.toInt)
+    val data = lexer.imageData(length)
 
-    ((degrees%360 + 360)%360) match
-      case 90L  => Page.Rotation.Quarter
-      case 180L => Page.Rotation.Half
-      case 270L => Page.Rotation.ThreeQuarters
-      case _    => Page.Rotation.None
-
-  // The page's displayed size: the crop box, with its axes exchanged when the page is
-  // rotated a quarter-turn either way.
-  def width: Quantity[Points[1]] raises PdfError = rotation match
-    case Page.Rotation.Quarter | Page.Rotation.ThreeQuarters => cropBox.height
-    case _                                                   => cropBox.width
-
-  def height: Quantity[Points[1]] raises PdfError = rotation match
-    case Page.Rotation.Quarter | Page.Rotation.ThreeQuarters => cropBox.width
-    case _                                                   => cropBox.height
-
-  // The page's content: its `/Contents` streams decoded and concatenated, which the
-  // specification requires to be treated as a single stream, with whitespace between.
-  def content: Data raises PdfError =
-    val streams = pdf.resolved(entries.at(t"Contents").or(Cos.Nil)) match
-      case body: Cos.Body =>
-        List(body)
-
-      case Cos.Sequence(elements) =>
-        elements.flatMap: element =>
-          pdf.resolved(element) match
-            case body: Cos.Body => List(body)
-            case _              => List()
-
-      case _ =>
-        List()
-
-    streams.map(pdf.payload(_)) match
-      case List()       => IArray.empty[Byte]
-      case List(single) => single
-      case many         => many.reduce(_ ++ IArray(0x0a.toByte) ++ _)
-
-  def operators: List[PdfOperator] raises PdfError =
-    ContentTokens.read(content).map(PdfOperator.read(_))
-
-  def annotations: List[Annotation] raises PdfError =
-    val pages = pdf.pageNumbers
-    val named = pdf.rawDestinations
-    val scale = userUnit
-
-    pdf.resolved(entries.at(t"Annots").or(Cos.Nil)).elements.lay(List()): items =>
-      items.flatMap: item =>
-        Annotation.read(item, pages, named.at(_), scale)(using pdf).lay(List())(List(_))
-
-  private def box(value: Optional[Cos]): Optional[PdfRect] raises PdfError =
-    value.let(PdfRect.read(_, userUnit)(using pdf))
+    val closed = parser.instruction().let(_(1).s == "EI").or(false)
+    if !closed then abort(PdfError(PdfError.Reason.MalformedOperator(t"BI")))
+    Instruction(List(Cos.Dictionary(entries), Cos.Chars(data)), t"BI")

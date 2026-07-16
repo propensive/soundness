@@ -110,6 +110,24 @@ private[facsimile] class CosLexer(scan: Scan):
   def skip(count: Long): Unit = scan.skip(count)
   def read(length: Int): Data = scan.read(length)
 
+  // The binary payload of an inline image, between `ID` and `EI` (ISO 32000-2 §8.9.7): a
+  // known length (`/L`) is read exactly; otherwise the data runs to the next standalone
+  // `EI`, found by byte-level scanning — the one lexical construct tokens cannot express.
+  def imageData(length: Optional[Int]): Data raises PdfError =
+    if whitespace(scan.peek) then scan.take() // a single whitespace byte follows `ID`
+
+    length.let(scan.read(_)).or:
+      val bytes = Array.newBuilder[Byte]
+
+      def boundary: Boolean =
+        val standalone = !regular(scan.peek(3))
+        whitespace(scan.peek) && scan.peek(1) == 'E' && scan.peek(2) == 'I' && standalone
+
+      while scan.peek != -1 && !boundary do bytes += scan.take().toByte
+      if scan.peek == -1 then abort(PdfError(PdfError.Reason.Truncated))
+      scan.take() // the whitespace before `EI`, which is not payload
+      bytes.result().immutable(using Unsafe)
+
   // Comments run to the end of the line and are whitespace (ISO 32000-2 §7.2.4).
   private def skipInterstice(): Unit =
     while
