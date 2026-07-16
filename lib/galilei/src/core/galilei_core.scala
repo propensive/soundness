@@ -84,7 +84,7 @@ extension [plane: Filesystem](path: Path on plane)
     protect(Operation.Write)(jnf.Files.write(javaPath, bytes.mutable(using Unsafe)))
 
   // Append `content` to the file in its entirety as a single, direct operation, creating the file
-  // if it does not exist — the eager counterpart of `Eof(path).open(content.writeTo(_))`.
+  // if it does not exist — the eager counterpart of `Eof(path).open(Write)(file.write(content))`.
   def append[content](content: content)
     ( using streamable: (content is Streamable by Data over Credit)^ )
   :   Unit raises IoError =
