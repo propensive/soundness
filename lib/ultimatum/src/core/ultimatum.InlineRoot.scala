@@ -39,6 +39,7 @@ import gossamer.*
 import profanity.*
 import symbolism.*
 import turbulence.*
+import vacuous.*
 
 object InlineRoot:
   // The root for inline mode over a real terminal: width and the height clamp are
@@ -83,7 +84,6 @@ extends GridSurface(widthFn(), 0):
   private var presentedRows: Int = 0
   private var presentedColumns: Int = 0
   private var presentedTop: Int = 1
-  private var invalidated: Boolean = false
 
   // For `Inline` anchoring: the row offset (from the block's top) at which the cursor was
   // left after the last frame, so the next frame can rise back to the top relatively.
@@ -97,9 +97,6 @@ extends GridSurface(widthFn(), 0):
     case InlineAnchoring.Inline                                        => false
 
   private var started: Boolean = false
-  private var caretColumn: Int = 0
-  private var caretRow: Int = 0
-  private var caretVisible: Boolean = true
 
   override def width: Int = widthFn()
 
@@ -114,8 +111,8 @@ extends GridSurface(widthFn(), 0):
   // Mark the next present as a resize repaint. Under `TopAfterResize` the first resize
   // also switches to top-anchoring; the other anchorings keep their fixed reference.
   // The driver calls it on every `WindowSize` event (a width-only resize counts too).
-  def invalidate(): Unit =
-    invalidated = true
+  override def invalidate(): Unit =
+    super.invalidate()
     if anchoring == InlineAnchoring.TopAfterResize then topAnchored = true
 
   // Forget everything recorded about what is on screen, so the NEXT frame renders as a
@@ -130,6 +127,10 @@ extends GridSurface(widthFn(), 0):
     presentedTop = 1
     flowCursorRow = 0
     invalidated = false
+    snapshot = Unset
+    presentedCaretRow = -1
+    presentedCaretColumn = -1
+    presentedCaretVisible = false
 
   // Record the caret's block-local target; `flush` positions the hardware cursor at
   // the corresponding absolute screen cell.
@@ -148,6 +149,11 @@ extends GridSurface(widthFn(), 0):
     val columns = gridWidth.min(widthFn())
     val h       = height
     invalidated = false
+
+    // `Inline` anchoring addresses the screen RELATIVELY, so an absolute snapshot can
+    // never describe where its cells really landed; drop it to keep the invariant that
+    // a snapshot always refers to an absolutely-addressed present.
+    snapshot = Unset
 
     val frame = StringBuilder()
     def emit(text: Text): Unit = frame.append(text.s)
@@ -205,6 +211,20 @@ extends GridSurface(widthFn(), 0):
     val rows    = heightFn()
     val columns = gridWidth.min(widthFn())
     val h       = height
+
+    // When the geometry is exactly as last presented (same dock row, height and width,
+    // and not a resize), every grid cell maps to the same screen cell as the snapshot,
+    // so the present is a pure overprint and only the cells that changed need emitting.
+    // Any geometry change falls back to the full redraw, which also handles docking,
+    // growth, shrink-clearing and resize-clearing.
+    val dockTop = if topAnchored then 1 else (rows - h + 1).max(1)
+
+    if !invalidated && started && h == presentedRows && columns == presentedColumns
+      && dockTop == presentedTop && snapshotValid(dockTop, columns, h)
+    then presentDiff(dockTop, columns, h)
+    else flushDockedFull(rows, columns, h)
+
+  private def flushDockedFull(rows: Int, columns: Int, h: Int): Unit =
     val resized = invalidated
     invalidated = false
 
@@ -317,6 +337,11 @@ extends GridSurface(widthFn(), 0):
     if caretVisible then
       emit(csi.cup((top + caretRow.min(h - 1)).max(1), caretColumn.min(columns - 1).max(0) + 1))
       emit(csi.dectcem(true))
+
+    // What was just drawn IS the screen now: record it (and the caret) so the next
+    // geometry-stable present can diff against it.
+    recordSnapshot(top, columns)
+    recordCaret(top, columns, h)
 
     Out.print(frame.toString.tt)
 

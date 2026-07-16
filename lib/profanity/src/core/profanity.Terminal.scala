@@ -101,8 +101,12 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
   def columns: Optional[Int] = metrics.columns
   def columns_=(value: Optional[Int]): Unit = metrics.columns = value
 
+  // The fallbacks when the size is not yet known (no `LINES`/`COLUMNS` in the
+  // environment and no size-probe reply yet): the classic 80×24. Conservative on
+  // purpose — drawing too few rows is benign, while assuming a taller terminal than
+  // real scatters absolutely-addressed output off-screen and into clamped garbage.
   def knownColumns: Int = columns.or(80)
-  def knownRows: Int = rows.or(80)
+  def knownRows: Int = rows.or(24)
 
   // `width` reads the live column count through the untracked `Metrics` holder (bound to a
   // block local, not read through `this`), so the termcap — and the stdio built on it —
@@ -162,17 +166,27 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
 
     . protect:
         daemon:
-          keyboard0.asInstanceOf[Keyboard.Standard].process(chars).each:
-            case resize@TerminalInfo.WindowSize(rows2, columns2) =>
-              metrics0.rows = rows2
-              metrics0.columns = columns2
-              events0.put(resize)
+          // The teardown in `interactive` closes stdin under the pump; the blocked read
+          // then surfaces as an `IOException`, which is the normal end of the session's
+          // input, not a failure — so it must not escalate (a plain `Throwable` bypasses
+          // the containment, which traps only typed `Error`s, and would reach the
+          // uncaught handler and print a stack trace over the restored terminal). The
+          // spool is stopped however the pump ends — exception, stdin EOF or decode
+          // error — so the session consuming the events always sees the input end.
+          try
+            keyboard0.asInstanceOf[Keyboard.Standard].process(chars).each:
+              case resize@TerminalInfo.WindowSize(rows2, columns2) =>
+                metrics0.rows = rows2
+                metrics0.columns = columns2
+                events0.put(resize)
 
-            case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-              metrics0.mode =
-                if Terminal.dark(red, green, blue) then Brightness.Dark else Brightness.Light
+              case bgColor@TerminalInfo.BgColor(red, green, blue) =>
+                metrics0.mode =
+                  if Terminal.dark(red, green, blue) then Brightness.Dark else Brightness.Light
 
-              events0.put(bgColor)
+                events0.put(bgColor)
 
-            case other =>
-              events0.put(other)
+              case other =>
+                events0.put(other)
+          catch case _: java.io.IOException => ()
+          finally events0.stop()
