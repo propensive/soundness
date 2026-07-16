@@ -126,16 +126,13 @@ extension (shell: Shell)
                  |}
                  |""".stripMargin
 
-            import filesystemOptions.writeAccess.enabled
-            import filesystemOptions.readAccess.disabled
-            import filesystemOptions.createNonexistent.enabled
             import filesystemOptions.createNonexistentParents.disabled
             import filesystemOptions.dereferenceSymlinks.enabled
             import charEncoders.utf8Encoder
 
             val tmpDir: Path on Linux = temporaryDirectory[Path on Linux]
             val file: Path on Linux = unsafely(tmpDir/t"exoskeleton-${Uuid()}.ps1")
-            file.open(_.write(psScript.tt))
+            file.open[File](Write, OpenFlag.Create) { h ?=> h.write(psScript.tt) }
             psFile = file
             t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${file.encode}"
 

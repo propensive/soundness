@@ -35,14 +35,15 @@ package soundness
 export
   galilei
   . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
-      Creatable, create, created, CreateNonexistent, CreateNonexistentParents, D, delete,
+      Creatable, create, created, CreateNonexistentParents, D, delete,
       DeleteRecursively, DereferenceSymlinks, descendants, Directory, Dos, Drive, Entry,
-      entry, executable, exists, Explorable, Fifo, File, FilesystemAttribute, FilesystemBackend,
+      entry, executable, exists, Explorable, Fifo, file, File, FileOpenable,
+      FilesystemAttribute, FilesystemBackend,
       Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
-      MacOs, modified, MoveAtomically, moveInto, moveTo, open, Openable, OpenFlag,
-      OverwritePreexisting, p, Platform, Posix, readable, ReadAccess, size, Socket, Stat,
+      MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,
+      OverwritePreexisting, p, Platform, Posix, readable, size, Socket, Stat,
       Substantiable, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder, UnixEntry, Volume,
-      volume, Windows, WindowsEntry, wipe, writable, write, WriteAccess, WriteSynchronously }
+      volume, Windows, WindowsEntry, wipe, writable, write }
 
 package interfaces.paths:
   export
@@ -52,9 +53,8 @@ package interfaces.paths:
 package filesystemOptions:
   export
     galilei.filesystemOptions
-    . { copyAttributes, createNonexistent, createNonexistentParents, deleteRecursively,
-        dereferenceSymlinks, moveAtomically, overwritePreexisting, readAccess, writeAccess,
-        writeSynchronously }
+    . { copyAttributes, createNonexistentParents, deleteRecursively,
+        dereferenceSymlinks, moveAtomically, overwritePreexisting }
 
 package filesystemTraversal:
   export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}

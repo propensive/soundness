@@ -1295,7 +1295,7 @@ object fulminate extends Library:
       settings.cc(super.scalacOptions())
 
 object galilei extends Library:
-  object core extends Component(serpentine.core, turbulence.core):
+  object core extends Component(aperture.core, serpentine.core, turbulence.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.nio` `FilesystemBackend` (`filesystemBackends.virtualMachine`), split out of `core`

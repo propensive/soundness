@@ -48,10 +48,7 @@ import turbulence.*
 import vacuous.*
 import zeppelin.*
 
-import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import filesystemTraversal.preOrderTraversal
 import logging.silentLogging
 import manifestAttributes.*
@@ -94,9 +91,9 @@ object Bundler:
             val root = directory.as[Path on Linux]
             root.descendants.to(List).filter: entry => !omissions(entry.name)
             . map: file =>
-              if file.entry() == Directory then Unset else file.open: handle =>
+              if file.entry() == Directory then Unset else
                 val ref = %.on[Zip] + root.toward(file).on[Zip]
-                Zip.Entry(ref, handle.read[Data])
+                Zip.Entry(ref, file.read[Data])
 
             . compact
 

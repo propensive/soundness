@@ -52,17 +52,35 @@ object Tests extends Suite(m"Galilei tests"):
           dest.read[Text]
       . assert(_ == t"Hello world")
 
-    // suite(m"Opening tests"):
-    //   val tmp: Path on Linux = temporaryDirectory
-    //   Out.println(m"Writing to $tmp")
+    suite(m"Opening files"):
+      val openLeaf: Text = Uuid().show
+      val dest: Path on Linux = unsafely((% / "tmp" / openLeaf).on[Linux])
 
-    //   val dest: Path on Linux = tmp/Uuid().show
+      test(m"A fresh path does not exist"):
+        dest
+      . assert(!_.exists())
 
+      test(m"A file opened for writing can be written and read back"):
+        unsafely:
+          dest.open[File](Write, OpenFlag.Create): handle ?=>
+            handle.write(LazyList(t"Hello world".in[Data]))
 
-    //   test(m"Check that a fresh path does not exist"):
-    //     dest
-    //   . assert(!_.exists())
+          dest.read[Text]
+      . assert(_ == t"Hello world")
 
-    //   dest.open(t"Hello world".writeTo(_))
+      test(m"The path exists after writing"):
+        dest
+      . assert(_.exists())
 
-    //   test(m"Check that a fresh path does exist after writing")(dest).assert(_.exists())
+      test(m"Opening an Eof appends to the file"):
+        unsafely:
+          Eof(dest).open(Write): handle ?=>
+            handle.write(LazyList(t"!".in[Data]))
+
+          dest.read[Text]
+      . assert(_ == t"Hello world!")
+
+      test(m"The file accessor reaches the contextual handle"):
+        unsafely:
+          dest.open[File]()(file.stream.read[Data]).utf8
+      . assert(_ == t"Hello world!")

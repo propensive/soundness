@@ -52,10 +52,7 @@ import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 
@@ -89,7 +86,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
 
     def writeFile(path: Path on Linux, content: Text): Unit =
       if !path.exists() then path.create[File]()
-      path.open: handle =>
+      path.open[File](Write): handle ?=>
         handle.write(LazyList(content.in[Data]))
 
     def commitFile(worktree: Worktree, name: Text, content: Text, message: Text): GitHash =

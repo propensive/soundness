@@ -36,13 +36,10 @@ import soundness.*
 
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import logging.silentLogging
 import strategies.throwUnsafely
 import systems.javaSystem
@@ -69,7 +66,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       Zipfile.write(path)(entries.to(List))
       path
 
-    def bytesOf(path: Path on Linux): Data = path.open(_.read[Data])
+    def bytesOf(path: Path on Linux): Data = path.read[Data]
 
     def readEntries(path: Path on Linux): List[Zip.Entry] = Zipfile.read(path).entries.to(List)
 

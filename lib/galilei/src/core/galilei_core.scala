@@ -59,12 +59,11 @@ extension (inline context: StringContext)
 extension [target: Substantiable](value: target)
   def exists(): Boolean = target.existence(value)
 
-extension [target](value: target)(using openable: (target is Openable)^)
-  def open[result]
-    ( lambda:  openable.Result^ => result, options: List[openable.Operand] = Nil )
-  :   result =
-
-    openable.open(value, lambda, options)
+// The contextual file handle within an `open` block, in the manner of facsimile's `pdf`.
+// Transparent inline so the handle's precise (grant-refined, capturing) type is preserved: a
+// non-inline accessor would widen the scoped capture set, losing the `Granting` refinement
+// that gates read and write operations.
+transparent inline def file(using handle: galilei.Handle^): handle.type = handle
 
 package filesystemTraversal:
   given preOrderTraversal: TraversalOrder = TraversalOrder.PreOrder
@@ -324,28 +323,6 @@ extension [plane <: Posix: Filesystem](path: Path on plane)
     backend.hardLinkCount(path, dereferenceSymlinks.dereference)
 
 package filesystemOptions:
-  object readAccess:
-    given enabled: ReadAccess:
-      type Transform[HandleType] = HandleType & ReadAccess.Ability
-
-      def flags(): List[OpenFlag] = List(OpenFlag.Read)
-
-    given disabled: ReadAccess:
-      type Transform[HandleType] = HandleType
-
-      def flags(): List[OpenFlag] = Nil
-
-  object writeAccess:
-    given enabled: WriteAccess:
-      type Transform[HandleType] = HandleType & WriteAccess.Ability
-
-      def flags(): List[OpenFlag] = List(OpenFlag.Write)
-
-    given disabled: WriteAccess:
-      type Transform[HandleType] = HandleType
-
-      def flags(): List[OpenFlag] = Nil
-
   object dereferenceSymlinks:
     given enabled: DereferenceSymlinks:
       def dereference = true
@@ -433,33 +410,3 @@ package filesystemOptions:
       def apply[result](path: Path on plane)(block: => result): result raises IoError =
         block
 
-  object createNonexistent:
-    given enabled: [plane: Filesystem]
-    =>  ( create: CreateNonexistentParents on plane )
-    =>  (Path on plane) is Substantiable
-    =>  CreateNonexistent on plane:
-
-      type Plane = plane
-
-      def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError =
-        abort(IoError(path, operation, Reason.Nonexistent))
-
-      def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError =
-        if !path.exists() then create(path)(operation)
-
-      def flags(): List[OpenFlag] = List(OpenFlag.Create)
-
-
-    given disabled: [plane: Filesystem] => CreateNonexistent on plane:
-
-      type Plane = plane
-
-      def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError =
-        abort(IoError(path, operation, Reason.Nonexistent))
-
-      def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError = ()
-      def flags(): List[OpenFlag] = List()
-
-  object writeSynchronously:
-    given enabled: WriteSynchronously = () => List(OpenFlag.Sync)
-    given disabled: WriteSynchronously = () => Nil

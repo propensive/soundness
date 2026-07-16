@@ -37,6 +37,7 @@ import java.lang as jl
 import ambience.*, systems.javaSystem
 import anticipation.*
 import contingency.*
+import aperture.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -46,13 +47,10 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.disabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 
 import filesystemBackends.virtualMachine
 
@@ -107,7 +105,7 @@ object Upgrade:
         pendingDir.create[Directory]()
         val pendingPath: Path on Linux = pendingDir/t".pending"
 
-        pendingPath.open: file =>
+        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
           file.write(LazyList(bytes))
 
         val launcher: Text = System.properties.ethereal.script[Text]()
