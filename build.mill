@@ -960,7 +960,7 @@ object crossparse extends Library:
   // expansion.
   object model
       extends Component(jacinta.staged, stratiform.staged, xylophone.staged,
-                       breviloquence.staged, ypsiloid.core):
+                       breviloquence.staged, locomotion.staged, ypsiloid.core):
     override def scalaJs = false // depends on the staged components (compiler jars)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1560,7 +1560,18 @@ object locomotion extends Library:
         gossamer.core, spectacular.core, panopticon.core, zephyrine.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core):
+  // `Protobuf.Inlinable`, whose entry macro needs expansion-time instance
+  // evaluation (an in-macro staging compiler), kept out of `core` so
+  // locomotion users don't inherit the compiler jars unless they opt in.
+  object staged extends Component(core):
+    override def scalaJs = false // expansion-time instance evaluation via staging
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+  object test extends Tests(core, staged):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units):

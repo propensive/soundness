@@ -30,91 +30,69 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package crossparse
+package locomotion
 
 import anticipation.*
-import breviloquence.*
-import contingency.*, strategies.throwUnsafely
-import gossamer.*
-import jacinta.*
-import prepositional.*
-import rudiments.*
-import stratiform.*
-import vacuous.*
-import wisteria.*
-import xylophone.*
+import contingency.*
 
-// The discriminator key the JSON derivations read at this module's
-// derivation sites.
-import jacinta.discriminables.jsonByKindDiscriminable
+object ProtobufReader:
+  // Only locomotion's read path (`Protobuf.parseDirect`) constructs readers,
+  // so the exclusivity of the wrapped parser and the resolution scope of the
+  // carried tactic are preserved by construction. The wrapped tactic travels
+  // as a neutral carrier (jacinta's `JsonReader` pattern): the field stays
+  // pure, and each accessor reasserts the type at the rim — the audited
+  // point.
+  private[locomotion] def apply(parser: ProtobufParser, tactic: Tactic[ProtobufError])
+  :   ProtobufReader^ =
 
-// The shared structure decoded by every format: varied primitive types, a
-// nested record, a sequence and a coproduct. Compiled one phase before the
-// benchmarks, so `Json.Inlinable`'s expansion-time instance evaluation can
-// load the types and resolve the companion `Inlinable` givens.
-enum Payment:
-  case Card(number: Text, expiry: Text, secure: Boolean)
-  case Transfer(iban: Text, reference: Long)
+    new ProtobufReader(parser, tactic.asInstanceOf[AnyRef])
 
-object Payment:
-  // An XML sum nested inside a product cannot use xylophone's label-based
-  // default `Discriminable`: the product encoder relabels the variant
-  // element with the *field's* name, which destroys the discriminator. The
-  // variant rides in a `type` attribute instead — `<payment type="Card">` —
-  // mirroring the discriminator key the JSON and YAML corpora carry. The
-  // named `DiscriminantAttribute` shape also lets the inlined XML parser
-  // dispatch on the attribute straight off the open tag.
-  given xmlDiscriminable: Payment is Discriminable in Xml = Xml.DiscriminantAttribute(t"type")
+// The public, restricted rim of the Protobuf wire parser, handed to
+// `Protobuf.Parsable` instances so they can consume fields straight off the
+// input without the intermediate number-keyed `Protobuf` map. A `parse` call
+// receives the reader with its *window* set to the value's payload (the
+// whole input at the top level; one field's wire value in a field position)
+// and must consume to the window's end. The reader carries its own
+// `Tactic[ProtobufError]`, so instance `parse` bodies need no error
+// vocabulary: malformed input aborts through the read call's ambient tactic.
+//
+// An exclusive, stateful capability, like the parser it wraps: it is owned
+// by one `Protobuf.Parsable.parse` call at a time, for the duration of that
+// call, and nothing of it may be retained afterwards.
+final class ProtobufReader private (parser0: AnyRef, tactic0: AnyRef)
+extends caps.ExclusiveCapability, caps.Stateful:
+  private inline def parser: ProtobufParser = parser0.asInstanceOf[ProtobufParser]
 
-  // The CBOR corpus carries the same `type` discriminator as a map entry;
-  // the named `DiscriminantKey` shape lets the inlined CBOR parser dispatch
-  // on a scan-ahead of that entry.
-  given cborDiscriminable: Payment is Discriminable in Cbor = Cbor.DiscriminantKey(t"type")
+  // The sealed conduit for generated parsers: package-private, so the only
+  // path to the wrapped capabilities from outside locomotion is through the
+  // accessor the compiler synthesizes for locomotion's own macro-generated
+  // splices — hand-written code cannot name it. Generated code binds the
+  // parser once per record and reads through `ProtobufParser`'s direct rim
+  // without this class's per-field forwarders.
+  private[locomotion] def rawParser: AnyRef = parser0
+  private[locomotion] def rawTactic: AnyRef = tactic0
+  private inline def tactic: Tactic[ProtobufError] = tactic0.asInstanceOf[Tactic[ProtobufError]]
 
-case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
+  // ── The message steps: the next field's tag while the window has
+  // content, then per-field reads. `enterField` narrows the window to one
+  // field's wire value (returning the token `leaveField` restores). ──
+  update def more: Boolean = !parser.directAtLimit
+  update def tag(): Int = parser.directTag()(using tactic)
+  update def enterField(code: Int): Int = parser.directEnterField(code)(using tactic)
+  update def leaveField(saved: Int): Unit = parser.directLeaveField(saved)
+  update def skipField(code: Int): Unit = parser.directSkipField(code)(using tactic)
 
-// The per-format `Inlinable` givens are qualified: each format's staged
-// component declares its own `Inlinable`, and this module imports all three
-// packages.
-object LineItem:
-  given jsonInlinable: (LineItem is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (LineItem is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (LineItem is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (LineItem is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (LineItem is locomotion.Inlinable) = locomotion.Inlinable.derived
+  // ── Scalars, reading the window's content exactly as the AST accessors
+  // interpret a field's recorded payload — for hand-written instances that
+  // compose over one wire value. ──
+  update def varint(): Long = parser.directVarint()(using tactic)
+  update def fixed32(): Int = parser.directFixed32()(using tactic)
+  update def fixed64(): Long = parser.directFixed64()(using tactic)
+  update def text(): Text = Text(parser.directStringWindow())
+  update def data(): Data = parser.directDataWindow()
 
-case class Customer(id: Long, name: Text, email: Text, region: Text)
-
-object Customer:
-  given jsonInlinable: (Customer is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (Customer is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (Customer is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (Customer is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (Customer is locomotion.Inlinable) = locomotion.Inlinable.derived
-
-case class Order
-  ( reference: Text, customer: Customer, items: List[LineItem], payment: Payment,
-    priority: Boolean, discount: Double )
-
-object Order:
-  given jsonInlinable: (Order is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (Order is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (Order is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (Order is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (Order is locomotion.Inlinable) = locomotion.Inlinable.derived
-
-case class Orders(orders: List[Order])
-
-object Orders:
-  // Direct parsing is opt-in per format; only the top type needs a nominal
-  // instance — nested types resolve through each format's field fallback
-  // chain.
-  given jsonParsable: Orders is Json.Parsable = Json.Parsable.derived
-  given telParsable: Orders is Tel.Parsable = Tel.Parsable.derived
-  given xmlParsable: Orders is Xml.Parsable = Xml.Parsable.derived
-
-  given jsonInlinable: (Orders is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (Orders is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (Orders is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (Orders is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (Orders is locomotion.Inlinable) = locomotion.Inlinable.derived
+  // ── The fallback seam: one field's wire value (for gathered occurrences
+  // decoded through a `Decodable in Protobuf`), or the remaining window as
+  // a message (for `Parsable.fromDecodable`). ──
+  update def wire(code: Int): Protobuf = parser.directWire(code)(using tactic)
+  update def message(): Protobuf = parser.directMessage()
