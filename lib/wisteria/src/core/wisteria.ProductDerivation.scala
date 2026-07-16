@@ -94,7 +94,7 @@ object ProductDerivation:
                         ->  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
-                              (derivation => field) aka "dereference",
+                              (derivation -> field) aka "dereference",
                               Int & FieldIndex[field] aka "index" ) ?=> result )
     :   IArray[result] =
 
