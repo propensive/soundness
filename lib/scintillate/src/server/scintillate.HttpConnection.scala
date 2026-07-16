@@ -82,6 +82,13 @@ object HttpConnection:
 
     lazy val in = exchange.getRequestBody.nn
 
+    // The Source evidence closes over `unsafely`'s ThrowTactic, which is `caps.Unscoped`
+    // (it throws in place, capturing nothing scoped), so it is truthfully sealed once here
+    // rather than leaking out of the per-mint `unsafely` scope through the body thunk.
+    val source: ji.InputStream is Source by Data over Credit =
+      unsafely:
+        caps.unsafe.unsafeAssumePure(summon[ji.InputStream is Source by Data over Credit])
+
     val request =
       Http.Request
         ( method      = method,
@@ -91,8 +98,7 @@ object HttpConnection:
           // Each mint reads on from the same live request stream — the
           // single-owner discipline (explicit `memoize` for re-reads). A read
           // failure throws, as the raw `InputStream` did before.
-          body        = () => unsafely(summon[ji.InputStream is Source by Data over Credit])
-                              . stream(in),
+          body        = () => source.stream(in),
           textHeaders = headers )
 
     Log.fine(HttpServerEvent.Received(request))
