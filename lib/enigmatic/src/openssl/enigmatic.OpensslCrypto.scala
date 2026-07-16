@@ -163,14 +163,24 @@ object OpensslCrypto extends Crypto:
         oneShot(encrypting = false, transformation, key, data.take(size), data.drop(size))
 
     def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+      session(transformation, key, iv, encrypting = true)
+
+    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+      session(transformation, key, iv, encrypting = false)
+
+    private def session
+      ( transformation: Text, key: Data, iv: Optional[Data], encrypting: Boolean )
+    :   CipherSession =
+
       val arena = Arena.ofShared().nn
       val parts = transformation.cut(t"/")
       val context = newContext()
       val cipher0 = cipher(opensslCipher(parts(0), parts(1), key.length))(using arena)
       val keySegment = ForeignLibrary.segment(key)(using arena)
       val ivSegment = iv.lay(MemorySegment.NULL)(ForeignLibrary.segment(_)(using arena))
+      val direction = if encrypting then t"Encrypt" else t"Decrypt"
 
-      lib.handle(t"EVP_EncryptInit_ex").invokeWithArguments
+      lib.handle(t"EVP_${direction}Init_ex").invokeWithArguments
         ( context, cipher0, MemorySegment.NULL, keySegment, ivSegment )
 
       if parts(2) == t"NoPadding" then
@@ -184,7 +194,7 @@ object OpensslCrypto extends Crypto:
           val length = arena.allocate(int).nn
           val input = ForeignLibrary.segment(chunk)(using arena)
 
-          lib.handle(t"EVP_EncryptUpdate").invokeWithArguments
+          lib.handle(t"EVP_${direction}Update").invokeWithArguments
             ( context, output, length, input, Integer.valueOf(chunk.length) )
 
           ForeignLibrary.bytes(output, length.get(int, 0L))
@@ -192,7 +202,7 @@ object OpensslCrypto extends Crypto:
         def finish(): Data =
           val output = arena.allocate(block.toLong).nn
           val length = arena.allocate(int).nn
-          lib.handle(t"EVP_EncryptFinal_ex").invokeWithArguments(context, output, length)
+          lib.handle(t"EVP_${direction}Final_ex").invokeWithArguments(context, output, length)
           val result = ForeignLibrary.bytes(output, length.get(int, 0L))
           lib.handle(t"EVP_CIPHER_CTX_free").invokeWithArguments(context)
           arena.close()
