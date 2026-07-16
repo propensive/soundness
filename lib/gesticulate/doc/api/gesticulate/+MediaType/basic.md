@@ -1,1 +1,0 @@
-a `:Text` representation of the media type, without any parameters

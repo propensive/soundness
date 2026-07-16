@@ -1,1 +1,0 @@
-defines macros for Adversaria

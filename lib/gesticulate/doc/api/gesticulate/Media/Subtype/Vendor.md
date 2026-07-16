@@ -1,1 +1,0 @@
-a media subtype in the vendor tree, which will be printed with the prefix, `vnd.`

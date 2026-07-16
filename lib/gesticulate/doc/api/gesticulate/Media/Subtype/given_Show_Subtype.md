@@ -1,1 +1,0 @@
-a `:Show` instance for presenting a media subtype as `:Text`

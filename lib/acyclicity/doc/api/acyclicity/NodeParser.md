@@ -1,1 +1,0 @@
-the [Contextual](https://github.com/propensive/contextual) interpolator for `ref""` interpolated strings

@@ -1,1 +1,0 @@
-the subtype part of the media type, i.e. the part which appears after the `/` character
