@@ -38,18 +38,19 @@ import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
 
 object Vocabulary:
-  def apply[source: Streamable by Data, transport](adjectives: source, animals: source)
+  def apply[source: Streamable by Data over Credit, transport](adjectives: source, animals: source)
   :   Vocabulary over transport =
 
     new Vocabulary(load(adjectives), load(animals)).asInstanceOf[Vocabulary over transport]
 
-  private def load[source: Streamable by Data](resource: source): List[Text] =
-    resource.lazyList[Data].read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
+  private def load[source: Streamable by Data over Credit](resource: source): List[Text] =
+    resource.read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
 
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport

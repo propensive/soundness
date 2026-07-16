@@ -192,14 +192,16 @@ object Dsv extends Dsv2:
     cells.join(format.delimiter.show)
 
   object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
-    class DsvProductDecoder[derivation](lambda: Dsv -> derivation)
+    // An impure (`=>`) lambda: a derived decoder legitimately captures the consumer's
+    // resolution-scoped tactics, which the fresh (`^`) `conjunction` result honestly admits.
+    class DsvProductDecoder[derivation](lambda: Dsv => derivation)
     extends Decodable:
       type Self = derivation
       type Form = Dsv
       def decoded(row: Dsv): derivation = lambda(row)
 
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Decodable in Dsv =
+    :   (derivation is Decodable in Dsv)^ =
 
       val spans: IArray[Int] = Spannable.derived[derivation].spans()
 
@@ -210,9 +212,8 @@ object Dsv extends Dsv2:
       provide[Foci[CellRef]]:
         // The decode lambda may capture the consumer's `Tactic` (field decoders are
         // tactic-taking givens), with the same lifetime as the instance's given resolution;
-        // laundered pure to keep decoder instances pure — the same rationale as jacinta's
-        // codec-thunk seal (see jacinta.Json.scala and rep/DECISIONS.md).
-        DsvProductDecoder[derivation](caps.unsafe.unsafeAssumePure:
+        // the fresh (`^`) result honestly admits the capture — no seal.
+        DsvProductDecoder[derivation](
           (row: Dsv) =>
             var count = 0
 

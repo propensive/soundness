@@ -42,13 +42,14 @@ object Handle:
   // Polymorphic over the handle's (scoped, capturing) singleton type: `Openable.open`
   // hands the lambda a capability-refined `Handle^{...}`, and a `Self = Handle` instance
   // would not be summonable for it under capture checking.
-  given streamable: [handle <: Handle^] => Tactic[StreamError]
-  =>  handle is Streamable by Data = _.reader()
+  given streamable: [handle <: Handle^] => handle is Streamable by Data over Credit = _.source()
 
-  given writable: [handle <: Handle^] => Emit[StreamError]
-  =>  handle is Writable by Data = _.writer(_)
+  given writable: [handle <: Handle^] => handle is Writable by Data = (handle, stream) =>
+    // The non-consume `write` crosses to the consuming pump as a neutral
+    // reference (the `accept` convention).
+    stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]
+    . pump(handle.intake().asInstanceOf[AnyRef].asInstanceOf[(Intake[Data] over Credit)^])
 
-  given source: [handle <: Handle^] => handle is Source by Data over Credit = _.source()
   given sink: [handle <: Handle^] => handle is Sink by Data over Credit = _.intake()
 
 // The native `source`/`intake` endpoints default to bridging the legacy
@@ -66,8 +67,11 @@ class Handle
       () => Sink.buffered((), (_, stream) => writer(stream)) )
 extends caps.ExclusiveCapability:
 
-  def write[source: Streamable by Data as streamable](source: source): Unit =
-    writer(streamable.stream(source))
+  def write[source](source: source)
+    ( using streamable: (source is Streamable by Data over Credit)^ )
+  :   Unit =
+    streamable.stream(source)
+    . pump(intake().asInstanceOf[AnyRef].asInstanceOf[(Intake[Data] over Credit)^])
 
   def stream: LazyList[Data] = reader()
 

@@ -102,6 +102,7 @@ case class Crew(lead: Worker, members: List[Worker]) derives CanEqual
 // Recursion through a collection (#1429), direct recursion, recursion through a map, and a generic
 // product used over a recursive type (which must stay structurally derived, not mis-read as a codec).
 case class Tree(value: Text, children: List[Tree]) derives CanEqual
+case class Counts(counts: Map[Text, Int], tag: Text) derives CanEqual
 case class TreeOpt(value: Text, child: Optional[TreeOpt]) derives CanEqual
 case class Forest(trees: Map[Text, Tree]) derives CanEqual
 case class Boxed[value](value: value) derives CanEqual
@@ -773,6 +774,18 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == JsonPrimitive.Null)
 
     suite(m"Direct parsing tests"):
+      test(m"an inlined recursive type ties through its own nominal Parsable"):
+        given (Tree is Json.Parsable) = Inlinable.parsable[Tree]
+        val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+        tree.in[Json].show.read[Tree in Json]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
+
+      test(m"an inlined Map field stays on the runtime seam"):
+        given (Counts is Json.Parsable) = Inlinable.parsable[Counts]
+        val counts = Counts(Map(t"a" -> 1, t"b" -> 2), t"tag")
+        counts.in[Json].show.read[Counts in Json]
+      . assert(_ == Counts(Map(t"a" -> 1, t"b" -> 2), t"tag"))
+
       test(m"Read an Int directly"):
         t"42".read[Int in Json]
       . assert(_ == 42)

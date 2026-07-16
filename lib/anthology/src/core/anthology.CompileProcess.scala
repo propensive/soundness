@@ -36,14 +36,15 @@ import anticipation.*
 import contingency.*
 import parasite.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 class CompileProcess():
   private[anthology] var continue: Boolean = true
 
   private val completion: Promise[CompileResult] = Promise()
-  private val noticesSpool: Spool[Notice] = Spool()
-  private val progressSpool: Spool[CompileProgress] = Spool()
+  private val noticesSpool: Relay[Notice] = Relay()
+  private val progressSpool: Relay[CompileProgress] = Relay()
 
   private var compilation: Optional[Task[Unit]] = Unset
   private var errorCount: Int = 0
@@ -72,5 +73,7 @@ class CompileProcess():
   def abort(): Unit = continue = false
   def cancelled: Boolean = !continue
 
-  lazy val progress: LazyList[CompileProgress] = progressSpool.stream
-  lazy val notices: LazyList[Notice] = noticesSpool.stream
+  // `lazy val`s deliberately share ONE memoizing view per relay, so several
+  // observers may traverse the same stream (the one Spool-era replay use).
+  lazy val progress: LazyList[CompileProgress] = LazyList.from(progressSpool.stream.records)
+  lazy val notices: LazyList[Notice] = LazyList.from(noticesSpool.stream.records)

@@ -30,57 +30,61 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
-
-import scala.quoted.*
+package facsimile
 
 import anticipation.*
-import fulminate.*
-import gigantism.*
-import hieroglyph.*
-import prepositional.*
+import contingency.*
+import gossamer.*
+import rudiments.*
 import vacuous.*
 
-object internal:
-  import stenography.internal.name
+// ASCII85Decode (ISO 32000-2 §7.4.3): groups of five characters from `!`–`u` encode four
+// bytes base-85; `z` abbreviates four zero bytes; a partial final group of n characters
+// yields n−1 bytes; `~>` ends the data.
+private[facsimile] object Ascii85:
+  def decode(data: Data): Data raises PdfError =
+    val bytes = Array.newBuilder[Byte]
+    val group = new Array[Int](5)
+    var members = 0
+    var done = false
+    var i = 0
 
-  def lazyList[source: Type, operand: Type](source: Expr[source]): Macro[LazyList[operand]] =
-    import quotes.reflect.*
+    def emit(count: Int): Unit =
+      var value = 0L
+      var j = 0
 
-    val bytes = TypeRepr.of[operand] =:= TypeRepr.of[Data]
-    val text = TypeRepr.of[operand] =:= TypeRepr.of[Text]
+      while j < 5 do
+        value = value*85 + (if j < count then group(j) else 84)
+        j += 1
 
-    lazy val streamableData: Optional[Expr[source is Streamable by Data]] =
-      Expr.summon[source is Streamable by Data].optional
+      var shift = 24
 
-    lazy val streamable: Optional[Expr[source is Streamable by operand]] =
-      Expr.summon[source is Streamable by operand].optional
+      while shift > 32 - count*8 do
+        bytes += ((value >> shift) & 0xff).toByte
+        shift -= 8
 
-    lazy val streamableText: Optional[Expr[source is Streamable by Text]] =
-      Expr.summon[source is Streamable by Text].optional
+    while i < data.length && !done do
+      val byte = data(i) & 0xff
+      i += 1
 
-    lazy val decoder: Optional[Expr[CharDecoder]] = Expr.summon[CharDecoder].optional
-    lazy val encoder: Optional[Expr[CharEncoder]] = Expr.summon[CharEncoder].optional
+      if byte == '~' then
+        done = true
+      else if byte == 'z' && members == 0 then
+        bytes += 0
+        bytes += 0
+        bytes += 0
+        bytes += 0
+      else if byte >= '!' && byte <= 'u' then
+        group(members) = byte - '!'
+        members += 1
 
-    val otherName =
-      if bytes then name[source is Streamable by Text] else name[source is Streamable by Data]
+        if members == 5 then
+          emit(5)
+          members = 0
+      else if !CosLexer.whitespace(byte) then
+        abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
 
-    Expr.summon[source is Streamable by operand].optional.let: streamable =>
-      '{$streamable.stream($source)}
+    if members == 1 then abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
+    if members > 1 then emit(members)
 
-    . or:
-        if text && streamableData.present then decoder.let: decoder =>
-          '{$decoder.decoded(${streamableData.vouch}.stream($source))}.absolve match
-            case '{$stream: LazyList[`operand`]} => stream
-
-        . or:
-            halt(m"can not stream ${name[source]} as ${name[Text]} without a ${name[CharDecoder]}")
-
-        else if bytes && streamableText.present then encoder.let: encoder =>
-          '{$encoder.encoded(${streamableText.vouch}.stream($source))}.absolve match
-            case '{$stream: LazyList[`operand`]} => stream
-
-        . or:
-            halt(m"can not stream ${name[source]} as ${name[Data]} without a ${name[CharEncoder]}")
-
-        else halt(m"no ${name[source is Streamable by operand]} (or $otherName) was found")
+    bytes.result().immutable(using Unsafe)

@@ -85,7 +85,7 @@ object Divisible:
   given byte2: Byte is Divisible by Double to Double = Divisible:
     (dividend, divisor) => dividend/divisor
 
-trait Divisible extends Typeclass, Operable, Resultant:
+trait Divisible extends Typeclass.Pure, Operable, Resultant:
   type Dividend = Self
   type Divisor = Operand
 

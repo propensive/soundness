@@ -163,8 +163,11 @@ object TmuxError:
 case class TmuxError(reason: TmuxError.Reason)(using Diagnostics)
 extends Error(271, reason.number)(m"can't drive tmux: $reason")
 
+// A `Tmux` is a *capability*: it identifies a live external tmux session whose lifetime is
+// the `tmux` block that creates it (killed after the block). `Exclusive` because a session
+// is driven by one test at a time.
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
-extends Findable
+extends Findable, caps.ExclusiveCapability
 
 case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):
   def apply(): Text = screen.join("\n")

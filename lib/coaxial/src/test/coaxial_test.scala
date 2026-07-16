@@ -80,7 +80,7 @@ object Tests extends Suite(m"Coaxial tests"):
           val client = jnc.SocketChannel.open(jn.InetSocketAddress("127.0.0.1", port)).nn
           val clientDuplex = channelDuplex(client)
 
-          summon[Data is Source by Data over Credit].stream(payload).pump(clientDuplex.intake)
+          summon[Data is Streamable by Data over Credit].stream(payload).pump(clientDuplex.intake)
           client.shutdownOutput()
 
           val result = received.await()
@@ -214,28 +214,29 @@ object Tests extends Suite(m"Coaxial tests"):
           val port = Port[Udp]()
           val received: Promise[Text] = Promise()
 
-          val server = port.listen[Data]: packet =>
+          val handler = (packet: Packet) =>
             received.fulfill(packet.data.utf8)
             UdpResponse.Reply(ascii(t"ack"))
 
-          // The `transmit` extension is overloaded on `Serviceable` (returns
-          // `LazyList[Data]`) and `Routable` (returns `Unit`); since value-discarding
-          // makes any type conform to `Unit`, the `Routable` overload is not
-          // reachable by ascription, so its given is exercised directly here.
-          val routable = summon[UdpPort is Routable]
-          routable.transmit(routable.connect(port, Unset), zephyrine.Stream(ascii(t"ping")))
-          received.await().also(server.stop())
+          port.listen[Data](handler):
+
+            // The `transmit` extension is overloaded on `Serviceable` (returns
+            // `LazyList[Data]`) and `Routable` (returns `Unit`); since value-discarding
+            // makes any type conform to `Unit`, the `Routable` overload is not
+            // reachable by ascription, so its given is exercised directly here.
+            val routable = summon[UdpPort is Routable]
+            routable.transmit(routable.connect(port, Unset), zephyrine.Stream(ascii(t"ping")))
+            received.await()
         . assert(_ == t"ping")
 
       suite(m"TCP server and client"):
         test(m"A client reacts to the server's pushed message"):
           val port = Port[Tcp]()
-          val server = port.listen[Data](socket => ascii(t"greeting"))
+          port.listen[Data](socket => ascii(t"greeting")):
+            val received: Data = port.react(Data())[Data]: message =>
+              Conclude(ascii(t""), message)
 
-          val received: Data = port.react(Data())[Data]: message =>
-            Conclude(ascii(t""), message)
-
-          bytes(received).also(server.stop())
+            bytes(received)
         . assert(_ == bytes(ascii(t"greeting")))
 
       suite(m"Unix domain socket server and client"):
@@ -245,15 +246,17 @@ object Tests extends Suite(m"Coaxial tests"):
           val socket = DomainSocket(path)
           val received: Promise[Text] = Promise()
 
-          val server = socket.listen[Data]: connection =>
+          val handler = (connection: Duplex) =>
             val request = connection.source.memoize
             received.fulfill(request.utf8)
             request
 
-          // The ascription selects the `Serviceable` overload of `transmit`; the
-          // client half-closes after sending, so the server reads to EOF.
-          val _: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(t"request")
-          received.await().also(server.stop())
+          socket.listen[Data](handler):
+
+            // The ascription selects the `Serviceable` overload of `transmit`; the
+            // client half-closes after sending, so the server reads to EOF.
+            val _: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(t"request")
+            received.await()
         . assert(_ == t"request")
 
       suite(m"Duplex connections"):
@@ -262,22 +265,24 @@ object Tests extends Suite(m"Coaxial tests"):
           java.nio.file.Files.deleteIfExists(java.nio.file.Path.of(path.s))
           val socket = DomainSocket(path)
 
-          val server = socket.listen[Data]: connection =>
-            // One refill window is the client's single message (no half-close on a duplex).
+          // One refill window is the client's single message (no half-close on a duplex).
+          val handler = (connection: Duplex) =>
             val source = connection.source
             val count = source.refill(zephyrine.Credit(64)).or(0)
             source.addressable.materialize(source.window(using Unsafe), source.start, count)
 
-          val reply = socket.duplex: duplex =>
-            duplex.send(zephyrine.Stream(ascii(t"ping")))
+          socket.listen[Data](handler):
 
-            // One refill window is the server's single reply.
-            val source = duplex.source
-            val count = source.refill(zephyrine.Credit(64)).or(0)
-            val data = source.addressable.materialize(source.window(using Unsafe), source.start, count)
-            bytes(data)
+            socket.duplex: duplex =>
+              duplex.send(zephyrine.Stream(ascii(t"ping")))
 
-          reply.also(server.stop())
+              // One refill window is the server's single reply.
+              val source = duplex.source
+              val count = source.refill(zephyrine.Credit(64)).or(0)
+              val data =
+                source.addressable.materialize(source.window(using Unsafe), source.start, count)
+
+              bytes(data)
         . assert(_ == bytes(ascii(t"ping")))
 
     suite(m"Socket options"):

@@ -21,8 +21,8 @@ around by cast/launder with a comment; the patched compiler may be used without 
    = given-resolution lifetime.
 3. **parasite daemon error propagation** (`ad3511b34`, pre-existing flag): deleted
    handler-nesting tests + Task monad dropped `Tactic[AsyncError]`; bless or redesign.
-4. **coaxial `port.listen`** result leaking `any` into `val server` (also surfaces inside
-   ethereal.core at `domainSocket.listen`): genuine escape; scoped-API redesign candidate.
+4. **coaxial `port.listen`** — CLOSED (2026-07-15, capture-honesty Phase 5): `listen` is now
+   a loan (`listen(lambda)(block: SocketService ?=> result)`), stop always in `finally`.
 5. **zeppelin.core `Zip.Entry`** lazily-captured `storedBytes` thunk: genuine capture
    (LazyList-confinement limit); design case.
 6. **tarantula `Navigator`** (browser session as capability), **probably.cli**
@@ -35,6 +35,65 @@ around by cast/launder with a comment; the patched compiler may be used without 
    curried dependent context functions ("Implementation restriction: not yet supported");
    options = compiler feature work, or a `Validate`/`protect` redesign avoiding function-value
    indirection in tests, or defer the 5 suites.
+
+## ⚑ Capture-honesty campaign: decision packet for Jon (2026-07-15)
+
+The campaign (branch series starting at `capture-honesty`) targets the two remaining dishonesty
+classes: scope-introducing context functions whose context value is a live resource but not a
+tracked capability (`profanity.interactive`, `tarantula.session`, `exoskeleton.sandbox`/`tmux`,
+scintillate handlers, effect channels), and typeclass families without honest markers. Plan file:
+`~/.claude/plans/soundness-has-been-updated-delegated-stardust.md`. Decisions needed, roughly in
+the order the legs need them:
+
+- **D1 — capability parents for scope-method context types** (needed for legs 2/4; proposal,
+  confirm or adjust): `Terminal`, `Enclave.Tool`, `Tmux`, `WebDriver#Session`, `HttpConnection`,
+  `Cli` (via its own declaration, not `Console`), `polaris.Buffer` → `caps.ExclusiveCapability`
+  (each is a stateful, torn-down-after-scope resource); `capricious.Random`,
+  `urticose.Internet` → `caps.SharedCapability` (aliasable effect evidence, no teardown). Scope
+  methods then take form A (`block: Ctx ?=> result` with unconstrained `result`), matching
+  `parasite.supervise`/`enigmatic.expose`, plus a CaptureTests-style negative regression each.
+  AMENDED in Phase 2 (compiler-forced): `Random` and `Internet` are `caps.Unscoped`, not
+  `SharedCapability` — `Unscoped extends ExclusiveCapability`, so the two classifiers cannot
+  combine, and both types have deliberately-ambient static instances (`Random.global`,
+  `object Online`, `internetAccess.online`) that scoped classifiers forbid. Unscoped is exactly
+  contingency's ambient-strategy precedent: tracked in capture sets, storable statically.
+- **D2 — coaxial `listen` scoped redesign** (existing ⚑4; needed for Phase 5): recommend the loan
+  form `def listen[result](lambda: Input => Output)(block: SocketService^ ?=> result): result`
+  (bind, run block, always stop in `finally`), which both fixes the `val server` fresh-escape and
+  matches form A. Alternative: an `Openable`-style owner object (`Server.open(port)(handler)(...)`,
+  the galilei `Result = Handle^` precedent). `caps.Unscoped` is a non-option (SocketService
+  genuinely must not escape). Ethereal's process-lifetime daemon becomes
+  `domainSocket.listen(handler) { service ?=> park() }`.
+- **D3 — guillotine `Process`/`Job` as capabilities**: live process handles currently returned
+  freely as plain classes. Classifying them is honest but the fallout sweep (every `.exec[]`/
+  `.fork[]` caller: octogenarian, ethereal, tarantula, eucalyptus.syslog, exoskeleton.rig) makes
+  it its own late leg. Go/no-go.
+- **D4 — eucalyptus `Logger` as capability**: holds an `enqueue` closure; capability-classing it
+  ripples through the `logs` alias exactly like `raises`/Tactic did (aliascap/ctxresult
+  territory). Probe-gated own leg. Go/no-go.
+- **D5 — wisteria capture-polymorphic `conjunction`/`disjunction`** (the ⚑1 open sub-question):
+  the bare `typeclass[derivation]` results are the root cause of every downstream codec-thunk
+  seal. Probe-first plan: (i) capturing leaf + derived product all-CC; (ii) through summonInline
+  chains with `aka`-Tagged params; (iii) expanded inside a staged quote. Sweep scope = whichever
+  stages are green. Two prior reverts recorded; treat as HIGH RISK. Go/no-go.
+- **D6 — parasite `Task^`** (existing ⚑3-adjacent): honest `Task^`/`Daemon^` handle types would
+  replace the 12 `unsafeAssumePure` sites in parasite core, but interact with the mercator
+  `Monad` instance for `Task` (see below). Go/no-go.
+- **D7 — Pure-flip policy for seal-bearing families**: flipping a trait to `Typeclass.Pure`
+  makes future honest capturing instances impossible, so families whose instances carry seals or
+  honest captures stay plain `Typeclass`: confirmed `Addable` (hellenism `LocalClasspath is
+  Addable ^{pathTactic, ioTactic}` is honest), `Parsable` (instances capture resolution-scoped
+  tactics by design — its own doc comment), `Extractable`/`Requirable` (sealed instances).
+  Also `mercator.Functor` CANNOT flip while `Monad extends Functor` and parasite's `Task` Monad
+  captures (a Pure parent would propagate); left plain, noted here.
+
+Probe results (2026-07-15, `rep/probe-core.sh` with the p2 release toolchain; logs in
+`rep/_probe/*/compile.log`): profanity.core RED (6 errors, E007 conversion shapes),
+tarantula.core RED (1×E223 + 2×E007), surveillance.core RED (6, NativeWatcher),
+scintillate.server RED (3, Tactic[ServerError] evidence shapes), ethereal.core RED (6+, E007),
+exoskeleton.rig RED (1×E007, Enclave.scala:105), anthology.bundle RED (1×E007, Bundler.scala:98).
+No macro-wall or quote-wall shapes at first depth — all seven look like ordinary conversion legs;
+rig and bundle look trivial.
 
 ## Toolchain (CURRENT: downloaded from the propensive/proscala releases)
 
@@ -1956,3 +2015,293 @@ decoder is NOT covered by dictcaps and resisted a jacinta-style restructure (it
 persisted and crashed rechecking). The two telekinesis Query-decode tests that
 hit it (`Dereference a query` — also broken #1500 — and `Decode a query`) are
 disabled with a comment, to revisit. See [[reference_dictcaps_compiler_fix]].
+
+## Capture-honesty Phase 2: effect channels + Cli are capabilities (2026-07-15, branch capture-honesty)
+
+`capricious.Random`, `urticose.Internet`/`Online` → `caps.Unscoped`; `polaris.Buffer` →
+`caps.ExclusiveCapability`; `exoskeleton.Cli` → `caps.ExclusiveCapability`. The scope methods
+(`stochastic`, `internet`, `require`/`appropriate`, `buffer`, `Executive.process`) keep their
+`Ctx ?=> result` shape — with the context types now capability classes, the bare name is
+auto-tracked (the `supervise` form). Gates: JVM 10301/10301, JS 8006/8006; suites green
+(telekinesis's 4 per-module Query failures reproduce exactly at the attested base — the known
+umbrella/per-module implicit-scope artifact).
+
+Recipes this leg (all compiler-forced, reusable):
+- Classifier lattice: `Unscoped extends ExclusiveCapability` — it cannot combine with
+  `SharedCapability`. Ambient-storable tracked types therefore go on the exclusive line.
+- A capability-typed FIELD forces its owner to extend Capability: `Random.global` now stores
+  the untracked JDK generator and mints a fresh `Random` wrapper per call; urticose's
+  `internetAccess.online` given became `inline given` (a fresh `Online` per summon site, no
+  static field); `Internet.require`/`appropriate` mint `Online()` per block instead of
+  referencing the singleton (a capability object referenced from a class body charges the
+  class's capture set).
+- polaris `Unpackable.iarray`: the curried continuation no longer captures the caller's
+  `Buffer` — it records the (pure) backing `Data` + start offset and mints its own buffer per
+  invocation. This keeps the trait signature pure for every other instance; the earlier
+  attempts (trait-level `Wrap[Self]^{buffer}`, transparent-inline unpackFrom with fresh `^`)
+  failed because hypotenuse's opaques (`U16 = Short` etc.) have no pure bounds, so nothing
+  downstream is statically pure and fresh `^` never collapses. FUTURE OPTION: pure upper
+  bounds on hypotenuse opaques (the zephyrine Credit<:Long precedent) would unlock
+  static-purity-based collapse tree-wide; needs Jon (exposes `U16 <: Short` subtyping).
+- exoskeleton `Executive.process` block param narrowed `Interface ?=> Return` → `Cli ?=>
+  Return`: adapting a `Cli ?=>` context function to an abstract-`Interface ?=>` one trips
+  capture-root unification ("any² cannot flow into {any}"), and every entry point routes a
+  `Cli ?=>` block anyway.
+- telekinesis staged fetch/submit: the `given online0: Online = $online` bindings inside
+  quotes DELETED — nothing in the generated code summons `Online` (it gates the extension
+  method's summonability), and a capability-typed local given inside a quote violates the
+  quote wall and (under sep) the statement rule.
+- Givens gated on `Online` evidence become honest capabilities: coaxial
+  `Connectable.tcpEndpoint` + `SecureEndpoint.connectable` (named params, `^{online,
+  caps.any}` results, named-class/new-instance form), perihelion `wsClient` and jacinta
+  `fetchingRegistry` (added `online` to their existing capture sets).
+
+## Capture-honesty Phase 3a: profanity/tarantula/surveillance capture-checked (2026-07-15)
+
+`settings.cc` flipped on profanity.core, tarantula.core, surveillance.core (branch
+capture-honesty). The Terminal/Server capability classifications planned for Phase 4a/4b were
+pulled forward — the modules do not compile under CC without them. Gates: JVM 10301/10301,
+JS 8006/8006; suites profanity 51/0, surveillance 4/0, ultimatum 66/0, exoskeleton 67/0
+(tarantula has no runnable suite).
+
+profanity recipes:
+- `Terminal extends Interactivity[TerminalEvent], caps.ExclusiveCapability` (holds Monitor/
+  Probate, spawns the pump daemon, torn down by `interactive`'s finally). Field typings:
+  `keyboard: Keyboard.Standard^{monitor}` (Probate is a plain trait — NOT nameable in capture
+  sets); mutable size/brightness state hoisted to a plain `Terminal.Metrics` holder so `cap`
+  (Termcap) and the `stdio` given stay PURE (`Stdio.termcap` requires a pure member) and the
+  pump daemon body needs no `this` rim at all. Public `var` API preserved via def accessors.
+- Pump daemon: block-local bindings + `AnyRef` cast-rim for the capability-typed keyboard
+  (cordillera recipe); the stdin LazyList crosses as a plain value (LazyList is not
+  capture-tracked). `dark` relocated to the companion (a class-private helper call charges
+  `this` in a pure closure). Signal-trap handler bound over `locally:` block locals.
+- Keyboard `As[Int]` extractor in a nested pattern: evidence summons against a skolem-typed
+  scrutinee fail under CC → explicit `safely(x.as[Int])` decoding. Enum-case unapply of
+  union-typed fields (`case Shift(inner)`) fails against the capture-decorated scrutinee →
+  typed patterns + field access; GADT-narrowed Char-literal unions widened to a clean
+  `Keypress | Char` binding first.
+- `Interaction` givens (`selectMenu`/`lineEditor`) take `(surface: Canvas^)` and return
+  `^{surface}`-annotated instances in `new`-instance form (the colon-body given's synthesized
+  class does not admit the result annotation).
+- `TerminalCanvas(terminal)`/`InlineRoot(terminal)` return `^{terminal}` (live size thunks);
+  ultimatum `Form(root: Canvas^)`, `paint(root: Canvas^)`, `FlowExtent(parent: Canvas^)`,
+  `Pane.Leaf(content: Extent^ -> Unit)`, `panel(content: (Extent^) ?-> Unit)`.
+- turbulence `Out`/`Err` print/write/println now take `(using Stdio^)` — honest acceptance of
+  capturing stdio evidence (an `Extent` is an `Stdio` and now captures its canvas).
+
+tarantula recipes:
+- ★ FIRST USE OF THE `uses` CLAUSE (fork feature): `case class Server(...) extends
+  caps.ExclusiveCapability uses Navigator.this:` — declares the outer reference of `stop()`.
+  Syntax: after the extends parents, before the colon (see fork tests
+  tests/pos-custom-args/captures/nested-classes-tracked.scala).
+- `WebDriver`/`Session`/`Element` are PURE ID-holders over the server's port; the live
+  resource is the `Server` capability, confined to `session` (launched there, stopped in its
+  finally). Capability-classing Session/Element was attempted and REVERTED: constructing
+  fresh capabilities inside `map(Element(_))` lambdas and passing a fresh `launch` result
+  into a fresh constructor param both hit unbridgeable fresh-root mismatches ("any² not
+  visible from any"). A leaked Session is a dangling ID over a stopped server; full handle
+  tracking waits on guillotine Job classification (D3/8b).
+- `launch` de-sugared (`logs` → explicit `using ExecEvent is Loggable`) with the VALUE param
+  LAST (`(using ...)(port: Int): Server^`): a fresh result under a trailing using clause is
+  invisible outside the implicit application. `session` likewise de-sugared.
+- `Focusable.apply` takes a pure (`->`) focus lambda (all instances are pure selector
+  renderers).
+
+surveillance recipes:
+- `Watcher.watch` filters are pure (`Text -> Boolean`) end-to-end — they are built by
+  `Watch.apply` from path names only, and registrations live in backend-global state which
+  must not capture. The filename is pre-read outside the lambda (`val filename = ...`).
+- Inside inline `Mutex.apply` blocks, the object-field `watches` HashMap is bound to a local
+  first: the `at` extension's evidence summon against the object-field singleton path fails
+  to unify under CC.
+
+## Capture-honesty Phase 3b: scintillate.server + exoskeleton.rig capture-checked (2026-07-15)
+
+`settings.cc` flipped on scintillate.server and exoskeleton.rig (branch capture-honesty).
+The `HttpConnection` capability classification planned for Phase 4d was pulled forward — the
+module does not compile under CC without it. Gates: JVM 10301/10301, JS 8006/8006; suites
+scintillate 19/0, exoskeleton 67/0, profanity 51/0, ethereal 49/0.
+
+scintillate recipes:
+- `HttpConnection extends ..., caps.ExclusiveCapability` (one live exchange, single owner,
+  respond-once); ctor takes `request: Http.Request^` and the response-first respond sink
+  `Http.Response => Tactic[StreamError] ?=> Unit` — the tactic-first nesting would need the
+  inner arrow to capture the outer ?=>-bound tactic (the ⚑7 dependent-capture restriction).
+- The four `Protocolic` server givens are honest capabilities (`^{tactic, monitor, caps.any}`)
+  over ONE named `HttpProtocolic` class (anonymous instances freshen inferred type members —
+  the galilei finding); `type Request = HttpConnection^` (a BARE capability-class alias
+  decorates the trait's `Request ?=>` param on only one side of the override);
+  `Protocolic.server` and the `serve` extension return `Server^`. The soundness bundle's
+  exports became hand-written forwarder givens (synthesized forwarders lose the annotated
+  refinement) with ONE erasing cast each (capture roots do not re-root through a second
+  given; the wisteria fieldInstance pattern).
+- `handle`/`HttpConnection.apply` de-sugared (`logs`/`raises` → explicit using). SocketServer's
+  accept/connection daemons take the full AnyRef-rim treatment, with the handler crossing as a
+  capture-neutral eta-wrapped `AnyRef => AnyRef` (a context-function value applies itself in
+  any non-CFT position). Cursor params follow the `Cursor[Data, {}]^` convention; `writeAll`
+  takes `(Stream[Data] over Credit)^`.
+- servlet (SEP module): `JavaServlet` now takes a PLAIN `HttpConnection => Http.Response`
+  (a CFT class param cannot be applied from a subclass's synthesized superArg);
+  `makeConnection` returns fresh `HttpConnection^` with rims for everything the connection
+  retains (a fresh capability result may not hide the method's parameters — and the
+  parameter-relative `^{streamError, ...}` alternative cannot absorb the ctor's fresh).
+  The `@servlet` macro types its hole `Any` and casts inside the quote (capability-typed
+  quote holes fail capture-root unification).
+- `request` accessor returns `Http.Request^`; the ws-upgrade TEST seals its flowing-body
+  thunk (a streamed response legitimately retains the live connection — the pure-`Response`
+  handler shape cannot express it; the honest `Response^{connection}` form is the recorded
+  future option).
+
+exoskeleton.rig: one real fix — `Fqcn.apply` instead of the `fqcn""` interpolator (the
+macro's synthesized tree fails capture-variable unification when expanded in a CC module;
+same family as the harlequin/honeycomb quote shapes; possible fork follow-up).
+
+REMAINING un-CC'd (per-class deferral list unchanged): ethereal.core (Phase 5),
+quantitative.core, cataclysm.core, synesthesia.core, apoplexy.core, zeppelin.core (⚑5),
+burdock.core, exegesis.*, aviation.core, superlunary.core, anthology.bundle + platform
+variants.
+
+## Capture-honesty Phase 4 remainder: Tool/Tmux + confinement regression tests (2026-07-15)
+
+Most of Phase 4 (the scope-method honesty conversions) was pulled forward into the Phase 3
+enablement legs, since the modules would not compile under CC without them. The remainder:
+
+- `Enclave.Tool` and `Tmux` → `caps.ExclusiveCapability` (live spawned process / tmux session,
+  torn down after their `sandbox`/`tmux` blocks). exoskeleton.rig compiled clean immediately.
+- CaptureTests-style negative regression suites (the enigmatic pattern: `demilitarize` blocks
+  asserting compile errors) added for profanity (Terminal × 3), exoskeleton.rig (Tool × 2) and
+  scintillate (HttpConnection stash × 1), wired into each module's Tests.
+- ★ FINDING (documented in profanity.CaptureTests): selecting a PURE field from a capability
+  path DISCHARGES the path under CC — `() => terminal.events.stop()` escapes `interactive`
+  legally because `events` is a plain `Spool`. Negative tests must charge the capability
+  itself (a method call); and pure-field escape is a real, if benign, hole to remember when
+  classifying: state that must not escape a scope must live in capability-typed (or
+  method-mediated) members, not pure public fields.
+- Random/Internet get NO confinement tests: they are `caps.Unscoped` (deliberately
+  ambient-storable), so blocks may legally leak them; the tracking is effect-visibility, not
+  scoping.
+
+Suites: profanity 54/0, exoskeleton 69/0, scintillate 20/0.
+
+## Capture-honesty Phase 5: coaxial listen is a loan; ethereal.core capture-checked (2026-07-15)
+
+CLOSES open decision ⚑4 (`port.listen` fresh-escape). Gates: JVM 10301/10301, JS 8006/8006;
+suites coaxial 36/0, ethereal 49/0, exoskeleton 69/0, cordillera 30/0, obligatory 22/0,
+perihelion 28/0, scintillate 20/0.
+
+- `Bindable.listen` and `DomainServer.listenConnections` are now LOANS: they bind, lend the
+  running server to a block as a `SocketService` capability, and always stop it in `finally`.
+  The interface variant is `listenOn(interface)(lambda)(block)` — overloading on the interface
+  clause is ambiguous against the trailing block. Ethereal's process-lifetime daemon nests its
+  readiness files, pid-watcher and park inside the block (it only leaves via `System.exit`).
+- `DaemonService` → `caps.ExclusiveCapability` (the 2026-07-06 service-class ruling);
+  `Executive.invocation`'s `entrypoint` param and `Completions.ensure/install` evidence are
+  `Entrypoint^`.
+- `ambience.Directories` converted to the honest capturing-evidence form `Xdg` already used
+  (`(path is Instantiable across Paths from Text)^` instead of a pure context bound) — it had
+  simply never had a CC-enabled caller before.
+- galilei's `Eof` `Openable` given takes named capturing evidence with an honest
+  `^{openable, caps.any}` result and a `{ type Result = openable.Result }` refinement (the
+  pure context bound could not accept `FileOpenable^` instances).
+- ethereal recipes: the `Client.invocation` promise is an `AnyRef` rim (a `Cli` capability
+  crossing fibers; cast at both ends); `Assembler.assemble` de-sugared (stacked `raises` →
+  explicit using) and its jar-append restructured as TWO SEQUENTIAL opens with a strict
+  read between (nested handle-loan lambdas mint fresh roots that cannot unify; the `Eof`
+  two-evidence dependent-`Result` chain has the same problem, so the append uses a direct
+  `open(..., List(OpenFlag.Append))`).
+
+## Capture-honesty Phase 6: seal audits on the Pure traits (2026-07-16)
+
+- `spectacular.Inspectable`'s 11 seals AUDITED, UNCHANGED: they are already the narrowest
+  form — a pure-thunk binding of the by-name element instance (unnameable in capture sets;
+  upstream candidate #5), yielding a compiler-verified-pure instance. Not the
+  `@untrackedCaptures`-field idiom, but narrower than a whole-instance seal, and truthfully
+  commented in place.
+- `gastronomy.Digestible`'s 7 WHOLE-INSTANCE seals NARROWED to the same thunk form: the seal
+  now covers only the by-name thunk, and each SAM instance is itself compiler-checked pure.
+  gastronomy suite 114/0; gates green.
+
+## Capture-honesty Phase 7: capture-polymorphic derivation — the seal class is deleted (2026-07-16)
+
+RESOLVES the deferred design question from typeclass-purity leg 2 ("making those givens
+honestly tracked is the remaining design question") and the ⚑1 open sub-question, for the
+DERIVATION-level seals. Design (probe-gated per plan; all three stages ran GREEN against the
+p2 toolchain):
+
+- `ProductDerivation.Methods.conjunction` and `SumDerivation.Methods.disjunction` return
+  FRESH (`typeclass[derivation]^`) instances: a derived codec may honestly capture its
+  resolution-scoped capabilities. Pure implementations are unaffected (narrowing a fresh
+  result is a legal override), so only the six sealed implementations changed.
+- `derivedOne`'s existing GADT re-typing match is now documented as the ONE engine-level
+  erasure of the derivation boundary: `deriveGraph`'s quoted trees cannot carry `^` types
+  (the quote wall), so the honest type narrows there, once — the `fieldInstance` erasing
+  cast's counterpart in the other direction. `derived` (the macro given) is unchanged.
+- SEALS DELETED (6): jacinta `DecodableDerivation.conjunction`, `Json.Field` conjunction +
+  disjunction; locomotion `DecodableDerivation` conjunction + disjunction; caesura Dsv
+  `DecodableDerivation.conjunction` (its `DsvProductDecoder` lambda param widened to `=>`).
+- Stage sentinels all green: (i) jacinta 366/0 + embarcadero.test compiles (the dictcaps
+  sentinel); (ii) locomotion 38/0 (the summonInline+`aka`-Tagged path — the misdiagnosed
+  "second summon path" needed nothing); (iii) ethereal 49/0, profanity 54/0, exoskeleton
+  69/0 (`Enclave.dispatch` staged quotes reach the honest derivations — THE QUOTE WALL DID
+  NOT BITE), embarcadero 30/0, austronesian 8/0, caesura 70/0. Gates: JVM 10301/10301,
+  JS 8006/8006. telekinesis's 4 per-module failures and superlunary's "no main class"
+  runner artifact reproduce identically at the attested base (pre-existing).
+- REMAINING seals (out of scope, unchanged): the by-name element-codec seals (jacinta
+  optional/list primitives — sep-blocked, upstream candidate #5) and the pure-thunk seals
+  on the Pure traits (Phase 6 form).
+
+## Capture-honesty Phase 8, legs 1+2: process handles and logging are honest (2026-07-16)
+
+D3 and D4 RESOLVED per Jon's rulings (tracked fresh handles; Unscoped logging). Gates: JVM
+10301/10301, JS 8006/8006; suites guillotine 88/0, eucalyptus 5/0, ethereal 49/0,
+exoskeleton 69/0, scintillate 20/0, coaxial 36/0, hellenism 6/0.
+
+D3 — guillotine:
+- `Job` and `Process` → `caps.ExclusiveCapability` (live process handles, one owner);
+  `fork()` de-sugared with a fresh `Job[Exec, result]^` result (only `fork` — de-sugaring
+  `exec`/`apply` too broke UNRELATED overload resolution of `Pipeline(...)` patterns with a
+  phantom "(intelligible: Nothing & Any).Result" error; the sugar on delegating methods is
+  harmless since their results are not fresh). `Computable.compute` takes `Subprocess^`
+  (SAM instances adapt; `Subprocess` itself stays a plain callback-scoped trait).
+- Recipes: the JDK `start()` runs inside the `try`, the `Job` is minted OUTSIDE it (a fresh
+  may not be created within a `try` expression); `Process.all`/`roots`/`children` build
+  their lists in while-loops in a helper METHOD (fresh may not be minted in `map` lambdas;
+  the elements box); `Job`'s `Writable` givens are capability-polymorphic
+  (`job <: Job[…]^`, the galilei Handle recipe); eucalyptus.syslog binds the fresh Job
+  before `writeTo`.
+
+D4 — logging:
+- `anticipation.LogSink extends caps.Unscoped`: sinks are deliberately ambient (importable
+  package givens, application-lifetime registries) — the tracking is effect-visibility, not
+  scope-confinement. `Logger` inherits it; its `enqueue` field is pure-typed (`->`, already
+  sealed at construction with the registry-lifetime justification).
+- `logs` now MIRRORS `raises`: `((event is Loggable)^) ?=> result`. `Loggable`'s self type
+  is `Loggable^` (a bare self type pinned every instance pure); `contramap` result adds
+  `{this}`. `Loggable.fanOut` is capture-polymorphic over the sinks (`cap^`, the Cursor
+  pattern — the compiler's own suggestion for the reach-capability leak):
+  `sinks: Every[LogSink[event, carrier]^{cap}]` → `(event is Loggable)^{cap, caps.any}`.
+- `Log.fine/info/warn/fail` take explicit `(loggable is Loggable)^` evidence; ~20 bare
+  `X is Loggable` using-params widened tree-wide (telekinesis.jvm excepted — a NON-CC unit
+  cannot parse `^`; mixed-mode overrides use the bare form). The telekinesis fetch/submit
+  macros seal the evidence at the staging boundary like `postable0` (quote wall); the
+  scintillate connection daemon rims it as `AnyRef`.
+
+## Capture-honesty Phase 8, leg 3: Task is an honest capability with a pure façade (2026-07-16)
+
+D6 RESOLVED per Jon's ruling (option c: "Task wants to be a capability, and it's not pure").
+Gates: JVM 10301/10301, JS 8006/8006; suites parasite 148/0, turbulence 73/0, zephyrine
+252/0, coaxial 36/0, surveillance 4/0, ethereal 49/0, exoskeleton 69/0, profanity 54/0.
+
+- `Task.apply`, `async` and `task` return FRESH handles (`(Task[result] emits …)^`); the
+  handle-and-body seals in `Task.apply` are DELETED (a `Task` IS a `Worker`, a capability —
+  the fresh result admits the body closure's captures honestly). `Task.map`/`bind` (trait
+  and `Worker` impl) return `^` likewise.
+- THE PURE FAÇADE: `Task.monad` (the mercator instance, which must abstract over `Task` as a
+  pure constructor) and the `Seq[Task].sequence` extension keep their seals, now documented
+  as the single composition boundary where fresh handles are deliberately narrowed. `daemon`
+  is unchanged (a `Daemon` handle was already this shape).
+- Storage/collection fallout, each resolved by the matching recipe: surveillance's poll-task
+  registry handles seal inside their `supervise` blocks (registry-lifetime, the façade
+  convention); coaxial's per-connection fire-and-forget `async` calls discard the handle
+  explicitly (`()` — a lambda result may not carry a fresh); the turbulence manifold test
+  seals its collected handles (the `sequence` shape).

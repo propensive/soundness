@@ -58,7 +58,7 @@ object Subtractable:
   given byte: Byte is Subtractable by Byte to Byte = Subtractable:
     (minuend, subtrahend) => (minuend - subtrahend).toByte
 
-trait Subtractable extends Typeclass, Operable, Resultant:
+trait Subtractable extends Typeclass.Pure, Operable, Resultant:
   type Minuend = Self
   type Subtrahend = Operand
 

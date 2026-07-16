@@ -43,6 +43,7 @@ import parasite.*
 import prepositional.*
 import spectacular.show
 import turbulence.*
+import zephyrine.Credit
 
 object Archetype:
   // Serve an archetype as an HTTP `text/html` response — exactly as `Document[Html]` is served — by
@@ -55,8 +56,8 @@ object Archetype:
 
   // `^{monitor}` only: `Probate` is not capture-tracked.
   given streamable: [page <: Archetype] => (monitor: Monitor, probate: Probate)
-  =>  ((page is Streamable by Text)^{monitor}) =
-    archetype => archetype.document.lazyList[Text]
+  =>  ((page is Streamable by Text over Credit)^{monitor, caps.any}) =
+    archetype => archetype.document.source[Text]
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a
 // subtype of `Archetype`); their only obligation is to provide `content`, the central matter.

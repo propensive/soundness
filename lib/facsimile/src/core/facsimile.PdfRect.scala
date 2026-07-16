@@ -28,101 +28,40 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
-
-import java.lang as jl
+package facsimile
 
 import anticipation.*
 import contingency.*
-import hypotenuse.*
-import rudiments.*
+import quantitative.*
+import symbolism.*
 import vacuous.*
 
-extension (stream: LazyList[Data])
-  inline def framed[width <: U16 | U32](terminator: Optional[width] = Unset)
-    ( using Tactic[StreamError]^ )
-  :   LazyList[Data] =
+object PdfRect:
+  // A `/Rect`-shaped array: four numbers whose corners may be given in any order, normalized
+  // here to lower-left and upper-right (ISO 32000-2 §7.9.5). `scale` carries `/UserUnit`,
+  // converting user-space units to points.
+  private[facsimile] def read(cos: Cos, scale: Double)(using pdf: Pdf)
+  :   Optional[PdfRect] raises PdfError =
 
-    inline compiletime.erasedValue[width] match
-      case _: U16 =>
-        framingImpl(stream, 2, terminator.asInstanceOf[Optional[U16]].let(_.long).or(-1L))
+    pdf.resolved(cos).elements.let: elements =>
+      if elements.length != 4 then Unset else
+        val values = elements.map(pdf.resolved(_).double.or(0.0)*scale)
 
-      case _: U32 =>
-        framingImpl(stream, 4, terminator.asInstanceOf[Optional[U32]].let(_.long).or(-1L))
+        PdfRect
+          ( Quantity[Points[1]](values(0).min(values(2))),
+            Quantity[Points[1]](values(1).min(values(3))),
+            Quantity[Points[1]](values(0).max(values(2))),
+            Quantity[Points[1]](values(1).max(values(3))) )
 
-private[turbulence] def framingImpl
-  ( stream: LazyList[Data], width: Int, terminator: Long )
-  ( using Tactic[StreamError]^ )
-:   LazyList[Data] =
+// A rectangle in default user space, held as typesafe lengths: one PDF point is exactly
+// 1/72 inch, which is `quantitative`'s `Points` unit.
+case class PdfRect
+  ( left:   Quantity[Points[1]],
+    bottom: Quantity[Points[1]],
+    right:  Quantity[Points[1]],
+    top:    Quantity[Points[1]] ):
 
-  def take
-    ( n: Int, buffer: IArray[Byte], offset: Int, tail: LazyList[Data], totalSoFar: Long )
-  :   (IArray[Byte], IArray[Byte], Int, LazyList[Data]) =
-
-    val out = new Array[Byte](n)
-    var taken = 0
-    var buf = buffer
-    var off = offset
-    var rest = tail
-
-    while taken < n do
-      val avail = buf.length - off
-      val need = n - taken
-
-      if avail >= need then
-        jl.System.arraycopy(buf, off, out, taken, need)
-        off += need
-        taken = n
-      else
-        if avail > 0 then
-          jl.System.arraycopy(buf, off, out, taken, avail)
-          taken += avail
-
-        rest match
-          case head #:: more =>
-            buf = head
-            off = 0
-            rest = more
-
-          case _ =>
-            abort(StreamError((totalSoFar + taken).b))
-
-    (out.immutable(using Unsafe), buf, off, rest)
-
-  def decodeBE(bytes: IArray[Byte]): Long =
-    var acc = 0L
-    var index = 0
-
-    while index < bytes.length do
-      acc = (acc << 8) | (bytes(index) & 0xFF)
-      index += 1
-
-    acc
-
-  def loop(buffer: IArray[Byte], offset: Int, tail: LazyList[Data], totalSoFar: Long)
-  :   LazyList[Data] =
-
-    val nonEmpty: Optional[(IArray[Byte], Int, LazyList[Data])] =
-      if buffer.length - offset > 0 then (buffer, offset, tail)
-      else tail match
-        case head #:: more => (head, 0, more)
-        case _             => Unset
-
-    nonEmpty.let: (buf0, off0, rest0) =>
-      val (prefix, buf1, off1, rest1) = take(width, buf0, off0, rest0, totalSoFar)
-      val length = decodeBE(prefix)
-
-      if length == terminator then LazyList()
-      else if length < 0 || length > Int.MaxValue then
-        abort(StreamError((totalSoFar + width).b))
-      else
-        val (frame, buf2, off2, rest2) =
-          take(length.toInt, buf1, off1, rest1, totalSoFar + width)
-
-        frame #:: loop(buf2, off2, rest2, totalSoFar + width + length)
-
-    . or(LazyList())
-
-  loop(IArray.empty[Byte], 0, stream, 0L)
+  def width: Quantity[Points[1]] = right - left
+  def height: Quantity[Points[1]] = top - bottom

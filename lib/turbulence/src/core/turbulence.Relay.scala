@@ -57,6 +57,21 @@ class Relay[record]():
   def put(record: record): Unit = queue.put(record)
   def stop(): Unit = queue.put(Relay.Termination)
 
+  // The element-wise view: a lazy `LazyList` draining the shared queue one
+  // record at a time. Unlike `stream`, it needs no `Addressable` medium — so
+  // it works for any record type, including an abstract one — at the cost of a
+  // cons cell per record; use it for low-rate event delivery (logging, message
+  // buses) where per-record batching would not pay. This is the direct
+  // successor to `Spool.stream`, laundering the endpoint into a pure LazyList,
+  // and the audited bridge until every consumer takes a windowed `stream`.
+  @scala.annotation.nowarn("msg=match may not be exhaustive")
+  def lazyList: LazyList[record] =
+    def pull(): LazyList[record] = queue.take().nn match
+      case Relay.Termination => LazyList()
+      case value             => value.asInstanceOf[record] #:: pull()
+
+    LazyList().lazyAppendedAll(pull())
+
   // The pull endpoint over this relay's records: single-owner, drained by one
   // thread; create it once. Records arriving after `stop` are not delivered.
   // The medium evidence resolves at the (concretely-typed) call site — the

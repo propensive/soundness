@@ -83,6 +83,14 @@ object Tests extends Suite(m"Stratiform Tests"):
   case class Worker(name: Text, rank: Int) derives CanEqual
   case class Crew(worker: Worker, size: Int) derives CanEqual
 
+  // Model types for the BinTEL direct-parsing suite: a scalar list, and a
+  // sum without singleton variants (which the generator does not support).
+  case class Readings(values: List[Int], label: Text) derives CanEqual
+
+  enum BShape derives CanEqual:
+    case BCircle(radius: Int)
+    case BRect(width: Int, height: Int)
+
   enum Shape2 derives CanEqual:
     case Circle(radius: Int)
     case Rectangle(width: Int, height: Int)
@@ -2177,3 +2185,115 @@ object Tests extends Suite(m"Stratiform Tests"):
     RecordsTests()
     VerifyTests()
     AccrualTests()
+
+    suite(m"BinTEL direct parsing (BintelInlinable)"):
+      given (Tests.Person is Bintel.Parsable) = BintelInlinable.parsable[Tests.Person]
+      given (Tests.Company is Bintel.Parsable) = BintelInlinable.parsable[Tests.Company]
+      given (Tests.Team is Bintel.Parsable) = BintelInlinable.parsable[Tests.Team]
+      given (Tests.OptField is Bintel.Parsable) = BintelInlinable.parsable[Tests.OptField]
+
+      given (Tests.WithDefault is Bintel.Parsable) =
+        BintelInlinable.parsable[Tests.WithDefault]
+
+      given (Tests.Readings is Bintel.Parsable) = BintelInlinable.parsable[Tests.Readings]
+      given (Tests.BShape is Bintel.Parsable) = BintelInlinable.parsable[Tests.BShape]
+
+      test(m"a flat struct reads directly from body bytes"):
+        Bintel.parse[Tests.Person](Tests.Person(t"Alice", 30).bintel)
+      . assert(_ == Tests.Person(t"Alice", 30))
+
+      test(m"the direct read agrees with Bintel.read"):
+        val bytes = Tests.Person(t"Iris", 44).bintel
+        Bintel.parse[Tests.Person](bytes) == Bintel.read[Tests.Person](bytes)
+      . assert(identity)
+
+      test(m"a nested struct inlines through its own generated parser"):
+        val company = Tests.Company(t"Acme", Tests.Person(t"Bob", 50))
+        Bintel.parse[Tests.Company](company.bintel)
+      . assert(_ == Tests.Company(t"Acme", Tests.Person(t"Bob", 50)))
+
+      test(m"a repeatable struct field gathers every occurrence in order"):
+        val team = Tests.Team(t"crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2)))
+        Bintel.parse[Tests.Team](team.bintel)
+      . assert(_ == Tests.Team(t"crew", List(Tests.Person(t"A", 1), Tests.Person(t"B", 2))))
+
+      test(m"a repeatable scalar field gathers every occurrence in order"):
+        val readings = Tests.Readings(List(3, 1, 4, 1, 5), t"pi")
+        Bintel.parse[Tests.Readings](readings.bintel)
+      . assert(_ == Tests.Readings(List(3, 1, 4, 1, 5), t"pi"))
+
+      test(m"an empty repeatable field reads as empty"):
+        Bintel.parse[Tests.Readings](Tests.Readings(Nil, t"none").bintel)
+      . assert(_ == Tests.Readings(Nil, t"none"))
+
+      test(m"an Optional field reads its value when present"):
+        Bintel.parse[Tests.OptField](Tests.OptField(7, t"note").bintel)
+      . assert(_ == Tests.OptField(7, t"note"))
+
+      test(m"an unset Optional agrees with the AST path"):
+        // The BinTEL *encoder* writes an unset `Optional` as a present,
+        // empty scalar, which the AST path restores as empty text rather
+        // than `Unset` — the direct parser reproduces that behavior
+        // exactly. (The encoder-side round-trip is a separate question.)
+        val bytes = Tests.OptField(7, Unset).bintel
+        Bintel.parse[Tests.OptField](bytes) == Bintel.read[Tests.OptField](bytes)
+      . assert(identity)
+
+      test(m"a truly absent Optional field reads Unset"):
+        // A hand-built body: one child, index 0 ("x"), scalar "7" — the
+        // `note` field is genuinely absent.
+        val bytes = IArray[Byte](0x01, 0x00, 0x01, '7'.toByte)
+        Bintel.parse[Tests.OptField](bytes)
+      . assert(_ == Tests.OptField(7, Unset))
+
+      test(m"a missing field with a declared default takes it"):
+        // A hand-built body: one child, index 0 ("name"), scalar "Bob".
+        val bytes = IArray[Byte](0x01, 0x00, 0x03, 'B'.toByte, 'o'.toByte, 'b'.toByte)
+        Bintel.parse[Tests.WithDefault](bytes)
+      . assert(_ == Tests.WithDefault(t"Bob", 18))
+
+      test(m"a missing required field raises Absent with its sentinel"):
+        // One child, index 1 ("age"), scalar "9" — "name" is missing.
+        val bytes = IArray[Byte](0x01, 0x01, 0x01, '9'.toByte)
+        capture[TelError](Bintel.parse[Tests.Person](bytes)).reason
+      . assert(_ == TelError.Reason.Absent)
+
+      test(m"an unparseable scalar raises NotScalar"):
+        // Two children: name "x", then age "abc".
+        val bytes = IArray[Byte]
+          (0x02, 0x00, 0x01, 'x'.toByte, 0x01, 0x03, 'a'.toByte, 'b'.toByte, 'c'.toByte)
+
+        capture[TelError](Bintel.parse[Tests.Person](bytes)).reason match
+          case TelError.Reason.NotScalar(atom, expected) => (atom.s, expected.s)
+          case other                                     => (other.toString, "")
+      . assert(_ == ("abc", "Int"))
+
+      test(m"a sum's variant is chosen by its keyword index"):
+        val shape: Tests.BShape = Tests.BShape.BRect(3, 4)
+        Bintel.parse[Tests.BShape](shape.bintel)
+      . assert(_ == Tests.BShape.BRect(3, 4))
+
+      test(m"the other variant round-trips too"):
+        val shape: Tests.BShape = Tests.BShape.BCircle(9)
+        Bintel.parse[Tests.BShape](shape.bintel)
+      . assert(_ == Tests.BShape.BCircle(9))
+
+      test(m"an out-of-range keyword index aborts"):
+        // One child with index 9 in a two-field struct.
+        val bytes = IArray[Byte](0x01, 0x09, 0x01, 'x'.toByte)
+        capture[BintelError](Bintel.parse[Tests.Person](bytes)).reason
+      . assert(_ == BintelError.Reason.BadKeywordIndex)
+
+      test(m"trailing bytes are rejected"):
+        val good = Tests.Person(t"Alice", 30).bintel
+        val padded = IArray.from(good.to(List) :+ 0.toByte)
+        capture[BintelError](Bintel.parse[Tests.Person](padded)).reason
+      . assert(_ == BintelError.Reason.TrailingBytes)
+
+    suite(m"TEL direct parsing recursion"):
+      test(m"an inlined recursive type ties through its own nominal Parsable"):
+        given (Tests.Tree is Tel.Parsable) = Inlinable.parsable[Tests.Tree]
+        val tree = Tests.Tree(t"root", List(Tests.Tree(t"a", Nil)))
+        val data: Data = tree.in[Tel].show.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+        data.read[Tests.Tree in Tel]
+      . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))

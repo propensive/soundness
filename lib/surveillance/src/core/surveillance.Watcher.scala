@@ -52,5 +52,7 @@ object Watcher:
     def cancel(): Unit
 
 trait Watcher:
-  def watch(directories: Map[jnf.Path, Text => Boolean], spool: Spool[WatchEvent])
+  // Pure (`->`) filters: they are constructed by `Watch.apply` from path names alone, and
+  // registrations are retained in backend-global state, which must not capture.
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
   :   Watcher.Registration raises WatchError

@@ -46,7 +46,9 @@ import vacuous.*
 // the changed cells; inline re-sizes the grid to the measured block height each
 // frame and re-presents the whole block at the cursor.
 class Form
-  ( root:         Canvas,
+  // `Canvas^`: a terminal-backed canvas retains its terminal (live size thunks), and the
+  // form legitimately holds it for its whole run.
+  ( root:         Canvas^,
     mode:         Mode,
     pane:         Pane,
     wake:         () => Unit   = () => (),
@@ -127,6 +129,7 @@ class Form
 
     root match
       case inline: InlineRoot => inline.reframe(root.width, height)
+      case screen: ScreenRoot => screen.reframe()
       case _                  => ()
 
     frame.arrange(Rect(0, 0, root.width, height)).cells.to(IndexedSeq)
@@ -206,14 +209,17 @@ class Form
     wakePending = false
     lastRedraw = System.currentTimeMillis
 
-    // A resize may have moved the old block; invalidate it (a width-only resize
-    // counts too) so the next present clears it. Done here, once, however many
-    // resizes were coalesced.
+    // A resize may have moved the old block (and reflowed the fullscreen contents);
+    // invalidate it (a width-only resize counts too) so the next present redraws in
+    // full. Done here, once, however many resizes were coalesced. This is what
+    // guarantees a SIGWINCH always forces a complete redraw, never a diff against a
+    // stale snapshot.
     if resizePending then
       resizePending = false
 
       root match
         case inline: InlineRoot => inline.invalidate()
+        case screen: ScreenRoot => screen.invalidate()
         case _                  => ()
 
     refresh(changed)

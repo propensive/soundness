@@ -127,7 +127,7 @@ infix type emits[left, error <: Hazard] = left match
 def async[result, error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
-:   Task[result] emits (error | AsyncError) =
+:   (Task[result] emits (error | AsyncError))^ =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
@@ -136,7 +136,7 @@ def async[result, error <: Hazard](using Codepoint)
 def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
-:   Task[result] emits (error | AsyncError) =
+:   (Task[result] emits (error | AsyncError))^ =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)

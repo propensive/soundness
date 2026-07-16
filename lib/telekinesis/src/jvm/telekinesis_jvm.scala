@@ -134,7 +134,7 @@ private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tact
 
   val body = Http.Body.Flowing: () =>
     unsafely:
-      summon[ji.InputStream is Source by Data over Credit].stream(response.body().nn)
+      summon[ji.InputStream is Streamable by Data over Credit].stream(response.body().nn)
 
   status(headers, body)
 

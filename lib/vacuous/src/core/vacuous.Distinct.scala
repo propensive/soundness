@@ -42,4 +42,4 @@ object Distinct:
     type Self = self
     type Origin = origin
 
-sealed trait Distinct extends Typeclass, Original
+sealed trait Distinct extends Typeclass.Pure, Original

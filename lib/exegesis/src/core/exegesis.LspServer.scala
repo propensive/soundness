@@ -48,6 +48,7 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import backstops.stackTraceBackstop
 import executives.completions
@@ -528,7 +529,7 @@ trait LspServer() extends Lsp:
         summon[Stdio].write(payload)
         summon[Stdio].out.flush()
 
-    summon[Stdio].in.lazyList[Data].iterator.frames[ContentLength].each: frame =>
+    summon[Stdio].in.source[Data].toLazyList.iterator.frames[ContentLength].each: frame =>
       try dispatch(frame.utf8.as[Json]).let(put)
       catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").in[Json])
 

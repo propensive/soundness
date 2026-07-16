@@ -63,6 +63,14 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
         processBuilder.inheritIO()
         if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
 
+        // Learn the real terminal size at session start: shells do not export
+        // `LINES`/`COLUMNS` by default, and without this probe the session would run
+        // on the 80×24 fallback until the first resize. Emitted only now, after raw
+        // mode is set, so the reply is neither echoed nor line-buffered; the keyboard
+        // pump parses it into a `WindowSize`, updating `knownRows`/`knownColumns`
+        // (and any driver re-tiles, exactly as for a resize).
+        terminal.stdio.out.print(Terminal.reportSize)
+
       block(using terminal)
 
     finally
@@ -90,7 +98,9 @@ package keyboards:
 
     def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given standardKeyboard: (monitor: Monitor, probate: Probate) => Keyboard.Standard =
+  // Honestly tracked: the keyboard's escape-disambiguation timeout runs `async`, so the
+  // instance retains the monitor.
+  given standardKeyboard: (monitor: Monitor, probate: Probate) => (Keyboard.Standard^{monitor}) =
     Keyboard.Standard()
 
 // The standard terminal features, each a turn-on/turn-off escape-sequence pair.

@@ -57,8 +57,12 @@ case class Client(pid: Pid) extends Topical:
   type Topic <: Matchable
 
   val stderr: Promise[ji.OutputStream] = Promise()
-  val invocation: Promise[Cli] = Promise()
-  val bus: Spool[Topic] = Spool()
+
+  // An `AnyRef` rim: the `Cli` capability crosses the promise between the signal-dispatch
+  // fiber and the invocation fiber, and a capability type argument cannot (the
+  // fiber-crossing recipe; cast at both ends).
+  val invocation: Promise[AnyRef] = Promise()
+  val bus: Relay[Topic] = Relay()
   val terminatePid: Promise[Pid] = Promise()
   val exitPromise: Promise[Exit] = Promise()
 

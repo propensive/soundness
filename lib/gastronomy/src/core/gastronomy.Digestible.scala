@@ -55,57 +55,64 @@ object Digestible extends Derivable[Digestible]:
 
 
   // The collection instances retain their by-name element digesters, which share each
-  // instance's given-resolution lifetime; laundered pure per the codec-thunk seal pattern
-  // (see rep/DECISIONS.md) — the product derivation summons them against pure expected
-  // types, and under 3.9.0 the by-name capture is tracked in the SAM closure.
+  // instance's given-resolution lifetime. As in `Inspectable`, the by-name is bound as a
+  // *pure thunk* before the SAM body — the narrowest form of the codec-thunk seal (see
+  // rep/DECISIONS.md): a by-name parameter is unnameable in a capture set, but the thunk
+  // yields a compiler-verified-pure instance (`Digestible` is a `Typeclass.Pure`), so only
+  // the thunk is asserted and the SAM instance itself is checked pure. The thunk keeps
+  // resolution lazy, which recursive derivations depend on.
   given optional: [value] => (digestible: => value is Digestible)
   =>  util.NotGiven[Unset.type <:< value]
   =>  Optional[value] is Digestible =
 
-    caps.unsafe.unsafeAssumePure:
-      (acc, value) => value.let(digestible.digest(acc, _))
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    (acc, value) => value.let(dig().digest(acc, _))
 
 
   given list: [list <: List, value] => (digestible: => value is Digestible)
   =>  list[value] is Digestible =
 
-    caps.unsafe.unsafeAssumePure:
-      (digestion, list) => list.each(digestible.digest(digestion, _))
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    (digestion, list) => list.each(dig().digest(digestion, _))
 
 
   given set: [set <: Set, value] => (digestible: => value is Digestible)
   =>  set[value] is Digestible =
 
-    caps.unsafe.unsafeAssumePure:
-      (digestion, set) => set.each(digestible.digest(digestion, _))
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    (digestion, set) => set.each(dig().digest(digestion, _))
 
 
   given series: [series <: Series, value] => (digestible: => value is Digestible)
   =>  series[value] is Digestible =
 
-    caps.unsafe.unsafeAssumePure:
-      (digestion, series) => series.each(digestible.digest(digestion, _))
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    (digestion, series) => series.each(dig().digest(digestion, _))
 
 
   given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =
-    caps.unsafe.unsafeAssumePure:
-      (digestion, iarray) => iarray.each(digestible.digest(digestion, _))
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    (digestion, iarray) => iarray.each(dig().digest(digestion, _))
 
 
   given map: [key, value] => (keyDigestible: => key is Digestible)
   =>  ( valueDigestible: => value is Digestible )
   =>  Map[key, value] is Digestible =
 
-    caps.unsafe.unsafeAssumePure:
-      (digestion, map) =>
-        map.each: (key, value) =>
-          keyDigestible.digest(digestion, key)
-          valueDigestible.digest(digestion, value)
+    val digKey: () -> (key is Digestible) = caps.unsafe.unsafeAssumePure(() => keyDigestible)
+
+    val digValue: () -> (value is Digestible) =
+      caps.unsafe.unsafeAssumePure(() => valueDigestible)
+
+    (digestion, map) =>
+      map.each: (key, value) =>
+        digKey().digest(digestion, key)
+        digValue().digest(digestion, value)
 
 
   given stream: [value] => (digestible: => value is Digestible) => LazyList[value] is Digestible =
-    caps.unsafe.unsafeAssumePure:
-      (digestion, iterable) => iterable.each(digestible.digest(digestion, _))
+    val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
+    (digestion, iterable) => iterable.each(dig().digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
     digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))

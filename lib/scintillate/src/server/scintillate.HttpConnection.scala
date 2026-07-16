@@ -52,8 +52,12 @@ import vacuous.*
 import zephyrine.*
 
 object HttpConnection:
+  // Explicit `using` evidence instead of `logs`/`raises` sugar: the `respond` closure built
+  // in the body cannot cross the nested context-function results the sugar desugars to (the
+  // stacked-raises convention; see rep/DECISIONS.md).
   def apply(exchange: csnh.HttpExchange)
-  :   HttpConnection logs HttpServerEvent raises HostnameError =
+    ( using (HttpServerEvent is Loggable)^, Tactic[HostnameError] )
+  :   HttpConnection^ =
 
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
@@ -78,6 +82,13 @@ object HttpConnection:
 
     lazy val in = exchange.getRequestBody.nn
 
+    // The Source evidence closes over `unsafely`'s ThrowTactic, which is `caps.Unscoped`
+    // (it throws in place, capturing nothing scoped), so it is truthfully sealed once here
+    // rather than leaking out of the per-mint `unsafely` scope through the body thunk.
+    val source: ji.InputStream is Streamable by Data over Credit =
+      unsafely:
+        caps.unsafe.unsafeAssumePure(summon[ji.InputStream is Streamable by Data over Credit])
+
     val request =
       Http.Request
         ( method      = method,
@@ -87,8 +98,7 @@ object HttpConnection:
           // Each mint reads on from the same live request stream — the
           // single-owner discipline (explicit `memoize` for re-reads). A read
           // failure throws, as the raw `InputStream` did before.
-          body        = () => unsafely(summon[ji.InputStream is Source by Data over Credit])
-                              . stream(in),
+          body        = () => source.stream(in),
           textHeaders = headers )
 
     Log.fine(HttpServerEvent.Received(request))
@@ -150,11 +160,19 @@ object HttpConnection:
 
     new HttpConnection(request, false, port, respond)
 
+// An `HttpConnection` is a *capability*: it is one live, socket-backed exchange, holding the
+// `respond` sink that writes to (and closes) the client connection. Its lifetime is the
+// handler invocation that receives it. `Exclusive` because an exchange has a single owner
+// and may be responded to only once.
 class HttpConnection
-  (     request: Http.Request,
+  (     request: Http.Request^,
     val tls:     Boolean,
     val port:    Int,
-    val respond: Tactic[StreamError] ?=> Http.Response => Unit )
+    // Layered response-first: the eta-expansion of a `respond(response)(using Tactic)` local
+    // into a tactic-first nested context function would need the inner arrow to capture the
+    // outer tactic (the dependent-capture restriction); this way the capturing arrow is
+    // outermost.
+    val respond: Http.Response => Tactic[StreamError] ?=> Unit )
 extends Http.Request
   ( request.method,
     request.version,
@@ -162,4 +180,5 @@ extends Http.Request
     request.target,
     request.textHeaders,
     request.body ),
-  Findable
+  Findable,
+  caps.ExclusiveCapability

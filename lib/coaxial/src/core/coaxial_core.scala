@@ -47,19 +47,27 @@ import vacuous.*
 import Control.*
 
 extension [bindable: {Bindable, Showable}](socket: bindable)
+  // `listen` is a loan: it binds, lends the running server to `block` as a `SocketService`
+  // capability, and always stops it afterwards. The capability form (rather than returning
+  // the service) means capture checking confines the accept loop to the block — the earlier
+  // `val server = port.listen(...)` shape was a genuine fresh-capability escape
+  // (rep/DECISIONS.md ⚑4, closed by this design).
+  //
   // A default argument cannot be combined with the path-dependent `bindable.Input`/`.Output`
-  // types here (default-getter synthesis fails), so the interface-less form is a separate
-  // overload that delegates with `Unset`.
+  // types here (default-getter synthesis fails), and overloading on the interface clause is
+  // ambiguous against the trailing block, so the interface form has its own name.
   transparent inline def listen[input](using Monitor, Probate)[result]
     ( lambda: bindable.Input => bindable.Output )
-  :   (SocketService^) raises BindError logs SocketEvent =
+    ( block: SocketService ?=> result )
+  :   result raises BindError logs SocketEvent =
 
-    socket.listen(lambda)(Unset)
+    socket.listenOn(Unset)(lambda)(block)
 
-  transparent inline def listen[input](using Monitor, Probate)[result]
-    ( lambda: bindable.Input => bindable.Output )
+  transparent inline def listenOn[input](using Monitor, Probate)[result]
     ( interface: Optional[MacAddress] )
-  :   (SocketService^) raises BindError logs SocketEvent =
+    ( lambda: bindable.Input => bindable.Output )
+    ( block: SocketService ?=> result )
+  :   result raises BindError logs SocketEvent =
 
     val binding = bindable.bind(socket, interface)
     Log.info(SocketEvent.Listening(socket.show))
@@ -74,25 +82,31 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
     // loop is already `Stopping`, so the interrupted `accept()` simply unwinds.
     val bindLoop = loop:
       safely(bindable.connect(binding)).let: connection =>
+        // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
+        // carry it).
         async:
           safely:
             try bindable.transmit(binding, connection, lambda(connection))
             finally bindable.close(connection)
 
+        ()
+
     val task = async(bindLoop.run())
 
-    SocketService: () =>
+    val service = SocketService: () =>
       bindLoop.stop()
       bindable.stop(binding)
       safely(task.await())
       Log.fine(SocketEvent.Closed(socket.show))
+
+    try block(using service) finally service.stop()
 
 
 // `Serviceable` instances are capabilities (their givens retain tactics and socket options), so
 // the evidence is an explicit capturing using-parameter rather than a context bound, which would
 // demand a pure instance.
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
-  def transmit[message: Transmissible](input: message)(using SocketEvent is Loggable)
+  def transmit[message: Transmissible](input: message)(using (SocketEvent is Loggable)^)
   :   (Stream[Data] over Credit)^{serviceable, caps.any} =
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
@@ -106,7 +120,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
   // initiate; a `Duplexable` additionally offers `exchange`, which can also send proactively.
   def react[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( using SocketEvent is Loggable )(using buffering: Buffering)
+    ( using (SocketEvent is Loggable)^ )(using buffering: Buffering)
   :   state =
 
     val connection = serviceable.connect(endpoint, Unset)
@@ -160,7 +174,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
     ( interact: Transmitter[message]^ => Unit )
-    ( using SocketEvent is Loggable )(using buffering: Buffering)
+    ( using (SocketEvent is Loggable)^ )(using buffering: Buffering)
   :   state =
 
     val connection = duplexable.connect(endpoint, Unset)
@@ -209,7 +223,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)
-    ( using Monitor, Tactic[StreamError], SocketEvent is Loggable )
+    ( using Monitor, Tactic[StreamError], (SocketEvent is Loggable)^ )
   :   Unit =
 
     Log.fine(SocketEvent.Connected(endpoint.show))
@@ -224,11 +238,11 @@ extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
   // connection is never half-closed. A long-lived connection that must outlive any
   // single block keeps `lambda` running (e.g. parked on its supervisor) until the
   // enclosing scope ends, at which point the loan closes the connection.
-  def duplex[result](lambda: Duplex => result)(using SocketEvent is Loggable): result =
+  def duplex[result](lambda: Duplex => result)(using (SocketEvent is Loggable)^): result =
     duplex(lambda)(Unset)
 
   def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress])
-    ( using SocketEvent is Loggable )
+    ( using (SocketEvent is Loggable)^ )
   :   result =
 
     val connection = connectable.connect(endpoint, interface)

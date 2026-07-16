@@ -46,11 +46,26 @@ object Process:
     val handle = ProcessHandle.of(pid.value).nn
     if handle.isPresent then new Process(handle.get.nn) else abort(PidError(pid))
 
-  def all: List[Process] = allHandles.map(new Process(_))
-  def roots: List[Process] = allHandles.filter(!_.parent.nn.isPresent).map(new Process(_))
+  // While-loops rather than `map`: a fresh capability may not be minted inside a lambda
+  // whose result type another scope owns (the Spring rule); built in the method body, the
+  // handles box into the (capture-boxed) list element type.
+  private def processes(handles: List[ProcessHandle]): List[Process] =
+    val builder = List.newBuilder[Process]
+    var remaining = handles
+
+    while !remaining.isEmpty do
+      builder += new Process(remaining.head)
+      remaining = remaining.tail
+
+    builder.result()
+
+  def all: List[Process] = processes(allHandles)
+  def roots: List[Process] = processes(allHandles.filter(!_.parent.nn.isPresent))
   def apply(): Process = new Process(ProcessHandle.current.nn)
 
-class Process private (java: ProcessHandle) extends ProcessRef:
+// A `Process` is a *capability*, like `Job`: a live handle to a running operating-system
+// process.
+class Process private (java: ProcessHandle) extends ProcessRef, caps.ExclusiveCapability:
   def pid: Pid = Pid(java.pid)
   def kill(): Unit logs ExecEvent = java.destroy()
   def abort(): Unit logs ExecEvent = java.destroyForcibly()
@@ -62,7 +77,7 @@ class Process private (java: ProcessHandle) extends ProcessRef:
     if parent.isPresent then new Process(parent.get.nn) else Unset
 
   def children: List[Process] =
-    java.children.nn.iterator.nn.asScala.map(new Process(_)).to(List)
+    Process.processes(java.children.nn.iterator.nn.asScala.to(List))
 
   def startTime[instantiable: Instantiable across Instants from Long]: Optional[instantiable] =
     val instant = java.info.nn.startInstant.nn

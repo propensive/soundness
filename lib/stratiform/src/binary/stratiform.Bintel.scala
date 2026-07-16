@@ -436,6 +436,43 @@ object Bintel:
     if compounds.nil then IArray.empty
     else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
 
+  object Parsable:
+    // The base of generated parsers: generated code is capture-erased, so
+    // the body receives the reader as a neutral carrier, and the capability
+    // is asserted here at the rim — the audited point — like the reader's
+    // own accessors. (A generated override of `parse` itself would narrow
+    // the trait's `BintelReader^` parameter to a pure type, which capture
+    // checking rejects at the instantiation site.)
+    abstract class Direct[value] extends Bintel.Parsable:
+      type Self = value
+
+      protected def parseCarrier(reader: AnyRef): value
+
+      def parse(reader: BintelReader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
+
+  // The direct-parsing counterpart of `Bintel.read`: consumes elements
+  // straight off the body bytes through a `BintelReader`, so neither the
+  // `Tel.Element` tree, nor its `Tel` presentation, nor the text-format
+  // decode that follows is materialized. `Parsable` is the opt-in surface:
+  // `Bintel.Inlinable.parsable` generates instances whose keyword-index
+  // dispatch is compiled from the value's statically-derived schema.
+  // BinTEL has no per-subtree bridge back to the AST path, so shapes the
+  // generator does not support stay on `Bintel.read`.
+  trait Parsable extends prepositional.Typeclass:
+    def parse(reader: BintelReader^): Self
+
+  // Decode BinTEL body bytes directly to a typed value through the value's
+  // `Bintel.Parsable`. Trailing bytes are rejected exactly as `decode`.
+  def parse[value](data: Data)
+    ( using parsable: (value is Bintel.Parsable)^ )
+    ( using tactic: Tactic[BintelError] )
+  :   value =
+
+    val parser = BintelParser(data)
+    val result = parsable.parse(BintelReader(parser, tactic))
+    if parser.offset != data.length then abort(BintelError(BintelError.Reason.TrailingBytes))
+    result
+
   // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type
   // — the inverse of `value.bintel`.
   def read[value: Tel.Decodable](data: Data)

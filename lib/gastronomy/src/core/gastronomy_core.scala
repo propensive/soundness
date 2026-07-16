@@ -35,6 +35,7 @@ package gastronomy
 import anticipation.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 // Capability providers. Pick one (or more) with an explicit import, e.g.
 // `import providers.javaStdlibProvider` for the JDK (which enables both hashing
@@ -144,12 +145,18 @@ extension [digestible: Digestible](value: digestible)
     val digester = Digester(digestible.digest(_, value))
     digester.apply
 
-extension [source: Streamable by Data](source: source)
+extension [source: Streamable by Data over Credit](source: source)
   def checksum[hash <: Algorithm]
     ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
   :   Digest in hash =
 
-    source.lazyList[Data].digest[hash]
+    val digester = Digester: digestion =>
+      source.source[Data].sweep: (storage, start, count) =>
+        digestion.append:
+          Data.build(count): array =>
+            System.arraycopy(storage.asInstanceOf[Array[Byte]], start, array, 0, count)
+
+    digester.apply
 
 
 // The concession of a hash algorithm: MD5 and SHA-1 are weak; everything else

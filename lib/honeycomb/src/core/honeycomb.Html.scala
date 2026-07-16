@@ -197,7 +197,9 @@ object Html extends Tag.Container
   =>  ((Html is Loadable by Text)^{tactic, caps.any}) = stream =>
     val root = Tag.root(Set(t"html"))
 
-    HtmlParser.fromIterator(stream.iterator, permissive = false)
+    HtmlParser.fromStream
+      ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^],
+        permissive = false )
     . parseHtml(root, doctypes = true) match
       case Fragment(Doctype(doctype), content) => Document(content, dom)
       case html@Element("html", _, _, _)       => Document(html, dom)
@@ -266,7 +268,9 @@ object Html extends Tag.Container
     val root = Tag.root(Set(t"html"))
 
     lenient(Document(Fragment(), dom)):
-      HtmlParser.fromIterator(stream.iterator, permissive = true)
+      HtmlParser.fromStream
+        ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^],
+          permissive = true )
       . parseHtml(root, doctypes = true) match
         case Fragment(Doctype(doctype), content) => Document(content, dom)
         case html@Element("html", _, _, _)       => Document(html, dom)
@@ -280,7 +284,7 @@ object Html extends Tag.Container
   // contextual `Formatting`. The whole emission lives in this instance so `.stream` is the single
   // route to streamed HTML; the producing code runs on a separate fiber.
   given streamable: (monitor: Monitor, probate: Probate)
-  =>  ((Document[Html] is Streamable by Text)^{monitor, caps.any}) = document =>
+  =>  ((Document[Html] is Streamable by Text over Credit)^{monitor, caps.any}) = document =>
     val formatting = summon[Formatting]
     val dom = document.metadata
     val producer = Producer[Text](4096)
@@ -291,7 +295,7 @@ object Html extends Tag.Container
       writeHtml(producer, dom, document.root, 0, block, Mode.Whitespace)
       producer.finish()
 
-    producer.iterator.to(LazyList)
+    Stream(producer.iterator)
 
   // `.show` serializes against the standard WHATWG (HTML5) DOM and without indentation, so a bare
   // node renders correctly (void elements, escaping) even outside a `Document`. The `Streamable`

@@ -52,9 +52,12 @@ import vacuous.*
 // failure or a dropped client only ends its own task, and the connection is always closed),
 // while a failure to *accept* skips one loop iteration; `stop()` unwinds the parked `accept()`.
 extension (domainSocket: DomainSocket)
-  def listenConnections(using Monitor, Probate)(handler: Connection => Unit)
-    ( using SocketEvent is Loggable )
-  :   SocketService^ =
+  // A loan, like `Bindable.listen`: the running server is lent to `block` as a
+  // `SocketService` capability and always stopped afterwards.
+  def listenConnections[result](using Monitor, Probate)(handler: Connection => Unit)
+    ( using (SocketEvent is Loggable)^ )
+    ( block: SocketService ?=> result )
+  :   result =
 
     val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
     channel.configureBlocking(true)
@@ -67,13 +70,19 @@ extension (domainSocket: DomainSocket)
         Connection(jnc.Channels.newInputStream(client).nn, jnc.Channels.newOutputStream(client).nn)
 
       . let: connection =>
+          // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
+          // carry it).
           async:
             safely(try handler(connection) finally connection.close())
 
+          ()
+
     val task = async(bindLoop.run())
 
-    SocketService: () =>
+    val service = SocketService: () =>
       bindLoop.stop()
       channel.close()
       safely(task.await())
       Log.fine(SocketEvent.Closed(domainSocket.address))
+
+    try block(using service) finally service.stop()

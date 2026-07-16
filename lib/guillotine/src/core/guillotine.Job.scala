@@ -47,44 +47,61 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 object Job:
-  given writable: [chunk, command <: Label, result]
+  // Polymorphic over the capability instance (`job <: Job[…]^`, the galilei `Handle` recipe):
+  // a bare `Job[command, result]` Self cannot match a tracked `Job` value.
+  given writable: [chunk, command <: Label, result, job <: Job[command, result]^]
   =>  (writable0: (ProcessInput is Writable by chunk)^)
-  =>  ((Job[command, result] is Writable by chunk)^{writable0}) =
+  =>  ((job is Writable by chunk)^{writable0}) =
 
     (process, stream) => process.stdin(stream)
 
 
-  given writableText: [command <: Label, result] => (streamCut: Emit[StreamError])
-  =>  ((Job[command, result] is Writable by Text)^{streamCut}) =
+  given writableText: [command <: Label, result, job <: Job[command, result]^]
+  =>  (streamCut: Emit[StreamError])
+  =>  ((job is Writable by Text)^{streamCut}) =
 
-    (process, stream) => process.stdin(stream.map(_.sysData))
+    (process, stream) =>
+      process.stdin
+        ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]
+          . via(hieroglyph.CharEncoder.system).asInstanceOf[(Stream[Data] over Credit)^] )
 
 
+// A `Job` is a *capability*: it is the live handle to a running subprocess (its streams and
+// its lifecycle), tracked fresh from `fork()`. `Exclusive` because a subprocess's stdio has
+// a single owner.
 class Job[+exec <: Label, result] private[guillotine] (process: java.lang.Process)
-extends Subprocess, ProcessRef:
+extends Subprocess, ProcessRef, caps.ExclusiveCapability:
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
 
-  def stdout(): LazyList[Data] raises StreamError =
-    Streamable.inputStream.stream(process.getInputStream.nn)
+  // The process's standard output (or error) as a single-owner pull endpoint:
+  // each call reads on from the live pipe, and explicit `memoize` replaces any
+  // implicit caching.
+  def stdout()(using Tactic[StreamError]): (Stream[Data] over Credit)^ =
+    summon[ji.InputStream is Streamable by Data over Credit].stream(process.getInputStream.nn)
 
-  def stderr(): LazyList[Data] raises StreamError =
-    Streamable.inputStream.stream(process.getErrorStream.nn)
+  def stderr()(using Tactic[StreamError]): (Stream[Data] over Credit)^ =
+    summon[ji.InputStream is Streamable by Data over Credit].stream(process.getErrorStream.nn)
 
   def text(): Text = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
   def errorText(): Text = String(process.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt
 
-  def lines(): LazyList[Text] =
-    val reader = ji.BufferedReader(ji.InputStreamReader(process.getInputStream))
-    reader.lines().nn.toScala(LazyList).map(_.tt)
+  // Standard output as a record stream of its lines: UTF-8 through the duct
+  // kernel, with adaptive line separation — matching the treatment of `\n`,
+  // `\r\n` and `\r` by `BufferedReader.readLine`, which this replaces.
+  def lines()(using Tactic[StreamError]): (Stream[IArray[Text]] over Credit)^ =
+    import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
+    import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
+    stdout().delineate
 
   def status(): Int = process.waitFor()
 
 
-  def stdin[chunk](stream: LazyList[chunk])
+  def stdin[chunk](stream: (Stream[chunk] over Credit)^)
     ( using writable: (ProcessInput is Writable by chunk)^ )
   :   Unit =
     writable.write(ProcessInput(process.getOutputStream.nn), stream)
@@ -113,7 +130,7 @@ extends Subprocess, ProcessRef:
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
-  def process(using Tactic[PidError]^) = Process(pid)
+  def process(using Tactic[PidError]^): Process^ = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
     try

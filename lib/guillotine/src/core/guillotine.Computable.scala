@@ -40,6 +40,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import zephyrine.*
 
 object Stderr:
   given computable: Stderr is Computable = process => Stderr(process.errorText())
@@ -47,16 +48,20 @@ object Stderr:
 case class Stderr(text: Text)
 
 object Computable:
-  given stream: LazyList[Text] is Computable = _.lines()
+  given stream: LazyList[Text] is Computable =
+    // The legacy view of `lines()`: lazy, and laundering (a pure LazyList
+    // cannot carry the endpoint it pulls from) — the audited-bridge idiom. A
+    // read failure throws, as the `BufferedReader` this replaced did.
+    job => unsafely(LazyList.from(job.lines().records))
 
-  given list: List[Text] is Computable = _.lines().to(List)
+  given list: List[Text] is Computable = job => unsafely(job.lines().records.to(List))
 
   given text: Text is Computable = _.text()
 
   given string: String is Computable = _.text().s
 
   given dataStream: (tactic: Tactic[StreamError]) => ((LazyList[Data] is Computable)^{tactic}) =
-    _.stdout()
+    job => zephyrine.toLazyList(job.stdout())
 
   given exitStatus: Exit is Computable = _.status() match
     case 0     => Exit.Ok
@@ -73,7 +78,7 @@ object Computable:
 
 
 trait Computable extends Typeclass:
-  def compute(process: Subprocess): Self
+  def compute(process: Subprocess^): Self
 
   def map[self2](lambda: Self => self2): (self2 is Computable)^{this, lambda} =
     process => lambda(compute(process))

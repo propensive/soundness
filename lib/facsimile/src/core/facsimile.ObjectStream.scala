@@ -30,63 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
-
-import language.experimental.pureFunctions
-
-import java.util.concurrent as juc
+package facsimile
 
 import anticipation.*
-import denominative.*
-import parasite.*
+import contingency.*
+import gossamer.*
 import rudiments.*
+import vacuous.*
 
-import probates.awaitProbate
+// An object stream (`/Type /ObjStm`, ISO 32000-2 §7.5.7): many small direct objects packed
+// into one compressed stream. The header is a table of `number offset` pairs; each object is
+// parsed on demand from the decoded payload.
+private[facsimile] object ObjectStream:
+  def apply(data: Data, first: Int, count: Int): ObjectStream raises PdfError =
+    val lexer = CosLexer(Scan(data))
+    var offsets = Map[Int, Int]()
 
-case class Multiplexer[key, element]()(using Monitor):
-  private case class Removal(key: key)
+    for _ <- 0 until count do (lexer.next(), lexer.next()) match
+      case (CosToken.Integral(number), CosToken.Integral(offset)) =>
+        offsets = offsets.updated(number.toInt, offset.toInt)
 
-  private val active: TrieMap[key, Unit] = TrieMap()
-  private val queue: juc.LinkedBlockingQueue[element | Removal] = juc.LinkedBlockingQueue()
+      case _ =>
+        abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
 
-  def close(): Unit = active.keys.each(remove(_))
+    new ObjectStream(data, first, offsets)
 
-  @tailrec
-  private[turbulence] final def pump(key: key, stream: LazyList[element])(using Worker): Unit =
-    if stream.nil then remove(key) else
-      relent()
-      queue.put(stream.head)
-      pump(key, stream.tail)
-
-  // Each source is drained by its own task — a child of the multiplexer's surrounding `Monitor`, so
-  // it is supervised and cleaned up when that scope ends rather than escaping as a daemon. If a
-  // source fails (its stream throws), the key is removed — so the consumer sees that source end
-  // rather than blocking forever on a `Removal` the failed pump never enqueued — isolating the
-  // failure to that source rather than letting it escape.
-  def add(key: key, stream: LazyList[element]): Unit =
-    active(key) =
-      contain:
-        case _ => remove(key); Remedy.Accept
-
-    // The whole body is built here and crosses to the fiber as a neutral thunk:
-    // an async body may not capture the enclosing instance, and even a cast to
-    // `Multiplexer[key, element]` inside the fiber would re-charge `this`
-    // through the class type parameters' prefix.
-    val body: AnyRef =
-      ((worker: AnyRef) =>
-          try pump(key, stream)(using worker.asInstanceOf[Worker^])
-          catch case _: Exception => remove(key))
-      . asInstanceOf[AnyRef]
-
-    async:
-      body.asInstanceOf[AnyRef => Unit](summon[Worker].asInstanceOf[AnyRef])
-
-  private[turbulence] def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
-
-  def stream: LazyList[element] = queue.take().nn.absolve match
-    case Removal(key) =>
-      active -= key
-      if active.nil then LazyList() else stream
-
-    case value =>
-      value.asInstanceOf[element] #:: stream
+private[facsimile] class ObjectStream(data: Data, first: Int, offsets: Map[Int, Int]):
+  def apply(number: Int): Optional[Cos] raises PdfError = offsets.at(number).let: offset =>
+    val scan = Scan(data)
+    scan.skip(first.toLong + offset)
+    CosParser(CosLexer(scan)).value()

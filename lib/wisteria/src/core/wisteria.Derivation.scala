@@ -38,6 +38,12 @@ trait Derivation[typeclass[_]]
 extends ProductDerivation.Methods[typeclass], SumDerivation.Methods[typeclass]:
   // Derives a single type, one level deep; its fields/variants resolve through `field` onto sibling
   // instances. `deriveGraph` calls this once per distinct reachable type.
+  //
+  // The match below is the ONE engine-level erasure of the derivation boundary: `conjunction`/
+  // `disjunction` return fresh (`^`) instances whose captures the graph macro's quoted trees
+  // cannot carry (the quote wall), so the honest type is narrowed here, once, instead of a
+  // codec-thunk seal in every implementation (the `fieldInstance` counterpart, in the other
+  // direction).
   inline def derivedOne[derivation]: typeclass[derivation] =
     inline if wisteria.internal.isSum[derivation] then
       disjunction[derivation](using summonInline[SumReflection[derivation]]).asMatchable match

@@ -54,7 +54,7 @@ import zephyrine.*
 
 trait Readable3:
   given textToData: [source, result]
-  =>  ( source0: (source is Source by Text over Credit)^ )
+  =>  ( source0: (source is Streamable by Text over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Data)^ )
   =>  ( encoder: CharEncoder, buffering: Buffering )
   =>  ((source is Readable to result)^{source0, aggregable}) =
@@ -62,7 +62,7 @@ trait Readable3:
 
 trait Readable2 extends Readable3:
   given dataToText: [source, result]
-  =>  ( source0: (source is Source by Data over Credit)^ )
+  =>  ( source0: (source is Streamable by Data over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Text)^ )
   =>  ( decoder: CharDecoder, buffering: Buffering )
   =>  ((source is Readable to result)^{source0, aggregable}) =
@@ -70,7 +70,7 @@ trait Readable2 extends Readable3:
 
 trait Readable1 extends Readable2:
   given textToText: [source, result]
-  =>  ( source0: (source is Source by Text over Credit)^ )
+  =>  ( source0: (source is Streamable by Text over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Text)^ )
   =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value))
@@ -86,7 +86,7 @@ object Readable extends Readable1:
     decoder.decoded(_)
 
   given dataToData: [source, result]
-  =>  ( source0: (source is Source by Data over Credit)^ )
+  =>  ( source0: (source is Streamable by Data over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Data)^ )
   =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value))

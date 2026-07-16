@@ -49,8 +49,12 @@ import spectacular.*
 sealed trait Executable:
   type Exec <: Label
 
+  // Explicit `using` evidence instead of `raises`/`logs` sugar, and a fresh (`^`) result:
+  // the freshly-minted `Job` capability cannot cross the nested context-function results the
+  // sugar desugars to (the stacked-raises convention; see rep/DECISIONS.md).
   def fork[result]()(using working: WorkingDirectory)
-  :   Job[Exec, result] raises ExecError logs ExecEvent
+    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+  :   Job[Exec, result]^
 
 
   def exec[result]()(using computable: (result is Computable)^, working: WorkingDirectory)
@@ -103,15 +107,21 @@ object Command:
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-  :   Job[Exec, result] raises ExecError logs ExecEvent =
+    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+  :   Job[Exec, result]^ =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
     processBuilder.directory(ji.File(working.directory().s))
 
     Log.info(ExecEvent.ProcessStart(this))
 
-    try new Job(processBuilder.start().nn)
-    catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
+    // The JDK process starts inside the `try`; the `Job` capability is minted outside it
+    // (a fresh result may not be created within a `try` expression).
+    val process =
+      try processBuilder.start().nn
+      catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
+
+    new Job(process)
 
 
   def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
@@ -126,7 +136,8 @@ object Pipeline:
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
-  :   Job[Exec, result] raises ExecError logs ExecEvent =
+    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+  :   Job[Exec, result]^ =
 
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)

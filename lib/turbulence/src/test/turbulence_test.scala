@@ -118,30 +118,30 @@ object Tests extends Suite(m"Turbulence tests"):
     val qbfData = qbf.in[Data]
 
     object Ref:
-      given textSource: Ref is Source by Text over Credit =
+      given textSource: Ref is Streamable by Text over Credit =
         ref => Stream(LazyList(t"abc", t"def").iterator)
-      given dataSource: Ref is Source by Data over Credit =
+      given dataSource: Ref is Streamable by Data over Credit =
         ref => Stream(LazyList(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Source by Text over Credit = ref => Stream(LazyList(t"abc", t"def").iterator)
+      given Ref2 is Streamable by Text over Credit = ref => Stream(LazyList(t"abc", t"def").iterator)
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Source by Data over Credit = ref => Stream(LazyList(t"abc".in[Data], t"def".in[Data]).iterator)
+      given Ref3 is Streamable by Data over Credit = ref => Stream(LazyList(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref3()
 
     suite(m"Reading tests"):
-      test(m"LazyList Text"):
-        qbf.lazyList[Text].join
+      test(m"Bridge Text source to LazyList"):
+        qbf.source[Text].toLazyList.join
       . assert(_ == qbf)
 
-      test(m"LazyList Data"):
-        qbf.lazyList[Data].reduce(_ ++ _).to(List)
+      test(m"Bridge Data source to LazyList"):
+        qbf.source[Data].toLazyList.reduce(_ ++ _).to(List)
       . assert(_ == qbfData.to(List))
 
       test(m"Read Text as Text"):
@@ -215,30 +215,34 @@ object Tests extends Suite(m"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object GeneralStore:
-        given GeneralStore is Writable by Data = (store, stream) => stream.each: data =>
-          data.each: byte =>
-            store.arrayBuffer.append(byte)
+        given GeneralStore is Writable by Data = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+            data.each: byte =>
+              store.arrayBuffer.append(byte)
 
-        given GeneralStore is Writable by Text = (store, texts) => texts.each: text =>
-          text.in[Data].each: byte =>
-            store.arrayBuffer.append(byte)
+        given GeneralStore is Writable by Text = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+            text.in[Data].each: byte =>
+              store.arrayBuffer.append(byte)
 
       class ByteStore():
         val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object ByteStore:
-        given ByteStore is Writable by Data = (store, stream) => stream.each: data =>
-          data.each: byte =>
-            store.arrayBuffer.append(byte)
+        given ByteStore is Writable by Data = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+            data.each: byte =>
+              store.arrayBuffer.append(byte)
 
       class TextStore():
         var text: Text = t""
         def apply(): Text = text
 
       object TextStore:
-        given TextStore is Writable by Text = (store, texts) => texts.each: text =>
-          store.text = store.text + text
+        given TextStore is Writable by Text = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+            store.text = store.text + text
 
       test(m"Write Text to some reference with Text and Data instances"):
         val store = GeneralStore()
@@ -416,23 +420,6 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-    suite(m"Multiplexer tests"):
-      val l1 = LazyList(2, 4, 6, 8, 10)
-      val l2 = LazyList(1, 3, 5, 7, 9)
-
-      test(m"Check that two multiplexed streams contain all elements"):
-        supervise(l1.multiplex(l2).to(Set))
-      . assert(_ == Set.range(1, 11))
-
-      test(m"Multiplexed streams preserve first stream order"):
-        supervise(l1.multiplex(l2).filter(_%2 == 0))
-      . assert(_ == l1)
-
-      for i <- 1 to 10
-      do test(m"Multiplexed streams preserve second stream order"):
-        supervise(l1.multiplex(l2).filter(_%2 == 1))
-      . assert(_ == l2)
-
     suite(m"Relay tests"):
       test(m"records put before draining arrive in order"):
         val relay = Relay[Text]()
@@ -474,9 +461,12 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"the reader blocks for records from concurrent producers"):
         supervise:
           val relay = Relay[Text]()
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val producers = (1 to 4).map: index =>
-            async:
-              for value <- 1 to 25 do relay.put(t"${index*100 + value}")
+            caps.unsafe.unsafeAssumePure:
+              async:
+                for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
           val reader = async(relay.stream.records.to(Set))
           producers.each(_.await())
@@ -508,6 +498,26 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
       . assert(_.flatten == longData.flatten)
+
+      test(m"Roundtrip compress/decompress a single block with LZW"):
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
+      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+
+      // Varied enough to push the code table through its 9-, 10- and 11-bit widths.
+      val variedData =
+        LazyList(IArray.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }))
+
+      test(m"Roundtrip compress/decompress across LZW width growth"):
+        variedData.compress[Lzw].decompress[Lzw]
+      . assert(_.flatten == variedData.flatten)
+
+      test(m"Roundtrip compress/decompress a long stream across LZW table clears"):
+        longData.compress[Lzw].decompress[Lzw]
+      . assert(_.flatten == longData.flatten)
+
+      test(m"LZW without early change also roundtrips"):
+        Lzw.decompress(Lzw.compress(variedData, earlyChange = false), earlyChange = false)
+      . assert(_.flatten == variedData.flatten)
       test(m"Compress a single block with Zlib"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to(List))
       . assert(_ == List(List(120, -100, 98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0, 0, -26, 0, 89)))
@@ -531,49 +541,6 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Roundtrip a long repetitive Deflate stream"):
         longData.compress[Deflate].decompress[Deflate]
       . assert: stream => stream === longData
-
-    suite(m"Framing"):
-      test(m"Single 4-byte-prefixed frame in one chunk"):
-        LazyList(Data(0, 0, 0, 3, 10, 20, 30)).framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](10, 20, 30)))
-
-      test(m"Single 2-byte-prefixed frame in one chunk"):
-        LazyList(Data(0, 3, 10, 20, 30)).framed[U16]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](10, 20, 30)))
-
-      test(m"Multiple 4-byte-prefixed frames in one chunk"):
-        val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 0, 3, 3, 4, 5)
-        LazyList(data).framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](1, 2), List[Byte](3, 4, 5)))
-
-      test(m"Frame split across two chunks"):
-        val s = LazyList(Data(0, 0, 0, 5, 1, 2), Data(3, 4, 5))
-        s.framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](1, 2, 3, 4, 5)))
-
-      test(m"Length prefix split across chunks"):
-        val s = LazyList(Data(0, 0), Data(0, 3, 7, 8, 9))
-        s.framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](7, 8, 9)))
-
-      test(m"Terminator ends stream cleanly"):
-        val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 255.toByte, 255.toByte)
-        LazyList(data).framed[U32](U32(0xFFFF.bits)).map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](1, 2)))
-
-      test(m"Truncated frame raises StreamError"):
-        capture[StreamError]:
-          LazyList(Data(0, 0, 0, 5, 1, 2)).framed[U32]().to(List)
-      . assert(_ == StreamError(6L.b))
-
-      test(m"Truncated length prefix raises StreamError"):
-        capture[StreamError]:
-          LazyList(Data(0, 0)).framed[U32]().to(List)
-      . assert(_ == StreamError(2L.b))
-
-      test(m"Empty stream yields empty result"):
-        LazyList[Data]().framed[U32]().to(List)
-      . assert(_ == Nil)
 
     suite(m"Line splitting"):
       // Split whole, or fragmented into `chunk`-char pieces — the fragmented
@@ -680,7 +647,7 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"input stream source flows to output stream sink"):
         val input = ji.ByteArrayInputStream(payload.mutable(using Unsafe))
         val output = ji.ByteArrayOutputStream()
-        val source = summon[ji.ByteArrayInputStream is Source by Data over Credit]
+        val source = summon[ji.ByteArrayInputStream is Streamable by Data over Credit]
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         source.stream(input).pump(sink.intake(output))
         output.toByteArray.nn.to(List)
@@ -689,7 +656,7 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
-        summon[Data is Source by Data over Credit].stream(payload).pump(sink.intake(output))
+        summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
         output.toByteArray.nn.to(List)
       . assert(_ == payload.to(List))
 
@@ -697,7 +664,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"reader source delivers text across refills"):
         val reader = ji.StringReader(original.s)
-        val source = summon[ji.StringReader is Source by Text over Credit]
+        val source = summon[ji.StringReader is Streamable by Text over Credit]
         val stream = source.stream(reader)
         val builder = StringBuilder()
 
@@ -715,14 +682,14 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == original)
 
       test(m"memoize view drains a stream as one value"):
-        val stream = summon[Data is Source by Data over Credit].stream(payload)
+        val stream = summon[Data is Streamable by Data over Credit].stream(payload)
         stream.memoize.to(List)
       . assert(_ == payload.to(List))
 
       test(m"a LazyList is a Source through its native instance"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
-        val source = summon[LazyList[Data] is Source by Data over Credit]
+        val source = summon[LazyList[Data] is Streamable by Data over Credit]
         source.stream(LazyList(payload, payload)).pump(sink.intake(output))
         output.toByteArray.nn.length
       . assert(_ == payload.length*2)
@@ -738,7 +705,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val sink = summon[ji.OutputStream is Sink by Data over Credit]
 
         capture[StreamError]:
-          summon[Data is Source by Data over Credit].stream(payload).pump(sink.intake(broken))
+          summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(broken))
       . assert(_ == StreamError(0.b))
 
       test(m"cancelling a blocked conduit writer releases it"):
@@ -757,7 +724,7 @@ object Tests extends Suite(m"Turbulence tests"):
           val builder = List.newBuilder[AnyRef]
           var index = 0
           while index < sources.length do
-            builder += summon[Data is Source by Data over Credit].stream(sources(index)).asInstanceOf[AnyRef]
+            builder += summon[Data is Streamable by Data over Credit].stream(sources(index)).asInstanceOf[AnyRef]
             index += 1
           val endpoints = builder.result()
 
@@ -769,14 +736,17 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"manifold delivers the whole stream to every subscriber"):
         supervise:
-          val source = summon[Data is Source by Data over Credit].stream(payload)
+          val source = summon[Data is Streamable by Data over Credit].stream(payload)
           val subscribers = Divergence(source, 3)
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
-            async:
-              val gather = Gather2()
-              stream.pump(gather)
-              gather.data.to(List)
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val gather = Gather2()
+                stream.pump(gather)
+                gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(payload.to(List)))
@@ -786,7 +756,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"gzip duct roundtrips a byte stream"):
         val gather = Gather2()
-        summon[Data is Source by Data over Credit].stream(mixed)
+        summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Gzip].decompress[Gzip].pump(gather)
         gather.data.to(List)
       . assert(_ == mixed.to(List))
@@ -796,16 +766,19 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"manifold snapshots a transient source for every subscriber"):
         supervise:
           val source =
-            summon[Data is Source by Data over Credit].stream(mixed)
+            summon[Data is Streamable by Data over Credit].stream(mixed)
             . compress[Gzip].decompress[Gzip]
 
           val subscribers = Divergence(source, 3)
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
-            async:
-              val gather = Gather2()
-              stream.pump(gather)
-              gather.data.to(List)
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val gather = Gather2()
+                stream.pump(gather)
+                gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(mixed.to(List)))
@@ -816,7 +789,7 @@ object Tests extends Suite(m"Turbulence tests"):
           var index = 0
           while index < 3 do
             builder +=
-              summon[Data is Source by Data over Credit].stream(mixed)
+              summon[Data is Streamable by Data over Credit].stream(mixed)
               . compress[Gzip].decompress[Gzip].asInstanceOf[AnyRef]
             index += 1
 
@@ -828,21 +801,21 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"deflate duct roundtrips a byte stream"):
         val gather = Gather2()
-        summon[Data is Source by Data over Credit].stream(mixed)
+        summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Deflate].decompress[Deflate].pump(gather)
         gather.data.to(List)
       . assert(_ == mixed.to(List))
 
       test(m"zlib duct roundtrips a byte stream"):
         val gather = Gather2()
-        summon[Data is Source by Data over Credit].stream(mixed)
+        summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Zlib].decompress[Zlib].pump(gather)
         gather.data.to(List)
       . assert(_ == mixed.to(List))
 
       test(m"gzip duct output is genuine gzip"):
         val gather = Gather2()
-        summon[Data is Source by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
+        summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
         val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
         stream.readAllBytes().nn.to(List)
       . assert(_ == mixed.to(List))
@@ -875,7 +848,7 @@ object Tests extends Suite(m"Turbulence tests"):
       // pending output and unconsumed input across many output-bound steps,
       // exercising the un-claim/re-feed path.
       test(m"gzip duct decompresses correctly under three-byte demand"):
-        val stream = summon[Data is Source by Data over Credit].stream(mixed)
+        val stream = summon[Data is Streamable by Data over Credit].stream(mixed)
                      . compress[Gzip].decompress[Gzip]
         val builder = List.newBuilder[Byte]
 
@@ -902,7 +875,7 @@ object Tests extends Suite(m"Turbulence tests"):
         zipped.close()
         val gather = Gather2()
 
-        summon[LazyList[Data] is Source by Data over Credit]
+        summon[LazyList[Data] is Streamable by Data over Credit]
         . stream(out.toByteArray.nn.immutable(using Unsafe).grouped(7).to(LazyList))
         . decompress[Gzip].pump(gather)
 

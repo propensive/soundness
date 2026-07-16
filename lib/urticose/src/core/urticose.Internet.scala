@@ -36,9 +36,14 @@ import beneficence.*
 import contingency.*
 import vacuous.*
 
-class Internet(val online: Boolean) extends Findable:
+// An `Internet` is a *capability*: it is evidence of (possible) network access, so code that
+// depends on connectivity carries it in its capture set. `caps.Unscoped` (like contingency's
+// ambient strategies) rather than a scoped classifier: it holds only a `Boolean`, and the
+// deliberately-ambient `Online` singleton and `internetAccess.online` given must be storable
+// statically, which the scoped classifiers forbid.
+class Internet(val online: Boolean) extends Findable, caps.Unscoped:
   def require[result](block: Online ?=> result)(using Tactic[OfflineError]): result =
-    if online then block(using Online) else abort(OfflineError())
+    if online then block(using Online()) else abort(OfflineError())
 
   def appropriate[result](block: Online ?=> result): Optional[result] =
-    if online then block(using Online) else Unset
+    if online then block(using Online()) else Unset

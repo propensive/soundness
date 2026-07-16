@@ -45,7 +45,10 @@ object Interaction:
   // relative motion at the prompt (a standalone `InlineCanvas`) or absolute
   // placement within a panel (an `Extent`). The surface is summoned from scope,
   // so a panel's `Extent` is used automatically when a widget runs inside one.
-  given selectMenu: [item: Showable] => (surface: Canvas) => Interaction[item, SelectMenu[item]]:
+  // `new`-instance form (not a colon-body given): the synthesized given class does not admit
+  // the `^{surface}` result annotation the capturing surface requires.
+  given selectMenu: [item: Showable] => (surface: Canvas^)
+  =>  (Interaction[item, SelectMenu[item]]^{surface}) = new Interaction[item, SelectMenu[item]]:
     override def before(): Unit = surface.cursor(false)
 
     override def after(): Unit =
@@ -70,7 +73,8 @@ object Interaction:
 
     def result(state: SelectMenu[item]): item = state.current
 
-  given lineEditor: (surface: Canvas) => Interaction[Text, LineEditor]:
+  given lineEditor: (surface: Canvas^)
+  =>  (Interaction[Text, LineEditor]^{surface}) = new Interaction[Text, LineEditor]:
     // The last row the editor's content reached, so `after` can drop the cursor
     // onto a fresh line below it.
     private var endRow: Int = 0

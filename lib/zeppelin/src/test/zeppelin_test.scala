@@ -141,11 +141,11 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == t"Hello world")
 
       test(m"entry is Streamable by Data"):
-        Zip.Entry(zipRef(t"a"), t"xyz".in[Data]).lazyList[Data].read[Text]
+        Zip.Entry(zipRef(t"a"), t"xyz".in[Data]).read[Text]
       . assert(_ == t"xyz")
 
       test(m"direct constructor accepts lazily-computed content"):
-        val lazyEntry: Zip.Entry = Zip.Entry(zipRef(t"a.txt"), () => LazyList(t"lazy".in[Data]))
+        val lazyEntry: Zip.Entry = Zip.Entry(zipRef(t"a.txt"), t"lazy".in[Data])
         lazyEntry.read[Text]
       . assert(_ == t"lazy")
 

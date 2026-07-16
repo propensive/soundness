@@ -138,7 +138,11 @@ object Assembler:
       jdk:           Boolean,
       publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
     ( using WorkingDirectory )
-  :   Unit raises AssemblyError raises IoError raises StreamError =
+    // Explicit `using` evidence instead of stacked `raises` sugar: the handle-loan lambdas
+    // in the body cannot cross the nested context-function results the sugar desugars to
+    // (the stacked-raises convention; see rep/DECISIONS.md).
+    ( using Tactic[AssemblyError], Tactic[IoError], Tactic[StreamError] )
+  :   Unit =
 
     val isWindows: Boolean = platformLabel.starts(t"windows")
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
@@ -151,7 +155,12 @@ object Assembler:
       if !isWindows then output.executable() = true
       safely(mute[ExecEvent](sh"codesign --sign - --force $output".exec[Exit]()))
 
-    jarFile.open: jarHandle =>
-      Eof(output).open(_.write(jarHandle.reader()))
+    // Two sequential opens rather than one nested inside the other's lambda (the inner
+    // open's evidence would mint fresh roots inside the outer handle's loan that cannot
+    // unify with it), and a direct append-mode open rather than `Eof` (whose two-evidence
+    // dependent `Result` chain has the same root problem). The read is strict (`to(List)`)
+    // so nothing reads the closed handle.
+    val chunks = jarFile.open(_.reader().to(List))
+    output.open(_.write(LazyList.from(chunks)), List(OpenFlag.Append))
 
     if !isWindows then output.executable() = true

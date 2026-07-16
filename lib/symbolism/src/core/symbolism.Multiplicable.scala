@@ -80,7 +80,7 @@ object Multiplicable:
 
       result
 
-trait Multiplicable extends Typeclass, Operable, Resultant:
+trait Multiplicable extends Typeclass.Pure, Operable, Resultant:
   type Multiplicand = Self
   type Multiplier = Operand
 

@@ -46,12 +46,19 @@ import vacuous.*
 // from `Tls.context`, or the system default), sets SNI to `host`, verifies the peer
 // hostname unless `Tls.verify` is off, then presents the socket's streams as a `Duplex`.
 object SecureEndpoint:
-  given connectable: (Online, Every[SocketOption.Tcp], Tls) => SecureEndpoint is Connectable:
+  // Honestly tracked, like `Connectable.tcpEndpoint`: the instance is resolvable only with
+  // `Online` permission, so it is a capability carrying that evidence in its capture set.
+  given connectable: (online: Online)
+  =>  (options: Every[SocketOption.Tcp], tls: Tls)
+  =>  ((SecureEndpoint is Connectable)^{online, caps.any}) =
+
+   new Connectable:
+    type Self = SecureEndpoint
+
     def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
-      val tls = summon[Tls]
       val context = tls.context.or(jns.SSLContext.getDefault.nn)
       val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
-      configure(socket, summon[Every[SocketOption.Tcp]].values)
+      configure(socket, options.values)
 
       interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
         socket.bind(jn.InetSocketAddress(local, 0))

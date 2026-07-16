@@ -1,0 +1,16 @@
+- reads PDF files conforming to ISO 32000-2 (PDF 2.0)
+- random access through classic cross-reference tables and cross-reference streams
+- follows incremental-update chains, with the newest version of each object winning
+- loads objects lazily and on demand, including from compressed object streams
+- decodes Flate, LZW, ASCIIHex, ASCII85 and RunLength filters, with PNG and TIFF predictors
+- streams large payloads incrementally through the zephyrine kernel, never materializing them
+- reads hybrid-reference files, and recovers from wrong or missing stream lengths
+- flattens the page tree with attribute inheritance, and typed page boxes in `Quantity[Points[1]]`
+- reads document information (with PDF date parsing), bookmarks, named destinations and annotations
+- surfaces embedded files, page labels and the XMP metadata packet
+- parses content streams into a typed operator AST, inline images included
+- reads fonts — standard-14 metrics, encodings, ToUnicode maps, embedded programs as `Ttf`s
+- extracts positioned text runs and plain text through the full text machinery
+- capture checking confines the open file to its scope; extracted values are pure and portable
+- tolerates common real-world deviations: prepended junk, raw deflate streams, truncated data
+- no third-party dependencies

@@ -40,13 +40,21 @@ object Unpackable:
   given iarray: [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
     type Wrap[Type] = Int -> Type
 
-    def unpack(buffer: Buffer): Int -> IArray[pack] = count =>
-      val array = new Array[pack](count)
+    // The continuation records the (pure) backing data and start offset, and mints its own
+    // buffer per invocation, so it does not capture the caller's `Buffer` capability: the
+    // arrow stays pure, and the caller's read position is unaffected by a later invocation.
+    def unpack(buffer: Buffer): Int -> IArray[pack] =
+      val bytes = buffer.bytes
+      val start = buffer.offset
 
-      array.indices.each: index =>
-        array(index) = pack.debuffer(buffer)
+      count =>
+        val local = Buffer(bytes, start)
+        val array = new Array[pack](count)
 
-      array.immutable(using Unsafe)
+        array.indices.each: index =>
+          array(index) = pack.debuffer(local)
+
+        array.immutable(using Unsafe)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type

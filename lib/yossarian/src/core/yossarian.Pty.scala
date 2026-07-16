@@ -44,13 +44,14 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 import PtyEscapeError.Reason, Reason.*
 
 object Pty:
   def apply(width: Int, height: Int): Pty =
-    Pty(Screen(width, height), PtyState(scrollBottom = (height - 1).z), Spool())
+    Pty(Screen(width, height), PtyState(scrollBottom = (height - 1).z), Relay())
 
   def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
@@ -60,8 +61,9 @@ object Pty:
     case _ =>
       LazyList()
 
-case class Pty(buffer: Screen[Style], state: PtyState, output: Spool[Text]):
-  def stream: LazyList[Text] = output.stream
+case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
+  // The legacy view of the reply relay (the audited bridge).
+  def stream: LazyList[Text] = LazyList.from(output.stream.records)
 
   def title: Text = state.title
   def cursor: Ordinal = state.cursor

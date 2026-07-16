@@ -73,15 +73,22 @@ object Openable:
     FileOpenable[filesystem, path]
 
 
-  given eof: [file: Openable by OpenFlag] => Eof[file] is Openable:
-    type Self = Eof[file]
-    type Operand = OpenFlag
-    type Result = file.Result
+  // Named capturing evidence and an honest result: `FileOpenable` instances retain their
+  // filesystem and tactic evidence, which a pure context bound cannot accept.
+  given eof: [file]
+  =>  (openable: (file is Openable by OpenFlag)^)
+  =>  (((Eof[file] is Openable by OpenFlag) { type Result = openable.Result })
+        ^{openable, caps.any}) =
 
-    def open[result](eof: Eof[file], lambda: file.Result => result, options: List[OpenFlag])
-    :   result =
+    new Openable:
+      type Self = Eof[file]
+      type Operand = OpenFlag
+      type Result = openable.Result
 
-      file.open(eof.file, lambda, OpenFlag.Append :: options)
+      def open[result](eof: Eof[file], lambda: openable.Result => result, options: List[OpenFlag])
+      :   result =
+
+        openable.open(eof.file, lambda, OpenFlag.Append :: options)
 
 trait Openable extends Typeclass, Operable, Resultant:
   def open[result](value: Self, lambda: Result => result, options: List[Operand]): result

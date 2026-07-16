@@ -36,6 +36,7 @@ import anticipation.*
 import bitumen.*
 import gesticulate.*
 import turbulence.*
+import zephyrine.*
 
 // A single image layer, built from a `bitumen.Tarfile`. A layer carries two distinct
 // digests: the `diff_id` is the SHA-256 of the *uncompressed* tar (recorded in the
@@ -46,10 +47,9 @@ object Layer:
   def apply(tar: Tarfile): Layer = new Layer(tar)
 
 class Layer(val tar: Tarfile):
-  lazy val raw:        Data       = tar.lazyList[Data].foldLeft(IArray.empty[Byte])(_ ++ _)
+  lazy val raw:        Data       = tar.source[Data].memoize
   lazy val diffId:     Text       = sha256(raw)
-  lazy val blob:       Data       =
-    LazyList(raw).compress[Gzip].foldLeft(IArray.empty[Byte])(_ ++ _)
+  lazy val blob:       Data       = raw.stream.compress[Gzip].memoize
   lazy val digest:     Text       = sha256(blob)
 
   lazy val descriptor: Descriptor =

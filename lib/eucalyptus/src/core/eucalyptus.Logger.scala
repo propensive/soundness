@@ -42,13 +42,14 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Logger:
   // Every construction site (a `Codepoint`) owns exactly one spool + writer daemon, so a `given`
   // re-evaluated on each summon (a context-parameterised given is a method, not a lazy val) reuses
   // the same resource instead of leaking a fresh thread per log call.
-  private val registry: juc.ConcurrentHashMap[Codepoint, Spool[?]] = juc.ConcurrentHashMap()
+  private val registry: juc.ConcurrentHashMap[Codepoint, Relay[?]] = juc.ConcurrentHashMap()
 
   def apply[eventType, loggingType, format, target]
     ( destination: target,
@@ -56,17 +57,21 @@ object Logger:
       name:        Optional[Text]      = Unset,
       categories:  Set[Log.Category]   = Set() )
     ( using inscribable: (loggingType is Inscribable in format)^,
-            writable:    (target is Writable by format)^,
+            writable:    (target is Writable by IArray[format])^,
+            addressable: IArray[format] is Addressable,
+            buffering:   Buffering,
             monitor:     Monitor,
             codepoint:   Codepoint,
             probate:     Probate )
   :   Logger[eventType, loggingType] =
 
-    val spool: Spool[format] =
+    val spool: Relay[format] =
       registry
-      . computeIfAbsent(codepoint, _ => establish[format, target](destination))
+      . computeIfAbsent(codepoint, _ =>
+          establish[format, target](destination)
+            (using writable, addressable, buffering, monitor, codepoint, probate))
       . nn
-      . asInstanceOf[Spool[format]]
+      . asInstanceOf[Relay[format]]
 
     // The enqueue closure retains the formatter and writer, whose lifetime is the global
     // spool registry's (application-wide, by design of the shared-spool scheme); laundered
@@ -84,22 +89,25 @@ object Logger:
   // stopped.
   private def establish[format, target]
     ( destination: target )
-    ( using writable:  (target is Writable by format)^,
+    ( using writable:    (target is Writable by IArray[format])^,
+            addressable: IArray[format] is Addressable,
+            buffering:   Buffering,
             monitor:   Monitor,
             codepoint: Codepoint,
             probate:   Probate )
-  :   Spool[format] =
+  :   Relay[format] =
 
     val stopped: juc.atomic.AtomicBoolean = juc.atomic.AtomicBoolean(false)
 
     // The daemon body must stay capture-free (hygienic, see above); the writer's lifetime is
     // the global spool registry's, so it is laundered pure for use inside the daemon.
-    val writable0: target is Writable by format = caps.unsafe.unsafeAssumePure(writable)
+    val writable0: target is Writable by IArray[format] = caps.unsafe.unsafeAssumePure(writable)
+    val addressable0: IArray[format] is Addressable = addressable
 
-    Spool[format]().tap: spool =>
+    Relay[format]().tap: spool =>
       daemon:
         while !stopped.get() do
-          try spool.stream.writeTo(destination)(using writable = writable0)
+          try writable0.write(destination, spool.stream(using addressable0))
           catch case _: StreamError => ()
 
       Os.intercept[Shutdown]:
@@ -107,7 +115,7 @@ object Logger:
         spool.stop()
 
 class Logger[-eventType, loggingType] private
-  ( threshold: Level, categories: Set[Log.Category], enqueue: (loggingType, Level, Long) => Unit )
+  ( threshold: Level, categories: Set[Log.Category], enqueue: (loggingType, Level, Long) -> Unit )
 extends LogSink[eventType, loggingType]:
 
   def accepts(level: Level): Boolean = level.ordinal >= threshold.ordinal

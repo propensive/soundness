@@ -48,12 +48,15 @@ trait Executive extends Findable:
       environment:      Environment,
       workingDirectory: WorkingDirectory,
       stdio:            Stdio,
-      entrypoint:       Entrypoint,
+      entrypoint:       Entrypoint^,
       login:            Login )
     ( using interpreter: Interpreter )
   :   Interface
 
-  def process(cli: Interface)(result: Interface ?=> Return): Exit
+  // The block sees `Cli` (not `Interface`): every entry point routes a `Cli ?=> Return` block
+  // here, and with `Cli` a capability, adapting a `Cli ?=>` context function to an
+  // abstract-`Interface ?=>` one trips capture-root unification.
+  def process(cli: Interface)(result: Cli ?=> Return): Exit
 
   // Re-run the application's pure portion in tab-completion mode with synthesized argument
   // prefixes to discover its subcommand/flag structure as a `Help` tree, rooted at `command`.

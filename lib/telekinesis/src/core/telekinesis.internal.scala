@@ -130,7 +130,10 @@ object internal:
           case method: Expr[Http.Method] => method
 
         ' {
-            given online0: Online = $online
+            // No `Online` binding in the staged code: the permission gates summonability of
+            // the enclosing extension method, and (with `Online` a capability) a local
+            // capability-typed given inside the quote would trip the quote wall and, under
+            // separation checking, hide the outer parameter from later statements.
 
             // Staging-boundary seal: quoted types must stay pure, so the (honestly
             // tracked) evidence is sealed on entry to the generated code. The
@@ -138,7 +141,9 @@ object internal:
             given postable0: (payload is Postable) =
               caps.unsafe.unsafeAssumePure($postable)
 
-            given loggable0: HttpEvent is Loggable = $loggable
+            // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
+            given loggable0: HttpEvent is Loggable =
+              caps.unsafe.unsafeAssumePure($loggable)
             val host: Host = $submit.host
             val path = $submit.originForm
             val contentType = Http.Header("content-type".tt, postable0.mediaType($payload).show)
@@ -173,8 +178,10 @@ object internal:
           case method: Expr[Http.Method] => method
 
         ' {
-            given online0: Online = $online
-            given loggable0: HttpEvent is Loggable = $loggable
+            // No `Online` binding, as in `submit` above.
+            // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
+            given loggable0: HttpEvent is Loggable =
+              caps.unsafe.unsafeAssumePure($loggable)
 
             val path = $fetch.originForm
 

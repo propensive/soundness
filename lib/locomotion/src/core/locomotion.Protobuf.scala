@@ -67,6 +67,16 @@ trait Protobuf2:
   inline given decodable: [value] => value is Decodable in Protobuf = summonFrom:
     case given Reflection[`value`] => DecodableDerivation.derived
 
+  // The AST-materializing read path: `bytes.read[Foo in Protobuf]` shorthand
+  // for `bytes.read[Protobuf].as[Foo]`. Lives at this priority so `object
+  // Protobuf`'s direct-parsing `aggregableParsed` wins whenever the value
+  // has a `Protobuf.Parsable`; when it does not, this resolves exactly as
+  // before. `value in Protobuf` is just `value { type Form = Protobuf }`,
+  // so the cast is a no-op at runtime.
+  given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[ProtobufError])
+  =>  (((value in Protobuf) is Aggregable by Data)^{tactic}) =
+    bytes => Protobuf.message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
+
   // Unpacked `repeated`: each element is emitted as a separate field (one tag per
   // value). This is the fallback for elements with no `Packable` instance — strings,
   // byte arrays and embedded messages. Numeric scalars are handled by the
@@ -103,7 +113,95 @@ trait Protobuf2:
 object Protobuf extends Protobuf2:
   // Wraps a complete message payload as a length-delimited wire value — the shape
   // the derivations decode. Used by the `Aggregable` instances backing `read`.
-  private def message(bytes: Data): Protobuf = Wire(WireType.Len, bytes)
+  private[locomotion] def message(bytes: Data): Protobuf = Wire(WireType.Len, bytes)
+
+  object Parsable:
+    // The base of generated parsers: generated code is capture-erased, so
+    // the body receives the reader as a neutral carrier, and the capability
+    // is asserted here at the rim — the audited point — like the reader's
+    // own accessors. (A generated override of `parse` itself would narrow
+    // the trait's `Reader^` parameter to a pure type, which capture
+    // checking rejects at the instantiation site.)
+    abstract class Direct[value] extends Protobuf.Parsable:
+      type Self = value
+
+      protected def parseCarrier(reader: AnyRef): value
+
+      def parse(reader: ProtobufReader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
+
+    def apply[value](parser: (reader: ProtobufReader^) => value)
+    :   ((value is Protobuf.Parsable)^{parser}) =
+
+      new Protobuf.Parsable:
+        type Self = value
+        def parse(reader: ProtobufReader^): value = parser(reader)
+
+    // The call point for a nominal `Parsable` in a field position of a
+    // *generated* parser (a recursive message's own instance, or a
+    // hand-written one). Both travel as neutral carriers — generated code
+    // is capture-erased — and the capability is reasserted here, at the
+    // audited point, exactly as the reader's own rim accessors do.
+    def parseField[value](parsable: AnyRef, reader: AnyRef): value =
+      parsable.asInstanceOf[value is Protobuf.Parsable]
+      . parse(reader.asInstanceOf[ProtobufReader^])
+
+    // The universal bridge from the AST world: materialize the window as a
+    // message and decode it. Types with only a `Decodable in Protobuf` keep
+    // working through this, and it is the user's one-line escape hatch when
+    // a custom decoder must beat a generated direct parser.
+    def fromDecodable[value](decodable: (value is Decodable in Protobuf)^)
+    :   ((value is Protobuf.Parsable)^{decodable}) =
+
+      new Protobuf.Parsable:
+        type Self = value
+        def parse(reader: ProtobufReader^): value = decodable.decoded(reader.message())
+
+  // The direct-parsing counterpart of `Decodable in Protobuf`: consumes
+  // fields straight off the input bytes through a `ProtobufReader` instead
+  // of walking the materialized number-keyed map, so `read[value in
+  // Protobuf]` can instantiate values without buffering every field's wire
+  // value. `Parsable` is the opt-in surface: explicit instances and
+  // `Protobuf.Inlinable.parsable`. It has no blanket fallback given, so no
+  // read changes behavior until a type opts in.
+  trait Parsable extends distillate.Parsable:
+    type Transport = Protobuf
+    type Reader = ProtobufReader
+
+  // Direct-parsing counterpart of the `aggregable`/`aggregableIn` path:
+  // drives a `Protobuf.Parsable` instance over the input through a
+  // `ProtobufReader`, its window set to the whole message.
+  private def parseDirect[value]
+    ( input: Data, parsable: (value is Protobuf.Parsable)^ )
+    ( using tactic: Tactic[ProtobufError] )
+  :   value =
+
+    parsable.parse(ProtobufReader(ProtobufParser(input), tactic))
+
+  // Direct parsing: when the value knows how to consume wire fields itself,
+  // the field map is never materialized. Declared here (not in `Protobuf2`,
+  // where the `Decodable`-based `aggregableIn` lives) so it wins whenever a
+  // `Protobuf.Parsable` exists, and is otherwise inapplicable — existing
+  // code resolves exactly as before. Sealed per the codec-thunk pattern:
+  // the instance retains the resolution-scoped parsable and tactic.
+  given aggregableParsed: [value]
+  =>  (parsable: (value is Protobuf.Parsable)^)
+  =>  (tactic: Tactic[ProtobufError])
+  =>  ((value in Protobuf) is Aggregable by Data) =
+
+    caps.unsafe.unsafeAssumePure:
+      bytes => parseDirect(bytes.read[Data], parsable).asInstanceOf[value in Protobuf]
+
+  // Whole-`Data` direct read: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream.
+  // Concrete in `Data`, so it beats the composed pipeline by specificity.
+  // Sealed like `aggregableParsed` above.
+  given readableParsed: [value]
+  =>  (parsable: (value is Protobuf.Parsable)^)
+  =>  (tactic: Tactic[ProtobufError])
+  =>  (Data is Readable to (value in Protobuf)) =
+
+    caps.unsafe.unsafeAssumePure:
+      data => parseDirect(data, parsable).asInstanceOf[value in Protobuf]
 
   given protobuf: Protobuf is Decodable in Protobuf = identity(_)
 
@@ -127,14 +225,6 @@ object Protobuf extends Protobuf2:
 
   // `bytes.read[Protobuf]` aggregates the byte stream and wraps it as a message.
   given aggregable: Protobuf is Aggregable by Data = bytes => message(bytes.read[Data])
-
-  // `bytes.read[Foo in Protobuf]` shorthand for `bytes.read[Protobuf].as[Foo]`,
-  // mirroring jacinta's `value in Json` and breviloquence's `value in Cbor`.
-  // `value in Protobuf` is just `value { type Form = Protobuf }`, so the
-  // cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[ProtobufError])
-  =>  (((value in Protobuf) is Aggregable by Data)^{tactic}) =
-    bytes => message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
 
   // Number-keyed optic: Protobuf fields are addressed by number, not name, so an
   // `Ordinal` selects field `n` (`Prim` = field 1). Updating parses the message's
@@ -411,25 +501,25 @@ object Protobuf extends Protobuf2:
 
   object DecodableDerivation extends Derivable[Decodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Decodable in Protobuf =
+    :   (derivation is Decodable in Protobuf)^ =
 
       val numbers = fieldNumbers[derivation]
 
       // The decode lambda closes over the resolution-scoped `Tactic` that `provide` summons
-      // at the derivation site, sharing the instance's given-resolution lifetime; laundered
-      // pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
-      caps.unsafe.unsafeAssumePure: protobuf =>
+      // at the derivation site, sharing the instance's given-resolution lifetime; the fresh
+      // (`^`) trait result honestly admits the capture — no seal.
+      { protobuf =>
         provide[Tactic[ProtobufError]]:
           val map = ProtobufParser(protobuf.payload).fields()
 
           build[derivation]:
             [field0] => context =>
               map.at(numbers(label)).lay(default.or(context.decoded(Protobuf.Absent))): values =>
-                context.decoded(Protobuf.Repeated(values))
+                context.decoded(Protobuf.Repeated(values)) }
 
-    inline def disjunction[derivation: SumReflection]: derivation is Decodable in Protobuf =
-      // Laundered pure as for `conjunction` above.
-      caps.unsafe.unsafeAssumePure: protobuf =>
+    inline def disjunction[derivation: SumReflection]: (derivation is Decodable in Protobuf)^ =
+      // A fresh (`^`) result honestly admitting the capture, as for `conjunction` above.
+      { protobuf =>
         provide[Tactic[ProtobufError]]:
           provide[Tactic[VariantError]]:
             val map = ProtobufParser(protobuf.payload).fields()
@@ -441,7 +531,7 @@ object Protobuf extends Protobuf2:
 
             delegate(labels(index)):
               [variant <: derivation] => context =>
-                context.decoded(Protobuf.Repeated(map(index + 1)))
+                context.decoded(Protobuf.Repeated(map(index + 1))) }
 
     inline def fieldNumbers[derivation <: Product: ProductReflection]: Map[Text, Int] =
       val annotated: Map[Text, Set[field]] = infer[derivation is Annotated by field] match

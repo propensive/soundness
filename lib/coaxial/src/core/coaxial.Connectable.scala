@@ -51,10 +51,17 @@ object Connectable:
     def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Duplex =
       backend.duplexDomain(domainSocket, options.values)
 
-  given tcpEndpoint: Online => (backend: SocketBackend, options: Every[SocketOption.Tcp])
-  =>  Endpoint[TcpPort] is Connectable:
-    def connect(endpoint: Endpoint[TcpPort], interface: Optional[MacAddress]): Duplex =
-      backend.duplexTcp(endpoint, interface, options.values)
+  // Honestly tracked: the instance is resolvable only with `Online` permission, so it is a
+  // capability carrying that evidence in its capture set.
+  given tcpEndpoint: (online: Online)
+  =>  (backend: SocketBackend, options: Every[SocketOption.Tcp])
+  =>  ((Endpoint[TcpPort] is Connectable)^{online, caps.any}) =
+
+    new Connectable:
+      type Self = Endpoint[TcpPort]
+
+      def connect(endpoint: Endpoint[TcpPort], interface: Optional[MacAddress]): Duplex =
+        backend.duplexTcp(endpoint, interface, options.values)
 
 trait Connectable extends Typeclass:
   def connect(endpoint: Self, interface: Optional[MacAddress]): Duplex

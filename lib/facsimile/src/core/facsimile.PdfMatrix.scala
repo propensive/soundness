@@ -30,23 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package facsimile
 
-import anticipation.*
-import parasite.*
-import prepositional.*
+object PdfMatrix:
+  val Identity: PdfMatrix = PdfMatrix(1, 0, 0, 1, 0, 0)
 
-class Pulsar[duration: Abstractable across Durations to Long](duration: duration):
-  // Untracked: a stop flag, set once from any thread and read by the ticking loop.
-  @caps.unsafe.untrackedCaptures
-  private var continue: Boolean = true
+// The six live entries of a PDF transformation matrix (ISO 32000-2 §8.3.4):
+//
+//   ⎡ a b 0 ⎤
+//   ⎢ c d 0 ⎥
+//   ⎣ e f 1 ⎦
+//
+// applied to row vectors, so `this * that` transforms by `this` first.
+case class PdfMatrix(a: Double, b: Double, c: Double, d: Double, e: Double, f: Double):
+  def * (that: PdfMatrix): PdfMatrix =
+    PdfMatrix
+      ( a*that.a + b*that.c,
+        a*that.b + b*that.d,
+        c*that.a + d*that.c,
+        c*that.b + d*that.d,
+        e*that.a + f*that.c + that.e,
+        e*that.b + f*that.d + that.f )
 
-  def stop(): Unit = continue = false
-
-  def stream(using Monitor): LazyList[Unit] =
-    if !continue then LazyList()
-    else
-      try
-        snooze(duration)
-        () #:: stream
-      catch case error: AsyncError => LazyList()
+  def apply(x: Double, y: Double): (Double, Double) = (a*x + c*y + e, b*x + d*y + f)

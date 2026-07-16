@@ -43,11 +43,11 @@ import rudiments.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 object Ttf:
-  def apply[source: Streamable by Data](source: source): Ttf =
-    val data = source.lazyList[Data].read[Data]
-    Ttf(data)
+  def apply[source: Streamable by Data over Credit](source: source): Ttf =
+    Ttf(source.read[Data])
 
   enum PlatformId:
     case Unicode, Macintosh, Windows, Custom

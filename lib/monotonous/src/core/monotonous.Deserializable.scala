@@ -85,7 +85,10 @@ object Deserializable:
   given quaternary: Alphabet[Quaternary] => Deserializable in Quaternary = base(2)
   given binary: Alphabet[Binary] => Deserializable in Binary = base(1)
 
-trait Deserializable extends Findable:
+// `caps.Pure` directly (not `Typeclass.Pure`) because `Deserializable` has no `Self`: it is
+// selected by its `Form` member alone. Error handling is per-call (`raises`/`Tactic` method
+// parameters), so instances themselves capture nothing.
+trait Deserializable extends Findable, caps.Pure:
   type Form <: Serialization
 
   protected val atomicity: Int = 1

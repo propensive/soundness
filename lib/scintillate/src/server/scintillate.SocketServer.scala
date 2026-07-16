@@ -69,7 +69,7 @@ extends RequestServable:
 
   private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".in[Data]
 
-  private def writeAll(out: ji.OutputStream, stream: Stream[Data] over Credit)
+  private def writeAll(out: ji.OutputStream, stream: (Stream[Data] over Credit)^)
   :   Unit raises StreamError =
 
     var count: Int = 0
@@ -94,7 +94,10 @@ extends RequestServable:
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
   // when neither is given. The framed stream stops exactly at the body's end so
   // the cursor is left at the next pipelined request.
-  private def requestBody(cursor: Cursor[Data, ?], head: Http.Request.Head)
+  // Upstream #1570's kernel-stream body with this branch's cursor convention
+  // (`Cursor[Data, {}]^`: a concrete cap argument, never `?`, which collapses inline
+  // receiver proxies to read-only).
+  private def requestBody(cursor: Cursor[Data, {}]^, head: Http.Request.Head)
   :   Stream[Data] over Credit =
 
     val chunked: Boolean = head.headers.exists: header =>
@@ -151,14 +154,14 @@ extends RequestServable:
   // involvement. The caller owns the streams (closing, read timeouts).
   def serveConnection(handler: HttpConnection ?=> Http.Response)
     ( in: ji.InputStream, out: ji.OutputStream )
-    ( using HttpServerEvent is Loggable )
+    ( using (HttpServerEvent is Loggable)^ )
   :   Unit =
 
     val closeHeader: Http.Header = Http.Header(t"connection", t"close")
 
     // Handle one request off the cursor; return whether to keep the connection
     // alive for a further request.
-    def serveRequest(cursor: Cursor[Data, ?]): Boolean =
+    def serveRequest(cursor: Cursor[Data, {}]^): Boolean =
       recover:
         case error: HttpRequestError =>
           val response = Http.Response(errorStatus(error.reason))() + closeHeader
@@ -259,13 +262,16 @@ extends RequestServable:
         Log.warn(HttpServerEvent.BrokenStream(length))
 
     . protect:
-        val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
+        // The connection cursor pulls straight from the socket's endpoint;
+        // construction is deferred until the first read (live-socket rule).
+        val cursor = Cursor[Data](Streamable.inputStream.stream(in))
 
         var continue = true
         while continue && !cursor.finished do continue = serveRequest(cursor)
 
   def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Probate)
-  :   Service logs HttpServerEvent raises ServerError =
+    ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
+  :   Service^ =
 
     val idleTimeout: Int = 30000
 
@@ -286,15 +292,40 @@ extends RequestServable:
       case error => Log.fail(HttpServerEvent.ConnectionFailed(error)); Remedy.Accept
 
     . protect:
+        // Daemon bodies must be pure context functions, so the server, the handler and each
+        // socket cross into them as `AnyRef` rims (the cordillera recipe).
+        val self: AnyRef = this
+        // Eta-wrapped into a capture-neutral `AnyRef => AnyRef` (capability-typed function
+        // types re-hide when crossed through a rim; the kernel-module-sep finding), since a
+        // context-function value applies itself in any non-context-function position.
+        val handler1: AnyRef => AnyRef =
+          connection => handler(using connection.asInstanceOf[HttpConnection])
+        val handler0: AnyRef = handler1.asInstanceOf[AnyRef]
+        // The (capability-typed) Loggable evidence crosses as an `AnyRef` rim too.
+        val loggable0: AnyRef = summon[(HttpServerEvent is Loggable)^].asInstanceOf[AnyRef]
+
         val acceptLoop = loop:
           safely(serverSocket.accept().nn).let: socket =>
-            daemon:
-              try
-                socket.setSoTimeout(idleTimeout)
-                serveConnection(handler)(socket.getInputStream.nn, socket.getOutputStream.nn)
-              finally safely(socket.close())
+            val socket0: AnyRef = socket
 
-        val acceptTask = daemon(acceptLoop.run())
+            daemon:
+              val socket1 = socket0.asInstanceOf[jn.Socket]
+
+              try
+                socket1.setSoTimeout(idleTimeout)
+
+                val h = handler0.asInstanceOf[AnyRef => AnyRef]
+
+                self.asInstanceOf[SocketServer]
+                . serveConnection
+                    (h(summon[HttpConnection].asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
+                    (socket1.getInputStream.nn, socket1.getOutputStream.nn)
+                    (using loggable0.asInstanceOf[HttpServerEvent is Loggable])
+
+              finally safely(socket1.close())
+
+        val acceptLoop0: AnyRef = acceptLoop.asInstanceOf[AnyRef]
+        val acceptTask = daemon(acceptLoop0.asInstanceOf[Loop].run())
         val cancel: Promise[Unit] = Promise[Unit]()
 
         val stopTask = async:

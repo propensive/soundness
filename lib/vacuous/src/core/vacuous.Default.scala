@@ -47,5 +47,7 @@ object Default:
   given set: [element] => Default[Set[element]] = () => Set()
   given series: [element] => Default[Series[element]] = () => Series()
 
+// `scala.caps.Pure` directly (not `Typeclass.Pure`): `Default` is parameterized covariantly
+// rather than selected through a `Self` member, so the prepositional shape does not apply.
 trait Default[+value] extends Findable, scala.caps.Pure:
   def apply(): value

@@ -103,7 +103,7 @@ package executives:
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
-        entrypoint:       Entrypoint,
+        entrypoint:       Entrypoint^,
         login:            Login )
       ( using interpreter: Interpreter )
     :   Invocation =
@@ -117,7 +117,7 @@ package executives:
           login )
 
 
-    def process(invocation: Invocation)(exitStatus: Interface ?=> Exit): Exit =
+    def process(invocation: Invocation)(exitStatus: Cli ?=> Exit): Exit =
       try exitStatus(using invocation)
       catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
 

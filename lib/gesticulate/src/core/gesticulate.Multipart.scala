@@ -52,10 +52,10 @@ object Multipart:
     case Inline, Attachment, FormData
 
 
-  def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
+  def parse[input: Streamable by Data over Credit](input: input, boundary0: Optional[Text] = Unset)
   :   Multipart raises MultipartError =
 
-    val cursor = Cursor[Data](input.lazyList[Data].filter(_.nonEmpty).iterator)
+    val cursor = Cursor[Data](input.source[Data])
 
     inline def expected(char: Char): Diagnostics ?=> MultipartError =
       MultipartError(Reason.Expected(char))

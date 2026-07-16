@@ -68,6 +68,8 @@ case class Counts(@field(1) counts: Map[Text, Int]) derives CanEqual
 
 // Recursion through a collection (#1429) and a generic product used over a recursive type.
 case class Tree(@field(1) value: Text, @field(2) children: List[Tree]) derives CanEqual
+
+case class Defaulted(@field(1) a: Int, @field(2) b: Int = 7) derives CanEqual
 case class Boxed[value](@field(1) value: value) derives CanEqual
 
 object Tests extends Suite(m"Locomotion Protobuf Tests"):
@@ -262,3 +264,101 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"an absent field number is a no-op"):
         wrapper.lens(_(Sen) = Point(7, 8)).as[Wrapper]
       . assert(_ == Wrapper(Point(3, 4), t"origin"))
+
+    suite(m"Direct parsing (Inlinable)"):
+      given (Point is Protobuf.Parsable) = Inlinable.parsable[Point]
+      given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+      given (Wrapper is Protobuf.Parsable) = Inlinable.parsable[Wrapper]
+      given (Sparse is Protobuf.Parsable) = Inlinable.parsable[Sparse]
+      given (Tags is Protobuf.Parsable) = Inlinable.parsable[Tags]
+      given (Numbers is Protobuf.Parsable) = Inlinable.parsable[Numbers]
+      given (MaybeName is Protobuf.Parsable) = Inlinable.parsable[MaybeName]
+      given (Shape is Protobuf.Parsable) = Inlinable.parsable[Shape]
+      given (Typed is Protobuf.Parsable) = Inlinable.parsable[Typed]
+      given (Counts is Protobuf.Parsable) = Inlinable.parsable[Counts]
+      given (Tree is Protobuf.Parsable) = Inlinable.parsable[Tree]
+      given (Defaulted is Protobuf.Parsable) = Inlinable.parsable[Defaulted]
+
+      def encoded[value: Encodable in Protobuf](value: value): Data = value.in[Protobuf].encode
+
+      test(m"a flat message reads directly from bytes"):
+        encoded(Person(t"Alice", 30)).read[Person in Protobuf]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"a nested message inlines through its own generated parser"):
+        encoded(Wrapper(Point(3, 4), t"origin")).read[Wrapper in Protobuf]
+      . assert(_ == Wrapper(Point(3, 4), t"origin"))
+
+      test(m"sparse @field numbers dispatch correctly"):
+        encoded(Sparse(9, t"x")).read[Sparse in Protobuf]
+      . assert(_ == Sparse(9, t"x"))
+
+      test(m"repeated strings gather in stream order"):
+        encoded(Tags(List(t"a", t"b", t"c"))).read[Tags in Protobuf]
+      . assert(_ == Tags(List(t"a", t"b", t"c")))
+
+      test(m"a packed repeated field reads its run in place"):
+        val packed = IArray[Byte](0x0a, 0x06, 0x03, 0x8e.toByte, 0x02, 0x9e.toByte, 0xa7.toByte, 0x05)
+        packed.read[Numbers in Protobuf]
+      . assert(_ == Numbers(List(3, 270, 86942)))
+
+      test(m"unpacked occurrences of a packable element still gather"):
+        // Two unpacked varint occurrences of field 1: 3 and 270.
+        val unpacked = IArray[Byte](0x08, 0x03, 0x08, 0x8e.toByte, 0x02)
+        unpacked.read[Numbers in Protobuf]
+      . assert(_ == Numbers(List(3, 270)))
+
+      test(m"the last occurrence of a scalar field wins"):
+        // x=1, x=9, y=2.
+        val bytes = IArray[Byte](0x08, 0x01, 0x08, 0x09, 0x10, 0x02)
+        bytes.read[Point in Protobuf]
+      . assert(_ == Point(9, 2))
+
+      test(m"an unknown field number is skipped whole"):
+        // Field 5 (varint 1), then x=3, y=4.
+        val bytes = IArray[Byte](0x28, 0x01, 0x08, 0x03, 0x10, 0x04)
+        bytes.read[Point in Protobuf]
+      . assert(_ == Point(3, 4))
+
+      test(m"a missing scalar field takes its proto3 zero"):
+        // Only x=3.
+        IArray[Byte](0x08, 0x03).read[Point in Protobuf]
+      . assert(_ == Point(3, 0))
+
+      test(m"a missing field with a declared default takes it"):
+        IArray[Byte](0x08, 0x03).read[Defaulted in Protobuf]
+      . assert(_ == Defaulted(3, 7))
+
+      test(m"an empty message reads as all-absent"):
+        IArray[Byte]().read[Point in Protobuf]
+      . assert(_ == Point(0, 0))
+
+      test(m"a set optional bridges through its Decodable"):
+        encoded(MaybeName(t"set")).read[MaybeName in Protobuf]
+      . assert(_ == MaybeName(t"set"))
+
+      test(m"an unset optional reads back to Unset"):
+        encoded(MaybeName(Unset)).read[MaybeName in Protobuf]
+      . assert(_ == MaybeName(Unset))
+
+      test(m"the Circle variant of a oneof round-trips"):
+        encoded(Shape.Circle(5): Shape).read[Shape in Protobuf]
+      . assert(_ == Shape.Circle(5))
+
+      test(m"the Rectangle variant of a oneof round-trips"):
+        encoded(Shape.Rectangle(3, 4): Shape).read[Shape in Protobuf]
+      . assert(_ == Shape.Rectangle(3, 4))
+
+      test(m"typed integers bridge through their Decodables"):
+        val typed = Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits)
+        encoded(typed).read[Typed in Protobuf]
+      . assert(_ == Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits))
+
+      test(m"a map field bridges through the entry-message Decodable"):
+        encoded(Counts(Map(t"a" -> 1, t"b" -> 2))).read[Counts in Protobuf]
+      . assert(_ == Counts(Map(t"a" -> 1, t"b" -> 2)))
+
+      test(m"a recursive type degrades its recursive field to the seam"):
+        val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+        encoded(tree).read[Tree in Protobuf]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))

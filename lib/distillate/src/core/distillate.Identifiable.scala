@@ -42,6 +42,6 @@ object Identifiable:
       def encode(text: Text): Text = encoder(text)
       def decode(text: Text): Text = decoder(text)
 
-trait Identifiable extends Typeclass:
+trait Identifiable extends Typeclass.Pure:
   def encode(text: Text): Text
   def decode(text: Text): Text

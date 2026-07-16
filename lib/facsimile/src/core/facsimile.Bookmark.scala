@@ -30,46 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
-
-// LazyList streaming utilities: the transitional view layer over the lazy-list
-// representation. Deliberately NOT separation-checked — this unit predates the
-// capability kernel and is scheduled for removal with the LazyList bridges.
-
-import language.adhocExtensions
-
-import java.io as ji
-import java.lang as jl
+package facsimile
 
 import anticipation.*
-import contingency.*
-import denominative.*
-import hypotenuse.*
-import parasite.*
-import prepositional.*
-import rudiments.*
-import symbolism.*
 import vacuous.*
-import zephyrine.*
 
-import abstractables.instantAbstractable
-import probates.awaitProbate
-
-extension [element](stream: LazyList[element])
-  def rate
-    [ generic: {Abstractable across Durations to Long, Instantiable across Durations from Long} ]
-    ( duration: generic )
-    ( using Monitor, Tactic[AsyncError] )
-  :   LazyList[element] =
-
-    def recur(stream: LazyList[element], last: Long): LazyList[element] =
-      stream.flow(LazyList()):
-        val duration2 =
-          generic(duration.generic - (jl.System.currentTimeMillis - last)*1_000_000L)
-
-        if duration2.generic > 0 then snooze(duration2)
-        stream
-
-    // A neutral thunk: the async body may not hide the method's parameters.
-    val body: AnyRef = (() => recur(stream, jl.System.currentTimeMillis)).asInstanceOf[AnyRef]
-    async(body.asInstanceOf[() => LazyList[element]]()).await()
+// One entry of the document outline (ISO 32000-2 §12.3.3), fully materialized as a pure
+// tree: PDF's "outlines" are what every viewer presents as bookmarks.
+case class Bookmark
+  ( title:       Text,
+    destination: Optional[Destination],
+    children:    List[Bookmark] )

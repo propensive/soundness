@@ -59,7 +59,10 @@ object NativeWatcher extends Watcher:
       pollLoop.stop()
       try watchService.close() catch case _: ji.IOException => ()
 
-    val async: Optional[Task[Unit]] = safely(supervise(task(n"surveillance")(pollLoop.run())))
+    // Registry-lifetime storage of the poll task's handle (held only to keep the supervised
+    // task alive); sealed inside the block, per the pure-façade convention (D6 ruling).
+    val async: Optional[Task[Unit]] =
+      safely(supervise(caps.unsafe.unsafeAssumePure(task(n"surveillance")(pollLoop.run()))))
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()
@@ -78,7 +81,12 @@ object NativeWatcher extends Watcher:
     try
       service.take().nn match
         case key: jnf.WatchKey =>
-          val pathWatches = watchesMutex(watches.at(key).or(Set()))
+          // `watches` is bound to a local first: summoning the `at` extension's evidence
+          // against the object-field singleton path inside the inline mutex block fails to
+          // unify under capture checking.
+          val pathWatches = watchesMutex:
+            val watches0 = watches
+            watches0.at(key).or(Set())
 
           key.pollEvents().nn.iterator.nn.asScala.each: event =>
             pathWatches.each(_.put(event))
@@ -101,16 +109,18 @@ object NativeWatcher extends Watcher:
       // failure mode: the operating system's watch limit (e.g. inotify `max_user_watches`).
       case _: ji.IOException            => abort(WatchError(WatchError.Reason.LimitExceeded))
 
-  def watch(directories: Map[jnf.Path, Text => Boolean], spool: Spool[WatchEvent])
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
     val pathWatches: Set[PathWatch] = watchesMutex:
+      val watches0 = watches
+
       directories.map:
         case (directory, filter) =>
           val key = registerKey(directory)
 
           new PathWatch(key, directory, spool, filter).tap: pathWatch =>
-            watches(key) = watches.at(key).or(Set()) + pathWatch
+            watches0(key) = watches0.at(key).or(Set()) + pathWatch
 
       . to(Set)
 
@@ -119,8 +129,8 @@ object NativeWatcher extends Watcher:
   private class PathWatch
     ( private[NativeWatcher] val key:    jnf.WatchKey,
       private[NativeWatcher] val base:   jnf.Path,
-                             val spool:  Spool[WatchEvent],
-                             val filter: Text => Boolean ):
+                             val spool:  Relay[WatchEvent],
+                             val filter: Text -> Boolean ):
 
     def put(event: jnf.WatchEvent[?]): Unit =
       event.context.nn.absolve match

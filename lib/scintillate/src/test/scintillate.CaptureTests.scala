@@ -30,21 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package scintillate
 
-import java.util.concurrent.atomic as juca
+import soundness.*
 
+import strategies.throwUnsafely
+import logging.silentLogging
 
-object Tap:
-  enum Regulation:
-    case Start, Stop
+// A handler receives one live exchange as an `HttpConnection` capability; capture checking
+// prevents the connection (or its respond sink) being retained past the handler invocation.
+object CaptureTests extends Suite(m"Connection confinement tests"):
+  def run(): Unit =
+    test(m"the connection cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(server: SocketServer)
+          ( using Monitor, Probate, (HttpServerEvent is Loggable)^, Tactic[ServerError] )
+        :   Unit =
+          var stash: () => Unit = () => ()
 
-class Tap(initial: Boolean = true):
-  private val flowing: juca.AtomicBoolean = juca.AtomicBoolean(initial)
-  private val spool: Spool[Tap.Regulation] = Spool()
+          server.handle:
+            stash = () => summon[HttpConnection].respond(Http.Response(Http.Ok)(t""))
+            Http.Response(Http.Ok)(t"")
 
-  def resume(): Unit = if !flowing.getAndSet(true) then spool.put(Tap.Regulation.Start)
-  def pause(): Unit = if flowing.getAndSet(false) then spool.put(Tap.Regulation.Stop)
-  def stop(): Unit = spool.stop()
-  def state(): Boolean = flowing.get
-  def stream: LazyList[Tap.Regulation] = spool.stream
+          ()
+    . assert(_.nonEmpty)

@@ -48,7 +48,9 @@ import errorDiagnostics.stackTracesDiagnostics
 
 
 object Acceptable:
-  given multipart: Tactic[MultipartError] => Multipart is Acceptable = request =>
+  // Honestly tracked: the instance retains its resolution-scoped tactic.
+  given multipart: (tactic: Tactic[MultipartError])
+  =>  ((Multipart is Acceptable)^{tactic, caps.any}) = request =>
     mitigate:
       case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
 

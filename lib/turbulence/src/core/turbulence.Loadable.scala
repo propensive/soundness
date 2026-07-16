@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import zephyrine.{stream as _, *}
+
 import language.experimental.captureChecking
 
 import prepositional.*
@@ -40,4 +42,4 @@ trait Loadable extends Typeclass:
   type Self <: Documentary
   type Operand
 
-  def load(stream: LazyList[Operand]): Document[Self]
+  def load(stream: (Stream[Operand] over Credit)^): Document[Self]

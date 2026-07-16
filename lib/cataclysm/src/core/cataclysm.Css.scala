@@ -64,14 +64,14 @@ object Css:
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
 
-  given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text = css =>
+  given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text over Credit = css =>
     val producer = Producer[Text](4096)
 
     async:
       write(css)(producer.put(_))
       producer.finish()
 
-    producer.iterator.to(LazyList)
+    Stream(producer.iterator)
 
   given showable: Formatting => Css is Showable = css =>
     Producer.collect[Text](): producer =>

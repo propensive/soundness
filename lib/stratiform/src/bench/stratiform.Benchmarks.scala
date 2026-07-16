@@ -61,6 +61,20 @@ import vacuous.*
 // effect of the §19.5 schema-driven recovery overhead can be read
 // directly off the table.
 
+// The BinTEL decode corpus: an order book mirroring the crossparse corpus's
+// shape, without its sum — a sum in field position derives to an
+// unresolvable schema Reference, which BinTEL's AST path cannot decode
+// either. Top-level, so the schema derivation and the generated parser see
+// ordinary class symbols.
+case class BLineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
+case class BCustomer(id: Long, name: Text, email: Text, region: Text)
+
+case class BOrder
+  ( reference: Text, customer: BCustomer, items: List[BLineItem], priority: Boolean,
+    discount: Double )
+
+case class BOrders(orders: List[BOrder])
+
 object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
@@ -114,8 +128,49 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
   lazy val example7Schema: Tels = loadSchema("example7.schema.tel")
   lazy val example8Schema: Tels = loadSchema("example8.schema.tel")
 
+  def lineItem(order: Int, item: Int): BLineItem =
+    BLineItem
+      ( sku         = t"SKU-$order-$item",
+        description = t"component-${(order*7 + item*3) % 20}-assembly",
+        quantity    = (order + item) % 9 + 1,
+        price       = ((order*13 + item*7) % 400).toDouble + 0.25*(item % 4),
+        taxed       = (order + item) % 2 == 0 )
+
+  def order(index: Int): BOrder =
+    val regions = List(t"north", t"south", t"east", t"west")
+
+    BOrder
+      ( reference = t"ORD-2026-${1000 + index}",
+        customer  = BCustomer
+          ( id     = 10000L + index,
+            name   = t"customer-$index",
+            email  = t"user$index@example.com",
+            region = regions(index % 4) ),
+        items     = List.tabulate(6)(lineItem(index, _)),
+        priority  = index % 3 == 0,
+        discount  = 0.25*(index % 3) )
+
+  lazy val bintelCorpus: BOrders = BOrders(List.tabulate(12)(order(_)))
+  lazy val bintelData: Data = bintelCorpus.bintel
+
+  given bintelParsable: (BOrders is Bintel.Parsable) = BintelInlinable.parsable[BOrders]
+
+  def decodeBintelAst(): BOrders = Bintel.read[BOrders](bintelData)
+  def decodeBintelInlined(): BOrders = Bintel.parse[BOrders](bintelData)
+
   def run(): Unit =
     val bench = Bench()
+
+    assert(decodeBintelInlined() == bintelCorpus, "BinTEL inlined decode disagrees")
+    assert(decodeBintelAst() == bintelCorpus, "BinTEL AST decode disagrees")
+
+    suite(m"Decode a BinTEL order corpus to case classes"):
+      bench(m"BinTEL inlined")
+        (target = 1*Second, warmups = 15, baseline = Baseline(compare = Min)):
+        '{ stratiform.Benchmarks.decodeBintelInlined() }
+
+      bench(m"BinTEL via AST")(target = 1*Second):
+        '{ stratiform.Benchmarks.decodeBintelAst() }
 
     suite(m"Example 1 — web-app servlet config"):
       val size = example1Bytes.length*Byte

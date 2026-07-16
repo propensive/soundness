@@ -235,7 +235,13 @@ object stagedInternal:
   // runtime seam. The cache spans one entry expansion, so a type's staging
   // summon runs at most once however often it recurs in the graph.
 
-  private type Cache = scm.HashMap[String, Option[Inlinable]]
+  // The per-entry expansion cache: memoized staging summons, and the set of
+  // types whose generators are currently on the expansion stack — a
+  // recursive occurrence (`Tree` with `children: List[Tree]`) must degrade
+  // to the runtime seam rather than expand forever.
+  private final class Cache:
+    val instances: scm.HashMap[String, Option[Inlinable]] = scm.HashMap()
+    val active: scm.Set[String] = scm.Set()
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
@@ -243,7 +249,49 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     builtinFor(tpe).orElse:
-      cache.getOrElseUpdate(tpe.show, summonViaStaging[field]).orElse(structuralFor[field](cache))
+      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
+      . orElse(structuralFor[field](cache))
+      . orElse(runtimeFor[field])
+
+  // A `derives`-clause carrier delegates to a structural instance; the
+  // ladder works with the delegate so generator identities (product,
+  // collection) stay recognizable.
+  private def unwrap(instance: Inlinable): Inlinable = instance match
+    case derived: Inlinable.ForJson[?] => derived.delegate.asInstanceOf[Inlinable]
+    case other                         => other
+
+  // The runtime tiers, resolved with a reflection-level implicit search at
+  // expansion time and called through neutral-carrier helpers (the erasing
+  // cast crosses the capability boundary, as wisteria's field-instance
+  // engine does): a nominal `Parsable` — the recursion tie, since a
+  // recursive record's own alias given (a lazy val) is found from inside
+  // its own definition — then the `Json.Field` fallback chain. Neither
+  // `summonInline` nor a `using` parameter works for these from inside the
+  // generated parser's inline context.
+  private def runtimeFor[field: Type](using Quotes): Option[Inlinable] =
+    import quotes.reflect.*
+
+    def searched(target: TypeRepr): Option[Expr[Any]] =
+      Implicits.search(target) match
+        case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
+        case _                              => None
+
+    searched(TypeRepr.of[field is Json.Parsable]).map(RuntimeInlinable[field](_)).orElse:
+      searched(TypeRepr.of[field is Json.Field]).map(RuntimeInlinable[field](_))
+
+  private final class RuntimeInlinable[value](parsing: Expr[Any]) extends Inlinable:
+    type Self = value
+
+    def parse(reader: Expr[JsonReader])(using Quotes, Type[value]): Expr[value] =
+      '{
+        Json.Parsable.parseField[value]
+          ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
+      }
+
+    override def absent(tactic: Expr[Tactic[JsonError]])(using Quotes, Type[value])
+    :   Expr[value] =
+
+      '{ Json.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic) }
 
   // Composition points become local defs rather than textual inlining: a
   // fully-flattened parser exceeds HotSpot's huge-method bytecode limit and
@@ -282,7 +330,12 @@ object stagedInternal:
 
     val tpe = TypeRepr.of[field].dealias
 
-    if tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+    // A `Map` is an `Iterable` of pairs, but its wire form is a JSON
+    // object, not an array — it stays on the runtime seam
+    // (`Json.Parsable.dictionary` through the `Field` chain).
+    val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
+
+    if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
       case AppliedType(_, arguments) =>
         arguments.last.asType match
           case '[element] =>
@@ -292,6 +345,9 @@ object stagedInternal:
 
       case _ =>
         None
+    // A recursive occurrence degrades to the runtime seam, whose
+    // derivation is lazy.
+    else if cache.active.contains(tpe.show) then None
     else if productSupported(tpe) then Some(Inlinable.ProductInlinable[field]())
     else None
 
@@ -376,9 +432,19 @@ object stagedInternal:
   private[jacinta] def productBody[product: Type](reader: Expr[JsonReader])(using Quotes)
   :   Expr[product] =
 
-    productBody[product](reader, scm.HashMap())
+    productBody[product](reader, Cache())
 
   private def productBody[product: Type](reader: Expr[JsonReader], cache: Cache)(using Quotes)
+  :   Expr[product] =
+
+    import quotes.reflect.*
+
+    cache.active += TypeRepr.of[product].dealias.show
+
+    try productBody0[product](reader, cache)
+    finally cache.active -= TypeRepr.of[product].dealias.show
+
+  private def productBody0[product: Type](reader: Expr[JsonReader], cache: Cache)(using Quotes)
   :   Expr[product] =
 
     import quotes.reflect.*
@@ -684,12 +750,19 @@ object stagedInternal:
   def inlinableParsable[value: Type](using Quotes): Expr[value is Json.Parsable] =
     import quotes.reflect.*
 
-    val cache: Cache = scm.HashMap()
+    val cache: Cache = Cache()
 
     val root: Inlinable = resolve[value](cache).getOrElse:
       report.errorAndAbort
         (s"jacinta: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not an "+
           "inlinable product; use `Json.Parsable.staged` or `derived`")
+
+    // A runtime-tier root would find the very given under definition — an
+    // infinite self-call — or add nothing over the instance it wraps.
+    if root.isInstanceOf[RuntimeInlinable[?]] then
+      report.errorAndAbort
+        (s"jacinta: ${TypeRepr.of[value].show} has no generator of its own; use "+
+          "`Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`")
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]
 
@@ -697,8 +770,9 @@ object stagedInternal:
       // Sealed per the codec-thunk pattern, like the staged instances: the
       // generated body resolves its capabilities where it is spliced.
       caps.unsafe.unsafeAssumePure:
-        new Json.Parsable:
-          type Self = value
-          def shape(): Morphology = Morphology.Any
-          def parse(reader: JsonReader): value = ${ instance.parse('{reader}) }
+        new Json.Parsable.Direct[value]:
+          protected def parseCarrier(reader0: AnyRef): value =
+            // A capability class cannot be quoted into a pure hole, so
+            // every use casts from the neutral carrier afresh.
+            ${ instance.parse('{ reader0.asInstanceOf[JsonReader] }) }
     }

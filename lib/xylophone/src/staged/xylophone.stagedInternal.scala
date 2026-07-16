@@ -242,7 +242,13 @@ object stagedInternal:
   // runtime seam. The cache spans one entry expansion, so a type's staging
   // summon runs at most once however often it recurs in the graph.
 
-  private type Cache = scm.HashMap[String, Option[Inlinable]]
+  // The per-entry expansion cache: memoized staging summons, and the set of
+  // types whose generators are currently on the expansion stack — a
+  // recursive occurrence (`Tree` with `children: List[Tree]`) must degrade
+  // to the runtime seam rather than expand forever.
+  private[xylophone] final class Cache:
+    val instances: scm.HashMap[String, Option[Inlinable]] = scm.HashMap()
+    val active: scm.Set[String] = scm.Set()
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
@@ -250,7 +256,50 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     builtinFor(tpe).orElse:
-      cache.getOrElseUpdate(tpe.show, summonViaStaging[field]).orElse(structuralFor[field](cache))
+      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
+      . orElse(structuralFor[field](cache))
+      . orElse(runtimeFor[field])
+
+  // A `derives`-clause carrier delegates to a structural instance; the
+  // ladder works with the delegate so generator identities stay
+  // recognizable.
+  private def unwrap(instance: Inlinable): Inlinable = instance match
+    case derived: Inlinable.ForXml[?] => derived.delegate.asInstanceOf[Inlinable]
+    case other                         => other
+
+  // The runtime tiers, resolved with a reflection-level implicit search at
+  // expansion time and called through neutral-carrier helpers (the erasing
+  // cast crosses the capability boundary, as wisteria's field-instance
+  // engine does): a nominal `Parsable` — the recursion tie, since a
+  // recursive record's own alias given (a lazy val) is found from inside
+  // its own definition — then the `Xml.Field` fallback chain. Neither
+  // `summonInline` nor a `using` parameter works for these from inside the
+  // generated parser's inline context.
+  private def runtimeFor[field: Type](using Quotes): Option[Inlinable] =
+    import quotes.reflect.*
+
+    def searched(target: TypeRepr): Option[Expr[Any]] =
+      Implicits.search(target) match
+        case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
+        case _                              => None
+
+    searched(TypeRepr.of[field is Xml.Parsable]).map(RuntimeInlinable[field](_)).orElse:
+      searched(TypeRepr.of[field is Xml.Field]).map(RuntimeInlinable[field](_))
+
+  private[xylophone] final class RuntimeInlinable[value](parsing: Expr[Any]) extends Inlinable:
+    type Self = value
+
+    def parse(reader: Expr[XmlReader])(using Quotes, Type[value]): Expr[value] =
+      '{
+        Xml.Parsable.parseField[value]
+          ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef])
+      }
+
+    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+      (using Quotes, Type[value])
+    :   Expr[value] =
+
+      '{ Xml.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic, $foci) }
 
   private def builtinFor(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[Inlinable] =
     import quotes.reflect.*
@@ -269,7 +318,11 @@ object stagedInternal:
 
     val tpe = TypeRepr.of[field].dealias
 
-    if tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+    // A `Map` is an `Iterable` of pairs, but its wire form is not repeated
+    // elements of tuples — it stays on the runtime seam.
+    val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
+
+    if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
       case AppliedType(_, arguments) =>
         arguments.last.asType match
           case '[element] =>
@@ -279,6 +332,9 @@ object stagedInternal:
 
       case _ =>
         None
+    // A recursive occurrence degrades to the runtime seam, whose
+    // derivation is lazy.
+    else if cache.active.contains(tpe.show) then None
     else if productSupported(tpe) then Some(Inlinable.ProductInlinable[field]())
     else sumFor[field](cache)
 
@@ -460,9 +516,21 @@ object stagedInternal:
   private[xylophone] def productFields[product: Type](reader: Expr[XmlReader])(using Quotes)
   :   Expr[product] =
 
-    productFields[product](reader, scm.HashMap())
+    productFields[product](reader, Cache())
 
   private[xylophone] def productFields[product: Type]
+    (reader: Expr[XmlReader], cache: Cache)
+    (using Quotes)
+  :   Expr[product] =
+
+    import quotes.reflect.TypeRepr
+
+    cache.active += TypeRepr.of[product].dealias.show
+
+    try productFields0[product](reader, cache)
+    finally cache.active -= TypeRepr.of[product].dealias.show
+
+  private def productFields0[product: Type]
     (reader: Expr[XmlReader], cache: Cache)
     (using Quotes)
   :   Expr[product] =
@@ -940,7 +1008,7 @@ object stagedInternal:
     (using Quotes)
   :   Expr[product] =
 
-    productAbsent[product](tactic, foci, scm.HashMap())
+    productAbsent[product](tactic, foci, Cache())
 
   private[xylophone] def productAbsent[product: Type]
     (tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]], cache: Cache)
@@ -1027,9 +1095,20 @@ object stagedInternal:
     (using Quotes)
   :   Expr[sum] =
 
-    sumBody[sum](reader, attribute, scm.HashMap())
+    sumBody[sum](reader, attribute, Cache())
 
   private def sumBody[sum: Type](reader: Expr[XmlReader], attribute: String, cache: Cache)
+    (using Quotes)
+  :   Expr[sum] =
+
+    import quotes.reflect.*
+
+    cache.active += TypeRepr.of[sum].dealias.show
+
+    try sumBody0[sum](reader, attribute, cache)
+    finally cache.active -= TypeRepr.of[sum].dealias.show
+
+  private def sumBody0[sum: Type](reader: Expr[XmlReader], attribute: String, cache: Cache)
     (using Quotes)
   :   Expr[sum] =
 
@@ -1095,7 +1174,7 @@ object stagedInternal:
   def inlinableParsable[value: Type](using Quotes): Expr[value is Xml.Parsable] =
     import quotes.reflect.*
 
-    val cache: Cache = scm.HashMap()
+    val cache: Cache = Cache()
 
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
@@ -1108,11 +1187,11 @@ object stagedInternal:
       // generated body resolves its capabilities at the read site, through
       // the reader.
       caps.unsafe.unsafeAssumePure:
-        new Xml.Parsable:
-          type Self = value
-
-          def parse(reader: XmlReader): value =
-            ${ productFields[value]('reader, cache) }
+        new Xml.Parsable.Direct[value]:
+          protected def parseCarrier(reader0: AnyRef): value =
+            // A capability class cannot be quoted into a pure hole, so
+            // every use casts from the neutral carrier afresh.
+            ${ productFields[value]('{ reader0.asInstanceOf[XmlReader] }, cache) }
 
           override def absent()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus]): value =
             ${ productAbsent[value]('tactic, 'foci, cache) }
