@@ -1077,7 +1077,8 @@ object escritoire extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
-    override def enabled = false
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object polysyllabic extends Library:
   object core extends Component(gossamer.core):
