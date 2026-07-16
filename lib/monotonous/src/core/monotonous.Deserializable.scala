@@ -98,14 +98,3 @@ trait Deserializable extends Findable, caps.Pure:
 
   def deserialize(value: Text)(using Tactic[SerializationError]): Data =
     deserialize(t"", value, 0, true)
-
-  def deserialize(stream: LazyList[Text])(using Tactic[SerializationError]): LazyList[Data] =
-    def recur(stream: LazyList[Text], previous: Text, carry: Int): LazyList[Data] = stream match
-      case head #:: tail =>
-        val carry2 = (carry + head.length)%atomicity
-        deserialize(previous, head, -carry, tail.nil) #:: recur(tail, head, carry2)
-
-      case _ =>
-        if carry > 0 then LazyList(deserialize(previous, t"", -carry, true)) else LazyList()
-
-    recur(stream, t"", 0)

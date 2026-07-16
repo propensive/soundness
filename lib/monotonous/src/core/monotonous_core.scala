@@ -127,13 +127,6 @@ extension (value: Text)
     deserializable.deserialize(value)
 
 
-extension (stream: LazyList[Text])
-  def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
-  :   LazyList[Data] raises SerializationError =
-
-    deserializable.deserialize(stream)
-
-
 extension [value: Encodable in Data](value: value)
   def serialize[scheme <: Serialization](using encodable: Serializable in scheme): Text =
     encodable.encode(value.bytestream)
