@@ -413,3 +413,248 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(xrefStreamDocument()).open():
           textOf(pdf.resolved(pdf(1, 0)(t"Greeting").or(Cos.Nil)))
       . assert(_ == t"hi")
+
+    // A two-page document: object 1 catalog, 2 page-tree root (A4 media box, inherited),
+    // 3 a plain page, 4 a page with its own crop box and rotation.
+    def paged(extraCatalog: Text = t"", page3: Text = t"", page4: Text = t""): Data =
+      document
+        ( t"<< /Type /Catalog /Pages 2 0 R $extraCatalog >>".in[Data],
+          t"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 595 842] >>".in[Data],
+          t"<< /Type /Page /Parent 2 0 R $page3 >>".in[Data],
+          t"<< /Type /Page /Parent 2 0 R /CropBox [10 10 300 400] /Rotate 90 $page4 >>"
+          . in[Data] )
+
+    suite(m"Pages"):
+      test(m"the page tree flattens in order"):
+        PdfFile(paged()).open():
+          pdf.pages.length
+      . assert(_ == 2)
+
+      test(m"the media box is inherited from the page-tree root"):
+        PdfFile(paged()).open():
+          pdf.pages(0).mediaBox.width
+      . assert(_ == Quantity[Points[1]](595.0))
+
+      test(m"the crop box defaults to the media box"):
+        PdfFile(paged()).open():
+          pdf.pages(0).cropBox.height
+      . assert(_ == Quantity[Points[1]](842.0))
+
+      test(m"a page's own crop box wins"):
+        PdfFile(paged()).open():
+          pdf.pages(1).cropBox.width
+      . assert(_ == Quantity[Points[1]](290.0))
+
+      test(m"the trim box defaults to the crop box"):
+        PdfFile(paged()).open():
+          pdf.pages(1).trimBox.height
+      . assert(_ == Quantity[Points[1]](390.0))
+
+      test(m"rotation is read from the page"):
+        PdfFile(paged()).open():
+          pdf.pages(1).rotation
+      . assert(_ == Page.Rotation.Quarter)
+
+      test(m"a quarter-turned page exchanges width and height"):
+        PdfFile(paged()).open():
+          pdf.pages(1).width
+      . assert(_ == Quantity[Points[1]](390.0))
+
+      test(m"an unrotated page keeps its axes"):
+        PdfFile(paged()).open():
+          pdf.pages(0).rotation
+      . assert(_ == Page.Rotation.None)
+
+      test(m"a UserUnit scales the boxes"):
+        PdfFile(paged(page3 = t"/UserUnit 2")).open():
+          pdf.pages(0).mediaBox.width
+      . assert(_ == Quantity[Points[1]](1190.0))
+
+      test(m"a cyclic page tree is an error"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [2 0 R] /Count 1 >>".in[Data] )
+
+        capture[PdfError](PdfFile(doc).open()(pdf.pages.length)).reason
+      . assert(_ == PdfError.Reason.CircularPageTree)
+
+    suite(m"Document information"):
+      def informed(info: Text): Data =
+        val body = t"<< /Type /Catalog /Pages 3 0 R >>".in[Data]
+        val pages = t"<< /Type /Pages /Kids [] /Count 0 >>".in[Data]
+        documentWith(t"/Info 2 0 R", body, t"<< $info >>".in[Data], pages)
+
+      test(m"the title is read"):
+        PdfFile(informed(t"/Title (A Document)")).open():
+          pdf.info.title
+      . assert(_ == t"A Document")
+
+      test(m"a UTF-16BE string decodes by its byte-order mark"):
+        PdfFile(informed(t"/Author <FEFF00480069>")).open():
+          pdf.info.author
+      . assert(_ == t"Hi")
+
+      test(m"PDFDocEncoding maps its differences from Latin-1"):
+        PdfFile(informed(t"/Subject (caf\\351 \\200)")).open():
+          pdf.info.subject
+      . assert(_ == t"café •")
+
+      test(m"a creation date parses with its offset"):
+        PdfFile(informed(t"/CreationDate (D:20240102030405+01'30')")).open():
+          pdf.info.created.let(_.offset)
+      . assert(_ == Quantity[Seconds[1]](5400.0))
+
+      test(m"a date with no offset has an unknown zone"):
+        PdfFile(informed(t"/CreationDate (D:20240102030405)")).open():
+          pdf.info.created.let(_.offset)
+      . assert(_ == Unset)
+
+      test(m"a malformed date is unset, not an error"):
+        PdfFile(informed(t"/ModDate (yesterday)")).open():
+          pdf.info.modified
+      . assert(_ == Unset)
+
+      test(m"a truncated date defaults its later components"):
+        PdfFile(informed(t"/CreationDate (D:2024)")).open():
+          pdf.info.created.let(_.timestamp)
+      . assert: timestamp =>
+          import calendars.gregorianCalendar
+          timestamp == Timestamp(Date(Year(2024), Month(1), Day(1)),
+              Clockface(Base24(0), Base60(0), Base60(0)))
+
+      test(m"document information escapes the scope as a pure value"):
+        val info = PdfFile(informed(t"/Title (Kept)")).open()(pdf.info)
+        info.title
+      . assert(_ == t"Kept")
+
+    suite(m"Navigation"):
+      def navigable(catalogExtra: Text, objects: Data*): Data =
+        val standard = List
+          ( t"<< /Type /Catalog /Pages 2 0 R $catalogExtra >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+
+        document((standard ++ objects)*)
+
+      test(m"a named destination resolves through the name tree"):
+        val doc = navigable
+          ( t"/Names << /Dests << /Names [(intro) [3 0 R /XYZ 10 20 null]] >> >>" )
+
+        PdfFile(doc).open():
+          pdf.destinations.at(t"intro")
+      . assert(_ == Destination.Xyz(Prim, 10.0, 20.0, Unset))
+
+      test(m"an old-style /Dests dictionary also resolves"):
+        val doc = navigable(t"/Dests << /intro [3 0 R /FitH 30] >>")
+
+        PdfFile(doc).open():
+          pdf.destinations.at(t"intro")
+      . assert(_ == Destination.FitWidth(Prim, 30.0))
+
+      test(m"bookmarks form a tree with destinations"):
+        val doc = navigable
+          ( t"/Outlines 4 0 R",
+            t"<< /Type /Outlines /First 5 0 R >>".in[Data],
+            t"<< /Title (One) /Parent 4 0 R /Next 6 0 R /Dest [3 0 R /Fit] >>".in[Data],
+            t"<< /Title (Two) /Parent 4 0 R /First 7 0 R >>".in[Data],
+            t"<< /Title (Child) /Parent 6 0 R >>".in[Data] )
+
+        PdfFile(doc).open():
+          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.length))
+      . assert(_ == List((t"One", 0), (t"Two", 1)))
+
+      test(m"a bookmark destination lands on its page"):
+        val doc = navigable
+          ( t"/Outlines 4 0 R",
+            t"<< /Type /Outlines /First 5 0 R >>".in[Data],
+            t"<< /Title (One) /Parent 4 0 R /Dest [3 0 R /Fit] >>".in[Data] )
+
+        PdfFile(doc).open():
+          pdf.bookmarks.head.destination
+      . assert(_ == Destination.Fit(Prim))
+
+      test(m"a cyclic outline terminates"):
+        val doc = navigable
+          ( t"/Outlines 4 0 R",
+            t"<< /Type /Outlines /First 5 0 R >>".in[Data],
+            t"<< /Title (Loop) /Parent 4 0 R /Next 5 0 R >>".in[Data] )
+
+        PdfFile(doc).open():
+          pdf.bookmarks.length
+      . assert(_ == 1)
+
+    suite(m"Annotations, attachments and labels"):
+      test(m"a URI link annotation"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>".in[Data],
+            t"<< /Subtype /Link /Rect [0 0 10 20] /A << /S /URI /URI (https://x.com) >> >>"
+            . in[Data] )
+
+        PdfFile(doc).open():
+          pdf.pages(0).annotations.head match
+            case Annotation.Link(rect, _, uri, _) => (rect.height, uri)
+            case _                                => (Quantity[Points[1]](0.0), Unset)
+      . assert(_ == (Quantity[Points[1]](20.0), t"https://x.com"))
+
+      test(m"a note annotation carries its contents"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R /Annots [4 0 R] >>".in[Data],
+            t"<< /Subtype /Text /Rect [0 0 5 5] /Contents (Remember) /Open true >>".in[Data] )
+
+        PdfFile(doc).open():
+          pdf.pages(0).annotations.head match
+            case Annotation.Note(_, contents, open, _) => (contents, open)
+            case _                                     => (Unset, false)
+      . assert(_ == (t"Remember", true))
+
+      test(m"an attachment surfaces its metadata and content"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R /Names << /EmbeddedFiles << /Names [(notes.txt) 4 0 R] >> >> >>"
+            . in[Data],
+            t"<< /Type /Pages /Kids [] /Count 0 >>".in[Data],
+            t"<< /Type /Page >>".in[Data],
+            t"<< /Type /Filespec /F (notes.txt) /EF << /F 5 0 R >> >>".in[Data],
+            t"<< /Type /EmbeddedFile /Subtype /text#2Fplain /Length 5 >>\nstream\nhello\nendstream"
+            . in[Data] )
+
+        PdfFile(doc).open():
+          val attachment = pdf.attachments.head
+
+          ( attachment.name,
+            attachment.filename,
+            attachment.mediaType,
+            String(attachment.data.mutable(using Unsafe), "UTF-8").tt )
+      . assert(_ == (t"notes.txt", t"notes.txt", t"text/plain", t"hello"))
+
+      test(m"page labels follow the number-tree ranges"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R /PageLabels << /Nums [0 << /S /r >> 2 << /S /D /St 5 /P (A-) >>] >> >>"
+            . in[Data],
+            t"<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 /MediaBox [0 0 9 9] >>"
+            . in[Data],
+            t"<< /Type /Page /Parent 2 0 R >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+
+        PdfFile(doc).open():
+          List(pdf.pageLabel(0.z), pdf.pageLabel(1.z), pdf.pageLabel(2.z))
+      . assert(_ == List(t"i", t"ii", t"A-5"))
+
+      test(m"a document without page labels numbers plainly"):
+        PdfFile(paged()).open():
+          pdf.pageLabel(1.z)
+      . assert(_ == t"2")
+
+      test(m"XMP metadata surfaces as raw bytes"):
+        val doc = document
+          ( t"<< /Type /Catalog /Pages 2 0 R /Metadata 3 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [] /Count 0 >>".in[Data],
+            t"<< /Type /Metadata /Subtype /XML /Length 5 >>\nstream\n<xmp/\nendstream".in[Data] )
+
+        PdfFile(doc).open():
+          pdf.xmp.let(bytes => String(bytes.mutable(using Unsafe), "UTF-8").tt)
+      . assert(_ == t"<xmp/")

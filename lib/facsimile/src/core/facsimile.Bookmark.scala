@@ -30,7 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package facsimile
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, PdfError, PdfFile,
-    PdfInfo, PdfRect, pdf}
+import anticipation.*
+import vacuous.*
+
+// One entry of the document outline (ISO 32000-2 §12.3.3), fully materialized as a pure
+// tree: PDF's "outlines" are what every viewer presents as bookmarks.
+case class Bookmark
+  ( title:       Text,
+    destination: Optional[Destination],
+    children:    List[Bookmark] )

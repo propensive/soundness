@@ -47,3 +47,36 @@ pdfFile.open():
 
 Decoded `Data` and parsed `Cos` values are pure and may escape the `open` block; the `Pdf`
 itself, and anything which still resolves lazily through it, may not.
+
+### Pages
+
+The page tree is flattened into reading order, with the inheritable attributes — resources,
+boxes and rotation — applied along each path. Page geometry is expressed in typesafe
+lengths: a PDF point is exactly 1/72 inch, `quantitative`'s `Points` unit.
+
+```scala
+pdfFile.open():
+  val page = pdf.pages(0)
+  page.mediaBox.width   // Quantity[Points[1]]
+  page.rotation         // Page.Rotation.Quarter, for /Rotate 90
+  page.width            // rotation-aware display width
+  page.annotations      // typed Link, Note and Widget annotations
+```
+
+A `Page` still resolves through the document, so — like the `Pdf` — it cannot leave the
+`open` block; everything extracted from it can.
+
+### Document structure
+
+Metadata and navigation structures are fully materialized as pure values:
+
+```scala
+pdfFile.open():
+  pdf.info.title        // Optional[Text]
+  pdf.info.created      // Optional[PdfInfo.Timing]: a Timestamp and optional UTC offset
+  pdf.bookmarks         // the outline tree, with Destinations
+  pdf.destinations      // named destinations
+  pdf.attachments       // embedded files (read `data` inside the scope)
+  pdf.pageLabel(0.z)    // "i", "42", "A-7"...
+  pdf.xmp               // the raw XMP packet, if any
+```
