@@ -33,6 +33,7 @@
 package crossparse
 
 import anticipation.*
+import breviloquence.*
 import contingency.*, strategies.throwUnsafely
 import gossamer.*
 import jacinta.*
@@ -65,6 +66,11 @@ object Payment:
   // dispatch on the attribute straight off the open tag.
   given xmlDiscriminable: Payment is Discriminable in Xml = Xml.DiscriminantAttribute(t"type")
 
+  // The CBOR corpus carries the same `type` discriminator as a map entry;
+  // the named `DiscriminantKey` shape lets the inlined CBOR parser dispatch
+  // on a scan-ahead of that entry.
+  given cborDiscriminable: Payment is Discriminable in Cbor = Cbor.DiscriminantKey(t"type")
+
 case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
 
 // The per-format `Inlinable` givens are qualified: each format's staged
@@ -74,6 +80,7 @@ object LineItem:
   given jsonInlinable: (LineItem is jacinta.Inlinable) = jacinta.Inlinable.derived
   given telInlinable: (LineItem is stratiform.Inlinable) = stratiform.Inlinable.derived
   given xmlInlinable: (LineItem is xylophone.Inlinable) = xylophone.Inlinable.derived
+  given cborInlinable: (LineItem is breviloquence.Inlinable) = breviloquence.Inlinable.derived
 
 case class Customer(id: Long, name: Text, email: Text, region: Text)
 
@@ -81,6 +88,7 @@ object Customer:
   given jsonInlinable: (Customer is jacinta.Inlinable) = jacinta.Inlinable.derived
   given telInlinable: (Customer is stratiform.Inlinable) = stratiform.Inlinable.derived
   given xmlInlinable: (Customer is xylophone.Inlinable) = xylophone.Inlinable.derived
+  given cborInlinable: (Customer is breviloquence.Inlinable) = breviloquence.Inlinable.derived
 
 case class Order
   ( reference: Text, customer: Customer, items: List[LineItem], payment: Payment,
@@ -90,6 +98,7 @@ object Order:
   given jsonInlinable: (Order is jacinta.Inlinable) = jacinta.Inlinable.derived
   given telInlinable: (Order is stratiform.Inlinable) = stratiform.Inlinable.derived
   given xmlInlinable: (Order is xylophone.Inlinable) = xylophone.Inlinable.derived
+  given cborInlinable: (Order is breviloquence.Inlinable) = breviloquence.Inlinable.derived
 
 case class Orders(orders: List[Order])
 
@@ -104,3 +113,4 @@ object Orders:
   given jsonInlinable: (Orders is jacinta.Inlinable) = jacinta.Inlinable.derived
   given telInlinable: (Orders is stratiform.Inlinable) = stratiform.Inlinable.derived
   given xmlInlinable: (Orders is xylophone.Inlinable) = xylophone.Inlinable.derived
+  given cborInlinable: (Orders is breviloquence.Inlinable) = breviloquence.Inlinable.derived

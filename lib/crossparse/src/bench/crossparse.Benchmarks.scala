@@ -34,6 +34,7 @@ package crossparse
 
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
+import breviloquence.*
 import contingency.*, strategies.throwUnsafely
 import distillate.*
 import fulminate.*
@@ -149,6 +150,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
   lazy val jsonData: Data = jsonText.s.getBytes("UTF-8").nn.immutable(using Unsafe)
   lazy val telData: Data = telText.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val cborData: Data = Cbor.Ast.encodable.encoded(Cbor.unseal(corpus.in[Cbor]))
 
   // ── The decode arms ───────────────────────────────────────────────────────
   // Each format is measured two ways: through its materialized AST, and
@@ -176,6 +178,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     given inlinedOrders: Orders is Json.Parsable = jacinta.Inlinable.parsable[Orders]
     given inlinedTelOrders: Orders is Tel.Parsable = stratiform.Inlinable.parsable[Orders]
     given inlinedXmlOrders: Orders is Xml.Parsable = xylophone.Inlinable.parsable[Orders]
+    given inlinedCborOrders: Orders is Cbor.Parsable = breviloquence.Inlinable.parsable[Orders]
 
   def decodeJsonInlined(): Orders =
     import inlined.inlinedOrders
@@ -189,9 +192,14 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     import inlined.inlinedXmlOrders
     xmlText.read[Orders in Xml]
 
+  def decodeCborInlined(): Orders =
+    import inlined.inlinedCborOrders
+    cborData.read[Orders in Cbor]
+
   def decodeTelAst(): Orders = telData.read[Tel].as[Orders]
   def decodeXmlAst(): Orders = xmlText.read[Xml].as[Orders]
   def decodeYamlAst(): Orders = yamlText.read[Yaml].as[Orders]
+  def decodeCborAst(): Orders = cborData.read[Cbor].as[Orders]
 
   // ── Jsoniter arms ─────────────────────────────────────────────────────────
   // The external yardstick, decoding the same JSON corpus: direct with a
@@ -244,7 +252,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
   def run(): Unit =
     println(s"Corpus sizes (bytes): JSON=${jsonText.s.length} TEL=${telText.s.length} "
-        + s"XML=${xmlText.s.length} YAML=${yamlText.s.length}")
+        + s"XML=${xmlText.s.length} YAML=${yamlText.s.length} CBOR=${cborData.length}")
 
     // The correctness gate: every arm must reproduce the original value
     // before anything is timed.
@@ -255,6 +263,8 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     assert(decodeXmlInlined() == corpus, "XML inlined decode disagrees with the corpus")
     assert(decodeXmlAst() == corpus, "XML AST decode disagrees with the corpus")
     assert(decodeYamlAst() == corpus, "YAML AST decode disagrees with the corpus")
+    assert(decodeCborInlined() == corpus, "CBOR inlined decode disagrees with the corpus")
+    assert(decodeCborAst() == corpus, "CBOR AST decode disagrees with the corpus")
 
     val jsoniterExpected = jsoniterMirror(corpus)
     assert(decodeJsoniterDirect() == jsoniterExpected, "Jsoniter direct decode disagrees")
@@ -285,6 +295,12 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
       bench(m"XML via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlAst() }
 
+      bench(m"CBOR inlined")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeCborInlined() }
+
+      bench(m"CBOR via AST")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeCborAst() }
+
       // YAML decodes through the AST only: aliases require materialized
       // subtrees, so ypsiloid deliberately has no inlined path.
       bench(m"YAML via AST")(target = 1*Second):
@@ -302,6 +318,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     suite(m"Profile: inlined-parser hotspots"):
       profile(m"TEL inlined")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeTelInlined() }
+
+      profile(m"CBOR inlined")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeCborInlined() }
 
       profile(m"XML inlined")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeXmlInlined() }

@@ -771,7 +771,18 @@ object breviloquence extends Library:
                        zephyrine.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core, sedentary.core, eucalyptus.core)
+  // `Cbor.Inlinable`, whose entry macro needs expansion-time instance
+  // evaluation (an in-macro staging compiler), kept out of `core` so
+  // breviloquence users don't inherit the compiler jars unless they opt in.
+  object staged extends Component(core):
+    override def scalaJs = false // expansion-time instance evaluation via staging
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+  object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2",
@@ -947,7 +958,9 @@ object crossparse extends Library:
   // that each format's `Inlinable` expansion-time instance evaluation can
   // load them (and resolve the companion `Inlinable` givens) at the bench's
   // expansion.
-  object model extends Component(jacinta.staged, stratiform.staged, xylophone.staged, ypsiloid.core):
+  object model
+      extends Component(jacinta.staged, stratiform.staged, xylophone.staged,
+                       breviloquence.staged, ypsiloid.core):
     override def scalaJs = false // depends on the staged components (compiler jars)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
