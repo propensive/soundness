@@ -449,7 +449,7 @@ object soundness extends Toolchain:
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core)
 
-  object data extends Bundle(caesura.core, dissonance.core, enigmatic.core,
+  object data extends Bundle(caesura.core, dissonance.core, enigmatic.core, facsimile.core,
     gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
@@ -1235,6 +1235,16 @@ object exoskeleton extends Library:
         mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(rig):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
+
+object facsimile extends Library:
+  object core extends Component(turbulence.jvm, zephyrine.core, gastronomy.core, enigmatic.core,
+      hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
+    override def scalaJs = false // random-access file reading (`java.nio`), `java.util.zip`, JCE
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -2272,7 +2282,7 @@ val allLibraries: Seq[Library] = Seq(
   charisma, chiaroscuro, coaxial, contextual, contingency, cordillera, cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
-  exoskeleton,
+  exoskeleton, facsimile,
   frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
   gnossienne, gossamer, graffiti, guillotine, hallucination, harlequin, hellenism, hieroglyph,
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
