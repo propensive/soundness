@@ -94,7 +94,9 @@ extends RequestServable:
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
   // when neither is given. The framed stream stops exactly at the body's end so
   // the cursor is left at the next pipelined request.
-  private def requestBody(cursor: Cursor[Data, ?], head: Http.Request.Head): LazyList[Data] =
+  private def requestBody(cursor: Cursor[Data, ?], head: Http.Request.Head)
+  :   Stream[Data] over Credit =
+
     val chunked: Boolean = head.headers.exists: header =>
       header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
@@ -104,7 +106,7 @@ extends RequestServable:
         . lay(Unset: Optional[Int]): text =>
             safely(Integer.parseInt(text.s.trim.nn))
 
-      length.lay(LazyList())(Http.Request.fixedBody(cursor, _))
+      length.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
 
   // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
   // HTTP/1.0 closes unless `Connection: keep-alive`.
@@ -177,7 +179,16 @@ extends RequestServable:
           // Tell a waiting client it may send the body before we read it.
           if expectsContinue(head) then writeAll(out, continueResponse.stream)
 
-          val body = if upgrade then cursor.remainder else requestBody(cursor, head)
+          // The framed body, minted once and lent single-owner: the handler and
+          // the post-response drain share it, so the handler pulls what it
+          // reads and the drain consumes the rest. A second `body()` call
+          // RESUMES rather than replaying — explicit `memoize` replaces the
+          // former LazyList view's implicit caching.
+          val bodyStream: Stream[Data] over Credit =
+            if upgrade then streamOf(cursor) else requestBody(cursor, head)
+
+          // Neutral carrier: the spring re-lends the same single-owner stream.
+          val bodyRef: AnyRef = bodyStream.asInstanceOf[AnyRef]
 
           val request =
             Http.Request
@@ -186,7 +197,7 @@ extends RequestServable:
                 head.host,
                 head.target,
                 head.headers,
-                () => body.iterator.stream )
+                () => bodyRef.asInstanceOf[Stream[Data] over Credit] )
 
           var upgraded = false
           var keep = keepAlive(head)
@@ -223,12 +234,22 @@ extends RequestServable:
             // (memoised) blocks doesn't move the cursor, so the position delta
             // measures only what the drain itself reads.
             val drainStart = cursor.position.n0
+            val drain = bodyRef.asInstanceOf[Stream[Data] over Credit]
+            var intact = true
+            var draining = true
 
-            def drained(stream: LazyList[Data]): Boolean = stream match
-              case _ #:: tail => cursor.position.n0 - drainStart <= drainLimit && drained(tail)
-              case _          => true
+            while draining do drain.refill(Credit(drainLimit)) match
+              case count: Int =>
+                drain.skip(count)
 
-            drained(body)
+                if cursor.position.n0 - drainStart > drainLimit then
+                  intact = false
+                  draining = false
+
+              case _ =>
+                draining = false
+
+            intact
 
     // A stream error tearing down the connection is logged and ends it; any other
     // unexpected failure is left to propagate out of the per-connection daemon, where
