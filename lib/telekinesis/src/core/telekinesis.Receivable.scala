@@ -46,15 +46,18 @@ trait Receivable2:
   =>  ((content is Receivable)^{tactic}) =
 
     Receivable:
-      body => content(body.memoize.utf8)
+      body => content(body.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
 
 object Receivable extends Receivable2:
   // A named SAM rather than a function type: a function type may not take a
   // capability-typed (`^`) parameter (the `Spring` precedent), and SAM
-  // conversion keeps `Receivable(stream => ...)` call sites unchanged.
+  // conversion keeps `Receivable(stream => ...)` call sites unchanged. The
+  // parameter is NOT `consume` (a SAM-lambda cannot provide one, on the
+  // `-scalajs` row): consuming readers cross it through a neutral carrier,
+  // per the `accept` convention.
   trait Reader[result]:
-    def read(consume stream: (Stream[Data] over Credit)^): result
+    def read(stream: (Stream[Data] over Credit)^): result
 
   // The reader receives the response body as a single-owner pull endpoint;
   // whole-value consumers go through their `Aggregable`'s `accept`.
@@ -67,7 +70,7 @@ object Receivable extends Receivable2:
 
   given text: (tactic: Tactic[HttpError])
   =>  ((Text is Receivable)^{tactic}) =
-    Receivable(_.memoize.utf8)
+    Receivable(_.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
   given streamable: [stream] => (aggregable: (stream is Aggregable by Data)^)
   =>  (tactic: Tactic[HttpError])

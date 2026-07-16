@@ -445,8 +445,13 @@ object Http:
 
       // Sealed like `Response.parse`: the cursor is single-owner and reachable
       // only through the spring; a capturing `Spring` would cascade `^` through
-      // every `Request` value.
-      val spring: Spring[Data]^ = () => streamOf(cursor)
+      // every `Request` value. The neutral carrier keeps the spring's result
+      // from naming the non-local cursor (the `-scalajs` row enforces the
+      // hiding rule where the JVM row does not).
+      val cursorRef: AnyRef = cursor.asInstanceOf[AnyRef]
+
+      val spring: Spring[Data]^ =
+        () => streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
 
       Request
         ( head.method,
@@ -906,8 +911,11 @@ object Http:
       // each mint resumes where the previous reader stopped (explicit `memoize`
       // replaces the former memoized-remainder replay). Sealed: the cursor is
       // reachable only through the spring; a capturing `Body` would cascade
-      // `^` through every `Response` value.
-      val spring: Spring[Data]^ = () => streamOf(cursor)
+      // `^` through every `Response` value. Neutral carrier: see `Request.parse`.
+      val cursorRef: AnyRef = cursor.asInstanceOf[AnyRef]
+
+      val spring: Spring[Data]^ =
+        () => streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
       val body = Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
 
       Response(version, status, headers.reverse, body)
