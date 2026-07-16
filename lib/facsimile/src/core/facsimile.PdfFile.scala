@@ -32,76 +32,59 @@
                                                                                                   */
 package facsimile
 
+import java.io as ji
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
 import anticipation.*
-import fulminate.*
+import contingency.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
-object PdfError:
-  enum Reason(val number: Int) extends Clarification:
-    case NotPdf                                       extends Reason(1)
-    case Truncated                                    extends Reason(2)
-    case MissingStartxref                             extends Reason(3)
-    case MalformedXref(offset: Long)                  extends Reason(4)
-    case Unparseable(offset: Long, expected: Text)    extends Reason(5)
-    case MissingObject(objectNumber: Int, generation: Int)  extends Reason(6)
-    case CircularReference(objectNumber: Int)                extends Reason(7)
-    case MissingEntry(key: Text)                      extends Reason(8)
-    case TypeMismatch(key: Text, expected: Text)      extends Reason(9)
-    case UnknownFilter(name: Text)                    extends Reason(10)
-    case CorruptStream(filter: Text)                  extends Reason(11)
-    case MalformedOperator(operator: Text)            extends Reason(12)
-    case UnsupportedEncryption(version: Int)          extends Reason(13)
-    case BadPassword                                  extends Reason(14)
-    case CircularPageTree                             extends Reason(15)
-    case Io(detail: Text)                             extends Reason(16)
+object PdfFile:
+  def apply[path: Abstractable across Paths to Text](path: path): PdfFile =
+    new PdfFile(Origin.OnDisk(path.generic))
 
-  given communicable: Reason is Communicable =
-    case Reason.NotPdf =>
-      m"the file does not begin with a PDF header"
+  def apply(data: Data): PdfFile = new PdfFile(Origin.InMemory(data))
 
-    case Reason.Truncated =>
-      m"the PDF file ended unexpectedly"
+  private enum Origin:
+    case OnDisk(filename: Text)
+    case InMemory(data: Data)
 
-    case Reason.MissingStartxref =>
-      m"no startxref keyword could be found at the end of the file"
+// An unopened PDF: a locator, analogous to `Zipfile`, holding either a path or in-memory
+// bytes. Nothing is read until `open` is called; a future write mode becomes a sibling scope
+// (`edit`) rather than a change to this one.
+class PdfFile private (origin: PdfFile.Origin):
+  import PdfFile.Origin
 
-    case Reason.MalformedXref(offset) =>
-      m"the cross-reference section at offset $offset could not be interpreted"
+  // Runs `block` with a contextual `Pdf` — reached through the package-level `pdf` accessor —
+  // over a source held open exactly for the block's duration. The header, cross-reference
+  // chain and (once supported) encryption keys are read eagerly, so a malformed file fails
+  // here and not at first access. Capture checking confines the `Pdf`, and anything that
+  // still resolves through it, to the block.
+  def open[result](password: Optional[Text] = Unset)(block: Pdf ?=> result)
+  :   result raises PdfError =
 
-    case Reason.Unparseable(offset, expected) =>
-      m"$expected was expected at offset $offset"
+    origin match
+      case Origin.InMemory(data) =>
+        read(DataSource(data), password)(block)
 
-    case Reason.MissingObject(objectNumber, generation) =>
-      m"the object $objectNumber $generation was missing or invalid"
+      case Origin.OnDisk(filename) =>
+        val channel =
+          try jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.READ).nn
+          catch case error: ji.IOException =>
+            abort(PdfError(PdfError.Reason.Io(error.getMessage.nn.tt)))
 
-    case Reason.CircularReference(objectNumber) =>
-      m"resolving the object $objectNumber returned to itself"
+        try read(ChannelSource(channel), password)(block) finally channel.close()
 
-    case Reason.MissingEntry(key) =>
-      m"the required dictionary entry $key was absent"
+  // The capability must be minted where the block is applied: a `Pdf` returned from another
+  // method is a distinct fresh capability which could not flow into the block's own.
+  private def read[result](source: ByteSource, password: Optional[Text])(block: Pdf ?=> result)
+  :   result raises PdfError =
 
-    case Reason.TypeMismatch(key, expected) =>
-      m"the dictionary entry $key was not $expected"
-
-    case Reason.UnknownFilter(name) =>
-      m"the stream filter $name is not recognized"
-
-    case Reason.CorruptStream(filter) =>
-      m"a stream could not be decoded with the $filter filter"
-
-    case Reason.MalformedOperator(operator) =>
-      m"the content operator $operator had malformed operands"
-
-    case Reason.UnsupportedEncryption(version) =>
-      m"the encryption scheme (version $version) is not supported"
-
-    case Reason.BadPassword =>
-      m"the password was incorrect"
-
-    case Reason.CircularPageTree =>
-      m"the page tree contains a cycle"
-
-    case Reason.Io(detail) =>
-      m"an I/O operation failed: $detail"
-
-case class PdfError(reason: PdfError.Reason)(using Diagnostics)
-extends Error(728, reason.number)(m"the PDF could not be read because $reason")
+    val version = Pdf.readVersion(source) // check the header before anything else is trusted
+    val pdf = Pdf(source, Xref.load(source), version)
+    Pdf.validate(pdf, password)
+    block(using pdf)

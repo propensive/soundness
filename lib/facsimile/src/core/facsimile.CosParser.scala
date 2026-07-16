@@ -57,13 +57,24 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
 
   def value(): Cos raises PdfError = interpret(advance())
 
-  // Parses `N G obj <content> endobj`, or a `Cos.Body` if the content is a stream dictionary.
-  // The payload itself is skipped over by the caller (or, more usually, never traversed at
-  // all, since every object is located through the cross-reference table).
-  def indirect(number: Int, generation: Int): Cos raises PdfError =
-    expect(CosToken.Integral(number.toLong), t"the object number $number")
-    expect(CosToken.Integral(generation.toLong), t"the generation number $generation")
+  // Parses `N G obj <content> endobj`, returning the header numbers — the caller checks them
+  // against the cross-reference entry it followed — and a `Cos.Body` if the content is a
+  // stream dictionary. The payload itself is never traversed: every object is located through
+  // the cross-reference table, so parsing stops at the `stream` keyword.
+  def indirect(): (Int, Int, Cos) raises PdfError =
+    val number = integral(t"an object number")
+    val generation = integral(t"a generation number")
     expect(CosToken.Keyword(t"obj"), t"the keyword 'obj'")
+    (number, generation, content())
+
+  private def integral(expected: Text): Int raises PdfError =
+    val position = offset
+
+    advance() match
+      case CosToken.Integral(value) => value.toInt
+      case _ => abort(PdfError(PdfError.Reason.Unparseable(position, expected)))
+
+  private def content(): Cos raises PdfError =
     val content = value()
 
     advance() match

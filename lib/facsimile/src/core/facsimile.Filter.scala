@@ -68,6 +68,43 @@ private[facsimile] object Filter:
       case "JBIG2Decode"             => Jbig2
       case _                         => Unset
 
+  // Normalizes a stream dictionary's `/Filter` (a name or an array of names) and
+  // `/DecodeParms` (a dictionary, an array with nulls, or absent) into a decoding plan. Both
+  // values must already be resolved: indirect references are the caller's concern.
+  def chain(filter: Optional[Cos], parms: Optional[Cos])
+  :   List[(Id, Map[Text, Cos])] raises PdfError =
+
+    val names: List[Text] = filter.lay(List()):
+      case Cos.Name(name) =>
+        List(name)
+
+      case Cos.Sequence(elements) =>
+        elements.map: element =>
+          element.name.or(abort(PdfError(PdfError.Reason.TypeMismatch(t"Filter", t"a name"))))
+
+      case _ =>
+        abort(PdfError(PdfError.Reason.TypeMismatch(t"Filter", t"a name or array of names")))
+
+    val parameters: List[Map[Text, Cos]] = parms.lay(List()):
+      case Cos.Dictionary(entries) =>
+        List(entries)
+
+      case Cos.Sequence(elements) =>
+        elements.map: element =>
+          element match
+            case Cos.Dictionary(entries) => entries
+            case Cos.Nil                 => Map()
+
+            case _ =>
+              abort(PdfError(PdfError.Reason.TypeMismatch(t"DecodeParms", t"a dictionary")))
+
+      case _ =>
+        abort(PdfError(PdfError.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
+
+    names.zipWithIndex.map: (name, index) =>
+      val id = Id.parse(name).or(abort(PdfError(PdfError.Reason.UnknownFilter(name))))
+      (id, if index < parameters.length then parameters(index) else Map())
+
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
   def decode(data: Data, chain: List[(Id, Map[Text, Cos])]): Data raises PdfError =
     chain match
