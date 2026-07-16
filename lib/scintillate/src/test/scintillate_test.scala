@@ -186,16 +186,19 @@ object Tests extends Suite(m"Scintillate tests"):
 
           val start = java.lang.System.nanoTime()
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val tasks = List.tabulate(clients): _ =>
-            async:
-              val socket = java.net.Socket("localhost", port)
-              val out = socket.getOutputStream.nn
-              out.write(payload)
-              out.flush()
-              socket.shutdownOutput()
-              val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
-              socket.close()
-              response.cut(t"HTTP/1.1 200 OK").length - 1
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val socket = java.net.Socket("localhost", port)
+                val out = socket.getOutputStream.nn
+                out.write(payload)
+                out.flush()
+                socket.shutdownOutput()
+                val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
+                socket.close()
+                response.cut(t"HTTP/1.1 200 OK").length - 1
 
           val total = tasks.map(_.await()).foldLeft(0)(_ + _)
           val millis = (java.lang.System.nanoTime() - start)/1000000.0
