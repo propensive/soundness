@@ -39,20 +39,14 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 // Stream filters (ISO 32000-2 §7.4). Image codecs — DCT, JPX, CCITT, JBIG2 — are *terminal*:
 // decoding stops before them and the caller receives the still-encoded image bytes, which is
 // what any consumer of those formats wants anyway.
 private[facsimile] object Filter:
-  enum Id:
-    case Flate, AsciiHex, Ascii85, Lzw, RunLength, Crypt
-    case Dct, Jpx, Ccitt, Jbig2
-
-    def terminal: Boolean = this match
-      case Dct | Jpx | Ccitt | Jbig2 => true
-      case _                         => false
-
   object Id:
     // Both the full names and the inline-image abbreviations of ISO 32000-2 §8.9.7.
     def parse(name: Text): Optional[Id] = name.s match
@@ -67,6 +61,14 @@ private[facsimile] object Filter:
       case "CCITTFaxDecode" | "CCF"  => Ccitt
       case "JBIG2Decode"             => Jbig2
       case _                         => Unset
+
+  enum Id:
+    case Flate, AsciiHex, Ascii85, Lzw, RunLength, Crypt
+    case Dct, Jpx, Ccitt, Jbig2
+
+    def terminal: Boolean = this match
+      case Dct | Jpx | Ccitt | Jbig2 => true
+      case _                         => false
 
   // Normalizes a stream dictionary's `/Filter` (a name or an array of names) and
   // `/DecodeParms` (a dictionary, an array with nulls, or absent) into a decoding plan. Both
@@ -105,6 +107,38 @@ private[facsimile] object Filter:
       val id = Id.parse(name).or(abort(PdfError(PdfError.Reason.UnknownFilter(name))))
       (id, if index < parameters.length then parameters(index) else Map())
 
+  // A streaming plan is plain data — closures at most — because ducts, being scoped
+  // capabilities, may only be minted at the `via` call site (a lambda cannot return a fresh
+  // capability; a method can). `Pdf.spring` interprets these steps into a pipeline.
+  private[facsimile] enum Step:
+    case Inflate
+    case Unlzw(earlyChange: Boolean)
+    case Gather(transform: Data => Data)
+
+  // The streaming plan for a decoding chain, stopping before any terminal codec: Flate
+  // streams incrementally through turbulence's zlib duct (without the eager path's
+  // raw-deflate retry, which is impossible mid-stream); the textual filters gather their
+  // input and decode on flush, which is immaterial at their typical sizes.
+  def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[PdfError])
+  :   List[Step^{tactic}] =
+    chain.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
+      val predicted = parms.at(t"Predictor").let(_.long).or(1L) > 1
+
+      id match
+        case Id.Flate =>
+          if predicted then List(Step.Inflate, Step.Gather(predict(_, parms)))
+          else List(Step.Inflate)
+
+        case Id.Lzw =>
+          if predicted then List(Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)))
+          else List(Step.Unlzw(earlyChange(parms)))
+
+        case Id.Crypt =>
+          List()
+
+        case other =>
+          List(Step.Gather(stage(_, other, parms)))
+
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
   def decode(data: Data, chain: List[(Id, Map[Text, Cos])]): Data raises PdfError =
     chain match
@@ -116,12 +150,20 @@ private[facsimile] object Filter:
 
   private def stage(data: Data, id: Id, parms: Map[Text, Cos]): Data raises PdfError = id match
     case Id.Flate     => predict(flate(data), parms)
+    case Id.Lzw       => predict(lzw(data, parms), parms)
+    case Id.Ascii85   => Ascii85.decode(data)
     case Id.AsciiHex  => asciiHex(data)
     case Id.RunLength => runLength(data)
     case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
-    case Id.Lzw       => abort(PdfError(PdfError.Reason.UnknownFilter(t"LZWDecode")))
-    case Id.Ascii85   => abort(PdfError(PdfError.Reason.UnknownFilter(t"ASCII85Decode")))
     case _            => data
+
+  private def lzw(data: Data, parms: Map[Text, Cos]): Data raises PdfError =
+    try Lzw.decompress(LazyList(data), earlyChange(parms)).foldLeft(IArray.empty[Byte])(_ ++ _)
+    catch case _: IllegalStateException =>
+      abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
+
+  private def earlyChange(parms: Map[Text, Cos]): Boolean =
+    parms.at(t"EarlyChange").let(_.long).or(1L) == 1L
 
   private def predict(data: Data, parms: Map[Text, Cos]): Data raises PdfError =
     val predictor = parms.at(t"Predictor").let(_.long).or(1L).toInt

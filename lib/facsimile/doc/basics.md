@@ -48,6 +48,11 @@ pdfFile.open():
 Decoded `Data` and parsed `Cos` values are pure and may escape the `open` block; the `Pdf`
 itself, and anything which still resolves lazily through it, may not.
 
+For a large payload — an image or an embedded file — `pdf.spring(body)` yields a
+re-materializable `Spring[Data]` instead: each application mints a fresh streaming pull
+endpoint which reads and decodes incrementally, never holding the whole payload. The
+endpoint reads through the document, so it is likewise confined to the scope.
+
 ### Pages
 
 The page tree is flattened into reading order, with the inheritable attributes — resources,

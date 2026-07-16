@@ -258,8 +258,8 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == List(1, 2, 3, 4, 5, 6))
 
       test(m"an unknown filter name is an error"):
-        capture[PdfError](Filter.decode(data(1), List((Filter.Id.Lzw, Map())))).reason
-      . assert(_ == PdfError.Reason.UnknownFilter(t"LZWDecode"))
+        capture[PdfError](Filter.chain(Cos.Name(t"BogusDecode"), Unset)).reason
+      . assert(_ == PdfError.Reason.UnknownFilter(t"BogusDecode"))
 
     suite(m"Whole documents"):
       test(m"the version comes from the header"):
@@ -413,6 +413,73 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(xrefStreamDocument()).open():
           textOf(pdf.resolved(pdf(1, 0)(t"Greeting").or(Cos.Nil)))
       . assert(_ == t"hi")
+
+    suite(m"Streaming payloads"):
+      def drain(stream: (Stream[Data] over Credit)^): Data =
+        val builder = Array.newBuilder[Byte]
+
+        def recur(): Unit = stream.refill(Credit(4096)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[Byte]]
+            var i = 0
+
+            while i < count do
+              builder += window(stream.start + i)
+              i += 1
+
+            stream.skip(count)
+            recur()
+
+          case _ =>
+            ()
+
+        recur()
+        builder.result().immutable(using Unsafe)
+
+      def streamed(body: Data): Text =
+        PdfFile(document(catalog, body)).open():
+          pdf(2, 0) match
+            case body: Cos.Body =>
+              String(drain(pdf.spring(body)()).mutable(using Unsafe), "UTF-8").tt
+
+            case _ =>
+              t""
+
+      test(m"a raw payload streams in chunks"):
+        streamed(t"<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
+      . assert(_ == t"Hello world")
+
+      test(m"a Flate payload streams through the zlib duct"):
+        val payload = deflate(t"streamed and inflated".in[Data])
+
+        val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
+          ++ payload ++ t"\nendstream".in[Data]
+
+        streamed(body)
+      . assert(_ == t"streamed and inflated")
+
+      test(m"a gathered filter delivers through flush"):
+        streamed(t"<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
+          . in[Data])
+      . assert(_ == t"Hello")
+
+      test(m"a spring re-materializes the same content"):
+        val payload = deflate(t"again and again".in[Data])
+
+        val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
+          ++ payload ++ t"\nendstream".in[Data]
+
+        PdfFile(document(catalog, body)).open():
+          pdf(2, 0) match
+            case body: Cos.Body =>
+              val spring = pdf.spring(body)
+              val first = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
+              val second = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
+              (first, second)
+
+            case _ =>
+              (t"", t"")
+      . assert(_ == (t"again and again", t"again and again"))
 
     // A two-page document: object 1 catalog, 2 page-tree root (A4 media box, inherited),
     // 3 a plain page, 4 a page with its own crop box and rotation.
@@ -648,6 +715,78 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(paged()).open():
           pdf.pageLabel(1.z)
       . assert(_ == t"2")
+
+      test(m"ASCII85Decode decodes a full group"):
+        String
+          ( Filter.decode(t"9jqo^~>".in[Data], List((Filter.Id.Ascii85, Map())))
+            . mutable(using Unsafe), "UTF-8" ).tt
+      . assert(_ == t"Man ")
+
+      test(m"ASCII85Decode decodes a partial final group"):
+        String
+          ( Filter.decode(t"9jqo~>".in[Data], List((Filter.Id.Ascii85, Map())))
+            . mutable(using Unsafe), "UTF-8" ).tt
+      . assert(_ == t"Man")
+
+      test(m"the z shorthand is four zero bytes"):
+        Filter.decode(t"z~>".in[Data], List((Filter.Id.Ascii85, Map()))).to(List).map(_.toInt)
+      . assert(_ == List(0, 0, 0, 0))
+
+      test(m"LZWDecode decodes the specification's example"):
+        val encoded = data(0x80, 0x0b, 0x60, 0x50, 0x22, 0x0c, 0x0c, 0x85, 0x01)
+        String
+          ( Filter.decode(encoded, List((Filter.Id.Lzw, Map()))).mutable(using Unsafe),
+            "UTF-8" ).tt
+      . assert(_ == t"-----A---B")
+
+      test(m"a wrong stream length falls back to the endstream keyword"):
+        val body = t"<< /Length 3 >>\nstream\nHello\nendstream".in[Data]
+
+        PdfFile(document(catalog, body)).open():
+          pdf(2, 0) match
+            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case _              => t""
+      . assert(_ == t"Hello")
+
+      test(m"a missing stream length falls back to the endstream keyword"):
+        val body = t"<< /Kind /Bare >>\nstream\nHello\nendstream".in[Data]
+
+        PdfFile(document(catalog, body)).open():
+          pdf(2, 0) match
+            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case _              => t""
+      . assert(_ == t"Hello")
+
+      test(m"a hybrid-reference file resolves its compressed objects"):
+        var out: Data = t"%PDF-1.5\n".in[Data]
+
+        val offset1 = out.length
+        out = out ++ t"1 0 obj\n<< /Type /Catalog /Value 4 0 R >>\nendobj\n".in[Data]
+
+        // An object stream holding just object 4, whose pair table is 4 bytes long.
+        val offset2 = out.length
+        out = out ++ t"2 0 obj\n<< /Type /ObjStm /N 1 /First 4 /Length 6 >>\nstream\n".in[Data]
+          ++ t"4 0\n99".in[Data] ++ t"\nendstream\nendobj\n".in[Data]
+
+        // The cross-reference stream covering only object 4, as compressed.
+        val offset3 = out.length
+        out = out
+          ++ t"3 0 obj\n<< /Type /XRef /Size 5 /W [1 2 1] /Index [4 1] /Length 4 >>\nstream\n"
+             . in[Data]
+          ++ data(2, 0, 2, 0) ++ t"\nendstream\nendobj\n".in[Data]
+
+        // The classic table marks object 4 free — the hybrid signature — and points at the
+        // cross-reference stream through /XRefStm.
+        val xrefOffset = out.length
+        out = out ++ t"xref\n0 5\n0000000000 65535 f \n".in[Data]
+          ++ t"${pad10(offset1)} 00000 n \n${pad10(offset2)} 00000 n \n".in[Data]
+          ++ t"${pad10(offset3)} 00000 n \n0000000000 00000 f \n".in[Data]
+          ++ t"trailer\n<< /Size 5 /Root 1 0 R /XRefStm $offset3 >>\n".in[Data]
+          ++ t"startxref\n$xrefOffset\n%%EOF".in[Data]
+
+        PdfFile(out).open():
+          pdf.resolved(pdf(1, 0)(t"Value").or(Cos.Nil))
+      . assert(_ == Cos.Integral(99))
 
       test(m"XMP metadata surfaces as raw bytes"):
         val doc = document

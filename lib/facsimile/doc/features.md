@@ -2,7 +2,9 @@
 - random access through classic cross-reference tables and cross-reference streams
 - follows incremental-update chains, with the newest version of each object winning
 - loads objects lazily and on demand, including from compressed object streams
-- decodes FlateDecode, ASCIIHexDecode and RunLengthDecode filters, with PNG and TIFF predictors
+- decodes Flate, LZW, ASCIIHex, ASCII85 and RunLength filters, with PNG and TIFF predictors
+- streams large payloads incrementally through the zephyrine kernel, never materializing them
+- reads hybrid-reference files, and recovers from wrong or missing stream lengths
 - flattens the page tree with attribute inheritance, and typed page boxes in `Quantity[Points[1]]`
 - reads document information (with PDF date parsing), bookmarks, named destinations and annotations
 - surfaces embedded files, page labels and the XMP metadata packet

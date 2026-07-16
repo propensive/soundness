@@ -55,7 +55,19 @@ private[facsimile] object Xref:
       if visited.contains(offset) || offset < 0 || offset >= source.size
       then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
-      val (sectionEntries, sectionTrailer) = section(source, offset)
+      val (classicEntries, sectionTrailer) = section(source, offset)
+
+      // A hybrid-reference file (ISO 32000-2 §7.5.8.4): the classic section points at a
+      // cross-reference stream carrying the entries — typically for objects in object
+      // streams — which legacy readers see as free. The table's live entries win, but its
+      // free markers yield to the stream's.
+      val sectionEntries = sectionTrailer.at(t"XRefStm").let(_.long).lay(classicEntries):
+        hybrid =>
+          val (hybridEntries, _) = stream(source, hybrid)
+
+          hybridEntries ++ classicEntries.filter: (number, entry) =>
+            entry != Entry.Free || !hybridEntries.contains(number)
+
       val mergedEntries = sectionEntries ++ entries
       val mergedTrailer = sectionTrailer ++ trailer
 
@@ -115,7 +127,7 @@ private[facsimile] object Xref:
       case CosToken.Integral(first) =>
         val count = lexer.next() match
           case CosToken.Integral(count) => count.toInt
-          case _ => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+          case _                        => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
         for index <- 0 until count do
           val entry = (lexer.next(), lexer.next(), lexer.next()) match
@@ -136,7 +148,7 @@ private[facsimile] object Xref:
       case CosToken.Keyword(word) if word.s == "trailer" =>
         CosParser(lexer).value() match
           case Cos.Dictionary(trailer) => trailer
-          case _ => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+          case _                       => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
       case _ =>
         abort(PdfError(PdfError.Reason.MalformedXref(offset)))
@@ -177,7 +189,7 @@ private[facsimile] object Xref:
             elements.map(_.long.or(abort(PdfError(PdfError.Reason.MalformedXref(offset)))))
             . grouped(2).to(List).map:
                 case List(first, count) => (first, count)
-                case _ => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
+                case _                  => abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
         val rowLength = widths.sum
         var entries = Map[Int, Entry]()
