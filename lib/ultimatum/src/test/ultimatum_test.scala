@@ -466,6 +466,198 @@ object Tests extends Suite(m"Ultimatum Tests"):
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
 
+    // A geometry-stable re-present diffs against the snapshot of what the last present
+    // drew, overprinting only the damaged cells; an identical frame emits nothing.
+    suite(m"InlineRoot diff present"):
+      def capturing(): (ji.ByteArrayOutputStream, Stdio) =
+        val bytes = ji.ByteArrayOutputStream()
+        (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap))
+
+      // Present `first`, then re-present `second` at the same geometry and capture
+      // only the second frame's bytes.
+      def represent(width: Int, height: Int, first: Text, second: Text)
+        ( using Stdio, ji.ByteArrayOutputStream )
+      :   Text =
+
+        val root = InlineRoot(width, 4)
+        root.reframe(width, height); root.move(Prim, Prim); root.put(first); root.flush()
+        summon[ji.ByteArrayOutputStream].reset()
+        root.reframe(width, height); root.move(Prim, Prim); root.put(second); root.flush()
+        String(summon[ji.ByteArrayOutputStream].toByteArray.nn, "UTF-8").tt
+
+      test(m"an identical re-present emits nothing at all"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        given ji.ByteArrayOutputStream = bytes
+        represent(3, 2, t"ab\ncd", t"ab\ncd")
+      . assert(_ == t"")
+
+      test(m"a single changed cell emits one absolutely-addressed grapheme"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        given ji.ByteArrayOutputStream = bytes
+        represent(3, 2, t"ab\ncd", t"ab\ncD")
+      . assert(_ == t"\e[?25l\e[4;2HD\e[3;1H\e[?25h")
+
+      test(m"adjacent changed cells coalesce into one run"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        given ji.ByteArrayOutputStream = bytes
+        represent(3, 2, t"ab\ncd", t"ab\nxy")
+      . assert(_ == t"\e[?25l\e[4;1Hxy\e[3;1H\e[?25h")
+
+      test(m"disjoint changed cells are addressed as separate runs"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        given ji.ByteArrayOutputStream = bytes
+        represent(3, 1, t"abc", t"xbz")
+      . assert(_ == t"\e[?25l\e[4;1Hx\e[4;3Hz\e[4;1H\e[?25h")
+
+      // A wide (CJK) glyph occupies two cells (its trailing sentinel carries the same
+      // style), so damage always covers the whole glyph, in both directions.
+      test(m"a wide glyph replacing narrow cells re-emits both cells"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        given ji.ByteArrayOutputStream = bytes
+        represent(3, 1, t"abc", t"a中")
+      . assert(_ == t"\e[?25l\e[4;2H中\e[4;1H\e[?25h")
+
+      test(m"narrow cells replacing a wide glyph re-emit both cells"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        given ji.ByteArrayOutputStream = bytes
+        represent(3, 1, t"a中", t"abc")
+      . assert(_ == t"\e[?25l\e[4;2Hbc\e[4;1H\e[?25h")
+
+      test(m"an unchanged wide glyph beside a changed cell is not re-emitted"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        given ji.ByteArrayOutputStream = bytes
+        represent(4, 1, t"中ab", t"中ax")
+      . assert(_ == t"\e[?25l\e[4;4Hx\e[4;1H\e[?25h")
+
+      // A style-only change is damage too, and the run renders its SGR self-contained
+      // (ending with a reset, so nothing bleeds beyond the patch).
+      test(m"a style-only change re-emits the cell as SGR within the run"):
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio =
+          Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        bytes.reset()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put(e"$Bold(a)b"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert: emitted =>
+          emitted.contains(t"\e[4;1H") && emitted.contains(t"\e[1m") && emitted.contains(t"\e[0m")
+            && !emitted.contains(t"\e[2K")
+
+      test(m"a caret-only move emits just the caret placement"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd")
+        root.showCaret(Sec, Prim)
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[3;2H\e[?25h")
+
+    // The buffered fullscreen root: panels composite into its grid, and `flush`
+    // presents each frame as one write, diffed against the previous present.
+    suite(m"ScreenRoot present"):
+      def capturing(): (ji.ByteArrayOutputStream, Stdio) =
+        val bytes = ji.ByteArrayOutputStream()
+        (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap))
+
+      test(m"move and put emit nothing until flush"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = ScreenRoot(3, 2)
+        root.move(Prim, Prim)
+        root.put(t"ab")
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"")
+
+      test(m"the first flush redraws every row absolutely"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = ScreenRoot(3, 2)
+        root.move(Prim, Prim)
+        root.put(t"ab")
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;1H\e[2Kab \e[2;1H\e[2K   \e[1;1H\e[?25h")
+
+      test(m"an identical re-flush emits nothing at all"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = ScreenRoot(3, 2)
+        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        bytes.reset()
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"")
+
+      test(m"a single changed cell is overprinted alone"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = ScreenRoot(3, 2)
+        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        bytes.reset()
+        root.move(Sec, Prim); root.put(t"X"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;2HX\e[1;1H\e[?25h")
+
+      // The SIGWINCH guarantee: `invalidate` (called by the form driver on every
+      // WindowSize event) forces the next flush to redraw everything, even when no
+      // cell changed.
+      test(m"invalidate forces the next flush to redraw in full"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = ScreenRoot(3, 2)
+        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        bytes.reset()
+        root.invalidate()
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;1H\e[2Kab \e[2;1H\e[2K   \e[1;1H\e[?25h")
+
+      test(m"clearing the grid blanks exactly the cells that had content"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = ScreenRoot(3, 2)
+        root.move(Prim, Prim); root.put(t"ab"); root.flush()
+        bytes.reset()
+        root.clear()
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;1H  \e[1;1H\e[?25h")
+
+      // A WindowSize event re-tiles the layout against the live size: the form driver
+      // invalidates the root and `reframe` re-fits the grid, so the present after a
+      // resize is a full redraw of the re-solved layout.
+      test(m"a WindowSize event re-tiles and fully redraws"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        var liveRows: Int = 4
+        val root = new ScreenRoot(() => 10, () => liveRows)
+
+        val resize = new Iterator[TerminalEvent]:
+          private var pending = true
+          def hasNext = pending
+
+          def next() =
+            pending = false
+            liveRows = 2
+            TerminalInfo.WindowSize(2, 10)
+
+        Form(root, Mode.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
+        . run(resize)
+
+        root.render
+      . assert(_ == t"A         \nB         ")
+
     suite(m"Dynamic panes"):
       def cell(): Pane = panel()(())
 
