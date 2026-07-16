@@ -43,6 +43,7 @@ import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
     textSanitizers.strictSanitizer
+import lineSeparation.adaptiveLinefeedLineSeparation
 import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase, alphabets.base32LowerCase
 import prepositional.*
 import probably.*
@@ -255,6 +256,33 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
               . via(zio.stream.ZPipeline.utfDecode).map(_.length).runSum
+        }
+
+    // Line splitting: UTF-8 decode then split the 4 MB corpus into lines,
+    // counting them. Soundness' `delineate` emits boxed `IArray[Text]` windows
+    // of lines and counts records per window with no per-line intermediate;
+    // FS2/ZIO allocate a string per line.
+    suite(m"Line splitting (4 MB)"):
+      bench(m"Soundness  Stream.delineate")
+        ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
+        '{
+            var total = 0L
+            turbulence.Benchmarks.textData.stream.delineate.sweep((_, _, count) => total += count)
+            total
+        }
+
+      bench(m"FS2  text.lines")(target = 1*Second, operationSize = textSize):
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.lines).compile.count.unsafeRunSync()
+        }
+
+      bench(m"ZIO  ZPipeline.splitLines")(target = 1*Second, operationSize = textSize):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.splitLines).runCount
         }
 
     // Example 3: byte checksum fold. The Soundness fold runs over the raw window
