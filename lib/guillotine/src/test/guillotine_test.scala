@@ -392,7 +392,7 @@ object Tests extends Suite(m"Guillotine tests"):
 
       test(m"read stderr from a forked job"):
         val proc = sh"sh -c 'echo err 1>&2; sleep 0.05'".fork[Unit]()
-        val bytes = proc.stderr().read[Data]
+        val bytes = proc.stderr().memoize
         proc.await()
         String(bytes.mutable(using Unsafe), "UTF-8").nn.trim
       . assert(_ == "err")

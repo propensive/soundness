@@ -40,6 +40,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import zephyrine.*
 
 object Stderr:
   given computable: Stderr is Computable = process => Stderr(process.errorText())
@@ -47,16 +48,20 @@ object Stderr:
 case class Stderr(text: Text)
 
 object Computable:
-  given stream: LazyList[Text] is Computable = _.lines()
+  given stream: (tactic: Tactic[StreamError]) => ((LazyList[Text] is Computable)^{tactic}) =
+    // The legacy view of `lines()`: lazy, and laundering (a pure LazyList
+    // cannot carry the endpoint it pulls from) — the audited-bridge idiom.
+    job => LazyList.from(job.lines().records)
 
-  given list: List[Text] is Computable = _.lines().to(List)
+  given list: (tactic: Tactic[StreamError]) => ((List[Text] is Computable)^{tactic}) =
+    _.lines().records.to(List)
 
   given text: Text is Computable = _.text()
 
   given string: String is Computable = _.text().s
 
   given dataStream: (tactic: Tactic[StreamError]) => ((LazyList[Data] is Computable)^{tactic}) =
-    _.stdout()
+    _.stdout().toLazyList
 
   given exitStatus: Exit is Computable = _.status() match
     case 0     => Exit.Ok

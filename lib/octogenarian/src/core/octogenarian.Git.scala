@@ -57,7 +57,7 @@ import GitError.Reason.*
 object Git:
   def progress(process: Job[?, ?]): LazyList[Progress] =
     safely[StreamError]:
-      process.stderr().map(_.utf8).map(_.trim).flatMap(_.cut(r"[\n\r]")).collect:
+      process.stderr().toLazyList.map(_.utf8).map(_.trim).flatMap(_.cut(r"[\n\r]")).collect:
         case r"Receiving objects: *$pc(\d*)\%.*" => Progress.Receiving(pc.s.toInt/100.0)
         case r"Resolving deltas: *$pc(\d+)\%.*"  => Progress.Resolving(pc.s.toInt/100.0)
         case r"Unpacking objects: *$pc(\d+)\%.*" => Progress.Unpacking(pc.s.toInt/100.0)
