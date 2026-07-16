@@ -944,10 +944,11 @@ object cosmopolite extends Library:
 
 object crossparse extends Library:
   // The corpus's domain types, compiled one phase before the benchmarks so
-  // that `Json.Inlinable`'s expansion-time instance evaluation can load them
-  // (and resolve the companion `Inlinable` givens) at the bench's expansion.
-  object model extends Component(jacinta.staged, stratiform.core, xylophone.core, ypsiloid.core):
-    override def scalaJs = false // depends on jacinta.staged (compiler jars)
+  // that each format's `Inlinable` expansion-time instance evaluation can
+  // load them (and resolve the companion `Inlinable` givens) at the bench's
+  // expansion.
+  object model extends Component(jacinta.staged, stratiform.staged, xylophone.staged, ypsiloid.core):
+    override def scalaJs = false // depends on the staged components (compiler jars)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
 
@@ -1891,6 +1892,17 @@ object stratiform extends Library:
   object records extends Component(core, polyvinyl.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The Expr-level `Inlinable` typeclass and its expansion-time instance
+  // evaluation (an in-macro staging compiler), kept out of `core` so
+  // stratiform users don't inherit the compiler jars unless they opt in.
+  object staged extends Component(core):
+    override def scalaJs = false // expansion-time instance evaluation via staging
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
   object time extends Component(core, aviation.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -2158,6 +2170,17 @@ object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, urticose.core, wisteria.core, panopticon.core, turbulence.core, serpentine.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The Expr-level `Inlinable` typeclass and its expansion-time instance
+  // evaluation (an in-macro staging compiler), kept out of `core` so
+  // xylophone users don't inherit the compiler jars unless they opt in.
+  object staged extends Component(core):
+    override def scalaJs = false // expansion-time instance evaluation via staging
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
   object test extends Tests(core)
   object bench extends Benchmarks(core, quantitative.units, hellenism.core):
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")

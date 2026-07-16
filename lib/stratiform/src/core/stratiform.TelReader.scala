@@ -74,9 +74,15 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // The next entry's keyword at exactly `indent`, with the reader left
   // positioned right after it, or `Unset` once the entry region ends (a
   // shallower line, a document separator, or the end of the input).
-  update def keyword(indent: Int): Optional[Text] =
-    val next = parser.directKeyword(indent)(using errorTactic)
-    if next == null then Unset else next.nn
+  // The quote-free forwarders are `inline` (enabled by the parser rim's
+  // `(using Tactic)` conventions and the toolchain's inline-update receiver
+  // fix); methods that appear inside stratiform's macro quotes stay
+  // non-inline — the spliced reader there is capture-erased, and an inline
+  // update method requires an exclusive receiver.
+  inline update def keyword(indent: Int): Optional[Text] =
+    parser.directKeyword(indent)(using errorTactic) match
+      case null       => Unset
+      case next: Text => next
 
   // The next keyword step in packed form, for parsers that compare keywords
   // against literal constants (staged parsers compile wire keywords to
@@ -95,7 +101,8 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // Peeks (without consuming) whether the entry has substance — an inline
   // atom or a child compound — the AST `optionalDecodable`'s emptiness test,
   // for optional wrappers that map a bare keyword to an absent value.
-  update def hasSubstance: Boolean = parser.directEntrySubstance()(using errorTactic)
+  inline update def hasSubstance: Boolean =
+    parser.directEntrySubstance()(using errorTactic)
 
   // ── Entry consumers: each takes the whole entry (line remainder,
   // source/literal continuation and child subtree), so the reader is left
@@ -135,9 +142,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // ── The fallback seam: materialize one entry (or the whole remaining
   // document) as a `Tel`, for field types that only have a
   // `Tel.Decodable`. ──
-  update def value(indent: Int): Tel = parser.directValue(indent)(using errorTactic)
+  inline update def value(indent: Int): Tel = parser.directValue(indent)(using errorTactic)
 
-  private[stratiform] update def document(): Tel = parser.directDocument()(using errorTactic)
+  private[stratiform] inline update def document(): Tel =
+    parser.directDocument()(using errorTactic)
 
   // Raise through the reader's tactic — for leaf instances that reject a
   // well-formed entry's content, continuing with a sentinel under an

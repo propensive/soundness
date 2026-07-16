@@ -105,7 +105,14 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // tag is consumed and validated. Character data, comments, CDATA sections
   // and processing instructions between child elements are consumed
   // transparently — the AST derivation looks only at `Element` children.
-  update def nextChild(): Optional[Text] =
+  //
+  // The hot forwarders are `inline` (enabled by the toolchain's
+  // inline-update receiver fix), so the derived engine's steps reach the
+  // parser without a call through the rim. Methods that appear inside
+  // xylophone's macro quotes stay non-inline: the spliced reader there is
+  // capture-erased, and an inline update method requires an exclusive
+  // receiver.
+  inline update def nextChild(): Optional[Text] =
     val name = parser.directNextChild()(using parseTactic)
     if name == null then Unset else name.nn
 
@@ -125,10 +132,22 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // The current element's text content, consumed together with its close
   // tag: `Unset` when the content is not exactly one text run (mirroring
   // `textOf`'s shape rules, under which CDATA is *not* text). Backs the
-  // primitive and text-codec parsers.
+  // text-codec parsers.
   update def text(): Optional[Text] =
     val text = parser.directText()(using parseTactic)
     if text == null then Unset else text.nn
+
+  // The current element's content parsed straight from the buffered chars
+  // as a primitive (consumed with its close tag), or `Unset` for missing,
+  // wrong-shaped or unparseable content — the byte-parsed counterparts of
+  // `text()`, saving the value `Text` it would otherwise materialize only
+  // for the primitive to re-scan. Values and failures agree with the
+  // `String`-parsing primitives exactly: exotic content falls back to the
+  // general path internally.
+  update def int(): Optional[Int] = parser.directTextInt()(using parseTactic)
+  update def long(): Optional[Long] = parser.directTextLong()(using parseTactic)
+  update def double(): Optional[Double] = parser.directTextDouble()(using parseTactic)
+  update def boolean(): Optional[Boolean] = parser.directTextBoolean()(using parseTactic)
 
   // Skips the current element's entire subtree, validating every close tag
   // on the way, building nothing — for unknown child elements and duplicate
@@ -137,7 +156,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   // The fallback seam: materialize the current element as an `Xml` tree, for
   // field types that only carry a `Decodable in Xml`.
-  update def element(): Xml = parser.directElement()(using parseTactic)
+  inline update def element(): Xml = parser.directElement()(using parseTactic)
 
   // Raise an `XmlError` through the read-site tactic and continue — for leaf
   // instances that reject an element's content, preserving the AST

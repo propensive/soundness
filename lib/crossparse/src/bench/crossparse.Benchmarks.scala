@@ -151,63 +151,45 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
   lazy val telData: Data = telText.s.getBytes("UTF-8").nn.immutable(using Unsafe)
 
   // ── The decode arms ───────────────────────────────────────────────────────
-  // Each format reads from its natural whole-input form — JSON and TEL from
-  // `Data`, XML and YAML from `Text` — with both of a format's arms reading
-  // the *same* input kind, so direct-versus-AST is a fair comparison within
-  // each format. YAML has no direct arm: ypsiloid's decoding is deliberately
-  // AST-only (YAML aliases require materialized subtrees).
-  def decodeJsonDirect(): Orders = jsonData.read[Orders in Json]
+  // Each format is measured two ways: through its materialized AST, and
+  // through its inlined parser — the Expr-composed, monomorphic decoder each
+  // format's `Inlinable.parsable` generates. Both of a format's arms read
+  // the *same* input kind (JSON and TEL from `Data`, XML and YAML from
+  // `Text`), so AST-versus-inlined is a fair comparison within each format.
+  // YAML has no inlined arm: ypsiloid's decoding is deliberately AST-only
+  // (YAML aliases require materialized subtrees).
   def decodeJsonAst(): Orders = jsonData.read[Json].as[Orders]
 
-  // The staged arm: monomorphic generated parsers for each record type,
-  // hoisted so the KeyTables and instance arrays are built once. The nested
-  // record types' staged givens are siblings, so each expansion finds them;
-  // `items` (a `List`) and `payment` (a sum) still cross runtime `Json.Field`
-  // seams — the current staged composition boundary.
-  object staged:
-    given lineItem: LineItem is Json.Parsable = Json.Parsable.staged
-    given customer: Customer is Json.Parsable = Json.Parsable.staged
+  object inlined:
+    // The JSON sum bridge: `payment` has no `Inlinable`, so the inlined
+    // parser binds this sibling staged sum through its runtime seam; the
+    // variant instances are its staged siblings.
     given card: Payment.Card is Json.Parsable = Json.Parsable.staged
     given transfer: Payment.Transfer is Json.Parsable = Json.Parsable.staged
     given payment: Payment is Json.Parsable = Json.Parsable.staged
-    given order: Order is Json.Parsable = Json.Parsable.staged
-    given orders: Orders is Json.Parsable = Json.Parsable.staged
 
-    given telLineItem: LineItem is Tel.Parsable = Tel.Parsable.staged
-    given telCustomer: Customer is Tel.Parsable = Tel.Parsable.staged
-    given telOrder: Order is Tel.Parsable = Tel.Parsable.staged
-    given telOrders: Orders is Tel.Parsable = Tel.Parsable.staged
-
-    given xmlLineItem: LineItem is Xml.Parsable = Xml.Parsable.staged
-    given xmlCustomer: Customer is Xml.Parsable = Xml.Parsable.staged
-    given xmlOrder: Order is Xml.Parsable = Xml.Parsable.staged
-    given xmlOrders: Orders is Xml.Parsable = Xml.Parsable.staged
-
-    // The Inlinable-composed parser: the whole instance graph (records,
-    // collection loops, leaf parsers) resolves live inside an in-macro
-    // staging compiler — the model component's companion givens — and
-    // inlines into one flat parser. `payment` (a sum) has no Inlinable and
-    // splices a runtime call to the sibling staged sum given above.
-    given inlinedOrders: Orders is Json.Parsable = Inlinable.parsable[Orders]
-
-  def decodeJsonStaged(): Orders =
-    import staged.orders
-    jsonData.read[Orders in Json]
+    // The Inlinable-composed parsers: the whole instance graph (records,
+    // collection gathering, leaf parsers — and, for TEL and XML, the sum
+    // itself) resolves live inside an in-macro staging compiler — the model
+    // component's companion givens — and inlines into one flat parser per
+    // format.
+    given inlinedOrders: Orders is Json.Parsable = jacinta.Inlinable.parsable[Orders]
+    given inlinedTelOrders: Orders is Tel.Parsable = stratiform.Inlinable.parsable[Orders]
+    given inlinedXmlOrders: Orders is Xml.Parsable = xylophone.Inlinable.parsable[Orders]
 
   def decodeJsonInlined(): Orders =
-    import staged.inlinedOrders
+    import inlined.inlinedOrders
     jsonData.read[Orders in Json]
 
-  def decodeTelStaged(): Orders =
-    import staged.telOrders
+  def decodeTelInlined(): Orders =
+    import inlined.inlinedTelOrders
     telData.read[Orders in Tel]
 
-  def decodeXmlStaged(): Orders =
-    import staged.xmlOrders
+  def decodeXmlInlined(): Orders =
+    import inlined.inlinedXmlOrders
     xmlText.read[Orders in Xml]
-  def decodeTelDirect(): Orders = telData.read[Orders in Tel]
+
   def decodeTelAst(): Orders = telData.read[Tel].as[Orders]
-  def decodeXmlDirect(): Orders = xmlText.read[Orders in Xml]
   def decodeXmlAst(): Orders = xmlText.read[Xml].as[Orders]
   def decodeYamlAst(): Orders = yamlText.read[Yaml].as[Orders]
 
@@ -266,15 +248,11 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
     // The correctness gate: every arm must reproduce the original value
     // before anything is timed.
-    assert(decodeJsonDirect() == corpus, "JSON direct decode disagrees with the corpus")
-    assert(decodeJsonStaged() == corpus, "JSON staged decode disagrees with the corpus")
     assert(decodeJsonInlined() == corpus, "JSON inlined decode disagrees with the corpus")
     assert(decodeJsonAst() == corpus, "JSON AST decode disagrees with the corpus")
-    assert(decodeTelDirect() == corpus, "TEL direct decode disagrees with the corpus")
-    assert(decodeTelStaged() == corpus, "TEL staged decode disagrees with the corpus")
+    assert(decodeTelInlined() == corpus, "TEL inlined decode disagrees with the corpus")
     assert(decodeTelAst() == corpus, "TEL AST decode disagrees with the corpus")
-    assert(decodeXmlDirect() == corpus, "XML direct decode disagrees with the corpus")
-    assert(decodeXmlStaged() == corpus, "XML staged decode disagrees with the corpus")
+    assert(decodeXmlInlined() == corpus, "XML inlined decode disagrees with the corpus")
     assert(decodeXmlAst() == corpus, "XML AST decode disagrees with the corpus")
     assert(decodeYamlAst() == corpus, "YAML AST decode disagrees with the corpus")
 
@@ -286,38 +264,29 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     val profile = Profile()
 
     suite(m"Decode a ~10 KB order corpus to case classes"):
-      bench(m"JSON direct")(target = 1*Second, baseline = Baseline(compare = Min)):
-        '{ crossparse.Benchmarks.decodeJsonDirect() }
-
-      bench(m"JSON staged")(target = 1*Second):
-        '{ crossparse.Benchmarks.decodeJsonStaged() }
-
-      bench(m"JSON inlined")(target = 1*Second):
+      // The suite's first row absorbs the JVM's compile ramp, so it warms
+      // longer than the rest.
+      bench(m"JSON inlined")
+        (target = 1*Second, warmups = 15, baseline = Baseline(compare = Min)):
         '{ crossparse.Benchmarks.decodeJsonInlined() }
 
       bench(m"JSON via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsonAst() }
 
-      bench(m"TEL direct")(target = 1*Second):
-        '{ crossparse.Benchmarks.decodeTelDirect() }
-
-      bench(m"TEL staged")(target = 1*Second):
-        '{ crossparse.Benchmarks.decodeTelStaged() }
+      bench(m"TEL inlined")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeTelInlined() }
 
       bench(m"TEL via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeTelAst() }
 
-      bench(m"XML direct")(target = 1*Second):
-        '{ crossparse.Benchmarks.decodeXmlDirect() }
-
-      bench(m"XML staged")(target = 1*Second):
-        '{ crossparse.Benchmarks.decodeXmlStaged() }
+      bench(m"XML inlined")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeXmlInlined() }
 
       bench(m"XML via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlAst() }
 
       // YAML decodes through the AST only: aliases require materialized
-      // subtrees, so ypsiloid deliberately has no direct path.
+      // subtrees, so ypsiloid deliberately has no inlined path.
       bench(m"YAML via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeYamlAst() }
 
@@ -327,27 +296,15 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
       bench(m"Jsoniter via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsoniterAst() }
 
-    // Where the self-time actually goes in each direct arm — a JFR hotspot
+    // Where the self-time actually goes in each inlined arm — a JFR hotspot
     // histogram per parser, coloured by package. Jsoniter direct is the
     // reference. Longer targets so the sampler gathers enough execution samples.
-    suite(m"Profile: direct-parser hotspots"):
-      profile(m"TEL direct")(target = 5*Second):
-        '{ crossparse.Benchmarks.decodeTelDirect() }
+    suite(m"Profile: inlined-parser hotspots"):
+      profile(m"TEL inlined")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeTelInlined() }
 
-      profile(m"TEL staged")(target = 5*Second):
-        '{ crossparse.Benchmarks.decodeTelStaged() }
-
-      profile(m"XML direct")(target = 5*Second):
-        '{ crossparse.Benchmarks.decodeXmlDirect() }
-
-      profile(m"XML staged")(target = 5*Second):
-        '{ crossparse.Benchmarks.decodeXmlStaged() }
-
-      profile(m"JSON direct")(target = 5*Second):
-        '{ crossparse.Benchmarks.decodeJsonDirect() }
-
-      profile(m"JSON staged")(target = 5*Second):
-        '{ crossparse.Benchmarks.decodeJsonStaged() }
+      profile(m"XML inlined")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeXmlInlined() }
 
       profile(m"JSON inlined")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeJsonInlined() }

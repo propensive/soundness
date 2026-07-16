@@ -60,44 +60,36 @@ object Payment:
   // default `Discriminable`: the product encoder relabels the variant
   // element with the *field's* name, which destroys the discriminator. The
   // variant rides in a `type` attribute instead — `<payment type="Card">` —
-  // mirroring the discriminator key the JSON and YAML corpora carry.
-  given xmlDiscriminable: Payment is Discriminable in Xml = new Discriminable:
-    type Self = Payment
-    type Form = Xml
-
-    def discriminate(xml: Xml): Optional[Text] = xml match
-      case Element(_, attributes, _)           => attributes.at(t"type")
-      case Fragment(Element(_, attributes, _)) => attributes.at(t"type")
-      case _                                   => Unset
-
-    def rewrite(kind: Text, xml: Xml): Xml = xml match
-      case Element(label, attributes, children) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case Fragment(Element(label, attributes, children)) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case other =>
-        other
-
-    def variant(xml: Xml): Xml = xml
+  // mirroring the discriminator key the JSON and YAML corpora carry. The
+  // named `DiscriminantAttribute` shape also lets the inlined XML parser
+  // dispatch on the attribute straight off the open tag.
+  given xmlDiscriminable: Payment is Discriminable in Xml = Xml.DiscriminantAttribute(t"type")
 
 case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
 
+// The per-format `Inlinable` givens are qualified: each format's staged
+// component declares its own `Inlinable`, and this module imports all three
+// packages.
 object LineItem:
-  given inlinable: (LineItem is Inlinable) = Inlinable.derived
+  given jsonInlinable: (LineItem is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (LineItem is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (LineItem is xylophone.Inlinable) = xylophone.Inlinable.derived
 
 case class Customer(id: Long, name: Text, email: Text, region: Text)
 
 object Customer:
-  given inlinable: (Customer is Inlinable) = Inlinable.derived
+  given jsonInlinable: (Customer is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (Customer is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (Customer is xylophone.Inlinable) = xylophone.Inlinable.derived
 
 case class Order
   ( reference: Text, customer: Customer, items: List[LineItem], payment: Payment,
     priority: Boolean, discount: Double )
 
 object Order:
-  given inlinable: (Order is Inlinable) = Inlinable.derived
+  given jsonInlinable: (Order is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (Order is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (Order is xylophone.Inlinable) = xylophone.Inlinable.derived
 
 case class Orders(orders: List[Order])
 
@@ -109,4 +101,6 @@ object Orders:
   given telParsable: Orders is Tel.Parsable = Tel.Parsable.derived
   given xmlParsable: Orders is Xml.Parsable = Xml.Parsable.derived
 
-  given inlinable: (Orders is Inlinable) = Inlinable.derived
+  given jsonInlinable: (Orders is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (Orders is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (Orders is xylophone.Inlinable) = xylophone.Inlinable.derived
