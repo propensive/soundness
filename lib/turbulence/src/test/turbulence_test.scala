@@ -416,23 +416,6 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-    suite(m"Multiplexer tests"):
-      val l1 = LazyList(2, 4, 6, 8, 10)
-      val l2 = LazyList(1, 3, 5, 7, 9)
-
-      test(m"Check that two multiplexed streams contain all elements"):
-        supervise(l1.multiplex(l2).to(Set))
-      . assert(_ == Set.range(1, 11))
-
-      test(m"Multiplexed streams preserve first stream order"):
-        supervise(l1.multiplex(l2).filter(_%2 == 0))
-      . assert(_ == l1)
-
-      for i <- 1 to 10
-      do test(m"Multiplexed streams preserve second stream order"):
-        supervise(l1.multiplex(l2).filter(_%2 == 1))
-      . assert(_ == l2)
-
     suite(m"Relay tests"):
       test(m"records put before draining arrive in order"):
         val relay = Relay[Text]()
@@ -554,49 +537,6 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Roundtrip a long repetitive Deflate stream"):
         longData.compress[Deflate].decompress[Deflate]
       . assert: stream => stream === longData
-
-    suite(m"Framing"):
-      test(m"Single 4-byte-prefixed frame in one chunk"):
-        LazyList(Data(0, 0, 0, 3, 10, 20, 30)).framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](10, 20, 30)))
-
-      test(m"Single 2-byte-prefixed frame in one chunk"):
-        LazyList(Data(0, 3, 10, 20, 30)).framed[U16]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](10, 20, 30)))
-
-      test(m"Multiple 4-byte-prefixed frames in one chunk"):
-        val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 0, 3, 3, 4, 5)
-        LazyList(data).framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](1, 2), List[Byte](3, 4, 5)))
-
-      test(m"Frame split across two chunks"):
-        val s = LazyList(Data(0, 0, 0, 5, 1, 2), Data(3, 4, 5))
-        s.framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](1, 2, 3, 4, 5)))
-
-      test(m"Length prefix split across chunks"):
-        val s = LazyList(Data(0, 0), Data(0, 3, 7, 8, 9))
-        s.framed[U32]().map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](7, 8, 9)))
-
-      test(m"Terminator ends stream cleanly"):
-        val data = Data(0, 0, 0, 2, 1, 2, 0, 0, 255.toByte, 255.toByte)
-        LazyList(data).framed[U32](U32(0xFFFF.bits)).map(_.to(List)).to(List)
-      . assert(_ == List(List[Byte](1, 2)))
-
-      test(m"Truncated frame raises StreamError"):
-        capture[StreamError]:
-          LazyList(Data(0, 0, 0, 5, 1, 2)).framed[U32]().to(List)
-      . assert(_ == StreamError(6L.b))
-
-      test(m"Truncated length prefix raises StreamError"):
-        capture[StreamError]:
-          LazyList(Data(0, 0)).framed[U32]().to(List)
-      . assert(_ == StreamError(2L.b))
-
-      test(m"Empty stream yields empty result"):
-        LazyList[Data]().framed[U32]().to(List)
-      . assert(_ == Nil)
 
     suite(m"Line splitting"):
       // Split whole, or fragmented into `chunk`-char pieces — the fragmented

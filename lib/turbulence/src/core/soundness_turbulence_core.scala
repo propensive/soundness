@@ -34,13 +34,11 @@ package soundness
 
 export
   turbulence
-  . { Aggregable, chunked, cluster, compress, Compression, Compressor, decompress, deduplicate,
+  . { Aggregable, chunked, compress, Compression, Compressor, decompress, deduplicate,
       defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, metronome, more, multiplex, Multiplexer,
-      multiplexer, Out, parallelMap, Pistol, Pulsar, rate, read, regulate, Relay, shred, Spool,
-      spool,
+      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred,
       Confluence, Divergence, Readable, Sink, Source, Stdio, lazyList, Streamable, StreamError,
-      StreamOutputStream, strict, take, Tap, Writable, writeTo, framed, flow }
+      StreamOutputStream, strict, take, Writable, writeTo, flow }
 
 package stdios:
   export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
