@@ -45,6 +45,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Teletype:
@@ -63,19 +64,23 @@ object Teletype:
     type Operand = Teletype
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
 
-  given out: Stdio => Out.type is Writable by Teletype = new Writable:
+  // Teletype values are records, so their streams travel on the boxed medium
+  // (windows of `IArray[Teletype]`); each record prints as it arrives.
+  given out: Stdio => Out.type is Writable by IArray[Teletype] = new Writable:
     type Self = Out.type
-    type Operand = Teletype
+    type Operand = IArray[Teletype]
 
-    def write(target: Self, stream: LazyList[Teletype]): Unit =
-      stream.flow(())(Out.print(next) yet write(target, more))
+    def write(target: Self, stream: (Stream[IArray[Teletype]] over Credit)^): Unit =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[IArray[Teletype]] over Credit)^]
+      . records.each(Out.print(_))
 
-  given err: Stdio => Err.type is Writable by Teletype = new Writable:
+  given err: Stdio => Err.type is Writable by IArray[Teletype] = new Writable:
     type Self = Err.type
-    type Operand = Teletype
+    type Operand = IArray[Teletype]
 
-    def write(target: Self, stream: LazyList[Teletype]): Unit =
-      stream.flow(())(Err.print(next) yet write(target, more))
+    def write(target: Self, stream: (Stream[IArray[Teletype]] over Credit)^): Unit =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[IArray[Teletype]] over Credit)^]
+      . records.each(Err.print(_))
 
   given textual: Teletype is Textual:
     type Result = Char

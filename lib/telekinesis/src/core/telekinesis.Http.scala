@@ -673,15 +673,7 @@ object Http:
             response.body )
 
     given streamable: (tactic: Tactic[HttpError])
-    =>  ((Response is Streamable by Data)^{tactic}) = response =>
-      response.status.category match
-        case Http.Status.Category.Successful => LazyList(response.body.stream.memoize)
-
-        case _ =>
-          abort(HttpError(response.status, response.textHeaders))
-
-    given source: (tactic: Tactic[HttpError])
-    =>  ((Response is Source by Data over Credit)^{tactic}) = response =>
+    =>  ((Response is Streamable by Data over Credit)^{tactic}) = response =>
       response.status.category match
         case Http.Status.Category.Successful => response.body.stream
 

@@ -39,11 +39,14 @@ import guillotine.*
 import parasite.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Syslog:
   given writable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
     import workingDirectories.javaWorkingDirectory
+    // The system charset, as the pre-migration `sysData` encoding used.
+    given hieroglyph.CharEncoder = hieroglyph.CharEncoder.system
 
     recover:
       case StreamError(_)     => ()
@@ -55,10 +58,10 @@ object Syslog:
         syslog.tag match
           case tag: Text => mute[ExecEvent]:
             val job = sh"logger -t $tag".fork[Unit]()
-            stream.writeTo(job)
+            job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
           case _ => mute[ExecEvent]:
             val job = sh"logger".fork[Unit]()
-            stream.writeTo(job)
+            job.stdin(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
 case class Syslog(tag: Optional[Text] = Unset)

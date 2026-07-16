@@ -43,6 +43,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import telekinesis.*
+import prepositional.*
 import turbulence.*
 import urticose.*
 import vacuous.*
@@ -52,7 +53,10 @@ import zephyrine.*
 // a context-function class parameter cannot be applied from the synthesized superclass
 // argument of subclasses like `JavaServletFn` (capture-root unification).
 open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.HttpServlet:
-  protected def streamBody(request: jsh.HttpServletRequest): LazyList[Data] raises StreamError =
+  protected def streamBody(request: jsh.HttpServletRequest)
+    ( using Tactic[StreamError] )
+  :   Stream[Data] over Credit =
+
     Streamable.inputStream.stream(request.getInputStream().nn)
 
 
@@ -87,11 +91,9 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
           host        = request.getServerName.nn.tt.as[Hostname],
           target      = target,
           body        = () =>
-            Stream:
-              Streamable.inputStream
-                (using streamError0.asInstanceOf[Tactic[StreamError]])
-              . stream(in.asInstanceOf[ji.InputStream])
-              . iterator,
+            Streamable.inputStream
+              (using streamError0.asInstanceOf[Tactic[StreamError]])
+            . stream(in.asInstanceOf[ji.InputStream]),
           textHeaders = headers )
 
     def respond(response: Http.Response): Unit =

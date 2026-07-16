@@ -1578,15 +1578,12 @@ object Tel extends Tel2:
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
   given loadable: (tactic: Tactic[TelError]) => ((Tel is Loadable by Text)^{tactic}) = stream =>
-    import denominative.nil
-    val builder = new StringBuilder()
-    var s = stream
+    // The whole document materializes once (the parser is whole-input); the
+    // non-consume `load` crosses to `memoize` as a neutral reference.
+    val text =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Text] over zephyrine.Credit)^]
+      . memoize.s
 
-    while !s.nil do
-      builder.append(s.head.s)
-      s = s.tail
-
-    val text = builder.toString
     val bytes = text.getBytes("UTF-8").nn
     val doc = Tel.Parser.parse(IArray.unsafeFromArray(bytes))
     val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)

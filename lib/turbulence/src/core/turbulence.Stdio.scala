@@ -89,6 +89,10 @@ trait Stdio extends Io, Findable:
   // `InputStream` would miss them.
   def ready(): Boolean = reader.ready()
 
+  // Read one character from the shared reader (`-1` at end of input) — the
+  // companion to `ready()`, for character-at-a-time consumers (a terminal).
+  def readChar(): Int = reader.read()
+
   def write(bytes: Data): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
   def writeErr(bytes: Data): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)

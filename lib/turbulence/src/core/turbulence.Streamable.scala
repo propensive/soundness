@@ -40,95 +40,168 @@ import contingency.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
+// The kernel `.stream` constructor is excluded from the wildcard so it does not
+// shadow this module's own `HttpStreams.Body.stream` extension (a same-module
+// package member); downstream sees both as siblings and resolves by receiver.
+import zephyrine.{stream as _, *}
 
+// A value which can be opened as a pull endpoint: a demand-aware `Stream`
+// over a mutable buffer (formerly a `LazyList`; the kernel shape was
+// incubated as `Source`, which remains as an alias). Instances needing
+// buffers or error contexts capture them as contextual values of the given
+// (`Buffering`, `Tactic[StreamError]`), so the typeclass itself remains a
+// single abstract method.
 object Streamable:
-  given bytes: Data is Streamable by Data = LazyList(_)
-  given text: [textual <: Text] => textual is Streamable by Text = LazyList(_)
-  given stream: [element] => LazyList[element] is Streamable by element = identity(_)
+  given bytes: Data is Streamable by Data over Credit = Stream(_)
+  given text: [textual <: Text] => textual is Streamable by Text over Credit = value => Stream(value)
 
-  // The encoder-bridged counterpart of `Aggregable`'s `bytesText` (`Text is Aggregable by Data`),
-  // so a `Text` can be streamed as `Data` directly — e.g. written to a file with `path.write`.
-  given textData: (encoder: CharEncoder) => Text is Streamable by Data =
-    text => encoder.encoded(LazyList(text))
+  // A `Text` value streamed as bytes, through the encoder duct.
+  given textData: (encoder: CharEncoder, buffering: Buffering)
+  =>  Text is Streamable by Data over Credit =
+    value => Stream(value).via(encoder).asInstanceOf[(Stream[Data] over Credit)^]
 
-  given inCharReader: (stdio: Stdio) => In.type is Streamable by Char = in =>
-    def recur(count: Bytes): LazyList[Char] =
-      stdio.reader.read() match
-        case -1  => LazyList()
-        case int => int.toChar #:: recur(count + 1.b)
+  // Legacy views: a lazy list of chunks is a source, though its production is
+  // beyond demand control; demand bounds only the exposure of each chunk.
+  given lazyListData: LazyList[Data] is Streamable by Data over Credit = value =>
+    Stream(value.iterator)
 
-    LazyList.defer(recur(0L.b))
+  given lazyListText: LazyList[Text] is Streamable by Text over Credit = value =>
+    Stream(value.iterator)
 
-  given inByteReader: (stdio: Stdio) => In.type is Streamable by Byte = in =>
-    def recur(count: Bytes): LazyList[Byte] =
-      stdio.in.read() match
-        case -1  => LazyList()
-        case int => int.toByte #:: recur(count + 1.b)
+  // The HTTP-body interchange protocol is itself a pull source, so a
+  // request or response body can be `read` directly.
+  given httpBody: Buffering => HttpStreams.Body is Streamable by Data over Credit = _.stream
 
-    LazyList.defer(recur(0L.b))
+  given inputStream: [input <: ji.InputStream] => (tactic: Tactic[StreamError], buffering: Buffering)
+  =>  ((input is Streamable by Data over Credit)^{tactic}) =
+    // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
 
-  given reader: [input <: ji.Reader] => (tactic: Tactic[StreamError]^)
-  =>  ((input is Streamable by Char)^{tactic}) =
-    reader =>
-      def recur(count: Bytes): LazyList[Char] =
-        try reader.read() match
-          case -1  => LazyList()
-          case int => int.toChar #:: recur(count + 1.b)
-        catch case error: ji.IOException =>
-          reader.close()
-          abort(StreamError(count))
+    value =>
+      Streamable.stream(jn.channels.Channels.newChannel(value).nn)(using t().asInstanceOf[Tactic[StreamError]^], summon[Buffering])
 
-      LazyList.defer(recur(0L.b))
+  given channel: (tactic: Tactic[StreamError], buffering: Buffering)
+  =>  ((jn.channels.ReadableByteChannel is Streamable by Data over Credit)^{tactic}) =
+    // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
+    value => Streamable.stream(value)(using t().asInstanceOf[Tactic[StreamError]^], summon[Buffering])
 
+  given reader: [input <: ji.Reader] => (tactic: Tactic[StreamError], buffering: Buffering)
+  =>  ((input is Streamable by Text over Credit)^{tactic}) =
+    // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
 
-  given bufferedReader: [input <: ji.BufferedReader] => (tactic: Tactic[StreamError]^)
-  =>  ((input is Streamable by Line)^{tactic}) =
+    value =>
+      new Stream[Text]:
+        type Transport = Credit
 
-    reader =>
-      def recur(count: Bytes): LazyList[Line] =
-        try reader.readLine() match
-          case null         => LazyList()
-          case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
-        catch case error: ji.IOException =>
-          reader.close()
-          abort(StreamError(count))
+        private val capacity: Int = summon[Buffering].capacity(Substrate.Chars)
+        private val storage: Array[Char] = new Array[Char](capacity)
+        private var start0: Int = 0
+        private var limit0: Int = 0
+        private var total: Long = 0
+        private var ended: Boolean = false
 
-      LazyList.defer(recur(0L.b))
+        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        def start: Int = start0
+        def limit: Int = limit0
+        update def skip(count: Int): Unit = start0 += count
 
+        update def refill(demand: Credit): Optional[Int] =
+          if limit0 > start0 then limit0 - start0
+          else if ended then Unset
+          else
+            val granted = summon[Credit is Regulation].grant(demand)
 
-  given inputStream: [input <: ji.InputStream] => (tactic: Tactic[StreamError]^)
-  =>  ((input is Streamable by Data)^{tactic}) =
+            if granted == 0 then 0 else
+              start0 = 0
+              limit0 = 0
 
-    channel.contramap(jn.channels.Channels.newChannel(_).nn)
+              try value.read(storage, 0, capacity.min(granted)) match
+                case -1 =>
+                  ended = true
+                  value.close()
+                  Unset
 
+                case count =>
+                  total += count
+                  limit0 = count
+                  count
 
-  given channel: (tactic: Tactic[StreamError]^)
-  =>  ((jn.channels.ReadableByteChannel is Streamable by Data)^{tactic}) =
-    channel =>
-      val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
+              catch case error: ji.IOException =>
+                ended = true
+                try value.close() catch case _: Exception => ()
+                { val received: Long = total
+                abort(StreamError(received.b))(using t().asInstanceOf[Tactic[StreamError]^]) }
 
-      def recur(total: Long): LazyList[Data] =
-        try channel.read(buffer) match
-          case -1 => LazyList().also(try channel.close() catch case error: Exception => ())
-          case 0  => recur(total)
+        override update def close(): Unit =
+          ended = true
+          try value.close() catch case _: Exception => ()
 
-          case count =>
-            buffer.flip()
-            val size: Int = count.min(1024)
-            val array: Array[Byte] = new Array[Byte](size)
-            buffer.get(array)
+  // The byte pump underlying `inputStream` and `channel` sources: reads
+  // directly into the stream's own storage, at most one granted block at a
+  // time.
+  private def stream(input: jn.channels.ReadableByteChannel)
+    ( using tactic: Tactic[StreamError], buffering: Buffering )
+  :   (Stream[Data] over Credit)^{tactic, caps.any} =
+
+    new Stream[Data]:
+      type Transport = Credit
+
+      private val capacity: Int = buffering.capacity(Substrate.Bytes)
+      private val storage: Array[Byte] = new Array[Byte](capacity)
+      private val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(storage).nn
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var total: Long = 0
+      private var ended: Boolean = false
+
+      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      def start: Int = start0
+      def limit: Int = limit0
+      update def skip(count: Int): Unit = start0 += count
+
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if ended then Unset
+        else
+          val granted = summon[Credit is Regulation].grant(demand)
+
+          if granted == 0 then 0 else
+            start0 = 0
+            limit0 = 0
             buffer.clear()
+            buffer.limit(capacity.min(granted))
 
-            array.immutable(using Unsafe) #:: recur(total + count)
+            try input.read(buffer) match
+              case -1 =>
+                ended = true
+                try input.close() catch case _: Exception => ()
+                Unset
 
-        catch case e: Exception => abort(StreamError(total.b))
+              case 0 =>
+                0
 
-      LazyList.defer(recur(0))
+              case count =>
+                total += count
+                limit0 = count
+                count
+
+            catch case error: Exception =>
+              ended = true
+              try input.close() catch case _: Exception => ()
+              { val received: Long = total; abort(StreamError(received.b)) }
+
+      override update def close(): Unit =
+        ended = true
+        try input.close() catch case _: Exception => ()
+
 
 trait Streamable extends Typeclass, Operable:
-  def stream(value: Self): LazyList[Operand]
+  type Transport
+  def stream(value: Self): (Stream[Operand] over Transport)^
 
-  def contramap[self2](lambda: self2 => Self): (self2 is Streamable by Operand)^{this, lambda} =
-    source => stream(lambda(source))
+  def contramap[self2](lambda: self2 => Self)
+  :   (self2 is Streamable by Operand over Transport)^{this, lambda} =
+    value => stream(lambda(value))

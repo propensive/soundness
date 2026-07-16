@@ -262,7 +262,9 @@ extends RequestServable:
         Log.warn(HttpServerEvent.BrokenStream(length))
 
     . protect:
-        val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
+        // The connection cursor pulls straight from the socket's endpoint;
+        // construction is deferred until the first read (live-socket rule).
+        val cursor = Cursor[Data](Streamable.inputStream.stream(in))
 
         var continue = true
         while continue && !cursor.finished do continue = serveRequest(cursor)

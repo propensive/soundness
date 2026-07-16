@@ -63,7 +63,10 @@ object Job:
   =>  (streamCut: Emit[StreamError])
   =>  ((job is Writable by Text)^{streamCut}) =
 
-    (process, stream) => process.stdin(stream.map(_.sysData))
+    (process, stream) =>
+      process.stdin
+        ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]
+          . via(hieroglyph.CharEncoder.system).asInstanceOf[(Stream[Data] over Credit)^] )
 
 
 // A `Job` is a *capability*: it is the live handle to a running subprocess (its streams and
@@ -98,7 +101,7 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
   def status(): Int = process.waitFor()
 
 
-  def stdin[chunk](stream: LazyList[chunk])
+  def stdin[chunk](stream: (Stream[chunk] over Credit)^)
     ( using writable: (ProcessInput is Writable by chunk)^ )
   :   Unit =
     writable.write(ProcessInput(process.getOutputStream.nn), stream)

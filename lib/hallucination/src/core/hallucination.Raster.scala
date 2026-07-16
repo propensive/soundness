@@ -60,14 +60,8 @@ object Raster:
     new Raster(image):
       type Form = form
 
-  given streamable: [form: Rasterizable] => (Raster in form) is Streamable by Data = raster =>
-    val out = StreamOutputStream()
-    ji.ImageIO.write(raster.image, form.name.s, out)
-    out.close()
-    out.stream
-
-  given source: [form: Rasterizable]
-  =>  (Raster in form) is Source by Data over zephyrine.Credit =
+  given streamable: [form: Rasterizable]
+  =>  (Raster in form) is Streamable by Data over zephyrine.Credit =
     raster =>
       val out = StreamOutputStream()
       ji.ImageIO.write(raster.image, form.name.s, out)

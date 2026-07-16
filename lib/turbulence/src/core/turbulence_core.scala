@@ -69,16 +69,18 @@ extension [value](value: value)
   def writeTo[target](target: target)[element]
     // Capture-polymorphic evidence: writers built from an `Emit[StreamError]` capture it; the
     // write completes within this call, so nothing is retained and the result stays `Unit`.
-    ( using streamable: (value is Streamable by element)^,
+    ( using streamable: (value is Streamable by element over Credit)^,
             writable:   (target is Writable by element)^ )
   :   Unit =
 
     writable.write(target, streamable.stream(value))
 
-extension [value: Streamable by Text](value: value)
-  def load[result <: Documentary](using loadable: (result is Loadable by Text)^)
+extension [value](value: value)
+  def load[result <: Documentary]
+    ( using streamable: (value is Streamable by Text over Credit)^,
+            loadable:   (result is Loadable by Text)^ )
   :   Document[result] =
-    loadable.load(value.lazyList[Text])
+    loadable.load(streamable.stream(value))
 
 extension [medium, transport](consume stream: (Stream[medium] over transport)^)
   // The detached pump: `pump` on its own parasite task, for fire-and-forget

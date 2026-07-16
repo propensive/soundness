@@ -51,7 +51,9 @@ object Tests extends Suite(m"Eucalyptus tests"):
   case class Capture(queue: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue())
 
   object Capture:
-    given writable: Capture is Writable by Text = (capture, stream) => stream.each(capture.queue.put)
+    given writable: Capture is Writable by Text = (capture, stream) =>
+      zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+      . each(capture.queue.put)
 
   // A `Writable` that `raise`s a `StreamError` for each line, to exercise the typed `handle` path.
   case class Failing()
@@ -59,7 +61,9 @@ object Tests extends Suite(m"Eucalyptus tests"):
   object Failing:
     given writable: (streamCut: Emit[StreamError])
     =>  ((Failing is Writable by Text)^{streamCut}) =
-      (failing, stream) => stream.each(_ => raise(StreamError(0.b)))
+      (failing, stream) =>
+        zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+        . each(_ => raise(StreamError(0.b)))
 
   // An event enum whose cases carry *different* categories. Because the marker traits are
   // transparent, `Log.info(Signal.Net(…))` is typed at the general `Signal`, so the concrete case's

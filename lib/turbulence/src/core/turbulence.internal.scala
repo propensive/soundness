@@ -38,6 +38,7 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import hieroglyph.*
+import zephyrine.Credit
 import prepositional.*
 import vacuous.*
 
@@ -65,19 +66,21 @@ object internal:
     val otherName =
       if bytes then name[source is Streamable by Text] else name[source is Streamable by Data]
 
+    // `Streamable` now yields a kernel stream; this macro is the legacy
+    // `LazyList` view, converting through the audited `toLazyList` bridge.
     Expr.summon[source is Streamable by operand].optional.let: streamable =>
-      '{$streamable.stream($source)}
+      '{zephyrine.toLazyList($streamable.stream($source).asInstanceOf[(zephyrine.Stream[operand] over Credit)^])(using compiletime.summonInline[zephyrine.Buffering])}
 
     . or:
         if text && streamableData.present then decoder.let: decoder =>
-          '{$decoder.decoded(${streamableData.vouch}.stream($source))}.absolve match
+          '{$decoder.decoded(zephyrine.toLazyList(${streamableData.vouch}.stream($source).asInstanceOf[(zephyrine.Stream[Data] over Credit)^])(using compiletime.summonInline[zephyrine.Buffering]))}.absolve match
             case '{$stream: LazyList[`operand`]} => stream
 
         . or:
             halt(m"can not stream ${name[source]} as ${name[Text]} without a ${name[CharDecoder]}")
 
         else if bytes && streamableText.present then encoder.let: encoder =>
-          '{$encoder.encoded(${streamableText.vouch}.stream($source))}.absolve match
+          '{$encoder.encoded(zephyrine.toLazyList(${streamableText.vouch}.stream($source).asInstanceOf[(zephyrine.Stream[Text] over Credit)^])(using compiletime.summonInline[zephyrine.Buffering]))}.absolve match
             case '{$stream: LazyList[`operand`]} => stream
 
         . or:

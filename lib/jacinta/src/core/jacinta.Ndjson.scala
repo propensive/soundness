@@ -40,10 +40,14 @@ import turbulence.*
 import zephyrine.*
 
 object Ndjson:
-  def parse[source: Streamable by Line](value: source)(using CharEncoder)
-  :   Ndjson raises ParseError =
+  def parse[source](value: source)
+    ( using streamable: (source is Streamable by Text over Credit)^,
+            tactic:     Tactic[ParseError],
+            buffering:  Buffering,
+            encoder:    CharEncoder )
+  :   Ndjson =
 
-    Ndjson(value.lazyList[Line].map { line => line.content.read[Json] })
+    parse(streamable.stream(value))
 
   // The endpoint form: lines split through the duct kernel, one `Json` per
   // forced element. (The `Ndjson` value's LazyList field is the lazy view —

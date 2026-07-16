@@ -138,7 +138,7 @@ class GrpcChannel
       connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
 
     expectOk(response)
-    val messages = stream.body.stream.iterator.frames[GrpcFraming]
+    val messages = stream.body.stream.records.frames[GrpcFraming]
     val first: Optional[Data] = if messages.hasNext then messages.next() else Unset
 
     // Verify the trailing status before demanding a body, so a Trailers-Only error
@@ -161,7 +161,7 @@ class GrpcChannel
       connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
 
     expectOk(response)
-    val messages = stream.body.stream.iterator.frames[GrpcFraming]
+    val messages = stream.body.stream.records.frames[GrpcFraming]
 
     def recur(): LazyList[response] =
       if messages.hasNext then decodeMessage[response](messages.next()) #:: recur()

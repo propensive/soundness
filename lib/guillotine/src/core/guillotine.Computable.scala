@@ -48,20 +48,20 @@ object Stderr:
 case class Stderr(text: Text)
 
 object Computable:
-  given stream: (tactic: Tactic[StreamError]) => ((LazyList[Text] is Computable)^{tactic}) =
+  given stream: LazyList[Text] is Computable =
     // The legacy view of `lines()`: lazy, and laundering (a pure LazyList
-    // cannot carry the endpoint it pulls from) — the audited-bridge idiom.
-    job => LazyList.from(job.lines().records)
+    // cannot carry the endpoint it pulls from) — the audited-bridge idiom. A
+    // read failure throws, as the `BufferedReader` this replaced did.
+    job => unsafely(LazyList.from(job.lines().records))
 
-  given list: (tactic: Tactic[StreamError]) => ((List[Text] is Computable)^{tactic}) =
-    _.lines().records.to(List)
+  given list: List[Text] is Computable = job => unsafely(job.lines().records.to(List))
 
   given text: Text is Computable = _.text()
 
   given string: String is Computable = _.text().s
 
   given dataStream: (tactic: Tactic[StreamError]) => ((LazyList[Data] is Computable)^{tactic}) =
-    _.stdout().toLazyList
+    job => zephyrine.toLazyList(job.stdout())
 
   given exitStatus: Exit is Computable = _.status() match
     case 0     => Exit.Ok

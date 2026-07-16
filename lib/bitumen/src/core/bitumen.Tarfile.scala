@@ -54,7 +54,8 @@ enum LongNameFormat:
 object Tarfile:
   val zeroBlock: Data = IArray.fill[Byte](512)(0)
 
-  given streamable: Tarfile is Streamable by Data = _.blocks
+  given streamable: Tarfile is Streamable by Data over Credit = tarfile =>
+    Stream(tarfile.blocks.iterator)
 
   def read(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
     readEntries(Cursor[Data](stream.filter(_.nonEmpty).iterator), Map.empty, Map.empty, Unset,

@@ -41,6 +41,7 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
+import zephyrine.Credit
 import vacuous.*
 
 object Manifest:
@@ -53,7 +54,8 @@ object Manifest:
 
       . to(Map)
 
-  given streamable: Manifest is Streamable by Data = manifest => LazyList(manifest.serialize)
+  given streamable: Manifest is Streamable by Data over Credit = manifest =>
+    zephyrine.Stream(manifest.serialize)
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:

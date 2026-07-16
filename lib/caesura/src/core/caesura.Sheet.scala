@@ -113,7 +113,8 @@ object Sheet:
           else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
-  given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(LazyList).map(_.show+t"\n")
+  given streamable: DsvFormat => Sheet is Streamable by Text over Credit = sheet =>
+    Stream(sheet.rows.iterator.map(_.show+t"\n"))
 
 
   // Parse rows from a pull endpoint, one block-credit refill per chunk.

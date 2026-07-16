@@ -104,21 +104,12 @@ object Audio:
     out.close()
     out.stream
 
-  given streamable: [form: Audible] => (Audio in form) is Streamable by Data = audio =>
-    writeAudio(audio, form.name)
-
-  given source: [form: Audible]
-  =>  (Audio in form) is Source by Data over Credit =
+  given streamable: [form: Audible]
+  =>  (Audio in form) is Streamable by Data over Credit =
     audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
 
-
   given streamableAcross: [form: Audible, layout]
-  =>  (Audio in form across layout) is Streamable by Data =
-
-    audio => writeAudio(audio, form.name)
-
-  given sourceAcross: [form: Audible, layout]
-  =>  (Audio in form across layout) is Source by Data over Credit =
+  =>  (Audio in form across layout) is Streamable by Data over Credit =
 
     audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
 

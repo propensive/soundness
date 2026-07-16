@@ -42,6 +42,7 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Logger:
@@ -56,7 +57,9 @@ object Logger:
       name:        Optional[Text]      = Unset,
       categories:  Set[Log.Category]   = Set() )
     ( using inscribable: (loggingType is Inscribable in format)^,
-            writable:    (target is Writable by format)^,
+            writable:    (target is Writable by IArray[format])^,
+            addressable: IArray[format] is Addressable,
+            buffering:   Buffering,
             monitor:     Monitor,
             codepoint:   Codepoint,
             probate:     Probate )
@@ -64,7 +67,9 @@ object Logger:
 
     val spool: Relay[format] =
       registry
-      . computeIfAbsent(codepoint, _ => establish[format, target](destination))
+      . computeIfAbsent(codepoint, _ =>
+          establish[format, target](destination)
+            (using writable, addressable, buffering, monitor, codepoint, probate))
       . nn
       . asInstanceOf[Relay[format]]
 
@@ -84,7 +89,9 @@ object Logger:
   // stopped.
   private def establish[format, target]
     ( destination: target )
-    ( using writable:  (target is Writable by format)^,
+    ( using writable:    (target is Writable by IArray[format])^,
+            addressable: IArray[format] is Addressable,
+            buffering:   Buffering,
             monitor:   Monitor,
             codepoint: Codepoint,
             probate:   Probate )
@@ -94,12 +101,13 @@ object Logger:
 
     // The daemon body must stay capture-free (hygienic, see above); the writer's lifetime is
     // the global spool registry's, so it is laundered pure for use inside the daemon.
-    val writable0: target is Writable by format = caps.unsafe.unsafeAssumePure(writable)
+    val writable0: target is Writable by IArray[format] = caps.unsafe.unsafeAssumePure(writable)
+    val addressable0: IArray[format] is Addressable = addressable
 
     Relay[format]().tap: spool =>
       daemon:
         while !stopped.get() do
-          try spool.lazyList.writeTo(destination)(using writable = writable0)
+          try writable0.write(destination, spool.stream(using addressable0))
           catch case _: StreamError => ()
 
       Os.intercept[Shutdown]:

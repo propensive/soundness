@@ -144,8 +144,8 @@ object Zip:
       Entry(ref, method, crc32, uncompressedSize, compressedSize, storedBytes, dosTime, dosDate,
           directory, comment)
 
-    given streamable: Entry is Streamable by Data = _.contents
-    given source: Entry is Source by Data over Credit = entry => entry.contents.iterator.stream
+    given streamable: Entry is Streamable by Data over Credit = entry =>
+      entry.contents.iterator.stream
 
   case class Entry
     ( ref:              Path on Zip,

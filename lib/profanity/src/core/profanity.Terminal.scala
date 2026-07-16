@@ -166,7 +166,15 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     val keyboard0: AnyRef = keyboard.asInstanceOf[AnyRef]
     val events0 = events
     val metrics0 = metrics
-    val chars: LazyList[Char] = In.lazyList[Char]
+    // The terminal reads chars one at a time from the same stdio reader the
+    // `Lookahead` consults (the former element-typed `Streamable by Char`
+    // instance, now private to its one user).
+    val chars: LazyList[Char] =
+      def recur(): LazyList[Char] = console.stdio.readChar() match
+        case -1  => LazyList()
+        case int => int.toChar #:: recur()
+
+      LazyList.defer(recur())
 
     contain:
       case _ => events0.stop(); Remedy.Accept

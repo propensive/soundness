@@ -215,30 +215,34 @@ object Tests extends Suite(m"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object GeneralStore:
-        given GeneralStore is Writable by Data = (store, stream) => stream.each: data =>
-          data.each: byte =>
-            store.arrayBuffer.append(byte)
+        given GeneralStore is Writable by Data = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+            data.each: byte =>
+              store.arrayBuffer.append(byte)
 
-        given GeneralStore is Writable by Text = (store, texts) => texts.each: text =>
-          text.in[Data].each: byte =>
-            store.arrayBuffer.append(byte)
+        given GeneralStore is Writable by Text = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+            text.in[Data].each: byte =>
+              store.arrayBuffer.append(byte)
 
       class ByteStore():
         val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object ByteStore:
-        given ByteStore is Writable by Data = (store, stream) => stream.each: data =>
-          data.each: byte =>
-            store.arrayBuffer.append(byte)
+        given ByteStore is Writable by Data = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+            data.each: byte =>
+              store.arrayBuffer.append(byte)
 
       class TextStore():
         var text: Text = t""
         def apply(): Text = text
 
       object TextStore:
-        given TextStore is Writable by Text = (store, texts) => texts.each: text =>
-          store.text = store.text + text
+        given TextStore is Writable by Text = (store, stream) =>
+          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+            store.text = store.text + text
 
       test(m"Write Text to some reference with Text and Data instances"):
         val store = GeneralStore()

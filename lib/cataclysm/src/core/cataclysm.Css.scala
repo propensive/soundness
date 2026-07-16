@@ -71,7 +71,7 @@ object Css:
       write(css)(producer.put(_))
       producer.finish()
 
-    producer.iterator.to(LazyList)
+    Stream(producer.iterator)
 
   given showable: Formatting => Css is Showable = css =>
     Producer.collect[Text](): producer =>

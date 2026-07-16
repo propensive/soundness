@@ -39,8 +39,7 @@ import zephyrine.Credit
 import vacuous.*
 
 object Part:
-  given streamable: Part is Streamable by Data = _.body
-  given source: Part is Source by Data over Credit = part =>
+  given streamable: Part is Streamable by Data over Credit = part =>
     zephyrine.Stream(part.body.iterator)
 
 case class Part
