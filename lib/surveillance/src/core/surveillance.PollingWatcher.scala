@@ -77,7 +77,7 @@ extends Watcher:
     ( directory: jnf.Path,
       previous:  Map[Text, Entry],
       current:   Map[Text, Entry],
-      spool:     Spool[WatchEvent] )
+      spool:     Relay[WatchEvent] )
   :   Unit =
 
     val base = directory.toString.show
@@ -94,7 +94,7 @@ extends Watcher:
     previous.each: (name, _) =>
       if !current.contains(name) then spool.put(WatchEvent.Delete(base, name))
 
-  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Spool[WatchEvent])
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
     directories.each: (directory, _) =>

@@ -450,7 +450,7 @@ def cli[bus <: Matchable](using executive: Executive)
               shellInput,
               script.as[Path on Local],
               deliver(pid, _),
-              clientState.bus.stream,
+              clientState.bus.lazyList,
               name,
               startTime,
               () => helpValue )

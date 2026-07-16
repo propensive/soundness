@@ -41,6 +41,7 @@ import iridescence.*
 import parasite.*
 import rudiments.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Terminal:
@@ -121,9 +122,14 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     val err = console.stdio.err
     val in = console.stdio.in
 
-  val events: Spool[TerminalEvent] = Spool()
+  val events: Relay[TerminalEvent] = Relay()
 
-  def eventIterator(): Iterator[TerminalEvent] = events.iterator
+  // A fresh single-owner drain of the shared event queue per call, batching
+  // queued events into windows across the producer boundary. Sealed: the
+  // `Interactivity` interface is pure-typed, exactly as `Spool.iterator` was
+  // before it — the endpoint is reachable only through this iterator.
+  def eventIterator(): Iterator[TerminalEvent] =
+    caps.unsafe.unsafeAssumePure(events.stream.records)
 
   // The handler is bound over block locals (not fields) so it stays pure: `Console.trap`
   // takes a pure `PartialFunction`, and a reference to `out` or `events` through `this`
