@@ -38,6 +38,7 @@ import escapade.*
 import gossamer.*
 import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import profanity.*
+import turbulence.*
 import vacuous.*
 import yossarian.*
 
@@ -74,6 +75,16 @@ extends Canvas:
   def invalidate(): Unit =
     invalidated = true
     snapshot = Unset
+
+  // The caret (hardware cursor) target and visibility, recorded by a root's `cursor`/
+  // `showCaret` and applied when the frame is presented; and where the last present
+  // left them, so a diffed present whose caret hasn't moved can omit placing it.
+  protected var caretColumn: Int = 0
+  protected var caretRow: Int = 0
+  protected var caretVisible: Boolean = true
+  protected var presentedCaretRow: Int = -1
+  protected var presentedCaretColumn: Int = -1
+  protected var presentedCaretVisible: Boolean = false
 
   private val metric: Grapheme is Measurable = summon[Grapheme is Measurable]
 
@@ -231,6 +242,46 @@ extends Canvas:
       r += 1
 
     runs
+
+  // Present by overprinting only the damaged cells (the geometry is unchanged, so a
+  // cell equal to the snapshot's is already on screen), the grid's rows mapping to the
+  // absolute screen rows `top..top + h - 1`. When no cell and no caret changed,
+  // NOTHING is written — an identical frame is a true no-op. Otherwise the patches
+  // land in one single write with the cursor hidden, so it never flashes across the
+  // screen between runs (and nothing can interleave mid-frame).
+  protected def presentDiff(top: Int, columns: Int, h: Int)(using Stdio): Unit =
+    val termcap = summon[Stdio].termcap
+    val body = StringBuilder()
+    val runs = emitDiffRuns(body, top, columns, h, termcap)
+
+    val caretRow2 = (top + caretRow.min(h - 1)).max(1)
+    val caretColumn2 = caretColumn.min(columns - 1).max(0) + 1
+
+    val caretSame = caretVisible == presentedCaretVisible
+      && (!caretVisible || (caretRow2 == presentedCaretRow && caretColumn2 == presentedCaretColumn))
+
+    if runs > 0 || !caretSame then
+      val frame = StringBuilder()
+      frame.append(csi.dectcem(false).s)
+      frame.append(body.toString)
+
+      if caretVisible then
+        frame.append(csi.cup(caretRow2, caretColumn2).s)
+        frame.append(csi.dectcem(true).s)
+
+      recordSnapshot(top, columns)
+      presentedCaretRow = caretRow2
+      presentedCaretColumn = caretColumn2
+      presentedCaretVisible = caretVisible
+      Out.print(frame.toString.tt)
+
+  // Record the caret state the present just applied, alongside `recordSnapshot`, so
+  // the next diffed present can recognise an unmoved caret. Called on the full path
+  // (the diffed path records inline, only when it writes).
+  protected def recordCaret(top: Int, columns: Int, h: Int): Unit =
+    presentedCaretRow = (top + caretRow.min(h - 1)).max(1)
+    presentedCaretColumn = caretColumn.min(columns - 1).max(0) + 1
+    presentedCaretVisible = caretVisible
 
   // A `Teletype` of `text` in one uniform style (sparse single-run form).
   private def styledCell(text: Text, style: StyleWord): Teletype =

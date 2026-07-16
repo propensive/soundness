@@ -85,12 +85,6 @@ extends GridSurface(widthFn(), 0):
   private var presentedColumns: Int = 0
   private var presentedTop: Int = 1
 
-  // Where the last present left the hardware cursor, so a diffed present whose caret
-  // hasn't moved (and whose cells haven't changed) can emit nothing at all.
-  private var presentedCaretRow: Int = -1
-  private var presentedCaretColumn: Int = -1
-  private var presentedCaretVisible: Boolean = false
-
   // For `Inline` anchoring: the row offset (from the block's top) at which the cursor was
   // left after the last frame, so the next frame can rise back to the top relatively.
   private var flowCursorRow: Int = 0
@@ -103,9 +97,6 @@ extends GridSurface(widthFn(), 0):
     case InlineAnchoring.Inline                                        => false
 
   private var started: Boolean = false
-  private var caretColumn: Int = 0
-  private var caretRow: Int = 0
-  private var caretVisible: Boolean = true
 
   override def width: Int = widthFn()
 
@@ -230,39 +221,8 @@ extends GridSurface(widthFn(), 0):
 
     if !invalidated && started && h == presentedRows && columns == presentedColumns
       && dockTop == presentedTop && snapshotValid(dockTop, columns, h)
-    then flushDockedDiff(dockTop, columns, h)
+    then presentDiff(dockTop, columns, h)
     else flushDockedFull(rows, columns, h)
-
-  // Present by overprinting only the damaged cells (the geometry is unchanged, so a
-  // cell equal to the snapshot's is already on screen). When no cell and no caret
-  // changed, NOTHING is written — an identical frame is a true no-op.
-  private def flushDockedDiff(top: Int, columns: Int, h: Int): Unit =
-    val termcap = summon[Stdio].termcap
-    val body = StringBuilder()
-    val runs = emitDiffRuns(body, top, columns, h, termcap)
-
-    val caretRow2 = (top + caretRow.min(h - 1)).max(1)
-    val caretColumn2 = caretColumn.min(columns - 1).max(0) + 1
-
-    val caretSame = caretVisible == presentedCaretVisible
-      && (!caretVisible || (caretRow2 == presentedCaretRow && caretColumn2 == presentedCaretColumn))
-
-    if runs > 0 || !caretSame then
-      // Still one single write (see `flushDockedFull` on why), hiding the cursor while
-      // the patches land so it never flashes across the screen between runs.
-      val frame = StringBuilder()
-      frame.append(csi.dectcem(false).s)
-      frame.append(body.toString)
-
-      if caretVisible then
-        frame.append(csi.cup(caretRow2, caretColumn2).s)
-        frame.append(csi.dectcem(true).s)
-
-      recordSnapshot(top, columns)
-      presentedCaretRow = caretRow2
-      presentedCaretColumn = caretColumn2
-      presentedCaretVisible = caretVisible
-      Out.print(frame.toString.tt)
 
   private def flushDockedFull(rows: Int, columns: Int, h: Int): Unit =
     val resized = invalidated
@@ -381,9 +341,7 @@ extends GridSurface(widthFn(), 0):
     // What was just drawn IS the screen now: record it (and the caret) so the next
     // geometry-stable present can diff against it.
     recordSnapshot(top, columns)
-    presentedCaretRow = (top + caretRow.min(h - 1)).max(1)
-    presentedCaretColumn = caretColumn.min(columns - 1).max(0) + 1
-    presentedCaretVisible = caretVisible
+    recordCaret(top, columns, h)
 
     Out.print(frame.toString.tt)
 

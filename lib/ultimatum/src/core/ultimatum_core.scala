@@ -166,11 +166,15 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
   mode match
     case Mode.Fullscreen =>
       profanity.terminalFeatures.alternateScreenFeature:
-        val root = TerminalCanvas(terminal)
+        // A buffered root: panels composite into its in-memory grid and each present
+        // diffs against what is already on screen, so unchanged cells are never
+        // re-emitted (no flicker). `cursor(false)` is recorded now and applied by the
+        // first present; `finish` re-shows the cursor on the way out.
+        val root = ScreenRoot(terminal)
         root.cursor(false)
 
         try Form(root, mode, pane, wake).run(terminal.eventIterator())
-        finally root.cursor(true)
+        finally root.finish()
 
     case Mode.Inline =>
       // A deferred resize repaint is woken by posting a `Redraw` after the remaining
@@ -207,6 +211,7 @@ def paint(root: Canvas^, pane: Pane): Unit =
 
   root match
     case inline: InlineRoot => inline.reframe(root.width, height)
+    case screen: ScreenRoot => screen.reframe()
     case _                  => ()
 
   val placement = pane.frame.arrange(Rect(0, 0, root.width, height))
