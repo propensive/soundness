@@ -49,21 +49,27 @@ import turbulence.*
 import vacuous.*
 
 object Job:
-  given writable: [chunk, command <: Label, result]
+  // Polymorphic over the capability instance (`job <: Job[…]^`, the galilei `Handle` recipe):
+  // a bare `Job[command, result]` Self cannot match a tracked `Job` value.
+  given writable: [chunk, command <: Label, result, job <: Job[command, result]^]
   =>  (writable0: (ProcessInput is Writable by chunk)^)
-  =>  ((Job[command, result] is Writable by chunk)^{writable0}) =
+  =>  ((job is Writable by chunk)^{writable0}) =
 
     (process, stream) => process.stdin(stream)
 
 
-  given writableText: [command <: Label, result] => (streamCut: Emit[StreamError])
-  =>  ((Job[command, result] is Writable by Text)^{streamCut}) =
+  given writableText: [command <: Label, result, job <: Job[command, result]^]
+  =>  (streamCut: Emit[StreamError])
+  =>  ((job is Writable by Text)^{streamCut}) =
 
     (process, stream) => process.stdin(stream.map(_.sysData))
 
 
+// A `Job` is a *capability*: it is the live handle to a running subprocess (its streams and
+// its lifecycle), tracked fresh from `fork()`. `Exclusive` because a subprocess's stdio has
+// a single owner.
 class Job[+exec <: Label, result] private[guillotine] (process: java.lang.Process)
-extends Subprocess, ProcessRef:
+extends Subprocess, ProcessRef, caps.ExclusiveCapability:
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
@@ -113,7 +119,7 @@ extends Subprocess, ProcessRef:
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
-  def process(using Tactic[PidError]^) = Process(pid)
+  def process(using Tactic[PidError]^): Process^ = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
     try

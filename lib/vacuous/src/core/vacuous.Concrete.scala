@@ -40,4 +40,4 @@ object Concrete:
   def apply[self](): self is Concrete = new Concrete:
     type Self = self
 
-sealed trait Concrete extends Typeclass
+sealed trait Concrete extends Typeclass.Pure

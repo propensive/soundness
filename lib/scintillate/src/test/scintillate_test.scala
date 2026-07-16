@@ -43,6 +43,8 @@ import probates.awaitProbate
 
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit =
+    CaptureTests()
+
     def freePort(): Int =
       val socket = java.net.ServerSocket(0)
       val port = socket.getLocalPort
@@ -156,7 +158,12 @@ object Tests extends Suite(m"Scintillate tests"):
           // Echo upgrade: the response body is the post-handshake request stream,
           // piped straight back out with no HTTP framing.
           val server = SocketServer(port).handle:
-            Http.Response(Http.SwitchingProtocols)(Http.Body.Flowing(() => request.body()))
+            Http.Response(Http.SwitchingProtocols)
+              (Http.Body.Flowing:
+                // Sealed: the upgraded response's stream legitimately reads the live
+                // connection for the rest of the exchange; the pure-`Http.Body` handler
+                // shape cannot express that retention (see rep/DECISIONS.md, Phase 3b).
+                caps.unsafe.unsafeAssumePure(() => request.body()))
 
           val response =
             rawRequest
@@ -179,16 +186,19 @@ object Tests extends Suite(m"Scintillate tests"):
 
           val start = java.lang.System.nanoTime()
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val tasks = List.tabulate(clients): _ =>
-            async:
-              val socket = java.net.Socket("localhost", port)
-              val out = socket.getOutputStream.nn
-              out.write(payload)
-              out.flush()
-              socket.shutdownOutput()
-              val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
-              socket.close()
-              response.cut(t"HTTP/1.1 200 OK").length - 1
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val socket = java.net.Socket("localhost", port)
+                val out = socket.getOutputStream.nn
+                out.write(payload)
+                out.flush()
+                socket.shutdownOutput()
+                val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
+                socket.close()
+                response.cut(t"HTTP/1.1 200 OK").length - 1
 
           val total = tasks.map(_.await()).foldLeft(0)(_ + _)
           val millis = (java.lang.System.nanoTime() - start)/1000000.0

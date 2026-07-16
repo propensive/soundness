@@ -252,7 +252,10 @@ object Serializable:
   given base32: Alphabet[Base32] => Serializable in Base32 = base(5)
   given base64: Alphabet[Base64] => Serializable in Base64 = base(6)
 
-trait Serializable extends Findable:
+// `caps.Pure` directly (not `Typeclass.Pure`) because `Serializable` has no `Self`: it is
+// selected by its `Form` member alone. Instances hold only immutable tables derived from a
+// pure `Alphabet`, so purity is compiler-verified.
+trait Serializable extends Findable, caps.Pure:
   type Form <: Serialization
 
   def encode(bytes: Data): Text

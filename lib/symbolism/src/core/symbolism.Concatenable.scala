@@ -34,5 +34,5 @@ package symbolism
 
 import prepositional.*
 
-trait Concatenable extends Typeclass, Operable:
+trait Concatenable extends Typeclass.Pure, Operable:
   def concat(left: Self, right: Operand): Self | Operand

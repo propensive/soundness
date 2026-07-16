@@ -50,8 +50,15 @@ object Syslog:
       case ExecError(_, _, _) => ()
 
     . protect:
+        // The fresh `Job` capability is bound before `writeTo` so its evidence summons
+        // against a stable reference rather than a fresh-decorated expression.
         syslog.tag match
-          case tag: Text => mute[ExecEvent](stream.writeTo(sh"logger -t $tag".fork[Unit]()))
-          case _         => mute[ExecEvent](stream.writeTo(sh"logger".fork[Unit]()))
+          case tag: Text => mute[ExecEvent]:
+            val job = sh"logger -t $tag".fork[Unit]()
+            stream.writeTo(job)
+
+          case _ => mute[ExecEvent]:
+            val job = sh"logger".fork[Unit]()
+            stream.writeTo(job)
 
 case class Syslog(tag: Optional[Text] = Unset)

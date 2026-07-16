@@ -30,10 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package profanity
 
-import beneficence.*
-import telekinesis.*
+import soundness.*
 
-trait WebserverErrorPage extends Findable:
-  def handle(throwable: Throwable, request: Http.Request^): Http.Response
+import classloaders.systemClassloader
+import environments.javaEnvironment
+import logging.silentLogging
+import strategies.throwUnsafely
+import threading.platformThreading
+
+// `interactive` lends the raw-mode tty session to its block as a `Terminal` capability, and
+// capture checking confines it to that block: raw mode and stdin are torn down in the
+// method's `finally`, so nothing may retain the session past it.
+object CaptureTests extends Suite(m"Terminal confinement tests"):
+  def run(): Unit =
+    test(m"the Terminal capability cannot be returned from interactive"):
+      demilitarize:
+        def attempt(using Console, Monitor, Probate, Environment, Every[TerminalFeature])
+        :   Terminal =
+          interactive(summon[Terminal])
+      . map(_.message)
+    . assert(_.nonEmpty)
+
+    // The closures call a method on the terminal: selecting a PURE field (like `events`)
+    // discharges the capability path under capture checking, so only a use that charges the
+    // terminal itself demonstrates confinement.
+    test(m"a closure over the Terminal cannot escape interactive"):
+      demilitarize:
+        def attempt(using Console, Monitor, Probate, Environment, Every[TerminalFeature])
+        :   () => Int =
+          interactive(() => summon[Terminal].knownColumns)
+    . assert(_.nonEmpty)
+
+    test(m"the Terminal cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(using Console, Monitor, Probate, Environment, Every[TerminalFeature]): Unit =
+          var stash: () => Unit = () => ()
+          interactive:
+            stash = () => { summon[Terminal].knownColumns; () }
+    . assert(_.nonEmpty)

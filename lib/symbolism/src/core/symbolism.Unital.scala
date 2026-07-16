@@ -42,6 +42,6 @@ object Unital:
   given double: Double is Unital = () => 1.0
   given float: Float is Unital = () => 1.0f
 
-trait Unital extends Typeclass:
+trait Unital extends Typeclass.Pure:
   protected def makeOne(): Self
   def one: Self = makeOne()

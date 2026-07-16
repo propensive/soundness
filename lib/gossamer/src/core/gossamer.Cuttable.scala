@@ -108,5 +108,5 @@ object Cuttable:
       cuttable.cut(text, delimiter.toString.tt, limit)
 
 
-trait Cuttable extends Typeclass, Operable:
+trait Cuttable extends Typeclass.Pure, Operable:
   def cut(value: Self, delimiter: Operand, limit: Int): List[Self]

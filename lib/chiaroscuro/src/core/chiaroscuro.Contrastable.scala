@@ -244,8 +244,8 @@ object Contrastable:
       if left == right then Juxtaposition.Same(left.show)
       else Juxtaposition.Different(left.show, right.show)
 
-trait Contrastable extends Typeclass:
+trait Contrastable extends Typeclass.Pure:
   def juxtaposition(left: Self, right: Self): Juxtaposition
 
-  def contramap[self2](lambda: self2 => Self): (self2 is Contrastable)^{this, lambda} =
+  def contramap[self2](lambda: self2 -> Self): self2 is Contrastable =
     (left, right) => juxtaposition(lambda(left), lambda(right))

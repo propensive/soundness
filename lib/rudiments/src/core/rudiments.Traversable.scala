@@ -50,5 +50,5 @@ object Traversable:
   // `Text is Traversable` without an explicit `import`, unlike a top-level given.
   given text: Text is Traversable by Char = text => LazyList(text.s.toCharArray.nn*)
 
-trait Traversable extends Typeclass, Operable:
+trait Traversable extends Typeclass.Pure, Operable:
   def traverse(self: Self): LazyList[Operand]

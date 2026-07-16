@@ -46,7 +46,9 @@ import vacuous.*
 // the changed cells; inline re-sizes the grid to the measured block height each
 // frame and re-presents the whole block at the cursor.
 class Form
-  ( root:         Canvas,
+  // `Canvas^`: a terminal-backed canvas retains its terminal (live size thunks), and the
+  // form legitimately holds it for its whole run.
+  ( root:         Canvas^,
     mode:         Mode,
     pane:         Pane,
     wake:         () => Unit   = () => (),

@@ -107,7 +107,7 @@ object Logger:
         spool.stop()
 
 class Logger[-eventType, loggingType] private
-  ( threshold: Level, categories: Set[Log.Category], enqueue: (loggingType, Level, Long) => Unit )
+  ( threshold: Level, categories: Set[Log.Category], enqueue: (loggingType, Level, Long) -> Unit )
 extends LogSink[eventType, loggingType]:
 
   def accepts(level: Level): Boolean = level.ordinal >= threshold.ordinal

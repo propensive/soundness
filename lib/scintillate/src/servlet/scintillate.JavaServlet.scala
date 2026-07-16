@@ -32,6 +32,7 @@
                                                                                                   */
 package scintillate
 
+import java.io as ji
 import jakarta.servlet as js, js.http as jsh
 
 import anticipation.*
@@ -47,15 +48,18 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
+// `handle` is a plain function (not a context function): with `HttpConnection` a capability,
+// a context-function class parameter cannot be applied from the synthesized superclass
+// argument of subclasses like `JavaServletFn` (capture-root unification).
+open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest): LazyList[Data] raises StreamError =
     Streamable.inputStream.stream(request.getInputStream().nn)
 
 
   protected def makeConnection
     ( request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse )
-    ( using Tactic[StreamError], Tactic[HostnameError] )
-  :   HttpConnection =
+    ( using streamError: Tactic[StreamError], hostnameError: Tactic[HostnameError] )
+  :   HttpConnection^ =
 
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)
@@ -68,23 +72,37 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
       . flatMap:
           case (key, values) => values.map(Http.Header(key, _))
 
+    // Rims: under separation checking a method's fresh capability result may not hide its
+    // parameters, so nothing the connection retains — the body thunk or the respond sink —
+    // may charge them; they cross as `AnyRef` (the cordillera recipe), with the tactic
+    // re-typed at each use site.
+    val in: AnyRef = request.getInputStream().nn
+    val servletResponse0: AnyRef = servletResponse
+    val streamError0: AnyRef = summon[Tactic[StreamError]].asInstanceOf[AnyRef]
+
     val httpRequest =
       Http.Request
         ( method      = request.getMethod.nn.show.as[Http.Method],
           version     = Http.Version.parse(request.getProtocol.nn.tt),
           host        = request.getServerName.nn.tt.as[Hostname],
           target      = target,
-          body        = () => Stream(streamBody(request).iterator),
+          body        = () =>
+            Stream:
+              Streamable.inputStream
+                (using streamError0.asInstanceOf[Tactic[StreamError]])
+              . stream(in.asInstanceOf[ji.InputStream])
+              . iterator,
           textHeaders = headers )
 
     def respond(response: Http.Response): Unit =
-      servletResponse.setStatus(response.status.code)
+      val servletResponse1 = servletResponse0.asInstanceOf[jsh.HttpServletResponse]
+      servletResponse1.setStatus(response.status.code)
 
       response.textHeaders.each:
         case Http.Header(key, value) =>
-          servletResponse.addHeader(key.s, value.s)
+          servletResponse1.addHeader(key.s, value.s)
 
-      val out = servletResponse.getOutputStream.nn
+      val out = servletResponse1.getOutputStream.nn
 
       response.body match
         case Http.Body.Fixed(data) =>
@@ -126,7 +144,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
     . protect:
         val connection = makeConnection(request, response)
-        connection.respond(handle(using connection))
+        connection.respond(handle(connection))
 
 
   override def service

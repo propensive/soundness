@@ -44,6 +44,9 @@ import prepositional.*
 import serpentine.*
 import vacuous.*
 
+// A `DaemonService` is a *capability*: it holds the daemon's shutdown and broadcast sinks
+// and the client's live stdin, scoped to one daemon-client invocation (the 2026-07-06
+// service-class ruling; see rep/DECISIONS.md).
 case class DaemonService[bus <: Matchable]
   ( pid:        Pid,
     shutdown:   () => Unit,
@@ -54,7 +57,7 @@ case class DaemonService[bus <: Matchable]
     script:     Text,
     startTime:  Long,
     helpThunk:  () => Optional[Help] )
-extends Entrypoint:
+extends Entrypoint, caps.ExclusiveCapability:
   def broadcast(message: bus): Unit = deliver(message)
 
   // The structured help tree for this command, generated lazily by re-running the application

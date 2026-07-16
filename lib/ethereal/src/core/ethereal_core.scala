@@ -359,7 +359,7 @@ def cli[bus <: Matchable](using executive: Executive)
         val response: SignalResponse =
           safely:
             val invocation = client(pid).invocation.await(250.0*Milli(Second))
-            invocation.dispatchSignal(signal)
+            invocation.asInstanceOf[Cli].dispatchSignal(signal)
 
           . or(SignalResponse.Reject)
 
@@ -467,7 +467,7 @@ def cli[bus <: Matchable](using executive: Executive)
                 service,
                 login )
 
-          clientState.invocation.offer(cli)
+          clientState.invocation.offer(cli.asInstanceOf[AnyRef])
 
           if cli.proceed then
             val result = block(using service, cli, environment, summon[Monitor])
@@ -510,37 +510,42 @@ def cli[bus <: Matchable](using executive: Executive)
 
       // Bind and start accepting *before* the build- and pid-files are written:
       // a launcher waits for those readiness files to appear and then connects,
-      // so the socket must already be listening by the time they exist. (`listen`
-      // binds synchronously and serves on its own daemon, so the bound socket
-      // queues connections immediately even before the files are created.)
+      // so the socket must already be listening by the time they exist.
+      // (`listenConnections` binds synchronously and serves on its own daemon, so
+      // the bound socket queues connections immediately even before the files are
+      // created.) It is a loan, so the whole serving lifetime — readiness files,
+      // the pid-watcher, and the park — nests inside its block; the daemon only
+      // ever leaves it via `termination`'s `System.exit`.
+      val acceptor = (connection: Connection) =>
+        inactivityTimer.nudge()
+        safely(makeClient(connection))
+        ()
+
       safely:
-        domainSocket.listenConnections: connection =>
-          inactivityTimer.nudge()
-          safely(makeClient(connection))
+        domainSocket.listenConnections(acceptor):
+          val buildId = safely(System.properties.build.id[Int]()).or:
+            safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
 
-      val buildId = safely(System.properties.build.id[Int]()).or:
-        safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
+          buildFile.open(_.write(t"$buildId"))
+          val pidValue = Process().pid.value.show
+          pidFile.open(_.write(pidValue))
 
-      buildFile.open(_.write(t"$buildId"))
-      val pidValue = Process().pid.value.show
-      pidFile.open(_.write(pidValue))
+          task(n"pid-watcher"):
+            safely:
+              List[Path on Local](socketFile, buildFile, pidFile).watch: watcher =>
+                watcher.stream.each:
+                  case Delete(_, _) | Modify(_, _) =>
+                    Log.warn(DaemonLogEvent.Termination)
+                    termination
 
-      task(n"pid-watcher"):
-        safely:
-          List[Path on Local](socketFile, buildFile, pidFile).watch: watcher =>
-            watcher.stream.each:
-              case Delete(_, _) | Modify(_, _) =>
-                Log.warn(DaemonLogEvent.Termination)
-                termination
+                  case other =>
+                    ()
 
-              case other =>
-                ()
-
-      // The accept loop runs on its own daemon inside `listen`, so park the
-      // supervisor here to keep the daemon process alive until `termination`
-      // (an idle timeout, a watched-file change, or an explicit shutdown)
-      // calls `System.exit`.
-      Promise[Unit]().await()
+          // The accept loop runs on its own daemon inside `listenConnections`, so
+          // park the supervisor here to keep the daemon process alive until
+          // `termination` (an idle timeout, a watched-file change, or an explicit
+          // shutdown) calls `System.exit`.
+          Promise[Unit]().await()
 
     Exit.Ok
 

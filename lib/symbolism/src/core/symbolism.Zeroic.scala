@@ -56,5 +56,5 @@ object Zeroic:
   given string: String is Zeroic:
     inline def zero: String = ""
 
-trait Zeroic extends Typeclass:
+trait Zeroic extends Typeclass.Pure:
   def zero: Self

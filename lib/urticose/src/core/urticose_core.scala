@@ -68,7 +68,7 @@ extension [remote: Remotable](value: remote)
 extension [port](port: port)
   transparent inline def serve[protocol: Protocolic over port]
     ( handler: protocol.Request ?=> protocol.Response )
-  :   protocol.Server =
+  :   protocol.Server^ =
 
     protocol.server(port)(handler)
 
@@ -83,5 +83,8 @@ val Localhost: Hostname = Hostname(DnsLabel("localhost".tt))
 type Host = Hostname | Ipv4 | Ipv6
 
 package internetAccess:
-  given online: Online = Online()
+  // `inline`: an unparameterized given would be a static field, and a field of capability type
+  // would force the enclosing package object to become a capability. Inlining mints a fresh
+  // `Online` at each summon site instead.
+  inline given online: Online = Online()
   given offline: Tactic[OfflineError] => Online = abort(OfflineError())

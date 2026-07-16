@@ -135,7 +135,9 @@ object ProductDerivation:
       ${wisteria.internal.fieldsProduct[typeclass, derivation, result]('product, 'lambda)}
 
 
-    inline def conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]
+    // A fresh (`^`) result: a derived instance may honestly capture its resolution-scoped
+    // capabilities (a decoder's tactic), so implementations need no codec-thunk seal.
+    inline def conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]^
 
 trait ProductDerivation[typeclass[_]] extends ProductDerivation.Methods[typeclass]:
   inline def derivedOne[derivation]: typeclass[derivation] =

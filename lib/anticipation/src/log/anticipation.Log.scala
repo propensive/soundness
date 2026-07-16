@@ -37,17 +37,17 @@ import language.experimental.into
 object Log:
   // `message` is by-name: with no sink in scope (or none accepting the level), `Loggable.fanOut`
   // never forces it, so the logged value is not even constructed.
-  def fine[loggable: Loggable](message: => loggable): Unit =
-    loggable.log(Level.Fine, System.currentTimeMillis, message)
+  def fine[loggable](message: => loggable)(using loggable0: (loggable is Loggable)^): Unit =
+    loggable0.log(Level.Fine, System.currentTimeMillis, message)
 
-  def info[loggable: Loggable](message: => loggable): Unit =
-    loggable.log(Level.Info, System.currentTimeMillis, message)
+  def info[loggable](message: => loggable)(using loggable0: (loggable is Loggable)^): Unit =
+    loggable0.log(Level.Info, System.currentTimeMillis, message)
 
-  def warn[loggable: Loggable](message: => loggable): Unit =
-    loggable.log(Level.Warn, System.currentTimeMillis, message)
+  def warn[loggable](message: => loggable)(using loggable0: (loggable is Loggable)^): Unit =
+    loggable0.log(Level.Warn, System.currentTimeMillis, message)
 
-  def fail[loggable: Loggable](message: => loggable): Unit =
-    loggable.log(Level.Fail, System.currentTimeMillis, message)
+  def fail[loggable](message: => loggable)(using loggable0: (loggable is Loggable)^): Unit =
+    loggable0.log(Level.Fail, System.currentTimeMillis, message)
 
   // A standard, growable vocabulary describing the *nature* of a log event. An event type (or, more
   // usually, an individual enum case) mixes in one or more marker traits; a `Logger` may then be

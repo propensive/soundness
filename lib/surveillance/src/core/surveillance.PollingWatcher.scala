@@ -59,7 +59,7 @@ extends Watcher:
 
   private case class Entry(directory: Boolean, modified: Long, size: Long)
 
-  private def scan(directory: jnf.Path, filter: Text => Boolean): Map[Text, Entry] =
+  private def scan(directory: jnf.Path, filter: Text -> Boolean): Map[Text, Entry] =
     Optional(directory.toFile.nn.listFiles()).let: files =>
       scala.collection.immutable.ArraySeq.unsafeWrapArray(files).flatMap: file =>
         val entry = file.nn
@@ -94,7 +94,7 @@ extends Watcher:
     previous.each: (name, _) =>
       if !current.contains(name) then spool.put(WatchEvent.Delete(base, name))
 
-  def watch(directories: Map[jnf.Path, Text => Boolean], spool: Spool[WatchEvent])
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Spool[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
     directories.each: (directory, _) =>
@@ -108,9 +108,11 @@ extends Watcher:
     directories.each: (directory, filter) =>
       snapshots(directory) = scan(directory, filter)
 
+    // Sealed per the pure-façade convention (D6), like `NativeWatcher`: the handle is held
+    // only to keep the supervised poll task alive for the registration's lifetime.
     val async: Optional[Task[Unit]] = safely:
       supervise:
-        task(n"surveillance-poll"):
+        val polling = task(n"surveillance-poll"):
           try
             while true do
               snooze(interval)
@@ -121,6 +123,8 @@ extends Watcher:
                 snapshots(directory) = current
 
           catch case _: InterruptedException => ()
+
+        caps.unsafe.unsafeAssumePure(polling)
 
     Registration(async)
 

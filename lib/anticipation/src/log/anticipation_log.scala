@@ -32,7 +32,9 @@
                                                                                                   */
 package anticipation
 
-infix type logs [result, event] = (event is Loggable) ?=> result
+// Mirrors `raises`: the evidence is `^` because a `Loggable` instance may honestly capture
+// the (Unscoped) sinks it fans out to.
+infix type logs [result, event] = ((event is Loggable)^) ?=> result
 
 infix type transcribes [event, event2] = Transcribable:
   type Self = event2

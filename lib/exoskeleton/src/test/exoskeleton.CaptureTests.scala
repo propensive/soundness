@@ -30,10 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package exoskeleton
 
-import beneficence.*
-import telekinesis.*
+import soundness.*
 
-trait WebserverErrorPage extends Findable:
-  def handle(throwable: Throwable, request: Http.Request^): Http.Response
+import strategies.throwUnsafely
+
+// `sandbox` lends the installed daemon to its block as a `Tool` capability, and `tmux` lends
+// the live tmux session as a `Tmux` capability; capture checking confines each to its block
+// (the process is killed, and the session ended, afterwards).
+object CaptureTests extends Suite(m"Rig confinement tests"):
+  def run(): Unit =
+    test(m"the Tool capability cannot be returned from sandbox"):
+      demilitarize:
+        def attempt(launcher: Enclave.Launcher): Enclave.Tool =
+          launcher.sandbox(summon[Enclave.Tool])
+      . map(_.message)
+    . assert(_.nonEmpty)
+
+    test(m"a closure over the Tool cannot escape sandbox"):
+      demilitarize:
+        def attempt(launcher: Enclave.Launcher): () => Text =
+          launcher.sandbox(() => summon[Enclave.Tool].command)
+    . assert(_.nonEmpty)

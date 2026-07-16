@@ -90,7 +90,9 @@ package keyboards:
 
     def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given standardKeyboard: (monitor: Monitor, probate: Probate) => Keyboard.Standard =
+  // Honestly tracked: the keyboard's escape-disambiguation timeout runs `async`, so the
+  // instance retains the monitor.
+  given standardKeyboard: (monitor: Monitor, probate: Probate) => (Keyboard.Standard^{monitor}) =
     Keyboard.Standard()
 
 // The standard terminal features, each a turn-on/turn-off escape-sequence pair.

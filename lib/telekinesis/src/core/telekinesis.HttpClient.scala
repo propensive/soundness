@@ -78,7 +78,7 @@ object HttpClient:
       type Target = Origin["http" | "https"]
 
       def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
-        ( using HttpEvent is Loggable )
+        ( using (HttpEvent is Loggable)^ )
       :   Http.Response =
 
         val url = httpRequest.on(origin)
@@ -97,7 +97,7 @@ object HttpClient:
       type Target = Origin["http" | "https"]
 
       def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
-        ( using HttpEvent is Loggable )
+        ( using (HttpEvent is Loggable)^ )
       :   Http.Response =
 
         val url = httpRequest.on(origin)
@@ -141,4 +141,4 @@ object HttpClient:
 // `Tactic`, an `Online` token, a backend) which they retain — a given that takes capabilities
 // as parameters produces a capability (Jon, 2026-07-06; see rep/DECISIONS.md).
 trait HttpClient extends Targetable, caps.ExclusiveCapability:
-  def request(request: Http.Request, target: Target)(using HttpEvent is Loggable): Http.Response
+  def request(request: Http.Request, target: Target)(using (HttpEvent is Loggable)^): Http.Response

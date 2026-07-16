@@ -44,16 +44,17 @@ object Watch:
   def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
   :   Watch raises WatchError =
 
-    val pathGroups: Map[jnf.Path, Iterable[Text => Boolean]] =
+    val pathGroups: Map[jnf.Path, Iterable[Text -> Boolean]] =
       paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else
           val parent = Optional(javaPath.getParent).or(jnf.Paths.get("").nn)
-          (parent, (_: Text) == javaPath.getFileName.nn.toString.tt)
+          val filename = javaPath.getFileName.nn.toString.tt
+          (parent, (_: Text) == filename)
 
       . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
 
-    val directories: Map[jnf.Path, Text => Boolean] =
+    val directories: Map[jnf.Path, Text -> Boolean] =
       pathGroups.view.mapValues: predicates =>
         (value: Text) => predicates.exists(_(value))
 

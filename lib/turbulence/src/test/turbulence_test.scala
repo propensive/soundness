@@ -474,9 +474,12 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"the reader blocks for records from concurrent producers"):
         supervise:
           val relay = Relay[Text]()
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val producers = (1 to 4).map: index =>
-            async:
-              for value <- 1 to 25 do relay.put(t"${index*100 + value}")
+            caps.unsafe.unsafeAssumePure:
+              async:
+                for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
           val reader = async(relay.stream.records.to(Set))
           producers.each(_.await())
@@ -772,11 +775,14 @@ object Tests extends Suite(m"Turbulence tests"):
           val source = summon[Data is Source by Data over Credit].stream(payload)
           val subscribers = Divergence(source, 3)
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
-            async:
-              val gather = Gather2()
-              stream.pump(gather)
-              gather.data.to(List)
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val gather = Gather2()
+                stream.pump(gather)
+                gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(payload.to(List)))
@@ -801,11 +807,14 @@ object Tests extends Suite(m"Turbulence tests"):
 
           val subscribers = Divergence(source, 3)
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
-            async:
-              val gather = Gather2()
-              stream.pump(gather)
-              gather.data.to(List)
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val gather = Gather2()
+                stream.pump(gather)
+                gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(mixed.to(List)))

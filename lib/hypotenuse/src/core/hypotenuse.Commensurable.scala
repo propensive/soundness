@@ -91,7 +91,7 @@ object Commensurable:
       else inline if strict then n < 0 else n <= 0
 
 
-trait Commensurable extends Typeclass, Contrastive:
+trait Commensurable extends Typeclass.Pure, Contrastive:
   inline def compare
     ( inline left:        Self,
       inline right:       Contrast,

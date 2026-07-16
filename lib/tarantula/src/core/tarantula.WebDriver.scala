@@ -51,7 +51,11 @@ import urticose.*
 import httpBackends.virtualMachine
 import strategies.throwUnsafely
 
-case class WebDriver(server: Navigator#Server):
+// A `WebDriver` and its `Session`/`Element` values are pure ID-holders over the automation
+// server's port: the live resource is the `Server` capability, confined to the `session`
+// block that launches it. (A leaked `Session` after the block is a dangling ID over a
+// stopped server, not a live handle.)
+case class WebDriver(port: Int):
   private transparent inline def wd: this.type = this
 
   case class Session(sessionId: Text):
@@ -67,17 +71,17 @@ case class WebDriver(server: Navigator#Server):
 
     case class Element(elementId: Text):
       private def get(address: Text): Json logs HttpEvent = safe:
-        given online: Online = Online
+        given online: Online = Online()
 
         val url: HttpUrl =
-          url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
+          url"http://localhost:${port}/session/$sessionId/element/$elementId/$address"
 
         url.fetch(contentType = media"application/json").receive[Json]
 
       private def post(address: Text, content: Json): Json logs HttpEvent = safe:
-        given online: Online = Online
+        given online: Online = Online()
 
-        url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
+        url"http://localhost:${port}/session/$sessionId/element/$elementId/$address"
         . submit()(content)
         . read[Text]
         . as[Json]
@@ -109,15 +113,15 @@ case class WebDriver(server: Navigator#Server):
         Element(e.value.selectDynamic(Wei.s).as[Text])
 
     private def get(address: Text): Json logs HttpEvent = safe:
-      given online: Online = Online
+      given online: Online = Online()
 
-      url"http://localhost:${server.port}/session/$sessionId/$address"
+      url"http://localhost:${port}/session/$sessionId/$address"
       . fetch(contentType = media"application/json")
       . receive[Json]
 
     private def post(address: Text, content: Json): Json logs HttpEvent = safe:
-      given online: Online = Online
-      url"http://localhost:${server.port}/session/$sessionId/$address".submit()(content)
+      given online: Online = Online()
+      url"http://localhost:${port}/session/$sessionId/$address".submit()(content)
       . read[Text]
       . as[Json]
 
@@ -155,9 +159,9 @@ case class WebDriver(server: Navigator#Server):
       Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
   def startSession(): Session logs HttpEvent =
-    given online: Online = Online
+    given online: Online = Online()
 
-    val url = url"http://localhost:${server.port}/session"
+    val url = url"http://localhost:${port}/session"
     val json = url.submit()(t"""{"capabilities":{}}""".read[Json]).read[Text].as[Json]
 
     Session(json.value.sessionId.as[Text])

@@ -47,7 +47,7 @@ object InlineRoot:
   // fixed at the caller's site rather than inside the library.
   def apply(terminal: Terminal)
     ( using anchoring: InlineAnchoring, growth: InlineGrowth, shrink: InlineShrink )
-  :   InlineRoot =
+  :   InlineRoot^{terminal} =
 
     new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)
       ( using terminal.stdio, anchoring, growth, shrink )

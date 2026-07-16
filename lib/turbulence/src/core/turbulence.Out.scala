@@ -38,12 +38,12 @@ import rudiments.*
 object Out:
   private val mutex: Mutex = Mutex()
 
-  def write(bytes: Data)(using stdio: Stdio): Unit = stdio.write(bytes)
+  def write(bytes: Data)(using stdio: Stdio^): Unit = stdio.write(bytes)
 
-  def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio): Unit =
+  def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio^): Unit =
     stdio.print(printable.print(text(using stdio.termcap), stdio.termcap))
 
-  def println()(using Stdio): Unit = print("\n".tt)
+  def println()(using Stdio^): Unit = print("\n".tt)
 
   def println[textual: Printable as printable, C^](lines: (Termcap ?->{C} textual)*)
     ( using stdio: Stdio )

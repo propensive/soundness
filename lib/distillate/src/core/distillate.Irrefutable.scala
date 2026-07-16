@@ -60,8 +60,8 @@ object Irrefutable:
   given intDoule: Int is Irrefutable to Double = _.toDouble
   given floatDouble: Float is Irrefutable to Double = _.toDouble
 
-trait Irrefutable extends Typeclass, Resultant:
+trait Irrefutable extends Typeclass.Pure, Resultant:
   def unapply(value: Self): Result
 
-  def contramap[self2](lambda: self2 => Self): (self2 is Irrefutable to Result)^{this, lambda} =
+  def contramap[self2](lambda: self2 -> Self): self2 is Irrefutable to Result =
     value => unapply(lambda(value))

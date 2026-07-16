@@ -42,5 +42,5 @@ object Mandatable:
     type Self = self
     type Result = result
 
-sealed trait Mandatable extends Typeclass:
+sealed trait Mandatable extends Typeclass.Pure:
   type Result <: Self

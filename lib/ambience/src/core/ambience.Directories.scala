@@ -42,64 +42,69 @@ import prepositional.*
 import vacuous.*
 
 object Directories:
-  def home[path: Instantiable across Paths from Text](using system: System): path =
-    path(homeText)
+  // Like `Xdg`, the evidence is an explicit capturing (`^`) using-parameter: path
+  // `Instantiable` instances retain their filesystem evidence, which a pure context bound
+  // cannot accept.
+  def home[path](using instantiable: (path is Instantiable across Paths from Text)^)
+    ( using system: System )
+  :   path =
+    instantiable(homeText)
 
 
   def homeText(using system: System): Text =
     system(t"user.home").or(panic(m"the `user.home` system property is not set"))
 
 
-  def dataHome[path: Instantiable across Paths from Text]
+  def dataHome[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   path =
 
     if isWindows then roamingAppData[path] else Xdg.dataHome[path]
 
 
-  def configHome[path: Instantiable across Paths from Text]
+  def configHome[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   path =
 
     if isWindows then roamingAppData[path] else Xdg.configHome[path]
 
 
-  def cacheHome[path: Instantiable across Paths from Text]
+  def cacheHome[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   path =
 
     if isWindows then localAppData[path] else Xdg.cacheHome[path]
 
 
-  def stateHome[path: Instantiable across Paths from Text]
+  def stateHome[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   path =
 
     if isWindows then localAppData[path] else Xdg.stateHome[path]
 
 
-  def runtimeDir[path: Instantiable across Paths from Text]
+  def runtimeDir[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   Optional[path] =
 
-    if isWindows then path(t"${localAppDataText}\\Temp") else Xdg.runtimeDir[path]
+    if isWindows then instantiable(t"${localAppDataText}\\Temp") else Xdg.runtimeDir[path]
 
 
-  def bin[path: Instantiable across Paths from Text]
+  def bin[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   path =
 
-    if isWindows then path(t"${localAppDataText}\\Programs") else Xdg.bin[path]
+    if isWindows then instantiable(t"${localAppDataText}\\Programs") else Xdg.bin[path]
 
 
-  def dataDirs[path: Instantiable across Paths from Text]
+  def dataDirs[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   List[path] =
 
     if isWindows then List(programData[path]) else Xdg.dataDirs[path]
 
 
-  def configDirs[path: Instantiable across Paths from Text]
+  def configDirs[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   List[path] =
 
@@ -122,22 +127,22 @@ object Directories:
     safely(Environment[Text](t"PROGRAMDATA")).or(t"C:\\ProgramData")
 
 
-  private def localAppData[path: Instantiable across Paths from Text]
+  private def localAppData[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   path =
 
-    path(localAppDataText)
+    instantiable(localAppDataText)
 
 
-  private def roamingAppData[path: Instantiable across Paths from Text]
+  private def roamingAppData[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment, system: System )
   :   path =
 
-    path(roamingAppDataText)
+    instantiable(roamingAppDataText)
 
 
-  private def programData[path: Instantiable across Paths from Text]
+  private def programData[path](using instantiable: (path is Instantiable across Paths from Text)^)
     ( using environment: Environment )
   :   path =
 
-    path(programDataText)
+    instantiable(programDataText)

@@ -48,34 +48,72 @@ object Terminal:
   // (in `terminalFeatures`) and by the `Winch` (resize) signal handler below.
   def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"
 
+  // In the companion (not the class) so the pure pump-daemon body can call it without
+  // charging `Terminal.this`.
+  private[profanity] def dark(red: Int, green: Int, blue: Int): Boolean =
+    (0.299*red + 0.587*green + 0.114*blue) < 32768
+
+  // The terminal's mutable size/brightness state, in a plain (untracked) holder rather than
+  // fields of `Terminal` itself: the termcap's live `width`, and the pump daemon's updates,
+  // then close over this holder instead of `Terminal.this` — which matters because the
+  // daemon body must be a pure context function and `Termcap`/`Stdio` values must stay pure.
+  private[profanity] class Metrics:
+    var mode: Optional[Brightness] = Unset
+    var rows: Optional[Int] = Unset
+    var columns: Optional[Int] = Unset
+
+// A `Terminal` is a *capability*: it holds the live raw-mode tty session — the `Monitor` and
+// `Probate` of its input-pump daemon, the event spool, and mutable size/brightness state —
+// whose lifetime is the `interactive` block that introduces it (raw mode and stdin are torn
+// down in its `finally`). `Exclusive` because a tty session has a single owner; nothing may
+// retain it past the teardown.
 case class Terminal()
   ( using console: Console, monitor: Monitor, probate: Probate, environment: Environment )
-extends Interactivity[TerminalEvent]:
+extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
 
   export console.stdio.{in, out, err}
 
-  val keyboard: Keyboard.Standard = Keyboard.Standard()
+  // The keyboard's escape-disambiguation timeout runs `async`, so the value retains the
+  // monitor; the field type declares the capture. (`Probate` is a plain trait, so it is not
+  // nameable in a capture set.)
+  val keyboard: Keyboard.Standard^{monitor} = Keyboard.Standard()
 
-  var mode: Optional[Brightness] = safely:
+  private val metrics: Terminal.Metrics = Terminal.Metrics()
+
+  metrics.mode = safely:
     def hex(text: Text): Int = Integer.parseInt(text.s, 16)
 
     Environment.terminalBg.cut(t"/").to(List) match
       case red :: green :: blue :: Nil =>
-        if dark(hex(red), hex(green), hex(blue)) then Brightness.Dark else Brightness.Light
+        if Terminal.dark(hex(red), hex(green), hex(blue)) then Brightness.Dark
+        else Brightness.Light
 
       case _ =>
         abort(EnvironmentError(t"TERMINAL_BG"))
 
-  var rows: Optional[Int] = safely(Environment.lines.as[Int])
-  var columns: Optional[Int] = safely(Environment.columns.as[Int])
+  metrics.rows = safely(Environment.lines.as[Int])
+  metrics.columns = safely(Environment.columns.as[Int])
+
+  def mode: Optional[Brightness] = metrics.mode
+  def mode_=(value: Optional[Brightness]): Unit = metrics.mode = value
+  def rows: Optional[Int] = metrics.rows
+  def rows_=(value: Optional[Int]): Unit = metrics.rows = value
+  def columns: Optional[Int] = metrics.columns
+  def columns_=(value: Optional[Int]): Unit = metrics.columns = value
 
   def knownColumns: Int = columns.or(80)
   def knownRows: Int = rows.or(80)
 
-  val cap: Termcap = new Termcap:
-    def ansi: Boolean = true
-    def color: ColorDepth = ColorDepth.TrueColor
-    override def width: Int = knownColumns
+  // `width` reads the live column count through the untracked `Metrics` holder (bound to a
+  // block local, not read through `this`), so the termcap — and the stdio built on it —
+  // stay pure, as `Stdio`'s `termcap` member requires.
+  val cap: Termcap =
+    val metrics0 = metrics
+
+    new Termcap:
+      def ansi: Boolean = true
+      def color: ColorDepth = ColorDepth.TrueColor
+      override def width: Int = metrics0.columns.or(80)
 
   given stdio: Stdio = new Stdio:
     val termcap = cap
@@ -87,37 +125,54 @@ extends Interactivity[TerminalEvent]:
 
   def eventIterator(): Iterator[TerminalEvent] = events.iterator
 
-  console.trap:
-    case Signal.Winch =>
-      out.print(Terminal.reportSize)
-      events.put(Signal.Winch)
-      SignalResponse.Accept
+  // The handler is bound over block locals (not fields) so it stays pure: `Console.trap`
+  // takes a pure `PartialFunction`, and a reference to `out` or `events` through `this`
+  // would charge the closure with the terminal capability.
+  locally:
+    val out0 = console.stdio.out
+    val events0 = events
 
-    case signal =>
-      events.put(signal)
-      SignalResponse.Accept
+    console.trap:
+      case Signal.Winch =>
+        out0.print(Terminal.reportSize)
+        events0.put(Signal.Winch)
+        SignalResponse.Accept
 
-  private def dark(red: Int, green: Int, blue: Int): Boolean =
-    (0.299*red + 0.587*green + 0.114*blue) < 32768
+      case signal =>
+        events0.put(signal)
+        SignalResponse.Accept
 
   // The keyboard pump runs as a daemon under a trap: if reading or decoding stdin fails,
   // the event spool is stopped so the session consuming `events.stream` sees the input end
   // and can exit cleanly, rather than blocking forever on a pump that has silently died.
+  //
+  // A daemon body must be a pure context function, so everything it needs is bound to
+  // block locals first: the untracked `Metrics` holder and `Spool` cross directly, the
+  // capability-typed keyboard crosses as an `AnyRef` rim (the cordillera recipe), and the
+  // stdin stream is a `LazyList`, which is not capture-tracked, so it crosses as a plain
+  // value.
   val pumpInput: Daemon =
+    val keyboard0: AnyRef = keyboard.asInstanceOf[AnyRef]
+    val events0 = events
+    val metrics0 = metrics
+    val chars: LazyList[Char] = In.lazyList[Char]
+
     contain:
-      case _ => events.stop(); Remedy.Accept
+      case _ => events0.stop(); Remedy.Accept
 
     . protect:
         daemon:
-          keyboard.process(In.lazyList[Char]).each:
+          keyboard0.asInstanceOf[Keyboard.Standard].process(chars).each:
             case resize@TerminalInfo.WindowSize(rows2, columns2) =>
-              rows = rows2
-              columns = columns2
-              events.put(resize)
+              metrics0.rows = rows2
+              metrics0.columns = columns2
+              events0.put(resize)
 
             case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-              mode = if dark(red, green, blue) then Brightness.Dark else Brightness.Light
-              events.put(bgColor)
+              metrics0.mode =
+                if Terminal.dark(red, green, blue) then Brightness.Dark else Brightness.Light
+
+              events0.put(bgColor)
 
             case other =>
-              events.put(other)
+              events0.put(other)

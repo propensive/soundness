@@ -130,7 +130,7 @@ package executives:
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
-        entrypoint:       Entrypoint,
+        entrypoint:       Entrypoint^,
         login:            Login )
       ( using interpreter: Interpreter )
     :   Cli =
@@ -222,7 +222,7 @@ package executives:
               Exit.Ok
 
             case t"install" =>
-              given Entrypoint = entrypoint
+              given entrypoint0: (Entrypoint^{entrypoint}) = entrypoint
               given WorkingDirectory = workingDirectory
               import errorDiagnostics.stackTracesDiagnostics
               import logging.silentLogging

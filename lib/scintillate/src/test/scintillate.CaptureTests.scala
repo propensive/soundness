@@ -32,8 +32,25 @@
                                                                                                   */
 package scintillate
 
-import beneficence.*
-import telekinesis.*
+import soundness.*
 
-trait WebserverErrorPage extends Findable:
-  def handle(throwable: Throwable, request: Http.Request^): Http.Response
+import strategies.throwUnsafely
+import logging.silentLogging
+
+// A handler receives one live exchange as an `HttpConnection` capability; capture checking
+// prevents the connection (or its respond sink) being retained past the handler invocation.
+object CaptureTests extends Suite(m"Connection confinement tests"):
+  def run(): Unit =
+    test(m"the connection cannot be stashed in an outer variable"):
+      demilitarize:
+        def attempt(server: SocketServer)
+          ( using Monitor, Probate, (HttpServerEvent is Loggable)^, Tactic[ServerError] )
+        :   Unit =
+          var stash: () => Unit = () => ()
+
+          server.handle:
+            stash = () => summon[HttpConnection].respond(Http.Response(Http.Ok)(t""))
+            Http.Response(Http.Ok)(t"")
+
+          ()
+    . assert(_.nonEmpty)

@@ -41,7 +41,9 @@ import prepositional.*
 import spectacular.*
 
 object Focusable:
-  def apply[element](strategy0: Text, focus0: element => Text): element is Focusable =
+  // A pure (`->`) focus lambda: every instance is built from a pure selector-rendering
+  // function, and the factory result must stay pure for the bare-typed givens below.
+  def apply[element](strategy0: Text, focus0: element -> Text): element is Focusable =
     new Focusable:
       type Self = element
       def strategy: Text = strategy0

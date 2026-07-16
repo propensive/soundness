@@ -63,5 +63,5 @@ object Inclusive:
   // instance for `text.has(char)`; substring containment is `subsumes` instead.
   given text: Text is Inclusive by Char = (text, char) => text.s.indexOf(char.toInt) >= 0
 
-trait Inclusive extends Typeclass, Operable:
+trait Inclusive extends Typeclass.Pure, Operable:
   def has(self: Self, value: Operand): Boolean

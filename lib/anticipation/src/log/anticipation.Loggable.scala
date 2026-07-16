@@ -44,9 +44,12 @@ object Loggable:
   // scope ⇒ an
   // empty `Every` ⇒ silent; many ⇒ fan-out with per-sink routing. Living in `Loggable`'s companion
   // keeps it in implicit scope, so no import is needed at the use site.
-  given fanOut: [event, carrier]
-  =>  ( transcribable: event is Transcribable to carrier, sinks: Every[LogSink[event, carrier]] )
-  =>  event is Loggable =
+  // Capture-polymorphic over the sinks' capabilities (`cap^`, the Cursor pattern): the
+  // derived instance honestly carries whatever the in-scope sinks capture.
+  given fanOut: [event, carrier, cap^]
+  =>  ( transcribable: event is Transcribable to carrier,
+        sinks:         Every[LogSink[event, carrier]^{cap}] )
+  =>  ((event is Loggable)^{cap, caps.any}) =
 
     new Loggable:
       type Self = event
@@ -68,7 +71,9 @@ object Loggable:
               then sink.submit(level, timestamp, message)
 
 trait Loggable extends Typeclass:
-  loggable: Loggable =>
+  // The self type is `^`: an instance may capture the (Unscoped) sinks it fans out to; a
+  // bare self type would pin every instance pure.
+  loggable: Loggable^ =>
     def log(level: Level, timestamp: Long, event: => Self): Unit
 
     // `^{lambda}` only: the compiler treats a bare `Loggable` receiver as untracked
@@ -76,6 +81,6 @@ trait Loggable extends Typeclass:
     // for the Scala.js pipeline, which — unlike the JVM pipeline — insists the anonymous
     // instance's base class is pure and rejects the capture of `lambda`; the result type still
     // declares it. (Compiler divergence; the JVM pipeline accepts the direct form.)
-    def contramap[self2](lambda: self2 => Self): (self2 is Loggable)^{lambda} =
+    def contramap[self2](lambda: self2 => Self): (self2 is Loggable)^{this, lambda} =
       val lambda0: self2 -> Self = caps.unsafe.unsafeAssumePure(lambda)
       (level, timestamp, event) => loggable.log(level, timestamp, lambda0(event))

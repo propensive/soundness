@@ -50,64 +50,70 @@ import urticose.*
 import vacuous.*
 
 package httpServers:
-  given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
-
+  // A named class rather than four anonymous given instances: the anonymous form freshens
+  // the inferred type members with capture variables, which then fail to conform to the
+  // declared refinement (the galilei `FileOpenable` finding). Honestly tracked: the instance
+  // retains its tactic and monitor (rep/DECISIONS.md ruling: server givens are capabilities).
+  private class HttpProtocolic[port <: (80 | 443 | 8080 | 8000)](native: Boolean, local: Boolean)
+    ( using tactic:    Tactic[ServerError],
+            monitor:   Monitor,
+            probate:   Probate,
+            loggable:  HttpServerEvent is Loggable,
+            errorPage: WebserverErrorPage )
+  extends Protocolic:
     type Transport = TcpPort of port
     type Self = Http
     type Server = Service
-    type Request = HttpConnection
+    // Alias with the explicit capture: a bare capability-class alias decorates the trait's
+    // `Request ?=>` parameter on one side of the override only.
+    type Request = HttpConnection^
     type Response = Http.Response
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, true).handle(lambda)
+    def server(port: TcpPort of port)(lambda: Request ?=> Response): Server^ =
+      if native then SocketServer(port.number, local).handle(lambda)
+      else HttpServer(port.number, local).handle(lambda)
 
+  // Public: the soundness bundle's hand-written forwarder givens name this alias.
+  type HttpServerFor[port] =
+    Http is Protocolic
+      { type Transport = TcpPort of port
+        type Request = HttpConnection^
+        type Response = Http.Response
+        type Server = Service }
+
+  given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
+  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+    HttpProtocolic[port](false, true)
 
   given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
-
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
-
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, false).handle(lambda)
-
+  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+    HttpProtocolic[port](false, false)
 
   given nativeHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
-
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
-
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      SocketServer(port.number, true).handle(lambda)
-
+  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+    HttpProtocolic[port](true, true)
 
   given nativePublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
+  =>  ( tactic: Tactic[ServerError], monitor: Monitor, probate: Probate )
+  =>  ( loggable: HttpServerEvent is Loggable, errorPage: WebserverErrorPage )
+  =>  ((HttpServerFor[port])^{tactic, monitor, caps.any}) =
+    HttpProtocolic[port](true, false)
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      SocketServer(port.number, false).handle(lambda)
+
+
+
+
+
+
+
+
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
@@ -125,7 +131,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
       Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
 
 
-inline def request: Http.Request = infer[Http.Request]
+inline def request: Http.Request^ = infer[Http.Request]
 
 extension (request: Http.Request)
   @unexported

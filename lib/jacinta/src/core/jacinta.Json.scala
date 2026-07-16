@@ -246,7 +246,7 @@ trait Json2 extends Json3:
 
   object DecodableDerivation extends Derivable[Json.Decodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Json.Decodable =
+    :   (derivation is Json.Decodable)^ =
 
       // The object `Morphology` is built from the *field decoders'* own shapes, so it
       // describes exactly what this decoder reads (a `… in Text`-branch field
@@ -258,23 +258,20 @@ trait Json2 extends Json3:
       // The capabilities are summoned at the derivation site and supplied explicitly to
       // `decodeObject`, rather than re-summoned inside the decoder body via nested `provide`s
       // (under capture checking those minted distinct root capabilities that failed to unify
-      // with `build`'s per-field lambda). The decode SAM therefore closes over the
-      // resolution-scoped tactic, which shares the instance's given-resolution lifetime, so
-      // the instance is laundered pure per the codec-thunk seal pattern (see the primitive
-      // codecs in `object Json` and rep/DECISIONS.md).
-      caps.unsafe.unsafeAssumePure:
-        Json.Decodable({
-          val fields: List[(Text, Morphology)] =
-            contexts[derivation](): [field] => context => (label, context.shape())
-            . to(List)
+      // with `build`'s per-field lambda). The decode SAM closes over the resolution-scoped
+      // tactic, which the fresh (`^`) result honestly admits — no seal.
+      Json.Decodable({
+        val fields: List[(Text, Morphology)] =
+          contexts[derivation](): [field] => context => (label, context.shape())
+          . to(List)
 
-          Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
-        }):
-          json =>
-            decodeObject[derivation](json)
-              ( using infer[ProductReflection[derivation]],
-                      infer[Foci[Json.Focus]],
-                      infer[Tactic[JsonError]] )
+        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+      }):
+        json =>
+          decodeObject[derivation](json)
+            ( using infer[ProductReflection[derivation]],
+                    infer[Foci[Json.Focus]],
+                    infer[Tactic[JsonError]] )
 
     private inline def decodeObject[derivation <: Product]
       ( json: Json )
@@ -358,40 +355,39 @@ trait Json2 extends Json3:
 
   object ParsableDerivation extends Derivable[Json.Field]:
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Json.Field =
+    :   (derivation is Json.Field)^ =
 
       // Like `DecodableDerivation.conjunction`: the capabilities are summoned
-      // at the derivation site and the instance is sealed per the codec-thunk
-      // pattern. A single `contexts` traversal collects, per field, its wire
-      // key (`@name`-aware), its parser (via the `Field` fallback chain) and
-      // its declared default; `Json.Parsable.product` owns the parse loop, so
-      // no per-field lambda ever closes over the reader.
-      caps.unsafe.unsafeAssumePure:
-        val reflection = infer[ProductReflection[derivation]]
+      // at the derivation site, and the fresh (`^`) result honestly admits the
+      // instance's capture of them — no seal. A single `contexts` traversal
+      // collects, per field, its wire key (`@name`-aware), its parser (via the
+      // `Field` fallback chain) and its declared default; `Json.Parsable.product`
+      // owns the parse loop, so no per-field lambda ever closes over the reader.
+      val reflection = infer[ProductReflection[derivation]]
 
-        Json.Parsable.product[derivation](
-          { () =>
-            val renames: Map[Text, Text] = relabelling[derivation, Json]
+      Json.Parsable.product[derivation](
+        { () =>
+          val renames: Map[Text, Text] = relabelling[derivation, Json]
 
-            contexts[derivation]():
-              [field] => context =>
-                ( renames.at(label).or(label).s,
-                  context: Json.Parsing,
-                  default[Optional[field]]: Any )
-          },
-          values => Json.Parsable.assemble(reflection, values))
-          ( using infer[Foci[Json.Focus]], infer[Tactic[JsonError]] )
+          contexts[derivation]():
+            [field] => context =>
+              ( renames.at(label).or(label).s,
+                context: Json.Parsing,
+                default[Optional[field]]: Any )
+        },
+        values => Json.Parsable.assemble(reflection, values))
+        ( using infer[Foci[Json.Focus]], infer[Tactic[JsonError]] )
 
-    inline def disjunction[derivation: SumReflection]: derivation is Json.Field =
+    inline def disjunction[derivation: SumReflection]: (derivation is Json.Field)^ =
       // Dispatch strategy by wire shape: a wrapper's tag is its first token,
       // so it streams with no lookahead at all; an envelope and an internal
       // field locate the tag with a bounded scan-ahead (`discriminant`
       // skips values without materializing them, then rewinds), after which
       // the chosen variant parses directly from the tokens. Any custom
       // `Discriminable` falls back to materializing one value's AST and
-      // dispatching through the decoder. Sealed per the codec-thunk
-      // pattern: each instance captures resolution-scoped tactics.
-      caps.unsafe.unsafeAssumePure:
+      // dispatching through the decoder. The fresh (`^`) result honestly
+      // admits each instance's capture of its resolution-scoped tactics.
+      locally:
         // Wire tag → variant label, a per-derivation constant: built once
         // here rather than on every `parse` call, whose profile it dominated
         // (map building plus generic-equality lookups, per occurrence).
