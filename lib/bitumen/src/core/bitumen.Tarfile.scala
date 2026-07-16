@@ -45,6 +45,7 @@ import prepositional.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 enum LongNameFormat:
   case Pax
@@ -56,7 +57,15 @@ object Tarfile:
   given streamable: Tarfile is Streamable by Data = _.blocks
 
   def read(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
-    readEntries(stream.chunked(512), Map.empty, Map.empty, Unset, Unset)
+    readEntries(Cursor[Data](stream.filter(_.nonEmpty).iterator), Map.empty, Map.empty, Unset,
+        Unset)
+
+  // The endpoint form: entries parse lazily straight off a pull endpoint (one
+  // forced entry advances the cursor past it), absorbing arbitrary chunk
+  // boundaries — the archive need never be materialized. The resulting
+  // entries are single-owner: consume them in order, on one thread.
+  def read(consume stream: (Stream[Data] over Credit)^): LazyList[Tar.Entry] raises TarError =
+    readEntries(Cursor[Data](stream), Map.empty, Map.empty, Unset, Unset)
 
   def from(stream: LazyList[Data]): Tarfile raises TarError = Tarfile(read(stream))
 
@@ -83,16 +92,21 @@ object Tarfile:
     Tarfile(entries)
 
   private def readEntries
-    ( blocks:        LazyList[Data],
+    ( cursor:        Cursor[Data, {}]^,
       paxOverlay:    Map[Text, Text],
       globalOverlay: Map[Text, Text],
       longName:      Optional[Text],
       longLink:      Optional[Text] )
-  :   LazyList[Tar.Entry] raises TarError =
+  :   LazyList[Tar.Entry] raises TarError = LazyList.defer:
+    val block = takeBlock(cursor)
 
-    blocks match
-      case head #:: tail =>
-        if TarHeader.isZeroBlock(head) then LazyList() else
+    if block.absent then
+      // The archive ended without its terminating zero blocks.
+      raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
+      LazyList()
+    else
+      val head = block.vouch
+      if TarHeader.isZeroBlock(head) then LazyList() else
           val header = TarHeader.parse(head)
           val checksum = TarHeader.decodeOctal(header.checksum, t"checksum")
           TarHeader.verifyChecksum(head, checksum)
@@ -115,24 +129,20 @@ object Tarfile:
 
           header.typeFlag.toInt & 0xff match
             case 'x' =>
-              val (data, rest) = takeData(tail, size)
-              val pax = Pax.parse(data)
-              readEntries(rest, paxOverlay ++ pax, globalOverlay, longName, longLink)
+              val pax = Pax.parse(takeData(cursor, size))
+              readEntries(cursor, paxOverlay ++ pax, globalOverlay, longName, longLink)
 
             case 'g' =>
-              val (data, rest) = takeData(tail, size)
-              val pax = Pax.parse(data)
-              readEntries(rest, paxOverlay, globalOverlay ++ pax, longName, longLink)
+              val pax = Pax.parse(takeData(cursor, size))
+              readEntries(cursor, paxOverlay, globalOverlay ++ pax, longName, longLink)
 
             case 'L' =>
-              val (data, rest) = takeData(tail, size)
-              val name = TarHeader.decodeNulText(data)
-              readEntries(rest, paxOverlay, globalOverlay, name, longLink)
+              val name = TarHeader.decodeNulText(takeData(cursor, size))
+              readEntries(cursor, paxOverlay, globalOverlay, name, longLink)
 
             case 'K' =>
-              val (data, rest) = takeData(tail, size)
-              val link = TarHeader.decodeNulText(data)
-              readEntries(rest, paxOverlay, globalOverlay, longName, link)
+              val link = TarHeader.decodeNulText(takeData(cursor, size))
+              readEntries(cursor, paxOverlay, globalOverlay, longName, link)
 
             case 'S' =>
               val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
@@ -141,8 +151,8 @@ object Tarfile:
               val inlineSegments: List[SparseSegment] = readInlineSparseMap(head)
               val isExtended: Boolean = head(482) != 0.toByte
               val realSize: Long = TarHeader.decodeOctal(head.slice(483, 495), t"realsize").long
-              val (extSegments, afterExt) = readSparseExtensions(tail, isExtended)
-              val (data, rest) = takeData(afterExt, size)
+              val extSegments = readSparseExtensions(cursor, isExtended)
+              val data = takeData(cursor, size)
 
               val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
 
@@ -153,7 +163,7 @@ object Tarfile:
                 Tar.Entry.Sparse
                   ( path, mode, user, group, mtime, realSize, allSegments, LazyList(data), extras )
 
-              entry #:: readEntries(rest, Map.empty, globalOverlay, Unset, Unset)
+              entry #:: readEntries(cursor, Map.empty, globalOverlay, Unset, Unset)
 
             case flag =>
               val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
@@ -163,15 +173,11 @@ object Tarfile:
               val extras: Map[Text, Text] =
                 (globalOverlay ++ paxOverlay).filter: (k, _) => !structuralPaxKeys.contains(k)
 
-              val (entry, rest) =
+              val entry =
                 buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras, header,
-                  tail)
+                  cursor)
 
-              entry #:: readEntries(rest, Map.empty, globalOverlay, Unset, Unset)
-
-      case _ =>
-        raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
-        LazyList()
+              entry #:: readEntries(cursor, Map.empty, globalOverlay, Unset, Unset)
 
   private def buildEntry
     ( flag:   Int,
@@ -184,45 +190,54 @@ object Tarfile:
       link:   Text,
       extras: Map[Text, Text],
       header: TarHeader,
-      blocks: LazyList[Data] )
-  :   (Tar.Entry, LazyList[Data]) raises TarError =
+      cursor: Cursor[Data, {}]^ )
+  :   Tar.Entry raises TarError =
 
     flag match
       case 0 | '0' | '7' =>
-        val (data, rest) = takeData(blocks, size)
-        (Tar.Entry.File(path, mode, user, group, mtime, LazyList(data), extras), rest)
+        Tar.Entry.File(path, mode, user, group, mtime, LazyList(takeData(cursor, size)), extras)
 
       case '5' =>
-        (Tar.Entry.Directory(path, mode, user, group, mtime, extras), blocks)
+        Tar.Entry.Directory(path, mode, user, group, mtime, extras)
 
       case '1' =>
-        (Tar.Entry.Link(path, mode, user, group, mtime, link, extras), blocks)
+        Tar.Entry.Link(path, mode, user, group, mtime, link, extras)
 
       case '2' =>
-        (Tar.Entry.Symlink(path, mode, user, group, mtime, link, extras), blocks)
+        Tar.Entry.Symlink(path, mode, user, group, mtime, link, extras)
 
       case '3' =>
         val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
         val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
-        (Tar.Entry.CharSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
+        Tar.Entry.CharSpecial(path, mode, user, group, mtime, (major, minor), extras)
 
       case '4' =>
         val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
         val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
-        (Tar.Entry.BlockSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
+        Tar.Entry.BlockSpecial(path, mode, user, group, mtime, (major, minor), extras)
 
       case '6' =>
-        (Tar.Entry.Fifo(path, mode, user, group, mtime, extras), blocks)
+        Tar.Entry.Fifo(path, mode, user, group, mtime, extras)
 
       case other =>
         raise(TarError(TarError.Reason.UnknownTypeFlag(other.toByte)))
-        (Tar.Entry.Directory(path, mode, user, group, mtime, extras), blocks)
+        Tar.Entry.Directory(path, mode, user, group, mtime, extras)
 
-  private def takeData(blocks: LazyList[Data], size: Int): (Data, LazyList[Data]) =
-    val nBlocks = (size + 511)/512
-    val (taken, rest) = blocks.splitAt(nBlocks)
-    val concatenated: Data = taken.foldLeft(IArray.empty[Byte])(_ ++ _).slice(0, size)
-    (concatenated, rest)
+  // The next 512-byte block, or `Unset` at clean end-of-archive; a partial
+  // block raises. One allocation per header block.
+  private def takeBlock(cursor: Cursor[Data, {}]^): Optional[Data] raises TarError =
+    if cursor.finished then Unset
+    else cursor.take(abort(TarError(TarError.Reason.TruncatedStream(512, cursor.available))))(512)
+
+  // An entry's `size` bytes of data plus its padding, in a single allocation
+  // (the block-list fold this replaces reallocated per block).
+  private def takeData(cursor: Cursor[Data, {}]^, size: Int): Data raises TarError =
+    val padded = ((size + 511)/512)*512
+
+    val data = cursor.take(abort(TarError(TarError.Reason.TruncatedStream(padded,
+        cursor.available))))(padded)
+
+    data.slice(0, size)
 
   private def decodeSparseField(data: Data): Long raises TarError =
     var allZero = true
@@ -249,11 +264,17 @@ object Tarfile:
 
     builder.result()
 
-  private def readSparseExtensions(blocks: LazyList[Data], hasMore: Boolean)
-  :   (List[SparseSegment], LazyList[Data]) raises TarError =
+  private def readSparseExtensions(cursor: Cursor[Data, {}]^, hasMore: Boolean)
+  :   List[SparseSegment] raises TarError =
 
-    if !hasMore then (Nil, blocks) else blocks match
-      case head #:: tail =>
+    if !hasMore then Nil else
+      val block = takeBlock(cursor)
+
+      if block.absent then
+        raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
+        Nil
+      else
+        val head = block.vouch
         val builder = List.newBuilder[SparseSegment]
         var pos = 0
         var i = 0
@@ -267,12 +288,7 @@ object Tarfile:
           i = i + 1
 
         val moreExtended = head(504) != 0.toByte
-        val (rest, afterRest) = readSparseExtensions(tail, moreExtended)
-        (builder.result() ++ rest, afterRest)
-
-      case _ =>
-        raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
-        (Nil, blocks)
+        builder.result() ++ readSparseExtensions(cursor, moreExtended)
 
   private def resolveName
     ( header:        TarHeader,
