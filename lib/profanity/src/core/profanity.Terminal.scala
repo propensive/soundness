@@ -73,10 +73,11 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
 
   export console.stdio.{in, out, err}
 
-  // The keyboard's escape-disambiguation timeout runs `async`, so the value retains the
-  // monitor; the field type declares the capture. (`Probate` is a plain trait, so it is not
-  // nameable in a capture set.)
-  val keyboard: Keyboard.Standard^{monitor} = Keyboard.Standard()
+  // ESC disambiguation consults the live reader — buffered input decides
+  // instantly and only a quiet line waits briefly (see `Keyboard.Lookahead`)
+  // — so the keyboard no longer runs `async` and retains no monitor.
+  val keyboard: Keyboard.Standard =
+    Keyboard.Standard()(using Keyboard.Lookahead.tty(console.stdio))
 
   private val metrics: Terminal.Metrics = Terminal.Metrics()
 

@@ -83,6 +83,12 @@ trait Stdio extends Io, Findable:
 
   protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in)
 
+  // Whether a character is already readable without blocking. This consults
+  // the same reader that character-level input streams from, so characters
+  // buffered inside its decoder count — an `available()` check on the raw
+  // `InputStream` would miss them.
+  def ready(): Boolean = reader.ready()
+
   def write(bytes: Data): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
   def writeErr(bytes: Data): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
