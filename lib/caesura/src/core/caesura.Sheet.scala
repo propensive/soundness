@@ -102,7 +102,7 @@ object Sheet:
         type Self = Sheet
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): Sheet = sheet(parse(text))
+        def aggregate(text: LazyList[Text]): Sheet = sheet(parse(Stream(text.iterator)))
         override def accept(stream: (Stream[Text] over Credit)^): Sheet =
           // The non-consume `accept` crosses to the consuming parser as a
           // neutral reference; each accept delivers a single-use stream.
@@ -114,23 +114,6 @@ object Sheet:
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(LazyList).map(_.show+t"\n")
-
-
-  private def parse(content0: LazyList[Text])
-    ( using format: DsvFormat, tactic: Tactic[DsvError] )
-  :   LazyList[Dsv] =
-
-    var content: LazyList[Text] = content0
-
-    val load: () => Optional[Text] = () => content match
-      case head #:: tail =>
-        content = tail
-        head
-
-      case _ =>
-        Unset
-
-    new Parser(load).stream
 
 
   // Parse rows from a pull endpoint, one block-credit refill per chunk.
