@@ -69,10 +69,10 @@ object Main extends Run:
     val payload: Data = "wasm e2e probe".getBytes("UTF-8").nn.immutable(using Unsafe)
 
     backend.open(file, List(OpenFlag.Write, OpenFlag.Create)): handle =>
-      handle.write(payload)
+      handle.writer(LazyList(payload))
 
     val content: Text = backend.open(file, List(OpenFlag.Read)): handle =>
-      handle.stream.map(_.utf8).join
+      handle.reader().map(_.utf8).join
 
     System.out.nn.println("fs: " + content.s)
 
