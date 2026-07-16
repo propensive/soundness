@@ -38,6 +38,7 @@ import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*
+import enigmatic.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -61,10 +62,10 @@ class PdfFile private (origin: PdfFile.Origin):
 
   // Runs `block` with a contextual `Pdf` — reached through the package-level `pdf` accessor —
   // over a source held open exactly for the block's duration. The header, cross-reference
-  // chain and (once supported) encryption keys are read eagerly, so a malformed file fails
-  // here and not at first access. Capture checking confines the `Pdf`, and anything that
-  // still resolves through it, to the block.
-  def open[result](password: Optional[Text] = Unset)(block: Pdf ?=> result)
+  // chain and, for an encrypted document, the encryption keys are read eagerly, so a
+  // malformed file — or a wrong password — fails here and not at first access. Capture
+  // checking confines the `Pdf`, and anything that still resolves through it, to the block.
+  def open[result](password: Optional[Password] = Unset)(block: Pdf ?=> result)
   :   result raises PdfError =
 
     origin match
@@ -81,7 +82,7 @@ class PdfFile private (origin: PdfFile.Origin):
 
   // The capability must be minted where the block is applied: a `Pdf` returned from another
   // method is a distinct fresh capability which could not flow into the block's own.
-  private def read[result](source: ByteSource, password: Optional[Text])(block: Pdf ?=> result)
+  private def read[result](source: ByteSource, password: Optional[Password])(block: Pdf ?=> result)
   :   result raises PdfError =
 
     val version = Pdf.readVersion(source) // check the header before anything else is trusted

@@ -35,6 +35,7 @@ package facsimile
 import anticipation.*
 import contingency.*
 import denominative.*
+import enigmatic.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -61,8 +62,9 @@ object Pdf:
   // Builds the security handler, if the file is encrypted, and installs it on the document.
   // The `/Encrypt` dictionary and the trailer `/ID` are read before the guard exists — and
   // so are never themselves decrypted — and a wrong password fails here, at open, rather
-  // than at first string or stream access.
-  private[facsimile] def unlock(pdf: Pdf^, password: Optional[Text]): Unit raises PdfError =
+  // than at first string or stream access. The password's cleartext is read only within
+  // `expose`, so it is confined to this call; the empty password covers unprotected files.
+  private[facsimile] def unlock(pdf: Pdf^, password: Optional[Password]): Unit raises PdfError =
     pdf.trailer.at(t"Encrypt").let: encryptRef =>
       val encrypt = pdf.resolved(encryptRef).dictionary
         . or(abort(PdfError(PdfError.Reason.UnsupportedEncryption(0))))
@@ -71,7 +73,8 @@ object Pdf:
         case Cos.Sequence(first :: _) => first.chars.or(IArray.empty[Byte])
         case _                        => IArray.empty[Byte]
 
-      pdf.guard = Guard(encrypt, id, password.or(t""))(using pdf)
+      pdf.guard = password.lay(Guard(encrypt, id, t"")(using pdf)): password =>
+        password.expose(Guard(encrypt, id, cleartext.text)(using pdf))
 
   // The header comment is nominally at offset 0, but tolerated anywhere in the first 1KiB,
   // matching widespread reader behaviour for files with prepended junk.

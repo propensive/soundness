@@ -889,12 +889,12 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == t"Secret")
 
       test(m"an AES-256 string decrypts with the right password"):
-        PdfFile(aes256Document(t"open sesame")).open(t"open sesame"):
+        PdfFile(aes256Document(t"open sesame")).open(Password(t"open sesame")):
           pdf.resolved(pdf(2, 0)(t"Secret").or(Cos.Nil)).text
       . assert(_ == t"Secret")
 
       test(m"an AES-256 stream decrypts"):
-        PdfFile(aes256Document(t"open sesame")).open(t"open sesame"):
+        PdfFile(aes256Document(t"open sesame")).open(Password(t"open sesame")):
           pdf(3, 0) match
             case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
             case _              => t""
@@ -902,7 +902,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a wrong password is rejected at open"):
         capture[PdfError]:
-          PdfFile(aes256Document(t"open sesame")).open(t"wrong")(pdf.version)
+          PdfFile(aes256Document(t"open sesame")).open(Password(t"wrong"))(pdf.version)
         . reason
       . assert(_ == PdfError.Reason.BadPassword)
 
