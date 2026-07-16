@@ -1,1 +1,0 @@
-constructs a new `:Graph`, a non-directional graph in the DOT language

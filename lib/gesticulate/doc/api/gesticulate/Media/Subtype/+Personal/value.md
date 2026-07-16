@@ -1,1 +1,0 @@
-the variable part of a media subtype in the personal tree, excluding the `prs.` prefix

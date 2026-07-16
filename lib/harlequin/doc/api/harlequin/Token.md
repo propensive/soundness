@@ -1,1 +1,0 @@
-an enumeration of different kinds of token; either code, a series of space characters, or a newline

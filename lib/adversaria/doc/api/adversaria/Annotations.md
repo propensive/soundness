@@ -1,1 +1,0 @@
-represents a collection of annotations of type `:A` on a type `:T`

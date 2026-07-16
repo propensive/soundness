@@ -1,1 +1,0 @@
-a media subtype in the personal tree, which will be printed with the prefix, `prs.`

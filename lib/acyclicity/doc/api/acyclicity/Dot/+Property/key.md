@@ -1,1 +1,0 @@
-the property key as `:Text`, which will typically represent the name of a visual (or similar) property
