@@ -433,91 +433,130 @@ object Http:
           head.headers,
           () => cursor.remainder.iterator.stream )
 
-    // LazyList exactly `length` bytes of body off `cursor`, in buffer-sized
-    // pieces, leaving it at the first byte after the body (the start of the next
-    // pipelined request on a kept-alive connection). Uses `advance` rather than
-    // `next`, so — like `parseHead` — it never reads past the body and so never
-    // blocks waiting for bytes that will not arrive until the client has our
-    // response.
-    def fixedBody(cursor: Cursor[Data, {}]^, length: Int): LazyList[Data] =
-      def recur(remaining: Int): LazyList[Data] =
-        if remaining <= 0 || cursor.finished then LazyList() else
-          val take = remaining.min(cursor.available)
+    // The endpoint form: the request parses straight off the connection's pull
+    // endpoint. The body spring lends the cursor's remainder as a SINGLE-OWNER
+    // stream: each mint resumes from wherever the previous reader stopped, and
+    // explicit `memoize` replaces the LazyList form's implicit caching.
+    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[HttpRequestError])
+    :   Request^ =
 
-          val chunk = cursor.hold:
-            val start = cursor.mark
-            var index = 0
+      val cursor = Cursor[Data](input)
+      val head = parseHead(cursor)
 
-            while index < take do
+      // Sealed like `Response.parse`: the cursor is single-owner and reachable
+      // only through the spring; a capturing `Spring` would cascade `^` through
+      // every `Request` value.
+      val spring: Spring[Data]^ = () => streamOf(cursor)
+
+      Request
+        ( head.method,
+          head.version,
+          head.host,
+          head.target,
+          head.headers,
+          caps.unsafe.unsafeAssumePure(spring) )
+
+    // Exactly `length` bytes of body, lent zero-copy off `cursor` (which stays
+    // open, positioned at the first byte after the body — the start of the next
+    // pipelined request on a kept-alive connection). It never reads past the
+    // body, so it never blocks waiting for bytes that will not arrive until the
+    // client has our response.
+    def fixedBody(cursor: Cursor[Data, {}]^, length: Int)
+    :   (Stream[Data] over Credit)^{cursor, caps.any} =
+
+      streamOf(cursor, length)
+
+    // Decode a `Transfer-Encoding: chunked` request body off `cursor`, lending
+    // each chunk's data zero-copy and leaving the cursor after the terminating
+    // `0`-chunk and trailers — i.e. at the next request. Lenient: a malformed
+    // length or a truncated stream simply ends the body. Consumes CRLFs with
+    // `advance` (not `next`), so it never reads past the body's final `\r\n`
+    // (see `parseHead`).
+    def chunkedBody(cursor: Cursor[Data, {}]^)
+    :   (Stream[Data] over Credit)^{cursor, caps.any} =
+
+      new Stream[Data]:
+        type Transport = Credit
+
+        // Bytes left in the current chunk's data; -1 before its size is read.
+        private var remaining: Int = -1
+        private var ended: Boolean = false
+
+        // Snapshot of the cursor's buffer, taken by `refill` (the `streamOf`
+        // discipline: only update methods access the exclusive cursor).
+        private var storage: AnyRef = ""
+        private var start0: Int = 0
+        private var limit0: Int = 0
+
+        protected def window0: AnyRef = storage
+        def start: Int = start0
+        def limit: Int = limit0
+
+        update def skip(count: Int): Unit =
+          remaining -= count
+          start0 += count
+          cursor.unsafeAdvanceBy(count)(using Unsafe)
+
+        private def hex(digit: Int): Int =
+          if digit >= '0' && digit <= '9' then digit - '0'
+          else if digit >= 'a' && digit <= 'f' then digit - 'a' + 10
+          else if digit >= 'A' && digit <= 'F' then digit - 'A' + 10
+          else -1
+
+        private update def consumeCrlf(): Unit =
+          if cursor.peek == '\r' then cursor.advance()
+          if cursor.peek == '\n' then cursor.advance()
+
+        private update def skipToCrlf(): Unit =
+          while !(cursor.peek == '\r') && !cursor.finished do cursor.advance()
+
+        private update def readSize(): Int =
+          var size = 0
+          var continue = true
+
+          while continue do
+            val value = hex(cursor.peek.asInt)
+
+            if value < 0 then continue = false else
+              size = size*16 + value
               cursor.advance()
-              index += 1
 
-            cursor.grab(start, cursor.mark)
+          skipToCrlf() // discard any chunk extension
+          consumeCrlf()
+          size
 
-          chunk #:: recur(remaining - take)
-
-      LazyList.defer(recur(length))
-
-    // Decode a `Transfer-Encoding: chunked` request body off `cursor`, yielding
-    // each chunk's data and leaving the cursor after the terminating `0`-chunk
-    // and trailers — i.e. at the next request. Lenient: a malformed length or a
-    // truncated stream simply ends the body. Consumes CRLFs with `advance` (not
-    // `next`), so it never reads past the body's final `\r\n` (see `parseHead`).
-    def chunkedBody(cursor: Cursor[Data, {}]^): LazyList[Data] =
-      def hex(digit: Int): Int =
-        if digit >= '0' && digit <= '9' then digit - '0'
-        else if digit >= 'a' && digit <= 'f' then digit - 'a' + 10
-        else if digit >= 'A' && digit <= 'F' then digit - 'A' + 10
-        else -1
-
-      def consumeCrlf(): Unit =
-        if cursor.peek == '\r' then cursor.advance()
-        if cursor.peek == '\n' then cursor.advance()
-
-      def skipToCrlf(): Unit = while !(cursor.peek == '\r') && !cursor.finished do cursor.advance()
-
-      def readSize(): Int =
-        var size = 0
-        var continue = true
-
-        while continue do
-          val value = hex(cursor.peek.asInt)
-
-          if value < 0 then continue = false else
-            size = size*16 + value
-            cursor.advance()
-
-        skipToCrlf() // discard any chunk extension
-        consumeCrlf()
-        size
-
-      def recur(): LazyList[Data] = LazyList.defer:
-        if cursor.finished then LazyList() else
-          val size = readSize()
-
-          if size <= 0 then
-            while !(cursor.peek == '\r') && !cursor.finished do // trailer header lines
-              skipToCrlf()
+        update def refill(demand: Credit): Optional[Int] =
+          if !ended then
+            // The previous chunk's data is fully consumed: its trailing CRLF,
+            // then the next chunk's size line.
+            if remaining == 0 then
               consumeCrlf()
+              remaining = -1
 
-            consumeCrlf() // final blank line
-            LazyList()
+            if remaining < 0 then
+              if cursor.finished then ended = true else
+                val size = readSize()
 
+                if size <= 0 then
+                  while !(cursor.peek == '\r') && !cursor.finished do // trailers
+                    skipToCrlf()
+                    consumeCrlf()
+
+                  consumeCrlf() // final blank line
+                  ended = true
+                else remaining = size
+
+          if ended then Unset
+          else if cursor.more then
+            storage = cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef]
+            start0 = cursor.unsafePos(using Unsafe)
+            val available = cursor.unsafeWriteEnd(using Unsafe) - start0
+            val readable = remaining.min(available)
+            limit0 = start0 + readable
+            readable
           else
-            val data = cursor.hold:
-              val start = cursor.mark
-              var index = 0
-
-              while index < size && !cursor.finished do
-                cursor.advance()
-                index += 1
-
-              cursor.grab(start, cursor.mark)
-
-            consumeCrlf()
-            data #:: recur()
-
-      recur()
+            ended = true
+            Unset
 
   enum Body:
     case Flowing(source: Spring[Data]^)
@@ -863,10 +902,12 @@ object Http:
           cursor.expect('\n')(expected('\n'))
           headers = Http.Header(header, value) :: headers
 
-      // Sealed: the cursor is single-owner and reachable only through its
-      // memoized `remainder`, so the spring is pure in effect; a capturing
-      // `Body` would cascade `^` through every `Response` value.
-      val spring: Spring[Data]^ = () => cursor.remainder.iterator.stream
+      // The body spring lends the cursor's remainder as a SINGLE-OWNER stream:
+      // each mint resumes where the previous reader stopped (explicit `memoize`
+      // replaces the former memoized-remainder replay). Sealed: the cursor is
+      // reachable only through the spring; a capturing `Body` would cascade
+      // `^` through every `Response` value.
+      val spring: Spring[Data]^ = () => streamOf(cursor)
       val body = Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
 
       Response(version, status, headers.reverse, body)
@@ -882,9 +923,11 @@ object Http:
       copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
 
 
-    def successBody: Optional[LazyList[Data]] =
+    // The successful response's body as a single-owner pull endpoint (explicit
+    // `memoize` replaces the former implicit whole-body caching).
+    def successBody: Optional[(Stream[Data] over Credit)^] =
       if status.category != Http.Status.Category.Successful then Unset
-      else LazyList(body.stream.memoize)
+      else body.stream
 
 
     def receive[body](using receivable: (body is Receivable)^): body =

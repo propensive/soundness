@@ -38,6 +38,7 @@ import gossamer.*
 import prepositional.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 trait Receivable2:
   given instantiable: [content: Instantiable across HttpRequests from Text]
@@ -45,23 +46,33 @@ trait Receivable2:
   =>  ((content is Receivable)^{tactic}) =
 
     Receivable:
-      body => content(body.read[Data].utf8)
+      body => content(body.memoize.utf8)
 
 
 object Receivable extends Receivable2:
-  def apply[result](lambda: (LazyList[Data] => result)^)(using tactic: Tactic[HttpError])
+  // A named SAM rather than a function type: a function type may not take a
+  // capability-typed (`^`) parameter (the `Spring` precedent), and SAM
+  // conversion keeps `Receivable(stream => ...)` call sites unchanged.
+  trait Reader[result]:
+    def read(consume stream: (Stream[Data] over Credit)^): result
+
+  // The reader receives the response body as a single-owner pull endpoint;
+  // whole-value consumers go through their `Aggregable`'s `accept`.
+  def apply[result](lambda: Reader[result]^)(using tactic: Tactic[HttpError])
   :   ((result is Receivable)^{lambda, tactic}) =
     response =>
-      response.successBody.let(lambda).lest(HttpError(response.status, response.textHeaders))
+      if response.status.category != Http.Status.Category.Successful
+      then abort(HttpError(response.status, response.textHeaders))
+      else lambda.read(response.body.stream)
 
   given text: (tactic: Tactic[HttpError])
   =>  ((Text is Receivable)^{tactic}) =
-    Receivable(_.read[Data].utf8)
+    Receivable(_.memoize.utf8)
 
   given streamable: [stream] => (aggregable: (stream is Aggregable by Data)^)
   =>  (tactic: Tactic[HttpError])
   =>  ((stream is Receivable)^{aggregable, tactic}) =
-    Receivable(aggregable.aggregate(_))
+    Receivable(aggregable.accept(_))
 
   given httpStatus: Http.Status is Receivable = _.status
 

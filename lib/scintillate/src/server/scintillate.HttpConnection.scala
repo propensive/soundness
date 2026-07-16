@@ -41,6 +41,7 @@ import beneficence.*
 import contingency.*
 import distillate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -77,19 +78,17 @@ object HttpConnection:
 
     lazy val in = exchange.getRequestBody.nn
 
-    val buffer = new Array[Byte](65536)
-
-    def stream(): LazyList[Data] =
-      val length = in.read(buffer)
-      if length > 0 then buffer.slice(0, length).snapshot #:: stream() else LazyList.empty
-
     val request =
       Http.Request
         ( method      = method,
           version     = version,
           host        = host,
           target      = target,
-          body        = () => Stream(stream().iterator),
+          // Each mint reads on from the same live request stream — the
+          // single-owner discipline (explicit `memoize` for re-reads). A read
+          // failure throws, as the raw `InputStream` did before.
+          body        = () => unsafely(summon[ji.InputStream is Source by Data over Credit])
+                              . stream(in),
           textHeaders = headers )
 
     Log.fine(HttpServerEvent.Received(request))
