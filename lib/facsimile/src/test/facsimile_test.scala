@@ -39,7 +39,10 @@ import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
 import _root_.java.io as ji
+import _root_.java.security as js
 import _root_.java.util.zip as juz
+import _root_.javax.crypto as jc
+import _root_.javax.crypto.spec as jcs
 
 object Tests extends Suite(m"Facsimile tests"):
   def run(): Unit =
@@ -363,10 +366,10 @@ object Tests extends Suite(m"Facsimile tests"):
         capture[PdfError](PdfFile(t"%PDF-1.7\nnothing else".in[Data]).open()(pdf.version)).reason
       . assert(_ == PdfError.Reason.MissingStartxref)
 
-      test(m"an encrypted document is refused for now"):
-        val doc = documentWith(t"/Encrypt << /V 4 >>", catalog)
+      test(m"a public-key security handler is unsupported"):
+        val doc = documentWith(t"/Encrypt << /Filter /Adobe.PubSec /V 4 >>", catalog)
         capture[PdfError](PdfFile(doc).open()(pdf.version)).reason
-      . assert(_ == PdfError.Reason.UnsupportedEncryption(4))
+      . assert(_ == PdfError.Reason.UnsupportedEncryption(0))
 
     suite(m"Cross-reference streams and object streams"):
       def xrefStreamDocument(): Data =
@@ -663,6 +666,245 @@ object Tests extends Suite(m"Facsimile tests"):
             case _ =>
               (t"", t"")
       . assert(_ == (t"again and again", t"again and again"))
+
+    suite(m"Encryption"):
+      val padding: Array[Byte] = Array[Byte]
+        ( 0x28, 0xbf.toByte, 0x4e, 0x5e, 0x4e, 0x75, 0x8a.toByte, 0x41, 0x64, 0x00, 0x4e,
+          0x56, 0xff.toByte, 0xfa.toByte, 0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6.toByte,
+          0xd0.toByte, 0x68, 0x3e, 0x80.toByte, 0x2f, 0x0c, 0xa9.toByte, 0xfe.toByte,
+          0x64, 0x53, 0x69, 0x7a )
+
+      def hexOf(bytes: Array[Byte]): Text =
+        val builder = StringBuilder()
+        var i = 0
+        while i < bytes.length do
+          builder.append(f"${bytes(i) & 0xff}%02x")
+          i += 1
+        builder.toString.tt
+
+      def xor(bytes: Array[Byte], value: Int): Array[Byte] =
+        val out = new Array[Byte](bytes.length)
+        var i = 0
+        while i < bytes.length do
+          out(i) = (bytes(i) ^ value).toByte
+          i += 1
+        out
+
+      def md5(chunks: Array[Byte]*): Array[Byte] =
+        val digest = js.MessageDigest.getInstance("MD5").nn
+        chunks.foreach(digest.update(_))
+        digest.digest().nn
+
+      // A test-side implementation of the standard security handler's *encryption* — the
+      // inverse of the reader's `Guard`, and independently written — used to build encrypted
+      // fixtures with an empty user password.
+      def rc4(key: Array[Byte], data: Array[Byte]): Array[Byte] =
+        Rc4(key.immutable(using Unsafe), data.immutable(using Unsafe)).mutable(using Unsafe)
+
+      val id: Array[Byte] =
+        val bytes = new Array[Byte](16)
+        var i = 0
+        while i < 16 do
+          bytes(i) = i.toByte
+          i += 1
+        bytes
+
+      // Builds an RC4-encrypted document (revision 2 = 40-bit, revision 3 = 128-bit) of the
+      // catalog plus one string-bearing object and one stream object.
+      def rc4Document(revision: Int): Data =
+        val keyBytes = if revision == 2 then 5 else 16
+        val permissions = -44
+
+        val ownerKey =
+          var hash = md5(padding)
+          if revision >= 3 then for _ <- 0 until 50 do hash = md5(hash.take(keyBytes))
+          hash.take(keyBytes)
+
+        val ownerEntry =
+          var value = rc4(ownerKey, padding)
+          if revision >= 3 then for i <- 1 to 19 do value = rc4(xor(ownerKey, i), value)
+          value
+
+        val permBytes = Array((permissions & 0xff).toByte, ((permissions >> 8) & 0xff).toByte,
+            ((permissions >> 16) & 0xff).toByte, ((permissions >> 24) & 0xff).toByte)
+
+        val fileKey =
+          var hash = md5(padding, ownerEntry, permBytes, id)
+          if revision >= 3 then for _ <- 0 until 50 do hash = md5(hash.take(keyBytes))
+          hash.take(keyBytes)
+
+        val userEntry =
+          if revision == 2 then rc4(fileKey, padding)
+          else
+            var value = rc4(fileKey, md5(padding, id))
+            for i <- 1 to 19 do value = rc4(xor(fileKey, i), value)
+            value ++ new Array[Byte](16)
+
+        def objectKey(number: Int, generation: Int): Array[Byte] =
+          md5(fileKey, Array((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
+              ((number >> 16) & 0xff).toByte, (generation & 0xff).toByte,
+              ((generation >> 8) & 0xff).toByte)).take((keyBytes + 5).min(16))
+
+        def hex(bytes: Array[Byte]): Text = hexOf(bytes)
+
+        val version = if revision == 2 then 1 else 2
+        val secret = rc4(objectKey(2, 0), t"Secret".s.getBytes("ISO-8859-1").nn)
+        val streamPlain = t"encrypted stream".s.getBytes("ISO-8859-1").nn
+        val streamCipher = rc4(objectKey(3, 0), streamPlain)
+
+        val encrypt =
+          t"<< /Filter /Standard /V $version /R $revision /Length ${keyBytes*8} /P $permissions /O <${hex(ownerEntry)}> /U <${hex(userEntry)}> >>"
+
+        buildEncrypted
+          ( encrypt,
+            t"<< /Type /Catalog >>".in[Data],
+            t"<< /Secret <${hex(secret)}> >>".in[Data],
+            (t"<< /Length ${streamCipher.length} >>\nstream\n".in[Data]
+                ++ streamCipher.immutable(using Unsafe) ++ t"\nendstream".in[Data]) )
+
+      // Assembles a document with an `/Encrypt` entry (object N+1) and an `/ID`.
+      def buildEncrypted(encrypt: Text, bodies: Data*): Data =
+        var out: Data = t"%PDF-1.6\n".in[Data]
+        val offsets = List.newBuilder[Long]
+
+        bodies.zipWithIndex.each: (body, index) =>
+          offsets += out.length.toLong
+          out = out ++ t"${index + 1} 0 obj\n".in[Data] ++ body ++ t"\nendobj\n".in[Data]
+
+        val encryptNumber = bodies.length + 1
+        offsets += out.length.toLong
+        out = out ++ t"$encryptNumber 0 obj\n".in[Data] ++ encrypt.in[Data] ++ t"\nendobj\n".in[Data]
+
+        val idHex = hexOf(id)
+        val xrefOffset = out.length
+        out = out ++ t"xref\n0 ${encryptNumber + 1}\n0000000000 65535 f \n".in[Data]
+
+        offsets.result().each: offset =>
+          out = out ++ t"${pad10(offset)} 00000 n \n".in[Data]
+
+        out ++ t"trailer\n<< /Size ${encryptNumber + 1} /Root 1 0 R /Encrypt $encryptNumber 0 R /ID [<$idHex> <$idHex>] >>\nstartxref\n$xrefOffset\n%%EOF".in[Data]
+
+      // An AES-256 (revision 6) fixture, whose key derivation the reader must mirror exactly.
+      def aes256Document(password: Text): Data =
+        def hash6(pw: Array[Byte], salt: Array[Byte]): Array[Byte] =
+          var k: Array[Byte] = md5(pw, salt) // placeholder, replaced below
+          val sha256 = js.MessageDigest.getInstance("SHA-256").nn
+          sha256.update(pw)
+          sha256.update(salt)
+          k = sha256.digest().nn
+          var round = 0
+          var done = false
+
+          while !done do
+            val block = Array.newBuilder[Byte]
+            for _ <- 0 until 64 do
+              block.addAll(pw)
+              block.addAll(k)
+
+            val input = block.result()
+            val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
+            cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(k.take(16), "AES"),
+                jcs.IvParameterSpec(k.slice(16, 32)))
+            val e = cipher.doFinal(input).nn
+            var sum = 0
+            for i <- 0 until 16 do sum += e(i) & 0xff
+            val algo = sum%3 match
+              case 0 => "SHA-256"
+              case 1 => "SHA-384"
+              case _ => "SHA-512"
+            k = js.MessageDigest.getInstance(algo).nn.digest(e).nn
+            round += 1
+            if round >= 64 && (e(e.length - 1) & 0xff) <= round - 32 then done = true
+
+          k.take(32)
+
+        val pw = password.s.getBytes("UTF-8").nn
+        val random = js.SecureRandom()
+        val userSalt = new Array[Byte](8)
+        val userKeySalt = new Array[Byte](8)
+        random.nextBytes(userSalt)
+        random.nextBytes(userKeySalt)
+
+        val fileKey = new Array[Byte](32)
+        random.nextBytes(fileKey)
+
+        val userEntry = hash6(pw, userSalt) ++ userSalt ++ userKeySalt
+        val intermediate = hash6(pw, userKeySalt)
+
+        val wrap = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
+        wrap.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(intermediate, "AES"),
+            jcs.IvParameterSpec(new Array[Byte](16)))
+        val ue = wrap.doFinal(fileKey).nn
+
+        def hex(bytes: Array[Byte]): Text = hexOf(bytes)
+
+        def encryptStream(number: Int, plain: Array[Byte]): Array[Byte] =
+          val iv = new Array[Byte](16)
+          random.nextBytes(iv)
+          val padLength = 16 - plain.length%16
+          val padded = plain ++ Array.fill(padLength)(padLength.toByte)
+          val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
+          cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(fileKey, "AES"),
+              jcs.IvParameterSpec(iv))
+          iv ++ cipher.doFinal(padded).nn
+
+        val secret = encryptStream(2, t"Secret".s.getBytes("UTF-8").nn)
+        val streamCipher = encryptStream(3, t"encrypted stream".s.getBytes("UTF-8").nn)
+
+        val ownerHex = hex(new Array[Byte](48))
+        val encrypt =
+          t"<< /Filter /Standard /V 5 /R 6 /Length 256 /P -44 /O <$ownerHex> /U <${hex(userEntry)}> /UE <${hex(ue)}> /CF << /StdCF << /CFM /AESV3 >> >> /StmF /StdCF /StrF /StdCF >>"
+
+        buildEncrypted
+          ( encrypt,
+            t"<< /Type /Catalog >>".in[Data],
+            (t"<< /Secret <${hex(secret)}> >>".in[Data]),
+            (t"<< /Length ${streamCipher.length} >>\nstream\n".in[Data]
+                ++ streamCipher.immutable(using Unsafe) ++ t"\nendstream".in[Data]) )
+
+      test(m"RC4 matches its known-answer vector"):
+        Rc4(t"Key".in[Data], t"Plaintext".in[Data]).to(List).map(b => f"${b & 0xff}%02X").mkString.tt
+      . assert(_ == t"BBF316E8D940AF0AD3")
+
+      test(m"an encrypted document reports it"):
+        PdfFile(rc4Document(3)).open():
+          pdf.encrypted
+      . assert(_ == true)
+
+      test(m"a revision-3 string decrypts with the empty password"):
+        PdfFile(rc4Document(3)).open():
+          pdf.resolved(pdf(2, 0)(t"Secret").or(Cos.Nil)).text
+      . assert(_ == t"Secret")
+
+      test(m"a revision-3 stream decrypts"):
+        PdfFile(rc4Document(3)).open():
+          pdf(3, 0) match
+            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case _              => t""
+      . assert(_ == t"encrypted stream")
+
+      test(m"a revision-2 (40-bit) string decrypts"):
+        PdfFile(rc4Document(2)).open():
+          pdf.resolved(pdf(2, 0)(t"Secret").or(Cos.Nil)).text
+      . assert(_ == t"Secret")
+
+      test(m"an AES-256 string decrypts with the right password"):
+        PdfFile(aes256Document(t"open sesame")).open(t"open sesame"):
+          pdf.resolved(pdf(2, 0)(t"Secret").or(Cos.Nil)).text
+      . assert(_ == t"Secret")
+
+      test(m"an AES-256 stream decrypts"):
+        PdfFile(aes256Document(t"open sesame")).open(t"open sesame"):
+          pdf(3, 0) match
+            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case _              => t""
+      . assert(_ == t"encrypted stream")
+
+      test(m"a wrong password is rejected at open"):
+        capture[PdfError]:
+          PdfFile(aes256Document(t"open sesame")).open(t"wrong")(pdf.version)
+        . reason
+      . assert(_ == PdfError.Reason.BadPassword)
 
     // A two-page document: object 1 catalog, 2 page-tree root (A4 media box, inherited),
     // 3 a plain page, 4 a page with its own crop box and rotation.

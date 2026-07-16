@@ -16,6 +16,18 @@ pdfFile.open():
   pdf.trailer          // the trailer dictionary
 ```
 
+An encrypted document is decrypted transparently; pass the user password to `open`, or
+omit it for the common empty-password case:
+
+```scala
+pdfFile.open(t"the password"):
+  pdf.encrypted        // true
+  pdf.pages.head.text  // decrypted like any other
+```
+
+The standard security handler is supported at all revisions — RC4, AES-128 and AES-256 —
+with a wrong password rejected immediately, when `open` is called.
+
 ### The COS object model
 
 Every value in a PDF is a `Cos` object: `Cos.Integral`, `Cos.Real`, `Cos.Name`, `Cos.Chars`

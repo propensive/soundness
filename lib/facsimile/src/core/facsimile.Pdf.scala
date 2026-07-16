@@ -58,12 +58,20 @@ object Pdf:
     def data: Data raises PdfError =
       body.let(pdf.payload(_)).or(abort(PdfError(PdfError.Reason.MissingEntry(t"EF"))))
 
-  // Until the encryption milestone lands, an encrypted file is refused outright rather
-  // than misread: strings and streams would otherwise surface as ciphertext.
-  private[facsimile] def validate(pdf: Pdf^, password: Optional[Text]): Unit raises PdfError =
-    pdf.trailer.at(t"Encrypt").let: encrypt =>
-      val revision = pdf.resolved(encrypt)(t"V").let(_.long).or(0L).toInt
-      abort(PdfError(PdfError.Reason.UnsupportedEncryption(revision)))
+  // Builds the security handler, if the file is encrypted, and installs it on the document.
+  // The `/Encrypt` dictionary and the trailer `/ID` are read before the guard exists — and
+  // so are never themselves decrypted — and a wrong password fails here, at open, rather
+  // than at first string or stream access.
+  private[facsimile] def unlock(pdf: Pdf^, password: Optional[Text]): Unit raises PdfError =
+    pdf.trailer.at(t"Encrypt").let: encryptRef =>
+      val encrypt = pdf.resolved(encryptRef).dictionary
+        . or(abort(PdfError(PdfError.Reason.UnsupportedEncryption(0))))
+
+      val id = pdf.trailer.at(t"ID") match
+        case Cos.Sequence(first :: _) => first.chars.or(IArray.empty[Byte])
+        case _                        => IArray.empty[Byte]
+
+      pdf.guard = Guard(encrypt, id, password.or(t""))(using pdf)
 
   // The header comment is nominally at offset 0, but tolerated anywhere in the first 1KiB,
   // matching widespread reader behaviour for files with prepended junk.
@@ -107,7 +115,18 @@ extends caps.ExclusiveCapability:
   private val containers: scala.collection.mutable.HashMap[Int, ObjectStream] =
     scala.collection.mutable.HashMap()
 
+  // The stream at each recorded payload offset belongs to this indirect object, so its bytes
+  // can be decrypted with the right per-object key. Populated as `Direct` objects load.
+  private val streamOwners: scala.collection.mutable.HashMap[Long, (Int, Int)] =
+    scala.collection.mutable.HashMap()
+
+  // The security handler, installed by `Pdf.unlock` after the document exists (it must read
+  // the unencrypted `/Encrypt` dictionary through this same document first).
+  private[facsimile] var guard: Optional[Guard] = Unset
+
   def trailer: Map[Text, Cos] = xref.trailer
+
+  def encrypted: Boolean = trailer.contains(t"Encrypt")
 
   def catalog: Map[Text, Cos] raises PdfError =
     resolved(trailer.at(t"Root").or(Cos.Nil)).dictionary
@@ -313,7 +332,15 @@ extends caps.ExclusiveCapability:
               if foundNumber != number || foundGeneration != generation
               then abort(PdfError(PdfError.Reason.MissingObject(number, generation)))
 
-              content
+              // A top-level indirect stream: record its owner so its payload can be
+              // decrypted with the right key.
+              content match
+                case Cos.Body(_, start) => streamOwners(start) = (number, generation)
+                case _                  => ()
+
+              // Strings in a directly-stored object are encrypted individually; those inside
+              // an object stream travel in its already-decrypted payload, so are skipped.
+              guard.lay(content)(decryptStrings(content, number, generation, _))
 
           case Xref.Entry.Compressed(container, index) =>
             if generation != 0 then Cos.Nil else
@@ -330,6 +357,27 @@ extends caps.ExclusiveCapability:
   def resolved(value: Cos): Cos raises PdfError = value match
     case ref: Cos.Ref => apply(ref)
     case other        => other
+
+  // Rewrites every string in an object with its decrypted bytes. A stream body's own
+  // dictionary is decrypted, but its payload is left to `raw`; nothing is done for `Ref`s,
+  // which resolve to their own separately-decrypted objects.
+  private def decryptStrings(value: Cos, number: Int, generation: Int, guard: Guard): Cos =
+    value match
+      case Cos.Chars(bytes) =>
+        Cos.Chars(guard.string(bytes, number, generation))
+
+      case Cos.Sequence(elements) =>
+        Cos.Sequence(elements.map(decryptStrings(_, number, generation, guard)))
+
+      case Cos.Dictionary(entries) =>
+        Cos.Dictionary(entries.view.mapValues(decryptStrings(_, number, generation, guard)).toMap)
+
+      case Cos.Body(entries, start) =>
+        val decrypted = entries.view.mapValues(decryptStrings(_, number, generation, guard)).toMap
+        Cos.Body(decrypted, start)
+
+      case other =>
+        other
 
   // The decoded content of a stream, decrypted (in a later milestone) and passed through its
   // filter chain, which stops at terminal image codecs. `/Length` may be indirect; filters in
@@ -356,9 +404,14 @@ extends caps.ExclusiveCapability:
     val start = body.start
     val end = payloadEnd(body)
 
+    // An encrypted stream is decrypted whole before filtering (a cipher spans the payload),
+    // so it starts the pipeline as one materialized chunk; a plain stream reads in chunks.
+    val decrypted: Optional[Data] = if encryptedStream(body) then raw(body) else Unset
+
     new Spring[Data]:
       def apply(): (Stream[Data] over Credit)^ =
-        pipeline(steps, Stream(ranges(start, end)))
+        decrypted.lay(pipeline(steps, Stream(ranges(start, end)))): data =>
+          pipeline(steps, Stream(List(data).iterator))
 
   // Interprets a streaming plan, minting each duct at its `via` call site.
   private def pipeline(steps: List[Filter.Step^], consume stream: (Stream[Data] over Credit)^)
@@ -389,9 +442,49 @@ extends caps.ExclusiveCapability:
       position = if chunk.length == 0 then end else position + chunk.length
       chunk
 
-  // The undecoded payload: the range from the payload's start to its computed end.
+  // The raw payload, decrypted if the document is encrypted and this stream is not exempt.
   private[facsimile] def raw(body: Cos.Body): Data raises PdfError =
-    source.read(body.start, (payloadEnd(body) - body.start).toInt)
+    val bytes = source.read(body.start, (payloadEnd(body) - body.start).toInt)
+
+    if !encryptedStream(body) then bytes else
+      guard.lay(bytes): guard =>
+        streamOwners.at(body.start).lay(bytes): (number, generation) =>
+          guard.stream(bytes, number, generation, Unset)
+
+  // Whether a stream's raw bytes need decrypting: the document is encrypted and the stream is
+  // not exempt — cross-reference streams (never encrypted), metadata under `/EncryptMetadata
+  // false`, and streams marked with the `Identity` crypt filter.
+  private def encryptedStream(body: Cos.Body): Boolean raises PdfError = guard.lay(false): guard =>
+    val kind = body.entries.at(t"Type").let(_.name).or(t"")
+
+    val exempt =
+      kind == t"XRef"
+      || (kind == t"Metadata" && !guard.encryptMetadata)
+      || cryptMethod(body) == Guard.Method.Identity
+
+    !exempt && streamOwners.contains(body.start)
+
+  // A `/Crypt` filter in the stream's filter chain selects a crypt method by name; `Identity`
+  // (the default) means the stream is stored in the clear.
+  private def cryptMethod(body: Cos.Body): Optional[Guard.Method] raises PdfError =
+    val filters = deepResolved(body.entries.at(t"Filter").or(Cos.Nil))
+
+    val hasCrypt = filters match
+      case Cos.Name(t"Crypt")     => true
+      case Cos.Sequence(elements) => elements.exists(_.name == t"Crypt")
+      case _                      => false
+
+    if !hasCrypt then Unset else
+      val parms = deepResolved(body.entries.at(t"DecodeParms").or(Cos.Nil))
+
+      val name = parms match
+        case Cos.Dictionary(entries) => entries.at(t"Name").let(_.name)
+        case Cos.Sequence(elements)  =>
+          elements.flatMap(_.dictionary.let(_.at(t"Name")).let(_.name).lay(List())(List(_))).headOption
+            . getOrElse(Unset)
+        case _                       => Unset
+
+      if name == t"Identity" || name.absent then Guard.Method.Identity else Unset
 
   // The exclusive end of the payload: `/Length` bytes when the declared length checks out —
   // the `endstream` keyword must follow it — and otherwise, since wrong lengths abound in
