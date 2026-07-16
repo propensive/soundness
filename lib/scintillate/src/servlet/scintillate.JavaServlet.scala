@@ -96,41 +96,42 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
             . stream(in.asInstanceOf[ji.InputStream]),
           textHeaders = headers )
 
-    def respond(response: Http.Response): Unit =
-      val servletResponse1 = servletResponse0.asInstanceOf[jsh.HttpServletResponse]
-      servletResponse1.setStatus(response.status.code)
+    val respond: HttpConnection.Respond^ = new HttpConnection.Respond:
+      def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
+        val servletResponse1 = servletResponse0.asInstanceOf[jsh.HttpServletResponse]
+        servletResponse1.setStatus(response.status.code)
 
-      response.textHeaders.each:
-        case Http.Header(key, value) =>
-          servletResponse1.addHeader(key.s, value.s)
+        response.textHeaders.each:
+          case Http.Header(key, value) =>
+            servletResponse1.addHeader(key.s, value.s)
 
-      val out = servletResponse1.getOutputStream.nn
+        val out = servletResponse1.getOutputStream.nn
 
-      response.body match
-        case Http.Body.Fixed(data) =>
-          servletResponse.addHeader("content-length", data.length.show.s)
-          out.write(data.mutable(using Unsafe))
+        response.body match
+          case Http.Body.Fixed(data) =>
+            servletResponse.addHeader("content-length", data.length.show.s)
+            out.write(data.mutable(using Unsafe))
 
-        case Http.Body.Empty =>
-          servletResponse.addHeader("content-length", "0")
+          case Http.Body.Empty =>
+            servletResponse.addHeader("content-length", "0")
 
-        case Http.Body.Flowing(source) =>
-          servletResponse.addHeader("transfer-encoding", "chunked")
-          val stream = source()
+          case Http.Body.Flowing(source) =>
+            servletResponse.addHeader("transfer-encoding", "chunked")
+            val stream = source()
 
-          // A while-loop rather than a recursive def: a def capturing the
-          // locally bound exclusive stream may not call itself.
-          var draining = true
+            // A while-loop rather than a recursive def: a def capturing the
+            // locally bound exclusive stream may not call itself.
+            var draining = true
 
-          while draining do stream.refill(Credit(Long.MaxValue)) match
-            case count: Int =>
-              out.write(stream.window(using Unsafe).asInstanceOf[Array[Byte]], stream.start, count)
-              out.flush()
-              stream.skip(count)
+            while draining do stream.refill(Credit(Long.MaxValue)) match
+              case count: Int =>
+                out.write(stream.window(using Unsafe).asInstanceOf[Array[Byte]], stream.start, count)
+                out.flush()
+                stream.skip(count)
 
-            case _ => draining = false
+              case _ => draining = false
 
-      out.close()
+        out.close()
 
     new HttpConnection(httpRequest, false, request.getServerPort, respond)
 

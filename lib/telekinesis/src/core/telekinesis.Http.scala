@@ -219,7 +219,8 @@ object Http:
       case 4 => Http.Category.ClientError
       case 5 => Http.Category.ServerError
 
-    def apply(headers: List[Header], body: Body): Response = Response.response(this, headers, body)
+    def apply(headers: List[Header], body: Body^): Response^{body} =
+      Response.response(this, headers, body)
 
   export Status.*
 
@@ -660,7 +661,7 @@ object Http:
       ${telekinesis.internal.response('headers)}
 
     case class Protoresponse(status0: Optional[Status], headers: Seq[Header]):
-      def apply(body: Body = Body.Empty): Response =
+      def apply(body: Body^ = Body.Empty): Response^{body} =
         Response(1.1, status0.or(Ok), headers.to(List), body)
 
       def apply[servable: Servable](body: servable): Response =
@@ -670,7 +671,9 @@ object Http:
           ( 1.1,
             status0.or(response.status),
             headers.to(List) ++ response.textHeaders,
-            response.body )
+            // `serve` returns a pure `Response`, so its body is pure; the seal only
+            // discharges the field's capture-polymorphic declared type.
+            caps.unsafe.unsafeAssumePure(response.body) )
 
     given streamable: (tactic: Tactic[HttpError])
     =>  ((Response is Streamable by Data over Credit)^{tactic}) = response =>
@@ -680,7 +683,8 @@ object Http:
         case _ =>
           abort(HttpError(response.status, response.textHeaders))
 
-    private[Http] def response(status: Status, headers: List[Header], body: Body): Response =
+    private[Http] def response(status: Status, headers: List[Header], body: Body^)
+    :   Response^{body} =
       new Response(1.1, status, headers, body)
 
     // Serialise a response to HTTP/1.1 wire bytes: status line, headers (with an
@@ -689,7 +693,7 @@ object Http:
     // body. `includeBody` is `false` for responses to `HEAD` requests and for
     // `101` upgrades (where the caller pipes the post-handshake stream raw). The
     // inverse of `parse`.
-    def serialize(response: Response, includeBody: Boolean = true, version: Version = 1.1)
+    def serialize(response: Response^, includeBody: Boolean = true, version: Version = 1.1)
       ( using buffering: Buffering )
     :   (Stream[Data] over Credit)^ =
 
@@ -902,8 +906,9 @@ object Http:
       // The body spring lends the cursor's remainder as a SINGLE-OWNER stream:
       // each mint resumes where the previous reader stopped (explicit `memoize`
       // replaces the former memoized-remainder replay). Sealed: the cursor is
-      // reachable only through the spring; a capturing `Body` would cascade
-      // `^` through every `Response` value. Neutral carrier: see `Request.parse`.
+      // reachable only through the spring, and the client API keeps `Response`
+      // pure (the honest capturing form is reserved for server-side handler
+      // results). Neutral carrier: see `Request.parse`.
       val cursorRef: AnyRef = cursor.asInstanceOf[AnyRef]
 
       val spring: Spring[Data]^ =
@@ -912,15 +917,27 @@ object Http:
 
       Response(version, status, headers.reverse, body)
 
+  // The body is capture-polymorphic (`Body^`): a server-side streamed response
+  // legitimately retains the live connection it answers — the handler shape
+  // `(connection: HttpConnection) ?=> Http.Response^{connection}` — while every
+  // client-facing `Response` remains pure.
   into case class Response private
-    ( version: Version, status: Status, textHeaders: List[Header], body: Body )
+    ( version: Version, status: Status, textHeaders: List[Header], body: Body^ )
   extends Dynamic:
 
     def updateDynamic[label <: Label: Directive of topic, topic](name: label)(value: topic)
-    :   Response =
+    :   Response^{this} =
 
       val key2 = name.tt.uncamel.kebab.lower
-      copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
+
+      // Explicit construction rather than `copy`: the synthesized `copy`'s
+      // capture-polymorphic `body` formal is fresh, so its `this.body` default
+      // would hide a capability the prefix also captures (separation).
+      new Response
+        ( version,
+          status,
+          Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2),
+          body )
 
 
     // The successful response's body as a single-owner pull endpoint (explicit
@@ -944,9 +961,11 @@ object Http:
 
 
     @targetName("add")
-    infix def + [value: Encodable in Http.Header](value: value): Response =
+    infix def + [value: Encodable in Http.Header](value: value): Response^{this} =
       val header: Http.Header = value.encode
-      copy(textHeaders = header :: textHeaders)
+
+      // Explicit construction rather than `copy`: see `updateDynamic`.
+      new Response(version, status, header :: textHeaders, body)
 
   case class Submit[target](originForm: Text, target: target, host: Host)
   extends Dynamic:

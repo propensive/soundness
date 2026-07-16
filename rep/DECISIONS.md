@@ -2147,10 +2147,8 @@ scintillate recipes:
   parameter-relative `^{streamError, ...}` alternative cannot absorb the ctor's fresh).
   The `@servlet` macro types its hole `Any` and casts inside the quote (capability-typed
   quote holes fail capture-root unification).
-- `request` accessor returns `Http.Request^`; the ws-upgrade TEST seals its flowing-body
-  thunk (a streamed response legitimately retains the live connection — the pure-`Response`
-  handler shape cannot express it; the honest `Response^{connection}` form is the recorded
-  future option).
+- `request` accessor returns `Http.Request^`. (The ws-upgrade seal was retired — see the
+  `Response^{connection}` leg below.)
 
 exoskeleton.rig: one real fix — `Fqcn.apply` instead of the `fqcn""` interpolator (the
 macro's synthesized tree fails capture-variable unification when expanded in a CC module;
@@ -2160,6 +2158,45 @@ REMAINING un-CC'd (per-class deferral list unchanged): ethereal.core (Phase 5),
 quantitative.core, cataclysm.core, synesthesia.core, apoplexy.core, zeppelin.core (⚑5),
 burdock.core, exegesis.*, aviation.core, superlunary.core, anthology.bundle + platform
 variants.
+
+## Capture-honesty follow-up: honest `Response^{connection}` for streamed bodies (2026-07-16)
+
+Retired the last scintillate seal (the ws-upgrade test's `unsafeAssumePure` flowing-body
+thunk) by making the handler result type capture-honest end-to-end. A streamed response
+body — a chunked response, SSE, or an upgraded protocol's raw stream — legitimately reads
+the live request stream for the rest of the exchange; the handler shape now expresses that.
+
+- Handler result type across the whole server API: `(connection: HttpConnection) ?=>
+  Http.Response^{connection}` (a **dependent context function** whose result captures its own
+  context parameter). Threaded through `RequestServable.handle`, `HttpServer.handle`,
+  `SocketServer.{handle, serveConnection}`, `scintillate_core`'s `HttpProtocolic.server`, and
+  `urticose`'s `Protocolic.server` + the `serve` extension.
+- `urticose.Protocolic#Request` gained a `<: caps.Capability` bound: an abstract type member
+  cannot appear in a dependent-result capture set unless it is known to be trackable (`cannot
+  be tracked since its capture set is empty` otherwise). `Any^` did NOT suffice — the fork
+  requires a `Capability` bound for the `{request}` capture to be admitted.
+- `Http.Response#body` widened to `Body^`; `Response` constructors/derivations
+  (`Status.apply`, `Protoresponse.apply`, `response`, `updateDynamic`, `+`) return
+  `Response^{body}` / `Response^{this}`. Two internal constructions that hand a **pure** body
+  to `copy` keep a one-line `unsafeAssumePure` (Cookie `addable`, `Protoresponse.apply` over a
+  `Servable`) — the seal only discharges the field's now capture-polymorphic declared type, it
+  hides nothing live. `updateDynamic`/`+` had to drop `copy` for explicit `new Response(...)`:
+  the synthesized `copy`'s fresh capture-polymorphic `body` formal separation-clashes with the
+  prefix's `this.body`.
+- `HttpConnection#respond` became a **named SAM** `HttpConnection.Respond` with
+  `def apply(response: Http.Response^)(using Tactic[StreamError]): Unit`, replacing the curried
+  `Http.Response => Tactic[StreamError] ?=> Unit` function field. Two reasons: a function type
+  cannot take a `^` parameter (the `Spring` precedent), and a **value** of curried dependent
+  context-function type — `(r: Http.Response^) => (Tactic ?=> Unit)^{r}` — is "not yet
+  supported" by the fork. The using-parameter form keeps the response consumed inside `apply`,
+  so nothing escapes; call sites (`connection.respond(response)`) are unchanged.
+- `Receivable.read` widened to `Http.Response^` (a reader may consume a response whose streamed
+  body retains its connection). Client-facing `Response.parse` stays pure (the client seal is
+  unchanged) — the honest capturing form is reserved for the server's handler result.
+- New negative CaptureTest: a handler returning `Http.Body.Flowing(() => foreign)` over a
+  **foreign** `(Stream[Data] over Credit)^` param must not compile — `Response^{connection}`
+  admits the connection only, not arbitrary scoped capabilities. The ws-upgrade positive test
+  (real streamed body reading `request.body()`) now compiles seal-free and passes.
 
 ## Capture-honesty Phase 4 remainder: Tool/Tmux + confinement regression tests (2026-07-15)
 

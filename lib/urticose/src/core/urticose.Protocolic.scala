@@ -35,8 +35,14 @@ package urticose
 import prepositional.*
 
 trait Protocolic extends Typeclass, Transportive:
-  type Request
+  // Capability-bounded so `request` is trackable in `server`'s dependent result capture:
+  // a protocol's request is a live connection.
+  type Request <: caps.Capability
   type Response
   type Server
 
-  def server(port: Transport)(lambda: Request ?=> Response): Server^
+  // The handler's result may capture the request it received (`Response^{request}`): a
+  // streamed response body legitimately retains the live connection it answers, and is
+  // consumed by the server within that connection's lifetime. Capturing anything *else*
+  // scoped is forbidden — the response outlives the handler's own frame.
+  def server(port: Transport)(lambda: (request: Request) ?=> Response^{request}): Server^

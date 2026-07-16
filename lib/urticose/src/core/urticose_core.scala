@@ -67,7 +67,7 @@ extension [remote: Remotable](value: remote)
 
 extension [port](port: port)
   transparent inline def serve[protocol: Protocolic over port]
-    ( handler: protocol.Request ?=> protocol.Response )
+    ( handler: (request: protocol.Request) ?=> protocol.Response^{request} )
   :   protocol.Server^ =
 
     protocol.server(port)(handler)

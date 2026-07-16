@@ -80,5 +80,7 @@ object Receivable extends Receivable2:
   given httpStatus: Http.Status is Receivable = _.status
 
 trait Receivable extends Typeclass:
-  def read(response: Http.Response): Self
+  // Widened (`Response^`): a reader may consume a response whose streamed body
+  // retains the live connection it arrived on.
+  def read(response: Http.Response^): Self
   def map[self2](lambda: Self => self2): (self2 is Receivable)^{this, lambda} = response => lambda(read(response))
