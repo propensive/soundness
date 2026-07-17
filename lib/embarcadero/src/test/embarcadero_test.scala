@@ -154,6 +154,83 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         layoutData.map(bytes => bytes.to(List))
       . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".in[Data].to(List)))
 
+    suite(m"Opening an image archive"):
+      val archiveData = image.archive.source[Data].memoize
+      val layerBlobPath = t"blobs/sha256/${layer.digest.s.stripPrefix("sha256:").tt}"
+      val manifestBlobPath =
+        t"blobs/sha256/${image.manifestDescriptor.digest.s.stripPrefix("sha256:").tt}"
+
+      // The archive with its entry list transformed: for exercising failure paths.
+      def rebuilt(transform: List[Tar.Entry] => List[Tar.Entry]): Data =
+        val entries = Tarfile.read(LazyList(archiveData)).to(List)
+        Tarfile(LazyList.from(transform(entries))).source[Data].memoize
+
+      def failure[result](body: => result): Optional[OciError.Reason] =
+        try
+          body
+          Unset
+        catch case error: OciError => error.reason
+
+      test(m"the index round-trips through an opened archive"):
+        archiveData.open[Image]() { handle ?=> handle.index }
+      . assert(_ == image.index)
+
+      test(m"the manifest round-trips, digest-verified"):
+        archiveData.open[Image]() { handle ?=> handle.manifest }
+      . assert(_ == image.manifest)
+
+      test(m"the image config round-trips"):
+        archiveData.open[Image]() { handle ?=> handle.imageConfig }
+      . assert(_ == image.imageConfig)
+
+      test(m"a layer's stored blob streams verbatim"):
+        archiveData.open[Image]() { handle ?=> bytesOf(handle.compressed(image.manifest.layers.head)).to(List) }
+      . assert(_ == layer.blob.to(List))
+
+      test(m"a layer decompresses to the original tar bytes"):
+        archiveData.open[Image]() { handle ?=> bytesOf(handle.layer(image.manifest.layers.head)).to(List) }
+      . assert(_ == layer.raw.to(List))
+
+      test(m"verified gathers a blob and confirms its digest and size"):
+        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head).to(List) }
+      . assert(_ == layer.blob.to(List))
+
+      test(m"index JSON round-trips through jacinta"):
+        image.index.in[Json].as[Index]
+      . assert(_ == image.index)
+
+      test(m"an archive without the oci-layout marker is rejected"):
+        val data = rebuilt(_.filter(_.entryName != t"oci-layout"))
+        failure(data.open[Image]() { handle ?=> handle.index })
+      . assert(_ == OciError.Reason.MissingLayout)
+
+      test(m"an archive without index.json is rejected"):
+        val data = rebuilt(_.filter(_.entryName != t"index.json"))
+        failure(data.open[Image]() { handle ?=> handle.index })
+      . assert(_ == OciError.Reason.MissingIndex)
+
+      test(m"a missing blob is reported by its digest"):
+        val data = rebuilt(_.filter(_.entryName != layerBlobPath))
+        failure(data.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head) })
+      . assert(_ == OciError.Reason.MissingBlob(layer.digest))
+
+      test(m"a corrupted blob fails its digest check"):
+        val data = rebuilt(_.map: entry =>
+          if entry.entryName == manifestBlobPath then fileEntry(manifestBlobPath, t"{}")
+          else entry)
+
+        failure(data.open[Image]() { handle ?=> handle.manifest })
+      . assert:
+          case OciError.Reason.DigestMismatch(expected, _) =>
+            expected == image.manifestDescriptor.digest
+
+          case _ =>
+            false
+
+      test(m"opening an archive for writing is refused"):
+        failure(archiveData.open[Image](Write) { handle ?=> () })
+      . assert(_ == OciError.Reason.WriteUnsupported)
+
     suite(m"containerd over a gRPC loopback"):
       import threading.virtualThreading
       import probates.cancelProbate
@@ -366,6 +443,171 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))
       . assert(_ == List((t"web", 4321, ProcessStatus.Running)))
+
+    suite(m"workload lifecycle over a gRPC loopback"):
+      import threading.virtualThreading
+      import probates.cancelProbate
+
+      val containersService = t"/containerd.services.containers.v1.Containers"
+      val tasksService = t"/containerd.services.tasks.v1.Tasks"
+
+      def pair(): (Duplex, Duplex) = Duplex.pair()
+
+      // A routing fake containerd: like `runServer`, but it dispatches on the `:path`
+      // pseudo-header, records the order of calls, and can fail chosen methods with a
+      // non-zero grpc-status. Methods without a canned response reply with `Empty`.
+      def runRouter
+          ( serverSide: Duplex,
+            calls:      scala.collection.mutable.ArrayBuffer[Text],
+            responses:  Map[Text, Data],
+            failures:   Set[Text] = Set() )
+          ( using Monitor, Probate )
+      :   Daemon =
+
+        daemon:
+          safely:
+            serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = false).serialize))
+            val source = serverSide.source
+            var skipped = 0
+
+            while skipped < 24 do source.refill(zephyrine.Credit(4096)) match
+              case count: Int =>
+                if count > 0 then
+                  val take = count.min(24 - skipped)
+                  source.skip(take)
+                  skipped += take
+
+              case _ =>
+                skipped = 24
+
+            val reader = FrameReader(source)
+            val hpack = Hpack()
+            var continue = true
+
+            while continue do (reader.next(): @unchecked) match
+              case Unset    => continue = false
+
+              case f: Frame => f match
+                case Frame.Settings(_, false) =>
+                  serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = true).serialize))
+
+                case Frame.Headers(id, block, _, _) =>
+                  val fields = hpack.decode(block)
+                  val path = fields.find(_.name == t":path").map(_.value).getOrElse(t"")
+                  calls.synchronized(calls.append(path))
+
+                  val status = hpack.encode(List(HpackEntry(t":status", t"200"),
+                      HpackEntry(t"content-type", t"application/grpc")))
+
+                  serverSide.send(zephyrine.Stream(Frame.Headers(id, status, false, true).serialize))
+
+                  if failures.contains(path) then
+                    val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"3")))
+                    serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
+                  else
+                    val body =
+                      responses.getOrElse(path, GrpcFraming.encode(Empty().in[Protobuf].encode))
+
+                    val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                    serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))
+                    serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
+
+                case _ => ()
+
+      def lifecycleResponses(startPid: Int): Map[Text, Data] =
+        Map
+          ( t"$containersService/Create" ->
+              GrpcFraming.encode(CreateContainerResponse(Container(t"web")).in[Protobuf].encode),
+            t"$tasksService/Create" ->
+              GrpcFraming.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode),
+            t"$tasksService/Start" ->
+              GrpcFraming.encode(StartResponse(startPid).in[Protobuf].encode),
+            t"$tasksService/Wait" ->
+              GrpcFraming.encode(WaitResponse(7).in[Protobuf].encode),
+            t"$tasksService/Delete" ->
+              GrpcFraming.encode(DeleteTaskResponse(t"web", 4321, 7).in[Protobuf].encode) )
+
+      test(m"a Read-mode open creates container and task, never starts, then deletes"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val calls = scala.collection.mutable.ArrayBuffer[Text]()
+          runRouter(serverSide, calls, lifecycleResponses(5678))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          given containerd: (Containerd^) = Containerd(endpoint, t"example")
+          val spec = Container(t"web", image = t"img:1")
+          val pid = spec.open[Workload]() { workload ?=> workload.pid }
+          (pid, calls.synchronized(calls.to(List)))
+      . assert(_ == (4321, List(t"$containersService/Create", t"$tasksService/Create",
+          t"$tasksService/Delete", t"$containersService/Delete")))
+
+      test(m"a Run-mode open starts the task and awaits its exit"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val calls = scala.collection.mutable.ArrayBuffer[Text]()
+          runRouter(serverSide, calls, lifecycleResponses(5678))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          given containerd: (Containerd^) = Containerd(endpoint, t"example")
+          val spec = Container(t"web", image = t"img:1")
+
+          val (pid, exit) = spec.open[Workload](Read & Run & Signal): workload ?=>
+            (workload.pid, workload.await().exitStatus)
+
+          (pid, exit, calls.synchronized(calls.to(List)))
+      . assert(_ == (5678, 7, List(t"$containersService/Create", t"$tasksService/Create",
+          t"$tasksService/Start", t"$tasksService/Wait", t"$tasksService/Kill",
+          t"$tasksService/Wait", t"$tasksService/Delete", t"$containersService/Delete")))
+
+      test(m"teardown still runs when the block throws, and the error escapes"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val calls = scala.collection.mutable.ArrayBuffer[Text]()
+          runRouter(serverSide, calls, lifecycleResponses(5678))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          given containerd: (Containerd^) = Containerd(endpoint, t"example")
+          val spec = Container(t"web", image = t"img:1")
+
+          val outcome =
+            try
+              spec.open[Workload](Read & Run) { workload ?=> throw java.lang.IllegalStateException() }
+              t"returned"
+            catch case _: java.lang.IllegalStateException => t"escaped"
+
+          (outcome, calls.synchronized(calls.to(List)))
+      . assert(_ == (t"escaped", List(t"$containersService/Create", t"$tasksService/Create",
+          t"$tasksService/Start", t"$tasksService/Kill", t"$tasksService/Wait",
+          t"$tasksService/Delete", t"$containersService/Delete")))
+
+      test(m"a failed container creation makes no further calls"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val calls = scala.collection.mutable.ArrayBuffer[Text]()
+          runRouter(serverSide, calls, Map(), failures = Set(t"$containersService/Create"))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          given containerd: (Containerd^) = Containerd(endpoint, t"example")
+          val spec = Container(t"web", image = t"img:1")
+          val result = safely(spec.open[Workload]() { workload ?=> () })
+          (result.absent, calls.synchronized(calls.to(List)))
+      . assert(_ == (true, List(t"$containersService/Create")))
 
     suite(m"containerd timestamps via the generic time abstraction"):
       // The `Long`-as-instant given lets us mint an Aviation `Instant` from epoch
