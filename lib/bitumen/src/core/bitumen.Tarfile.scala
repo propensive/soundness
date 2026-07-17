@@ -37,7 +37,6 @@ import contingency.*
 import denominative.*
 import distillate.*
 import fulminate.*
-import galilei.*
 import gossamer.*
 import hieroglyph.*, charEncoders.asciiEncoder
 import hypotenuse.*
@@ -79,19 +78,6 @@ object Tarfile:
 
   def fromDeflate(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
     read(stream.decompress[Deflate])
-
-  def from[plane <: Posix: Filesystem](root: Path on plane)
-    ( using DereferenceSymlinks,
-            TraversalOrder,
-            plane is Explorable,
-            Tactic[IoError],
-            Tactic[TarError] )
-  :   Tarfile =
-
-    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
-      TarFilesystem.entryFor(root, path)
-
-    Tarfile(entries)
 
   // Per-entry body accounting for the streaming reader. A file's payload
   // streams lazily off the shared cursor in bounded chunks; forcing the NEXT
@@ -479,16 +465,6 @@ case class Tarfile
   def gzip: LazyList[Data] = blocks.compress[Gzip]
   def zlib: LazyList[Data] = blocks.compress[Zlib]
   def deflate: LazyList[Data] = blocks.compress[Deflate]
-
-  def extractTo[plane <: Posix: Filesystem](root: Path on plane)
-    ( using CreateNonexistentParents on plane,
-            OverwritePreexisting on plane,
-            Tactic[IoError],
-            Tactic[TarError] )
-  :   Unit =
-
-    entries.foreach: entry =>
-      TarFilesystem.applyEntry(root, entry)
 
   private def emitEntry(entry: Tar.Entry): LazyList[Data] =
     Tarfile.preamble(entry, longNameFormat) #::: entry.serialize

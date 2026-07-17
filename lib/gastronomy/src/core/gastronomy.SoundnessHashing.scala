@@ -32,9 +32,23 @@
                                                                                                   */
 package gastronomy
 
-// A pure-Scala hashing provider for algorithms with no JDK implementation. Today
-// that is just BLAKE3 (implemented in `Blake3`); other native-Scala hashes would
-// be added here. Select it with `import providers.soundnessProvider`.
+// A complete pure-Scala hashing provider: BLAKE3 (which the JDK does not implement) plus MD5,
+// SHA-1, the SHA-2 family and CRC-32 (implemented in `PureHashes`), so hashing is available on
+// every platform. On the JVM the JDK-backed `JavaStdlibHashing` remains the default, delegating
+// to native `MessageDigest`; off the JVM (`JavaStdlibHashing`'s native variant) it forwards here.
+// Select it explicitly with `import providers.soundnessProvider`.
 object SoundnessHashing extends Hashing:
   def blake3: Hashing.Function = new Hashing.Function:
     def digestion(): Digestion = Blake3.digestion()
+
+  def md5: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = PureHashes.md5
+
+  def sha1: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = PureHashes.sha1
+
+  def sha2(bits: Int): Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = PureHashes.sha2(bits)
+
+  def crc32: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = PureHashes.crc32

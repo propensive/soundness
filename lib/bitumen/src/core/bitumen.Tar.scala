@@ -65,19 +65,10 @@ object Tar:
     val self: Text = "."
     val parent: Text = ".."
 
-  // Anchored here so `path.open[Tar](...)` and `data.open[Tar](...)` resolve with no import.
-  given openable: [path: Abstractable across Paths to Text]
-  =>  ( Tactic[TarError], Tactic[StreamError] )
-  =>  ( TarOpenable[path]^ ) =
-    TarOpenable[path]
-
+  // Anchored here so `data.open[Tar](...)` resolves with no import. Opening a filesystem
+  // *path* as TAR (`path.open[Tar]`) lives in `bitumen.jvm`, alongside the disk backend.
   given dataOpenable: (Tactic[TarError], Tactic[StreamError]) => (TarDataOpenable^) =
     TarDataOpenable()
-
-  given creatable: [path: Abstractable across Paths to Text]
-  =>  Tactic[TarError]
-  =>  ( TarBuilder.TarCreatable[path]^ ) =
-    TarBuilder.TarCreatable[path]
 
   object Entry:
     def apply[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
