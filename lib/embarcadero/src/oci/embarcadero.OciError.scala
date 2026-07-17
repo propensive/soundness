@@ -33,105 +33,48 @@
 package embarcadero
 
 import anticipation.*
-import bitumen.*
-import contingency.*
-import distillate.*
-import gesticulate.*
+import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
-import hypotenuse.*
-import prepositional.*
-import serpentine.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
-import wisteria.*
 
-object Image:
-  // Anchored here so `path.open[Image]()` and `data.open[Image]()` resolve with no import.
-  given openable: [path: Abstractable across Paths to Text]
-  =>  ( Tactic[OciError], Tactic[TarError], Tactic[StreamError] )
-  =>  ( ImageOpenable[path]^ ) =
-    ImageOpenable[path]
+object OciError:
+  enum Reason(val number: Int) extends Clarification:
+    case MissingLayout extends Reason(1)
+    case UnsupportedLayout(version: Text) extends Reason(2)
+    case MissingIndex extends Reason(3)
+    case MissingBlob(digest: Text) extends Reason(4)
+    case DigestMismatch(expected: Text, actual: Text) extends Reason(5)
+    case InvalidBlob(digest: Text, detail: Text) extends Reason(6)
+    case UnsupportedDigest(algorithm: Text) extends Reason(7)
+    case NoManifest extends Reason(8)
+    case WriteUnsupported extends Reason(9)
 
-  given dataOpenable: (Tactic[OciError], Tactic[TarError], Tactic[StreamError])
-  =>  ( ImageDataOpenable^ ) =
-    ImageDataOpenable()
+  given communicable: Reason is Communicable =
+    case Reason.MissingLayout =>
+      m"the archive does not contain an oci-layout marker"
 
-  // Assembles an image from its layers and optional runtime configuration,
-  // computing the config blob, manifest and index (with all digests/sizes).
-  def apply
-    ( layers:       List[Layer],
-      config:       Optional[ContainerConfig] = Unset,
-      architecture: Text                      = t"amd64",
-      os:           Text                      = t"linux",
-      annotations:  Optional[Map[Text, Text]] = Unset )
-  :   Image =
+    case Reason.UnsupportedLayout(version) =>
+      m"the image layout version $version is not supported"
 
-    val imageConfig =
-      ImageConfig
-        ( architecture = architecture,
-          os           = os,
-          rootfs       = RootFs(t"layers", layers.map(_.diffId)),
-          config       = config )
+    case Reason.MissingIndex =>
+      m"the archive does not contain an index.json document"
 
-    val configBytes      = render(imageConfig)
-    val configType       = media"application/vnd.oci.image.config.v1+json"
-    val configDescriptor = descriptorOf(configType, configBytes)
+    case Reason.MissingBlob(digest) =>
+      m"the blob $digest is not present in the archive"
 
-    val manifestType = media"application/vnd.oci.image.manifest.v1+json"
+    case Reason.DigestMismatch(expected, actual) =>
+      m"the blob addressed as $expected has the digest $actual"
 
-    val manifest =
-      Manifest(2, manifestType, configDescriptor, layers.map(_.descriptor), annotations)
+    case Reason.InvalidBlob(digest, detail) =>
+      m"the blob $digest could not be interpreted: $detail"
 
-    val manifestBytes      = render(manifest)
-    val manifestDescriptor = descriptorOf(manifestType, manifestBytes)
+    case Reason.UnsupportedDigest(algorithm) =>
+      m"the digest algorithm $algorithm is not supported"
 
-    val indexType  = media"application/vnd.oci.image.index.v1+json"
-    val index      = Index(2, indexType, List(manifestDescriptor))
-    val indexBytes = render(index)
+    case Reason.NoManifest =>
+      m"the image index lists no manifests"
 
-    Image(layers, imageConfig, configBytes, configDescriptor, manifest, manifestBytes,
-        manifestDescriptor, index, indexBytes)
+    case Reason.WriteUnsupported =>
+      m"OCI image archives cannot be opened for writing"
 
-case class Image
-  ( layers:             List[Layer],
-    imageConfig:        ImageConfig,
-    configBytes:        Data,
-    configDescriptor:   Descriptor,
-    manifest:           Manifest,
-    manifestBytes:      Data,
-    manifestDescriptor: Descriptor,
-    index:              Index,
-    indexBytes:         Data ):
-
-  // Every blob in the image, as `(digest, bytes)` pairs: the config, each layer,
-  // and the manifest.
-  def blobs: List[(Text, Data)] =
-    val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
-    (configDescriptor.digest, configBytes) ::
-      layerBlobs :::
-      List((manifestDescriptor.digest, manifestBytes))
-
-  // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
-  // an `oci-layout` marker, the `index.json`, and every blob under
-  // `blobs/sha256/`. Suitable for `ctr images import`, `podman load`, or
-  // `skopeo copy oci-archive:…`.
-  def archive: Tarfile =
-    def entry(path: Text, content: Data): Tar.Entry =
-      Tar.Entry.File
-        ( path  = path.as[Relative on Tar],
-          mode  = UnixMode(),
-          user  = UnixUser(0),
-          group = UnixGroup(0),
-          mtime = 0.bits.u32,
-          data  = LazyList(content) )
-
-    val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
-    val indexEntry  = entry(t"index.json", indexBytes)
-
-    val blobEntries = blobs.map: (digest, content) =>
-      val hex = digest.s.stripPrefix("sha256:").tt
-      entry(t"blobs/sha256/$hex", content)
-
-    Tarfile(LazyList.from(layoutEntry :: indexEntry :: blobEntries))
+case class OciError(reason: OciError.Reason)(using Diagnostics)
+extends Error(285, reason.number)(m"the OCI image archive could not be read because $reason")
