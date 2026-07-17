@@ -45,10 +45,7 @@ import errorDiagnostics.stackTracesDiagnostics
 
 import scala.compiletime.*
 
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 
 import filesystemBackends.virtualMachine
@@ -70,7 +67,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       tests.children
         . filter(_.name.starts(t"y_"))
         . map: file =>
-            (file.name, file.open(_.read[Data]))
+            (file.name, file.read[Data])
         . to(List)
 
     val negativeCases: List[(Text, Data)] =
@@ -78,7 +75,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         . filter(_.name.starts(t"n_"))
         . filter { file => !deeplyNested.contains(file.name) }
         . map: file =>
-            (file.name, file.open(_.read[Data]))
+            (file.name, file.read[Data])
         . to(List)
 
     suite(m"Positive tests"):

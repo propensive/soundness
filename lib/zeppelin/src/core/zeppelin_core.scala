@@ -30,15 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package zeppelin
 
-object WriteAccess:
-  sealed trait Ability
-
-trait WriteAccess:
-  type Transform[_]
-
-  def flags(): List[OpenFlag]
-
-  def transform[HandleType](handle: HandleType): Transform[HandleType] =
-    handle.asInstanceOf[Transform[HandleType]]
+// The contextual archive handle within an `open[Zip]` block, in the manner of galilei's `file`.
+// Transparent inline so the handle's precise (grant-refined, capturing) type is preserved.
+transparent inline def zip(using handle: ZipHandle): handle.type = handle

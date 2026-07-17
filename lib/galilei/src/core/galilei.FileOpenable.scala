@@ -30,63 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package bitumen
+package galilei
 
-import anticipation.*
-import fulminate.*
-import hypotenuse.*
+import aperture.*
+import contingency.*
+import prepositional.*
+import serpentine.*
 
-object TarError:
-  enum Reason(val number: Int) extends Clarification:
-    case NameTooLong(field: Text, length: Int, maximum: Int) extends Reason(1)
-    case BadMagic(actual: Data) extends Reason(2)
-    case BadChecksum(expected: U32, actual: U32) extends Reason(3)
-    case UnknownTypeFlag(byte: Byte) extends Reason(4)
-    case TruncatedStream(needed: Int, got: Int) extends Reason(5)
-    case BadOctal(field: Text, data: Data) extends Reason(6)
-    case BadPaxRecord(data: Data) extends Reason(7)
-    case BadName(text: Text) extends Reason(8)
-    case BadSparseMap(text: Text) extends Reason(9)
-    case DeviceCreationUnsupported(path: Text) extends Reason(10)
-    case WriteUnsupported extends Reason(11)
+// The `Openable` instance for opening a file's content: `path.open[File](Read & Write)`. A
+// named class rather than an anonymous given instance: instantiating an anonymous subclass
+// freshens `Handle`'s (capability) field types in the inferred `Result` member, which then
+// fails to conform to the declared `to Handle` refinement.
+class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
+  ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+extends Openable:
 
-  given communicable: Reason is Communicable =
-    case Reason.NameTooLong(field, length, maximum) =>
-      m"the $field field is $length bytes, exceeding the USTAR limit of $maximum bytes"
+  type Self = path
+  type Form = File
+  type Operand = OpenFlag
+  type Result = Handle
 
-    case Reason.BadMagic(actual) =>
-      m"the USTAR magic bytes are not valid (got ${actual.length} bytes)"
+  def open[grants <: Grant, result]
+    ( value: path, mode: Mode granting grants, flags: List[OpenFlag] )
+    ( block: ((Handle & Granting[grants])^) ?=> result )
+  :   result =
 
-    case Reason.BadChecksum(expected, actual) =>
-      m"""
-        the header checksum did not match (header recorded $expected but the recomputed value is
-        $actual)
-      """
+    // The mode's atoms translate to OS open flags. `aperture.Exclusive` is deliberately not
+    // translated to `OpenFlag.Exclusive`: POSIX `O_EXCL` governs exclusive *creation*, not
+    // exclusive access, so honoring the `Exclusive` grant awaits the access register.
+    val modeFlags =
+      (if mode.atoms.contains(Read) then List(OpenFlag.Read) else Nil) ++
+        (if mode.atoms.contains(Write) then List(OpenFlag.Write) else Nil)
 
-    case Reason.UnknownTypeFlag(byte) =>
-      val code: Int = byte.toInt & 0xff
-      m"the entry type flag $code is not recognised"
-
-    case Reason.TruncatedStream(needed, got) =>
-      m"the archive stream ended unexpectedly (needed $needed bytes, got $got)"
-
-    case Reason.BadOctal(field, _) =>
-      m"the $field field did not contain a valid octal value"
-
-    case Reason.BadPaxRecord(_) =>
-      m"a PAX extended-header record could not be parsed"
-
-    case Reason.BadName(text) =>
-      m"the entry name $text is not a valid POSIX relative path"
-
-    case Reason.BadSparseMap(text) =>
-      m"the GNU sparse map $text could not be parsed"
-
-    case Reason.DeviceCreationUnsupported(path) =>
-      m"the special device entry at $path could not be created on this filesystem"
-
-    case Reason.WriteUnsupported =>
-      m"TAR archives cannot yet be opened for writing"
-
-case class TarError(reason: TarError.Reason)(using Diagnostics)
-extends Error(284, reason.number)(m"the TAR archive could not be read or written because $reason")
+    backend.open(value, modeFlags ++ flags): handle =>
+      // `Granting` is a phantom marker, so the cast only refines the static type with the
+      // grants that `modeFlags` has just made true operationally.
+      block(using handle.asInstanceOf[Handle & Granting[grants]])

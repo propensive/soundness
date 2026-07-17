@@ -433,8 +433,8 @@ object soundness extends Toolchain:
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
-  object base extends Bundle(ambience.core, aviation.core, contextual.core, contingency.core,
-    denominative.core, digression.core, diuretic.core, fulminate.core,
+  object base extends Bundle(ambience.core, aperture.core, aviation.core, contextual.core,
+    contingency.core, denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
@@ -708,6 +708,14 @@ object anticipation extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests:
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
+
+object aperture extends Library:
+  object core extends Component(prepositional.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -1287,7 +1295,7 @@ object fulminate extends Library:
       settings.cc(super.scalacOptions())
 
 object galilei extends Library:
-  object core extends Component(serpentine.core, turbulence.core):
+  object core extends Component(aperture.core, serpentine.core, turbulence.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.nio` `FilesystemBackend` (`filesystemBackends.virtualMachine`), split out of `core`
@@ -2319,7 +2327,8 @@ object ziggurat extends Library:
 // directories.
 val allLibraries: Seq[Library] = Seq(
   abacist, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
-  apoplexy, archimedes, austronesian, aviation, baroque, beneficence, bitumen, breviloquence,
+  aperture, apoplexy, archimedes, austronesian, aviation, baroque, beneficence, bitumen,
+  breviloquence,
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
   charisma, chiaroscuro, coaxial, contextual, contingency, cordillera, cosmopolite,

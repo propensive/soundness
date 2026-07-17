@@ -30,63 +30,129 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package bitumen
+package aperture
 
-import anticipation.*
-import fulminate.*
-import hypotenuse.*
+import soundness.*
 
-object TarError:
-  enum Reason(val number: Int) extends Clarification:
-    case NameTooLong(field: Text, length: Int, maximum: Int) extends Reason(1)
-    case BadMagic(actual: Data) extends Reason(2)
-    case BadChecksum(expected: U32, actual: U32) extends Reason(3)
-    case UnknownTypeFlag(byte: Byte) extends Reason(4)
-    case TruncatedStream(needed: Int, got: Int) extends Reason(5)
-    case BadOctal(field: Text, data: Data) extends Reason(6)
-    case BadPaxRecord(data: Data) extends Reason(7)
-    case BadName(text: Text) extends Reason(8)
-    case BadSparseMap(text: Text) extends Reason(9)
-    case DeviceCreationUnsupported(path: Text) extends Reason(10)
-    case WriteUnsupported extends Reason(11)
+// Openable instances for testing: an in-memory "document" openable in two different forms
+// from the same target type (to exercise form selection and its ambiguity), and in a unique
+// form from another (to exercise form inference).
+trait Doc
+trait Bin
 
-  given communicable: Reason is Communicable =
-    case Reason.NameTooLong(field, length, maximum) =>
-      m"the $field field is $length bytes, exceeding the USTAR limit of $maximum bytes"
+case class Ref(name: Text)
+case class Sole(name: Text)
 
-    case Reason.BadMagic(actual) =>
-      m"the USTAR magic bytes are not valid (got ${actual.length} bytes)"
+enum TestFlag:
+  case Fast, Careful
 
-    case Reason.BadChecksum(expected, actual) =>
-      m"""
-        the header checksum did not match (header recorded $expected but the recomputed value is
-        $actual)
-      """
+class DocHandle(val name: Text, val flags: List[TestFlag]) extends caps.ExclusiveCapability:
+  private var appended: List[Text] = Nil
+  def titleOf: Text = t"doc:$name"
+  def appendedText: Text = appended.reverse.join
 
-    case Reason.UnknownTypeFlag(byte) =>
-      val code: Int = byte.toInt & 0xff
-      m"the entry type flag $code is not recognised"
+extension (handle: (DocHandle & Granting[Grant.Read])^)
+  def title: Text = handle.titleOf
 
-    case Reason.TruncatedStream(needed, got) =>
-      m"the archive stream ended unexpectedly (needed $needed bytes, got $got)"
+extension (handle: (DocHandle & Granting[Grant.Write])^)
+  def append(text: Text): Unit = ()
 
-    case Reason.BadOctal(field, _) =>
-      m"the $field field did not contain a valid octal value"
+// Named classes rather than anonymous given instances: instantiating an anonymous subclass
+// freshens the handle's capability type in the inferred `Result` member (see the equivalent
+// comment on galilei's `FileOpenable`).
+class DocOpenable extends Openable:
+  type Self = Ref
+  type Form = Doc
+  type Operand = TestFlag
+  type Result = DocHandle
 
-    case Reason.BadPaxRecord(_) =>
-      m"a PAX extended-header record could not be parsed"
+  def open[grants <: Grant, result]
+    ( value: Ref, mode: Mode granting grants, flags: List[TestFlag] )
+    ( block: ((DocHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-    case Reason.BadName(text) =>
-      m"the entry name $text is not a valid POSIX relative path"
+    block(using new DocHandle(value.name, flags) with Granting[grants] {})
 
-    case Reason.BadSparseMap(text) =>
-      m"the GNU sparse map $text could not be parsed"
+class BinOpenable extends Openable:
+  type Self = Ref
+  type Form = Bin
+  type Operand = TestFlag
+  type Result = DocHandle
 
-    case Reason.DeviceCreationUnsupported(path) =>
-      m"the special device entry at $path could not be created on this filesystem"
+  def open[grants <: Grant, result]
+    ( value: Ref, mode: Mode granting grants, flags: List[TestFlag] )
+    ( block: ((DocHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-    case Reason.WriteUnsupported =>
-      m"TAR archives cannot yet be opened for writing"
+    block(using new DocHandle(t"bin:"+value.name, flags) with Granting[grants] {})
 
-case class TarError(reason: TarError.Reason)(using Diagnostics)
-extends Error(284, reason.number)(m"the TAR archive could not be read or written because $reason")
+class SoleOpenable extends Openable:
+  type Self = Sole
+  type Form = Doc
+  type Operand = TestFlag
+  type Result = DocHandle
+
+  def open[grants <: Grant, result]
+    ( value: Sole, mode: Mode granting grants, flags: List[TestFlag] )
+    ( block: ((DocHandle & Granting[grants])^) ?=> result )
+  :   result =
+
+    block(using new DocHandle(value.name, flags) with Granting[grants] {})
+
+given docOpenable: DocOpenable = DocOpenable()
+given binOpenable: BinOpenable = BinOpenable()
+given soleOpenable: SoleOpenable = SoleOpenable()
+
+object Tests extends Suite(m"Aperture Tests"):
+  def run(): Unit =
+    test(m"An entity opens readably by default"):
+      Ref(t"alpha").open[Doc]() { handle ?=> handle.title }
+    . assert(_ == t"doc:alpha")
+
+    test(m"An explicit form selects between instances"):
+      Ref(t"alpha").open[Bin]() { handle ?=> handle.title }
+    . assert(_ == t"doc:bin:alpha")
+
+    test(m"The form is inferred when the target has a unique instance"):
+      Sole(t"beta").open() { handle ?=> handle.title }
+    . assert(_ == t"doc:beta")
+
+    test(m"A mode of Read & Write permits both kinds of operation"):
+      Ref(t"gamma").open[Doc](Read & Write): handle ?=>
+        handle.append(t"more")
+        handle.title
+    . assert(_ == t"doc:gamma")
+
+    test(m"Flags are passed through to the instance"):
+      Ref(t"delta").open[Doc](TestFlag.Fast, TestFlag.Careful) { handle ?=> handle.flags }
+    . assert(_ == List(TestFlag.Fast, TestFlag.Careful))
+
+    test(m"Flags may follow an explicit mode"):
+      Ref(t"epsilon").open[Doc](Read & Write, TestFlag.Fast) { handle ?=> handle.flags }
+    . assert(_ == List(TestFlag.Fast))
+
+    test(m"A write operation without the Write grant does not compile"):
+      demilitarize:
+        Ref(t"zeta").open[Doc]() { handle ?=> handle.append(t"nope") }
+      . map(_.message)
+    . assert(_.nonEmpty)
+
+    test(m"An ambiguous form does not compile"):
+      demilitarize:
+        Ref(t"eta").open() { handle ?=> handle.title }
+      . map(_.message)
+    . assert(_.nonEmpty)
+
+    test(m"A composite mode's atoms are its constituent atomic modes"):
+      (Read & Write & Exclusive).atoms
+    . assert(_ == Set(Read, Write, Exclusive))
+
+    test(m"An atomic mode's atoms are itself"):
+      Write.atoms
+    . assert(_ == Set(Write))
+
+    test(m"A read operation with only the Write grant does not compile"):
+      demilitarize:
+        Ref(t"theta").open[Doc](Write) { handle ?=> handle.title }
+      . map(_.message)
+    . assert(_.nonEmpty)

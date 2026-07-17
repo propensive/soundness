@@ -30,63 +30,71 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package bitumen
+package zeppelin
+
+import java.nio as jn
+import java.nio.channels as jnc
+import java.nio.file as jnf
 
 import anticipation.*
-import fulminate.*
-import hypotenuse.*
+import aperture.*
+import contingency.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import vacuous.*
+import zephyrine.*
 
-object TarError:
-  enum Reason(val number: Int) extends Clarification:
-    case NameTooLong(field: Text, length: Int, maximum: Int) extends Reason(1)
-    case BadMagic(actual: Data) extends Reason(2)
-    case BadChecksum(expected: U32, actual: U32) extends Reason(3)
-    case UnknownTypeFlag(byte: Byte) extends Reason(4)
-    case TruncatedStream(needed: Int, got: Int) extends Reason(5)
-    case BadOctal(field: Text, data: Data) extends Reason(6)
-    case BadPaxRecord(data: Data) extends Reason(7)
-    case BadName(text: Text) extends Reason(8)
-    case BadSparseMap(text: Text) extends Reason(9)
-    case DeviceCreationUnsupported(path: Text) extends Reason(10)
-    case WriteUnsupported extends Reason(11)
+// The scoped capability provided by opening an archive as `Zip`: `path.open[Zip]()`. Unlike a
+// detached `Zipfile` (whose `FileSource` re-opens the file for every read), a `ZipHandle` reads
+// through a single channel held open for the duration of the block, so entry payloads resolve
+// with no per-read open/close cost — and, correspondingly, must be consumed within the scope.
+// (Zeppelin is not yet capture-checked, so the confinement is enforced only for callers
+// compiled with capture checking; the annotations sharpen when the module joins the rollout.)
+class ZipHandle private[zeppelin] (private[zeppelin] val zipfile: Zipfile)
+extends caps.ExclusiveCapability:
+  def entries: LazyList[Zip.Entry] = zipfile.entries
+  def entry(ref: Path on Zip): Zip.Entry raises ZipError = zipfile.entry(ref)
+  def comment: Optional[Text] = zipfile.comment
 
-  given communicable: Reason is Communicable =
-    case Reason.NameTooLong(field, length, maximum) =>
-      m"the $field field is $length bytes, exceeding the USTAR limit of $maximum bytes"
+// A named class rather than an anonymous given instance, for the reasons documented on
+// galilei's `FileOpenable`. Archives open read-only: a `Write` mode is refused with
+// `ZipError.Reason.WriteUnsupported` until writing lands.
+class ZipOpenable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+extends Openable:
 
-    case Reason.BadMagic(actual) =>
-      m"the USTAR magic bytes are not valid (got ${actual.length} bytes)"
+  type Self = path
+  type Form = Zip
+  type Operand = Nothing
+  type Result = ZipHandle
 
-    case Reason.BadChecksum(expected, actual) =>
-      m"""
-        the header checksum did not match (header recorded $expected but the recomputed value is
-        $actual)
-      """
+  def open[grants <: Grant, result]
+    ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: (ZipHandle & Granting[grants]) ?=> result )
+  :   result =
 
-    case Reason.UnknownTypeFlag(byte) =>
-      val code: Int = byte.toInt & 0xff
-      m"the entry type flag $code is not recognised"
+    if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
 
-    case Reason.TruncatedStream(needed, got) =>
-      m"the archive stream ended unexpectedly (needed $needed bytes, got $got)"
+    val channel =
+      jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
 
-    case Reason.BadOctal(field, _) =>
-      m"the $field field did not contain a valid octal value"
+    try
+      val zipfile = Zipfile.parse(Zipfile.ChannelSource(channel))
+      block(using new ZipHandle(zipfile) with Granting[grants] {})
+    finally channel.close()
 
-    case Reason.BadPaxRecord(_) =>
-      m"a PAX extended-header record could not be parsed"
+// Opens an in-memory archive; no channel is involved, but access is scoped all the same, for
+// consistency with every other form of `Zip` target.
+class ZipDataOpenable(using Tactic[ZipError]) extends Openable:
+  type Self = Data
+  type Form = Zip
+  type Operand = Nothing
+  type Result = ZipHandle
 
-    case Reason.BadName(text) =>
-      m"the entry name $text is not a valid POSIX relative path"
+  def open[grants <: Grant, result]
+    ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: (ZipHandle & Granting[grants]) ?=> result )
+  :   result =
 
-    case Reason.BadSparseMap(text) =>
-      m"the GNU sparse map $text could not be parsed"
-
-    case Reason.DeviceCreationUnsupported(path) =>
-      m"the special device entry at $path could not be created on this filesystem"
-
-    case Reason.WriteUnsupported =>
-      m"TAR archives cannot yet be opened for writing"
-
-case class TarError(reason: TarError.Reason)(using Diagnostics)
-extends Error(284, reason.number)(m"the TAR archive could not be read or written because $reason")
+    if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+    block(using new ZipHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})

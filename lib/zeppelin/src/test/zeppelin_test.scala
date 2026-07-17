@@ -36,13 +36,10 @@ import soundness.*
 
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import logging.silentLogging
 import strategies.throwUnsafely
 import systems.javaSystem
@@ -69,7 +66,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       Zipfile.write(path)(entries.to(List))
       path
 
-    def bytesOf(path: Path on Linux): Data = path.open(_.read[Data])
+    def bytesOf(path: Path on Linux): Data = path.read[Data]
 
     def readEntries(path: Path on Linux): List[Zip.Entry] = Zipfile.read(path).entries.to(List)
 
@@ -256,6 +253,29 @@ object Tests extends Suite(m"Zeppelin tests"):
         import errorDiagnostics.emptyDiagnostics
         capture[ZipError](Zipfile.read(t"this is not a zip file".in[Data])).reason
       . assert(_ == ZipError.Reason.MissingEocd)
+
+    suite(m"Scoped opening"):
+      val archive = writeZip(t"scoped.zip", entry(t"a.txt", t"alpha"), entry(t"b/c.txt", t"gamma"))
+
+      test(m"an archive opened as Zip lists its entries"):
+        archive.open[Zip]():
+          zip.entries.to(List).map(_.ref.encode)
+      . assert(_ == List(t"a.txt", t"b/c.txt"))
+
+      test(m"entry content resolves within the scope"):
+        archive.open[Zip]():
+          zip.entry(zipRef(t"b/c.txt")).read[Text]
+      . assert(_ == t"gamma")
+
+      test(m"in-memory data opens as Zip"):
+        bytesOf(archive).open[Zip]():
+          zip.entries.to(List).map(_.ref.encode)
+      . assert(_ == List(t"a.txt", t"b/c.txt"))
+
+      test(m"opening for writing is refused"):
+        import errorDiagnostics.emptyDiagnostics
+        capture[ZipError](archive.open[Zip](Write) { () }).reason
+      . assert(_ == ZipError.Reason.WriteUnsupported)
 
     suite(m"Interoperability with the JDK writer"):
       test(m"reads entry names from an externally (JDK) written archive"):

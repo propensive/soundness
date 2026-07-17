@@ -33,6 +33,7 @@
 package ziggurat
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import distillate.*
 import galilei.*, galilei.Platform.pathReadable
@@ -50,9 +51,6 @@ import charEncoders.utf8Encoder
 import classloaders.threadContextClassloader
 import filesystemBackends.virtualMachine
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.overwritePreexisting.enabled
@@ -164,7 +162,7 @@ object Xeq:
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File]()
 
-    output.open: handle =>
+    output.open[File](Write, OpenFlag.Create): handle ?=>
       handle.write(LazyList(data))
 
     output.executable() = true
@@ -196,7 +194,7 @@ object Xeq:
 
     val dataPayload: Optional[Payload] =
       if dataPath.exists() then
-        val bytes: Data = dataPath.open(_.read[Data])
+        val bytes: Data = dataPath.read[Data]
         Payload(DataName, bytes, gzip = false)
       else
         Unset
@@ -214,7 +212,7 @@ object Xeq:
   private def onlineLauncherMain(output: Text, jar: Text, manifest: Text, baseUrl: Text): Unit =
     unsafely:
       val outputPath: Path on Linux = output.as[Path on Linux]
-      val jarData: Data = jar.as[Path on Linux].open(_.read[Data])
+      val jarData: Data = jar.as[Path on Linux].read[Data]
       val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
 
       val entries: List[(Text, Text, Text)] =

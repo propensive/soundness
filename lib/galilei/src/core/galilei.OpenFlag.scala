@@ -32,8 +32,8 @@
                                                                                                   */
 package galilei
 
-// The platform-neutral options for opening an entry's content, assembled by the `ReadAccess`,
-// `WriteAccess`, `CreateNonexistent` and `WriteSynchronously` option typeclasses (plus `Eof` for
-// appending) and interpreted by the `FilesystemBackend`.
+// The platform-neutral options for opening an entry's content: `Read` and `Write` are
+// contributed by the `open` call's `Mode`, `Append` by opening an `Eof`, and the rest may be
+// passed as flags to `open`; all are interpreted by the `FilesystemBackend`.
 enum OpenFlag:
   case Read, Write, Append, Create, Exclusive, Truncate, Sync, Dsync, NoFollow

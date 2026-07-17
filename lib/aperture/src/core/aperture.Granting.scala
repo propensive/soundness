@@ -30,13 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package aperture
 
-import prepositional.*
-import contingency.*
-import serpentine.*
-
-trait CreateNonexistent extends Planar:
-  def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError
-  def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError
-  def flags(): List[OpenFlag]
+// Mixed into a handle by an `Openable` instance to attach the grants selected by the `Mode`
+// passed to `open`. Covariant, so a handle with more grants is a subtype of one with fewer.
+trait Granting[+grants <: Grant]

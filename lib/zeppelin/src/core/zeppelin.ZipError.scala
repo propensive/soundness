@@ -47,6 +47,7 @@ object ZipError:
     case TruncatedArchive                    extends Reason(6)
     case BadSignature(expected: Int)         extends Reason(7)
     case Zip64Error                          extends Reason(8)
+    case WriteUnsupported                    extends Reason(9)
 
   given communicable: Reason is Communicable =
     case Reason.DuplicateEntry(path)    => m"the path $path is a duplicate entry"
@@ -57,6 +58,7 @@ object ZipError:
     case Reason.TruncatedArchive        => m"the ZIP archive ended unexpectedly"
     case Reason.BadSignature(expected)  => m"an expected record signature ($expected) was absent"
     case Reason.Zip64Error              => m"the ZIP64 metadata could not be interpreted"
+    case Reason.WriteUnsupported        => m"ZIP archives cannot yet be opened for writing"
 
 case class ZipError(reason: ZipError.Reason)(using Diagnostics)
 extends Error(751, reason.number)(m"the ZIP operation failed because $reason")

@@ -49,10 +49,7 @@ import alphabets.hexLowerCase
 import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 
@@ -88,7 +85,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val dir = tempDir()
       val script = dir / t"hello"
       script.create[File]()
-      script.open: handle =>
+      script.open[File](Write): handle ?=>
         handle.write(LazyList(bundleBytes))
       script.executable() = true
       (dir, script)
@@ -120,7 +117,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val dir = tempDir()
       val script = dir / t"fetch"
       script.create[File]()
-      script.open: handle =>
+      script.open[File](Write): handle ?=>
         handle.write(LazyList(Xeq.onlineLauncher(jar, entries)))
       script.executable() = true
       script
@@ -132,7 +129,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val bin = dir / t"bin-$label"
       bin.create[File]()
       val bytes = body.in[Data]
-      bin.open: handle =>
+      bin.open[File](Write): handle ?=>
         handle.write(LazyList(bytes))
       (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
 
@@ -220,7 +217,7 @@ object Tests extends Suite(m"Ziggurat tests"):
           ++ Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
 
         file.create[File]()
-        file.open(LazyList(bytes.immutable(using Unsafe): Data).writeTo(_))
+        file.open[File](Write) { h ?=> h.write(LazyList(bytes.immutable(using Unsafe): Data)) }
 
       test(m"EmbedAll bundles the JAR once and every patched stub"):
         val dir: Path on Linux = tempDir()
@@ -228,7 +225,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open(LazyList(t"JARBYTES".in[Data]).writeTo(_))
+        jar.open[File](Write) { h ?=> h.write(LazyList(t"JARBYTES".in[Data])) }
 
         val out: Path on Linux = dir/t"hello"
 
@@ -242,7 +239,7 @@ object Tests extends Suite(m"Ziggurat tests"):
               runnerSource = Packaging.RunnerSource.Local(dir) )
 
         Packager.pack(packaging)
-        val text: Text = out.open(_.read[Data]).utf8
+        val text: Text = out.read[Data].utf8
 
         text.starts(t"#!/usr/bin/env bash") && text.contains(t"data=")
         && labels.all { label => text.contains(t"$label=") }
@@ -253,7 +250,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open(LazyList(t"JARBYTES".in[Data]).writeTo(_))
+        jar.open[File](Write) { h ?=> h.write(LazyList(t"JARBYTES".in[Data])) }
 
         val out: Path on Linux = dir/t"hello"
         val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to(Map)
@@ -268,7 +265,7 @@ object Tests extends Suite(m"Ziggurat tests"):
               runnerSource = Packaging.RunnerSource.Remote(t"https://r.test/", hashes) )
 
         Packager.pack(packaging)
-        val text: Text = out.open(_.read[Data]).utf8
+        val text: Text = out.read[Data].utf8
 
         text.contains(t"index:data=1")
         && labels.all { label => text.contains(t"$label=https://r.test/runner-$label") }
@@ -312,10 +309,10 @@ class Hello { static void Main() { System.Console.WriteLine("hello from windows-
 '@
 Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputType ConsoleApplication
 """
-        compilePs.open: handle =>
-          LazyList(psContent.in[Data]).writeTo(handle)
+        compilePs.open[File](Write): handle ?=>
+          handle.write(LazyList(psContent.in[Data]))
 
-        val localExe = workDir / t"hello.exe"
+        val localExe: Path on Linux = workDir / t"hello.exe"
 
         val bootstrapped =
           (safely(sh"scp -q $compilePs $host:ziggurat-test-compile.ps1".exec[Exit]()) == Exit.Ok)
@@ -327,15 +324,15 @@ Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputTy
           Out.println(t"Failed to bootstrap hello.exe on $host; skipping Windows tests")
           safely(sh"ssh $host del /q ziggurat-test-*".exec[Exit]())
         else
-          val winArm64Bytes: Data = localExe.open(_.read[Data])
+          val winArm64Bytes: Data = localExe.read[Data]
           val winBundle = Xeq.installer:
             payloads :+ Payload(t"windows-arm64", winArm64Bytes, gzip = false)
 
           def stageAndCopy(extension: Text): Text =
             val script = workDir / t"hello-${Uuid().show}.$extension"
             script.create[File]()
-            script.open: handle =>
-              LazyList(winBundle).writeTo(handle)
+            script.open[File](Write): handle ?=>
+              handle.write(LazyList(winBundle))
             val remote = t"ziggurat-test-${Uuid().show}.$extension"
             sh"scp -q $script $host:$remote".exec[Exit]()
             remote

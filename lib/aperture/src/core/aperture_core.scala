@@ -30,7 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package aperture
 
-trait WriteSynchronously:
-  def flags(): List[OpenFlag]
+import prepositional.*
+
+// Refines a type's `Grants` member; `Mode granting Grant.Read` reads naturally.
+infix type granting [refined <: { type Grants <: Grant }, grants <: Grant] =
+  refined { type Grants = grants }
+
+val Read: Mode granting Grant.Read = new Mode { type Grants = Grant.Read }
+
+// `Write` alone does not confer read access: open with `Read & Write` for both.
+val Write: Mode granting Grant.Write = new Mode { type Grants = Grant.Write }
+
+val Exclusive: Mode granting Grant.Exclusive = new Mode { type Grants = Grant.Exclusive }
+
+extension [target](value: target)
+  // Opens `value` in form `form`: `path.open[Directory]()`, or `path.open[File](Read & Write)`.
+  // The form may be omitted when the target has a unique `Openable` instance; with several,
+  // the ambiguity error lists the alternatives. Flags — of the instance's `Operand` type, so
+  // target-specific — follow the mode. The handle is provided as a contextual value to the
+  // block, and capture checking prevents it, or anything derived from it, from escaping.
+  def open[form](using o: (target is Openable in form)^)
+  :   (Opener { val openable: o.type })^{o} =
+
+    Opener(o, value)

@@ -65,6 +65,15 @@ object Tar:
     val self: Text = "."
     val parent: Text = ".."
 
+  // Anchored here so `path.open[Tar](...)` and `data.open[Tar](...)` resolve with no import.
+  given openable: [path: Abstractable across Paths to Text]
+  =>  ( Tactic[TarError], Tactic[StreamError] )
+  =>  ( TarOpenable[path]^ ) =
+    TarOpenable[path]
+
+  given dataOpenable: (Tactic[TarError], Tactic[StreamError]) => (TarDataOpenable^) =
+    TarDataOpenable()
+
   object Entry:
     def apply[data: Streamable by Data over Credit, instant: Abstractable across Instants to Long]
       ( name:  TarRef,

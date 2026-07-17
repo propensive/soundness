@@ -35,11 +35,13 @@ package galilei
 import java.nio.file as jnf
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import inimitable.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import turbulence.Eof
 import turbulence.Readable
 import vacuous.*
 
@@ -69,6 +71,36 @@ object Platform:
         jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
 
       readable.read(bytes)
+
+  // The `Openable` instance for the `File` form. Placed here (rather than in `File`'s
+  // companion) so that it is anchored by the *path* type: `path.open[File](...)` resolves with
+  // no import, and while `File` is a path's only form, `path.open(...)` can infer it.
+  given openable: [filesystem: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem,
+        Tactic[IoError] )
+  =>  ( FileOpenable[filesystem, path]^ ) =
+    FileOpenable[filesystem, path]
+
+  // Opening `Eof(path)` opens the file's content for appending: the instance prepends the
+  // `Append` flag and delegates to the file's own instance. Named capturing evidence and an
+  // honest result: the instance retains `openable`, which a pure context bound cannot accept.
+  given eof: [file]
+  =>  ( openable: (file is Openable in File by OpenFlag)^ )
+  =>  ( ((Eof[file] is Openable in File by OpenFlag) { type Result = openable.Result })
+        ^{openable, caps.any} ) =
+
+    new Openable:
+      type Self = Eof[file]
+      type Form = File
+      type Operand = OpenFlag
+      type Result = openable.Result
+
+      def open[grants <: Grant, result]
+        ( value: Eof[file], mode: Mode granting grants, flags: List[OpenFlag] )
+        ( block: ((openable.Result & Granting[grants])^) ?=> result )
+      :   result =
+
+        openable.open(value.file, mode, OpenFlag.Append :: flags)(block)
 
 // Pure: platforms are phantom plane markers, so capture checking never freshens them
 // (keeping `=:=`-based plane unification exact through the `soundness` export aliases).

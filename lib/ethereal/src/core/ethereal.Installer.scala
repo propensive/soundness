@@ -37,6 +37,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import eucalyptus.*
+import aperture.*
 import exoskeleton.*
 import fulminate.*
 import galilei.*
@@ -52,13 +53,10 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 
 import filesystemBackends.virtualMachine
 
@@ -146,7 +144,7 @@ object Installer:
             val filename: Text = file.inspect
             Log.info(DaemonLogEvent.WriteExecutable(filename))
 
-            service.executable.open: file =>
+            service.executable.open[File](Read & Write, OpenFlag.Create): file ?=>
               val stream = file.stream
 
               if prefixSize > 0.b

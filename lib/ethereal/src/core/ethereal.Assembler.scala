@@ -37,6 +37,7 @@ import java.nio as jnio
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import eucalyptus.*
 import fulminate.*
@@ -48,12 +49,9 @@ import rudiments.*
 import serpentine.*
 import turbulence.*
 
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 
 import filesystemBackends.virtualMachine
 
@@ -147,9 +145,8 @@ object Assembler:
     val isWindows: Boolean = platformLabel.starts(t"windows")
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
-    output.open
-      ( file => file.write(LazyList(patched)),
-        List(OpenFlag.Truncate) )
+    output.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
+      ( file.write(LazyList(patched)) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
@@ -160,7 +157,7 @@ object Assembler:
     // unify with it), and a direct append-mode open rather than `Eof` (whose two-evidence
     // dependent `Result` chain has the same root problem). The read is strict (`to(List)`)
     // so nothing reads the closed handle.
-    val chunks = jarFile.open(_.reader().to(List))
-    output.open(_.write(LazyList.from(chunks)), List(OpenFlag.Append))
+    val chunks = jarFile.open[File]()(file.reader().to(List))
+    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(LazyList.from(chunks)))
 
     if !isWindows then output.executable() = true

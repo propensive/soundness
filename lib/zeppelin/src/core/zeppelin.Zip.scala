@@ -73,6 +73,14 @@ object Zip:
     def decode(text: Text): %.type raises PathError = %
     def encode(root: %.type): Text = t""
 
+  // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import.
+  given openable: [path: Abstractable across Paths to Text]
+  =>  Tactic[ZipError]
+  =>  ZipOpenable[path] =
+    ZipOpenable[path]
+
+  given dataOpenable: Tactic[ZipError] => ZipDataOpenable = ZipDataOpenable()
+
   // The compression method actually recorded on an entry.
   enum Method(val id: Int):
     case Stored  extends Method(0)

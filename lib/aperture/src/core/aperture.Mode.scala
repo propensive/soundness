@@ -30,65 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package aperture
 
-import contingency.*
-import prepositional.*
-import serpentine.*
-import turbulence.*
+// A term-level selection of the grants an `open` call should confer, carrying them as the
+// `Grants` type member so the mode chosen at the call site determines the handle's type inside
+// the `open` block. `&` composes dependently — `Read & Write` has
+// `Grants = Grant.Read & Grant.Write` — which keeps the grant set precise without any inline
+// expansion or macros.
+//
+// A composite mode is identified at runtime by the set of atomic modes it was composed from:
+// an `Openable` instance interrogates `atoms` (e.g. `mode.atoms.contains(Read)`) to translate
+// the mode into whatever operational terms its backend needs, such as OS open flags. Atomic
+// modes are global values, compared by reference.
+class Mode:
+  type Grants <: Grant
 
-object Openable:
-  // A named class rather than an anonymous given instance: instantiating an anonymous
-  // subclass freshens `Handle`'s (capability) field types in the inferred `Result` member,
-  // which then fails to conform to the declared `to Handle` refinement.
-  class FileOpenable[filesystem: Filesystem, path <: Path on filesystem]
-    ( using read:        ReadAccess,
-            write:       WriteAccess,
-            dereference: DereferenceSymlinks,
-            create:      CreateNonexistent on filesystem,
-            backend:     FilesystemBackend on filesystem,
-            ioError:     Tactic[IoError] )
-  extends Openable:
+  def atoms: Set[Mode] = Set(this)
 
-    type Self = path
-    type Operand = OpenFlag
-    type Result = Handle^
+  infix def & (that: Mode): Mode granting (Grants & that.Grants) =
+    val these = atoms
 
-    def open[result](path: path, lambda: Result => result, extraOptions: List[OpenFlag]): result =
-      val dereferenceFlags = if dereference.dereference then Nil else List(OpenFlag.NoFollow)
-
-      val flags =
-        read.flags() ++ write.flags() ++ dereferenceFlags ++ create.flags() ++ extraOptions
-
-      backend.open(path, flags)(lambda)
-
-  given openable: [filesystem: Filesystem, path <: Path on filesystem]
-  =>  ( ReadAccess,
-        WriteAccess,
-        DereferenceSymlinks,
-        CreateNonexistent on filesystem,
-        FilesystemBackend on filesystem,
-        Tactic[IoError] )
-  =>  ( FileOpenable[filesystem, path]^ ) =
-    FileOpenable[filesystem, path]
-
-
-  // Named capturing evidence and an honest result: `FileOpenable` instances retain their
-  // filesystem and tactic evidence, which a pure context bound cannot accept.
-  given eof: [file]
-  =>  (openable: (file is Openable by OpenFlag)^)
-  =>  (((Eof[file] is Openable by OpenFlag) { type Result = openable.Result })
-        ^{openable, caps.any}) =
-
-    new Openable:
-      type Self = Eof[file]
-      type Operand = OpenFlag
-      type Result = openable.Result
-
-      def open[result](eof: Eof[file], lambda: openable.Result => result, options: List[OpenFlag])
-      :   result =
-
-        openable.open(eof.file, lambda, OpenFlag.Append :: options)
-
-trait Openable extends Typeclass, Operable, Resultant:
-  def open[result](value: Self, lambda: Result => result, options: List[Operand]): result
+    new Mode:
+      type Grants = Mode.this.Grants & that.Grants
+      override def atoms: Set[Mode] = these ++ that.atoms

@@ -30,15 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package bitumen
 
-object ReadAccess:
-  sealed trait Ability
-
-trait ReadAccess:
-  type Transform[_]
-
-  def flags(): List[OpenFlag]
-
-  def transform[HandleType](handle: HandleType): Transform[HandleType] =
-    handle.asInstanceOf[Transform[HandleType]]
+// Flags for opening a TAR archive: the compression wrapping the archive, if any. TAR has no
+// self-identifying magic for its compression layer at the API level, so the caller states it:
+// `path.open[Tar](TarFlag.Gzip)`.
+enum TarFlag:
+  case Gzip, Zlib, Deflate

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export zeppelin.{Zip, ZipError, ZipEvent, Zipfile}
+export zeppelin.{zip, Zip, ZipDataOpenable, ZipError, ZipEvent, Zipfile, ZipHandle, ZipOpenable}

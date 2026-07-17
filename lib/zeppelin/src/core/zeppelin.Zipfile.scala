@@ -91,11 +91,11 @@ object Zipfile:
       then raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
 
   // A random-access view of the bytes backing a ZIP archive.
-  private trait ByteSource:
+  private[zeppelin] trait ByteSource:
     def size: Long
     def read(offset: Long, length: Int): Data
 
-  private class DataSource(data: Data) extends ByteSource:
+  private[zeppelin] class DataSource(data: Data) extends ByteSource:
     def size: Long = data.length.toLong
     def read(offset: Long, length: Int): Data = data.slice(offset.toInt, offset.toInt + length)
 
@@ -124,7 +124,25 @@ object Zipfile:
           buffer.array.nn.immutable(using Unsafe)
         finally channel.close()
 
-  private def parse(source: ByteSource): Zipfile raises ZipError =
+  // Positional reads against a channel held open for the lifetime of a `ZipHandle`'s scope —
+  // unlike `FileSource`, which re-opens per read so detached `Zipfile` entries stay usable
+  // beyond it.
+  private[zeppelin] class ChannelSource(channel: jnc.FileChannel) extends ByteSource:
+    def size: Long = channel.size
+
+    def read(offset: Long, length: Int): Data =
+      if length == 0 then IArray.empty[Byte] else
+        val buffer = jn.ByteBuffer.allocate(length).nn
+        var position = offset
+        var eof = false
+
+        while buffer.hasRemaining && !eof do
+          val count = channel.read(buffer, position)
+          if count < 0 then eof = true else position += count
+
+        buffer.array.nn.immutable(using Unsafe)
+
+  private[zeppelin] def parse(source: ByteSource): Zipfile raises ZipError =
     val size = source.size
     if size < 22 then raise(ZipError(ZipError.Reason.MissingEocd))
 

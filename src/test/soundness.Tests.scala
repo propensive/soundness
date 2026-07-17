@@ -41,6 +41,7 @@ object Tests extends Suite(m"Soundness tests"):
     anamnesis.Tests()
     anthology.Tests()
     anticipation.Tests()
+    aperture.Tests()
     apoplexy.Tests()
     austronesian.Tests()
     aviation.Tests()

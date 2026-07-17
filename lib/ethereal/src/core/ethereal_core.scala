@@ -42,6 +42,7 @@ import scala.collection.concurrent as scc
 
 import ambience.*, systems.javaSystem
 import anticipation.*
+import aperture.*
 import coaxial.*
 import contingency.*
 import digression.*
@@ -69,12 +70,9 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 
 import filesystemBackends.virtualMachine
 
@@ -173,8 +171,8 @@ def cli[bus <: Matchable](using executive: Executive)
             val cacheRunner: Path on Linux = cacheDir/runnerName
 
             val runnerBytes: Data =
-              if localRunner.exists() then localRunner.open(_.read[Data])
-              else if cacheRunner.exists() then cacheRunner.open(_.read[Data])
+              if localRunner.exists() then localRunner.open[File]()(file.read[Data])
+              else if cacheRunner.exists() then cacheRunner.open[File]()(file.read[Data])
               else
                 mitigate:
                   case RunnerError(detail) =>
@@ -194,7 +192,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
                     if !cacheDir.exists() then cacheDir.create[Directory]()
-                    cacheRunner.open(_.write(LazyList(bytes)))
+                    cacheRunner.open[File](Write, OpenFlag.Create)(file.write(LazyList(bytes)))
                     bytes
 
             // ML-DSA-44 public key used by the runner to verify upgrades.
@@ -214,7 +212,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     val work: Path on Linux = workingDirectory
                     work + keyPath.as[Relative on Linux]
 
-                  val raw: Data = resolved.open(_.read[Data])
+                  val raw: Data = resolved.open[File]()(file.read[Data])
 
                   if raw.length != Assembler.PublicKeyLength then
                     Out.println(e"Public key at $keyPath is the wrong size (expected 1312 bytes)")
@@ -261,7 +259,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
   def ownsState: Boolean =
     val recorded: Optional[Text] =
-      if pidFile.exists() then safely(pidFile.open(_.read[Text]).trim)
+      if pidFile.exists() then safely(pidFile.read[Text].trim)
       else Unset
 
     recorded.let(_ == Process().pid.value.show).or(false)
@@ -526,9 +524,9 @@ def cli[bus <: Matchable](using executive: Executive)
           val buildId = safely(System.properties.build.id[Int]()).or:
             safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
 
-          buildFile.open(_.write(t"$buildId"))
+          buildFile.open[File](Write, OpenFlag.Create)(file.write(t"$buildId"))
           val pidValue = Process().pid.value.show
-          pidFile.open(_.write(pidValue))
+          pidFile.open[File](Write, OpenFlag.Create)(file.write(pidValue))
 
           task(n"pid-watcher"):
             safely:

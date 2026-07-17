@@ -32,61 +32,70 @@
                                                                                                   */
 package bitumen
 
+import java.io as ji
+
 import anticipation.*
-import fulminate.*
-import hypotenuse.*
+import aperture.*
+import contingency.*
+import prepositional.*
+import turbulence.*
+import zephyrine.*
 
-object TarError:
-  enum Reason(val number: Int) extends Clarification:
-    case NameTooLong(field: Text, length: Int, maximum: Int) extends Reason(1)
-    case BadMagic(actual: Data) extends Reason(2)
-    case BadChecksum(expected: U32, actual: U32) extends Reason(3)
-    case UnknownTypeFlag(byte: Byte) extends Reason(4)
-    case TruncatedStream(needed: Int, got: Int) extends Reason(5)
-    case BadOctal(field: Text, data: Data) extends Reason(6)
-    case BadPaxRecord(data: Data) extends Reason(7)
-    case BadName(text: Text) extends Reason(8)
-    case BadSparseMap(text: Text) extends Reason(9)
-    case DeviceCreationUnsupported(path: Text) extends Reason(10)
-    case WriteUnsupported extends Reason(11)
+// The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
+// sequential format, so `entries` streams lazily from the underlying source (memoized by the
+// `LazyList`, so revisiting an entry within the scope is free); payloads must be consumed
+// within the scope, while the source remains open.
+class TarHandle private[bitumen] (val entries: LazyList[Tar.Entry])
+extends caps.ExclusiveCapability
 
-  given communicable: Reason is Communicable =
-    case Reason.NameTooLong(field, length, maximum) =>
-      m"the $field field is $length bytes, exceeding the USTAR limit of $maximum bytes"
+// A named class rather than an anonymous given instance, for the reasons documented on
+// galilei's `FileOpenable`. Archives open read-only: a `Write` mode is refused with
+// `TarError.Reason.WriteUnsupported` until writing lands.
+class TarOpenable[path: Abstractable across Paths to Text]
+  ( using Tactic[TarError], Tactic[StreamError] )
+extends Openable:
 
-    case Reason.BadMagic(actual) =>
-      m"the USTAR magic bytes are not valid (got ${actual.length} bytes)"
+  type Self = path
+  type Form = Tar
+  type Operand = TarFlag
+  type Result = TarHandle
 
-    case Reason.BadChecksum(expected, actual) =>
-      m"""
-        the header checksum did not match (header recorded $expected but the recomputed value is
-        $actual)
-      """
+  def open[grants <: Grant, result]
+    ( value: path, mode: Mode granting grants, flags: List[TarFlag] )
+    ( block: ((TarHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-    case Reason.UnknownTypeFlag(byte) =>
-      val code: Int = byte.toInt & 0xff
-      m"the entry type flag $code is not recognised"
+    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
 
-    case Reason.TruncatedStream(needed, got) =>
-      m"the archive stream ended unexpectedly (needed $needed bytes, got $got)"
+    val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 
-    case Reason.BadOctal(field, _) =>
-      m"the $field field did not contain a valid octal value"
+    try
+      val entries = TarHandle.entries(in.source[Data].toLazyList, flags)
+      block(using new TarHandle(entries) with Granting[grants] {})
+    finally in.close()
 
-    case Reason.BadPaxRecord(_) =>
-      m"a PAX extended-header record could not be parsed"
+class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Openable:
+  type Self = Data
+  type Form = Tar
+  type Operand = TarFlag
+  type Result = TarHandle
 
-    case Reason.BadName(text) =>
-      m"the entry name $text is not a valid POSIX relative path"
+  def open[grants <: Grant, result]
+    ( value: Data, mode: Mode granting grants, flags: List[TarFlag] )
+    ( block: ((TarHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-    case Reason.BadSparseMap(text) =>
-      m"the GNU sparse map $text could not be parsed"
+    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
+    val entries = TarHandle.entries(LazyList(value), flags)
+    block(using new TarHandle(entries) with Granting[grants] {})
 
-    case Reason.DeviceCreationUnsupported(path) =>
-      m"the special device entry at $path could not be created on this filesystem"
+object TarHandle:
+  private[bitumen] def entries(stream: LazyList[Data], flags: List[TarFlag])
+    ( using Tactic[TarError], Tactic[StreamError] )
+  :   LazyList[Tar.Entry] =
 
-    case Reason.WriteUnsupported =>
-      m"TAR archives cannot yet be opened for writing"
-
-case class TarError(reason: TarError.Reason)(using Diagnostics)
-extends Error(284, reason.number)(m"the TAR archive could not be read or written because $reason")
+    flags.headOption match
+      case Some(TarFlag.Gzip)    => Tarfile.fromGzip(stream)
+      case Some(TarFlag.Zlib)    => Tarfile.fromZlib(stream)
+      case Some(TarFlag.Deflate) => Tarfile.fromDeflate(stream)
+      case None                  => Tarfile.read(stream)
