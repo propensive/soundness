@@ -70,7 +70,10 @@ extends Openable:
     val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 
     try
-      val entries = TarHandle.entries(in.source[Data].toLazyList, flags)
+      // Entries parse lazily straight off the live stream, held open for the
+      // scope's duration; file payloads stream in bounded chunks as they are
+      // read, and are drained when a later entry is forced.
+      val entries = TarHandle.entries(in.source[Data], flags)
       block(using new TarHandle(entries) with Granting[grants] {})
     finally in.close()
 
@@ -90,6 +93,16 @@ class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Opena
     block(using new TarHandle(entries) with Granting[grants] {})
 
 object TarHandle:
+  private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[TarFlag])
+    ( using Tactic[TarError], Tactic[StreamError], Buffering )
+  :   LazyList[Tar.Entry] =
+
+    flags.headOption match
+      case Some(TarFlag.Gzip)    => Tarfile.read(stream.decompress[Gzip])
+      case Some(TarFlag.Zlib)    => Tarfile.read(stream.decompress[Zlib])
+      case Some(TarFlag.Deflate) => Tarfile.read(stream.decompress[Deflate])
+      case _                     => Tarfile.read(stream)
+
   private[bitumen] def entries(stream: LazyList[Data], flags: List[TarFlag])
     ( using Tactic[TarError], Tactic[StreamError] )
   :   LazyList[Tar.Entry] =

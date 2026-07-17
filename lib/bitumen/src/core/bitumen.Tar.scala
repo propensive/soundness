@@ -263,13 +263,17 @@ object Tar:
       val pad: Int = (width - 1 - str.length).max(0)
       (("0"*pad) + str).tt.in[Data]
 
-    def header: Data = Data.build(512): array =>
+    def header: Data = headerWith(size)
+
+    // The 512-byte USTAR header with an explicit size: the streaming writer
+    // backpatches a placeholder header once an entry's body length is known.
+    private[bitumen] def headerWith(size0: U32): Data = Data.build(512): array =>
       val nameData = entryName.in[Data]
       array.place(if nameData.length > 100 then nameData.slice(0, 100) else nameData, Prim)
       array.place(mode.bytes, 100.z)
       array.place(user.bytes, 108.z)
       array.place(group.bytes, 116.z)
-      array.place(format(size, 12), 124.z)
+      array.place(format(size0, 12), 124.z)
       array.place(format(mtime, 12), 136.z)
       array.place(t"        ".in[Data], 148.z)
       array(156) = typeFlag.id.toByte
