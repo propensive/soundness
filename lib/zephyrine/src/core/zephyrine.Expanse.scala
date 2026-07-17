@@ -30,36 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zephyrine
 
-export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
-    Duct, Ductile, Expanse, Malleable, Pace,
-    Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Records, records, Regulation, Spring, Stream, Substrate, locate, locateKey, memoize, pump,
-    stream, streamOf, sweep, toLazyList}
+import anticipation.*
 
-// Hand-written forwarders: the synthesized export forwarders for these dependent-typed
-// extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture
-// checking and fail to retypecheck.
-extension [in, transport](consume stream: (Stream[in] over transport)^)
-  def via[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile by in) { type Upstream = transport },
-            buffering: Buffering )
-  :   (Stream[ductile.Result] over ductile.Transport)^ =
-    // The call's dependent result widens to a `Ductile{...}#Result` projection rather than
-    // narrowing back to this forwarder's `ductile.Result`; the value is returned unchanged,
-    // so the cast only restores the dependent typing the export forwarder would have lost.
-    zephyrine.via[in, transport](stream)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[(Stream[ductile.Result] over ductile.Transport)^]
+// A random-access view of an expanse of bytes: the abstraction beneath formats whose access
+// pattern is positional rather than sequential -- ZIP central directories, PDF cross-reference
+// tables, memory-mapped files -- and beneath any medium that can serve ranged reads, such as a
+// file channel, an in-memory buffer, or an HTTP resource supporting `Range` requests.
+// Implementations state their own lifetime discipline: some hold a resource open for a scope,
+// while others re-acquire it per read.
+trait Expanse:
+  def size: Long
+  def read(offset: Long, length: Int): Data
 
-extension [out, transport](consume intake: (Intake[out] over transport)^)
-  def accepting[stage](consume stage: stage^)
-    ( using ductile: (stage is Ductile to out) { type Transport = transport },
-            buffering: Buffering )
-  :   (Intake[ductile.Operand] over ductile.Upstream)^ =
-    // See `via` above.
-    zephyrine.accepting[out, transport](intake)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[(Intake[ductile.Operand] over ductile.Upstream)^]
-
-package parsing:
-  export zephyrine.parsing.trackPositions
+// An `Expanse` whose bytes may also be replaced in place, as in a memory-mapped file. The
+// region is fixed: `write` may not extend beyond `size`.
+trait Malleable extends Expanse:
+  def write(offset: Long, data: Data): Unit
