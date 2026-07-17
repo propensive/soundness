@@ -544,13 +544,17 @@ object Tests extends Suite(m"Turbulence tests"):
 
     suite(m"Line splitting"):
       // Split whole, or fragmented into `chunk`-char pieces — the fragmented
-      // rows exercise separator sequences spanning window boundaries.
+      // rows exercise separator sequences spanning window boundaries. A chunk
+      // size of `-1` runs the whole-value form (`text.delineate`, the
+      // `Duct.feed` driver), which must agree with the streaming form on
+      // every case.
       def splitLines(input: Text, chunk: Int)(using LineSeparation): List[Text] =
-        if chunk == 0 then input.stream.delineate.records.to(List)
+        if chunk == -1 then input.delineate.to(List)
+        else if chunk == 0 then input.stream.delineate.records.to(List)
         else input.s.grouped(chunk).map(_.tt).stream.delineate.records.to(List)
 
       def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
-        for fragment <- List(0, 1, 3) do
+        for fragment <- List(-1, 0, 1, 3) do
           cases.zipWithIndex.each: (row, index) =>
             test(m"$policy, case $index, chunk size $fragment"):
               splitLines(row(0), fragment)

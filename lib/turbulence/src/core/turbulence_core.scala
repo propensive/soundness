@@ -113,6 +113,15 @@ extension (consume stream: (Stream[Text] over Credit)^)
 
     stream.via(lineSeparation).asInstanceOf[(Stream[IArray[Text]] over Credit)^]
 
+extension (text: Text)
+  // Split a whole `Text` into its lines through the SAME `LineSeparation`
+  // duct as the streaming form, driven directly over the value as a single
+  // window (`Duct.feed`) — no stream endpoint, no credit machinery. One
+  // implementation, two drivers.
+  @targetName("delineateText")
+  def delineate(using lineSeparation: LineSeparation, buffering: Buffering): IArray[Text] =
+    Duct.feed(text, LineSeparation.lines.duct(lineSeparation))
+
 extension (consume stream: (Stream[Data] over Credit)^)
   // Split a byte stream into its lines: character decoding under the ambient
   // `CharDecoder`, then line splitting as above.
