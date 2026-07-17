@@ -57,6 +57,38 @@ object Tests extends Suite(m"Caesura tests"):
         t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to(List)
       . assert(_ == List(t"alpha", t"beta"))
 
+    suite(m"Direct parsing"):
+      import dsvFormats.csvFormat
+
+      test(m"read a single record directly"):
+        t"hello,world".read[DirectFoo in Dsv]
+      . assert(_ == DirectFoo(t"hello", t"world"))
+
+      test(m"read every row as a List directly"):
+        t"a,b\nc,d\ne,f".read[List[DirectFoo] in Dsv]
+      . assert(_ == List(DirectFoo(t"a", t"b"), DirectFoo(t"c", t"d"), DirectFoo(t"e", t"f")))
+
+      test(m"typed rows stream one value per row"):
+        t"x,1\ny,2".source[Text].rowsOf[DirectStat].map(_.count).to(List)
+      . assert(_ == List(1, 2))
+
+      test(m"direct read locates fields by heading"):
+        import dsvFormats.csvWithHeaderFormat
+        t"count,name\n3,alpha".read[DirectStat in Dsv]
+      . assert(_ == DirectStat(t"alpha", 3, Unset))
+
+      test(m"a short row parses a trailing Optional to Unset"):
+        t"z,9".read[DirectStat in Dsv]
+      . assert(_ == DirectStat(t"z", 9, Unset))
+
+      test(m"a present trailing Optional parses positionally"):
+        t"z,9,note".read[DirectStat in Dsv]
+      . assert(_ == DirectStat(t"z", 9, t"note"))
+
+      test(m"quoted cells with embedded newlines parse directly"):
+        t"\"1\n2\",x".read[DirectFoo in Dsv]
+      . assert(_ == DirectFoo(t"1\n2", t"x"))
+
     suite(m"Parsing tests"):
       import dsvFormats.csvFormat
 
@@ -353,6 +385,13 @@ object Tests extends Suite(m"Caesura tests"):
     AccrualTests()
 
 case class Foo(one: Text, two: Text)
+case class DirectFoo(one: Text, two: Text)
+object DirectFoo:
+  given parsable: DirectFoo is Dsv.Parsable = Dsv.Parsable.derived
+
+case class DirectStat(name: Text, count: Int, note: Optional[Text])
+object DirectStat:
+  given parsable: DirectStat is Dsv.Parsable = Dsv.Parsable.derived
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
 case class Quux(name: Text, greeting: Text)
 case class Greeting(word: Text, name: Optional[Text])

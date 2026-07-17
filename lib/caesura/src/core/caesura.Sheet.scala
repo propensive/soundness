@@ -152,6 +152,26 @@ object Sheet:
   // Constructed in a helper: a local binding of the fresh parser would hide it
   // from the anonymous class (the statement rule); consume parameters carry
   // explicit capture sets and hide nothing.
+  // A token reader for direct (AST-free) parsing, over a fresh parser: the
+  // `Dsv.Parsable` counterpart of `parseRows`. Same rim discipline as above.
+  private[caesura] def directReader(consume stream: (Stream[Text] over Credit)^)
+    ( using format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+  :   DsvReader^ =
+
+    val block = buffering.capacity(Substrate.Chars)
+    given sealedTactic: Tactic[DsvError] = caps.unsafe.unsafeAssumePure(tactic)
+
+    DsvReader(format = format, tactic = caps.unsafe.unsafeAssumePure(tactic), parser =
+      new Parser(() => stream.refill(Credit(block)) match
+        case count: Int =>
+          val window = stream.window(using Unsafe)
+          val text = stream.addressable.materialize(window, stream.start, count)
+          stream.skip(count)
+          text
+
+        case _ =>
+          Unset))
+
   private def rowIterator(consume parser: Parser^): Iterator[Dsv]^ =
     new Iterator[Dsv]:
       // Untracked: a stdlib `Iterator` cannot extend `Stateful`; the fields
@@ -176,7 +196,7 @@ object Sheet:
         row
 
 
-  private class Parser(load: () => Optional[Text])
+  private[caesura] class Parser(load: () => Optional[Text])
     ( using format: DsvFormat, tactic: Tactic[DsvError] )
   extends caps.ExclusiveCapability, caps.Stateful:
     private var current: String = ""
@@ -217,19 +237,31 @@ object Sheet:
       cellsBuf += Text(builder.toString.nn)
       builder.setLength(0)
 
-    update private def emitRow(): Dsv =
+    // The completed row's cells remain in `cellsBuf` (reused across rows):
+    // the direct parser reads them in place; `materialize()` copies them out
+    // for the `Dsv` row path.
+    update private def endRow(): Unit =
+      rowOrdinal = rowOrdinal.next
+
+    private[caesura] def cellCount: Int = cellsBuf.length
+
+    private[caesura] def cellAt(index: Int): Optional[Text] =
+      if index >= 0 && index < cellsBuf.length then cellsBuf(index) else Unset
+
+    private[caesura] def columnIndex(name: Text): Optional[Int] =
+      headings.let(_.at(name))
+
+    private[caesura] def materialize(): Dsv =
       val n = cellsBuf.length
       val arr = new Array[Text](n)
       cellsBuf.copyToArray(arr)
-      cellsBuf.clear()
-      rowOrdinal = rowOrdinal.next
       Dsv(IArray.unsafeFromArray(arr), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
     // bulk-appending the run of regular characters in one operation, then
-    // dispatch on the trigger char. Returns Unset to continue parsing or a
-    // Dsv when a row has just been closed.
-    update private def scanFresh(): Optional[Dsv] =
+    // dispatch on the trigger char. Returns true when a row has just been
+    // closed (its cells left in `cellsBuf`).
+    update private def scanFresh(): Boolean =
       val str = current
       val len = currentLen
       val d = delim
@@ -246,7 +278,7 @@ object Sheet:
 
           if ch == d then
             closeCell()
-            return Unset
+            return false
           else if ch == q then
             if builder.length > 0 then
               val reason = DsvError.Reason.MisplacedQuote
@@ -259,18 +291,19 @@ object Sheet:
               raise(DsvError(format, reason, row, cell, position))
 
             state = State.Quoted
-            return Unset
+            return false
           else
-            if cellsBuf.nil && builder.length == 0 then return Unset
+            if cellsBuf.nil && builder.length == 0 then return false
             else
               closeCell()
-              return emitRow()
+              endRow()
+              return true
 
         p += 1
 
       if p > s then builder.append(str, s, p)
       pos = p
-      Unset
+      false
 
     // Scan ahead in Quoted state for the next quote, bulk-appending all other
     // characters (including delimiters and newlines) verbatim.
@@ -289,64 +322,68 @@ object Sheet:
       else
         pos = p
 
-    update private def handleDoubleQuoted(): Optional[Dsv] =
+    update private def handleDoubleQuoted(): Boolean =
       val ch = current.charAt(pos)
       pos += 1
 
       if ch == quoteChar then
         builder.append(quoteChar)
         state = State.Quoted
-        Unset
+        false
       else if ch == delim then
         closeCell()
         state = State.Fresh
-        Unset
+        false
       else if ch == '\n' || ch == '\r' then
         closeCell()
         state = State.Fresh
-        emitRow()
+        endRow()
+        true
       else
         builder.append(ch)
-        Unset
+        false
 
-    update private def parseRow(): Optional[Dsv] =
+    // Parse the next row into `cellsBuf`, returning false at the end of the
+    // input. The previous row's cells are discarded on entry.
+    private[caesura] update def advance(): Boolean =
+      cellsBuf.clear()
+
       while loadChunk() do
-        val emitted: Optional[Dsv] = state match
+        val complete: Boolean = state match
           case State.Fresh        => scanFresh()
-          case State.Quoted       => scanQuoted(); Unset
+          case State.Quoted       => scanQuoted(); false
           case State.DoubleQuoted => handleDoubleQuoted()
 
-        emitted match
-          case row: Dsv => return row
-          case _        => ()
+        if complete then return true
 
       if cellsBuf.nonEmpty || builder.length > 0 then
         closeCell()
-        emitRow()
+        endRow()
+        true
       else
-        Unset
+        false
 
-    // The next data row, or `Unset` at the end of the input. When the format
-    // has a header, the first parsed row is consumed into `headings` so every
-    // data row carries the name→index map.
-    update def nextRow(): Optional[Dsv] = parseRow() match
-      case row: Dsv =>
+    // Advance to the next DATA row: when the format has a header, the first
+    // parsed row is consumed into `headings` so data rows can be addressed by
+    // column name.
+    private[caesura] update def advanceData(): Boolean =
+      if advance() then
         if isHeader && headings.absent then
-          val data = row.data
           val mapBuilder = Map.newBuilder[Text, Int]
           var i = 0
 
-          while i < data.length do
-            mapBuilder += data(i) -> i
+          while i < cellsBuf.length do
+            mapBuilder += cellsBuf(i) -> i
             i += 1
 
           headings = mapBuilder.result()
-          nextRow()
-        else
-          row
+          advanceData()
+        else true
+      else false
 
-      case _ =>
-        Unset
+    // The next data row, or `Unset` at the end of the input.
+    update def nextRow(): Optional[Dsv] =
+      if advanceData() then materialize() else Unset
 
 // A fully-instantiated sheet of DSV data: every row is in memory, replayable
 // and indexable. The streaming counterpart is `stream.rows`, an
