@@ -1181,17 +1181,21 @@ private[turbulence] final class Deflater(level0: Int, nowrap: Boolean):
         matchIndex += 1
 
         // We check for insufficient lookahead only every 8th comparison; the 256th check will be
-        // made at strstart+258.
-        def compare(): Boolean =
-          scan += 1
-          matchIndex += 1
-          window(scan) == window(matchIndex)
-
+        // made at strstart+258. Written as an explicit loop (not a closure) so `scan` and
+        // `matchIndex` stay unboxed.
         var go = true
 
         while go do
-          go = compare() && compare() && compare() && compare() && compare() && compare() &&
-            compare() && compare() && scan < strend
+          var group = 0
+          var mismatch = false
+
+          while group < 8 && !mismatch do
+            scan += 1
+            matchIndex += 1
+            if window(scan) != window(matchIndex) then mismatch = true
+            group += 1
+
+          go = !mismatch && scan < strend
 
         len = MaxMatch - (strend - scan)
         scan = strend - MaxMatch

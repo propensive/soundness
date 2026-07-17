@@ -374,10 +374,15 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
     var f = 0      // pointer to copy strings from
 
     // copy input/output information to locals; `leave` restores it and flushes the window
+    val input = z.nextIn
+    val win = s.window
+
     p = z.nextInIndex; n = z.availIn; b = s.bitb; k = s.bitk
     q = s.write; m = if q < s.read then s.read - q - 1 else s.end - q
 
-    def leave(status: Int): Int =
+    // Passing the loop state as parameters (rather than capturing the `var`s) keeps the hot
+    // locals unboxed: captured mutable locals would otherwise be compiled to heap references.
+    def leave(status: Int, b: Int, k: Int, p: Int, n: Int, q: Int): Int =
       s.bitb = b; s.bitk = k
       z.availIn = n; z.totalIn += p - z.nextInIndex; z.nextInIndex = p
       s.write = q
@@ -408,9 +413,9 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
           j = need
 
           while k < j do
-            if n != 0 then r = ZOk else return leave(r)
+            if n != 0 then r = ZOk else return leave(r, b, k, p, n, q)
             n -= 1
-            b |= (z.nextIn(p) & 0xff) << k
+            b |= (input(p) & 0xff) << k
             p += 1
             k += 8
 
@@ -434,15 +439,15 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
             mode = Badcode // invalid code
             z.msg = "invalid literal/length code"
             r = ZDataError
-            return leave(r)
+            return leave(r, b, k, p, n, q)
 
         case Lenext => // i: getting length extra (have base)
           j = get
 
           while k < j do
-            if n != 0 then r = ZOk else return leave(r)
+            if n != 0 then r = ZOk else return leave(r, b, k, p, n, q)
             n -= 1
-            b |= (z.nextIn(p) & 0xff) << k
+            b |= (input(p) & 0xff) << k
             p += 1
             k += 8
 
@@ -459,9 +464,9 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
           j = need
 
           while k < j do
-            if n != 0 then r = ZOk else return leave(r)
+            if n != 0 then r = ZOk else return leave(r, b, k, p, n, q)
             n -= 1
-            b |= (z.nextIn(p) & 0xff) << k
+            b |= (input(p) & 0xff) << k
             p += 1
             k += 8
 
@@ -481,15 +486,15 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
             mode = Badcode // invalid code
             z.msg = "invalid distance code"
             r = ZDataError
-            return leave(r)
+            return leave(r, b, k, p, n, q)
 
         case Distext => // i: getting distance extra
           j = get
 
           while k < j do
-            if n != 0 then r = ZOk else return leave(r)
+            if n != 0 then r = ZOk else return leave(r, b, k, p, n, q)
             n -= 1
-            b |= (z.nextIn(p) & 0xff) << k
+            b |= (input(p) & 0xff) << k
             p += 1
             k += 8
 
@@ -524,14 +529,14 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
                 if m == 0 then bail = true
 
             if !bail then
-              s.window(q) = s.window(f)
+              win(q) = win(f)
               q += 1
               f += 1
               m -= 1
               if f == s.end then f = 0
               len -= 1
 
-          if bail then return leave(r)
+          if bail then return leave(r, b, k, p, n, q)
           mode = Start
 
         case Lit => // o: got literal, waiting for output space
@@ -550,10 +555,10 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
                 q = 0
                 m = if q < s.read then s.read - q - 1 else s.end - q
 
-              if m == 0 then return leave(r)
+              if m == 0 then return leave(r, b, k, p, n, q)
 
           r = ZOk
-          s.window(q) = lit.toByte
+          win(q) = lit.toByte
           q += 1
           m -= 1
           mode = Start
@@ -569,20 +574,20 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
           q = s.write
           m = if q < s.read then s.read - q - 1 else s.end - q
 
-          if s.read != s.write then return leave(r)
+          if s.read != s.write then return leave(r, b, k, p, n, q)
           mode = End
 
         case End =>
           r = ZStreamEnd
-          return leave(r)
+          return leave(r, b, k, p, n, q)
 
         case Badcode => // x: got error
           r = ZDataError
-          return leave(r)
+          return leave(r, b, k, p, n, q)
 
         case _ =>
           r = ZStreamError
-          return leave(r)
+          return leave(r, b, k, p, n, q)
 
     ZStreamError // unreachable
 
@@ -608,6 +613,9 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
     var r = 0       // copy source pointer
     var tpIndexT3 = 0 // (tpIndex + t)*3
 
+    val input = z.nextIn
+    val win = s.window
+
     // load input, output, bit values
     p = z.nextInIndex; n = z.availIn; b = s.bitb; k = s.bitk
     q = s.write; m = if q < s.read then s.read - q - 1 else s.end - q
@@ -616,14 +624,15 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
     val ml = inflateMask(bl) // mask for literal/length tree
     val md = inflateMask(bd) // mask for distance tree
 
-    def leave(status: Int): Int =
-      c = z.availIn - n
-      c = if (k >> 3) < c then k >> 3 else c
-      n += c
-      p -= c
-      k -= c << 3
-      s.bitb = b; s.bitk = k
-      z.availIn = n; z.totalIn += p - z.nextInIndex; z.nextInIndex = p
+    // Parameters rather than captures, to keep the hot locals unboxed (see `proc`).
+    def leave(status: Int, b: Int, k0: Int, p0: Int, n0: Int, q: Int): Int =
+      var c0 = z.availIn - n0
+      c0 = if (k0 >> 3) < c0 then k0 >> 3 else c0
+      val n1 = n0 + c0
+      val p1 = p0 - c0
+      val k1 = k0 - (c0 << 3)
+      s.bitb = b; s.bitk = k1
+      z.availIn = n1; z.totalIn += p1 - z.nextInIndex; z.nextInIndex = p1
       s.write = q
       status
 
@@ -632,7 +641,7 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
       // get literal/length code
       while k < 20 do // max bits for literal/length code
         n -= 1
-        b |= (z.nextIn(p) & 0xff) << k
+        b |= (input(p) & 0xff) << k
         p += 1
         k += 8
 
@@ -645,7 +654,7 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
       if e == 0 then
         b >>= tp(tpIndexT3 + 1)
         k -= tp(tpIndexT3 + 1)
-        s.window(q) = tp(tpIndexT3 + 2).toByte
+        win(q) = tp(tpIndexT3 + 2).toByte
         q += 1
         m -= 1
       else
@@ -664,7 +673,7 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
             // decode distance base of block to copy
             while k < 15 do // max bits for distance code
               n -= 1
-              b |= (z.nextIn(p) & 0xff) << k
+              b |= (input(p) & 0xff) << k
               p += 1
               k += 8
 
@@ -686,7 +695,7 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
 
                 while k < e do // get extra bits (up to 13)
                   n -= 1
-                  b |= (z.nextIn(p) & 0xff) << k
+                  b |= (input(p) & 0xff) << k
                   p += 1
                   k += 8
 
@@ -701,11 +710,11 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
                   r = q - d
 
                   if q - r > 0 && 2 > (q - r) then
-                    s.window(q) = s.window(r); q += 1; r += 1 // minimum count is three,
-                    s.window(q) = s.window(r); q += 1; r += 1 // so unroll loop a little
+                    win(q) = win(r); q += 1; r += 1 // minimum count is three,
+                    win(q) = win(r); q += 1; r += 1 // so unroll loop a little
                     c -= 2
                   else
-                    System.arraycopy(s.window, r, s.window, q, 2)
+                    System.arraycopy(win, r, win, q, 2)
                     q += 2
                     r += 2
                     c -= 2
@@ -720,9 +729,9 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
                     c -= e
 
                     if q - r > 0 && e > (q - r) then
-                      while { s.window(q) = s.window(r); q += 1; r += 1; e -= 1; e != 0 } do ()
+                      while { win(q) = win(r); q += 1; r += 1; e -= 1; e != 0 } do ()
                     else
-                      System.arraycopy(s.window, r, s.window, q, e)
+                      System.arraycopy(win, r, win, q, e)
                       q += e
                       r += e
                       e = 0
@@ -731,9 +740,9 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
 
                 // copy all or what's left
                 if q - r > 0 && c > (q - r) then
-                  while { s.window(q) = s.window(r); q += 1; r += 1; c -= 1; c != 0 } do ()
+                  while { win(q) = win(r); q += 1; r += 1; c -= 1; c != 0 } do ()
                 else
-                  System.arraycopy(s.window, r, s.window, q, c)
+                  System.arraycopy(win, r, win, q, c)
                   q += c
                   r += c
                   c = 0
@@ -746,7 +755,7 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
                 e = tp(tpIndexT3)
               else
                 z.msg = "invalid distance code"
-                return leave(ZDataError)
+                return leave(ZDataError, b, k, p, n, q)
 
             innerDone = true
           else if (e & 64) == 0 then
@@ -758,21 +767,21 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
             if e == 0 then
               b >>= tp(tpIndexT3 + 1)
               k -= tp(tpIndexT3 + 1)
-              s.window(q) = tp(tpIndexT3 + 2).toByte
+              win(q) = tp(tpIndexT3 + 2).toByte
               q += 1
               m -= 1
               innerDone = true
           else if (e & 32) != 0 then
-            return leave(ZStreamEnd)
+            return leave(ZStreamEnd, b, k, p, n, q)
           else
             z.msg = "invalid literal/length code"
-            return leave(ZDataError)
+            return leave(ZDataError, b, k, p, n, q)
 
       m >= 258 && n >= 10
     do ()
 
     // not enough input or output — restore pointers and return
-    leave(ZOk)
+    leave(ZOk, b, k, p, n, q)
 
 private[turbulence] object InfBlocks:
   final val Many = 1440
@@ -842,7 +851,8 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
     p = z.nextInIndex; n = z.availIn; b = bitb; k = bitk
     q = write; m = if q < read then read - q - 1 else end - q
 
-    def leave(status: Int): Int =
+    // Parameters rather than captures, to keep the hot locals unboxed (see `InfCodes.proc`).
+    def leave(status: Int, b: Int, k: Int, p: Int, n: Int, q: Int): Int =
       bitb = b; bitk = k
       z.availIn = n; z.totalIn += p - z.nextInIndex; z.nextInIndex = p
       write = q
@@ -853,7 +863,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
       mode match
         case Type =>
           while k < 3 do
-            if n != 0 then r = ZOk else return leave(r)
+            if n != 0 then r = ZOk else return leave(r, b, k, p, n, q)
             n -= 1
             b |= (z.nextIn(p) & 0xff) << k
             p += 1
@@ -888,11 +898,11 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
               mode = Bad
               z.msg = "invalid block type"
               r = ZDataError
-              return leave(r)
+              return leave(r, b, k, p, n, q)
 
         case Lens =>
           while k < 32 do
-            if n != 0 then r = ZOk else return leave(r)
+            if n != 0 then r = ZOk else return leave(r, b, k, p, n, q)
             n -= 1
             b |= (z.nextIn(p) & 0xff) << k
             p += 1
@@ -902,7 +912,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
             mode = Bad
             z.msg = "invalid stored block lengths"
             r = ZDataError
-            return leave(r)
+            return leave(r, b, k, p, n, q)
 
           left = b & 0xffff
           b = 0 // dump bits
@@ -910,7 +920,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           mode = if left != 0 then Stored else if last != 0 then Dry else Type
 
         case Stored =>
-          if n == 0 then return leave(r)
+          if n == 0 then return leave(r, b, k, p, n, q)
 
           var bail = false
 
@@ -931,7 +941,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
 
               if m == 0 then bail = true
 
-          if bail then return leave(r)
+          if bail then return leave(r, b, k, p, n, q)
           r = ZOk
 
           t = left
@@ -947,7 +957,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
 
         case Table =>
           while k < 14 do
-            if n != 0 then r = ZOk else return leave(r)
+            if n != 0 then r = ZOk else return leave(r, b, k, p, n, q)
             n -= 1
             b |= (z.nextIn(p) & 0xff) << k
             p += 1
@@ -960,7 +970,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
             mode = Bad
             z.msg = "too many length or distance symbols"
             r = ZDataError
-            return leave(r)
+            return leave(r, b, k, p, n, q)
 
           t = 258 + (t & 0x1f) + ((t >> 5) & 0x1f)
 
@@ -993,7 +1003,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
               b >>>= 3
               k -= 3
 
-          if bail then return leave(r)
+          if bail then return leave(r, b, k, p, n, q)
 
           while index < 19 do
             blens(border(index)) = 0
@@ -1005,7 +1015,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           if t != ZOk then
             r = t
             if r == ZDataError then mode = Bad
-            return leave(r)
+            return leave(r, b, k, p, n, q)
 
           index = 0
           mode = Dtree
@@ -1066,7 +1076,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
                       mode = Bad
                       z.msg = "invalid bit length repeat"
                       r = ZDataError
-                      return leave(r)
+                      return leave(r, b, k, p, n, q)
 
                     val cv = if c == 16 then blens(i - 1) else 0
 
@@ -1074,7 +1084,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
 
                     index = i
 
-          if bail then return leave(r)
+          if bail then return leave(r, b, k, p, n, q)
 
           tb(0) = -1
           bl(0) = 9 // must be <= 9 for lookahead assumptions
@@ -1087,7 +1097,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           if t != ZOk then
             if t == ZDataError then mode = Bad
             r = t
-            return leave(r)
+            return leave(r, b, k, p, n, q)
 
           codes.init(bl(0), bd(0), hufts, tli(0), hufts, tdi(0))
           mode = Codes
@@ -1112,20 +1122,20 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           r = inflateFlush(r)
           q = write
           m = if q < read then read - q - 1 else end - q
-          if read != write then return leave(r)
+          if read != write then return leave(r, b, k, p, n, q)
           mode = Done
 
         case Done =>
           r = ZStreamEnd
-          return leave(r)
+          return leave(r, b, k, p, n, q)
 
         case Bad =>
           r = ZDataError
-          return leave(r)
+          return leave(r, b, k, p, n, q)
 
         case _ =>
           r = ZStreamError
-          return leave(r)
+          return leave(r, b, k, p, n, q)
 
     ZStreamError // unreachable
 
