@@ -277,6 +277,33 @@ object Tests extends Suite(m"Zeppelin tests"):
         capture[ZipError](archive.open[Zip](Write) { () }).reason
       . assert(_ == ZipError.Reason.WriteUnsupported)
 
+    suite(m"JAR archives"):
+      val manifestText =
+        t"Manifest-Version: 1.0\r\nMain-Class: com.example.\r\n Main\r\nBuilt-By: soundness\r\n\r\nName: ignored/Section\r\nSealed: true\r\n"
+
+      val jarArchive = writeZip
+        ( t"app.jar",
+          entry(t"META-INF/MANIFEST.MF", manifestText),
+          entry(t"com/example/Main.class", t"bytecode") )
+
+      test(m"A JAR's manifest main attributes are parsed"):
+        jarArchive.open[Jar]():
+          zip.manifest
+      . assert(_ == Map
+          ( t"Manifest-Version" -> t"1.0",
+            t"Main-Class"       -> t"com.example.Main",
+            t"Built-By"         -> t"soundness" ))
+
+      test(m"A JAR handle still lists entries like a Zip"):
+        jarArchive.open[Jar]():
+          zip.entries.to(List).map(_.ref.encode).to(Set)
+      . assert(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
+
+      test(m"An archive without a manifest has no attributes"):
+        writeZip(t"plain.jar", entry(t"a.txt", t"alpha")).open[Jar]():
+          zip.manifest
+      . assert(_ == Map())
+
     suite(m"Interoperability with the JDK writer"):
       test(m"reads entry names from an externally (JDK) written archive"):
         names(readEntries(writeRawZip(t"foreign.zip", t"one.txt", t"two.txt")))
