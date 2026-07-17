@@ -1,3 +1,7 @@
 - reads TrueType and OpenType font files
 - can read from any [Turbulence](https://github.com/propensive/turbulence/) source
 - access font metrics and calculate widths of individual glyphs or strings of text
+- chooses the best Unicode character mapping, supporting all common `cmap` formats
+- interprets the `head`, `hhea`, `hmtx`, `maxp`, `post`, `OS/2`, `name`, `loca` and `glyf` tables
+- decodes font names, including the PostScript and family names
+- subsets fonts to the glyphs a set of characters needs, producing complete, valid font files

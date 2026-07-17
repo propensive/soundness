@@ -33,20 +33,83 @@
 package phoenicia
 
 import anticipation.*
-import fulminate.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
 
-object FontError:
-  enum Reason(val number: Int) extends Clarification:
-    case MissingTable(tag: TableTag)  extends Reason(1)
-    case UnknownFormat(format: Int)   extends Reason(2)
-    case MagicNumber                  extends Reason(3)
-    case MissingEncoding              extends Reason(4)
+// Serialises a table set as an sfnt font file: the header, a directory sorted by tag, and the
+// tables themselves, four-byte aligned and zero-padded, with per-table checksums computed and
+// head's checksum adjustment set so the whole file sums to the specified constant.
+private[phoenicia] object Sfnt:
+  def assemble(version: Data, tables: List[(Text, Data)]): Data =
+    def padded(length: Int): Int = (length + 3)/4*4
 
-  given communicable: Reason is Communicable =
-    case Reason.MissingTable(tag)     => m"the table ${tag.text} was not found"
-    case Reason.UnknownFormat(format) => m"the table contains data in unknown format $format"
-    case Reason.MagicNumber           => m"the font did not contain expected check data"
-    case Reason.MissingEncoding       => m"the font contains no usable character encoding"
+    val sorted = tables.sortBy(_(0).s)
+    val count = sorted.length
+    val entrySelector = 31 - Integer.numberOfLeadingZeros(count)
+    val searchRange = (1 << entrySelector)*16
+    val tablesStart = 12 + count*16
 
-case class FontError(reason: FontError.Reason)(using Diagnostics)
-extends Error(564, reason.number)(m"the font could not be read because $reason")
+    val total = tablesStart + sorted.sumBy: entry =>
+      padded(entry(1).length)
+
+    val buffer = new Array[Byte](total)
+
+    def putU16(position: Int, value: Int): Unit =
+      buffer(position) = (value >> 8).toByte
+      buffer(position + 1) = value.toByte
+
+    def putU32(position: Int, value: Long): Unit =
+      buffer(position) = (value >> 24).toByte
+      buffer(position + 1) = (value >> 16).toByte
+      buffer(position + 2) = (value >> 8).toByte
+      buffer(position + 3) = value.toByte
+
+    // The sum of big-endian 32-bit words, over the length rounded up to a word boundary —
+    // safe because tables are zero-padded in place.
+    def checksum(start: Int, length: Int): Long =
+      var sum = 0L
+      var position = start
+      val end = start + padded(length)
+
+      while position < end do
+        val word =
+          ((buffer(position) & 0xffL) << 24) | ((buffer(position + 1) & 0xffL) << 16) |
+            ((buffer(position + 2) & 0xffL) << 8) | (buffer(position + 3) & 0xffL)
+
+        sum = (sum + word) & 0xffffffffL
+        position += 4
+
+      sum
+
+    (0 until 4).each: index =>
+      buffer(index) = version(index)
+
+    putU16(4, count)
+    putU16(6, searchRange)
+    putU16(8, entrySelector)
+    putU16(10, count*16 - searchRange)
+
+    var offset = tablesStart
+    var headOffset = -1
+
+    sorted.indices.each: index =>
+      val (tag, table) = sorted(index)
+      val directory = 12 + index*16
+      val tagBytes = tag.s.getBytes("US-ASCII").nn
+
+      (0 until 4).each: position =>
+        buffer(directory + position) = tagBytes(position)
+
+      System.arraycopy(table.mutable(using Unsafe), 0, buffer, offset, table.length)
+      putU32(directory + 4, checksum(offset, table.length))
+      putU32(directory + 8, offset.toLong)
+      putU32(directory + 12, table.length.toLong)
+      if tag == t"head" then headOffset = offset
+      offset += padded(table.length)
+
+    // The caller supplies head with its adjustment zeroed, so the directory checksum above
+    // is the spec's zero-adjusted one; the adjustment is then patched in afterwards.
+    if headOffset >= 0 then putU32(headOffset + 8, (0xb1b0afbaL - checksum(0, total)) & 0xffffffffL)
+
+    buffer.immutable(using Unsafe)
