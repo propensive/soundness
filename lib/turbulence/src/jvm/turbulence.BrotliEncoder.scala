@@ -94,6 +94,9 @@ private[turbulence] object BrotliEncoder:
   private final val MinMatch = 4
   private final val HashBits = 17
   private final val HashSize = 1 << HashBits
+  private final val RingSize = 1 << 18 // hash-chain ring; bounds chain memory for large inputs
+  private final val MaxChain = 64      // longest chain walk per position
+  private final val NiceLength = 128   // stop searching at a match this good
 
   def encode(input: Array[Byte], length: Int): Array[Byte] =
     if length == 0 then
@@ -103,18 +106,42 @@ private[turbulence] object BrotliEncoder:
       writer.writeBits(1, 1) // ISLASTEMPTY = 1
       writer.align()
       writer.result()
-    else
+    else if length > MaxMetaBlock then
       val storedWriter = BrotliBitWriter()
       storeAll(storedWriter, input, length)
-      val stored = storedWriter.result()
+      storedWriter.result()
+    else
+      val writer = BrotliBitWriter()
+      compressBlock(writer, input, length)
+      val compressed = writer.result()
 
-      if length > MaxMetaBlock then stored else
-        val writer = BrotliBitWriter()
-        compressBlock(writer, input, length)
-        val compressed = writer.result()
-        // Never expand beyond the stored framing: for tiny or incompressible inputs the
-        // Huffman-tree headers can cost more than they save.
-        if compressed.length < stored.length then compressed else stored
+      // Never expand beyond the stored framing: for tiny or incompressible inputs the
+      // Huffman-tree headers can cost more than they save. The stored size is computed
+      // analytically, so the stored form is only materialized when it wins.
+      if compressed.length < storedSize(length) then compressed
+      else
+        val storedWriter = BrotliBitWriter()
+        storeAll(storedWriter, input, length)
+        storedWriter.result()
+
+  // The exact byte length `storeAll` would produce, without producing it.
+  private def storedSize(length: Int): Int =
+    var bits = 1 // WBITS
+    var pos = 0
+
+    while pos < length do
+      val chunk = Math.min(length - pos, MaxMetaBlock)
+      val value = chunk - 1
+      val nibbles = if value < (1 << 16) then 4 else if value < (1 << 20) then 5 else 6
+      bits += 1 + 2 + nibbles*4 + 1
+      bits = (bits + 7) & ~7 // align
+      bits += chunk*8
+      pos += chunk
+
+    bits += 2
+    bits = (bits + 7) & ~7 // final align
+
+    bits >>> 3
 
   // Fallback: frame the payload as uncompressed meta-blocks (see the class comment on RFC framing).
   private def storeAll(writer: BrotliBitWriter, input: Array[Byte], length: Int): Unit =
@@ -341,42 +368,61 @@ private[turbulence] object BrotliEncoder:
         i += 1
 
   // --- Length/distance prefix codes --------------------------------------------------------------
+  // Scanning upward exits immediately for the common short lengths.
   private def lengthCode(offsets: Array[Int], nbits: Array[Int], length: Int): Int =
-    var i = offsets.length - 1
-    while i > 0 && offsets(i) > length do i -= 1
+    var i = 0
+    while i + 1 < offsets.length && offsets(i + 1) <= length do i += 1
     i
 
-  // Distance symbol and extra bits for a backward distance, with NPOSTFIX = 0, NDIRECT = 0.
+  // Distance symbol and extra bits for a backward distance, with NPOSTFIX = 0, NDIRECT = 0. The
+  // symbol for distance d covers d+3 in [(2+b) << n, (3+b) << n), located directly from the bit
+  // width of d+3.
   private def distanceCode(distance: Int): Long =
-    var j = 0
-
-    while j < 48 do
-      val n = (j >> 1) + 1
-      val b = j & 1
-      val low = ((2 + b) << n) - 3
-
-      if distance >= low && distance <= low + (1 << n) - 1 then
-        val extra = distance - low
-        return (((16 + j).toLong) << 40) | ((n.toLong) << 32) | (extra.toLong & 0xffffffffL)
-
-      j += 1
-
-    -1L
+    val x = distance + 3
+    val n = 30 - Integer.numberOfLeadingZeros(x) // 31 - nlz(x) - 1
+    val b = if x >= (3 << n) then 1 else 0
+    val j = ((n - 1) << 1) + b
+    val low = ((2 + b) << n) - 3
+    val extra = distance - low
+    ((16 + j).toLong << 40) | (n.toLong << 32) | (extra.toLong & 0xffffffffL)
 
   // --- Compressed meta-block ---------------------------------------------------------------------
   private def compressBlock(writer: BrotliBitWriter, input: Array[Byte], length: Int): Unit =
     val windowBits = if length <= (1 << 22) then 22 else 24
     val maxDistance = (1 << windowBits) - 16
 
-    // LZ77 command generation (greedy, single-cell hash of 4-byte prefixes).
-    val hashTable = new Array[Int](HashSize)
+    // LZ77 command generation: greedy hash-chain search over 4-byte prefixes. The chain links
+    // live in a ring of positions (like zlib's `prev` array), bounded by `RingSize`; entries that
+    // alias across the ring appear as non-decreasing positions and terminate the walk. Commands
+    // accumulate in growable parallel `Int` arrays (unboxed, unlike an `ArrayBuffer[Int]`).
+    val head = new Array[Int](HashSize)
     var h = 0
-    while h < HashSize do { hashTable(h) = -1; h += 1 }
+    while h < HashSize do { head(h) = -1; h += 1 }
 
-    val cmdInsert = scala.collection.mutable.ArrayBuffer[Int]()
-    val cmdLitPos = scala.collection.mutable.ArrayBuffer[Int]()
-    val cmdCopy = scala.collection.mutable.ArrayBuffer[Int]()
-    val cmdDist = scala.collection.mutable.ArrayBuffer[Int]()
+    val ringMask = RingSize - 1
+    val chain = new Array[Int](Math.min(length, RingSize))
+
+    var capacity = 1024
+    var cmdInsert = new Array[Int](capacity)
+    var cmdLitPos = new Array[Int](capacity)
+    var cmdCopy = new Array[Int](capacity)
+    var cmdDist = new Array[Int](capacity)
+    var commands = 0
+
+    def push(insert: Int, litPos: Int, copy: Int, dist: Int): Unit =
+      if commands == capacity then
+        capacity <<= 1
+        val ni = new Array[Int](capacity); System.arraycopy(cmdInsert, 0, ni, 0, commands)
+        val nl = new Array[Int](capacity); System.arraycopy(cmdLitPos, 0, nl, 0, commands)
+        val nc = new Array[Int](capacity); System.arraycopy(cmdCopy, 0, nc, 0, commands)
+        val nd = new Array[Int](capacity); System.arraycopy(cmdDist, 0, nd, 0, commands)
+        cmdInsert = ni; cmdLitPos = nl; cmdCopy = nc; cmdDist = nd
+
+      cmdInsert(commands) = insert
+      cmdLitPos(commands) = litPos
+      cmdCopy(commands) = copy
+      cmdDist(commands) = dist
+      commands += 1
 
     def hashAt(p: Int): Int =
       val v = (input(p) & 0xff) | ((input(p + 1) & 0xff) << 8) | ((input(p + 2) & 0xff) << 16) |
@@ -392,38 +438,58 @@ private[turbulence] object BrotliEncoder:
 
       if pos + MinMatch <= length then
         val hv = hashAt(pos)
-        val candidate = hashTable(hv)
-        hashTable(hv) = pos
+        var candidate = head(hv)
+        chain(pos & ringMask) = candidate
+        head(hv) = pos
 
-        if candidate >= 0 && pos - candidate <= maxDistance then
-          var len = 0
-          while pos + len < length && input(candidate + len) == input(pos + len) do len += 1
+        // Walk the chain for the longest match, newest candidate first.
+        var bestLen = 0
+        var bestDist = 0
+        var depth = MaxChain
 
-          if len >= MinMatch then
-            cmdInsert += pos - literalStart
-            cmdLitPos += literalStart
-            cmdCopy += len
-            cmdDist += pos - candidate
-            var q = pos + 1
-            val end = pos + len
-            while q < end do { if q + MinMatch <= length then hashTable(hashAt(q)) = q; q += 1 }
-            pos = end
-            literalStart = pos
-            matched = true
+        while candidate >= 0 && depth > 0 && pos - candidate <= maxDistance do
+          // Check the byte one past the current best first: cheap rejection of shorter matches.
+          if bestLen == 0 ||
+            (pos + bestLen < length && input(candidate + bestLen) == input(pos + bestLen))
+          then
+            var len = 0
+            while pos + len < length && input(candidate + len) == input(pos + len) do len += 1
+
+            if len > bestLen then
+              bestLen = len
+              bestDist = pos - candidate
+              if len >= NiceLength then depth = 0
+
+          val next = chain(candidate & ringMask)
+          // A non-decreasing link means the ring entry was overwritten by a newer position.
+          candidate = if next >= candidate then -1 else next
+          depth -= 1
+
+        if bestLen >= MinMatch then
+          push(pos - literalStart, literalStart, bestLen, bestDist)
+          var q = pos + 1
+          val end = pos + bestLen
+
+          while q < end do
+            if q + MinMatch <= length then
+              val qh = hashAt(q)
+              chain(q & ringMask) = head(qh)
+              head(qh) = q
+
+            q += 1
+
+          pos = end
+          literalStart = pos
+          matched = true
 
       if !matched then pos += 1
 
-    if literalStart < length then
-      cmdInsert += length - literalStart
-      cmdLitPos += literalStart
-      cmdCopy += 0
-      cmdDist += 0
+    if literalStart < length then push(length - literalStart, literalStart, 0, 0)
 
     // Histograms.
     val litHist = new Array[Int](256)
     val cmdHist = new Array[Int](704)
     val distHist = new Array[Int](64)
-    val commands = cmdInsert.length
     var c = 0
 
     while c < commands do
