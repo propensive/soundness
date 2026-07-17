@@ -124,3 +124,69 @@ object Tests extends Suite(m"Gastronomy tests"):
         test(m"deriveKey, inputLen=${vector.inputLen}"):
           Blake3.deriveKey(context, input, 131).serialize[Hex]
         . assert(_ == expectedDerived)
+
+    // The pure-Scala hash implementations (used off the JVM, where `MessageDigest` is absent) are
+    // exercised directly here against the NIST/RFC "abc" vectors and cross-validated against the
+    // JDK for random inputs across the block-boundary sizes.
+    suite(m"Pure hash implementations"):
+      def hex(digestion: Digestion, message: Text): Text =
+        digestion.append(message.s.getBytes("UTF-8").nn.immutable(using Unsafe))
+        digestion.digest().serialize[Hex]
+
+      test(m"pure SHA-256 of \"abc\""):
+        hex(PureHashes.sha2(256), t"abc")
+      . assert(_ == t"BA7816BF8F01CFEA414140DE5DAE2223B00361A396177A9CB410FF61F20015AD")
+
+      test(m"pure SHA-224 of \"abc\""):
+        hex(PureHashes.sha2(224), t"abc")
+      . assert(_ == t"23097D223405D8228642A477BDA255B32AADBCE4BDA0B3F7E36C9DA7")
+
+      test(m"pure SHA-384 of \"abc\""):
+        hex(PureHashes.sha2(384), t"abc")
+      . assert: digest =>
+          digest == t"CB00753F45A35E8BB5A03D699AC65007272C32AB0EDED1631A8B605A43FF5BED"
+              + t"8086072BA1E7CC2358BAECA134C825A7"
+
+      test(m"pure SHA-512 of \"abc\""):
+        hex(PureHashes.sha2(512), t"abc")
+      . assert: digest =>
+          digest == t"DDAF35A193617ABACC417349AE20413112E6FA4E89A97EA20A9EEEE64B55D39A"
+              + t"2192992A274FC1A836BA3C23A3FEEBBD454D4423643CE80E2A9AC94FA54CA49F"
+
+      test(m"pure SHA-1 of \"abc\""):
+        hex(PureHashes.sha1, t"abc")
+      . assert(_ == t"A9993E364706816ABA3E25717850C26C9CD0D89D")
+
+      test(m"pure MD5 of \"abc\""):
+        hex(PureHashes.md5, t"abc")
+      . assert(_ == t"900150983CD24FB0D6963F7D28E17F72")
+
+      // Random inputs at and around the 55/56/63/64/111/112/127/128-byte padding boundaries.
+      val sizes = List(0, 1, 55, 56, 57, 63, 64, 65, 111, 112, 113, 127, 128, 129, 1000)
+
+      sizes.each: size =>
+        val data: Data = IArray.tabulate(size)(i => ((i*31 + 7) & 0xff).toByte)
+
+        def jdk(name: Text): Text =
+          val md = java.security.MessageDigest.getInstance(name.s).nn
+          md.digest(data.mutable(using Unsafe)).nn.immutable(using Unsafe).serialize[Hex]
+
+        def pureHex(digestion: Digestion): Text =
+          digestion.append(data)
+          digestion.digest().serialize[Hex]
+
+        test(m"pure SHA-256 matches the JDK, size=$size"):
+          pureHex(PureHashes.sha2(256))
+        . assert(_ == jdk(t"SHA-256"))
+
+        test(m"pure SHA-512 matches the JDK, size=$size"):
+          pureHex(PureHashes.sha2(512))
+        . assert(_ == jdk(t"SHA-512"))
+
+        test(m"pure SHA-1 matches the JDK, size=$size"):
+          pureHex(PureHashes.sha1)
+        . assert(_ == jdk(t"SHA-1"))
+
+        test(m"pure MD5 matches the JDK, size=$size"):
+          pureHex(PureHashes.md5)
+        . assert(_ == jdk(t"MD5"))

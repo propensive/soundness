@@ -30,55 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package bitumen
+package gastronomy
 
-import anticipation.*
-import aperture.*
-import contingency.*
-import prepositional.*
-import pneumatic.*
-import turbulence.*
-import zephyrine.*
-
-// The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
-// sequential format, so `entries` streams lazily from the underlying source (memoized by the
-// `LazyList`, so revisiting an entry within the scope is free); payloads must be consumed
-// within the scope, while the source remains open.
-class TarHandle private[bitumen] (val entries: LazyList[Tar.Entry])
-extends caps.ExclusiveCapability
-
-class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Openable:
-  type Self = Data
-  type Form = Tar
-  type Operand = TarFlag
-  type Result = TarHandle
-
-  def open[grants <: Grant, result]
-    ( value: Data, mode: Mode granting grants, flags: List[TarFlag] )
-    ( block: ((TarHandle & Granting[grants])^) ?=> result )
-  :   result =
-
-    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
-    val entries = TarHandle.entries(LazyList(value), flags)
-    block(using new TarHandle(entries) with Granting[grants] {})
-
-object TarHandle:
-  private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[TarFlag])
-    ( using Tactic[TarError], Tactic[StreamError], Buffering )
-  :   LazyList[Tar.Entry] =
-
-    flags.headOption match
-      case Some(TarFlag.Gzip)    => Tarfile.read(stream.decompress[Gzip])
-      case Some(TarFlag.Zlib)    => Tarfile.read(stream.decompress[Zlib])
-      case Some(TarFlag.Deflate) => Tarfile.read(stream.decompress[Deflate])
-      case _                     => Tarfile.read(stream)
-
-  private[bitumen] def entries(stream: LazyList[Data], flags: List[TarFlag])
-    ( using Tactic[TarError], Tactic[StreamError] )
-  :   LazyList[Tar.Entry] =
-
-    flags.headOption match
-      case Some(TarFlag.Gzip)    => Tarfile.fromGzip(stream)
-      case Some(TarFlag.Zlib)    => Tarfile.fromZlib(stream)
-      case Some(TarFlag.Deflate) => Tarfile.fromDeflate(stream)
-      case None                  => Tarfile.read(stream)
+// Off the JVM (Scala.js and WASI) there is no `java.security.MessageDigest`, so the
+// "JavaStdlib" provider forwards to the pure-Scala implementations in `SoundnessHashing`. This
+// keeps `import providers.javaStdlibProvider` working identically on every platform — code that
+// selects it gets native hashing on the JVM and the pure port elsewhere, with no source change.
+object JavaStdlibHashing extends Hashing:
+  def md5:  Hashing.Function = SoundnessHashing.md5
+  def sha1: Hashing.Function = SoundnessHashing.sha1
+  def sha2(bits: Int): Hashing.Function = SoundnessHashing.sha2(bits)
+  def crc32: Hashing.Function = SoundnessHashing.crc32

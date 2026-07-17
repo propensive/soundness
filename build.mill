@@ -467,7 +467,7 @@ object soundness extends Toolchain:
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
-    stratiform.binary, stratiform.records, bitumen.core, breviloquence.core, distillate.core,
+    stratiform.binary, stratiform.records, bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
@@ -778,11 +778,19 @@ object beneficence extends Library:
       settings.cc(super.scalacOptions())
 
 object bitumen extends Library:
-  object core extends Component(serpentine.core, turbulence.core, pneumatic.flate, galilei.jvm):
-    override def scalaJs = false // depends on `galilei` (filesystem)
+  // The pure streaming TAR format (over `Data` streams), cross-platform: it needs only galilei's
+  // platform-neutral filesystem *abstraction* (`Tar is Filesystem`) and pure-Scala compression, so
+  // it compiles for Scala.js and WASI as well as the JVM.
+  object core extends Component(serpentine.core, turbulence.core, pneumatic.flate, galilei.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core, galilei.jvm, guillotine.core):
+  // The filesystem-backed operations — opening a path as an archive, building one from a directory,
+  // extracting one to disk — which read and write an actual filesystem through galilei's JVM backend.
+  object jvm extends Component(core, galilei.jvm):
+    override def scalaJs = false
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, jvm, galilei.jvm, guillotine.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -1062,10 +1070,13 @@ object diuretic extends Library:
       settings.cc(super.scalacOptions())
 
 object embarcadero extends Library:
+  // Building and hashing OCI image contents is cross-platform now that `bitumen.core` and
+  // `gastronomy` are, but opening an image from disk (`ImageHandle`) still needs `bitumen.jvm`, so
+  // the module stays JVM-only until it too is split into an in-memory core and a filesystem backend.
   object oci
-      extends Component(bitumen.core, jacinta.core, gastronomy.core, monotonous.core,
+      extends Component(bitumen.core, bitumen.jvm, jacinta.core, gastronomy.core, monotonous.core,
         gesticulate.core, aperture.core, pneumatic.flate):
-    override def scalaJs = false // OCI images; depends on JVM-only `bitumen` (galilei archives)
+    override def scalaJs = false
     override def scalacOptions = Task:
       settings.cc(settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64"))
   object containerd extends Component(obligatory.grpc, cordillera.core, coaxial.core, locomotion.core, anticipation.time, aperture.core):
@@ -1330,8 +1341,13 @@ object galilei extends Library:
       settings.cc(super.scalacOptions())
 
 object gastronomy extends Library:
+  // Hashing works on every platform: the pure-Scala MD5/SHA/CRC-32 implementations (and BLAKE3)
+  // are shared, while the `JavaStdlibHashing` provider is compiled against `java.security` on the
+  // JVM (`core-jvm`, native `MessageDigest`) and against the pure implementations elsewhere
+  // (`core-native`), selected by the `jsSources` platform split.
   object core extends Component(monotonous.core, turbulence.core):
-    override def scalaJs = false // hashing (`java.security` MessageDigest)
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):

@@ -33,52 +33,51 @@
 package bitumen
 
 import anticipation.*
-import aperture.*
 import contingency.*
+import galilei.*
 import prepositional.*
-import pneumatic.*
+import serpentine.*
 import turbulence.*
+import vacuous.*
 import zephyrine.*
 
-// The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
-// sequential format, so `entries` streams lazily from the underlying source (memoized by the
-// `LazyList`, so revisiting an entry within the scope is free); payloads must be consumed
-// within the scope, while the source remains open.
-class TarHandle private[bitumen] (val entries: LazyList[Tar.Entry])
-extends caps.ExclusiveCapability
+import filesystemBackends.virtualMachine
 
-class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Openable:
-  type Self = Data
-  type Form = Tar
-  type Operand = TarFlag
-  type Result = TarHandle
+// Opening a filesystem path or building an archive from disk needs `bitumen.jvm`; re-exported
+// through `soundness.*`, so `path.open[Tar]` and `Tar.Entry(...)` resolve as before on the JVM.
+given openable: [path: Abstractable across Paths to Text]
+=>  ( Tactic[TarError], Tactic[StreamError] )
+=>  ( TarOpenable[path]^ ) =
+  TarOpenable[path]
 
-  def open[grants <: Grant, result]
-    ( value: Data, mode: Mode granting grants, flags: List[TarFlag] )
-    ( block: ((TarHandle & Granting[grants])^) ?=> result )
-  :   result =
+given creatable: [path: Abstractable across Paths to Text]
+=>  Tactic[TarError]
+=>  ( TarBuilder.TarCreatable[path]^ ) =
+  TarBuilder.TarCreatable[path]
 
-    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
-    val entries = TarHandle.entries(LazyList(value), flags)
-    block(using new TarHandle(entries) with Granting[grants] {})
+extension (companion: Tarfile.type)
+  // Build an archive from a directory tree on a filesystem.
+  def from[plane <: Posix: Filesystem](root: Path on plane)
+    ( using DereferenceSymlinks,
+            TraversalOrder,
+            plane is Explorable,
+            Tactic[IoError],
+            Tactic[TarError] )
+  :   Tarfile =
 
-object TarHandle:
-  private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[TarFlag])
-    ( using Tactic[TarError], Tactic[StreamError], Buffering )
-  :   LazyList[Tar.Entry] =
+    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
+      TarFilesystem.entryFor(root, path)
 
-    flags.headOption match
-      case Some(TarFlag.Gzip)    => Tarfile.read(stream.decompress[Gzip])
-      case Some(TarFlag.Zlib)    => Tarfile.read(stream.decompress[Zlib])
-      case Some(TarFlag.Deflate) => Tarfile.read(stream.decompress[Deflate])
-      case _                     => Tarfile.read(stream)
+    Tarfile(entries)
 
-  private[bitumen] def entries(stream: LazyList[Data], flags: List[TarFlag])
-    ( using Tactic[TarError], Tactic[StreamError] )
-  :   LazyList[Tar.Entry] =
+extension (tarfile: Tarfile)
+  // Extract an archive to a directory tree on a filesystem.
+  def extractTo[plane <: Posix: Filesystem](root: Path on plane)
+    ( using CreateNonexistentParents on plane,
+            OverwritePreexisting on plane,
+            Tactic[IoError],
+            Tactic[TarError] )
+  :   Unit =
 
-    flags.headOption match
-      case Some(TarFlag.Gzip)    => Tarfile.fromGzip(stream)
-      case Some(TarFlag.Zlib)    => Tarfile.fromZlib(stream)
-      case Some(TarFlag.Deflate) => Tarfile.fromDeflate(stream)
-      case None                  => Tarfile.read(stream)
+    tarfile.entries.foreach: entry =>
+      TarFilesystem.applyEntry(root, entry)
