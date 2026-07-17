@@ -128,6 +128,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val gzippedInput: Data = input.stream.compress[Gzip].memoize
   lazy val gzippedInputArray: Array[Byte] = gzippedInput.asInstanceOf[Array[Byte]]
 
+  // The same 4 MB pre-compressed with Brotli, for the standalone decompression benchmark.
+  lazy val brotliInput: Data = input.stream.compress[Brotli].memoize
+  lazy val brotliInputArray: Array[Byte] = brotliInput.asInstanceOf[Array[Byte]]
+
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
   lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
     SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
@@ -214,6 +218,41 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val in =
               java.util.zip.GZIPInputStream
                 (java.io.ByteArrayInputStream(turbulence.Benchmarks.gzippedInputArray), 65536)
+
+            val buffer = new Array[Byte](65536)
+            var total = 0L
+            var count = in.read(buffer)
+
+            while count >= 0 do
+              total += count
+              count = in.read(buffer)
+
+            total
+        }
+
+    // Example 1c: Brotli compression (drain, count output bytes). Brotli has no FS2/ZIO pipeline,
+    // so the informative comparison is against our own Gzip and the raw output size.
+    suite(m"Brotli compression (4 MB)"):
+      bench(m"Soundness  Stream.compress[Brotli]")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.input.stream.compress[Brotli].memoize.length }
+
+      bench(m"Soundness  Stream.compress[Gzip]")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.input.stream.compress[Gzip].memoize.length }
+
+    // Example 1d: Brotli decompression alone, on the pre-Brotli'd corpus. The reference pure-Java
+    // decoder `org.brotli.dec.BrotliInputStream` is the "competitive-with-Java" baseline — our port
+    // implements the same algorithm, so this row shows how close the pure-Scala port runs to it.
+    suite(m"Brotli decompression (4 MB)"):
+      bench(m"Soundness  Stream.decompress[Brotli]")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.brotliInput.stream.decompress[Brotli].memoize.length }
+
+      bench(m"Java  org.brotli.dec.BrotliInputStream")(target = 1*Second, operationSize = size):
+        '{
+            val in =
+              org.brotli.dec.BrotliInputStream
+                (java.io.ByteArrayInputStream(turbulence.Benchmarks.brotliInputArray), 65536)
 
             val buffer = new Array[Byte](65536)
             var total = 0L
