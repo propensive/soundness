@@ -37,14 +37,16 @@ import fulminate.*
 
 object FontError:
   enum Reason(val number: Int) extends Clarification:
-    case MissingTable(tag: TableTag) extends Reason(1)
-    case UnknownFormat               extends Reason(2)
-    case MagicNumber                 extends Reason(3)
+    case MissingTable(tag: TableTag)  extends Reason(1)
+    case UnknownFormat(format: Int)   extends Reason(2)
+    case MagicNumber                  extends Reason(3)
+    case MissingEncoding              extends Reason(4)
 
   given communicable: Reason is Communicable =
-    case Reason.MissingTable(tag) => m"the table ${tag.text} was not found"
-    case Reason.UnknownFormat     => m"the table contains data in an unknown format"
-    case Reason.MagicNumber       => m"the font did not contain expected check data"
+    case Reason.MissingTable(tag)     => m"the table ${tag.text} was not found"
+    case Reason.UnknownFormat(format) => m"the table contains data in unknown format $format"
+    case Reason.MagicNumber           => m"the font did not contain expected check data"
+    case Reason.MissingEncoding       => m"the font contains no usable character encoding"
 
 case class FontError(reason: FontError.Reason)(using Diagnostics)
 extends Error(564, reason.number)(m"the font could not be read because $reason")
