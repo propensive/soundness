@@ -153,6 +153,70 @@ object Tests extends Suite(m"Galilei tests"):
         . map(_.message)
       . assert(_.nonEmpty)
 
+    suite(m"Scratch directories"):
+      import filesystemOptions.createNonexistentParents.enabled
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.deleteRecursively.enabled
+
+      val scratchLeaf: Text = Uuid().show
+      val base: Path on Linux = unsafely((% / "tmp" / scratchLeaf).on[Linux])
+      unsafely(base.create[Directory]())
+
+      test(m"A scratch directory works within its scope and vanishes afterwards"):
+        unsafely:
+          val (written, stem) = base.open[Scratch](Read & Write): scratch ?=>
+            (scratch / "file.txt").overwrite(t"data")
+            ((scratch / "file.txt").extant(), scratch.stem)
+
+          (written, stem.exists())
+      . assert(_ == (true, false))
+
+      test(m"A scratch directory is removed even when the scope fails"):
+        import errorDiagnostics.emptyDiagnostics
+        unsafely:
+          var stem: Optional[Path on Linux] = Unset
+
+          capture[IoError]:
+            base.open[Scratch](Read & Write): scratch ?=>
+              stem = scratch.stem
+              abort(IoError(base, IoError.Operation.Write, IoError.Reason.Unsupported))
+
+          stem.let(_.exists()).or(true)
+      . assert(_ == false)
+
+    suite(m"Memory-mapped access"):
+      val ramLeaf: Text = Uuid().show
+      val ramFile: Path on Linux = unsafely((% / "tmp" / ramLeaf).on[Linux])
+      unsafely(ramFile.write(t"0123456789"))
+
+      test(m"A mapped file serves positional reads"):
+        unsafely:
+          ramFile.open[Ram](): ram ?=>
+            ram(2, 3).utf8
+      . assert(_ == t"234")
+
+      test(m"A mapped file accepts positional writes and persists them"):
+        unsafely:
+          ramFile.open[Ram](Read & Write): ram ?=>
+            ram(3L) = t"XYZ".in[Data]
+
+          ramFile.read[Text]
+      . assert(_ == t"012XYZ6789")
+
+      test(m"The expanse view reads consistently"):
+        unsafely:
+          ramFile.open[Ram](): ram ?=>
+            val source = ram.expanse
+            (source.size, source.read(0, 3).utf8)
+      . assert(_ == (10L, t"012"))
+
+      test(m"A positional write without the Write grant does not compile"):
+        demilitarize:
+          ramFile.open[Ram](): ram ?=>
+            ram(0L) = t"no".in[Data]
+        . map(_.message)
+      . assert(_.nonEmpty)
+
     suite(m"The access register"):
       import filesystemOptions.createNonexistentParents.enabled
       import filesystemOptions.overwritePreexisting.enabled

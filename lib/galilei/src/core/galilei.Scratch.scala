@@ -30,32 +30,68 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package galilei
 
-export
-  galilei
-  . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
-      Creatable, create, created, CreateNonexistentParents, D, delete,
-      DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, DirectoryHandle,
-      DirectoryOpenable, Dos, Drive, Entry,
-      entry, executable, exists, Explorable, Fifo, file, File, FileOpenable,
-      FilesystemAttribute, FilesystemBackend,
-      Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
-      MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,
-      OverwritePreexisting, p, Platform, Posix, readable, size, Socket, Stat,
-      Scratch, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,
-      UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
+import anticipation.*
+import aperture.*
+import contingency.*
+import inimitable.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import vacuous.*
 
-package interfaces.paths:
-  export
-    anticipation.interfaces.paths
-    . { pathOnLinux, pathOnLocal, pathOnMacOs, pathOnPosix, pathOnWindows }
+import IoError.{Operation, Reason}
 
-package filesystemOptions:
-  export
-    galilei.filesystemOptions
-    . { copyAttributes, createNonexistentParents, deleteRecursively,
-        dereferenceSymlinks, moveAtomically, overwritePreexisting }
+// The form for transient working directories: `parent.open[Scratch](Read & Write)` creates a
+// fresh, uniquely-named directory beneath `parent`, provides a `DirectoryHandle` over it for
+// the scope, and deletes it — and everything created within it — when the scope ends, however
+// it ends. The lifetime of the directory *is* the scope, and the fresh-plane machinery
+// guarantees that no path into it survives beyond it, so the deletion is always sound.
+trait Scratch
 
-package filesystemTraversal:
-  export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}
+object Scratch:
+  class ScratchOpenable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+  extends Openable:
+
+    type Self = path
+    type Form = Scratch
+    type Operand = Nothing
+    type Result = DirectoryHandle { type Under = filesystem }
+
+    def open[grants <: Grant, result]
+      ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+      ( block: (((DirectoryHandle { type Under = filesystem }) & Granting[grants])^) ?=> result )
+    :   result =
+
+      if backend.stat(value, true).entry != Directory
+      then abort(IoError(value, Operation.Open, Reason.IsNotDirectory))
+
+      // A fresh name under `value`: no other scope can denote it, so unlike opening an
+      // existing directory, a scratch scope needs no access-register arbitration.
+      val name: Text = Uuid().show
+      val child: Path on filesystem = value.child(name)(using Unsafe)
+      backend.createDirectory(child)
+
+      def wipe(path: Path on filesystem): Unit =
+        if backend.stat(path, false).entry == Directory
+        then backend.children(path).each { name => wipe(path.child(name)(using Unsafe)) }
+        backend.delete(path)
+
+      try
+        val handle =
+          new DirectoryHandle with Granting[grants]:
+            type Under = filesystem
+            val stem: Path on filesystem = child
+            val atoms: Set[Mode] = mode.atoms
+
+        block(using handle)
+      finally wipe(child)
+
+  given openable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem,
+        Tactic[IoError] )
+  =>  ( ScratchOpenable[filesystem, path]^ ) =
+    ScratchOpenable[filesystem, path]
