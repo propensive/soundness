@@ -39,6 +39,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
 import _root_.java.io as ji
+import _root_.java.nio.file as jnf
 import _root_.java.security as js
 import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
@@ -92,6 +93,85 @@ object Tests extends Suite(m"Facsimile tests"):
       out ++ t"trailer\n<< /Size ${bodies.length + 1} /Root 1 0 R $trailerExtra >>\nstartxref\n$xrefOffset\n%%EOF".in[Data]
 
     val catalog: Data = t"<< /Type /Catalog >>".in[Data]
+
+    // A filename Text is its own abstract path, for opening temp files on disk.
+    given (Text is Abstractable across Paths to Text) = identity(_)
+
+    // Write `bytes` to a fresh temp file and return its path as Text; and read a file back.
+    def tempPdf(bytes: Data): Text =
+      val path = jnf.Files.createTempFile("facsimile", ".pdf").nn
+      jnf.Files.write(path, bytes.mutable(using Unsafe))
+      path.toString.tt
+
+    def fileBytes(path: Text): Data =
+      jnf.Files.readAllBytes(jnf.Paths.get(path.s)).nn.immutable(using Unsafe)
+
+    // Big-endian byte assembly for the font fixture below.
+    def big16(values: Int*): Data =
+      IArray.from:
+        values.flatMap: value =>
+          Seq((value >> 8).toByte, value.toByte)
+
+    def big32(values: Long*): Data =
+      IArray.from:
+        values.flatMap: value =>
+          Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+
+    def utf16(text: Text): Data = IArray.from(text.s.getBytes("UTF-16BE").nn)
+
+    // A minimal but real TrueType font: glyphs A and B with simple outlines and C a composite
+    // of both, at 1000 units per em, carrying the bounding box (-50, -200, 1000, 800), an
+    // italic angle of -11.5, fixed pitch, cap height 730 and the PostScript name TestSans —
+    // everything the embedder reads.
+    val miniFont: Data =
+      val head =
+        big16(1, 0, 1, 0) ++ big32(0L, 0x5f0f3cf5L) ++ big16(0, 1000) ++ big32(0L, 0L, 0L, 0L) ++
+          big16(-50, -200, 1000, 800) ++ big16(0, 8) ++ big16(2, 0, 0)
+
+      val hhea = big16(1, 0) ++ big16(800, -200, 90, 600, 10, 10, 1000, 1, 0, 0, 0, 0, 0, 0, 0, 3)
+      val hmtx = big16(600, 10, 500, 20, 400, 30) ++ big16(25)
+
+      val cmap =
+        big16(0, 1) ++ big16(3, 1) ++ big32(12L) ++ big16(4, 46, 0) ++ big16(6, 4, 1, 2) ++
+          big16(0x43, 0x63, 0xffff) ++ big16(0) ++ big16(0x41, 0x61, 0xffff) ++
+          big16(-64, 0, 1) ++ big16(0, 4, 0) ++ big16(2, 3, 1)
+
+      val maxp = big32(0x00010000L) ++ big16(4)
+      val post = big32(0x00030000L, 0xfff48000L) ++ big16(-100, 50) ++ big32(1L)
+
+      val os2 =
+        big16(2, 500, 700, 5, 8) ++ big16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) ++ big16(0) ++
+          big16(0, 0, 0, 0, 0) ++ big32(0L, 0L, 0L, 0L) ++ t"TEST".in[Data] ++
+          big16(0x40, 0x41, 0x7a) ++ big16(750, -250, 100) ++ big16(820, 220) ++
+          big32(0L, 0L) ++ big16(530, 730, 0, 32, 0)
+
+      val name =
+        big16(0, 2, 30) ++ big16(3, 1, 0x409, 1, 18, 0) ++ big16(3, 1, 0x409, 6, 16, 18) ++
+          utf16(t"Test Sans") ++ utf16(t"TestSans")
+
+      val glyph3 =
+        big16(-1, 0, 0, 500, 700) ++ big16(0x0021, 1, 0, 0) ++ big16(0x0008, 2, 0, 0x4000)
+
+      val glyf = big16(1, 0, 0, 500, 700, 1, 0) ++ big16(1, 10, 20, 400, 600, 1, 0) ++ glyph3
+      val loca = big16(0, 0, 7, 14, 27)
+
+      val tables = List(t"cmap" -> cmap, t"glyf" -> glyf, t"head" -> head, t"hhea" -> hhea,
+          t"hmtx" -> hmtx, t"loca" -> loca, t"maxp" -> maxp, t"name" -> name, t"OS/2" -> os2,
+          t"post" -> post)
+
+      var offset = 12 + tables.length*16
+      val directory = List.newBuilder[Data]
+      val parts = List.newBuilder[Data]
+
+      tables.each: (tag, table) =>
+        val padding = (4 - table.length%4)%4
+        val entry = IArray.from(tag.s.getBytes("US-ASCII").nn)
+        directory += entry ++ big32(0L, offset.toLong, table.length.toLong)
+        parts += table ++ IArray.fill[Byte](padding)(0)
+        offset += table.length + padding
+
+      big32(0x00010000L) ++ big16(10, 128, 3, 32) ++ directory.result().reduce(_ ++ _) ++
+        parts.result().reduce(_ ++ _)
 
     suite(m"COS object syntax"):
       test(m"a bare integer"):
@@ -376,6 +456,460 @@ object Tests extends Suite(m"Facsimile tests"):
         capture[PdfError](PdfFile(doc).open()(pdf.version)).reason
       . assert(_ == PdfError.Reason.UnsupportedEncryption(0))
 
+    suite(m"Writing"):
+      // A document with a catalog (obj 1), a note object (obj 2), and a page tree, for editing.
+      def editable: Data = document
+        ( t"<< /Type /Catalog /Pages 3 0 R /Note 2 0 R >>".in[Data],
+          t"<< /Value (original) >>".in[Data],
+          t"<< /Type /Pages /Kids [4 0 R] /Count 1 /MediaBox [0 0 200 300] >>".in[Data],
+          t"<< /Type /Page /Parent 3 0 R >>".in[Data] )
+
+      test(m"a replaced object is visible after the write, via an incremental update"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.resolved(pdf(2, 0))(t"Value").let(_.text)
+      . assert(_ == t"edited")
+
+      test(m"the original bytes are preserved (incremental append, not rewrite)"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
+
+        fileBytes(path).slice(0, editable.length).to(List)
+      . assert(_ == editable.to(List))
+
+      test(m"the incremental update chains /Prev to the original cross-reference"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.set(Cos.Ref(2, 0), Cos.Integral(7))
+
+        String(fileBytes(path).mutable(using Unsafe), "ISO-8859-1").nn.contains("/Prev")
+      . assert(_ == true)
+
+      test(m"an allocated object gets a fresh number and is readable after writing"):
+        val path = tempPdf(editable)
+        var allocated = 0
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val ref = doc.allocate(Cos.Dictionary(Map(t"Kind" -> Cos.Name(t"New"))))
+          allocated = ref.number
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf(allocated)(t"Kind")
+      . assert(_ == Cos.Name(t"New"))
+
+      test(m"a fresh object number is one past the original size"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.allocate(Cos.Nil).number
+      . assert(_ == 5)
+
+      test(m"a deleted object reads back as null"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.free(Cos.Ref(2, 0))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf(2, 0)
+      . assert(_ == Cos.Nil)
+
+      test(m"edits are visible to read views within the same write scope"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"live".in[Data]))))
+          doc.resolved(doc(2, 0))(t"Value").let(_.text)
+      . assert(_ == t"live")
+
+      test(m"a scope that changes nothing appends nothing"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.version
+
+        fileBytes(path).length
+      . assert(_ == editable.length)
+
+      test(m"opening in-memory data for writing is refused"):
+        capture[PdfError](PdfFile(editable).open(Read & Write) { doc ?=> () }).reason
+      . assert(_ == PdfError.Reason.WriteUnsupported)
+
+      // A one-page A4 document with Helvetica, for page and content edits.
+      def onePage: Data = document
+        ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
+          t"<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> >>".in[Data],
+          t"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".in[Data] )
+
+      test(m"replacing a page's content is visible as extracted text"):
+        val path = tempPdf(onePage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val operators = List
+            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
+              PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"Written".in[Data]),
+              PdfOperator.EndText )
+
+          doc.setContents(doc.pages(0), operators)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).text
+      . assert(_ == t"Written")
+
+      test(m"setting a page's rotation round-trips"):
+        val path = tempPdf(onePage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.setRotation(doc.pages(0), Page.Rotation.Quarter)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).rotation
+      . assert(_ == Page.Rotation.Quarter)
+
+      test(m"setting a page box round-trips"):
+        val path = tempPdf(onePage)
+
+        val target = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+            Quantity[Points[1]](200.0), Quantity[Points[1]](400.0))
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.setBox(doc.pages(0), t"CropBox", target)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).cropBox.width
+      . assert(_ == Quantity[Points[1]](200.0))
+
+      test(m"an appended page increases the page count"):
+        val path = tempPdf(onePage)
+
+        val a4 = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+            Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.appendPage(a4)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages.length
+      . assert(_ == 2)
+
+      test(m"an appended page's content extracts as text"):
+        val path = tempPdf(onePage)
+
+        val a4 = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+            Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
+
+        val helvetica = Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Font"),
+            t"Subtype" -> Cos.Name(t"Type1"), t"BaseFont" -> Cos.Name(t"Helvetica")))
+
+        val resources = Cos.Dictionary(Map(t"Font" -> Cos.Dictionary(Map(t"F1" -> helvetica))))
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val operators = List
+            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
+              PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"Second".in[Data]),
+              PdfOperator.EndText )
+
+          doc.appendPage(a4, operators, resources)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(1).text
+      . assert(_ == t"Second")
+
+      test(m"a removed page decreases the page count"):
+        val twoPages = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+
+        val path = tempPdf(twoPages)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.removePage(doc.pages(0))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages.length
+      . assert(_ == 1)
+
+      test(m"setting document information round-trips text fields"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.setInfo(PdfInfo(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          (pdf.info.title, pdf.info.author)
+      . assert(_ == (t"A Title", t"An Author"))
+
+      test(m"a set creation date round-trips through the D: format"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          import calendars.gregorianCalendar
+          val moment = Timestamp(Date(Year(2026), Month(7), Day(17)),
+              Clockface(Base24(9), Base60(30), Base60(0)))
+
+          val info = PdfInfo(Unset, Unset, Unset, Unset, Unset, Unset,
+              PdfInfo.Timing(moment, Unset), Unset)
+
+          doc.setInfo(info)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.info.created.let(_.timestamp)
+      . assert: created =>
+          import calendars.gregorianCalendar
+          created == Timestamp(Date(Year(2026), Month(7), Day(17)),
+              Clockface(Base24(9), Base60(30), Base60(0)))
+
+      test(m"setting bookmarks builds a navigable outline"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val marks = List
+            ( Bookmark(t"Chapter 1", Unset, List(Bookmark(t"Section 1.1", Unset, Nil))),
+              Bookmark(t"Chapter 2", Unset, Nil) )
+
+          doc.setBookmarks(marks)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.bookmarks.map(bookmark => (bookmark.title, bookmark.children.length))
+      . assert(_ == List((t"Chapter 1", 1), (t"Chapter 2", 0)))
+
+      test(m"a bookmark destination targets a page"):
+        val path = tempPdf(editable)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.setBookmarks(List(Bookmark(t"Start", Destination.Fit(Prim), Nil)))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.bookmarks.head.destination
+      . assert(_ == Destination.Fit(Prim))
+
+      test(m"adding a link annotation round-trips"):
+        val onePage = document
+          ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+            t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
+            t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+
+        val path = tempPdf(onePage)
+
+        val rect = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+            Quantity[Points[1]](50.0), Quantity[Points[1]](20.0))
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.addLink(doc.pages(0), rect, uri = t"https://soundness.dev/")
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).annotations.head match
+            case Annotation.Link(_, _, uri, _) => uri
+            case _                             => Unset
+      . assert(_ == t"https://soundness.dev/")
+
+      // A one-page document with no font, for embedding a font into.
+      def blankPage: Data = document
+        ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
+          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 595 842] >>".in[Data],
+          t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+
+      // Stand-in font-program bytes: the reader wraps FontFile2 bytes in `Ttf` without
+      // validating, and the embedder degrades gracefully on an unparseable program, so this
+      // exercises the embedding plumbing without a real font file in the repo.
+      val fontProgram: Data = t"pretend-truetype-font-program".in[Data]
+
+      test(m"an embedded font's program round-trips as FontFile2"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
+          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).fonts(t"F1").embedded.let(_.data.to(List))
+      . assert(_ == fontProgram.to(List))
+
+      test(m"content using an embedded font extracts as text"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
+          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+
+          val operators = List
+            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
+              PdfOperator.Offset(72, 720), PdfOperator.ShowText(winAnsi(t"Embedded text")),
+              PdfOperator.EndText )
+
+          doc.setContents(doc.pages(0), operators)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).text
+      . assert(_ == t"Embedded text")
+
+      test(m"the embedded font is a simple WinAnsi TrueType font"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
+          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).fonts(t"F1") match
+            case _: PdfFont.TrueType => true
+            case _                   => false
+      . assert(_ == true)
+
+      test(m"an unnamed embedded font takes its PostScript name"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(miniFont))
+          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).fonts(t"F1").baseFont
+      . assert(_ == t"TestSans")
+
+      test(m"the font descriptor carries the font's real metrics"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(miniFont))
+          val dict = doc.resolved(font).dictionary.or(Map[Text, Cos]())
+
+          val descriptor =
+            doc.resolved(dict.at(t"FontDescriptor").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+
+          ( descriptor.at(t"FontBBox"),
+            descriptor.at(t"ItalicAngle"),
+            descriptor.at(t"CapHeight"),
+            descriptor.at(t"Flags") )
+      . assert(_ == (Cos.Sequence(List(Cos.Integral(-50), Cos.Integral(-200), Cos.Integral(1000),
+            Cos.Integral(800))), Cos.Real(-11.5), Cos.Integral(730), Cos.Integral(97)))
+
+      test(m"widths come from the font's own character mapping"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(miniFont))
+          val dict = doc.resolved(font).dictionary.or(Map[Text, Cos]())
+
+          dict.at(t"Widths") match
+            case Cos.Sequence(widths) => (widths('A' - 32), widths('z' - 32))
+            case _                    => Unset
+      . assert(_ == (Cos.Integral(500), Cos.Integral(0)))
+
+      test(m"a subset embed carries a six-letter tag prefix"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(miniFont), subset = t"AB")
+          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).fonts(t"F1").baseFont
+      . assert(_.s.matches("[A-Z]{6}\\+TestSans"))
+
+      test(m"a subset program keeps used outlines and drops the rest"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(miniFont), subset = t"A")
+          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).fonts(t"F1").embedded.let: ttf =>
+            (ttf.glyf(1).empty, ttf.glyf(2).empty)
+      . assert(_ == (false, true))
+
+      test(m"a subset retains the components of composite glyphs"):
+        val path = tempPdf(blankPage)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val font = doc.embedFont(Ttf(miniFont), subset = t"C")
+          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).fonts(t"F1").embedded.let: ttf =>
+            (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
+      . assert(_ == (false, false, true))
+
+      test(m"winAnsi encodes accented characters to their code page byte"):
+        winAnsi(t"café").to(List).map(_.toInt & 0xff)
+      . assert(_ == List('c', 'a', 'f', 0xe9))
+
+    suite(m"Creation from scratch"):
+      def freshPath: Text =
+        val path = jnf.Files.createTempFile("facsimile-new", ".pdf").nn
+        jnf.Files.delete(path)
+        path.toString.tt
+
+      val a4 = PdfRect(Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+          Quantity[Points[1]](595.0), Quantity[Points[1]](842.0))
+
+      test(m"a created document is a valid, openable PDF"):
+        val path = freshPath
+        path.create[Pdf](): doc ?=>
+          doc.appendPage(a4)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages.length
+      . assert(_ == 1)
+
+      test(m"a created page carries its media box"):
+        val path = freshPath
+        path.create[Pdf](): doc ?=>
+          doc.appendPage(a4)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).mediaBox.width
+      . assert(_ == Quantity[Points[1]](595.0))
+
+      test(m"a created page's content extracts as text"):
+        val path = freshPath
+
+        val helvetica = Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Font"),
+            t"Subtype" -> Cos.Name(t"Type1"), t"BaseFont" -> Cos.Name(t"Helvetica")))
+
+        val resources = Cos.Dictionary(Map(t"Font" -> Cos.Dictionary(Map(t"F1" -> helvetica))))
+
+        path.create[Pdf](): doc ?=>
+          val operators = List
+            ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
+              PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"From scratch".in[Data]),
+              PdfOperator.EndText )
+
+          doc.appendPage(a4, operators, resources)
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.pages(0).text
+      . assert(_ == t"From scratch")
+
+      test(m"document information set at creation round-trips"):
+        val path = freshPath
+        path.create[Pdf](): doc ?=>
+          doc.appendPage(a4)
+          doc.setInfo(PdfInfo(t"Made", Unset, Unset, Unset, Unset, Unset, Unset, Unset))
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          pdf.info.title
+      . assert(_ == t"Made")
+
+      test(m"creating over an existing file needs the Replace flag"):
+        val path = freshPath
+        path.create[Pdf](): doc ?=>
+          doc.appendPage(a4)
+
+        capture[PdfError](path.create[Pdf]() { doc ?=> doc.appendPage(a4) }).reason
+      . assert(_ == PdfError.Reason.Io(t"the file already exists"))
+
     suite(m"Damaged-file recovery"):
       // A minimal well-formed document whose objects can be found by scanning, used as the
       // basis for various corruptions.
@@ -532,7 +1066,9 @@ object Tests extends Suite(m"Facsimile tests"):
           case List(_, PdfOperator.ShowTexts(elements), _) =>
             elements.map:
               case value: Double => value
-              case data: Data    => String(data.mutable(using Unsafe), "UTF-8").tt
+
+              case data: (Data @unchecked) =>
+                String(data.mutable(using Unsafe), "UTF-8").tt
 
           case _ =>
             List()
@@ -975,6 +1511,44 @@ object Tests extends Suite(m"Facsimile tests"):
           PdfFile(aes256Document(t"open sesame")).open(Password(t"wrong"))(pdf.version)
         . reason
       . assert(_ == PdfError.Reason.BadPassword)
+
+      test(m"an edit to an RC4 document is encrypted on write and decrypts on re-read"):
+        val path = tempPdf(rc4Document(3))
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.set(Cos.Ref(1, 0),
+              Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"), t"Marker" -> Cos.Chars(t"added".in[Data]))))
+
+        // Re-reading (with the empty password) must decrypt the newly-written string; a
+        // failure to encrypt on write would surface as garbage here.
+        PdfFile(fileBytes(path)).open():
+          pdf.resolved(pdf(1, 0))(t"Marker").let(_.text)
+      . assert(_ == t"added")
+
+      test(m"an edit to an AES-256 document round-trips"):
+        val path = tempPdf(aes256Document(t"open sesame"))
+
+        PdfFile(path).open(Read & Write, Password(t"open sesame")): doc ?=>
+          doc.set(Cos.Ref(1, 0),
+              Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"), t"Marker" -> Cos.Chars(t"aes".in[Data]))))
+
+        PdfFile(fileBytes(path)).open(Password(t"open sesame")):
+          pdf.resolved(pdf(1, 0))(t"Marker").let(_.text)
+      . assert(_ == t"aes")
+
+      test(m"a newly-written stream in an encrypted document decrypts on re-read"):
+        val path = tempPdf(rc4Document(3))
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          val ref = doc.allocate(doc.newStream(t"secret stream".in[Data]))
+          doc.set(Cos.Ref(1, 0),
+              Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"), t"Extra" -> ref)))
+
+        PdfFile(fileBytes(path)).open():
+          pdf.resolved(pdf(1, 0)(t"Extra").or(Cos.Nil)) match
+            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case _              => t""
+      . assert(_ == t"secret stream")
 
     // A two-page document: object 1 catalog, 2 page-tree root (A4 media box, inherited),
     // 3 a plain page, 4 a page with its own crop box and rotation.

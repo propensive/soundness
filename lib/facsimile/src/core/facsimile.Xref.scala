@@ -55,6 +55,8 @@ private[facsimile] object Xref:
     safely(strict(source)).or(rebuild(source))
 
   private def strict(source: ByteSource): Xref raises PdfError =
+    val head = startxref(source)
+
     def recur(offset: Long, entries: Map[Int, Entry], trailer: Map[Text, Cos], visited: Set[Long])
     :   Xref =
 
@@ -77,10 +79,10 @@ private[facsimile] object Xref:
       val mergedEntries = sectionEntries ++ entries
       val mergedTrailer = sectionTrailer ++ trailer
 
-      sectionTrailer.at(t"Prev").let(_.long).lay(Xref(mergedEntries, mergedTrailer)): previous =>
+      sectionTrailer.at(t"Prev").let(_.long).lay(Xref(mergedEntries, mergedTrailer, head)): previous =>
         recur(previous, mergedEntries, mergedTrailer, visited + offset)
 
-    recur(startxref(source), Map(), Map(), Set())
+    recur(head, Map(), Map(), Set())
 
   // Recovers a cross-reference table from a damaged file by scanning for `N G obj` markers,
   // the latest offset of each object number winning (an incremental update's newer copy
@@ -372,4 +374,9 @@ private[facsimile] object Xref:
 
     value
 
-private[facsimile] case class Xref(entries: Map[Int, Xref.Entry], trailer: Map[Text, Cos])
+// `startxref` is the byte offset of the newest cross-reference section in the original file —
+// the anchor an incremental update chains its own `/Prev` to. It is `Unset` for a table
+// recovered by scanning, which has no valid section to chain to (so writing must rewrite in
+// full rather than append).
+private[facsimile] case class Xref
+  ( entries: Map[Int, Xref.Entry], trailer: Map[Text, Cos], startxref: Optional[Long] = Unset )

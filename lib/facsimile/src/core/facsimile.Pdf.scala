@@ -43,6 +43,30 @@ import vacuous.*
 import zephyrine.*
 
 object Pdf:
+  // A fresh, empty document: a catalog and an empty page tree, over which a creation scope's
+  // edits accumulate before a full write. Built in memory so the write extensions — which
+  // resolve through a `Pdf` — work identically to editing an existing file.
+  private[facsimile] def blank(): Pdf raises PdfError =
+    val catalog = t"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+    val pages = t"2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+    val body = t"%PDF-1.7\n$catalog$pages"
+
+    val offset1 = body.s.indexOf("1 0 obj")
+    val offset2 = body.s.indexOf("2 0 obj")
+    val xrefOffset = body.length
+
+    def pad(value: Int): Text =
+      val digits = value.toString
+      ("0".repeat(10 - digits.length).nn + digits).tt
+
+    val table =
+      t"xref\n0 3\n0000000000 65535 f \n${pad(offset1)} 00000 n \n${pad(offset2)} 00000 n \n"
+
+    val trailer = t"trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n$xrefOffset\n%%EOF"
+    val bytes = t"$body$table$trailer".s.getBytes("ISO-8859-1").nn.immutable(using Unsafe)
+    val source = DataSource(bytes)
+    Pdf(source, Xref.load(source), Version(1, 7))
+
   // Anchored here — the form's companion — so `path.open[Pdf]()` and `data.open[Pdf]()`
   // resolve with no import.
   given pathOpenable: [path: Abstractable across Paths to Text]
@@ -52,6 +76,12 @@ object Pdf:
 
   given dataOpenable: Tactic[PdfError] => ( PdfFile.PdfDataOpenable^ ) =
     PdfFile.PdfDataOpenable()
+
+  // Anchored here so `path.create[Pdf](): doc ?=> …` resolves the `Pdf` form with no import.
+  given creatable: [path: Abstractable across Paths to Text]
+  =>  Tactic[PdfError]
+  =>  ( PdfFile.PdfCreatable[path]^ ) =
+    PdfFile.PdfCreatable[path]
 
   case class Version(major: Int, minor: Int)
 
@@ -137,6 +167,83 @@ extends caps.ExclusiveCapability:
   // the unencrypted `/Encrypt` dictionary through this same document first).
   private[facsimile] var guard: Optional[Guard] = Unset
 
+  // The write overlay: an in-memory incremental update layered over the immutable read model.
+  // New and replaced objects live in `overlay`, deleted objects in `freed`; `apply` consults
+  // them first, so every existing read view reflects pending edits with no change of its own.
+  // Empty in a read-only session; serialised and appended to the file when the write scope
+  // closes.
+  private[facsimile] val overlay: scala.collection.mutable.HashMap[Int, Cos] =
+    scala.collection.mutable.HashMap()
+
+  private[facsimile] val freed: scala.collection.mutable.HashSet[Int] =
+    scala.collection.mutable.HashSet()
+
+  // The next free object number, one past the largest the original file used.
+  private[facsimile] var nextNumber: Int =
+    (xref.entries.keys.maxOption.getOrElse(0).max(trailer.at(t"Size").let(_.long).or(0L).toInt - 1)) + 1
+
+  // Payloads for streams created during the write scope. A `Cos.Body` locates its bytes by a
+  // file offset; a new stream has none, so it is given a negative sentinel `start` that keys
+  // its bytes here — inert to a reader, resolved to these bytes by `raw` and the writer.
+  private[facsimile] val newStreams: scala.collection.mutable.HashMap[Long, Data] =
+    scala.collection.mutable.HashMap()
+
+  private var nextStreamId: Long = -1L
+
+  // Trailer entries set or overridden during the write scope — e.g. a newly-created `/Info`
+  // reference. Merged over the original trailer's carried-forward entries by the writer.
+  private[facsimile] val trailerOverrides: scala.collection.mutable.HashMap[Text, Cos] =
+    scala.collection.mutable.HashMap()
+
+  // A new stream object carrying inline bytes, for content the write scope produces.
+  private[facsimile] def newBody(entries: Map[Text, Cos], data: Data): Cos.Body =
+    val id = nextStreamId
+    nextStreamId -= 1
+    newStreams(id) = data
+    Cos.Body(entries.updated(t"Length", Cos.Integral(data.length.toLong)), id)
+
+  private[facsimile] def dirty: Boolean =
+    overlay.nonEmpty || freed.nonEmpty || trailerOverrides.nonEmpty
+
+  // Records a new value for an existing or new object number; un-frees it if it was deleted.
+  private[facsimile] def put(number: Int, value: Cos): Unit =
+    overlay(number) = value
+    freed.remove(number)
+
+  // Allocates a fresh object number for a new value, returning a reference to it.
+  private[facsimile] def allocate(value: Cos): Cos.Ref =
+    val number = nextNumber
+    nextNumber += 1
+    overlay(number) = value
+    Cos.Ref(number, 0)
+
+  // Marks an object deleted: dropped from the overlay, and — if it exists in the base file —
+  // recorded as freed so the incremental update writes a free entry for it.
+  private[facsimile] def remove(number: Int): Unit =
+    overlay.remove(number)
+    if xref.entries.contains(number) then freed += number
+
+  // Rewrites an object's dictionary in place, reading its current value (overlay-aware) so
+  // successive edits within a scope compose.
+  private[facsimile] def editDictionary(number: Int)(transform: Map[Text, Cos] => Map[Text, Cos])
+  :   Unit raises PdfError =
+
+    put(number, Cos.Dictionary(transform(apply(number).dictionary.or(Map[Text, Cos]()))))
+
+  // Rewrites the catalog (the `/Root` object) in place.
+  private[facsimile] def editCatalog(transform: Map[Text, Cos] => Map[Text, Cos])
+  :   Unit raises PdfError =
+
+    trailer.at(t"Root") match
+      case ref: Cos.Ref => editDictionary(ref.number)(transform)
+      case _            => ()
+
+  // A reference to the page at a position in the flattened page sequence, for destinations.
+  private[facsimile] def pageReference(ordinal: Ordinal): Optional[Cos.Ref] raises PdfError =
+    val entries = pageEntries
+    if ordinal.n0 < 0 || ordinal.n0 >= entries.length then Unset
+    else entries(ordinal.n0)(0).let(Cos.Ref(_, 0))
+
   def trailer: Map[Text, Cos] = xref.trailer
 
   def encrypted: Boolean = trailer.contains(t"Encrypt")
@@ -181,7 +288,7 @@ extends caps.ExclusiveCapability:
 
   def pages: Vector[Page^{this}] raises PdfError =
     pageEntries.zipWithIndex.map: (entry, index) =>
-      Page(this, index.z, entry(1), entry(2))
+      Page(this, index.z, entry(0), entry(1), entry(2))
 
   // Leaf object numbers mapped to positions in the flattened page sequence, for resolving
   // destinations that refer to pages by reference.
@@ -328,43 +435,46 @@ extends caps.ExclusiveCapability:
 
   def apply(ref: Cos.Ref): Cos raises PdfError = apply(ref.number, ref.generation)
 
-  // Resolves an object by number and generation: from the cache, from its recorded file
-  // offset, or by extraction from a containing object stream. A missing or free entry, or a
-  // generation mismatch, is `null` per ISO 32000-2 §7.3.10.
+  // Resolves an object by number and generation: from the write overlay, the cache, its
+  // recorded file offset, or a containing object stream. A freed, missing or invalid entry,
+  // or a generation mismatch, is `null` per ISO 32000-2 §7.3.10.
   def apply(number: Int, generation: Int = 0): Cos raises PdfError =
-    cache.at(number).or:
-      if !loading.add(number) then abort(PdfError(PdfError.Reason.CircularReference(number)))
+    if freed.contains(number) then Cos.Nil
+    else overlay.at(number).or(cache.at(number).or(load(number, generation)))
 
-      try
-        val resolution = xref.entries.at(number) match
-          case Xref.Entry.Direct(offset, expected) =>
-            if expected != generation then Cos.Nil else
-              // If the recorded offset does not hold this object — a corrupt or shifted
-              // cross-reference table — fall back to the offset found by a full-file scan.
-              val content = atOffset(number, generation, offset).or:
-                recoveredOffset(number).let(atOffset(number, generation, _)).or(Cos.Nil)
+  private def load(number: Int, generation: Int): Cos raises PdfError =
+    if !loading.add(number) then abort(PdfError(PdfError.Reason.CircularReference(number)))
 
-              // A top-level indirect stream: record its owner so its payload can be
-              // decrypted with the right key.
-              content match
-                case Cos.Body(_, start) => streamOwners(start) = (number, generation)
-                case _                  => ()
+    try
+      val resolution = xref.entries.at(number) match
+        case Xref.Entry.Direct(offset, expected) =>
+          if expected != generation then Cos.Nil else
+            // If the recorded offset does not hold this object — a corrupt or shifted
+            // cross-reference table — fall back to the offset found by a full-file scan.
+            val content = atOffset(number, generation, offset).or:
+              recoveredOffset(number).let(atOffset(number, generation, _)).or(Cos.Nil)
 
-              // Strings in a directly-stored object are encrypted individually; those inside
-              // an object stream travel in its already-decrypted payload, so are skipped.
-              guard.lay(content)(decryptStrings(content, number, generation, _))
+            // A top-level indirect stream: record its owner so its payload can be
+            // decrypted with the right key.
+            content match
+              case Cos.Body(_, start) => streamOwners(start) = (number, generation)
+              case _                  => ()
 
-          case Xref.Entry.Compressed(container, index) =>
-            if generation != 0 then Cos.Nil else
-              containerStream(container)(number)
-              . or(abort(PdfError(PdfError.Reason.MissingObject(number, generation))))
+            // Strings in a directly-stored object are encrypted individually; those inside
+            // an object stream travel in its already-decrypted payload, so are skipped.
+            guard.lay(content)(decryptStrings(content, number, generation, _))
 
-          case _ =>
-            Cos.Nil
+        case Xref.Entry.Compressed(container, index) =>
+          if generation != 0 then Cos.Nil else
+            containerStream(container)(number)
+            . or(abort(PdfError(PdfError.Reason.MissingObject(number, generation))))
 
-        cache(number) = resolution
-        resolution
-      finally loading.remove(number)
+        case _ =>
+          Cos.Nil
+
+      cache(number) = resolution
+      resolution
+    finally loading.remove(number)
 
   // Parses the object at an offset, returning its content only if the header matches the
   // number and generation asked for; a mismatch (a lie in the cross-reference table) is
@@ -470,14 +580,16 @@ extends caps.ExclusiveCapability:
       position = if chunk.length == 0 then end else position + chunk.length
       chunk
 
-  // The raw payload, decrypted if the document is encrypted and this stream is not exempt.
+  // The raw payload, decrypted if the document is encrypted and this stream is not exempt. A
+  // stream created in this scope (negative sentinel start) yields its inline bytes directly.
   private[facsimile] def raw(body: Cos.Body): Data raises PdfError =
-    val bytes = source.read(body.start, (payloadEnd(body) - body.start).toInt)
+    if body.start < 0 then newStreams.at(body.start).or(IArray.empty[Byte]) else
+      val bytes = source.read(body.start, (payloadEnd(body) - body.start).toInt)
 
-    if !encryptedStream(body) then bytes else
-      guard.lay(bytes): guard =>
-        streamOwners.at(body.start).lay(bytes): (number, generation) =>
-          guard.stream(bytes, number, generation, Unset)
+      if !encryptedStream(body) then bytes else
+        guard.lay(bytes): guard =>
+          streamOwners.at(body.start).lay(bytes): (number, generation) =>
+            guard.stream(bytes, number, generation, Unset)
 
   // Whether a stream's raw bytes need decrypting: the document is encrypted and the stream is
   // not exempt — cross-reference streams (never encrypted), metadata under `/EncryptMetadata

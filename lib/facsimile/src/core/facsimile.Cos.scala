@@ -51,6 +51,26 @@ object Cos:
       '’', '‚', '™', 'ﬁ', 'ﬂ', 'Ł', 'Œ', 'Š',
       'Ÿ', 'Ž', 'ı', 'ł', 'œ', 'š', 'ž', '�' )
 
+  // Encodes text as a PDF text string: Latin-1 (a subset of PDFDocEncoding) when every
+  // character fits, otherwise UTF-16BE with a byte-order mark, matching `decodeText`.
+  private[facsimile] def encodeText(text: Text): Data =
+    if text.s.forall(_ < 0x100) then
+      val bytes = new Array[Byte](text.s.length)
+      var i = 0
+
+      while i < text.s.length do
+        bytes(i) = text.s.charAt(i).toByte
+        i += 1
+
+      bytes.immutable(using Unsafe)
+    else
+      val body = text.s.getBytes("UTF-16BE").nn
+      val bytes = new Array[Byte](body.length + 2)
+      bytes(0) = 0xfe.toByte
+      bytes(1) = 0xff.toByte
+      System.arraycopy(body, 0, bytes, 2, body.length)
+      bytes.immutable(using Unsafe)
+
   // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
