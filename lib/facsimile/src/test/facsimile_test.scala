@@ -362,14 +362,75 @@ object Tests extends Suite(m"Facsimile tests"):
         capture[PdfError](PdfFile(t"not a pdf at all".in[Data]).open()(pdf.version)).reason
       . assert(_ == PdfError.Reason.NotPdf)
 
-      test(m"a missing startxref is an error"):
-        capture[PdfError](PdfFile(t"%PDF-1.7\nnothing else".in[Data]).open()(pdf.version)).reason
-      . assert(_ == PdfError.Reason.MissingStartxref)
-
       test(m"a public-key security handler is unsupported"):
         val doc = documentWith(t"/Encrypt << /Filter /Adobe.PubSec /V 4 >>", catalog)
         capture[PdfError](PdfFile(doc).open()(pdf.version)).reason
       . assert(_ == PdfError.Reason.UnsupportedEncryption(0))
+
+    suite(m"Damaged-file recovery"):
+      // A minimal well-formed document whose objects can be found by scanning, used as the
+      // basis for various corruptions.
+      def recoverable: Data = document
+        ( t"<< /Type /Catalog /Pages 2 0 R /Note (kept) >>".in[Data],
+          t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 200 300] >>".in[Data],
+          t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
+
+      test(m"a document with no startxref is recovered by scanning"):
+        // Truncate the cross-reference section and trailer entirely.
+        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val truncated = text.substring(0, text.indexOf("xref")).nn.tt.in[Data]
+
+        PdfFile(truncated).open():
+          (pdf.pages.length, pdf.pages(0).mediaBox.width)
+      . assert(_ == (1, Quantity[Points[1]](200.0)))
+
+      test(m"the catalog is found when the trailer is gone"):
+        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val truncated = text.substring(0, text.indexOf("xref")).nn.tt.in[Data]
+
+        PdfFile(truncated).open():
+          pdf.resolved(pdf.trailer.at(t"Root").or(Cos.Nil))(t"Note").let(_.text)
+      . assert(_ == t"kept")
+
+      test(m"a corrupt startxref offset falls back to scanning"):
+        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val corrupt = text.replaceAll("startxref\\n\\d+", "startxref\n999999").nn.tt.in[Data]
+
+        PdfFile(corrupt).open():
+          pdf.pages.length
+      . assert(_ == 1)
+
+      test(m"shifted cross-reference offsets are recovered per object"):
+        // Prepend junk so every recorded offset is wrong by a fixed amount, but leave the
+        // xref table itself syntactically valid.
+        val shifted = t"% a comment prepended by some tool\n".in[Data] ++ recoverable
+
+        PdfFile(shifted).open():
+          pdf.pages(0).mediaBox.height
+      . assert(_ == Quantity[Points[1]](300.0))
+
+      test(m"garbage between objects does not prevent recovery"):
+        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val messy = text.replace("endobj\n2 0 obj", "endobj\n%% junk %%\n2 0 obj").nn.tt.in[Data]
+        val truncated =
+          String(messy.mutable(using Unsafe), "ISO-8859-1").nn
+          . pipe { s => s.substring(0, s.indexOf("xref")).nn.tt.in[Data] }
+
+        PdfFile(truncated).open():
+          pdf.pages.length
+      . assert(_ == 1)
+
+      test(m"an incremental update's newer object wins during recovery"):
+        val full = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val base = full.substring(0, full.indexOf("xref")).nn
+
+        // Append a newer copy of object 1 with a changed note, then no valid xref.
+        val updated =
+          (base + "1 0 obj\n<< /Type /Catalog /Pages 2 0 R /Note (updated) >>\nendobj\n").tt
+
+        PdfFile(updated.in[Data]).open():
+          pdf.resolved(pdf.trailer.at(t"Root").or(Cos.Nil))(t"Note").let(_.text)
+      . assert(_ == t"updated")
 
     suite(m"Cross-reference streams and object streams"):
       def xrefStreamDocument(): Data =

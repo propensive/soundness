@@ -47,8 +47,14 @@ private[facsimile] object Xref:
   // Locates `startxref` near the end of the file and walks the chain of cross-reference
   // sections — classic tables and cross-reference streams — through `/Prev`, newest first.
   // Later (older) sections never override earlier entries, and the newest trailer's values
-  // take precedence. `load` is the single seam a damaged-file `rebuild` can replace later.
+  // take precedence. When the cross-reference machinery is missing or corrupt — as it
+  // frequently is in the wild — the whole file is scanned for objects instead (`rebuild`).
   def load(source: ByteSource): Xref raises PdfError =
+    // Any structural failure in the cross-reference machinery drops through to a full-file
+    // scan for objects.
+    safely(strict(source)).or(rebuild(source))
+
+  private def strict(source: ByteSource): Xref raises PdfError =
     def recur(offset: Long, entries: Map[Int, Entry], trailer: Map[Text, Cos], visited: Set[Long])
     :   Xref =
 
@@ -75,6 +81,143 @@ private[facsimile] object Xref:
         recur(previous, mergedEntries, mergedTrailer, visited + offset)
 
     recur(startxref(source), Map(), Map(), Set())
+
+  // Recovers a cross-reference table from a damaged file by scanning for `N G obj` markers,
+  // the latest offset of each object number winning (an incremental update's newer copy
+  // appears later in the file). Object streams found this way are expanded to their compressed
+  // members. The trailer is the last `trailer` dictionary if any, else synthesized by finding
+  // the catalog among the recovered objects.
+  private[facsimile] def rebuild(source: ByteSource): Xref raises PdfError =
+    var entries = Map[Int, Entry]()
+    val objectStreams = List.newBuilder[Int]
+    val size = source.size
+    val chunkSize = 65536
+    val overlap = 32 // long enough to hold "NNNNNN GGGGG obj" split across a chunk boundary
+    var base = 0L
+
+    while base < size do
+      val length = (size - base).min((chunkSize + overlap).toLong).toInt
+      val chunk = source.read(base, length)
+      val limit = if base + length >= size then chunk.length else chunk.length - overlap
+      var i = 0
+
+      while i < limit do
+        // A candidate object header is `<digits> <digits> obj` at a token boundary.
+        if matches(chunk, i, t"obj") && (i + 3 >= chunk.length || !CosLexer.regular(chunk(i + 3) & 0xff))
+           && (i == 0 || CosLexer.whitespace(chunk(i - 1) & 0xff))
+        then
+          objectHeader(chunk, i).let: (number, generation, start) =>
+            val offset = base + start
+            entries = entries.updated(number, Entry.Direct(offset, generation))
+
+        i += 1
+
+      base += (if limit == chunk.length then chunk.length else limit).toLong
+
+    // Expand object streams: each `/Type /ObjStm` object's members become compressed entries,
+    // unless a direct copy of that member was already recovered (a later direct object wins).
+    val direct = entries
+
+    direct.foreach: (container, entry) =>
+      entry match
+        case Entry.Direct(offset, _) =>
+          safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
+            content match
+              case body @ Cos.Body(dictionary, _)
+              if dictionary.at(t"Type").let(_.name) == t"ObjStm" =>
+                objStmMembers(source, body).each: number =>
+                  if !direct.contains(number)
+                  then entries = entries.updated(number, Entry.Compressed(container, 0))
+
+              case _ =>
+                ()
+
+        case _ =>
+          ()
+
+    Xref(entries, recoverTrailer(source, entries))
+
+  // Parses `<num> <gen> obj` ending at `objAt`, returning the object number, generation, and
+  // the offset the `<num>` begins at — by scanning backwards over the two preceding integers.
+  private def objectHeader(chunk: Data, objAt: Int): Optional[(Int, Int, Int)] =
+    def digits(end: Int): Optional[(Int, Int)] = // (value, startIndex), scanning back from end
+      var i = end
+      while i > 0 && CosLexer.whitespace(chunk(i - 1) & 0xff) do i -= 1
+      val last = i
+      while i > 0 && { val b = chunk(i - 1) & 0xff; b >= '0' && b <= '9' } do i -= 1
+      if i == last then Unset else (parseInt(chunk, i, last), i)
+
+    digits(objAt).let: (generation, genStart) =>
+      digits(genStart).let: (number, numberStart) =>
+        (number, generation, numberStart)
+
+  private def parseInt(chunk: Data, start: Int, end: Int): Int =
+    var value = 0
+    var i = start
+    while i < end do
+      value = value*10 + (chunk(i) & 0xff) - '0'
+      i += 1
+    value
+
+  // The object numbers packed into an object stream, from the header table of its decoded
+  // payload; tolerant of any failure (a member simply stays unrecovered).
+  private def objStmMembers(source: ByteSource, body: Cos.Body): List[Int] =
+    safely:
+      val length = body.entries.at(t"Length").let(_.long)
+        . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Length")))).toInt
+
+      val count = body.entries.at(t"N").let(_.long)
+        . or(abort(PdfError(PdfError.Reason.MissingEntry(t"N")))).toInt
+
+      val raw = source.read(body.start, length)
+      val chain = Filter.chain(body.entries.at(t"Filter"), body.entries.at(t"DecodeParms"))
+      val data = Filter.decode(raw, chain)
+      val lexer = CosLexer(Scan(data))
+
+      List.range(0, count).map: _ =>
+        (lexer.next(), lexer.next()) match
+          case (CosToken.Integral(number), CosToken.Integral(_)) => number.toInt
+          case _ => abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
+
+    . or(List())
+
+  // A recovered trailer: the file's last `trailer` dictionary if one survives, otherwise
+  // synthesized around the catalog found among the recovered objects.
+  private def recoverTrailer(source: ByteSource, entries: Map[Int, Entry]): Map[Text, Cos] =
+    lastTrailer(source).or:
+      entries.view.flatMap: (number, entry) =>
+        entry match
+          case Entry.Direct(offset, generation) =>
+            safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
+              content.dictionary.let(_.at(t"Type")).let(_.name) match
+                case t"Catalog" => List(number -> generation)
+                case _          => List()
+
+            . or(List())
+
+          case _ =>
+            List()
+
+      . headOption.map: (number, generation) =>
+          Map(t"Root" -> Cos.Ref(number, generation))
+
+      . getOrElse(Map())
+
+  // The last `trailer` dictionary in the file, if any (classic-xref files have one even when
+  // their cross-reference table is corrupt).
+  private def lastTrailer(source: ByteSource): Optional[Map[Text, Cos]] =
+    val windowSize = source.size.min(4096L).toInt
+    val window = source.read(source.size - windowSize, windowSize)
+    val marker = t"trailer"
+
+    var i = window.length - marker.length
+
+    while i >= 0 && !matches(window, i, marker) do i -= 1
+    if i < 0 then Unset else
+      safely:
+        val lexer = CosLexer(new Scan(source, source.size - windowSize + i))
+        lexer.next() // the `trailer` keyword
+        CosParser(lexer).value().dictionary.or(abort(PdfError(PdfError.Reason.Truncated)))
 
   private def startxref(source: ByteSource): Long raises PdfError =
     val windowSize = source.size.min(2048L).toInt

@@ -14,4 +14,5 @@
 - capture checking confines the open file to its scope; extracted values are pure and portable
 - decrypts documents secured with the standard handler: RC4, AES-128 and AES-256 (R2–R6)
 - tolerates common real-world deviations: prepended junk, raw deflate streams, truncated data
+- recovers from a missing or corrupt cross-reference table by scanning the file for objects
 - no third-party dependencies
