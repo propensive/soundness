@@ -388,6 +388,41 @@ object Tarfile:
 
   private val structuralPaxKeys: Set[Text] = Set(t"path", t"linkpath", t"uname", t"gname")
 
+  // The blocks that precede an entry's own header: GNU long-name/long-link
+  // pseudo-entries and/or a PAX extended-header entry, per the format. These
+  // depend only on names and attributes — never on the payload size — so the
+  // streaming writer can emit them before an unknown-length body.
+  private[bitumen] def preamble(entry: Tar.Entry, longNameFormat: LongNameFormat)
+  :   LazyList[Data] =
+
+    val longNamePart: LazyList[Data] = longNameFormat match
+      case LongNameFormat.Pax => LazyList()
+
+      case LongNameFormat.Gnu =>
+        val nameBlocks =
+          if entry.entryName.in[Data].length > 100
+          then Tar.Entry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
+          else LazyList()
+
+        val linkBlocks = entry.link.let: l =>
+          if l.in[Data].length > 100 then Tar.Entry.GnuLong(TypeFlag.LongLink, l).serialize
+          else LazyList()
+
+        . or(LazyList())
+
+        nameBlocks #::: linkBlocks
+
+    val records = paxRecordsFor(entry).filter: (key, _) =>
+      longNameFormat match
+        case LongNameFormat.Pax => true
+        case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
+
+    val paxPart: LazyList[Data] =
+      if records.nil then LazyList()
+      else Tar.Entry.Pax(Pax.records(records)).serialize
+
+    longNamePart #::: paxPart
+
   private def paxRecordsFor(entry: Tar.Entry): List[(Text, Text)] =
     val builder = List.newBuilder[(Text, Text)]
     if entry.entryName.in[Data].length > 100 then builder += ((t"path", entry.entryName))
@@ -455,30 +490,4 @@ case class Tarfile
       TarFilesystem.applyEntry(root, entry)
 
   private def emitEntry(entry: Tar.Entry): LazyList[Data] =
-    val longNamePart: LazyList[Data] = longNameFormat match
-      case LongNameFormat.Pax => LazyList()
-
-      case LongNameFormat.Gnu =>
-        val nameBlocks =
-          if entry.entryName.in[Data].length > 100
-          then Tar.Entry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
-          else LazyList()
-
-        val linkBlocks = entry.link.let: l =>
-          if l.in[Data].length > 100 then Tar.Entry.GnuLong(TypeFlag.LongLink, l).serialize
-          else LazyList()
-
-        . or(LazyList())
-
-        nameBlocks #::: linkBlocks
-
-    val records = Tarfile.paxRecordsFor(entry).filter: (key, _) =>
-      longNameFormat match
-        case LongNameFormat.Pax => true
-        case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
-
-    val paxPart: LazyList[Data] =
-      if records.nil then LazyList()
-      else Tar.Entry.Pax(Pax.records(records)).serialize
-
-    longNamePart #::: paxPart #::: entry.serialize
+    Tarfile.preamble(entry, longNameFormat) #::: entry.serialize
