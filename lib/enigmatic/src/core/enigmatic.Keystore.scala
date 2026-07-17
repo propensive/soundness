@@ -30,93 +30,89 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package enigmatic
 
-import java.lang as jl
+import java.io as ji
+import java.security as js
+import java.util as ju
 
-import ambience.*, systems.javaSystem
 import anticipation.*
-import contingency.*
 import aperture.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import nomenclature.*
+import contingency.*
 import prepositional.*
-import serpentine.*
-import turbulence.*
+import rudiments.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+// The form for PKCS#12 keystores: `path.open[Keystore](Password(t"..."))`. The password is
+// passed as a flag -- enigmatic's opaque `Password`, so the secret neither appears in the call
+// nor renders in diagnostics -- and the handle serves the store's aliases and DER-encoded
+// certificates for the duration of the scope.
+trait Keystore
 
-import filesystemBackends.virtualMachine
+// The contextual keystore handle within an `open[Keystore]` block, in the manner of galilei's
+// `file`. Transparent inline so the handle's precise (grant-refined, capturing) type is
+// preserved.
+transparent inline def keystore(using handle: Keystore.KeystoreHandle^): handle.type = handle
 
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
-//
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
-//
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
-object Upgrade:
-  inline def apply[source]
-    ( source: source )
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
+object Keystore:
+  class KeystoreHandle private[enigmatic] (keystore: js.KeyStore)
+  extends caps.ExclusiveCapability:
 
-    applyBytes(source.read[Data])
+    def aliases: List[Text] =
+      val enumeration = keystore.aliases.nn
+      val builder = List.newBuilder[Text]
+      while enumeration.hasMoreElements do builder += enumeration.nextElement.nn.tt
+      builder.result()
 
+    // The DER-encoded (X.509) certificate stored under `alias`, if any.
+    def certificate(alias: Text): Optional[Data] =
+      keystore.getCertificate(alias.s) match
+        case null        => Unset
+        case certificate => certificate.getEncoded.nn.immutable(using Unsafe)
 
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
+  // A named class rather than an anonymous given instance, for the reasons documented on
+  // galilei's `FileOpenable`. Read-only until staged keystore writing lands.
+  class KeystoreOpenable[path: Abstractable across Paths to Text]
+    ( using keystoreError: Tactic[KeystoreError] )
+  extends Openable:
 
-    mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
+    type Self = path
+    type Form = Keystore
+    type Operand = Password
+    type Result = KeystoreHandle
 
-    . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
+    def open[grants <: Grant, result]
+      ( value: path, mode: Mode granting grants, flags: List[Password] )
+      ( block: ((KeystoreHandle & Granting[grants])^) ?=> result )
+    :   result =
 
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
+      if mode.atoms.contains(Write)
+      then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
 
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
+      val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
-          file.write(LazyList(bytes))
+      try
+        val keystore = js.KeyStore.getInstance("PKCS12").nn
 
-        val launcher: Text = System.properties.ethereal.script[Text]()
+        // A missing password loads without an integrity check, per `KeyStore.load`. The
+        // cleartext is copied into a `Char` array for the JDK, then zeroed.
+        flags.prim.lay(loadKeystore(keystore, in, null)): password =>
+          password.expose:
+            val chars = cleartext.text.s.toCharArray.nn
+            try loadKeystore(keystore, in, chars) finally ju.Arrays.fill(chars, ' ')
 
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
+        block(using new KeystoreHandle(keystore) with Granting[grants] {})
+      finally in.close()
 
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
+    // Public, and failure-wrapping: any of the JDK's load-time exceptions (bad password, bad
+    // format, truncation) becomes `Unreadable`, which deliberately does not distinguish a
+    // wrong password from a corrupt store.
+    def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: Array[Char] | Null)
+    :   Unit =
+      try keystore.load(in, password)
+      catch case error: Exception => abort(KeystoreError(KeystoreError.Reason.Unreadable))
 
-
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+  given openable: [path: Abstractable across Paths to Text]
+  =>  Tactic[KeystoreError]
+  =>  ( KeystoreOpenable[path]^ ) =
+    KeystoreOpenable[path]

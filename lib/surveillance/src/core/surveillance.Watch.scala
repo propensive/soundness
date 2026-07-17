@@ -35,6 +35,7 @@ package surveillance
 import java.nio.file as jnf
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import prepositional.*
 import turbulence.*
@@ -64,6 +65,16 @@ object Watch:
     val spool: Relay[WatchEvent] = Relay()
 
     new Watch(spool, watcher.watch(directories, spool))
+
+  given openable: [path: Abstractable across Paths to Text]
+  =>  ( Watcher, Tactic[WatchError] )
+  =>  ( WatchOpenable[path]^ ) =
+    WatchOpenable[path]
+
+  given allOpenable: [path: Abstractable across Paths to Text, collection <: Iterable[path]]
+  =>  ( Watcher, Tactic[WatchError] )
+  =>  ( WatchAllOpenable[collection, path]^ ) =
+    WatchAllOpenable[collection, path]
 
 // A `Watch` is the user-facing handle returned by registering one or more paths. Its `stream`
 // yields events as they occur, and `unregister` cancels the backend registration and terminates

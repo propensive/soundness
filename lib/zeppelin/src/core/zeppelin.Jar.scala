@@ -30,93 +30,100 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package zeppelin
 
-import java.lang as jl
+import java.nio.channels as jnc
+import java.nio.file as jnf
 
-import ambience.*, systems.javaSystem
 import anticipation.*
-import contingency.*
 import aperture.*
-import fulminate.*
-import galilei.*
+import contingency.*
 import gossamer.*
-import nomenclature.*
 import prepositional.*
-import serpentine.*
-import turbulence.*
+import rudiments.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+// The form for Java archives: `path.open[Jar]()`. A JAR is a ZIP, so a `JarHandle` is a
+// `ZipHandle` refined with the archive's parsed manifest; entries and their content behave
+// exactly as they do for the `Zip` form.
+trait Jar
 
-import filesystemBackends.virtualMachine
+object Jar:
+  private val ManifestName: Text = t"META-INF/MANIFEST.MF"
 
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
-//
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
-//
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
-object Upgrade:
-  inline def apply[source]
-    ( source: source )
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
+  class JarHandle private[zeppelin] (zipfile: Zipfile) extends ZipHandle(zipfile):
 
-    applyBytes(source.read[Data])
+    // The main attributes of `META-INF/MANIFEST.MF`: continuation lines (a leading space)
+    // rejoin the preceding attribute, and parsing stops at the first blank line, which ends
+    // the main section. An archive without a manifest has no attributes.
+    def manifest: Map[Text, Text] =
+      zipfile.entries.find(_.ref.encode == ManifestName).map: entry =>
+        val bytes: Array[Byte] =
+          entry.contents.foldLeft(Array.empty[Byte]) { (acc, data) => acc ++ data.mutable(using Unsafe) }
 
+        val text: Text = String(bytes, "UTF-8").tt
+        val unfolded = text.s.split("\r\n|\r|\n", -1).nn.map(_.nn)
+        val main = unfolded.takeWhile(_.nonEmpty)
 
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
+        val rejoined = main.foldLeft(List.empty[String]): (acc, line) =>
+          if line.startsWith(" ") && acc.nonEmpty then (acc.head + line.drop(1)) :: acc.tail
+          else line :: acc
 
-    mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
+        rejoined.reverse.flatMap: line =>
+          line.indexOf(": ") match
+            case -1    => Nil
+            case index => List((line.take(index).tt, line.drop(index + 2).tt))
+        . to(Map)
 
-    . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
+      . getOrElse(Map())
 
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
+  // A named class rather than an anonymous given instance, for the reasons documented on
+  // galilei's `FileOpenable`. Like `Zip`, archives open read-only for now.
+  class JarOpenable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+  extends Openable:
 
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
+    type Self = path
+    type Form = Jar
+    type Operand = Nothing
+    type Result = JarHandle
 
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
-          file.write(LazyList(bytes))
+    def open[grants <: Grant, result]
+      ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+      ( block: (JarHandle & Granting[grants]) ?=> result )
+    :   result =
 
-        val launcher: Text = System.properties.ethereal.script[Text]()
+      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
 
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
+      val channel =
+        jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
 
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
+      try
+        val zipfile = Zipfile.parse(Zipfile.ChannelSource(channel))
+        block(using new JarHandle(zipfile) with Granting[grants] {})
+      finally channel.close()
 
+  class JarDataOpenable(using Tactic[ZipError]) extends Openable:
+    type Self = Data
+    type Form = Jar
+    type Operand = Nothing
+    type Result = JarHandle
 
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+    def open[grants <: Grant, result]
+      ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
+      ( block: (JarHandle & Granting[grants]) ?=> result )
+    :   result =
+
+      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      block(using new JarHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})
+
+  given openable: [path: Abstractable across Paths to Text]
+  =>  Tactic[ZipError]
+  =>  JarOpenable[path] =
+    JarOpenable[path]
+
+  given dataOpenable: Tactic[ZipError] => JarDataOpenable = JarDataOpenable()
+
+  given creatable: [path: Abstractable across Paths to Text]
+  =>  Tactic[ZipError]
+  =>  ZipBuilder.JarCreatable[path] =
+    ZipBuilder.JarCreatable[path]

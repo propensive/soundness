@@ -30,93 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package aperture
 
-import java.lang as jl
-
-import ambience.*, systems.javaSystem
-import anticipation.*
-import contingency.*
-import aperture.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import nomenclature.*
 import prepositional.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
-
-import filesystemBackends.virtualMachine
-
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
+// An entity which can be created: the counterpart of `Openable`, for bringing artifacts into
+// existence rather than accessing existing ones. An instance is written
+// `target is Creatable in Form by Flag to Handle`, and serves two notions of creation with
+// one verb:
 //
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
+//  - *instantiation*: `path.create[Directory]()` makes an empty artifact exist, with no
+//    scope, returning the target;
+//  - *scoped authoring*: `path.create[Zip](): zip ?=> ...` creates the artifact, populates
+//    it through a handle granted `Grants` (write access from birth: a newborn artifact is
+//    unconditionally its creator's), and commits the result when the scope closes. An
+//    exception escaping the scope means nothing is left behind: instances guarantee this by
+//    staging to a temporary sibling and moving atomically, or by wiping what they created.
 //
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
-object Upgrade:
-  inline def apply[source]
-    ( source: source )
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
+// There is no `Mode` parameter: what a creation scope may do is not a caller's choice, and
+// the persisted permissions of the created entry are flag territory. Creating an entity that
+// might already exist is governed by per-form flags (replacement is never the default), and
+// is distinct from *opening* a possibly-absent entity for writing (`OpenFlag.Create`), which
+// accesses whatever is there.
+trait Creatable extends Typeclass, Formal, Operable, Resultant:
+  type Grants <: Grant
 
-    applyBytes(source.read[Data])
+  // Creates the artifact, empty. The default serves builder forms, whose discarded handle
+  // costs nothing; forms holding OS resources override it to create directly — notably a
+  // FIFO, which must never be opened just to be created (opening one for writing blocks
+  // until a reader appears).
+  def make(value: Self, flags: List[Operand]): Unit =
+    create(value, flags) { () }
 
-
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
-
-    mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
-
-    . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
-
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
-
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
-
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
-          file.write(LazyList(bytes))
-
-        val launcher: Text = System.properties.ethereal.script[Text]()
-
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
-
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
-
-
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+  def create[result]
+    ( value: Self, flags: List[Operand] )
+    ( block: ((Result & Granting[Grants])^) ?=> result )
+  :   result

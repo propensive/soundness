@@ -30,93 +30,68 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package galilei
 
-import java.lang as jl
-
-import ambience.*, systems.javaSystem
 import anticipation.*
-import contingency.*
 import aperture.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import nomenclature.*
+import contingency.*
+import inimitable.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
-import turbulence.*
+import spectacular.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+import IoError.{Operation, Reason}
 
-import filesystemBackends.virtualMachine
+// The form for transient working directories: `parent.open[Scratch](Read & Write)` creates a
+// fresh, uniquely-named directory beneath `parent`, provides a `DirectoryHandle` over it for
+// the scope, and deletes it — and everything created within it — when the scope ends, however
+// it ends. The lifetime of the directory *is* the scope, and the fresh-plane machinery
+// guarantees that no path into it survives beyond it, so the deletion is always sound.
+trait Scratch
 
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
-//
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
-//
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
-object Upgrade:
-  inline def apply[source]
-    ( source: source )
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
+object Scratch:
+  class ScratchOpenable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+  extends Openable:
 
-    applyBytes(source.read[Data])
+    type Self = path
+    type Form = Scratch
+    type Operand = Nothing
+    type Result = DirectoryHandle { type Under = filesystem }
 
+    def open[grants <: Grant, result]
+      ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+      ( block: (((DirectoryHandle { type Under = filesystem }) & Granting[grants])^) ?=> result )
+    :   result =
 
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
+      if backend.stat(value, true).entry != Directory
+      then abort(IoError(value, Operation.Open, Reason.IsNotDirectory))
 
-    mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
+      // A fresh name under `value`: no other scope can denote it, so unlike opening an
+      // existing directory, a scratch scope needs no access-register arbitration.
+      val name: Text = Uuid().show
+      val child: Path on filesystem = value.child(name)(using Unsafe)
+      backend.createDirectory(child)
 
-    . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
+      def wipe(path: Path on filesystem): Unit =
+        if backend.stat(path, false).entry == Directory
+        then backend.children(path).each { name => wipe(path.child(name)(using Unsafe)) }
+        backend.delete(path)
 
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
+      try
+        val handle =
+          new DirectoryHandle with Granting[grants]:
+            type Under = filesystem
+            val stem: Path on filesystem = child
+            val atoms: Set[Mode] = mode.atoms
 
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
+        block(using handle)
+      finally wipe(child)
 
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
-          file.write(LazyList(bytes))
-
-        val launcher: Text = System.properties.ethereal.script[Text]()
-
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
-
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
-
-
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+  given openable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem,
+        Tactic[IoError] )
+  =>  ( ScratchOpenable[filesystem, path]^ ) =
+    ScratchOpenable[filesystem, path]

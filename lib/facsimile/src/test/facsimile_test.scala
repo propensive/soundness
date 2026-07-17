@@ -362,6 +362,15 @@ object Tests extends Suite(m"Facsimile tests"):
         capture[PdfError](PdfFile(t"not a pdf at all".in[Data]).open()(pdf.version)).reason
       . assert(_ == PdfError.Reason.NotPdf)
 
+      test(m"opening a PDF for writing is refused"):
+        capture[PdfError](PdfFile(document(catalog)).open(Write) { () }).reason
+      . assert(_ == PdfError.Reason.WriteUnsupported)
+
+      test(m"in-memory data opens directly in Pdf form"):
+        document(catalog).open[Pdf]():
+          pdf.version.major
+      . assert(_ == 1)
+
       test(m"a public-key security handler is unsupported"):
         val doc = documentWith(t"/Encrypt << /Filter /Adobe.PubSec /V 4 >>", catalog)
         capture[PdfError](PdfFile(doc).open()(pdf.version)).reason

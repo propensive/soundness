@@ -81,6 +81,11 @@ object Zip:
 
   given dataOpenable: Tactic[ZipError] => ZipDataOpenable = ZipDataOpenable()
 
+  given creatable: [path: Abstractable across Paths to Text]
+  =>  Tactic[ZipError]
+  =>  ZipBuilder.ZipCreatable[path] =
+    ZipBuilder.ZipCreatable[path]
+
   // The compression method actually recorded on an entry.
   enum Method(val id: Int):
     case Stored  extends Method(0)

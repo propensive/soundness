@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export aperture.{Exclusive, Grant, granting, Granting, Mode, Openable, open, Opener, Read, Write}
+export aperture.{create, Creatable, Creator, Exclusive, Grant, granting, Granting, Mode, Openable, open, Opener, Read, Write}

@@ -32,7 +32,8 @@
                                                                                                   */
 package soundness
 
-export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum, Duct, Ductile, Pace,
+export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
+    Duct, Ductile, Expanse, Malleable, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
     Records, records, Regulation, Spring, Stream, Substrate, locate, locateKey, memoize, pump,
     stream, streamOf, sweep, toLazyList}

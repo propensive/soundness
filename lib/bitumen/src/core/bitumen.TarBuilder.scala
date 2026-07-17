@@ -30,93 +30,104 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package bitumen
 
-import java.lang as jl
+import java.io as ji
+import java.nio.file as jnf
 
-import ambience.*, systems.javaSystem
 import anticipation.*
-import contingency.*
 import aperture.*
-import fulminate.*
-import galilei.*
+import contingency.*
+import galilei.CreateFlag
 import gossamer.*
-import nomenclature.*
+import hypotenuse.*
 import prepositional.*
-import serpentine.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+// The authoring handle provided by `path.create[Tar](flags*)`: bitumen's first writer.
+// Entries accumulate in insertion order; TAR permits duplicate names (later entries
+// supersede on extraction), so nothing is checked at insert. The archive is serialized only
+// when the creation scope closes — compressed per any `TarFlag`, long names encoded per any
+// `LongNameFormat` flag — to a temporary sibling moved atomically onto the target, so an
+// exception escaping the scope leaves nothing behind.
+class TarBuilder private[bitumen] () extends caps.ExclusiveCapability:
+  private var stack: List[Tar.Entry] = Nil
 
-import filesystemBackends.virtualMachine
+  def insert(entry: Tar.Entry): Unit = stack ::= entry
 
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
-//
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
-//
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
-object Upgrade:
-  inline def apply[source]
-    ( source: source )
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
+  def insert[data: Streamable by Data over Credit as streamable](name: TarRef, data: data)
+  :   Unit =
 
-    applyBytes(source.read[Data])
+    insert(Tar.Entry.File
+      ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
+        streamable.stream(data).toLazyList ))
 
+  private[bitumen] def tarfile(format: LongNameFormat): Tarfile =
+    Tarfile(stack.reverse.to(LazyList), format)
 
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
+object TarBuilder:
+  class TarCreatable[path: Abstractable across Paths to Text](using Tactic[TarError])
+  extends Creatable:
 
-    mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
+    type Self = path
+    type Form = Tar
+    type Operand = CreateFlag | TarFlag | LongNameFormat
+    type Grants = Grant.Read & Grant.Write
+    type Result = TarBuilder
 
-    . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
+    def create[result]
+      ( value: path, flags: List[CreateFlag | TarFlag | LongNameFormat] )
+      ( block: ((TarBuilder & Granting[Grant.Read & Grant.Write])^) ?=> result )
+    :   result =
 
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
+      val builder = new TarBuilder with Granting[Grant.Read & Grant.Write] {}
+      val outcome = block(using builder)
 
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
+      val format = flags.collectFirst { case format: LongNameFormat => format }
+        . getOrElse(LongNameFormat.Pax)
 
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
-          file.write(LazyList(bytes))
+      val tarfile = builder.tarfile(format)
 
-        val launcher: Text = System.properties.ethereal.script[Text]()
+      val stream: LazyList[Data] = flags.collectFirst:
+        case TarFlag.Gzip    => tarfile.gzip
+        case TarFlag.Zlib    => tarfile.zlib
+        case TarFlag.Deflate => tarfile.deflate
 
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
+      . getOrElse(tarfile.source[Data].toLazyList)
 
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
+      commit(value.generic, flags.collect { case flag: CreateFlag => flag }, stream)
+      outcome
 
+  // Serialize to a hidden temporary sibling, then move atomically onto the target.
+  private def commit(filename: Text, flags: List[CreateFlag], stream: LazyList[Data])
+    ( using Tactic[TarError] )
+  :   Unit =
 
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+    val target = jnf.Path.of(filename.s).nn
+
+    if !flags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+    then abort(TarError(TarError.Reason.AlreadyExists))
+
+    try
+      if flags.contains(CreateFlag.Parents) then
+        Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
+
+      val temporary = target.resolveSibling(t".${filename.s.split('/').nn.last.nn}.part".s).nn
+
+      try
+        val out = ji.FileOutputStream(temporary.toFile)
+
+        try stream.each { chunk => out.write(chunk.mutable(using Unsafe)) }
+        finally out.close()
+
+        jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,
+          jnf.StandardCopyOption.REPLACE_EXISTING)
+      catch case throwable: Throwable =>
+        try jnf.Files.deleteIfExists(temporary) catch case _: Exception => ()
+        throw throwable
+    catch
+      case error: ji.IOException =>
+        abort(TarError(TarError.Reason.CannotWrite(error.getMessage.nn.tt)))

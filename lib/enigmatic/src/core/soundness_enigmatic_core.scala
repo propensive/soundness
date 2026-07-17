@@ -40,7 +40,8 @@ export
       CipherSession, Cleartext, cleartext, Crypto, CryptoError, Ctr, decrypt, Decryptor, Des,
       Divulgence,
       Dsa, Ecb, encrypt, Encryptor, Encryption, expose,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, NoPadding, Ofb, Pem, PemError,
+      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, keystore, Keystore, KeystoreError,
+      NoPadding, Ofb, Pem, PemError,
       PemLabel, Password,
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
       Symmetric, SymmetricKey, TripleDes }

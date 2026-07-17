@@ -191,7 +191,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     import filesystemOptions.overwritePreexisting.disabled
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
-                    if !cacheDir.exists() then cacheDir.create[Directory]()
+                    if !cacheDir.exists() then cacheDir.create[Directory](CreateFlag.Parents)
                     cacheRunner.open[File](Write, OpenFlag.Create)(file.write(LazyList(bytes)))
                     bytes
 
@@ -530,7 +530,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           task(n"pid-watcher"):
             safely:
-              List[Path on Local](socketFile, buildFile, pidFile).watch: watcher =>
+              List[Path on Local](socketFile, buildFile, pidFile).open[Watch](): watcher ?=>
                 watcher.stream.each:
                   case Delete(_, _) | Modify(_, _) =>
                     Log.warn(DaemonLogEvent.Termination)

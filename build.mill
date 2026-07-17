@@ -824,7 +824,7 @@ object burdock extends Library:
       settings.cc(super.scalacOptions())
 
 object cacophony extends Library:
-  object core extends Component(gesticulate.core, quantitative.units, anticipation.http):
+  object core extends Component(aperture.core, gesticulate.core, quantitative.units, anticipation.http):
     override def scalaJs = false // audio (`javax.sound.sampled`)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -1074,7 +1074,7 @@ object embarcadero extends Library:
       settings.cc(settings.maxInlines(super.scalacOptions(), "64"))
 
 object enigmatic extends Library:
-  object core extends Component(gastronomy.core):
+  object core extends Component(aperture.core, gastronomy.core):
     override def scalaJs = false // crypto via `gastronomy` (`java.security`/`javax.crypto`)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -1276,7 +1276,8 @@ object exoskeleton extends Library:
       settings.cc(super.scalacOptions())
 
 object facsimile extends Library:
-  object core extends Component(turbulence.jvm, zephyrine.core, gastronomy.core, enigmatic.core,
+  object core extends Component(aperture.core, turbulence.jvm, zephyrine.core, gastronomy.core,
+      enigmatic.core,
       hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
     override def scalaJs = false // random-access file reading (`java.nio`), `java.util.zip`, JCE
     override def scalacOptions = Task:
@@ -2010,7 +2011,7 @@ object superlunary extends Library:
     override def finalMainClass: Task.Simple[String] = "superlunary.run"
 
 object surveillance extends Library:
-  object core extends Component(eucalyptus.core):
+  object core extends Component(aperture.core, eucalyptus.core):
     override def scalaJs = false // file watching (`java.nio.file` WatchService)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))

@@ -55,3 +55,10 @@ extension [target](value: target)
   :   (Opener { val openable: o.type })^{o} =
 
     Opener(o, value)
+
+  // Creates `value` in form `form`: `path.create[Directory]()` for an empty artifact, or
+  // `path.create[Zip]() { ... }` to author its contents, committed when the scope closes.
+  def create[form](using c: (target is Creatable in form)^)
+  :   (Creator { val creatable: c.type })^{c} =
+
+    Creator(c, value)

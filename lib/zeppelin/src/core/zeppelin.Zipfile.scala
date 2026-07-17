@@ -90,17 +90,15 @@ object Zipfile:
       if !seen.add(entry.ref.encode)
       then raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
 
-  // A random-access view of the bytes backing a ZIP archive.
-  private[zeppelin] trait ByteSource:
-    def size: Long
-    def read(offset: Long, length: Int): Data
-
-  private[zeppelin] class DataSource(data: Data) extends ByteSource:
+  // Sources implement zephyrine's shared `Expanse`, the random-access view of the bytes
+  // backing an archive, so other positional consumers (and future ones, such as ranged HTTP)
+  // can interoperate.
+  private[zeppelin] class DataSource(data: Data) extends Expanse:
     def size: Long = data.length.toLong
     def read(offset: Long, length: Int): Data = data.slice(offset.toInt, offset.toInt + length)
 
   // Re-opens the file for each read, so entries stay detached and reusable with no held handle.
-  private class FileSource(filename: Text) extends ByteSource:
+  private class FileSource(filename: Text) extends Expanse:
     private def open(): jnc.FileChannel =
       jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.READ).nn
 
@@ -127,7 +125,7 @@ object Zipfile:
   // Positional reads against a channel held open for the lifetime of a `ZipHandle`'s scope —
   // unlike `FileSource`, which re-opens per read so detached `Zipfile` entries stay usable
   // beyond it.
-  private[zeppelin] class ChannelSource(channel: jnc.FileChannel) extends ByteSource:
+  private[zeppelin] class ChannelSource(channel: jnc.FileChannel) extends Expanse:
     def size: Long = channel.size
 
     def read(offset: Long, length: Int): Data =
@@ -142,7 +140,7 @@ object Zipfile:
 
         buffer.array.nn.immutable(using Unsafe)
 
-  private[zeppelin] def parse(source: ByteSource): Zipfile raises ZipError =
+  private[zeppelin] def parse(source: Expanse): Zipfile raises ZipError =
     val size = source.size
     if size < 22 then raise(ZipError(ZipError.Reason.MissingEocd))
 

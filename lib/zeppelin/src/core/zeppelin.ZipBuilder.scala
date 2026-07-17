@@ -30,60 +30,140 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package zeppelin
 
 import java.io as ji
-import java.net as jn
-import java.nio.channels as jnc
 import java.nio.file as jnf
 
+import anticipation.*
 import aperture.*
 import contingency.*
+import galilei.CreateFlag
+import gossamer.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
+import hieroglyph.*, charEncoders.utf8Encoder
+import turbulence.*
+import vacuous.*
+import zephyrine.*
 
-// The `java.nio` representations of a path, for interoperating with Java APIs directly.
-extension [plane: Filesystem](path: Path on plane)
-  def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
-  def javaFile: ji.File = javaPath.toFile.nn
+// The authoring handle provided by `path.create[Zip]()` (and, refined with manifest support,
+// `path.create[Jar]()`). Entries accumulate in insertion order; a duplicate name is an error
+// at the offending `insert`, not at commit. The archive is serialized only when the creation
+// scope closes, to a temporary sibling moved atomically onto the target, so an exception
+// escaping the scope leaves nothing behind.
+class ZipBuilder private[zeppelin] (using Tactic[ZipError])
+extends caps.ExclusiveCapability:
 
-object SocketCreation:
-  // Binding a Unix-domain socket is inherently scoped under the new model: the block form
-  // provides the live, bound `Socket` and closes its channel when the scope ends (the socket
-  // file remains, as before; an exception escaping the scope removes it). The no-block form
-  // binds and immediately closes, leaving just the socket file.
-  class SocketCreatable[filesystem <: Posix: Filesystem, path <: Path on filesystem]
-    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
+  private var stack: List[Zip.Entry] = Nil
+  private var names: Set[Text] = Set()
+  private var remark: Optional[Text] = Unset
+
+  def insert(entry: Zip.Entry): Unit =
+    if names.contains(entry.ref.encode)
+    then abort(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
+
+    names += entry.ref.encode
+    stack ::= entry
+
+  def insert[content: Streamable by Data over Credit](ref: Path on Zip, content: content)
+    ( using Zip.Compression )
+  :   Unit =
+
+    insert(Zip.Entry(ref, content))
+
+  def comment(text: Text): Unit = remark = text
+
+  private[zeppelin] def zipfile: Zipfile = Zipfile(stack.reverse.to(LazyList), remark, Unset)
+
+class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
+
+  // Writes `META-INF/MANIFEST.MF` from the given attributes, with values wrapped at 72 bytes
+  // per the JAR specification. Call it first if the manifest should lead the archive, as
+  // convention prefers.
+  def manifest(attributes: (Text, Text)*)(using Zip.Compression): Unit =
+    val lines = attributes.to(List).map { (key, value) => wrap(t"$key: $value") }
+    val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
+    insert(Zip.Entry(ZipBuilder.manifestRef, text))
+
+  private def wrap(line: Text): Text =
+    if line.s.length <= 70 then line
+    else t"${line.s.take(70)}\r\n ${wrap(line.s.drop(70).tt)}"
+
+object ZipBuilder:
+  private[zeppelin] val manifestRef: Path on Zip =
+    Path[Zip, Text, Tuple](t"", List(t"MANIFEST.MF", t"META-INF"))
+
+  // Creation instances for the `Zip` and `Jar` forms. The default `make` (a discarded
+  // builder) writes a valid empty archive. `CreateFlag.Parents` and `CreateFlag.Replace`
+  // govern the destination as they do for filesystem entries.
+  class ZipCreatable[path: Abstractable across Paths to Text](using Tactic[ZipError])
   extends Creatable:
 
     type Self = path
-    type Form = Socket
+    type Form = Zip
     type Operand = CreateFlag
     type Grants = Grant.Read & Grant.Write
-    type Result = Socket
+    type Result = ZipBuilder
 
     def create[result]
       ( value: path, flags: List[CreateFlag] )
-      ( block: (Socket & Granting[Grant.Read & Grant.Write]) ?=> result )
+      ( block: (ZipBuilder & Granting[Grant.Read & Grant.Write]) ?=> result )
     :   result =
 
-      Creation.ensure(value, flags)
-      Creation.replace(value, flags)
+      val builder = new ZipBuilder with Granting[Grant.Read & Grant.Write] {}
+      val outcome = block(using builder)
+      commit(value.generic, flags, builder.zipfile)
+      outcome
 
-      val address = jn.UnixDomainSocketAddress.of(value.javaPath).nn
-      val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
-      channel.bind(address)
+  class JarCreatable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+  extends Creatable:
+
+    type Self = path
+    type Form = Jar
+    type Operand = CreateFlag
+    type Grants = Grant.Read & Grant.Write
+    type Result = JarBuilder
+
+    def create[result]
+      ( value: path, flags: List[CreateFlag] )
+      ( block: (JarBuilder & Granting[Grant.Read & Grant.Write]) ?=> result )
+    :   result =
+
+      val builder = new JarBuilder with Granting[Grant.Read & Grant.Write] {}
+      val outcome = block(using builder)
+      commit(value.generic, flags, builder.zipfile)
+      outcome
+
+  // Serialize to a hidden temporary sibling, then move atomically onto the target.
+  private def commit(filename: Text, flags: List[CreateFlag], zipfile: Zipfile)
+    ( using Tactic[ZipError] )
+  :   Unit =
+
+    val target = jnf.Path.of(filename.s).nn
+
+    if !flags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+    then abort(ZipError(ZipError.Reason.AlreadyExists))
+
+    try
+      if flags.contains(CreateFlag.Parents) then
+        Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
+
+      val parent = target.toAbsolutePath.nn.getParent
+      val temporary = target.resolveSibling(t".${filename.s.split('/').nn.last.nn}.part".s).nn
 
       try
-        try block(using new Socket(channel) with Granting[Grant.Read & Grant.Write] {})
-        catch case throwable: Throwable =>
-          try backend.deleteIfExists(value) catch case _: Exception => ()
-          throw throwable
-      finally channel.close()
+        val out = ji.FileOutputStream(temporary.toFile)
 
-  given socket: [filesystem <: Posix: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem, Tactic[IoError] )
-  =>  SocketCreatable[filesystem, path] =
-    SocketCreatable[filesystem, path]
+        try zipfile.serialize.each { chunk => out.write(chunk.mutable(using Unsafe)) }
+        finally out.close()
 
-export SocketCreation.socket as socketCreatable
+        jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,
+          jnf.StandardCopyOption.REPLACE_EXISTING)
+      catch case throwable: Throwable =>
+        try jnf.Files.deleteIfExists(temporary) catch case _: Exception => ()
+        throw throwable
+    catch
+      case error: ji.IOException =>
+        abort(ZipError(ZipError.Reason.CannotWrite(error.getMessage.nn.tt)))

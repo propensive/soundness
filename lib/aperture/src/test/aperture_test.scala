@@ -103,6 +103,41 @@ given docOpenable: DocOpenable = DocOpenable()
 given binOpenable: BinOpenable = BinOpenable()
 given soleOpenable: SoleOpenable = SoleOpenable()
 
+// A creatable counterpart: an in-memory "vault" of documents, committed on scope close so
+// that rollback semantics are observable.
+class Vault:
+  var committed: Optional[List[Text]] = Unset
+  var made: Boolean = false
+
+case class VaultRef(vault: Vault)
+
+class VaultScribe private[aperture] (var lines: List[Text])
+extends caps.ExclusiveCapability:
+  def append(line: Text): Unit = lines = line :: lines
+
+class VaultCreatable extends Creatable:
+  type Self = VaultRef
+  type Form = Doc
+  type Operand = TestFlag
+  type Grants = Grant.Read & Grant.Write
+  type Result = VaultScribe
+
+  override def make(value: VaultRef, flags: List[TestFlag]): Unit =
+    value.vault.made = true
+    value.vault.committed = Nil
+
+  def create[result]
+    ( value: VaultRef, flags: List[TestFlag] )
+    ( block: ((VaultScribe & Granting[Grant.Read & Grant.Write])^) ?=> result )
+  :   result =
+
+    val scribe = new VaultScribe(Nil) with Granting[Grant.Read & Grant.Write] {}
+    val outcome = block(using scribe)
+    value.vault.committed = scribe.lines.reverse
+    outcome
+
+given vaultCreatable: VaultCreatable = VaultCreatable()
+
 object Tests extends Suite(m"Aperture Tests"):
   def run(): Unit =
     test(m"An entity opens readably by default"):
@@ -142,6 +177,42 @@ object Tests extends Suite(m"Aperture Tests"):
         Ref(t"eta").open() { handle ?=> handle.title }
       . map(_.message)
     . assert(_.nonEmpty)
+
+    test(m"Instantiation creates an empty artifact and returns the target"):
+      val vault = Vault()
+      val target = VaultRef(vault).create()
+      (target.vault.made, vault.committed)
+    . assert(_ == (true, Nil))
+
+    test(m"Scoped authoring commits at scope close"):
+      val vault = Vault()
+
+      VaultRef(vault).create(): scribe ?=>
+        scribe.append(t"first")
+        scribe.append(t"second")
+
+      vault.committed
+    . assert(_ == List(t"first", t"second"))
+
+    test(m"An exception escaping the scope commits nothing"):
+      val vault = Vault()
+
+      try
+        VaultRef(vault).create(): scribe ?=>
+          scribe.append(t"doomed")
+          throw new RuntimeException("boom")
+      catch case _: RuntimeException => ()
+
+      vault.committed
+    . assert(_ == Unset)
+
+    test(m"The scoped result is returned from the authoring block"):
+      val vault = Vault()
+
+      VaultRef(vault).create(): scribe ?=>
+        scribe.append(t"only")
+        t"result"
+    . assert(_ == t"result")
 
     test(m"A composite mode's atoms are its constituent atomic modes"):
       (Read & Write & Exclusive).atoms

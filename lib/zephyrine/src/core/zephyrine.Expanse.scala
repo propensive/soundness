@@ -30,93 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package zephyrine
 
-import java.lang as jl
-
-import ambience.*, systems.javaSystem
 import anticipation.*
-import contingency.*
-import aperture.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import nomenclature.*
-import prepositional.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+// A random-access view of an expanse of bytes: the abstraction beneath formats whose access
+// pattern is positional rather than sequential -- ZIP central directories, PDF cross-reference
+// tables, memory-mapped files -- and beneath any medium that can serve ranged reads, such as a
+// file channel, an in-memory buffer, or an HTTP resource supporting `Range` requests.
+// Implementations state their own lifetime discipline: some hold a resource open for a scope,
+// while others re-acquire it per read.
+trait Expanse:
+  def size: Long
+  def read(offset: Long, length: Int): Data
 
-import filesystemBackends.virtualMachine
-
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
-//
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
-//
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
-object Upgrade:
-  inline def apply[source]
-    ( source: source )
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
-
-    applyBytes(source.read[Data])
-
-
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
-
-    mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
-
-    . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
-
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
-
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
-
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
-          file.write(LazyList(bytes))
-
-        val launcher: Text = System.properties.ethereal.script[Text]()
-
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
-
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
-
-
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+// An `Expanse` whose bytes may also be replaced in place, as in a memory-mapped file. The
+// region is fixed: `write` may not extend beyond `size`.
+trait Malleable extends Expanse:
+  def write(offset: Long, data: Data): Unit

@@ -132,3 +132,34 @@ object Tests extends Suite(m"Cacophony Tests"):
           recording.stop()
           chunk.channels
         . assert(_ == 1)
+
+    test(m"Playing on an outlet without the Write grant does not compile"):
+      demilitarize:
+        val outlet: Outlet = ???
+        outlet.open[Pcm](): out ?=>
+          out.play(??? : Audio)
+      . map(_.message)
+    . assert(_.nonEmpty)
+
+    test(m"Playing on an outlet with the Write grant compiles"):
+      demilitarize:
+        val outlet: Outlet = ???
+        outlet.open[Pcm](Write): out ?=>
+          out.play(??? : Audio)
+      . map(_.message)
+    . assert(_ == Nil)
+
+    test(m"A feed opened for capture with a layout compiles"):
+      demilitarize:
+        val feed: Feed = ???
+        feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000)): input ?=>
+          input.stream.head
+      . map(_.message)
+    . assert(_ == Nil)
+
+    Feed.list.headOption.foreach: feed =>
+      if feed.supports[Monaural](8000.0*Hertz, 16) then
+        test(m"Scoped capture from a feed produces audio chunks"):
+          feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Chunk(1024)):
+            input ?=> input.stream.head.channels
+        . assert(_ == 1)

@@ -299,13 +299,6 @@ extension [plane: Filesystem](path: Path on plane)
     backend.touch(path)
     Log.fine(IoEvent.Touch(path.show))
 
-  transparent inline def create[entry]()
-    ( using creatable: (entry is Creatable on plane)^, log: (IoEvent is Loggable)^ )
-  :   creatable.Result =
-
-    Log.info(IoEvent.Create(path.show))
-    creatable.create(path)
-
 extension (path: Path on Windows)
   def created[instant: Instantiable across Instants from Long]()
     ( using backend: FilesystemBackend on Windows )

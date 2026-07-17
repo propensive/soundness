@@ -30,93 +30,58 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ethereal
+package surveillance
 
-import java.lang as jl
-
-import ambience.*, systems.javaSystem
 import anticipation.*
-import contingency.*
 import aperture.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import nomenclature.*
+import contingency.*
 import prepositional.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
 
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.deleteRecursively.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
+// The scoped capability provided by opening a path (or several) as `Watch`:
+// `path.open[Watch]()`. The OS watch registration lasts exactly as long as the block, and the
+// handle — with anything lazily derived from its event stream — is confined to it by capture
+// checking. Watching is pure observation, so no operation is grant-gated: the mode is
+// irrelevant, and `Read` (the default) describes it best.
+class WatchHandle private[surveillance] (watch: Watch) extends caps.ExclusiveCapability:
+  def stream: LazyList[WatchEvent] = watch.stream
 
-import filesystemBackends.virtualMachine
+// A named class rather than an anonymous given instance, for the reasons documented on
+// galilei's `FileOpenable`.
+class WatchOpenable[path: Abstractable across Paths to Text]
+  ( using watcher: Watcher, watchError: Tactic[WatchError] )
+extends Openable:
 
-// Apply an upgrade to the running ethereal application. The given `source`
-// must yield the bytes of a complete signed runner+JAR binary — exactly
-// what `ethereal-sign` produces. The Scala side performs no verification;
-// the freshly-spawned launcher's `check_updates` (in `update.rs`) verifies
-// the ML-DSA-44 signature against the public key baked into the running
-// launcher before swapping anything into place.
-//
-// On success this function does not return — it spawns a new launcher and
-// `System.exit(0)`s the current JVM. The new launcher picks up `.pending`,
-// verifies, swaps, and re-execs into the upgraded binary.
-//
-// If the signature is bad, the new launcher silently deletes `.pending` and
-// continues with the existing binary. The caller's exit was still effective.
-// There is no synchronous success/failure signal because the verifying
-// process is, by design, not the calling one.
-object Upgrade:
-  inline def apply[source]
-    ( source: source )
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics,
-            readable:    source is Readable to Data )
-  :   Nothing raises UpgradeError =
+  type Self = path
+  type Form = Watch
+  type Operand = Nothing
+  type Result = WatchHandle
 
-    applyBytes(source.read[Data])
+  def open[grants <: Grant, result]
+    ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((WatchHandle & Granting[grants])^) ?=> result )
+  :   result =
 
+    val watch = Watch(List(value))
+    try block(using new WatchHandle(watch) with Granting[grants] {})
+    finally watch.unregister()
 
-  def applyBytes(bytes: Data)
-    ( using environment: Environment,
-            system:      System,
-            diagnostics: Diagnostics )
-  :   Nothing raises UpgradeError =
+// Watching several paths at once: `List(a, b, c).open[Watch]()`, with one event stream
+// multiplexing all of them, exactly as `Watch` itself works. Parameterized over the concrete
+// collection type, since `Openable`'s `Self` is matched invariantly.
+class WatchAllOpenable[collection <: Iterable[path], path: Abstractable across Paths to Text]
+  ( using watcher: Watcher, watchError: Tactic[WatchError] )
+extends Openable:
 
-    mitigate:
-      case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
-      case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
-      case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
+  type Self = collection
+  type Form = Watch
+  type Operand = Nothing
+  type Result = WatchHandle
 
-    . protect:
-        val name: Text = System.properties.ethereal.name[Text]()
+  def open[grants <: Grant, result]
+    ( value: collection, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((WatchHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-        val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
-
-        val pendingDir: Path on Linux = dataHome/name
-        pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
-        val pendingPath: Path on Linux = pendingDir/t".pending"
-
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
-          file.write(LazyList(bytes))
-
-        val launcher: Text = System.properties.ethereal.script[Text]()
-
-        try new jl.ProcessBuilder(launcher.s).inheritIO().nn.start()
-        catch case _: jl.Throwable =>
-          abort(UpgradeError(UpgradeError.Reason.CannotRespawnLauncher))
-
-        jl.System.exit(0)
-        throw new jl.AssertionError("unreachable: System.exit returned")
-
-
-  private def isWindows(using system: System): Boolean =
-    safely(System.properties.os.name[Text]().lower.contains(t"win")).or(false)
+    val watch = Watch(value)
+    try block(using new WatchHandle(watch) with Granting[grants] {})
+    finally watch.unregister()

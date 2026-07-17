@@ -49,6 +49,8 @@ object TarError:
     case BadSparseMap(text: Text) extends Reason(9)
     case DeviceCreationUnsupported(path: Text) extends Reason(10)
     case WriteUnsupported extends Reason(11)
+    case AlreadyExists extends Reason(12)
+    case CannotWrite(detail: Text) extends Reason(13)
 
   given communicable: Reason is Communicable =
     case Reason.NameTooLong(field, length, maximum) =>
@@ -87,6 +89,12 @@ object TarError:
 
     case Reason.WriteUnsupported =>
       m"TAR archives cannot yet be opened for writing"
+
+    case Reason.AlreadyExists =>
+      m"an archive already exists at this path"
+
+    case Reason.CannotWrite(detail) =>
+      m"the archive could not be written: $detail"
 
 case class TarError(reason: TarError.Reason)(using Diagnostics)
 extends Error(284, reason.number)(m"the TAR archive could not be read or written because $reason")

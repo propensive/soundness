@@ -277,6 +277,92 @@ object Tests extends Suite(m"Zeppelin tests"):
         capture[ZipError](archive.open[Zip](Write) { () }).reason
       . assert(_ == ZipError.Reason.WriteUnsupported)
 
+    suite(m"JAR archives"):
+      val manifestText =
+        t"Manifest-Version: 1.0\r\nMain-Class: com.example.\r\n Main\r\nBuilt-By: soundness\r\n\r\nName: ignored/Section\r\nSealed: true\r\n"
+
+      val jarArchive = writeZip
+        ( t"app.jar",
+          entry(t"META-INF/MANIFEST.MF", manifestText),
+          entry(t"com/example/Main.class", t"bytecode") )
+
+      test(m"A JAR's manifest main attributes are parsed"):
+        jarArchive.open[Jar]():
+          zip.manifest
+      . assert(_ == Map
+          ( t"Manifest-Version" -> t"1.0",
+            t"Main-Class"       -> t"com.example.Main",
+            t"Built-By"         -> t"soundness" ))
+
+      test(m"A JAR handle still lists entries like a Zip"):
+        jarArchive.open[Jar]():
+          zip.entries.to(List).map(_.ref.encode).to(Set)
+      . assert(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
+
+      test(m"An archive without a manifest has no attributes"):
+        writeZip(t"plain.jar", entry(t"a.txt", t"alpha")).open[Jar]():
+          zip.manifest
+      . assert(_ == Map())
+
+    suite(m"Creating archives"):
+      test(m"A created archive round-trips through open"):
+        val target = workDir/t"created.zip"
+
+        target.create[Zip](): builder ?=>
+          builder.insert(zipRef(t"a.txt"), t"alpha")
+          builder.insert(zipRef(t"b.txt"), t"beta")
+
+        target.open[Zip]():
+          zip.entries.to(List).map { entry => (entry.ref.encode, entry.read[Text]) }
+      . assert(_ == List((t"a.txt", t"alpha"), (t"b.txt", t"beta")))
+
+      test(m"A discarded builder writes a valid empty archive"):
+        val target = workDir/t"empty-created.zip"
+        target.create[Zip]()
+        target.open[Zip]()(zip.entries.length)
+      . assert(_ == 0)
+
+      test(m"A duplicate entry fails at the offending insert"):
+        import errorDiagnostics.emptyDiagnostics
+        val target = workDir/t"dup.zip"
+
+        capture[ZipError]:
+          target.create[Zip](): builder ?=>
+            builder.insert(zipRef(t"same"), t"one")
+            builder.insert(zipRef(t"same"), t"two")
+        . reason
+      . assert(_.isInstanceOf[ZipError.Reason.DuplicateEntry])
+
+      test(m"An exception escaping the creation scope leaves nothing behind"):
+        import errorDiagnostics.emptyDiagnostics
+        val target = workDir/t"doomed.zip"
+
+        capture[ZipError]:
+          target.create[Zip](): builder ?=>
+            builder.insert(zipRef(t"x"), t"data")
+            abort(ZipError(ZipError.Reason.MissingEocd))
+
+        target.exists()
+      . assert(_ == false)
+
+      test(m"Creating over an existing archive requires Replace"):
+        import errorDiagnostics.emptyDiagnostics
+        val target = workDir/t"pre.zip"
+        target.create[Zip]()
+        capture[ZipError](target.create[Zip]()).reason
+      . assert(_ == ZipError.Reason.AlreadyExists)
+
+      test(m"A created JAR's manifest round-trips"):
+        val target = workDir/t"created.jar"
+
+        target.create[Jar](): builder ?=>
+          builder.manifest(t"Manifest-Version" -> t"1.0", t"Main-Class" -> t"com.example.Main")
+          builder.insert(zipRef(t"com/example/Main.class"), t"bytecode")
+
+        target.open[Jar]():
+          zip.manifest
+      . assert(_ == Map(t"Manifest-Version" -> t"1.0", t"Main-Class" -> t"com.example.Main"))
+
     suite(m"Interoperability with the JDK writer"):
       test(m"reads entry names from an externally (JDK) written archive"):
         names(readEntries(writeRawZip(t"foreign.zip", t"one.txt", t"two.txt")))

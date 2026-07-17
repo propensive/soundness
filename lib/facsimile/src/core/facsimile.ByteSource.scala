@@ -39,11 +39,9 @@ import anticipation.*
 import rudiments.*
 import vacuous.*
 
-// A random-access view of the bytes backing a PDF file. A read past the end of the source
-// yields fewer bytes than requested, never padding.
-private[facsimile] trait ByteSource:
-  def size: Long
-  def read(offset: Long, length: Int): Data
+// A random-access view of the bytes backing a PDF file, as zephyrine's shared `Expanse`. A
+// read past the end of the source yields fewer bytes than requested, never padding.
+private[facsimile] trait ByteSource extends zephyrine.Expanse
 
 private[facsimile] class DataSource(data: Data) extends ByteSource:
   def size: Long = data.length.toLong

@@ -43,6 +43,16 @@ import vacuous.*
 import zephyrine.*
 
 object Pdf:
+  // Anchored here — the form's companion — so `path.open[Pdf]()` and `data.open[Pdf]()`
+  // resolve with no import.
+  given pathOpenable: [path: Abstractable across Paths to Text]
+  =>  Tactic[PdfError]
+  =>  ( PdfFile.PdfPathOpenable[path]^ ) =
+    PdfFile.PdfPathOpenable[path]
+
+  given dataOpenable: Tactic[PdfError] => ( PdfFile.PdfDataOpenable^ ) =
+    PdfFile.PdfDataOpenable()
+
   case class Version(major: Int, minor: Int)
 
   // An embedded file from the `/EmbeddedFiles` name tree. Its metadata is materialized, but

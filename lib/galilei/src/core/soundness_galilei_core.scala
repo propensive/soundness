@@ -35,7 +35,7 @@ package soundness
 export
   galilei
   . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
-      Creatable, create, created, CreateNonexistentParents, D, delete,
+      created, CreateFlag, CreateNonexistentParents, Creation, D, delete,
       DeleteRecursively, DereferenceSymlinks, descendants, dir, Directory, DirectoryHandle,
       DirectoryOpenable, Dos, Drive, Entry,
       entry, executable, exists, Explorable, Fifo, file, File, FileOpenable,
@@ -43,8 +43,8 @@ export
       Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
       MacOs, modified, MoveAtomically, moveInto, moveTo, OpenFlag,
       OverwritePreexisting, p, Platform, Posix, readable, size, Socket, Stat,
-      Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder, UnixEntry,
-      Volume, volume, Windows, WindowsEntry, wipe, writable, write }
+      Scratch, Substantiable, Subtree, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder,
+      UnixEntry, Volume, volume, Windows, WindowsEntry, wipe, writable, write }
 
 package interfaces.paths:
   export
