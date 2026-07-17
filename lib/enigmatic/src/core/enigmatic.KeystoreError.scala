@@ -30,24 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package enigmatic
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Crypto, CryptoError, Ctr, decrypt, Decryptor, Des,
-      Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption, expose,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, keystore, Keystore, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes }
+import anticipation.*
+import fulminate.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+object KeystoreError:
+  given communicable: Reason is Communicable =
+    case Reason.Unreadable       => m"the keystore could not be read with the given password"
+    case Reason.WriteUnsupported => m"keystores cannot yet be opened for writing"
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+  enum Reason(val number: Int) extends Clarification:
+    case Unreadable       extends Reason(1)
+    case WriteUnsupported extends Reason(2)
+
+case class KeystoreError(reason: KeystoreError.Reason)(using Diagnostics)
+extends Error(522, reason.number)(m"the keystore operation failed because $reason")

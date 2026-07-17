@@ -485,4 +485,39 @@ object Tests extends Suite(m"Gastronomy tests"):
           chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
       . assert(_ == t"Hello, streaming world!")
 
+    suite(m"Keystores"):
+      import java.io as ji
+      import java.security as js
+
+      given (Text is Abstractable across Paths to Text) = identity(_)
+
+      def createKeystore(password: Array[Char] | Null): Text =
+        val path = t"/tmp/enigmatic-keystore-${java.util.UUID.randomUUID.nn.toString}.p12"
+        val keystore = js.KeyStore.getInstance("PKCS12").nn
+        keystore.load(null, null)
+        val out = ji.FileOutputStream(path.s)
+        try keystore.store(out, if password == null then Array.empty[Char] else password)
+        finally out.close()
+        path
+
+      val guarded = createKeystore(Array('s', 'e', 's', 'a', 'm', 'e'))
+
+      test(m"An empty keystore opens with the right password"):
+        guarded.open[Keystore](Password(t"sesame")):
+          keystore.aliases
+      . assert(_ == Nil)
+
+      test(m"A wrong password is refused as Unreadable"):
+        capture[KeystoreError](guarded.open[Keystore](Password(t"wrong")) { () }).reason
+      . assert(_ == KeystoreError.Reason.Unreadable)
+
+      test(m"Opening a keystore for writing is refused"):
+        capture[KeystoreError](guarded.open[Keystore](Write, Password(t"sesame")) { () }).reason
+      . assert(_ == KeystoreError.Reason.WriteUnsupported)
+
+      test(m"A missing certificate alias is Unset"):
+        guarded.open[Keystore](Password(t"sesame")):
+          keystore.certificate(t"absent")
+      . assert(_ == Unset)
+
     CaptureTests()

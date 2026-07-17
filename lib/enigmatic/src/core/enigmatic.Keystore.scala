@@ -30,24 +30,89 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package enigmatic
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Crypto, CryptoError, Ctr, decrypt, Decryptor, Des,
-      Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption, expose,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, keystore, Keystore, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes }
+import java.io as ji
+import java.security as js
+import java.util as ju
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+import anticipation.*
+import aperture.*
+import contingency.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+// The form for PKCS#12 keystores: `path.open[Keystore](Password(t"..."))`. The password is
+// passed as a flag -- enigmatic's opaque `Password`, so the secret neither appears in the call
+// nor renders in diagnostics -- and the handle serves the store's aliases and DER-encoded
+// certificates for the duration of the scope.
+trait Keystore
+
+// The contextual keystore handle within an `open[Keystore]` block, in the manner of galilei's
+// `file`. Transparent inline so the handle's precise (grant-refined, capturing) type is
+// preserved.
+transparent inline def keystore(using handle: Keystore.KeystoreHandle^): handle.type = handle
+
+object Keystore:
+  class KeystoreHandle private[enigmatic] (keystore: js.KeyStore)
+  extends caps.ExclusiveCapability:
+
+    def aliases: List[Text] =
+      val enumeration = keystore.aliases.nn
+      val builder = List.newBuilder[Text]
+      while enumeration.hasMoreElements do builder += enumeration.nextElement.nn.tt
+      builder.result()
+
+    // The DER-encoded (X.509) certificate stored under `alias`, if any.
+    def certificate(alias: Text): Optional[Data] =
+      keystore.getCertificate(alias.s) match
+        case null        => Unset
+        case certificate => certificate.getEncoded.nn.immutable(using Unsafe)
+
+  // A named class rather than an anonymous given instance, for the reasons documented on
+  // galilei's `FileOpenable`. Read-only until staged keystore writing lands.
+  class KeystoreOpenable[path: Abstractable across Paths to Text]
+    ( using keystoreError: Tactic[KeystoreError] )
+  extends Openable:
+
+    type Self = path
+    type Form = Keystore
+    type Operand = Password
+    type Result = KeystoreHandle
+
+    def open[grants <: Grant, result]
+      ( value: path, mode: Mode granting grants, flags: List[Password] )
+      ( block: ((KeystoreHandle & Granting[grants])^) ?=> result )
+    :   result =
+
+      if mode.atoms.contains(Write)
+      then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
+
+      val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
+
+      try
+        val keystore = js.KeyStore.getInstance("PKCS12").nn
+
+        // A missing password loads without an integrity check, per `KeyStore.load`. The
+        // cleartext is copied into a `Char` array for the JDK, then zeroed.
+        flags.prim.lay(loadKeystore(keystore, in, null)): password =>
+          password.expose:
+            val chars = cleartext.text.s.toCharArray.nn
+            try loadKeystore(keystore, in, chars) finally ju.Arrays.fill(chars, ' ')
+
+        block(using new KeystoreHandle(keystore) with Granting[grants] {})
+      finally in.close()
+
+    // Public, and failure-wrapping: any of the JDK's load-time exceptions (bad password, bad
+    // format, truncation) becomes `Unreadable`, which deliberately does not distinguish a
+    // wrong password from a corrupt store.
+    def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: Array[Char] | Null)
+    :   Unit =
+      try keystore.load(in, password)
+      catch case error: Exception => abort(KeystoreError(KeystoreError.Reason.Unreadable))
+
+  given openable: [path: Abstractable across Paths to Text]
+  =>  Tactic[KeystoreError]
+  =>  ( KeystoreOpenable[path]^ ) =
+    KeystoreOpenable[path]
