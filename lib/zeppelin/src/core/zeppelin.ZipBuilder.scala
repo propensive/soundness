@@ -32,98 +32,138 @@
                                                                                                   */
 package zeppelin
 
-import java.nio.channels as jnc
+import java.io as ji
 import java.nio.file as jnf
 
 import anticipation.*
 import aperture.*
 import contingency.*
+import galilei.CreateFlag
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
+import hieroglyph.*, charEncoders.utf8Encoder
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-// The form for Java archives: `path.open[Jar]()`. A JAR is a ZIP, so a `JarHandle` is a
-// `ZipHandle` refined with the archive's parsed manifest; entries and their content behave
-// exactly as they do for the `Zip` form.
-trait Jar
+// The authoring handle provided by `path.create[Zip]()` (and, refined with manifest support,
+// `path.create[Jar]()`). Entries accumulate in insertion order; a duplicate name is an error
+// at the offending `insert`, not at commit. The archive is serialized only when the creation
+// scope closes, to a temporary sibling moved atomically onto the target, so an exception
+// escaping the scope leaves nothing behind.
+class ZipBuilder private[zeppelin] (using Tactic[ZipError])
+extends caps.ExclusiveCapability:
 
-object Jar:
-  private val ManifestName: Text = t"META-INF/MANIFEST.MF"
+  private var stack: List[Zip.Entry] = Nil
+  private var names: Set[Text] = Set()
+  private var remark: Optional[Text] = Unset
 
-  class JarHandle private[zeppelin] (zipfile: Zipfile) extends ZipHandle(zipfile):
+  def insert(entry: Zip.Entry): Unit =
+    if names.contains(entry.ref.encode)
+    then abort(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
 
-    // The main attributes of `META-INF/MANIFEST.MF`: continuation lines (a leading space)
-    // rejoin the preceding attribute, and parsing stops at the first blank line, which ends
-    // the main section. An archive without a manifest has no attributes.
-    def manifest: Map[Text, Text] =
-      zipfile.entries.find(_.ref.encode == ManifestName).map: entry =>
-        val bytes: Array[Byte] =
-          entry.contents.foldLeft(Array.empty[Byte]) { (acc, data) => acc ++ data.mutable(using Unsafe) }
+    names += entry.ref.encode
+    stack ::= entry
 
-        val text: Text = String(bytes, "UTF-8").tt
-        val unfolded = text.s.split("\r\n|\r|\n", -1).nn.map(_.nn)
-        val main = unfolded.takeWhile(_.nonEmpty)
+  def insert[content: Streamable by Data over Credit](ref: Path on Zip, content: content)
+    ( using Zip.Compression )
+  :   Unit =
 
-        val rejoined = main.foldLeft(List.empty[String]): (acc, line) =>
-          if line.startsWith(" ") && acc.nonEmpty then (acc.head + line.drop(1)) :: acc.tail
-          else line :: acc
+    insert(Zip.Entry(ref, content))
 
-        rejoined.reverse.flatMap: line =>
-          line.indexOf(": ") match
-            case -1    => Nil
-            case index => List((line.take(index).tt, line.drop(index + 2).tt))
-        . to(Map)
+  def comment(text: Text): Unit = remark = text
 
-      . getOrElse(Map())
+  private[zeppelin] def zipfile: Zipfile = Zipfile(stack.reverse.to(LazyList), remark, Unset)
 
-  // A named class rather than an anonymous given instance, for the reasons documented on
-  // galilei's `FileOpenable`. Like `Zip`, archives open read-only for now.
-  class JarOpenable[path: Abstractable across Paths to Text](using Tactic[ZipError])
-  extends Openable:
+class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
+
+  // Writes `META-INF/MANIFEST.MF` from the given attributes, with values wrapped at 72 bytes
+  // per the JAR specification. Call it first if the manifest should lead the archive, as
+  // convention prefers.
+  def manifest(attributes: (Text, Text)*)(using Zip.Compression): Unit =
+    val lines = attributes.to(List).map { (key, value) => wrap(t"$key: $value") }
+    val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
+    insert(Zip.Entry(ZipBuilder.manifestRef, text))
+
+  private def wrap(line: Text): Text =
+    if line.s.length <= 70 then line
+    else t"${line.s.take(70)}\r\n ${wrap(line.s.drop(70).tt)}"
+
+object ZipBuilder:
+  private[zeppelin] val manifestRef: Path on Zip =
+    Path[Zip, Text, Tuple](t"", List(t"MANIFEST.MF", t"META-INF"))
+
+  // Creation instances for the `Zip` and `Jar` forms. The default `make` (a discarded
+  // builder) writes a valid empty archive. `CreateFlag.Parents` and `CreateFlag.Replace`
+  // govern the destination as they do for filesystem entries.
+  class ZipCreatable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+  extends Creatable:
+
+    type Self = path
+    type Form = Zip
+    type Operand = CreateFlag
+    type Grants = Grant.Read & Grant.Write
+    type Result = ZipBuilder
+
+    def create[result]
+      ( value: path, flags: List[CreateFlag] )
+      ( block: (ZipBuilder & Granting[Grant.Read & Grant.Write]) ?=> result )
+    :   result =
+
+      val builder = new ZipBuilder with Granting[Grant.Read & Grant.Write] {}
+      val outcome = block(using builder)
+      commit(value.generic, flags, builder.zipfile)
+      outcome
+
+  class JarCreatable[path: Abstractable across Paths to Text](using Tactic[ZipError])
+  extends Creatable:
 
     type Self = path
     type Form = Jar
-    type Operand = Nothing
-    type Result = JarHandle
+    type Operand = CreateFlag
+    type Grants = Grant.Read & Grant.Write
+    type Result = JarBuilder
 
-    def open[grants <: Grant, result]
-      ( value: path, mode: Mode granting grants, flags: List[Nothing] )
-      ( block: (JarHandle & Granting[grants]) ?=> result )
+    def create[result]
+      ( value: path, flags: List[CreateFlag] )
+      ( block: (JarBuilder & Granting[Grant.Read & Grant.Write]) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      val builder = new JarBuilder with Granting[Grant.Read & Grant.Write] {}
+      val outcome = block(using builder)
+      commit(value.generic, flags, builder.zipfile)
+      outcome
 
-      val channel =
-        jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
+  // Serialize to a hidden temporary sibling, then move atomically onto the target.
+  private def commit(filename: Text, flags: List[CreateFlag], zipfile: Zipfile)
+    ( using Tactic[ZipError] )
+  :   Unit =
+
+    val target = jnf.Path.of(filename.s).nn
+
+    if !flags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+    then abort(ZipError(ZipError.Reason.AlreadyExists))
+
+    try
+      if flags.contains(CreateFlag.Parents) then
+        Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
+
+      val parent = target.toAbsolutePath.nn.getParent
+      val temporary = target.resolveSibling(t".${filename.s.split('/').nn.last.nn}.part".s).nn
 
       try
-        val zipfile = Zipfile.parse(Zipfile.ChannelSource(channel))
-        block(using new JarHandle(zipfile) with Granting[grants] {})
-      finally channel.close()
+        val out = ji.FileOutputStream(temporary.toFile)
 
-  class JarDataOpenable(using Tactic[ZipError]) extends Openable:
-    type Self = Data
-    type Form = Jar
-    type Operand = Nothing
-    type Result = JarHandle
+        try zipfile.serialize.each { chunk => out.write(chunk.mutable(using Unsafe)) }
+        finally out.close()
 
-    def open[grants <: Grant, result]
-      ( value: Data, mode: Mode granting grants, flags: List[Nothing] )
-      ( block: (JarHandle & Granting[grants]) ?=> result )
-    :   result =
-
-      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
-      block(using new JarHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})
-
-  given openable: [path: Abstractable across Paths to Text]
-  =>  Tactic[ZipError]
-  =>  JarOpenable[path] =
-    JarOpenable[path]
-
-  given dataOpenable: Tactic[ZipError] => JarDataOpenable = JarDataOpenable()
-
-  given creatable: [path: Abstractable across Paths to Text]
-  =>  Tactic[ZipError]
-  =>  ZipBuilder.JarCreatable[path] =
-    ZipBuilder.JarCreatable[path]
+        jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,
+          jnf.StandardCopyOption.REPLACE_EXISTING)
+      catch case throwable: Throwable =>
+        try jnf.Files.deleteIfExists(temporary) catch case _: Exception => ()
+        throw throwable
+    catch
+      case error: ji.IOException =>
+        abort(ZipError(ZipError.Reason.CannotWrite(error.getMessage.nn.tt)))

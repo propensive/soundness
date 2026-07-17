@@ -48,6 +48,8 @@ object ZipError:
     case BadSignature(expected: Int)         extends Reason(7)
     case Zip64Error                          extends Reason(8)
     case WriteUnsupported                    extends Reason(9)
+    case AlreadyExists                       extends Reason(10)
+    case CannotWrite(detail: Text)           extends Reason(11)
 
   given communicable: Reason is Communicable =
     case Reason.DuplicateEntry(path)    => m"the path $path is a duplicate entry"
@@ -59,6 +61,8 @@ object ZipError:
     case Reason.BadSignature(expected)  => m"an expected record signature ($expected) was absent"
     case Reason.Zip64Error              => m"the ZIP64 metadata could not be interpreted"
     case Reason.WriteUnsupported        => m"ZIP archives cannot yet be opened for writing"
+    case Reason.AlreadyExists           => m"an archive already exists at this path"
+    case Reason.CannotWrite(detail)     => m"the archive could not be written: $detail"
 
 case class ZipError(reason: ZipError.Reason)(using Diagnostics)
 extends Error(751, reason.number)(m"the ZIP operation failed because $reason")
