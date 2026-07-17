@@ -33,31 +33,91 @@
 package embarcadero
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import cordillera.*
-import gossamer.*
 import locomotion.*
 import obligatory.*
 import parasite.*
-import vacuous.*
 
-object Workload:
-  // Anchored here so `container.open[Workload](...)` resolves with no import.
-  given openable: (containerd: Containerd^)
-  =>  ( Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
-  =>  ( WorkloadOpenable^ ) =
-    WorkloadOpenable()
+// Grants particular to container workloads, in the deliberately-open `Grant` hierarchy:
+// `Run` means the task is started when opened, and confers awaiting its exit; `Signal`
+// confers sending signals to it.
+object WorkloadGrant:
+  trait Run extends Grant
+  trait Signal extends Grant
 
-// A task's process state (`containerd.v1.types.Workload`, a subset): which container and
-// exec it belongs to, its `pid`, the raw `status` code, and the exit status/time once
-// it has stopped. `state` decodes the status code to the `ProcessStatus` enum.
-case class Workload
-  ( @field(1)  containerId: Text      = t"",
-    @field(2)  id:          Text      = t"",
-    @field(3)  pid:         Int       = 0,
-    @field(4)  status:      Int       = 0,
-    @field(9)  exitStatus:  Int       = 0,
-    @field(10) exitedAt:    Timestamp = Timestamp() )
-derives CanEqual:
+object WorkloadHandle:
+  // Operations are extensions gated by the grant-refined handle types rather than
+  // typeclass givens: summoning a typeclass on a *scoped* capability's refined type can
+  // fail under capture checking, while extensions resolve directly.
+  extension (handle: (WorkloadHandle & Granting[Grant.Read])^)
+    def state()
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    :   ProcessStatus =
 
-  def state: ProcessStatus = ProcessStatus.of(status).or(ProcessStatus.Unknown)
+      handle.containerd.task(handle.containerId).state
+
+  extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Run])^)
+    // `await`, not `wait`: the latter would clash with `Object#wait`.
+    def await()
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    :   WaitResponse =
+
+      handle.containerd.waitTask(handle.containerId)
+
+  extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Signal])^)
+    def kill(signal: Int, all: Boolean = false)
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    :   Unit =
+
+      handle.containerd.killTask(handle.containerId, signal, all = all)
+
+// A container task scoped to an `open` block: the container metadata and its task exist
+// exactly for the block's duration, and are torn down — killed if started, reaped, and
+// deleted — on every exit path. The lifetime of the workload *is* the scope.
+class WorkloadHandle private[embarcadero]
+  ( private[embarcadero] val containerd: Containerd^,
+    val containerId: Text,
+    val pid: Int )
+extends caps.ExclusiveCapability
+
+// A named class rather than an anonymous instance in the `given`, because instantiating an
+// anonymous subclass freshens the capability field types in the inferred `Result` member,
+// which then fails to conform to the declared refinement.
+class WorkloadOpenable
+  ( using containerd:    Containerd^,
+          grpcError:     Tactic[GrpcError],
+          http2Error:    Tactic[Http2Error],
+          asyncError:    Tactic[AsyncError],
+          protobufError: Tactic[ProtobufError] )
+extends Openable:
+
+  type Self = Container
+  type Form = Workload
+  type Operand = Mount
+  type Result = WorkloadHandle
+
+  def open[grants <: Grant, result]
+    ( value: Container, mode: Mode granting grants, flags: List[Mount] )
+    ( block: ((WorkloadHandle & Granting[grants])^) ?=> result )
+  :   result =
+
+    val created = containerd.createContainer(value)
+
+    try
+      val response = containerd.createTask(created.id, flags)
+      val started = mode.atoms.contains(Run)
+      val pid = if started then containerd.startTask(created.id) else response.pid
+
+      try block(using new WorkloadHandle(containerd, created.id, pid) with Granting[grants] {})
+      finally
+        // Teardown is best-effort: a failure here must not mask the block's own result
+        // or error. SIGKILL, because scope end is unconditional; a started task is then
+        // reaped before deletion, since containerd refuses to delete an unreaped task.
+        if started then
+          safely(containerd.killTask(created.id, 9, all = true))
+          safely(containerd.waitTask(created.id))
+
+        safely(containerd.deleteTask(created.id))
+    finally safely(containerd.deleteContainer(created.id))

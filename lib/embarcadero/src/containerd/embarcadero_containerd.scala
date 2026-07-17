@@ -32,32 +32,10 @@
                                                                                                   */
 package embarcadero
 
-import anticipation.*
-import contingency.*
-import cordillera.*
-import gossamer.*
-import locomotion.*
-import obligatory.*
-import parasite.*
-import vacuous.*
+import aperture.*
 
-object Workload:
-  // Anchored here so `container.open[Workload](...)` resolves with no import.
-  given openable: (containerd: Containerd^)
-  =>  ( Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
-  =>  ( WorkloadOpenable^ ) =
-    WorkloadOpenable()
-
-// A task's process state (`containerd.v1.types.Workload`, a subset): which container and
-// exec it belongs to, its `pid`, the raw `status` code, and the exit status/time once
-// it has stopped. `state` decodes the status code to the `ProcessStatus` enum.
-case class Workload
-  ( @field(1)  containerId: Text      = t"",
-    @field(2)  id:          Text      = t"",
-    @field(3)  pid:         Int       = 0,
-    @field(4)  status:      Int       = 0,
-    @field(9)  exitStatus:  Int       = 0,
-    @field(10) exitedAt:    Timestamp = Timestamp() )
-derives CanEqual:
-
-  def state: ProcessStatus = ProcessStatus.of(status).or(ProcessStatus.Unknown)
+// Atomic modes selecting the workload grants, composed like aperture's `Read` and `Write`:
+// `container.open[Workload](Read & Run & Signal)`. The default `Read` open creates the
+// container and its task but does not start it — an inspection scope.
+val Run: Mode granting WorkloadGrant.Run = new Mode { type Grants = WorkloadGrant.Run }
+val Signal: Mode granting WorkloadGrant.Signal = new Mode { type Grants = WorkloadGrant.Signal }
