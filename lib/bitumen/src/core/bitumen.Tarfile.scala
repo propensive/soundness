@@ -92,6 +92,49 @@ object Tarfile:
 
     Tarfile(entries)
 
+  // Per-entry body accounting for the streaming reader. A file's payload
+  // streams lazily off the shared cursor in bounded chunks; forcing the NEXT
+  // entry first forces whatever of this body was not yet read (its `LazyList`
+  // memoizes, so this materializes only skipped-over payloads — an in-order
+  // consumer streams with bounded memory, while listing entries before
+  // reading a body still works, at the cost of buffering the passed-over
+  // bodies, which is what the eager reader always did).
+  private class TarBody(cursor: Cursor[Data, {}]^, size: Int, padded: Int)
+    ( using Tactic[TarError] ):
+
+    private var consumed: Int = 0
+    private val chunkSize: Int = 65536
+
+    // A single memoizing chain per body: every consumer (including `drain`)
+    // shares it, so the cursor region is read exactly once.
+    lazy val stream: LazyList[Data] = chunk(0)
+
+    private def chunk(offset: Int): LazyList[Data] = LazyList.defer:
+      if offset >= size then
+        finishPadding()
+        LazyList()
+      else
+        val n = (size - offset).min(chunkSize)
+
+        val data =
+          cursor.take(abort(TarError(TarError.Reason.TruncatedStream(n, cursor.available))))(n)
+
+        consumed = offset + n
+        data #:: chunk(offset + n)
+
+    // Consume the trailing padding once the data region is fully read.
+    private def finishPadding(): Unit =
+      if consumed < padded then
+        cursor.take(abort(TarError(TarError.Reason.TruncatedStream(padded - consumed,
+            cursor.available))))(padded - consumed)
+        consumed = padded
+
+    // Force the remainder of this body, so the cursor stands at the next
+    // header. Already-read chunks are memoized and not re-read.
+    private[Tarfile] def drain(): Unit =
+      var rest = stream
+      while !rest.isEmpty do rest = rest.tail
+
   private def readEntries
     ( cursor:        Cursor[Data, {}]^,
       paxOverlay:    Map[Text, Text],
@@ -166,6 +209,22 @@ object Tarfile:
 
               entry #:: readEntries(cursor, Map.empty, globalOverlay, Unset, Unset)
 
+            case flag if flag == 0 || flag == '0' || flag == '7' =>
+              val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
+              val path = decodePath(nameText)
+
+              val extras: Map[Text, Text] =
+                (globalOverlay ++ paxOverlay).filter: (k, _) => !structuralPaxKeys.contains(k)
+
+              // The body streams off the shared cursor; forcing the tail of
+              // this cons (the next entry) drains whatever of it was unread.
+              val body = TarBody(cursor, size, ((size + 511)/512)*512)
+              val entry = Tar.Entry.File(path, mode, user, group, mtime, body.stream, extras)
+
+              entry #:: LazyList.defer:
+                body.drain()
+                readEntries(cursor, Map.empty, globalOverlay, Unset, Unset)
+
             case flag =>
               val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
               val linkText = resolveLink(header, paxOverlay, globalOverlay, longLink)
@@ -195,9 +254,6 @@ object Tarfile:
   :   Tar.Entry raises TarError =
 
     flag match
-      case 0 | '0' | '7' =>
-        Tar.Entry.File(path, mode, user, group, mtime, LazyList(takeData(cursor, size)), extras)
-
       case '5' =>
         Tar.Entry.Directory(path, mode, user, group, mtime, extras)
 
