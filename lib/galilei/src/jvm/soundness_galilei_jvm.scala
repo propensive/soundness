@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export galilei.{javaPath, javaFile, socketCreatable, Device, Ram}
+export galilei.{javaPath, javaFile, socketCreatable, Device, Ram, RamFlag}
 
 package filesystemBackends:
   export galilei.filesystemBackends.virtualMachine

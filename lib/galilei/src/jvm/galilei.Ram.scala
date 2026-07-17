@@ -57,6 +57,9 @@ import IoError.{Operation, Reason}
 // capture checking; the annotations sharpen when the module joins the rollout.)
 trait Ram
 
+enum RamFlag:
+  case Size(bytes: Long)
+
 object Ram:
   class RamHandle private[galilei] (buffer: jn.MappedByteBuffer, val size: Long)
   extends caps.ExclusiveCapability:
@@ -139,3 +142,61 @@ object Ram:
   =>  Tactic[IoError]
   =>  RamOpenable[filesystem, path] =
     RamOpenable[filesystem, path]
+
+  // Creating a mapped file requires its size up front — `RamFlag.Size(n)` is mandatory,
+  // since an empty mapping is useless and growth is not supported. The named file is
+  // created, sized, mapped read-write for the scope, and removed if the scope fails.
+  class RamCreatable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[IoError] )
+  extends Creatable:
+
+    type Self = path
+    type Form = Ram
+    type Operand = CreateFlag | RamFlag
+    type Grants = Grant.Read & Grant.Write
+    type Result = RamHandle
+
+    def create[result]
+      ( value: path, flags: List[CreateFlag | RamFlag] )
+      ( block: (RamHandle & Granting[Grant.Read & Grant.Write]) ?=> result )
+    :   result =
+
+      val size: Long = flags.collectFirst { case RamFlag.Size(bytes) => bytes }
+        . getOrElse(abort(IoError(value, Operation.Create, Reason.Unsupported)))
+
+      if size <= 0 || size > Int.MaxValue
+      then abort(IoError(value, Operation.Create, Reason.Unsupported))
+
+      val createFlags = flags.collect { case flag: CreateFlag => flag }
+      Creation.ensure(value, createFlags)
+      Creation.replace(value, createFlags)
+
+      if backend.exists(value, false)
+      then abort(IoError(value, Operation.Create, Reason.AlreadyExists))
+
+      value.protect(Operation.Create):
+        val channel =
+          jnc.FileChannel.open
+            ( value.javaPath,
+              jnf.StandardOpenOption.CREATE_NEW,
+              jnf.StandardOpenOption.READ,
+              jnf.StandardOpenOption.WRITE ).nn
+
+        try
+          try
+            // Extend the new, empty file to its mapped size by writing its final byte.
+            channel.write(jn.ByteBuffer.wrap(Array[Byte](0)).nn, size - 1)
+
+            val buffer = channel.map(jnc.FileChannel.MapMode.READ_WRITE, 0, size).nn
+
+            try block(using new RamHandle(buffer, size) with Granting[Grant.Read & Grant.Write] {})
+            finally buffer.force()
+          catch case throwable: Throwable =>
+            try backend.deleteIfExists(value) catch case _: Exception => ()
+            throw throwable
+        finally channel.close()
+
+  given creatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem, Tactic[IoError] )
+  =>  RamCreatable[filesystem, path] =
+    RamCreatable[filesystem, path]

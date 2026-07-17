@@ -297,6 +297,29 @@ object Tests extends Suite(m"Galilei tests"):
         . map(_.message)
       . assert(_.nonEmpty)
 
+    suite(m"Creating mapped files"):
+      import errorDiagnostics.emptyDiagnostics
+
+      val ramCreateLeaf: Text = Uuid().show
+      val ramBase: Path on Linux = unsafely((% / "tmp" / ramCreateLeaf).on[Linux])
+      unsafely(ramBase.create[Directory]())
+
+      test(m"A created mapping is sized, writable, and persists"):
+        unsafely:
+          val target: Path on Linux = ramBase / "fresh.bin"
+
+          target.create[Ram](RamFlag.Size(16L)): ram ?=>
+            ram(0L) = t"ABCD".in[Data]
+
+          (target.read[Data].length, target.read[Data].slice(0, 4).utf8)
+      . assert(_ == (16, t"ABCD"))
+
+      test(m"Creating a mapping without Size is refused"):
+        unsafely:
+          val target: Path on Linux = ramBase / "unsized.bin"
+          capture[IoError](target.create[Ram]() { () }).reason
+      . assert(_ == IoError.Reason.Unsupported)
+
     suite(m"The access register"):
       import filesystemOptions.createNonexistentParents.enabled
       import filesystemOptions.overwritePreexisting.enabled
