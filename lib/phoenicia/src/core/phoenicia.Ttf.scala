@@ -55,6 +55,14 @@ object Ttf:
   enum EncodingId:
     case Unicode1, Unicode1_1, IsoIec10646, Unicode2Bmp, Unicode2Full, UnicodeVariation, UnicodeFull
 
+  // Naming-table name identifiers (OpenType §name); each case's ordinal is its name id.
+  enum NameId:
+    case Copyright, Family, Subfamily, UniqueId, FullName, Version, PostScriptName, Trademark,
+      Manufacturer, Designer, Description, VendorUrl, DesignerUrl, License, LicenseUrl, Reserved,
+      TypographicFamily, TypographicSubfamily, CompatibleFullName, SampleText, PostScriptCidName,
+      WwsFamily, WwsSubfamily, LightBackgroundPalette, DarkBackgroundPalette,
+      VariationsPostScriptNamePrefix
+
 case class Ttf(data: Data):
   ttf =>
 
@@ -118,6 +126,35 @@ case class Ttf(data: Data):
 
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
 
+  def maxp: MaxpTable raises FontError =
+    tables.at(TtfTag.Maxp).let: ref =>
+      MaxpTable(ref.offset)
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Maxp)))
+
+  def post: PostTable raises FontError =
+    tables.at(TtfTag.Post).let: ref =>
+      PostTable(ref.offset)
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Post)))
+
+  def os2: Os2Table raises FontError =
+    tables.at(OtfTag.Os2).let: ref =>
+      Os2Table(ref.offset)
+
+    . lest(FontError(FontError.Reason.MissingTable(OtfTag.Os2)))
+
+  def name: NameTable raises FontError =
+    tables.at(TtfTag.Name).let: ref =>
+      NameTable(ref.offset)
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Name)))
+
+  // The font's PostScript name, by which PDF and PostScript documents reference it.
+  def fontName: Optional[Text] = safely(name(Ttf.NameId.PostScriptName))
+
+  def familyName: Optional[Text] = safely(name(Ttf.NameId.Family))
+
   case class HeadTable
     ( majorVersion:       U16,
       minorVersion:       U16,
@@ -126,7 +163,18 @@ case class Ttf(data: Data):
       checksumAdjustment: B32,
       magicNumber:        B32,
       flags:              B16,
-      unitsPerEm:         U16 )
+      unitsPerEm:         U16,
+      created:            S64,
+      modified:           S64,
+      xMin:               S16,
+      yMin:               S16,
+      xMax:               S16,
+      yMax:               S16,
+      macStyle:           B16,
+      lowestRecPpem:      U16,
+      fontDirectionHint:  S16,
+      indexToLocFormat:   S16,
+      glyphDataFormat:    S16 )
 
   case class HheaTable
     ( majorVersion:        U16,
@@ -164,6 +212,89 @@ case class Ttf(data: Data):
       else B16(data, offset + count*4 + (glyphId - count)*2).s16.int
 
     case class HMetrics(advanceWidth: Int, leftSideBearing: Int)
+
+  // The maximum-profile table; only the glyph count is of interest here.
+  case class MaxpTable(offset: Int):
+    lazy val glyphCount: Int = B16(data, offset + 4).u16.int
+
+  // PostScript-related metadata.
+  case class PostTable(offset: Int):
+    lazy val italicAngle: Double = B32(data, offset + 4).s32.int/65536.0
+    lazy val underlinePosition: Int = B16(data, offset + 8).s16.int
+    lazy val underlineThickness: Int = B16(data, offset + 10).s16.int
+    lazy val monospaced: Boolean = B32(data, offset + 12).s32.int != 0
+
+  // OS/2 and Windows metrics. Later versions of the table append fields; those which the
+  // font's version predates are absent.
+  case class Os2Table(offset: Int):
+    lazy val version: Int = B16(data, offset).u16.int
+    lazy val weightClass: Int = B16(data, offset + 4).u16.int
+    lazy val widthClass: Int = B16(data, offset + 6).u16.int
+    lazy val fsType: Int = B16(data, offset + 8).u16.int
+    lazy val familyClass: Int = B16(data, offset + 30).s16.int
+    lazy val selection: Int = B16(data, offset + 62).u16.int
+    lazy val typoAscender: Int = B16(data, offset + 68).s16.int
+    lazy val typoDescender: Int = B16(data, offset + 70).s16.int
+    lazy val typoLineGap: Int = B16(data, offset + 72).s16.int
+    lazy val winAscent: Int = B16(data, offset + 74).u16.int
+    lazy val winDescent: Int = B16(data, offset + 76).u16.int
+
+    lazy val xHeight: Optional[Int] =
+      if version >= 2 then B16(data, offset + 86).s16.int else Unset
+
+    lazy val capHeight: Optional[Int] =
+      if version >= 2 then B16(data, offset + 88).s16.int else Unset
+
+    // Installable embedding is 0; of the restriction bits, only bit 1 forbids embedding
+    // outright.
+    def embeddable: Boolean = (fsType & 0x000f) != 0x0002
+
+  // The naming table: localized, per-platform strings such as the font's family and
+  // PostScript names.
+  case class NameTable(offset: Int):
+    lazy val count: Int = B16(data, offset + 2).u16.int
+    private lazy val storageStart: Int = offset + B16(data, offset + 4).u16.int
+
+    case class Record
+      ( platformId: Int, encodingId: Int, languageId: Int, nameId: Int, length: Int, start: Int ):
+
+      def decode: Text =
+        val bytes = data.mutable(using Unsafe)
+
+        platformId match
+          case 0 | 3 =>
+            String(bytes, start, length, "UTF-16BE").tt
+
+          case _ =>
+            try String(bytes, start, length, "x-MacRoman").tt
+            catch case _: Exception => String(bytes, start, length, "ISO-8859-1").tt
+
+    lazy val records: IArray[Record] =
+      IArray.from:
+        (0 until count).map: n =>
+          val base = offset + 6 + n*12
+
+          Record
+            ( B16(data, base).u16.int,
+              B16(data, base + 2).u16.int,
+              B16(data, base + 4).u16.int,
+              B16(data, base + 6).u16.int,
+              B16(data, base + 8).u16.int,
+              storageStart + B16(data, base + 10).u16.int )
+
+    // The best record for a name: Windows US English first, then other Unicode records, then
+    // legacy Macintosh.
+    def apply(nameId: Ttf.NameId): Optional[Text] =
+      val candidates = records.filter(_.nameId == nameId.ordinal)
+
+      def rank(record: Record): Int = (record.platformId, record.encodingId) match
+        case (3, 1)  => if record.languageId == 0x409 then 0 else 1
+        case (3, 10) => 2
+        case (0, _)  => 3
+        case (1, 0)  => 4
+        case _       => 5
+
+      if candidates.isEmpty then Unset else candidates.minBy(rank).decode
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):

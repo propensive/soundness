@@ -47,6 +47,9 @@ object Tests extends Suite(m"Phoenicia Tests"):
       values.flatMap: value =>
         Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
+  def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn)
+  def utf16(text: Text): Data = IArray.from(text.s.getBytes("UTF-16BE").nn)
+
   // Assembles tables into an sfnt container: the header, a table directory, then the tables
   // themselves, four-byte aligned. Checksums are left zero: the parser does not verify them.
   def sfnt(tables: (Text, Data)*): Ttf =
@@ -89,6 +92,33 @@ object Tests extends Suite(m"Phoenicia Tests"):
   // Three full metric pairs, then a bearing-only entry for the monospaced tail.
   val hmtxTable: Data = u16(600, 10, 500, 20, 400, 30) ++ u16(25)
 
+  val maxpTable: Data = u32(0x00010000L) ++ u16(4)
+
+  val postTable: Data =
+    u32(0x00030000L, 0xfff48000L) // version 3.0 and an italic angle of -11.5
+    ++ u16(-100, 50)              // underline position and thickness
+    ++ u32(1L)                    // fixed pitch
+
+  val os2Table: Data =
+    u16(2, 500, 700, 5, 8)               // version through fsType (preview-and-print)
+    ++ u16(0, 0, 0, 0, 0, 0, 0, 0, 0, 0) // sub/superscript and strikeout metrics
+    ++ u16(0)                            // family class
+    ++ u16(0, 0, 0, 0, 0)                // panose
+    ++ u32(0L, 0L, 0L, 0L)               // unicode ranges
+    ++ ascii(t"TEST")                    // vendor id
+    ++ u16(0x40, 0x41, 0x7a)             // selection and first/last character index
+    ++ u16(750, -250, 100)               // typographic ascent, descent and line gap
+    ++ u16(820, 220)                     // Windows ascent and descent
+    ++ u32(0L, 0L)                       // code page ranges
+    ++ u16(530, 730, 0, 32, 0)           // x-height, cap height and character fields
+
+  val nameTable: Data =
+    u16(0, 3, 42)               // format, count and storage offset
+    ++ u16(3, 1, 0x409, 1, 18, 0)  // Windows family name
+    ++ u16(3, 1, 0x409, 6, 16, 18) // Windows PostScript name
+    ++ u16(1, 0, 0, 6, 7, 34)      // Macintosh PostScript name
+    ++ utf16(t"Test Sans") ++ utf16(t"TestSans") ++ ascii(t"MacName")
+
   // Three segments: A–C mapping by delta, a–c indirecting through the glyph id array in
   // rotated order, and the terminal sentinel.
   val format4Subtable: Data =
@@ -124,7 +154,8 @@ object Tests extends Suite(m"Phoenicia Tests"):
     ++ u16(12, 0) ++ u32(28L, 0L, 1L) ++ u32(0x41L, 0x41L, 5L)
 
   def font(cmap: Data = cmapFormat4): Ttf =
-    sfnt(t"cmap" -> cmap, t"head" -> headTable, t"hhea" -> hheaTable, t"hmtx" -> hmtxTable)
+    sfnt(t"cmap" -> cmap, t"head" -> headTable, t"hhea" -> hheaTable, t"hmtx" -> hmtxTable,
+        t"maxp" -> maxpTable, t"post" -> postTable, t"OS/2" -> os2Table, t"name" -> nameTable)
 
   def run(): Unit =
     suite(m"Character mapping"):
@@ -176,3 +207,42 @@ object Tests extends Suite(m"Phoenicia Tests"):
       test(m"Text width scales advances by the em size"):
         ttf.width(t"AB")
       . assert(_ == 0.9*Em)
+
+    suite(m"Font tables"):
+      val ttf = font()
+
+      test(m"The head table records the glyph bounding box"):
+        (ttf.head.xMin.int, ttf.head.yMin.int, ttf.head.xMax.int, ttf.head.yMax.int)
+      . assert(_ == (-50, -200, 1000, 800))
+
+      test(m"The maximum profile records the glyph count"):
+        ttf.maxp.glyphCount
+      . assert(_ == 4)
+
+      test(m"The post table decodes the fixed-point italic angle"):
+        ttf.post.italicAngle
+      . assert(_ == -11.5)
+
+      test(m"The post table identifies a monospaced font"):
+        ttf.post.monospaced
+      . assert(_ == true)
+
+      test(m"OS/2 metrics are read at their versioned offsets"):
+        (ttf.os2.weightClass, ttf.os2.typoAscender, ttf.os2.typoDescender)
+      . assert(_ == (700, 750, -250))
+
+      test(m"Cap height and x-height are present from OS/2 version 2"):
+        (ttf.os2.capHeight, ttf.os2.xHeight)
+      . assert(_ == (730, 530))
+
+      test(m"Preview-and-print fonts count as embeddable"):
+        ttf.os2.embeddable
+      . assert(_ == true)
+
+      test(m"Windows names are preferred to Macintosh names"):
+        ttf.fontName
+      . assert(_ == t"TestSans")
+
+      test(m"The family name is decoded from UTF-16"):
+        ttf.familyName
+      . assert(_ == t"Test Sans")
