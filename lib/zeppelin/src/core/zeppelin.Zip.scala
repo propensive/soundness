@@ -250,17 +250,9 @@ object Zip:
     deflater.end()
     out.toByteArray.nn.immutable(using Unsafe)
 
-  private[zeppelin] def inflate(data: Data): Data =
-    val inflater = juz.Inflater(true)
-    inflater.setInput(data.mutable(using Unsafe))
-    val buffer = new Array[Byte](8192)
-    val out = ji.ByteArrayOutputStream()
-
-    while !inflater.finished() && !inflater.needsInput() do
-      out.write(buffer, 0, inflater.inflate(buffer))
-
-    inflater.end()
-    out.toByteArray.nn.immutable(using Unsafe)
+  // Zip entries hold raw deflate data — the `Deflate` format's duct, driven
+  // over the whole value.
+  private[zeppelin] def inflate(data: Data): Data = data.decompress[Deflate]
 
   private[zeppelin] def gather(stream: LazyList[Data]): Data =
     val out = ji.ByteArrayOutputStream()

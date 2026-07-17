@@ -43,10 +43,10 @@ trait Compression:
 
   // Streaming stages for the same transformations, applied with
   // `stream.compress[Gzip]`/`stream.decompress[Gzip]` on a pull endpoint.
-  def compressor()(using Buffering): Duct[Data, Data] {
+  def compressor()(using Buffering): (Duct[Data, Data] {
     type Transport = Credit
-    type Upstream = Credit }
+    type Upstream = Credit })^
 
-  def decompressor()(using Buffering): Duct[Data, Data] {
+  def decompressor()(using Buffering): (Duct[Data, Data] {
     type Transport = Credit
-    type Upstream = Credit }
+    type Upstream = Credit })^

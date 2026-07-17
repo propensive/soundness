@@ -499,6 +499,38 @@ object Tests extends Suite(m"Turbulence tests"):
         longData.compress[Gzip].decompress[Gzip]
       . assert(_.flatten == longData.flatten)
 
+      // The whole-value forms (`Duct.feed` over the format ducts) must
+      // interoperate with the stream forms in both directions, per format.
+      val wholeData: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+
+      for format <- List(t"Gzip", t"Zlib", t"Deflate") do
+        test(m"whole-value compress roundtrips through whole-value decompress ($format)"):
+          format.s match
+            case "Gzip"    => wholeData.compress[Gzip].decompress[Gzip].to(List)
+            case "Zlib"    => wholeData.compress[Zlib].decompress[Zlib].to(List)
+            case _         => wholeData.compress[Deflate].decompress[Deflate].to(List)
+        . assert(_ == wholeData.to(List))
+
+        test(m"whole-value compress feeds the stream decompressor ($format)"):
+          format.s match
+            case "Gzip"    => wholeData.compress[Gzip].stream.decompress[Gzip].memoize.to(List)
+            case "Zlib"    => wholeData.compress[Zlib].stream.decompress[Zlib].memoize.to(List)
+            case _ => wholeData.compress[Deflate].stream.decompress[Deflate].memoize.to(List)
+        . assert(_ == wholeData.to(List))
+
+        test(m"stream compress feeds the whole-value decompressor ($format)"):
+          format.s match
+            case "Gzip"    => wholeData.stream.compress[Gzip].memoize.decompress[Gzip].to(List)
+            case "Zlib"    => wholeData.stream.compress[Zlib].memoize.decompress[Zlib].to(List)
+            case _ => wholeData.stream.compress[Deflate].memoize.decompress[Deflate].to(List)
+        . assert(_ == wholeData.to(List))
+
+      test(m"whole-value Data delineate agrees with the stream form"):
+        import lineSeparation.adaptiveLinefeedLineSeparation
+        val bytes: Data = t"one\ntwo\r\nthree".in[Data]
+        bytes.delineate.to(List)
+      . assert(_ == List(t"one", t"two", t"three"))
+
       test(m"Roundtrip compress/decompress a single block with LZW"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
       . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
