@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 import Flate.*
 import FlateTables.*
@@ -45,7 +45,7 @@ import FlateTables.*
 //
 // Huffman decoding tables, built by `huftBuild` (zlib's `huft_build`): each entry is a triple
 // (operation, bits, value) flattened into an `Array[Int]`.
-private[turbulence] final class InfTree:
+private[pneumatic] final class InfTree:
   private final val Many = 1440
   private final val Bmax = 15
 
@@ -317,7 +317,7 @@ private[turbulence] final class InfTree:
       else
         ZOk
 
-private[turbulence] object InfCodes:
+private[pneumatic] object InfCodes:
   // waiting for "i:"=input, "o:"=output, "x:"=nothing
   final val Start = 0    // x: set up for Len
   final val Len = 1      // i: get length/literal/eob next
@@ -330,7 +330,7 @@ private[turbulence] object InfCodes:
   final val End = 8      // x: got eob and all data flushed
   final val Badcode = 9  // x: got error
 
-private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
+private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
   import InfCodes.*
 
   var mode: Int = 0 // current inflate_codes mode
@@ -783,7 +783,7 @@ private[turbulence] final class InfCodes(z: Inflater, s: InfBlocks):
     // not enough input or output — restore pointers and return
     leave(ZOk, b, k, p, n, q)
 
-private[turbulence] object InfBlocks:
+private[pneumatic] object InfBlocks:
   final val Many = 1440
 
   final val Type = 0   // get type bits (3, including end bit)
@@ -797,7 +797,7 @@ private[turbulence] object InfBlocks:
   final val Done = 8   // finished last block, done
   final val Bad = 9    // got a data error — stuck here
 
-private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
+private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
   import InfBlocks.*
 
   var mode: Int = Type // current inflate_block mode
@@ -1193,7 +1193,7 @@ private[turbulence] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
 
     r
 
-private[turbulence] object Inflater:
+private[pneumatic] object Inflater:
   final val Head = 14   // waiting for the zlib header (or straight to Blocks when raw)
   final val Dict4 = 2   // four dictionary check bytes to go
   final val Dict3 = 3   // three dictionary check bytes to go
@@ -1212,19 +1212,19 @@ private[turbulence] object Inflater:
 // `setInput`, drain output with `inflate`, which returns the number of bytes produced. Corrupt
 // data throws `IllegalStateException`. The zlib wrapper (header and Adler-32 trailer) is parsed
 // unless `nowrap` is set, in which case the stream is raw DEFLATE.
-private[turbulence] final class Inflater(nowrap: Boolean):
+private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   import Inflater.*
 
-  private[turbulence] var nextIn: Array[Byte] = empty
-  private[turbulence] var nextInIndex: Int = 0
-  private[turbulence] var availIn: Int = 0
-  private[turbulence] var totalIn: Long = 0
-  private[turbulence] var nextOut: Array[Byte] = empty
-  private[turbulence] var nextOutIndex: Int = 0
-  private[turbulence] var availOut: Int = 0
-  private[turbulence] var totalOut: Long = 0
-  private[turbulence] var msg: String = ""
-  private[turbulence] var adler: FlateChecksum = Adler32()
+  private[pneumatic] var nextIn: Array[Byte] = empty
+  private[pneumatic] var nextInIndex: Int = 0
+  private[pneumatic] var availIn: Int = 0
+  private[pneumatic] var totalIn: Long = 0
+  private[pneumatic] var nextOut: Array[Byte] = empty
+  private[pneumatic] var nextOutIndex: Int = 0
+  private[pneumatic] var availOut: Int = 0
+  private[pneumatic] var totalOut: Long = 0
+  private[pneumatic] var msg: String = ""
+  private[pneumatic] var adler: FlateChecksum = Adler32()
 
   private val wrap: Int = if nowrap then 0 else 1
   private val wbits: Int = MaxWbits

@@ -38,6 +38,7 @@ import anticipation.*
 import aperture.*
 import contingency.*
 import prepositional.*
+import pneumatic.*
 import turbulence.*
 import zephyrine.*
 

@@ -43,6 +43,7 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import pneumatic.*
 import turbulence.*
 import zephyrine.*
 import vacuous.*

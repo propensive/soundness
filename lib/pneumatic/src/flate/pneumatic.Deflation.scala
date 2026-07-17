@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 import anticipation.*
 import zephyrine.*
@@ -45,14 +45,14 @@ import zephyrine.*
 //
 // Compression ratios are unknowable, so `translate` is a pass-through: the
 // duct's own bounded buffer and the retained-surplus rule absorb expansion.
-private[turbulence] class Deflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
+private[pneumatic] class Deflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
-  private val deflater: Deflater = Deflater(-1, nowrap || gzip)
+  private val deflater: DeflateEngine = FlateBackend.deflater(-1, nowrap || gzip)
 
-  private val crc: Crc32 = Crc32()
+  private val crc: FlateChecksum = FlateBackend.crc32()
   private val empty: Array[Byte] = new Array[Byte](0)
   private var headerDone: Boolean = !gzip
   private var size: Long = 0
@@ -155,7 +155,7 @@ extends Duct[Data, Data]:
 // Streaming decompression, the inverse of `Deflation`, over the pure-Scala `Inflater`,
 // with the gzip header parsed by a small state machine ahead of the inflater
 // and the 8-byte trailer consumed and ignored after it finishes.
-private[turbulence] class Inflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
+private[pneumatic] class Inflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
@@ -168,7 +168,7 @@ extends Duct[Data, Data]:
     case Checksum(remaining: Int)
     case Done
 
-  private val inflater: Inflater = Inflater(nowrap || gzip)
+  private val inflater: InflateEngine = FlateBackend.inflater(nowrap || gzip)
   private val empty: Array[Byte] = new Array[Byte](0)
   private var header: Header = if gzip then Header.Fixed(10) else Header.Done
   private var flags: Int = 0

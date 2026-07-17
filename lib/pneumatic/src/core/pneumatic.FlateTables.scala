@@ -30,12 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 // Constant tables for the pure-Scala DEFLATE implementation, extracted verbatim from JZlib
 // (BSD 3-clause, Copyright (c) 2000-2011 ymnk, JCraft, Inc.), itself derived from zlib and
 // PKZIP's appnote.txt. This file is generated; do not edit by hand.
-private[turbulence] object FlateTables:
+private[pneumatic] object FlateTables:
   // Root bits of the fixed literal/length and distance decoding tables.
   final val fixedBl = 9
   final val fixedBd = 5

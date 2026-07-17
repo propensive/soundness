@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 import java.util as ju
 
@@ -38,7 +38,7 @@ import java.util as ju
 // split into MIME-encoded chunks so each string literal stays within the JVM constant-pool limit
 // and each source line stays within the column limit; the MIME decoder ignores the line breaks.
 // This file is generated; do not edit by hand.
-private[turbulence] object BrotliDictionaryData:
+private[pneumatic] object BrotliDictionaryData:
   private val chunk0: String = """
 dGltZWRvd25saWZlbGVmdGJhY2tjb2RlZGF0YXNob3dvbmx5c2l0ZWNpdHlvcGVuanVzdGxpa2VmcmVld29ya3RleHR5ZWFy
 b3ZlcmJvZHlsb3ZlZm9ybWJvb2twbGF5bGl2ZWxpbmVoZWxwaG9tZXNpZGVtb3Jld29yZGxvbmd0aGVtdmlld2ZpbmRwYWdl

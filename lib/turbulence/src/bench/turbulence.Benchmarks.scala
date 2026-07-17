@@ -54,6 +54,7 @@ import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 import zephyrine.*
+import pneumatic.*
 
 // Comparative streaming benchmarks: Soundness's pull `Stream` kernel against the
 // effect-based streaming libraries ZIO-Streams, FS2 and Kyo. Each benchmark's

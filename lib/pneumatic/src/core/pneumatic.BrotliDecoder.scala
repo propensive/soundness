@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 // A pure-Scala Brotli decoder (RFC 7932), ported faithfully from Google's `org.brotli.dec`
 // (MIT-licensed, Copyright 2015 Google Inc.). Two deliberate simplifications versus the reference:
@@ -44,41 +44,41 @@ package turbulence
 //
 // The bit-stream parsing, Huffman-table construction, context modelling, distance decoding and
 // static-dictionary transforms are otherwise a direct translation of the reference.
-private[turbulence] object BrotliDecoder:
+private[pneumatic] object BrotliDecoder:
   final val HuffmanMaxTableSize = 1080
 
-  private[turbulence] final val DefaultCodeLength = 8
-  private[turbulence] final val CodeLengthRepeatCode = 16
-  private[turbulence] final val NumLiteralCodes = 256
-  private[turbulence] final val NumInsertAndCopyCodes = 704
-  private[turbulence] final val NumBlockLengthCodes = 26
-  private[turbulence] final val LiteralContextBits = 6
-  private[turbulence] final val DistanceContextBits = 2
-  private[turbulence] final val HuffmanTableBits = 8
-  private[turbulence] final val HuffmanTableMask = 0xff
-  private[turbulence] final val CodeLengthCodes = 18
-  private[turbulence] final val NumDistanceShortCodes = 16
+  private[pneumatic] final val DefaultCodeLength = 8
+  private[pneumatic] final val CodeLengthRepeatCode = 16
+  private[pneumatic] final val NumLiteralCodes = 256
+  private[pneumatic] final val NumInsertAndCopyCodes = 704
+  private[pneumatic] final val NumBlockLengthCodes = 26
+  private[pneumatic] final val LiteralContextBits = 6
+  private[pneumatic] final val DistanceContextBits = 2
+  private[pneumatic] final val HuffmanTableBits = 8
+  private[pneumatic] final val HuffmanTableMask = 0xff
+  private[pneumatic] final val CodeLengthCodes = 18
+  private[pneumatic] final val NumDistanceShortCodes = 16
   private final val MaxLength = 15
 
-  private[turbulence] val codeLengthCodeOrder: Array[Int] =
+  private[pneumatic] val codeLengthCodeOrder: Array[Int] =
     Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
-  private[turbulence] val distanceShortCodeIndexOffset: Array[Int] =
+  private[pneumatic] val distanceShortCodeIndexOffset: Array[Int] =
     Array(3, 2, 1, 0, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2)
 
-  private[turbulence] val distanceShortCodeValueOffset: Array[Int] =
+  private[pneumatic] val distanceShortCodeValueOffset: Array[Int] =
     Array(0, 0, 0, 0, -1, 1, -2, 2, -3, 3, -1, 1, -2, 2, -3, 3)
 
   // Static Huffman code for the code-length code lengths.
-  private[turbulence] val fixedTable: Array[Int] =
+  private[pneumatic] val fixedTable: Array[Int] =
     Array(0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040001,
         0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040005)
 
-  private[turbulence] def corrupt(message: String): Nothing =
+  private[pneumatic] def corrupt(message: String): Nothing =
     throw IllegalStateException("the Brotli data is corrupt: "+message)
 
   // Builds a Huffman lookup table assuming code lengths are in symbol order (reference `Huffman`).
-  private[turbulence] def buildHuffmanTable
+  private[pneumatic] def buildHuffmanTable
     ( rootTable: Array[Int], tableOffset: Int, rootBits: Int, codeLengths: Array[Int],
       codeLengthsSize: Int )
   :   Unit =
@@ -186,7 +186,7 @@ private[turbulence] object BrotliDecoder:
 
 // A single-shot decoder instance holding all mutable decoding state. Not reusable; create one per
 // decode. `run()` returns exactly the decoded bytes.
-private[turbulence] final class BrotliDecode(source: Array[Byte], sourceLength: Int):
+private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: Int):
   import BrotliDecoder.*
   import BrotliTables.*
 

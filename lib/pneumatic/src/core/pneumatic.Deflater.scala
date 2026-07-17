@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 import Flate.*
 import FlateTables.*
@@ -40,7 +40,7 @@ import FlateTables.*
 // hash-chain longest-match search with lazy evaluation, dynamic Huffman trees per block, and the
 // full flush protocol (`ZNoFlush`, `ZSyncFlush`, `ZFinish`), streaming with bounded memory. Only
 // the zlib and raw framings are supported (`nowrap`); gzip framing is added by `Deflation`.
-private[turbulence] object Deflater:
+private[pneumatic] object Deflater:
   final val MinMatch = 3
   final val MaxMatch = 258
   final val MinLookahead = MaxMatch + MinMatch + 1
@@ -145,7 +145,7 @@ private[turbulence] object Deflater:
 
       n += 1
 
-private[turbulence] object TreeConfig:
+private[pneumatic] object TreeConfig:
   import Deflater.*
 
   val staticL: TreeConfig = TreeConfig(staticLtree, extraLbits, Literals + 1, LCodes, MaxBits)
@@ -154,13 +154,13 @@ private[turbulence] object TreeConfig:
 
 // The static configuration of one of the three Huffman trees: its static counterpart (empty for
 // the bit-length tree), extra-bit tables and size limits (JZlib's `StaticTree`).
-private[turbulence] final class TreeConfig
+private[pneumatic] final class TreeConfig
   ( val staticTree: Array[Short], val extraBits: Array[Int], val extraBase: Int, val elems: Int,
     val maxLength: Int )
 
 // One dynamic Huffman tree under construction (JZlib's `Tree`): frequency and code arrays
 // interleaved in `dynTree`, built against a `TreeConfig`.
-private[turbulence] final class FlateTree(val dynTree: Array[Short], val statDesc: TreeConfig):
+private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc: TreeConfig):
   import Deflater.*
 
   var maxCode: Int = 0 // largest code with non-zero frequency
@@ -330,19 +330,19 @@ private[turbulence] final class FlateTree(val dynTree: Array[Short], val statDes
 // A streaming deflater with the same call pattern as `java.util.zip.Deflater`: feed input with
 // `setInput`, drain with `deflate` (which consumes input into the sliding window and returns the
 // number of bytes produced), then `finish` and drain until `finished`.
-private[turbulence] final class Deflater(level0: Int, nowrap: Boolean):
+private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends DeflateEngine:
   import Deflater.*
 
-  private[turbulence] var nextIn: Array[Byte] = empty
-  private[turbulence] var nextInIndex: Int = 0
-  private[turbulence] var availIn: Int = 0
-  private[turbulence] var totalIn: Long = 0
-  private[turbulence] var nextOut: Array[Byte] = empty
-  private[turbulence] var nextOutIndex: Int = 0
-  private[turbulence] var availOut: Int = 0
-  private[turbulence] var totalOut: Long = 0
-  private[turbulence] var msg: String = ""
-  private[turbulence] val adler: FlateChecksum = Adler32()
+  private[pneumatic] var nextIn: Array[Byte] = empty
+  private[pneumatic] var nextInIndex: Int = 0
+  private[pneumatic] var availIn: Int = 0
+  private[pneumatic] var totalIn: Long = 0
+  private[pneumatic] var nextOut: Array[Byte] = empty
+  private[pneumatic] var nextOutIndex: Int = 0
+  private[pneumatic] var availOut: Int = 0
+  private[pneumatic] var totalOut: Long = 0
+  private[pneumatic] var msg: String = ""
+  private[pneumatic] val adler: FlateChecksum = Adler32()
 
   private val level: Int = if level0 == -1 then 6 else level0
   private val strategy: Int = 0 // Z_DEFAULT_STRATEGY
@@ -398,16 +398,16 @@ private[turbulence] final class Deflater(level0: Int, nowrap: Boolean):
   private val dDesc: FlateTree = FlateTree(dynDtree, TreeConfig.staticD)
   private val blDesc: FlateTree = FlateTree(blTree, TreeConfig.staticBl)
 
-  private[turbulence] val blCount: Array[Short] = new Array[Short](MaxBits + 1)
-  private[turbulence] val nextCode: Array[Short] = new Array[Short](MaxBits + 1)
-  private[turbulence] val heap: Array[Int] = new Array[Int](2*LCodes + 1)
-  private[turbulence] var heapLen: Int = 0
-  private[turbulence] var heapMax: Int = 0
-  private[turbulence] val depth: Array[Byte] = new Array[Byte](2*LCodes + 1)
+  private[pneumatic] val blCount: Array[Short] = new Array[Short](MaxBits + 1)
+  private[pneumatic] val nextCode: Array[Short] = new Array[Short](MaxBits + 1)
+  private[pneumatic] val heap: Array[Int] = new Array[Int](2*LCodes + 1)
+  private[pneumatic] var heapLen: Int = 0
+  private[pneumatic] var heapMax: Int = 0
+  private[pneumatic] val depth: Array[Byte] = new Array[Byte](2*LCodes + 1)
 
   private var lastLit: Int = 0
-  private[turbulence] var optLen: Int = 0
-  private[turbulence] var staticLen: Int = 0
+  private[pneumatic] var optLen: Int = 0
+  private[pneumatic] var staticLen: Int = 0
   private var matches: Int = 0
   private var lastEobLen: Int = 0
 
@@ -458,7 +458,7 @@ private[turbulence] final class Deflater(level0: Int, nowrap: Boolean):
     matches = 0
 
   // Restore the heap property by moving down the tree starting at node k.
-  private[turbulence] def pqdownheap(tree: Array[Short], k0: Int): Unit =
+  private[pneumatic] def pqdownheap(tree: Array[Short], k0: Int): Unit =
     var k = k0
     val v = heap(k)
     var j = k << 1 // left son of k

@@ -30,23 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package soundness
 
-import anticipation.*
-import zephyrine.*
-
-trait Compression:
-  type Self <: Compressor
-
-  def compress(stream: LazyList[Data]): LazyList[Data]
-  def decompress(stream: LazyList[Data]): LazyList[Data]
-
-  // Streaming stages for the same transformations, applied with
-  // `stream.compress[Gzip]`/`stream.decompress[Gzip]` on a pull endpoint.
-  def compressor()(using Buffering): (Duct[Data, Data] {
-    type Transport = Credit
-    type Upstream = Credit })^
-
-  def decompressor()(using Buffering): (Duct[Data, Data] {
-    type Transport = Credit
-    type Upstream = Credit })^
+export pneumatic.{Brotli, compress, Compression, Compressor, decompress, Lzw}

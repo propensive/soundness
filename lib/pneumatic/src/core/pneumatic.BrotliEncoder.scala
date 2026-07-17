@@ -30,12 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 // A little-endian (LSB-first) bit-stream writer, the mirror of the decoder's `BitReader`. Bits
 // accumulate into a 64-bit register and are flushed a byte at a time; `align` pads the current byte
 // with zero bits, after which `writeBytes` may append raw byte-aligned data.
-private[turbulence] final class BrotliBitWriter:
+private[pneumatic] final class BrotliBitWriter:
   private var out: Array[Byte] = new Array[Byte](256)
   private var size: Int = 0
   private var accumulator: Long = 0L
@@ -87,7 +87,7 @@ private[turbulence] final class BrotliBitWriter:
 // back to stored (uncompressed) meta-blocks. The parameters (single block type, no context
 // modelling, no distance
 // cache, NPOSTFIX/NDIRECT = 0) keep the meta-block structure simple while remaining spec-compliant.
-private[turbulence] object BrotliEncoder:
+private[pneumatic] object BrotliEncoder:
   import BrotliTables.*
 
   private final val MaxMetaBlock = 1 << 24

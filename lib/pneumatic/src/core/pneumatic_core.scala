@@ -30,23 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package pneumatic
 
-export
-  turbulence
-  . { Aggregable, chunked, deduplicate,
-      defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred, source,
-      Confluence, Divergence, Readable, Sink, Stdio, Streamable, StreamError,
-      StreamOutputStream, strict, take, Writable, writeTo, flow }
+import language.adhocExtensions
 
-package stdios:
-  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
+import scala.annotation.*
 
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        virtualMachineLineSeparation }
+import anticipation.*
+import prepositional.*
+import turbulence.*
+import zephyrine.*
+
+extension (data: Data)
+  // Compress/decompress a whole value through the format's own duct, driven directly over it as
+  // a single window (`Duct.feed`): the whole-value counterparts of the stream stages, sharing
+  // their implementation.
+  @targetName("compressWholeData")
+  def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
+  :   Data =
+
+    Duct.feed(data, compression.compressor())
+
+  @targetName("decompressWholeData")
+  def decompress[format <: Compressor]
+    ( using compression: format is Compression, buffering: Buffering )
+  :   Data =
+
+    Duct.feed(data, compression.decompressor())
+
+extension (consume stream: (Stream[Data] over Credit)^)
+  def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
+  :   (Stream[Data] over Credit)^ =
+
+    stream.via(compression.compressor()).asInstanceOf[(Stream[Data] over Credit)^]
+
+  def decompress[format <: Compressor]
+    ( using compression: format is Compression, buffering: Buffering )
+  :   (Stream[Data] over Credit)^ =
+
+    stream.via(compression.decompressor()).asInstanceOf[(Stream[Data] over Credit)^]
+
+extension (stream: LazyList[Data])
+  def compress[compression <: Compressor: Compression]: LazyList[Data] =
+    compression.compress(stream)
+
+  def decompress[compression <: Compressor: Compression]: LazyList[Data] =
+    compression.decompress(stream)
