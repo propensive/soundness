@@ -33,12 +33,14 @@
 package caesura
 
 import anticipation.*
+import contingency.*
 import denominative.*
 import gossamer.*
 import panopticon.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 package dsvFormats:
   given csvFormat: DsvFormat = DsvFormat(false, ',', '"', '"')
@@ -58,7 +60,49 @@ package dsvRedesignations:
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
 extension [encodable: Encodable in Dsv](value: Seq[encodable])
-  def dsv: Sheet = Sheet(value.to(LazyList).map(encodable.encode(_)))
+  def dsv: Sheet = Sheet(IArray.from(value.map(encodable.encode(_))))
+
+extension (consume stream: (Stream[Text] over Credit)^)
+  // The rows of a character stream of DSV data, as a single-consumer
+  // iterator: the streaming counterpart of `read[Sheet]`, which materializes.
+  // Quoted cells may span chunk (and line) boundaries; the parser carries its
+  // state across refills.
+  def rows(using DsvFormat, Tactic[DsvError], Buffering): Iterator[Dsv]^ =
+    Sheet.parseRows(stream)
+
+extension (consume stream: (Stream[Text] over Credit)^)
+  // Each row parsed straight to `value` through its `Dsv.Parsable` — the
+  // streaming direct form: no `Dsv` row value is ever built.
+  def rowsOf[value](using parsable: value is Dsv.Parsable)
+    ( using DsvFormat, Tactic[DsvError], Buffering )
+  :   Iterator[value]^ =
+
+    parsedIterator(Sheet.directReader(stream), parsable)
+
+// Constructed in a helper: a local binding of the fresh reader would hide it
+// from the anonymous class (the statement rule).
+private def parsedIterator[value](consume reader: DsvReader^, parsable: value is Dsv.Parsable)
+:   Iterator[value]^ =
+
+  new Iterator[value]:
+    @caps.unsafe.untrackedCaptures
+    private var pending: Optional[value] = Unset
+    @caps.unsafe.untrackedCaptures
+    private var finished: Boolean = false
+
+    def hasNext: Boolean =
+      if pending.present then true
+      else if finished then false
+      else
+        pending = if reader.nextRow() then parsable.parse(reader, 0) else Unset
+        if pending.absent then finished = true
+        pending.present
+
+    def next(): value =
+      if !hasNext then Iterator.empty.next()
+      val row = pending.or(Iterator.empty.next())
+      pending = Unset
+      row
 
 // Panopticon optics for tabular data (no nesting, so they mirror the row/cell
 // structure rather than JSON's map/array). `cellLens` reads/writes a cell by column

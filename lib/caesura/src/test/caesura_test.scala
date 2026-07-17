@@ -41,6 +41,54 @@ given decimalizer: Decimalizer = Decimalizer(1)
 
 object Tests extends Suite(m"Caesura tests"):
   def run(): Unit =
+    suite(m"Streaming rows"):
+      import dsvFormats.csvFormat
+
+      test(m"rows of a stream as an iterator"):
+        t"a,b\nc,d\ne,f".source[Text].rows.to(List)
+      . assert(_ == List(Dsv(t"a", t"b"), Dsv(t"c", t"d"), Dsv(t"e", t"f")))
+
+      test(m"quoted newlines survive one-char chunks"):
+        t"\"1\n2\",x\ny,z".s.grouped(1).map(_.tt).stream.rows.to(List)
+      . assert(_ == List(Dsv(t"1\n2", t"x"), Dsv(t"y", t"z")))
+
+      test(m"header rows carry column names"):
+        import dsvFormats.csvWithHeaderFormat
+        t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to(List)
+      . assert(_ == List(t"alpha", t"beta"))
+
+    suite(m"Direct parsing"):
+      import dsvFormats.csvFormat
+
+      test(m"read a single record directly"):
+        t"hello,world".read[DirectFoo in Dsv]
+      . assert(_ == DirectFoo(t"hello", t"world"))
+
+      test(m"read every row as a List directly"):
+        t"a,b\nc,d\ne,f".read[List[DirectFoo] in Dsv]
+      . assert(_ == List(DirectFoo(t"a", t"b"), DirectFoo(t"c", t"d"), DirectFoo(t"e", t"f")))
+
+      test(m"typed rows stream one value per row"):
+        t"x,1\ny,2".source[Text].rowsOf[DirectStat].map(_.count).to(List)
+      . assert(_ == List(1, 2))
+
+      test(m"direct read locates fields by heading"):
+        import dsvFormats.csvWithHeaderFormat
+        t"count,name\n3,alpha".read[DirectStat in Dsv]
+      . assert(_ == DirectStat(t"alpha", 3, Unset))
+
+      test(m"a short row parses a trailing Optional to Unset"):
+        t"z,9".read[DirectStat in Dsv]
+      . assert(_ == DirectStat(t"z", 9, Unset))
+
+      test(m"a present trailing Optional parses positionally"):
+        t"z,9,note".read[DirectStat in Dsv]
+      . assert(_ == DirectStat(t"z", 9, t"note"))
+
+      test(m"quoted cells with embedded newlines parse directly"):
+        t"\"1\n2\",x".read[DirectFoo in Dsv]
+      . assert(_ == DirectFoo(t"1\n2", t"x"))
+
     suite(m"Parsing tests"):
       import dsvFormats.csvFormat
 
@@ -93,44 +141,44 @@ object Tests extends Suite(m"Caesura tests"):
       . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote, Prim.next.next, Sec, 12))
 
       test(m"multi-line CSV without trailing newline"):
-        t"""foo,bar\nbaz,quux""".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t"""foo,bar\nbaz,quux""".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with trailing newline"):
-        t"""foo,bar\nbaz,quux\n""".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t"""foo,bar\nbaz,quux\n""".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with CR and LF"):
-        t"""foo,bar\r\nbaz,quux\r\n""".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t"""foo,bar\r\nbaz,quux\r\n""".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with quoted newlines"):
-        t""""foo","bar"\n"baz","quux"\n""".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+        t""""foo","bar"\n"baz","quux"\n""".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with newlines and quotes in cells"):
-        t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\n2\n3\n")))
+        t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\n2\n3\n")))
 
       test(m"multi-line CSV with quoted quotes adjacent to newlines"):
-        t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
+        t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
 
       test(m"CSV with quoted quotes adjacent to delimiters"):
-        t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
+        t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
 
 
     suite(m"Alternative formats"):
       test(m"Parse TSV data without header"):
         import dsvFormats.tsvFormat
-        t"Hello\tWorld\n".read[Sheet].rows
-      . assert(_ == LazyList(Dsv(t"Hello", t"World")))
+        t"Hello\tWorld\n".read[Sheet].rows.to(List)
+      . assert(_ == List(Dsv(t"Hello", t"World")))
 
       test(m"Parse TSV data with header"):
         import dsvFormats.tsvWithHeaderFormat
         t"Greeting\tAddressee\nHello\tWorld\n".read[Sheet]
-      . assert(_ == Sheet(LazyList(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeaderFormat, IArray(t"Greeting", t"Addressee")))
+      . assert(_ == Sheet(IArray(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeaderFormat, IArray(t"Greeting", t"Addressee")))
 
 
 
@@ -190,38 +238,38 @@ object Tests extends Suite(m"Caesura tests"):
 
     test(m"convert simple row to string"):
       import dsvFormats.csvFormat
-      Sheet(LazyList(Dsv(t"hello", t"world"))).show
+      Sheet(IArray(Dsv(t"hello", t"world"))).show
     . assert(_ == t"""hello,world""")
 
     test(m"convert complex row to string"):
       import dsvFormats.csvFormat
-      Sheet(LazyList(Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
+      Sheet(IArray(Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
     . assert(_ == t"""0.1,two,three,4,five,six""")
 
     test(m"convert row with escaped quote"):
       import dsvFormats.csvFormat
-      Sheet(LazyList(Dsv(t"hello\"world"))).show
+      Sheet(IArray(Dsv(t"hello\"world"))).show
     . assert(_ == t""""hello""world"""")
 
     test(m"convert row with delimiter in cell"):
       import dsvFormats.csvFormat
-      Sheet(LazyList(Dsv(t"hello, world", t"test"))).show
+      Sheet(IArray(Dsv(t"hello, world", t"test"))).show
     . assert(_ == t""""hello, world",test""")
 
     test(m"convert row with newline in cell"):
       import dsvFormats.csvFormat
-      Sheet(LazyList(Dsv(t"line1\nline2", t"test"))).show
+      Sheet(IArray(Dsv(t"line1\nline2", t"test"))).show
     . assert(_ == t""""line1\nline2",test""")
 
     test(m"convert row with carriage return in cell"):
       import dsvFormats.csvFormat
-      Sheet(LazyList(Dsv(t"line1\rline2", t"test"))).show
+      Sheet(IArray(Dsv(t"line1\rline2", t"test"))).show
     . assert(_ == t""""line1\rline2",test""")
 
     test(m"simple parse TSV"):
       import dsvFormats.tsvFormat
       t"hello\tworld".read[Sheet]
-    . assert(_ == Sheet(LazyList(Dsv(t"hello", t"world")), format = dsvFormats.tsvFormat))
+    . assert(_ == Sheet(IArray(Dsv(t"hello", t"world")), format = dsvFormats.tsvFormat))
 
     test(m"decode case class from TSV"):
       import dsvFormats.tsvFormat
@@ -337,6 +385,13 @@ object Tests extends Suite(m"Caesura tests"):
     AccrualTests()
 
 case class Foo(one: Text, two: Text)
+case class DirectFoo(one: Text, two: Text)
+object DirectFoo:
+  given parsable: DirectFoo is Dsv.Parsable = Dsv.Parsable.derived
+
+case class DirectStat(name: Text, count: Int, note: Optional[Text])
+object DirectStat:
+  given parsable: DirectStat is Dsv.Parsable = Dsv.Parsable.derived
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
 case class Quux(name: Text, greeting: Text)
 case class Greeting(word: Text, name: Optional[Text])

@@ -47,6 +47,7 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
+import zephyrine.*
 
 trait Dsv2:
   // Generic fallback: any `Decodable in Text` (custom types, enums, `Uuid`, …)
@@ -57,6 +58,19 @@ trait Dsv2:
   given decoder: [decodable] => (decodable: (decodable is Decodable in Text)^)
   =>  ((decodable is Decodable in Dsv)^{decodable}) =
     value => decodable.decoded(value.data.head)
+
+  // `source.read[Foo in Dsv]` shorthand: decodes a single DSV record (the first
+  // row) into `Foo` through the row AST. Held below `aggregableParsed` in
+  // `object Dsv`, so a type with an explicit `Dsv.Parsable` takes the direct
+  // (AST-free) path instead. The `Form` type-tag is added by an `asInstanceOf`
+  // cast — `value in Dsv` is just `value { type Form = Dsv }`, so the cast is a
+  // no-op at runtime.
+  given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat)
+  =>  (tactic: Tactic[DsvError])
+  =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
+    text =>
+      summon[Sheet is Aggregable by Text].aggregate(text).rows.head.as[value]
+      . asInstanceOf[value in Dsv]
 
 object Dsv extends Dsv2:
   def apply(iterable: Iterable[Text]): Dsv =
@@ -153,20 +167,6 @@ object Dsv extends Dsv2:
 
     DecodableDerivation.derived[value]
 
-  // `source.read[Foo in Dsv]` shorthand for `source.read[Sheet].rows.head.as[Foo]`:
-  // decodes a single DSV record (the first row) into `Foo`, mirroring the other
-  // formats' `value in Format` aggregables. Multi-row sources should be read as a
-  // `Sheet` instead (`Sheet.as[Foo]` yields a `LazyList[Foo]`). The `Form` type-tag is
-  // added by an `asInstanceOf` cast — `value in Dsv` is just `value { type Form = Dsv }`
-  // so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat)
-  =>  (tactic: Tactic[DsvError])
-  =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
-    text =>
-      summon[Sheet is Aggregable by Text].aggregate(text).rows.head.as[value]
-      . asInstanceOf[value in Dsv]
-
-
   inline given encodableDerivation: [value <: Product: ProductReflection]
   =>  value is Encodable in Dsv =
 
@@ -190,6 +190,145 @@ object Dsv extends Dsv2:
             append(format.quote)
 
     cells.join(format.delimiter.show)
+
+  // Direct-read entries, gated on an explicit `Dsv.Parsable` (they sit above
+  // the AST-based `aggregableIn` in `Dsv2`, so opting in switches the path).
+  // `read[Foo in Dsv]` parses the first row; `read[List[Foo] in Dsv]` parses
+  // every row. Sealed per the codec-thunk pattern.
+  given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
+  =>  ( format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+  =>  ((value in Dsv) is Aggregable by Text) =
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = value in Dsv
+        type Operand = Text
+
+        def aggregate(text: LazyList[Text]): value in Dsv = accept(Stream(text.iterator))
+
+        override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
+          val reader =
+            Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+
+          if reader.nextRow() then parsable.parse(reader, 0).asInstanceOf[value in Dsv]
+          else tactic.abort(DsvError(format, DsvError.Reason.Absent))
+
+  given aggregableParsedList: [value] => (parsable: value is Dsv.Parsable)
+  =>  ( format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+  =>  ((List[value] in Dsv) is Aggregable by Text) =
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = List[value] in Dsv
+        type Operand = Text
+
+        def aggregate(text: LazyList[Text]): List[value] in Dsv = accept(Stream(text.iterator))
+
+        override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
+          val reader =
+            Sheet.directReader(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+
+          val buffer = scala.collection.mutable.ListBuffer[value]()
+          while reader.nextRow() do buffer += parsable.parse(reader, 0)
+          buffer.to(List).asInstanceOf[List[value] in Dsv]
+
+  // ---- Direct (AST-free) parsing --------------------------------------------
+  //
+  // `Dsv.Parsable` reads a value straight off the `DsvReader` token reader:
+  // no per-row `Dsv`, no per-field slice of the cell array. `Parsable` is the
+  // OPT-IN surface (explicit instances and `derives Dsv.Parsable`; no blanket
+  // given), so `read[T in Dsv]` changes behavior only when a type opts in;
+  // `Field` is the operational sibling that always resolves (bridging any
+  // `Decodable in Text`), used in field position by the derivation. Neither
+  // subtypes the other.
+  trait Parsing extends distillate.Parsable:
+    type Transport = Dsv
+    type Reader = DsvReader
+
+    // Cells this value occupies in positional mode.
+    def width: Int = 1
+
+    // Read a value from the current row, starting at cell `offset`.
+    def parse(reader: DsvReader^, offset: Int): Self
+
+    def parse(reader: DsvReader^): Self = parse(reader, 0)
+
+  trait Parsable extends Parsing
+
+  object Parsable:
+    inline def derived[value <: Product: ProductReflection]: value is Dsv.Parsable =
+      val field = ParsableDerivation.derived[value]
+
+      new Parsable:
+        type Self = value
+        override def width: Int = field.width
+        def parse(reader: DsvReader^, offset: Int): value = field.parse(reader, offset)
+
+  trait Field extends Parsing
+
+  object Field:
+    // Rim call points for generated code: the derivation's lambda holds the
+    // reader as a neutral `AnyRef` carrier (a function type may not take a
+    // `^` parameter, and an inline lambda may not mint the capability); these
+    // named methods reassert it.
+    def parseField[value](field: value is Dsv.Field, carrier: AnyRef, offset: Int): value =
+      field.parse(carrier.asInstanceOf[DsvReader^], offset)
+
+    def fieldColumn(carrier: AnyRef, name: Text): Optional[Int] =
+      carrier.asInstanceOf[DsvReader].column(name)
+
+    // Bridge: any `Decodable in Text` reads a single cell. An absent cell (a
+    // short positional row, or a header column missing here) aborts through
+    // the reader's own tactic; `optional` below intercepts that for
+    // `Optional` fields. Sealed per the codec-thunk pattern.
+    given decodable: [value] => (decodable: (value is Decodable in Text)^)
+    =>  value is Dsv.Field =
+      caps.unsafe.unsafeAssumePure:
+        new Field:
+          type Self = value
+
+          def parse(reader: DsvReader^, offset: Int): value =
+            reader.cell(offset).lay(reader.absent()): cell =>
+              decodable.decoded(cell)
+
+    given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+    =>  ( field: => inner is Dsv.Field )
+    =>  value is Dsv.Field =
+      caps.unsafe.unsafeAssumePure:
+        new Field:
+          type Self = value
+          override def width: Int = field.width
+
+          def parse(reader: DsvReader^, offset: Int): value =
+            if reader.cell(offset).absent then Unset else field.parse(reader, offset)
+
+  object ParsableDerivation extends ProductDerivable[Dsv.Field]:
+    // The generated parse lambda takes the reader as a neutral `AnyRef`
+    // carrier (a function type may not take a `^` parameter); the capability
+    // is reasserted at the rim inside. Nothing of the reader is retained.
+    class DsvProductParser[derivation](width0: Int, lambda: (AnyRef, Int) => derivation)
+    extends Field:
+      type Self = derivation
+      override def width: Int = width0
+
+      def parse(reader: DsvReader^, offset: Int): derivation =
+        lambda(reader.asInstanceOf[AnyRef], offset)
+
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   (derivation is Dsv.Field)^ =
+
+      val spans: IArray[Int] = Spannable.derived[derivation].spans()
+      var total: Int = 0
+      spans.foreach { span => total += span }
+
+      DsvProductParser[derivation](total, (carrier, offset) =>
+        var count = offset
+
+        build[derivation]:
+          [field] => context =>
+            // Header mode locates the field by column name; positional mode
+            // reads the field's span starting at the running offset.
+            val at = Dsv.Field.fieldColumn(carrier, label).or(count)
+            count += spans(index)
+            Dsv.Field.parseField(contextual, carrier, at))
 
   object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
     // An impure (`=>`) lambda: a derived decoder legitimately captures the consumer's
