@@ -32,84 +32,28 @@
                                                                                                   */
 package turbulence
 
-import java.io as ji
-import java.util.zip as juz
-
 import anticipation.*
-import denominative.*
 import rudiments.*
 import vacuous.*
-import zephyrine.*
 
-object Zlib:
-  given compression: Zlib is Compression:
-    def compressor()(using Buffering): (Duct[Data, Data] {
-      type Transport = Credit
-      type Upstream = Credit })^ =
+// One-shot gzip/gunzip for a whole `Data` block, over the pure-Scala DEFLATE implementation, and
+// therefore available on every platform.
+extension (bytes: Data)
+  def gzip: Data = concatenate(Gzip.compression.compress(LazyList(bytes)))
+  def gunzip: Data = concatenate(Gzip.compression.decompress(LazyList(bytes)))
 
-      Deflation(gzip = false, nowrap = false)
+private def concatenate(stream: LazyList[Data]): Data =
+  val chunks = stream.to(List)
+  var total = 0
 
-    def decompressor()(using Buffering): (Duct[Data, Data] {
-      type Transport = Credit
-      type Upstream = Credit })^ =
+  chunks.each: chunk =>
+    total += chunk.length
 
-      Inflation(gzip = false, nowrap = false)
+  val result = new Array[Byte](total)
+  var offset = 0
 
-    def compress(stream: LazyList[Data]): LazyList[Data] =
-      val deflater = juz.Deflater()
-      val buffer: Array[Byte] = new Array(4096)
-      val out = new ji.ByteArrayOutputStream()
+  chunks.each: chunk =>
+    System.arraycopy(chunk.mutable(using Unsafe), 0, result, offset, chunk.length)
+    offset += chunk.length
 
-      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
-        case head #:: tail =>
-          deflater.setInput(head.mutable(using Unsafe))
-          var count = deflater.deflate(buffer, 0, buffer.length, juz.Deflater.SYNC_FLUSH)
-
-          while count > 0 do
-            out.write(buffer, 0, count)
-            count = deflater.deflate(buffer, 0, buffer.length, juz.Deflater.SYNC_FLUSH)
-
-          val data = out.toByteArray.nn.immutable(using Unsafe)
-          out.reset()
-
-          if !data.nil then data #:: recur(tail) else recur(tail)
-
-        case _ =>
-          deflater.finish()
-
-          while !deflater.finished() do
-            val count = deflater.deflate(buffer, 0, buffer.length)
-            if count > 0 then out.write(buffer, 0, count)
-
-          val data = out.toByteArray.nn.immutable(using Unsafe)
-          out.reset()
-          deflater.end()
-          if !data.nil then LazyList(data) else LazyList.empty
-
-      recur(stream)
-
-    def decompress(stream: LazyList[Data]): LazyList[Data] =
-      val inflater = juz.Inflater(false)
-      val buffer: Array[Byte] = new Array(4096)
-
-      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
-        case head #:: tail =>
-          inflater.setInput(head.mutable(using Unsafe))
-          val out = new ji.ByteArrayOutputStream()
-          var count = inflater.inflate(buffer)
-
-          while count > 0 do
-            out.write(buffer, 0, count)
-            count = inflater.inflate(buffer)
-
-          val data = out.toByteArray.nn.immutable(using Unsafe)
-          if !data.nil then data #:: recur(tail) else recur(tail)
-
-        case _ =>
-          val finished = inflater.finished()
-          inflater.end()
-          LazyList.empty
-
-      recur(stream)
-
-sealed trait Zlib extends Compressor
+  result.immutable(using Unsafe)

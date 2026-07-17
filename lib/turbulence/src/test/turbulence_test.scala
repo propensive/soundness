@@ -574,6 +574,117 @@ object Tests extends Suite(m"Turbulence tests"):
         longData.compress[Deflate].decompress[Deflate]
       . assert: stream => stream === longData
 
+    suite(m"Pure DEFLATE implementation tests"):
+      // The pure-Scala port (from JZlib) must interoperate byte-for-byte with the JDK's zlib in
+      // both directions, across all three framings.
+      val corpus: Data =
+        IArray.from((0 until 300000).map { index => ((index*31 + (index >> 6)) & 0xff).toByte })
+
+      def jdkInflate(data: Data, nowrap: Boolean): List[Byte] =
+        val inflater = java.util.zip.Inflater(nowrap)
+        inflater.setInput(data.mutable(using Unsafe))
+        val out = ji.ByteArrayOutputStream()
+        val buffer = new Array[Byte](4096)
+
+        while !inflater.finished && !inflater.needsInput do
+          val count = inflater.inflate(buffer)
+          out.write(buffer, 0, count)
+
+        inflater.end()
+        out.toByteArray.nn.to(List)
+
+      def jdkDeflate(data: Data, nowrap: Boolean): Data =
+        val deflater = java.util.zip.Deflater(-1, nowrap)
+        deflater.setInput(data.mutable(using Unsafe))
+        deflater.finish()
+        val out = ji.ByteArrayOutputStream()
+        val buffer = new Array[Byte](4096)
+
+        while !deflater.finished do
+          val count = deflater.deflate(buffer)
+          out.write(buffer, 0, count)
+
+        deflater.end()
+        out.toByteArray.nn.immutable(using Unsafe)
+
+      test(m"Pure Deflate output inflates with the JDK"):
+        jdkInflate(corpus.compress[Deflate], true)
+      . assert(_ == corpus.to(List))
+
+      test(m"JDK Deflate output inflates with the pure implementation"):
+        jdkDeflate(corpus, true).decompress[Deflate].to(List)
+      . assert(_ == corpus.to(List))
+
+      test(m"Pure Zlib output inflates with the JDK"):
+        jdkInflate(corpus.compress[Zlib], false)
+      . assert(_ == corpus.to(List))
+
+      test(m"JDK Zlib output inflates with the pure implementation"):
+        jdkDeflate(corpus, false).decompress[Zlib].to(List)
+      . assert(_ == corpus.to(List))
+
+      test(m"Pure gzip output decodes with the JDK's GZIPInputStream"):
+        val in = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(corpus.gzip.mutable(using Unsafe)))
+        val out = ji.ByteArrayOutputStream()
+        val buffer = new Array[Byte](4096)
+
+        def recur(): Unit =
+          val count = in.read(buffer)
+          if count > 0 then
+            out.write(buffer, 0, count)
+            recur()
+
+        recur()
+        out.toByteArray.nn.to(List)
+      . assert(_ == corpus.to(List))
+
+      test(m"JDK gzip output decodes with the pure gunzip"):
+        val out = ji.ByteArrayOutputStream()
+        val zipped = java.util.zip.GZIPOutputStream(out)
+        zipped.write(corpus.mutable(using Unsafe))
+        zipped.close()
+        out.toByteArray.nn.immutable(using Unsafe).gunzip.to(List)
+      . assert(_ == corpus.to(List))
+
+      test(m"Whole-value gzip roundtrips through gunzip"):
+        corpus.gzip.gunzip.to(List)
+      . assert(_ == corpus.to(List))
+
+      test(m"Pure deflate output is byte-identical to the JDK's"):
+        corpus.compress[Deflate].to(List)
+      . assert(_ == jdkDeflate(corpus, true).to(List))
+
+      test(m"A gzip stream with optional header fields decodes"):
+        // FLG = FEXTRA | FNAME | FCOMMENT | FHCRC exercises every optional-field state
+        val out = ji.ByteArrayOutputStream()
+        val payload: Data = t"optional header fields".in[Data]
+        val deflated = jdkDeflate(payload, true)
+        val crc = java.util.zip.CRC32()
+        crc.update(payload.mutable(using Unsafe))
+
+        val headerStart: Array[Byte] =
+          Array[Byte](31, -117, 8, (4 | 8 | 16).toByte, 0, 0, 0, 0, 0, -1)
+
+        out.write(headerStart)
+        out.write(Array[Byte](3, 0)) // XLEN = 3
+        out.write(Array[Byte](1, 2, 3)) // extra field
+        out.write(Array[Byte]('n', 'a', 'm', 'e', 0)) // zero-terminated name
+        out.write(Array[Byte]('c', 'o', 'm', 'm', 'e', 'n', 't', 0)) // zero-terminated comment
+        out.write(deflated.mutable(using Unsafe))
+
+        var index = 0
+        while index < 4 do
+          out.write(((crc.getValue >>> (index*8)) & 0xff).toInt)
+          index += 1
+
+        index = 0
+        while index < 4 do
+          out.write(((payload.length >>> (index*8)) & 0xff).toInt)
+          index += 1
+
+        out.toByteArray.nn.immutable(using Unsafe).decompress[Gzip].to(List)
+      . assert(_ == t"optional header fields".in[Data].to(List))
+
     suite(m"Brotli tests"):
       // Golden vectors: real output of the reference `brotli` CLI, decoded here. These validate the
       // decoder against the reference implementation, not merely against our own encoder.
