@@ -1064,7 +1064,7 @@ object diuretic extends Library:
 object embarcadero extends Library:
   object oci
       extends Component(bitumen.core, jacinta.core, gastronomy.core, monotonous.core,
-        gesticulate.core, aperture.core):
+        gesticulate.core, aperture.core, pneumatic.flate):
     override def scalaJs = false // OCI images; depends on JVM-only `bitumen` (galilei archives)
     override def scalacOptions = Task:
       settings.cc(settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64"))

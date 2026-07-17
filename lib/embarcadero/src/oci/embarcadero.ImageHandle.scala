@@ -41,6 +41,7 @@ import fulminate.*
 import gesticulate.*
 import gossamer.*
 import jacinta.*
+import pneumatic.*
 import prepositional.*
 import turbulence.*
 import vacuous.*
