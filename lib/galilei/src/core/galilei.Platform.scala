@@ -81,6 +81,15 @@ object Platform:
   =>  ( FileOpenable[filesystem, path]^ ) =
     FileOpenable[filesystem, path]
 
+  // The `Openable` instance for the `Directory` form: anchored here for the same reason as
+  // the `File` instance above. With both in scope, a bare `path.open(...)` is ambiguous, and
+  // the form must be stated: `path.open[File](...)` or `path.open[Directory](...)`.
+  given directoryOpenable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem,
+        Tactic[IoError] )
+  =>  ( DirectoryOpenable[filesystem, path]^ ) =
+    DirectoryOpenable[filesystem, path]
+
   // Opening `Eof(path)` opens the file's content for appending: the instance prepends the
   // `Append` flag and delegates to the file's own instance. Named capturing evidence and an
   // honest result: the instance retains `openable`, which a pure context bound cannot accept.
