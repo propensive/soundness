@@ -49,7 +49,7 @@ object Layer:
 class Layer(val tar: Tarfile):
   lazy val raw:        Data       = tar.source[Data].memoize
   lazy val diffId:     Text       = sha256(raw)
-  lazy val blob:       Data       = raw.stream.compress[Gzip].memoize
+  lazy val blob:       Data       = raw.compress[Gzip]
   lazy val digest:     Text       = sha256(blob)
 
   lazy val descriptor: Descriptor =

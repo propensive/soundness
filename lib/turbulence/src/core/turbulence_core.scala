@@ -113,6 +113,41 @@ extension (consume stream: (Stream[Text] over Credit)^)
 
     stream.via(lineSeparation).asInstanceOf[(Stream[IArray[Text]] over Credit)^]
 
+extension (text: Text)
+  // Split a whole `Text` into its lines through the SAME `LineSeparation`
+  // duct as the streaming form, driven directly over the value as a single
+  // window (`Duct.feed`) — no stream endpoint, no credit machinery. One
+  // implementation, two drivers.
+  @targetName("delineateText")
+  def delineate(using lineSeparation: LineSeparation, buffering: Buffering): IArray[Text] =
+    Duct.feed(text, LineSeparation.lines.duct(lineSeparation))
+
+extension (data: Data)
+  // Split whole bytes into lines: whole-value character decoding, then the
+  // lines duct as above.
+  @targetName("delineateWholeData")
+  def delineate
+    ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
+  :   IArray[Text] =
+
+    decoder.decoded(data).delineate
+
+  // Compress/decompress a whole value through the format's own duct, driven
+  // directly over it as a single window (`Duct.feed`): the whole-value
+  // counterparts of the stream stages, sharing their implementation.
+  @targetName("compressWholeData")
+  def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
+  :   Data =
+
+    Duct.feed(data, compression.compressor())
+
+  @targetName("decompressWholeData")
+  def decompress[format <: Compressor]
+    ( using compression: format is Compression, buffering: Buffering )
+  :   Data =
+
+    Duct.feed(data, compression.decompressor())
+
 extension (consume stream: (Stream[Data] over Credit)^)
   // Split a byte stream into its lines: character decoding under the ambient
   // `CharDecoder`, then line splitting as above.

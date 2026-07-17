@@ -35,7 +35,7 @@ package soundness
 export
   jacinta
   . { dynamicJsonAccess, DynamicJsonEnabler, j, jp, Json, Json2, jsonConversion, JsonError,
-      JsonPointer, JsonPointerError, JsonPrimitive, JsonReader, Ndjson, NumberMode,
+      JsonPointer, JsonPointerError, JsonPrimitive, JsonReader, NumberMode,
       parserAggregable, showable }
 
 package formatting:

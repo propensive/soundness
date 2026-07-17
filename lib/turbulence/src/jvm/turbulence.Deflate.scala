@@ -43,15 +43,15 @@ import zephyrine.*
 
 object Deflate:
   given compression: Deflate is Compression:
-    def compressor()(using Buffering): Duct[Data, Data] {
+    def compressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       Deflation(gzip = false, nowrap = true)
 
-    def decompressor()(using Buffering): Duct[Data, Data] {
+    def decompressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       Inflation(gzip = false, nowrap = true)
 

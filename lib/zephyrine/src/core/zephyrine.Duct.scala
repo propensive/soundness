@@ -33,6 +33,7 @@
 package zephyrine
 
 import prepositional.*
+import vacuous.*
 
 // A synchronous transformation stage, attachable to either end of a pipeline:
 // `stream.via(duct)` yields a differently-typed `Stream`, and
@@ -65,6 +66,53 @@ object Duct:
       inline def produced: Int = progress.toInt
 
   opaque type Progress = Long
+
+  // Drive a duct over a whole value, as if it were the single window of a
+  // stream — but with none of the stream machinery: no endpoint, no credit
+  // accounting, no refill cycle. `step` runs over the value's storage (its
+  // backing directly when the medium exposes one, else one copy in) until the
+  // input is consumed, output windows accumulate into the medium's builder,
+  // and `flush` drains the duct's terminal state. This is the whole-value
+  // counterpart of `stream.via(duct)`: one transformation, two drivers.
+  def feed[in, out](value: in, consume duct: (Duct[in, out])^)(using buffering: Buffering): out =
+    val length = duct.input.length(value)
+
+    val source: duct.input.Storage^{caps.any.rd} = duct.input.backing(value).or:
+      val copied = duct.input.allocate(length.max(1))
+      duct.input.copyChunk(value, 0, copied, 0, length)
+      copied
+
+    val target = duct.output.blank(buffering.capacity(duct.output.substrate))
+    val space = buffering.transfer(duct.output.substrate).max(duct.quantum)
+    val window: duct.output.Storage^ = duct.output.allocate(space)
+
+    // `step`/`flush` declare pure `Storage` parameters; the kernel drivers
+    // cross that rim with cast-erased windows (the established recipe), and
+    // this driver does the same — the storage never escapes this method.
+    val source0 = source.asInstanceOf[duct.input.Storage]
+    val window0 = window.asInstanceOf[duct.output.Storage]
+
+    var consumed = 0
+
+    while consumed < length do
+      val progress = duct.step(source0, consumed, length - consumed, window0, 0, space)
+
+      if progress.produced > 0
+      then duct.output.cloneStorage(window0, 0, progress.produced)(target)
+
+      // The step contract guarantees progress given input and `quantum` space;
+      // a zero-progress step would loop forever, so treat it as terminal.
+      if progress.consumed == 0 && progress.produced == 0 then consumed = length
+      else consumed += progress.consumed
+
+    var flushed = duct.flush(window0, 0, space)
+
+    while flushed > 0 do
+      duct.output.cloneStorage(window0, 0, flushed)(target)
+      flushed = duct.flush(window0, 0, space)
+
+    duct.close()
+    duct.output.build(target)
 
 // A duct is single-owner mutable state (compressors, partial atoms), so it is a stateful
 // capability: `step`/`flush`/`close` mutate it and require exclusive access, while

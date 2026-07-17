@@ -42,15 +42,15 @@ import zephyrine.*
 
 object Gzip:
   given compression: Gzip is Compression:
-    def compressor()(using Buffering): Duct[Data, Data] {
+    def compressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       Deflation(gzip = true, nowrap = true)
 
-    def decompressor()(using Buffering): Duct[Data, Data] {
+    def decompressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       Inflation(gzip = true, nowrap = true)
 
