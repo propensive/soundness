@@ -1486,21 +1486,17 @@ object Tests extends Suite(m"Jacinta Tests"):
         JsonSchema.Format.Email.encode.as[JsonSchema.Format]
       . assert(_ == JsonSchema.Format.Email)
 
-    suite(m"Ndjson tests"):
-      test(m"Ndjson stream of three values decodes to a List"):
-        val stream = LazyList(
-          t"1".read[Json],
-          t"2".read[Json],
-          t"3".read[Json])
-        Ndjson(stream).stream.map(_.as[Int]).to(List)
+    suite(m"Newline-delimited JSON"):
+      import lineSeparation.adaptiveLinefeedLineSeparation
+
+      // NDJSON needs no bespoke type: split the source into lines and read each
+      // as `Json`.
+      test(m"decode NDJSON text to a List of values"):
+        t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to(List)
       . assert(_ == List(1, 2, 3))
 
-      test(m"Ndjson can hold heterogeneous values"):
-        val stream = LazyList(
-          t""""hi"""".read[Json],
-          t"42".read[Json],
-          t"true".read[Json])
-        Ndjson(stream).stream.length
+      test(m"NDJSON lines may hold heterogeneous values"):
+        t"\"hi\"\n42\ntrue".source[Text].delineate.records.map(_.read[Json]).to(List).length
       . assert(_ == 3)
 
     suite(m"j\"\" interpolator"):
