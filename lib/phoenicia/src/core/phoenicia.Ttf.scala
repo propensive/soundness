@@ -162,6 +162,64 @@ case class Ttf(data: Data):
 
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Glyf)))
 
+  // A new font containing only the outlines needed to render the given characters — plus any
+  // composite components they reference — with the original glyph numbering retained: unused
+  // glyphs keep empty outlines, so character mappings, metrics and glyph references remain
+  // valid. Every other table is carried over unchanged.
+  def subset(chars: Set[Char]): Ttf raises FontError =
+    val retained = glyphClosure(chars.map(glyph(_).id) + 0)
+    val glyphs = glyf
+    val count = maxp.glyphCount
+
+    val offsets = new Array[Int](count + 1)
+    val parts = List.newBuilder[Data]
+    var position = 0
+
+    (0 until count).each: id =>
+      offsets(id) = position
+
+      if retained.contains(id) then
+        val bytes = glyphs(id).bytes
+        parts += bytes
+        position += bytes.length
+
+    offsets(count) = position
+
+    val newGlyf = new Array[Byte](position)
+    var written = 0
+
+    parts.result().each: part =>
+      System.arraycopy(part.mutable(using Unsafe), 0, newGlyf, written, part.length)
+      written += part.length
+
+    // The rebuilt loca always uses the long format, so head's format field must agree.
+    val newLoca = new Array[Byte]((count + 1)*4)
+
+    (0 to count).each: id =>
+      newLoca(id*4) = (offsets(id) >> 24).toByte
+      newLoca(id*4 + 1) = (offsets(id) >> 16).toByte
+      newLoca(id*4 + 2) = (offsets(id) >> 8).toByte
+      newLoca(id*4 + 3) = offsets(id).toByte
+
+    val headRef = tables.at(TtfTag.Head).lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
+    val newHead = data.slice(headRef.offset, headRef.offset + headRef.length).mutable(using Unsafe)
+    (8 to 11).each { index => newHead(index) = 0 } // adjustment is recomputed on assembly
+    newHead(50) = 0
+    newHead(51) = 1
+
+    val carried = tables.values.to(List).flatMap: ref =>
+      if ref.id == TtfTag.Glyf || ref.id == TtfTag.Loca || ref.id == TtfTag.Head then Nil
+      else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
+
+    val entries =
+      (t"glyf", newGlyf.immutable(using Unsafe)) ::
+        (t"loca", newLoca.immutable(using Unsafe)) ::
+        (t"head", newHead.immutable(using Unsafe)) :: carried
+
+    Ttf(Sfnt.assemble(data.slice(0, 4), entries))
+
+  def subset(text: Text): Ttf raises FontError = subset(text.chars.to(Set))
+
   // The transitive closure of a set of glyphs under composite-glyph components: every glyph
   // needed to render the given ones.
   def glyphClosure(glyphIds: Set[Int]): Set[Int] raises FontError =

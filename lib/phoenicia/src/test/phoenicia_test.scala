@@ -288,3 +288,49 @@ object Tests extends Suite(m"Phoenicia Tests"):
       test(m"Long-format loca offsets are read unhalved"):
         font(head = headTableWith(1), extra = t"loca" -> locaTableLong).glyf(3).bytes.length
       . assert(_ == 26)
+
+    suite(m"Subsetting"):
+      val ttf = font()
+
+      test(m"A subset font reparses, keeping its glyph count"):
+        ttf.subset(Set('A')).maxp.glyphCount
+      . assert(_ == 4)
+
+      test(m"Retained glyphs keep their outlines byte-for-byte"):
+        ttf.subset(Set('A')).glyf(1).bytes.to(List)
+      . assert(_ == glyph1.to(List))
+
+      test(m"Unused glyphs lose their outlines"):
+        (ttf.subset(Set('A')).glyf(2).empty, ttf.subset(Set('A')).glyf(3).empty)
+      . assert(_ == (true, true))
+
+      test(m"Composite components are retained transitively"):
+        val subset = ttf.subset(Set('C'))
+        (subset.glyf(1).empty, subset.glyf(2).empty, subset.glyf(3).composite)
+      . assert(_ == (false, false, true))
+
+      test(m"Character mapping survives subsetting"):
+        ttf.subset(t"A").glyph('A').id
+      . assert(_ == 1)
+
+      test(m"Metrics and names are carried over"):
+        (ttf.subset(t"A").advanceWidth('A'), ttf.subset(t"A").fontName)
+      . assert(_ == (500, t"TestSans"))
+
+      test(m"The subset head switches to long loca offsets"):
+        ttf.subset(Set('A')).head.indexToLocFormat.int
+      . assert(_ == 1)
+
+      test(m"The whole file sums to the checksum constant"):
+        val bytes = ttf.subset(Set('A')).data
+        var sum = 0L
+
+        (0 until bytes.length by 4).each: index =>
+          val word =
+            ((bytes(index) & 0xffL) << 24) | ((bytes(index + 1) & 0xffL) << 16) |
+            ((bytes(index + 2) & 0xffL) << 8) | (bytes(index + 3) & 0xffL)
+
+          sum = (sum + word) & 0xffffffffL
+
+        sum
+      . assert(_ == 0xb1b0afbaL)
