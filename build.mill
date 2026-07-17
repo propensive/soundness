@@ -1276,7 +1276,8 @@ object exoskeleton extends Library:
       settings.cc(super.scalacOptions())
 
 object facsimile extends Library:
-  object core extends Component(turbulence.jvm, zephyrine.core, gastronomy.core, enigmatic.core,
+  object core extends Component(aperture.core, turbulence.jvm, zephyrine.core, gastronomy.core,
+      enigmatic.core,
       hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
     override def scalaJs = false // random-access file reading (`java.nio`), `java.util.zip`, JCE
     override def scalacOptions = Task:
