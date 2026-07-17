@@ -33,9 +33,20 @@
 package embarcadero
 
 import anticipation.*
+import contingency.*
+import cordillera.*
 import gossamer.*
-import locomotion.field
+import locomotion.*
+import obligatory.*
+import parasite.*
 import vacuous.*
+
+object Workload:
+  // Anchored here so `container.open[Workload](...)` resolves with no import.
+  given openable: (containerd: Containerd^)
+  =>  ( Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+  =>  ( WorkloadOpenable^ ) =
+    WorkloadOpenable()
 
 // A task's process state (`containerd.v1.types.Workload`, a subset): which container and
 // exec it belongs to, its `pid`, the raw `status` code, and the exit status/time once

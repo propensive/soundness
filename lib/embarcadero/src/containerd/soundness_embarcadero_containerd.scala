@@ -40,4 +40,5 @@ export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor, Docker
     GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
     ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
     ListTasksRequest, ListTasksResponse, Mount, Namespace, Workload, ProcessStatus, Runtime,
-    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}
+    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse, WorkloadGrant,
+    WorkloadHandle, WorkloadOpenable, Run, Signal}

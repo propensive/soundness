@@ -33,105 +33,91 @@
 package embarcadero
 
 import anticipation.*
-import bitumen.*
+import aperture.*
 import contingency.*
-import distillate.*
-import gesticulate.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8Encoder
-import hypotenuse.*
-import prepositional.*
-import serpentine.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
-import wisteria.*
+import cordillera.*
+import locomotion.*
+import obligatory.*
+import parasite.*
 
-object Image:
-  // Anchored here so `path.open[Image]()` and `data.open[Image]()` resolve with no import.
-  given openable: [path: Abstractable across Paths to Text]
-  =>  ( Tactic[OciError], Tactic[TarError], Tactic[StreamError] )
-  =>  ( ImageOpenable[path]^ ) =
-    ImageOpenable[path]
+// Grants particular to container workloads, in the deliberately-open `Grant` hierarchy:
+// `Run` means the task is started when opened, and confers awaiting its exit; `Signal`
+// confers sending signals to it.
+object WorkloadGrant:
+  trait Run extends Grant
+  trait Signal extends Grant
 
-  given dataOpenable: (Tactic[OciError], Tactic[TarError], Tactic[StreamError])
-  =>  ( ImageDataOpenable^ ) =
-    ImageDataOpenable()
+object WorkloadHandle:
+  // Operations are extensions gated by the grant-refined handle types rather than
+  // typeclass givens: summoning a typeclass on a *scoped* capability's refined type can
+  // fail under capture checking, while extensions resolve directly.
+  extension (handle: (WorkloadHandle & Granting[Grant.Read])^)
+    def state()
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    :   ProcessStatus =
 
-  // Assembles an image from its layers and optional runtime configuration,
-  // computing the config blob, manifest and index (with all digests/sizes).
-  def apply
-    ( layers:       List[Layer],
-      config:       Optional[ContainerConfig] = Unset,
-      architecture: Text                      = t"amd64",
-      os:           Text                      = t"linux",
-      annotations:  Optional[Map[Text, Text]] = Unset )
-  :   Image =
+      handle.containerd.task(handle.containerId).state
 
-    val imageConfig =
-      ImageConfig
-        ( architecture = architecture,
-          os           = os,
-          rootfs       = RootFs(t"layers", layers.map(_.diffId)),
-          config       = config )
+  extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Run])^)
+    // `await`, not `wait`: the latter would clash with `Object#wait`.
+    def await()
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    :   WaitResponse =
 
-    val configBytes      = render(imageConfig)
-    val configType       = media"application/vnd.oci.image.config.v1+json"
-    val configDescriptor = descriptorOf(configType, configBytes)
+      handle.containerd.waitTask(handle.containerId)
 
-    val manifestType = media"application/vnd.oci.image.manifest.v1+json"
+  extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Signal])^)
+    def kill(signal: Int, all: Boolean = false)
+    ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
+    :   Unit =
 
-    val manifest =
-      Oci.Manifest(2, manifestType, configDescriptor, layers.map(_.descriptor), annotations)
+      handle.containerd.killTask(handle.containerId, signal, all = all)
 
-    val manifestBytes      = render(manifest)
-    val manifestDescriptor = descriptorOf(manifestType, manifestBytes)
+// A container task scoped to an `open` block: the container metadata and its task exist
+// exactly for the block's duration, and are torn down — killed if started, reaped, and
+// deleted — on every exit path. The lifetime of the workload *is* the scope.
+class WorkloadHandle private[embarcadero]
+  ( private[embarcadero] val containerd: Containerd^,
+    val containerId: Text,
+    val pid: Int )
+extends caps.ExclusiveCapability
 
-    val indexType  = media"application/vnd.oci.image.index.v1+json"
-    val index      = Index(2, indexType, List(manifestDescriptor))
-    val indexBytes = render(index)
+// A named class rather than an anonymous instance in the `given`, because instantiating an
+// anonymous subclass freshens the capability field types in the inferred `Result` member,
+// which then fails to conform to the declared refinement.
+class WorkloadOpenable
+  ( using containerd:    Containerd^,
+          grpcError:     Tactic[GrpcError],
+          http2Error:    Tactic[Http2Error],
+          asyncError:    Tactic[AsyncError],
+          protobufError: Tactic[ProtobufError] )
+extends Openable:
 
-    Image(layers, imageConfig, configBytes, configDescriptor, manifest, manifestBytes,
-        manifestDescriptor, index, indexBytes)
+  type Self = Container
+  type Form = Workload
+  type Operand = Mount
+  type Result = WorkloadHandle
 
-case class Image
-  ( layers:             List[Layer],
-    imageConfig:        ImageConfig,
-    configBytes:        Data,
-    configDescriptor:   Descriptor,
-    manifest:           Oci.Manifest,
-    manifestBytes:      Data,
-    manifestDescriptor: Descriptor,
-    index:              Index,
-    indexBytes:         Data ):
+  def open[grants <: Grant, result]
+    ( value: Container, mode: Mode granting grants, flags: List[Mount] )
+    ( block: ((WorkloadHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-  // Every blob in the image, as `(digest, bytes)` pairs: the config, each layer,
-  // and the manifest.
-  def blobs: List[(Text, Data)] =
-    val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
-    (configDescriptor.digest, configBytes) ::
-      layerBlobs :::
-      List((manifestDescriptor.digest, manifestBytes))
+    val created = containerd.createContainer(value)
 
-  // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
-  // an `oci-layout` marker, the `index.json`, and every blob under
-  // `blobs/sha256/`. Suitable for `ctr images import`, `podman load`, or
-  // `skopeo copy oci-archive:…`.
-  def archive: Tarfile =
-    def entry(path: Text, content: Data): Tar.Entry =
-      Tar.Entry.File
-        ( path  = path.as[Relative on Tar],
-          mode  = UnixMode(),
-          user  = UnixUser(0),
-          group = UnixGroup(0),
-          mtime = 0.bits.u32,
-          data  = LazyList(content) )
+    try
+      val response = containerd.createTask(created.id, flags)
+      val started = mode.atoms.contains(Run)
+      val pid = if started then containerd.startTask(created.id) else response.pid
 
-    val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
-    val indexEntry  = entry(t"index.json", indexBytes)
+      try block(using new WorkloadHandle(containerd, created.id, pid) with Granting[grants] {})
+      finally
+        // Teardown is best-effort: a failure here must not mask the block's own result
+        // or error. SIGKILL, because scope end is unconditional; a started task is then
+        // reaped before deletion, since containerd refuses to delete an unreaped task.
+        if started then
+          safely(containerd.killTask(created.id, 9, all = true))
+          safely(containerd.waitTask(created.id))
 
-    val blobEntries = blobs.map: (digest, content) =>
-      val hex = digest.s.stripPrefix("sha256:").tt
-      entry(t"blobs/sha256/$hex", content)
-
-    Tarfile(LazyList.from(layoutEntry :: indexEntry :: blobEntries))
+        safely(containerd.deleteTask(created.id))
+    finally safely(containerd.deleteContainer(created.id))
