@@ -15,4 +15,11 @@
 - decrypts documents secured with the standard handler: RC4, AES-128 and AES-256 (R2–R6)
 - tolerates common real-world deviations: prepended junk, raw deflate streams, truncated data
 - recovers from a missing or corrupt cross-reference table by scanning the file for objects
+- edits on-disk documents in place, appending changes as a PDF incremental update
+- sets page content from typed operators, and edits page boxes, rotation and structure
+- edits document information, bookmarks and annotations
+- embeds TrueType/OpenType fonts — described by their real metrics, and subset to the text
+  used — and builds text content that uses them
+- edits encrypted documents, encrypting new and changed objects on write
+- creates documents from scratch through aperture's Creatable, written atomically
 - no third-party dependencies

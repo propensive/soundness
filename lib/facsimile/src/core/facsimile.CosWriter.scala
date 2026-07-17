@@ -33,80 +33,116 @@
 package facsimile
 
 import anticipation.*
-import fulminate.*
+import rudiments.*
+import vacuous.*
 
-object PdfError:
-  enum Reason(val number: Int) extends Clarification:
-    case NotPdf                                       extends Reason(1)
-    case Truncated                                    extends Reason(2)
-    case MissingStartxref                             extends Reason(3)
-    case MalformedXref(offset: Long)                  extends Reason(4)
-    case Unparseable(offset: Long, expected: Text)    extends Reason(5)
-    case MissingObject(objectNumber: Int, generation: Int)  extends Reason(6)
-    case CircularReference(objectNumber: Int)                extends Reason(7)
-    case MissingEntry(key: Text)                      extends Reason(8)
-    case TypeMismatch(key: Text, expected: Text)      extends Reason(9)
-    case UnknownFilter(name: Text)                    extends Reason(10)
-    case CorruptStream(filter: Text)                  extends Reason(11)
-    case MalformedOperator(operator: Text)            extends Reason(12)
-    case UnsupportedEncryption(version: Int)          extends Reason(13)
-    case BadPassword                                  extends Reason(14)
-    case CircularPageTree                             extends Reason(15)
-    case Io(detail: Text)                             extends Reason(16)
-    case WriteUnsupported                             extends Reason(17)
+// Serialises `Cos` values to the syntax the lexer reads (ISO 32000-2 §7.3), the inverse of
+// `CosParser`. Strings are written as escaped literals; names re-escape the delimiter and
+// whitespace bytes as `#xx`; reals drop trailing zeros and never use exponents. A `Cos.Body`
+// is written as its dictionary alone — the caller writes the `stream … endstream` framing,
+// since it owns the payload bytes and the recomputed `/Length`.
+private[facsimile] object CosWriter:
+  def write(cos: Cos): Data =
+    val builder = Array.newBuilder[Byte]
+    append(builder, cos)
+    builder.result().immutable(using Unsafe)
 
-  given communicable: Reason is Communicable =
-    case Reason.NotPdf =>
-      m"the file does not begin with a PDF header"
+  def dictionaryBytes(entries: Map[Text, Cos]): Data =
+    val builder = Array.newBuilder[Byte]
+    dictionary(builder, entries)
+    builder.result().immutable(using Unsafe)
 
-    case Reason.Truncated =>
-      m"the PDF file ended unexpectedly"
+  private def bytes(builder: scala.collection.mutable.ArrayBuilder[Byte], text: String): Unit =
+    var i = 0
+    while i < text.length do
+      builder += text.charAt(i).toByte
+      i += 1
 
-    case Reason.MissingStartxref =>
-      m"no startxref keyword could be found at the end of the file"
+  private def append(builder: scala.collection.mutable.ArrayBuilder[Byte], cos: Cos): Unit =
+    cos match
+      case Cos.Nil          => bytes(builder, "null")
+      case Cos.Truth(value) => bytes(builder, if value then "true" else "false")
+      case Cos.Integral(n)  => bytes(builder, n.toString)
+      case Cos.Real(n)      => bytes(builder, real(n))
+      case Cos.Ref(n, g)    => bytes(builder, s"$n $g R")
+      case Cos.Name(text)   => name(builder, text)
+      case Cos.Chars(data)  => literal(builder, data)
 
-    case Reason.MalformedXref(offset) =>
-      m"the cross-reference section at offset $offset could not be interpreted"
+      case Cos.Sequence(elements) =>
+        builder += '['.toByte
 
-    case Reason.Unparseable(offset, expected) =>
-      m"$expected was expected at offset $offset"
+        elements.zipWithIndex.each: (element, index) =>
+          if index > 0 then builder += ' '.toByte
+          append(builder, element)
 
-    case Reason.MissingObject(objectNumber, generation) =>
-      m"the object $objectNumber $generation was missing or invalid"
+        builder += ']'.toByte
 
-    case Reason.CircularReference(objectNumber) =>
-      m"resolving the object $objectNumber returned to itself"
+      case Cos.Dictionary(entries) =>
+        dictionary(builder, entries)
 
-    case Reason.MissingEntry(key) =>
-      m"the required dictionary entry $key was absent"
+      case Cos.Body(entries, _) =>
+        dictionary(builder, entries)
 
-    case Reason.TypeMismatch(key, expected) =>
-      m"the dictionary entry $key was not $expected"
+  private[facsimile] def dictionary
+    ( builder: scala.collection.mutable.ArrayBuilder[Byte], entries: Map[Text, Cos] )
+  :   Unit =
 
-    case Reason.UnknownFilter(name) =>
-      m"the stream filter $name is not recognized"
+    bytes(builder, "<<")
 
-    case Reason.CorruptStream(filter) =>
-      m"a stream could not be decoded with the $filter filter"
+    entries.each: (key, value) =>
+      builder += ' '.toByte
+      name(builder, key)
+      builder += ' '.toByte
+      append(builder, value)
 
-    case Reason.MalformedOperator(operator) =>
-      m"the content operator $operator had malformed operands"
+    bytes(builder, " >>")
 
-    case Reason.UnsupportedEncryption(version) =>
-      m"the encryption scheme (version $version) is not supported"
+  // A real with no trailing zeros and no exponent (PDF reals are plain decimals).
+  private def real(value: Double): String =
+    if value == value.toLong.toDouble then value.toLong.toString else
+      val text = java.math.BigDecimal(value).nn.stripTrailingZeros.nn.toPlainString.nn
+      text
 
-    case Reason.BadPassword =>
-      m"the password was incorrect"
+  private def name(builder: scala.collection.mutable.ArrayBuilder[Byte], text: Text): Unit =
+    builder += '/'.toByte
+    val raw = text.s.getBytes("UTF-8").nn
+    var i = 0
 
-    case Reason.CircularPageTree =>
-      m"the page tree contains a cycle"
+    while i < raw.length do
+      val byte = raw(i) & 0xff
 
-    case Reason.Io(detail) =>
-      m"an I/O operation failed: $detail"
+      if byte < 0x21 || byte > 0x7e || CosLexer.delimiter(byte) || byte == '#' then
+        builder += '#'.toByte
+        builder += hexDigit(byte >> 4)
+        builder += hexDigit(byte & 0xf)
+      else builder += byte.toByte
 
-    case Reason.WriteUnsupported =>
-      m"this document cannot be written (only an unencrypted, on-disk file with a valid "+
-          m"cross-reference table can be edited in place)"
+      i += 1
 
-case class PdfError(reason: PdfError.Reason)(using Diagnostics)
-extends Error(728, reason.number)(m"the PDF could not be read because $reason")
+  // A literal string with the mandatory escapes, and non-printable bytes as octal, so any
+  // byte sequence round-trips.
+  private def literal(builder: scala.collection.mutable.ArrayBuilder[Byte], data: Data): Unit =
+    builder += '('.toByte
+    var i = 0
+
+    while i < data.length do
+      val byte = data(i) & 0xff
+
+      byte match
+        case '('  => bytes(builder, "\\(")
+        case ')'  => bytes(builder, "\\)")
+        case '\\' => bytes(builder, "\\\\")
+
+        case _ =>
+          if byte >= 0x20 && byte < 0x7f then builder += byte.toByte else
+            builder += '\\'.toByte
+            builder += ('0' + ((byte >> 6) & 0x7)).toByte
+            builder += ('0' + ((byte >> 3) & 0x7)).toByte
+            builder += ('0' + (byte & 0x7)).toByte
+
+      i += 1
+
+    builder += ')'.toByte
+
+  private def hexDigit(value: Int): Byte =
+    (if value < 10 then '0' + value else 'A' + value - 10).toByte

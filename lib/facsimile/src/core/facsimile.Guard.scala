@@ -293,6 +293,39 @@ private[facsimile] class Guard
       case Method.Aes256 =>
         aesCbc(fileKey, bytes)
 
+  // The inverse operations, for writing new or edited objects into an encrypted document's
+  // incremental update. RC4 is symmetric, so it reuses `decrypt`; AES prepends a fresh
+  // random initialization vector and PKCS#7-pads.
+  def encryptString(bytes: Data, number: Int, generation: Int): Data =
+    encrypt(bytes, number, generation, stringMethod)
+
+  def encryptStream(bytes: Data, number: Int, generation: Int): Data =
+    encrypt(bytes, number, generation, streamMethod)
+
+  private def encrypt(bytes: Data, number: Int, generation: Int, method: Method): Data =
+    method match
+      case Method.Identity => bytes
+      case Method.Rc4      => Rc4(objectKey(number, generation, false), bytes)
+      case Method.Aes128   => aesCbcEncrypt(objectKey(number, generation, true), bytes)
+      case Method.Aes256   => aesCbcEncrypt(fileKey, bytes)
+
+  private def aesCbcEncrypt(key: Data, bytes: Data): Data =
+    val iv = new Array[Byte](16)
+    js.SecureRandom().nextBytes(iv)
+
+    val pad = 16 - bytes.length%16
+    val padded = new Array[Byte](bytes.length + pad)
+    System.arraycopy(bytes.mutable(using Unsafe), 0, padded, 0, bytes.length)
+    var i = bytes.length
+    while i < padded.length do { padded(i) = pad.toByte; i += 1 }
+
+    val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
+
+    cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(key.mutable(using Unsafe), "AES"),
+        jcs.IvParameterSpec(iv))
+
+    (iv.immutable(using Unsafe) ++ cipher.doFinal(padded).nn.immutable(using Unsafe))
+
   // AESV2/V3 layout: a 16-byte initialization vector prefixes the ciphertext.
   private def aesCbc(key: Data, bytes: Data): Data =
     if bytes.length <= 16 then IArray.empty[Byte] else

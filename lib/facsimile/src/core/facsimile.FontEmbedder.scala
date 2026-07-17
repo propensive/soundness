@@ -32,118 +32,116 @@
                                                                                                   */
 package facsimile
 
+import java.security as js
+
 import anticipation.*
-import aviation.*
 import contingency.*
 import gossamer.*
-import quantitative.*
+import hypotenuse.*
+import phoenicia.*
 import rudiments.*
 import vacuous.*
 
-object PdfInfo:
-  // Serialises document information back to an `/Info` dictionary: text fields as PDF text
-  // strings, dates in the `D:` form. Absent fields are omitted.
-  private[facsimile] def dictionary(info: PdfInfo): Map[Text, Cos] =
-    var entries = Map[Text, Cos]()
+// Embeds a TrueType (or OpenType) font program as a simple, single-byte PDF font with WinAnsi
+// encoding: the program becomes a `FontFile2` stream, referenced by a `FontDescriptor` built
+// from the font's own tables — bounding box, italic angle, cap height, pitch and style — with
+// per-character widths scaled from the font's metrics to the 1000-unit glyph space PDF
+// expects. When subset text is given, only the glyphs it needs are embedded, under the
+// conventional six-letter subset tag. An unparseable program still embeds, described by
+// standard fallback metrics.
+private[facsimile] object FontEmbedder:
+  def embed(pdf: Pdf, ttf: Ttf, name: Optional[Text], subset: Optional[Text])
+  :   Cos.Ref raises PdfError =
 
-    def string(key: Text, value: Optional[Text]): Unit =
-      value.let { text => entries = entries.updated(key, Cos.Chars(Cos.encodeText(text))) }
+    val program = subset.lay(ttf): chars =>
+      safely(ttf.subset(chars)).or(ttf)
 
-    def date(key: Text, value: Optional[Timing]): Unit =
-      value.let { timing => entries = entries.updated(key, Cos.Chars(Cos.encodeText(formatDate(timing)))) }
+    val baseName = name.or(postScriptName(ttf)).or(t"Embedded")
 
-    string(t"Title", info.title)
-    string(t"Author", info.author)
-    string(t"Subject", info.subject)
-    string(t"Keywords", info.keywords)
-    string(t"Creator", info.creator)
-    string(t"Producer", info.producer)
-    date(t"CreationDate", info.created)
-    date(t"ModDate", info.modified)
-    entries
+    val baseFont = subset.lay(baseName): chars =>
+      t"${tag(baseName, chars)}+$baseName"
 
-  private def formatDate(timing: Timing): Text =
-    import calendars.gregorianCalendar
-    val ts = timing.timestamp
+    val unitsPerEm = safely(program.head.unitsPerEm.int).or(1000).max(1)
+    def scaled(units: Int): Long = units.toLong*1000/unitsPerEm
 
-    def pad(n: Int, width: Int): Text =
-      val digits = n.toString
-      ("0".repeat(width - digits.length).nn + digits).tt
+    val fontFile =
+      pdf.allocate:
+        pdf.newBody(Map(t"Length1" -> Cos.Integral(program.data.length.toLong)), program.data)
 
-    val year: Int = ts.year.apply()
-    val month: Int = ts.month.ordinal + 1
-    val day: Int = ts.day.apply()
+    val ascent = safely(scaled(program.hhea.ascender.int)).or(750L)
+    val descent = safely(scaled(program.hhea.descender.int)).or(-250L)
+    val italicAngle = safely(program.post.italicAngle).or(0.0)
+    val monospaced = safely(program.post.monospaced).or(false)
+    val capHeight = safely(program.os2.capHeight).let(scaled(_)).or(ascent)
 
-    val stamp =
-      t"D:${pad(year, 4)}${pad(month, 2)}${pad(day, 2)}${pad(ts.hour, 2)}${pad(ts.minute, 2)}${pad(ts.second, 2)}"
+    val boundingBox =
+      safely:
+        val head = program.head
 
-    val zone = timing.offset.lay(t""): duration =>
-      val seconds = duration.value.toInt
+        integers(scaled(head.xMin.int), scaled(head.yMin.int), scaled(head.xMax.int),
+            scaled(head.yMax.int))
 
-      if seconds == 0 then t"Z" else
-        val minutes = (if seconds < 0 then -seconds else seconds)/60
-        t"${if seconds < 0 then t"-" else t"+"}${pad(minutes/60, 2)}'${pad(minutes%60, 2)}'"
+      . or(integers(-200, -250, 1100, 1000))
 
-    t"$stamp$zone"
-  // A PDF date (ISO 32000-2 §7.9.4): local time with an *optional* UTC offset — absence
-  // means the relationship to UTC is unknown, so a zoneless `Timestamp` carries the moment
-  // and the offset rides alongside only when the file stated one.
-  case class Timing(timestamp: Timestamp, offset: Optional[Duration])
+    // Nonsymbolic, plus fixed-pitch and italic when the font declares them.
+    val flags = 32L | (if monospaced then 1L else 0L) | (if italicAngle != 0.0 then 64L else 0L)
 
-  // `D:YYYYMMDDHHmmSS±HH'mm'`, everything after the year optional; a malformed date is
-  // `Unset`, never an error, since real files abound with slightly-wrong dates.
-  private[facsimile] def parseDate(value: Text): Optional[Timing] =
-    val content = if value.s.startsWith("D:") then value.s.substring(2).nn else value.s
+    val descriptor =
+      pdf.allocate:
+        Cos.Dictionary:
+          Map
+            ( t"Type"        -> Cos.Name(t"FontDescriptor"),
+              t"FontName"    -> Cos.Name(baseFont),
+              t"Flags"       -> Cos.Integral(flags),
+              t"FontBBox"    -> boundingBox,
+              t"ItalicAngle" -> Cos.Real(italicAngle),
+              t"Ascent"      -> Cos.Integral(ascent),
+              t"Descent"     -> Cos.Integral(descent),
+              t"CapHeight"   -> Cos.Integral(capHeight),
+              t"StemV"       -> Cos.Integral(80),
+              t"FontFile2"   -> fontFile )
 
-    def digits(start: Int, length: Int, minimum: Int, maximum: Int): Optional[Int] =
-      if start + length > content.length then Unset else
-        var i = start
-        var number = 0
-        var bad = false
+    // Widths for codes 32–255 under WinAnsi: each code's glyph advance, or 0 where the font
+    // has no glyph for it.
+    val widths = (32 to 255).to(List).map: code =>
+      val char = PdfEncoding.winAnsi(code)
 
-        while i < start + length do
-          val char = content.charAt(i)
-          if char < '0' || char > '9' then bad = true else number = number*10 + (char - '0')
-          i += 1
+      if char == ' ' && code != 32 then Cos.Integral(0L)
+      else Cos.Integral(width(program, scaled, char))
 
-        if bad || number < minimum || number > maximum then Unset else number
+    pdf.allocate:
+      Cos.Dictionary:
+        Map
+          ( t"Type"           -> Cos.Name(t"Font"),
+            t"Subtype"        -> Cos.Name(t"TrueType"),
+            t"BaseFont"       -> Cos.Name(baseFont),
+            t"FirstChar"      -> Cos.Integral(32),
+            t"LastChar"       -> Cos.Integral(255),
+            t"Widths"         -> Cos.Sequence(widths),
+            t"Encoding"       -> Cos.Name(t"WinAnsiEncoding"),
+            t"FontDescriptor" -> descriptor )
 
-    digits(0, 4, 0, 9999).let: year =>
-      val month = digits(4, 2, 1, 12).or(1)
-      val day = digits(6, 2, 1, 31).or(1)
-      val hour = digits(8, 2, 0, 23).or(0)
-      val minute = digits(10, 2, 0, 59).or(0)
-      val second = digits(12, 2, 0, 59).or(0)
+  // The font's advance for a character, in glyph space; zero for one it does not map.
+  private def width(ttf: Ttf, scaled: Int => Long, char: Char): Long =
+    safely:
+      val glyph = ttf.glyph(char)
+      if glyph.id == 0 then 0L else scaled(ttf.hmtx.advanceWidth(glyph.id))
 
-      val offset: Optional[Duration] =
-        if content.length > 14 then content.charAt(14) match
-          case 'Z' =>
-            Quantity[Seconds[1]](0.0)
+    . or(0L)
 
-          case sign @ ('+' | '-') =>
-            digits(15, 2, 0, 23).let: hours =>
-              val minutes = digits(18, 2, 0, 59).or(0)
-              val seconds = (hours*3600 + minutes*60)*(if sign == '-' then -1 else 1)
-              Quantity[Seconds[1]](seconds.toDouble)
+  // A PostScript name contains no spaces, though some fonts' naming tables do.
+  private def postScriptName(ttf: Ttf): Optional[Text] =
+    ttf.fontName.let(_.s.replace(" ", "").nn.tt)
 
-          case _ =>
-            Unset
-        else Unset
+  // The conventional six-uppercase-letter subset tag, derived deterministically from the
+  // name and subset text, so identical subsets embed identically.
+  private def tag(name: Text, chars: Text): Text =
+    val md5 = js.MessageDigest.getInstance("MD5").nn
+    val digest = md5.digest(t"$name:$chars".s.getBytes("UTF-8")).nn
 
-      import calendars.gregorianCalendar
+    val letters = (0 until 6).map: index =>
+      ('A' + ((digest(index) & 0xff)%26)).toChar
 
-      safely(Timestamp(Date(Year(year), Month(month), Day(day)),
-          Clockface(Base24(hour), Base60(minute), Base60(second)))).let: timestamp =>
-        Timing(timestamp, offset)
+    String(letters.toArray).tt
 
-// The document-information dictionary, fully materialized: a pure value that outlives the
-// `open` scope.
-case class PdfInfo
-  ( title:    Optional[Text],
-    author:   Optional[Text],
-    subject:  Optional[Text],
-    keywords: Optional[Text],
-    creator:  Optional[Text],
-    producer: Optional[Text],
-    created:  Optional[PdfInfo.Timing],
-    modified: Optional[PdfInfo.Timing] )
+  private def integers(values: Long*): Cos = Cos.Sequence(values.to(List).map(Cos.Integral(_)))

@@ -65,8 +65,9 @@ object Page:
 class Page private[facsimile]
   ( private[facsimile] val pdf: Pdf,
     val index: Ordinal,
+    private[facsimile] val number: Optional[Int],
     private[facsimile] val entries: Map[Text, Cos],
-    inherited: Page.Inherited ):
+    private[facsimile] val inherited: Page.Inherited ):
 
   def dictionary: Map[Text, Cos] = entries
 
