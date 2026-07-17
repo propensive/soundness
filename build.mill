@@ -814,7 +814,7 @@ object burdock extends Library:
       settings.cc(super.scalacOptions())
 
 object cacophony extends Library:
-  object core extends Component(gesticulate.core, quantitative.units, anticipation.http):
+  object core extends Component(aperture.core, gesticulate.core, quantitative.units, anticipation.http):
     override def scalaJs = false // audio (`javax.sound.sampled`)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
