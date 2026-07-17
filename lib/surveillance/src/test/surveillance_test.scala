@@ -47,14 +47,14 @@ object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =
     test(m"Watching a path beneath a nonexistent directory raises a WatchError"):
       val target = t"/surveillance-nonexistent-parent-9d3f17/child".as[Path on Local]
-      capture[WatchError](target.watch(watcher => watcher)).reason
+      capture[WatchError](target.open[Watch]() { () }).reason
 
     . assert(_ == WatchError.Reason.Nonexistent)
 
     test(m"Watching a path whose parent is a regular file raises a WatchError"):
       val file = temporaryDirectory[Path on Local]/Uuid().show
       file.create[File]()
-      capture[WatchError]((file/Uuid().show).watch(watcher => watcher)).reason
+      capture[WatchError]((file/Uuid().show).open[Watch]() { () }).reason
 
     . assert(_ == WatchError.Reason.NotDirectory)
 
@@ -62,8 +62,12 @@ object Tests extends Suite(m"Surveillance tests"):
       val directory = temporaryDirectory[Path on Local]/Uuid().show
       directory.create[Directory]()
 
-      // Before `unregister` stopped the spool this `to(List)` would block forever.
-      directory.watch(watcher => watcher).stream.to(List)
+      // Before `unregister` stopped the spool this `to(List)` would block forever. The scoped
+      // form cannot express a post-scope read (the handle is confined), so this exercises the
+      // `Watch` layer directly.
+      val watchSet = Watch(List(directory))
+      watchSet.unregister()
+      watchSet.stream.to(List)
 
     . assert(_ == Nil)
 
@@ -73,7 +77,7 @@ object Tests extends Suite(m"Surveillance tests"):
       directory.create[Directory]()
       val leaf: Text = Uuid().show
 
-      directory.watch: watcher =>
+      directory.open[Watch](): watcher ?=>
         (directory/leaf).create[File]()
 
         watcher.stream.head match
