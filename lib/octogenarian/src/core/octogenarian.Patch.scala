@@ -42,13 +42,18 @@ object Patch:
   // Streams a `git diff -p --no-color` output as one FileDiff per file.
   // Common cases (modify, add, delete, rename, copy) are handled. Binary
   // diffs and mode-only changes produce a FileDiff with no hunks.
-  def parse(stream: LazyList[Text]): LazyList[FileDiff] =
-    stream.dropWhile(!_.starts(t"diff --git ")) match
-      case head #:: tail =>
-        val (body, rest) = tail.span(!_.starts(t"diff --git "))
-        LazyList(parseFile(head, body.to(List))) #::: parse(rest)
+  def parse(lines: Iterator[Text]^): List[FileDiff] =
+    val cursor = lines.buffered
+    while cursor.hasNext && !cursor.head.starts(t"diff --git ") do cursor.next()
+    val files = scala.collection.mutable.ListBuffer[FileDiff]()
 
-      case _ => LazyList()
+    while cursor.hasNext do
+      val header = cursor.next()
+      val body = scala.collection.mutable.ListBuffer[Text]()
+      while cursor.hasNext && !cursor.head.starts(t"diff --git ") do body += cursor.next()
+      files += parseFile(header, body.to(List))
+
+    files.to(List)
 
 
   // Flattens every hunk's edits into a single Dissonance Diff[Text].

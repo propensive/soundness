@@ -93,6 +93,7 @@ extension (stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
     ( using decryptor:  Decryptor[cipher],
             algorithm:  cipher & Encryption,
             buffering:  zephyrine.Buffering,
+            tactic:     Tactic[CryptoError],
             erased weakness: ProcessingPermit[Weakness[cipher]],
             erased authentication: ProcessingPermit[Authentication[cipher]] )
   :   (zephyrine.Stream[Data] over zephyrine.Credit)^ =

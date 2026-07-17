@@ -119,7 +119,7 @@ case class Command(arguments: Text*) extends Executable:
     // (a fresh result may not be created within a `try` expression).
     val process =
       try processBuilder.start().nn
-      catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
+      catch case errror: ji.IOException => abort(ExecError(this))
 
     new Job(process)
 

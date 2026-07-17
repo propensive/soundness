@@ -1577,15 +1577,20 @@ object Tel extends Tel2:
   // `text.load[Tel]` for any LazyList[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
-  given loadable: (tactic: Tactic[TelError]) => ((Tel is Loadable by Text)^{tactic}) = stream =>
-    // The whole document materializes once (the parser is whole-input); the
+  given loadable: (tactic: Tactic[TelError], buffering: Buffering)
+  =>  ((Tel is Loadable by Text)^{tactic}) = stream =>
+    // The whole document materializes once (the parser is whole-input), but the
+    // Text stream is transcoded to UTF-8 through the encoder duct and memoized
+    // straight to bytes — the parser's own input type — rather than through an
+    // intermediate whole-document `String` and a second `getBytes` copy. The
     // non-consume `load` crosses to `memoize` as a neutral reference.
-    val text =
+    val bytes: Data =
       stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Text] over zephyrine.Credit)^]
-      . memoize.s
+      . via(hieroglyph.charEncoders.utf8Encoder)
+      . asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^]
+      . memoize
 
-    val bytes = text.getBytes("UTF-8").nn
-    val doc = Tel.Parser.parse(IArray.unsafeFromArray(bytes))
+    val doc = Tel.Parser.parse(bytes)
     val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
     turbulence.Document(Tel(doc): Tel, meta)
 

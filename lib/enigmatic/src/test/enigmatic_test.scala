@@ -314,6 +314,15 @@ object Tests extends Suite(m"Gastronomy tests"):
       capture[CryptoError](wrongKey.expose(ciphertext.decrypt.as[Text])).reason
     . assert(_ == CryptoError.Reason.BadPadding)
 
+    test(m"Streaming decryption with the wrong key raises a CryptoError"):
+      // The provider's tag/padding failure surfaces at end-of-stream as a typed
+      // `CryptoError`, not the raw JCE exception, when the final window is pulled.
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val ciphertext = key.expose(t"Hello world".encrypt(InitializationVector.random))
+      capture[CryptoError](wrongKey.expose(ciphertext.stream.decrypt.memoize)).reason
+    . assert(_ == CryptoError.Reason.BadPadding)
+
     test(m"AES/CBC/NoPadding round-trips block-aligned input"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
       key.expose:

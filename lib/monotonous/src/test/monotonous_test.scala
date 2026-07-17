@@ -51,20 +51,35 @@ object Tests extends Suite(m"Monotonous tests"):
 
   def run(): Unit = stochastic:
 
-    //suite(m"Streaming tests"):
-      // test(m"Streaming BASE32"):
-      //   val text: Text = allNumbers.serialize
-      //   val shredded = LazyList(text.bytes).shred(6, 9).map(_.utf8)
-      //   println(shredded.to(List).inspect)
-      //   val result = shredded.deserialize.toList
-      //   println(result.reduce(_ ++ _).to(List).inspect)
-      //   result.reduce(_ ++ _).to(List)
-      // .assert(_ == allNumbers.to(List))
+    suite(m"Streaming deserialize (kernel duct) equals whole-value"):
+      import strategies.throwUnsafely
+      import alphabets.base64Standard, alphabets.hexLowerCase, alphabets.base32UpperCase
 
-      // test(m"Streaming BASE64"):
-      //   import strategies.throwUnsafely
-      //   import alphabets.base64Standard
-      //   stream.
+      // The kernel `via(Alphabet)` deserialize duct carries incomplete
+      // encoding groups (and split padding) across window boundaries; for any
+      // chunk split it must reconstruct exactly what the whole-value
+      // `Text.deserialize` produces. Strides not aligned to the group size
+      // exercise the carry at every intra-group offset.
+      def chunks(text: Text, size: Int): (Stream[Text] over Credit)^ =
+        Stream(text.s.grouped(size).map(_.tt).to(LazyList).iterator)
+
+      val base64Text = allNumbers.serialize[Base64]
+      val hexText = allNumbers.serialize[Hex]
+      val base32Text = allNumbers.serialize[Base32]
+      val expected = allNumbers.to(List)
+
+      for size <- List(1, 2, 3, 5, 7, 11) do
+        test(m"BASE64 streamed at stride $size equals whole"):
+          chunks(base64Text, size).deserialize[Base64].memoize.to(List)
+        . assert(_ == expected)
+
+        test(m"Hex streamed at stride $size equals whole"):
+          chunks(hexText, size).deserialize[Hex].memoize.to(List)
+        . assert(_ == expected)
+
+        test(m"BASE32 streamed at stride $size equals whole"):
+          chunks(base32Text, size).deserialize[Base32].memoize.to(List)
+        . assert(_ == expected)
 
     test(m"Serialize to Binary"):
       import alphabets.binaryStandard

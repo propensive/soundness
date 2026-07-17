@@ -131,7 +131,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   :   List[GitBranch] logs GitEvent =
 
     sh"$git $repoOptions branch"
-    . exec[LazyList[Text]]()
+    . exec[Iterator[Text]]()
     . map(_.skip(2))
     . to(List)
     . map(GitBranch.unsafe(_))
@@ -213,17 +213,17 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   // diff(ref): full tree-vs-ref diff (working tree relative to ref).
   def diff(staged: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   LazyList[FileDiff] logs GitEvent =
+  :   List[FileDiff] logs GitEvent =
 
     val stagedOpt = if staged then sh"--staged" else sh""
-    Patch.parse(sh"$git $repoOptions diff --no-color $stagedOpt".exec[LazyList[Text]]())
+    Patch.parse(sh"$git $repoOptions diff --no-color $stagedOpt".exec[Iterator[Text]]())
 
 
   def diff(ref: Refspec)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   LazyList[FileDiff] logs GitEvent =
+  :   List[FileDiff] logs GitEvent =
 
-    Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[LazyList[Text]]())
+    Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Iterator[Text]]())
 
 
   def merge

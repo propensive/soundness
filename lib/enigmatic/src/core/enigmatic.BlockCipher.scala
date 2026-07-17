@@ -32,7 +32,10 @@
                                                                                                   */
 package enigmatic
 
+import javax.crypto as jc
+
 import anticipation.*
+import contingency.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -108,7 +111,8 @@ extends Cipher, Encryption, Symmetric:
   // end-of-stream — the provider buffers the whole message internally — so
   // streaming decryption of AEAD input bounds no memory; it is offered for
   // API uniformity only.
-  def decrypt(stream: (Stream[Data] over Credit)^, key: Data)(using Buffering)
+  def decrypt(stream: (Stream[Data] over Credit)^, key: Data)
+    (using buffering: Buffering, tactic: Tactic[CryptoError])
   :   (Stream[Data] over Credit)^ =
 
     val ivSize = if mode.usesIv then cipher.blockSize(transformation) else 0
@@ -116,7 +120,7 @@ extends Cipher, Encryption, Symmetric:
     val start: Data => CipherSession = iv =>
       cipher.decryptStream(transformation, key, if mode.usesIv then iv else Unset)
 
-    stream.via(DecipherDuct(start, ivSize)).asInstanceOf[(Stream[Data] over Credit)^]
+    stream.via(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
 
   def decrypt(bytes: Data, key: Data): Data =
     val ivSize: Optional[Int] = if mode.usesIv then cipher.blockSize(transformation) else Unset
@@ -192,10 +196,18 @@ extends Duct[Data, Data]:
 // session. A stream that ends before a whole IV arrives starts the session
 // with the truncated prefix, and the provider raises its own (accurate)
 // invalid-parameter error.
-private[enigmatic] final class DecipherDuct(start: Data => CipherSession, ivSize: Int)
+private[enigmatic] final class DecipherDuct
+  ( start: Data => CipherSession, ivSize: Int, tactic: Tactic[CryptoError] )
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
+
+  // Turn the provider's end-of-stream verification failure (an AEAD tag
+  // mismatch, or corrupt padding on a block mode) into a typed `CryptoError`
+  // as the final window is pulled, rather than leaking the JCE exception.
+  private def detail(error: Throwable): Optional[Text] = error.getMessage match
+    case null         => Unset
+    case text: String => text.tt
 
   private val header: Array[Byte] = new Array[Byte](ivSize)
   private var headerFilled: Int = 0
@@ -242,7 +254,17 @@ extends Duct[Data, Data]:
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
     inner match
       case duct: CipherDuct =>
-        duct.flush(target.asInstanceOf[duct.output.Storage], targetOffset, targetSpace)
-      case null             =>
+        try duct.flush(target.asInstanceOf[duct.output.Storage], targetOffset, targetSpace)
+        catch
+          case error: jc.AEADBadTagException =>
+            tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+
+          case error: jc.BadPaddingException =>
+            tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+
+          case error: jc.IllegalBlockSizeException =>
+            tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+
+      case null =>
         inner = begin().asInstanceOf[CipherDuct]
         flush(target, targetOffset, targetSpace)

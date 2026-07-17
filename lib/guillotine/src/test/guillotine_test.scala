@@ -284,15 +284,15 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == t"3")
 
       test(m"read stream of strings"):
-        sh"echo 'Hello world'".exec[LazyList[Text]]().to(List)
+        sh"echo 'Hello world'".exec[Iterator[Text]]().to(List)
       . assert(_ == List(t"Hello world"))
 
       test(m"read list of strings"):
         sh"printf 'a\nb\nc\n'".exec[List[Text]]()
       . assert(_ == List(t"a", t"b", t"c"))
 
-      test(m"read stream of bytes"):
-        sh"echo 'Hello world'".exec[LazyList[Data]]().read[Data].to(List)
+      test(m"read all bytes"):
+        sh"echo 'Hello world'".exec[Data]().to(List)
       . assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
 
       test(m"read as String"):
