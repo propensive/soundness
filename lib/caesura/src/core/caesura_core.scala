@@ -33,12 +33,14 @@
 package caesura
 
 import anticipation.*
+import contingency.*
 import denominative.*
 import gossamer.*
 import panopticon.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 package dsvFormats:
   given csvFormat: DsvFormat = DsvFormat(false, ',', '"', '"')
@@ -58,7 +60,15 @@ package dsvRedesignations:
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
 extension [encodable: Encodable in Dsv](value: Seq[encodable])
-  def dsv: Sheet = Sheet(value.to(LazyList).map(encodable.encode(_)))
+  def dsv: Sheet = Sheet(IArray.from(value.map(encodable.encode(_))))
+
+extension (consume stream: (Stream[Text] over Credit)^)
+  // The rows of a character stream of DSV data, as a single-consumer
+  // iterator: the streaming counterpart of `read[Sheet]`, which materializes.
+  // Quoted cells may span chunk (and line) boundaries; the parser carries its
+  // state across refills.
+  def rows(using DsvFormat, Tactic[DsvError], Buffering): Iterator[Dsv]^ =
+    Sheet.parseRows(stream)
 
 // Panopticon optics for tabular data (no nesting, so they mirror the row/cell
 // structure rather than JSON's map/array). `cellLens` reads/writes a cell by column

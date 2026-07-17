@@ -81,7 +81,8 @@ object Sheet:
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
 
-    def rows(value: Sheet) = value.rows
+    def rows(value: Sheet): Seq[Dsv] =
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(value.rows.mutable(using Unsafe))
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
@@ -105,39 +106,74 @@ object Sheet:
         type Self = Sheet
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): Sheet = sheet(parse(Stream(text.iterator)))
+        def aggregate(text: LazyList[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
         override def accept(stream: (Stream[Text] over Credit)^): Sheet =
           // The non-consume `accept` crosses to the consuming parser as a
           // neutral reference; each accept delivers a single-use stream.
-          sheet(parse(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+          sheet(parseRows(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
-        private def sheet(rows: LazyList[Dsv]): Sheet =
+        private def sheet(iterator: Iterator[Dsv]^): Sheet =
+          val rows = IArray.from(iterator)
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
           else Sheet(rows, format)
 
-  given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
+  given showable: DsvFormat => Sheet is Showable = _.rows.to(List).map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.iterator.map(_.show+t"\n"))
 
 
-  // Parse rows from a pull endpoint, one block-credit refill per chunk.
-  private def parse(consume stream: (Stream[Text] over Credit)^)
+  // Parse rows from a pull endpoint as a single-consumer iterator, one
+  // block-credit refill per chunk. Each call builds a fresh parser over the
+  // stream; the iterator owns both for its lifetime.
+  private[caesura] def parseRows(consume stream: (Stream[Text] over Credit)^)
     ( using format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
-  :   LazyList[Dsv] =
+  :   Iterator[Dsv]^ =
 
     val block = buffering.capacity(Substrate.Chars)
 
-    val load: () => Optional[Text] = () => stream.refill(Credit(block)) match
-      case count: Int =>
-        val window = stream.window(using Unsafe)
-        val text = stream.addressable.materialize(window, stream.start, count)
-        stream.skip(count)
-        text
+    // The load closure is built inline in the constructor call: a local
+    // binding of it would hide the stream from the subsequent statement (the
+    // statement rule). The resolution-scoped tactic is sealed at the rim (the
+    // codec-thunk pattern, as in `aggregable` above) so the fresh parser can
+    // cross into the consume position without referring to the parameter.
+    given sealedTactic: Tactic[DsvError] = caps.unsafe.unsafeAssumePure(tactic)
 
-      case _ =>
-        Unset
+    rowIterator:
+      new Parser(() => stream.refill(Credit(block)) match
+        case count: Int =>
+          val window = stream.window(using Unsafe)
+          val text = stream.addressable.materialize(window, stream.start, count)
+          stream.skip(count)
+          text
 
-    new Parser(load).stream
+        case _ =>
+          Unset)
+
+  // Constructed in a helper: a local binding of the fresh parser would hide it
+  // from the anonymous class (the statement rule); consume parameters carry
+  // explicit capture sets and hide nothing.
+  private def rowIterator(consume parser: Parser^): Iterator[Dsv]^ =
+    new Iterator[Dsv]:
+      // Untracked: a stdlib `Iterator` cannot extend `Stateful`; the fields
+      // are reached only through this iterator's own methods.
+      @caps.unsafe.untrackedCaptures
+      private var pending: Optional[Dsv] = Unset
+      @caps.unsafe.untrackedCaptures
+      private var finished: Boolean = false
+
+      def hasNext: Boolean =
+        if pending.present then true
+        else if finished then false
+        else
+          pending = parser.nextRow()
+          if pending.absent then finished = true
+          pending.present
+
+      def next(): Dsv =
+        if !hasNext then Iterator.empty.next()
+        val row = pending.or(Iterator.empty.next())
+        pending = Unset
+        row
 
 
   private class Parser(load: () => Optional[Text])
@@ -290,9 +326,10 @@ object Sheet:
       else
         Unset
 
-    update def stream: LazyList[Dsv] = next()
-
-    update private def next(): LazyList[Dsv] = parseRow() match
+    // The next data row, or `Unset` at the end of the input. When the format
+    // has a header, the first parsed row is consumed into `headings` so every
+    // data row carries the name→index map.
+    update def nextRow(): Optional[Dsv] = parseRow() match
       case row: Dsv =>
         if isHeader && headings.absent then
           val data = row.data
@@ -304,29 +341,35 @@ object Sheet:
             i += 1
 
           headings = mapBuilder.result()
-          next()
+          nextRow()
         else
-          row #:: next()
+          row
 
       case _ =>
-        LazyList()
+        Unset
 
+// A fully-instantiated sheet of DSV data: every row is in memory, replayable
+// and indexable. The streaming counterpart is `stream.rows`, an
+// `Iterator[Dsv]` over a live pull endpoint, which never builds a `Sheet`.
 case class Sheet
-  ( rows:    LazyList[Dsv],
+  ( rows:    IArray[Dsv],
     format:  Optional[DsvFormat]    = Unset,
     columns: Optional[IArray[Text]] = Unset ):
 
-  def as[value: Decodable in Dsv]: LazyList[value] raises DsvError tracks CellRef =
-    rows.map(_.as[value])
+  def as[value: Decodable in Dsv]: List[value] raises DsvError tracks CellRef =
+    rows.to(List).map(_.as[value])
 
   override def hashCode: Int =
-    (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
-      ju.Arrays.hashCode(array.mutable(using Unsafe))
+    (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[Array[Object | Null]])*31
+        + format.hashCode)*31
+    + columns.lay(-1): array =>
+        ju.Arrays.hashCode(array.mutable(using Unsafe))
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>
-      dsv.rows == rows && dsv.format == format && columns.lay(dsv.columns == Unset): columns =>
-        dsv.columns.lay(false)(columns.sameElements(_))
+      dsv.rows.sameElements(rows) && dsv.format == format
+      && columns.lay(dsv.columns == Unset): columns =>
+           dsv.columns.lay(false)(columns.sameElements(_))
 
     case _ =>
       false
