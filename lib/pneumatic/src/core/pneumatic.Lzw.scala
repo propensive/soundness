@@ -30,38 +30,66 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
-
-import java.io as ji
-import java.util.zip as juz
+package pneumatic
 
 import anticipation.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-// JVM `java.util.zip`-backed one-shot gzip/gunzip for a whole `Data` block. Kept out of
-// `turbulence.core` because `java.util.zip` has no Scala.js implementation; the streaming
-// `compress`/`decompress` (over the platform-agnostic `Compression`/`Compressor` typeclasses)
-// remain in core.
-extension (bytes: Data)
-  def gzip: Data =
-    val out = ji.ByteArrayOutputStream()
-    val out2 = juz.GZIPOutputStream(out)
-    out2.write(bytes.mutable(using Unsafe))
-    out2.close()
-    out.toByteArray.nn.immutable(using Unsafe)
+// LZW, the compression of TIFF and PDF streams, implemented natively (the JDK offers none)
+// and therefore available on every platform. `earlyChange` — both sides widening their
+// codes one table entry sooner — is the TIFF/PDF default, and what every known encoder
+// produces; the parameterized factories serve formats which state it explicitly.
+object Lzw:
+  def compressor(earlyChange: Boolean)(using Buffering): Duct[Data, Data] {
+    type Transport = Credit
+    type Upstream = Credit } =
 
-  def gunzip: Data =
-    val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
-    val in2 = juz.GZIPInputStream(in)
-    val out = ji.ByteArrayOutputStream()
-    val buffer: Array[Byte] = new Array(1024)
+    LzwStage(LzwEncoder(earlyChange))
 
-    def recur(): Unit = in2.read(buffer).tap: length =>
-      if length > 0 then
-        out.write(buffer, 0, length)
-        recur()
+  def decompressor(earlyChange: Boolean)(using Buffering): Duct[Data, Data] {
+    type Transport = Credit
+    type Upstream = Credit } =
 
-    recur()
+    LzwStage(LzwDecoder(earlyChange))
 
-    out.toByteArray.nn.immutable(using Unsafe)
+  def compress(stream: LazyList[Data], earlyChange: Boolean = true): LazyList[Data] =
+    drive(LzwEncoder(earlyChange), stream)
+
+  def decompress(stream: LazyList[Data], earlyChange: Boolean = true): LazyList[Data] =
+    drive(LzwDecoder(earlyChange), stream)
+
+  given compression: Lzw is Compression:
+    def compressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      LzwStage(LzwEncoder(true))
+
+    def decompressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      LzwStage(LzwDecoder(true))
+
+    def compress(stream: LazyList[Data]): LazyList[Data] = Lzw.compress(stream)
+    def decompress(stream: LazyList[Data]): LazyList[Data] = Lzw.decompress(stream)
+
+  // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
+  private def drive(engine: LzwEngine, stream: LazyList[Data]): LazyList[Data] =
+    def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+      case head #:: tail =>
+        engine.accept(head.mutable(using Unsafe), 0, head.length)
+        val data = engine.gather()
+        if data.length > 0 then data #:: recur(tail) else recur(tail)
+
+      case _ =>
+        engine.finish()
+        val data = engine.gather()
+        if data.length > 0 then LazyList(data) else LazyList.empty
+
+    LazyList.defer(recur(stream))
+
+sealed trait Lzw extends Compressor

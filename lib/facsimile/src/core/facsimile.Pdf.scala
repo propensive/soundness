@@ -41,6 +41,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
+import pneumatic.*
 
 object Pdf:
   // A fresh, empty document: a catalog and an empty page tree, over which a creation scope's
@@ -557,10 +558,10 @@ extends caps.ExclusiveCapability:
 
     steps match
       case Filter.Step.Inflate :: rest =>
-        pipeline(rest, stream.via(turbulence.Zlib.compression.decompressor()))
+        pipeline(rest, stream.via(pneumatic.Zlib.compression.decompressor()))
 
       case Filter.Step.Unlzw(earlyChange) :: rest =>
-        pipeline(rest, stream.via(turbulence.Lzw.decompressor(earlyChange)))
+        pipeline(rest, stream.via(pneumatic.Lzw.decompressor(earlyChange)))
 
       case Filter.Step.Gather(transform) :: rest =>
         pipeline(rest, stream.via(Gathering(transform)))

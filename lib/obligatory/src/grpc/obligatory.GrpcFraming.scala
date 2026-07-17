@@ -39,6 +39,7 @@ import prepositional.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
+import pneumatic.*
 
 // gRPC's length-prefixed message framing (the same wire shape for every codec):
 // each message is a 1-byte compression flag, a 4-byte big-endian length, then that

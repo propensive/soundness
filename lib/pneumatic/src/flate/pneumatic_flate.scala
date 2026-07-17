@@ -30,23 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package pneumatic
 
-export
-  turbulence
-  . { Aggregable, chunked, deduplicate,
-      defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred, source,
-      Confluence, Divergence, Readable, Sink, Stdio, Streamable, StreamError,
-      StreamOutputStream, strict, take, Writable, writeTo, flow }
+import anticipation.*
+import rudiments.*
+import vacuous.*
 
-package stdios:
-  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
+// One-shot gzip/gunzip for a whole `Data` block, over the pure-Scala DEFLATE implementation, and
+// therefore available on every platform.
+extension (bytes: Data)
+  def gzip: Data = concatenate(Gzip.compression.compress(LazyList(bytes)))
+  def gunzip: Data = concatenate(Gzip.compression.decompress(LazyList(bytes)))
 
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        virtualMachineLineSeparation }
+private def concatenate(stream: LazyList[Data]): Data =
+  val chunks = stream.to(List)
+  var total = 0
+
+  chunks.each: chunk =>
+    total += chunk.length
+
+  val result = new Array[Byte](total)
+  var offset = 0
+
+  chunks.each: chunk =>
+    System.arraycopy(chunk.mutable(using Unsafe), 0, result, offset, chunk.length)
+    offset += chunk.length
+
+  result.immutable(using Unsafe)

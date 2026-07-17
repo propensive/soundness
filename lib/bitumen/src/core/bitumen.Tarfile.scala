@@ -43,6 +43,7 @@ import hieroglyph.*, charEncoders.asciiEncoder
 import hypotenuse.*
 import prepositional.*
 import serpentine.*
+import pneumatic.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*

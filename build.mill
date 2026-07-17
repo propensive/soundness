@@ -359,12 +359,15 @@ trait ScalaJsCross extends BaseScalaModule:
   jvm =>
   def scalaJs: Boolean = true
   def jsModuleDeps: Seq[ScalaJSModule]
+  // The sources of the Scala.js cross-module: the JVM module's sources by default, overridable
+  // for components with platform-specific implementations (e.g. `pneumatic.flate`).
+  def jsSources: T[Seq[PathRef]] = sources
 
   object js extends ScalaJSModule, Toolchain:
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     def scalacOptions = jvm.scalacOptions
-    def sources = jvm.sources
+    def sources = jvm.jsSources
     def resources = jvm.resources
     def compileResources = jvm.compileResources
     def mvnDeps = jvm.mvnDeps
@@ -449,7 +452,7 @@ object soundness extends Toolchain:
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
-    turbulence.jvm,
+    pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core)
 
@@ -775,8 +778,8 @@ object beneficence extends Library:
       settings.cc(super.scalacOptions())
 
 object bitumen extends Library:
-  object core extends Component(serpentine.core, turbulence.jvm, galilei.jvm):
-    override def scalaJs = false // depends on `galilei` (filesystem) and `turbulence.jvm`
+  object core extends Component(serpentine.core, turbulence.core, pneumatic.flate, galilei.jvm):
+    override def scalaJs = false // depends on `galilei` (filesystem)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, galilei.jvm, guillotine.core):
@@ -1276,7 +1279,7 @@ object exoskeleton extends Library:
       settings.cc(super.scalacOptions())
 
 object facsimile extends Library:
-  object core extends Component(aperture.core, galilei.core, turbulence.jvm, zephyrine.core,
+  object core extends Component(aperture.core, galilei.core, turbulence.core, pneumatic.flate, zephyrine.core,
       gastronomy.core, enigmatic.core,
       hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
     override def scalaJs = false // random-access file reading (`java.nio`), `java.util.zip`, JCE
@@ -1685,8 +1688,8 @@ object obligatory extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object grpc extends Component(core, locomotion.core, cordillera.core, turbulence.jvm):
-    override def scalaJs = false // gRPC over `cordillera` (HTTP/2) with `turbulence.jvm` compression
+  object grpc extends Component(core, locomotion.core, cordillera.core, pneumatic.flate):
+    override def scalaJs = false // gRPC over `cordillera` (HTTP/2) with JVM-backed compression
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, json, grpc)
@@ -1731,6 +1734,28 @@ object plutocrat extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
+
+// Compression: the `Compression` typeclass and the Lzw, Brotli, Deflate, Gzip and Zlib formats,
+// atop zephyrine's streaming kernel.
+object pneumatic extends Library:
+  // The typeclasses, the pure-Scala implementations (LZW, Brotli, and the DEFLATE machinery
+  // ported from JZlib), and the engine interfaces the `flate` formats compile against. Compiled
+  // with capture checking (not separation checking): the faithfully-ported, aliasing-heavy zlib
+  // machinery does not (yet) satisfy the stricter ruleset.
+  object core extends Component(turbulence.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The `Deflate`/`Gzip`/`Zlib` formats, compiled twice against platform backends: over
+  // `java.util.zip` (native zlib) on the JVM, and over `core`'s pure-Scala port everywhere else
+  // (Scala.js and WASI), selected by the `flate-jvm`/`flate-native` source directories.
+  object flate extends Component(core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "flate-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "flate-native")
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, flate):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object polaris extends Library:
   object core extends Component(hypotenuse.core, wisteria.core):
@@ -2073,24 +2098,20 @@ object turbulence extends Library:
       zephyrine.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  // JVM-only implementations (`java.util.zip` compression) split out of `core` so modules that use
-  // only turbulence's platform-agnostic streaming can cross-compile to Scala.js.
-  object jvm extends Component(core):
-    override def scalaJs = false
-    override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // WASI-backed standard streams: a `Stdio` whose output writes through the `wasi:io/streams`
   // `output-stream` resource, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` here; only meaningful linked as a component.
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, jvm):
+  // The test suite exercises fan-out/merge over compression ducts, so it depends on `pneumatic`.
+  object test extends Tests(core, pneumatic.flate):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
   // Comparative streaming benchmarks against the effect-based streaming libraries. External,
   // benchmark-only deps (resolved from Maven Central) exactly as `jacinta.bench` pulls circe/jsoniter.
-  object bench extends Benchmarks(core, jvm, quantitative.units, monotonous.core, enigmatic.core):
+  object bench
+  extends Benchmarks(core, pneumatic.flate, quantitative.units, monotonous.core, enigmatic.core):
     def mvnDeps = Seq(
       mvn"dev.zio::zio-streams:2.1.26",
       mvn"co.fs2::fs2-core:3.13.0",
@@ -2310,7 +2331,7 @@ object zephyrine extends Library:
   object bench extends Benchmarks(core, quantitative.units)
 
 object zeppelin extends Library:
-  object core extends Component(galilei.jvm, zephyrine.core, turbulence.jvm):
+  object core extends Component(galilei.jvm, zephyrine.core, turbulence.core, pneumatic.flate):
     override def scalaJs = false // zip archives (`java.util.zip`, `galilei`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -2320,9 +2341,9 @@ object zeppelin extends Library:
 
 object ziggurat extends Library:
   object core
-      extends Component(hellenism.core, monotonous.core, turbulence.jvm, gastronomy.core,
-                       galilei.jvm):
-    override def scalaJs = false // JAR/zip packaging; `hellenism`, `turbulence.jvm`, `galilei`
+      extends Component(hellenism.core, monotonous.core, turbulence.core, pneumatic.flate,
+                       gastronomy.core, galilei.jvm):
+    override def scalaJs = false // JAR/zip packaging; `hellenism`, `galilei`
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object packager

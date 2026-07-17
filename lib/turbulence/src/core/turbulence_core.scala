@@ -132,22 +132,6 @@ extension (data: Data)
 
     decoder.decoded(data).delineate
 
-  // Compress/decompress a whole value through the format's own duct, driven
-  // directly over it as a single window (`Duct.feed`): the whole-value
-  // counterparts of the stream stages, sharing their implementation.
-  @targetName("compressWholeData")
-  def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
-  :   Data =
-
-    Duct.feed(data, compression.compressor())
-
-  @targetName("decompressWholeData")
-  def decompress[format <: Compressor]
-    ( using compression: format is Compression, buffering: Buffering )
-  :   Data =
-
-    Duct.feed(data, compression.decompressor())
-
 extension (consume stream: (Stream[Data] over Credit)^)
   // Split a byte stream into its lines: character decoding under the ambient
   // `CharDecoder`, then line splitting as above.
@@ -157,18 +141,6 @@ extension (consume stream: (Stream[Data] over Credit)^)
   :   (Stream[IArray[Text]] over Credit)^ =
 
     stream.via(decoder).asInstanceOf[(Stream[Text] over Credit)^].delineate
-
-extension (consume stream: (Stream[Data] over Credit)^)
-  def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
-  :   (Stream[Data] over Credit)^ =
-
-    stream.via(compression.compressor()).asInstanceOf[(Stream[Data] over Credit)^]
-
-  def decompress[format <: Compressor]
-    ( using compression: format is Compression, buffering: Buffering )
-  :   (Stream[Data] over Credit)^ =
-
-    stream.via(compression.decompressor()).asInstanceOf[(Stream[Data] over Credit)^]
 
 extension (consume stream: (Stream[Data] over Credit)^)
   // View a pull endpoint as a `java.io.InputStream` for handing to JDK APIs:
@@ -349,12 +321,6 @@ extension (stream: LazyList[Data])
         head #:: more
 
     recur(stream, bytes)
-
-  def compress[compression <: Compressor: Compression]: LazyList[Data] =
-    compression.compress(stream)
-
-  def decompress[compression <: Compressor: Compression]: LazyList[Data] =
-    compression.decompress(stream)
 
   def shred(mean: Double, variance: Double)(using Random): LazyList[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)

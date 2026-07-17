@@ -30,14 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
-
-import java.util.zip as juz
+package pneumatic
 
 import anticipation.*
 import zephyrine.*
 
-// Streaming compression as a pipeline stage, over `juz.Deflater`. The three
+// Streaming compression as a pipeline stage, over the pure-Scala `Deflater`. The three
 // compression formats differ only in framing: `Zlib` is the deflater's own
 // wrapper, `Deflate` is the raw stream, and `Gzip` adds a manual header,
 // CRC-32 and trailer around a raw stream. The deflater is fed zero-copy from
@@ -47,15 +45,14 @@ import zephyrine.*
 //
 // Compression ratios are unknowable, so `translate` is a pass-through: the
 // duct's own bounded buffer and the retained-surplus rule absorb expansion.
-private[turbulence] class Deflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
+private[pneumatic] class Deflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
-  private val deflater: juz.Deflater =
-    juz.Deflater(juz.Deflater.DEFAULT_COMPRESSION, nowrap || gzip)
+  private val deflater: DeflateEngine = FlateBackend.deflater(-1, nowrap || gzip)
 
-  private val crc: juz.CRC32 = juz.CRC32()
+  private val crc: FlateChecksum = FlateBackend.crc32()
   private val empty: Array[Byte] = new Array[Byte](0)
   private var headerDone: Boolean = !gzip
   private var size: Long = 0
@@ -142,7 +139,7 @@ extends Duct[Data, Data]:
         produced += run
 
       if deflater.finished && gzip then
-        val value = crc.getValue
+        val value = crc.value
 
         while trailer < 8 && produced < targetSpace do
           val datum =
@@ -155,10 +152,10 @@ extends Duct[Data, Data]:
 
     produced
 
-// Streaming decompression, the inverse of `Deflation`, over `juz.Inflater`,
+// Streaming decompression, the inverse of `Deflation`, over the pure-Scala `Inflater`,
 // with the gzip header parsed by a small state machine ahead of the inflater
 // and the 8-byte trailer consumed and ignored after it finishes.
-private[turbulence] class Inflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
+private[pneumatic] class Inflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
 extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
@@ -171,7 +168,7 @@ extends Duct[Data, Data]:
     case Checksum(remaining: Int)
     case Done
 
-  private val inflater: juz.Inflater = juz.Inflater(nowrap || gzip)
+  private val inflater: InflateEngine = FlateBackend.inflater(nowrap || gzip)
   private val empty: Array[Byte] = new Array[Byte](0)
   private var header: Header = if gzip then Header.Fixed(10) else Header.Done
   private var flags: Int = 0
@@ -263,10 +260,7 @@ extends Duct[Data, Data]:
         var run: Int = 1
 
         while run > 0 && produced < targetSpace && !inflater.finished do
-          run =
-            try inflater.inflate(out, targetOffset + produced, targetSpace - produced)
-            catch case error: juz.DataFormatException => throw IllegalStateException(error)
-
+          run = inflater.inflate(out, targetOffset + produced, targetSpace - produced)
           produced += run
 
         consumed += fed - inflater.getRemaining
@@ -289,10 +283,7 @@ extends Duct[Data, Data]:
     var run: Int = 1
 
     while run > 0 && produced < targetSpace && !inflater.finished do
-      run =
-        try inflater.inflate(out, targetOffset + produced, targetSpace - produced)
-        catch case error: juz.DataFormatException => throw IllegalStateException(error)
-
+      run = inflater.inflate(out, targetOffset + produced, targetSpace - produced)
       produced += run
 
     produced

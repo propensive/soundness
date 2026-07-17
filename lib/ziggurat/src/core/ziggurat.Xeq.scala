@@ -43,6 +43,7 @@ import hieroglyph.*
 import monotonous.*, alphabets.base64Standard
 import prepositional.*
 import serpentine.*
+import pneumatic.*
 import turbulence.*
 import vacuous.*
 

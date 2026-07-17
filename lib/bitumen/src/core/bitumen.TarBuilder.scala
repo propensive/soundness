@@ -45,6 +45,7 @@ import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import pneumatic.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*

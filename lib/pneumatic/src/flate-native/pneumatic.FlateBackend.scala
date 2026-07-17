@@ -30,23 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package pneumatic
 
-export
-  turbulence
-  . { Aggregable, chunked, deduplicate,
-      defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred, source,
-      Confluence, Divergence, Readable, Sink, Stdio, Streamable, StreamError,
-      StreamOutputStream, strict, take, Writable, writeTo, flow }
-
-package stdios:
-  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
-
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        virtualMachineLineSeparation }
+// The backend for every platform without `java.util.zip` (Scala.js and WASI): the pure-Scala
+// DEFLATE implementation ported from JZlib in `core`.
+private[pneumatic] object FlateBackend:
+  def deflater(level: Int, nowrap: Boolean): DeflateEngine = Deflater(level, nowrap)
+  def inflater(nowrap: Boolean): InflateEngine = Inflater(nowrap)
+  def crc32(): FlateChecksum = Crc32()

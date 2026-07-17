@@ -30,13 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
-
-import java.io as ji
-import java.util.zip as juz
+package pneumatic
 
 import anticipation.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
 import zephyrine.*
 
@@ -55,40 +53,144 @@ object Gzip:
       Inflation(gzip = true, nowrap = true)
 
     def compress(stream: LazyList[Data]): LazyList[Data] =
-      val out = ji.ByteArrayOutputStream()
-      val out2 = juz.GZIPOutputStream(out)
+      val deflater = FlateBackend.deflater(-1, true)
+      val crc = FlateBackend.crc32()
+      val buffer: Array[Byte] = new Array(4096)
+      val header: Data = Data(31, -117, 8, 0, 0, 0, 0, 0, 0, -1)
+      var size: Long = 0
+
+      // Drain with no forced flush, exactly as `GZIPOutputStream` would: output appears only as
+      // the deflater's own buffers fill, so the byte stream is identical to the JDK's.
+      def drain(): Data =
+        val out = scala.collection.mutable.ArrayBuffer[Byte]()
+        var count = deflater.deflate(buffer, 0, buffer.length, Flate.ZNoFlush)
+
+        while count > 0 do
+          var i = 0
+          while i < count do { out += buffer(i); i += 1 }
+          count = deflater.deflate(buffer, 0, buffer.length, Flate.ZNoFlush)
+
+        val result = new Array[Byte](out.length)
+        var i = 0
+        while i < out.length do { result(i) = out(i); i += 1 }
+        result.immutable(using Unsafe)
 
       def recur(stream: LazyList[Data]): LazyList[Data] = stream match
         case head #:: tail =>
-          out2.write(head.mutable(using Unsafe))
-          out2.flush()
-
-          if out.size == 0 then recur(tail) else
-            val data = out.toByteArray().nn.immutable(using Unsafe)
-            out.reset()
-            data #:: recur(tail)
+          val bytes = head.mutable(using Unsafe)
+          crc.update(bytes, 0, bytes.length)
+          size += bytes.length
+          deflater.setInput(bytes)
+          val data = drain()
+          if data.length > 0 then data #:: recur(tail) else recur(tail)
 
         case _ =>
-          out2.close()
+          deflater.finish()
+          val out = scala.collection.mutable.ArrayBuffer[Byte]()
 
-          if out.size == 0 then LazyList()
-          else LazyList(out.toByteArray().nn.immutable(using Unsafe))
+          while !deflater.finished do
+            val count = deflater.deflate(buffer, 0, buffer.length)
+            var i = 0
+            while i < count do { out += buffer(i); i += 1 }
 
-      recur(stream)
+          // CRC-32 and size trailer, little-endian
+          val value = crc.value
+          var index = 0
 
-    // Hand-rolled read loop rather than `unsafely(….toLazyList)`: the lazy stream would
-    // capture the tactic beyond the scope `unsafely` seals (see rep/DECISIONS.md).
+          while index < 4 do
+            out += ((value >>> (index*8)) & 0xff).toByte
+            index += 1
+
+          index = 0
+
+          while index < 4 do
+            out += ((size >>> (index*8)) & 0xff).toByte
+            index += 1
+
+          val result = new Array[Byte](out.length)
+          var i = 0
+          while i < out.length do { result(i) = out(i); i += 1 }
+          LazyList(result.immutable(using Unsafe))
+
+      header #:: LazyList.defer(recur(stream))
+
     def decompress(stream: LazyList[Data]): LazyList[Data] =
-      val in = juz.GZIPInputStream(stream.inputStream)
+      val inflater = FlateBackend.inflater(true)
       val buffer: Array[Byte] = new Array(4096)
+      // Consume the gzip header from the start of the chunked stream, returning the number of
+      // bytes consumed from this chunk: the fixed 10-byte part, then any optional extra, name,
+      // comment and header-checksum fields selected by the FLG byte, in that order.
+      var flags: Int = 0
+      var fixedRemaining: Int = 10
+      var position: Int = 0
+      var extraLow: Int = -1
+      var extraRemaining: Int = -1
+      var checksumRemaining: Int = 2
+      var headerDone: Boolean = false
 
-      def recur(): LazyList[Data] =
-        val count = in.read(buffer)
+      def afterExtra(): Unit =
+        flags &= ~4
+        if (flags & (8 | 16 | 2)) == 0 then headerDone = true
 
-        if count < 0 then LazyList()
-        else if count == 0 then recur()
-        else buffer.slice(0, count).immutable(using Unsafe) #:: recur()
+      def consumeHeader(bytes: Array[Byte], offset: Int, length: Int): Int =
+        var index = 0
 
-      recur()
+        while index < length && !headerDone do
+          val byte = bytes(offset + index) & 0xff
+
+          if fixedRemaining > 0 then
+            if position == 3 then flags = byte
+            position += 1
+            fixedRemaining -= 1
+            if fixedRemaining == 0 && (flags & (4 | 8 | 16 | 2)) == 0 then headerDone = true
+          else if (flags & 4) != 0 then
+            if extraLow == -1 then extraLow = byte
+            else if extraRemaining == -1 then
+              extraRemaining = (byte << 8) | extraLow
+              if extraRemaining == 0 then afterExtra()
+            else
+              extraRemaining -= 1
+              if extraRemaining == 0 then afterExtra()
+          else if (flags & 8) != 0 then
+            if byte == 0 then
+              flags &= ~8
+              if (flags & (16 | 2)) == 0 then headerDone = true
+          else if (flags & 16) != 0 then
+            if byte == 0 then
+              flags &= ~16
+              if (flags & 2) == 0 then headerDone = true
+          else
+            checksumRemaining -= 1
+            if checksumRemaining == 0 then headerDone = true
+
+          index += 1
+
+        index
+
+      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+        case head #:: tail =>
+          val bytes = head.mutable(using Unsafe)
+          val skip = if headerDone then 0 else consumeHeader(bytes, 0, bytes.length)
+          val out = scala.collection.mutable.ArrayBuffer[Byte]()
+
+          if headerDone && skip < bytes.length && !inflater.finished then
+            inflater.setInput(bytes, skip, bytes.length - skip)
+            var count = inflater.inflate(buffer)
+
+            while count > 0 do
+              var i = 0
+              while i < count do { out += buffer(i); i += 1 }
+              count = if inflater.finished then 0 else inflater.inflate(buffer)
+
+          if out.isEmpty then recur(tail) else
+            val result = new Array[Byte](out.length)
+            var i = 0
+            while i < out.length do { result(i) = out(i); i += 1 }
+            result.immutable(using Unsafe) #:: recur(tail)
+
+        case _ =>
+          LazyList()
+
+      LazyList.defer(recur(stream))
 
 sealed trait Gzip extends Compressor

@@ -30,23 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package pneumatic
 
-export
-  turbulence
-  . { Aggregable, chunked, deduplicate,
-      defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred, source,
-      Confluence, Divergence, Readable, Sink, Stdio, Streamable, StreamError,
-      StreamOutputStream, strict, take, Writable, writeTo, flow }
+import anticipation.*
+import zephyrine.*
 
-package stdios:
-  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
+trait Compression:
+  type Self <: Compressor
 
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        virtualMachineLineSeparation }
+  def compress(stream: LazyList[Data]): LazyList[Data]
+  def decompress(stream: LazyList[Data]): LazyList[Data]
+
+  // Streaming stages for the same transformations, applied with
+  // `stream.compress[Gzip]`/`stream.decompress[Gzip]` on a pull endpoint.
+  def compressor()(using Buffering): (Duct[Data, Data] {
+    type Transport = Credit
+    type Upstream = Credit })^
+
+  def decompressor()(using Buffering): (Duct[Data, Data] {
+    type Transport = Credit
+    type Upstream = Credit })^

@@ -44,6 +44,7 @@ import _root_.java.security as js
 import _root_.java.util.zip as juz
 import _root_.javax.crypto as jc
 import _root_.javax.crypto.spec as jcs
+import pneumatic.*
 
 object Tests extends Suite(m"Facsimile tests"):
   def run(): Unit =

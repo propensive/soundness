@@ -30,21 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 import anticipation.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
 
-// Brotli (RFC 7932), implemented natively in pure Scala: the decoder is a faithful port of Google's
-// reference `org.brotli.dec` (see `BrotliDecoder`); the encoder is the fast, spec-compliant path in
-// `BrotliEncoder`. As with LZW, the algorithm lives in plain engine classes that buffer output
-// in a `pending` array, and the `Duct` stage is a thin wrapper. Both the encoder and decoder need
-// the whole value before producing output (the decoder because backward references may reach across
-// the entire window; the encoder because it chooses its framing from the total length), so `accept`
-// accumulates input and `finish` produces the transformed bytes in one pass.
-private[turbulence] trait BrotliEngine:
+// LZW, as used by TIFF and PDF: MSB-first codes of 9 to 12 bits, code 256 clearing the
+// table and 257 ending the data. The algorithm lives in plain engine classes — the moral
+// equivalent of `juz.Deflater`, so the lazy `LazyList` drivers may close over them exactly
+// as `Zlib`'s do over a deflater — and the `Duct` stages are thin wrappers.
+//
+// With `earlyChange` — the TIFF/PDF default — both sides widen their codes one table entry
+// sooner. The decoder's table trails the encoder's by one entry, so the encoder widens (and
+// clears) at a `nextCode` threshold one higher than the decoder's table-length threshold,
+// which is what keeps the two in step.
+private[pneumatic] trait LzwEngine:
   protected val pending: scala.collection.mutable.ArrayBuffer[Byte] =
     scala.collection.mutable.ArrayBuffer()
 
@@ -67,6 +69,9 @@ private[turbulence] trait BrotliEngine:
 
     produced
 
+  // Everything not yet delivered, drained in one immutable piece: the whole-value
+  // counterpart of `deliver`, and — being a method of an untracked engine with a pure
+  // result — safe to call from within a lazy stream's thunks.
   def gather(): Data =
     val result = new Array[Byte](pending.length - delivered)
     var i = 0
@@ -80,52 +85,148 @@ private[turbulence] trait BrotliEngine:
     delivered = 0
     result.immutable(using Unsafe)
 
-// Accumulates the whole compressed stream, then decodes it in one pass (see `BrotliDecoder`).
-private[turbulence] class BrotliDecoderEngine extends BrotliEngine:
-  private val input: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
+private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
+  private val codes: scala.collection.mutable.HashMap[(Int, Byte), Int] =
+    scala.collection.mutable.HashMap()
 
-  private var finished = false
+  private var nextCode = 258
+  private var width = 9
+  private var prefix = -1
+  private var bits = 0L
+  private var bitCount = 0
+  private var begun = false
+  private var ended = false
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
-    var i = 0
-    while i < length do { input += bytes(offset + i); i += 1 }
+  private val early: Int = if earlyChange then 1 else 0
 
-  def finish(): Unit =
-    if !finished then
-      finished = true
-      val array = new Array[Byte](input.length)
-      var k = 0
-      while k < input.length do { array(k) = input(k); k += 1 }
-      val decoded = BrotliDecoder.decode(array, array.length)
-      var i = 0
-      while i < decoded.length do { pending += decoded(i); i += 1 }
+  private def emit(code: Int): Unit =
+    bits = (bits << width) | code
+    bitCount += width
 
-// Accumulates the whole payload, then emits it as Brotli (see `BrotliEncoder`).
-private[turbulence] class BrotliEncoderEngine extends BrotliEngine:
-  private val input: scala.collection.mutable.ArrayBuffer[Byte] =
-    scala.collection.mutable.ArrayBuffer()
-
-  private var finished = false
+    while bitCount >= 8 do
+      pending += ((bits >> (bitCount - 8)) & 0xff).toByte
+      bitCount -= 8
 
   def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
+    if !begun then
+      emit(256)
+      begun = true
+
     var i = 0
-    while i < length do { input += bytes(offset + i); i += 1 }
+
+    while i < length do
+      val byte = bytes(offset + i)
+
+      if prefix < 0 then prefix = byte & 0xff else codes.at((prefix, byte)) match
+        case code: Int =>
+          prefix = code
+
+        case _ =>
+          emit(prefix)
+          codes((prefix, byte)) = nextCode
+          nextCode += 1
+
+          // The decoder's table trails by one entry, so its thresholds sit one lower.
+          if nextCode >= (1 << width) + 1 - early && width < 12 then width += 1
+
+          if nextCode >= 4096 - early then
+            emit(256)
+            codes.clear()
+            nextCode = 258
+            width = 9
+
+          prefix = byte & 0xff
+
+      i += 1
 
   def finish(): Unit =
-    if !finished then
-      finished = true
-      val array = new Array[Byte](input.length)
-      var k = 0
-      while k < input.length do { array(k) = input(k); k += 1 }
-      val encoded = BrotliEncoder.encode(array, array.length)
-      var i = 0
-      while i < encoded.length do { pending += encoded(i); i += 1 }
+    if !ended then
+      if !begun then
+        emit(256)
+        begun = true
 
-// The `Duct` stage: a thin wrapper presenting a Brotli engine to the streaming kernel, draining the
-// engine's retained `pending` buffer into whatever space each step or flush offers. The shape
-// mirrors `LzwStage`.
-private[turbulence] class BrotliStage(engine: BrotliEngine) extends Duct[Data, Data]:
+      if prefix >= 0 then
+        emit(prefix)
+        prefix = -1
+
+      emit(257)
+      if bitCount > 0 then emit(0) // pad the final code out to a byte boundary
+      bitCount = 0
+      ended = true
+
+private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
+  private val table: scala.collection.mutable.ArrayBuffer[Array[Byte]] =
+    scala.collection.mutable.ArrayBuffer()
+
+  private var width = 9
+  private var bits = 0L
+  private var bitCount = 0
+  private var finished = false
+
+  private var previous: Array[Byte] = new Array[Byte](0)
+
+  private val early: Int = if earlyChange then 1 else 0
+
+  reset()
+
+  private def reset(): Unit =
+    table.clear()
+    var byte = 0
+
+    while byte < 256 do
+      table += Array(byte.toByte)
+      byte += 1
+
+    table += new Array[Byte](0) // the clear code
+    table += new Array[Byte](0) // the end-of-data code
+    width = 9
+    previous = new Array[Byte](0)
+
+  private def interpret(): Unit =
+    val code = ((bits >> (bitCount - width)) & ((1L << width) - 1)).toInt
+    bitCount -= width
+
+    code match
+      case 256 =>
+        reset()
+
+      case 257 =>
+        finished = true
+
+      case code =>
+        val entry: Array[Byte] =
+          if code < table.length then table(code).nn
+          else if code == table.length && previous.length > 0 then previous :+ previous(0)
+          else throw IllegalStateException("the LZW data is corrupt")
+
+        var i = 0
+
+        while i < entry.length do
+          pending += entry(i)
+          i += 1
+
+        if previous.length > 0 then table += previous :+ entry(0)
+        previous = entry
+        if table.length >= (1 << width) - early && width < 12 then width += 1
+
+  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
+    var consumed = 0
+
+    while consumed < length do
+      while bitCount <= 56 && consumed < length do
+        bits = (bits << 8) | (bytes(offset + consumed) & 0xff)
+        bitCount += 8
+        consumed += 1
+
+      while bitCount >= width && !finished do interpret()
+      if finished then consumed = length // trailing bytes after end-of-data are noise
+
+  def finish(): Unit = while bitCount >= width && !finished do interpret()
+
+// The `Duct` stages: thin wrappers presenting an engine to the streaming kernel. All output
+// is staged through the engine's retained `pending` buffer, drained into whatever target
+// space each step or flush offers.
+private[pneumatic] class LzwStage(engine: LzwEngine) extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
@@ -155,36 +256,3 @@ private[turbulence] class BrotliStage(engine: BrotliEngine) extends Duct[Data, D
       finishing = true
 
     engine.deliver(target.asInstanceOf[Array[Byte]], targetOffset, targetSpace)
-
-object Brotli:
-  given compression: Brotli is Compression:
-    def compressor()(using Buffering): Duct[Data, Data] {
-      type Transport = Credit
-      type Upstream = Credit } =
-
-      BrotliStage(BrotliEncoderEngine())
-
-    def decompressor()(using Buffering): Duct[Data, Data] {
-      type Transport = Credit
-      type Upstream = Credit } =
-
-      BrotliStage(BrotliDecoderEngine())
-
-    def compress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliEncoderEngine(), stream)
-    def decompress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliDecoderEngine(), stream)
-
-  // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
-  private def drive(engine: BrotliEngine, stream: LazyList[Data]): LazyList[Data] =
-    def recur(stream: LazyList[Data]): LazyList[Data] = stream match
-      case head #:: tail =>
-        engine.accept(head.mutable(using Unsafe), 0, head.length)
-        recur(tail)
-
-      case _ =>
-        engine.finish()
-        val data = engine.gather()
-        if data.length > 0 then LazyList(data) else LazyList.empty
-
-    LazyList.defer(recur(stream))
-
-sealed trait Brotli extends Compressor

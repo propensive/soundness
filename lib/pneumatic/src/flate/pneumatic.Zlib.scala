@@ -30,6 +30,85 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package pneumatic
 
-export turbulence.{Brotli, Deflate, Gzip, Lzw, Zlib, gzip, gunzip}
+import java.io as ji
+
+import anticipation.*
+import denominative.*
+import rudiments.*
+import vacuous.*
+import zephyrine.*
+
+object Zlib:
+  given compression: Zlib is Compression:
+    def compressor()(using Buffering): (Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit })^ =
+
+      Deflation(gzip = false, nowrap = false)
+
+    def decompressor()(using Buffering): (Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit })^ =
+
+      Inflation(gzip = false, nowrap = false)
+
+    def compress(stream: LazyList[Data]): LazyList[Data] =
+      val deflater = FlateBackend.deflater(-1, false)
+      val buffer: Array[Byte] = new Array(4096)
+      val out = new ji.ByteArrayOutputStream()
+
+      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+        case head #:: tail =>
+          deflater.setInput(head.mutable(using Unsafe))
+          var count = deflater.deflate(buffer, 0, buffer.length, Flate.ZSyncFlush)
+
+          while count > 0 do
+            out.write(buffer, 0, count)
+            count = deflater.deflate(buffer, 0, buffer.length, Flate.ZSyncFlush)
+
+          val data = out.toByteArray.nn.immutable(using Unsafe)
+          out.reset()
+
+          if !data.nil then data #:: recur(tail) else recur(tail)
+
+        case _ =>
+          deflater.finish()
+
+          while !deflater.finished do
+            val count = deflater.deflate(buffer, 0, buffer.length)
+            if count > 0 then out.write(buffer, 0, count)
+
+          val data = out.toByteArray.nn.immutable(using Unsafe)
+          out.reset()
+          deflater.end()
+          if !data.nil then LazyList(data) else LazyList.empty
+
+      recur(stream)
+
+    def decompress(stream: LazyList[Data]): LazyList[Data] =
+      val inflater = FlateBackend.inflater(false)
+      val buffer: Array[Byte] = new Array(4096)
+
+      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+        case head #:: tail =>
+          inflater.setInput(head.mutable(using Unsafe))
+          val out = new ji.ByteArrayOutputStream()
+          var count = inflater.inflate(buffer)
+
+          while count > 0 do
+            out.write(buffer, 0, count)
+            count = inflater.inflate(buffer)
+
+          val data = out.toByteArray.nn.immutable(using Unsafe)
+          if !data.nil then data #:: recur(tail) else recur(tail)
+
+        case _ =>
+          val finished = inflater.finished
+          inflater.end()
+          LazyList.empty
+
+      recur(stream)
+
+sealed trait Zlib extends Compressor

@@ -30,14 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 // Word transforms and static-dictionary geometry for Brotli, ported faithfully from Google's
 // reference decoder (org.brotli.dec, MIT-licensed, Copyright 2015 Google Inc.).
 // `transformDictionaryWord` writes a transformed dictionary word into `dst` and returns its length.
 // The transform types are the RFC 7932 set: identity, omit-first-N, omit-last-N, and the two case
 // transforms.
-private[turbulence] object BrotliDictionary:
+private[pneumatic] object BrotliDictionary:
   final val Identity = 0
   final val OmitLast1 = 1;  final val OmitLast2 = 2;  final val OmitLast3 = 3
   final val OmitLast4 = 4;  final val OmitLast5 = 5;  final val OmitLast6 = 6

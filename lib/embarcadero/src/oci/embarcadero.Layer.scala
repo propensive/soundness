@@ -35,6 +35,7 @@ package embarcadero
 import anticipation.*
 import bitumen.*
 import gesticulate.*
+import pneumatic.*
 import turbulence.*
 import zephyrine.*
 

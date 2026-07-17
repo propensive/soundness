@@ -39,6 +39,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
+import pneumatic.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*

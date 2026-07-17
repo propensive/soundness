@@ -30,12 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package pneumatic
 
 // Lookup tables for Brotli decoding, ported from Google's reference decoder (org.brotli.dec,
 // MIT-licensed, Copyright 2015 Google Inc.): the context-modelling lookup table and the prefix-code
 // range tables (RFC 7932 sections 7.3 and 5). This file is generated; do not edit by hand.
-private[turbulence] object BrotliTables:
+private[pneumatic] object BrotliTables:
   // Context-modelling lookup table (1792 entries).
   val contextLookup: Array[Int] = Array(
     0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 4, 0, 0,
