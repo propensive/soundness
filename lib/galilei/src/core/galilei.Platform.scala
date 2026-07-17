@@ -90,6 +90,30 @@ object Platform:
   =>  ( DirectoryOpenable[filesystem, path]^ ) =
     DirectoryOpenable[filesystem, path]
 
+  // The `Creatable` instances for filesystem entries, anchored here for the same reason as
+  // the `Openable` instances above: resolvable, with the form inferred where unique, from
+  // any `Path on <platform>` with no import.
+  given directoryCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem,
+        Tactic[IoError],
+        (IoEvent is Loggable)^ )
+  =>  ( Creation.DirectoryCreatable[filesystem, path]^ ) =
+    Creation.DirectoryCreatable[filesystem, path]
+
+  given fileCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem,
+        Tactic[IoError],
+        (IoEvent is Loggable)^ )
+  =>  ( Creation.FileCreatable[filesystem, path]^ ) =
+    Creation.FileCreatable[filesystem, path]
+
+  given fifoCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem,
+        Tactic[IoError],
+        (IoEvent is Loggable)^ )
+  =>  ( Creation.FifoCreatable[filesystem, path]^ ) =
+    Creation.FifoCreatable[filesystem, path]
+
   // Opening `Eof(path)` opens the file's content for appending: the instance prepends the
   // `Append` flag and delegates to the file's own instance. Named capturing evidence and an
   // honest result: the instance retains `openable`, which a pure context bound cannot accept.

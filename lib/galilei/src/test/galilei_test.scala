@@ -153,6 +153,86 @@ object Tests extends Suite(m"Galilei tests"):
         . map(_.message)
       . assert(_.nonEmpty)
 
+    suite(m"Creating entries"):
+      import errorDiagnostics.emptyDiagnostics
+
+      val createLeaf: Text = Uuid().show
+      val base: Path on Linux = unsafely((% / "tmp" / createLeaf).on[Linux])
+      unsafely(base.create[Directory]())
+
+      test(m"Creating a file without Replace fails if it already exists"):
+        unsafely:
+          val target: Path on Linux = base / "once.txt"
+          target.create[File]()
+          capture[IoError](target.create[File]()).reason
+      . assert(_ == IoError.Reason.AlreadyExists)
+
+      test(m"Replace permits re-creation"):
+        unsafely:
+          val target: Path on Linux = base / "twice.txt"
+          target.create[File]()
+          target.create[File](CreateFlag.Replace)
+          target.exists()
+      . assert(_ == true)
+
+      test(m"Creating beneath a missing parent fails without Parents"):
+        unsafely:
+          val target: Path on Linux = base / "no" / "such" / "deep"
+          capture[IoError](target.create[Directory]()).reason
+      . assert(_ == IoError.Reason.Nonexistent)
+
+      test(m"Parents creates missing ancestors"):
+        unsafely:
+          val target: Path on Linux = base / "a" / "b" / "c"
+          target.create[Directory](CreateFlag.Parents)
+          target.exists()
+      . assert(_ == true)
+
+      test(m"Directory authoring provides a fresh-plane handle over the new directory"):
+        unsafely:
+          val target: Path on Linux = base / "authored"
+
+          target.create[Directory](): dir ?=>
+            (dir / "inner.txt").overwrite(t"hello")
+
+          val inner: Path on Linux = target / "inner.txt"
+          inner.read[Text]
+      . assert(_ == t"hello")
+
+      test(m"A failed directory authoring scope leaves nothing behind"):
+        unsafely:
+          val target: Path on Linux = base / "doomed-dir"
+
+          capture[IoError]:
+            target.create[Directory](): dir ?=>
+              (dir / "x.txt").overwrite(t"data")
+              abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
+
+          target.exists()
+      . assert(_ == false)
+
+      test(m"File authoring commits the staged content on success"):
+        unsafely:
+          val target: Path on Linux = base / "staged.txt"
+
+          target.create[File](): handle ?=>
+            handle.write(LazyList(t"payload".in[Data]))
+
+          target.read[Text]
+      . assert(_ == t"payload")
+
+      test(m"A failed file authoring scope leaves nothing behind"):
+        unsafely:
+          val target: Path on Linux = base / "doomed.txt"
+
+          capture[IoError]:
+            target.create[File](): handle ?=>
+              handle.write(LazyList(t"data".in[Data]))
+              abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
+
+          target.exists()
+      . assert(_ == false)
+
     suite(m"Scratch directories"):
       import filesystemOptions.createNonexistentParents.enabled
       import filesystemOptions.overwritePreexisting.enabled
@@ -227,7 +307,7 @@ object Tests extends Suite(m"Galilei tests"):
       val inner: Path on Linux = unsafely(outer / "nested")
       val siblingLeaf: Text = t"$registerLeaf-sibling"
       val sibling: Path on Linux = unsafely((% / "tmp" / siblingLeaf).on[Linux])
-      unsafely(inner.create[Directory]())
+      unsafely(inner.create[Directory](CreateFlag.Parents))
       unsafely(sibling.create[Directory]())
 
       test(m"Overlapping Read opens coexist"):

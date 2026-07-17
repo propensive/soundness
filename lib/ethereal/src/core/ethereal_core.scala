@@ -191,7 +191,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     import filesystemOptions.overwritePreexisting.disabled
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
-                    if !cacheDir.exists() then cacheDir.create[Directory]()
+                    if !cacheDir.exists() then cacheDir.create[Directory](CreateFlag.Parents)
                     cacheRunner.open[File](Write, OpenFlag.Create)(file.write(LazyList(bytes)))
                     bytes
 

@@ -138,7 +138,7 @@ object Installer:
             abort(InstallError(InstallError.Reason.Environment))
 
           val file: Path on Linux = installDirectory/command
-          val installFile: Optional[Path on Linux] = file.create[File]()
+          val installFile: Optional[Path on Linux] = file.create[File](CreateFlag.Replace)
 
           installFile.let: file =>
             val filename: Text = file.inspect

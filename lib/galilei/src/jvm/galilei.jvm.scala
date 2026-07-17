@@ -37,6 +37,7 @@ import java.net as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
+import aperture.*
 import contingency.*
 import prepositional.*
 import serpentine.*
@@ -47,23 +48,42 @@ extension [plane: Filesystem](path: Path on plane)
   def javaFile: ji.File = javaPath.toFile.nn
 
 object SocketCreation:
-  given socket: [plane <: Posix: Filesystem]
-  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
-        overwritePreexisting:     OverwritePreexisting on plane,
-        tactic:                   Tactic[IoError] )
-  =>  Socket is Creatable to Socket =
+  // Binding a Unix-domain socket is inherently scoped under the new model: the block form
+  // provides the live, bound `Socket` and closes its channel when the scope ends (the socket
+  // file remains, as before; an exception escaping the scope removes it). The no-block form
+  // binds and immediately closes, leaving just the socket file.
+  class SocketCreatable[filesystem <: Posix: Filesystem, path <: Path on filesystem]
+    ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
+  extends Creatable:
 
-    new Creatable:
-      type Plane = plane
-      type Self = Socket
-      type Result = Socket
+    type Self = path
+    type Form = Socket
+    type Operand = CreateFlag
+    type Grants = Grant.Read & Grant.Write
+    type Result = Socket
 
-      def create(path: Path on Plane): Result =
-        createNonexistentParents(path):
-          overwritePreexisting(path):
-            val address = jn.UnixDomainSocketAddress.of(path.javaPath).nn
-            val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
-            channel.bind(address)
-            Socket(channel)
+    def create[result]
+      ( value: path, flags: List[CreateFlag] )
+      ( block: (Socket & Granting[Grant.Read & Grant.Write]) ?=> result )
+    :   result =
+
+      Creation.ensure(value, flags)
+      Creation.replace(value, flags)
+
+      val address = jn.UnixDomainSocketAddress.of(value.javaPath).nn
+      val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+      channel.bind(address)
+
+      try
+        try block(using new Socket(channel) with Granting[Grant.Read & Grant.Write] {})
+        catch case throwable: Throwable =>
+          try backend.deleteIfExists(value) catch case _: Exception => ()
+          throw throwable
+      finally channel.close()
+
+  given socket: [filesystem <: Posix: Filesystem, path <: Path on filesystem]
+  =>  ( FilesystemBackend on filesystem, Tactic[IoError] )
+  =>  SocketCreatable[filesystem, path] =
+    SocketCreatable[filesystem, path]
 
 export SocketCreation.socket as socketCreatable

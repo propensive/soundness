@@ -160,9 +160,7 @@ object Xeq:
 
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
-    output.create[File]()
-
-    output.open[File](Write, OpenFlag.Create): handle ?=>
+    output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
       handle.write(LazyList(data))
 
     output.executable() = true
