@@ -30,6 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aperture
 
-export aperture.{create, Creatable, Creator, Exclusive, Grant, granting, Granting, Mode, Openable, open, Opener, Read, Write}
+import prepositional.*
+
+// An entity which can be created: the counterpart of `Openable`, for bringing artifacts into
+// existence rather than accessing existing ones. An instance is written
+// `target is Creatable in Form by Flag to Handle`, and serves two notions of creation with
+// one verb:
+//
+//  - *instantiation*: `path.create[Directory]()` makes an empty artifact exist, with no
+//    scope, returning the target;
+//  - *scoped authoring*: `path.create[Zip](): zip ?=> ...` creates the artifact, populates
+//    it through a handle granted `Grants` (write access from birth: a newborn artifact is
+//    unconditionally its creator's), and commits the result when the scope closes. An
+//    exception escaping the scope means nothing is left behind: instances guarantee this by
+//    staging to a temporary sibling and moving atomically, or by wiping what they created.
+//
+// There is no `Mode` parameter: what a creation scope may do is not a caller's choice, and
+// the persisted permissions of the created entry are flag territory. Creating an entity that
+// might already exist is governed by per-form flags (replacement is never the default), and
+// is distinct from *opening* a possibly-absent entity for writing (`OpenFlag.Create`), which
+// accesses whatever is there.
+trait Creatable extends Typeclass, Formal, Operable, Resultant:
+  type Grants <: Grant
+
+  // Creates the artifact, empty. The default serves builder forms, whose discarded handle
+  // costs nothing; forms holding OS resources override it to create directly — notably a
+  // FIFO, which must never be opened just to be created (opening one for writing blocks
+  // until a reader appears).
+  def make(value: Self, flags: List[Operand]): Unit =
+    create(value, flags) { () }
+
+  def create[result]
+    ( value: Self, flags: List[Operand] )
+    ( block: ((Result & Granting[Grants])^) ?=> result )
+  :   result

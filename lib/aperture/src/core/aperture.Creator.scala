@@ -30,6 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aperture
 
-export aperture.{create, Creatable, Creator, Exclusive, Grant, granting, Granting, Mode, Openable, open, Opener, Read, Write}
+// The applier returned by the `create` extension method, mirroring `Opener`: the form
+// resolves the `Creatable` instance, and the arguments arrive at the overloaded `apply`s —
+// without a block for instantiation (returning the target, which now exists), or with a
+// block for scoped authoring. The `tracked` parameter keeps the instance's `Self`,
+// `Operand`, `Result` and `Grants` members precise.
+final class Creator(tracked val creatable: Creatable^, val value: creatable.Self):
+
+  def apply(flags: creatable.Operand*): creatable.Self =
+    creatable.make(value, flags.to(List))
+    value
+
+  def apply[result]
+    ( flags: creatable.Operand* )
+    ( block: ((creatable.Result & Granting[creatable.Grants])^) ?=> result )
+  :   result =
+
+    creatable.create(value, flags.to(List))(block)
