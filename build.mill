@@ -51,12 +51,13 @@ object settings:
   // sealed-classfile parsing — see rep/DECISIONS.md). It is consumed in one of two modes:
   //
   //   1. Released (the default). The fork is published at
-  //      https://github.com/propensive/proscala/releases; each release's assets are exactly the
-  //      contents of a `release/lib` directory (the unversioned core jars plus the versioned
-  //      third-party jars). The `toolchain` module below downloads `SOUNDNESS_SCALA_RELEASE`
-  //      (default `3.9.0-RC1-p2`, the latest in the 3.9.0 stream) into a shared cache and exposes
-  //      its jars to every coursier resolution — no local compiler build and no publishing step
-  //      needed. Switch streams by setting `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.0-dev-p2`).
+  //      https://github.com/propensive/proscala/releases; each release ships a single
+  //      `proscala-<tag>.tar.gz` asset whose contents are a `lib` directory (the unversioned core
+  //      jars plus the versioned third-party jars). The `toolchain` module below downloads
+  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.0-RC1-p3`, the latest in the 3.9.0 stream) and
+  //      extracts it into a shared cache, exposing its jars to every coursier resolution — no
+  //      local compiler build and no publishing step needed. Switch streams by setting
+  //      `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.0-dev-p2`).
   //
   //   2. Local (fork developers). Point `SOUNDNESS_SCALA_HOME` at a `make`-built `release`
   //      directory to use its `release/lib` jars directly instead of downloading. After
@@ -67,7 +68,7 @@ object settings:
   // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
   // must match the version string the jars were built with (`compiler.properties`), or
   // coursier/zinc caches poison each other across compilers. The release tag
-  // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept: `3.9.0-RC1-p2` ships jars built as
+  // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept: `3.9.0-RC1-p3` ships jars built as
   // `3.9.0-RC1-propensive`. Override the coordinate with `SOUNDNESS_SCALA_VERSION` (e.g. the
   // 3.10.0 row is version "3.10.0-propensive").
   val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC1-propensive")
@@ -169,31 +170,40 @@ object settings:
 // (including the modules that depend on the compiler API), `scala3-staging_3`, the sbt bridge, and
 // the Scala.js stdlib — is served from here.
 object toolchain extends Module:
-  // Downloads the `settings.scalaRelease` assets from propensive/proscala into a *shared* cache
-  // dir outside the Mill `out/` tree, so the throwaway-worktree `make attest` build (clean `out/`
-  // every time) reuses them and stays offline after the first fetch. A `.complete` sentinel makes
-  // a fully-populated cache a no-op — no network, no GitHub API call. Returns the `lib` dir.
+  // Downloads and extracts the `settings.scalaRelease` tarball from propensive/proscala into a
+  // *shared* cache dir outside the Mill `out/` tree, so the throwaway-worktree `make attest` build
+  // (clean `out/` every time) reuses it and stays offline after the first fetch. Each release is a
+  // single `proscala-<tag>.tar.gz` asset carrying a `lib/` directory of jars, extracted here into
+  // `<tag>/lib`. A `.complete` sentinel makes a fully-populated cache a no-op — no network, no
+  // GitHub API call. Returns the `lib` dir.
   def downloadRelease(tag: String): os.Path =
-    val lib = os.home / ".cache" / "soundness" / "proscala" / tag / "lib"
+    val root = os.home / ".cache" / "soundness" / "proscala" / tag
+    val lib = root / "lib"
     val sentinel = lib / ".complete"
     if os.exists(sentinel) then lib else
-      os.makeDir.all(lib)
+      os.makeDir.all(root)
       val api = s"https://api.github.com/repos/propensive/proscala/releases/tags/$tag"
       val json = ujson.read(os.proc("curl", "-fsSL", api).call().out.text())
-      json("assets").arr.foreach: asset =>
-        val name = asset("name").str
-        val url = asset("browser_download_url").str
-        val target = lib / name
-        if !os.exists(target) then
-          os.proc("curl", "-fsSL", "-o", target.toString, url).call()
-        // Verify against the published digest when the API supplies one ("sha256:<hex>").
-        asset.obj.get("digest").flatMap(_.strOpt).foreach: digest =>
-          if digest.startsWith("sha256:") then
-            val md = java.security.MessageDigest.getInstance("SHA-256")
-            val hex = md.digest(os.read.bytes(target)).map("%02x".format(_)).mkString
-            if hex != digest.stripPrefix("sha256:") then
-              os.remove(target)
-              throw new Exception(s"checksum mismatch for $name (expected $digest, got sha256:$hex)")
+      val asset = json("assets").arr.find(_("name").str.endsWith(".tar.gz")).getOrElse:
+        throw new Exception(s"no .tar.gz asset on proscala release $tag")
+      val name = asset("name").str
+      val url = asset("browser_download_url").str
+      val tarball = root / name
+      if !os.exists(tarball) then
+        os.proc("curl", "-fsSL", "-o", tarball.toString, url).call()
+      // Verify against the published digest when the API supplies one ("sha256:<hex>").
+      asset.obj.get("digest").flatMap(_.strOpt).foreach: digest =>
+        if digest.startsWith("sha256:") then
+          val md = java.security.MessageDigest.getInstance("SHA-256")
+          val hex = md.digest(os.read.bytes(tarball)).map("%02x".format(_)).mkString
+          if hex != digest.stripPrefix("sha256:") then
+            os.remove(tarball)
+            throw new Exception(s"checksum mismatch for $name (expected $digest, got sha256:$hex)")
+      // The tarball carries a `lib/` prefix, so extracting into `<tag>` lands the jars at
+      // `<tag>/lib/*.jar`. Clear any partial extract first (we only get here without the sentinel).
+      os.remove.all(lib)
+      os.proc("tar", "-xzf", tarball.toString, "-C", root.toString).call()
+      os.remove(tarball) // reclaim ~43 MB; the sentinel guards against re-fetching
       os.write(sentinel, "")
       lib
 
