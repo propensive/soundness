@@ -37,19 +37,9 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 
-extension [path: Abstractable across Paths to Text](path: path)
-  def watch[result](lambda: Watch => result)(using Watcher): result raises WatchError =
-    val watchSet = Watch(List(path))
-
-    lambda(watchSet).also:
-      watchSet.unregister()
-
-extension [path: Abstractable across Paths to Text](paths: Iterable[path])
-  def watch[result](lambda: Watch => result)(using Watcher): result raises WatchError =
-    val watchSet = Watch(paths)
-
-    lambda(watchSet).also:
-      watchSet.unregister()
+// The contextual watch handle within an `open[Watch]` block, in the manner of galilei's
+// `file`. Transparent inline so the handle's precise (capturing) type is preserved.
+transparent inline def watch(using handle: WatchHandle^): handle.type = handle
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 

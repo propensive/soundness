@@ -32,58 +32,56 @@
                                                                                                   */
 package surveillance
 
-import java.nio.file as jnf
-
 import anticipation.*
 import aperture.*
 import contingency.*
 import prepositional.*
-import turbulence.*
-import zephyrine.*
-import vacuous.*
 
-object Watch:
-  def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
-  :   Watch raises WatchError =
+// The scoped capability provided by opening a path (or several) as `Watch`:
+// `path.open[Watch]()`. The OS watch registration lasts exactly as long as the block, and the
+// handle — with anything lazily derived from its event stream — is confined to it by capture
+// checking. Watching is pure observation, so no operation is grant-gated: the mode is
+// irrelevant, and `Read` (the default) describes it best.
+class WatchHandle private[surveillance] (watch: Watch) extends caps.ExclusiveCapability:
+  def stream: LazyList[WatchEvent] = watch.stream
 
-    val pathGroups: Map[jnf.Path, Iterable[Text -> Boolean]] =
-      paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
-        if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
-        else
-          val parent = Optional(javaPath.getParent).or(jnf.Paths.get("").nn)
-          val filename = javaPath.getFileName.nn.toString.tt
-          (parent, (_: Text) == filename)
+// A named class rather than an anonymous given instance, for the reasons documented on
+// galilei's `FileOpenable`.
+class WatchOpenable[path: Abstractable across Paths to Text]
+  ( using watcher: Watcher, watchError: Tactic[WatchError] )
+extends Openable:
 
-      . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
+  type Self = path
+  type Form = Watch
+  type Operand = Nothing
+  type Result = WatchHandle
 
-    val directories: Map[jnf.Path, Text -> Boolean] =
-      pathGroups.view.mapValues: predicates =>
-        (value: Text) => predicates.exists(_(value))
+  def open[grants <: Grant, result]
+    ( value: path, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((WatchHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-      . to(Map)
+    val watch = Watch(List(value))
+    try block(using new WatchHandle(watch) with Granting[grants] {})
+    finally watch.unregister()
 
-    val spool: Relay[WatchEvent] = Relay()
+// Watching several paths at once: `List(a, b, c).open[Watch]()`, with one event stream
+// multiplexing all of them, exactly as `Watch` itself works. Parameterized over the concrete
+// collection type, since `Openable`'s `Self` is matched invariantly.
+class WatchAllOpenable[collection <: Iterable[path], path: Abstractable across Paths to Text]
+  ( using watcher: Watcher, watchError: Tactic[WatchError] )
+extends Openable:
 
-    new Watch(spool, watcher.watch(directories, spool))
+  type Self = collection
+  type Form = Watch
+  type Operand = Nothing
+  type Result = WatchHandle
 
-  given openable: [path: Abstractable across Paths to Text]
-  =>  ( Watcher, Tactic[WatchError] )
-  =>  ( WatchOpenable[path]^ ) =
-    WatchOpenable[path]
+  def open[grants <: Grant, result]
+    ( value: collection, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((WatchHandle & Granting[grants])^) ?=> result )
+  :   result =
 
-  given allOpenable: [path: Abstractable across Paths to Text, collection <: Iterable[path]]
-  =>  ( Watcher, Tactic[WatchError] )
-  =>  ( WatchAllOpenable[collection, path]^ ) =
-    WatchAllOpenable[collection, path]
-
-// A `Watch` is the user-facing handle returned by registering one or more paths. Its `stream`
-// yields events as they occur, and `unregister` cancels the backend registration and terminates
-// the stream. The actual change-detection is delegated to a `Watcher` backend.
-class Watch(spool: Relay[WatchEvent], registration: Watcher.Registration):
-  // The legacy view of the event relay (the audited bridge): one lazy,
-  // single-owner drain of the shared queue, as before.
-  def stream: LazyList[WatchEvent] = LazyList.from(spool.stream.records)
-
-  def unregister(): Unit =
-    registration.cancel()
-    spool.stop()
+    val watch = Watch(value)
+    try block(using new WatchHandle(watch) with Granting[grants] {})
+    finally watch.unregister()

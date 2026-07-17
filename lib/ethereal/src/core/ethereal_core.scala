@@ -530,7 +530,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           task(n"pid-watcher"):
             safely:
-              List[Path on Local](socketFile, buildFile, pidFile).watch: watcher =>
+              List[Path on Local](socketFile, buildFile, pidFile).open[Watch](): watcher ?=>
                 watcher.stream.each:
                   case Delete(_, _) | Modify(_, _) =>
                     Log.warn(DaemonLogEvent.Termination)
