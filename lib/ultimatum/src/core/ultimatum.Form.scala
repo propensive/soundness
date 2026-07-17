@@ -66,6 +66,15 @@ class Form
   private var wakePending: Boolean = false
   private var resizePending: Boolean = false
 
+  // The anchor reply (the parked cursor's position after the resize's reflow),
+  // stashed when it decodes and handed to the inline root at the resize repaint;
+  // dropped on every new WINCH so it can only describe the latest reflow.
+  private var anchor: Optional[(Int, Int)] = Unset
+
+  // Whether the resize repaint has already been deferred once to await a late
+  // anchor reply; a single grace keeps a reply-less terminal from stalling.
+  private var resizeGrace: Boolean = false
+
   // Bind every container to the wake function so a mutation requests a repaint.
   private def bind(node: Pane): Unit = node match
     case Pane.Branch(_, _, panes) =>
@@ -205,24 +214,43 @@ class Form
       scheduleWake(resizeDelay)
 
   private def flushDeferred(): Unit = deferred.let: changed =>
-    deferred = Unset
-    wakePending = false
-    lastRedraw = System.currentTimeMillis
+    // A resize repaint whose anchor reply hasn't decoded yet defers once more, a few
+    // milliseconds: the reply usually sits in the input buffer already, and waiting
+    // for it is the difference between recovering the block's position and falling
+    // back to a full clear. Gated on a real `debounce` (so a driver with a no-op
+    // `scheduleWake` can never stall) and used at most once per resize.
+    if resizePending && anchor.absent && debounce > 0 && !resizeGrace then
+      resizeGrace = true
+      wakePending = true
+      scheduleWake(40)
+    else
+      deferred = Unset
+      wakePending = false
+      lastRedraw = System.currentTimeMillis
 
-    // A resize may have moved the old block (and reflowed the fullscreen contents);
-    // invalidate it (a width-only resize counts too) so the next present redraws in
-    // full. Done here, once, however many resizes were coalesced. This is what
-    // guarantees a SIGWINCH always forces a complete redraw, never a diff against a
-    // stale snapshot.
-    if resizePending then
-      resizePending = false
+      // A resize may have moved the old block (and reflowed the fullscreen contents);
+      // invalidate it (a width-only resize counts too) so the next present redraws in
+      // full. Done here, once, however many resizes were coalesced. This is what
+      // guarantees a SIGWINCH always forces a complete redraw, never a diff against a
+      // stale snapshot. An inline root additionally receives the anchor, from which
+      // it can recover the reflowed block's position instead of wiping the screen.
+      if resizePending then
+        resizePending = false
+        resizeGrace = false
 
-      root match
-        case inline: InlineRoot => inline.invalidate()
-        case screen: ScreenRoot => screen.invalidate()
-        case _                  => ()
+        root match
+          case inline: InlineRoot =>
+            anchor.let((row, column) => inline.anchor(row, column))
+            anchor = Unset
+            inline.invalidate()
 
-    refresh(changed)
+          case screen: ScreenRoot =>
+            screen.invalidate()
+
+          case _ =>
+            ()
+
+      refresh(changed)
 
   def run(events: Iterator[TerminalEvent]): Unit =
     requestRefresh(Set())
@@ -240,10 +268,30 @@ class Form
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
 
+      // The WINCH signal arrives synchronously from the trap, well before the anchor
+      // and size replies decode: drop any anchor from a previous resize (it cannot
+      // describe this reflow) and, when a real debounce window exists, mark the
+      // resize NOW — so a keypress landing mid-resize coalesces instead of
+      // presenting against stale geometry. Without a debounce (no wake scheduling),
+      // suppression could stall, so the resize is only marked by `WindowSize`.
+      case Signal.Winch =>
+        anchor = Unset
+        resizeGrace = false
+
+        if debounce > 0 then
+          resizePending = true
+          requestResizeRefresh()
+
+      // The anchor query's reply: where the terminal moved the parked cursor during
+      // the reflow. Stashed for the resize repaint; never widget input, never a
+      // repaint by itself.
+      case TerminalInfo.CursorPosition(row, column) =>
+        anchor = (row, column)
+
       // A resize re-tiles to the new size; reset the rects so the whole layout is
       // repainted against the live dimensions, and mark the resize so the next
-      // repaint clears the moved block (with a cursor query). The repaint is debounced
-      // until the drag pauses; typing is unaffected.
+      // repaint clears the moved block (using the anchor reply, when one arrived).
+      // The repaint is debounced until the drag pauses; typing is unaffected.
       case _: TerminalInfo.WindowSize =>
         rects = IndexedSeq()
         resizePending = true
@@ -264,7 +312,14 @@ class Form
       case event =>
         if focuses.nonEmpty then
           focuses(focusIndex).handle(event)
-          requestRefresh(Set(focusLeaf(focusIndex)))
+          val changed = Set(focusLeaf(focusIndex))
+
+          // During a pending resize the widget's state updates immediately, but its
+          // repaint coalesces into the debounced resize flush: presenting now would
+          // draw against stale geometry and move the parked cursor out from under
+          // the anchor recovery. (A wake is always scheduled while `resizePending`.)
+          if resizePending then deferred = deferred.lay(changed)(_ ++ changed)
+          else requestRefresh(changed)
 
     root match
       case inline: InlineRoot => inline.finish()

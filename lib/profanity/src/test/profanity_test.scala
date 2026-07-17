@@ -430,6 +430,42 @@ object Tests extends Suite(m"Profanity Tests"):
           case Keypress.CharKey('a') => true
           case _                     => false
 
+      // The plain cursor-position report is a size-probe reply; the pump reclassifies
+      // it as an anchor reply when the resize trap queued one.
+      test(m"a plain CPR decodes to a WindowSize"):
+        supervise:
+          Keyboard.Standard().process(LazyList('', '[', '1', '2', ';', '3', '4', 'R')).head
+      . assert:
+          case TerminalInfo.WindowSize(12, 34) => true
+          case _                               => false
+
+      // The `?`-prefixed DECXCPR form is unambiguous: it can only be a cursor position.
+      test(m"a DECXCPR reply decodes to a CursorPosition"):
+        supervise:
+          Keyboard.Standard()
+          . process(LazyList('', '[', '?', '1', '2', ';', '3', '4', 'R'))
+          . head
+      . assert:
+          case TerminalInfo.CursorPosition(12, 34) => true
+          case _                                   => false
+
+      // DECXCPR at VT level 4 appends the page number, which is ignored.
+      test(m"a three-field DECXCPR reply decodes, dropping the page"):
+        supervise:
+          Keyboard.Standard()
+          . process(LazyList('', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
+          . head
+      . assert:
+          case TerminalInfo.CursorPosition(12, 34) => true
+          case _                                   => false
+
+      test(m"a malformed report is dropped and the stream continues"):
+        supervise:
+          Keyboard.Standard().process(LazyList('', '[', '?', ';', 'R', 'z')).head
+      . assert:
+          case Keypress.CharKey('z') => true
+          case _                     => false
+
       suite(m"Terminal features"):
         test(m"the kitty keyboard feature pushes the protocol on"):
           terminalFeatures.kittyKeyboardFeature.enable

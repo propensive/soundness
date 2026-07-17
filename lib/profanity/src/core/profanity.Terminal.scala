@@ -49,6 +49,22 @@ object Terminal:
   // (in `terminalFeatures`) and by the `Winch` (resize) signal handler below.
   def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"
 
+  // The anchor query a resize sends BEFORE the size probe: a bare DSR, answered with
+  // the cursor's position — which, after a reflow, is where the terminal moved the
+  // cursor an inline renderer had parked on a known cell. It must precede
+  // `reportSize`, whose corner-jam moves the cursor (its DECSC/DECRC bracket cannot
+  // be trusted to survive a reflow), and both go out in one write. The two replies
+  // are byte-identical in form; the `Report` expectation queue tells them apart by
+  // arrival order.
+  def anchorQuery: Text = t"\e[6n"
+
+  // What the next cursor-position report answers: the resize trap queues an `Anchor`
+  // then a `Size` per WINCH; the pump pops one per report. An empty queue means the
+  // report answers a bare size probe (session start, `terminalSizeFeature`), which
+  // queues no expectations.
+  private[profanity] enum Report:
+    case Anchor, Size
+
   // In the companion (not the class) so the pure pump-daemon body can call it without
   // charging `Terminal.this`.
   private[profanity] def dark(red: Int, green: Int, blue: Int): Boolean =
@@ -62,6 +78,11 @@ object Terminal:
     var mode: Optional[Brightness] = Unset
     var rows: Optional[Int] = Unset
     var columns: Optional[Int] = Unset
+
+    // Outstanding cursor-position-report expectations: appended by the resize trap
+    // (signal thread), consumed by the pump daemon — hence a concurrent queue.
+    val reports: java.util.concurrent.ConcurrentLinkedQueue[Report] =
+      java.util.concurrent.ConcurrentLinkedQueue()
 
 // A `Terminal` is a *capability*: it holds the live raw-mode tty session — the `Monitor` and
 // `Probate` of its input-pump daemon, the event spool, and mutable size/brightness state —
@@ -142,10 +163,17 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
   locally:
     val out0 = console.stdio.out
     val events0 = events
+    val reports0 = metrics.reports
 
     console.trap:
       case Signal.Winch =>
-        out0.print(Terminal.reportSize)
+        // The anchor query goes FIRST — the cursor still sits wherever the last
+        // present parked it, and the size probe's corner-jam would move it. The
+        // expectations are queued before the write, so a reply can never arrive to
+        // find them missing; appends preserve arrival-order pairing across a burst.
+        reports0.add(Terminal.Report.Anchor)
+        reports0.add(Terminal.Report.Size)
+        out0.print(t"${Terminal.anchorQuery}${Terminal.reportSize}")
         events0.put(Signal.Winch)
         SignalResponse.Accept
 
@@ -191,9 +219,25 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
           try
             keyboard0.asInstanceOf[Keyboard.Standard].process(chars).each:
               case resize@TerminalInfo.WindowSize(rows2, columns2) =>
-                metrics0.rows = rows2
-                metrics0.columns = columns2
-                events0.put(resize)
+                // An anchor query and a size probe elicit byte-identical replies,
+                // which the decoder always parses as `WindowSize`; the expectation
+                // queue written by the resize trap tells them apart by arrival
+                // order. An anchor reply never touches the metrics — its
+                // coordinates are a cursor cell, not a terminal size.
+                if metrics0.reports.poll() == Terminal.Report.Anchor
+                then events0.put(TerminalInfo.CursorPosition(rows2, columns2))
+                else
+                  metrics0.rows = rows2
+                  metrics0.columns = columns2
+                  events0.put(resize)
+
+              case position@TerminalInfo.CursorPosition(_, _) =>
+                // The unambiguous `?`-form report, should a terminal volunteer it
+                // for a plain query: consume the outstanding anchor expectation so
+                // the size reply that follows stays correctly classified.
+                if metrics0.reports.peek() == Terminal.Report.Anchor
+                then metrics0.reports.poll()
+                events0.put(position)
 
               case bgColor@TerminalInfo.BgColor(red, green, blue) =>
                 metrics0.mode =

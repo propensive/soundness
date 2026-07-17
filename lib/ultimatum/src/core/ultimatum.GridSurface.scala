@@ -62,9 +62,7 @@ extends Canvas:
   // tagged with the absolute top row and column count it was drawn at, so the next
   // present can emit only the cells that differ (an unchanged overprint is a no-op).
   // It models the TERMINAL, not the compose grid: `reshape` and `clear` leave it alone
-  // (they only blank what will be composed next), and only `invalidate` drops it —
-  // forcing the next present to redraw everything, e.g. after a resize has reflowed
-  // whatever was really on screen.
+  // (they only blank what will be composed next).
   protected var snapshot: Optional[Screen[StyleWord]] = Unset
   protected var snapshotTop: Int = 0
   protected var snapshotColumns: Int = 0
@@ -72,9 +70,12 @@ extends Canvas:
 
   // Mark the next present as a full repaint: the screen can no longer be assumed to
   // match the snapshot (typically after a WINCH, when the terminal has reflowed it).
+  // The snapshot itself is RETAINED: it no longer describes the screen for diffing
+  // (the `invalidated` flag alone gates that path), but it remains the exact record
+  // of what the last present drew — which the resize recovery needs, to predict how
+  // the terminal re-wrapped those very rows at the new width.
   def invalidate(): Unit =
     invalidated = true
-    snapshot = Unset
 
   // The caret (hardware cursor) target and visibility, recorded by a root's `cursor`/
   // `showCaret` and applied when the frame is presented; and where the last present
@@ -86,7 +87,7 @@ extends Canvas:
   protected var presentedCaretColumn: Int = -1
   protected var presentedCaretVisible: Boolean = false
 
-  private val metric: Grapheme is Measurable = summon[Grapheme is Measurable]
+  protected val metric: Grapheme is Measurable = summon[Grapheme is Measurable]
 
   def width: Int = gridWidth
   def height: Int = gridHeight
@@ -184,6 +185,31 @@ extends Canvas:
 
     content
 
+  // The number of leading cells of row `r` of `screen2` (clipped to `limit`) up to and
+  // including the last cell that is not a default-styled blank — the row's true
+  // content width. A wide-trailing sentinel (nil grapheme) is content, so a wide
+  // glyph is never half-trimmed off the end.
+  protected def contentWidth(screen2: Screen[StyleWord], r: Int, limit: Int): Int =
+    var end = limit.min(screen2.width)
+
+    while end > 0
+      && screen2.grapheme((end - 1).z, r.z).text == t" "
+      && screen2.style((end - 1).z, r.z).raw == StyleWord.Default.raw
+    do end -= 1
+
+    end
+
+  // The row for a FULL-ROW present, with trailing default-styled blanks trimmed: the
+  // presenter's `el(2)` has already cleared the tail, so the emitted frame renders
+  // identically — but the row becomes a hard logical line of exactly its content
+  // width, which no terminal re-wraps on resize if it fits the new width, and every
+  // terminal re-wraps identically if it doesn't. That determinism is what the resize
+  // recovery's reflow prediction relies on. Diff runs must NOT use this (damage may
+  // be "became blank") and neither may `FlowExtent` compositing (an extent must
+  // overwrite its whole rectangle).
+  protected def trimmedRowContent(r: Int, columns: Int): Teletype =
+    runContent(r, 0, contentWidth(screen, r, columns))
+
   // Record the grid as what is now really on screen, drawn at absolute row `top` and
   // clipped to `columns`. Called by a presenter after every present, on both the full
   // and the diffed path.
@@ -257,17 +283,22 @@ extends Canvas:
     val caretRow2 = (top + caretRow.min(h - 1)).max(1)
     val caretColumn2 = caretColumn.min(columns - 1).max(0) + 1
 
+    // The caret cell matters even when hidden: the cursor physically PARKS there
+    // (below), making it the known anchor a resize recovery locates after a reflow.
     val caretSame = caretVisible == presentedCaretVisible
-      && (!caretVisible || (caretRow2 == presentedCaretRow && caretColumn2 == presentedCaretColumn))
+      && caretRow2 == presentedCaretRow && caretColumn2 == presentedCaretColumn
 
     if runs > 0 || !caretSame then
       val frame = StringBuilder()
       frame.append(csi.dectcem(false).s)
       frame.append(body.toString)
 
-      if caretVisible then
-        frame.append(csi.cup(caretRow2, caretColumn2).s)
-        frame.append(csi.dectcem(true).s)
+      // Park the cursor at the caret cell unconditionally — a hidden cursor still
+      // has a position, and a reflowing terminal drags that position with the cell
+      // it is on, so a resize can ask where the block went. Only visibility is
+      // conditional.
+      frame.append(csi.cup(caretRow2, caretColumn2).s)
+      if caretVisible then frame.append(csi.dectcem(true).s)
 
       recordSnapshot(top, columns)
       presentedCaretRow = caretRow2

@@ -98,6 +98,17 @@ extends GridSurface(widthFn(), 0):
 
   private var started: Boolean = false
 
+  // Where the terminal reported the parked cursor cell after the last resize's reflow
+  // (1-based screen coordinates), stashed by the driver from the anchor query's reply
+  // and consumed by the next resized present — so a stale anchor can never inform a
+  // later resize it didn't measure.
+  private var anchorCell: Optional[(Int, Int)] = Unset
+
+  // Stash the anchor reply for the next resized present. A reflowing terminal keeps
+  // the cursor attached to the logical cell it was on, and every present parks the
+  // cursor at the caret cell, so this reveals where that known cell landed.
+  def anchor(row: Int, column: Int): Unit = anchorCell = (row, column)
+
   override def width: Int = widthFn()
 
   // Resize the grid to the measured block height, clamped to the live terminal
@@ -108,12 +119,11 @@ extends GridSurface(widthFn(), 0):
   // so a focused editor shows it and a focused menu keeps it hidden.
   def cursor(visible: Boolean): Unit = caretVisible = visible
 
-  // Mark the next present as a resize repaint. Under `TopAfterResize` the first resize
-  // also switches to top-anchoring; the other anchorings keep their fixed reference.
-  // The driver calls it on every `WindowSize` event (a width-only resize counts too).
-  override def invalidate(): Unit =
-    super.invalidate()
-    if anchoring == InlineAnchoring.TopAfterResize then topAnchored = true
+  // `invalidate()` (inherited) marks the next present as a resize repaint; the driver
+  // calls it on every `WindowSize` event (a width-only resize counts too). Under
+  // `TopAfterResize`, the switch to top-anchoring no longer happens there: the resized
+  // present first tries to recover the block's position from the anchor reply, and
+  // flips (latched) only when that recovery is unavailable or fails.
 
   // Forget everything recorded about what is on screen, so the NEXT frame renders as a
   // fresh first frame at the current cursor rather than relative to (or docked against)
@@ -128,6 +138,7 @@ extends GridSurface(widthFn(), 0):
     flowCursorRow = 0
     invalidated = false
     snapshot = Unset
+    anchorCell = Unset
     presentedCaretRow = -1
     presentedCaretColumn = -1
     presentedCaretVisible = false
@@ -171,7 +182,7 @@ extends GridSurface(widthFn(), 0):
     var r = 0
     while r < h do
       emit(csi.el(2))
-      val rendered = rowContent(r, columns).render(termcap)
+      val rendered = trimmedRowContent(r, columns).render(termcap)
       emit(rendered)
       if rendered.contains(t"\e") then emit(csi.sgr(0))
       emit(t"\r")
@@ -241,6 +252,29 @@ extends GridSurface(widthFn(), 0):
 
     emit(csi.dectcem(false))
 
+    // The anchor is consumed by whichever present follows the resize that measured
+    // it — used or not — so it can never inform a later resize.
+    val anchor0 = anchorCell
+    anchorCell = Unset
+
+    // Today's resize behaviour, for when no anchor could reconcile the reflow: under
+    // `TopAfterResize` the block gives up its dock — flip to top-anchoring (latched;
+    // a terminal that failed to answer once won't start) and clear the whole screen;
+    // otherwise clear a bottom band sized by the wrap heuristic.
+    def unrecoveredResize(): Int =
+      if anchoring == InlineAnchoring.TopAfterResize then
+        topAnchored = true
+        emit(csi.cup(1, 1))
+        emit(csi.ed(0))
+        1
+      else
+        val narrowed = presentedColumns > columns && columns > 0
+        val wrap = if narrowed then (presentedColumns + columns - 1)/columns else 1
+        val cleared = (presentedRows*wrap).max(h)
+        emit(csi.cup((rows - cleared + 1).max(1), 1))
+        emit(csi.ed(0))
+        (rows - h + 1).max(1)
+
     // The block's absolute top row, and the resize/grow clearing for each anchoring.
     val top =
       if topAnchored then
@@ -253,14 +287,19 @@ extends GridSurface(widthFn(), 0):
         1
       else
         if resized then
-          // Clear the block's rows at the bottom dock, sized for the terminal
-          // re-wrapping our previous, wider lines.
-          val narrowed = presentedColumns > columns && columns > 0
-          val wrap = if narrowed then (presentedColumns + columns - 1)/columns else 1
-          val cleared = (presentedRows*wrap).max(h)
-          emit(csi.cup((rows - cleared + 1).max(1), 1))
-          emit(csi.ed(0))
-          (rows - h + 1).max(1)
+          // Recover the old block's position from the anchor: the terminal kept the
+          // parked cursor attached to its cell through the reflow, so the residue's
+          // top row is computable from the reply and the retained snapshot. Clear
+          // exactly from there to the screen foot and re-dock — the block survives
+          // the resize without wiping the scrollback history above it. When the
+          // anchor is missing or cannot be reconciled, fall back to today's clears.
+          val recovered: Optional[Int] = anchor0.let: (anchorRow, anchorColumn) =>
+            residueTop(anchorRow, anchorColumn, columns, rows)
+
+          recovered.lay(unrecoveredResize()): clearTop =>
+            emit(csi.cup(clearTop, 1))
+            emit(csi.ed(0))
+            (rows - h + 1).max(1)
         else if h > presentedRows then
           // Grow beyond the previous height. `ScrollIntoScrollback` scrolls the screen
           // up so the extra rows are free at the bottom, pushing the content above into
@@ -300,7 +339,10 @@ extends GridSurface(widthFn(), 0):
 
     while r < h do
       emit(csi.el(2))
-      val rendered = rowContent(r, columns).render(termcap)
+      // Trailing default-styled blanks are trimmed (`el(2)` has cleared them): each
+      // row becomes a hard logical line of its content width, so a resize's reflow
+      // of these rows is predictable — the basis of the anchor recovery above.
+      val rendered = trimmedRowContent(r, columns).render(termcap)
       emit(rendered)
       // Reset only after a row that actually emitted SGR, so a plain row is byte-for-
       // byte as before and no colour bleeds into the next `el(2)`-cleared row.
@@ -332,11 +374,12 @@ extends GridSurface(widthFn(), 0):
     presentedRows = h
     presentedColumns = columns
 
-    // The caret is the hardware cursor, placed at an absolute cell and shown only when
-    // visible; otherwise the cursor is left hidden.
-    if caretVisible then
-      emit(csi.cup((top + caretRow.min(h - 1)).max(1), caretColumn.min(columns - 1).max(0) + 1))
-      emit(csi.dectcem(true))
+    // The caret is the hardware cursor, parked at its absolute cell UNCONDITIONALLY —
+    // a hidden cursor still has a position, and a reflowing terminal drags that
+    // position with the cell it is on, so the next resize can ask where the block
+    // went. Only visibility is conditional.
+    emit(csi.cup((top + caretRow.min(h - 1)).max(1), caretColumn.min(columns - 1).max(0) + 1))
+    if caretVisible then emit(csi.dectcem(true))
 
     // What was just drawn IS the screen now: record it (and the caret) so the next
     // geometry-stable present can diff against it.
@@ -344,6 +387,99 @@ extends GridSurface(widthFn(), 0):
     recordCaret(top, columns, h)
 
     Out.print(frame.toString.tt)
+
+  // Predict the topmost screen row the previous block's residue can occupy after a
+  // resize, from the observed anchor cell and the retained snapshot. Two models cover
+  // the real terminal population: a REFLOWING terminal (VTE, iTerm2, kitty, alacritty,
+  // tmux, Terminal.app, foot, wezterm) re-wraps each of the block's hard logical lines
+  // at the new width and keeps the cursor attached to its logical cell; a TRUNCATING
+  // terminal (xterm, st, urxvt, screen, mosh) clips lines in place and leaves the
+  // cursor's row alone. Each model predicts where the parked cursor should have landed
+  // — row offset AND column — so the observed column discriminates them: trust the
+  // model whose column matches; when both match take the safer (upper) minimum; when
+  // neither matches the terminal did something unmodellable, so return `Unset` and let
+  // the caller fall back to today's clears. The result is clamped to the screen.
+  private def residueTop(anchorRow: Int, anchorColumn: Int, newColumns: Int, rows: Int)
+  :   Optional[Int] =
+
+    snapshot.let: snap =>
+      val oldH = snap.height
+      val parkLocal = presentedCaretRow - snapshotTop     // the park cell, block-local
+      val parkColumn = presentedCaretColumn - 1           // 0-based
+
+      if parkLocal < 0 || parkLocal >= oldH || anchorRow < 1 || anchorRow > rows
+        || newColumns <= 0
+      then Unset
+      else
+        // Simulate the terminal re-wrapping snapshot row `r`'s content (trimmed, so
+        // exactly what was really printed) at width `w`: the number of physical
+        // sub-rows it occupies, and the sub-row and column on which cell `target`
+        // lands. A wide glyph that would straddle the margin is pushed whole to the
+        // next sub-row, as terminals do. A target beyond the content (the park sat in
+        // the `el(2)`-cleared tail) stays on the last sub-row at its clamped column —
+        // erased cells are not content and never wrap.
+        def wrapProfile(r: Int, w: Int, target: Int): (Int, Int, Int) =
+          val width0 = contentWidth(snap, r, snapshotColumns)
+          var c = 0
+          var col = 0
+          var sub = 0
+          var targetSub = -1
+          var targetColumn = 0
+
+          while c < width0 do
+            val grapheme = snap.grapheme(c.z, r.z)
+
+            if grapheme.text.nil then
+              // A wide-trailing sentinel: its lead already advanced past this cell.
+              if c == target then
+                targetSub = sub
+                targetColumn = (col - 1).max(0)
+            else
+              val cellWidth = metric.width(grapheme)
+              if cellWidth > 0 && col + cellWidth > w then
+                sub += 1
+                col = 0
+              if c == target then
+                targetSub = sub
+                targetColumn = col
+              col += cellWidth
+
+            c += 1
+
+          if targetSub < 0 then
+            targetSub = sub
+            targetColumn = target.min(w - 1).max(0)
+
+          (sub + 1, targetSub, targetColumn)
+
+        // Physical rows of block content above the park cell, per model, and the
+        // column each model predicts for the anchor reply.
+        var reflowAbove = 0
+        var r = 0
+
+        while r < parkLocal do
+          reflowAbove += wrapProfile(r, newColumns, -1)(0)
+          r += 1
+
+        val (_, parkSub, parkNewColumn) = wrapProfile(parkLocal, newColumns, parkColumn)
+        reflowAbove += parkSub
+
+        val truncateAbove = parkLocal
+        val reflowColumn = parkNewColumn + 1
+        val truncateColumn = parkColumn.min(newColumns - 1) + 1
+
+        val matchReflow = anchorColumn == reflowColumn
+        val matchTruncate = anchorColumn == truncateColumn
+
+        val clearTop: Optional[Int] =
+          if matchReflow && !matchTruncate then anchorRow - reflowAbove
+          else if matchTruncate && !matchReflow then anchorRow - truncateAbove
+          else if matchReflow && matchTruncate
+          then (anchorRow - reflowAbove).min(anchorRow - truncateAbove)
+          else Unset
+
+        clearTop.let: top =>
+          if top > rows then Unset else top.max(1)
 
   // On exit, drop the cursor onto a fresh line below the block and re-show it, so
   // subsequent output continues after the rendered block (like a submitted prompt).
