@@ -53,6 +53,7 @@ object PdfError:
     case BadPassword                                  extends Reason(14)
     case CircularPageTree                             extends Reason(15)
     case Io(detail: Text)                             extends Reason(16)
+    case WriteUnsupported                             extends Reason(17)
 
   given communicable: Reason is Communicable =
     case Reason.NotPdf =>
@@ -102,6 +103,9 @@ object PdfError:
 
     case Reason.Io(detail) =>
       m"an I/O operation failed: $detail"
+
+    case Reason.WriteUnsupported =>
+      m"PDF documents cannot yet be opened for writing"
 
 case class PdfError(reason: PdfError.Reason)(using Diagnostics)
 extends Error(728, reason.number)(m"the PDF could not be read because $reason")
