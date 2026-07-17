@@ -574,6 +574,85 @@ object Tests extends Suite(m"Turbulence tests"):
         longData.compress[Deflate].decompress[Deflate]
       . assert: stream => stream === longData
 
+    suite(m"Brotli tests"):
+      // Golden vectors: real output of the reference `brotli` CLI, decoded here. These validate the
+      // decoder against the reference implementation, not merely against our own encoder.
+      val xBrotli: Data = Data(11, 0, -128, 120, 3)
+      val tenXtenYBrotli: Data = Data(27, 19, 0, 0, -92, -80, -78, -22, -127, 71, 2, 73)
+      val ukkonooaBrotli: Data = Data(27, 81, 0, 0, 68, -73, 86, -86, -93, 91, -53, -62, -63, 13,
+          -67, -7, -32, 11, 14, 57, -44, -125, 96, -96, 113, 64, -106, -76, 5, 27, 99, 56, -60, -79,
+          106, 109, 102, -61, -35, 12, -16, -47, 37, -28, -38, 109, 60, -99, -119, -116, 75, 113, 44,
+          12, 69, 90, -32, -45, -4, 66, 113, 47, 49, -73, 22)
+      val foxBrotli: Data = Data(-113, 21, -128, 84, 104, 101, 32, 113, 117, 105, 99, 107, 32, 98,
+          114, 111, 119, 110, 32, 102, 111, 120, 32, 106, 117, 109, 112, 115, 32, 111, 118, 101, 114,
+          32, 116, 104, 101, 32, 108, 97, 122, 121, 32, 100, 111, 103, 46, 3)
+
+      val ukkonooaPlain: Text = t"ukko nooa, ukko nooa oli kunnon mies, kun han meni saunaan, pisti laukun naulaan, "
+      val foxPlain: Text = t"The quick brown fox jumps over the lazy dog."
+
+      test(m"Decode reference Brotli output (single byte)"):
+        xBrotli.decompress[Brotli].to(List)
+      . assert(_ == t"x".in[Data].to(List))
+
+      test(m"Decode reference Brotli output (run-length)"):
+        tenXtenYBrotli.decompress[Brotli].to(List)
+      . assert(_ == t"XXXXXXXXXXYYYYYYYYYY".in[Data].to(List))
+
+      test(m"Decode reference Brotli output (natural-language text)"):
+        ukkonooaBrotli.decompress[Brotli].to(List)
+      . assert(_ == ukkonooaPlain.in[Data].to(List))
+
+      test(m"Decode reference Brotli output using the static dictionary"):
+        foxBrotli.decompress[Brotli].to(List)
+      . assert(_ == foxPlain.in[Data].to(List))
+
+      val brotliLong = LazyList.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val brotliWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val brotliVaried: Data =
+        IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
+
+      test(m"Roundtrip compress/decompress a single block with Brotli"):
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Brotli].decompress[Brotli]
+      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+
+      test(m"Roundtrip compress/decompress a long repetitive stream with Brotli"):
+        brotliLong.compress[Brotli].decompress[Brotli]
+      . assert(_.flatten == brotliLong.flatten)
+
+      test(m"whole-value compress roundtrips through whole-value decompress (Brotli)"):
+        brotliWhole.compress[Brotli].decompress[Brotli].to(List)
+      . assert(_ == brotliWhole.to(List))
+
+      test(m"whole-value compress feeds the stream decompressor (Brotli)"):
+        brotliWhole.compress[Brotli].stream.decompress[Brotli].memoize.to(List)
+      . assert(_ == brotliWhole.to(List))
+
+      test(m"stream compress feeds the whole-value decompressor (Brotli)"):
+        brotliWhole.stream.compress[Brotli].memoize.decompress[Brotli].to(List)
+      . assert(_ == brotliWhole.to(List))
+
+      test(m"Roundtrip varied data spanning many commands (Brotli)"):
+        brotliVaried.compress[Brotli].decompress[Brotli].to(List)
+      . assert(_ == brotliVaried.to(List))
+
+      test(m"Brotli actually compresses a repetitive payload"):
+        val payload = (t"the quick brown fox jumped " * 500).in[Data]
+        payload.compress[Brotli].length < payload.length
+      . assert(_ == true)
+
+      test(m"Roundtrip a large multi-command payload (Brotli)"):
+        val big = IArray.from((0 until 2000000).map { index => ((index*31 + (index >> 6)) & 0xff).toByte })
+        big.compress[Brotli].decompress[Brotli].to(List) == big.to(List)
+      . assert(_ == true)
+
+      test(m"Empty input roundtrips (Brotli)"):
+        Data().compress[Brotli].decompress[Brotli].to(List)
+      . assert(_ == Nil)
+
+      test(m"Single byte roundtrips (Brotli)"):
+        Data(42).compress[Brotli].decompress[Brotli].to(List)
+      . assert(_ == List[Byte](42))
+
     suite(m"Line splitting"):
       // Split whole, or fragmented into `chunk`-char pieces — the fragmented
       // rows exercise separator sequences spanning window boundaries. A chunk

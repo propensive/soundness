@@ -2094,7 +2094,9 @@ object turbulence extends Library:
     def mvnDeps = Seq(
       mvn"dev.zio::zio-streams:2.1.26",
       mvn"co.fs2::fs2-core:3.13.0",
-      mvn"io.getkyo::kyo-core:1.0.0-RC5" )
+      mvn"io.getkyo::kyo-core:1.0.0-RC5",
+      // Google's reference pure-Java Brotli decoder, the baseline for the Brotli decode benchmark.
+      mvn"org.brotli:dec:0.1.2" )
     // Kyo's `Safepoint`/`Frame` given machinery does not resolve under explicit-nulls and
     // no-flexible-types; drop just those two for the benchmark sources (which don't rely on them).
     override def scalacOptions = Task:

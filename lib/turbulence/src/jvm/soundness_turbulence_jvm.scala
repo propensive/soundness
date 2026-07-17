@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export turbulence.{Deflate, Gzip, Lzw, Zlib, gzip, gunzip}
+export turbulence.{Brotli, Deflate, Gzip, Lzw, Zlib, gzip, gunzip}
