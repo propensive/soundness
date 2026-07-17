@@ -84,23 +84,23 @@ extends caps.ExclusiveCapability:
 
   // The index's first manifest, or the one a descriptor selects; the manifest blob is
   // digest-verified against its descriptor before decoding.
-  def manifest: Manifest raises OciError =
+  def manifest: Oci.Manifest raises OciError =
     val descriptor =
       index.manifests.headOption.getOrElse(abort(OciError(OciError.Reason.NoManifest)))
 
     manifest(descriptor)
 
-  def manifest(descriptor: Descriptor): Manifest raises OciError =
+  def manifest(descriptor: Descriptor): Oci.Manifest raises OciError =
     val bytes = verified(descriptor)
 
     decode(descriptor.digest):
       import strategies.throwUnsafely
-      bytes.read[Json].as[Manifest]
+      bytes.read[Json].as[Oci.Manifest]
 
   // The decoded image config for a manifest (by default, the first).
   def imageConfig: ImageConfig raises OciError = imageConfig(manifest)
 
-  def imageConfig(manifest: Manifest): ImageConfig raises OciError =
+  def imageConfig(manifest: Oci.Manifest): ImageConfig raises OciError =
     val bytes = verified(manifest.config)
 
     // Field-wise, not `as[ImageConfig]`: jacinta's derivation currently fails on an

@@ -30,18 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package embarcadero
+package soundness
 
-import anticipation.*
-import gesticulate.*
-import vacuous.*
-
-// An OCI image manifest: a descriptor for the config blob plus the ordered list of
-// layer descriptors. `schemaVersion` is always `2`.
-case class Manifest
-  ( schemaVersion: Int,
-    mediaType:     MediaType,
-    config:        Descriptor,
-    layers:        List[Descriptor],
-    annotations:   Optional[Map[Text, Text]] = Unset )
-derives CanEqual
+export embarcadero.{ContainerConfig, Descriptor, History, Image, ImageConfig, ImageDataOpenable,
+    ImageHandle, ImageOpenable, Index, Layer, Oci, OciError, RootFs}

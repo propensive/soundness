@@ -128,7 +128,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == true)
 
       test(m"manifest JSON round-trips through jacinta"):
-        image.manifest.in[Json].as[Manifest]
+        image.manifest.in[Json].as[Oci.Manifest]
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
