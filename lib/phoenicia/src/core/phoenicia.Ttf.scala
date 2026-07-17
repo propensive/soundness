@@ -150,6 +150,33 @@ case class Ttf(data: Data):
 
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Name)))
 
+  def loca: LocaTable raises FontError =
+    tables.at(TtfTag.Loca).let: ref =>
+      LocaTable(ref.offset, maxp.glyphCount, head.indexToLocFormat.int == 1)
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Loca)))
+
+  def glyf: GlyfTable raises FontError =
+    tables.at(TtfTag.Glyf).let: ref =>
+      GlyfTable(ref.offset, loca)
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Glyf)))
+
+  // The transitive closure of a set of glyphs under composite-glyph components: every glyph
+  // needed to render the given ones.
+  def glyphClosure(glyphIds: Set[Int]): Set[Int] raises FontError =
+    val table = glyf
+
+    def expand(pending: List[Int], seen: Set[Int]): Set[Int] = pending match
+      case Nil =>
+        seen
+
+      case head :: tail =>
+        val fresh = table(head).components.filter(!seen.contains(_))
+        expand(fresh ++ tail, seen ++ fresh)
+
+    expand(glyphIds.to(List), glyphIds)
+
   // The font's PostScript name, by which PDF and PostScript documents reference it.
   def fontName: Optional[Text] = safely(name(Ttf.NameId.PostScriptName))
 
@@ -212,6 +239,46 @@ case class Ttf(data: Data):
       else B16(data, offset + count*4 + (glyphId - count)*2).s16.int
 
     case class HMetrics(advanceWidth: Int, leftSideBearing: Int)
+
+  // The glyph-location index: for each glyph, the extent of its data within glyf. In the
+  // short format, offsets are stored halved in sixteen bits.
+  case class LocaTable(offset: Int, glyphCount: Int, longFormat: Boolean):
+    lazy val offsets: IArray[Int] =
+      IArray.from:
+        (0 to glyphCount).map: index =>
+          if longFormat then B32(data, offset + index*4).s32.int
+          else B16(data, offset + index*2).u16.int*2
+
+  case class GlyfTable(offset: Int, loca: LocaTable):
+    def apply(glyphId: Int): GlyphRecord =
+      GlyphRecord(offset + loca.offsets(glyphId), loca.offsets(glyphId + 1) - loca.offsets(glyphId))
+
+    // One glyph's raw data. A glyph with no outline — a space — has zero extent; a composite
+    // glyph has a negative contour count and a list of component glyphs.
+    case class GlyphRecord(start: Int, length: Int):
+      def empty: Boolean = length == 0
+      def bytes: Data = data.slice(start, start + length)
+      def contourCount: Int = if empty then 0 else B16(data, start).s16.int
+      def composite: Boolean = !empty && contourCount < 0
+
+      lazy val components: List[Int] =
+        if !composite then Nil else
+          val builder = List.newBuilder[Int]
+          var position = start + 10
+          var more = true
+
+          while more do
+            val flags = B16(data, position).u16.int
+            builder += B16(data, position + 2).u16.int
+            position += (if (flags & 0x0001) != 0 then 8 else 6) // words or bytes for the args
+
+            if (flags & 0x0008) != 0 then position += 2      // a single scale
+            else if (flags & 0x0040) != 0 then position += 4 // separate x and y scales
+            else if (flags & 0x0080) != 0 then position += 8 // a 2×2 transformation
+
+            more = (flags & 0x0020) != 0
+
+          builder.result()
 
   // The maximum-profile table; only the glyph count is of interest here.
   case class MaxpTable(offset: Int):

@@ -71,14 +71,16 @@ object Tests extends Suite(m"Phoenicia Tests"):
 
     Ttf(header ++ directory.result().reduce(_ ++ _) ++ body.result().reduce(_ ++ _))
 
-  val headTable: Data =
+  def headTableWith(indexToLocFormat: Int): Data =
     u16(1, 0, 1, 0)              // versions and font revision
     ++ u32(0L, 0x5f0f3cf5L)      // checksum adjustment and magic number
     ++ u16(0, 1000)              // flags and unitsPerEm
     ++ u32(0L, 0L, 0L, 0L)       // created and modified
     ++ u16(-50, -200, 1000, 800) // glyph bounding box
     ++ u16(0, 8)                 // macStyle and lowestRecPPEM
-    ++ u16(2, 0, 0)              // direction hint, indexToLocFormat and glyphDataFormat
+    ++ u16(2, indexToLocFormat, 0) // direction hint, indexToLocFormat and glyphDataFormat
+
+  val headTable: Data = headTableWith(0)
 
   val hheaTable: Data =
     u16(1, 0)                    // version
@@ -119,6 +121,20 @@ object Tests extends Suite(m"Phoenicia Tests"):
     ++ u16(1, 0, 0, 6, 7, 34)      // Macintosh PostScript name
     ++ utf16(t"Test Sans") ++ utf16(t"TestSans") ++ ascii(t"MacName")
 
+  // Glyphs 1 and 2 are simple single-contour glyphs; glyph 3 is a composite of both, its
+  // second component using byte-sized args and a single scale.
+  val glyph1: Data = u16(1, 0, 0, 500, 700, 1, 0)
+  val glyph2: Data = u16(1, 10, 20, 400, 600, 1, 0)
+
+  val glyph3: Data =
+    u16(-1, 0, 0, 500, 700)      // composite header
+    ++ u16(0x0021, 1, 0, 0)      // first component: word args, with more to come
+    ++ u16(0x0008, 2, 0, 0x4000) // second component: byte args and a scale of one
+
+  val locaTable: Data = u16(0, 0, 7, 14, 27)
+  val locaTableLong: Data = u32(0L, 0L, 14L, 28L, 54L)
+  val glyfTable: Data = glyph1 ++ glyph2 ++ glyph3
+
   // Three segments: A–C mapping by delta, a–c indirecting through the glyph id array in
   // rotated order, and the terminal sentinel.
   val format4Subtable: Data =
@@ -153,9 +169,12 @@ object Tests extends Suite(m"Phoenicia Tests"):
     ++ format4Subtable
     ++ u16(12, 0) ++ u32(28L, 0L, 1L) ++ u32(0x41L, 0x41L, 5L)
 
-  def font(cmap: Data = cmapFormat4): Ttf =
-    sfnt(t"cmap" -> cmap, t"head" -> headTable, t"hhea" -> hheaTable, t"hmtx" -> hmtxTable,
-        t"maxp" -> maxpTable, t"post" -> postTable, t"OS/2" -> os2Table, t"name" -> nameTable)
+  def font(cmap: Data = cmapFormat4, head: Data = headTable, extra: (Text, Data)*): Ttf =
+    val base = List(t"cmap" -> cmap, t"head" -> head, t"hhea" -> hheaTable,
+        t"hmtx" -> hmtxTable, t"maxp" -> maxpTable, t"post" -> postTable, t"OS/2" -> os2Table,
+        t"name" -> nameTable, t"loca" -> locaTable, t"glyf" -> glyfTable)
+
+    sfnt((base ++ extra)*)
 
   def run(): Unit =
     suite(m"Character mapping"):
@@ -246,3 +265,26 @@ object Tests extends Suite(m"Phoenicia Tests"):
       test(m"The family name is decoded from UTF-16"):
         ttf.familyName
       . assert(_ == t"Test Sans")
+
+    suite(m"Glyph outlines"):
+      val ttf = font()
+
+      test(m"A glyph without an outline has zero extent"):
+        ttf.glyf(0).empty
+      . assert(_ == true)
+
+      test(m"A simple glyph records its contour count"):
+        (ttf.glyf(1).contourCount, ttf.glyf(1).composite, ttf.glyf(1).bytes.length)
+      . assert(_ == (1, false, 14))
+
+      test(m"A composite glyph lists its components"):
+        ttf.glyf(3).components
+      . assert(_ == List(1, 2))
+
+      test(m"The glyph closure follows composite components"):
+        ttf.glyphClosure(Set(3))
+      . assert(_ == Set(1, 2, 3))
+
+      test(m"Long-format loca offsets are read unhalved"):
+        font(head = headTableWith(1), extra = t"loca" -> locaTableLong).glyf(3).bytes.length
+      . assert(_ == 26)
