@@ -676,7 +676,12 @@ object anthology extends Library:
     override def scalaJs = false // depends on JVM-only `anthology.core`/`zeppelin`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(`scala`, `java`, core, spectacular.core):
+  object link extends Component(core, eucalyptus.core, guillotine.core):
+    override def scalaJs = false // drives the Scala.js linker (a JVM library) via its API
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
+  object test extends Tests(`scala`, `java`, core, bundle, link, spectacular.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
