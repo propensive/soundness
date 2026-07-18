@@ -1292,10 +1292,10 @@ object exoskeleton extends Library:
       settings.cc(super.scalacOptions())
 
 object facsimile extends Library:
-  object core extends Component(aperture.core, galilei.core, turbulence.core, pneumatic.flate, zephyrine.core,
-      gastronomy.core, enigmatic.core,
+  object core extends Component(aperture.core, galilei.core, galilei.jvm, ambience.core, turbulence.core,
+      pneumatic.flate, zephyrine.core, gastronomy.core, enigmatic.core,
       hypotenuse.core, phoenicia.core, quantitative.units, iridescence.core, aviation.core):
-    override def scalaJs = false // random-access file reading (`java.nio`), `java.util.zip`, JCE
+    override def scalaJs = false // memory-mapped random-access reads (galilei.jvm `Ram`), JCE
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):

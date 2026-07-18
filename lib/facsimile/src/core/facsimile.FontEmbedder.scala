@@ -32,15 +32,17 @@
                                                                                                   */
 package facsimile
 
-import java.security as js
-
 import anticipation.*
 import contingency.*
+import gastronomy.*
 import gossamer.*
 import hypotenuse.*
 import phoenicia.*
 import rudiments.*
 import vacuous.*
+
+import gastronomy.crypto.permitDisallowedCrypto
+import gastronomy.providers.javaStdlibProvider
 
 // Embeds a TrueType (or OpenType) font program as a simple, single-byte PDF font with WinAnsi
 // encoding: the program becomes a `FontFile2` stream, referenced by a `FontDescriptor` built
@@ -136,8 +138,7 @@ private[facsimile] object FontEmbedder:
   // The conventional six-uppercase-letter subset tag, derived deterministically from the
   // name and subset text, so identical subsets embed identically.
   private def tag(name: Text, chars: Text): Text =
-    val md5 = js.MessageDigest.getInstance("MD5").nn
-    val digest = md5.digest(t"$name:$chars".s.getBytes("UTF-8")).nn
+    val digest = t"$name:$chars".digest[Md5].data
 
     val letters = (0 until 6).map: index =>
       ('A' + ((digest(index) & 0xff)%26)).toChar

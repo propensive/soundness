@@ -32,9 +32,6 @@
                                                                                                   */
 package facsimile
 
-import java.io as ji
-import java.util.zip as juz
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -182,26 +179,21 @@ private[facsimile] object Filter:
     . or(abort(PdfError(PdfError.Reason.CorruptStream(t"FlateDecode"))))
 
   private def inflate(data: Data, nowrap: Boolean): Optional[Data] =
-    val inflater = juz.Inflater(nowrap)
-    val out = ji.ByteArrayOutputStream()
-    val buffer = new Array[Byte](8192)
-    inflater.setInput(data.mutable(using Unsafe))
+    val builder = Array.newBuilder[Byte]
 
     try
-      // Stop on completion, or when no more output can be produced from the input that
-      // remains: a truncated stream yields what it decoded.
-      var stalled = false
+      val chunks =
+        if nowrap then LazyList(data).decompress[Deflate] else LazyList(data).decompress[Zlib]
 
-      while !inflater.finished && !stalled do
-        val count = inflater.inflate(buffer)
+      // Forcing the stream incrementally means a truncated (but valid-so-far) input keeps
+      // whatever it decoded before the bytes ran out, matching the eager inflater's
+      // partial-on-truncation behaviour; corrupt data throws from the backend.
+      chunks.each: chunk =>
+        builder.addAll(chunk.mutable(using Unsafe))
+    catch case _: IllegalStateException => ()
 
-        if count > 0 then out.write(buffer, 0, count)
-        else stalled = inflater.needsInput || inflater.needsDictionary
-
-      if out.size == 0 && data.length > 0 && !inflater.finished then Unset
-      else out.toByteArray.nn.immutable(using Unsafe)
-    catch case _: juz.DataFormatException => Unset
-    finally inflater.end()
+    val result = builder.result()
+    if result.length == 0 && data.length > 0 then Unset else result.immutable(using Unsafe)
 
   private def asciiHex(data: Data): Data raises PdfError =
     val bytes = Array.newBuilder[Byte]

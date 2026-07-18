@@ -42,6 +42,13 @@ object SymmetricKey:
   def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher): SymmetricKey[cipher] =
     SymmetricKey(cipher.genKey())
 
+  // Adopt externally-supplied key material — for example a key produced by a key-
+  // derivation function — as a symmetric key, in contrast to `generate`'s fresh random
+  // key. The bytes must be a valid key length for the cipher; an invalid length surfaces
+  // when the key is used (as a `CryptoError` on decryption). Defining this `apply`
+  // suppresses the synthetic constructor proxy, so it is the sole `SymmetricKey(bytes)`.
+  def apply[cipher <: Cipher](bytes: Data): SymmetricKey[cipher] = new SymmetricKey(bytes)
+
 class SymmetricKey[cipher <: Cipher](private[enigmatic] val bytes: Data)
 extends PrivateKey[cipher](bytes):
   def verify[value: Encodable in Data](value: value, signature: Signature[cipher])
