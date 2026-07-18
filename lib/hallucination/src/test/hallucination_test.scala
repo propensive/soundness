@@ -344,6 +344,30 @@ object Tests extends Suite(m"Hallucination Tests"):
       capture[RasterError](JpegCodec.decode(jpg420.slice(0, 200))).reason
     . assert(_ == RasterError.Reason.Truncated)
 
+    // A smooth gradient whose channels stay within 0..255 (no wrap-around discontinuity that
+    // chroma subsampling would otherwise amplify).
+    def gradient32: Raster = Raster(32, 24)((x, y) => Chroma(x*7, y*10, (x + y)*4))
+
+    test(m"the pure JPEG encoder produces a valid JPEG signature"):
+      val encoded = JpegEncoder.encode(gradient32, 90)
+      (encoded(0) & 0xff, encoded(1) & 0xff)
+    . assert(_ == (0xff, 0xd8))
+
+    test(m"a high-quality (4:4:4) JPEG round-trips through the pure codec"):
+      val encoded = JpegEncoder.encode(gradient32, 95)
+      jpegClose(JpegCodec.decode(encoded), gradient32, 4.0, 40)
+    . assert(_ == true)
+
+    test(m"a 4:2:0 JPEG round-trips through the pure codec"):
+      val encoded = JpegEncoder.encode(gradient32, 80)
+      jpegClose(JpegCodec.decode(encoded), gradient32, 6.0, 64)
+    . assert(_ == true)
+
+    test(m"ImageIO reads what the pure JPEG encoder writes"):
+      val encoded = JpegEncoder.encode(gradient32, 90)
+      jpegClose(encoded.read[Raster in Jpeg], gradient32, 6.0, 50)
+    . assert(_ == true)
+
     test(m"a pure-PNG round trip preserves every pixel"):
       same(PngCodec.decode(PngCodec.encode(gradient)), gradient)
     . assert(_ == true)
