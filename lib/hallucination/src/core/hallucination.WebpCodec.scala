@@ -70,7 +70,9 @@ private[hallucination] object WebpCodec:
           lossy(Vp8Decoder.decode(data, chunkStart, chunkStart + chunkSize))
 
         case "VP8X" =>
-          abort(RasterError(Webp(), Reason.UnsupportedVariant))
+          val chunkSize = u32le(data, 16)
+          val riffEnd = (8 + u32le(data, 4)).min(data.length)
+          WebpExtended.decode(data, chunkStart, chunkStart + chunkSize, riffEnd)
 
         case _ =>
           abort(RasterError(Webp(), Reason.BadSignature))

@@ -491,6 +491,50 @@ object Tests extends Suite(m"Hallucination Tests"):
         (raster.width, raster.height)
     . assert(_ == (24, 16))
 
+
+    // Extended (VP8X) WebP: lossy-with-alpha and animation (first frame).
+
+    val vp8xLossy = hex"""
+                        524946469c00000057454250565038580a000000100000001300000f0000414c50481200000011b98ce87f404890
+                        10fdbfdc18310169ee0156503820640000009002009d012a1400100001402625b00274ca11c00167463ba69201bf
+                        6800fefe1dccfc63ac5a0385fe4eae42e136eebf89893de9bfc12aa892aeb3608c1610461bdd4f26bdd4ff9a7b55
+                        b7d6137d665a08b2c239b39f3eb2967a019e11f4af870f000000"""
+    val vp8xLossyRef = hex"""
+                        89504e470d0a1a0a0000000d494844520000001400000010080600000016185f1b0000028249444154388d5d92c1
+                        6e1c451445abdf7d3575c6310c4496b3c52c5820f1a57ca2178994150b0832b2c73355af1e8b6a278255a9d4addb
+                        a7efb9dbafbffd5e1e1f1ff9be775a6bbc3f9f31334eb353ddf9b954cc8cf799988c0fbd23777e9cebbc8f2beece
+                        5d0899e11f3f7ec24cdc7e07b556da9c78addce6c06ba5be0672a7cec04c7829b81ccf824b544b24a76e864978dc
+                        9d69ad717ef98773299c8e46a91ba504a304d7cb22e91198c4e841ca19d949893e3b29a7872109bf7d774b3d54bc
+                        07a7d38977970ba514acbf524ae17873839971cc44661c3d7039c77424e7665e913b3721cc0c7fbafb824cfc700a
+                        fe56e770bd62320e19988c6b1866c665eff0d20743e2350732e3252e48ce4b0893e1ad35dc1df68edab66166b4b2
+                        02db1ed8f6c06642122d97841605c9696f81797f256c306761d324afab9b99834d2266a1989199a419d983f424e7
+                        7a2fc758f798a4190e20339865916c1bf64620d166592499ebb92deb6d2e094d05b916a119fed7870b45c69813af
+                        4eed036962259136febc4cdcc5968199517b471eccecc8c4a15f703987b035abda1aee8239d797de3a2ab99f2bb0
+                        ed81cd6c11a62113cdd62edb5b60dc778a263302ab95ec7d75928374272f41ba1339491331064549ce41da24fb60
+                        7a9243a4267e3c829920f66ebe12689d2570775aceb502edddcdddb26debcfb45b7ebefb82491c66e05e791e7dcd
+                        a04c24e7f9b202c9819971ee03b9789e03c9e825e9a5d0b7b6a4b4d6d0be43c977826f81df08b577a845348564f8
+                        0c6aade85a389fcf78dc0f8a261181d524fb20956409d283bc4ca682286b87d13be56d87267206e778e5d3e73ff8
+                        e9e101e7b876788cff5b8e752ff3abf5ff589ecbb2aeaf3c3dbdf0cbc30337c723ff023d1e5058068b0d9f000000
+                        0049454e44ae426082"""
+    val anim = hex"""
+                        524946468400000057454250565038580a000000020000000f00000f0000414e494d06000000ffffffff0000414e
+                        4d46280000000000000000000f00000f0000640000025650384c0f0000002f0fc003000710fd8ffe0722a2ff0100
+                        414e4d46280000000000000000000f00000f0000640000005650384c0f0000002f0fc0030007d0ff88fe0722a2ff
+                        0100"""
+
+    test(m"a lossy WebP with an alpha channel (VP8X + ALPH) decodes byte-exactly"):
+      same(WebpCodec.decode(vp8xLossy), vp8xLossyRef.read[Raster in Png])
+    . assert(_ == true)
+
+    test(m"a lossy alpha WebP decodes to an RGBA raster"):
+      WebpCodec.decode(vp8xLossy).descriptor.hasAlpha
+    . assert(_ == true)
+
+    test(m"an animated WebP decodes its first frame"):
+      val raster = WebpCodec.decode(anim)
+      (raster.width, raster.height, raster(5, 5))
+    . assert(_ == (16, 16, Chroma(255, 0, 0)))
+
     test(m"a non-WebP byte stream is rejected"):
       capture[RasterError](WebpCodec.decode(pngGradient)).reason
     . assert(_ == RasterError.Reason.BadSignature)

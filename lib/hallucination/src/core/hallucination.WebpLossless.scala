@@ -100,6 +100,11 @@ private[hallucination] object WebpLossless:
     if version != 0 then abort(RasterError(Webp(), Reason.UnsupportedVariant))
     (width, height, Decoder(reader, width, height).run())
 
+  // Decodes a VP8L stream whose dimensions are given externally (no 5-byte header), as used for
+  // the lossless-compressed alpha plane of a lossy image. Returns the RGBA buffer.
+  def decodeRaw(reader: WebpBitReader, width: Int, height: Int): Array[Byte] raises RasterError =
+    Decoder(reader, width, height).run()
+
   private final class Decoder(reader: WebpBitReader, width: Int, height: Int):
     // One optional transform slot per transform type; `order` is reverse-read order, which is the
     // order transforms must be un-applied in.
