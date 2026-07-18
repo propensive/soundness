@@ -13,15 +13,21 @@ retargeted at another backend with `targeting`:
 val portable = Scalac[3.8](List(scalacOptions.experimental)).targeting[Backend.Portable]
 ```
 
-Four backends exist: `Backend.Jvm`, which produces classfiles, and the three _portable_
+Five backends exist: `Backend.Jvm`, which produces classfiles; the three _portable_
 backends—`Backend.Js`, `Backend.Wasm` and `Backend.Wasi`—which additionally produce
-target-neutral `.sjsir` files, deferring the choice of linked representation until link time.
-`Backend.Portable`, the union of the three, is the natural choice when compiling a library whose
-linked form is not yet known; a portable compilation may later be linked as _any_ of the three.
+target-neutral `.sjsir` files, deferring the choice of linked representation until link time;
+and `Backend.Native`, which produces `.nir` files for Scala Native. `Backend.Portable`, the
+union of the three sjsir backends, is the natural choice when compiling a library whose linked
+form is not yet known; a portable compilation may later be linked as _any_ of the three.
+`Backend.Linked` is the union of every backend whose output is linkable.
 
 Compiling for a portable backend requires the Scala.js runtime JARs (`scalajs-javalib`,
 `scalajs-library_2.13`, `scalajs-scalalib_2.13` and `scala3-library_sjs1`) on the classpath;
-their absence surfaces as ordinary compiler diagnostics.
+their absence surfaces as ordinary compiler diagnostics. Compiling for `Backend.Native`
+additionally requires a `NirPlugin` in scope—evidence of the location of the Scala Native
+compiler plugin, since NIR is emitted by a plugin rather than a backend built into the
+compiler—plus the Scala Native runtime JARs (`scalalib`, `scala3lib`, `javalib`, `auxlib`,
+`clib`, `posixlib` and `nativelib`) on the classpath.
 
 ### Products
 
@@ -35,10 +41,10 @@ Three products can be made from a compilation, and each is only expressible for 
 is valid for:
  - `Bundler.bundle(compilation, jarfile, main)` produces an executable JAR, and requires a
    `Compilation[Backend.Jvm]`
- - `Bundler.library(compilation, jarfile)` produces a library JAR of `.sjsir` files for
-   downstream assembly, and requires a portable compilation
+ - `Bundler.library(compilation, jarfile)` produces a library JAR of `.sjsir` or `.nir` files
+   for downstream assembly, and requires a linkable compilation
  - `Linker[target](options, entryPoints).link(compilation, out)` produces a fully-linked
-   artifact for a concrete portable target
+   artifact for a concrete linkable target
 
 ### Linking
 
@@ -79,3 +85,24 @@ Linker[Backend.Wasi](Nil).link(compilation, out)
 
 `Backend.Js` and `Backend.Wasm` require no native tooling: the linker is an ordinary JVM
 library.
+
+### Linking native binaries
+
+A Scala Native link shells out to `clang` and `clang++`, so its `Linkage` exists only via the
+probing constructor `NativeLinkage()`, which verifies the C toolchain is present (raising
+`ToolchainError` otherwise):
+```scala
+given Linkage[Backend.Native] = NativeLinkage()
+
+Linker[Backend.Native]
+  ( List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+    List(Linker.EntryPoint(fqcn"com.example.Main")) )
+. link(compilation, out)
+```
+
+A native link requires exactly one entry point, and produces an executable binary. Native
+options cover the garbage collector (`gc.*`), build mode (`mode.*`), link-time optimization
+(`lto.*`) and the target platform: `nativeOptions.target(triple)` selects a `Triple` such as
+`Triple.Arm64MacOs` or `Triple.X64Linux`, rendered as an LLVM target triple. The default
+targets the build host; other targets require a C toolchain capable of cross-compiling to
+them.

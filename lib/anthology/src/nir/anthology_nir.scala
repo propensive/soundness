@@ -32,109 +32,27 @@
                                                                                                   */
 package anthology
 
-import ambience.*
-import anticipation.*
-import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import hellenism.*
-import prepositional.*
-import revolution.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
-import zeppelin.*
+import scala.scalanative.build.{GC, LTO, Mode, NativeConfig}
 
-import filesystemBackends.virtualMachine
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemTraversal.preOrderTraversal
-import logging.silentLogging
-import manifestAttributes.*
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
+object nativeOptions:
+  private def native(edit: NativeConfig => NativeConfig): Linker.Option[Backend.Native] =
+    Linker.Option(edit)
 
-object Bundler:
-  def classpath(out: Path on Linux): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match
-      case classpath: LocalClasspath => classpath.entries
+  def target(triple: Triple): Linker.Option[Backend.Native] =
+    native(_.withTargetTriple(Some(triple.text.s)))
 
-      case _ =>
-        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries)
+  object gc:
+    val immix: Linker.Option[Backend.Native] = native(_.withGC(GC.immix))
+    val commix: Linker.Option[Backend.Native] = native(_.withGC(GC.commix))
+    val boehm: Linker.Option[Backend.Native] = native(_.withGC(GC.boehm))
+    val none: Linker.Option[Backend.Native] = native(_.withGC(GC.none))
 
-    LocalClasspath(entries*)
+  object mode:
+    val debug: Linker.Option[Backend.Native] = native(_.withMode(Mode.debug))
+    val releaseFast: Linker.Option[Backend.Native] = native(_.withMode(Mode.releaseFast))
+    val releaseFull: Linker.Option[Backend.Native] = native(_.withMode(Mode.releaseFull))
 
-
-  def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
-  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
-
-    assemble(classpath(directory), jarfile0.or(directory.peer("tmpfile.jar")), main)
-
-
-  // Bundles a JVM compilation, together with the classpath it was compiled against, as an
-  // executable JAR file.
-  def bundle
-    ( compilation: Compilation[Backend.Jvm],
-      jarfile0:    Optional[Path on Linux],
-      main:        Optional[Fqcn] )
-  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
-
-    val entries = Classpath.Directory(compilation.out) :: compilation.classpath.entries.to(List)
-    assemble(LocalClasspath(entries*), jarfile0.or(compilation.out.peer("tmpfile.jar")), main)
-
-
-  // Bundles a linkable compilation's output—its `.sjsir` or `.nir` files alongside its
-  // classfiles—as a library JAR for downstream assembly: the JAR is a valid classpath entry both
-  // for further compilations and for a later `Linker`.
-  def library(compilation: Compilation[Backend.Linked], jarfile0: Optional[Path on Linux])
-  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
-
-    val entries = List(Classpath.Directory(compilation.out))
-    assemble(LocalClasspath(entries*), jarfile0.or(compilation.out.peer("tmpfile.jar")), Unset)
-
-
-  private def assemble
-    ( classpath: LocalClasspath, jarfile: Path on Linux, main: Optional[Fqcn] )
-  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
-
-    val manifest =
-      main.let(MainClass(_)).let: main =>
-        Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
-
-      . or:
-          Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
-
-
-    val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
-
-    Zipfile.write(jarfile):
-      val entries =
-        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
-          classpath.entries.to(List).flatMap:
-          case ClasspathEntry.Directory(directory) =>
-            val root = directory.as[Path on Linux]
-            root.descendants.to(List).filter: entry => !omissions(entry.name)
-            . map: file =>
-              if file.entry() == Directory then Unset else
-                val ref = %.on[Zip] + root.toward(file).on[Zip]
-                Zip.Entry(ref, file.read[Data])
-
-            . compact
-
-          case ClasspathEntry.Jar(jar) =>
-            val jarfile = workingDirectory[Path on Linux].resolve(jar)
-
-            // Re-emit each entry verbatim: it already carries its compressed bytes, so no
-            // decompression or recompression is needed.
-            Zipfile.read(jarfile).entries.to(List).filter: entry =>
-              val name: Text = entry.ref.encode
-              !entry.directory && name != t"META-INF/MANIFEST.MF"
-
-          case _ =>
-            Nil
-
-      entries.distinctBy(_.ref)
-
-    jarfile
+  object lto:
+    val none: Linker.Option[Backend.Native] = native(_.withLTO(LTO.none))
+    val thin: Linker.Option[Backend.Native] = native(_.withLTO(LTO.thin))
+    val full: Linker.Option[Backend.Native] = native(_.withLTO(LTO.full))
