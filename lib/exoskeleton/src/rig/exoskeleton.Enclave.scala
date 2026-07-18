@@ -99,11 +99,14 @@ extends Rig:
   type Transport = Json
 
   def stage(out: Path on Linux): Path on Linux =
-    val target = unsafely(out.peer(name))
+    // Children of the per-stage `out` directory (not `peer` siblings): each staged build's
+    // artifacts must stay in its own directory, or two builds of the same tool name — an
+    // upgrade test's v1 and v2 — would collide at the same path.
+    val target = unsafely(out / name)
 
     unsafely:
       val name2 = t"$name.jar"
-      val jarfile = out.peer(name2)
+      val jarfile = out / name2
       // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
       // fails capture-variable unification when expanded in a capture-checked module.
       val executor: Fqcn = safely(Fqcn(t"superlunary.Executor2")).vouch
