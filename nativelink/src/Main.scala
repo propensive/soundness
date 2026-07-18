@@ -75,3 +75,10 @@ object Main:
     val readBytes = unsafely(fs.open(file, List(OpenFlag.Read))(_.reader().map(_.length).sum))
     out.println("fs: bytes read back       = "+readBytes)
     unsafely(fs.delete(file))
+
+    // ambience: read an environment variable through the core `Environment` backend, which uses
+    // `System.getenv` — SN-supported, so it works on native with no separate backend (the same is
+    // true of turbulence's stdio and capricious's randomness: their core givens use SN-supported
+    // `System.*`/`java.util.Random` APIs).
+    import environments.javaEnvironment
+    out.println("ambience HOME = "+summon[Environment].variable(t"HOME").or(t"?").s)
