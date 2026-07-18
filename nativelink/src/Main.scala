@@ -1,8 +1,7 @@
-// A tiny native application exercising a representative slice of the Native-capable modules, so
-// that `soundness.nativelink.binary` LINKS them through the Scala Native `tools` linker — turning
-// any reachable reference to an unimplemented `java.*` API into a link-time error, and (via the
-// xenophile call below) actually running a C foreign-function invocation lowered by `NativeInvoke`.
-// The runtime counterpart to `soundness.native`, which only compiles to NIR.
+// A native application exercising a representative slice of the Native-capable modules, so that
+// `soundness.nativelink.binary` LINKS them through the Scala Native `tools` linker — turning any
+// reachable reference to an unimplemented `java.*` API into a link-time error (the native
+// counterpart of `jslink`). It also runs a real C foreign call lowered by xenophile's `NativeInvoke`.
 package nativelink
 
 import soundness.*
@@ -15,10 +14,26 @@ object Main:
     Interface[Native]("/nativelink/libc.h")
 
   def main(args: Array[String]): Unit =
+    val out = java.lang.System.out.nn
+
+    // vacuous
     val present: Optional[Int] = 34
     val absent: Optional[Int] = Unset
-    System.out.nn.println("soundness native: "+(present.or(0) + absent.or(8)))
+    out.println((present.or(0) + absent.or(8)).toString)
 
-    // A real C foreign call, lowered by xenophile's `NativeInvoke` to a `dlsym`+`CFuncPtr` call.
+    // gossamer
+    out.println(t"hello, ${args.length} args".s)
+
+    // hypotenuse
+    val n: U64 = 42
+    out.println(n.toString)
+
+    // spectacular
+    out.println(43.show.s)
+
+    // aviation
+    out.println(calendars.gregorianCalendar.daysInYear(Year(2000)).toString)
+
+    // xenophile native C FFI: a real libc call lowered by `NativeInvoke`.
     val pid: Int = Foreign["library", Native].getpid().invoke[Int]
-    System.out.nn.println("pid via native FFI: "+pid)
+    out.println("pid via native FFI: "+pid)

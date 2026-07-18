@@ -2554,7 +2554,9 @@ object nativelink extends Module:
     def compileResources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
     def compileMvnDeps = nativeToolchain.runtimeDeps
     override def mainClass = Some("nativelink.Main")
-    override def moduleDeps = Seq(vacuous.core.native, xenophile.scalanative.native)
+    override def moduleDeps = Seq(
+      vacuous.core.native, xenophile.scalanative.native, gossamer.core.native,
+      hypotenuse.core.native, spectacular.core.native, aviation.core.native)
 
   object linker extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion
