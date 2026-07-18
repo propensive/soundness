@@ -1026,6 +1026,10 @@ object chiaroscuro extends Library:
 
 object coaxial extends Library:
   object core extends Component(urticose.core, frontier.core, turbulence.core):
+    // The native `SocketBackend` (`socketBackends.native`) is folded into the native cross via
+    // `nativeSources` (as galilei's filesystem backend is): TCP and UDP over Scala Native's
+    // `java.net` sockets, with Unix-domain sockets and TLS unsupported for now.
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.virtualMachine`), split out
