@@ -44,6 +44,13 @@ object Native:
   given long: (Long is Interoperable in Native of "long") =
     Interoperable[Long, Native, "long"]()
 
+  given short: (Short is Interoperable in Native of "short") =
+    Interoperable[Short, Native, "short"]()
+
+  // A C `char` (as a scalar, not `char*`) is a byte.
+  given char: (Byte is Interoperable in Native of "char") =
+    Interoperable[Byte, Native, "char"]()
+
   given double: (Double is Interoperable in Native of "double") =
     Interoperable[Double, Native, "double"]()
 

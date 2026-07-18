@@ -170,7 +170,7 @@ object NativeInvoke:
       case Foreign.Type.Named(t"string") => (cstringType, true)
 
       case _ =>
-        halt(m"xenophile: a C type in $owner.$function is not yet supported on native")
+        halt(m"xenophile: $owner.$function uses a pointer or struct type, unsupported on native")
 
     val paramInfo = parameterTypes.map(cType)
     val (resultCtype, resultIsString) = cType(prototype.result)
