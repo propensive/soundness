@@ -32,14 +32,15 @@
                                                                                                   */
 package facsimile
 
-import java.security as js
 import javax.crypto as jc
 import javax.crypto.spec as jcs
 
 import anticipation.*
 import contingency.*
+import enigmatic.*
 import gastronomy.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -49,9 +50,9 @@ import gastronomy.providers.javaStdlibProvider
 // The standard security handler (ISO 32000-2 §7.6.4), revisions 2–6. The file key is derived
 // from the user password and the `/Encrypt` dictionary and validated against `/U` at open;
 // per-object keys are derived from it (with the object number and generation for revisions
-// ≤4, or used directly for revision 6). Cryptographic primitives come from the JDK directly:
-// the algorithm is a precise sequence of digest and block-cipher rounds that maps onto
-// `MessageDigest`/`Cipher` more faithfully than onto a higher-level wrapper. RC4 is local.
+// ≤4, or used directly for revision 6). Digests come from gastronomy and AES-CBC from
+// enigmatic; the algorithm is a precise sequence of digest and block-cipher rounds. RC4,
+// which those libraries do not offer, is local.
 private[facsimile] object Guard:
   enum Method:
     case Rc4
@@ -196,6 +197,10 @@ private[facsimile] object Guard:
       else
         val intermediate = hash6(passwordBytes, keySalt, IArray.empty[Byte])
 
+        // AES-256-CBC with a zero IV and no padding. This stays on the JDK cipher: enigmatic's
+        // `NoPadding` given captures a `Tactic[CryptoError]`, and the only available strategy
+        // (`throwUnsafely`) yields a root `{any}` capability that capture checking cannot
+        // confine here — unlike the `Pkcs7` object ciphers below. See the module notes.
         try
           val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
 
@@ -228,6 +233,8 @@ private[facsimile] object Guard:
       val key = k.take(16).mutable(using Unsafe)
       val iv = k.slice(16, 32).mutable(using Unsafe)
 
+      // AES-128-CBC with no padding on block-aligned input; on the JDK cipher for the same
+      // capture-checking reason as `unwrap6`.
       val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
       cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(key, "AES"), jcs.IvParameterSpec(iv))
       val e = cipher.doFinal(input).nn
@@ -291,10 +298,10 @@ private[facsimile] class Guard
         Rc4(objectKey(number, generation, false), bytes)
 
       case Method.Aes128 =>
-        aesCbc(objectKey(number, generation, true), bytes)
+        aesCbc[128](objectKey(number, generation, true), bytes)
 
       case Method.Aes256 =>
-        aesCbc(fileKey, bytes)
+        aesCbc[256](fileKey, bytes)
 
   // The inverse operations, for writing new or edited objects into an encrypted document's
   // incremental update. RC4 is symmetric, so it reuses `decrypt`; AES prepends a fresh
@@ -309,41 +316,22 @@ private[facsimile] class Guard
     method match
       case Method.Identity => bytes
       case Method.Rc4      => Rc4(objectKey(number, generation, false), bytes)
-      case Method.Aes128   => aesCbcEncrypt(objectKey(number, generation, true), bytes)
-      case Method.Aes256   => aesCbcEncrypt(fileKey, bytes)
+      case Method.Aes128   => aesCbcEncrypt[128](objectKey(number, generation, true), bytes)
+      case Method.Aes256   => aesCbcEncrypt[256](fileKey, bytes)
 
-  private def aesCbcEncrypt(key: Data, bytes: Data): Data =
-    val iv = new Array[Byte](16)
-    js.SecureRandom().nextBytes(iv)
+  // A fresh random IV is prepended and PKCS#7 padding applied — both handled by enigmatic's
+  // `Cbc against Pkcs7`, whose whole-value output is exactly `iv ++ ciphertext`.
+  private def aesCbcEncrypt[bits <: 128 | 256: ValueOf](key: Data, bytes: Data): Data =
+    val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
 
-    val pad = 16 - bytes.length%16
-    val padded = new Array[Byte](bytes.length + pad)
-    System.arraycopy(bytes.mutable(using Unsafe), 0, padded, 0, bytes.length)
-    var i = bytes.length
-    while i < padded.length do { padded(i) = pad.toByte; i += 1 }
+    symmetricKey.expose:
+      bytes.encrypt[Aes[bits] over Cbc against Pkcs7](InitializationVector.random)
 
-    val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
-
-    cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(key.mutable(using Unsafe), "AES"),
-        jcs.IvParameterSpec(iv))
-
-    (iv.immutable(using Unsafe) ++ cipher.doFinal(padded).nn.immutable(using Unsafe))
-
-  // AESV2/V3 layout: a 16-byte initialization vector prefixes the ciphertext.
-  private def aesCbc(key: Data, bytes: Data): Data =
+  // AESV2/V3 layout: a 16-byte initialization vector prefixes the ciphertext, which enigmatic
+  // reads back off the front; `Pkcs7` strips the padding. Any failure yields empty bytes.
+  private def aesCbc[bits <: 128 | 256: ValueOf](key: Data, bytes: Data): Data =
     if bytes.length <= 16 then IArray.empty[Byte] else
-      val iv = bytes.slice(0, 16).mutable(using Unsafe)
-      val body = bytes.slice(16, bytes.length).mutable(using Unsafe)
+      val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
 
-      try
-        val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
-
-        cipher.init(jc.Cipher.DECRYPT_MODE, jcs.SecretKeySpec(key.mutable(using Unsafe), "AES"),
-            jcs.IvParameterSpec(iv))
-
-        val decrypted = cipher.doFinal(body).nn
-        // Strip PKCS#7 padding.
-        val pad = if decrypted.length > 0 then decrypted(decrypted.length - 1) & 0xff else 0
-        val end = if pad >= 1 && pad <= 16 then decrypted.length - pad else decrypted.length
-        decrypted.take(end).immutable(using Unsafe)
-      catch case _: Exception => IArray.empty[Byte]
+      safely(symmetricKey.expose(bytes.decrypt[Data, Aes[bits] over Cbc against Pkcs7]))
+      . or(IArray.empty[Byte])
