@@ -1411,6 +1411,10 @@ object fulminate extends Library:
 
 object galilei extends Library:
   object core extends Component(aperture.core, serpentine.core, turbulence.core):
+    // The native `FilesystemBackend` (`filesystemBackends.native`) is folded into the native cross
+    // via `nativeSources` — native has a single OS filesystem, so (unlike the JVM/WASI backends,
+    // which are separate modules) it need not be an opt-in dependency.
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.nio` `FilesystemBackend` (`filesystemBackends.virtualMachine`), split out of `core`
@@ -2588,7 +2592,7 @@ object nativelink extends Module:
     override def mainClass = Some("nativelink.Main")
     override def moduleDeps = Seq(
       vacuous.core.native, xenophile.scalanative.native, gossamer.core.native,
-      hypotenuse.core.native, spectacular.core.native, aviation.core.native)
+      hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native)
 
   object linker extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion

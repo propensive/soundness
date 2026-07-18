@@ -51,3 +51,15 @@ object Main:
 
     val home: Text = Foreign["library", Native].getenv(t"HOME").invoke[Text]
     out.println("getenv(HOME) via native FFI: "+home.s)
+
+    // galilei: a real filesystem round-trip driven straight through the native `FilesystemBackend`
+    // (Scala Native javalib) — create a directory, observe it, delete it, observe it gone.
+    import galilei.filesystemBackends.native
+    val fs = summon[FilesystemBackend on Linux]
+    val dir: Path on Linux = unsafely((% / "var" / "tmp" / "soundness-native-fs").on[Linux])
+    if fs.exists(dir, false) then unsafely(fs.delete(dir))
+    out.println("fs: exists before mkdir = "+fs.exists(dir, false))
+    unsafely(fs.createDirectory(dir))
+    out.println("fs: exists after mkdir  = "+fs.exists(dir, false))
+    unsafely(fs.delete(dir))
+    out.println("fs: exists after delete = "+fs.exists(dir, false))
