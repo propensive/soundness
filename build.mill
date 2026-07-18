@@ -2335,8 +2335,24 @@ object xenophile extends Library:
   object typescript extends Component(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object native extends Component(core):
+  // The platform-neutral C front end (the `Native` ecosystem type markers and the `CHeaderDialect`
+  // header parser); shared by the JVM Panama backend and the Scala Native backend, so it carries no
+  // platform runtime and cross-compiles to both.
+  object cffi extends Component(core):
+    override def scalaJs = false // no JS relevance (its consumers are the native/Panama backends)
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object native extends Component(core, cffi):
     override def scalaJs = false // native FFI via `java.lang.foreign` (Panama) — JVM-only
+    override def scalaNative = false // the Panama backend is the JVM's; native uses `scalanative`
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The Scala Native materializer: lowers a C `Foreign` navigation to a `dlsym`+`CFuncPtr` call.
+  // Compiled for the JVM (where the macro runs) and cross-compiled for native (where downstream
+  // callers link it). Its `invoke` extension collides by design with `wasm`/`js` (they target
+  // different platforms), so — like `js` — it is not bundled into the `test` module.
+  object scalanative extends Component(core, cffi):
+    override def scalaJs = false // a Scala Native materializer; no JS relevance
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object wit extends Component(core, hypotenuse.core):
