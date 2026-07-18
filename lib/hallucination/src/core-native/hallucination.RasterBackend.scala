@@ -43,10 +43,11 @@ import vacuous.*
 // `RasterError`, while remaining fully supported by the JVM backend.
 private[hallucination] object RasterBackend:
   def decode(format: Rasterizable, data: Data): Raster raises RasterError = format.name.s match
-    case "PNG" => PngCodec.decode(data)
-    case "BMP" => BmpCodec.decode(data)
-    case "GIF" => GifCodec.decode(data)
-    case _     => abort(RasterError(format))
+    case "PNG"  => PngCodec.decode(data)
+    case "BMP"  => BmpCodec.decode(data)
+    case "GIF"  => GifCodec.decode(data)
+    case "WEBP" => WebpCodec.decode(data)
+    case _      => abort(RasterError(format))
 
   // Format-agnostic decoding, recognising the format by its opening magic bytes.
   def decode(data: Data): Raster raises RasterError =
@@ -54,10 +55,12 @@ private[hallucination] object RasterBackend:
     else if (data(0)&0xff) == 0x89 && data(1) == 0x50 then PngCodec.decode(data)
     else if data(0) == 0x47 && data(1) == 0x49 && data(2) == 0x46 then GifCodec.decode(data)
     else if data(0) == 0x42 && data(1) == 0x4d then BmpCodec.decode(data)
+    else if WebpCodec.isWebp(data) then WebpCodec.decode(data)
     else abort(RasterError(Unset))
 
   def encode(format: Rasterizable, raster: Raster): Data = format.name.s match
-    case "PNG" => PngCodec.encode(raster)
-    case "BMP" => BmpCodec.encode(raster)
-    case "GIF" => GifCodec.encode(raster)
-    case _     => panic(m"the ${format.name} format has no native encoder")
+    case "PNG"  => PngCodec.encode(raster)
+    case "BMP"  => BmpCodec.encode(raster)
+    case "GIF"  => GifCodec.encode(raster)
+    case "WEBP" => WebpCodec.encode(raster)
+    case _      => panic(m"the ${format.name} format has no native encoder")

@@ -30,9 +30,50 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package hallucination
 
-// `Descriptor` clashes with embarcadero's OCI `Descriptor` in the umbrella; reach it via
-// `hallucination.Descriptor`.
-export hallucination.{Bmp, Canvas, CanvasHandle, Gif, Jpeg, pixel, Png, Raster, RasterError,
-    Rasterizable, RasterOpenable, repack, Webp}
+import java.io as ji
+
+import anticipation.*
+import rudiments.*
+import vacuous.*
+
+// A little-endian bit writer for the VP8L lossless bitstream, ported from image-rs/image-webp
+// (`src/lossless/encoder/mod.rs`, MIT/Apache-2.0). Bits accumulate least-significant first into a
+// 64-bit buffer, flushed eight bytes at a time.
+private[hallucination] final class WebpBitWriter:
+  private val out = ji.ByteArrayOutputStream()
+  private var buffer: Long = 0L
+  private var count: Int = 0
+
+  def writeBits(bits: Long, nbits: Int): Unit =
+    val previous = count
+    buffer |= bits << previous
+    count = previous + nbits
+
+    if count >= 64 then
+      writeLong(buffer)
+      count -= 64
+      val shift = 64 - previous
+      buffer = if shift >= 64 then 0L else bits >>> shift
+
+  private def writeLong(value: Long): Unit =
+    var i = 0
+
+    while i < 8 do
+      out.write(((value >>> (i*8)) & 0xff).toInt)
+      i += 1
+
+  // Pads to a byte boundary and returns the accumulated bytes.
+  def bytes: Data =
+    if count%8 != 0 then writeBits(0, 8 - count%8)
+
+    var i = 0
+
+    while i < count/8 do
+      out.write(((buffer >>> (i*8)) & 0xff).toInt)
+      i += 1
+
+    buffer = 0
+    count = 0
+    out.toByteArray.nn.immutable(using Unsafe)

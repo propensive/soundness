@@ -30,9 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package hallucination
 
-// `Descriptor` clashes with embarcadero's OCI `Descriptor` in the umbrella; reach it via
-// `hallucination.Descriptor`.
-export hallucination.{Bmp, Canvas, CanvasHandle, Gif, Jpeg, pixel, Png, Raster, RasterError,
-    Rasterizable, RasterOpenable, repack, Webp}
+import anticipation.*
+import gesticulate.*
+
+object Webp:
+  def apply(): Rasterizable = rasterization
+
+  given rasterization: Webp is Rasterizable:
+    def name: Text = "WEBP".tt
+    def mediaType = media"image/webp"
+    def alpha: Boolean = true
+
+sealed trait Webp

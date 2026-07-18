@@ -45,8 +45,10 @@ private[hallucination] object Quantization:
 
     if counts.size <= limit then
       val palette = IArray.from(counts.keys)
+
       palette.indices.foreach: index =>
         assignment(palette(index)) = index
+
       (palette, assignment)
     else
       val boxes = scm.ArrayBuffer[Array[Int]](counts.keys.toArray)
@@ -91,6 +93,7 @@ private[hallucination] object Quantization:
           val sorted = boxes(candidate).sortBy(channel(_, shift))
 
           var total = 0L
+
           sorted.foreach: color =>
             total += counts(color)
 

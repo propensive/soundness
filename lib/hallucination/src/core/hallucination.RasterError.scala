@@ -38,7 +38,7 @@ import vacuous.*
 
 object RasterError:
   enum Reason:
-    case BadSignature, BadCrc, Truncated, UnsupportedVariant
+    case BadSignature, BadCrc, Truncated, UnsupportedVariant, Bitstream, Huffman, InvalidTransform
 
 case class RasterError
   ( rasterizable: Optional[Rasterizable], reason: Optional[RasterError.Reason] = Unset )
