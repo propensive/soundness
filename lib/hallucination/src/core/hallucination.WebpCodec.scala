@@ -30,9 +30,53 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package hallucination
 
-// `Descriptor` clashes with embarcadero's OCI `Descriptor` in the umbrella; reach it via
-// `hallucination.Descriptor`.
-export hallucination.{Bmp, Canvas, CanvasHandle, Gif, Jpeg, pixel, Png, Raster, RasterError,
-    Rasterizable, RasterOpenable, repack, Webp}
+import anticipation.*
+import contingency.*
+
+import Binary.*
+import RasterError.Reason
+
+// A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
+// simple (non-extended) lossless VP8L images; lossy VP8 and extended VP8X images raise
+// `UnsupportedVariant` until later phases. Unlike the other formats, WebP has no `javax.imageio`
+// support, so this codec is selected on every platform, including the JVM.
+private[hallucination] object WebpCodec:
+  // The RIFF container signature: "RIFF", a size, then "WEBP".
+  def isWebp(data: Data): Boolean =
+    data.length >= 12 && fourcc(data, 0) == "RIFF" && fourcc(data, 8) == "WEBP"
+
+  def decode(data: Data): Raster raises RasterError =
+    try
+      if data.length < 12 || fourcc(data, 0) != "RIFF" || fourcc(data, 8) != "WEBP"
+      then abort(RasterError(Webp(), Reason.BadSignature))
+
+      // The first chunk after the "WEBP" fourcc determines the image kind.
+      val chunk = fourcc(data, 12)
+      val chunkStart = 20
+
+      chunk match
+        case "VP8L" =>
+          val chunkSize = u32le(data, 16)
+          val reader = WebpBitReader(data, chunkStart, chunkStart + chunkSize)
+          val (width, height, rgba) = WebpLossless.decode(reader)
+          raster(width, height, rgba)
+
+        case "VP8 " | "VP8X" =>
+          abort(RasterError(Webp(), Reason.UnsupportedVariant))
+
+        case _ =>
+          abort(RasterError(Webp(), Reason.BadSignature))
+
+    catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
+      abort(RasterError(Webp(), Reason.Truncated))
+
+  // Builds an RGBA raster from the decoded, un-transformed byte buffer (in RGBA order).
+  private def raster(width: Int, height: Int, rgba: Array[Byte]): Raster =
+    Raster.build(width, height, Descriptor.rgba): index =>
+      (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
+        (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
+
+  private def fourcc(data: Data, offset: Int): String =
+    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn

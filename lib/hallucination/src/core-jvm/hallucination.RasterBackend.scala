@@ -38,26 +38,35 @@ import javax.imageio as ji
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
+
+import WebpCodec.isWebp
 
 // The JVM backend: decoding and encoding through `javax.imageio`, whose native codecs outperform
 // any pure implementation. The pure-Scala codecs in `core` remain compiled (and tested) on the
 // JVM; they are simply not selected here.
 private[hallucination] object RasterBackend:
   def decode(format: Rasterizable, data: Data): Raster raises RasterError =
-    val reader: ji.ImageReader = ji.ImageIO.getImageReadersByFormatName(format.name.s).nn.next().nn
-    reader.setInput(ji.ImageIO.createImageInputStream(data.javaInputStream).nn)
+    // `javax.imageio` has no WebP reader on any standard JRE, so WebP always uses the pure codec.
+    if format.name.s == "WEBP" then WebpCodec.decode(data) else
+      val reader: ji.ImageReader =
+        ji.ImageIO.getImageReadersByFormatName(format.name.s).nn.next().nn
 
-    val image = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(format))
+      reader.setInput(ji.ImageIO.createImageInputStream(data.javaInputStream).nn)
+      val image = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(format))
 
-    convert(image).also(reader.dispose())
+      convert(image).also(reader.dispose())
 
   def decode(data: Data): Raster raises RasterError =
-    val image = ji.ImageIO.read(data.javaInputStream)
-    if image == null then abort(RasterError(Unset)) else convert(image.nn)
+    if isWebp(data) then WebpCodec.decode(data) else
+      val image = ji.ImageIO.read(data.javaInputStream)
+      if image == null then abort(RasterError(Unset)) else convert(image.nn)
 
   def encode(format: Rasterizable, raster: Raster): Data =
+    // WebP has no `javax.imageio` writer; a pure encoder arrives in a later phase.
+    if format.name.s == "WEBP" then panic(m"the WEBP format has no encoder yet")
     val alpha = format.alpha && raster.descriptor.hasAlpha
 
     val imageType =
