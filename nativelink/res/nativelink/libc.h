@@ -6,3 +6,6 @@ int abs(int n);
 double pow(double base, double exp);
 long strlen(const char* s);
 char* getenv(const char* name);
+void* malloc(long size);
+void* memset(void* s, int c, long n);
+void free(void* ptr);

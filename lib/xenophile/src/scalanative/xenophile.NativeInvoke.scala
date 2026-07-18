@@ -153,29 +153,48 @@ object NativeInvoke:
       halt(m"xenophile: wrong number of arguments for $owner.$function")
 
     // Each C type maps to the Scala type of identical ABI: a primitive (`int`→`Int`; Scala Native's
-    // `CInt` etc. are aliases), or `CString` (`char*`) for a `Text`. `cType` returns the `CFuncPtr`
-    // slot type and whether it is a string (needing `Text`/`CString` marshalling). The `CString`
-    // type is read off `dlopen`'s own `CString` parameter, so no Native type is named here.
+    // `CInt` etc. are aliases), `CString` (`char*`) for a `Text`, or `Ptr[Byte]` for any other
+    // pointer (`T*`/`void*`/opaque handle, whose Scala value is the raw-address `Pointer`). `cType`
+    // returns the `CFuncPtr` slot type and the marshalling `Kind` it needs. The `CString` type is
+    // read off `dlopen`'s own `CString` parameter, so no Native type is named here.
     val cstringType = dlopen.paramSymss.head.head.info
+    val ptrByteType = Symbol.requiredClass("scala.scalanative.unsafe.Ptr").typeRef
+      .appliedTo(TypeRepr.of[Byte])
 
-    def cType(tpe: Foreign.Type): (TypeRepr, Boolean) = tpe match
-      case Foreign.Type.Named(t"int")    => (TypeRepr.of[Int], false)
-      case Foreign.Type.Named(t"long")   => (TypeRepr.of[Long], false)
-      case Foreign.Type.Named(t"short")  => (TypeRepr.of[Short], false)
-      case Foreign.Type.Named(t"char")   => (TypeRepr.of[Byte], false)
-      case Foreign.Type.Named(t"double") => (TypeRepr.of[Double], false)
-      case Foreign.Type.Named(t"float")  => (TypeRepr.of[Float], false)
-      case Foreign.Type.Named(t"bool")   => (TypeRepr.of[Boolean], false)
-      case Foreign.Type.Named(t"void")   => (TypeRepr.of[Unit], false)
-      case Foreign.Type.Named(t"string") => (cstringType, true)
+    enum Kind:
+      case Plain, Str, Address
+
+    def cType(tpe: Foreign.Type): (TypeRepr, Kind) = tpe match
+      case Foreign.Type.Named(t"int")    => (TypeRepr.of[Int], Kind.Plain)
+      case Foreign.Type.Named(t"long")   => (TypeRepr.of[Long], Kind.Plain)
+      case Foreign.Type.Named(t"short")  => (TypeRepr.of[Short], Kind.Plain)
+      case Foreign.Type.Named(t"char")   => (TypeRepr.of[Byte], Kind.Plain)
+      case Foreign.Type.Named(t"double") => (TypeRepr.of[Double], Kind.Plain)
+      case Foreign.Type.Named(t"float")  => (TypeRepr.of[Float], Kind.Plain)
+      case Foreign.Type.Named(t"bool")   => (TypeRepr.of[Boolean], Kind.Plain)
+      case Foreign.Type.Named(t"void")   => (TypeRepr.of[Unit], Kind.Plain)
+      case Foreign.Type.Named(t"string") => (cstringType, Kind.Str)
+
+      case Foreign.Type.Applied(t"ptr", _) =>
+        (ptrByteType, Kind.Address)
 
       case _ =>
-        halt(m"xenophile: $owner.$function uses a pointer or struct type, unsupported on native")
+        halt(m"xenophile: $owner.$function uses a struct type, unsupported on native")
 
     val paramInfo = parameterTypes.map(cType)
-    val (resultCtype, resultIsString) = cType(prototype.result)
-    val hasStringArg = paramInfo.exists(_._2)
+    val (resultCtype, resultKind) = cType(prototype.result)
+    val hasStringArg = paramInfo.exists(_._2 == Kind.Str)
     val arity = paramInfo.length
+
+    // The `Ptr`↔`Long` bridges for `Pointer` arguments and results: `fromRawPtr`/`toRawPtr` (from
+    // the `scala.scalanative.runtime` package object, whose members dotty exposes on the package
+    // symbol) and the `Intrinsics` casts.
+    val runtimePackage = Symbol.requiredPackage("scala.scalanative.runtime")
+    val fromRawPtr = runtimePackage.methodMember("fromRawPtr").head
+    val toRawPtr = runtimePackage.methodMember("toRawPtr").head
+    val intrinsics = Symbol.requiredModule("scala.scalanative.runtime.Intrinsics")
+    val castLongToRawPtr = intrinsics.methodMember("castLongToRawPtr").head
+    val castRawPtrToLong = intrinsics.methodMember("castRawPtrToLong").head
 
     // `CFuncPtr<arity>[param…, result]`.
     val cfuncPtrN = Symbol.requiredClass(s"scala.scalanative.unsafe.CFuncPtr$arity")
@@ -230,25 +249,44 @@ object NativeInvoke:
     val charset = '{_root_.java.nio.charset.Charset.defaultCharset().nn}.asTerm
 
     // The invocation: each argument is unwrapped from the navigation's `Literal` (the cast unboxes
-    // it from `Any`), and a `string` one is marshalled to a `CString` in `zone`; a `string` result
-    // is read back with `fromCString`.
+    // it from `Any`); a `string` one is marshalled to a `CString` in `zone`, and a `pointer` one
+    // (a raw-address `Long`, since `Pointer` is opaquely a `Long`) to a `Ptr[Byte]` with
+    // `fromRawPtr(castLongToRawPtr(_))`. A `string` result is read back with `fromCString`, and a
+    // pointer result lowered to its raw address with `castRawPtrToLong(toRawPtr(_))`.
     def invocation(zone: Optional[Term]): Term =
       val callArgs = argumentTerms.zip(paramInfo).map: (term, info) =>
-        val (tpe, isString) = info
+        val (tpe, kind) = info
         val value = convertedValue(term)
 
-        if isString then
-          val string = Select.unique(value, "asInstanceOf").appliedToType(TypeRepr.of[String])
-          val place = zone.or(halt(m"xenophile: no zone for a string argument"))
-          Apply(Apply(Ref(toCString), List(string)), List(place))
-        else
-          Select.unique(value, "asInstanceOf").appliedToType(tpe)
+        kind match
+          case Kind.Str =>
+            val string = Select.unique(value, "asInstanceOf").appliedToType(TypeRepr.of[String])
+            val place = zone.or(halt(m"xenophile: no zone for a string argument"))
+            Apply(Apply(Ref(toCString), List(string)), List(place))
+
+          case Kind.Address =>
+            val address = Select.unique(value, "asInstanceOf").appliedToType(TypeRepr.of[Long])
+            val raw = Apply(Ref(castLongToRawPtr), List(address))
+            Apply(TypeApply(Ref(fromRawPtr), List(Inferred(TypeRepr.of[Byte]))), List(raw))
+
+          case Kind.Plain =>
+            Select.unique(value, "asInstanceOf").appliedToType(tpe)
 
       val raw = Apply(Select(funcPtr, cfuncPtrN.methodMember("apply").head), callArgs)
 
-      if resultIsString then Apply(Ref(fromCString), List(raw, charset)) else raw
+      resultKind match
+        case Kind.Str => Apply(Ref(fromCString), List(raw, charset))
 
-    val innerType = if resultIsString then TypeRepr.of[String] else resultCtype
+        case Kind.Address =>
+          val rawPtr = Apply(TypeApply(Ref(toRawPtr), List(Inferred(TypeRepr.of[Byte]))), List(raw))
+          Apply(Ref(castRawPtrToLong), List(rawPtr))
+
+        case Kind.Plain => raw
+
+    val innerType = resultKind match
+      case Kind.Str     => TypeRepr.of[String]
+      case Kind.Address => TypeRepr.of[Long]
+      case Kind.Plain   => resultCtype
 
     // A string argument's `CString` lives in a `Zone`, so wrap the call in `Zone.acquire { zone =>
     // … }` when (and only when) there is one; otherwise emit the call directly.

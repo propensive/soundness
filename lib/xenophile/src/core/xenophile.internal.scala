@@ -218,9 +218,19 @@ object Xenophile:
       case Foreign.Type.Applied(constructor, ok :: _) if constructor.s == "result" => reprOf(ok)
       case _                                                                       => Unset
 
+    // A raw C `Pointer` argument (topic `pointer`) satisfies *any* pointer-typed parameter
+    // (`ptr<T>`, of which `char*`'s `string` special case is not one) — the C dialect checks
+    // pointerness, not pointee identity, exactly as C itself does.
+    val pointerOk: Boolean = paramType match
+      case Foreign.Type.Applied(constructor, _) if constructor.s == "ptr" =>
+        argTopic <:< reprOf(Foreign.Type.Named(t"pointer"))
+
+      case _ =>
+        false
+
     // Subsumption, not equality: a `string` (or a bare `none`) argument satisfies an
     // `option<string>` (`string|none`) parameter, and an `ok`-arm value a `result<…>` parameter.
-    if argTopic <:< paramTopic || okArm.lay(false)(argTopic <:< _) then '{$arg.expr}
+    if argTopic <:< paramTopic || okArm.lay(false)(argTopic <:< _) || pointerOk then '{$arg.expr}
     else halt(m"xenophile: $method expects an argument of foreign type ${paramType.text}")
 
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =

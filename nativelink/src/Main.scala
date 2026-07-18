@@ -52,6 +52,16 @@ object Main:
     val home: Text = Foreign["library", Native].getenv(t"HOME").invoke[Text]
     out.println("getenv(HOME) via native FFI: "+home.s)
 
+    // (v4) raw pointers: a pointer-returning call (`malloc`), a `Pointer` argument satisfying a
+    // `void*` parameter (`memset`, whose pointer result is discarded into a `Pointer` too), and
+    // `free` returning `void` — the round-trip proving `Pointer` flows in both directions.
+    val block: Pointer = Foreign["library", Native].malloc(32L).invoke[Pointer]
+    out.println("malloc(32) via native FFI: isNull = "+block.isNull)
+    val filled: Pointer = Foreign["library", Native].memset(block, 0, 32L).invoke[Pointer]
+    out.println("memset(block, 0, 32) via native FFI: same = "+(filled.address == block.address))
+    Foreign["library", Native].free(block).invoke[Unit]
+    out.println("free(block) via native FFI: ok")
+
     // galilei: a real filesystem round-trip driven straight through the native `FilesystemBackend`
     // (Scala Native javalib) — create a directory, observe it, delete it, observe it gone.
     import galilei.filesystemBackends.native

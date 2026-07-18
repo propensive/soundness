@@ -30,10 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// The platform-neutral C foreign-interface front end: the `Native` ecosystem (Scala↔C type
-// markers) and the `CHeaderDialect` header parser. Shared by the JVM Panama backend
-// (`xenophile.native`, `ForeignLibrary`) and the Scala Native backend (`xenophile.scalanative`,
-// `NativeInvoke`); it carries no platform runtime, so it cross-compiles to both.
-export xenophile.{CHeaderDialect, Native, Pointer}
+// An opaque C pointer — the platform-neutral currency for every `T*` a C header declares
+// (buffers, opaque handles like `EVP_MD*`, out-params) beyond the `char*`↔`Text` special case.
+// It is a raw address: `MemorySegment.ofAddress` gives the Panama backend its `ADDRESS` argument,
+// and Scala Native's materializer casts it to a `Ptr[_]`. It satisfies *any* pointer-typed
+// parameter (the navigation macro subsumes the `"pointer"` topic under every `ptr<T>`), so it is
+// exactly as type-safe as C: the header checks arity and pointerness, not pointee identity.
+// Foreign memory reachable through a `Pointer` is manually managed (see `ForeignBuffer`).
+object Pointer:
+  // The C null pointer, for optional-pointer parameters.
+  val Null: Pointer = 0L
+
+  def apply(address: Long): Pointer = address
+
+  extension (pointer: Pointer)
+    def address: Long = pointer
+    def isNull: Boolean = pointer == 0L
+
+opaque type Pointer = Long
