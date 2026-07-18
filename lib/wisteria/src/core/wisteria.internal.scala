@@ -560,6 +560,25 @@ object internal:
                 case None =>
                   product.typeSymbol.caseFields.foreach: field =>
                     visit(product.memberType(field), false)
+          else tpe match
+            // An alias like `Optional[P]` dealiases to a union (`Unset | P`) with no type
+            // arguments, so the codec probes above cannot follow its elements, and a union is
+            // neither a sum nor a product. Visit each branch so a structural element inside a
+            // union field (`Optional`-of-product, #1600) still becomes a shared sibling: the
+            // element codec then resolves to the sibling's lazy val — never a fresh capturing
+            // expansion inside `optional`'s by-name slot, which capture checking rejects.
+            // Singleton members (`Unset`, `None.type`) are sentinels handled by the union-level
+            // codec itself: they can never need a sibling, and probing their resolvability
+            // expands capability givens at macro time, which perturbs capture-checking state.
+            case OrType(left, right) =>
+              def branch(part: TypeRepr): Unit =
+                if !(part.dealias <:< TypeRepr.of[scala.Singleton]) then visit(part, false)
+
+              branch(left)
+              branch(right)
+
+            case _ =>
+              ()
 
       val rootType = TypeRepr.of[derivation].dealias
       visit(rootType, isRoot = true)

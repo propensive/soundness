@@ -53,6 +53,7 @@ case class Outer(inner: Inner)
 case class NamedOuter(name: Text, inner: Inner)
 case class OptFoo(x: Option[Int])
 case class OptionalFoo(x: Optional[Int])
+case class OptInner(inner: Optional[Inner] = Unset)
 case class Bar(a: Int, b: Text)
 case class BarOpt(a: Int, b: Optional[Text])
 case class WithDefault(name: Text, age: Int = 18) derives CanEqual
@@ -300,6 +301,14 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Extract an explicit null Optional as Unset"):
         t"""{"x": null}""".read[Json].as[OptionalFoo].x
+      . assert(_ == Unset)
+
+      test(m"Decode a present Optional product field"):
+        t"""{"inner":{"n":42}}""".read[Json].as[OptInner].inner
+      . assert(_ == Inner(42))
+
+      test(m"Decode an absent Optional product field"):
+        t"""{}""".read[Json].as[OptInner].inner
       . assert(_ == Unset)
 
       test(m"Decode a top-level null to an Optional as Unset"):
