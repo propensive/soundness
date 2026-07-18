@@ -54,7 +54,7 @@ import vacuous.*
 // The opaque type and its operations are confined to `decimalInternal` — the pattern of
 // `internal`'s numeric types — so the representation stays hidden even from the rest of
 // this package, keeping companion-scope given resolution intact everywhere outside.
-export decimalInternal.{Decimal, text, divide, whole, double, scale, signum, abs}
+export decimalInternal.Decimal
 
 object decimalInternal:
   opaque type Decimal = IArray[Int]
@@ -597,107 +597,107 @@ object decimalInternal:
 
     given textualizable: Decimal is Textualizable = value => text(value)
 
-  extension (left: Decimal)
-    def signum: Int = left(0)
-    def scale: Int = left(1)
-    def abs: Decimal = if left(0) < 0 then Decimal.negation(left) else left
+    extension (left: Decimal)
+      def signum: Int = left(0)
+      def scale: Int = left(1)
+      def abs: Decimal = if left(0) < 0 then Decimal.negation(left) else left
 
-    // Division to an explicit result scale and rounding policy — the quotient of two
-    // decimals generally does not terminate, so both must be chosen by the caller.
-    def divide(right: Decimal, scale: Int, rounding: Decimal.Rounding)
-    :   Decimal raises DivisionError =
+      // Division to an explicit result scale and rounding policy — the quotient of two
+      // decimals generally does not terminate, so both must be chosen by the caller.
+      def divide(right: Decimal, scale: Int, rounding: Decimal.Rounding)
+      :   Decimal raises DivisionError =
 
-      if right(0) == 0 then abort(DivisionError())
-      else if left(0) == 0 then Decimal.Zero
-      else
-        val sign = left(0)*right(0)
-        val power = scale + right(1) - left(1)
-        val leftMagnitude = Decimal.magnitudeOf(left)
-        val rightMagnitude = Decimal.magnitudeOf(right)
+        if right(0) == 0 then abort(DivisionError())
+        else if left(0) == 0 then Decimal.Zero
+        else
+          val sign = left(0)*right(0)
+          val power = scale + right(1) - left(1)
+          val leftMagnitude = Decimal.magnitudeOf(left)
+          val rightMagnitude = Decimal.magnitudeOf(right)
 
-        val (dividend, dividendCount) =
-          if power >= 0 then Decimal.scaleUp(leftMagnitude, leftMagnitude.length, power)
-          else (leftMagnitude, leftMagnitude.length)
+          val (dividend, dividendCount) =
+            if power >= 0 then Decimal.scaleUp(leftMagnitude, leftMagnitude.length, power)
+            else (leftMagnitude, leftMagnitude.length)
 
-        val (divisor, divisorCount) =
-          if power < 0 then Decimal.scaleUp(rightMagnitude, rightMagnitude.length, -power)
-          else (rightMagnitude, rightMagnitude.length)
+          val (divisor, divisorCount) =
+            if power < 0 then Decimal.scaleUp(rightMagnitude, rightMagnitude.length, -power)
+            else (rightMagnitude, rightMagnitude.length)
 
-        val (quotient, quotientCount, remainder, remainderCount) =
-          Decimal.divideMagnitude(dividend, dividendCount, divisor, divisorCount)
+          val (quotient, quotientCount, remainder, remainderCount) =
+            Decimal.divideMagnitude(dividend, dividendCount, divisor, divisorCount)
 
-        val exact = remainderCount == 1 && remainder(0) == 0
+          val exact = remainderCount == 1 && remainder(0) == 0
 
-        val increment: Boolean =
-          if exact then false else rounding match
-            case Decimal.Rounding.Down    => false
-            case Decimal.Rounding.Up      => true
-            case Decimal.Rounding.Ceiling => sign > 0
-            case Decimal.Rounding.Floor   => sign < 0
+          val increment: Boolean =
+            if exact then false else rounding match
+              case Decimal.Rounding.Down    => false
+              case Decimal.Rounding.Up      => true
+              case Decimal.Rounding.Ceiling => sign > 0
+              case Decimal.Rounding.Floor   => sign < 0
 
-            case half =>
-              val (doubled, doubledCount) =
-                Decimal.addMagnitude(remainder, remainderCount, remainder, remainderCount)
+              case half =>
+                val (doubled, doubledCount) =
+                  Decimal.addMagnitude(remainder, remainderCount, remainder, remainderCount)
 
-              Decimal.compareMagnitude(doubled, doubledCount, divisor, divisorCount) match
-                case 0 => half match
-                  case Decimal.Rounding.HalfUp   => true
-                  case Decimal.Rounding.HalfDown => false
-                  case _                         => quotient(0)%2 == 1
+                Decimal.compareMagnitude(doubled, doubledCount, divisor, divisorCount) match
+                  case 0 => half match
+                    case Decimal.Rounding.HalfUp   => true
+                    case Decimal.Rounding.HalfDown => false
+                    case _                         => quotient(0)%2 == 1
 
-                case order =>
-                  order > 0
+                  case order =>
+                    order > 0
 
-        val (rounded, roundedCount) =
-          if increment then Decimal.addMagnitude(quotient, quotientCount, Array(1), 1)
-          else (quotient, quotientCount)
+          val (rounded, roundedCount) =
+            if increment then Decimal.addMagnitude(quotient, quotientCount, Array(1), 1)
+            else (quotient, quotientCount)
 
-        Decimal.compose(sign, rounded, roundedCount, scale)
+          Decimal.compose(sign, rounded, roundedCount, scale)
 
-    // Plain decimal notation — no exponent, no trailing zeros — with `BigDecimal`'s
-    // `stripTrailingZeros.toPlainString` semantics built into the canonical form.
-    def text: Text =
-      if left(0) == 0 then "0".tt else
-        val digits = StringBuilder()
-        if left(0) < 0 then digits.append('-')
-        val start = digits.length
-        var i = left.length - 1
-        digits.append(left(i).toString)
-        i -= 1
-
-        while i >= 2 do
-          val group = left(i).toString
-          var pad = 9 - group.length
-
-          while pad > 0 do
-            digits.append('0')
-            pad -= 1
-
-          digits.append(group)
+      // Plain decimal notation — no exponent, no trailing zeros — with `BigDecimal`'s
+      // `stripTrailingZeros.toPlainString` semantics built into the canonical form.
+      def text: Text =
+        if left(0) == 0 then "0".tt else
+          val digits = StringBuilder()
+          if left(0) < 0 then digits.append('-')
+          val start = digits.length
+          var i = left.length - 1
+          digits.append(left(i).toString)
           i -= 1
 
-        val scale = left(1)
-        val count = digits.length - start
+          while i >= 2 do
+            val group = left(i).toString
+            var pad = 9 - group.length
 
-        if scale <= 0 then
-          var zeros = -scale
+            while pad > 0 do
+              digits.append('0')
+              pad -= 1
 
-          while zeros > 0 do
-            digits.append('0')
-            zeros -= 1
-        else if count > scale then digits.insert(digits.length - scale, '.')
-        else
-          val prefix = StringBuilder("0.")
-          var zeros = scale - count
-          while zeros > 0 do
-            prefix.append('0')
-            zeros -= 1
-          digits.insert(start, prefix)
+            digits.append(group)
+            i -= 1
 
-        digits.toString.tt
+          val scale = left(1)
+          val count = digits.length - start
 
-    // The nearest `Double`, by way of the decimal text — correctly rounded, since parsing
-    // decimal text is itself correctly rounded.
-    def double: Double = java.lang.Double.parseDouble(text.s)
+          if scale <= 0 then
+            var zeros = -scale
 
-    def whole: Boolean = left(1) <= 0
+            while zeros > 0 do
+              digits.append('0')
+              zeros -= 1
+          else if count > scale then digits.insert(digits.length - scale, '.')
+          else
+            val prefix = StringBuilder("0.")
+            var zeros = scale - count
+            while zeros > 0 do
+              prefix.append('0')
+              zeros -= 1
+            digits.insert(start, prefix)
+
+          digits.toString.tt
+
+      // The nearest `Double`, by way of the decimal text — correctly rounded, since parsing
+      // decimal text is itself correctly rounded.
+      def double: Double = java.lang.Double.parseDouble(text.s)
+
+      def whole: Boolean = left(1) <= 0

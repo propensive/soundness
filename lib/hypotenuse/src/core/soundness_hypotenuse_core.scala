@@ -40,7 +40,7 @@ export
       hex, hyp, increment, infinite, int, lcm, ln, log10, log1p, long, mantissa, nan, octal,
       Orderable, OverflowError, pi, predecessor, rawBits, round, S16, S32, S64, S8, scalb, short,
       signum, sin, sinh, successor, tan, U16, U32, U64, U8, ulp, π, φ, min, minimize, minimum,
-      max, maximize, maximum, median, Decimal, DecimalError, text, divide, whole, double, scale }
+      max, maximize, maximum, median, Decimal, DecimalError }
 
 package arithmeticOptions:
   export hypotenuse.arithmeticOptions.{division, overflow}
