@@ -63,3 +63,15 @@ object Main:
     out.println("fs: exists after mkdir  = "+fs.exists(dir, false))
     unsafely(fs.delete(dir))
     out.println("fs: exists after delete = "+fs.exists(dir, false))
+
+    // Write a file through the backend's `open`, then read it back — real file-content I/O.
+    import charEncoders.utf8Encoder
+    val file: Path on Linux = unsafely((% / "var" / "tmp" / "soundness-native-file").on[Linux])
+    if fs.exists(file, false) then unsafely(fs.delete(file))
+    unsafely:
+      fs.open(file, List(OpenFlag.Write, OpenFlag.Create)): handle =>
+        handle.writer(LazyList(t"hello native fs".in[Data]))
+    out.println("fs: file size after write = "+unsafely(fs.stat(file, false)).size)
+    val readBytes = unsafely(fs.open(file, List(OpenFlag.Read))(_.reader().map(_.length).sum))
+    out.println("fs: bytes read back       = "+readBytes)
+    unsafely(fs.delete(file))

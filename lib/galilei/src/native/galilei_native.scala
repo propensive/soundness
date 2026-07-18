@@ -33,6 +33,7 @@
 package galilei
 
 import java.io as ji
+import java.nio.channels as jnc
 import java.nio.file as jnf
 import java.nio.file.attribute as jnfa
 
@@ -41,6 +42,7 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 import serpentine.*
+import turbulence.*
 import vacuous.*
 
 import IoError.{Operation, Reason}
@@ -120,15 +122,18 @@ package filesystemBackends:
                   case _     => File
               catch case _: Exception => File
 
+          // `FileTime.toMillis` directly, rather than `.toInstant.toEpochMilli` (the JVM backend's
+          // way): Scala Native's javalib has no `java.time.Instant.MIN`, which `FileTime.toInstant`
+          // references, so the `Instant` round-trip fails to link.
           val created: Optional[Long] =
-            val time = attributes.creationTime().nn.toInstant.nn.toEpochMilli
+            val time = attributes.creationTime().nn.toMillis
             if time == 0L then Unset else time
 
           Stat
             ( entry,
               attributes.size(),
-              attributes.lastModifiedTime().nn.toInstant.nn.toEpochMilli,
-              attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli,
+              attributes.lastModifiedTime().nn.toMillis,
+              attributes.lastAccessTime().nn.toMillis,
               created )
 
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
@@ -246,9 +251,37 @@ package filesystemBackends:
         ( using Tactic[IoError] )
       :   result =
 
-        // File-content I/O through a streaming `Handle` (as the JVM backend does over a
-        // `FileChannel`) is deferred: the identical code hits a capture-checking inference
-        // difference on native — the channel capability leaks out of the stream/skip closures —
-        // that it does not on the JVM. Every tree/metadata operation above is fully supported.
-        val _ = (flags, lambda)
-        abort(IoError(path, Operation.Open, Reason.Unsupported))
+        val options: List[jnf.OpenOption] = flags.map:
+          case OpenFlag.Read      => jnf.StandardOpenOption.READ
+          case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
+          case OpenFlag.Append    => jnf.StandardOpenOption.APPEND
+          case OpenFlag.Create    => jnf.StandardOpenOption.CREATE
+          case OpenFlag.Exclusive => jnf.StandardOpenOption.CREATE_NEW
+          case OpenFlag.Truncate  => jnf.StandardOpenOption.TRUNCATE_EXISTING
+          case OpenFlag.Sync      => jnf.StandardOpenOption.SYNC
+          case OpenFlag.Dsync     => jnf.StandardOpenOption.DSYNC
+          case OpenFlag.NoFollow  => jnf.LinkOption.NOFOLLOW_LINKS
+
+        // `READ` and `APPEND` cannot be combined on a `FileChannel`.
+        val appending = options.contains(jnf.StandardOpenOption.APPEND)
+
+        val options2 =
+          if appending && options.contains(jnf.StandardOpenOption.READ)
+          then options.filter(_ != jnf.StandardOpenOption.READ)
+          else options
+
+        val channel =
+          protect(path, Operation.Open)(jnc.FileChannel.open(javaPath(path), options2*).nn)
+
+        try
+          // The `source`/`intake` closures capture the `FileChannel` capability, which native's
+          // capture checker (unlike the JVM's, on identical code) reports as leaking out of the
+          // closure. The channel is genuinely scoped — closed in the `finally` after `lambda`
+          // returns — so the capture is asserted safe with `unsafeAssumePure`.
+          lambda:
+            Handle
+              ( () => unsafely(zephyrine.toLazyList(Streamable.channel.stream(channel))),
+                data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.iterator))) )
+              ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
+                () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
+        finally channel.close()
