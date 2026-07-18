@@ -38,6 +38,8 @@ import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.util as ju
 
+import scala.scalanative.unsafe.*
+
 import anticipation.*
 import contingency.*
 import hypotenuse.*
@@ -486,3 +488,111 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
         out.flush()
 
     def close(): Unit = shutdown()
+
+
+// The command constants behind the OpenSSL macros re-expressed as `ctrl` calls above; their
+// values are ABI (fixed in OpenSSL's public headers).
+private[coaxial] val SSL_VERIFY_NONE: Int = 0
+private[coaxial] val SSL_VERIFY_PEER: Int = 1
+private[coaxial] val SSL_CTRL_SET_TLSEXT_HOSTNAME: Int = 55
+private[coaxial] val TLSEXT_NAMETYPE_host_name: Long = 0L
+private[coaxial] val BIO_C_SET_CONNECT: Int = 100
+private[coaxial] val BIO_C_DO_STATE_MACHINE: Int = 101
+private[coaxial] val BIO_C_GET_SSL: Int = 110
+
+// The libssl surface: context and connection setup. All OpenSSL object types (`SSL_CTX`,
+// `SSL`, `SSL_METHOD`, `BIO`) are opaque, so each is an untyped `Ptr[Byte]`; C `long` (and
+// `unsigned long`) is declared as the ABI-identical `Long` — Scala Native's `CLong` is the
+// word-sized `Size`, and every supported target is LP64. OpenSSL 1.1+ initializes itself on
+// first use, so no explicit `OPENSSL_init_ssl` call is needed.
+@extern @link("ssl")
+private[coaxial] object libssl:
+  def TLS_client_method(): Ptr[Byte] = extern
+  def SSL_CTX_new(method: Ptr[Byte]): Ptr[Byte] = extern
+  def SSL_CTX_free(context: Ptr[Byte]): Unit = extern
+  def SSL_CTX_set_default_verify_paths(context: Ptr[Byte]): CInt = extern
+  def SSL_CTX_set_verify(context: Ptr[Byte], mode: CInt, callback: Ptr[Byte]): Unit = extern
+  def SSL_ctrl(ssl: Ptr[Byte], command: CInt, larg: Long, parg: Ptr[Byte]): Long = extern
+  def SSL_set1_host(ssl: Ptr[Byte], hostname: CString): CInt = extern
+  def BIO_new_ssl_connect(context: Ptr[Byte]): Ptr[Byte] = extern
+
+// The libcrypto surface: the BIO I/O calls and the error queue.
+@extern @link("crypto")
+private[coaxial] object libcrypto:
+  def BIO_ctrl(bio: Ptr[Byte], command: CInt, larg: Long, parg: Ptr[Byte]): Long = extern
+  def BIO_read(bio: Ptr[Byte], buffer: Ptr[Byte], length: CInt): CInt = extern
+  def BIO_write(bio: Ptr[Byte], buffer: Ptr[Byte], length: CInt): CInt = extern
+  def BIO_free_all(bio: Ptr[Byte]): Unit = extern
+  def ERR_get_error(): Long = extern
+  def ERR_error_string(error: Long, buffer: Ptr[Byte]): CString = extern
+
+// Renders OpenSSL's queued error (if any) for exception messages; `ERR_error_string` with a
+// null buffer returns a static buffer.
+private[coaxial] def opensslError(): String =
+  val error = libcrypto.ERR_get_error()
+
+  if error == 0L then "unknown error"
+  else fromCString(libcrypto.ERR_error_string(error, null.asInstanceOf[Ptr[Byte]]))
+
+// Presents a connected SSL BIO chain as a `Duplex`, mirroring `streamsDuplex`: the read side
+// blocks in `BIO_read` directly into the endpoint's buffer, and a non-positive result (a
+// close_notify or a transport failure) ends the stream. `close` frees the whole BIO chain —
+// SSL, socket and all — and releases the connection's `SSL_CTX` reference.
+private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
+  new Duplex:
+    def source(using buffering: Buffering): (Stream[Data] over Credit)^ =
+      new Stream[Data]:
+        type Transport = Credit
+
+        private[coaxial] val capacity: Int = buffering.capacity(Substrate.Bytes)
+        private[coaxial] val storage: Array[Byte] = new Array[Byte](capacity)
+        private var start0: Int = 0
+        private var limit0: Int = 0
+        private var ended: Boolean = false
+
+        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        def start: Int = start0
+        def limit: Int = limit0
+        update def skip(count: Int): Unit = start0 += count
+
+        update def refill(demand: Credit): Optional[Int] =
+          if limit0 > start0 then limit0 - start0
+          else if ended then Unset
+          else
+            val granted = summon[Credit is Regulation].grant(demand)
+
+            if granted == 0 then 0 else
+              start0 = 0
+              limit0 = 0
+
+              // (`asInstanceOf` launders the field read's capture, as `window0` does, and
+              // `atUnsafe` is Scala Native's array-to-pointer view — its bounds-checked `at`
+              // is shadowed by rudiments' `at` extension; the indices here are in range by
+              // construction.)
+              val pure = storage.asInstanceOf[Array[Byte]]
+              val count = libcrypto.BIO_read(bio, pure.atUnsafe(0), capacity.min(granted))
+
+              if count <= 0 then
+                ended = true
+                Unset
+              else
+                limit0 = count
+                count
+
+    def send(consume data: (Stream[Data] over Credit)^): Unit =
+      // A write failure surfaces as an `IOException`, matching what the JVM backend's
+      // stream `write` throws at runtime; `Duplex.send` offers no typed error channel.
+      import unsafeExceptions.canThrowAny
+
+      data.sweep: (storage, start, count) =>
+        val array = storage.asInstanceOf[Array[Byte]]
+        var written = 0
+
+        while written < count do
+          val result = libcrypto.BIO_write(bio, array.atUnsafe(start + written), count - written)
+          if result <= 0 then throw ji.IOException("TLS: BIO_write failed: "+opensslError())
+          written += result
+
+    def close(): Unit =
+      libcrypto.BIO_free_all(bio)
+      libssl.SSL_CTX_free(context)

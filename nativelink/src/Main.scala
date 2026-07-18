@@ -110,3 +110,16 @@ object Main:
     duplex.close()
     sb.shutdown(tcpServer)
     out.println("tcp: received "+received.length+" bytes = "+received.to(List).map(_.toChar).mkString)
+
+    // coaxial TLS: a real HTTPS exchange through the OpenSSL-backed `SecureEndpoint` — the one
+    // networked scenario, so gated on `SOUNDNESS_CI_ONLINE` like wasm-e2e's outgoing-HTTP check.
+    if java.lang.System.getenv("SOUNDNESS_CI_ONLINE") == "1" then
+      import internetAccess.online
+      val secure = coaxial.SecureEndpoint(t"example.com", 443)
+      val tlsDuplex = summon[coaxial.SecureEndpoint is Connectable].connect(secure, Unset)
+      val request = t"HEAD / HTTP/1.0\r\nHost: example.com\r\nConnection: close\r\n\r\n".in[Data]
+      tlsDuplex.send(summon[Data is Streamable by Data over Credit].stream(request))
+      val response = unsafely(tlsDuplex.source.memoize)
+      tlsDuplex.close()
+      val status = response.to(List).takeWhile(_ != 13).map(_.toChar).mkString
+      out.println("tls: "+status+" ("+response.length+" bytes)")

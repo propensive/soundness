@@ -20,6 +20,14 @@ import scala.concurrent.duration.Duration
   val entries =
     classpath.split(File.pathSeparator).nn.toSeq.map(p => Paths.get(p).nn).filter(Files.exists(_))
 
+  // coaxial's TLS backend declares `@link("ssl")`/`@link("crypto")`, so the final clang link gets
+  // `-lssl -lcrypto` whenever those externs are reachable; on macOS the Homebrew OpenSSL keg is
+  // not on the default search path, so add it when present (Linux finds the system libssl as-is).
+  val librarySearchPaths =
+    Seq("/opt/homebrew/opt/openssl@3/lib", "/usr/local/opt/openssl@3/lib")
+      .filter(path => Files.exists(Paths.get(path)))
+      .map("-L" + _)
+
   val config = Config.empty
     .withBaseDir(Paths.get(baseDir).nn.toAbsolutePath.nn)
     .withMainClass(Some(mainClass))
@@ -32,6 +40,7 @@ import scala.concurrent.duration.Duration
         .withGC(GC.immix)
         .withMode(Mode.debug)
         .withLTO(LTO.none)
+        .withLinkingOptions(librarySearchPaths)
         .withBaseName("soundness-native"))
 
   val artifact = Await.result(Build.build(config), Duration.Inf)
