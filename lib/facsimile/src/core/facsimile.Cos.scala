@@ -32,9 +32,8 @@
                                                                                                   */
 package facsimile
 
-import java.nio.charset as jncs
-
 import anticipation.*
+import hieroglyph.*
 import rudiments.*
 import vacuous.*
 
@@ -64,21 +63,21 @@ object Cos:
 
       bytes.immutable(using Unsafe)
     else
-      val body = text.s.getBytes("UTF-16BE").nn
+      val body = charEncoders.utf16BeEncoder.encoded(text)
       val bytes = new Array[Byte](body.length + 2)
       bytes(0) = 0xfe.toByte
       bytes(1) = 0xff.toByte
-      System.arraycopy(body, 0, bytes, 2, body.length)
+      System.arraycopy(body.mutable(using Unsafe), 0, bytes, 2, body.length)
       bytes.immutable(using Unsafe)
 
   // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
     if bytes.length >= 2 && (bytes(0) & 0xff) == 0xfe && (bytes(1) & 0xff) == 0xff
-    then String(bytes.drop(2).mutable(using Unsafe), jncs.StandardCharsets.UTF_16BE).nn.tt
+    then charDecoders.utf16BeDecoder.decoded(bytes.drop(2))
     else if bytes.length >= 3
             && (bytes(0) & 0xff) == 0xef && (bytes(1) & 0xff) == 0xbb && (bytes(2) & 0xff) == 0xbf
-    then String(bytes.drop(3).mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
+    then charDecoders.utf8Decoder.decoded(bytes.drop(3))
     else
       val chars = new Array[Char](bytes.length)
       var i = 0

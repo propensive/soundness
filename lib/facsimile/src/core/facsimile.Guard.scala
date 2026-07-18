@@ -40,6 +40,7 @@ import contingency.*
 import enigmatic.*
 import gastronomy.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -188,7 +189,7 @@ private[facsimile] object Guard:
   // padding.
   private def unwrap6(password: Text, user: Data, ue: Data): Optional[Data] =
     if user.length < 48 || ue.length < 32 then Unset else
-      val passwordBytes = password.s.getBytes("UTF-8").nn
+      val passwordBytes = charEncoders.utf8Encoder.encoded(password).mutable(using Unsafe)
       val salt = user.slice(32, 40)
       val keySalt = user.slice(40, 48)
 
@@ -258,7 +259,7 @@ private[facsimile] object Guard:
     k.take(32)
 
   private def padded(password: Text): Array[Byte] =
-    val bytes = password.s.getBytes("ISO-8859-1").nn
+    val bytes = charEncoders.iso88591Encoder.encoded(password).mutable(using Unsafe)
     val out = new Array[Byte](32)
     val count = 32.min(bytes.length)
     System.arraycopy(bytes, 0, out, 0, count)

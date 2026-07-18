@@ -35,6 +35,7 @@ package facsimile
 import anticipation.*
 import contingency.*
 import gossamer.*
+import hieroglyph.*
 import rudiments.*
 import vacuous.*
 
@@ -54,7 +55,7 @@ private[facsimile] object PdfWriter:
       builder.addAll(data.mutable(using Unsafe))
       length += data.length
 
-    def ascii(text: Text): Unit = raw(text.s.getBytes("ISO-8859-1").nn.immutable(using Unsafe))
+    def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
 
     // A binary comment after the header marks the file as containing binary data.
     ascii(t"%PDF-1.7\n")
@@ -100,7 +101,7 @@ private[facsimile] object PdfWriter:
       builder.addAll(data.mutable(using Unsafe))
       length += data.length
 
-    def ascii(text: Text): Unit = raw(text.s.getBytes("ISO-8859-1").nn.immutable(using Unsafe))
+    def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
 
     // A leading end-of-line guards against the original file not ending in one.
     ascii(t"\n")

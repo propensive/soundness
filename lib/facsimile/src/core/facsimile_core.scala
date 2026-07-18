@@ -35,3 +35,7 @@ package facsimile
 // The contextual document within a `PdfFile.open` block: `pdf.trailer` rather than
 // `summon[Pdf].trailer`, following parasite's `monitor`.
 transparent inline def pdf: Pdf^ = infer[Pdf^]
+
+// Malformed text decodes with U+FFFD substitution, matching the REPLACE behaviour of the
+// JDK's `String(bytes, charset)` constructor, which PDF string handling has always had.
+private[facsimile] given replacementSanitizer: hieroglyph.TextSanitizer = (_, _) => '\ufffd'

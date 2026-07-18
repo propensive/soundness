@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import enigmatic.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -64,7 +65,7 @@ object Pdf:
       t"xref\n0 3\n0000000000 65535 f \n${pad(offset1)} 00000 n \n${pad(offset2)} 00000 n \n"
 
     val trailer = t"trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n$xrefOffset\n%%EOF"
-    val bytes = t"$body$table$trailer".s.getBytes("ISO-8859-1").nn.immutable(using Unsafe)
+    val bytes = charEncoders.iso88591Encoder.encoded(t"$body$table$trailer")
     val source = DataSource(bytes)
     Pdf(source, Xref.load(source), Version(1, 7))
 
