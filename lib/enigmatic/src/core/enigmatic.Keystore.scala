@@ -95,11 +95,9 @@ object Keystore:
         val keystore = js.KeyStore.getInstance("PKCS12").nn
 
         // A missing password loads without an integrity check, per `KeyStore.load`. The
-        // cleartext is copied into a `Char` array for the JDK, then zeroed.
+        // cleartext is lent as a mutable `Char` array, zeroed when the block exits.
         flags.prim.lay(loadKeystore(keystore, in, null)): password =>
-          password.expose:
-            val chars = cleartext.text.s.toCharArray.nn
-            try loadKeystore(keystore, in, chars) finally ju.Arrays.fill(chars, ' ')
+          password.uncloak(loadKeystore(keystore, in, cleartext.chars))
 
         block(using new KeystoreHandle(keystore) with Granting[grants] {})
       finally in.close()

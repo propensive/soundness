@@ -37,6 +37,7 @@ package enigmatic
 // encrypting cloak captures that cloak; a heap-cloaked `Secret` is pure). It is deliberately
 // not exported from the `soundness` bundle: user code reaches secrets only through
 // `Password`/`PrivateKey`/`SymmetricKey` and their `uncloak` methods.
+@unexported
 trait Secret:
   // Lends the secret to the block as a MUTABLE byte array, materialized from wherever the
   // cloak stores it. The array is zeroed in a `finally` when the block exits, normally or

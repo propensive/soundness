@@ -37,26 +37,48 @@ import gastronomy.*, providers.javaStdlibProvider
 import gossamer.*
 import monotonous.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 object PrivateKey:
-  def generate[cipher <: Cipher]()(using cipher: cipher): PrivateKey[cipher] =
+  def generate[cipher <: Cipher]()(using cipher: cipher, cloak: Cloak^)
+  :   PrivateKey[cipher]^{cloak} =
+
     PrivateKey(cipher.genKey())
+
+  // Adopts freshly-generated key material: the `Data` is ours, so it is zeroed in place
+  // (through a mutable view) as it is cloaked.
+  private[enigmatic] def apply[cipher <: Cipher](data: Data)(using cloak: Cloak^)
+  :   PrivateKey[cipher]^{cloak} =
+
+    new PrivateKey(cloak.cloak(data.mutable(using Unsafe)))
 
   given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
     import alphabets.base64Standard
-    t"PrivateKey(${key.privateData.digest[Sha2[256]].serialize[Base64]})"
 
-class PrivateKey[cipher <: Cipher](private[enigmatic] val privateData: Data):
+    key.secret.uncloak: bytes =>
+      t"PrivateKey(${bytes.immutable(using Unsafe).digest[Sha2[256]].serialize[Base64]})"
+
+// A private key held opaquely by whichever `Cloak` was in scope at construction, capturing
+// that cloak. Operations that need the key material — `public`, `sign`, `pem` — materialize
+// it transiently through the cloak, and the transient copy is zeroed as soon as the
+// operation completes; only `pem`, gated on `Divulgence`, lets the material escape.
+class PrivateKey[cipher <: Cipher](private[enigmatic] val secret: Secret^):
   def public(using cipher: cipher): PublicKey[cipher] =
-    PublicKey(cipher.privateToPublic(privateData))
+    secret.uncloak: bytes =>
+      PublicKey(cipher.privateToPublic(bytes.immutable(using Unsafe)))
 
 
   def sign[encodable: Encodable in Data](value: encodable)
     ( using cipher: cipher & Signing, erased weakness: Permit[Weakness[cipher]] )
   :   Signature[cipher] =
 
-    Signature(cipher.sign(encodable.encode(value), privateData))
+    secret.uncloak: bytes =>
+      Signature(cipher.sign(encodable.encode(value), bytes.immutable(using Unsafe)))
 
 
-  def pem(reveal: Divulgence.type): Pem = Pem(PemLabel.PrivateKey, privateData)
+  // The immutable `Data` in the result outlives the cloak's zeroing, which is exactly why
+  // revealing it demands the explicit `Divulgence` token.
+  def pem(reveal: Divulgence.type): Pem = secret.uncloak: bytes =>
+    Pem(PemLabel.PrivateKey, bytes.clone.immutable(using Unsafe))
