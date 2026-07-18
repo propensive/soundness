@@ -61,8 +61,16 @@ enum RamFlag:
   case Size(bytes: Long)
 
 object Ram:
-  class RamHandle private[galilei] (buffer: jn.MappedByteBuffer, val size: Long)
+  class RamHandle private[galilei] (channel: jnc.FileChannel, readWrite: Boolean, initial: Long)
   extends caps.ExclusiveCapability:
+
+    private val mapMode: jnc.FileChannel.MapMode =
+      if readWrite then jnc.FileChannel.MapMode.READ_WRITE.nn else jnc.FileChannel.MapMode.READ_ONLY.nn
+
+    private var buffer: jn.MappedByteBuffer = channel.map(mapMode, 0, initial).nn
+    private var currentSize: Long = initial
+
+    def size: Long = currentSize
 
     // Public: called from the grant-gated transparent-inline operations below, where a
     // `private` member's inline-accessor bridge would fail capture checking.
@@ -74,6 +82,19 @@ object Ram:
     def writeTo(offset: Long, data: Data): Unit =
       buffer.put(offset.toInt, data.mutable(using Unsafe), 0, data.length)
 
+    // Extends the mapped file to `newSize` and remaps, so subsequent positional writes can
+    // address the grown region — the growth that a fixed up-front mapping otherwise forbids.
+    // Only reachable with the `Write` grant; a `newSize` no larger than the current size is a
+    // no-op, and (like the initial mapping) `newSize` must fit in `Int`.
+    def growTo(newSize: Long): Unit =
+      if newSize > currentSize then
+        buffer.force()
+        channel.write(jn.ByteBuffer.wrap(Array[Byte](0)).nn, newSize - 1)
+        buffer = channel.map(mapMode, 0, newSize).nn
+        currentSize = newSize
+
+    def flush(): Unit = buffer.force()
+
     // A shared positional view, for consumers written against zephyrine's `Expanse`.
     def expanse: Expanse = new Expanse:
       def size: Long = RamHandle.this.size
@@ -84,6 +105,7 @@ object Ram:
 
   extension (handle: RamHandle & Granting[Grant.Write])
     transparent inline def update(offset: Long, data: Data): Unit = handle.writeTo(offset, data)
+    transparent inline def grow(newSize: Long): Unit = handle.growTo(newSize)
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // `FileOpenable`. An `Exclusive` mode implies a writable channel, since OS exclusive locks
@@ -127,14 +149,10 @@ object Ram:
           if lock.isEmpty then abort(IoError(value, Operation.Open, Reason.Busy))
 
           try
-            val mapMode =
-              if mode.atoms.contains(Write) then jnc.FileChannel.MapMode.READ_WRITE
-              else jnc.FileChannel.MapMode.READ_ONLY
-
-            val buffer = channel.map(mapMode, 0, size).nn
-
-            try block(using new RamHandle(buffer, size) with Granting[grants] {})
-            finally if mode.atoms.contains(Write) then buffer.force()
+            val write = mode.atoms.contains(Write)
+            val handle = new RamHandle(channel, write, size) with Granting[grants] {}
+            try block(using handle)
+            finally if write then handle.flush()
           finally lock.foreach { held => if held != null then held.release() }
         finally channel.close()
 
@@ -187,10 +205,9 @@ object Ram:
             // Extend the new, empty file to its mapped size by writing its final byte.
             channel.write(jn.ByteBuffer.wrap(Array[Byte](0)).nn, size - 1)
 
-            val buffer = channel.map(jnc.FileChannel.MapMode.READ_WRITE, 0, size).nn
-
-            try block(using new RamHandle(buffer, size) with Granting[Grant.Read & Grant.Write] {})
-            finally buffer.force()
+            val handle = new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
+            try block(using handle)
+            finally handle.flush()
           catch case throwable: Throwable =>
             try backend.deleteIfExists(value) catch case _: Exception => ()
             throw throwable

@@ -297,6 +297,32 @@ object Tests extends Suite(m"Galilei tests"):
         . map(_.message)
       . assert(_.nonEmpty)
 
+      test(m"Growing a mapping extends the file for positional writes past the old end"):
+        val growLeaf: Text = Uuid().show
+        val growFile: Path on Linux = unsafely((% / "tmp" / growLeaf).on[Linux])
+        unsafely(growFile.write(t"0123456789"))
+        unsafely:
+          growFile.open[Ram](Read & Write): ram ?=>
+            ram.grow(13L)
+            ram(10L) = t"abc".in[Data]
+
+          growFile.read[Text]
+      . assert(_ == t"0123456789abc")
+
+      test(m"Growing does not shrink when passed a smaller size"):
+        unsafely:
+          ramFile.open[Ram](Read & Write): ram ?=>
+            ram.grow(4L)
+            ram.size
+      . assert(_ == 10L)
+
+      test(m"Growing without the Write grant does not compile"):
+        demilitarize:
+          ramFile.open[Ram](): ram ?=>
+            ram.grow(20L)
+        . map(_.message)
+      . assert(_.nonEmpty)
+
     suite(m"Creating mapped files"):
       import errorDiagnostics.emptyDiagnostics
 
