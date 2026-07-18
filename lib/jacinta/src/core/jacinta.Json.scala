@@ -114,7 +114,7 @@ trait Json3:
 
   given decodableAtFocus: [value]
   =>  ( inner: (value is Decodable in Json)^ )
-  =>  ((value is Decodable in Json at Json.Focus)^{inner, caps.any}) =
+  =>  ((value is Decodable in Json at Json.Focus)^{inner}) =
 
     new JsonDecodable[value]:
       def decoded(json: Json): value = inner.decoded(json)
@@ -159,7 +159,7 @@ trait Json2 extends Json3:
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-12).
   given bytes: (tactic: Tactic[JsonError])
-  =>  ((Bytes is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Bytes is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long.b)
 
   // Element-wise `Json.Field` instances resolved during derivation: the
@@ -1876,45 +1876,48 @@ object Json extends Json2, Dynamic:
   // the `Json` case in the `decodable` summonFrom above.
   given jsonDecodable: Json is distillate.Decodable in Json = identity(_)
 
-  // The primitive codecs are laundered pure: their resolution-scoped tactic shares each
-  // instance's given-resolution lifetime, and both the product derivation and the inline
-  // bodies expanded inside staged quotes (superlunary) summon them against pure expected
-  // types (honest capturing forms return with wisteria capture-polymorphism; see
-  // rep/DECISIONS.md).
+  // The primitive codecs are honest capabilities: each instance retains its
+  // resolution-scoped tactic, declared as exactly `^{tactic}` — deliberately without a
+  // fresh (`caps.any`) component. The decode lambdas capture nothing beyond the tactic,
+  // and a declared fresh component would be instantiated *inside* the synthesized
+  // by-name thunk when one of these fills an element-wise codec given's `=> (… )^` slot
+  // (`optional`, `array`, `map`), from where it cannot flow into the slot's own
+  // expected fresh capture — rejecting e.g. an `Optional[Text]` field in a derived
+  // product under capture checking (#1604). A concrete `^{tactic}` flows fine.
   given boolean: (tactic: Tactic[JsonError])
-  =>  ((Boolean is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Boolean is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Bool)(_.root.boolean)
 
   given double: (tactic: Tactic[JsonError])
-  =>  ((Double is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Double is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Real)(_.root.double)
 
   given float: (tactic: Tactic[JsonError])
-  =>  ((Float is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Float is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Real)(_.root.double.toFloat)
 
   given long: (tactic: Tactic[JsonError])
-  =>  ((Long is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Long is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long)
 
   given int: (tactic: Tactic[JsonError])
-  =>  ((Int is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Int is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long.toInt)
 
   given ordinalDecodable: (tactic: Tactic[JsonError])
-  =>  ((Ordinal is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Ordinal is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Whole)(_.root.long.toInt.z)
 
   given text: (tactic: Tactic[JsonError])
-  =>  ((Text is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Text is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Str)(_.root.string)
 
   given string: (tactic: Tactic[JsonError])
-  =>  ((String is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((String is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Str)(_.root.string.s)
 
   given unit: (tactic: Tactic[JsonError])
-  =>  ((Unit is Json.Decodable)^{tactic, caps.any}) =
+  =>  ((Unit is Json.Decodable)^{tactic}) =
     Json.Decodable(Morphology.Empty): value =>
       if value.root.isNull then ()
       else
