@@ -64,7 +64,7 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
 
   val uuid = Uuid()
   val out: Path on Linux = unsafely(temporaryDirectory/uuid)
-  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
+  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
 
   val settings: staging.Compiler.Settings =
     staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))

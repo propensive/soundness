@@ -34,6 +34,7 @@ package anthology
 
 import language.adhocExtensions
 
+import scala.annotation.targetName
 import scala.util.control as suc
 
 import dotty.tools.dotc as dtd
@@ -65,15 +66,24 @@ object Scalac:
   def refresh(): Unit = mutex { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
-case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[version]]):
+  // Preserves the single-type-argument call form, `Scalac[3.6](options)`, which targets the JVM.
+  @targetName("applyJvm")
+  def apply[version <: Versions](options: List[Option[version]]): Scalac[version, Backend.Jvm] =
+    new Scalac(options)
+
+case class Scalac[version <: Scalac.Versions, backend <: Backend] private
+  ( options: List[Scalac.Option[version]] ):
+
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
+
+  def targeting[backend2 <: Backend]: Scalac[version, backend2] = new Scalac(options)
 
 
   def apply
     ( classpath: LocalClasspath )
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
-    ( using System, Monitor, Probate )
+    ( using System, Monitor, Probate, Backend.Emission[backend] )
   :   CompileProcess logs CompileEvent raises CompilerError =
 
     val scalacProcess: CompileProcess = CompileProcess()
@@ -120,7 +130,8 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
         //val jsParams =
 
         val arguments: List[Text] =
-          List(t"-d", out.generic, t"-classpath", classpath()) :::
+          summon[Backend.Emission[backend]].flags :::
+            List(t"-d", out.generic, t"-classpath", classpath()) :::
             commandLineArguments :::
             List(t"")
 
