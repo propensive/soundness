@@ -127,3 +127,35 @@ object Tests extends Suite(m"Hallucination Tests"):
       val cropped = stripes.crop(top = 1, bottom = 1)
       (cropped.height, cropped(0, 0).red, cropped(0, 1).red)
     . assert(_ == (2, 10, 20))
+
+    test(m"a layout-typed raster gives typed pixel access"):
+      val raster = Raster[Rgba](2, 2): (x, y) =>
+        Pixel[Rgba](Srgb(x.toDouble, y.toDouble, 1.0))
+
+      (raster.pixel(1, 0).red, raster.pixel(1, 0).alpha, raster.pixel(0, 1).green)
+    . assert(_ == (255, 255, 255))
+
+    test(m"a decoded PNG has an eight-bit RGB or RGBA layout"):
+      png.read[Raster in Png].descriptor.entries.map(_.depth)
+    . assert(_.forall(_ == 8))
+
+    test(m"repacking to the same layout returns the same raster"):
+      val raster = stripes
+      raster.repack[Rgb] eq raster
+    . assert(_ == true)
+
+    test(m"repacking to RGBA adds a fully-opaque alpha channel"):
+      val raster = stripes.repack[Rgba]
+      (raster.pixel(0, 2).red, raster.pixel(0, 2).alpha)
+    . assert(_ == (20, 255))
+
+    test(m"repacking to a 16-bit layout scales the channels"):
+      Raster(1, 1)((x, y) => Chroma(255, 0, 51)).repack[(Red[5], Green[6], Blue[5])].pixel(0, 0)
+      . pipe: pixel =>
+        (pixel.red, pixel.green, pixel.blue)
+    . assert(_ == (31, 0, 6))
+
+    test(m"rotation transposes the dimensions and moves the pixels"):
+      stripes.rotate(90).pipe: rotated =>
+        (rotated.width, rotated.height, rotated(3, 1).red)
+    . assert(_ == (4, 2, 30))

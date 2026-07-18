@@ -32,28 +32,24 @@
                                                                                                   */
 package hallucination
 
-import javax.imageio as ji
-
 import anticipation.*
 import contingency.*
 import gesticulate.*
 import prepositional.*
-import rudiments.*
 import turbulence.*
 
+// A raster image format. Decoding and encoding are delegated to `RasterBackend`, which has one
+// implementation per platform: `javax.imageio` on the JVM, and pure-Scala codecs everywhere else
+// (Scala.js and WASI), selected by the `core-jvm`/`core-native` source directories.
 trait Rasterizable extends Typeclass:
   rasterizable: Rasterizable =>
     def name: Text
     def mediaType: MediaType
 
-    //protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
+    // Whether the encoded form can carry an alpha channel.
+    def alpha: Boolean
 
     def read[input: Streamable by Data over zephyrine.Credit](inputType: input)
     :   Raster in Self raises RasterError =
-      val reader: ji.ImageReader = ji.ImageIO.getImageReadersByFormatName(name.s).nn.next().nn
-      reader.setInput(ji.ImageIO.createImageInputStream(inputType.read[Data].javaInputStream).nn)
 
-      val data = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(this))
-
-      new Raster(data) { type Form = rasterizable.Self }
-      . also(reader.dispose())
+      RasterBackend.decode(this, inputType.read[Data]).asInstanceOf[Raster in rasterizable.Self]

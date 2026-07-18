@@ -32,15 +32,26 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import gesticulate.*
+import scala.compiletime.*
 
-object Png:
-  def apply(): Rasterizable = rasterization
+import iridescence.*
+import prepositional.*
 
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
+extension [layout <: Tuple](raster: Raster by layout)
+  // The hot path: the storage match collapses at compile time to a single array load, and
+  // `Pixel`'s accessors to a constant shift-and-mask.
+  inline def pixel(x: Int, y: Int): Pixel[layout] =
+    val index = y*raster.width + x
 
-sealed trait Png
+    inline erasedValue[Channel.Storage[layout]] match
+      case _: Byte  => Pixel.make(raster.buffer.asInstanceOf[Array[Byte]](index)&0xffL)
+      case _: Short => Pixel.make(raster.buffer.asInstanceOf[Array[Short]](index)&0xffffL)
+      case _: Int   => Pixel.make(raster.buffer.asInstanceOf[Array[Int]](index)&0xffffffffL)
+      case _: Long  => Pixel.make(raster.buffer.asInstanceOf[Array[Long]](index))
+
+extension (raster: Raster)
+  // Repacks every pixel into the given layout, converting colour models where the channel sets
+  // differ. Alpha is carried over when both layouts have it; the identity repack (already in the
+  // target layout) is free.
+  inline def repack[layout <: Tuple]: Raster by layout =
+    Raster.repack(raster, Descriptor.of[layout]).asInstanceOf[Raster by layout]

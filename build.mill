@@ -1417,8 +1417,12 @@ object guillotine extends Library:
       settings.cc(super.scalacOptions())
 
 object hallucination extends Library:
+  // Raster images with pluggable codec backends: `javax.imageio` on the JVM, and pure-Scala
+  // codecs everywhere else (Scala.js and WASI), selected by the `core-jvm`/`core-native` source
+  // directories.
   object core extends Component(anticipation.gfx, iridescence.core, gesticulate.core):
-    override def scalaJs = false // uses `java.awt`/`javax.imageio` (no Scala.js implementation)
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object ansi extends Component(escapade.core, core):
@@ -2082,7 +2086,7 @@ object synesthesia extends Library:
 
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core, guillotine.core):
-    override def scalaJs = false // browser automation; depends on JVM-only `hallucination`
+    override def scalaJs = false // browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):

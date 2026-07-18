@@ -41,5 +41,6 @@ object Bmp:
   given rasterization: Bmp is Rasterizable:
     def name: Text = "BMP".tt
     def mediaType = media"image/bmp"
+    def alpha: Boolean = false
 
 sealed trait Bmp

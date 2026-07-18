@@ -41,5 +41,6 @@ object Gif:
   given rasterization: Gif is Rasterizable:
     def name: Text = "GIF".tt
     def mediaType = media"image/gif"
+    def alpha: Boolean = true
 
 sealed trait Gif

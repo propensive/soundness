@@ -32,15 +32,59 @@
                                                                                                   */
 package hallucination
 
+import java.awt.image as jai
+import java.io as ji2
+import javax.imageio as ji
+
 import anticipation.*
-import gesticulate.*
+import contingency.*
+import rudiments.*
+import vacuous.*
 
-object Png:
-  def apply(): Rasterizable = rasterization
+// The JVM backend: decoding and encoding through `javax.imageio`, whose native codecs outperform
+// any pure implementation. The pure-Scala codecs in `core` remain compiled (and tested) on the
+// JVM; they are simply not selected here.
+private[hallucination] object RasterBackend:
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError =
+    val reader: ji.ImageReader = ji.ImageIO.getImageReadersByFormatName(format.name.s).nn.next().nn
+    reader.setInput(ji.ImageIO.createImageInputStream(data.javaInputStream).nn)
 
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
+    val image = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(format))
 
-sealed trait Png
+    convert(image).also(reader.dispose())
+
+  def decode(data: Data): Raster raises RasterError =
+    val image = ji.ImageIO.read(data.javaInputStream)
+    if image == null then abort(RasterError(Unset)) else convert(image.nn)
+
+  def encode(format: Rasterizable, raster: Raster): Data =
+    val alpha = format.alpha && raster.descriptor.hasAlpha
+
+    val imageType =
+      if alpha then jai.BufferedImage.TYPE_INT_ARGB else jai.BufferedImage.TYPE_INT_RGB
+
+    val image = jai.BufferedImage(raster.width, raster.height, imageType)
+    val argb = new Array[Int](raster.width*raster.height)
+
+    for index <- 0 until argb.length do
+      val word = raster.word(index)
+      val opacity = if alpha then (raster.descriptor.alpha(word)*255 + 0.5).toInt else 255
+      argb(index) = opacity << 24 | raster.descriptor.chroma(word).underlying
+
+    image.setRGB(0, 0, raster.width, raster.height, argb, 0, raster.width)
+
+    val out = ji2.ByteArrayOutputStream()
+    ji.ImageIO.write(image, format.name.s, out)
+    out.toByteArray.nn.immutable(using Unsafe)
+
+  // Reads out the pixels in one bulk `getRGB`, as `Rgb` or `Rgba` according to the image's
+  // colour model.
+  private def convert(image: jai.BufferedImage): Raster =
+    val width = image.getWidth
+    val height = image.getHeight
+    val argb = image.getRGB(0, 0, width, height, null, 0, width).nn
+
+    if image.getColorModel.nn.hasAlpha
+    then Raster.build(width, height, Descriptor.rgba): index =>
+      (argb(index).toLong&0xffffff) << 8 | (argb(index) >>> 24)
+    else Raster.build(width, height, Descriptor.rgb)(argb(_).toLong&0xffffff)

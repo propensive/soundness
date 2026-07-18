@@ -33,14 +33,20 @@
 package hallucination
 
 import anticipation.*
-import gesticulate.*
+import contingency.*
+import fulminate.*
+import vacuous.*
 
-object Png:
-  def apply(): Rasterizable = rasterization
+// The pure-Scala backend, selected on Scala.js and WASI. The codecs themselves live in `core`
+// (so they compile and are differentially tested on the JVM); this object only dispatches. PNG,
+// BMP and GIF are implemented natively; JPEG currently has no native codec, so it fails with a
+// `RasterError` here, while remaining fully supported by the JVM backend.
+private[hallucination] object RasterBackend:
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError =
+    abort(RasterError(format))
 
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
+  def decode(data: Data): Raster raises RasterError =
+    abort(RasterError(Unset))
 
-sealed trait Png
+  def encode(format: Rasterizable, raster: Raster): Data =
+    panic(m"the ${format.name} format has no native encoder")
