@@ -34,6 +34,13 @@ object Main:
     // aviation
     out.println(calendars.gregorianCalendar.daysInYear(Year(2000)).toString)
 
-    // xenophile native C FFI: a real libc call lowered by `NativeInvoke`.
+    // xenophile native C FFI: real libc calls lowered by `NativeInvoke` — a nullary call and
+    // (v2) calls with primitive arguments.
     val pid: Int = Foreign["library", Native].getpid().invoke[Int]
     out.println("pid via native FFI: "+pid)
+
+    val absolute: Int = Foreign["library", Native].abs(-7).invoke[Int]
+    out.println("abs(-7) via native FFI: "+absolute)
+
+    val power: Double = Foreign["library", Native].pow(2.0, 10.0).invoke[Double]
+    out.println("pow(2, 10) via native FFI: "+power)
