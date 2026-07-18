@@ -121,6 +121,21 @@ object Main:
     sb.shutdown(tcpServer)
     out.println("tcp: received "+received.length+" bytes = "+received.to(List).map(_.toChar).mkString)
 
+    // parasite: real concurrency through the native supervisors — `virtualThreading` resolves to
+    // the platform-thread twin (no Loom on native), and two workers running concurrently under
+    // `supervise` prove forking, awaiting and cross-thread promise completion all work.
+    locally:
+      import parasite.*, threading.virtualThreading, probates.cancelProbate
+      import contingency.strategies.throwUnsafely
+
+      supervise:
+        val first = async:
+          Thread.sleep(10)
+          21
+
+        val second = async(21)
+        out.println("parasite: async sum = "+(first.await() + second.await()))
+
     // enigmatic: OpenSSL crypto through xenophile's cross-compiled C navigation — the same
     // `OpensslCrypto` source that runs on the JVM via Panama, here materialized as direct C
     // calls. The HMAC is checked against RFC 4231-style known output, and AES/CBC round-trips.
