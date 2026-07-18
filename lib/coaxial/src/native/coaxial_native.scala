@@ -167,8 +167,8 @@ package socketBackends:
       val socket = jn.DatagramSocket(port.number)
       configure(socket, options)
 
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+      // (Selecting the multicast interface needs `DatagramSocket.setOption`, absent from Scala
+      // Native's javalib; unsupported for now — `interface` is ignored for UDP.)
 
       socket
 
@@ -316,8 +316,8 @@ package socketBackends:
       val socket = jn.DatagramSocket()
       configure(socket, options)
 
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+      // (Selecting the multicast interface needs `DatagramSocket.setOption`, absent from Scala
+      // Native's javalib; unsupported for now — `interface` is ignored for UDP.)
 
       UdpCourier(address, endpoint.port.number, socket)
 
@@ -328,8 +328,8 @@ package socketBackends:
       val socket = jn.DatagramSocket()
       configure(socket, options)
 
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+      // (Selecting the multicast interface needs `DatagramSocket.setOption`, absent from Scala
+      // Native's javalib; unsupported for now — `interface` is ignored for UDP.)
 
       UdpCourier(jn.InetAddress.getLocalHost.nn, port.number, socket)
 
@@ -348,56 +348,62 @@ package socketBackends:
 // particular socket does not support are silently skipped (guarded by `supportedOptions`), which
 // is the runtime backstop for socket-kind nuances within a transport (e.g. a server socket has no
 // `TCP_NODELAY`).
+// Each socket kind supports a different subset of options through its own type-specific setters
+// (Scala Native's javalib has no generic `setOption`/`supportedOptions`); a `Configurable` maps the
+// common options to those setters, and an option a given socket kind does not support defaults to a
+// no-op (`ReusePort` has no portable setter and is skipped everywhere).
 private[coaxial] trait Configurable:
-  def supported: ju.Set[jn.SocketOption[?]]
-  def soTimeout(milliseconds: Int): Unit
-  def option[value](socketOption: jn.SocketOption[value], value: value): Unit
-
-  def set[value](socketOption: jn.SocketOption[value], value: value): Unit =
-    if supported.contains(socketOption) then option(socketOption, value)
+  def reuseAddress(): Unit = ()
+  def noDelay(): Unit = ()
+  def keepAlive(): Unit = ()
+  def broadcast(): Unit = ()
+  def receiveBuffer(bytes: Int): Unit = ()
+  def sendBuffer(bytes: Int): Unit = ()
+  def trafficClass(value: Int): Unit = ()
+  def linger(seconds: Int): Unit = ()
+  def soTimeout(milliseconds: Int): Unit = ()
 
 private[coaxial] def applyOptions(options: List[SocketOption])(target: Configurable): Unit =
-  import jn.StandardSocketOptions.*
-  val yes: java.lang.Boolean = Boolean.box(true)
-
   options.each:
-    case SocketOption.ReuseAddress          => target.set(SO_REUSEADDR.nn, yes)
-    case SocketOption.ReusePort             => target.set(SO_REUSEPORT.nn, yes)
-    case SocketOption.NoDelay               => target.set(TCP_NODELAY.nn, yes)
-    case SocketOption.KeepAlive             => target.set(SO_KEEPALIVE.nn, yes)
-    case SocketOption.Broadcast             => target.set(SO_BROADCAST.nn, yes)
-    case SocketOption.ReceiveBuffer(n)      => target.set(SO_RCVBUF.nn, Int.box(n))
-    case SocketOption.SendBuffer(n)         => target.set(SO_SNDBUF.nn, Int.box(n))
-    case SocketOption.TrafficClass(n)       => target.set(IP_TOS.nn, Int.box(n))
-    case SocketOption.Linger(seconds)       => target.set(SO_LINGER.nn, Int.box(seconds.or(-1)))
+    case SocketOption.ReuseAddress          => target.reuseAddress()
+    case SocketOption.ReusePort             => ()
+    case SocketOption.NoDelay               => target.noDelay()
+    case SocketOption.KeepAlive             => target.keepAlive()
+    case SocketOption.Broadcast             => target.broadcast()
+    case SocketOption.ReceiveBuffer(n)      => target.receiveBuffer(n)
+    case SocketOption.SendBuffer(n)         => target.sendBuffer(n)
+    case SocketOption.TrafficClass(n)       => target.trafficClass(n)
+    case SocketOption.Linger(seconds)       => target.linger(seconds.or(-1))
     case SocketOption.Timeout(milliseconds) => target.soTimeout(milliseconds)
 
 private[coaxial] def configure(socket: jn.Socket, options: List[SocketOption]): Unit =
   applyOptions(options):
     new Configurable:
-      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
-      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
-
-      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
-        socket.setOption(socketOption, value)
+      override def reuseAddress(): Unit = socket.setReuseAddress(true)
+      override def noDelay(): Unit = socket.setTcpNoDelay(true)
+      override def keepAlive(): Unit = socket.setKeepAlive(true)
+      override def receiveBuffer(bytes: Int): Unit = socket.setReceiveBufferSize(bytes)
+      override def sendBuffer(bytes: Int): Unit = socket.setSendBufferSize(bytes)
+      override def trafficClass(value: Int): Unit = socket.setTrafficClass(value)
+      override def linger(seconds: Int): Unit = socket.setSoLinger(seconds >= 0, seconds.max(0))
+      override def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
 
 private[coaxial] def configure(socket: jn.ServerSocket, options: List[SocketOption]): Unit =
   applyOptions(options):
     new Configurable:
-      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
-      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
-
-      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
-        socket.setOption(socketOption, value)
+      override def reuseAddress(): Unit = socket.setReuseAddress(true)
+      override def receiveBuffer(bytes: Int): Unit = socket.setReceiveBufferSize(bytes)
+      override def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
 
 private[coaxial] def configure(socket: jn.DatagramSocket, options: List[SocketOption]): Unit =
   applyOptions(options):
     new Configurable:
-      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
-      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
-
-      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
-        socket.setOption(socketOption, value)
+      override def reuseAddress(): Unit = socket.setReuseAddress(true)
+      override def broadcast(): Unit = socket.setBroadcast(true)
+      override def receiveBuffer(bytes: Int): Unit = socket.setReceiveBufferSize(bytes)
+      override def sendBuffer(bytes: Int): Unit = socket.setSendBufferSize(bytes)
+      override def trafficClass(value: Int): Unit = socket.setTrafficClass(value)
+      override def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
 
 // Resolves a `MacAddress` to the local network interface whose hardware address matches, if any.
 private[coaxial] def interfaceFor(mac: MacAddress): Optional[jn.NetworkInterface] =

@@ -82,3 +82,31 @@ object Main:
     // `System.*`/`java.util.Random` APIs).
     import environments.javaEnvironment
     out.println("ambience HOME = "+summon[Environment].variable(t"HOME").or(t"?").s)
+
+    // coaxial: a UDP loopback round-trip straight through the native `SocketBackend` — bind a
+    // datagram socket, dispatch a payload to it, receive it back.
+    import coaxial.socketBackends.native
+    val sb = summon[SocketBackend]
+    val udpPort = Port.unsafe[Udp](55555)
+    val server = sb.listenUdp(udpPort, Unset, Nil)
+    val courier = sb.routeUdpPort(udpPort, Unset, Nil)
+    val payload: Data = t"ping".in[Data]
+    unsafely(sb.dispatch(courier, summon[Data is Streamable by Data over Credit].stream(payload)))
+    val packet = unsafely(sb.receive(server))
+    sb.unbind(server)
+    out.println("udp: received "+packet.data.length+" bytes = "+packet.data.to(List).map(_.toChar).mkString)
+
+    // ...and a TCP loopback round-trip: listen, dial back into the listener, write the payload and
+    // hang up (so the server-side read sees EOF), then accept and read it back through the duplex.
+    // The kernel's listen backlog completes the handshake and buffers the payload, so the
+    // single-threaded dial → write → accept → read sequence never blocks.
+    val tcpPort = Port.unsafe[Tcp](55556)
+    val tcpServer = sb.listenTcp(tcpPort, Unset, Nil)
+    val client = sb.dialTcpPort(tcpPort, Unset, Nil)
+    sb.request(client, summon[Data is Streamable by Data over Credit].stream(payload))
+    sb.hangUp(client)
+    val duplex = unsafely(sb.accept(tcpServer))
+    val received = unsafely(duplex.source.memoize)
+    duplex.close()
+    sb.shutdown(tcpServer)
+    out.println("tcp: received "+received.length+" bytes = "+received.to(List).map(_.toChar).mkString)
