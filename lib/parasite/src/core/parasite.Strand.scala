@@ -30,97 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package parasite
 
-import java.util.concurrent.atomic as juca
+import language.experimental.pureFunctions
 
-import ambience.*
-import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import parasite.*
-import profanity.*
-import quantitative.*
-import rudiments.*
-import symbolism.*
-import vacuous.*
+import java.util.concurrent.locks as jucl
 
-object Cli:
-  private var messages: List[Text] = Nil
-  private var trigger: Promise[Unit] = Promise()
+import scala.compiletime.asMatchable
 
-  def prepare(): Unit =
-    messages = Nil
-    trigger = Promise()
+object Strand:
+  // Equality delegates to the underlying thread: `Promise` stores waiters in a `Set[Strand]`, and
+  // two handles on the same thread must coincide there, however they were obtained.
+  final class Threaded(val thread: Thread) extends Strand:
+    def interrupt(): Unit = thread.interrupt()
+    def join(): Unit = thread.join()
+    def unpark(): Unit = jucl.LockSupport.unpark(thread)
 
-  def done(): Unit = trigger.offer(())
-  def log(input: Text): Unit = messages ::= input
-  def await()(using Monitor^): List[Text] =
-    safely(trigger.await(10.0*Second)) yet messages.reverse
+    override def equals(that: Any): Boolean = that.asMatchable match
+      case that: Threaded => that.thread == thread
+      case _              => false
 
+    override def hashCode: Int = thread.hashCode
 
-  def arguments
-    ( textArguments: Iterable[Text],
-      focus:         Optional[Int]     = Unset,
-      position:      Optional[Int]     = Unset,
-      tab:           Optional[Ordinal] = Unset )
-  :   List[Argument] =
-
-    textArguments.to(List).padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
-      Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
-
-
-// A `Cli` is a *capability*: it carries the live stdio, signal-dispatch and completion state of
-// one command-line invocation, whose lifetime is the `process` scope that introduces it.
-// `Exclusive` because an invocation has a single owner; nothing may retain it past the exit.
-trait Cli extends Console, caps.ExclusiveCapability:
-  def arguments: List[Argument]
-  def environment: Environment
-  def workingDirectory: WorkingDirectory
-  def proceed: Boolean
-  def login: Login
-  def register(flag: Flag, discoverable: Discoverable): Unit = ()
-  def present(flag: Flag): Unit = ()
-  def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit = ()
-
-  private val signalHandlers:
-  juca.AtomicReference[List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]]] =
-    juca.AtomicReference(Nil)
-
-  override def trap
-    ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
-  :   Unit =
-
-    signalHandlers.updateAndGet(handler :: _.nn)
-
-
-  def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =
-    def loop(handlers: List[PartialFunction[UnixSignal | WindowsSignal, SignalResponse]])
-    :   SignalResponse =
-
-      handlers match
-        case Nil =>
-          SignalResponse.Reject
-
-        case pf :: rest =>
-          if pf.isDefinedAt(signal) then pf(signal) match
-            case SignalResponse.Defer => loop(rest)
-            case decided              => decided
-          else loop(rest)
-
-    loop(signalHandlers.get.nn)
-
-
-  def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
-  :   Optional[operand]
-
-
-  def suggest
-    ( argument: Argument,
-      update:   (List[Suggestion] aka "prior") ?=> List[Suggestion],
-      prefix:   Text,
-      suffix:   Text )
-  :   Unit =
-
-    return
+// The abstract handle on a unit of execution forked by a `Supervisor`: the minimal surface that
+// supervision (`Worker.cancel`) and wakeup (`Promise`) require. On the JVM it wraps a `Thread`; an
+// event-loop supervisor (Wasm/WASIp3) would implement it over a run-queue entry. `unpark` lives
+// here rather than on `Supervisor` because the wake side of a `Promise` (`fulfill`/`offer`/
+// `cancel`) runs with no `Monitor` in scope, possibly on a foreign strand: a strand must be
+// self-wakeable.
+trait Strand:
+  def interrupt(): Unit   // request cancellation of the strand
+  def join(): Unit        // block until the strand has terminated
+  def unpark(): Unit      // release the strand from a `Supervisor.park`

@@ -53,6 +53,7 @@ object WorkloadHandle:
   // fail under capture checking, while extensions resolve directly.
   extension (handle: (WorkloadHandle & Granting[Grant.Read])^)
     def state()
+    ( using Monitor^ )
     ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
     :   ProcessStatus =
 
@@ -61,6 +62,7 @@ object WorkloadHandle:
   extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Run])^)
     // `await`, not `wait`: the latter would clash with `Object#wait`.
     def await()
+    ( using Monitor^ )
     ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
     :   WaitResponse =
 
@@ -68,6 +70,7 @@ object WorkloadHandle:
 
   extension (handle: (WorkloadHandle & Granting[WorkloadGrant.Signal])^)
     def kill(signal: Int, all: Boolean = false)
+    ( using Monitor^ )
     ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
     :   Unit =
 
@@ -87,6 +90,7 @@ extends caps.ExclusiveCapability
 // which then fails to conform to the declared refinement.
 class WorkloadOpenable
   ( using containerd:    Containerd^,
+          monitor:       Monitor^,
           grpcError:     Tactic[GrpcError],
           http2Error:    Tactic[Http2Error],
           asyncError:    Tactic[AsyncError],

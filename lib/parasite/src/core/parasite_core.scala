@@ -56,7 +56,9 @@ package threading:
   given adaptiveThreading: Threading = () => AdaptiveSupervisor
 
 package probates:
-  given awaitProbate: Probate = _.delegate(_.attend())
+  // Cleanup runs on the completing worker's own strand, with no ambient `Monitor`: the dying
+  // worker itself licenses the suspension (a `Worker` IS a `Monitor`).
+  given awaitProbate: Probate = worker => worker.delegate(_.attend()(using worker))
   given cancelProbate: Probate = _.delegate(_.cancel())
 
   given panicProbate: Probate = _.delegate: child =>
@@ -68,6 +70,14 @@ package probates:
 
 package supervisors:
   given globalSupervisor: Supervisor = PlatformSupervisor
+
+// A process-lifetime monitor for blocking *outside* any `supervise` scope: it parks the calling
+// platform thread and supervises nothing. A deliberate, explicitly-imported escape hatch for
+// call sites (daemon lifecycles, process-lifetime waits) where no supervision scope can exist;
+// prefer `supervise` wherever the blocking region is already scoped. (An object, not a `package`,
+// because a top-level field of capability type must live in an object extending `Capability`.)
+object unsupervised extends caps.ExclusiveCapability:
+  given orphanMonitor: Monitor = Root(PlatformSupervisor)
 
 package retryTenacities:
   given exponentialForeverTenacity: Tenacity = Tenacity.exponential(10L, 1.2)

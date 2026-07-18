@@ -59,5 +59,5 @@ object Daemon:
 
 
 trait Daemon:
-  def attend(): Unit
+  def attend()(using Monitor^): Unit
   def cancel(): Unit

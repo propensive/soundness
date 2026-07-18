@@ -36,11 +36,11 @@ import language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.atomic as juca
-import java.util.concurrent.locks as jucl
 import java.util.function as juf
 
 import anticipation.*
 import contingency.*
+import digression.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -49,12 +49,12 @@ import unsafeExceptions.canThrowAny
 
 object Promise:
   enum State[+value]:
-    case Incomplete(waiting: Set[Thread])
+    case Incomplete(waiting: Set[Strand])
     case Complete(value: value)
     case Cancelled
 
 // A plain class, not a case class: a zero-field case class would make every promise `==` every
-// other, and promises are meaningful only by identity (`LockSupport.park` blocks on `this`).
+// other, and promises are meaningful only by identity (`Supervisor.park` blocks on `this`).
 final class Promise[value]():
   import Promise.State, State.{Incomplete, Complete, Cancelled}
 
@@ -75,6 +75,10 @@ final class Promise[value]():
     case Complete(_) => true
     case _           => false
 
+  // The promise's completion, reified as a `Task`: the monadic form of `await`, composable with
+  // `bind`/`map` without suspending the calling strand.
+  def task(using Monitor^, Probate^, Codepoint): (Task[value] emits AsyncError)^ = async(await())
+
   // The transition is pure — `getAndUpdate` may re-run it under contention — so the waiters are
   // unparked exactly once afterwards, from the returned previous state. No wakeup can be lost:
   // once `Complete` is installed, `enqueue` adds no further waiters.
@@ -87,21 +91,21 @@ final class Promise[value]():
     state.getAndUpdate(completeIncomplete(supplied)).nn match
       case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
       case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
-      case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
+      case Incomplete(waiting) => waiting.each(_.unpark())
 
   def offer(supplied: => value): Unit =
     state.getAndUpdate(completeIncomplete(supplied)).nn match
-      case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
+      case Incomplete(waiting) => waiting.each(_.unpark())
       case _                   => ()
 
-  private def enqueue(thread: Thread)(current: State[value] | Null): State[value] =
+  private def enqueue(strand: Strand)(current: State[value] | Null): State[value] =
     current.nn match
-      case Incomplete(waiting) => Incomplete(waiting + thread)
+      case Incomplete(waiting) => Incomplete(waiting + strand)
       case Complete(value)     => Complete(value)
       case _                   => Cancelled
 
-  def await(): value raises AsyncError =
-    if Thread.interrupted() then throw new InterruptedException()
+  def await()(using monitor: Monitor^): value raises AsyncError =
+    if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     // A settled promise needs no CAS and no waiter-set allocation — the common case when joining
     // an already-finished task. The enqueue operator is allocated once per call, outside the
@@ -110,32 +114,34 @@ final class Promise[value]():
       case Complete(value) => value
       case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
       case Incomplete(_)   =>
-        val enqueue0: juf.UnaryOperator[State[value]] = enqueue(Thread.currentThread.nn)(_)
+        val strand0: Strand = monitor.supervisor.strand()
+        val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
         @tailrec
         def recur(): value =
-          if Thread.interrupted() then throw new InterruptedException()
+          if monitor.supervisor.interrupted() then throw new InterruptedException()
 
           state.getAndUpdate(enqueue0).nn match
-            case Incomplete(_)   => jucl.LockSupport.park(this) yet recur()
+            case Incomplete(_)   => monitor.supervisor.park(this) yet recur()
             case Complete(value) => value
             case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
 
         recur()
 
-  def attend(): Unit =
-    if Thread.interrupted() then throw new InterruptedException()
+  def attend()(using monitor: Monitor^): Unit =
+    if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     if !ready then
-      val enqueue0: juf.UnaryOperator[State[value]] = enqueue(Thread.currentThread.nn)(_)
+      val strand0: Strand = monitor.supervisor.strand()
+      val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
       @tailrec
       def recur(): Unit =
-        if Thread.interrupted() then throw new InterruptedException()
+        if monitor.supervisor.interrupted() then throw new InterruptedException()
 
         state.getAndUpdate(enqueue0) match
           case Incomplete(_) =>
-            jucl.LockSupport.park(this)
+            monitor.supervisor.park(this)
             recur()
 
           case _ =>
@@ -148,29 +154,31 @@ final class Promise[value]():
     case current       => current.nn
 
   def cancel(): Unit = state.getAndUpdate(cancelIncomplete) match
-    case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
+    case Incomplete(waiting) => waiting.each(_.unpark())
     case _                   => ()
 
 
   def await[generic: Abstractable across Durations to Long](duration: generic)
+    ( using monitor: Monitor^ )
   :   value raises AsyncError =
 
-    if Thread.interrupted() then throw new InterruptedException()
+    if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     state.get().nn match
       case Complete(value) => value
       case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
       case Incomplete(_)   =>
         val deadline = jl.System.nanoTime() + duration.generic
-        val enqueue0: juf.UnaryOperator[State[value]] = enqueue(Thread.currentThread.nn)(_)
+        val strand0: Strand = monitor.supervisor.strand()
+        val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
         @tailrec
         def recur(): value =
-          if Thread.interrupted() then throw new InterruptedException()
+          if monitor.supervisor.interrupted() then throw new InterruptedException()
           else if deadline < jl.System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
           else state.getAndUpdate(enqueue0).nn match
             case Incomplete(_) =>
-              jucl.LockSupport.parkNanos(this, deadline - jl.System.nanoTime())
+              monitor.supervisor.park(this, deadline)
               recur()
 
             case Complete(value) =>
@@ -182,20 +190,24 @@ final class Promise[value]():
         recur()
 
 
-  def attend[generic: Abstractable across Durations to Long](duration: generic): Unit =
-    if Thread.interrupted() then throw new InterruptedException()
+  def attend[generic: Abstractable across Durations to Long](duration: generic)
+    ( using monitor: Monitor^ )
+  :   Unit =
+
+    if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     if !ready then
       val deadline = jl.System.nanoTime() + duration.generic
-      val enqueue0: juf.UnaryOperator[State[value]] = enqueue(Thread.currentThread.nn)(_)
+      val strand0: Strand = monitor.supervisor.strand()
+      val enqueue0: juf.UnaryOperator[State[value]] = enqueue(strand0)(_)
 
       @tailrec
       def recur(): Unit =
-        if Thread.interrupted() then throw new InterruptedException()
+        if monitor.supervisor.interrupted() then throw new InterruptedException()
         else if deadline > jl.System.nanoTime
         then state.getAndUpdate(enqueue0).nn match
           case Incomplete(_) =>
-            jucl.LockSupport.parkNanos(this, deadline - jl.System.nanoTime())
+            monitor.supervisor.park(this, deadline)
             recur()
 
           case Cancelled =>

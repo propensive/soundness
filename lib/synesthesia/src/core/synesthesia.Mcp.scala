@@ -850,7 +850,11 @@ object Mcp:
     def `prompts/get`(name: Text, arguments: Optional[Map[Text, Text]], _meta: Optional[Json])
     :   GetPrompt =
 
-      val messages = spec.invokePrompt(server, client, name, arguments.or(Map())).map:
+      // The RPC proxy's awaits are scoped to this call, so it runs under its own supervision.
+      import threading.platformThreading
+
+      val messages = unsafely(supervise:
+        spec.invokePrompt(server, client, name, arguments.or(Map()))).map:
         case Human(message) => PromptMessage(Role.User, TextContent(message))
         case Agent(message) => PromptMessage(Role.Assistant, TextContent(message))
 
@@ -876,7 +880,9 @@ object Mcp:
     def `resources/unsubscribe`(uri: Text, _meta: Optional[Json]): Unit = ???
 
     def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
-      val result = spec.invokeTool(server, client, name, arguments)
+      // The RPC proxy's awaits are scoped to this call, so it runs under its own supervision.
+      import threading.platformThreading
+      val result = unsafely(supervise(spec.invokeTool(server, client, name, arguments)))
 
       import formatting.compactJsonFormatting
       CallTool(content = List(TextContent(result.show)), structuredContent = result)

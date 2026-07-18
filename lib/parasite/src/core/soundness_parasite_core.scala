@@ -37,7 +37,7 @@ export
   . { AdaptiveSupervisor, async, Async, AsyncError, cancel, Chain, Probate, Daemon, daemon, delay,
       Destruction, Fault, Fulfillment, hibernate, Hook, intercept,
       Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
-      relent, retry, RetryError, Shutdown, sleep, snooze, supervise, Supervisor, Task, task,
+      relent, retry, RetryError, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task, task,
       Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor, Worker,
       AsyncTactic, Remedy, concurrent }
 
@@ -49,6 +49,9 @@ package probates:
 
 package supervisors:
   export parasite.supervisors.globalSupervisor
+
+object unsupervised:
+  export parasite.unsupervised.orphanMonitor
 
 package retryTenacities:
   export

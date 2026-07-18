@@ -89,6 +89,7 @@ object Containerd:
 case class Containerd(channel: GrpcChannel^):
   // The daemon's version and build revision (`containerd.services.version.v1.Version`).
   def version()
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   VersionResponse =
 
@@ -97,6 +98,7 @@ case class Containerd(channel: GrpcChannel^):
   // The containers in the bound namespace (`containerd.services.containers.v1`),
   // optionally narrowed by containerd `filters`.
   def containers(filters: List[Text] = Nil)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   List[Container] =
 
@@ -108,6 +110,7 @@ case class Containerd(channel: GrpcChannel^):
   // Register a container, returning it as stored (`Containers.Create`). The container's
   // `spec` carries the OCI runtime spec as an `AnyMessage`.
   def createContainer(container: Container)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Container =
 
@@ -122,6 +125,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // A single container by id (`Containers.Get`).
   def container(id: Text)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Container =
 
@@ -132,6 +136,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Remove a container by id (`Containers.Delete`).
   def deleteContainer(id: Text)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Unit =
 
@@ -141,6 +146,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // The namespaces known to the daemon (`Namespaces.List`).
   def namespaces(filter: Text = t"")
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   List[Namespace] =
 
@@ -151,6 +157,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Create a namespace, returning it as stored (`Namespaces.Create`).
   def createNamespace(namespace: Namespace)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Namespace =
 
@@ -161,6 +168,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Remove a namespace by name (`Namespaces.Delete`).
   def deleteNamespace(name: Text)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Unit =
 
@@ -169,6 +177,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // The images in the bound namespace (`Images.List`), optionally filtered.
   def images(filters: List[Text] = Nil)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   List[ImageRecord] =
 
@@ -179,6 +188,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // A single image by reference (`Images.Get`).
   def image(name: Text)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   ImageRecord =
 
@@ -189,6 +199,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Remove an image by reference (`Images.Delete`).
   def deleteImage(name: Text, sync: Boolean = false)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Unit =
 
@@ -200,6 +211,7 @@ case class Containerd(channel: GrpcChannel^):
   // `rootfs` mounts, e.g. from an unpacked snapshot) and optional runtime `options`,
   // returning the container id and the new task's host pid.
   def createTask(containerId: Text, rootfs: List[Mount] = Nil, options: AnyMessage = AnyMessage())
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   CreateTaskResponse =
 
@@ -209,6 +221,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Start a created task (`Tasks.Start`), returning its host pid.
   def startTask(containerId: Text, execId: Text = t"")
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Int =
 
@@ -219,6 +232,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Send a signal to a task (`Tasks.Kill`); `all` targets every process in the container.
   def killTask(containerId: Text, signal: Int, execId: Text = t"", all: Boolean = false)
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Unit =
 
@@ -228,6 +242,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Wait for a task to exit (`Tasks.Wait`), returning its exit status and time.
   def waitTask(containerId: Text, execId: Text = t"")
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   WaitResponse =
 
@@ -236,6 +251,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Delete a task (`Tasks.Delete`), returning its final exit status.
   def deleteTask(containerId: Text, execId: Text = t"")
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   DeleteTaskResponse =
 
@@ -245,6 +261,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // The state of a single task (`Tasks.Get`).
   def task(containerId: Text, execId: Text = t"")
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   Workload =
 
@@ -253,6 +270,7 @@ case class Containerd(channel: GrpcChannel^):
 
   // Every task known to the daemon (`Tasks.List`), optionally filtered.
   def tasks(filter: Text = t"")
+  ( using Monitor^ )
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   List[Workload] =
 

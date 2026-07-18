@@ -90,18 +90,34 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   def chain: Optional[Chain]
   def stack: Text
   def daemon: Boolean
-  def attend(): Unit = promise.attend()
+  def attend()(using Monitor^): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
   def supervisor: Supervisor
 
   def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
-    jucl.LockSupport.parkNanos(duration.generic)
+    supervisor.sleep(duration.generic)
 
-// The thread-forking strategy. DECOUPLED from `Monitor` (see capture-checking-capabilities notes):
-// the global strategy singletons (`PlatformSupervisor` etc.) are plain values, NOT capabilities, so
-// they can be referenced anywhere; the supervision tree (capability-tracked `Monitor`s) is rooted
-// locally per `supervise` block by a `Root`.
+// The execution strategy: forking and — since every way a strand can *suspend* must be routed
+// through it — parking, sleeping and cancellation-status too. This is the whole platform seam:
+// a backend for a different execution model (an event loop over WASIp3 waitable-sets, say) is a
+// `Supervisor` implementation, selected by a `Threading` given; nothing else in parasite touches
+// the platform. DECOUPLED from `Monitor` (see capture-checking-capabilities notes): the global
+// strategy singletons (`PlatformSupervisor` etc.) are plain values, NOT capabilities, so they can
+// be referenced anywhere; the supervision tree (capability-tracked `Monitor`s) is rooted locally
+// per `supervise` block by a `Root`. The *license* to suspend is `Monitor^`; the supervisor is
+// only the mechanism.
+//
+// The WASIp3 (Component Model async) mapping, for a future `parasite.wasi` backend:
+//   fork                 → allocate a run-queue entry (the strand) and enqueue it
+//   park                 → suspend the current task, returning WAIT on its waitable-set;
+//                          `Strand.unpark` → resolve its wakeup waitable / mark it runnable
+//   park(deadline)/sleep → join a `wasi:clocks/monotonic-clock` timer to the set
+//   interrupted          → the strand's cancellation flag, set by `Strand.interrupt`
+// On a stackless runtime, a direct-style `park` from arbitrary stack depth only becomes
+// implementable once the compiler can CPS-transform suspending code; until then such a backend
+// serves the monadic dialect (`Task.bind`/`map`, `Task.sleep`, `Promise#task`), whose
+// continuations are already reified.
 trait Supervisor:
   def name: Name[Async]
 
@@ -109,7 +125,37 @@ trait Supervisor:
   // building strings, and `VirtualSupervisor` — the default — never evaluates it. (A thunk, not
   // a by-name parameter, because a by-name `Optional[Text]` crashes the capture checker's Setup
   // phase on the union type.)
-  def fork(name: () => Optional[Text])(block: => Unit): Thread
+  def fork(name: () => Optional[Text])(block: => Unit): Strand
+
+  // The identity of the calling strand, as a waiter which a later `Strand.unpark` can release.
+  def strand(): Strand
+
+  // Suspend the calling strand until it is unparked. Spurious wakeups are permitted — every
+  // caller re-checks its condition in a loop, exactly as `LockSupport.park` demands.
+  def park(blocker: AnyRef): Unit
+
+  // Suspend the calling strand until the deadline (`System.nanoTime` basis) or an unpark.
+  def park(blocker: AnyRef, deadline: Long): Unit
+
+  // Timed suspension with no blocker and no wakeup channel.
+  def sleep(nanoseconds: Long): Unit
+
+  // Check-and-clear the calling strand's cancellation-interrupt status.
+  def interrupted(): Boolean
+
+// The thread-backed implementation of the suspension primitives, shared by every JVM supervisor.
+// This also compiles (and no-ops harmlessly) on the Scala.js/Wasm javalib, which fakes `Thread`
+// and `LockSupport`; if the fork's javalib ever drops those fakes, split this out with the
+// `jsSources` arrangement used by `pneumatic.flate`.
+trait ThreadSupervisor extends Supervisor:
+  def strand(): Strand = Strand.Threaded(Thread.currentThread.nn)
+  def park(blocker: AnyRef): Unit = jucl.LockSupport.park(blocker)
+
+  def park(blocker: AnyRef, deadline: Long): Unit =
+    jucl.LockSupport.parkNanos(blocker, deadline - jl.System.nanoTime())
+
+  def sleep(nanoseconds: Long): Unit = jucl.LockSupport.parkNanos(nanoseconds)
+  def interrupted(): Boolean = Thread.interrupted()
 
 // The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),
 // but its lifetime is the `supervise` block, so it does not escape as a global capability.
@@ -124,13 +170,13 @@ class Root(val supervisor: Supervisor) extends Monitor:
   def cancel(): Unit = ()
   def shutdown(): Unit = workers.each(_.cancel())
 
-object VirtualSupervisor extends Supervisor:
+object VirtualSupervisor extends ThreadSupervisor:
   def name: Name[Async] = n"virtual"
 
-  def fork(name: () => Optional[Text])(block: => Unit): Thread =
-    Thread.ofVirtual().nn.start{ () => block }.nn
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
+    Strand.Threaded(Thread.ofVirtual().nn.start{ () => block }.nn)
 
-object AdaptiveSupervisor extends Supervisor:
+object AdaptiveSupervisor extends ThreadSupervisor:
   def name: Name[Async] = n"adaptive"
 
   // Virtual-thread support is a deterministic property of the JVM, so it is probed once with a
@@ -144,19 +190,20 @@ object AdaptiveSupervisor extends Supervisor:
       true
     catch case error: UnsupportedOperationException => false
 
-  def fork(name: () => Optional[Text])(block: => Unit): Thread =
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
     if virtual then VirtualSupervisor.fork(name)(block)
     else PlatformSupervisor.fork(name)(block)
 
-object PlatformSupervisor extends Supervisor:
+object PlatformSupervisor extends ThreadSupervisor:
   def name: Name[Async] = n"platform"
 
-  def fork(name: () => Optional[Text])(block: => Unit): Thread =
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
     val runnable: Runnable^ = () => block
 
-    new Thread(runnable).tap: thread =>
-      name().let(_.s).let(thread.setName(_))
-      thread.start()
+    Strand.Threaded:
+      new Thread(runnable).tap: thread =>
+        name().let(_.s).let(thread.setName(_))
+        thread.start()
 
 abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
   self: Worker^ =>
@@ -190,7 +237,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
   def relent(): Unit =
     relents += 1
-    if Thread.interrupted() then throw new InterruptedException()
+    if supervisor.interrupted() then throw new InterruptedException()
 
     state.get().nn match
       case Initializing    => ()
@@ -201,9 +248,9 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       case Cancelled       => throw new InterruptedException()
 
   override def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
-    if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
-    jucl.LockSupport.parkNanos(duration.generic)
-    if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
+    if supervisor.interrupted() || state.get() == Cancelled then throw new InterruptedException()
+    supervisor.sleep(duration.generic)
+    if supervisor.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
   def map[result2](lambda: Result => result2)(using Monitor^, Probate^)
@@ -221,7 +268,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // An explicit CAS loop rather than `updateAndGet`, whose update function may be re-run under
   // contention: the cancellation effects must fire exactly once, and only *after* the `Cancelled`
   // state is visible, so that a joiner woken by `promise.cancel()` cannot observe a stale
-  // `Active` state. The final `thread.join()` happens whenever the state is `Cancelled`, even if
+  // `Active` state. The final `strand.join()` happens whenever the state is `Cancelled`, even if
   // another cancellation won the race.
   @tailrec
   final def cancel(): Unit =
@@ -231,10 +278,10 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       case Initializing | Active(_) =>
         if !state.compareAndSet(current, Cancelled) then cancel() else
           promise.cancel()
-          thread.interrupt()
-          thread.join()
+          strand.interrupt()
+          strand.join()
 
-      case Cancelled => thread.join()
+      case Cancelled => strand.join()
       case _         => ()
 
   def result()(using cancel: Tactic[AsyncError]^): Result =
@@ -259,11 +306,12 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // `canThrowAny`), so the static error is only `AsyncError`. Used internally (`map`/`bind`/
   // `sequence`/`race`) where the body's error type is not tracked. Public callers go via the typed
   // `Task#await`, which routes through `deliver` instead.
-  // No `thread.join()`: the promise is settled in the worker thread's `finally` block, strictly
+  // No `strand.join()`: the promise is settled in the worker strand's `finally` block, strictly
   // after the state is terminal and probate cleanup has run, so `attend` returning already
-  // guarantees everything a join would. (A trailing unbounded `thread.join()` would also defeat
+  // guarantees everything a join would. (A trailing unbounded `strand.join()` would also defeat
   // the timed variants' deadline.)
   def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
+    ( using Monitor^ )
   :   Result raises AsyncError =
 
     promise.attend(duration)
@@ -271,7 +319,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     result()
 
 
-  def join(): Result raises AsyncError =
+  def join()(using Monitor^): Result raises AsyncError =
     promise.attend()
     result()
 
@@ -281,14 +329,14 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // `Tactic[error | AsyncError]`. `error` is reconstructed by an unchecked cast that is sound for
   // any failure raised through the body's `AsyncTactic` (the only typed-error path); a genuinely
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
-  def deliver[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
+  def deliver[error <: Hazard]()(using Monitor^, Tactic[error | AsyncError]^): Result =
     promise.attend()
     fulfilment()
 
 
   def deliver[error <: Hazard, abstractable: Abstractable across Durations to Long]
     ( duration: abstractable )
-    ( using Tactic[error | AsyncError]^ )
+    ( using Monitor^, Tactic[error | AsyncError]^ )
   :   Result =
 
     promise.attend(duration)
@@ -314,7 +362,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
           case Cancelled                   => abort(AsyncError(Reason.Cancelled))
           case _                           => abort(AsyncError(Reason.Incomplete))
 
-  private lazy val thread: Thread = parent.supervisor.fork(() => stack):
+  private lazy val strand: Strand = parent.supervisor.fork(() => stack):
     val started: Boolean = state.updateAndGet:
       case Initializing => Active(jl.System.currentTimeMillis)
       case other        => other
@@ -330,7 +378,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
     catch
       case error: InterruptedException =>
-        Thread.interrupted()
+        supervisor.interrupted()
 
         state.updateAndGet:
           case Initializing | Active(_) | Cancelled => Cancelled
@@ -381,4 +429,4 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
       escalation.let(throw _)
 
-  thread
+  strand

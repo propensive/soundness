@@ -96,6 +96,12 @@ object grpcInternal:
             Expr.summon[Tactic[error]].getOrElse:
               halt(m"a contextual ${TypeRepr.of[Tactic[error]].show} instance is required")
 
+          // Summoned at the expansion site, outside the quote: a `given Monitor` declared inside
+          // the quote would resolve to itself and recurse.
+          def monitorExpr: Expr[Monitor] = Expr.summon[Monitor] match
+            case Some(monitor) => monitor
+            case _             => halt(m"a contextual `Monitor` instance is required")
+
           def encoder[request: Type]: Expr[request is Encodable in Protobuf] =
             Expr.summon[request is Encodable in Protobuf].getOrElse:
               halt(m"no ${TypeRepr.of[request is Encodable in Protobuf].show} instance was found")
@@ -116,6 +122,7 @@ object grpcInternal:
 
                     Some:
                       ' {
+                          given Monitor = ${monitorExpr}
                           given Tactic[GrpcError] = ${tactic[GrpcError]}
                           given Tactic[Http2Error] = ${tactic[Http2Error]}
                           given Tactic[AsyncError] = ${tactic[AsyncError]}
@@ -132,6 +139,7 @@ object grpcInternal:
 
                     Some:
                       ' {
+                          given Monitor = ${monitorExpr}
                           given Tactic[GrpcError] = ${tactic[GrpcError]}
                           given Tactic[Http2Error] = ${tactic[Http2Error]}
                           given Tactic[AsyncError] = ${tactic[AsyncError]}

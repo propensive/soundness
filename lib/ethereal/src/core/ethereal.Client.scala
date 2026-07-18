@@ -70,4 +70,4 @@ case class Client(pid: Pid) extends Topical:
 
   val socket: Promise[Connection] = Promise()
 
-  def close(): Unit = safely(socket.await(1.0*Second).close())
+  def close()(using Monitor^): Unit = safely(socket.await(1.0*Second).close())

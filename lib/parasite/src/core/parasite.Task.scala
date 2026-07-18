@@ -64,9 +64,10 @@ object Task:
         def daemon: Boolean = false
         def evaluate(worker: Worker): Result = evaluate0(worker)
 
-        def await(): result raises (error | AsyncError) = deliver[error]()
+        def await()(using Monitor^): result raises (error | AsyncError) = deliver[error]()
 
         def await[duration: Abstractable across Durations to Long](duration: duration)
+          ( using Monitor^ )
         :   result raises (error | AsyncError) =
 
           deliver[error, duration](duration)
@@ -87,6 +88,15 @@ object Task:
 
       def apply[value, value2](value: Task[value])(lambda: value => value2): Task[value2] =
         caps.unsafe.unsafeAssumePure(value.map(lambda))
+
+  // The monadic form of `snooze`: a task which completes after the duration, for composition
+  // with `bind`/`map` without suspending the calling strand.
+  def sleep[duration: Abstractable across Durations to Long](duration: duration)
+    ( using Monitor^, Probate^, Codepoint )
+  :   (Task[Unit] emits AsyncError)^ =
+
+    async(snooze(duration))
+
 
   extension [result](tasks: Seq[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
@@ -111,18 +121,19 @@ trait Task[+result]:
   type Error <: Hazard
 
   def ready: Boolean
-  def attend(): Unit
+  def attend()(using Monitor^): Unit
   def cancel(): Unit
 
-  def await(): result raises (Error | AsyncError)
+  def await()(using Monitor^): result raises (Error | AsyncError)
 
-  def await[duration: Abstractable across Durations to Long](duration: duration)
+  def await[duration: Abstractable across Durations to Long](duration: duration)(using Monitor^)
   :   result raises (Error | AsyncError)
 
   // The raw join, for parasite-internal combinators that do not track the error type.
-  protected[parasite] def join(): result raises AsyncError
+  protected[parasite] def join()(using Monitor^): result raises AsyncError
 
   protected[parasite] def join[duration: Abstractable across Durations to Long](duration: duration)
+    ( using Monitor^ )
   :   result raises AsyncError
 
   def bind[result2](lambda: result => Task[result2])(using Monitor^, Probate^)
