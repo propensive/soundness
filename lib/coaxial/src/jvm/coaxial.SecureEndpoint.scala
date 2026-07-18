@@ -68,12 +68,23 @@ object SecureEndpoint:
       val params = socket.getSSLParameters.nn
       params.setServerNames(ju.List.of(jns.SNIHostName(endpoint.host.s)))
       if tls.verify then params.setEndpointIdentificationAlgorithm("HTTPS")
+
+      // Offer the ALPN protocols (in preference order) so the peer can select the
+      // application protocol during the handshake; the choice is read back below.
+      if !tls.protocols.isEmpty then params.setApplicationProtocols(tls.protocols.map(_.s).toArray)
+
       socket.setSSLParameters(params)
 
       socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
       socket.startHandshake()
 
-      streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn): () =>
+      // `getApplicationProtocol` is `""` when nothing was negotiated (and, defensively,
+      // could be `null`); either way the transport carries no ALPN protocol.
+      val negotiated: Optional[Text] = socket.getApplicationProtocol match
+        case null | "" => Unset
+        case protocol  => protocol.tt
+
+      streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn, negotiated): () =>
         socket.close()
 
 case class SecureEndpoint(host: Text, port: Int)

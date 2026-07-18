@@ -76,6 +76,12 @@ trait Duplex:
   // a bare stateful result reads as `.rd` at separation-checked use sites.
   def source(using Buffering): (Stream[Data] over Credit)^
 
+  // The ALPN-negotiated application protocol (e.g. `h2` or `http/1.1`) for a TLS
+  // transport, or `Unset` for a plaintext connection or when the peer selected none.
+  // A unified HTTP client reads this once, straight after connecting, to pick an
+  // HTTP/2 or HTTP/1.1 driver over this very socket.
+  def alpnProtocol: Optional[Text] = Unset
+
   // Push endpoint over the write side: repeatable, like `send`, and
   // `finish()` flushes without half-closing the connection.
   def intake(using buffering: Buffering): (Intake[Data] over Credit)^{this} =
