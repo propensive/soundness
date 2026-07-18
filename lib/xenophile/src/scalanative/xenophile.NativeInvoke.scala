@@ -150,20 +150,20 @@ object NativeInvoke:
     // `CFuncPtr0[result]`.
     val funcType = cfuncPtr0.typeRef.appliedTo(List(resultType))
 
-    // `new CQuote(StringContext("function")).c()` — the interned C string of the symbol name.
-    val parts = Typed(
-      Repeated(List(Literal(StringConstant(function.s))), TypeTree.of[String]),
-      TypeTree.of[Seq[String]])
-
-    val context =
-      Apply(Select.unique(Ref(Symbol.requiredModule("scala.StringContext")), "apply"), List(parts))
-
+    // `new CQuote(StringContext("function")).c()` — the interned C string of the symbol name. The
+    // `StringContext` is built with a quote (it is plain stdlib, so its varargs are spread correctly
+    // by the quote compiler) and only the Scala Native `CQuote`/`c` around it are name-resolved.
+    val context = '{_root_.scala.StringContext(${Expr(function.s)})}.asTerm
     val quoted = Apply(Select(New(TypeTree.ref(cquote)), cquote.primaryConstructor), List(context))
     val symbolName = Apply(Select(quoted, cMethod), Nil)
 
     // `dlopen(null, RTLD_NOW)` — a handle over the main program and everything already loaded (the
-    // C symbols the linked binary provides), then `dlsym(handle, c"function")`.
-    val handle = Apply(Ref(dlopen), List(Literal(NullConstant()), Ref(rtldNow)))
+    // C symbols the linked binary provides), then `dlsym(handle, c"function")`. The null filename is
+    // cast to dlopen's own `CString` parameter type, since Scala Native's pointer type is not
+    // implicitly nullable.
+    val cstringType = dlopen.paramSymss.head.head.info
+    val nullFilename = Select.unique(Literal(NullConstant()), "asInstanceOf").appliedToType(cstringType)
+    val handle = Apply(Ref(dlopen), List(nullFilename, Ref(rtldNow)))
     val symbol = Apply(Ref(dlsym), List(handle, symbolName))
 
     // `CFuncPtr.fromPtr[CFuncPtr0[result]](symbol)` — summon the required `Tag` implicit (present

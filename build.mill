@@ -714,7 +714,7 @@ object ambience extends Library:
   // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component
   // Model import of `wasi:cli/environment` `get-environment` (`list<tuple<string, string>>`),
   // materialized by xenophile's `invoke` at the downstream (Wasm-linked) summoning site.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core):
@@ -838,7 +838,7 @@ object aviation extends Library:
   // WASI-backed monotonic clock: a `MonotonicClock` given whose reading is a Wasm Component Model
   // import of `wasi:clocks/monotonic-clock`, materialized by xenophile's `invoke` at the downstream
   // (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -968,7 +968,7 @@ object capricious extends Library:
   // WASI-backed entropy: a `Randomization` given whose randomness is a Wasm Component Model import
   // of `wasi:random/random`, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` in this build; only meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core):
@@ -1026,7 +1026,7 @@ object coaxial extends Library:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // A `SocketBackend` over `wasi:sockets` (TCP only; WASI has no Unix-domain sockets), materialized
   // by xenophile's `invoke` at the downstream Wasm-linked summoning site.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm)
@@ -1410,7 +1410,7 @@ object galilei extends Library:
   // A `FilesystemBackend` over `wasi:filesystem`, materialized by xenophile's `invoke` at the
   // downstream (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only meaningful linked
   // as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm):
@@ -2192,7 +2192,7 @@ object telekinesis extends Library:
   // A GET-only `Http.Backend` over `wasi:http/outgoing-handler`, materialized by xenophile's
   // `invoke` at the downstream (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only
   // meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, jvm, http2):
@@ -2208,7 +2208,7 @@ object turbulence extends Library:
   // WASI-backed standard streams: a `Stdio` whose output writes through the `wasi:io/streams`
   // `output-stream` resource, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` here; only meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   // The test suite exercises fan-out/merge over compression ducts, so it depends on `pneumatic`.
@@ -2329,7 +2329,7 @@ object wisteria extends Library:
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
-    vacuous.core, hellenism.core):
+    vacuous.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object typescript extends Component(core):
@@ -2372,7 +2372,7 @@ object xenophile extends Library:
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit, webidl, wasm):
+  object test extends Tests(typescript, native, wit, webidl, wasm, hellenism.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -2548,9 +2548,13 @@ object nativelink extends Module:
       (settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
         :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "src")
+    // The C header the xenophile FFI call navigates is read by the macro at compile time, so it must
+    // be on the compile classpath (as well as packaged for completeness).
+    def resources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
+    def compileResources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
     def compileMvnDeps = nativeToolchain.runtimeDeps
     override def mainClass = Some("nativelink.Main")
-    override def moduleDeps = Seq(vacuous.core.native)
+    override def moduleDeps = Seq(vacuous.core.native, xenophile.scalanative.native)
 
   object linker extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion
