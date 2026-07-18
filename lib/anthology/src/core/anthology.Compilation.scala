@@ -30,9 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Backend, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Importance, Notice }
+import galilei.*
+import hellenism.*
+import prepositional.*
+import serpentine.*
+
+// A token pairing a compilation's output directory with the classpath it was compiled against,
+// tagged with the backend it targeted. Contravariance means a `Compilation[Backend.Portable]`
+// is acceptable wherever a compilation for any single portable backend is required, while a
+// JVM compilation can never be linked and a portable compilation can never be bundled as an
+// executable JAR.
+case class Compilation[-backend <: Backend](out: Path on Linux, classpath: LocalClasspath)

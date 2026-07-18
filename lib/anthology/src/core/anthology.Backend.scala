@@ -30,9 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { Backend, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Importance, Notice }
+import anticipation.*
+import gossamer.*
+
+object Backend:
+  type Jvm = Backend.Jvm.type
+  type Js = Backend.Js.type
+  type Wasm = Backend.Wasm.type
+  type Wasi = Backend.Wasi.type
+
+  // The backends whose compilations emit target-neutral `.sjsir`, deferring the choice of
+  // linked representation (JavaScript, browser Wasm or a WASI component) until link time.
+  type Portable = Js | Wasm | Wasi
+
+  // Determines the additional compiler flags each backend requires; contravariance lets the
+  // single `portable` instance serve every member of the `Portable` union.
+  trait Emission[-backend <: Backend]:
+    def flags: List[Text]
+
+  given jvm: Emission[Jvm]:
+    def flags: List[Text] = Nil
+
+  given portable: Emission[Portable]:
+    def flags: List[Text] = List(t"-scalajs")
+
+enum Backend:
+  case Jvm, Js, Wasm, Wasi
