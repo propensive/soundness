@@ -798,8 +798,10 @@ object Http:
       val chunks = bodyBytes
       Stream(Iterator(head.in[Data]) ++ chunks)
 
-    def parse(stream: LazyList[Data]): Response raises HttpResponseError =
-      parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator))
+    def parse(stream: LazyList[Data], bodiless: Boolean = false)
+    :   Response raises HttpResponseError =
+
+      parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator), bodiless)
 
     // The endpoint form: the response is parsed straight off the connection's pull
     // endpoint, with no lazy-list view. The tactic is a plain using-parameter: a
@@ -807,9 +809,19 @@ object Http:
     def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[HttpResponseError])
     :   Response =
 
-      parseCursor(Cursor[Data](input))
+      parseCursor(Cursor[Data](input), false)
 
-    private def parseCursor(consume cursor: Cursor[Data, {}]^)(using Tactic[HttpResponseError])
+    // As above, with `bodiless` marking a response to a `HEAD` request, which
+    // repeats the `GET` framing headers but carries no body (RFC 7230 §3.3.3).
+    // (A separate overload: only one variant may have default arguments.)
+    def parse(consume input: (Stream[Data] over Credit)^, bodiless: Boolean)
+      ( using Tactic[HttpResponseError] )
+    :   Response =
+
+      parseCursor(Cursor[Data](input), bodiless)
+
+    private def parseCursor(consume cursor: Cursor[Data, {}]^, bodiless: Boolean)
+      ( using Tactic[HttpResponseError] )
     :   Response =
       
 
@@ -903,19 +915,69 @@ object Http:
           cursor.expect('\n')(expected('\n'))
           headers = Http.Header(header, value) :: headers
 
-      // The body spring lends the cursor's remainder as a SINGLE-OWNER stream:
-      // each mint resumes where the previous reader stopped (explicit `memoize`
-      // replaces the former memoized-remainder replay). Sealed: the cursor is
-      // reachable only through the spring, and the client API keeps `Response`
-      // pure (the honest capturing form is reserved for server-side handler
-      // results). Neutral carrier: see `Request.parse`.
+      val headerList: List[Http.Header] = headers.reverse
+
+      // The body is framed by its headers, per RFC 7230 §3.3.3, leaving the
+      // cursor at the first byte after it — the start of the next response on a
+      // kept-alive connection. `Transfer-Encoding: chunked` decodes chunks
+      // (taking precedence over any `Content-Length`); a `Content-Length` bounds
+      // a fixed run; a response that can never carry a body — one answering a
+      // `HEAD` request (signalled by `bodiless`), or with a 1xx/204/304 status —
+      // ends at the header block. `101 Switching Protocols` is the exception:
+      // its remainder is the upgraded protocol's raw stream, lent whole. With no
+      // framing header at all, the body is delimited by connection close, as
+      // before.
+      val chunked: Boolean = headerList.exists: header =>
+        header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
+
+      val length: Optional[Int] =
+        headerList.filter(_.key.lower == t"content-length").prim.let(_.value)
+        . lay(Unset: Optional[Int]): text =>
+            safely(Integer.parseInt(text.s.trim.nn))
+
+      // The body spring lends the framed view as a SINGLE-OWNER stream: each
+      // mint resumes where the previous reader stopped. A chunked or fixed
+      // framing is stateful (mid-chunk position, remaining length), so it is
+      // minted once and the same endpoint re-lent; the unframed remainder is
+      // position-resuming by construction. Sealed: the cursor is reachable only
+      // through the spring, and the client API keeps `Response` pure (the honest
+      // capturing form is reserved for server-side handler results). Neutral
+      // carrier: see `Request.parse`.
       val cursorRef: AnyRef = cursor.asInstanceOf[AnyRef]
 
-      val spring: Spring[Data]^ =
-        () => streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
-      val body = Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
+      def remainder(): Http.Body =
+        val spring: Spring[Data]^ =
+          () => streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
 
-      Response(version, status, headers.reverse, body)
+        Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
+
+      def framed(fixed: Optional[Int]): Http.Body =
+        var stream0: Optional[AnyRef] = Unset
+
+        val spring: Spring[Data]^ = () =>
+          if stream0 == Unset then
+            stream0 =
+              fixed.lay(Request.chunkedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^])):
+                length => Request.fixedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^], length)
+
+              . asInstanceOf[AnyRef]
+
+          stream0.asInstanceOf[(Stream[Data] over Credit)^]
+
+        Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
+
+      val cannotHaveBody: Boolean =
+        bodiless || code == 204 || code == 304 || (code >= 100 && code < 200 && code != 101)
+
+      val body: Http.Body =
+        if code == 101 then remainder()
+        else if cannotHaveBody then Http.Body.Empty
+        else if chunked then framed(Unset)
+        else
+          length.lay(remainder()): length =>
+            if length <= 0 then Http.Body.Empty else framed(length)
+
+      Response(version, status, headerList, body)
 
   // The body is capture-polymorphic (`Body^`): a server-side streamed response
   // legitimately retains the live connection it answers — the handler shape

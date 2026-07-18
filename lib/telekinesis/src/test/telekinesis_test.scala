@@ -485,6 +485,80 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert(_ == true)
 
+    // The native TCP backend, driven against a loopback JDK server: requests
+    // travel over a real socket through telekinesis's own wire codec, with no
+    // `java.net.http` involvement on the client side.
+    suite(m"Native TCP backend"):
+      import java.net.InetSocketAddress
+      import com.sun.net.httpserver as csnh
+
+      val server = csnh.HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).nn
+
+      server.createContext("/fixed", { exchange =>
+        val data = "Hello, native!".getBytes("UTF-8").nn
+        exchange.nn.getResponseHeaders.nn.set("Content-Type", "text/plain")
+        exchange.nn.sendResponseHeaders(200, data.length)
+        exchange.nn.getResponseBody.nn.write(data)
+        exchange.nn.close() })
+
+      server.createContext("/chunked", { exchange =>
+        exchange.nn.sendResponseHeaders(200, 0)
+        val out = exchange.nn.getResponseBody.nn
+        out.write("Hello".getBytes("UTF-8").nn)
+        out.flush()
+        out.write("World".getBytes("UTF-8").nn)
+        exchange.nn.close() })
+
+      server.createContext("/echo", { exchange =>
+        val body = exchange.nn.getRequestBody.nn.readAllBytes.nn
+        exchange.nn.sendResponseHeaders(200, body.length)
+        exchange.nn.getResponseBody.nn.write(body)
+        exchange.nn.close() })
+
+      server.start()
+      val port: Int = server.getAddress.nn.getPort
+
+      import socketBackends.virtualMachine
+
+      val backend: Http.Backend = httpBackends.native
+
+      def fetchNative(target: Text, method: Http.Method = Http.Get, body: Text = t"")
+      :   Http.Response =
+
+        backend.request
+          ( t"http://127.0.0.1:$port$target",
+            method,
+            Nil,
+            () => if body == t"" then Http.emptyBody() else body.in[Data].stream )
+
+      test(m"Fetch a fixed-length response over a raw TCP socket"):
+        val response = fetchNative(t"/fixed")
+        (response.status, response.body.stream.memoize.utf8)
+
+      . assert(_ == (Http.Ok, t"Hello, native!"))
+
+      test(m"Fetch a chunked response over a raw TCP socket"):
+        fetchNative(t"/chunked").body.stream.memoize.utf8
+
+      . assert(_ == t"HelloWorld")
+
+      test(m"An error status is conveyed"):
+        fetchNative(t"/missing").status
+
+      . assert(_ == Http.NotFound)
+
+      test(m"A response to HEAD has no body"):
+        fetchNative(t"/fixed", Http.Head).body
+
+      . assert(_ == Http.Body.Empty)
+
+      test(m"A request body is transmitted"):
+        fetchNative(t"/echo", Http.Post, t"ping-pong").body.stream.memoize.utf8
+
+      . assert(_ == t"ping-pong")
+
+      server.stop(0)
+
     // The suites below depend on external services (httpbin.org, badssl.com)
     // whose availability and configuration fluctuate; they are aspirational
     // pending #676, which replaces them with assertions about telekinesis's

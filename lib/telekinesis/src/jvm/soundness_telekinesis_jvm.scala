@@ -36,4 +36,4 @@ export telekinesis.{requestTransmissible, domainSocketFetchable, domainSocketHtt
     TlsAcceptance}
 
 package httpBackends:
-  export telekinesis.httpBackends.virtualMachine
+  export telekinesis.httpBackends.{native, virtualMachine}

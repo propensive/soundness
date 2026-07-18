@@ -42,10 +42,15 @@ import anticipation.*
 import coaxial.*
 import coaxial.socketBackends.virtualMachine
 import contingency.*
+import distillate.*
+import gigantism.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import urticose.*
+import vacuous.*
 import zephyrine.*
 
 // Build the underlying Java client with redirect-following disabled — the
@@ -152,6 +157,87 @@ package httpBackends:
     :   Http.Response =
 
       buildResponse(send(buildJavaRequest(jn.URI.create(url.s).nn, method, headers, body)))
+
+  // A native HTTP/1.1 transport over a raw TCP socket (via `coaxial`), speaking
+  // telekinesis's own wire codec instead of `java.net.http`. One connection per
+  // request: `Connection: close` is sent, the framed response body is drained
+  // eagerly, and the socket is closed before the response is returned — so
+  // responses do not stream yet (the pooled, keep-alive transport will restore
+  // that). Plaintext `http` only for now; `https` (TLS with ALPN) arrives with
+  // the unified protocol-negotiating backend.
+  given native: (backend: SocketBackend, options: Every[SocketOption.Tcp], buffering: Buffering)
+  =>  Http.Backend = new Http.Backend:
+
+    def request
+      ( url:     Text,
+        method:  Http.Method,
+        headers: List[Http.Header],
+        body:    Spring[Data] )
+      ( using Tactic[ConnectError] )
+    :   Http.Response =
+
+      import ConnectError.Reason.*
+
+      val parsed: HttpUrl = safely(url.as[HttpUrl]).or(abort(ConnectError(Unknown)))
+
+      if parsed.scheme.name != t"http" then abort(ConnectError(Unknown))
+
+      val host: Host = parsed.host.or(abort(ConnectError(Dns)))
+      val port: Int = parsed.authority.lay(80)(_.port.or(80))
+      val tcpPort: TcpPort = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
+
+      // An origin-form URL has an empty path; its request target is `/`.
+      val target: Text =
+        if parsed.location == t"" then t"/${parsed.requestTarget}" else parsed.requestTarget
+
+      // Connection-per-request: ask the server to close after this response, so
+      // an unframed (connection-delimited) body terminates.
+      val headers2: List[Http.Header] =
+        if headers.exists(_.key.lower == t"connection") then headers
+        else Http.Header(t"connection", t"close") :: headers
+
+      val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
+
+      val duplex: Duplex =
+        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values) catch
+          case error: jn.UnknownHostException => abort(ConnectError(Dns))
+
+          case error: jn.ConnectException =>
+            error.getMessage() match
+              case "Connection refused"   => abort(ConnectError(Refused))
+              case "Connection timed out" => abort(ConnectError(Timeout))
+              case _                      => abort(ConnectError(Unknown))
+
+          case error: ji.IOException => abort(ConnectError(Unknown))
+
+      try
+        duplex.send(Http.Request.serialize(httpRequest))
+
+        // Typed binding: `parse` is overloaded (lazy-list and endpoint forms),
+        // so the expected type picks the endpoint pair.
+        val input: zephyrine.Stream[Data] over zephyrine.Credit = duplex.source
+
+        val response: Http.Response =
+          mitigate:
+            case error: HttpResponseError =>
+              import error.diagnostics
+              ConnectError(Unknown)
+
+          . protect:
+              Http.Response.parse(input, method == Http.Head)
+
+        val data: Data =
+          try response.body.stream.memoize catch
+            case error: StreamError    => abort(ConnectError(Unknown))
+            case error: ji.IOException => abort(ConnectError(Unknown))
+
+        val body2: Http.Body = response.body match
+          case Http.Body.Empty => Http.Body.Empty
+          case _               => if data.isEmpty then Http.Body.Empty else Http.Body.Fixed(data)
+
+        response.status(response.textHeaders, body2)
+
+      finally duplex.close()
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
 given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)
