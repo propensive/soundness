@@ -32,15 +32,10 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import gesticulate.*
+object Canvas:
+  given openable: [layout <: Tuple] => RasterOpenable[layout] = RasterOpenable[layout]()
 
-object Png:
-  def apply(): Rasterizable = rasterization
-
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
-
-sealed trait Png
+// The form phantom for opening a raster for scoped pixel access:
+// `raster.open[Canvas]()` for reading, or `raster.open[Canvas](Read & Write)` to mutate pixels
+// in place.
+trait Canvas

@@ -33,14 +33,16 @@
 package hallucination
 
 import anticipation.*
-import gesticulate.*
 
-object Png:
-  def apply(): Rasterizable = rasterization
+// Bounds-unchecked primitive readers shared by the pure codecs; out-of-range reads throw and
+// are translated to `RasterError(..., Truncated)` at each codec's boundary.
+private[hallucination] object Binary:
+  def u8(data: Data, index: Int): Int = data(index)&0xff
+  def u16le(data: Data, index: Int): Int = u8(data, index) | u8(data, index + 1) << 8
+  def u16be(data: Data, index: Int): Int = u8(data, index) << 8 | u8(data, index + 1)
 
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
+  def u32le(data: Data, index: Int): Int =
+    u16le(data, index) | u16le(data, index + 2) << 16
 
-sealed trait Png
+  def u32be(data: Data, index: Int): Int =
+    u16be(data, index) << 16 | u16be(data, index + 2)

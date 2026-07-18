@@ -41,5 +41,6 @@ object Jpeg:
   given rasterization: Jpeg is Rasterizable:
     def name: Text = "JPEG".tt
     def mediaType: MediaType = media"image/jpeg"
+    def alpha: Boolean = false
 
 sealed trait Jpeg

@@ -32,15 +32,44 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import gesticulate.*
+import scala.compiletime.*
 
-object Png:
-  def apply(): Rasterizable = rasterization
+import aperture.*
+import iridescence.*
+import prepositional.*
 
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
+object CanvasHandle:
+  // The pixel operations are `Granting`-gated extensions rather than methods, so that a
+  // read-only canvas simply has no `update`, and the mismatch is a compile-time error.
+  extension [layout <: Tuple](canvas: (CanvasHandle[layout] & Granting[Grant.Read])^)
+    inline def apply(x: Int, y: Int): Pixel[layout] = hallucination.pixel(canvas.raster)(x, y)
 
-sealed trait Png
+  extension [layout <: Tuple](canvas: (CanvasHandle[layout] & Granting[Grant.Write])^)
+    inline def update(x: Int, y: Int, pixel: Pixel[layout]): Unit =
+      val index = y*canvas.raster.width + x
+
+      inline erasedValue[Channel.Storage[layout]] match
+        case _: Byte =>
+          canvas.raster.buffer.asInstanceOf[Array[Byte]](index) = Pixel.value(pixel).toByte
+
+        case _: Short =>
+          canvas.raster.buffer.asInstanceOf[Array[Short]](index) = Pixel.value(pixel).toShort
+
+        case _: Int =>
+          canvas.raster.buffer.asInstanceOf[Array[Int]](index) = Pixel.value(pixel).toInt
+
+        case _: Long =>
+          canvas.raster.buffer.asInstanceOf[Array[Long]](index) = Pixel.value(pixel)
+
+// The scoped capability for pixel access to an open raster. Writes through a `Write`-granted
+// canvas mutate the raster's buffer in place, with the same semantics as writing through an
+// open file handle; `snapshot` takes an independent copy for deriving new rasters instead.
+class CanvasHandle[layout <: Tuple] private[hallucination]
+  ( private[hallucination] val raster: Raster by layout )
+extends caps.ExclusiveCapability:
+  def width: Int = raster.width
+  def height: Int = raster.height
+
+  def snapshot: Raster by layout =
+    Raster.build(raster.width, raster.height, raster.descriptor)(raster.word(_))
+    . asInstanceOf[Raster by layout]

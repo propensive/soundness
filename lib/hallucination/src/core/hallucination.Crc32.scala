@@ -33,14 +33,28 @@
 package hallucination
 
 import anticipation.*
-import gesticulate.*
 
-object Png:
-  def apply(): Rasterizable = rasterization
+// The standard CRC-32 (as used by PNG chunks), implemented locally: pneumatic's `Crc32` is
+// private to that module, and this one is only a table and a loop.
+private[hallucination] object Crc32:
+  private val table: IArray[Int] = IArray.tabulate(256): index =>
+    var crc = index
+    var bit = 0
 
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
+    while bit < 8 do
+      crc = if (crc&1) == 1 then 0xedb88320 ^ (crc >>> 1) else crc >>> 1
+      bit += 1
 
-sealed trait Png
+    crc
+
+  def checksum(segments: Data*): Int =
+    var crc = 0xffffffff
+
+    segments.foreach: segment =>
+      var index = 0
+
+      while index < segment.length do
+        crc = table((crc ^ segment(index))&0xff) ^ (crc >>> 8)
+        index += 1
+
+    crc ^ 0xffffffff

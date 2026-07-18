@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export hallucination.{Bmp, Gif, Jpeg, Png, Raster, RasterError, Rasterizable}
+// `Descriptor` clashes with embarcadero's OCI `Descriptor` in the umbrella; reach it via
+// `hallucination.Descriptor`.
+export hallucination.{Bmp, Canvas, CanvasHandle, Gif, Jpeg, pixel, Png, Raster, RasterError,
+    Rasterizable, RasterOpenable, repack}

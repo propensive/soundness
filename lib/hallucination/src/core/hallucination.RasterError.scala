@@ -36,6 +36,12 @@ import anticipation.*
 import fulminate.*
 import vacuous.*
 
-case class RasterError(rasterizable: Optional[Rasterizable])(using Diagnostics)
+object RasterError:
+  enum Reason:
+    case BadSignature, BadCrc, Truncated, UnsupportedVariant
+
+case class RasterError
+  ( rasterizable: Optional[Rasterizable], reason: Optional[RasterError.Reason] = Unset )
+  ( using Diagnostics )
 extends Error
   ( m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format" )

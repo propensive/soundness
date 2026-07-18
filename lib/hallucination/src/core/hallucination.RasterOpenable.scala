@@ -32,15 +32,24 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import gesticulate.*
+import aperture.*
+import prepositional.*
 
-object Png:
-  def apply(): Rasterizable = rasterization
+// The `Openable` instance for scoped pixel access to a raster: `raster.open[Canvas](...)`. A
+// named class rather than an anonymous given instance: instantiating an anonymous subclass
+// freshens `CanvasHandle`'s field types in the inferred `Result` member, which then fails to
+// conform to the declared refinement.
+class RasterOpenable[layout <: Tuple]() extends Openable:
+  type Self = Raster by layout
+  type Form = Canvas
+  type Operand = Nothing
+  type Result = CanvasHandle[layout]
 
-  given rasterization: Png is Rasterizable:
-    def name: Text = "PNG".tt
-    def mediaType = media"image/png"
-    def alpha: Boolean = true
+  def open[grants <: Grant, result]
+    ( value: Raster by layout, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((CanvasHandle[layout] & Granting[grants])^) ?=> result )
+  :   result =
 
-sealed trait Png
+    // `Granting` is a phantom marker, so the cast only refines the static type with the
+    // grants the mode selected.
+    block(using (new CanvasHandle(value)).asInstanceOf[CanvasHandle[layout] & Granting[grants]])
