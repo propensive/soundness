@@ -32,9 +32,6 @@
                                                                                                   */
 package enigmatic
 
-import java.security as js
-import javax.crypto as jc
-
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -115,21 +112,22 @@ extension (data: Data)
       case text: String => text.tt
 
     val plaintext =
-      try algorithm.decrypt(data, decryptor.bytes) catch
-        case error: jc.AEADBadTagException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-        case error: jc.BadPaddingException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-        case error: jc.IllegalBlockSizeException =>
-          abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
-
-        case error: js.InvalidKeyException =>
-          abort(CryptoError(CryptoError.Reason.InvalidKey, detail(error)))
-
-        case error: js.GeneralSecurityException =>
-          abort(CryptoError(CryptoError.Reason.IoFailure, detail(error)))
+      // Matched by class name (see `securityException`): `javax.crypto`/`java.security` types
+      // cannot be referenced from this platform-neutral file. `AEADBadTagException` is a
+      // `BadPaddingException`, so the superclass-walking match preserves the original order.
+      try algorithm.decrypt(data, decryptor.bytes) catch case error: Exception =>
+        // (`canThrowAny` only relicenses the rethrow of the exceptions this handler does not
+        // match.)
+        import unsafeExceptions.canThrowAny
+        if securityException(error, "javax.crypto.BadPaddingException")
+        then abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+        else if securityException(error, "javax.crypto.IllegalBlockSizeException")
+        then abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+        else if securityException(error, "java.security.InvalidKeyException")
+        then abort(CryptoError(CryptoError.Reason.InvalidKey, detail(error)))
+        else if securityException(error, "java.security.GeneralSecurityException")
+        then abort(CryptoError(CryptoError.Reason.IoFailure, detail(error)))
+        else throw error
 
     decodable.decoded(plaintext)
 

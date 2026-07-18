@@ -30,82 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package soundness
 
-import anticipation.*
-import gastronomy.*
-import prepositional.*
-import gastronomy.Concession
-
-extension [encodable: Encodable in Data](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Data)
-    ( using hash:            Hash in algorithm,
-            crypto:          Crypto,
-            erased weakness: Permit[HashWeakness[algorithm]] )
-  :   Hmac in algorithm =
-
-    Hmac(crypto.hmac(hash.hmacName).mac(key, encodable.encode(value)))
-
-package blockCipherMode:
-  export Cbc.mode as cbc
-  export Ctr.mode as ctr
-  export Cfb.mode as cfb
-  export Ofb.mode as ofb
-  // `Ecb.mode` is not re-exported: it is now a context-function given (it requires
-  // an erased `Permit[Concession.Ecb]`), and re-exporting such a given trips a
-  // compiler assertion. ECB is summoned from its own companion; use `over Ecb`.
-
-package blockCipherPadding:
-  export Pkcs7.padding as pkcs7
-  export Iso10126.padding as iso10126
-  // `NoPadding` is not re-exported for import-based inference: its `given` takes a
-  // `Tactic[CryptoError]`, and re-exporting a context-function given trips a
-  // compiler assertion ("bad adapt"). Use `against NoPadding` explicitly instead.
-
-// The initialization vector is now supplied explicitly at the encryption site —
-// `InitializationVector.random` / `.fixed(…)` / `.zero` — so there is no
-// `initializationVector` given namespace.
-
-// The JDK crypto provider is derived from the shared `Provider.JavaStdlib` marker
-// in `Crypto`'s companion, so `import providers.javaStdlibProvider` (from
-// gastronomy) enables both hashing and cryptography. OpenSSL (crypto-only) is
-// selected directly via `import providers.opensslProvider` in the openssl module.
-
-// The `Permit`/`Concession` machinery and the `crypto.permit…Crypto` aggregates
-// live in gastronomy (shared with hashing); the cipher concessions they cover are
-// mapped from cipher types by `Weakness`/`Authentication` in `enigmatic.Weakness`.
-
-
-// The cipher-side concession match types. The shared `Concession` markers, `Permit`
-// and the `crypto.permit…Crypto` aggregates live in gastronomy; these map a cipher
-// type to its concession.
-
-// The algorithm/key-length concession of a cipher type, extracted by matching the
-// (possibly `over`/`against`-refined) cipher. Anything not named here — AES,
-// RSA-2048, HMAC — is `Acceptable` and needs no permission.
-type Weakness[cipher] = cipher match
-  case Des          => Concession.Des
-  case TripleDes[?] => Concession.TripleDes
-  case Rc2[?]       => Concession.Rc2
-  case Blowfish[?]  => Concession.Blowfish
-  case Rsa[1024]    => Concession.SmallRsa
-  case Dsa[?]       => Concession.Dsa
-  case _            => Concession.Acceptable
-
-
-// Every (non-AEAD) block cipher is unauthenticated; asymmetric ciphers are not
-// classified this way. When authenticated encryption is added, its ciphers will
-// fall through to `Acceptable` here.
-type Authentication[cipher] = cipher match
-  case BlockCipher => Concession.Unauthenticated
-  case _           => Concession.Acceptable
-
-
-// Matches a JCE exception by class name, walking superclasses, so the platform-neutral core can
-// map the failures a JVM provider throws to `CryptoError`s without referencing `javax.crypto` or
-// `java.security` types — which do not exist on Scala Native, whose providers throw none of them.
-private[enigmatic] def securityException(error: Throwable, name: String): Boolean =
-  def recur(cls: Class[?] | Null): Boolean =
-    cls != null && (cls.nn.getName == name || recur(cls.nn.getSuperclass))
-
-  recur(error.getClass)
+// The JVM-only slice of enigmatic's `soundness` exports: PKCS#12 keystores are backed by
+// `java.security.KeyStore`, which has no Scala Native counterpart.
+export enigmatic.{keystore, Keystore}

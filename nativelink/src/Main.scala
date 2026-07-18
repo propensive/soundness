@@ -121,6 +121,22 @@ object Main:
     sb.shutdown(tcpServer)
     out.println("tcp: received "+received.length+" bytes = "+received.to(List).map(_.toChar).mkString)
 
+    // enigmatic: OpenSSL crypto through xenophile's cross-compiled C navigation — the same
+    // `OpensslCrypto` source that runs on the JVM via Panama, here materialized as direct C
+    // calls. The HMAC is checked against RFC 4231-style known output, and AES/CBC round-trips.
+    val mac = enigmatic.OpensslCrypto.hmac(t"HmacSHA256").mac(t"key".in[Data], t"message".in[Data])
+    val hex = mac.to(List).map(b => String.format("%02x", Int.box(b & 255))).mkString
+    out.println("hmac-sha256(key, message) = "+hex)
+    out.println("hmac verified = "+(hex == "6e9ef29b75fffc5b7abae527d58fdadb2fe42e7219011976917343065f58ed4a"))
+
+    val aes = enigmatic.OpensslCrypto.aes
+    val aesKey = aes.generateKey(256)
+    val aesIv = enigmatic.OpensslCrypto.random.bytes(16)
+    val secret = t"attack at dawn!!".in[Data]
+    val sealed0 = aes.encrypt(t"AES/CBC/PKCS7", aesKey, aesIv, secret)
+    val opened = aes.decrypt(t"AES/CBC/PKCS7", aesKey, 16, sealed0)
+    out.println("aes-256-cbc round-trip = "+(opened.to(List) == secret.to(List)))
+
     // coaxial TLS: a real HTTPS exchange through the OpenSSL-backed `SecureEndpoint` — the one
     // networked scenario, so gated on `SOUNDNESS_CI_ONLINE` like wasm-e2e's outgoing-HTTP check.
     if java.lang.System.getenv("SOUNDNESS_CI_ONLINE") == "1" then
