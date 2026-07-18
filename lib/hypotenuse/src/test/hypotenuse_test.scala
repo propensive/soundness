@@ -475,3 +475,178 @@ object Tests extends Suite(m"Hypotenuse tests"):
     //   test(m"2.toShort >= x >= 4.toShort"):
     //     List(1.toShort, 2.toShort, 3.toShort, 4.toShort, 5.toShort).filter(4.toShort >= _ >= 2.toShort)
     //   .assert(_ == List(2.toShort, 3.toShort, 4.toShort))
+
+    suite(m"Decimal tests"):
+      import errorDiagnostics.stackTracesDiagnostics
+      import strategies.throwUnsafely
+      import java.math as jm
+
+      def reference(unscaled: Long, scale: Int): jm.BigDecimal =
+        jm.BigDecimal(jm.BigInteger.valueOf(unscaled), scale).nn
+
+      def plain(value: jm.BigDecimal): String =
+        value.stripTrailingZeros.nn.toPlainString.nn
+
+      test(m"zero renders as 0"):
+        Decimal(0L).text
+      . assert(_ == t"0")
+
+      test(m"an integer renders without a point"):
+        Decimal(1234567890123L).text
+      . assert(_ == t"1234567890123")
+
+      test(m"a negative scaled value renders plainly"):
+        Decimal(-1234567, 4).text
+      . assert(_ == t"-123.4567")
+
+      test(m"a small fraction pads with leading zeros"):
+        Decimal(7, 5).text
+      . assert(_ == t"0.00007")
+
+      test(m"a negative scale expands with trailing zeros"):
+        Decimal(42, -3).text
+      . assert(_ == t"42000")
+
+      test(m"trailing zeros are canonically stripped"):
+        Decimal(1100, 2).text
+      . assert(_ == t"11")
+
+      test(m"a Double converts by shortest representation, not binary expansion"):
+        Decimal(0.1).text
+      . assert(_ == t"0.1")
+
+      test(m"a large Double converts through its exponent form"):
+        Decimal(1.0e21).text
+      . assert(_ == t"1000000000000000000000")
+
+      test(m"a tiny Double converts through its negative exponent form"):
+        Decimal(2.5e-7).text
+      . assert(_ == t"0.00000025")
+
+      test(m"a non-finite Double is refused"):
+        capture[DecimalError](Decimal(Double.NaN))
+      . assert(_ => true)
+
+      test(m"parsing accepts exponents and signs"):
+        Decimal.parse(t"-12.34e+2").text
+      . assert(_ == t"-1234")
+
+      test(m"parsing rejects malformed text"):
+        capture[DecimalError](Decimal.parse(t"1.2.3"))
+      . assert(_ => true)
+
+      test(m"a numeric literal constructs a Decimal"):
+        val price: Decimal = 12.99
+        price.text
+      . assert(_ == t"12.99")
+
+      test(m"comparison agrees with ordering"):
+        List(Decimal(1, 1) < Decimal(2, 1), Decimal(-3) < Decimal(2), Decimal(10) < Decimal(2))
+      . assert(_ == List(true, true, false))
+
+      test(m"negation and absolute value"):
+        List((-Decimal(5, 1)).text, Decimal(-5, 1).abs.text)
+      . assert(_ == List(t"-0.5", t"0.5"))
+
+      test(m"addition carries across limbs"):
+        (Decimal.parse(t"999999999999999999") + Decimal(1)).text
+      . assert(_ == t"1000000000000000000")
+
+      test(m"multiplication of many-digit values"):
+        (Decimal.parse(t"123456789012345678901234567890")
+            * Decimal.parse(t"987654321098765432109876543210")).text
+      . assert(_ == t"121932631137021795226185032733622923332237463801111263526900")
+
+      test(m"division to a scale with HalfEven"):
+        Decimal(1).divide(Decimal(3), 10, Decimal.Rounding.HalfEven).text
+      . assert(_ == t"0.3333333333")
+
+      test(m"division by zero raises"):
+        capture[DivisionError](Decimal(1).divide(Decimal(0L), 2, Decimal.Rounding.HalfUp))
+      . assert(_ => true)
+
+      test(m"rounding modes match the JDK"):
+        val modes = List
+          ( Decimal.Rounding.Up -> jm.RoundingMode.UP,
+            Decimal.Rounding.Down -> jm.RoundingMode.DOWN,
+            Decimal.Rounding.Ceiling -> jm.RoundingMode.CEILING,
+            Decimal.Rounding.Floor -> jm.RoundingMode.FLOOR,
+            Decimal.Rounding.HalfUp -> jm.RoundingMode.HALF_UP,
+            Decimal.Rounding.HalfDown -> jm.RoundingMode.HALF_DOWN,
+            Decimal.Rounding.HalfEven -> jm.RoundingMode.HALF_EVEN )
+
+        val cases = List((7L, 2L), (-7L, 2L), (5L, 2L), (-5L, 2L), (1L, 3L), (-1L, 3L), (25L, 4L))
+
+        modes.flatMap: (mine, java) =>
+          cases.map: (a, b) =>
+            val ours = Decimal(a).divide(Decimal(b), 0, mine).text.s
+            val theirs = plain(reference(a, 0).divide(reference(b, 0), 0, java).nn)
+            ours == theirs
+
+      . assert(_.forall(identity))
+
+      test(m"differential arithmetic against BigDecimal"):
+        val random = scala.util.Random(742938473L)
+
+        (0 until 400).map: _ =>
+          val a = random.nextLong(2000000000000000L) - 1000000000000000L
+          val b = random.nextLong(2000000000000000L) - 1000000000000000L
+          val sa = random.nextInt(25) - 8
+          val sb = random.nextInt(25) - 8
+          val left = Decimal(a, sa)
+          val right = Decimal(b, sb)
+          val jleft = reference(a, sa)
+          val jright = reference(b, sb)
+
+          val sums = (left + right).text.s == plain(jleft.add(jright).nn)
+          val differences = (left - right).text.s == plain(jleft.subtract(jright).nn)
+          val products = (left*right).text.s == plain(jleft.multiply(jright).nn)
+
+          val comparisons =
+            Decimal.comparison(left, right).sign == jleft.compareTo(jright).sign
+
+          val quotients = b == 0L ||
+            ( left.divide(right, 12, Decimal.Rounding.HalfEven).text.s
+                == plain(jleft.divide(jright, 12, jm.RoundingMode.HALF_EVEN).nn) )
+
+          sums && differences && products && comparisons && quotients
+
+      . assert(_.forall(identity))
+
+      test(m"differential many-limb arithmetic against BigDecimal"):
+        val random = scala.util.Random(93842711L)
+
+        def bigText(digits: Int): String =
+          val builder = StringBuilder()
+          builder.append(('1' + random.nextInt(9)).toChar)
+          for _ <- 1 until digits do builder.append(('0' + random.nextInt(10)).toChar)
+          builder.toString
+
+        (0 until 60).map: _ =>
+          val aText = bigText(30 + random.nextInt(40))
+          val bText = bigText(10 + random.nextInt(25))
+          val left = Decimal.parse(aText.tt)
+          val right = Decimal.parse(bText.tt)
+          val jleft = jm.BigDecimal(aText).nn
+          val jright = jm.BigDecimal(bText).nn
+
+          val products = (left*right).text.s == plain(jleft.multiply(jright).nn)
+
+          val quotients =
+            left.divide(right, 15, Decimal.Rounding.HalfEven).text.s
+              == plain(jleft.divide(jright, 15, jm.RoundingMode.HALF_EVEN).nn)
+
+          val sums = (left + right).text.s == plain(jleft.add(jright).nn)
+
+          products && quotients && sums
+
+      . assert(_.forall(identity))
+
+      test(m"parse round-trips its own rendering"):
+        val random = scala.util.Random(555000111L)
+
+        (0 until 200).map: _ =>
+          val value = Decimal(random.nextLong(), random.nextInt(30) - 10)
+          Decimal.comparison(Decimal.parse(value.text), value) == 0
+
+      . assert(_.forall(identity))
