@@ -158,13 +158,24 @@ package httpBackends:
 
       buildResponse(send(buildJavaRequest(jn.URI.create(url.s).nn, method, headers, body)))
 
+  // Idle kept-alive connections held by the `native` backend, keyed on
+  // `host:port`. Bounded per origin: an overflow connection is closed rather
+  // than pooled. A pooled socket the server has since closed is discovered on
+  // use and replaced by a single retry on a fresh connection.
+  private val idleConnections: juc.ConcurrentHashMap[Text, juc.ConcurrentLinkedQueue[Duplex]] =
+    juc.ConcurrentHashMap()
+
+  private val maxIdlePerOrigin: Int = 8
+
   // A native HTTP/1.1 transport over a raw TCP socket (via `coaxial`), speaking
-  // telekinesis's own wire codec instead of `java.net.http`. One connection per
-  // request: `Connection: close` is sent, the framed response body is drained
-  // eagerly, and the socket is closed before the response is returned — so
-  // responses do not stream yet (the pooled, keep-alive transport will restore
-  // that). Plaintext `http` only for now; `https` (TLS with ALPN) arrives with
-  // the unified protocol-negotiating backend.
+  // telekinesis's own wire codec instead of `java.net.http`, with keep-alive:
+  // when a response's extent was explicit (a framed body, or none) and neither
+  // side asked to close, its connection returns to a per-origin pool for the
+  // next request. The framed body is drained eagerly before the connection is
+  // surrendered, so responses do not stream yet. Plaintext `http` only for now;
+  // `https` (TLS with ALPN) arrives with the unified protocol-negotiating
+  // backend, and `101` upgrades are not supported (the upgraded stream would
+  // never end).
   given native: (backend: SocketBackend, options: Every[SocketOption.Tcp], buffering: Buffering)
   =>  Http.Backend = new Http.Backend:
 
@@ -185,20 +196,15 @@ package httpBackends:
       val host: Host = parsed.host.or(abort(ConnectError(Dns)))
       val port: Int = parsed.authority.lay(80)(_.port.or(80))
       val tcpPort: TcpPort = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
+      val origin: Text = t"${host.show}:$port"
 
       // An origin-form URL has an empty path; its request target is `/`.
       val target: Text =
         if parsed.location == t"" then t"/${parsed.requestTarget}" else parsed.requestTarget
 
-      // Connection-per-request: ask the server to close after this response, so
-      // an unframed (connection-delimited) body terminates.
-      val headers2: List[Http.Header] =
-        if headers.exists(_.key.lower == t"connection") then headers
-        else Http.Header(t"connection", t"close") :: headers
+      val httpRequest = Http.Request(method, 1.1, host, target, headers, body)
 
-      val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
-
-      val duplex: Duplex =
+      def connect(): Duplex =
         try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values) catch
           case error: jn.UnknownHostException => abort(ConnectError(Dns))
 
@@ -210,26 +216,56 @@ package httpBackends:
 
           case error: ji.IOException => abort(ConnectError(Unknown))
 
-      try
+      def borrow(): Duplex | Null =
+        val queue = idleConnections.get(origin)
+        if queue == null then null else queue.poll()
+
+      def surrender(duplex: Duplex): Unit =
+        val queue =
+          idleConnections
+          . computeIfAbsent(origin, { _ => juc.ConcurrentLinkedQueue[Duplex]() }).nn
+
+        if queue.size < maxIdlePerOrigin then queue.add(duplex) else duplex.close()
+
+      // One request/response exchange over `duplex`. Failures are thrown (the
+      // caller translates them, retrying once if the connection came from the
+      // pool); on success, the connection is surrendered for reuse or closed.
+      def attempt(duplex: Duplex): Http.Response =
         duplex.send(Http.Request.serialize(httpRequest))
 
         // Typed binding: `parse` is overloaded (lazy-list and endpoint forms),
         // so the expected type picks the endpoint pair.
         val input: zephyrine.Stream[Data] over zephyrine.Credit = duplex.source
+        val response: Http.Response = unsafely(Http.Response.parse(input, method == Http.Head))
 
-        val response: Http.Response =
-          mitigate:
-            case error: HttpResponseError =>
-              import error.diagnostics
-              ConnectError(Unknown)
+        // A `101` body is the upgraded protocol's unending stream: draining it
+        // would block forever, so refuse it here (aborting rather than throwing,
+        // so a pooled connection is not pointlessly retried).
+        if response.status == Http.SwitchingProtocols then
+          duplex.close()
+          abort(ConnectError(Unknown))
 
-          . protect:
-              Http.Response.parse(input, method == Http.Head)
+        val data: Data = unsafely(response.body.stream.memoize)
 
-        val data: Data =
-          try response.body.stream.memoize catch
-            case error: StreamError    => abort(ConnectError(Unknown))
-            case error: ji.IOException => abort(ConnectError(Unknown))
+        // The connection can be kept alive only when the body's extent was
+        // explicit — a framed body, or none at all — and neither side asked to
+        // close: an unframed body was delimited by the server closing.
+        val framed: Boolean =
+          response.body == Http.Body.Empty
+          || response.textHeaders.exists: header =>
+               val key = header.key.lower
+
+               key == t"content-length"
+               || (key == t"transfer-encoding" && header.value.lower.contains(t"chunked"))
+
+        val serverClose: Boolean = response.textHeaders.exists: header =>
+          header.key.lower == t"connection" && header.value.lower.contains(t"close")
+
+        val reusable: Boolean =
+          framed && !serverClose && response.version == 1.1
+          && !headers.exists(_.key.lower == t"connection")
+
+        if reusable then surrender(duplex) else duplex.close()
 
         val body2: Http.Body = response.body match
           case Http.Body.Empty => Http.Body.Empty
@@ -237,7 +273,22 @@ package httpBackends:
 
         response.status(response.textHeaders, body2)
 
-      finally duplex.close()
+      def fresh(): Http.Response =
+        val duplex = connect()
+
+        try attempt(duplex) catch
+          case error: HttpResponseError => duplex.close(); abort(ConnectError(Unknown))
+          case error: StreamError       => duplex.close(); abort(ConnectError(Unknown))
+          case error: ji.IOException    => duplex.close(); abort(ConnectError(Unknown))
+
+      borrow() match
+        case null => fresh()
+
+        case duplex: Duplex =>
+          try attempt(duplex) catch
+            case error: HttpResponseError => duplex.close(); fresh()
+            case error: StreamError       => duplex.close(); fresh()
+            case error: ji.IOException    => duplex.close(); fresh()
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
 given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)

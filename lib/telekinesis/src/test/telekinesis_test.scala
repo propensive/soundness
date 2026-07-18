@@ -515,6 +515,14 @@ object Tests extends Suite(m"Telekinesis tests"):
         exchange.nn.getResponseBody.nn.write(body)
         exchange.nn.close() })
 
+      // Answers with the client's ephemeral port: two requests over a reused
+      // (kept-alive) connection see the same value.
+      server.createContext("/port", { exchange =>
+        val data = String.valueOf(exchange.nn.getRemoteAddress.nn.getPort).nn.getBytes("UTF-8").nn
+        exchange.nn.sendResponseHeaders(200, data.length)
+        exchange.nn.getResponseBody.nn.write(data)
+        exchange.nn.close() })
+
       server.start()
       val port: Int = server.getAddress.nn.getPort
 
@@ -556,6 +564,13 @@ object Tests extends Suite(m"Telekinesis tests"):
         fetchNative(t"/echo", Http.Post, t"ping-pong").body.stream.memoize.utf8
 
       . assert(_ == t"ping-pong")
+
+      test(m"Sequential requests reuse a kept-alive connection"):
+        val first = fetchNative(t"/port").body.stream.memoize.utf8
+        val second = fetchNative(t"/port").body.stream.memoize.utf8
+        first == second
+
+      . assert(_ == true)
 
       server.stop(0)
 
