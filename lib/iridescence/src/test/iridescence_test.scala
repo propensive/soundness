@@ -183,3 +183,73 @@ object Tests extends Suite(m"Iridescence tests"):
       test(m"mix at 0.5 averages all axes"):
         Cielab(0, 0, 0).mix(Cielab(40, 20, 10))
       . assert(_ == Cielab(20, 10, 5))
+
+    suite(m"Pixel layouts"):
+      test(m"a 24-bit RGB layout is stored in an Int"):
+        compiletime.constValue[Channel.TotalBits[Rgb]]
+      . assert(_ == 24)
+
+      test(m"channels of an 8-bit greyscale layout fit a Byte"):
+        summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+      . assert(_ != null)
+
+      test(m"a 16-bit RGB layout fits a Short"):
+        summon[Channel.Storage[(Red[5], Green[6], Blue[5])] =:= Short]
+      . assert(_ != null)
+
+      test(m"a 32-bit RGBA layout fits an Int"):
+        summon[Channel.Storage[Rgba] =:= Int]
+      . assert(_ != null)
+
+      test(m"a 64-bit RGBA layout needs a Long"):
+        summon[Channel.Storage[(Red[16], Green[16], Blue[16], Alpha[16])] =:= Long]
+      . assert(_ != null)
+
+      test(m"channel accessors unpack a 10/12/10 pixel"):
+        val pixel = Pixel.make[(Red[10], Green[12], Blue[10])](1023L << 22 | 2048L << 10 | 512L)
+        (pixel.red, pixel.green, pixel.blue)
+      . assert(_ == (1023, 2048, 512))
+
+      test(m"a Chroma converts to an Rgb pixel"):
+        val pixel = rgb"#abcdef".pixel
+        (pixel.red, pixel.green, pixel.blue)
+      . assert(_ == (0xab, 0xcd, 0xef))
+
+      test(m"an Rgb pixel converts back to the same Chroma"):
+        rgb"#abcdef".pixel.chroma
+      . assert(_ == rgb"#abcdef")
+
+      test(m"a 10/12/10 pixel rounds to Chroma exactly as Rgb32"):
+        Rgb32(600, 3000, 200).pixel.chroma
+      . assert(_ == Chroma((600*255 + 511)/1023, (3000*255 + 2047)/4095, (200*255 + 511)/1023))
+
+      test(m"an Rgb32 round-trips through Pixel"):
+        Rgb32(600, 3000, 200).pixel.rgb32
+      . assert(_ == Rgb32(600, 3000, 200))
+
+      test(m"a colour packs into an RGBA pixel with full alpha"):
+        val pixel = Pixel[Rgba](Srgb(1.0, 0.0, 0.5))
+        (pixel.red, pixel.green, pixel.blue, pixel.alpha)
+      . assert(_ == (255, 0, 128, 255))
+
+      test(m"a pure colour packs into a CMYK pixel"):
+        val pixel = Pixel[Cmyk8](Srgb(1.0, 0.0, 0.0))
+        (pixel.cyan, pixel.magenta, pixel.yellow, pixel.key)
+      . assert(_ == (0, 255, 255, 0))
+
+      test(m"black packs into a CMYK pixel as pure key"):
+        val pixel = Pixel[Cmyk8](Srgb(0.0, 0.0, 0.0))
+        (pixel.cyan, pixel.magenta, pixel.yellow, pixel.key)
+      . assert(_ == (0, 0, 0, 255))
+
+      test(m"a CMYK pixel converts to Srgb through its colour model"):
+        Pixel[Cmyk8](Srgb(1.0, 0.0, 0.0)).chroma
+      . assert(_ == Chroma(255, 0, 0))
+
+      test(m"a greyscale pixel scales by Rec. 601 luma"):
+        Pixel[Tuple1[Grey[8]]](Srgb(1.0, 1.0, 1.0)).grey
+      . assert(_ == 255)
+
+      test(m"a 16-bit channel is exact in proportion"):
+        Pixel.make[(Red[16], Green[16], Blue[16])](65535L << 32).proportion["red"]
+      . assert(_ == 1.0)

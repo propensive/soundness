@@ -32,25 +32,63 @@
                                                                                                   */
 package iridescence
 
-export Rgb12Opaque.Rgb12
-export Rgb32Opaque.Rgb32
-export PixelOpaque.Pixel
+import scala.compiletime.ops.any.*
+import scala.compiletime.ops.int.*
 
-// Common pixel layouts. (`Cmyk` names the `Double`-based colour model, so the 32-bit packed
-// layout is `Cmyk8`.)
-type Rgb = (Red[8], Green[8], Blue[8])
-type Rgba = (Red[8], Green[8], Blue[8], Alpha[8])
-type Cmyk8 = (Cyan[8], Magenta[8], Yellow[8], Key[8])
+// A phantom description of one channel in a packed pixel layout, such as `Red[10]`: a colour
+// component with a bit depth, never instantiated. A pixel layout is a tuple of channels, most
+// significant first, e.g. `(Red[10], Green[12], Blue[10])`, which is exactly the packing of
+// `Rgb32`. The `label` singleton gives every channel family a key which the match types in the
+// companion use to locate a channel within a layout, without needing a match-type case for each
+// channel family. The hierarchy is open: domain-specific channels can be introduced downstream so
+// long as their labels are distinct.
+object Channel:
+  type Label[channel] <: String = channel match
+    case Channel[label, bits] => label
 
-// `Chroma` and `Rgb32` pack their channels in exactly the layouts `Rgb` and
-// `(Red[10], Green[12], Blue[10])` respectively, so these conversions just retype the bits.
-extension (chroma: anticipation.Chroma)
-  def pixel: Pixel[Rgb] = Pixel.make(chroma.underlying&0xffffff)
+  type Bits[channel] <: Int = channel match
+    case Channel[label, bits] => bits
 
-extension (rgb32: Rgb32)
-  @annotation.targetName("rgb32Pixel")
-  def pixel: Pixel[(Red[10], Green[12], Blue[10])] =
-    Pixel.make(rgb32.red.toLong << 22 | rgb32.green.toLong << 10 | rgb32.blue.toLong)
+  type TotalBits[layout <: Tuple] <: Int = layout match
+    case EmptyTuple   => 0
+    case head *: tail => Bits[head] + TotalBits[tail]
 
-extension (pixel: Pixel[(Red[10], Green[12], Blue[10])])
-  inline def rgb32: Rgb32 = Rgb32(pixel.red, pixel.green, pixel.blue)
+  type Has[layout <: Tuple, label <: String] <: Boolean = layout match
+    case EmptyTuple   => false
+    case head *: tail => (Label[head] == label) match
+      case true  => true
+      case false => Has[tail, label]
+
+  // The shift of the labelled channel is the total width of the channels packed below it. This
+  // deliberately fails to reduce if the layout lacks the channel, statically gating accessors
+  // like `.red` and `.cyan` to layouts which have them.
+  type Shift[layout <: Tuple, label <: String] <: Int = layout match
+    case head *: tail => (Label[head] == label) match
+      case true  => TotalBits[tail]
+      case false => Shift[tail, label]
+
+  type Depth[layout <: Tuple, label <: String] <: Int = layout match
+    case head *: tail => (Label[head] == label) match
+      case true  => Bits[head]
+      case false => Depth[tail, label]
+
+  // The narrowest primitive which can store one pixel of the layout.
+  type Storage[layout <: Tuple] <: Byte | Short | Int | Long = (TotalBits[layout] <= 8) match
+    case true  => Byte
+    case false => (TotalBits[layout] <= 16) match
+      case true  => Short
+      case false => (TotalBits[layout] <= 32) match
+        case true  => Int
+        case false => Long
+
+trait Channel[label <: String & Singleton, bits <: Int]
+
+trait Red[bits <: Int] extends Channel["red", bits]
+trait Green[bits <: Int] extends Channel["green", bits]
+trait Blue[bits <: Int] extends Channel["blue", bits]
+trait Alpha[bits <: Int] extends Channel["alpha", bits]
+trait Cyan[bits <: Int] extends Channel["cyan", bits]
+trait Magenta[bits <: Int] extends Channel["magenta", bits]
+trait Yellow[bits <: Int] extends Channel["yellow", bits]
+trait Key[bits <: Int] extends Channel["key", bits]
+trait Grey[bits <: Int] extends Channel["grey", bits]
