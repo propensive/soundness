@@ -442,6 +442,55 @@ object Tests extends Suite(m"Hallucination Tests"):
         (raster.width, raster.height)
     . assert(_ == (16, 12))
 
+    // WebP lossy (VP8) decode. The reference images were produced by libwebp's `dwebp -nofancy`,
+    // which uses simple chroma upsampling to match this decoder; the comparison is byte-exact.
+
+    val ls1Webp = hex"""
+                        524946464a00000057454250565038203e000000f001009d012a1000100002003425b00274010f0c12f2ca8000fe
+                        fd6f1460c7655b6ab5f0b984b5667097ee72ec0207e62ffff917ba9fff3c7e97e2e40000"""
+    val ls1Ref = hex"""
+                        89504e470d0a1a0a0000000d494844520000001000000010080200000090916836000001b24944415428913d90cd
+                        6e144110c6a6fb7355ffcc2e482104097144bcffa341a29064a6ab9643809b6f965dbadf23ee03c4d797fa9f7fc4
+                        1dd2e7d855f53d1f247d8eab0ab4d6102d408ccd0cf630497b4cc13ca7c4cc8998e70ee2f85442e5881a2adbada5
+                        9461455ae99b9447afb0b26f224f4f84ff3598a459a7602e80bf06db91f6dc85f6734af0eba1406959c7e8cf3793
+                        745926e9770af47c56de597a3e252abd7777bf96e1ee2307622c043387c4644a9a39240d1b121c9f9c398ef09bd9
+                        9116f0ba4ce8253ae8ed30d05b0af1760ac4f57a75f7b1a892a523ac027838926f2ee4e1425e1ce0e9dbc5ccfaa2
+                        b5f6eb7508b5b3493ce647842f077ee604f97249f4decd6c6673f7a961d8be1ad2252e4297d50497dc117b3882e3
+                        ae95d65ec302dbb60f8962b54dca9805e56a55e4ad27e42281b9ef063d4cb50e86a4b19ad088f7630e8c1cc00c93
+                        c4e3971bb6f52873f4c7d8a08c7343e52925d51692ead34d521dabfe6b70bf96d17b9fc7c4d8cf26346302733930
+                        7302f33410c7bd69f4e3e69bf376284d2f4b88234a508e558272640dcaeb2aa270bd5e5a6b7d19e09b9be1d5912c
+                        1cf0ea127e33815713fa0359d4a4b40a26462e0000000049454e44ae426082"""
+    val ls2Webp = hex"""
+                        524946464e0000005745425056503820420000003003009d012a180010003e51208c4423a221180400380504a009
+                        d328478183f3110000fee64f1edf049ee9c31cc4511367e1c3d7ad04950f36dbbbc6427968000000"""
+    val ls2Ref = hex"""
+                        89504e470d0a1a0a0000000d4948445200000018000000100802000000834628c2000000be49444154388dadd241
+                        7284300c05d12703434e99336493e3c7cac20634c9d65eb87e0955a9dd283ebfbe7164e0ec0d7b838c7ee7d70fec
+                        a327022de16c1b22a15974f6e640c4c0f0dcfa9d43949e2c9ddb9dd711c917647b2697cf33cff90d2d4abd3f1ceb
+                        88323e90c21f45591d0d96e0dd5131bb8e281cf7b4acef8f8e8861edb93312a19bd244f6a54469472f8e3ad814ba
+                        710670ed9a52d71285d3fb068d3cc140cb6a2a5d5eaeca5aa26bb3c78e984cc4f83b558b7f8e4665ada35fd90943
+                        dfbe51f5fa0000000049454e44ae426082"""
+
+    def lossyMatches(webp: Data, ref: Data): Boolean = same(WebpCodec.decode(webp), ref.read[Raster in Png])
+
+    test(m"a lossy WebP decodes byte-exactly against libwebp (dwebp -nofancy)"):
+      lossyMatches(ls1Webp, ls1Ref)
+    . assert(_ == true)
+
+    test(m"a smooth-gradient lossy WebP decodes byte-exactly against libwebp"):
+      lossyMatches(ls2Webp, ls2Ref)
+    . assert(_ == true)
+
+    test(m"a lossy WebP decodes to an opaque RGB raster of the right size"):
+      val raster = WebpCodec.decode(ls1Webp)
+      (raster.width, raster.height, raster.descriptor.hasAlpha)
+    . assert(_ == (16, 16, false))
+
+    test(m"a lossy WebP is read through the public decoding API"):
+      ls2Webp.read[Raster in Webp].pipe: raster =>
+        (raster.width, raster.height)
+    . assert(_ == (24, 16))
+
     test(m"a non-WebP byte stream is rejected"):
       capture[RasterError](WebpCodec.decode(pngGradient)).reason
     . assert(_ == RasterError.Reason.BadSignature)

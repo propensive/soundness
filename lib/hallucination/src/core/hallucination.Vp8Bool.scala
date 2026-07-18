@@ -33,61 +33,78 @@
 package hallucination
 
 import anticipation.*
-import contingency.*
 
-import Binary.*
-import RasterError.Reason
+// The VP8 boolean entropy decoder (RFC 6386 §7). This is the canonical bit-exact algorithm; the
+// reference (image-rs/image-webp `src/lossy/arithmetic_decoder.rs`) uses a faster but equivalent
+// chunked implementation. Reads past the end of the partition yield zero bytes, as libwebp allows.
+private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
+  private var position = start
+  private var value = ((byte(start) << 8) | byte(start + 1))
+  private var range = 255
+  private var bitCount = 0
 
-// A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
-// simple (non-extended) lossless VP8L images; lossy VP8 and extended VP8X images raise
-// `UnsupportedVariant` until later phases. Unlike the other formats, WebP has no `javax.imageio`
-// support, so this codec is selected on every platform, including the JVM.
-private[hallucination] object WebpCodec:
-  // The RIFF container signature: "RIFF", a size, then "WEBP".
-  def isWebp(data: Data): Boolean =
-    data.length >= 12 && fourcc(data, 0) == "RIFF" && fourcc(data, 8) == "WEBP"
+  locally { position = start + 2 }
 
-  def encode(raster: Raster): Data = WebpEncoder.encode(raster)
+  private inline def byte(index: Int): Int = if index < end then data(index) & 0xff else 0
 
-  def decode(data: Data): Raster raises RasterError =
-    try
-      if data.length < 12 || fourcc(data, 0) != "RIFF" || fourcc(data, 8) != "WEBP"
-      then abort(RasterError(Webp(), Reason.BadSignature))
+  def bool(probability: Int): Boolean =
+    val split = 1 + (((range - 1)*probability) >> 8)
+    val bigSplit = split << 8
 
-      // The first chunk after the "WEBP" fourcc determines the image kind.
-      val chunk = fourcc(data, 12)
-      val chunkStart = 20
+    val result =
+      if value >= bigSplit then
+        range -= split
+        value -= bigSplit
+        true
+      else
+        range = split
+        false
 
-      chunk match
-        case "VP8L" =>
-          val chunkSize = u32le(data, 16)
-          val reader = WebpBitReader(data, chunkStart, chunkStart + chunkSize)
-          val (width, height, rgba) = WebpLossless.decode(reader)
-          raster(width, height, rgba)
+    while range < 128 do
+      value <<= 1
+      range <<= 1
+      bitCount += 1
 
-        case "VP8 " =>
-          val chunkSize = u32le(data, 16)
-          lossy(Vp8Decoder.decode(data, chunkStart, chunkStart + chunkSize))
+      if bitCount == 8 then
+        bitCount = 0
+        value |= byte(position)
+        position += 1
 
-        case "VP8X" =>
-          abort(RasterError(Webp(), Reason.UnsupportedVariant))
+    result
 
-        case _ =>
-          abort(RasterError(Webp(), Reason.BadSignature))
+  def flag: Boolean = bool(128)
 
-    catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Webp(), Reason.Truncated))
+  def literal(bits: Int): Int =
+    var value = 0
+    var i = 0
 
-  // Builds an opaque RGB raster from a decoded VP8 lossy frame.
-  private def lossy(frame: Vp8Frame): Raster =
-    val rgb = Vp8Yuv.toRgb(frame)
-    Raster.build(frame.width, frame.height, Descriptor.rgb)(rgb(_).toLong & 0xffffff)
+    while i < bits do
+      value = (value << 1) | (if flag then 1 else 0)
+      i += 1
 
-  // Builds an RGBA raster from the decoded, un-transformed byte buffer (in RGBA order).
-  private def raster(width: Int, height: Int, rgba: Array[Byte]): Raster =
-    Raster.build(width, height, Descriptor.rgba): index =>
-      (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
-        (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
+    value
 
-  private def fourcc(data: Data, offset: Int): String =
-    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn
+  // An optional signed value: a flag, then (if set) an `bits`-wide magnitude and a sign.
+  def optionalSigned(bits: Int): Int =
+    if !flag then 0 else
+      val magnitude = literal(bits)
+
+      if flag then -magnitude else magnitude
+
+  // Walks a token tree: `tree` holds branch targets in sibling pairs (positive = next node index
+  // ×2, non-positive = negated leaf value); `probs`/`probOffset` give the per-node probability.
+  // `startPosition` seeds the walk (2 skips the first decision — used after a zero coefficient).
+  def tree(tree: Array[Int], probs: Array[Int], probOffset: Int, startPosition: Int): Int =
+    var position = startPosition
+
+    while
+      val bit = if bool(probs(probOffset + (position >> 1))) then 1 else 0
+      position = tree(position + bit)
+      position > 0
+
+    do ()
+
+    -position
+
+  def tree(tree: Array[Int], probs: Array[Int], probOffset: Int): Int =
+    this.tree(tree, probs, probOffset, 0)

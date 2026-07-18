@@ -32,62 +32,46 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import contingency.*
+// A decoded VP8 keyframe: the luma and chroma planes (samples as `Int` in 0–255). The luma plane
+// has stride `bufferWidth` (the macroblock-padded width); chroma planes have stride
+// `bufferWidth/2`. `width`/`height` are the displayed dimensions.
+private[hallucination] final class Vp8Frame
+  ( val width: Int, val height: Int, val bufferWidth: Int, val luma: Array[Int],
+    val chromaU: Array[Int], val chromaV: Array[Int] )
 
-import Binary.*
-import RasterError.Reason
+// YUV→RGB conversion, ported from image-rs/image-webp (`src/lossy/yuv.rs`, MIT/Apache-2.0). This
+// uses simple (nearest-neighbour) chroma upsampling — each chroma sample covers a 2×2 luma block —
+// matching libwebp's `dwebp -nofancy`.
+private[hallucination] object Vp8Yuv:
+  private inline def mulhi(value: Int, coeff: Int): Int = (value*coeff) >> 8
 
-// A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
-// simple (non-extended) lossless VP8L images; lossy VP8 and extended VP8X images raise
-// `UnsupportedVariant` until later phases. Unlike the other formats, WebP has no `javax.imageio`
-// support, so this codec is selected on every platform, including the JVM.
-private[hallucination] object WebpCodec:
-  // The RIFF container signature: "RIFF", a size, then "WEBP".
-  def isWebp(data: Data): Boolean =
-    data.length >= 12 && fourcc(data, 0) == "RIFF" && fourcc(data, 8) == "WEBP"
+  private inline def clip(value: Int): Int =
+    val v = value >> 6
 
-  def encode(raster: Raster): Data = WebpEncoder.encode(raster)
+    if v < 0 then 0 else if v > 255 then 255 else v
 
-  def decode(data: Data): Raster raises RasterError =
-    try
-      if data.length < 12 || fourcc(data, 0) != "RIFF" || fourcc(data, 8) != "WEBP"
-      then abort(RasterError(Webp(), Reason.BadSignature))
+  // Fills `rgb(index) = packed 0xRRGGBB` for the displayed image, one entry per pixel.
+  def toRgb(frame: Vp8Frame): Array[Int] =
+    val width = frame.width
+    val height = frame.height
+    val chromaStride = frame.bufferWidth/2
+    val rgb = new Array[Int](width*height)
+    var y = 0
 
-      // The first chunk after the "WEBP" fourcc determines the image kind.
-      val chunk = fourcc(data, 12)
-      val chunkStart = 20
+    while y < height do
+      var x = 0
 
-      chunk match
-        case "VP8L" =>
-          val chunkSize = u32le(data, 16)
-          val reader = WebpBitReader(data, chunkStart, chunkStart + chunkSize)
-          val (width, height, rgba) = WebpLossless.decode(reader)
-          raster(width, height, rgba)
+      while x < width do
+        val luma = frame.luma(y*frame.bufferWidth + x)
+        val u = frame.chromaU((y/2)*chromaStride + x/2)
+        val v = frame.chromaV((y/2)*chromaStride + x/2)
+        val base = mulhi(luma, 19077)
+        val red = clip(base + mulhi(v, 26149) - 14234)
+        val green = clip(base - mulhi(u, 6419) - mulhi(v, 13320) + 8708)
+        val blue = clip(base + mulhi(u, 33050) - 17685)
+        rgb(y*width + x) = (red << 16) | (green << 8) | blue
+        x += 1
 
-        case "VP8 " =>
-          val chunkSize = u32le(data, 16)
-          lossy(Vp8Decoder.decode(data, chunkStart, chunkStart + chunkSize))
+      y += 1
 
-        case "VP8X" =>
-          abort(RasterError(Webp(), Reason.UnsupportedVariant))
-
-        case _ =>
-          abort(RasterError(Webp(), Reason.BadSignature))
-
-    catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Webp(), Reason.Truncated))
-
-  // Builds an opaque RGB raster from a decoded VP8 lossy frame.
-  private def lossy(frame: Vp8Frame): Raster =
-    val rgb = Vp8Yuv.toRgb(frame)
-    Raster.build(frame.width, frame.height, Descriptor.rgb)(rgb(_).toLong & 0xffffff)
-
-  // Builds an RGBA raster from the decoded, un-transformed byte buffer (in RGBA order).
-  private def raster(width: Int, height: Int, rgba: Array[Byte]): Raster =
-    Raster.build(width, height, Descriptor.rgba): index =>
-      (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
-        (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
-
-  private def fourcc(data: Data, offset: Int): String =
-    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn
+    rgb

@@ -32,62 +32,82 @@
                                                                                                   */
 package hallucination
 
-import anticipation.*
-import contingency.*
+// The VP8 inverse transforms, ported from image-rs/image-webp (`src/lossy/transform.rs`,
+// MIT/Apache-2.0), per RFC 6386 §14. Both operate in place on a 16-element (4×4) coefficient
+// block; intermediate products are computed as `Long` to avoid overflow.
+private[hallucination] object Vp8Transform:
+  private val Const1: Long = 20091 // cos(pi/8)·sqrt(2) − 1, 16-bit fixed point
+  private val Const2: Long = 35468 // sin(pi/8)·sqrt(2), 16-bit fixed point
 
-import Binary.*
-import RasterError.Reason
+  // Inverse discrete cosine transform.
+  def idct4x4(block: Array[Int], offset: Int = 0): Unit =
+    inline def b(i: Int): Int = block(offset + i)
+    inline def set(i: Int, v: Int): Unit = block(offset + i) = v
+    var i = 0
 
-// A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
-// simple (non-extended) lossless VP8L images; lossy VP8 and extended VP8X images raise
-// `UnsupportedVariant` until later phases. Unlike the other formats, WebP has no `javax.imageio`
-// support, so this codec is selected on every platform, including the JVM.
-private[hallucination] object WebpCodec:
-  // The RIFF container signature: "RIFF", a size, then "WEBP".
-  def isWebp(data: Data): Boolean =
-    data.length >= 12 && fourcc(data, 0) == "RIFF" && fourcc(data, 8) == "WEBP"
+    while i < 4 do
+      val a1 = b(i).toLong + b(8 + i)
+      val b1 = b(i).toLong - b(8 + i)
+      val t1 = (b(4 + i).toLong*Const2) >> 16
+      val t2 = b(12 + i).toLong + ((b(12 + i).toLong*Const1) >> 16)
+      val c1 = t1 - t2
+      val t3 = b(4 + i).toLong + ((b(4 + i).toLong*Const1) >> 16)
+      val t4 = (b(12 + i).toLong*Const2) >> 16
+      val d1 = t3 + t4
 
-  def encode(raster: Raster): Data = WebpEncoder.encode(raster)
+      set(i, (a1 + d1).toInt)
+      set(4 + i, (b1 + c1).toInt)
+      set(12 + i, (a1 - d1).toInt)
+      set(8 + i, (b1 - c1).toInt)
+      i += 1
 
-  def decode(data: Data): Raster raises RasterError =
-    try
-      if data.length < 12 || fourcc(data, 0) != "RIFF" || fourcc(data, 8) != "WEBP"
-      then abort(RasterError(Webp(), Reason.BadSignature))
+    i = 0
 
-      // The first chunk after the "WEBP" fourcc determines the image kind.
-      val chunk = fourcc(data, 12)
-      val chunkStart = 20
+    while i < 4 do
+      val a1 = b(4*i).toLong + b(4*i + 2)
+      val b1 = b(4*i).toLong - b(4*i + 2)
+      val t1 = (b(4*i + 1).toLong*Const2) >> 16
+      val t2 = b(4*i + 3).toLong + ((b(4*i + 3).toLong*Const1) >> 16)
+      val c1 = t1 - t2
+      val t3 = b(4*i + 1).toLong + ((b(4*i + 1).toLong*Const1) >> 16)
+      val t4 = (b(4*i + 3).toLong*Const2) >> 16
+      val d1 = t3 + t4
 
-      chunk match
-        case "VP8L" =>
-          val chunkSize = u32le(data, 16)
-          val reader = WebpBitReader(data, chunkStart, chunkStart + chunkSize)
-          val (width, height, rgba) = WebpLossless.decode(reader)
-          raster(width, height, rgba)
+      set(4*i, ((a1 + d1 + 4) >> 3).toInt)
+      set(4*i + 3, ((a1 - d1 + 4) >> 3).toInt)
+      set(4*i + 1, ((b1 + c1 + 4) >> 3).toInt)
+      set(4*i + 2, ((b1 - c1 + 4) >> 3).toInt)
+      i += 1
 
-        case "VP8 " =>
-          val chunkSize = u32le(data, 16)
-          lossy(Vp8Decoder.decode(data, chunkStart, chunkStart + chunkSize))
+  // Inverse Walsh-Hadamard transform, used for the Y2 (DC-of-DC) block.
+  def iwht4x4(block: Array[Int], offset: Int = 0): Unit =
+    inline def b(i: Int): Int = block(offset + i)
+    inline def set(i: Int, v: Int): Unit = block(offset + i) = v
+    var i = 0
 
-        case "VP8X" =>
-          abort(RasterError(Webp(), Reason.UnsupportedVariant))
+    while i < 4 do
+      val a1 = b(i) + b(12 + i)
+      val b1 = b(4 + i) + b(8 + i)
+      val c1 = b(4 + i) - b(8 + i)
+      val d1 = b(i) - b(12 + i)
 
-        case _ =>
-          abort(RasterError(Webp(), Reason.BadSignature))
+      set(i, a1 + b1)
+      set(4 + i, c1 + d1)
+      set(8 + i, a1 - b1)
+      set(12 + i, d1 - c1)
+      i += 1
 
-    catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Webp(), Reason.Truncated))
+    i = 0
 
-  // Builds an opaque RGB raster from a decoded VP8 lossy frame.
-  private def lossy(frame: Vp8Frame): Raster =
-    val rgb = Vp8Yuv.toRgb(frame)
-    Raster.build(frame.width, frame.height, Descriptor.rgb)(rgb(_).toLong & 0xffffff)
+    while i < 4 do
+      val base = i*4
+      val a1 = b(base) + b(base + 3)
+      val b1 = b(base + 1) + b(base + 2)
+      val c1 = b(base + 1) - b(base + 2)
+      val d1 = b(base) - b(base + 3)
 
-  // Builds an RGBA raster from the decoded, un-transformed byte buffer (in RGBA order).
-  private def raster(width: Int, height: Int, rgba: Array[Byte]): Raster =
-    Raster.build(width, height, Descriptor.rgba): index =>
-      (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
-        (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
-
-  private def fourcc(data: Data, offset: Int): String =
-    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn
+      set(base, (a1 + b1 + 3) >> 3)
+      set(base + 1, (c1 + d1 + 3) >> 3)
+      set(base + 2, (a1 - b1 + 3) >> 3)
+      set(base + 3, (d1 - c1 + 3) >> 3)
+      i += 1
