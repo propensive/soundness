@@ -34,6 +34,7 @@ package facsimile
 
 import anticipation.*
 import gossamer.*
+import hieroglyph.*
 import iridescence.*
 import rudiments.*
 import vacuous.*
@@ -54,7 +55,7 @@ private[facsimile] object ContentWriter:
   :   Unit =
 
     def out(text: Text): Unit =
-      val raw = text.s.getBytes("ISO-8859-1").nn
+      val raw = charEncoders.iso88591Encoder.encoded(text)
       var i = 0
       while i < raw.length do { builder += raw(i); i += 1 }
 

@@ -33,6 +33,7 @@
 package facsimile
 
 import anticipation.*
+import hieroglyph.*
 import rudiments.*
 import vacuous.*
 
@@ -105,7 +106,7 @@ private[facsimile] object CosWriter:
 
   private def name(builder: scala.collection.mutable.ArrayBuilder[Byte], text: Text): Unit =
     builder += '/'.toByte
-    val raw = text.s.getBytes("UTF-8").nn
+    val raw = charEncoders.utf8Encoder.encoded(text)
     var i = 0
 
     while i < raw.length do

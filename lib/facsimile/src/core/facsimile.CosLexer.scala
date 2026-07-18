@@ -32,11 +32,11 @@
                                                                                                   */
 package facsimile
 
-import java.nio.charset as jncs
-
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
+import hieroglyph.*
 import rudiments.*
 import vacuous.*
 
@@ -156,13 +156,13 @@ private[facsimile] class CosLexer(scan: Scan):
     val content = text.toString
 
     if content.indexOf('.') >= 0 || content.indexOf('e') >= 0 || content.indexOf('E') >= 0 then
-      try CosToken.Real(java.lang.Double.parseDouble(if content == "." then "0" else content))
-      catch case _: NumberFormatException =>
-        abort(PdfError(PdfError.Reason.Unparseable(start, t"a numeric object")))
+      val corrected: Text = if content == "." then t"0" else content.tt
+
+      safely(CosToken.Real(corrected.as[Double]))
+      . or(abort(PdfError(PdfError.Reason.Unparseable(start, t"a numeric object"))))
     else
-      try CosToken.Integral(java.lang.Long.parseLong(content))
-      catch case _: NumberFormatException =>
-        abort(PdfError(PdfError.Reason.Unparseable(start, t"a numeric object")))
+      safely(CosToken.Integral(content.tt.as[Long]))
+      . or(abort(PdfError(PdfError.Reason.Unparseable(start, t"a numeric object"))))
 
   private def name(): CosToken =
     val bytes = Array.newBuilder[Byte]
@@ -257,5 +257,4 @@ private[facsimile] class CosLexer(scan: Scan):
     if high >= 0 then bytes += (high << 4).toByte // an odd final digit implies a trailing zero
     CosToken.Chars(bytes.result().immutable(using Unsafe))
 
-  private def decode(bytes: Data): Text =
-    String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
+  private def decode(bytes: Data): Text = charDecoders.utf8Decoder.decoded(bytes)

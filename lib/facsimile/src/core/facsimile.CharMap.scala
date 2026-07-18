@@ -32,11 +32,10 @@
                                                                                                   */
 package facsimile
 
-import java.nio.charset as jncs
-
 import anticipation.*
 import contingency.*
 import gossamer.*
+import hieroglyph.*
 import rudiments.*
 import vacuous.*
 
@@ -63,7 +62,7 @@ private[facsimile] object CharMap:
       result
 
     def target(value: Cos): Optional[Text] = value.chars.let: bytes =>
-      String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_16BE).nn.tt
+      charDecoders.utf16BeDecoder.decoded(bytes)
 
     def increment(text: Text, by: Int): Text =
       if text.s.isEmpty then text
