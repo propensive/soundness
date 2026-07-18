@@ -33,36 +33,30 @@
 package hallucination
 
 import anticipation.*
-import contingency.*
-import fulminate.*
-import vacuous.*
 
-// The pure-Scala backend, selected on Scala.js and WASI. The codecs themselves live in `core`
-// (so they compile, and are differentially tested against `javax.imageio`, on the JVM); this
-// object only dispatches.
-private[hallucination] object RasterBackend:
-  def decode(format: Rasterizable, data: Data): Raster raises RasterError = format.name.s match
-    case "PNG"  => PngCodec.decode(data)
-    case "BMP"  => BmpCodec.decode(data)
-    case "GIF"  => GifCodec.decode(data)
-    case "WEBP" => WebpCodec.decode(data)
-    case "JPEG" => JpegCodec.decode(data)
-    case _      => abort(RasterError(format))
+// A forward byte cursor over the fully-buffered image `data`. JPEG is parsed from a `Read` stream
+// in the reference (image-rs/jpeg-decoder); since Hallucination decodes from a materialised
+// `Data`, a position cursor serves the same role. Reads past the end throw
+// `IndexOutOfBoundsException`, caught by `JpegCodec` and reported as a truncated image.
+private[hallucination] final class JpegReader(data: Data, start: Int):
+  private var pos: Int = start
 
-  // Format-agnostic decoding, recognising the format by its opening magic bytes.
-  def decode(data: Data): Raster raises RasterError =
-    if data.length < 4 then abort(RasterError(Unset, RasterError.Reason.Truncated))
-    else if (data(0)&0xff) == 0x89 && data(1) == 0x50 then PngCodec.decode(data)
-    else if data(0) == 0x47 && data(1) == 0x49 && data(2) == 0x46 then GifCodec.decode(data)
-    else if data(0) == 0x42 && data(1) == 0x4d then BmpCodec.decode(data)
-    else if JpegCodec.isJpeg(data) then JpegCodec.decode(data)
-    else if WebpCodec.isWebp(data) then WebpCodec.decode(data)
-    else abort(RasterError(Unset))
+  def position: Int = pos
 
-  def encode(format: Rasterizable, raster: Raster): Data = format.name.s match
-    case "PNG"  => PngCodec.encode(raster)
-    case "BMP"  => BmpCodec.encode(raster)
-    case "GIF"  => GifCodec.encode(raster)
-    case "WEBP" => WebpCodec.encode(raster)
-    case "JPEG" => JpegEncoder.encode(raster)
-    case _      => panic(m"the ${format.name} format has no native encoder")
+  def u8(): Int =
+    val byte = data(pos) & 0xff
+    pos += 1
+    byte
+
+  // A big-endian 16-bit value, as used by all JPEG segment length and dimension fields.
+  def u16(): Int = (u8() << 8) | u8()
+
+  def readExact(buffer: Array[Byte]): Unit =
+    var index = 0
+
+    while index < buffer.length do
+      buffer(index) = data(pos)
+      pos += 1
+      index += 1
+
+  def skip(length: Int): Unit = pos += length
