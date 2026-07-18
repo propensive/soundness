@@ -48,12 +48,8 @@ import vacuous.*
 import wisteria.*
 
 object Image:
-  // Anchored here so `path.open[Image]()` and `data.open[Image]()` resolve with no import.
-  given openable: [path: Abstractable across Paths to Text]
-  =>  ( Tactic[OciError], Tactic[TarError], Tactic[StreamError] )
-  =>  ( ImageOpenable[path]^ ) =
-    ImageOpenable[path]
-
+  // Anchored here so `data.open[Image]()` resolves with no import. Opening a filesystem
+  // *path* as an image (`path.open[Image]`) lives in the JVM-only source set.
   given dataOpenable: (Tactic[OciError], Tactic[TarError], Tactic[StreamError])
   =>  ( ImageDataOpenable^ ) =
     ImageDataOpenable()
