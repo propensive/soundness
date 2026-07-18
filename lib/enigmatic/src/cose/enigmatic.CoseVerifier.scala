@@ -35,6 +35,8 @@ package enigmatic
 import anticipation.*
 import enigmatic.*
 import prepositional.*
+import rudiments.*
+import vacuous.*
 
 // Counterpart to CoseAuthenticator. Selects how the public/symmetric key is
 // used to verify a COSE signature or MAC.
@@ -63,7 +65,8 @@ object CoseVerifier:
       def cborTag:       Long   = CoseTag.Mac0
 
       def check(toBeSigned: Data, authentication: Data, key: SymmetricKey[cipher]): Boolean =
-        algorithm.verify(toBeSigned, authentication, key.bytes)
+        key.secret.uncloak: bytes =>
+          algorithm.verify(toBeSigned, authentication, bytes.immutable(using Unsafe))
 
 trait CoseVerifier:
   type Self
