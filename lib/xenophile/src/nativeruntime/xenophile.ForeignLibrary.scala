@@ -30,12 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `invoke` materializes a fully-applied C `Foreign` navigation into a real Scala Native call,
-// resolving the symbol with `dlsym` and invoking it through a `CFuncPtr`. Must be applied
-// directly to an inline navigation chain — e.g. `Foreign["library", Native].random().invoke[Int]`
-// — not to a value bound to a `val`. It is the Scala Native analogue of `PanamaInvoke` (the JVM
-// Panama materializer); the two lower the identical navigation for different platforms and are
-// never on the same application's classpath.
-export xenophile.{NativeInvoke, invoke}
+import anticipation.*
+
+// The Scala Native twin of the JVM (Panama) `ForeignLibrary` object's registration surface. A
+// native binary resolves every C symbol from the flat namespace of its own statically-linked
+// image (`NativeInvoke` emits `dlopen(null)`), so there is no library to load at runtime —
+// `register` is a no-op, and the library must instead be present at *link* time (a `-l...`
+// linking option, or a reachable `@link` annotation). Sharing the name and signature lets code
+// that registers its libraries cross-compile unchanged.
+object ForeignLibrary:
+  def register(paths: Text*): Unit = ()

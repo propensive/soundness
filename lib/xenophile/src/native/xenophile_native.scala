@@ -30,12 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `invoke` materializes a fully-applied C `Foreign` navigation into a real Scala Native call,
-// resolving the symbol with `dlsym` and invoking it through a `CFuncPtr`. Must be applied
-// directly to an inline navigation chain — e.g. `Foreign["library", Native].random().invoke[Int]`
-// — not to a value bound to a `val`. It is the Scala Native analogue of `PanamaInvoke` (the JVM
-// Panama materializer); the two lower the identical navigation for different platforms and are
-// never on the same application's classpath.
-export xenophile.{NativeInvoke, invoke}
+// The `invoke` terminal for call sites that import `xenophile.*` rather than `soundness.*`
+// (the same extension is exported to the `soundness` package alongside `ForeignLibrary`).
+extension (foreign: Foreign)
+  inline def invoke[result]: result =
+    ${PanamaInvoke.invoke[result]('foreign)}

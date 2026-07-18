@@ -30,12 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `invoke` materializes a fully-applied C `Foreign` navigation into a real Scala Native call,
-// resolving the symbol with `dlsym` and invoking it through a `CFuncPtr`. Must be applied
-// directly to an inline navigation chain — e.g. `Foreign["library", Native].random().invoke[Int]`
-// — not to a value bound to a `val`. It is the Scala Native analogue of `PanamaInvoke` (the JVM
-// Panama materializer); the two lower the identical navigation for different platforms and are
-// never on the same application's classpath.
-export xenophile.{NativeInvoke, invoke}
+// The `invoke` terminal (re-exported to the `soundness` package alongside `NativeInvoke`).
+// Plain `inline` (not `transparent`): the return type is fixed by the type argument, and
+// non-transparency defers the macro so the `scala.scalanative.*` call only materializes at the
+// downstream (Native-linked) call site.
+extension (foreign: Foreign)
+  inline def invoke[result]: result =
+    ${NativeInvoke.invoke[result]('foreign)}

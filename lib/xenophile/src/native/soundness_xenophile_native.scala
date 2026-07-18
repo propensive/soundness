@@ -32,4 +32,8 @@
                                                                                                   */
 package soundness
 
-export xenophile.ForeignLibrary
+// `invoke` materializes a fully-applied C `Foreign` navigation into a Panama downcall (see
+// `PanamaInvoke`); it is the JVM analogue of the `scalanative` module's `invoke` — the two lower
+// the identical navigation for different platforms and are never on the same application's
+// classpath.
+export xenophile.{ForeignBuffer, ForeignLibrary, PanamaInvoke, invoke}

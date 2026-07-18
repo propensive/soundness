@@ -30,12 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `invoke` materializes a fully-applied C `Foreign` navigation into a real Scala Native call,
-// resolving the symbol with `dlsym` and invoking it through a `CFuncPtr`. Must be applied
-// directly to an inline navigation chain — e.g. `Foreign["library", Native].random().invoke[Int]`
-// — not to a value bound to a `val`. It is the Scala Native analogue of `PanamaInvoke` (the JVM
-// Panama materializer); the two lower the identical navigation for different platforms and are
-// never on the same application's classpath.
-export xenophile.{NativeInvoke, invoke}
+import java.lang.foreign.*
+
+import anticipation.*
+import rudiments.*
+import vacuous.*
+
+// A manually-managed block of foreign memory: the portable scratch space for pointer-typed C
+// parameters — an input buffer copied in from `Data`, an output buffer read back with `data`, or
+// an out-param read with `int`. This is the JVM (Panama) twin of the Scala Native version: the
+// two present an identical surface over an `Arena`-backed `MemorySegment` here and a `malloc`ed
+// `Ptr[Byte]` there, so code allocating buffers around `invoke` cross-compiles unchanged.
+// Lifetime is explicit on both platforms: `free` releases the memory.
+object ForeignBuffer:
+  def apply(size: Int): ForeignBuffer =
+    val arena = Arena.ofShared().nn
+    new ForeignBuffer(arena, arena.allocate(size.toLong).nn, size)
+
+  def apply(data: Data): ForeignBuffer =
+    val buffer = apply(data.length)
+
+    MemorySegment.copy
+      ( data.mutable(using Unsafe), 0, buffer.segment, ValueLayout.JAVA_BYTE, 0L, data.length )
+
+    buffer
+
+class ForeignBuffer(arena: Arena, private[xenophile] val segment: MemorySegment, val size: Int):
+  def pointer: Pointer = Pointer(segment.address)
+  def data(length: Int): Data = ForeignLibrary.bytes(segment, length)
+  def int: Int = segment.get(ValueLayout.JAVA_INT.nn, 0L)
+  def free(): Unit = arena.close()

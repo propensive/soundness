@@ -102,6 +102,54 @@ object ForeignLibrary:
     MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0L, array, 0, length)
     array.immutable(using Unsafe)
 
+  //── Process-wide symbol resolution, for the macro `invoke` (`PanamaInvoke`) ─────────────────
+  // A statically-linked native binary resolves every C symbol from one flat namespace
+  // (`dlopen(null)`, which is what `NativeInvoke` emits); the JVM equivalent is the default
+  // lookup (libc and already-loaded images) plus explicitly-loaded libraries. `register` loads
+  // a library — by the first of several candidate paths that resolves, bound to the global
+  // arena, since a registered library serves downcalls for the life of the process — into that
+  // search path; `downcall` then finds a symbol wherever it lives and caches the bound handle.
+
+  private val registered: java.util.concurrent.CopyOnWriteArrayList[SymbolLookup] =
+    java.util.concurrent.CopyOnWriteArrayList()
+
+  private val handles: java.util.concurrent.ConcurrentHashMap[Text, MethodHandle] =
+    java.util.concurrent.ConcurrentHashMap()
+
+  def register(paths: Text*): Unit =
+    def attempt(remaining: List[Text]): SymbolLookup = remaining match
+      case path :: rest =>
+        try SymbolLookup.libraryLookup(path.s, Arena.global().nn).nn
+        catch case _: Throwable => attempt(rest)
+
+      case Nil =>
+        throw IllegalArgumentException("no native library could be loaded from "+paths)
+
+    registered.add(attempt(paths.to(List)))
+
+  def downcall(symbol: Text, descriptor: FunctionDescriptor): MethodHandle =
+    handles.computeIfAbsent(symbol, _ => bind(symbol, descriptor)).nn
+
+  private def bind(symbol: Text, descriptor: FunctionDescriptor): MethodHandle =
+    def search(lookups: List[SymbolLookup]): MemorySegment = lookups match
+      case lookup :: rest =>
+        val found = lookup.find(symbol.s).nn
+        if found.isPresent then found.get.nn else search(rest)
+
+      case Nil =>
+        panic(m"no such foreign symbol: $symbol (is its library `ForeignLibrary.register`ed?)")
+
+    val lookups: List[SymbolLookup] =
+      import scala.jdk.CollectionConverters.ListHasAsScala
+      linker.defaultLookup.nn :: registered.asScala.to(List)
+
+    linker.downcallHandle(search(lookups), descriptor).nn
+
+  // Reads a NUL-terminated C string result back as `Text` (a downcall's `ADDRESS` result is a
+  // zero-length segment, so it must be reinterpreted before reading).
+  def text(segment: MemorySegment): Text =
+    segment.reinterpret(java.lang.Long.MAX_VALUE).nn.getString(0L).nn.tt
+
 class ForeignLibrary(lookup: SymbolLookup, signatures: Map[Text, Prototype]):
   // A bound `MethodHandle` for the named function, built from its parsed C
   // signature. Invoke it with `invokeWithArguments`, passing `MemorySegment`s for

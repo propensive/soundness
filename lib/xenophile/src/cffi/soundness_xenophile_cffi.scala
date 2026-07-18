@@ -37,3 +37,4 @@ package soundness
 // (`xenophile.native`, `ForeignLibrary`) and the Scala Native backend (`xenophile.scalanative`,
 // `NativeInvoke`); it carries no platform runtime, so it cross-compiles to both.
 export xenophile.{CHeaderDialect, Native, Pointer}
+export xenophile.Pointer.{address, isNull}

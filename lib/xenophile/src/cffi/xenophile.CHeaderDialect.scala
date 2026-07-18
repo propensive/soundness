@@ -139,9 +139,12 @@ object CHeaderDialect extends Dialect:
 
     val base = canonical(words)
 
+    // Only a *plain* `char*` is the C-string type: `unsigned char*`/`signed char*`
+    // conventionally mean a byte buffer, not text, so they stay pointers (`canonical` has
+    // already dropped the signedness from `base`, hence the check against the original words).
     val foreign =
       if pointers == 0 then Foreign.Type.Named(base)
-      else if base == t"char" && pointers == 1 then Foreign.Type.Named(t"string")
+      else if words == List("char") && pointers == 1 then Foreign.Type.Named(t"string")
       else Foreign.Type.Applied(t"ptr", List(Foreign.Type.Named(base)))
 
     (foreign, name, rest)

@@ -30,12 +30,50 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `invoke` materializes a fully-applied C `Foreign` navigation into a real Scala Native call,
-// resolving the symbol with `dlsym` and invoking it through a `CFuncPtr`. Must be applied
-// directly to an inline navigation chain — e.g. `Foreign["library", Native].random().invoke[Int]`
-// — not to a value bound to a `val`. It is the Scala Native analogue of `PanamaInvoke` (the JVM
-// Panama materializer); the two lower the identical navigation for different platforms and are
-// never on the same application's classpath.
-export xenophile.{NativeInvoke, invoke}
+import scala.scalanative.libc.stdlib
+import scala.scalanative.runtime.Intrinsics
+import scala.scalanative.runtime.{fromRawPtr, toRawPtr}
+import scala.scalanative.unsafe.*
+import scala.scalanative.unsigned.*
+
+import anticipation.*
+import rudiments.*
+import vacuous.*
+
+// A manually-managed block of foreign memory: the Scala Native twin of the Panama version (see
+// that file for the surface's rationale) — a `malloc`ed `Ptr[Byte]` in place of an
+// `Arena`-backed `MemorySegment`, with byte-wise copies in and out (`Data` is heap memory the C
+// callee must never retain, so it is always copied). Lifetime is explicit: `free` releases the
+// allocation.
+object ForeignBuffer:
+  def apply(size: Int): ForeignBuffer =
+    new ForeignBuffer(stdlib.malloc(size.toCSize).nn, size)
+
+  def apply(data: Data): ForeignBuffer =
+    val buffer = apply(data.length)
+    val array = data.mutable(using Unsafe)
+    var index = 0
+
+    while index < array.length do
+      buffer.memory(index) = array(index)
+      index += 1
+
+    buffer
+
+class ForeignBuffer(private[xenophile] val memory: Ptr[Byte], val size: Int):
+  def pointer: Pointer = Pointer(Intrinsics.castRawPtrToLong(toRawPtr(memory)))
+
+  def data(length: Int): Data =
+    val array = new Array[Byte](length)
+    var index = 0
+
+    while index < length do
+      array(index) = memory(index)
+      index += 1
+
+    array.immutable(using Unsafe)
+
+  def int: Int = !memory.asInstanceOf[Ptr[Int]]
+  def free(): Unit = stdlib.free(memory)
