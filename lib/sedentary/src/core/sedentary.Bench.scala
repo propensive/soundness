@@ -198,7 +198,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
     device.deploy(jarfile, uuid)
     jarfile
 
-  protected val scalac: Scalac[3.7] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.7, Backend.Jvm] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
     stage.remote: input =>

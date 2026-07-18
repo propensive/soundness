@@ -57,7 +57,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   type Result[output]
   type Transport <: Object
 
-  protected val scalac: Scalac[?]
+  protected val scalac: Scalac[?, ?]
 
   protected def invoke[output](stage: Stage[output, Form, Target]): Result[output]
 

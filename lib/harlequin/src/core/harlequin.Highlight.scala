@@ -44,23 +44,23 @@ object Highlight:
 
 trait Highlight:
   def depth: Depth
-  def scalac: Optional[Scalac[?]]
+  def scalac: Optional[Scalac[?, ?]]
   def classpath: Optional[LocalClasspath]
 
 object highlighting:
   given tokenizedScala: Highlight = new Highlight:
     def depth: Depth = Depth.Tokenized
-    def scalac: Optional[Scalac[?]] = Unset
+    def scalac: Optional[Scalac[?, ?]] = Unset
     def classpath: Optional[LocalClasspath] = Unset
 
-  given typecheckedScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
+  given typecheckedScala(using scalac0: Scalac[?, ?], classpath0: LocalClasspath): Highlight =
     new Highlight:
       def depth: Depth = Depth.Typechecked
-      def scalac: Optional[Scalac[?]] = scalac0
+      def scalac: Optional[Scalac[?, ?]] = scalac0
       def classpath: Optional[LocalClasspath] = classpath0
 
-  given compiledScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
+  given compiledScala(using scalac0: Scalac[?, ?], classpath0: LocalClasspath): Highlight =
     new Highlight:
       def depth: Depth = Depth.Compiled
-      def scalac: Optional[Scalac[?]] = scalac0
+      def scalac: Optional[Scalac[?, ?]] = scalac0
       def classpath: Optional[LocalClasspath] = classpath0

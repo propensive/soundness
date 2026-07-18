@@ -30,38 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package anthology
 
-import anthology.*
+import ambience.*
 import anticipation.*
-import austronesian.*
-import galilei.*
+import contingency.*
+import eucalyptus.*
 import gossamer.*
-import hellenism.*
-import prepositional.*
-import serpentine.*
-import vacuous.*
+import guillotine.*
+import rudiments.*
 
-import classloaders.systemClassloader
+// Evidence that the native tools a WASI component link shells out to (`wasm-tools` and the
+// scala-wasm fork of `wit-bindgen`) are present. Instances exist only via the probing `apply`,
+// so linking for `Backend.Wasi` cannot discover a missing tool at link time.
+object WasiToolchain:
+  def apply()(using WorkingDirectory): WasiToolchain raises ToolchainError =
+    probe(t"wasm-tools")
+    probe(t"wit-bindgen")
+    new WasiToolchain()
 
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
+  private def probe(tool: Text)(using WorkingDirectory): Unit raises ToolchainError =
+    if safely(mute[ExecEvent](sh"$tool --version".exec[Exit]())) != Exit.Ok
+    then raise(ToolchainError(tool))
 
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
-
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
-
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
-      val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+class WasiToolchain private ()

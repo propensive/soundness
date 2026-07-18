@@ -30,38 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package anthology
 
-import anthology.*
-import anticipation.*
-import austronesian.*
 import galilei.*
-import gossamer.*
 import hellenism.*
 import prepositional.*
 import serpentine.*
-import vacuous.*
 
-import classloaders.systemClassloader
-
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
-
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
-
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
-
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
-      val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+// A token pairing a compilation's output directory with the classpath it was compiled against,
+// tagged with the backend it targeted. Contravariance means a `Compilation[Backend.Portable]`
+// is acceptable wherever a compilation for any single portable backend is required, while a
+// JVM compilation can never be linked and a portable compilation can never be bundled as an
+// executable JAR.
+case class Compilation[-backend <: Backend](out: Path on Linux, classpath: LocalClasspath)

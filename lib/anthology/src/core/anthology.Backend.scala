@@ -30,38 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package anthology
 
-import anthology.*
 import anticipation.*
-import austronesian.*
-import galilei.*
 import gossamer.*
-import hellenism.*
-import prepositional.*
-import serpentine.*
-import vacuous.*
 
-import classloaders.systemClassloader
+object Backend:
+  type Jvm = Backend.Jvm.type
+  type Js = Backend.Js.type
+  type Wasm = Backend.Wasm.type
+  type Wasi = Backend.Wasi.type
 
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
+  // The backends whose compilations emit target-neutral `.sjsir`, deferring the choice of
+  // linked representation (JavaScript, browser Wasm or a WASI component) until link time.
+  type Portable = Js | Wasm | Wasi
 
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
+  // Determines the additional compiler flags each backend requires; contravariance lets the
+  // single `portable` instance serve every member of the `Portable` union.
+  trait Emission[-backend <: Backend]:
+    def flags: List[Text]
 
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
+  given jvm: Emission[Jvm]:
+    def flags: List[Text] = Nil
 
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
-      val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+  given portable: Emission[Portable]:
+    def flags: List[Text] = List(t"-scalajs")
+
+enum Backend:
+  case Jvm, Js, Wasm, Wasi

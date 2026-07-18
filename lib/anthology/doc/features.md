@@ -8,3 +8,8 @@
 - compiler invocation is typed according to the major compiler version
 - options are typechecked against the compiler version
 - supports compilation with [Scala.js](https://scala-js.org/)
+- compilations are typed by target backend: JVM, JavaScript, WebAssembly or WASI
+- fully-linked `.js` and `.wasm` artifacts, or unlinked `.sjsir` library JARs for
+  downstream assembly
+- linker options are typechecked against the link target
+- a WASI component link will not typecheck until its native tooling is proven present

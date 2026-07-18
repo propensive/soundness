@@ -30,38 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package anthology
 
-import anthology.*
 import anticipation.*
-import austronesian.*
-import galilei.*
-import gossamer.*
-import hellenism.*
-import prepositional.*
-import serpentine.*
-import vacuous.*
+import fulminate.*
 
-import classloaders.systemClassloader
-
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
-
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
-
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
-
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
-      val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+case class ToolchainError(tool: Text)(using Diagnostics)
+extends Error(779, 2)(m"the native tool $tool is not available on the PATH")

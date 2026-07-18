@@ -30,38 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package anthology
 
-import anthology.*
-import anticipation.*
-import austronesian.*
-import galilei.*
-import gossamer.*
-import hellenism.*
-import prepositional.*
-import serpentine.*
-import vacuous.*
+import org.scalajs.linker.interface.{ESVersion, ModuleKind}
 
-import classloaders.systemClassloader
+object linkerOptions:
+  object moduleKind:
+    val esModule: Linker.Option[Backend.Js] =
+      Linker.Option(_.withModuleKind(ModuleKind.ESModule))
 
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
+    val commonJs: Linker.Option[Backend.Js] =
+      Linker.Option(_.withModuleKind(ModuleKind.CommonJSModule))
 
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
+    val noModule: Linker.Option[Backend.Js] =
+      Linker.Option(_.withModuleKind(ModuleKind.NoModule))
 
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
+  val checkIr: Linker.Option[Backend.Portable] = Linker.Option(_.withCheckIR(true))
+  val sourceMaps: Linker.Option[Backend.Portable] = Linker.Option(_.withSourceMap(true))
 
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
-      val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+  object esVersion:
+    private def of(version: ESVersion): Linker.Option[Backend.Portable] =
+      Linker.Option(_.withESFeatures(_.withESVersion(version)))
+
+    val es2015: Linker.Option[Backend.Portable] = of(ESVersion.ES2015)
+    val es2016: Linker.Option[Backend.Portable] = of(ESVersion.ES2016)
+    val es2017: Linker.Option[Backend.Portable] = of(ESVersion.ES2017)
+    val es2018: Linker.Option[Backend.Portable] = of(ESVersion.ES2018)
+    val es2019: Linker.Option[Backend.Portable] = of(ESVersion.ES2019)
+    val es2020: Linker.Option[Backend.Portable] = of(ESVersion.ES2020)
+    val es2021: Linker.Option[Backend.Portable] = of(ESVersion.ES2021)
+    val es2022: Linker.Option[Backend.Portable] = of(ESVersion.ES2022)
+
+  object optimize:
+    val none: Linker.Option[Backend.Portable] = Linker.Option(_.withOptimizer(false))
+    val fast: Linker.Option[Backend.Portable] = Linker.Option(_.withOptimizer(true))

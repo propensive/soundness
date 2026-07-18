@@ -120,7 +120,7 @@ extends Rig:
         case Exit.Ok         => target
         case Exit.Fail(fail) => ???
 
-  protected val scalac: Scalac[3.8] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.8, Backend.Jvm] = Scalac(List(scalacOptions.experimental))
 
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux])

@@ -30,38 +30,91 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package anthology
 
-import anthology.*
+import java.nio.file as jnf
+
+import scala.concurrent.*
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.*
+import scala.util.control as suc
+
+import org.scalajs.linker.interface.{ModuleInitializer, StandardConfig}
+import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
+import org.scalajs.logging.{Level, Logger}
+
 import anticipation.*
-import austronesian.*
+import contingency.*
+import digression.*
 import galilei.*
-import gossamer.*
 import hellenism.*
 import prepositional.*
 import serpentine.*
-import vacuous.*
 
-import classloaders.systemClassloader
+object Linker:
+  // An entry point whose `main(args: Array[String])` method runs when the linked module loads.
+  case class EntryPoint(mainClass: Fqcn)
 
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
+  object Option:
+    private[anthology] def apply[target <: Backend.Portable]
+      ( configure0: StandardConfig => StandardConfig )
+    :   Option[target] =
 
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
+      new Option[target]:
+        private[anthology] def configure(config: StandardConfig): StandardConfig =
+          configure0(config)
 
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
+  // Options are constructible only through the `linkerOptions` DSL, keeping the underlying
+  // Scala.js linker types out of the public API; contravariance permits an option declared for
+  // `Backend.Portable` in the options list of any linker.
+  trait Option[-target <: Backend.Portable]:
+    private[anthology] def configure(config: StandardConfig): StandardConfig
 
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
-      val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+case class Linker[target <: Backend.Portable]
+  ( options: List[Linker.Option[target]], entryPoints: List[Linker.EntryPoint] = Nil ):
+
+  def link(compilation: Compilation[target], out: Path on Linux)(using linkage: Linkage[target])
+  :   Path on Linux logs LinkEvent raises LinkError =
+
+    Log.info(LinkEvent.Start)
+
+    val config: StandardConfig =
+      options.foldLeft(linkage.configure(StandardConfig())): (config, option) =>
+        option.configure(config)
+
+    val entries: List[jnf.Path] =
+      jnf.Paths.get(compilation.out.encode.s).nn ::
+        compilation.classpath.entries.to(List).flatMap:
+          case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
+          case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
+          case _                                   => Nil
+
+    val initializers: List[ModuleInitializer] = entryPoints.map: entry =>
+      ModuleInitializer.mainMethodWithArgs(entry.mainClass.text.s, "main")
+
+    object logger extends Logger:
+      def log(level: Level, message: => String): Unit =
+        if level == Level.Error || level == Level.Warn
+        then Log.warn(LinkEvent.Message(message.tt))
+        else if level == Level.Info then Log.info(LinkEvent.Message(message.tt))
+        else Log.fine(LinkEvent.Message(message.tt))
+
+      def trace(error: => Throwable): Unit = Log.warn(LinkEvent.Message(error.toString.tt))
+
+    try
+      val outPath = jnf.Paths.get(out.encode.s).nn
+      jnf.Files.createDirectories(outPath)
+      val linker = StandardImpl.linker(config)
+      val cache = StandardImpl.irFileCache().newCache
+
+      val (containers, _) =
+        Await.result(PathIRContainer.fromClasspath(entries), 300.seconds)
+
+      val irFiles = Await.result(cache.cached(containers), 300.seconds)
+      val output = PathOutputDirectory(outPath)
+      Await.result(linker.link(irFiles, initializers, output, logger), 1800.seconds)
+      val result = linkage.artifact(out)
+      Log.info(LinkEvent.Linked(result.encode))
+      result
+
+    catch case suc.NonFatal(error) => abort(LinkError(error.stackTrace))

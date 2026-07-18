@@ -30,38 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package superlunary
+package anthology
 
-import anthology.*
+import org.scalajs.linker.interface.{ESVersion, ModuleKind, StandardConfig}
+
 import anticipation.*
-import austronesian.*
 import galilei.*
-import gossamer.*
-import hellenism.*
 import prepositional.*
 import serpentine.*
-import vacuous.*
 
-import classloaders.systemClassloader
+object Linkage:
+  given js: Linkage[Backend.Js]:
+    private[anthology] def configure(config: StandardConfig): StandardConfig =
+      config.withModuleKind(ModuleKind.ESModule)
 
-object Isolation extends Rig:
-  type Result[output] = output
-  type Form = Array[Pojo]
-  type Target = Classloader
-  type Transport = Pojo
+    private[anthology] def artifact(out: Path on Linux): Path on Linux = out / "main.js"
 
-  def stage(out: Path on Linux): Classloader = classpath(out).classloader()
+  given wasm: Linkage[Backend.Wasm]:
+    private[anthology] def configure(config: StandardConfig): StandardConfig =
+      config
+      . withModuleKind(ModuleKind.ESModule)
+      . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
 
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
+    private[anthology] def artifact(out: Path on Linux): Path on Linux = out / "main.wasm"
 
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
-      val classloader: Classloader = stage.target
-      val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
-      val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-      val method = cls.getMethod("apply").nn
-      val function = method.invoke(instance).nn
-      val cls2 = function.getClass
-      val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
-      method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+
+  given wasi(using toolchain: WasiToolchain, world: WitWorld): Linkage[Backend.Wasi] =
+    new Linkage[Backend.Wasi]:
+      private[anthology] def configure(config: StandardConfig): StandardConfig =
+        config
+        . withModuleKind(ModuleKind.WasmComponent)
+        . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
+        . withWasmFeatures: features =>
+            features
+            . withWitDirectory(Some(world.directory.encode.s))
+            . withWitWorld(Some(world.world.s))
+
+      private[anthology] def artifact(out: Path on Linux): Path on Linux = out / "main.wasm"
+
+// Determines how each portable backend is linked: the linker configuration it mandates and the
+// primary artifact it produces. The `wasi` instance is conditional upon a `WasiToolchain` (the
+// native tools, proven present) and a `WitWorld`, so a WASI component link is only expressible
+// once its runtime prerequisites are satisfied.
+trait Linkage[target <: Backend.Portable]:
+  private[anthology] def configure(config: StandardConfig): StandardConfig
+  private[anthology] def artifact(out: Path on Linux): Path on Linux

@@ -79,7 +79,7 @@ object SourceCode:
 
       if highlighting.depth == Depth.Tokenized then Unset else
         (highlighting.scalac, highlighting.classpath) match
-          case (scalac: Scalac[?], classpath: LocalClasspath) =>
+          case (scalac: Scalac[?, ?], classpath: LocalClasspath) =>
             resolveTypes
               ( text, scalac, classpath, highlighting.depth == Depth.Compiled, caret )
 
@@ -335,7 +335,7 @@ object SourceCode:
 
   private def resolveTypes
     ( text:      Text,
-      scalac:    Scalac[?],
+      scalac:    Scalac[?, ?],
       classpath: LocalClasspath,
       full:      Boolean,
       caret:     Optional[Ordinal] )
@@ -364,7 +364,7 @@ object SourceCode:
     (metaMap, diagnostics, completions)
 
   private def frontend
-    ( text: Text, scalac: Scalac[?], cp: Text )
+    ( text: Text, scalac: Scalac[?, ?], cp: Text )
     ( stop: Contexts.FreshContext => Contexts.FreshContext )
   :   (Run, Contexts.Context, List[Diagnostic]) =
 
