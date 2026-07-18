@@ -1092,6 +1092,9 @@ object embarcadero extends Library:
 object enigmatic extends Library:
   object core extends Component(aperture.core, gastronomy.core):
     override def scalaJs = false // crypto via `gastronomy` (`java.security`/`javax.crypto`)
+    // The off-heap/encrypting cloaks live in `core-jvm` (`java.lang.foreign`), ready for the
+    // day the shared tree cross-compiles.
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object cose extends Component(core, breviloquence.core):

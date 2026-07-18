@@ -32,29 +32,56 @@
                                                                                                   */
 package enigmatic
 
+import java.nio as jn
+import java.nio.charset as jnc
+import java.util as ju
+
 import anticipation.*
 import gossamer.*
 import spectacular.*
 
 object Password:
-  def apply(cleartext: Text): Password = new Password(cleartext)
+  // From cleartext `Text`. The immutable `String` has already pinned the cleartext on the
+  // heap, where it cannot be zeroed, so the cloak protects only the copy it stores; prefer
+  // the `Array[Char]` overload when the password originates from mutable input.
+  def apply(cleartext: Text)(using cloak: Cloak^): Password^{cloak} =
+    new Password(cloak.cloak(cleartext.s.getBytes(jnc.StandardCharsets.UTF_8).nn))
+
+  // From mutable chars: encodes to UTF-8, then zeroes both the input array and the
+  // intermediate encoding buffer, leaving the cloaked copy as the only cleartext.
+  def apply(cleartext: Array[Char])(using cloak: Cloak^): Password^{cloak} =
+    val buffer = jnc.StandardCharsets.UTF_8.nn.encode(jn.CharBuffer.wrap(cleartext)).nn
+    val bytes = new Array[Byte](buffer.remaining)
+    buffer.get(bytes)
+    if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, 0.toByte)
+    ju.Arrays.fill(cleartext, '\u0000')
+    new Password(cloak.cloak(bytes))
 
   // Never renders the secret: a `Password` is safe to log or embed in a message.
   given showable: Password is Showable = _ => t"Password(•••)"
 
-// A password held opaquely: constructed from cleartext, but with no way to read that
-// cleartext back except through `expose`, which lends it — as a scoped `Cleartext`
-// capability — to a block, exactly as `PrivateKey.expose` lends a `Decryptor`. Capture
-// checking confines the capability to the block, so it (and any closure over it) cannot
-// escape; `result` is instantiated at the call site.
-class Password(private val cleartext: Text):
-  def expose[result](block: Cleartext^ ?=> result): result = block(using Cleartext(cleartext))
+// A password held opaquely by whichever `Cloak` was in scope at construction, capturing that
+// cloak, with no way to read the cleartext back except through `uncloak`, which lends it — as
+// a scoped `Cleartext` capability over a mutable char array — to a block, exactly as
+// `PrivateKey.uncloak` lends a `Decryptor`. Capture checking confines the capability to the
+// block, so it (and any closure over it) cannot escape; `result` is instantiated at the call
+// site. The chars are zeroed when the block exits, so they must not escape either.
+class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
+  def uncloak[result](block: Cleartext^ ?=> result): result =
+    secret.uncloak: bytes =>
+      val buffer = jnc.StandardCharsets.UTF_8.nn.decode(jn.ByteBuffer.wrap(bytes)).nn
+      val chars = new Array[Char](buffer.remaining)
+      buffer.get(chars)
+      if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, '\u0000')
+      try block(using Cleartext(chars)) finally ju.Arrays.fill(chars, '\u0000')
 
-// The scoped view of a password's cleartext, lent within `expose`. A stateless
-// `SharedCapability`, freely aliasable within the block but not beyond it.
-class Cleartext private[enigmatic] (private val secret: Text) extends caps.SharedCapability:
-  def text: Text = secret
+// The scoped view of a password's cleartext, lent within `uncloak` as a mutable char array,
+// zeroed when the block exits. A `SharedCapability`, freely aliasable within the block but
+// not beyond it. There is deliberately no `Text` accessor: an immutable `String` copy of the
+// cleartext could be neither confined to the block nor zeroed after it.
+class Cleartext private[enigmatic] (private val secret: Array[Char]) extends caps.SharedCapability:
+  def chars: Array[Char] = secret
 
-// The cleartext lent within an `expose` block, reached contextually: `cleartext.text` rather
-// than `summon[Cleartext].text`, following the same idiom as parasite's `monitor`.
+// The cleartext lent within an `uncloak` block, reached contextually: `cleartext.chars` rather
+// than `summon[Cleartext].chars`, following the same idiom as parasite's `monitor`.
 transparent inline def cleartext: Cleartext^ = infer[Cleartext^]

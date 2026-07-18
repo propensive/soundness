@@ -32,53 +32,14 @@
                                                                                                   */
 package enigmatic
 
-import anticipation.*
-import gastronomy.*, providers.javaStdlibProvider
-import gossamer.*
-import monotonous.*
-import prepositional.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
-
-object PrivateKey:
-  def generate[cipher <: Cipher]()(using cipher: cipher, cloak: Cloak^)
-  :   PrivateKey[cipher]^{cloak} =
-
-    PrivateKey(cipher.genKey())
-
-  // Adopts freshly-generated key material: the `Data` is ours, so it is zeroed in place
-  // (through a mutable view) as it is cloaked.
-  private[enigmatic] def apply[cipher <: Cipher](data: Data)(using cloak: Cloak^)
-  :   PrivateKey[cipher]^{cloak} =
-
-    new PrivateKey(cloak.cloak(data.mutable(using Unsafe)))
-
-  given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
-    import alphabets.base64Standard
-
-    key.secret.uncloak: bytes =>
-      t"PrivateKey(${bytes.immutable(using Unsafe).digest[Sha2[256]].serialize[Base64]})"
-
-// A private key held opaquely by whichever `Cloak` was in scope at construction, capturing
-// that cloak. Operations that need the key material — `public`, `sign`, `pem` — materialize
-// it transiently through the cloak, and the transient copy is zeroed as soon as the
-// operation completes; only `pem`, gated on `Divulgence`, lets the material escape.
-class PrivateKey[cipher <: Cipher](private[enigmatic] val secret: Secret^):
-  def public(using cipher: cipher): PublicKey[cipher] =
-    secret.uncloak: bytes =>
-      PublicKey(cipher.privateToPublic(bytes.immutable(using Unsafe)))
-
-
-  def sign[encodable: Encodable in Data](value: encodable)
-    ( using cipher: cipher & Signing, erased weakness: Permit[Weakness[cipher]] )
-  :   Signature[cipher] =
-
-    secret.uncloak: bytes =>
-      Signature(cipher.sign(encodable.encode(value), bytes.immutable(using Unsafe)))
-
-
-  // The immutable `Data` in the result outlives the cloak's zeroing, which is exactly why
-  // revealing it demands the explicit `Divulgence` token.
-  def pem(reveal: Divulgence.type): Pem = secret.uncloak: bytes =>
-    Pem(PemLabel.PrivateKey, bytes.clone.immutable(using Unsafe))
+// The handle to one secret stored through a `Cloak`. It is not itself a capability: its
+// tracked-ness comes from the `Cloak` that made it (a `Secret` produced by an off-heap or
+// encrypting cloak captures that cloak; a heap-cloaked `Secret` is pure). It is deliberately
+// not exported from the `soundness` bundle: user code reaches secrets only through
+// `Password`/`PrivateKey`/`SymmetricKey` and their `uncloak` methods.
+@unexported
+trait Secret:
+  // Lends the secret to the block as a MUTABLE byte array, materialized from wherever the
+  // cloak stores it. The array is zeroed in a `finally` when the block exits, normally or
+  // abruptly, so it must not escape the block.
+  def uncloak[result](block: Array[Byte] => result): result

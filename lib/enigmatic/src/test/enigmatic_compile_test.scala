@@ -38,14 +38,15 @@ import charEncoders.utf8Encoder
 import blockCipherMode.cbc, blockCipherPadding.pkcs7
 import providers.javaStdlibProvider
 import crypto.permitUnauthenticatedCrypto   // AES-CBC is unauthenticated
+import cloaks.cloakHeap
 
 // Compile-time regressions for the cipher API. (Capture-checking confinement of
-// the exposed `Encryptor`/`Decryptor` capability is enforced and regression-tested
+// the lent `Encryptor`/`Decryptor` capability is enforced and regression-tested
 // in `CaptureTests`.)
 object CompileChecks:
   val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
 
-  val ciphertext: Data = key.expose:
+  val ciphertext: Data = key.uncloak:
     t"Hello world".encrypt(InitializationVector.random)
 
   // Validity regression: only cipher/mode/padding triples the JDK supports have a
@@ -70,4 +71,4 @@ object CompileChecks:
   // that key generation is *not* gated; only the encryption operation is.
   //
   //   val desKey = SymmetricKey.generate[Des over Cbc against Pkcs7]()
-  //   val desText = desKey.expose(t"Hello world".encrypt(InitializationVector.random))
+  //   val desText = desKey.uncloak(t"Hello world".encrypt(InitializationVector.random))

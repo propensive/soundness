@@ -40,6 +40,7 @@ import contingency.*
 import distillate.*
 import gastronomy.{Permit, ProcessingPermit}
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 // Encryption is total: a valid transformation is guaranteed by the static types
@@ -60,7 +61,8 @@ extension [value: Encodable in Data](value: value)
 // Streaming encryption (block ciphers only) lazily transforms a `LazyList`, driving
 // the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
 // and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
-// `expose` block — only the fixed ciphertext of `stream` could otherwise leak.
+// `uncloak` block: beyond leaking, a stream drained after the block ends would
+// read key bytes the cloak has already zeroed.
 
 extension (stream: LazyList[Data])
   def encrypt[cipher <: BlockCipher](iv: InitializationVector)
@@ -131,24 +133,30 @@ extension (data: Data)
 
     decodable.decoded(plaintext)
 
-// `expose` lends the key to the block as an `Encryptor`/`Decryptor` capability,
+// `uncloak` lends the key to the block as an `Encryptor`/`Decryptor` capability,
 // and capture checking confines it there: `result` is instantiated at the call
 // site, so returning the capability — or any closure over it — is a compile
 // error ("leaks into outer capture set"). The capabilities are `SharedCapability`
 // because they are stateless key wrappers, freely aliasable within the block
 // (the symmetric variant lends two at once), so separation checking is
-// deliberately not used. The streaming caveat above stands: a lazily-encrypted
-// `LazyList[Data]` is pure (the key bytes are already baked in) and escapes
-// tracking by design. Confinement is regression-tested in `CaptureTests`.
+// deliberately not used. The key material is materialized through the key's
+// cloak for the duration of the block and zeroed when it exits — the lent
+// capabilities view the live transient array, so their view dies with it. The
+// streaming requirement above is therefore hard: a lazily-encrypted stream
+// drained after the block reads zeroes. Confinement is regression-tested in
+// `CaptureTests`.
 
 extension [cipher <: Cipher](key: PublicKey[cipher])
-  def expose[result](block: Encryptor[cipher]^ ?=> result): result =
+  def uncloak[result](block: Encryptor[cipher]^ ?=> result): result =
     block(using Encryptor(key.bytes))
 
-extension [cipher <: Cipher](key: PrivateKey[cipher])
-  def expose[result](block: Decryptor[cipher]^ ?=> result): result =
-    block(using Decryptor(key.privateData))
+extension [cipher <: Cipher](key: PrivateKey[cipher]^)
+  def uncloak[result](block: Decryptor[cipher]^ ?=> result): result =
+    key.secret.uncloak: bytes =>
+      block(using Decryptor(bytes.immutable(using Unsafe)))
 
-extension [cipher <: Cipher](key: SymmetricKey[cipher])
-  def expose[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?=> result): result =
-    block(using Encryptor(key.bytes), Decryptor(key.bytes))
+extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
+  def uncloak[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?=> result): result =
+    key.secret.uncloak: bytes =>
+      val data = bytes.immutable(using Unsafe)
+      block(using Encryptor(data), Decryptor(data))

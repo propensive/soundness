@@ -37,14 +37,18 @@ package soundness
 export
   enigmatic
   . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Crypto, CryptoError, Ctr, decrypt, Decryptor, Des,
-      Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption, expose,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, keystore, Keystore, KeystoreError,
+      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
+      Des, Divulgence,
+      Dsa, Ecb, encrypt, Encryptor, Encryption,
+      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, keystore, Keystore,
+      KeystoreError,
       NoPadding, Ofb, Pem, PemError,
       PemLabel, Password,
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes }
+      Symmetric, SymmetricKey, TripleDes, uncloak }
+
+package cloaks:
+  export enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}
 
 package blockCipherMode:
   export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
