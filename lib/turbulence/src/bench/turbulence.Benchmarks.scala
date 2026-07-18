@@ -135,6 +135,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
   lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
+    import enigmatic.cloaks.heap
     SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
   lazy val jdkKeyBytes: Array[Byte] = Array.tabulate(32)(i => (i*7 + 1).toByte)
   lazy val jdkIvBytes:  Array[Byte] = Array.tabulate(16)(i => (i*13 + 3).toByte)
@@ -489,7 +490,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  full secure-archive chain")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
-            turbulence.Benchmarks.aesKey.expose:
+            turbulence.Benchmarks.aesKey.uncloak:
               val compressed: Data = turbulence.Benchmarks.input.stream.compress[Gzip].memoize
               val encrypted: Data = compressed.encrypt(InitializationVector.random)
 
@@ -674,7 +675,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  enigmatic encryptStream")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
-            turbulence.Benchmarks.aesKey.expose:
+            turbulence.Benchmarks.aesKey.uncloak:
               LazyList(turbulence.Benchmarks.input).encrypt(InitializationVector.random)
               . map(_.length.toLong).sum
         }

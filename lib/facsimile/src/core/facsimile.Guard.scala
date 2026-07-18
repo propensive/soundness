@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import java.nio as jn
+import java.nio.charset as jnc
+import java.util as ju
 import javax.crypto as jc
 import javax.crypto.spec as jcs
 
@@ -45,6 +48,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
+import enigmatic.cloaks.heap
 import gastronomy.crypto.permitDisallowedCrypto
 import gastronomy.providers.javaStdlibProvider
 
@@ -78,7 +82,9 @@ private[facsimile] object Guard:
     case 512 => data.digest[Sha2[512]].data
     case _   => data.digest[Sha2[256]].data
 
-  def apply(encrypt: Map[Text, Cos], id: Data, password: Text)(using pdf: Pdf)
+  // The password arrives as a mutable char array — as lent by `Password.uncloak` — never as
+  // an immutable string, so the transient encodings derived from it here can all be zeroed.
+  def apply(encrypt: Map[Text, Cos], id: Data, password: Array[Char])(using pdf: Pdf)
   :   Guard raises PdfError =
 
     val filter = encrypt.at(t"Filter").let(pdf.resolved(_).name).or(t"")
@@ -137,8 +143,8 @@ private[facsimile] object Guard:
 
   // Algorithm 2: the file encryption key for revisions 2–4.
   private def deriveKey
-    ( password: Text, owner: Data, permissions: Int, id: Data, keyBytes: Int, revision: Int,
-      encryptMetadata: Boolean )
+    ( password: Array[Char], owner: Data, permissions: Int, id: Data, keyBytes: Int,
+      revision: Int, encryptMetadata: Boolean )
   :   Data =
 
     val permissionsBytes: Data = IArray((permissions & 0xff).toByte,
@@ -187,30 +193,33 @@ private[facsimile] object Guard:
   // Algorithms 2.A/8 (revision 6): validate the user password against `/U`, then unwrap the
   // file key from `/UE` with the intermediate key, using AES-256-CBC with a zero IV and no
   // padding.
-  private def unwrap6(password: Text, user: Data, ue: Data): Optional[Data] =
+  private def unwrap6(password: Array[Char], user: Data, ue: Data): Optional[Data] =
     if user.length < 48 || ue.length < 32 then Unset else
-      val passwordBytes = charEncoders.utf8Encoder.encoded(password).mutable(using Unsafe)
+      val passwordBytes = encoded(password, jnc.StandardCharsets.UTF_8.nn)
       val salt = user.slice(32, 40)
       val keySalt = user.slice(40, 48)
 
-      if hash6(passwordBytes, salt, IArray.empty[Byte]).to(List) != user.take(32).to(List)
-      then Unset
-      else
-        val intermediate = hash6(passwordBytes, keySalt, IArray.empty[Byte])
+      try
+        if hash6(passwordBytes, salt, IArray.empty[Byte]).to(List) != user.take(32).to(List)
+        then Unset
+        else
+          val intermediate = hash6(passwordBytes, keySalt, IArray.empty[Byte])
 
-        // AES-256-CBC with a zero IV and no padding. This stays on the JDK cipher: enigmatic's
-        // `NoPadding` given captures a `Tactic[CryptoError]`, and the only available strategy
-        // (`throwUnsafely`) yields a root `{any}` capability that capture checking cannot
-        // confine here — unlike the `Pkcs7` object ciphers below. See the module notes.
-        try
-          val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
+          // AES-256-CBC with a zero IV and no padding. This stays on the JDK cipher:
+          // enigmatic's `NoPadding` given captures a `Tactic[CryptoError]`, and the only
+          // available strategy (`throwUnsafely`) yields a root `{any}` capability that
+          // capture checking cannot confine here — unlike the `Pkcs7` object ciphers below.
+          // See the module notes.
+          try
+            val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
 
-          cipher.init(jc.Cipher.DECRYPT_MODE,
-              jcs.SecretKeySpec(intermediate.mutable(using Unsafe), "AES"),
-              jcs.IvParameterSpec(new Array[Byte](16)))
+            cipher.init(jc.Cipher.DECRYPT_MODE,
+                jcs.SecretKeySpec(intermediate.mutable(using Unsafe), "AES"),
+                jcs.IvParameterSpec(new Array[Byte](16)))
 
-          cipher.doFinal(ue.take(32).mutable(using Unsafe)).nn.immutable(using Unsafe)
-        catch case _: Exception => Unset
+            cipher.doFinal(ue.take(32).mutable(using Unsafe)).nn.immutable(using Unsafe)
+          catch case _: Exception => Unset
+      finally ju.Arrays.fill(passwordBytes, 0.toByte)
 
   // Revision-6 hash (algorithm 2.B): SHA-256 seeded, then rounds mixing SHA-256/384/512
   // selected by the running hash, until the 64th-plus round whose last byte is ≤ round−32.
@@ -258,12 +267,22 @@ private[facsimile] object Guard:
 
     k.take(32)
 
-  private def padded(password: Text): Array[Byte] =
-    val bytes = charEncoders.iso88591Encoder.encoded(password).mutable(using Unsafe)
+  // Encodes the password chars to a mutable byte array, zeroing the encoder's intermediate
+  // buffer; callers zero the result once the derived key is computed.
+  private def encoded(password: Array[Char], charset: jnc.Charset): Array[Byte] =
+    val buffer = charset.encode(jn.CharBuffer.wrap(password)).nn
+    val bytes = new Array[Byte](buffer.remaining)
+    buffer.get(bytes)
+    if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, 0.toByte)
+    bytes
+
+  private def padded(password: Array[Char]): Array[Byte] =
+    val bytes = encoded(password, jnc.StandardCharsets.ISO_8859_1.nn)
     val out = new Array[Byte](32)
     val count = 32.min(bytes.length)
     System.arraycopy(bytes, 0, out, 0, count)
     System.arraycopy(padding, 0, out, count, 32 - count)
+    ju.Arrays.fill(bytes, 0.toByte)
     out
 
 private[facsimile] class Guard
@@ -325,7 +344,7 @@ private[facsimile] class Guard
   private def aesCbcEncrypt[bits <: 128 | 256: ValueOf](key: Data, bytes: Data): Data =
     val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
 
-    symmetricKey.expose:
+    symmetricKey.uncloak:
       bytes.encrypt[Aes[bits] over Cbc against Pkcs7](InitializationVector.random)
 
   // AESV2/V3 layout: a 16-byte initialization vector prefixes the ciphertext, which enigmatic
@@ -334,5 +353,5 @@ private[facsimile] class Guard
     if bytes.length <= 16 then IArray.empty[Byte] else
       val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
 
-      safely(symmetricKey.expose(bytes.decrypt[Data, Aes[bits] over Cbc against Pkcs7]))
+      safely(symmetricKey.uncloak(bytes.decrypt[Data, Aes[bits] over Cbc against Pkcs7]))
       . or(IArray.empty[Byte])

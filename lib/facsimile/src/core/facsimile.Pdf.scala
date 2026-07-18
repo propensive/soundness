@@ -105,7 +105,7 @@ object Pdf:
   // The `/Encrypt` dictionary and the trailer `/ID` are read before the guard exists — and
   // so are never themselves decrypted — and a wrong password fails here, at open, rather
   // than at first string or stream access. The password's cleartext is read only within
-  // `expose`, so it is confined to this call; the empty password covers unprotected files.
+  // `uncloak`, so it is confined to this call; the empty password covers unprotected files.
   private[facsimile] def unlock(pdf: Pdf^, password: Optional[Password]): Unit raises PdfError =
     pdf.trailer.at(t"Encrypt").let: encryptRef =>
       val encrypt = pdf.resolved(encryptRef).dictionary
@@ -115,8 +115,8 @@ object Pdf:
         case Cos.Sequence(first :: _) => first.chars.or(IArray.empty[Byte])
         case _                        => IArray.empty[Byte]
 
-      pdf.guard = password.lay(Guard(encrypt, id, t"")(using pdf)): password =>
-        password.expose(Guard(encrypt, id, cleartext.text)(using pdf))
+      pdf.guard = password.lay(Guard(encrypt, id, Array.empty[Char])(using pdf)): password =>
+        password.uncloak(Guard(encrypt, id, cleartext.chars)(using pdf))
 
   // The header comment is nominally at offset 0, but tolerated anywhere in the first 1KiB,
   // matching widespread reader behaviour for files with prepended junk.
