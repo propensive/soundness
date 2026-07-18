@@ -535,6 +535,42 @@ object Tests extends Suite(m"Hallucination Tests"):
       (raster.width, raster.height, raster(5, 5))
     . assert(_ == (16, 16, Chroma(255, 0, 0)))
 
+    // WebP lossy (VP8) encoding. The output is valid VP8: verified out of band to decode in
+    // libwebp's `dwebp`, and here round-tripped through the decoder to confirm good fidelity
+    // (the decoder is itself byte-exact against `dwebp -nofancy`).
+
+    def meanChannelDiff(left: Raster, right: Raster): Double =
+      var total = 0L
+
+      for i <- 0 until left.width*left.height do
+        val a = left(i % left.width, i / left.width)
+        val b = right(i % right.width, i / right.width)
+        total += math.abs(a.red - b.red) + math.abs(a.green - b.green) + math.abs(a.blue - b.blue)
+
+      total.toDouble/(3*left.width*left.height)
+
+    def lossySource: Raster =
+      Raster(48, 32)((x, y) => Chroma((x*5) % 256, (y*7) % 256, ((x + y)*3) % 256))
+
+    test(m"a lossy-encoded WebP round-trips through the decoder with good fidelity"):
+      val decoded = WebpCodec.decode(WebpCodec.encodeLossy(lossySource, 90))
+      (decoded.width, decoded.height, meanChannelDiff(decoded, lossySource) < 12)
+    . assert(_ == (48, 32, true))
+
+    test(m"lossy encoding produces a valid RIFF/WEBP/VP8 container"):
+      val encoded = WebpCodec.encodeLossy(lossySource, 80)
+
+      ( String(IArray.genericWrapArray(encoded.slice(0, 4)).toArray, "UTF-8").tt,
+        String(IArray.genericWrapArray(encoded.slice(8, 12)).toArray, "UTF-8").tt,
+        String(IArray.genericWrapArray(encoded.slice(12, 16)).toArray, "UTF-8").tt )
+    . assert(_ == (t"RIFF", t"WEBP", t"VP8 "))
+
+    test(m"a smaller image also lossy-encodes and round-trips"):
+      val src = Raster(16, 16)((x, y) => Chroma(x*16, y*16, 128))
+      val decoded = WebpCodec.decode(WebpCodec.encodeLossy(src, 85))
+      (decoded.width, decoded.height, meanChannelDiff(decoded, src) < 15)
+    . assert(_ == (16, 16, true))
+
     test(m"a non-WebP byte stream is rejected"):
       capture[RasterError](WebpCodec.decode(pngGradient)).reason
     . assert(_ == RasterError.Reason.BadSignature)

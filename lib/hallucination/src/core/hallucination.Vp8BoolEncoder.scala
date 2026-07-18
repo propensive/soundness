@@ -35,87 +35,121 @@ package hallucination
 import java.io as ji
 
 import anticipation.*
-import contingency.*
 import rudiments.*
 import vacuous.*
 
-import Binary.*
-import RasterError.Reason
+// The VP8 boolean entropy encoder (RFC 6386 §7), ported from image-rs/image-webp
+// (`src/lossy/arithmetic_encoder.rs`, MIT/Apache-2.0) — the inverse of `Vp8Bool`.
+private[hallucination] final class Vp8BoolEncoder:
+  private val out = ji.ByteArrayOutputStream()
+  private val buffer = scala.collection.mutable.ArrayBuffer[Int]()
+  private var bottom = 0
+  private var range = 255
+  private var bitCount = 24
 
-// A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
-// simple (non-extended) lossless VP8L images; lossy VP8 and extended VP8X images raise
-// `UnsupportedVariant` until later phases. Unlike the other formats, WebP has no `javax.imageio`
-// support, so this codec is selected on every platform, including the JVM.
-private[hallucination] object WebpCodec:
-  // The RIFF container signature: "RIFF", a size, then "WEBP".
-  def isWebp(data: Data): Boolean =
-    data.length >= 12 && fourcc(data, 0) == "RIFF" && fourcc(data, 8) == "WEBP"
+  // A carry propagates by incrementing the most recent sub-255 output byte.
+  private def addOneToOutput(): Unit =
+    var i = buffer.length - 1
+    var done = false
 
-  def encode(raster: Raster): Data = WebpEncoder.encode(raster)
+    while i >= 0 && !done do
+      if buffer(i) < 255 then
+        buffer(i) = buffer(i) + 1
+        done = true
+      else
+        i -= 1
 
-  // Lossy VP8 encoding at the given quality (0–100). Wraps the VP8 bitstream in a simple container.
-  def encodeLossy(raster: Raster, quality: Int): Data =
-    val frame = Vp8Encoder.encode(raster, quality)
-    val out = ji.ByteArrayOutputStream()
+  def writeFlag(flag: Boolean): Unit = writeBool(flag, 128)
 
-    def fourcc(text: String): Unit = text.foreach: char =>
-      out.write(char.toInt)
+  def writeBool(bit: Boolean, probability: Int): Unit =
+    val split = 1 + (((range - 1)*probability) >> 8)
 
-    def u32(value: Int): Unit =
-      out.write(value & 0xff); out.write((value >>> 8) & 0xff)
-      out.write((value >>> 16) & 0xff); out.write((value >>> 24) & 0xff)
+    if bit then
+      bottom += split
+      range -= split
+    else
+      range = split
 
-    val padded = frame.length + (frame.length & 1)
-    fourcc("RIFF")
-    u32(padded + 12)
-    fourcc("WEBP")
-    fourcc("VP8 ")
-    u32(frame.length)
-    out.write(frame.mutable(using Unsafe))
-    if (frame.length & 1) == 1 then out.write(0)
+    while range < 128 do
+      range <<= 1
+
+      if (bottom & (1 << 31)) != 0 then addOneToOutput()
+      bottom <<= 1
+      bitCount -= 1
+
+      if bitCount == 0 then
+        buffer += (bottom >>> 24) & 0xff
+        bottom &= (1 << 24) - 1
+        bitCount = 8
+
+  def writeLiteral(bits: Int, value: Int): Unit =
+    var bit = bits - 1
+
+    while bit >= 0 do
+      writeBool(((1 << bit) & value) != 0, 128)
+      bit -= 1
+
+  def writeOptionalSigned(bits: Int, value: Optional[Int]): Unit =
+    writeFlag(value.present)
+
+    value.let: v =>
+      writeLiteral(bits, math.abs(v))
+      writeFlag(v >= 0)
+
+  // Encodes a tree value: locate the leaf `−value`, then emit the root-to-leaf bits.
+  def writeTree(tree: Array[Int], probs: Array[Int], probOffset: Int, value: Int): Unit =
+    writeTree(tree, probs, probOffset, value, 0)
+
+  def writeTree(tree: Array[Int], probs: Array[Int], probOffset: Int, value: Int, startIndex: Int)
+  :   Unit =
+
+    var current = indexOf(tree, -value)
+    val bits = scala.collection.mutable.ArrayBuffer[(Boolean, Int)]()
+    var done = false
+
+    while !done do
+      if current == startIndex then
+        bits += ((false, probs(probOffset + current/2)))
+        done = true
+      else if current == startIndex + 1 then
+        bits += ((true, probs(probOffset + current/2)))
+        done = true
+      else
+        val bit = current % 2 == 1
+
+        if bit then current -= 1
+        bits += ((bit, probs(probOffset + current/2)))
+        current = indexOf(tree, current)
+
+    var i = bits.length - 1
+
+    while i >= 0 do
+      writeBool(bits(i)(0), bits(i)(1))
+      i -= 1
+
+  private def indexOf(tree: Array[Int], value: Int): Int =
+    var i = 0
+
+    while tree(i) != value do i += 1
+    i
+
+  // Flushes the pending bits and returns the encoded bytes.
+  def bytes: Data =
+    if (bottom & (1 << (32 - bitCount))) != 0 then addOneToOutput()
+    var v = bottom.toLong & 0xffffffffL
+    v <<= (bitCount & 0x7)
+    var c = (bitCount >> 3) - 1
+
+    while c >= 0 do
+      v <<= 8
+      c -= 1
+
+    c = 3
+
+    while c >= 0 do
+      buffer += ((v >>> 24) & 0xff).toInt
+      v = (v << 8) & 0xffffffffL
+      c -= 1
+
+    buffer.foreach(out.write(_))
     out.toByteArray.nn.immutable(using Unsafe)
-
-  def decode(data: Data): Raster raises RasterError =
-    try
-      if data.length < 12 || fourcc(data, 0) != "RIFF" || fourcc(data, 8) != "WEBP"
-      then abort(RasterError(Webp(), Reason.BadSignature))
-
-      // The first chunk after the "WEBP" fourcc determines the image kind.
-      val chunk = fourcc(data, 12)
-      val chunkStart = 20
-
-      chunk match
-        case "VP8L" =>
-          val chunkSize = u32le(data, 16)
-          val reader = WebpBitReader(data, chunkStart, chunkStart + chunkSize)
-          val (width, height, rgba) = WebpLossless.decode(reader)
-          raster(width, height, rgba)
-
-        case "VP8 " =>
-          val chunkSize = u32le(data, 16)
-          lossy(Vp8Decoder.decode(data, chunkStart, chunkStart + chunkSize))
-
-        case "VP8X" =>
-          val chunkSize = u32le(data, 16)
-          val riffEnd = (8 + u32le(data, 4)).min(data.length)
-          WebpExtended.decode(data, chunkStart, chunkStart + chunkSize, riffEnd)
-
-        case _ =>
-          abort(RasterError(Webp(), Reason.BadSignature))
-
-    catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Webp(), Reason.Truncated))
-
-  // Builds an opaque RGB raster from a decoded VP8 lossy frame.
-  private def lossy(frame: Vp8Frame): Raster =
-    val rgb = Vp8Yuv.toRgb(frame)
-    Raster.build(frame.width, frame.height, Descriptor.rgb)(rgb(_).toLong & 0xffffff)
-
-  // Builds an RGBA raster from the decoded, un-transformed byte buffer (in RGBA order).
-  private def raster(width: Int, height: Int, rgba: Array[Byte]): Raster =
-    Raster.build(width, height, Descriptor.rgba): index =>
-      (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
-        (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
-
-  private def fourcc(data: Data, offset: Int): String =
-    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn

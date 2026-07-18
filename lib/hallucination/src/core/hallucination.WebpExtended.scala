@@ -91,6 +91,7 @@ private[hallucination] object WebpExtended:
   // Decodes a lossy VP8 image, applying the ALPH alpha channel if present.
   private def decodeLossy(data: Data, chunks: Chunks, hasAlpha: Boolean)
   :   Raster raises RasterError =
+
     val (vp8Start, vp8End) = chunks.vp8.or(abort(RasterError(Webp(), Reason.UnsupportedVariant)))
     val frame = Vp8Decoder.decode(data, vp8Start, vp8End)
     val rgb = Vp8Yuv.toRgb(frame)
@@ -118,6 +119,7 @@ private[hallucination] object WebpExtended:
         // Lossless-compressed alpha: a VP8L L8 image whose green channel carries the alpha.
         val reader = WebpBitReader(data, start + 1, end)
         val rgba = WebpLossless.decodeRaw(reader, width, height)
+
         Array.tabulate(width*height): i =>
           rgba(i*4 + 1) & 0xff
       else if compression == 0 then
