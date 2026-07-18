@@ -489,7 +489,7 @@ object soundness extends Toolchain:
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
-    cataclysm.html, querencia.core, cordillera.core, embarcadero.containerd, obligatory.grpc,
+    cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
     xenophile.wit, telekinesis.core, graffiti.core)
 
@@ -966,17 +966,6 @@ object contextual extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
-object cordillera extends Library:
-  object core
-      extends Component(telekinesis.core, coaxial.core, zephyrine.core, turbulence.core,
-        parasite.core, hypotenuse.core, gossamer.core, contingency.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
-    override def scalacOptions = Task:
-      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core):
-    override def scalacOptions = Task:
-      settings.cc(super.scalacOptions())
-
 object contingency extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
@@ -1091,7 +1080,7 @@ object embarcadero extends Library:
     override def jsSources = Task.Sources(moduleDir)
     override def scalacOptions = Task:
       settings.cc(settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64"))
-  object containerd extends Component(obligatory.grpc, cordillera.core, coaxial.core, locomotion.core, anticipation.time, aperture.core):
+  object containerd extends Component(obligatory.grpc, telekinesis.http2, coaxial.core, locomotion.core, anticipation.time, aperture.core):
     override def scalaJs = false // container runtime; depends on JVM-only `obligatory.grpc`
     override def scalacOptions = Task:
       settings.cc(settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64"))
@@ -1723,8 +1712,8 @@ object obligatory extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object grpc extends Component(core, locomotion.core, cordillera.core, pneumatic.flate):
-    override def scalaJs = false // gRPC over `cordillera` (HTTP/2) with JVM-backed compression
+  object grpc extends Component(core, locomotion.core, telekinesis.http2, pneumatic.flate):
+    override def scalaJs = false // gRPC over native HTTP/2 with JVM-backed compression
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, json, grpc)
@@ -2117,13 +2106,23 @@ object telekinesis extends Library:
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  // The native HTTP/2 stack (client framing, HPACK and stream multiplexing) — formerly the
+  // `cordillera` module, whose sources retain the `cordillera` package. A separate JVM-only
+  // component rather than part of `jvm`: these sources require separation checking, which
+  // `jvm` has not yet adopted.
+  object http2
+      extends Component(core, coaxial.core, zephyrine.core, turbulence.core,
+        parasite.core, hypotenuse.core, gossamer.core, contingency.core):
+    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // A GET-only `Http.Backend` over `wasi:http/outgoing-handler`, materialized by xenophile's
   // `invoke` at the downstream (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only
   // meaningful linked as a component.
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, jvm):
+  object test extends Tests(core, jvm, http2):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -2400,7 +2399,7 @@ val allLibraries: Seq[Library] = Seq(
   breviloquence,
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
-  charisma, chiaroscuro, coaxial, contextual, contingency, cordillera, cosmopolite,
+  charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,
