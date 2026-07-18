@@ -171,29 +171,9 @@ extends caps.ExclusiveCapability:
 // The `oci-layout` marker document at the archive root.
 private[embarcadero] case class OciLayout(imageLayoutVersion: Text)
 
-// Named classes rather than anonymous given instances, for the reasons documented on
-// galilei's `FileOpenable`. Archives open read-only: a `Write` mode is refused with
-// `OciError.Reason.WriteUnsupported`. The TAR bracket is delegated to bitumen's
-// `TarOpenable`, which holds the file open for the scope's duration.
-class ImageOpenable[path: Abstractable across Paths to Text]
-  ( using Tactic[OciError], Tactic[TarError], Tactic[StreamError] )
-extends Openable:
-
-  type Self = path
-  type Form = Image
-  type Operand = Nothing
-  type Result = ImageHandle
-
-  def open[grants <: Grant, result]
-    ( value: path, mode: Mode granting grants, flags: List[Nothing] )
-    ( block: ((ImageHandle & Granting[grants])^) ?=> result )
-  :   result =
-
-    if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
-
-    TarOpenable[path]().open(value, mode, Nil): tar ?=>
-      block(using new ImageHandle(tar.entries) with Granting[grants] {})
-
+// A named class rather than an anonymous given instance, for the reasons documented on
+// galilei's `FileOpenable`. Opening in-memory `Data` as an OCI image; opening a filesystem
+// *path* (`ImageOpenable`) lives in the JVM-only source set. Read-only for now.
 class ImageDataOpenable(using Tactic[OciError], Tactic[TarError], Tactic[StreamError])
 extends Openable:
 
