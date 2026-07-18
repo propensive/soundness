@@ -79,15 +79,17 @@ object Tests extends Suite(m"Anthology Tests"):
     . assert(_.forall(_ == List(t"-scalajs")))
 
     test(m"Module-kind options configure the linker"):
-      linkerOptions.moduleKind.commonJs.configure(StandardConfig()).moduleKind
+      linkerOptions.moduleKind.commonJs.edit(StandardConfig()).asInstanceOf[StandardConfig]
+      . moduleKind
     . assert(_ == ModuleKind.CommonJSModule)
 
     test(m"The JavaScript linkage produces an ES module"):
-      summon[Linkage[Backend.Js]].configure(StandardConfig()).moduleKind
+      summon[Linkage[Backend.Js]].initial.asInstanceOf[StandardConfig].moduleKind
     . assert(_ == ModuleKind.ESModule)
 
     test(m"The browser Wasm linkage enables the WebAssembly backend"):
-      summon[Linkage[Backend.Wasm]].configure(StandardConfig()).esFeatures.useWebAssembly
+      summon[Linkage[Backend.Wasm]].initial.asInstanceOf[StandardConfig]
+      . esFeatures.useWebAssembly
     . assert(_ == true)
 
     test(m"A module-kind option is not applicable to a Wasm linker"):

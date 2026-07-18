@@ -32,25 +32,30 @@
                                                                                                   */
 package anthology
 
-import org.scalajs.linker.interface.{ESVersion, ModuleKind}
+import org.scalajs.linker.interface.{ESVersion, ModuleKind, StandardConfig}
 
 object linkerOptions:
+  private def sjs[target <: Backend.Portable](edit: StandardConfig => StandardConfig)
+  :   Linker.Option[target] =
+
+    Linker.Option(edit)
+
   object moduleKind:
     val esModule: Linker.Option[Backend.Js] =
-      Linker.Option(_.withModuleKind(ModuleKind.ESModule))
+      sjs(_.withModuleKind(ModuleKind.ESModule))
 
     val commonJs: Linker.Option[Backend.Js] =
-      Linker.Option(_.withModuleKind(ModuleKind.CommonJSModule))
+      sjs(_.withModuleKind(ModuleKind.CommonJSModule))
 
     val noModule: Linker.Option[Backend.Js] =
-      Linker.Option(_.withModuleKind(ModuleKind.NoModule))
+      sjs(_.withModuleKind(ModuleKind.NoModule))
 
-  val checkIr: Linker.Option[Backend.Portable] = Linker.Option(_.withCheckIR(true))
-  val sourceMaps: Linker.Option[Backend.Portable] = Linker.Option(_.withSourceMap(true))
+  val checkIr: Linker.Option[Backend.Portable] = sjs(_.withCheckIR(true))
+  val sourceMaps: Linker.Option[Backend.Portable] = sjs(_.withSourceMap(true))
 
   object esVersion:
     private def of(version: ESVersion): Linker.Option[Backend.Portable] =
-      Linker.Option(_.withESFeatures(_.withESVersion(version)))
+      sjs(_.withESFeatures(_.withESVersion(version)))
 
     val es2015: Linker.Option[Backend.Portable] = of(ESVersion.ES2015)
     val es2016: Linker.Option[Backend.Portable] = of(ESVersion.ES2016)
@@ -62,5 +67,5 @@ object linkerOptions:
     val es2022: Linker.Option[Backend.Portable] = of(ESVersion.ES2022)
 
   object optimize:
-    val none: Linker.Option[Backend.Portable] = Linker.Option(_.withOptimizer(false))
-    val fast: Linker.Option[Backend.Portable] = Linker.Option(_.withOptimizer(true))
+    val none: Linker.Option[Backend.Portable] = sjs(_.withOptimizer(false))
+    val fast: Linker.Option[Backend.Portable] = sjs(_.withOptimizer(true))

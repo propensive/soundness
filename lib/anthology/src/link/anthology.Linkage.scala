@@ -32,46 +32,108 @@
                                                                                                   */
 package anthology
 
-import org.scalajs.linker.interface.{ESVersion, ModuleKind, StandardConfig}
+import java.nio.file as jnf
+
+import scala.concurrent.*
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.*
+import scala.util.control as suc
+
+import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleKind, StandardConfig}
+import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
+import org.scalajs.logging.{Level, Logger}
 
 import anticipation.*
+import contingency.*
+import digression.*
 import galilei.*
+import hellenism.*
 import prepositional.*
 import serpentine.*
 
 object Linkage:
-  given js: Linkage[Backend.Js]:
-    private[anthology] def configure(config: StandardConfig): StandardConfig =
-      config.withModuleKind(ModuleKind.ESModule)
+  // The `.sjsir` link family: the three portable backends share the Scala.js linker pipeline,
+  // differing only in the configuration they mandate and the artifact they produce.
+  private class Sjs[target <: Backend.Portable]
+    ( base: StandardConfig => StandardConfig, artifact: (Path on Linux) => (Path on Linux) )
+  extends Linkage[target]:
+    private[anthology] type Form = StandardConfig
+    private[anthology] def initial: StandardConfig = base(StandardConfig())
 
-    private[anthology] def artifact(out: Path on Linux): Path on Linux = out / "main.js"
+    private[anthology] def link
+      ( form:        StandardConfig,
+        compilation: Compilation[target],
+        entryPoints: List[Linker.EntryPoint],
+        out:         Path on Linux )
+    :   Path on Linux logs LinkEvent raises LinkError =
 
-  given wasm: Linkage[Backend.Wasm]:
-    private[anthology] def configure(config: StandardConfig): StandardConfig =
-      config
-      . withModuleKind(ModuleKind.ESModule)
-      . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
+      val entries: List[jnf.Path] =
+        jnf.Paths.get(compilation.out.encode.s).nn ::
+          compilation.classpath.entries.to(List).flatMap:
+            case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
+            case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
+            case _                                   => Nil
 
-    private[anthology] def artifact(out: Path on Linux): Path on Linux = out / "main.wasm"
+      val initializers: List[ModuleInitializer] = entryPoints.map: entry =>
+        ModuleInitializer.mainMethodWithArgs(entry.mainClass.text.s, "main")
 
+      object logger extends Logger:
+        def log(level: Level, message: => String): Unit =
+          if level == Level.Error || level == Level.Warn
+          then Log.warn(LinkEvent.Message(message.tt))
+          else if level == Level.Info then Log.info(LinkEvent.Message(message.tt))
+          else Log.fine(LinkEvent.Message(message.tt))
+
+        def trace(error: => Throwable): Unit = Log.warn(LinkEvent.Message(error.toString.tt))
+
+      try
+        val outPath = jnf.Paths.get(out.encode.s).nn
+        jnf.Files.createDirectories(outPath)
+        val linker = StandardImpl.linker(form)
+        val cache = StandardImpl.irFileCache().newCache
+
+        val (containers, _) =
+          Await.result(PathIRContainer.fromClasspath(entries), 300.seconds)
+
+        val irFiles = Await.result(cache.cached(containers), 300.seconds)
+        val output = PathOutputDirectory(outPath)
+        Await.result(linker.link(irFiles, initializers, output, logger), 1800.seconds)
+        artifact(out)
+
+      catch case suc.NonFatal(error) =>
+        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+
+  given js: Linkage[Backend.Js] =
+    Sjs(_.withModuleKind(ModuleKind.ESModule), _ / "main.js")
+
+  given wasm: Linkage[Backend.Wasm] =
+    Sjs
+      ( _.withModuleKind(ModuleKind.ESModule)
+        . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true)),
+        _ / "main.wasm" )
 
   given wasi(using toolchain: WasiToolchain, world: WitWorld): Linkage[Backend.Wasi] =
-    new Linkage[Backend.Wasi]:
-      private[anthology] def configure(config: StandardConfig): StandardConfig =
-        config
-        . withModuleKind(ModuleKind.WasmComponent)
+    Sjs
+      ( _.withModuleKind(ModuleKind.WasmComponent)
         . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
         . withWasmFeatures: features =>
             features
             . withWitDirectory(Some(world.directory.encode.s))
-            . withWitWorld(Some(world.world.s))
+            . withWitWorld(Some(world.world.s)),
+        _ / "main.wasm" )
 
-      private[anthology] def artifact(out: Path on Linux): Path on Linux = out / "main.wasm"
+// Determines how each linked backend's compilations become artifacts: the underlying linker
+// configuration type (`Form`), the configuration the backend mandates, and the link pipeline
+// itself. Instances whose runtime prerequisites can be absent are conditional upon evidence of
+// them: `wasi` upon a `WasiToolchain` and a `WitWorld`, and the Scala Native instance (in the
+// `nir` module) upon probing the C toolchain.
+trait Linkage[target <: Backend.Linked]:
+  private[anthology] type Form
+  private[anthology] def initial: Form
 
-// Determines how each portable backend is linked: the linker configuration it mandates and the
-// primary artifact it produces. The `wasi` instance is conditional upon a `WasiToolchain` (the
-// native tools, proven present) and a `WitWorld`, so a WASI component link is only expressible
-// once its runtime prerequisites are satisfied.
-trait Linkage[target <: Backend.Portable]:
-  private[anthology] def configure(config: StandardConfig): StandardConfig
-  private[anthology] def artifact(out: Path on Linux): Path on Linux
+  private[anthology] def link
+    ( form:        Form,
+      compilation: Compilation[target],
+      entryPoints: List[Linker.EntryPoint],
+      out:         Path on Linux )
+  :   Path on Linux logs LinkEvent raises LinkError
