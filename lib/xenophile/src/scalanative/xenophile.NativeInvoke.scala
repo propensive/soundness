@@ -51,9 +51,10 @@ import vacuous.*
 // only ever expanded — and linked — at a downstream `.native` call site.
 //
 // Materializes a call of any arity whose parameters and result are C primitives (`int`, `long`,
-// `short`, `char`, `double`, `float`, `bool`, `void`): each Scala argument, recovered from the
-// `Foreign.converter` `Conversion` the navigation applied, is passed straight to a `CFuncPtr` of
-// the matching arity. Pointer/`Text`↔`CString` marshalling (which needs a `Zone`) is the next step.
+// `short`, `char`, `double`, `float`, `bool`, `void`) or C strings (`char*` ↔ `Text`): each Scala
+// argument, recovered from the `Foreign.converter` `Conversion` the navigation applied, is passed
+// to a `CFuncPtr` of the matching arity, with `Text` arguments marshalled to a `CString` in a
+// `Zone` and a `Text` result read back with `fromCString`. General pointers/structs are next.
 object NativeInvoke:
   def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
     import quotes.reflect.*
@@ -151,34 +152,34 @@ object NativeInvoke:
     if argumentTerms.length != parameterTypes.length then
       halt(m"xenophile: wrong number of arguments for $owner.$function")
 
-    // Each C type maps to the Scala primitive of identical ABI (Scala Native's `CInt`/`CLong` etc.
-    // are aliases of `Int`/`Long`); a `CFuncPtr`'s parameter and return types are those primitives.
-    def scalaType(tpe: Foreign.Type): TypeRepr = tpe match
-      case Foreign.Type.Named(t"int")    => TypeRepr.of[Int]
-      case Foreign.Type.Named(t"long")   => TypeRepr.of[Long]
-      case Foreign.Type.Named(t"short")  => TypeRepr.of[Short]
-      case Foreign.Type.Named(t"char")   => TypeRepr.of[Byte]
-      case Foreign.Type.Named(t"double") => TypeRepr.of[Double]
-      case Foreign.Type.Named(t"float")  => TypeRepr.of[Float]
-      case Foreign.Type.Named(t"bool")   => TypeRepr.of[Boolean]
-      case Foreign.Type.Named(t"void")   => TypeRepr.of[Unit]
+    // Each C type maps to the Scala type of identical ABI: a primitive (`int`→`Int`; Scala Native's
+    // `CInt` etc. are aliases), or `CString` (`char*`) for a `Text`. `cType` returns the `CFuncPtr`
+    // slot type and whether it is a string (needing `Text`/`CString` marshalling). The `CString`
+    // type is read off `dlopen`'s own `CString` parameter, so no Native type is named here.
+    val cstringType = dlopen.paramSymss.head.head.info
+
+    def cType(tpe: Foreign.Type): (TypeRepr, Boolean) = tpe match
+      case Foreign.Type.Named(t"int")    => (TypeRepr.of[Int], false)
+      case Foreign.Type.Named(t"long")   => (TypeRepr.of[Long], false)
+      case Foreign.Type.Named(t"short")  => (TypeRepr.of[Short], false)
+      case Foreign.Type.Named(t"char")   => (TypeRepr.of[Byte], false)
+      case Foreign.Type.Named(t"double") => (TypeRepr.of[Double], false)
+      case Foreign.Type.Named(t"float")  => (TypeRepr.of[Float], false)
+      case Foreign.Type.Named(t"bool")   => (TypeRepr.of[Boolean], false)
+      case Foreign.Type.Named(t"void")   => (TypeRepr.of[Unit], false)
+      case Foreign.Type.Named(t"string") => (cstringType, true)
 
       case _ =>
         halt(m"xenophile: a C type in $owner.$function is not yet supported on native")
 
-    val resultType = scalaType(prototype.result)
-    val paramTypes = parameterTypes.map(scalaType)
-    val arity = paramTypes.length
-
-    // The marshalled call arguments: for a C primitive the wrapped Scala value is already of the
-    // right type, ascribed to the `CFuncPtr` parameter type (which unboxes it from the `Any` the
-    // navigation's `Literal` stored it as).
-    val callArgs = argumentTerms.zip(paramTypes).map: (term, tpe) =>
-      Select.unique(convertedValue(term), "asInstanceOf").appliedToType(tpe)
+    val paramInfo = parameterTypes.map(cType)
+    val (resultCtype, resultIsString) = cType(prototype.result)
+    val hasStringArg = paramInfo.exists(_._2)
+    val arity = paramInfo.length
 
     // `CFuncPtr<arity>[param…, result]`.
     val cfuncPtrN = Symbol.requiredClass(s"scala.scalanative.unsafe.CFuncPtr$arity")
-    val funcType = cfuncPtrN.typeRef.appliedTo(paramTypes :+ resultType)
+    val funcType = cfuncPtrN.typeRef.appliedTo(paramInfo.map(_._1) :+ resultCtype)
 
     // `new CQuote(StringContext("function")).c()` — the interned C string of the symbol name. The
     // `StringContext` is built with a quote (it is plain stdlib, so its varargs are spread by the
@@ -191,8 +192,6 @@ object NativeInvoke:
     // C symbols the linked binary provides), then `dlsym(handle, c"function")`. The null filename
     // is cast to dlopen's own `CString` parameter type, since Scala Native's pointer type is not
     // implicitly nullable.
-    val cstringType = dlopen.paramSymss.head.head.info
-
     val nullFilename =
       Select.unique(Literal(NullConstant()), "asInstanceOf").appliedToType(cstringType)
 
@@ -215,5 +214,57 @@ object NativeInvoke:
 
     val funcPtr = Apply(applied, List(tag))
 
-    // Invoke the function pointer with the marshalled arguments.
-    Apply(Select(funcPtr, cfuncPtrN.methodMember("apply").head), callArgs).asExprOf[result]
+    // The `Text`/`CString` marshallers, from the same `scala.scalanative.unsafe` package object as
+    // `CQuote`. `toCString(str)(zone)` needs a `Zone` (the `(String)` overload is picked out by its
+    // shape); `fromCString(cstr, charset)` reads one back — the default charset built with a quote,
+    // since `java.*` resolves on both platforms.
+    val unsafe = cquote.owner
+
+    val toCStrings = unsafe.methodMember("toCString").filter: method =>
+      method.paramSymss match
+        case List(List(param), List(_)) => param.info =:= TypeRepr.of[String]
+        case _                          => false
+
+    val toCString = toCStrings.head
+    val fromCString = unsafe.methodMember("fromCString").head
+    val charset = '{_root_.java.nio.charset.Charset.defaultCharset().nn}.asTerm
+
+    // The invocation: each argument is unwrapped from the navigation's `Literal` (the cast unboxes
+    // it from `Any`), and a `string` one is marshalled to a `CString` in `zone`; a `string` result
+    // is read back with `fromCString`.
+    def invocation(zone: Optional[Term]): Term =
+      val callArgs = argumentTerms.zip(paramInfo).map: (term, info) =>
+        val (tpe, isString) = info
+        val value = convertedValue(term)
+
+        if isString then
+          val string = Select.unique(value, "asInstanceOf").appliedToType(TypeRepr.of[String])
+          val place = zone.or(halt(m"xenophile: no zone for a string argument"))
+          Apply(Apply(Ref(toCString), List(string)), List(place))
+        else
+          Select.unique(value, "asInstanceOf").appliedToType(tpe)
+
+      val raw = Apply(Select(funcPtr, cfuncPtrN.methodMember("apply").head), callArgs)
+
+      if resultIsString then Apply(Ref(fromCString), List(raw, charset)) else raw
+
+    val innerType = if resultIsString then TypeRepr.of[String] else resultCtype
+
+    // A string argument's `CString` lives in a `Zone`, so wrap the call in `Zone.acquire { zone =>
+    // … }` when (and only when) there is one; otherwise emit the call directly.
+    val call =
+      if !hasStringArg then invocation(Unset)
+      else
+        val zoneType = Symbol.requiredClass("scala.scalanative.unsafe.Zone").typeRef
+        val zoneModule = Symbol.requiredModule("scala.scalanative.unsafe.Zone")
+        val acquire = zoneModule.methodMember("acquire").head
+        val method = MethodType(List("zone"))(_ => List(zoneType), _ => innerType)
+
+        val lambda = Lambda(Symbol.spliceOwner, method,
+          (_, params) => invocation(params.head.asInstanceOf[Term]))
+
+        Apply(TypeApply(Ref(acquire), List(Inferred(innerType))), List(lambda))
+
+    // Coerce the result (a Scala primitive, or the `String` from `fromCString`) to `result` — for a
+    // `string` result, the `String` to the `Text` it opaquely is.
+    Select.unique(call, "asInstanceOf").appliedToType(TypeRepr.of[result]).asExprOf[result]

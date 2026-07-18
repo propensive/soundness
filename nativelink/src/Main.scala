@@ -44,3 +44,10 @@ object Main:
 
     val power: Double = Foreign["library", Native].pow(2.0, 10.0).invoke[Double]
     out.println("pow(2, 10) via native FFI: "+power)
+
+    // (v3) a string argument marshalled to a `CString`, and a string result read back.
+    val length: Long = Foreign["library", Native].strlen(t"hello, world").invoke[Long]
+    out.println("strlen(hello, world) via native FFI: "+length)
+
+    val home: Text = Foreign["library", Native].getenv(t"HOME").invoke[Text]
+    out.println("getenv(HOME) via native FFI: "+home.s)

@@ -4,3 +4,5 @@ int rand(void);
 int getpid(void);
 int abs(int n);
 double pow(double base, double exp);
+long strlen(const char* s);
+char* getenv(const char* name);
