@@ -71,6 +71,20 @@ object Tests extends Suite(m"internal Benchmarks"):
 
       . assert(_ == Path(t"/", t"baz", t"foo"))
 
+      test(m"A peer replaces the leaf"):
+        val path: Path on Linux = (% / "foo" / "bar").on[Linux]
+        path.peer("baz")
+
+      . assert(_ == Path(t"/", t"baz", t"foo"))
+
+      test(m"A peer of a platformed path replaces the leaf"):
+        unsafely:
+          val path: Path on Linux = (% / "foo" / "bar").on[Linux]
+          val leaf: Text = t"baz"
+          path.peer(leaf)
+
+      . assert(_ == Path(t"/", t"baz", t"foo"))
+
       test(m"Construct a path with unknown label"):
         val dir: Text = t""
         val path = (% / dir / "baz")

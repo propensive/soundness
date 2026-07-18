@@ -305,14 +305,16 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   transparent inline def peer(child: Any)(using child.type is Admissible on Plane)
   :   Path on Plane under Limit =
 
+    // A peer replaces the leaf, so the current leaf is dropped from the descent — mirroring
+    // `child.type *: tail` at the type level.
     inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path[Plane, Limit, child.type *: tail]
-          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent )
+          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1) )
 
       case _ =>
         Path[Plane, Limit, Tuple]
-          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent )
+          ( root, infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1) )
 
 
   transparent inline def + (relative: Relative): Path =
