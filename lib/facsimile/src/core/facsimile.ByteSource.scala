@@ -32,12 +32,7 @@
                                                                                                   */
 package facsimile
 
-import java.nio as jn
-import java.nio.channels as jnc
-
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 // A random-access view of the bytes backing a PDF file, as zephyrine's shared `Expanse`. A
 // read past the end of the source yields fewer bytes than requested, never padding.
@@ -47,23 +42,13 @@ private[facsimile] class DataSource(data: Data) extends ByteSource:
   def size: Long = data.length.toLong
   def read(offset: Long, length: Int): Data = data.slice(offset.toInt, offset.toInt + length)
 
-// Positional reads against a channel held open for the lifetime of a `Pdf` scope. Unlike
-// Zeppelin's per-read reopening (whose entries must outlive any handle), a PDF is resolved
-// through many small reads which all happen strictly within the scope, so a held channel is
-// both safe and necessary for a consistent snapshot of the file.
-private[facsimile] class ChannelSource(channel: jnc.FileChannel) extends ByteSource:
-  def size: Long = channel.size
-
+// Positional reads against another `Expanse` — galilei's memory-mapped `Ram`, held open for
+// the lifetime of a `Pdf` scope. A PDF is resolved through many small reads which all happen
+// strictly within the scope, so the held mapping is both safe and a consistent snapshot of
+// the file. The size is pinned at construction: the underlying mapping may later grow (for
+// the incremental-update append), and the document's own view must not shift underneath it.
+private[facsimile] class ExpanseSource(expanse: zephyrine.Expanse, val size: Long)
+extends ByteSource:
   def read(offset: Long, length: Int): Data =
-    if length <= 0 then IArray.empty[Byte] else
-      val buffer = jn.ByteBuffer.allocate(length).nn
-      var position = offset
-      var eof = false
-
-      while buffer.hasRemaining && !eof do
-        val count = channel.read(buffer, position)
-        if count < 0 then eof = true else position += count
-
-      if buffer.hasRemaining
-      then buffer.array.nn.slice(0, buffer.position).immutable(using Unsafe)
-      else buffer.array.nn.immutable(using Unsafe)
+    if length <= 0 || offset >= size then IArray.empty[Byte]
+    else expanse.read(offset, length.min((size - offset).toInt))

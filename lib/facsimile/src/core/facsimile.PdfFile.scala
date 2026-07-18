@@ -32,20 +32,32 @@
                                                                                                   */
 package facsimile
 
-import java.io as ji
-import java.nio as jn
-import java.nio.channels as jnc
-import java.nio.file as jnf
-
+import ambience.*
 import anticipation.*
 import aperture.*
 import contingency.*
+import distillate.*
 import enigmatic.*
-import galilei.CreateFlag
+import eucalyptus.*
+import galilei.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
+import turbulence.*
 import vacuous.*
+
+import fulminate.errorDiagnostics.stackTracesDiagnostics
+import filesystemBackends.virtualMachine
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.moveAtomically.enabled
+import filesystemOptions.overwritePreexisting.enabled
+import logging.silentLogging
+import systems.javaSystem
+import workingDirectories.javaWorkingDirectory
 
 object PdfFile:
   def apply[path: Abstractable across Paths to Text](path: path): PdfFile =
@@ -63,27 +75,30 @@ object PdfFile:
     ( using Tactic[PdfError] )
   :   Unit =
 
-    val target = jnf.Path.of(filename.s).nn
+    mitigate:
+      case PathError(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
+      case NameError(_, _, _)  => PdfError(PdfError.Reason.Io(t"the path is invalid"))
+      case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be written"))
 
-    if !flags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
-    then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
+    . protect:
+        val target: Path on Local = workingDirectory[Path on Local].resolve(filename)
 
-    try
-      if flags.contains(CreateFlag.Parents) then
-        Optional(target.toAbsolutePath.nn.getParent).let(jnf.Files.createDirectories(_))
+        if !flags.contains(CreateFlag.Replace) && target.exists()
+        then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
 
-      val last = filename.s.split('/').nn.last.nn
-      val temporary = target.resolveSibling(t".$last.part".s).nn
+        if flags.contains(CreateFlag.Parents) then
+          target.parent.let: parent =>
+            if !parent.exists() then parent.create[Directory]()
 
-      try
-        jnf.Files.write(temporary, bytes.mutable(using Unsafe))
-        jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,
-            jnf.StandardCopyOption.REPLACE_EXISTING)
-      catch case throwable: Throwable =>
-        try jnf.Files.deleteIfExists(temporary) catch case _: Exception => ()
-        throw throwable
-    catch case error: ji.IOException =>
-      abort(PdfError(PdfError.Reason.Io(error.getMessage.nn.tt)))
+        val part: Text = t".${target.name}.part"
+        val temporary = target.peer(part)
+
+        try
+          temporary.write(bytes)
+          temporary.moveTo(target)
+        catch case throwable: Throwable =>
+          safely(temporary.wipe())
+          throw throwable
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Documents open read-only: a future write mode is a staged
@@ -182,46 +197,56 @@ class PdfFile private (origin: PdfFile.Origin):
       case Origin.InMemory(data) =>
         // In-memory bytes have nowhere to be written back; opening them writably is refused.
         if writable then abort(PdfError(PdfError.Reason.WriteUnsupported))
-        read[grants, result](DataSource(data), password, Unset)(block)
+        val (outcome, _) = read[grants, result](DataSource(data), password, false)(block)
+        outcome
 
       case Origin.OnDisk(filename) =>
-        val options =
-          if writable
-          then List(jnf.StandardOpenOption.READ, jnf.StandardOpenOption.WRITE)
-          else List(jnf.StandardOpenOption.READ)
+        mitigate:
+          case PathError(_, _)     => PdfError(PdfError.Reason.Io(t"the path is invalid"))
+          case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be opened"))
 
-        val channel =
-          try jnc.FileChannel.open(jnf.Path.of(filename.s), options*).nn
-          catch case error: ji.IOException =>
-            abort(PdfError(PdfError.Reason.Io(error.getMessage.nn.tt)))
+        . protect:
+            val path: Path on Local = workingDirectory[Path on Local].resolve(filename)
 
-        try read[grants, result](ChannelSource(channel), password, if writable then channel else Unset)(block)
-        finally channel.close()
+            if writable then
+              path.open[Ram](Read & Write): ram ?=>
+                // The source pins the file's size at open: the mapping grows for the
+                // incremental-update append below, and the document's view must not shift.
+                val source = ExpanseSource(ram.expanse, ram.size)
+                val (outcome, increment) = read[grants, result](source, password, true)(block)
+
+                increment.let: bytes =>
+                  ram.grow(source.size + bytes.length)
+                  ram(source.size) = bytes
+
+                outcome
+            else
+              path.open[Ram](): ram ?=>
+                val source = ExpanseSource(ram.expanse, ram.size)
+                val (outcome, _) = read[grants, result](source, password, false)(block)
+                outcome
 
   // The capability must be minted where the block is applied: a `Pdf` returned from another
   // method is a distinct fresh capability which could not flow into the block's own. The
   // `Granting` cast only refines the static type with the grants aperture has already vetted.
-  // When a write channel is supplied, the overlay accumulated during the block is serialised
-  // as an incremental update and appended to the file on the way out.
+  // When opened writably, the overlay accumulated during the block is serialised as an
+  // incremental update and returned for the caller to append to the file on the way out.
   private def read[grants <: Grant, result]
-    ( source: ByteSource, password: Optional[Password], sink: Optional[jnc.FileChannel] )
+    ( source: ByteSource, password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  :   result raises PdfError =
+  :   (result, Optional[Data]) raises PdfError =
 
     val version = Pdf.readVersion(source) // check the header before anything else is trusted
     val pdf = Pdf(source, Xref.load(source), version)
     Pdf.unlock(pdf, password)
     val outcome = block(using pdf.asInstanceOf[Pdf & Granting[grants]])
 
-    sink.let: channel =>
-      if pdf.dirty then
+    val increment: Optional[Data] =
+      if writable && pdf.dirty then
         // An incremental update chains to the previous cross-reference section; a file whose
         // table was only recovered by scanning has none to chain to.
         if pdf.xref.startxref.absent then abort(PdfError(PdfError.Reason.WriteUnsupported))
+        PdfWriter.increment(pdf, source.size)
+      else Unset
 
-        val bytes = PdfWriter.increment(pdf, source.size)
-        val buffer = jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn
-        var position = source.size
-        while buffer.hasRemaining do position += channel.write(buffer, position)
-
-    outcome
+    (outcome, increment)
