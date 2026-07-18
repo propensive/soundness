@@ -33,7 +33,9 @@
 package facsimile
 
 import anticipation.*
+import contingency.*
 import hieroglyph.*
+import hypotenuse.*
 import rudiments.*
 import vacuous.*
 
@@ -98,11 +100,12 @@ private[facsimile] object CosWriter:
 
     bytes(builder, " >>")
 
-  // A real with no trailing zeros and no exponent (PDF reals are plain decimals).
+  // A real with no trailing zeros and no exponent (PDF reals are plain decimals), by the
+  // shortest round-tripping representation; a non-finite value (which PDF cannot express)
+  // degrades to zero.
   private def real(value: Double): String =
-    if value == value.toLong.toDouble then value.toLong.toString else
-      val text = java.math.BigDecimal(value).nn.stripTrailingZeros.nn.toPlainString.nn
-      text
+    if value == value.toLong.toDouble then value.toLong.toString
+    else safely(Decimal(value).text.s).or("0")
 
   private def name(builder: scala.collection.mutable.ArrayBuilder[Byte], text: Text): Unit =
     builder += '/'.toByte

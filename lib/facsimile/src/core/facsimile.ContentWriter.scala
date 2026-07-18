@@ -33,8 +33,10 @@
 package facsimile
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import hieroglyph.*
+import hypotenuse.*
 import iridescence.*
 import rudiments.*
 import vacuous.*
@@ -61,7 +63,7 @@ private[facsimile] object ContentWriter:
 
     def num(value: Double): Text =
       if value == value.toLong.toDouble then value.toLong.toString.tt
-      else java.math.BigDecimal(value).nn.stripTrailingZeros.nn.toPlainString.nn.tt
+      else safely(Decimal(value).text).or(t"0")
 
     def nums(values: Double*): Text = values.map(num).join(t" ")
     def string(data: Data): Unit = builder.addAll(CosWriter.write(Cos.Chars(data)).mutable(using Unsafe))

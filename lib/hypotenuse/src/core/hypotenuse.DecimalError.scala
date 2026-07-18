@@ -30,17 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package hypotenuse
 
-export
-  hypotenuse
-  . { %%, **, /-, <, <=, >, >=, abs, acos, asin, atan, B16, B32, B64, B8, base32, bin,
-      binary, bits, ceiling, CheckOverflow, Commensurable, cos, cosh, decrement, DivisionByZero,
-      DivisionError, erf, euler, exp, expm1, exponent, F32, F64, finite, floor, gcd, goldenRatio,
-      hex, hyp, increment, infinite, int, lcm, ln, log10, log1p, long, mantissa, nan, octal,
-      Orderable, OverflowError, pi, predecessor, rawBits, round, S16, S32, S64, S8, scalb, short,
-      signum, sin, sinh, successor, tan, U16, U32, U64, U8, ulp, π, φ, min, minimize, minimum,
-      max, maximize, maximum, median, Decimal, DecimalError }
+import language.experimental.into
 
-package arithmeticOptions:
-  export hypotenuse.arithmeticOptions.{division, overflow}
+import anticipation.*
+import fulminate.*
+
+case class DecimalError(text: Text)(using Diagnostics)
+extends Error(869, 0)(m"$text is not a representable decimal number")
