@@ -38,9 +38,13 @@ import javax.crypto.spec as jcs
 
 import anticipation.*
 import contingency.*
+import gastronomy.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+
+import gastronomy.crypto.permitDisallowedCrypto
+import gastronomy.providers.javaStdlibProvider
 
 // The standard security handler (ISO 32000-2 §7.6.4), revisions 2–6. The file key is derived
 // from the user password and the `/Encrypt` dictionary and validated against `/U` at open;
@@ -61,6 +65,16 @@ private[facsimile] object Guard:
       0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80, 0x2f, 0x0c, 0xa9, 0xfe,
       0x64, 0x53, 0x69, 0x7a )
     . map(_.toByte)
+
+  // MD5 (weak, hence the permit) and SHA-2 digests through gastronomy's cross-platform
+  // hashing. The PDF security algorithms hash the concatenation of their parts, which is
+  // exactly one `.digest` over the joined bytes.
+  private def md5(data: Data): Data = data.digest[Md5].data
+
+  private def sha(bits: Int, data: Data): Data = bits match
+    case 384 => data.digest[Sha2[384]].data
+    case 512 => data.digest[Sha2[512]].data
+    case _   => data.digest[Sha2[256]].data
 
   def apply(encrypt: Map[Text, Cos], id: Data, password: Text)(using pdf: Pdf)
   :   Guard raises PdfError =
@@ -125,31 +139,28 @@ private[facsimile] object Guard:
       encryptMetadata: Boolean )
   :   Data =
 
-    val md5 = js.MessageDigest.getInstance("MD5").nn
-    md5.update(padded(password))
-    md5.update(owner.mutable(using Unsafe), 0, 32.min(owner.length))
+    val permissionsBytes: Data = IArray((permissions & 0xff).toByte,
+        ((permissions >> 8) & 0xff).toByte, ((permissions >> 16) & 0xff).toByte,
+        ((permissions >> 24) & 0xff).toByte)
 
-    md5.update(Array((permissions & 0xff).toByte, ((permissions >> 8) & 0xff).toByte,
-        ((permissions >> 16) & 0xff).toByte, ((permissions >> 24) & 0xff).toByte))
+    val metadataBytes: Data =
+      if revision >= 4 && !encryptMetadata
+      then IArray(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte)
+      else IArray.empty[Byte]
 
-    md5.update(id.mutable(using Unsafe))
-
-    if revision >= 4 && !encryptMetadata then md5.update(Array(0xff.toByte, 0xff.toByte,
-        0xff.toByte, 0xff.toByte))
-
-    var hash = md5.digest().nn
+    var hash: Data =
+      md5(padded(password).immutable(using Unsafe) ++ owner.take(32.min(owner.length)) ++
+        permissionsBytes ++ id ++ metadataBytes)
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
     if revision >= 3 then
       var i = 0
 
       while i < 50 do
-        val next = js.MessageDigest.getInstance("MD5").nn
-        next.update(hash, 0, keyBytes)
-        hash = next.digest().nn
+        hash = md5(hash.take(keyBytes))
         i += 1
 
-    hash.take(keyBytes).immutable(using Unsafe)
+    hash.take(keyBytes)
 
   // Algorithm 6: validate the user password by reconstructing `/U`.
   private def validate(fileKey: Data, user: Data, id: Data, revision: Int, keyBytes: Int)
@@ -157,10 +168,7 @@ private[facsimile] object Guard:
 
     if revision == 2 then Rc4(fileKey, padding.immutable(using Unsafe)).to(List) == user.to(List)
     else
-      val md5 = js.MessageDigest.getInstance("MD5").nn
-      md5.update(padding)
-      md5.update(id.mutable(using Unsafe))
-      var value = md5.digest().nn.immutable(using Unsafe)
+      var value: Data = md5(padding.immutable(using Unsafe) ++ id)
 
       value = Rc4(fileKey, value)
 
@@ -201,11 +209,7 @@ private[facsimile] object Guard:
   // Revision-6 hash (algorithm 2.B): SHA-256 seeded, then rounds mixing SHA-256/384/512
   // selected by the running hash, until the 64th-plus round whose last byte is ≤ round−32.
   private def hash6(password: Array[Byte], salt: Data, extra: Data): Data =
-    val sha256 = js.MessageDigest.getInstance("SHA-256").nn
-    sha256.update(password)
-    sha256.update(salt.mutable(using Unsafe))
-    if extra.length > 0 then sha256.update(extra.mutable(using Unsafe))
-    var k = sha256.digest().nn.immutable(using Unsafe)
+    var k: Data = sha(256, password.immutable(using Unsafe) ++ salt ++ extra)
 
     var round = 0
     var done = false
@@ -234,12 +238,12 @@ private[facsimile] object Guard:
         sum += e(i) & 0xff
         i += 1
 
-      val algorithm = sum%3 match
-        case 0 => "SHA-256"
-        case 1 => "SHA-384"
-        case _ => "SHA-512"
+      val bits = sum%3 match
+        case 0 => 256
+        case 1 => 384
+        case _ => 512
 
-      k = js.MessageDigest.getInstance(algorithm).nn.digest(e).nn.immutable(using Unsafe)
+      k = sha(bits, e.immutable(using Unsafe))
       round += 1
 
       if round >= 64 && (e(e.length - 1) & 0xff) <= round - 32 then done = true
@@ -263,15 +267,14 @@ private[facsimile] class Guard
   // Algorithm 1: the per-object key. For revision 6 the file key is used directly.
   private def objectKey(number: Int, generation: Int, aes: Boolean): Data =
     if revision >= 5 then fileKey else
-      val md5 = js.MessageDigest.getInstance("MD5").nn
-      md5.update(fileKey.mutable(using Unsafe))
-
-      md5.update(Array((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
+      val numbering: Data = IArray((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
           ((number >> 16) & 0xff).toByte, (generation & 0xff).toByte,
-          ((generation >> 8) & 0xff).toByte))
+          ((generation >> 8) & 0xff).toByte)
 
-      if aes then md5.update(Array[Byte](0x73, 0x41, 0x6c, 0x54)) // the "sAlT" constant
-      md5.digest().nn.take((fileKey.length + 5).min(16)).immutable(using Unsafe)
+      // the "sAlT" constant
+      val salt: Data = if aes then IArray[Byte](0x73, 0x41, 0x6c, 0x54) else IArray.empty[Byte]
+
+      Guard.md5(fileKey ++ numbering ++ salt).take((fileKey.length + 5).min(16))
 
   def string(bytes: Data, number: Int, generation: Int): Data =
     decrypt(bytes, number, generation, stringMethod)
