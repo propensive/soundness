@@ -30,28 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parasite
 
-export
-  parasite
-  . { AdaptiveSupervisor, async, Async, AsyncError, cancel, Chain, Probate, Daemon, daemon, delay,
-      Destruction, Fault, Fulfillment, hibernate, Hook, intercept,
-      Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
-      relent, retry, RetryError, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task, task,
-      Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor, Worker,
-      AsyncTactic, Remedy, concurrent }
+import language.experimental.pureFunctions
 
-package threading:
-  export parasite.threading.{adaptiveThreading, platformThreading, virtualThreading}
+import java.util.concurrent.locks as jucl
 
-package probates:
-  export parasite.probates.{awaitProbate, cancelProbate, failProbate, panicProbate}
+import scala.compiletime.asMatchable
 
-package supervisors:
-  export parasite.supervisors.globalSupervisor
+object Strand:
+  // Equality delegates to the underlying thread: `Promise` stores waiters in a `Set[Strand]`, and
+  // two handles on the same thread must coincide there, however they were obtained.
+  final class Threaded(val thread: Thread) extends Strand:
+    def interrupt(): Unit = thread.interrupt()
+    def join(): Unit = thread.join()
+    def unpark(): Unit = jucl.LockSupport.unpark(thread)
 
-package retryTenacities:
-  export
-    parasite.retryTenacities
-    . { exponentialFiveTimesTenacity, exponentialForeverTenacity, exponentialTenTimesTenacity,
-        fixedNoDelayFiveTimesTenacity, fixedNoDelayForeverTenacity, fixedNoDelayTenTimesTenacity }
+    override def equals(that: Any): Boolean = that.asMatchable match
+      case that: Threaded => that.thread == thread
+      case _              => false
+
+    override def hashCode: Int = thread.hashCode
+
+// The abstract handle on a unit of execution forked by a `Supervisor`: the minimal surface that
+// supervision (`Worker.cancel`) and wakeup (`Promise`) require. On the JVM it wraps a `Thread`; an
+// event-loop supervisor (Wasm/WASIp3) would implement it over a run-queue entry. `unpark` lives
+// here rather than on `Supervisor` because the wake side of a `Promise` (`fulfill`/`offer`/
+// `cancel`) runs with no `Monitor` in scope, possibly on a foreign strand: a strand must be
+// self-wakeable.
+trait Strand:
+  def interrupt(): Unit   // request cancellation of the strand
+  def join(): Unit        // block until the strand has terminated
+  def unpark(): Unit      // release the strand from a `Supervisor.park`
