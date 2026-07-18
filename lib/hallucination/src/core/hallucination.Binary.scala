@@ -33,15 +33,16 @@
 package hallucination
 
 import anticipation.*
-import fulminate.*
-import vacuous.*
 
-object RasterError:
-  enum Reason:
-    case BadSignature, BadCrc, Truncated, UnsupportedVariant
+// Bounds-unchecked primitive readers shared by the pure codecs; out-of-range reads throw and
+// are translated to `RasterError(..., Truncated)` at each codec's boundary.
+private[hallucination] object Binary:
+  def u8(data: Data, index: Int): Int = data(index)&0xff
+  def u16le(data: Data, index: Int): Int = u8(data, index) | u8(data, index + 1) << 8
+  def u16be(data: Data, index: Int): Int = u8(data, index) << 8 | u8(data, index + 1)
 
-case class RasterError
-  ( rasterizable: Optional[Rasterizable], reason: Optional[RasterError.Reason] = Unset )
-  ( using Diagnostics )
-extends Error
-  ( m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format" )
+  def u32le(data: Data, index: Int): Int =
+    u16le(data, index) | u16le(data, index + 2) << 16
+
+  def u32be(data: Data, index: Int): Int =
+    u16be(data, index) << 16 | u16be(data, index + 2)

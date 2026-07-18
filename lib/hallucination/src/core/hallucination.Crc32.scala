@@ -33,15 +33,28 @@
 package hallucination
 
 import anticipation.*
-import fulminate.*
-import vacuous.*
 
-object RasterError:
-  enum Reason:
-    case BadSignature, BadCrc, Truncated, UnsupportedVariant
+// The standard CRC-32 (as used by PNG chunks), implemented locally: pneumatic's `Crc32` is
+// private to that module, and this one is only a table and a loop.
+private[hallucination] object Crc32:
+  private val table: IArray[Int] = IArray.tabulate(256): index =>
+    var crc = index
+    var bit = 0
 
-case class RasterError
-  ( rasterizable: Optional[Rasterizable], reason: Optional[RasterError.Reason] = Unset )
-  ( using Diagnostics )
-extends Error
-  ( m"unable to read the raster image in ${rasterizable.lay("unspecified".tt)(_.name)} format" )
+    while bit < 8 do
+      crc = if (crc&1) == 1 then 0xedb88320 ^ (crc >>> 1) else crc >>> 1
+      bit += 1
+
+    crc
+
+  def checksum(segments: Data*): Int =
+    var crc = 0xffffffff
+
+    segments.foreach: segment =>
+      var index = 0
+
+      while index < segment.length do
+        crc = table((crc ^ segment(index))&0xff) ^ (crc >>> 8)
+        index += 1
+
+    crc ^ 0xffffffff

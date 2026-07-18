@@ -38,15 +38,26 @@ import fulminate.*
 import vacuous.*
 
 // The pure-Scala backend, selected on Scala.js and WASI. The codecs themselves live in `core`
-// (so they compile and are differentially tested on the JVM); this object only dispatches. PNG,
-// BMP and GIF are implemented natively; JPEG currently has no native codec, so it fails with a
-// `RasterError` here, while remaining fully supported by the JVM backend.
+// (so they compile, and are differentially tested against `javax.imageio`, on the JVM); this
+// object only dispatches. JPEG currently has no native codec: decoding one raises a
+// `RasterError`, while remaining fully supported by the JVM backend.
 private[hallucination] object RasterBackend:
-  def decode(format: Rasterizable, data: Data): Raster raises RasterError =
-    abort(RasterError(format))
+  def decode(format: Rasterizable, data: Data): Raster raises RasterError = format.name.s match
+    case "PNG" => PngCodec.decode(data)
+    case "BMP" => BmpCodec.decode(data)
+    case "GIF" => GifCodec.decode(data)
+    case _     => abort(RasterError(format))
 
+  // Format-agnostic decoding, recognising the format by its opening magic bytes.
   def decode(data: Data): Raster raises RasterError =
-    abort(RasterError(Unset))
+    if data.length < 4 then abort(RasterError(Unset, RasterError.Reason.Truncated))
+    else if (data(0)&0xff) == 0x89 && data(1) == 0x50 then PngCodec.decode(data)
+    else if data(0) == 0x47 && data(1) == 0x49 && data(2) == 0x46 then GifCodec.decode(data)
+    else if data(0) == 0x42 && data(1) == 0x4d then BmpCodec.decode(data)
+    else abort(RasterError(Unset))
 
-  def encode(format: Rasterizable, raster: Raster): Data =
-    panic(m"the ${format.name} format has no native encoder")
+  def encode(format: Rasterizable, raster: Raster): Data = format.name.s match
+    case "PNG" => PngCodec.encode(raster)
+    case "BMP" => BmpCodec.encode(raster)
+    case "GIF" => GifCodec.encode(raster)
+    case _     => panic(m"the ${format.name} format has no native encoder")

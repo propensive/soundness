@@ -1420,7 +1420,7 @@ object hallucination extends Library:
   // Raster images with pluggable codec backends: `javax.imageio` on the JVM, and pure-Scala
   // codecs everywhere else (Scala.js and WASI), selected by the `core-jvm`/`core-native` source
   // directories.
-  object core extends Component(anticipation.gfx, aperture.core, iridescence.core, gesticulate.core):
+  object core extends Component(anticipation.gfx, aperture.core, iridescence.core, gesticulate.core, pneumatic.flate):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
