@@ -48,7 +48,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import enigmatic.cloaks.heap
+import enigmatic.cloaks.cloakHeap
 import gastronomy.crypto.permitDisallowedCrypto
 import gastronomy.providers.javaStdlibProvider
 

@@ -47,6 +47,9 @@ export
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
       Symmetric, SymmetricKey, TripleDes, uncloak }
 
+package cloaks:
+  export enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}
+
 package blockCipherMode:
   export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
 

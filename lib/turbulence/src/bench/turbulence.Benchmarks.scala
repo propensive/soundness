@@ -135,7 +135,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
   lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
-    import enigmatic.cloaks.heap
+    import enigmatic.cloaks.cloakHeap
     SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
   lazy val jdkKeyBytes: Array[Byte] = Array.tabulate(32)(i => (i*7 + 1).toByte)
   lazy val jdkIvBytes:  Array[Byte] = Array.tabulate(16)(i => (i*13 + 3).toByte)
