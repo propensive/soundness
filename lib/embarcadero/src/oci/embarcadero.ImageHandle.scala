@@ -104,22 +104,9 @@ extends caps.ExclusiveCapability:
   def imageConfig(manifest: Oci.Manifest): ImageConfig raises OciError =
     val bytes = verified(manifest.config)
 
-    // Field-wise, not `as[ImageConfig]`: jacinta's derivation currently fails on an
-    // `Optional` *product* field (`config`) inside a derived product decoder, though
-    // each field type decodes directly.
     decode(manifest.config.digest):
       import strategies.throwUnsafely
-      import dynamicJsonAccess.enabled
-      val json = bytes.read[Json]
-
-      ImageConfig
-        ( architecture = json.architecture.as[Text],
-          os           = json.os.as[Text],
-          rootfs       = json.rootfs.as[RootFs],
-          config       = json.config.as[Optional[ContainerConfig]],
-          history      = json.history.as[Optional[List[History]]],
-          created      = json.created.as[Optional[Text]],
-          author       = json.author.as[Optional[Text]] )
+      bytes.read[Json].as[ImageConfig]
 
   // A layer's stored blob, verbatim: for OCI layers, the gzip-compressed tar.
   def compressed(descriptor: Descriptor): LazyList[Data] raises OciError =
