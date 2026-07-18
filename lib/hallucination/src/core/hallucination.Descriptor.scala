@@ -43,6 +43,10 @@ import vacuous.*
 // fixed at construction from the static layout, and powers the layout-agnostic operations —
 // `Graphical`, `Raster`'s untyped `apply`, repacking and the codec backends — which cannot use
 // `Pixel`'s inline accessors.
+//
+// `@unexported`: `Descriptor` would clash with embarcadero's OCI `Descriptor` in the
+// `soundness` umbrella; reach it via `hallucination.Descriptor`.
+@unexported
 object Descriptor:
   case class Entry(label: Text, depth: Int)
 

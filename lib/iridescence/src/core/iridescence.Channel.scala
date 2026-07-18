@@ -81,6 +81,9 @@ object Channel:
         case true  => Int
         case false => Long
 
+// `@unexported`: `Channel` would clash with perihelion's WebSocket `Channel` in the `soundness`
+// umbrella; reach the pixel channel machinery via `iridescence.Channel`.
+@unexported
 trait Channel[label <: String & Singleton, bits <: Int]
 
 trait Red[bits <: Int] extends Channel["red", bits]
