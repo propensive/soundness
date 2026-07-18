@@ -59,7 +59,8 @@ private[hallucination] object RasterBackend:
     else abort(RasterError(Unset))
 
   def encode(format: Rasterizable, raster: Raster): Data = format.name.s match
-    case "PNG" => PngCodec.encode(raster)
-    case "BMP" => BmpCodec.encode(raster)
-    case "GIF" => GifCodec.encode(raster)
-    case _     => panic(m"the ${format.name} format has no native encoder")
+    case "PNG"  => PngCodec.encode(raster)
+    case "BMP"  => BmpCodec.encode(raster)
+    case "GIF"  => GifCodec.encode(raster)
+    case "WEBP" => WebpCodec.encode(raster)
+    case _      => panic(m"the ${format.name} format has no native encoder")

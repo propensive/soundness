@@ -445,3 +445,32 @@ object Tests extends Suite(m"Hallucination Tests"):
     test(m"a non-WebP byte stream is rejected"):
       capture[RasterError](WebpCodec.decode(pngGradient)).reason
     . assert(_ == RasterError.Reason.BadSignature)
+
+    // The lossless encoder round-trips through the decoder for every layout and image structure.
+
+    def roundtrips(raster: Raster): Boolean =
+      same(WebpCodec.decode(WebpCodec.encode(raster)), raster)
+
+    test(m"an RGB raster round-trips through the WebP lossless encoder"):
+      roundtrips(gradient)
+    . assert(_ == true)
+
+    test(m"an RGBA raster round-trips through the WebP lossless encoder"):
+      roundtrips(translucent)
+    . assert(_ == true)
+
+    test(m"a raster with long runs round-trips (run-length coding)"):
+      roundtrips(Raster(40, 30)((_, _) => Chroma(90, 40, 200)))
+    . assert(_ == true)
+
+    test(m"a large raster round-trips (multiple predictor blocks)"):
+      roundtrips(Raster(600, 40)((x, y) => Chroma(x % 256, y*6, (x + y) % 256)))
+    . assert(_ == true)
+
+    test(m"encoded WebP is a valid RIFF/WEBP/VP8L container"):
+      val encoded = WebpCodec.encode(gradient)
+
+      ( String(IArray.genericWrapArray(encoded.slice(0, 4)).toArray, "UTF-8").tt,
+        String(IArray.genericWrapArray(encoded.slice(8, 12)).toArray, "UTF-8").tt,
+        String(IArray.genericWrapArray(encoded.slice(12, 16)).toArray, "UTF-8").tt )
+    . assert(_ == (t"RIFF", t"WEBP", t"VP8L"))

@@ -32,53 +32,48 @@
                                                                                                   */
 package hallucination
 
+import java.io as ji
+
 import anticipation.*
-import contingency.*
+import rudiments.*
+import vacuous.*
 
-import Binary.*
-import RasterError.Reason
+// A little-endian bit writer for the VP8L lossless bitstream, ported from image-rs/image-webp
+// (`src/lossless/encoder/mod.rs`, MIT/Apache-2.0). Bits accumulate least-significant first into a
+// 64-bit buffer, flushed eight bytes at a time.
+private[hallucination] final class WebpBitWriter:
+  private val out = ji.ByteArrayOutputStream()
+  private var buffer: Long = 0L
+  private var count: Int = 0
 
-// A pure-Scala WebP codec, ported from image-rs/image-webp (MIT/Apache-2.0). This phase decodes
-// simple (non-extended) lossless VP8L images; lossy VP8 and extended VP8X images raise
-// `UnsupportedVariant` until later phases. Unlike the other formats, WebP has no `javax.imageio`
-// support, so this codec is selected on every platform, including the JVM.
-private[hallucination] object WebpCodec:
-  // The RIFF container signature: "RIFF", a size, then "WEBP".
-  def isWebp(data: Data): Boolean =
-    data.length >= 12 && fourcc(data, 0) == "RIFF" && fourcc(data, 8) == "WEBP"
+  def writeBits(bits: Long, nbits: Int): Unit =
+    val previous = count
+    buffer |= bits << previous
+    count = previous + nbits
 
-  def encode(raster: Raster): Data = WebpEncoder.encode(raster)
+    if count >= 64 then
+      writeLong(buffer)
+      count -= 64
+      val shift = 64 - previous
+      buffer = if shift >= 64 then 0L else bits >>> shift
 
-  def decode(data: Data): Raster raises RasterError =
-    try
-      if data.length < 12 || fourcc(data, 0) != "RIFF" || fourcc(data, 8) != "WEBP"
-      then abort(RasterError(Webp(), Reason.BadSignature))
+  private def writeLong(value: Long): Unit =
+    var i = 0
 
-      // The first chunk after the "WEBP" fourcc determines the image kind.
-      val chunk = fourcc(data, 12)
-      val chunkStart = 20
+    while i < 8 do
+      out.write(((value >>> (i*8)) & 0xff).toInt)
+      i += 1
 
-      chunk match
-        case "VP8L" =>
-          val chunkSize = u32le(data, 16)
-          val reader = WebpBitReader(data, chunkStart, chunkStart + chunkSize)
-          val (width, height, rgba) = WebpLossless.decode(reader)
-          raster(width, height, rgba)
+  // Pads to a byte boundary and returns the accumulated bytes.
+  def bytes: Data =
+    if count%8 != 0 then writeBits(0, 8 - count%8)
 
-        case "VP8 " | "VP8X" =>
-          abort(RasterError(Webp(), Reason.UnsupportedVariant))
+    var i = 0
 
-        case _ =>
-          abort(RasterError(Webp(), Reason.BadSignature))
+    while i < count/8 do
+      out.write(((buffer >>> (i*8)) & 0xff).toInt)
+      i += 1
 
-    catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
-      abort(RasterError(Webp(), Reason.Truncated))
-
-  // Builds an RGBA raster from the decoded, un-transformed byte buffer (in RGBA order).
-  private def raster(width: Int, height: Int, rgba: Array[Byte]): Raster =
-    Raster.build(width, height, Descriptor.rgba): index =>
-      (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
-        (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
-
-  private def fourcc(data: Data, offset: Int): String =
-    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn
+    buffer = 0
+    count = 0
+    out.toByteArray.nn.immutable(using Unsafe)
