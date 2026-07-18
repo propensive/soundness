@@ -38,7 +38,9 @@ import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
 import logging.silentLogging
 import charEncoders.utf8Encoder
+import environments.javaEnvironment
 import gitCommands.environmentDefaultGitCommand
+import systems.javaSystem
 import workingDirectories.javaWorkingDirectory
 import internetAccess.online
 import errorDiagnostics.stackTracesDiagnostics
@@ -53,7 +55,15 @@ import filesystemBackends.virtualMachine
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):
   def run(): Unit =
     val work: Path on Linux = workingDirectory
-    val jsonSuite: Path on Linux = work/"tests"/"JSONTestSuite"
+    val localSuite: Path on Linux = work/"tests"/"JSONTestSuite"
+
+    // The corpus lives in `tests/` where present (established dev checkouts);
+    // otherwise in the per-machine `~/.cache/soundness` cache, which — like
+    // the proscala toolchain cache — survives the throwaway attest worktrees,
+    // so only the very first run on a machine needs network access.
+    val jsonSuite: Path on Linux =
+      if (localSuite/"test_parsing").exists() then localSuite
+      else Xdg.cacheHome[Path on Linux]/"soundness"/"JSONTestSuite"
 
     if !(jsonSuite/"test_parsing").exists() then
       Git.clone(url"https://github.com/nst/JSONTestSuite", jsonSuite).complete()
@@ -302,9 +312,13 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
     suite(m"Number-only arrays"):
       def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
 
-      test(m"Pure integer array uses the unboxed Array[Double] form"):
+      test(m"Pure integer array uses the unboxed small-BCD Array[Int] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
-      . assert(_ == "[D")
+      . assert(_ == "[I")
+
+      test(m"Array with an 8-nibble number widens to the Array[Long] form"):
+        parseRaw(t"[12345678, 2]").getClass.getName
+      . assert(_ == "[J")
 
       test(m"Pure integer array decodes back to the original numbers"):
         t"[1, 2, 3]".read[Json].as[List[Int]]
@@ -313,42 +327,42 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       test(m"Decimal-only array uses the unboxed form and round-trips"):
         given Json.Formatting = Json.Formatting(Unset, false)
         val raw = parseRaw(t"[1.5, 2.25, 3.125]")
-        raw.getClass.getName == "[D"
+        raw.getClass.getName == "[I"
         && raw.asInstanceOf[Json.Ast].show == t"[1.5,2.25,3.125]"
       . assert(identity)
 
       test(m"Exponent-bearing numbers stay in the unboxed form"):
         val raw = parseRaw(t"[1e2, 2.5e-3]")
         raw.getClass.getName
-      . assert(_ == "[D")
+      . assert(_ == "[I")
 
       test(m"Negative numbers stay in the unboxed form and round-trip"):
         t"[-1, -2, -3]".read[Json].as[List[Int]]
       . assert(_ == List(-1, -2, -3))
 
-      test(m"Empty array uses the parity-padded boxed form, not Array[Double]"):
+      test(m"Empty array uses the parity-padded boxed form, not a number array"):
         val raw = parseRaw(t"[]")
         raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
       test(m"Single-element number array uses the unboxed form"):
         parseRaw(t"[42]").getClass.getName
-      . assert(_ == "[D")
+      . assert(_ == "[I")
 
       test(m"Non-number after numbers triggers fallback to the boxed form"):
         val raw = parseRaw(t"""[1, 2, "three"]""")
         raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
-      test(m"Fallback array preserves the leading numbers as Long values"):
-        t"""[1, 2, "three"]""".read[Json].root.arrayElement(0).asMatchable
-      . assert:
-          case l: Long => l == 1L
-          case _       => false
+      test(m"Fallback array preserves the leading numbers' values"):
+        // The boxed node keeps the small-BCD `Int` form; its numeric value
+        // surfaces through the accessors.
+        t"""[1, 2, "three"]""".read[Json].root.arrayElement(0).long
+      . assert(_ == 1L)
 
       test(m"Bcd-overflow number triggers fallback to the boxed form"):
         // 16-digit value overflows the 15-nibble in-Long fast path and
-        // forces a Bcd fallback, which doesn't fit in Array[Double].
+        // forces a Bcd fallback, which doesn't fit the unboxed forms.
         val raw = parseRaw(t"[1, 1234567890123456]")
         raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
@@ -358,12 +372,18 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         raw.asInstanceOf[Json.Ast].arrayElement(1).isBcd
       . assert(identity)
 
-      test(m"15-nibble integer (parser fast path) stays in the unboxed form"):
-        // 15 digits = 15 nibbles, fits in the in-Long fast path and in
-        // Double exactly (< 2^50).
+      test(m"15-nibble integer exceeds the 14-nibble BCD-Long cap and boxes"):
+        // 15 digits fit the parser's in-Long fast path but not the 14-nibble
+        // single-Long BCD packing, so the element materializes as a `Bcd`
+        // and the array falls back to the boxed form.
         val raw = parseRaw(t"[1, 123456789012345]")
+        raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
+      . assert(identity)
+
+      test(m"14-nibble integer stays in the unboxed Array[Long] form"):
+        val raw = parseRaw(t"[1, 12345678901234]")
         raw.getClass.getName
-      . assert(_ == "[D")
+      . assert(_ == "[J")
 
       test(m"Non-number first element keeps the boxed buffer"):
         val raw = parseRaw(t"""["a", 1, 2]""")
@@ -395,6 +415,29 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       test(m"Object equality is preserved"):
         t"""{"a": 1, "b": 2}""".read[Json] == t"""{"b": 2, "a": 1}""".read[Json]
       . assert(identity)
+
+      // #1576: a >7-nibble number that arrives *after* the array is already
+      // boxed (a leading non-number) must be decoded to its scalar value, not
+      // stored as a raw packed BCD-Long that `double`/`long` then misread.
+      test(m"Boxed fractional element decodes to its scalar Double"):
+        t"""["x", 1016.865234375]""".read[Json].root.arrayElement(1).double
+      . assert(_ == 1016.865234375)
+
+      test(m"Boxed multi-digit integer element decodes to its scalar Long"):
+        t"""["x", 12345678901234]""".read[Json].root.arrayElement(1).long
+      . assert(_ == 12345678901234L)
+
+      // The pre-boxed migration path (number buffered first, then boxed) was
+      // already correct — guard it against regressions.
+      test(m"Pre-boxed fractional element decodes to its scalar Double"):
+        t"""[1016.865234375, "x"]""".read[Json].root.arrayElement(0).double
+      . assert(_ == 1016.865234375)
+
+      // The purely-numeric (unboxed IArray[Long]) path was also already
+      // correct — guard it too.
+      test(m"Unboxed fractional array element decodes to its scalar Double"):
+        t"""[1016.865234375]""".read[Json].root.arrayElement(0).double
+      . assert(_ == 1016.865234375)
 
 
 

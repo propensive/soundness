@@ -1683,3 +1683,4 @@ object Tests extends Suite(m"Jacinta Tests"):
     ValidationTests()
     PositionTests()
     VerifyTests()
+    ParserTests()

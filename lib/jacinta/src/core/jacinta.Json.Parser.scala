@@ -664,6 +664,17 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   protected inline update def relinquishBcdLongBuffer(): Unit = bcdLongBufferId -= 1
 
+  // Decode a single-Long BCD value to its scalar `JsonNumber` form for storage
+  // in a boxed (`IArray[Any]`) array: a `Long` if it is an exact integer that
+  // fits, else a `Double`. A boxed array must never hold a raw packed BCD-Long —
+  // its bits are `sign | count | nibbles`, not the numeric value, so
+  // `Json.Ast.double`/`long` (which treat a bare `Long` node as numeric) would
+  // misread it (see #1576).
+  protected def decodeBcdLongToScalar(value: Long): Any =
+    val text = Bcd.bcdLongText(value)
+    try java.lang.Long.parseLong(text)
+    catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
+
   protected update def getBcdIntBuffer(): ArrayBuffer[Int] =
     bcdIntBufferId += 1
 
@@ -797,7 +808,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // comparisons (`>= 32`, `!= "`, `!= \`) into a single load + compare.
     while more && StringScanContinue(peek & 0xFF) != 0 do advance()
 
-    if !more then errorAt(Issue.PrematureEnd, region)
+    // Span from the string token's opening quote (one byte before the
+    // content region) — see `tail`.
+    if !more then errorAt(Issue.PrematureEnd, Cursor.Mark(region.absolute - 1))
 
     if peek == Quote then slice(region).also(advance())
     else tail(region)
@@ -871,7 +884,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     while more && StringScanContinue(peek & 0xFF) != 0 do advance()
 
-    if !more then errorAt(Issue.PrematureEnd, region)
+    // Span from the string token's opening quote (one byte before the
+    // content region) — see `tail`.
+    if !more then errorAt(Issue.PrematureEnd, Cursor.Mark(region.absolute - 1))
 
     if peek != Quote then tail(region)
     else
@@ -937,10 +952,15 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     resetString()
     appendRegionToBuffer(start)
 
+    // `start` marks the string *content* (it doubles as the slice region), but
+    // error spans must cover the whole string token from its opening quote —
+    // one byte earlier. A synthesized mark is safe here: `errorAt` only reads
+    // its absolute position.
+    val token: Region = Cursor.Mark(start.absolute - 1)
     var continue = true
 
     while continue do
-      if !more then errorAt(Issue.PrematureEnd, start)
+      if !more then errorAt(Issue.PrematureEnd, token)
       val ch = peek
 
       ch match
@@ -948,11 +968,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           continue = false
 
         case Tab | Newline | Return =>
-          errorAt(Issue.InvalidWhitespace, start)
+          errorAt(Issue.InvalidWhitespace, token)
 
         case Backslash =>
           advance()
-          if !more then errorAt(Issue.PrematureEnd, start)
+          if !more then errorAt(Issue.PrematureEnd, token)
 
           (peek: @switch) match
             case Quote     => appendChar('"')
@@ -964,12 +984,12 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
             case LowerR    => appendChar('\r')
             case LowerT    => appendChar('\t')
             case LowerU    => appendChar(parseUnicode())
-            case bad       => errorAt(Issue.IncorrectEscape(bad.toChar), start)
+            case bad       => errorAt(Issue.IncorrectEscape(bad.toChar), token)
 
         case _ =>
           if ch == 0 && holes then appendChar(' ')
           else ((ch >> 5): @switch) match
-            case 0                 => errorAt(Issue.NotEscaped(ch.toChar), start)
+            case 0                 => errorAt(Issue.NotEscaped(ch.toChar), token)
             case 1 | 2 | 3 | 4 | 5 => appendChar(ch.toChar)
 
             case _ =>
@@ -1428,17 +1448,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       val n = src.length
       var i = 0
 
-      // Decode each BCD-Long to its scalar JsonNumber form. Long if the
-      // value is an exact integer that fits Long, else Double.
+      // Decode each BCD-Long to its scalar JsonNumber form (see #1576).
       while i < n do
-        val v = src(i)
-        val text = Bcd.bcdLongText(v)
-
-        val ast: Any =
-          try java.lang.Long.parseLong(text)
-          catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
-
-        dst += ast
+        dst += decodeBcdLongToScalar(src(i))
         i += 1
 
       relinquishBcdLongBuffer()
@@ -1499,13 +1511,15 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
                     longItems.nn += bcdLong
 
                   case _ =>
-                    // Boxed mode — surface the value as a JsonNumber.
-                    // For ≤7 nibbles, the small-BCD `Int` is the right
-                    // shape; otherwise the BCD-Long itself is fine.
+                    // Boxed mode — surface the value as a JsonNumber. For ≤7
+                    // nibbles the small-BCD `Int` is a self-describing
+                    // `JsonNumber` (accessors decode it via `bcdIntToDouble`);
+                    // a larger BCD-Long must be decoded to a scalar, never
+                    // stored raw (see #1576).
                     if nibbles <= Bcd.MaxBcdIntNibbles then
                       anyItems.nn += Bcd.packBcdIntFromLong(bcdLong)
                     else
-                      anyItems.nn += bcdLong
+                      anyItems.nn += decodeBcdLongToScalar(bcdLong)
 
             case _ =>
               if first then
@@ -1700,7 +1714,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
                     if nibbles <= Bcd.MaxBcdIntNibbles then
                       anyItems.nn += Bcd.packBcdIntFromLong(bcdLong)
                     else
-                      anyItems.nn += bcdLong
+                      anyItems.nn += decodeBcdLongToScalar(bcdLong)
 
             case _ =>
               if first then
