@@ -107,6 +107,17 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
 // be referenced anywhere; the supervision tree (capability-tracked `Monitor`s) is rooted locally
 // per `supervise` block by a `Root`. The *license* to suspend is `Monitor^`; the supervisor is
 // only the mechanism.
+//
+// The WASIp3 (Component Model async) mapping, for a future `parasite.wasi` backend:
+//   fork                 → allocate a run-queue entry (the strand) and enqueue it
+//   park                 → suspend the current task, returning WAIT on its waitable-set;
+//                          `Strand.unpark` → resolve its wakeup waitable / mark it runnable
+//   park(deadline)/sleep → join a `wasi:clocks/monotonic-clock` timer to the set
+//   interrupted          → the strand's cancellation flag, set by `Strand.interrupt`
+// On a stackless runtime, a direct-style `park` from arbitrary stack depth only becomes
+// implementable once the compiler can CPS-transform suspending code; until then such a backend
+// serves the monadic dialect (`Task.bind`/`map`, `Task.sleep`, `Promise#task`), whose
+// continuations are already reified.
 trait Supervisor:
   def name: Name[Async]
 
