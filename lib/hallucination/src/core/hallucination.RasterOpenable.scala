@@ -30,7 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package hallucination
 
-export hallucination.{Bmp, Canvas, CanvasHandle, Descriptor, Gif, Jpeg, pixel, Png, Raster,
-    RasterError, Rasterizable, RasterOpenable, repack}
+import aperture.*
+import prepositional.*
+
+// The `Openable` instance for scoped pixel access to a raster: `raster.open[Canvas](...)`. A
+// named class rather than an anonymous given instance: instantiating an anonymous subclass
+// freshens `CanvasHandle`'s field types in the inferred `Result` member, which then fails to
+// conform to the declared refinement.
+class RasterOpenable[layout <: Tuple]() extends Openable:
+  type Self = Raster by layout
+  type Form = Canvas
+  type Operand = Nothing
+  type Result = CanvasHandle[layout]
+
+  def open[grants <: Grant, result]
+    ( value: Raster by layout, mode: Mode granting grants, flags: List[Nothing] )
+    ( block: ((CanvasHandle[layout] & Granting[grants])^) ?=> result )
+  :   result =
+
+    // `Granting` is a phantom marker, so the cast only refines the static type with the
+    // grants the mode selected.
+    block(using (new CanvasHandle(value)).asInstanceOf[CanvasHandle[layout] & Granting[grants]])

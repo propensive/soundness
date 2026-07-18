@@ -159,3 +159,28 @@ object Tests extends Suite(m"Hallucination Tests"):
       stripes.rotate(90).pipe: rotated =>
         (rotated.width, rotated.height, rotated(3, 1).red)
     . assert(_ == (4, 2, 30))
+
+    test(m"a raster opened as a canvas reads pixels"):
+      val raster = Raster(2, 2)((x, y) => Chroma(x*100 + y*10, 0, 0))
+
+      raster.open[Canvas](): canvas ?=>
+        canvas(1, 1).red
+    . assert(_ == 110)
+
+    test(m"writing through a canvas mutates the raster in place"):
+      val raster = Raster(2, 2)((x, y) => Chroma(0, 0, 0))
+
+      raster.open[Canvas](Read & Write): canvas ?=>
+        canvas(0, 0) = Pixel[Rgb](Srgb(1.0, 0.0, 0.0))
+
+      raster(0, 0).red
+    . assert(_ == 255)
+
+    test(m"a snapshot is unaffected by later writes"):
+      val raster = Raster(1, 1)((x, y) => Chroma(1, 2, 3))
+
+      raster.open[Canvas](Read & Write): canvas ?=>
+        val before = canvas.snapshot
+        canvas(0, 0) = Pixel[Rgb](Srgb(1.0, 1.0, 1.0))
+        before(0, 0).red
+    . assert(_ == 1)
