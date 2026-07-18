@@ -251,7 +251,7 @@ object internal:
                           JsonRpc.notification($url, $methodName, json)
                             ( using $monitor, $probate, $online )
 
-                          . await()
+                          . await()(using $monitor)
 
                         . yet (())
                       }
@@ -268,7 +268,7 @@ object internal:
                                 val response =
                                   JsonRpc.request($url, $methodName, json)
                                     ( using $monitor, $probate, $online )
-                                  . await()
+                                  . await()(using $monitor)
 
                                 $decoder.decoded(response)
                             }
@@ -369,8 +369,8 @@ object internal:
 
             . asTerm
           else result.asType.absolve match
-            case '[result] => Expr.summon[result is Json.Decodable] match
-              case Some(decoder) =>
+            case '[result] => (Expr.summon[result is Json.Decodable], Expr.summon[Monitor]) match
+              case (Some(decoder), Some(monitor)) =>
                 Some:
                   ' {
                       val json = Map(${Varargs(entries)}*).in[Json]
@@ -378,19 +378,22 @@ object internal:
                       unsafely:
                         val response =
                           JsonRpc.request($rpc, $methodName, json)
-                          . await()
+                          . await()(using $monitor)
 
                         $decoder.decoded(response)
                     }
 
                   . asTerm
 
-              case _ =>
+              case (None, _) =>
                 halt:
                   m"""
                     could not find a contextual ${TypeRepr.of[result is Decodable in Json].show}
                     instance for the return type of ${method.name}
                   """
+
+              case _ =>
+                halt(m"a contextual `Monitor` instance is required")
 
         case _ =>
           halt(69, m"the method ${method.name} must have exactly one parameter list")

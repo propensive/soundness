@@ -90,7 +90,7 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   def chain: Optional[Chain]
   def stack: Text
   def daemon: Boolean
-  def attend(): Unit = promise.attend()
+  def attend()(using Monitor^): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
   def supervisor: Supervisor
@@ -300,6 +300,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // guarantees everything a join would. (A trailing unbounded `strand.join()` would also defeat
   // the timed variants' deadline.)
   def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
+    ( using Monitor^ )
   :   Result raises AsyncError =
 
     promise.attend(duration)
@@ -307,7 +308,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     result()
 
 
-  def join(): Result raises AsyncError =
+  def join()(using Monitor^): Result raises AsyncError =
     promise.attend()
     result()
 
@@ -317,14 +318,14 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // `Tactic[error | AsyncError]`. `error` is reconstructed by an unchecked cast that is sound for
   // any failure raised through the body's `AsyncTactic` (the only typed-error path); a genuinely
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
-  def deliver[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
+  def deliver[error <: Hazard]()(using Monitor^, Tactic[error | AsyncError]^): Result =
     promise.attend()
     fulfilment()
 
 
   def deliver[error <: Hazard, abstractable: Abstractable across Durations to Long]
     ( duration: abstractable )
-    ( using Tactic[error | AsyncError]^ )
+    ( using Monitor^, Tactic[error | AsyncError]^ )
   :   Result =
 
     promise.attend(duration)

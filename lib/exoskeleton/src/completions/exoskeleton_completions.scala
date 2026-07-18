@@ -218,7 +218,8 @@ package executives:
 
             case t"await" =>
               Cli.prepare()
-              safely(Cli.await()).or(Nil).map(Out.println(_))
+              import parasite.threading.platformThreading
+              safely(parasite.supervise(Cli.await())).or(Nil).map(Out.println(_))
               Exit.Ok
 
             case t"install" =>

@@ -50,6 +50,9 @@ package probates:
 package supervisors:
   export parasite.supervisors.globalSupervisor
 
+object unsupervised:
+  export parasite.unsupervised.orphanMonitor
+
 package retryTenacities:
   export
     parasite.retryTenacities

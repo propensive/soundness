@@ -387,6 +387,11 @@ def cli[bus <: Matchable](using executive: Executive)
         val clientState = client(pid)
         clientState.socket.fulfill(connection)
 
+        // The stream crosses the capability-erasing `java.io.OutputStream` interface, so the
+        // monitor its first write suspends on cannot stay tracked; laundered to pure, sound
+        // because it is the daemon-lifetime connection monitor, which outlives the stream.
+        val monitor0: Monitor^{} = caps.unsafe.unsafeAssumePure(summon[Monitor])
+
         val lazyStderr: ji.OutputStream = new ji.OutputStream():
           private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
             juca.AtomicReference(null)
@@ -396,7 +401,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
             if s != null then s
             else
-              val newS = clientState.stderr.await()
+              val newS = clientState.stderr.await()(using monitor0)
               stderrOut.set(newS)
               newS
 

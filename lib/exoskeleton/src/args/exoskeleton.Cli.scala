@@ -56,7 +56,8 @@ object Cli:
 
   def done(): Unit = trigger.offer(())
   def log(input: Text): Unit = messages ::= input
-  def await(): List[Text] = safely(trigger.await(10.0*Second)) yet messages.reverse
+  def await()(using Monitor^): List[Text] =
+    safely(trigger.await(10.0*Second)) yet messages.reverse
 
 
   def arguments

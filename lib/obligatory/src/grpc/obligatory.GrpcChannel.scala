@@ -101,7 +101,10 @@ class GrpcChannel
   // carries the status in the headers). Raise unless the status is `Ok`.
   // Declared with explicit tactics rather than stacked `raises`: see `bintelDocument`
   // in stratiform (capture checking cannot unify cross-level tactic captures, 3.10).
-  private def expectStatus(stream: Http2Stream)(using Tactic[GrpcError], Tactic[AsyncError]): Unit =
+  private def expectStatus(stream: Http2Stream)
+    ( using Monitor^, Tactic[GrpcError], Tactic[AsyncError] )
+  :   Unit =
+
     val fields = stream.trailers.await() ++ stream.headers.await()
     val codeText = fields.find(_.name == t"grpc-status").optional.let(_.value)
     val message = fields.find(_.name == t"grpc-message").optional.let(_.value).or(t"")
@@ -131,6 +134,7 @@ class GrpcChannel
   def unary[request, response]
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
+    ( using Monitor^ )
     ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   response =
 
@@ -154,6 +158,7 @@ class GrpcChannel
   def serverStreaming[request, response]
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
+    ( using Monitor^ )
     ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
   :   LazyList[response] =
 
