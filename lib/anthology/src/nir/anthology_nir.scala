@@ -32,45 +32,27 @@
                                                                                                   */
 package anthology
 
-import anticipation.*
-import contingency.*
-import digression.*
-import galilei.*
-import prepositional.*
-import serpentine.*
+import scala.scalanative.build.{GC, LTO, Mode, NativeConfig}
 
-object Linker:
-  // An entry point whose `main(args: Array[String])` method runs when the linked module loads.
-  case class EntryPoint(mainClass: Fqcn)
+object nativeOptions:
+  private def native(edit: NativeConfig => NativeConfig): Linker.Option[Backend.Native] =
+    Linker.Option(edit)
 
-  object Option:
-    // Sound by construction: options are only creatable through the per-family DSLs, each of
-    // which types its options at a subset of exactly one link family, and every `Linkage` of
-    // that family fixes `Form` to the type the DSL edits; no option is typed across families.
-    private[anthology] def apply[target <: Backend.Linked, form](edit0: form => form)
-    :   Option[target] =
+  def target(triple: Triple): Linker.Option[Backend.Native] =
+    native(_.withTargetTriple(Some(triple.text.s)))
 
-      new Option[target]:
-        private[anthology] def edit(form0: Any): Any = edit0(form0.asInstanceOf[form])
+  object gc:
+    val immix: Linker.Option[Backend.Native] = native(_.withGC(GC.immix))
+    val commix: Linker.Option[Backend.Native] = native(_.withGC(GC.commix))
+    val boehm: Linker.Option[Backend.Native] = native(_.withGC(GC.boehm))
+    val none: Linker.Option[Backend.Native] = native(_.withGC(GC.none))
 
-  // Options are constructible only through the per-family DSLs, keeping the underlying linker
-  // configuration types out of the public API; contravariance permits an option declared for a
-  // union of backends in the options list of any of that union's linkers.
-  trait Option[-target <: Backend.Linked]:
-    private[anthology] def edit(form0: Any): Any
+  object mode:
+    val debug: Linker.Option[Backend.Native] = native(_.withMode(Mode.debug))
+    val releaseFast: Linker.Option[Backend.Native] = native(_.withMode(Mode.releaseFast))
+    val releaseFull: Linker.Option[Backend.Native] = native(_.withMode(Mode.releaseFull))
 
-case class Linker[target <: Backend.Linked]
-  ( options: List[Linker.Option[target]], entryPoints: List[Linker.EntryPoint] = Nil ):
-
-  def link(compilation: Compilation[target], out: Path on Linux)(using linkage: Linkage[target])
-  :   Path on Linux logs LinkEvent raises LinkError =
-
-    Log.info(LinkEvent.Start)
-
-    val form: linkage.Form =
-      options.foldLeft(linkage.initial): (form, option) =>
-        option.edit(form).asInstanceOf[linkage.Form]
-
-    val result = linkage.link(form, compilation, entryPoints, out)
-    Log.info(LinkEvent.Linked(result.encode))
-    result
+  object lto:
+    val none: Linker.Option[Backend.Native] = native(_.withLTO(LTO.none))
+    val thin: Linker.Option[Backend.Native] = native(_.withLTO(LTO.thin))
+    val full: Linker.Option[Backend.Native] = native(_.withLTO(LTO.full))

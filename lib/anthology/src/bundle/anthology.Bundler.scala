@@ -85,10 +85,10 @@ object Bundler:
     assemble(LocalClasspath(entries*), jarfile0.or(compilation.out.peer("tmpfile.jar")), main)
 
 
-  // Bundles a portable compilation's output—its `.sjsir` files alongside its classfiles—as a
-  // library JAR for downstream assembly: the JAR is a valid classpath entry both for further
-  // compilations and for a later `Linker`.
-  def library(compilation: Compilation[Backend.Portable], jarfile0: Optional[Path on Linux])
+  // Bundles a linkable compilation's output—its `.sjsir` or `.nir` files alongside its
+  // classfiles—as a library JAR for downstream assembly: the JAR is a valid classpath entry both
+  // for further compilations and for a later `Linker`.
+  def library(compilation: Compilation[Backend.Linked], jarfile0: Optional[Path on Linux])
   :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
 
     val entries = List(Classpath.Directory(compilation.out))

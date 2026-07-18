@@ -35,4 +35,4 @@ package soundness
 export
   anthology
   . { Backend, Compilation, CompileEvent, CompileProcess, CompileProgress, Compiler,
-      CompilerError, CompileResult, Importance, Notice }
+      CompilerError, CompileResult, Importance, NirPlugin, Notice }

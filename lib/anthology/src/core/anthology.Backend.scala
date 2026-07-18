@@ -34,16 +34,22 @@ package anthology
 
 import anticipation.*
 import gossamer.*
+import serpentine.*
 
 object Backend:
   type Jvm = Backend.Jvm.type
   type Js = Backend.Js.type
   type Wasm = Backend.Wasm.type
   type Wasi = Backend.Wasi.type
+  type Native = Backend.Native.type
 
   // The backends whose compilations emit target-neutral `.sjsir`, deferring the choice of
   // linked representation (JavaScript, browser Wasm or a WASI component) until link time.
   type Portable = Js | Wasm | Wasi
+
+  // Every backend whose compilations emit a linkable intermediate representation—`.sjsir` for
+  // the portable backends, `.nir` for Scala Native—and whose products are made by a `Linker`.
+  type Linked = Portable | Native
 
   // Determines the additional compiler flags each backend requires; contravariance lets the
   // single `portable` instance serve every member of the `Portable` union.
@@ -56,5 +62,11 @@ object Backend:
   given portable: Emission[Portable]:
     def flags: List[Text] = List(t"-scalajs")
 
+  // NIR is emitted by the Scala Native compiler plugin rather than by a backend built into the
+  // compiler, so compiling for `Backend.Native` requires evidence of the plugin's location.
+  given native(using plugin: NirPlugin): Emission[Native] =
+    new Emission[Native]:
+      def flags: List[Text] = List(t"-Xplugin:${plugin.jar.encode}")
+
 enum Backend:
-  case Jvm, Js, Wasm, Wasi
+  case Jvm, Js, Wasm, Wasi, Native

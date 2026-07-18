@@ -681,7 +681,12 @@ object anthology extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
-  object test extends Tests(`scala`, `java`, core, bundle, link, spectacular.core):
+  object nir extends Component(link):
+    override def scalaJs = false // drives the Scala Native linker (a JVM library) via its API
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(mvn"org.scala-native:tools_3:0.5.12")
+  object test extends Tests(`scala`, `java`, core, bundle, link, nir, spectacular.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
