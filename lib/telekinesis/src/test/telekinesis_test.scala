@@ -836,6 +836,17 @@ object Tests extends Suite(m"Telekinesis tests"):
         parameters.getProtocols.nn.to(List).map(_.nn.tt)
       . assert(_ == List(t"TLSv1.3"))
 
+      test(m"an acceptance bridges to a Tls carrying its policy"):
+        val acceptance = TlsAcceptance(versions = List(Trust.Version.Tls13))
+        val tls = acceptance.tls(List(t"h2"))
+        (tls.verify, tls.protocols, tls.versions, tls.context.present)
+      . assert(_ == (true, List(t"h2"), List(t"TLSv1.3"), true))
+
+      test(m"a relaxed acceptance bridges with verification off"):
+        import crypto.permitUntrustedCertificates
+        TlsAcceptance().permitHostnameMismatch.tls().verify
+      . assert(_ == false)
+
     suite(m"Certificate validation with relaxed acceptance"):
       import crypto.permitUntrustedCertificates, crypto.permitUncheckedRevocation
 

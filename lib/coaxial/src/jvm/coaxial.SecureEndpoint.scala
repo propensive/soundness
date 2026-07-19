@@ -73,6 +73,9 @@ object SecureEndpoint:
       // application protocol during the handshake; the choice is read back below.
       if !tls.protocols.isEmpty then params.setApplicationProtocols(tls.protocols.map(_.s).toArray)
 
+      // Restrict the TLS protocol versions when the configuration asks for it.
+      if !tls.versions.isEmpty then params.setProtocols(tls.versions.map(_.s).toArray)
+
       socket.setSSLParameters(params)
 
       socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))

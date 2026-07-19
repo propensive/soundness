@@ -947,7 +947,7 @@ object coaxial extends Library:
   // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.virtualMachine`), split out
   // of `core` so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI)
   // supply their own backend.
-  object jvm extends Component(core):
+  object jvm extends Component(core, gastronomy.core):
     override def scalaJs = false
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -2102,7 +2102,7 @@ object telekinesis extends Library:
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
   // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
   // and the `coaxial` domain-socket client.
-  object jvm extends Component(core, http2, coaxial.jvm, gastronomy.core):
+  object jvm extends Component(core, http2, coaxial.jvm):
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
