@@ -2625,6 +2625,36 @@ object nativelink extends Module:
       hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native,
       ambience.core.native, coaxial.core.native, enigmatic.openssl.native, parasite.core.native)
 
+  // The crypto-only regression binary: enigmatic's `OpensslCrypto` with NO coaxial in the graph,
+  // so nothing statically links libcrypto. It links only because xenophile loads libcrypto by path
+  // at run time (`ForeignLibrary.register` → `dlopen`) and resolves symbols from that handle; a
+  // regression to `dlopen(null)`-only lookup would link but crash at run time (see the source).
+  object cryptoApp extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = Task:
+      (settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+        :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "crypto")
+    def compileMvnDeps = nativeToolchain.runtimeDeps
+    override def mainClass = Some("nativecrypto.Main")
+    override def moduleDeps = Seq(
+      xenophile.scalanative.native, gossamer.core.native, gastronomy.core.native,
+      enigmatic.openssl.native)
+
+  def cryptoBinary: T[PathRef] = Task:
+    val classpath =
+      (cryptoApp.compile().classes.path
+        +: (cryptoApp.compileClasspath() ++ cryptoApp.runClasspath()).toSeq.map(_.path))
+      . distinct.filter(os.exists)
+    val driverClasspath =
+      linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driverClasspath, "nativelink.link", Task.dest.toString,
+      "nativecrypto.Main", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(Task.dest / "soundness-native")
+
   // Real test suites compiled for Native and linked as binaries — each runs `<module>.Tests`
   // natively, the end-state check that `probably` and a green module's entire suite work as a
   // native binary. Only suites free of `demilitarize` blocks qualify (larceny is a JVM compiler
@@ -2672,10 +2702,12 @@ object nativelink extends Module:
 
       PathRef(Task.dest / "soundness-native")
 
-  // Links every enrolled suite and runs each binary; a failing suite (nonzero exit) fails the
-  // task, so `mill nativelink.testSuites` is the one-shot native-test sweep.
+  // Links every enrolled suite plus the crypto-only regression binary and runs each; a failing
+  // one (nonzero exit) fails the task, so `mill nativelink.testSuites` is the one-shot native
+  // sweep.
   def testSuites: T[Unit] = Task:
-    Task.traverse(suite.crossModules.toSeq)(_.binary)().foreach: binary =>
+    val binaries = Task.traverse(suite.crossModules.toSeq)(_.binary)() :+ cryptoBinary()
+    binaries.foreach: binary =>
       os.proc(binary.path.toString).call(stdout = os.Inherit, stderr = os.Inherit)
 
   object linker extends ScalaModule, Toolchain:
