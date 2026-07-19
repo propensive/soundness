@@ -58,8 +58,16 @@ Every artifact is produced by the same verb:
 from the artifact's origin universe. `Linker[Artifact.Jar]` produces an executable JAR from a
 classfile compilation (with at most one entry point becoming its `Main-Class`, and
 `jarOptions.name` choosing its filename); `Linker[Artifact.Library[universe]]` packages any
-compilation's unlinked output as a library JAR. (`Bundler.bundle` remains for the distinct task
-of bundling the _running application's_ classpath, as staging rigs do.)
+compilation's unlinked output as a library JAR.
+
+A staging rig, which must fold its own running classpath into the JARs it produces, pairs
+`Bundler.applicationClasspath` (the running application's classpath, introspected from the
+thread-context classloader) with its compiled output as the `Compilation` it links:
+
+```scala
+val compilation = Compilation[Universe.Classfile](out, Bundler.applicationClasspath)
+Linker[Artifact.Jar](List(jarOptions.name(t"$uuid.jar")), List(executor)).link(compilation, out)
+```
 
 ### Linking
 

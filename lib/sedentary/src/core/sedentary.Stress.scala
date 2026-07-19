@@ -47,7 +47,6 @@ import gossamer.*
 import hellenism.*
 import inimitable.*
 import jacinta.*
-import nomenclature.*
 import parasite.*
 import prepositional.*
 import probably.*
@@ -445,9 +444,15 @@ extends Rig:
 
   def stage(out: Path on Linux): Path on Linux = unsafely:
     val uuid = Uuid()
-    val name = t"$uuid.jar"
-    val jarfile = out.peer(name)
-    Bundler.bundle(out, jarfile, fqcn"superlunary.Executor")
+    val compilation = Compilation[Universe.Classfile](out, Bundler.applicationClasspath)
+
+    val jarfile =
+      Linker[Artifact.Jar]
+        ( List(jarOptions.name(t"$uuid.jar")),
+          List(Linker.EntryPoint(fqcn"superlunary.Executor")) )
+
+      . link(compilation, out)
+
     device.deploy(jarfile, uuid)
     jarfile
 
