@@ -270,7 +270,22 @@ extends RequestServable:
         var continue = true
         while continue && !cursor.finished do continue = serveRequest(cursor)
 
+  // A per-request server: handle every request (HTTP/1.1) or stream (HTTP/2)
+  // with `handler`. The degenerate session with no per-connection setup.
   def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+    ( using Monitor, Probate )
+    ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
+  :   Service^ =
+
+    handleSession: session ?=>
+      session.handle(handler)
+
+  // A per-connection session server: `scope` runs once when a connection is
+  // established (an HTTP/2 connection, or an HTTP/1.1 keep-alive socket) and may
+  // set up per-connection state before calling `session.handle` to serve that
+  // connection's requests/streams with the state in scope. Capture checking
+  // confines the state to its connection.
+  def handleSession(scope: (session: Http2Session^) ?=> Unit)
     ( using Monitor, Probate )
     ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
   :   Service^ =
@@ -282,7 +297,21 @@ extends RequestServable:
         val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
 
         ssl.lay(jn.ServerSocket(port, 0, address)): context =>
-          context.getServerSocketFactory.nn.createServerSocket(port, 0, address).nn
+          val socket = context.getServerSocketFactory.nn.createServerSocket(port, 0, address).nn
+
+          // Offer `h2` then `http/1.1` by ALPN, so a client that speaks HTTP/2
+          // negotiates it during the TLS handshake; accepted sockets inherit
+          // these parameters. Plaintext servers have no ALPN.
+          socket match
+            case ssl: jns.SSLServerSocket =>
+              val params = ssl.getSSLParameters.nn
+              params.setApplicationProtocols(Array[String | Null]("h2", "http/1.1"))
+              ssl.setSSLParameters(params)
+
+            case _ =>
+              ()
+
+          socket
       catch case error: jn.BindException => abort(ServerError(port))
 
     val serverSocket = startServer()
@@ -297,12 +326,12 @@ extends RequestServable:
         // Daemon bodies must be pure context functions, so the server, the handler and each
         // socket cross into them as `AnyRef` rims (the cordillera recipe).
         val self: AnyRef = this
-        // Eta-wrapped into a capture-neutral `AnyRef => AnyRef` (capability-typed function
+        // Eta-wrapped into a capture-neutral `AnyRef => Unit` (capability-typed function
         // types re-hide when crossed through a rim; the kernel-module-sep finding), since a
         // context-function value applies itself in any non-context-function position.
-        val handler1: AnyRef => AnyRef =
-          connection => handler(using connection.asInstanceOf[HttpConnection])
-        val handler0: AnyRef = handler1.asInstanceOf[AnyRef]
+        val scope1: AnyRef => Unit =
+          session => scope(using session.asInstanceOf[Http2Session^])
+        val scope0: AnyRef = scope1.asInstanceOf[AnyRef]
         // The (capability-typed) Loggable evidence crosses as an `AnyRef` rim too.
         val loggable0: AnyRef = summon[(HttpServerEvent is Loggable)^].asInstanceOf[AnyRef]
 
@@ -316,13 +345,35 @@ extends RequestServable:
               try
                 socket1.setSoTimeout(idleTimeout)
 
-                val h = handler0.asInstanceOf[AnyRef => AnyRef]
+                val in = socket1.getInputStream.nn
+                val out = socket1.getOutputStream.nn
+                given HttpServerEvent is Loggable = loggable0.asInstanceOf[HttpServerEvent is Loggable]
+                val scope2 = scope0.asInstanceOf[AnyRef => Unit]
+                val self1 = self.asInstanceOf[SocketServer]
 
-                self.asInstanceOf[SocketServer]
-                . serveConnection
-                    (h(summon[HttpConnection].asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
-                    (socket1.getInputStream.nn, socket1.getOutputStream.nn)
-                    (using loggable0.asInstanceOf[HttpServerEvent is Loggable])
+                // A TLS socket may have negotiated `h2` by ALPN; force the
+                // handshake to learn the protocol, then dispatch to the native
+                // HTTP/2 engine. Everything else (plaintext, or ALPN `http/1.1`)
+                // takes the HTTP/1.1 keep-alive path. Either way the connection is
+                // one session scope.
+                val protocol: Text = socket1 match
+                  case tls: jns.SSLSocket =>
+                    safely(tls.startHandshake())
+                    Optional(tls.getApplicationProtocol).let(_.tt).or(t"")
+
+                  case _ =>
+                    t""
+
+                if protocol == t"h2" then Http2Serve.serveSession(scope0, in, out, port)
+                else
+                  // An HTTP/1.1 keep-alive connection is also a per-connection
+                  // scope; its session `handle` serves the connection's requests.
+                  val session: Http2Session^ = new Http2Session:
+                    def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection})
+                    :   Unit =
+                      self1.serveConnection(handler)(in, out)
+
+                  scope2(session.asInstanceOf[AnyRef])
 
               finally safely(socket1.close())
 

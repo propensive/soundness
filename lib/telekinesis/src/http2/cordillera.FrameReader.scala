@@ -34,6 +34,7 @@ package cordillera
 
 import anticipation.{Data as Bytes, *}
 import contingency.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
 import prepositional.*
@@ -95,6 +96,21 @@ extends caps.ExclusiveCapability, caps.Stateful:
     System.arraycopy(buffer, pos, out, 0, n)
     pos += n
     out.immutable(using Unsafe)
+
+  // Consume and validate the given connection preface (RFC 7540 §3.5) ahead of
+  // the first frame — the server role's first read on a new connection. A
+  // mismatch (or a stream ending mid-preface) is a protocol error.
+  update def expectPreface(preface: Bytes)(using Tactic[Http2Error]): Unit =
+    if !ensure(preface.length)
+    then abort(Http2Error(Reason.Protocol(t"bad connection preface")))
+
+    val read: Bytes = slice(preface.length)
+    var index: Int = 0
+
+    while index < preface.length do
+      if read(index) != preface(index)
+      then abort(Http2Error(Reason.Protocol(t"bad connection preface")))
+      index += 1
 
   // Read the next frame, or `Unset` at clean end of stream. The tactic is a plain
   // using-parameter: a context-function result may not hide `this`.

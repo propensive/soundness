@@ -311,6 +311,146 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           client.request(request, endpoint).status.code
       . assert(_ == 200)
 
+      test(m"the server role serves the client role over an in-memory pair"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val server = Http2ServerConnection(serverSide)
+
+          // The serve loop: one handler per accepted stream, echoing the
+          // decoded request's method and target through a real `Http.Response`.
+          // The connection crosses into the daemon as a neutral carrier: a
+          // daemon body may not capture a capability.
+          val serverRef: AnyRef = server.asInstanceOf[AnyRef]
+
+          daemon:
+            safely:
+              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+
+              server0.accepted.stream.records.each: stream =>
+                unsafely:
+                  val entries = stream.headers.await()
+                  val request = PseudoHeaders.requestOf(entries, () => Http.emptyBody())
+
+                  // A `Data` (byte) body selects the `Fixed` servable, so the
+                  // response body is a plain fixed stream.
+                  val payload: Data = ascii(t"echo:${request.method.show}:${request.target}")
+                  val response = Http.Response(Http.Ok)(payload)
+
+                  server0.sendHeaders(stream.id, PseudoHeaders.entries(response), false)
+                  server0.sendData(stream.id, response.body.stream.memoize, true)
+
+          val client = Http2Connection(clientSide)
+          val serverStarted = async(server.start())
+          client.start()
+          serverStarted.await()
+
+          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/hello", Nil,
+              () => Http.emptyBody())
+
+          val (_, response) = client.fetch(request, t"http", t"unix")
+          val body = response.body.stream.memoize.utf8
+          client.close()
+          // Stop the server's reader/writer and the serve loop (via
+          // `accepted.stop()`), so the enclosing `supervise` can return.
+          server.close()
+          body
+
+      . assert(_ == t"echo:GET:/hello")
+
+      test(m"the server role emits response trailers the client reads"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val server = Http2ServerConnection(serverSide)
+          val serverRef: AnyRef = server.asInstanceOf[AnyRef]
+
+          daemon:
+            safely:
+              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+
+              server0.accepted.stream.records.each: stream =>
+                unsafely:
+                  stream.headers.await()
+                  // HEADERS + DATA left open, then a trailing HEADERS block
+                  // (gRPC status) closes the stream.
+                  val head = List(HpackEntry(t":status", t"200"))
+                  server0.sendHeaders(stream.id, head, endStream = false)
+                  server0.sendData(stream.id, ascii(t"body"), endStream = false)
+                  server0.sendTrailers(stream.id, List(HpackEntry(t"grpc-status", t"0")))
+
+          val client = Http2Connection(clientSide)
+          val serverStarted = async(server.start())
+          client.start()
+          serverStarted.await()
+
+          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/call", Nil,
+              () => Stream(ascii(t"ping")))
+
+          val (stream, response) = client.fetch(request, t"http", t"unix")
+          val body = response.body.stream.memoize.utf8
+          val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
+          client.close()
+          server.close()
+          (body, grpcStatus.getOrElse(t"?"))
+
+      . assert(_ == (t"body", t"0"))
+
+      test(m"a flow window drains in bounded chunks and blocks until replenished"):
+        supervise:
+          val window = FlowWindow(10)
+          val a = window.acquire(4)    // all requested: 4
+          val b = window.acquire(100)  // capped at the remaining 6
+
+          // The window is now empty; this acquire blocks until `release` tops it
+          // up. The result is 3 whichever way `release` and the blocked `acquire`
+          // interleave, so the test needs no timing.
+          val blocked: Promise[Int] = Promise()
+          async(blocked.offer(window.acquire(5)))
+          window.release(3)
+          val c = blocked.await()
+
+          (a, b, c)
+
+      . assert(_ == (4, 6, 3))
+
+      test(m"a response larger than the connection window streams intact"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val server = Http2ServerConnection(serverSide)
+          val serverRef: AnyRef = server.asInstanceOf[AnyRef]
+
+          // A body well over the 65535-byte connection window, so the server
+          // must split DATA frames and wait for the client's WINDOW_UPDATEs.
+          val size = 200000
+          val payload: Data = IArray.tabulate(size)(i => (i%256).toByte)
+          val payloadRef: AnyRef = payload.asInstanceOf[AnyRef]
+
+          daemon:
+            safely:
+              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+              val body = payloadRef.asInstanceOf[Data]
+
+              server0.accepted.stream.records.each: stream =>
+                unsafely:
+                  stream.headers.await()
+                  server0.sendHeaders(stream.id, List(HpackEntry(t":status", t"200")), false)
+                  server0.sendData(stream.id, body, endStream = true)
+
+          val client = Http2Connection(clientSide)
+          val serverStarted = async(server.start())
+          client.start()
+          serverStarted.await()
+
+          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/big", Nil,
+              () => Http.emptyBody())
+
+          val (_, response) = client.fetch(request, t"http", t"unix")
+          val received = response.body.stream.memoize
+          client.close()
+          server.close()
+          (received.length, received.to(List) == payload.to(List))
+
+      . assert(_ == (200000, true))
+
       test(m"a session lends one connection to several multiplexed requests"):
         supervise:
           val (clientSide, serverSide) = pair()

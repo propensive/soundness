@@ -261,6 +261,120 @@ object Tests extends Suite(m"Scintillate tests"):
 
         . assert(_.contains(t"secure"))
 
+      suite(m"Native HTTP/2 server"):
+        // A throwaway self-signed certificate, shared by the h2 tests below.
+        def serverContext(): javax.net.ssl.SSLContext =
+          val dir = java.nio.file.Files.createTempDirectory("scintillate-h2").nn
+          val path = dir.resolve("test.p12").nn.toString.nn
+
+          val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
+              "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
+              "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
+
+          keytool.redirectErrorStream(true)
+          keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
+          keytool.start().nn.waitFor()
+
+          val password = "changeit".toCharArray.nn
+          val keystore = java.security.KeyStore.getInstance("PKCS12").nn
+          keystore.load(java.io.FileInputStream(path), password)
+          val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
+          keyManagers.init(keystore, password)
+          val context = javax.net.ssl.SSLContext.getInstance("TLS").nn
+          context.init(keyManagers.getKeyManagers, null, null)
+          context
+
+        // A client SSL context that trusts any certificate.
+        def trustAllContext(): javax.net.ssl.SSLContext =
+          val trustManager = new javax.net.ssl.X509TrustManager:
+            type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+            def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
+            def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
+            def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
+
+          val context = javax.net.ssl.SSLContext.getInstance("TLS").nn
+          context.init(null, scala.Array(trustManager), java.security.SecureRandom())
+          context
+
+        // The JDK HTTP client negotiates ALPN and speaks HTTP/2 automatically
+        // over TLS, so it exercises our server against a reference h2 client.
+        test(m"serves an HTTP/2 request negotiated by ALPN"):
+          val port = freePort()
+
+          val server =
+            SocketServer(port, ssl = serverContext()).handle(Http.Response(Http.Ok)(t"h2-secure"))
+
+          val client = java.net.http.HttpClient.newBuilder.nn
+            . sslContext(trustAllContext()).nn
+            . version(java.net.http.HttpClient.Version.HTTP_2).nn
+            . build.nn
+
+          val request = java.net.http.HttpRequest.newBuilder.nn
+            . uri(java.net.URI.create(s"https://localhost:$port/").nn).nn
+            . build.nn
+
+          val response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString.nn).nn
+          server.cancel()
+          (response.version.nn.toString.nn.tt, response.body.nn.tt)
+
+        . assert(_ == (t"HTTP_2", t"h2-secure"))
+
+        test(m"serves several HTTP/2 requests on one multiplexed connection"):
+          val port = freePort()
+
+          val server = SocketServer(port, ssl = serverContext()).handle:
+            Http.Response(Http.Ok)(t"multiplexed")
+
+          val client = java.net.http.HttpClient.newBuilder.nn
+            . sslContext(trustAllContext()).nn
+            . version(java.net.http.HttpClient.Version.HTTP_2).nn
+            . build.nn
+
+          def fetch(): Text =
+            val request = java.net.http.HttpRequest.newBuilder.nn
+              . uri(java.net.URI.create(s"https://localhost:$port/").nn).nn
+              . build.nn
+
+            client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString.nn).nn.body.nn.tt
+
+          val results = List(fetch(), fetch(), fetch())
+          server.cancel()
+          results
+
+        . assert(_ == List(t"multiplexed", t"multiplexed", t"multiplexed"))
+
+        test(m"a session shares per-connection state across its streams"):
+          val port = freePort()
+
+          // The scope sets up a per-connection counter, shared by every stream
+          // handled on that connection; capture checking keeps it from leaking
+          // to another connection.
+          val server = SocketServer(port, ssl = serverContext()).handleSession: session ?=>
+            val counter = java.util.concurrent.atomic.AtomicInteger(0)
+
+            session.handle:
+              Http.Response(Http.Ok)(t"${counter.incrementAndGet}")
+
+          val client = java.net.http.HttpClient.newBuilder.nn
+            . sslContext(trustAllContext()).nn
+            . version(java.net.http.HttpClient.Version.HTTP_2).nn
+            . build.nn
+
+          def fetch(): Int =
+            val request = java.net.http.HttpRequest.newBuilder.nn
+              . uri(java.net.URI.create(s"https://localhost:$port/").nn).nn
+              . build.nn
+
+            client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString.nn).nn.body.nn.toInt
+
+          // Three requests reuse the one pooled HTTP/2 connection, so the shared
+          // counter yields three distinct values.
+          val results = List(fetch(), fetch(), fetch())
+          server.cancel()
+          results.sorted
+
+        . assert(_ == List(1, 2, 3))
+
     // Drive the connection loop entirely in memory — no socket, no threads — by
     // feeding request bytes through `serveConnection` and capturing the response.
     def inProcess(handler: HttpConnection ?=> Http.Response, request: Text): Text =

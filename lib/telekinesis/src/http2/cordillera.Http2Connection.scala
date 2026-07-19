@@ -115,7 +115,7 @@ object Http2Connection:
 
         true
 
-      case Frame.WindowUpdate(_, _) | Frame.Continuation(_, _, _) =>
+      case Frame.WindowUpdate(_, _) | Frame.Continuation(_, _, _) | Frame.Ignored(_, _) =>
         true
 
 
