@@ -2,17 +2,23 @@
 
 Anthology structures compilation around two tiers. A _universe_ is the intermediate
 representation a compilation emits, and hence the ecosystem of library artifacts it can link
-with: `Universe.Bytecode` (JVM classfiles), `Universe.Sjsir` (Scala.js IR) and `Universe.Nir`
+with: `Universe.Classfile` (JVM classfiles), `Universe.Sjsir` (Scala.js IR) and `Universe.Nir`
 (Scala Native IR). An _artifact_ is a linked end product: `Artifact.Jar` (an executable JAR,
-bound to the JDK), `Artifact.Js` (a JavaScript module or script, bound to a JavaScript host),
-`Artifact.Wasm` (a core WebAssembly module with JavaScript glue), `Artifact.Wasi[version]` (a
-standalone WebAssembly artifact bound to a version of the WASI system interface: `0.1`, `0.2` or
-`0.3`) and `Artifact.Binary` (a machine-code executable).
+bound to the JDK), `Artifact.Dex` (Dalvik bytecode for Android—nameable, though no linkage yet
+exists for it), `Artifact.Js[module]` (JavaScript, bound to a JavaScript host through the
+`"es"`, `"commonjs"` or `"script"` module system), `Artifact.Wasm` (a core WebAssembly module
+with JavaScript glue), `Artifact.Wasi[version]` (a standalone WebAssembly artifact bound to a
+version of the WASI system interface: `0.1`, `0.2` or `0.3`) and `Artifact.Binary` (a
+machine-code executable).
+
+Where a variant changes an artifact's binding contract—the module system a JavaScript host
+imports it through, or the WASI interface version—it is part of the artifact's type; open-ended
+refinements such as native target triples or ECMAScript versions remain link options.
 
 Each artifact is produced from exactly one universe, witnessed by a `Provenance` instance:
-`Jar` from `Bytecode`; `Js`, `Wasm` and `Wasi` from `Sjsir`; `Binary` from `Nir`. The sjsir
-universe defers the choice among its three artifacts until link time, so one compilation may be
-linked as any of them.
+`Jar` and `Dex` from `Classfile`; `Js`, `Wasm` and `Wasi` from `Sjsir`; `Binary` from `Nir`.
+The sjsir universe defers the choice among its artifacts until link time, so one compilation
+may be linked as any of them.
 
 ### Compiling
 
@@ -20,13 +26,13 @@ A Scala compiler is represented by a `Scalac` value, parameterized by the compil
 the universe it compiles into, with options whose validity is checked against the version at
 compile time:
 ```scala
-val scalac: Scalac[3.8, Universe.Bytecode] = Scalac[3.8](List(scalacOptions.experimental))
+val scalac: Scalac[3.8, Universe.Classfile] = Scalac[3.8](List(scalacOptions.experimental))
 ```
 
-The single-type-argument form targets the bytecode universe. `targeting` selects a universe
+The single-type-argument form targets the classfile universe. `targeting` selects a universe
 explicitly, while `producing` selects it via the artifact you ultimately want:
 ```scala
-val forJs = Scalac[3.8](options).producing[Artifact.Js]            // Scalac[3.8, Universe.Sjsir]
+val forJs = Scalac[3.8](options).producing[Artifact.Js["es"]]      // Scalac[3.8, Universe.Sjsir]
 val forNative = Scalac[3.8](options).targeting[Universe.Nir]
 ```
 
@@ -46,7 +52,7 @@ described by a `Compilation`, tagged with its universe:
 val compilation: Compilation[Universe.Sjsir] = Compilation(out, classpath)
 ```
 
- - `Bundler.bundle(compilation, jarfile, main)` produces an executable JAR from a bytecode
+ - `Bundler.bundle(compilation, jarfile, main)` produces an executable JAR from a classfile
    compilation
  - `Bundler.library(compilation, jarfile)` produces a library JAR from a compilation in _any_
    universe—classfiles, `.sjsir` or `.nir`—for downstream assembly
@@ -58,18 +64,18 @@ val compilation: Compilation[Universe.Sjsir] = Compilation(out, classpath)
 A `Linker` is parameterized by the artifact it produces, with options whose validity is checked
 against that artifact at compile time, mirroring `scalacOptions`:
 ```scala
-val linker = Linker[Artifact.Js]
-  ( List(linkerOptions.moduleKind.esModule, linkerOptions.optimize.fast),
+val linker = Linker[Artifact.Js["es"]]
+  ( List(linkerOptions.optimize.fast),
     List(Linker.EntryPoint(fqcn"com.example.Main")) )
 
 val mainJs: Path on Linux = linker.link(compilation, out)
 ```
 
-The universe is inferred: linking `Artifact.Js` demands a `Compilation[Universe.Sjsir]`, and
-supplying a compilation from any other universe is a compile error. Options such as
-`moduleKind.*` apply only to `Artifact.Js` (the WebAssembly artifacts mandate their own module
-kinds), while `checkIr`, `sourceMaps`, `esVersion.*` and `optimize.*` apply to every sjsir
-artifact; a misapplied option is a compile error.
+The universe is inferred: linking `Artifact.Js[module]` demands a
+`Compilation[Universe.Sjsir]`, and supplying a compilation from any other universe is a compile
+error. The module system is part of the artifact's type rather than an option, since it changes
+how a host consumes the artifact. Options such as `checkIr`, `sourceMaps`, `esVersion.*` and
+`optimize.*` apply to every sjsir artifact; a misapplied option is a compile error.
 
 ### Linking WASI artifacts
 
@@ -94,7 +100,7 @@ is a flat, libc-style syscall interface on core modules; `0.2` is the component 
 adds native asynchrony. Only `0.2` is currently linkable—requesting `Artifact.Wasi[0.3]` is a
 compile error until a `Linkage` for it exists.
 
-`Artifact.Js` and `Artifact.Wasm` require no native tooling: the linker is an ordinary JVM
+`Artifact.Js[module]` and `Artifact.Wasm` require no native tooling: the linker is an ordinary JVM
 library.
 
 ### Linking native binaries

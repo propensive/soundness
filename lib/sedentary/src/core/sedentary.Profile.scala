@@ -194,7 +194,7 @@ extends Rig:
     device.deploy(jarfile, uuid)
     jarfile
 
-  protected val scalac: Scalac[3.7, Universe.Bytecode] = Scalac(List(scalacOptions.experimental))
+  protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
     stage.remote: input =>

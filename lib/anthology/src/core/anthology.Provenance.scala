@@ -35,10 +35,14 @@ package anthology
 import prepositional.*
 
 object Provenance:
-  given jar: (Provenance[Artifact.Jar] from Universe.Bytecode):
-    type Origin = Universe.Bytecode
+  given jar: (Provenance[Artifact.Jar] from Universe.Classfile):
+    type Origin = Universe.Classfile
 
-  given js: (Provenance[Artifact.Js] from Universe.Sjsir):
+  given dex: (Provenance[Artifact.Dex] from Universe.Classfile):
+    type Origin = Universe.Classfile
+
+  given js: [module <: Artifact.Js.Modules]
+  =>  (Provenance[Artifact.Js[module]] from Universe.Sjsir):
     type Origin = Universe.Sjsir
 
   given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):

@@ -51,16 +51,19 @@ private type JnfPath = java.nio.file.Path
 
 // Unexecuted definitions whose successful compilation assert `Provenance`'s tier structure:
 // choosing an artifact determines the universe a compilation must inhabit.
-def producingWasi(scalac: Scalac[3.8, Universe.Bytecode]): Scalac[3.8, Universe.Sjsir] =
-  scalac.targeting[Universe.Bytecode].producing[Artifact.Wasi[0.2]]
+def producingWasi(scalac: Scalac[3.8, Universe.Classfile]): Scalac[3.8, Universe.Sjsir] =
+  scalac.targeting[Universe.Classfile].producing[Artifact.Wasi[0.2]]
 
-def producingBinary(scalac: Scalac[3.8, Universe.Bytecode]): Scalac[3.8, Universe.Nir] =
+def producingBinary(scalac: Scalac[3.8, Universe.Classfile]): Scalac[3.8, Universe.Nir] =
   scalac.producing[Artifact.Binary]
+
+def producingDex(scalac: Scalac[3.8, Universe.Sjsir]): Scalac[3.8, Universe.Classfile] =
+  scalac.producing[Artifact.Dex]
 
 object Tests extends Suite(m"Anthology Tests"):
   def run(): Unit =
-    test(m"A single-type-argument Scalac targets the bytecode universe"):
-      val scalac: Scalac[3.6, Universe.Bytecode] = Scalac[3.6](Nil)
+    test(m"A single-type-argument Scalac targets the classfile universe"):
+      val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](Nil)
       scalac.commandLineArguments
     . assert(_ == Nil)
 
@@ -69,21 +72,21 @@ object Tests extends Suite(m"Anthology Tests"):
       . commandLineArguments
     . assert(_ == List(t"-experimental"))
 
-    test(m"The bytecode universe adds no compiler flags"):
-      summon[Universe.Emission[Universe.Bytecode]].flags
+    test(m"The classfile universe adds no compiler flags"):
+      summon[Universe.Emission[Universe.Classfile]].flags
     . assert(_ == Nil)
 
     test(m"The sjsir universe adds the -scalajs flag"):
       summon[Universe.Emission[Universe.Sjsir]].flags
     . assert(_ == List(t"-scalajs"))
 
-    test(m"Module-kind options configure the linker"):
-      linkerOptions.moduleKind.commonJs.edit(StandardConfig()).asInstanceOf[StandardConfig]
+    test(m"The module system is part of the JavaScript artifact's type"):
+      summon[Linkage[Artifact.Js["commonjs"]]].initial.asInstanceOf[StandardConfig]
       . moduleKind
     . assert(_ == ModuleKind.CommonJSModule)
 
     test(m"The JavaScript linkage produces an ES module"):
-      summon[Linkage[Artifact.Js]].initial.asInstanceOf[StandardConfig].moduleKind
+      summon[Linkage[Artifact.Js["es"]]].initial.asInstanceOf[StandardConfig].moduleKind
     . assert(_ == ModuleKind.ESModule)
 
     test(m"The browser Wasm linkage enables the WebAssembly backend"):
@@ -91,9 +94,14 @@ object Tests extends Suite(m"Anthology Tests"):
       . esFeatures.useWebAssembly
     . assert(_ == true)
 
-    test(m"A module-kind option is not applicable to a Wasm linker"):
+    test(m"An unknown module system is not a JavaScript artifact"):
       demilitarize:
-        Linker[Artifact.Wasm](List(linkerOptions.moduleKind.esModule))
+        summon[Linkage[Artifact.Js["amd"]]]
+    . assert(_.nonEmpty)
+
+    test(m"Dex is nameable but not linkable"):
+      demilitarize:
+        summon[Linkage[Artifact.Dex]]
     . assert(_.nonEmpty)
 
     test(m"A WASI linkage is not available without toolchain and WIT world"):
@@ -108,10 +116,10 @@ object Tests extends Suite(m"Anthology Tests"):
         summon[Linkage[Artifact.Wasi[0.3]]]
     . assert(_.nonEmpty)
 
-    test(m"A bytecode compilation cannot be linked as JavaScript"):
+    test(m"A classfile compilation cannot be linked as JavaScript"):
       demilitarize:
-        val compilation: Compilation[Universe.Bytecode] = ???
-        Linker[Artifact.Js](Nil).link(compilation, ???)
+        val compilation: Compilation[Universe.Classfile] = ???
+        Linker[Artifact.Js["es"]](Nil).link(compilation, ???)
     . assert(_.nonEmpty)
 
     test(m"An sjsir compilation is not a native compilation"):
@@ -122,7 +130,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
     test(m"A native option is not applicable to a JavaScript linker"):
       demilitarize:
-        Linker[Artifact.Js](List(nativeOptions.gc.immix))
+        Linker[Artifact.Js["es"]](List(nativeOptions.gc.immix))
     . assert(_.nonEmpty)
 
     test(m"An sjsir option is not applicable to a native linker"):
@@ -152,7 +160,7 @@ object Tests extends Suite(m"Anthology Tests"):
 
     test(m"Any universe's compilation can be bundled as a library JAR"):
       demilitarize:
-        def bytecode(compilation: Compilation[Universe.Bytecode]) =
+        def classfile(compilation: Compilation[Universe.Classfile]) =
           Bundler.library(compilation, Unset)
         def nir(compilation: Compilation[Universe.Nir]) =
           Bundler.library(compilation, Unset)
@@ -172,7 +180,7 @@ object Tests extends Suite(m"Anthology Tests"):
         Files.createDirectories(Paths.get(out.encode.s))
 
         val process =
-          Scalac[3.8](Nil).producing[Artifact.Js]
+          Scalac[3.8](Nil).producing[Artifact.Js["es"]]
             (classpath)(Map(t"hello.scala" -> source), out)
 
         test(m"A portable compilation succeeds"):
@@ -187,9 +195,7 @@ object Tests extends Suite(m"Anthology Tests"):
         val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
         test(m"Linking as JavaScript produces a nonempty main.js"):
-          Linker[Artifact.Js]
-            ( List(linkerOptions.moduleKind.esModule),
-              List(Linker.EntryPoint(Fqcn(t"Main"))) )
+          Linker[Artifact.Js["es"]](Nil, List(Linker.EntryPoint(Fqcn(t"Main"))))
           . link(Compilation(out, classpath), linked)
           . pipe: artifact =>
               Files.size(Paths.get(artifact.encode.s))

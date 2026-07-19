@@ -105,8 +105,14 @@ object Linkage:
       catch case suc.NonFatal(error) =>
         abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
 
-  given js: (Linkage[Artifact.Js] from Universe.Sjsir) =
+  given jsEs: (Linkage[Artifact.Js["es"]] from Universe.Sjsir) =
     Sjs(_.withModuleKind(ModuleKind.ESModule), _ / "main.js")
+
+  given jsCommonJs: (Linkage[Artifact.Js["commonjs"]] from Universe.Sjsir) =
+    Sjs(_.withModuleKind(ModuleKind.CommonJSModule), _ / "main.js")
+
+  given jsScript: (Linkage[Artifact.Js["script"]] from Universe.Sjsir) =
+    Sjs(_.withModuleKind(ModuleKind.NoModule), _ / "main.js")
 
   given wasm: (Linkage[Artifact.Wasm] from Universe.Sjsir) =
     Sjs
