@@ -32,23 +32,13 @@
                                                                                                   */
 package anthology
 
-import org.scalajs.linker.interface.{ESVersion, ModuleKind, StandardConfig}
+import org.scalajs.linker.interface.{ESVersion, StandardConfig}
 
 object linkerOptions:
   private def sjs[artifact <: Artifact.Sjs](edit: StandardConfig => StandardConfig)
   :   Linker.Option[artifact] =
 
     Linker.Option(edit)
-
-  object moduleKind:
-    val esModule: Linker.Option[Artifact.Js] =
-      sjs(_.withModuleKind(ModuleKind.ESModule))
-
-    val commonJs: Linker.Option[Artifact.Js] =
-      sjs(_.withModuleKind(ModuleKind.CommonJSModule))
-
-    val noModule: Linker.Option[Artifact.Js] =
-      sjs(_.withModuleKind(ModuleKind.NoModule))
 
   val checkIr: Linker.Option[Artifact.Sjs] = sjs(_.withCheckIR(true))
   val sourceMaps: Linker.Option[Artifact.Sjs] = sjs(_.withSourceMap(true))

@@ -73,10 +73,10 @@ object Bundler:
     assemble(classpath(directory), jarfile0.or(directory.peer("tmpfile.jar")), main)
 
 
-  // Bundles a bytecode compilation, together with the classpath it was compiled against, as an
+  // Bundles a classfile compilation, together with the classpath it was compiled against, as an
   // executable JAR file.
   def bundle
-    ( compilation: Compilation[Universe.Bytecode],
+    ( compilation: Compilation[Universe.Classfile],
       jarfile0:    Optional[Path on Linux],
       main:        Optional[Fqcn] )
   :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =

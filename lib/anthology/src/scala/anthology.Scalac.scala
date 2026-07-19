@@ -67,10 +67,10 @@ object Scalac:
   def compiler(): dtd.Compiler = Scala3
 
   // Preserves the single-type-argument call form, `Scalac[3.6](options)`, which targets the
-  // JVM bytecode universe.
-  @targetName("applyBytecode")
+  // classfile universe.
+  @targetName("applyClassfile")
   def apply[version <: Versions](options: List[Option[version]])
-  :   Scalac[version, Universe.Bytecode] =
+  :   Scalac[version, Universe.Classfile] =
 
     new Scalac(options)
 

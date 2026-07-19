@@ -40,6 +40,6 @@ import serpentine.*
 // A token pairing a compilation's output directory with the classpath it was compiled against,
 // tagged with the universe it inhabits. A `Compilation[Universe.Sjsir]` may be linked as any
 // sjsir artifact (JavaScript, browser Wasm or a WASI component), a `Compilation[Universe.Nir]`
-// as a native binary for any target, and a `Compilation[Universe.Bytecode]` bundled as an
+// as a native binary for any target, and a `Compilation[Universe.Classfile]` bundled as an
 // executable JAR.
 case class Compilation[universe <: Universe](out: Path on Linux, classpath: LocalClasspath)

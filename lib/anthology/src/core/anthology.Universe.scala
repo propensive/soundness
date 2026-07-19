@@ -37,7 +37,7 @@ import gossamer.*
 import serpentine.*
 
 object Universe:
-  type Bytecode = Universe.Bytecode.type
+  type Classfile = Universe.Classfile.type
   type Sjsir = Universe.Sjsir.type
   type Nir = Universe.Nir.type
 
@@ -45,7 +45,7 @@ object Universe:
   trait Emission[universe <: Universe]:
     def flags: List[Text]
 
-  given bytecode: Emission[Bytecode]:
+  given classfile: Emission[Classfile]:
     def flags: List[Text] = Nil
 
   given sjsir: Emission[Sjsir]:
@@ -58,8 +58,8 @@ object Universe:
       def flags: List[Text] = List(t"-Xplugin:${plugin.jar.encode}")
 
 // The universe a compilation inhabits: the intermediate representation it emits, and hence the
-// ecosystem of library artifacts it can link with. `Bytecode` is JVM classfiles; `Sjsir` is
+// ecosystem of library artifacts it can link with. `Classfile` is JVM classfiles; `Sjsir` is
 // Scala.js IR, whose linked representation (JavaScript, browser Wasm or a WASI component) is
 // chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM.
 enum Universe:
-  case Bytecode, Sjsir, Nir
+  case Classfile, Sjsir, Nir
