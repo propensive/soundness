@@ -574,6 +574,126 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       server.stop(0)
 
+    // The `https` path of the native backend: ALPN negotiation during the TLS
+    // handshake selects the HTTP/2 or HTTP/1.1 driver over the same socket.
+    suite(m"Native TLS backend"):
+      import java.net.InetSocketAddress
+      import com.sun.net.httpserver as csnh
+
+      // A throwaway self-signed certificate, generated with the JDK's keytool.
+      val dir = java.nio.file.Files.createTempDirectory("telekinesis-tls").nn
+      val path = dir.resolve("test.p12").nn.toString.nn
+
+      val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
+          "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
+          "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
+
+      keytool.redirectErrorStream(true)
+      keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
+      keytool.start().nn.waitFor()
+
+      val password = "changeit".toCharArray.nn
+      val keystore = java.security.KeyStore.getInstance("PKCS12").nn
+      keystore.load(java.io.FileInputStream(path), password)
+      val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
+      keyManagers.init(keystore, password)
+      val serverContext = javax.net.ssl.SSLContext.getInstance("TLS").nn
+      serverContext.init(keyManagers.getKeyManagers, null, null)
+
+      // A client that trusts any certificate, so the self-signed one is accepted.
+      val trustManager = new javax.net.ssl.X509TrustManager:
+        type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+        def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
+        def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
+        def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
+
+      val clientContext = javax.net.ssl.SSLContext.getInstance("TLS").nn
+      clientContext.init(null, scala.Array(trustManager), java.security.SecureRandom())
+
+      given Tls = Tls(clientContext, verify = false)
+
+      import socketBackends.virtualMachine
+
+      val backend: Http.Backend = httpBackends.native
+
+      test(m"An ALPN-less server falls back to HTTP/1.1 over TLS"):
+        val server = csnh.HttpsServer.create(InetSocketAddress("127.0.0.1", 0), 0).nn
+        server.setHttpsConfigurator(csnh.HttpsConfigurator(serverContext))
+
+        server.createContext("/tls", { exchange =>
+          val data = "secure-native".getBytes("UTF-8").nn
+          exchange.nn.sendResponseHeaders(200, data.length)
+          exchange.nn.getResponseBody.nn.write(data)
+          exchange.nn.close() })
+
+        server.start()
+        val port = server.getAddress.nn.getPort
+
+        val response =
+          backend.request(t"https://localhost:$port/tls", Http.Get, Nil, () => Http.emptyBody())
+
+        server.stop(0)
+        (response.status, response.body.stream.memoize.utf8)
+
+      . assert(_ == (Http.Ok, t"secure-native"))
+
+      test(m"ALPN selects h2 and the request is served over HTTP/2"):
+        import cordillera.{FrameReader, Hpack, HpackEntry}
+        import cordillera.Http2.Frame
+
+        val serverSocket =
+          serverContext.getServerSocketFactory.nn.createServerSocket(0).nn
+          . asInstanceOf[javax.net.ssl.SSLServerSocket]
+
+        val params = serverSocket.getSSLParameters.nn
+        params.setApplicationProtocols(scala.Array[String | Null]("h2"))
+        serverSocket.setSSLParameters(params)
+        serverSocket.setSoTimeout(10000)
+        val port = serverSocket.getLocalPort
+
+        // A minimal frame-level HTTP/2 server for a single connection: exchange
+        // SETTINGS, then answer the request HEADERS with a 200 and a DATA frame.
+        val serverThread = java.lang.Thread.ofVirtual().nn.start({ () =>
+          try
+            val socket = serverSocket.accept().nn
+            val in = socket.getInputStream.nn
+            val out = socket.getOutputStream.nn
+
+            def write(frame: Frame): Unit =
+              out.write(frame.serialize.mutable(using Unsafe))
+              out.flush()
+
+            write(Frame.Settings(Nil, ack = false))
+            in.readNBytes(24) // the client connection preface
+
+            unsafely:
+              val source = summon[java.io.InputStream is Streamable by Data over Credit].stream(in)
+              val reader = FrameReader(source)
+              val hpack = Hpack()
+              var continue = true
+
+              while continue do (reader.next(): @unchecked) match
+                case Unset        => continue = false
+                case frame: Frame => frame match
+                  case Frame.Settings(_, false) =>
+                    write(Frame.Settings(Nil, ack = true))
+
+                  case Frame.Headers(id, _, _, _) =>
+                    val head = hpack.encode(List(HpackEntry(t":status", t"200")))
+                    write(Frame.Headers(id, head, false, true))
+                    write(Frame.Data(id, t"h2-native".in[Data], true))
+
+                  case _ => ()
+          catch case error: Exception => () }).nn
+
+        val response =
+          backend.request(t"https://localhost:$port/", Http.Get, Nil, () => Http.emptyBody())
+
+        serverSocket.close()
+        (response.status, response.body.stream.memoize.utf8)
+
+      . assert(_ == (Http.Ok, t"h2-native"))
+
     // The suites below depend on external services (httpbin.org, badssl.com)
     // whose availability and configuration fluctuate; they are aspirational
     // pending #676, which replaces them with assertions about telekinesis's
