@@ -73,10 +73,10 @@ object Bundler:
     assemble(classpath(directory), jarfile0.or(directory.peer("tmpfile.jar")), main)
 
 
-  // Bundles a JVM compilation, together with the classpath it was compiled against, as an
+  // Bundles a bytecode compilation, together with the classpath it was compiled against, as an
   // executable JAR file.
   def bundle
-    ( compilation: Compilation[Backend.Jvm],
+    ( compilation: Compilation[Universe.Bytecode],
       jarfile0:    Optional[Path on Linux],
       main:        Optional[Fqcn] )
   :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
@@ -85,10 +85,11 @@ object Bundler:
     assemble(LocalClasspath(entries*), jarfile0.or(compilation.out.peer("tmpfile.jar")), main)
 
 
-  // Bundles a linkable compilation's output—its `.sjsir` or `.nir` files alongside its
-  // classfiles—as a library JAR for downstream assembly: the JAR is a valid classpath entry both
-  // for further compilations and for a later `Linker`.
-  def library(compilation: Compilation[Backend.Linked], jarfile0: Optional[Path on Linux])
+  // Bundles a compilation's output—classfiles, and any `.sjsir` or `.nir` alongside them—as a
+  // library JAR for downstream assembly: the JAR is a valid classpath entry for further
+  // compilations in the same universe, and for a later `Linker`.
+  def library[universe <: Universe]
+    ( compilation: Compilation[universe], jarfile0: Optional[Path on Linux] )
   :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
 
     val entries = List(Classpath.Directory(compilation.out))

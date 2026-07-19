@@ -66,24 +66,34 @@ object Scalac:
   def refresh(): Unit = mutex { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
-  // Preserves the single-type-argument call form, `Scalac[3.6](options)`, which targets the JVM.
-  @targetName("applyJvm")
-  def apply[version <: Versions](options: List[Option[version]]): Scalac[version, Backend.Jvm] =
+  // Preserves the single-type-argument call form, `Scalac[3.6](options)`, which targets the
+  // JVM bytecode universe.
+  @targetName("applyBytecode")
+  def apply[version <: Versions](options: List[Option[version]])
+  :   Scalac[version, Universe.Bytecode] =
+
     new Scalac(options)
 
-case class Scalac[version <: Scalac.Versions, backend <: Backend] private
+case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   ( options: List[Scalac.Option[version]] ):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
-  def targeting[backend2 <: Backend]: Scalac[version, backend2] = new Scalac(options)
+  def targeting[universe2 <: Universe]: Scalac[version, universe2] = new Scalac(options)
+
+  // Retargets this configuration at the universe from which the given artifact is produced,
+  // for callers who think in terms of the end product rather than its intermediate form.
+  def producing[artifact <: Artifact](using provenance: Provenance[artifact])
+  :   Scalac[version, provenance.Origin] =
+
+    new Scalac(options)
 
 
   def apply
     ( classpath: LocalClasspath )
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
-    ( using System, Monitor, Probate, Backend.Emission[backend] )
+    ( using System, Monitor, Probate, Universe.Emission[universe] )
   :   CompileProcess logs CompileEvent raises CompilerError =
 
     val scalacProcess: CompileProcess = CompileProcess()
@@ -130,7 +140,7 @@ case class Scalac[version <: Scalac.Versions, backend <: Backend] private
         //val jsParams =
 
         val arguments: List[Text] =
-          summon[Backend.Emission[backend]].flags :::
+          summon[Universe.Emission[universe]].flags :::
             List(t"-d", out.generic, t"-classpath", classpath()) :::
             commandLineArguments :::
             List(t"")

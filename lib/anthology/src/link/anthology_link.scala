@@ -35,37 +35,37 @@ package anthology
 import org.scalajs.linker.interface.{ESVersion, ModuleKind, StandardConfig}
 
 object linkerOptions:
-  private def sjs[target <: Backend.Portable](edit: StandardConfig => StandardConfig)
-  :   Linker.Option[target] =
+  private def sjs[artifact <: Artifact.Sjs](edit: StandardConfig => StandardConfig)
+  :   Linker.Option[artifact] =
 
     Linker.Option(edit)
 
   object moduleKind:
-    val esModule: Linker.Option[Backend.Js] =
+    val esModule: Linker.Option[Artifact.Js] =
       sjs(_.withModuleKind(ModuleKind.ESModule))
 
-    val commonJs: Linker.Option[Backend.Js] =
+    val commonJs: Linker.Option[Artifact.Js] =
       sjs(_.withModuleKind(ModuleKind.CommonJSModule))
 
-    val noModule: Linker.Option[Backend.Js] =
+    val noModule: Linker.Option[Artifact.Js] =
       sjs(_.withModuleKind(ModuleKind.NoModule))
 
-  val checkIr: Linker.Option[Backend.Portable] = sjs(_.withCheckIR(true))
-  val sourceMaps: Linker.Option[Backend.Portable] = sjs(_.withSourceMap(true))
+  val checkIr: Linker.Option[Artifact.Sjs] = sjs(_.withCheckIR(true))
+  val sourceMaps: Linker.Option[Artifact.Sjs] = sjs(_.withSourceMap(true))
 
   object esVersion:
-    private def of(version: ESVersion): Linker.Option[Backend.Portable] =
+    private def of(version: ESVersion): Linker.Option[Artifact.Sjs] =
       sjs(_.withESFeatures(_.withESVersion(version)))
 
-    val es2015: Linker.Option[Backend.Portable] = of(ESVersion.ES2015)
-    val es2016: Linker.Option[Backend.Portable] = of(ESVersion.ES2016)
-    val es2017: Linker.Option[Backend.Portable] = of(ESVersion.ES2017)
-    val es2018: Linker.Option[Backend.Portable] = of(ESVersion.ES2018)
-    val es2019: Linker.Option[Backend.Portable] = of(ESVersion.ES2019)
-    val es2020: Linker.Option[Backend.Portable] = of(ESVersion.ES2020)
-    val es2021: Linker.Option[Backend.Portable] = of(ESVersion.ES2021)
-    val es2022: Linker.Option[Backend.Portable] = of(ESVersion.ES2022)
+    val es2015: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2015)
+    val es2016: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2016)
+    val es2017: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2017)
+    val es2018: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2018)
+    val es2019: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2019)
+    val es2020: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2020)
+    val es2021: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2021)
+    val es2022: Linker.Option[Artifact.Sjs] = of(ESVersion.ES2022)
 
   object optimize:
-    val none: Linker.Option[Backend.Portable] = sjs(_.withOptimizer(false))
-    val fast: Linker.Option[Backend.Portable] = sjs(_.withOptimizer(true))
+    val none: Linker.Option[Artifact.Sjs] = sjs(_.withOptimizer(false))
+    val fast: Linker.Option[Artifact.Sjs] = sjs(_.withOptimizer(true))

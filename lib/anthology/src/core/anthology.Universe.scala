@@ -32,90 +32,34 @@
                                                                                                   */
 package anthology
 
-import java.nio.file as jnf
-
-import scala.concurrent.*
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.*
-import scala.scalanative.build.{Build, Config, GC, LTO, Mode, NativeConfig}
-import scala.scalanative.util.Scope
-import scala.util.control as suc
-
-import ambience.*
 import anticipation.*
-import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
 import gossamer.*
-import guillotine.*
-import hellenism.*
-import prepositional.*
 import serpentine.*
-import vacuous.*
 
-// The Scala Native link family. An instance exists only via the probing `apply`, which verifies
-// that the C toolchain (`clang` and `clang++`) the link shells out to is present—so, as with
-// WASI components, a native link whose native tooling is absent is not expressible. Put one in
-// scope with `given NativeLinkage = NativeLinkage()`.
-object NativeLinkage:
-  def apply()(using WorkingDirectory)
-  :   (Linkage[Artifact.Binary] from Universe.Nir) raises ToolchainError =
+object Universe:
+  type Bytecode = Universe.Bytecode.type
+  type Sjsir = Universe.Sjsir.type
+  type Nir = Universe.Nir.type
 
-    new NativeLinkage(probe(t"clang"), probe(t"clang++"))
+  // Determines the additional compiler flags each universe's emission requires.
+  trait Emission[universe <: Universe]:
+    def flags: List[Text]
 
-  private def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
-    safely(mute[ExecEvent](sh"which $tool".exec[Text]())).let(_.trim)
-    . or(abort(ToolchainError(tool)))
+  given bytecode: Emission[Bytecode]:
+    def flags: List[Text] = Nil
 
-class NativeLinkage private (clang: Text, clangpp: Text)
-extends Linkage[Artifact.Binary]:
-  type Origin = Universe.Nir
-  private[anthology] type Form = NativeConfig
+  given sjsir: Emission[Sjsir]:
+    def flags: List[Text] = List(t"-scalajs")
 
-  private[anthology] def initial: NativeConfig =
-    NativeConfig.empty
-    . withClang(jnf.Paths.get(clang.s).nn)
-    . withClangPP(jnf.Paths.get(clangpp.s).nn)
-    . withGC(GC.immix)
-    . withMode(Mode.debug)
-    . withLTO(LTO.none)
-    . withBaseName("main")
+  // NIR is emitted by the Scala Native compiler plugin rather than by a backend built into the
+  // compiler, so compiling into the NIR universe requires evidence of the plugin's location.
+  given nir(using plugin: NirPlugin): Emission[Nir] =
+    new Emission[Nir]:
+      def flags: List[Text] = List(t"-Xplugin:${plugin.jar.encode}")
 
-  private[anthology] def link
-    ( form:        NativeConfig,
-      compilation: Compilation[Universe.Nir],
-      entryPoints: List[Linker.EntryPoint],
-      out:         Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
-
-    val main = entryPoints match
-      case List(entry) => entry.mainClass.text
-      case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
-
-    val entries: List[jnf.Path] =
-      jnf.Paths.get(compilation.out.encode.s).nn ::
-        compilation.classpath.entries.to(List).flatMap:
-          case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
-          case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
-          case _                                   => Nil
-
-    try
-      val outPath = jnf.Paths.get(out.encode.s).nn
-      jnf.Files.createDirectories(outPath)
-      given Scope = Scope.forever
-
-      val config =
-        Config.empty
-        . withBaseDir(outPath.toAbsolutePath.nn)
-        . withMainClass(Some(main.s))
-        . withClassPath(entries)
-        . withModuleName("main")
-        . withCompilerConfig(form)
-
-      val artifact = Await.result(Build.build(config), 1800.seconds)
-      unsafely(artifact.toString.tt.as[Path on Linux])
-
-    catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+// The universe a compilation inhabits: the intermediate representation it emits, and hence the
+// ecosystem of library artifacts it can link with. `Bytecode` is JVM classfiles; `Sjsir` is
+// Scala.js IR, whose linked representation (JavaScript, browser Wasm or a WASI component) is
+// chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM.
+enum Universe:
+  case Bytecode, Sjsir, Nir

@@ -35,24 +35,24 @@ package anthology
 import scala.scalanative.build.{GC, LTO, Mode, NativeConfig}
 
 object nativeOptions:
-  private def native(edit: NativeConfig => NativeConfig): Linker.Option[Backend.Native] =
+  private def native(edit: NativeConfig => NativeConfig): Linker.Option[Artifact.Binary] =
     Linker.Option(edit)
 
-  def target(triple: Triple): Linker.Option[Backend.Native] =
+  def target(triple: Triple): Linker.Option[Artifact.Binary] =
     native(_.withTargetTriple(Some(triple.text.s)))
 
   object gc:
-    val immix: Linker.Option[Backend.Native] = native(_.withGC(GC.immix))
-    val commix: Linker.Option[Backend.Native] = native(_.withGC(GC.commix))
-    val boehm: Linker.Option[Backend.Native] = native(_.withGC(GC.boehm))
-    val none: Linker.Option[Backend.Native] = native(_.withGC(GC.none))
+    val immix: Linker.Option[Artifact.Binary] = native(_.withGC(GC.immix))
+    val commix: Linker.Option[Artifact.Binary] = native(_.withGC(GC.commix))
+    val boehm: Linker.Option[Artifact.Binary] = native(_.withGC(GC.boehm))
+    val none: Linker.Option[Artifact.Binary] = native(_.withGC(GC.none))
 
   object mode:
-    val debug: Linker.Option[Backend.Native] = native(_.withMode(Mode.debug))
-    val releaseFast: Linker.Option[Backend.Native] = native(_.withMode(Mode.releaseFast))
-    val releaseFull: Linker.Option[Backend.Native] = native(_.withMode(Mode.releaseFull))
+    val debug: Linker.Option[Artifact.Binary] = native(_.withMode(Mode.debug))
+    val releaseFast: Linker.Option[Artifact.Binary] = native(_.withMode(Mode.releaseFast))
+    val releaseFull: Linker.Option[Artifact.Binary] = native(_.withMode(Mode.releaseFull))
 
   object lto:
-    val none: Linker.Option[Backend.Native] = native(_.withLTO(LTO.none))
-    val thin: Linker.Option[Backend.Native] = native(_.withLTO(LTO.thin))
-    val full: Linker.Option[Backend.Native] = native(_.withLTO(LTO.full))
+    val none: Linker.Option[Artifact.Binary] = native(_.withLTO(LTO.none))
+    val thin: Linker.Option[Artifact.Binary] = native(_.withLTO(LTO.thin))
+    val full: Linker.Option[Artifact.Binary] = native(_.withLTO(LTO.full))

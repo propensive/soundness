@@ -1,29 +1,38 @@
+### Universes and artifacts
+
+Anthology structures compilation around two tiers. A _universe_ is the intermediate
+representation a compilation emits, and hence the ecosystem of library artifacts it can link
+with: `Universe.Bytecode` (JVM classfiles), `Universe.Sjsir` (Scala.js IR) and `Universe.Nir`
+(Scala Native IR). An _artifact_ is a linked end product: `Artifact.Jar` (an executable JAR,
+bound to the JDK), `Artifact.Js` (a JavaScript module or script, bound to a JavaScript host),
+`Artifact.Wasm` (a core WebAssembly module with JavaScript glue), `Artifact.Wasi[version]` (a
+standalone WebAssembly artifact bound to a version of the WASI system interface: `0.1`, `0.2` or
+`0.3`) and `Artifact.Binary` (a machine-code executable).
+
+Each artifact is produced from exactly one universe, witnessed by a `Provenance` instance:
+`Jar` from `Bytecode`; `Js`, `Wasm` and `Wasi` from `Sjsir`; `Binary` from `Nir`. The sjsir
+universe defers the choice among its three artifacts until link time, so one compilation may be
+linked as any of them.
+
 ### Compiling
 
 A Scala compiler is represented by a `Scalac` value, parameterized by the compiler version and
-the backend it targets, with a list of compiler options whose validity is checked against the
-version at compile time:
+the universe it compiles into, with options whose validity is checked against the version at
+compile time:
 ```scala
-val scalac: Scalac[3.8, Backend.Jvm] = Scalac[3.8](List(scalacOptions.experimental))
+val scalac: Scalac[3.8, Universe.Bytecode] = Scalac[3.8](List(scalacOptions.experimental))
 ```
 
-The single-type-argument form, `Scalac[3.8](options)`, targets the JVM. The same options may be
-retargeted at another backend with `targeting`:
+The single-type-argument form targets the bytecode universe. `targeting` selects a universe
+explicitly, while `producing` selects it via the artifact you ultimately want:
 ```scala
-val portable = Scalac[3.8](List(scalacOptions.experimental)).targeting[Backend.Portable]
+val forJs = Scalac[3.8](options).producing[Artifact.Js]            // Scalac[3.8, Universe.Sjsir]
+val forNative = Scalac[3.8](options).targeting[Universe.Nir]
 ```
 
-Five backends exist: `Backend.Jvm`, which produces classfiles; the three _portable_
-backends—`Backend.Js`, `Backend.Wasm` and `Backend.Wasi`—which additionally produce
-target-neutral `.sjsir` files, deferring the choice of linked representation until link time;
-and `Backend.Native`, which produces `.nir` files for Scala Native. `Backend.Portable`, the
-union of the three sjsir backends, is the natural choice when compiling a library whose linked
-form is not yet known; a portable compilation may later be linked as _any_ of the three.
-`Backend.Linked` is the union of every backend whose output is linkable.
-
-Compiling for a portable backend requires the Scala.js runtime JARs (`scalajs-javalib`,
+Compiling into `Universe.Sjsir` requires the Scala.js runtime JARs (`scalajs-javalib`,
 `scalajs-library_2.13`, `scalajs-scalalib_2.13` and `scala3-library_sjs1`) on the classpath;
-their absence surfaces as ordinary compiler diagnostics. Compiling for `Backend.Native`
+their absence surfaces as ordinary compiler diagnostics. Compiling into `Universe.Nir`
 additionally requires a `NirPlugin` in scope—evidence of the location of the Scala Native
 compiler plugin, since NIR is emitted by a plugin rather than a backend built into the
 compiler—plus the Scala Native runtime JARs (`scalalib`, `scala3lib`, `javalib`, `auxlib`,
@@ -32,44 +41,41 @@ compiler—plus the Scala Native runtime JARs (`scalalib`, `scala3lib`, `javalib
 ### Products
 
 The result of a compilation—an output directory and the classpath it was compiled against—is
-described by a `Compilation`, tagged with its backend:
+described by a `Compilation`, tagged with its universe:
 ```scala
-val compilation: Compilation[Backend.Portable] = Compilation(out, classpath)
+val compilation: Compilation[Universe.Sjsir] = Compilation(out, classpath)
 ```
 
-Three products can be made from a compilation, and each is only expressible for the backends it
-is valid for:
- - `Bundler.bundle(compilation, jarfile, main)` produces an executable JAR, and requires a
-   `Compilation[Backend.Jvm]`
- - `Bundler.library(compilation, jarfile)` produces a library JAR of `.sjsir` or `.nir` files
-   for downstream assembly, and requires a linkable compilation
- - `Linker[target](options, entryPoints).link(compilation, out)` produces a fully-linked
-   artifact for a concrete linkable target
+ - `Bundler.bundle(compilation, jarfile, main)` produces an executable JAR from a bytecode
+   compilation
+ - `Bundler.library(compilation, jarfile)` produces a library JAR from a compilation in _any_
+   universe—classfiles, `.sjsir` or `.nir`—for downstream assembly
+ - `Linker[artifact](options, entryPoints).link(compilation, out)` produces a fully-linked
+   artifact, and requires a compilation from that artifact's origin universe
 
 ### Linking
 
-A `Linker` is parameterized by the concrete backend it links for, with options whose validity is
-checked against that backend at compile time, mirroring `scalacOptions`:
+A `Linker` is parameterized by the artifact it produces, with options whose validity is checked
+against that artifact at compile time, mirroring `scalacOptions`:
 ```scala
-val linker = Linker[Backend.Js]
+val linker = Linker[Artifact.Js]
   ( List(linkerOptions.moduleKind.esModule, linkerOptions.optimize.fast),
     List(Linker.EntryPoint(fqcn"com.example.Main")) )
 
-val artifact: Path on Linux = linker.link(compilation, out)
+val mainJs: Path on Linux = linker.link(compilation, out)
 ```
 
-`Backend.Js` produces a `main.js`; `Backend.Wasm` produces a `main.wasm` (with a JavaScript
-loader alongside) for browsers and JavaScript runtimes; `Backend.Wasi` produces a standalone
-WASI component, `main.wasm`, for runtimes such as `wasmtime`.
+The universe is inferred: linking `Artifact.Js` demands a `Compilation[Universe.Sjsir]`, and
+supplying a compilation from any other universe is a compile error. Options such as
+`moduleKind.*` apply only to `Artifact.Js` (the WebAssembly artifacts mandate their own module
+kinds), while `checkIr`, `sourceMaps`, `esVersion.*` and `optimize.*` apply to every sjsir
+artifact; a misapplied option is a compile error.
 
-Options such as `moduleKind.*` apply only to `Backend.Js` (the WebAssembly backends mandate
-their own module kinds), while `checkIr`, `sourceMaps`, `esVersion.*` and `optimize.*` apply to
-every portable backend; a misapplied option is a compile error.
+### Linking WASI artifacts
 
-### Linking WASI components
-
-A WASI component link has two prerequisites beyond the linker itself, both expressed as
-contextual values without which `Linker[Backend.Wasi].link` does not compile:
+A WASI link produces an `Artifact.Wasi[0.2]`—a component-model `.wasm` whose imports and
+exports are described by WIT. It has two prerequisites beyond the linker itself, both expressed
+as contextual values without which the link does not compile:
 
  - a `WasiToolchain`, evidence that the native tools the link shells out to—`wasm-tools` and the
    scala-wasm fork of `wit-bindgen`—are present; instances exist only via the probing
@@ -80,10 +86,15 @@ contextual values without which `Linker[Backend.Wasi].link` does not compile:
 given WasiToolchain = WasiToolchain()
 given WitWorld = WitWorld(witDirectory, t"my-world")
 
-Linker[Backend.Wasi](Nil).link(compilation, out)
+Linker[Artifact.Wasi[0.2]](Nil).link(compilation, out)
 ```
 
-`Backend.Js` and `Backend.Wasm` require no native tooling: the linker is an ordinary JVM
+WASI versions are part of the artifact's type because they determine its ABI: `0.1` (preview 1)
+is a flat, libc-style syscall interface on core modules; `0.2` is the component model; `0.3`
+adds native asynchrony. Only `0.2` is currently linkable—requesting `Artifact.Wasi[0.3]` is a
+compile error until a `Linkage` for it exists.
+
+`Artifact.Js` and `Artifact.Wasm` require no native tooling: the linker is an ordinary JVM
 library.
 
 ### Linking native binaries
@@ -92,9 +103,9 @@ A Scala Native link shells out to `clang` and `clang++`, so its `Linkage` exists
 probing constructor `NativeLinkage()`, which verifies the C toolchain is present (raising
 `ToolchainError` otherwise):
 ```scala
-given Linkage[Backend.Native] = NativeLinkage()
+given NativeLinkage = NativeLinkage()
 
-Linker[Backend.Native]
+Linker[Artifact.Binary]
   ( List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
     List(Linker.EntryPoint(fqcn"com.example.Main")) )
 . link(compilation, out)

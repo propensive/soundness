@@ -55,7 +55,7 @@ object Jvm extends Rig:
 
   def stage(out: Path on Linux): LocalClasspath = classpath(out)
 
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
+  val scalac: Scalac[3.6, Universe.Bytecode] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
     import workingDirectories.systemWorkingDirectory

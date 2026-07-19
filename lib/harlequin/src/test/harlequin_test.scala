@@ -99,7 +99,7 @@ object Tests extends Suite(m"Harlequin Tests"):
     .assert(_ == (t"term", t"binding"))
 
     test(m"typechecked highlighting resolves the type of a val"):
-      given Scalac[3.8, Backend.Jvm] = Scalac[3.8](Nil)
+      given Scalac[3.8, Universe.Bytecode] = Scalac[3.8](Nil)
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
@@ -107,7 +107,7 @@ object Tests extends Suite(m"Harlequin Tests"):
     .assert { rendered => rendered.contains(t"List") && rendered.contains(t"Int") }
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):
-      given Scalac[3.8, Backend.Jvm] = Scalac[3.8](Nil)
+      given Scalac[3.8, Universe.Bytecode] = Scalac[3.8](Nil)
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
@@ -115,7 +115,7 @@ object Tests extends Suite(m"Harlequin Tests"):
     .assert(_ > 0)
 
     test(m"no completions are computed without a caret"):
-      given Scalac[3.8, Backend.Jvm] = Scalac[3.8](Nil)
+      given Scalac[3.8, Universe.Bytecode] = Scalac[3.8](Nil)
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
@@ -123,7 +123,7 @@ object Tests extends Suite(m"Harlequin Tests"):
     .assert(_ == Unset)
 
     test(m"completions at a member selection include the type's methods"):
-      given Scalac[3.8, Backend.Jvm] = Scalac[3.8](Nil)
+      given Scalac[3.8, Universe.Bytecode] = Scalac[3.8](Nil)
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
