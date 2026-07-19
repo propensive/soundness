@@ -48,7 +48,10 @@ export Baseline.Compare.{Min, Mean, Max}
 export Baseline.Metric.{Cadential, Temporal}
 export Baseline.Mode.{Arithmetic, Geometric}
 
-type TestPalette = Palette:
+// A real trait, not a structural refinement of `Palette`: structural member selection goes
+// through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
+// support — whereas these are ordinary virtual calls.
+trait TestPalette extends Juxtaposition.JuxtapositionPalette:
   type Form = Srgb
   def warning: Color in Srgb
   def critical: Color in Srgb

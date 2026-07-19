@@ -86,8 +86,14 @@ object Teletypeable:
   given stackTrace: (Text is Measurable) => (palette: StackTrace.Palette)
   =>  StackTrace is Teletypeable = stack =>
 
-    def accent(level: Int): Color in Srgb =
-      palette.selectDynamic(s"accent${(level % 5) + 1}")
+    // A static match, not `selectDynamic(s"accent$n")`: structural selection reflects through
+    // `Class.getMethod`, unsupported on Scala Native (and these are real trait members anyway).
+    def accent(level: Int): Color in Srgb = (level % 5) + 1 match
+      case 1 => palette.accent1
+      case 2 => palette.accent2
+      case 3 => palette.accent3
+      case 4 => palette.accent4
+      case _ => palette.accent5
 
     def dedup[element](todo: List[element], seen: Set[element] = Set(), done: List[element] = Nil)
     :   List[element] =

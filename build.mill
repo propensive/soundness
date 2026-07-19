@@ -1589,7 +1589,11 @@ object honeycomb extends Library:
     def mvnDeps = Seq(mvn"org.jsoup:jsoup:1.18.3")
 
 object hieroglyph extends Library:
+  // The unicode.org download fallback needs `java.net.URL`, absent on Scala Native, so it is
+  // split by platform (`core-jvm`/`core-native`); native binaries embed the UNIDATA tables.
   object core extends Component(kaleidoscope.core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
@@ -1963,7 +1967,11 @@ object probably extends Library:
   object cli extends Component(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The scoverage `Invoker`'s initializer needs `SecureRandom` (absent on Scala Native), so
+  // the measurement-file lookup is split by platform (`coverage-jvm`/`coverage-native`).
   object coverage extends Component(dendrology.tree):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(cli):
@@ -2616,6 +2624,44 @@ object nativelink extends Module:
       vacuous.core.native, xenophile.scalanative.native, gossamer.core.native,
       hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native,
       ambience.core.native, coaxial.core.native, enigmatic.openssl.native, parasite.core.native)
+
+  // A real test suite compiled for Native — the end-state check that `probably` (and a green
+  // module's entire suite) runs as a native binary. Hypotenuse: 100+ numeric tests and no
+  // `demilitarize` blocks (larceny is a JVM compiler plugin whose `CompileError` values would
+  // otherwise be needed at native link time). The same `Tests`-trait flags apply (larceny and
+  // beneficence plugins, `settings.cc`), plus `nscplugin` for NIR.
+  object testapp extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = Task:
+      settings.cc(settings.scalaOptions)
+        :+ s"-Xplugin:${larceny.plugin.assembly().path}"
+        :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+        :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "lib" / "hypotenuse" / "src" / "test")
+    def compileMvnDeps = nativeToolchain.runtimeDeps
+    override def mainClass = Some("hypotenuse.Tests")
+    override def moduleDeps = Seq(
+      probably.cli.native, proscenium.core.native, hypotenuse.core.native,
+      quantitative.units.native, abacist.core.native)
+
+  def testBinary: T[PathRef] = Task:
+    // The union of both classpaths: `compileClasspath` carries the Scala Native runtime jars
+    // (they are `compileMvnDeps`, absent from the run classpath), while `runClasspath` adds the
+    // upstream modules' resource directories, which the linker embeds in the binary
+    // (`embedResources`) — hieroglyph's UNIDATA tables are read back at run time through
+    // `getResourceAsStream`.
+    val classpath =
+      (testapp.compile().classes.path
+        +: (testapp.compileClasspath() ++ testapp.runClasspath()).toSeq.map(_.path))
+      . distinct.filter(os.exists)
+    val driverClasspath =
+      linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driverClasspath, "nativelink.link", Task.dest.toString,
+      "hypotenuse.Tests", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(Task.dest / "soundness-native")
 
   object linker extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion

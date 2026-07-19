@@ -40,6 +40,9 @@ import scala.concurrent.duration.Duration
         .withGC(GC.immix)
         .withMode(Mode.debug)
         .withLTO(LTO.none)
+        // Classpath resources (e.g. hieroglyph's UNIDATA tables) are embedded in the binary and
+        // served back through `Class.getResourceAsStream`.
+        .withEmbedResources(true)
         .withLinkingOptions(librarySearchPaths)
         .withBaseName("soundness-native"))
 

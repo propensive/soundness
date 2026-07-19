@@ -30,74 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package hieroglyph
 
-import java.io.*
-
-import scala.collection.mutable.BitSet
-import scala.io.*
+import java.io as ji
 
 import anticipation.*
-import distillate.*
-import gossamer.*
-import rudiments.*
+import vacuous.*
 
-object Coverage:
-  def apply(): Option[Coverage] = currentDir.map: dir =>
-    val currentFile = measurementFileIn(dir)
-    val hits = measurements(currentFile)
-    val dirFile = File(dir.s)
-
-    if !dirFile.exists() then Coverage(dir, IArray(), Set(), Set())
-    else
-      val otherFiles =
-        Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).toList).getOrElse(Nil)
-
-      val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
-
-      val allHits: Set[Int] = measurementFiles.iterator.flatMap(measurements(_)).to(Set)
-      val oldHits: Set[Int] = allHits -- hits
-
-      Coverage(dir, spec(dir), oldHits, hits)
-
-  private def currentDir: Option[Text] =
-    Option(System.getProperty("scalac.coverage")).map(_.nn).map(Text(_))
-
-  private def spec(dir: Text): IArray[Juncture] =
-    val file = java.io.File(java.io.File(dir.s), "scoverage.coverage")
-    val lines = Source.fromFile(file).getLines().to(LazyList).map(Text(_))
-
-    def recur(lines: LazyList[Text], junctures: List[Juncture] = Nil): List[Juncture] =
-      lines match
-        case
-          ( As.Int(id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName #::
-            As.Int(start) #:: As.Int(end) #:: As.Int(lineNo) #:: symbolName #:: treeName #::
-            As.Boolean(branch) #:: _ #:: As.Boolean(ignored) #:: tail ) =>
-
-          val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
-              symbolName, treeName, branch, ignored, tail.takeWhile(!_.starts(t"\f")).to(List))
-
-          recur(tail.dropWhile(!_.starts(t"\f")).tail, juncture :: junctures)
-
-        case _ =>
-          junctures.reverse
-
-    IArray.from(recur(lines.dropWhile(_.starts(t"#"))))
-
-  private def measurements(file: File): Set[Int] =
-    val ids = BitSet()
-
-    if !file.exists() then Set()
-    else Source.fromFile(file).getLines().to(LazyList).each: id =>
-      ids(id.toInt) = true
-
-    ids.to(Set)
-
-case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
-  lazy val structure: Map[Text, List[Surface]] =
-    val index: Int = spec.lastIndexWhere(_.id == 0)
-
-    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
-      path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
-
-    . to(Map)
+// The Scala Native twin of the unicode.org fallback: there is no `java.net.URL` on native, and
+// no downloading data at run time — the UNIDATA tables must be embedded in the binary (the
+// linker's `embedResources`), so a missing table is simply absent.
+private[hieroglyph] def remoteUnicodeData(name: Text): Optional[ji.InputStream] = Unset

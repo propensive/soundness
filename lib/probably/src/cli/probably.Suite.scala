@@ -55,8 +55,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
   var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo
 
-    given palette: (theme: Theme) => TestPalette = new Palette:
-      type Form = Srgb
+    given palette: (theme: Theme) => TestPalette = new TestPalette:
       val yellow:      Color in Srgb = theme.spectrum.yellow.to[Srgb]
       val red:         Color in Srgb = theme.spectrum.red.to[Srgb]
       val blue:        Color in Srgb = theme.spectrum.blue.to[Srgb]
