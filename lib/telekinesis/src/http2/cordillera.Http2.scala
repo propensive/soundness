@@ -366,6 +366,42 @@ object Http2:
 
       ready.await().asInstanceOf[Http2Connection^{monitor, caps.any}]
 
+  // A scoped session on an `Http2.Endpoint`: the multiplexed connection is opened
+  // and its handshake completed, then the live `Http2Connection` is lent to the
+  // lambda; when the lambda ends, the connection (with its reader/writer daemons)
+  // is torn down and the transport closed — no parked daemon holds the loan open,
+  // because the loan and the scope coincide. `result` is quantified outside the
+  // lambda, so a value borrowing the connection — a lazily-streaming response
+  // body, an open `Http2Stream` — cannot escape the scope; memoized values may.
+  // Concurrent `fetch`es within the scope multiplex on the one connection.
+  // A named instance class rather than an anonymous given: an anonymous
+  // subclass would freshen the capability types in its inferred `Session`
+  // member, which then fails to match the declared refinement.
+  class EndpointSessionable[endpoint: {Connectable, Showable}]
+    ( using monitor:    Monitor,
+            probate:    Probate,
+            asyncError: Tactic[AsyncError],
+            loggable:   (SocketEvent is Loggable)^ )
+  extends Sessionable:
+    type Self = Endpoint[endpoint]
+    type Session = Http2Connection^{caps.any}
+
+    def session[result](target: Endpoint[endpoint])(lambda: (session: Session) ?=> result)
+    :   result =
+
+      target.endpoint.duplex: duplex =>
+        val connection = Http2Connection(duplex)
+        connection.start()
+        try lambda(using connection) finally connection.close()
+
+  given sessionable: [endpoint: {Connectable, Showable}]
+  =>  ( monitor:    Monitor,
+        probate:    Probate,
+        asyncError: Tactic[AsyncError],
+        loggable:   (SocketEvent is Loggable)^ )
+  =>  (EndpointSessionable[endpoint]^{monitor, asyncError, loggable, caps.any}) =
+    EndpointSessionable[endpoint]()
+
   // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
   // It captures the ambient `Monitor`/`Probate` from this given's context — the
   // connection's daemons (and the scope-tied teardown) need them — so it can only be

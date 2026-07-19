@@ -230,6 +230,20 @@ extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
     routable.transmit(routable.connect(endpoint, Unset), transmissible.serialize(message))
 
 
+extension [target](target: target)
+  // Open a session to the target: the connection (of whatever kind the target's
+  // `Sessionable` instance provides) is available within `lambda`, and is
+  // closed when the scope ends. Values borrowing the session cannot escape it.
+  // Inline, with the instance as a capturing using-parameter ahead of the
+  // lambda: the instance's capabilities and its concrete `Session` type flow
+  // through from the use site, where a non-inline def would mint fresh roots
+  // the capability-carrying instance cannot flow into.
+  transparent inline def session[result](using sessionable: (target is Sessionable)^)
+    ( lambda: (session: sessionable.Session) ?=> result )
+  :   result =
+
+    sessionable.session(target)(lambda)
+
 extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
   // Open a persistent, bidirectional connection for the duration of `lambda` and
   // always close it afterwards — whether `lambda` returns or throws. This is the

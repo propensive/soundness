@@ -30,17 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package coaxial
 
-export
-  coaxial
-  . { Bindable, BindError, Connectable, ConnectionError, Control, DomainSocket,
-      DomainSocketEndpoint, duplex, Duplex, Duplexable, exchange, Ingressive, listen, Packet,
-      react, Routable, Transmitter, Serviceable, session, Sessionable, SocketBackend, SocketEvent,
-      SocketOption, SocketService, Transmissible, transmit, UdpResponse }
+import anticipation.*
+import prepositional.*
+import spectacular.*
 
-package socketOptions:
-  export
-    coaxial.socketOptions
-    . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, receiveBuffer, sendBuffer, linger, trafficClass, timeout }
+// A connection-oriented scope: `target.session(lambda)` opens a live connection
+// to the target, lends it to `lambda` for its duration, and closes it when the
+// lambda ends — whether it returns or throws. The `result` type parameter is
+// quantified outside the lambda, so a value borrowing the session (e.g. a
+// response streaming from the live connection) cannot escape the scope; only
+// session-independent values may leave. Instances at the transport layer lend a
+// raw `Duplex`; protocol layers (e.g. HTTP) lend richer session handles over
+// the same shape.
+object Sessionable:
+  // Any `Connectable` endpoint hosts a transport-level session, lending its
+  // persistent `Duplex` connection. This is the typeclass form of the `duplex`
+  // loan, to which it delegates.
+  given connectable: [endpoint: {Connectable, Showable}]
+  =>  (loggable: (SocketEvent is Loggable)^)
+  =>  ((endpoint is Sessionable { type Session = Duplex })^{loggable, caps.any}) =
+
+   new Sessionable:
+    type Self = endpoint
+    type Session = Duplex
+
+    def session[result](target: endpoint)(lambda: (session: Session) ?=> result): result =
+      target.duplex: duplex =>
+        lambda(using duplex)
+
+trait Sessionable extends Typeclass:
+  type Session
+
+  def session[result](target: Self)(lambda: (session: Session) ?=> result): result
