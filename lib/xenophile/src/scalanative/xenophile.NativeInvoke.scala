@@ -61,10 +61,12 @@ object NativeInvoke:
 
     // The native runtime entry points, resolved from the downstream `nativelib`/`posixlib` so this
     // module needs no dependency on them (the macro runs on the JVM; the call links downstream).
+    // `dlopen` is retained only for its `CString` parameter type (read off below); symbol
+    // resolution itself goes through `xenophile.ForeignLibrary.resolve` (its native twin), which
+    // searches the libraries loaded at runtime by `register` before the process-default lookup.
     val dlfcn = Symbol.requiredModule("scala.scalanative.posix.dlfcn")
     val dlopen = dlfcn.methodMember("dlopen").head
-    val dlsym = dlfcn.methodMember("dlsym").head
-    val rtldNow = dlfcn.methodMember("RTLD_NOW").head
+    val resolve = Symbol.requiredMethod("xenophile.ForeignLibrary.resolve")
     val cfuncPtr = Symbol.requiredModule("scala.scalanative.unsafe.CFuncPtr")
     val fromPtr = cfuncPtr.methodMember("fromPtr").head
     val cquote = Symbol.requiredClass("scala.scalanative.unsafe.CQuote")
@@ -207,15 +209,11 @@ object NativeInvoke:
     val quoted = Apply(Select(New(TypeTree.ref(cquote)), cquote.primaryConstructor), List(context))
     val symbolName = Apply(Select(quoted, cMethod), Nil)
 
-    // `dlopen(null, RTLD_NOW)` — a handle over the main program and everything already loaded (the
-    // C symbols the linked binary provides), then `dlsym(handle, c"function")`. The null filename
-    // is cast to dlopen's own `CString` parameter type, since Scala Native's pointer type is not
-    // implicitly nullable.
-    val nullFilename =
-      Select.unique(Literal(NullConstant()), "asInstanceOf").appliedToType(cstringType)
-
-    val handle = Apply(Ref(dlopen), List(nullFilename, Ref(rtldNow)))
-    val symbol = Apply(Ref(dlsym), List(handle, symbolName))
+    // `ForeignLibrary.resolve(c"function")` — the symbol pointer from the registered libraries (or
+    // the default lookup), panicking if unbound rather than returning NULL. This replaces a bare
+    // `dlsym(dlopen(null, RTLD_NOW), …)`, whose default-only lookup found a symbol just when some
+    // *other* reachable code had statically linked its library (`@link`), and crashed otherwise.
+    val symbol = Apply(Ref(resolve), List(symbolName))
 
     // `CFuncPtr.fromPtr[CFuncPtr0[result]](symbol)` — summon the required `Tag` implicit (present
     // downstream, where the Native runtime is on the classpath) and pass it explicitly.
