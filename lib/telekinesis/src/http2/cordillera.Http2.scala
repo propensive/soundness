@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 import anticipation.{Data as Bytes, *}
 import coaxial.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import parasite.*
 import prepositional.*
@@ -164,7 +165,13 @@ object Http2:
       if end > data.length then abort(Http2Error(Reason.Truncated))
       val body: anticipation.Data = data.slice(start, end)
 
-      val frame = FrameType.fromId(typeId).lest(Http2Error(Reason.BadFrameType(typeId))) match
+      // An unrecognised frame type — PRIORITY or PUSH_PROMISE (which this stack
+      // does not model), or an extension frame — must be ignored, not treated as
+      // a connection error (RFC 7540 §4.1, §5.5): clients routinely send
+      // PRIORITY, so aborting here would kill real connections.
+      val frame = (FrameType.fromId(typeId): @unchecked) match
+        case Unset => Frame.Ignored(typeId, streamId)
+
         case FrameType.Data =>
           Frame.Data(streamId, stripPadding(body, flags), Flags.set(flags, Flags.EndStream))
 
@@ -237,6 +244,7 @@ object Http2:
       case _: Frame.Ping         => FrameType.Ping
       case _: Frame.GoAway       => FrameType.GoAway
       case _: Frame.WindowUpdate => FrameType.WindowUpdate
+      case _: Frame.Ignored      => panic(m"an ignored frame cannot be serialized")
 
     private def frameFlags(frame: Frame): Int = frame match
       case Frame.Headers(_, _, endStream, endHeaders) =>
@@ -269,6 +277,7 @@ object Http2:
       case Frame.Data(_, payload, _)       => payload
       case Frame.Ping(opaque, _)           => opaque
       case Frame.RstStream(_, errorCode)   => frameBuilder(writeUint32(_, errorCode))
+      case Frame.Ignored(_, _)             => panic(m"an ignored frame cannot be serialized")
 
       case Frame.WindowUpdate(_, increment) =>
         frameBuilder(writeUint32(_, increment.toLong & 0x7fffffffL))
@@ -317,6 +326,11 @@ object Http2:
     case GoAway(lastStreamId: Int, errorCode: Long, debug: Bytes)
     case WindowUpdate(streamId: Int, increment: Int)
 
+    // An inbound frame of a type this stack does not model — PRIORITY,
+    // PUSH_PROMISE or an extension — decoded only to be discarded (RFC 7540
+    // §4.1, §5.5). Never serialised.
+    case Ignored(typeId: Int, streamId: Int)
+
     // The stream this frame belongs to; connection-level frames (SETTINGS, PING,
     // GOAWAY) use stream 0.
     def stream: Int = this match
@@ -328,6 +342,7 @@ object Http2:
       case Ping(_, _)             => 0
       case GoAway(_, _, _)        => 0
       case WindowUpdate(id, _)    => id
+      case Ignored(_, id)         => id
 
     // Serialise the frame, including its 9-byte header.
     // Delegates to the companion: builder mutation inside an enum-class method

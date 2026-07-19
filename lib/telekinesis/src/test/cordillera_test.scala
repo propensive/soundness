@@ -311,6 +311,52 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           client.request(request, endpoint).status.code
       . assert(_ == 200)
 
+      test(m"the server role serves the client role over an in-memory pair"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val server = Http2ServerConnection(serverSide)
+
+          // The serve loop: one handler per accepted stream, echoing the
+          // decoded request's method and target through a real `Http.Response`.
+          // The connection crosses into the daemon as a neutral carrier: a
+          // daemon body may not capture a capability.
+          val serverRef: AnyRef = server.asInstanceOf[AnyRef]
+
+          daemon:
+            safely:
+              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+
+              server0.accepted.stream.records.each: stream =>
+                unsafely:
+                  val entries = stream.headers.await()
+                  val request = PseudoHeaders.requestOf(entries, () => Http.emptyBody())
+
+                  // A `Data` (byte) body selects the `Fixed` servable, so the
+                  // response body is a plain fixed stream.
+                  val payload: Data = ascii(t"echo:${request.method.show}:${request.target}")
+                  val response = Http.Response(Http.Ok)(payload)
+
+                  server0.sendHeaders(stream.id, PseudoHeaders.entries(response), false)
+                  server0.sendData(stream.id, response.body.stream.memoize, true)
+
+          val client = Http2Connection(clientSide)
+          val serverStarted = async(server.start())
+          client.start()
+          serverStarted.await()
+
+          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/hello", Nil,
+              () => Http.emptyBody())
+
+          val (_, response) = client.fetch(request, t"http", t"unix")
+          val body = response.body.stream.memoize.utf8
+          client.close()
+          // Stop the server's reader/writer and the serve loop (via
+          // `accepted.stop()`), so the enclosing `supervise` can return.
+          server.close()
+          body
+
+      . assert(_ == t"echo:GET:/hello")
+
       test(m"a session lends one connection to several multiplexed requests"):
         supervise:
           val (clientSide, serverSide) = pair()
