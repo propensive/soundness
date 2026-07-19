@@ -35,3 +35,6 @@ package soundness
 // The JVM-only slice of enigmatic's `soundness` exports: PKCS#12 keystores are backed by
 // `java.security.KeyStore`, which has no Scala Native counterpart.
 export enigmatic.{keystore, Keystore}
+
+package cloaks:
+  export enigmatic.cloaks.{cloakHeap, cloakOffHeap, cloakVeiledHeap, cloakVeiledOffHeap}
