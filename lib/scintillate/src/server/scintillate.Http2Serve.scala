@@ -55,28 +55,20 @@ import zephyrine.*
 // ends (client GOAWAY or socket close). Blocks the calling (accept-loop) daemon
 // for the connection's lifetime, matching `serveConnection`.
 object Http2Serve:
-  def serve
-    ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (HttpServerEvent is Loggable)^ )
+  // Serve every stream on `connection` with the request handler `handler0` (a
+  // neutral `AnyRef => AnyRef` rim of the context-function handler), each on its
+  // own virtual thread. Blocks until the connection ends. The per-connection
+  // state a session sets up is captured by `handler0` and shared here across
+  // all streams.
+  private def runStreams
+    ( connection: Http2ServerConnection^, handler0: AnyRef, port: Int )
+    ( using Monitor, Probate, (HttpServerEvent is Loggable)^ )
   :   Unit =
 
-    // A local (pure) Probate rather than one captured from the accept daemon:
-    // capturing the caller's `Probate` capability would make this call — and so
-    // the accept-daemon body — impure.
-    import probates.cancelProbate
-
-    given Tactic[AsyncError] = strategies.throwUnsafely
     given Tactic[Http2Error] = strategies.throwUnsafely
     given Tactic[StreamError] = strategies.throwUnsafely
 
-    // The app handler crosses into the per-stream daemons as a neutral rim: a
-    // capability-typed function value re-hides through a fiber boundary (the
-    // cordillera recipe), so it is carried as an `AnyRef` and cast back inside.
-    val handler0: AnyRef = handler.asInstanceOf[AnyRef]
-
-    val connection = Http2ServerConnection(StreamDuplex(in, out))
     val connectionRef: AnyRef = connection.asInstanceOf[AnyRef]
-    connection.start()
 
     connection.eachStream: stream =>
       val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
@@ -147,6 +139,64 @@ object Http2Serve:
 
           val connection1 = new HttpConnection(request, true, port, respond)
           connection1.respond(handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
+
+  // Open the HTTP/2 connection over the socket's streams and run its session
+  // scope. `serve` (per-request) is the degenerate session that immediately
+  // handles with no per-connection setup; `serveSession` lends the caller an
+  // `Http2Session` so it can set up per-connection state first.
+  private def open(in: ji.InputStream, out: ji.OutputStream)(using Monitor)
+  :   (Http2ServerConnection^, Probate) =
+
+    // A local (pure) Probate rather than one captured from the accept daemon:
+    // capturing the caller's `Probate` capability would make this call — and so
+    // the accept-daemon body — impure.
+    import probates.cancelProbate
+    given Tactic[AsyncError] = strategies.throwUnsafely
+    given Tactic[StreamError] = strategies.throwUnsafely
+    val connection = Http2ServerConnection(StreamDuplex(in, out))
+    connection.start()
+    (connection, cancelProbate)
+
+  def serve
+    ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
+    ( using Monitor, (HttpServerEvent is Loggable)^ )
+  :   Unit =
+
+    val (connection, probate) = open(in, out)
+    runStreams(connection, handler.asInstanceOf[AnyRef], port)(using summon, probate)
+
+  // Serve one HTTP/2 connection as a session: `scope0` — the (rimmed) session
+  // scope — runs once when the connection is established and may set up
+  // per-connection state (auth, a rate limiter, …) before calling
+  // `session.handle` to serve every stream with that state in scope. Capture
+  // checking confines the state to this connection — the server dual of the
+  // client's `Http2.Endpoint.session`. `scope0` crosses the accept daemon as an
+  // `AnyRef => Unit` rim (a session-scope function value re-hides otherwise).
+  def serveSession
+    ( scope0: AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
+    ( using Monitor, (HttpServerEvent is Loggable)^ )
+  :   Unit =
+
+    val (connection, probate) = open(in, out)
+
+    val session: Http2Session^ = new Http2Session:
+      def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection}): Unit =
+        // Rim the context-function handler to a neutral `AnyRef => AnyRef`, as
+        // the accept loop does for the per-request path.
+        val handler0: AnyRef =
+          ((ref: AnyRef) => handler(using ref.asInstanceOf[HttpConnection])).asInstanceOf[AnyRef]
+
+        runStreams(connection, handler0, port)(using summon, probate)
+
+    scope0.asInstanceOf[AnyRef => Unit](session.asInstanceOf[AnyRef])
+
+// A per-connection serve scope. Runs once when an HTTP/2 connection is
+// established; `handle` registers the per-stream request handler and serves
+// every stream on the connection with it (concurrently), sharing whatever state
+// the enclosing scope set up. That state is confined by capture checking to the
+// connection, so it cannot leak to another client's connection.
+trait Http2Session:
+  def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection}): Unit
 
 // A `Duplex` over a socket's raw byte streams: reads frame the inbound endpoint,
 // each `send` writes the whole chunk and flushes (the writer serialises one frame

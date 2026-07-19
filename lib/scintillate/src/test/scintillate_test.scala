@@ -343,6 +343,38 @@ object Tests extends Suite(m"Scintillate tests"):
 
         . assert(_ == List(t"multiplexed", t"multiplexed", t"multiplexed"))
 
+        test(m"a session shares per-connection state across its streams"):
+          val port = freePort()
+
+          // The scope sets up a per-connection counter, shared by every stream
+          // handled on that connection; capture checking keeps it from leaking
+          // to another connection.
+          val server = SocketServer(port, ssl = serverContext()).handleSession: session ?=>
+            val counter = java.util.concurrent.atomic.AtomicInteger(0)
+
+            session.handle:
+              Http.Response(Http.Ok)(t"${counter.incrementAndGet}")
+
+          val client = java.net.http.HttpClient.newBuilder.nn
+            . sslContext(trustAllContext()).nn
+            . version(java.net.http.HttpClient.Version.HTTP_2).nn
+            . build.nn
+
+          def fetch(): Int =
+            val request = java.net.http.HttpRequest.newBuilder.nn
+              . uri(java.net.URI.create(s"https://localhost:$port/").nn).nn
+              . build.nn
+
+            client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString.nn).nn.body.nn.toInt
+
+          // Three requests reuse the one pooled HTTP/2 connection, so the shared
+          // counter yields three distinct values.
+          val results = List(fetch(), fetch(), fetch())
+          server.cancel()
+          results.sorted
+
+        . assert(_ == List(1, 2, 3))
+
     // Drive the connection loop entirely in memory — no socket, no threads — by
     // feeding request bytes through `serveConnection` and capturing the response.
     def inProcess(handler: HttpConnection ?=> Http.Response, request: Text): Text =
