@@ -310,3 +310,30 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
           client.request(request, endpoint).status.code
       . assert(_ == 200)
+
+      test(m"a session lends one connection to several multiplexed requests"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          runServer(serverSide)
+
+          import logging.silentLogging
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"loopback")
+
+          // Both fetches multiplex on the single connection the session lends;
+          // the connection is torn down when the scope ends.
+          endpoint.session: connection ?=>
+            val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]),
+                t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
+
+            val (_, first) = connection.fetch(request, t"http", t"loopback")
+            val (_, second) = connection.fetch(request, t"http", t"loopback")
+
+            List(first, second).count: response =>
+              ascii(t"pong").to(List) == response.body.stream.memoize.to(List)
+
+      . assert(_ == 2)

@@ -336,28 +336,9 @@ private def httpsExchange
   ( using Tactic[ConnectError] )
 :   Http.Response =
 
-  import ConnectError.Reason.*, Ssl.Reason.*
+  import ConnectError.Reason.*
 
-  val alpn: Tls = Tls(tls.context, tls.verify, List(t"h2", t"http/1.1"))
-
-  val duplex: Duplex =
-    try
-      SecureEndpoint.connectable(using online)(using options, alpn)
-      . connect(SecureEndpoint(host.show, port), Unset)
-    catch
-      case error: jns.SSLHandshakeException      => abort(ConnectError(Ssl(Handshake)))
-      case error: jns.SSLProtocolException       => abort(ConnectError(Ssl(Protocol)))
-      case error: jns.SSLPeerUnverifiedException => abort(ConnectError(Ssl(Peer)))
-      case error: jns.SSLKeyException            => abort(ConnectError(Ssl(Key)))
-      case error: jn.UnknownHostException        => abort(ConnectError(Dns))
-
-      case error: jn.ConnectException =>
-        error.getMessage() match
-          case "Connection refused"   => abort(ConnectError(Refused))
-          case "Connection timed out" => abort(ConnectError(Timeout))
-          case _                      => abort(ConnectError(Unknown))
-
-      case error: ji.IOException => abort(ConnectError(Unknown))
+  val duplex: Duplex = secureConnect(host, port)
 
   duplex.alpnProtocol match
     case t"h2" =>
@@ -401,24 +382,37 @@ private def httpsExchange
 
       val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
 
-      try
-        duplex.send(Http.Request.serialize(httpRequest))
+      try sequentialFetch(duplex, httpRequest) finally duplex.close()
 
-        // Typed binding: `parse` is overloaded (lazy-list and endpoint forms),
-        // so the expected type picks the endpoint pair.
-        val input: zephyrine.Stream[Data] over zephyrine.Credit = duplex.source
-        val response: Http.Response = unsafely(Http.Response.parse(input, method == Http.Head))
+// One sequential HTTP/1.1 exchange over an open connection: send the request,
+// parse the framed response, drain its body, and leave the connection open,
+// positioned at the next response. `101` upgrades are refused (the upgraded
+// stream would never end); failures map onto `ConnectError`.
+private def sequentialFetch(duplex: Duplex, request: Http.Request)
+  ( using Buffering )
+  ( using Tactic[ConnectError] )
+:   Http.Response =
 
-        if response.status == Http.SwitchingProtocols then abort(ConnectError(Unknown))
+  import ConnectError.Reason.*
 
-        repackage(response, unsafely(response.body.stream.memoize))
+  try
+    duplex.send(Http.Request.serialize(request))
 
-      catch
-        case error: HttpResponseError => abort(ConnectError(Unknown))
-        case error: StreamError       => abort(ConnectError(Unknown))
-        case error: ji.IOException    => abort(ConnectError(Unknown))
+    // Typed binding: `parse` is overloaded (lazy-list and endpoint forms),
+    // so the expected type picks the endpoint pair.
+    val input: zephyrine.Stream[Data] over zephyrine.Credit = duplex.source
 
-      finally duplex.close()
+    val response: Http.Response =
+      unsafely(Http.Response.parse(input, request.method == Http.Head))
+
+    if response.status == Http.SwitchingProtocols then abort(ConnectError(Unknown))
+
+    repackage(response, unsafely(response.body.stream.memoize))
+
+  catch
+    case error: HttpResponseError => abort(ConnectError(Unknown))
+    case error: StreamError       => abort(ConnectError(Unknown))
+    case error: ji.IOException    => abort(ConnectError(Unknown))
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
 given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)

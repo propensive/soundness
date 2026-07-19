@@ -2111,7 +2111,7 @@ object telekinesis extends Library:
   // component rather than part of `jvm`: these sources require separation checking, which
   // `jvm` has not yet adopted.
   object http2
-      extends Component(core, coaxial.core, zephyrine.core, turbulence.core,
+      extends Component(core, coaxial.jvm, zephyrine.core, turbulence.core,
         parasite.core, hypotenuse.core, gossamer.core, contingency.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:

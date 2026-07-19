@@ -820,11 +820,14 @@ object Http:
 
       parseCursor(Cursor[Data](input), bodiless)
 
-    private def parseCursor(consume cursor: Cursor[Data, {}]^, bodiless: Boolean)
-      ( using Tactic[HttpResponseError] )
-    :   Response =
-      
+    case class Head(version: Version, status: Status, headers: List[Header])
 
+    // Parse a status line (`HTTP-version SP status-code SP reason CRLF`) and the
+    // header block off `cursor`, leaving it positioned at the first byte of the
+    // message body. The symmetric twin of `Request.parseHead`; factored out so a
+    // client driving a single cursor across a kept-alive connection can frame
+    // the body itself (e.g. an `HttpSession` lending streaming bodies).
+    def parseHead(cursor: Cursor[Data, {}]^)(using Tactic[HttpResponseError]): Head =
       inline def expected(char: Char): Diagnostics ?=> HttpResponseError =
         HttpResponseError(HttpResponseError.Reason.Expectation(char, cursor.peek.asInt.toChar))
 
@@ -915,7 +918,17 @@ object Http:
           cursor.expect('\n')(expected('\n'))
           headers = Http.Header(header, value) :: headers
 
-      val headerList: List[Http.Header] = headers.reverse
+      Head(version, status, headers.reverse)
+
+    private def parseCursor(consume cursor: Cursor[Data, {}]^, bodiless: Boolean)
+      ( using Tactic[HttpResponseError] )
+    :   Response =
+
+      val head: Head = parseHead(cursor)
+      val version: Http.Version = head.version
+      val status: Http.Status = head.status
+      val code: Int = status.code
+      val headerList: List[Http.Header] = head.headers
 
       // The body is framed by its headers, per RFC 7230 §3.3.3, leaving the
       // cursor at the first byte after it — the start of the next response on a
