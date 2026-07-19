@@ -30,24 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+import anticipation.*
+import prepositional.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+// The C / native ecosystem: `Interoperable` markers associating Scala types with the C types
+// `CHeaderDialect` reads from header files. No runtime representation is involved.
+object Native:
+  given int: (Int is Interoperable in Native of "int") =
+    Interoperable[Int, Native, "int"]()
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+  given long: (Long is Interoperable in Native of "long") =
+    Interoperable[Long, Native, "long"]()
+
+  given short: (Short is Interoperable in Native of "short") =
+    Interoperable[Short, Native, "short"]()
+
+  // A C `char` (as a scalar, not `char*`) is a byte.
+  given char: (Byte is Interoperable in Native of "char") =
+    Interoperable[Byte, Native, "char"]()
+
+  given double: (Double is Interoperable in Native of "double") =
+    Interoperable[Double, Native, "double"]()
+
+  given float: (Float is Interoperable in Native of "float") =
+    Interoperable[Float, Native, "float"]()
+
+  given boolean: (Boolean is Interoperable in Native of "bool") =
+    Interoperable[Boolean, Native, "bool"]()
+
+  // A C string (`char*` / `const char*`) corresponds to a Scala `Text`.
+  given string: (Text is Interoperable in Native of "string") =
+    Interoperable[Text, Native, "string"]()
+
+  // Any other C pointer (`T*`, `void*`, an opaque handle, an out-param) corresponds to the raw
+  // `Pointer`; the navigation macro subsumes the `pointer` topic under every `ptr<T>` parameter.
+  given pointer: (Pointer is Interoperable in Native of "pointer") =
+    Interoperable[Pointer, Native, "pointer"]()
+
+trait Native extends Ecosystem:
+  type Grammar = CHeaderDialect.type

@@ -30,24 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+import anticipation.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
-
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+// The Scala Native twin of the JVM (Panama) `ForeignLibrary` object's registration surface. A
+// native binary resolves every C symbol from the flat namespace of its own statically-linked
+// image (`NativeInvoke` emits `dlopen(null)`), so there is no library to load at runtime —
+// `register` is a no-op, and the library must instead be present at *link* time (a `-l...`
+// linking option, or a reachable `@link` annotation). Sharing the name and signature lets code
+// that registers its libraries cross-compile unchanged.
+object ForeignLibrary:
+  def register(paths: Text*): Unit = ()

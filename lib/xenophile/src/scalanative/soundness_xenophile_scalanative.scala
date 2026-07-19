@@ -30,32 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package xenophile
+package soundness
 
-import anticipation.*
-import prepositional.*
-
-// The C / native ecosystem: `Interoperable` markers associating Scala types with the C types
-// `CHeaderDialect` reads from header files. No runtime representation is involved.
-object Native:
-  given int: (Int is Interoperable in Native of "int") =
-    Interoperable[Int, Native, "int"]()
-
-  given long: (Long is Interoperable in Native of "long") =
-    Interoperable[Long, Native, "long"]()
-
-  given double: (Double is Interoperable in Native of "double") =
-    Interoperable[Double, Native, "double"]()
-
-  given float: (Float is Interoperable in Native of "float") =
-    Interoperable[Float, Native, "float"]()
-
-  given boolean: (Boolean is Interoperable in Native of "bool") =
-    Interoperable[Boolean, Native, "bool"]()
-
-  // A C string (`char*` / `const char*`) corresponds to a Scala `Text`.
-  given string: (Text is Interoperable in Native of "string") =
-    Interoperable[Text, Native, "string"]()
-
-trait Native extends Ecosystem:
-  type Grammar = CHeaderDialect.type
+// `invoke` materializes a fully-applied C `Foreign` navigation into a real Scala Native call,
+// resolving the symbol with `dlsym` and invoking it through a `CFuncPtr`. Must be applied
+// directly to an inline navigation chain — e.g. `Foreign["library", Native].random().invoke[Int]`
+// — not to a value bound to a `val`. It is the Scala Native analogue of `PanamaInvoke` (the JVM
+// Panama materializer); the two lower the identical navigation for different platforms and are
+// never on the same application's classpath.
+export xenophile.{NativeInvoke, invoke}

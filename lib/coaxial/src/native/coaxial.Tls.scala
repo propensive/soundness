@@ -30,24 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package coaxial
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+// Configuration for a TLS client connection (a `SecureEndpoint`), the native counterpart of the
+// JVM `Tls` (whose `context` slot holds an `SSLContext`; OpenSSL's equivalent — the `SSL_CTX` —
+// is built per connection from the system default certificate store, so there is nothing to
+// configure but verification). `verify` toggles peer-certificate and hostname verification; it
+// is ON by default and should only be turned off for a self-signed peer whose certificate you
+// already trust out of band. The default `given` is fully secure.
+object Tls:
+  given Tls = Tls()
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
-
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+case class Tls(verify: Boolean = true)

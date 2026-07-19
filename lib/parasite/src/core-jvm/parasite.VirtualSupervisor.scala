@@ -30,24 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parasite
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+import anticipation.*
+import nomenclature.*
+import vacuous.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+import Async.nominative
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+// The virtual-thread (Loom) supervisors — JVM-only, so split out of the platform-neutral core
+// (Scala Native's twins fork platform threads instead; there is no Loom on native).
+
+object VirtualSupervisor extends ThreadSupervisor:
+  def name: Name[Async] = n"virtual"
+
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
+    Strand.Threaded(Thread.ofVirtual().nn.start{ () => block }.nn)
+
+object AdaptiveSupervisor extends ThreadSupervisor:
+  def name: Name[Async] = n"adaptive"
+
+  // Virtual-thread support is a deterministic property of the JVM, so it is probed once with a
+  // no-op thread rather than trial-forked per task. A dedicated probe means a transient failure
+  // (e.g. OutOfMemoryError) on a real fork cannot mis-pin the process to platform threads: only
+  // `UnsupportedOperationException` — the deterministic outcome — is cached; anything else
+  // propagates and the probe is retried on the next fork.
+  private lazy val virtual: Boolean =
+    try
+      Thread.ofVirtual().nn.start{ () => () }
+      true
+    catch case error: UnsupportedOperationException => false
+
+  def fork(name: () => Optional[Text])(block: => Unit): Strand =
+    if virtual then VirtualSupervisor.fork(name)(block)
+    else PlatformSupervisor.fork(name)(block)

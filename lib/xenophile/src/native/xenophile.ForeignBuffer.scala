@@ -30,24 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+import java.lang.foreign.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+import anticipation.*
+import rudiments.*
+import vacuous.*
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+// A manually-managed block of foreign memory: the portable scratch space for pointer-typed C
+// parameters — an input buffer copied in from `Data`, an output buffer read back with `data`, or
+// an out-param read with `int`. This is the JVM (Panama) twin of the Scala Native version: the
+// two present an identical surface over an `Arena`-backed `MemorySegment` here and a `malloc`ed
+// `Ptr[Byte]` there, so code allocating buffers around `invoke` cross-compiles unchanged.
+// Lifetime is explicit on both platforms: `free` releases the memory.
+object ForeignBuffer:
+  def apply(size: Int): ForeignBuffer =
+    val arena = Arena.ofShared().nn
+    new ForeignBuffer(arena, arena.allocate(size.toLong).nn, size)
+
+  def apply(data: Data): ForeignBuffer =
+    val buffer = apply(data.length)
+
+    MemorySegment.copy
+      ( data.mutable(using Unsafe), 0, buffer.segment, ValueLayout.JAVA_BYTE, 0L, data.length )
+
+    buffer
+
+class ForeignBuffer(arena: Arena, private[xenophile] val segment: MemorySegment, val size: Int):
+  def pointer: Pointer = Pointer(segment.address)
+  def data(length: Int): Data = ForeignLibrary.bytes(segment, length)
+  def int: Int = segment.get(ValueLayout.JAVA_INT.nn, 0L)
+  def free(): Unit = arena.close()

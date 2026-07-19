@@ -36,7 +36,6 @@ import java.io.*
 
 import scala.collection.mutable.BitSet
 import scala.io.*
-import scala.runtime.coverage.*
 
 import anticipation.*
 import distillate.*
@@ -45,7 +44,7 @@ import rudiments.*
 
 object Coverage:
   def apply(): Option[Coverage] = currentDir.map: dir =>
-    val currentFile = Invoker.measurementFile(dir.s)
+    val currentFile = measurementFileIn(dir)
     val hits = measurements(currentFile)
     val dirFile = File(dir.s)
 

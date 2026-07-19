@@ -170,30 +170,6 @@ class Root(val supervisor: Supervisor) extends Monitor:
   def cancel(): Unit = ()
   def shutdown(): Unit = workers.each(_.cancel())
 
-object VirtualSupervisor extends ThreadSupervisor:
-  def name: Name[Async] = n"virtual"
-
-  def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    Strand.Threaded(Thread.ofVirtual().nn.start{ () => block }.nn)
-
-object AdaptiveSupervisor extends ThreadSupervisor:
-  def name: Name[Async] = n"adaptive"
-
-  // Virtual-thread support is a deterministic property of the JVM, so it is probed once with a
-  // no-op thread rather than trial-forked per task. A dedicated probe means a transient failure
-  // (e.g. OutOfMemoryError) on a real fork cannot mis-pin the process to platform threads: only
-  // `UnsupportedOperationException` — the deterministic outcome — is cached; anything else
-  // propagates and the probe is retried on the next fork.
-  private lazy val virtual: Boolean =
-    try
-      Thread.ofVirtual().nn.start{ () => () }
-      true
-    catch case error: UnsupportedOperationException => false
-
-  def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    if virtual then VirtualSupervisor.fork(name)(block)
-    else PlatformSupervisor.fork(name)(block)
-
 object PlatformSupervisor extends ThreadSupervisor:
   def name: Name[Async] = n"platform"
 

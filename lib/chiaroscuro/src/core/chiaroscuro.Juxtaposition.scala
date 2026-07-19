@@ -48,7 +48,11 @@ import vacuous.*
 
 object Juxtaposition:
 
-  type JuxtapositionPalette = Palette:
+  // A real trait, not a structural refinement of `Palette`: structural member selection goes
+  // through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does
+  // not support — whereas these are ordinary virtual calls. (probably's `TestPalette` extends
+  // this, so the test reporter's palette satisfies the `Teletypeable` given below.)
+  trait JuxtapositionPalette extends Palette:
     type Form = Srgb
     def unaccented: Color in Srgb
     def informative: Color in Srgb

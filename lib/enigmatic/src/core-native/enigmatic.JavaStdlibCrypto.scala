@@ -30,24 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package enigmatic
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+import anticipation.*
+import fulminate.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+// The Scala Native twin of the JVM `JavaStdlibCrypto` provider. `javax.crypto` does not exist on
+// Scala Native, so every operation panics: the object exists only so the platform-neutral
+// `Crypto.javaStdlibCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
+// delegation) compiles unchanged — selecting it *and using it* on native is the error.
+object JavaStdlibCrypto extends Crypto:
+  private def unavailable: Nothing =
+    panic(m"the Java standard library's cryptography is unavailable on Scala Native")
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+  def random: Crypto.Random = unavailable
+  def aes: Crypto.SymmetricCipher = unavailable
+  def rsa: Crypto.PublicKeyCipher = unavailable
+  def hmac(algorithm: Text): Crypto.Mac = unavailable
+
+  def des: Crypto.SymmetricCipher = unavailable
+  def tripleDes: Crypto.SymmetricCipher = unavailable
+  def blowfish: Crypto.SymmetricCipher = unavailable
+  def rc2: Crypto.SymmetricCipher = unavailable

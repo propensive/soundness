@@ -103,11 +103,8 @@ object Unicode:
 
   lazy val unicodeData: Map[Text, Char | Text] =
     val in: ji.InputStream =
-      Optional(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt")).or:
-        safely:
-          val uri = new java.net.URI("https://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
-          uri.toURL().nn.openStream().nn: ji.InputStream
-
+      Optional(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt"))
+      . or(remoteUnicodeData("UnicodeData.txt".tt))
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
     scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
@@ -152,13 +149,9 @@ object Unicode:
           map
 
     val in: ji.InputStream =
-      Optional(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).or:
-        safely:
-          val uri = new java.net.URI("https://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt")
-          uri.toURL().nn.openStream().nn: ji.InputStream
-
-        . or:
-            panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
+      Optional(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt"))
+      . or(remoteUnicodeData("EastAsianWidth.txt".tt))
+      . or(panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath"))
 
     val stream = scala.io.Source.fromInputStream(in).getLines().map(Text(_)).to(LazyList)
 

@@ -99,3 +99,13 @@ type Weakness[cipher] = cipher match
 type Authentication[cipher] = cipher match
   case BlockCipher => Concession.Unauthenticated
   case _           => Concession.Acceptable
+
+
+// Matches a JCE exception by class name, walking superclasses, so the platform-neutral core can
+// map the failures a JVM provider throws to `CryptoError`s without referencing `javax.crypto` or
+// `java.security` types — which do not exist on Scala Native, whose providers throw none of them.
+private[enigmatic] def securityException(error: Throwable, name: String): Boolean =
+  def recur(cls: Class[?] | Null): Boolean =
+    cls != null && (cls.nn.getName == name || recur(cls.nn.getSuperclass))
+
+  recur(error.getClass)

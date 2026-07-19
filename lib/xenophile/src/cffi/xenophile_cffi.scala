@@ -30,24 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+// An opaque C pointer — the platform-neutral currency for every `T*` a C header declares
+// (buffers, opaque handles like `EVP_MD*`, out-params) beyond the `char*`↔`Text` special case.
+// It is a raw address: `MemorySegment.ofAddress` gives the Panama backend its `ADDRESS` argument,
+// and Scala Native's materializer casts it to a `Ptr[_]`. It satisfies *any* pointer-typed
+// parameter (the navigation macro subsumes the `"pointer"` topic under every `ptr<T>`), so it is
+// exactly as type-safe as C: the header checks arity and pointerness, not pointee identity.
+// Foreign memory reachable through a `Pointer` is manually managed (see `ForeignBuffer`).
+object Pointer:
+  // The C null pointer, for optional-pointer parameters.
+  val Null: Pointer = 0L
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+  def apply(address: Long): Pointer = address
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+  extension (pointer: Pointer)
+    def address: Long = pointer
+    def isNull: Boolean = pointer == 0L
+
+opaque type Pointer = Long

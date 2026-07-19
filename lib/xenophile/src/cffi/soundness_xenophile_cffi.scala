@@ -32,22 +32,9 @@
                                                                                                   */
 package soundness
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
-
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
-
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+// The platform-neutral C foreign-interface front end: the `Native` ecosystem (Scala↔C type
+// markers) and the `CHeaderDialect` header parser. Shared by the JVM Panama backend
+// (`xenophile.native`, `ForeignLibrary`) and the Scala Native backend (`xenophile.scalanative`,
+// `NativeInvoke`); it carries no platform runtime, so it cross-compiles to both.
+export xenophile.{CHeaderDialect, Native, Pointer}
+export xenophile.Pointer.{address, isNull}

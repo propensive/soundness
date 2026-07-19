@@ -916,8 +916,12 @@ final class Report(using Environment)(using palette: TestPalette):
       if steps.length > 1 then
         val stackPalette = summon[StackTrace.Palette]
 
-        def accent(level: Int): Color in Srgb =
-          stackPalette.selectDynamic(s"accent${(level%5) + 1}")
+        def accent(level: Int): Color in Srgb = (level%5) + 1 match
+          case 1 => stackPalette.accent1
+          case 2 => stackPalette.accent2
+          case 3 => stackPalette.accent3
+          case 4 => stackPalette.accent4
+          case _ => stackPalette.accent5
 
         val labelWidth = series.map(_(0).length).max
         val peak = series.flatMap(_(1).values).map(_.throughput).max.max(1L)
@@ -1052,8 +1056,12 @@ final class Report(using Environment)(using palette: TestPalette):
 
       // The digression convention: packages in first-appearance order take the accent
       // colours cyclically, exactly as coloured stack traces do.
-      def accent(level: Int): Color in Srgb =
-        stackPalette.selectDynamic(s"accent${(level%5) + 1}")
+      def accent(level: Int): Color in Srgb = (level%5) + 1 match
+        case 1 => stackPalette.accent1
+        case 2 => stackPalette.accent2
+        case 3 => stackPalette.accent3
+        case 4 => stackPalette.accent4
+        case _ => stackPalette.accent5
 
       rows.to(List).sortBy(_.test.timestamp).each: row =>
         Out.println(e"$Bold(${Fg(palette.foreground)}(${row.test.name}))")

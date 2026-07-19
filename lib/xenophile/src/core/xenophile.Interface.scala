@@ -32,11 +32,18 @@
                                                                                                   */
 package xenophile
 
-import hellenism.*
 import prepositional.*
 
 object Interface:
-  transparent inline def apply[form](inline resource: Resource): Interface =
+  // Accepts any `Locative` — anything carrying a `Locus` singleton path type, in particular a
+  // hellenism `Resource` from `cp"…"` — rather than the `Resource` type itself, so `core` needs no
+  // dependency on hellenism (JVM-only, and it would block cross-compilation to Scala Native).
+  transparent inline def apply[form](inline resource: Locative): Interface =
     ${Xenophile.interface[form]('resource)}
+
+  // The classpath path of the definitions given directly as a string literal — the hellenism-free
+  // way to declare an `Interface` (hellenism's `cp"…"` does not cross-compile to Scala Native).
+  transparent inline def apply[form](inline path: String): Interface =
+    ${Xenophile.interfaceFromPath[form]('path)}
 
 trait Interface extends Formal, Locative

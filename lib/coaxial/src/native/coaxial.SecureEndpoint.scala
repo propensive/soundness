@@ -30,106 +30,98 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package coaxial
+
+import java.io as ji
+
+import scala.scalanative.unsafe.*
+
+// TLS setup failures surface as `IOException`s, matching what the JVM `SecureEndpoint`'s
+// `SSLSocket` calls throw at runtime; `Connectable.connect` offers no typed error channel.
+import unsafeExceptions.canThrowAny
 
 import anticipation.*
-import chiaroscuro.*
-import digression.*
-import fulminate.*
-import gossamer.*
-import hypotenuse.*
-import iridescence.*
-import prepositional.*
-import symbolism.*
+import gigantism.*
+import urticose.*
+import vacuous.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
+// A secure (TLS) TCP endpoint — a `host:port` reached over TLS, the counterpart of the
+// plaintext `Endpoint[TcpPort]`, mirroring the JVM `SecureEndpoint`. Scala Native has no
+// `javax.net.ssl`, so its `Connectable` speaks to OpenSSL directly through `extern` calls:
+// an `SSL_CTX` trusting the system default certificate store, a *connect BIO* — OpenSSL's
+// own resolve-connect-handshake state machine, which owns the underlying socket — with SNI
+// set to `host`, hostname verification (`SSL_set1_host`) unless `Tls.verify` is off, and
+// the handshaken BIO presented as a `Duplex` over `BIO_read`/`BIO_write`.
+//
+// The OpenSSL "functions" that are really C macros (`BIO_do_connect`, `BIO_get_ssl`,
+// `SSL_set_tlsext_host_name`, …) have no linkable symbols; each is re-expressed here as the
+// `BIO_ctrl`/`SSL_ctrl` call the macro expands to, with the command constants restated below.
+object SecureEndpoint:
+  // Honestly tracked, like `Connectable.tcpEndpoint`: the instance is resolvable only with
+  // `Online` permission, so it is a capability carrying that evidence in its capture set.
+  given connectable: (online: Online)
+  =>  ( options: Every[SocketOption.Tcp], tls: Tls )
+  =>  ( (SecureEndpoint is Connectable)^{online, caps.any} ) =
 
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{Cadential, Temporal}
-export Baseline.Mode.{Arithmetic, Geometric}
+    new Connectable:
+      type Self = SecureEndpoint
 
-// A real trait, not a structural refinement of `Palette`: structural member selection goes
-// through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
-// support — whereas these are ordinary virtual calls.
-trait TestPalette extends Juxtaposition.JuxtapositionPalette:
-  type Form = Srgb
-  def warning: Color in Srgb
-  def critical: Color in Srgb
-  def benchmark: Color in Srgb
-  def mixed: Color in Srgb
-  def informative: Color in Srgb
-  def cold: Color in Srgb
-  def warm: Color in Srgb
-  def hot: Color in Srgb
-  def accented: Color in Srgb
-  def highlight: Color in Srgb
-  def detail: Color in Srgb
-  def pass: Color in Srgb
-  def fail: Color in Srgb
-  def aspirePass: Color in Srgb
-  def aspireFail: Color in Srgb
-  def subdued: Color in Srgb
-  def unaccented: Color in Srgb
-  def positive: Color in Srgb
-  def negative: Color in Srgb
+      def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
+        // A connect BIO resolves and opens its socket internally, so neither a local-interface
+        // bind nor per-socket `options` can be applied; both are ignored (as `listenUdp`
+        // ignores `interface`).
+        val nullPtr = null.asInstanceOf[Ptr[Byte]]
+        val context = libssl.SSL_CTX_new(libssl.TLS_client_method())
+        if context == null then throw ji.IOException("TLS: SSL_CTX_new failed: "+opensslError())
 
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
+        try
+          if libssl.SSL_CTX_set_default_verify_paths(context) != 1
+          then throw ji.IOException("TLS: no default certificate store: "+opensslError())
 
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
+          val mode = if tls.verify then SSL_VERIFY_PEER else SSL_VERIFY_NONE
+          libssl.SSL_CTX_set_verify(context, mode, nullPtr)
 
-extension [value](value: value)
-  @targetName("plusOrMinus")
-  inline infix def +/- (tolerance: value)
-  ( using inline commensurable: value is Commensurable against value,
-          addable:              value is Addable by value,
-          equality:             addable.Result =:= value,
-          subtractable:         value is Subtractable by value,
-          equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+          val bio = libssl.BIO_new_ssl_connect(context)
 
-    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
+          if bio == null
+          then throw ji.IOException("TLS: BIO_new_ssl_connect failed: "+opensslError())
 
+          try
+            val sslHolder = stackalloc[Ptr[Byte]]()
+            libcrypto.BIO_ctrl(bio, BIO_C_GET_SSL, 0L, sslHolder.asInstanceOf[Ptr[Byte]])
+            val ssl = !sslHolder
+            if ssl == null then throw ji.IOException("TLS: BIO_get_ssl failed: "+opensslError())
 
-  @targetName("plusOrMinus2")
-  inline infix def ± (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+            Zone.acquire: zone =>
+              val host = toCString(endpoint.host.s)(using zone)
 
-    value +/- (tolerance)
+              // SNI lets the server select its certificate (OpenSSL copies the name)...
+              libssl.SSL_ctrl
+                ( ssl, SSL_CTRL_SET_TLSEXT_HOSTNAME, TLSEXT_NAMETYPE_host_name,
+                  host.asInstanceOf[Ptr[Byte]] )
 
+              // ...and `SSL_set1_host` then checks that certificate against the hostname
+              // during the handshake (skipped only when verification is off).
+              if tls.verify && libssl.SSL_set1_host(ssl, host) != 1
+              then throw ji.IOException("TLS: SSL_set1_host failed: "+opensslError())
 
-def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
-  TestId(name, suite, codepoint)
+              val target = toCString(endpoint.host.s+":"+endpoint.port.toString)(using zone)
+              libcrypto.BIO_ctrl(bio, BIO_C_SET_CONNECT, 0L, target.asInstanceOf[Ptr[Byte]])
 
+            // Resolve, connect and handshake in one step; with `SSL_VERIFY_PEER` set, an
+            // untrusted or mismatched certificate fails here.
+            if libcrypto.BIO_ctrl(bio, BIO_C_DO_STATE_MACHINE, 0L, nullPtr) <= 0 then
+              val where = endpoint.host.s+":"+endpoint.port.toString
+              throw ji.IOException("TLS: connection to "+where+" failed: "+opensslError())
 
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-  ( block: Testable ?=> Unit )
-:   Unit =
+            bioDuplex(bio, context)
 
-  runner.suite(Testable(name, suite), block)
+          catch case error: Throwable =>
+            libcrypto.BIO_free_all(bio)
+            throw error
 
+        catch case error: Throwable =>
+          libssl.SSL_CTX_free(context)
+          throw error
 
-extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${probably.internal.debug('value, 'test)}
-
-package harnesses:
-  given threadLocal: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
-    override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
-
-package autopsies:
-  given contrastExpectations: Autopsy:
-    type Analyse = true
-
-  given none: Autopsy:
-    type Analyse = false
+case class SecureEndpoint(host: Text, port: Int)

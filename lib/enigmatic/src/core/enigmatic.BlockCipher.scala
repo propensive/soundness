@@ -32,8 +32,6 @@
                                                                                                   */
 package enigmatic
 
-import javax.crypto as jc
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -255,15 +253,16 @@ extends Duct[Data, Data]:
     inner match
       case duct: CipherDuct =>
         try duct.flush(target.asInstanceOf[duct.output.Storage], targetOffset, targetSpace)
-        catch
-          case error: jc.AEADBadTagException =>
-            tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-          case error: jc.BadPaddingException =>
-            tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-          case error: jc.IllegalBlockSizeException =>
-            tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+        catch case error: Exception =>
+          // Matched by class name (see `securityException`): `javax.crypto` types cannot be
+          // referenced from this platform-neutral file. (`canThrowAny` only relicenses the
+          // rethrow of the exceptions this handler does not match.)
+          import unsafeExceptions.canThrowAny
+          if securityException(error, "javax.crypto.BadPaddingException")
+          then tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+          else if securityException(error, "javax.crypto.IllegalBlockSizeException")
+          then tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+          else throw error
 
       case null =>
         inner = begin().asInstanceOf[CipherDuct]

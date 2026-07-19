@@ -38,7 +38,7 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import hellenism.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -218,9 +218,19 @@ object Xenophile:
       case Foreign.Type.Applied(constructor, ok :: _) if constructor.s == "result" => reprOf(ok)
       case _                                                                       => Unset
 
+    // A raw C `Pointer` argument (topic `pointer`) satisfies *any* pointer-typed parameter
+    // (`ptr<T>`, of which `char*`'s `string` special case is not one) — the C dialect checks
+    // pointerness, not pointee identity, exactly as C itself does.
+    val pointerOk: Boolean = paramType match
+      case Foreign.Type.Applied(constructor, _) if constructor.s == "ptr" =>
+        argTopic <:< reprOf(Foreign.Type.Named(t"pointer"))
+
+      case _ =>
+        false
+
     // Subsumption, not equality: a `string` (or a bare `none`) argument satisfies an
     // `option<string>` (`string|none`) parameter, and an `ok`-arm value a `result<…>` parameter.
-    if argTopic <:< paramTopic || okArm.lay(false)(argTopic <:< _) then '{$arg.expr}
+    if argTopic <:< paramTopic || okArm.lay(false)(argTopic <:< _) || pointerOk then '{$arg.expr}
     else halt(m"xenophile: $method expects an argument of foreign type ${paramType.text}")
 
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
@@ -322,14 +332,12 @@ object Xenophile:
       case '[type result <: Foreign; result] =>
         '{Foreign.make($tree).asInstanceOf[result]}
 
-  def interface[form: Type](resource: Expr[Resource]): Macro[Interface] =
+  // Builds an `Interface { type Form = form; type Locus = <locus> }` value from the definitions
+  // path's singleton type, shared by both `apply` overloads.
+  private def interfaceOf[form: Type](using quotes: Quotes)(locusRepr: quotes.reflect.TypeRepr)
+  :   Expr[Interface] =
+
     import quotes.reflect.*
-
-    val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
-
-    val locusRepr = members.at(t"Locus").or:
-      halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")
-
     val formRepr = TypeRepr.of[form]
 
     val resultType =
@@ -341,6 +349,27 @@ object Xenophile:
     resultType.asType.absolve match
       case '[type result <: Interface; result] =>
         '{(new Interface {}).asInstanceOf[result]}
+
+  // The `Locative` overload: read the `Locus` singleton path type from the argument (a hellenism
+  // `Resource`, or any other value carrying a `Locus`).
+  def interface[form: Type](resource: Expr[Locative]): Macro[Interface] =
+    import quotes.reflect.*
+
+    val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
+
+    val locusRepr = members.at(t"Locus").or:
+      halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")
+
+    interfaceOf[form](locusRepr)
+
+  // The `String` overload: the path is given directly as a string literal, needing no hellenism.
+  def interfaceFromPath[form: Type](path: Expr[String]): Macro[Interface] =
+    import quotes.reflect.*
+
+    val locus = path.value.getOrElse:
+      halt(m"xenophile: the definitions path must be a string literal")
+
+    interfaceOf[form](ConstantType(StringConstant(locus)))
 
   def root[name <: Label: Type, origin: Type]: Macro[Foreign] =
     import quotes.reflect.*

@@ -77,6 +77,13 @@ object settings:
   // `release/lib` jars directly (fork-developer mode).
   val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")
   val scalaJsVersion = "1.22.0-wasm.4"
+  // Scala Native cross-compilation. The stock published `nscplugin`/`scala3lib_native` for the
+  // upstream base version work unchanged with the fork compiler (the plugin is keyed to the base
+  // Scala version, and the fork stays TASTy/plugin-compatible), so — unlike the Scala.js stdlib —
+  // no fork-republished Native artifacts are needed. `scalaNativeScalaVersion` is the *base*
+  // version those artifacts are published for (the fork's `-propensive` suffix is dropped).
+  val scalaNativeVersion = "0.5.12"
+  val scalaNativeScalaVersion = "3.9.0-RC1"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -284,6 +291,34 @@ object toolchain extends Module:
 
     PathRef(Task.dest)
 
+// Resolves the stock Scala Native artifacts from Maven Central (they are not fork-built, so no
+// local repository view is needed). `nscplugin` is the compiler plugin that lowers to NIR, added
+// as a single `-Xplugin:` (resolved intransitively so no non-plugin jar is passed to `-Xplugin`,
+// which the compiler rejects); `runtime` is the Native stdlib/`javalib` that `.native` sources
+// compile against; `tools` is the linker library the `nativelink` driver runs in its own JVM.
+object nativeToolchain extends mill.javalib.CoursierModule:
+  import settings.scalaNativeVersion as snv
+  import settings.scalaNativeScalaVersion as snsv
+
+  def nscplugin: T[PathRef] = Task:
+    defaultResolver().classpath(Seq(mvn"org.scala-native:nscplugin_$snsv:$snv"), false).head
+
+  // The Native stdlib/`javalib`/C runtime. Added to each `.native` module as *compile-only*
+  // dependencies (`compileMvnDeps`, which do not propagate to dependents): they carry the `.nir`
+  // and bundled C sources the linker consumes, and must appear on the final link classpath exactly
+  // once — routing them through `unmanagedClasspath`/`mvnDeps` instead multiplies the C runtime
+  // across the module graph and the C linker then rejects the duplicate symbols.
+  val runtimeDeps: Seq[mill.javalib.Dep] = Seq(
+    mvn"org.scala-native:scala3lib_native0.5_3:$snsv+$snv",
+    mvn"org.scala-native:javalib_native0.5_3:$snv",
+    mvn"org.scala-native:auxlib_native0.5_3:$snv",
+    mvn"org.scala-native:clib_native0.5_3:$snv",
+    mvn"org.scala-native:posixlib_native0.5_3:$snv",
+    mvn"org.scala-native:nativelib_native0.5_3:$snv")
+
+  def tools: T[Seq[PathRef]] = Task:
+    defaultResolver().classpath(Seq(mvn"org.scala-native:tools_3:$snv"))
+
 // Routes a Scala module through the fork toolchain: the repository view above for all coursier
 // resolutions, plus direct (content-hashed) paths for the two hot artifacts — the compiler
 // classpath and the compiled sbt bridge — so a rebuilt compiler is picked up without any
@@ -351,17 +386,37 @@ def jsDeps(deps: Seq[mill.api.Module]): Seq[ScalaJSModule] = deps.collect:
   case component: Component if component.scalaJs         => component.js
   case component: BareComponent if component.scalaJs     => component.js
 
-// Adds a nested `js` Scala.js cross-module that shares the JVM module's sources, resources and
-// scalac options (the compiler plugins and `-Yimports` etc. apply identically; mill appends
-// `-scalajs`). On by default; a JVM-only module opts out with `override def scalaJs = false`, which
-// also excludes it from `jsAll` and from dependents' JS dependency graphs.
-trait ScalaJsCross extends BaseScalaModule:
+// The Scala Native counterpart of `jsDeps`: maps JVM `moduleDeps` to the corresponding `.native`
+// cross-modules, skipping any dependency not itself Native-capable (`scalaNative = false`).
+def nativeDeps(deps: Seq[mill.api.Module]): Seq[ScalaModule] = deps.collect:
+  case component: Component if component.scalaNative     => component.native
+  case component: BareComponent if component.scalaNative => component.native
+
+// Adds nested `js` (Scala.js) and `native` (Scala Native) cross-modules that share the JVM
+// module's sources, resources and scalac options — the compiler plugins and `-Yimports` etc.
+// apply identically across platforms. `scalaJs` defaults on; `scalaNative` defaults to `scalaJs`,
+// because a module's platform-neutrality is very nearly the same predicate for both back ends —
+// so a JVM-only module (`scalaJs = false`) is native-incapable by default too, and only the few
+// modules where the two diverge need an explicit `scalaNative` override (a JS-capable module that
+// nonetheless uses a native-unsupported API, or a native materializer with no JS relevance). Opting
+// a platform out also excludes the module from the `soundness.js` / `soundness.native` aggregates
+// and from dependents' cross graphs.
+//
+// The `js` module is a real `ScalaJSModule` (mill's Scala.js worker links it). The `native` module
+// is a plain `ScalaModule` whose Native-ness comes entirely from the `nscplugin` `-Xplugin` and the
+// Native stdlib on its classpath: compiling it emits `.nir` alongside the classfiles. Linking a
+// native binary is a separate step (`soundness.nativelink`), mirroring how the Wasm component is
+// linked out of band.
+trait PlatformCross extends BaseScalaModule:
   jvm =>
   def scalaJs: Boolean = true
+  def scalaNative: Boolean = scalaJs
   def jsModuleDeps: Seq[ScalaJSModule]
-  // The sources of the Scala.js cross-module: the JVM module's sources by default, overridable
-  // for components with platform-specific implementations (e.g. `pneumatic.flate`).
+  def nativeModuleDeps: Seq[ScalaModule]
+  // The sources of the cross-modules: the JVM module's sources by default, overridable for
+  // components with platform-specific implementations (e.g. `pneumatic.flate`).
   def jsSources: T[Seq[PathRef]] = sources
+  def nativeSources: T[Seq[PathRef]] = sources
 
   object js extends ScalaJSModule, Toolchain:
     def scalaVersion = settings.scalaVersion
@@ -374,23 +429,38 @@ trait ScalaJsCross extends BaseScalaModule:
     def compileMvnDeps = jvm.compileMvnDeps
     override def moduleDeps = jvm.jsModuleDeps
 
+  object native extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = Task:
+      jvm.scalacOptions() :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
+    def sources = jvm.nativeSources
+    def resources = jvm.resources
+    def compileResources = jvm.compileResources
+    def mvnDeps = jvm.mvnDeps
+    // The Native stdlib/`javalib` are compiled against directly (they carry the `.nir` the linker
+    // consumes); the fork's JVM stdlib remains present for the compiler itself via `Toolchain`.
+    def compileMvnDeps = Task { jvm.compileMvnDeps() ++ nativeToolchain.runtimeDeps }
+    override def moduleDeps = jvm.nativeModuleDeps
+
 trait BareComponent(dependencies: PublishModule*)
-extends BaseScalaModule, SonatypeCentralPublishModule, ScalaJsCross:
+extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
   def moduleId: String = moduleDir.last
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
   override def moduleDeps = dependencies
   def jsModuleDeps = jsDeps(moduleDeps)
+  def nativeModuleDeps = nativeDeps(moduleDeps)
 
 trait Component(dependencies: PublishModule*)
-extends BaseScalaModule, SonatypeCentralPublishModule, ScalaJsCross:
+extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
   def moduleId: String = moduleDir.last
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def sources = Task.Sources(moduleDir)
   override def moduleDeps = beneficence.core +: proscenium.core +: dependencies
   def jsModuleDeps = jsDeps(moduleDeps)
+  def nativeModuleDeps = nativeDeps(moduleDeps)
 
   override def scalacOptions = Task:
     settings.scalaOptions
@@ -508,6 +578,13 @@ object soundness extends Toolchain:
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     override def moduleDeps = jsComponents
+
+  // The Scala Native cross-build of every Native-capable component (a sibling platform to `js`,
+  // built alongside it, not part of `all`). Compiling it emits `.nir` across the whole surface;
+  // `soundness.nativelink` then links a representative slice to a real binary.
+  object native extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    override def moduleDeps = nativeComponents
 
   object all extends Bundle(jvm, wasi)
 
@@ -641,7 +718,8 @@ object ambience extends Library:
   // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component
   // Model import of `wasi:cli/environment` `get-environment` (`list<tuple<string, string>>`),
   // materialized by xenophile's `invoke` at the downstream (Wasm-linked) summoning site.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+    override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core):
@@ -765,7 +843,8 @@ object aviation extends Library:
   // WASI-backed monotonic clock: a `MonotonicClock` given whose reading is a Wasm Component Model
   // import of `wasi:clocks/monotonic-clock`, materialized by xenophile's `invoke` at the downstream
   // (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+    override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -855,6 +934,7 @@ object cacophony extends Library:
 
 object caduceus extends Library:
   object core extends Component(honeycomb.core):
+    override def scalaNative = false // renders HTML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object resend extends Component(core, telekinesis.jvm, jacinta.core):
@@ -895,7 +975,8 @@ object capricious extends Library:
   // WASI-backed entropy: a `Randomization` given whose randomness is a Wasm Component Model import
   // of `wasi:random/random`, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` in this build; only meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+    override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core):
@@ -915,9 +996,12 @@ object cataclysm extends Library:
       contingency.core, vacuous.core, fulminate.core, denominative.core, hellenism.core,
       jacinta.core, quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
       contextual.core, nomenclature.core):
+    override def scalaNative = false // loads its property/syntax tables from classpath resources
+                                     // at runtime via hellenism's classloaders (JVM/JS-only)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object html extends Component(core, honeycomb.core, gigantism.core):
+    override def scalaNative = false // depends on `cataclysm.core`/honeycomb (JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, html):
@@ -942,6 +1026,10 @@ object chiaroscuro extends Library:
 
 object coaxial extends Library:
   object core extends Component(urticose.core, frontier.core, turbulence.core):
+    // The native `SocketBackend` (`socketBackends.native`) is folded into the native cross via
+    // `nativeSources` (as galilei's filesystem backend is): TCP and UDP over Scala Native's
+    // `java.net` sockets, with Unix-domain sockets and TLS unsupported for now.
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.virtualMachine`), split out
@@ -953,7 +1041,8 @@ object coaxial extends Library:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // A `SocketBackend` over `wasi:sockets` (TCP only; WASI has no Unix-domain sockets), materialized
   // by xenophile's `invoke` at the downstream Wasm-linked summoning site.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+    override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm)
@@ -1078,6 +1167,7 @@ object embarcadero extends Library:
         gesticulate.core, aperture.core, pneumatic.flate):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "oci-jvm")
     override def jsSources = Task.Sources(moduleDir)
+    override def nativeSources = Task.Sources(moduleDir) // as `jsSources`: exclude the `oci-jvm` set
     override def scalacOptions = Task:
       settings.cc(settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64"))
   object containerd extends Component(obligatory.grpc, telekinesis.http2, coaxial.core, locomotion.core, anticipation.time, aperture.core):
@@ -1089,19 +1179,29 @@ object embarcadero extends Library:
       settings.cc(settings.maxInlines(super.scalacOptions(), "64"))
 
 object enigmatic extends Library:
+  // The platform split mirrors gastronomy's: the cipher/key/PEM model is platform-neutral, while
+  // the `JavaStdlibCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
+  // `java.security` on the JVM (`core-jvm`) and against panicking stubs on native (`core-native`,
+  // where the OpenSSL provider is the real implementation).
   object core extends Component(aperture.core, gastronomy.core):
-    override def scalaJs = false // crypto via `gastronomy` (`java.security`/`javax.crypto`)
-    // The off-heap/encrypting cloaks live in `core-jvm` (`java.lang.foreign`), ready for the
-    // day the shared tree cross-compiles.
+    override def scalaJs = false // `javax.crypto` has no JS analogue (and no OpenSSL either)
+    override def scalaNative = true // but native has the OpenSSL provider
+    // `core-jvm` also holds the off-heap/encrypting cloaks (`java.lang.foreign`).
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object cose extends Component(core, breviloquence.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // One shared source, two FFI backends: the JVM variant materializes `invoke` through Panama
+  // (`xenophile.native`), the Scala Native variant through `nscplugin` (`xenophile.scalanative`) —
+  // the dependency swap below is the whole difference.
   object openssl extends Component(core, xenophile.native):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalaJs = false // a C FFI backend; no JS relevance
+    override def scalaNative = true
+    override def nativeModuleDeps = super.nativeModuleDeps :+ xenophile.scalanative.native
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, cose, openssl):
@@ -1325,6 +1425,10 @@ object fulminate extends Library:
 
 object galilei extends Library:
   object core extends Component(aperture.core, serpentine.core, turbulence.core):
+    // The native `FilesystemBackend` (`filesystemBackends.native`) is folded into the native cross
+    // via `nativeSources` — native has a single OS filesystem, so (unlike the JVM/WASI backends,
+    // which are separate modules) it need not be an opt-in dependency.
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.nio` `FilesystemBackend` (`filesystemBackends.virtualMachine`), split out of `core`
@@ -1337,7 +1441,8 @@ object galilei extends Library:
   // A `FilesystemBackend` over `wasi:filesystem`, materialized by xenophile's `invoke` at the
   // downstream (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only meaningful linked
   // as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+    override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm):
@@ -1403,6 +1508,7 @@ object gossamer extends Library:
 
 object graffiti extends Library:
   object core extends Component(honeycomb.core, cataclysm.core):
+    override def scalaNative = false // renders HTML/CSS via honeycomb/cataclysm (JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
@@ -1457,6 +1563,9 @@ object hellenism extends Library:
   // Galilei-free classpath/`Resource`/`cp""` — cross-compiles to Scala.js (used by xenophile).
   object core extends Component(anticipation.url, serpentine.core, turbulence.core,
     nomenclature.core, gossamer.core):
+    // Cross-compiles to Scala.js but not to native: `servicesFor` calls `ServiceLoader.load` with a
+    // runtime `Class`, which nscplugin rejects (native needs a `classOf` literal).
+    override def scalaNative = false
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // Galilei/filesystem-backed classpath (`LocalClasspath`, the `Filesystem`/`Substantiable` givens).
@@ -1471,6 +1580,8 @@ object hellenism extends Library:
 object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url,
       nomenclature.core, hellenism.core):
+    override def scalaNative = false // loads its HTML entity tables from classpath resources at
+                                     // runtime via hellenism's classloaders (JVM/JS-only)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
@@ -1478,7 +1589,11 @@ object honeycomb extends Library:
     def mvnDeps = Seq(mvn"org.jsoup:jsoup:1.18.3")
 
 object hieroglyph extends Library:
+  // The unicode.org download fallback needs `java.net.URL`, absent on Scala Native, so it is
+  // split by platform (`core-jvm`/`core-native`); native binaries embed the UNIDATA tables.
   object core extends Component(kaleidoscope.core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
@@ -1588,6 +1703,7 @@ object larceny extends Library:
 
 object legerdemain extends Library:
   object core extends Component(honeycomb.core, anamnesis.core):
+    override def scalaNative = false // renders HTML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, scintillate.server):
@@ -1726,8 +1842,12 @@ object panopticon extends Library:
   object bench extends Benchmarks(core, quantitative.units)
 
 object parasite extends Library:
+  // The virtual-thread (Loom) supervisors live in `core-jvm`; Scala Native compiles twins that
+  // fork platform threads instead (`core-native`) — no Loom on native.
   object core extends Component(digression.core, mercator.core, anticipation.time,
       nomenclature.core):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // `GarbageCollection`/`Heap` introspection via `java.lang.management` — JVM-only.
@@ -1847,7 +1967,11 @@ object probably extends Library:
   object cli extends Component(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The scoverage `Invoker`'s initializer needs `SecureRandom` (absent on Scala Native), so
+  // the measurement-file lookup is split by platform (`coverage-jvm`/`coverage-native`).
   object coverage extends Component(dendrology.tree):
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "coverage-native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(cli):
@@ -1865,6 +1989,7 @@ object profanity extends Library:
 
 object punctuation extends Library:
   object core extends Component(honeycomb.core, frontier.core):
+    override def scalaNative = false // renders HTML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object html extends Component(core):
@@ -1917,6 +2042,7 @@ object rudiments extends Library:
 object archimedes extends Library:
   object core extends Component(xylophone.core, honeycomb.core, contextual.core, gigantism.core,
     quantitative.core, baroque.core, mosquito.core):
+    override def scalaNative = false // renders MathML via honeycomb (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, quantitative.units):
@@ -1926,6 +2052,7 @@ object archimedes extends Library:
 object savagery extends Library:
   object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core,
     mosquito.core):
+    override def scalaNative = false // builds SVG/CSS via cataclysm (classpath resources, JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
@@ -2097,6 +2224,9 @@ object tarantula extends Library:
 
 object telekinesis extends Library:
   object core extends Component(monotonous.core, legerdemain.core, turbulence.core):
+    // HTTP: reaches `legerdemain` (HTML, JVM/JS-only) and would need a native sockets/HTTP backend
+    // (there is none yet — the JVM `java.net.http` transport lives in `telekinesis.jvm`).
+    override def scalaNative = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
@@ -2119,7 +2249,8 @@ object telekinesis extends Library:
   // A GET-only `Http.Backend` over `wasi:http/outgoing-handler`, materialized by xenophile's
   // `invoke` at the downstream (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only
   // meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+    override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, jvm, http2):
@@ -2135,7 +2266,8 @@ object turbulence extends Library:
   // WASI-backed standard streams: a `Stdio` whose output writes through the `wasi:io/streams`
   // `output-stream` resource, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` here; only meaningful linked as a component.
-  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit, hellenism.core):
+    override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   // The test suite exercises fan-out/merge over compression ducts, so it depends on `pneumatic`.
@@ -2256,14 +2388,36 @@ object wisteria extends Library:
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
-    vacuous.core, hellenism.core):
+    vacuous.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object typescript extends Component(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object native extends Component(core):
-    override def scalaJs = false // native FFI via `java.lang.foreign` (Panama) — JVM-only
+  // The platform-neutral C front end (the `Native` ecosystem type markers and the `CHeaderDialect`
+  // header parser); shared by the JVM Panama backend and the Scala Native backend, so it carries no
+  // platform runtime and cross-compiles to both.
+  object cffi extends Component(core):
+    override def scalaJs = false // no JS relevance (its consumers are the native/Panama backends)
+    override def scalaNative = true // but it is the shared front end of the native backend
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object native extends Component(core, cffi):
+    override def scalaJs = false // native FFI via `java.lang.foreign` (Panama) — JVM-only (native
+                                 // uses `scalanative`); `scalaNative` follows `scalaJs` here
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The Scala Native materializer: lowers a C `Foreign` navigation to a `dlsym`+`CFuncPtr` call.
+  // Compiled for the JVM (where the macro runs) and cross-compiled for native (where downstream
+  // callers link it). Its `invoke` extension collides by design with `wasm`/`js` (they target
+  // different platforms), so — like `js` — it is not bundled into the `test` module.
+  object scalanative extends Component(core, cffi):
+    override def scalaJs = false // a Scala Native materializer; no JS relevance
+    override def scalaNative = true // but it is, of course, the native materializer itself
+    // The native variant additionally compiles `src/nativeruntime` — the Scala Native twins of
+    // the Panama module's runtime surface (`ForeignBuffer`, `ForeignLibrary.register`), which
+    // reference `scala.scalanative.*` and so cannot join this module's JVM (macro) compilation.
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "nativeruntime")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object wit extends Component(core, hypotenuse.core):
@@ -2283,13 +2437,14 @@ object xenophile extends Library:
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit, webidl, wasm):
+  object test extends Tests(typescript, native, wit, webidl, wasm, hellenism.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
 object querencia extends Library:
   object core extends Component(xenophile.webidl, honeycomb.core, hypotenuse.core, gossamer.core,
     prepositional.core, vacuous.core, hellenism.core):
+    override def scalaNative = false // browser DOM via honeycomb + hellenism (JVM/JS-only)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
@@ -2426,6 +2581,14 @@ val jsComponents: Seq[ScalaJSModule] =
     case component: Component if component.scalaJs     => component.js
     case component: BareComponent if component.scalaJs => component.js
 
+// Every Scala Native-capable component's `native` cross-module — the module deps of
+// `soundness.native`. Building it compiles the whole Native-capable surface to NIR; JVM-only
+// modules opt out with `override def scalaNative = false` and are skipped here.
+val nativeComponents: Seq[ScalaModule] =
+  allLibraries.flatMap(_.moduleDirectChildren).collect:
+    case component: Component if component.scalaNative     => component.native
+    case component: BareComponent if component.scalaNative => component.native
+
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a
 // `java.*` class Scala.js does not implement (the runtime counterpart to the
@@ -2438,6 +2601,102 @@ object jslink extends ScalaJSModule, Toolchain:
   def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "jslink" / "src")
   override def mainClass = Some("jslink.Main")
   override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js, xenophile.typescript.js, xenophile.js.js)
+
+// The Scala Native counterpart of `jslink`: `nativelink.binary` links a representative slice of the
+// Native-capable modules (`nativelink/src`) into a real executable via the `tools` linker, so any
+// reachable reference to an unimplemented `java.*` API surfaces at link time. Mirrors `object wasm`:
+// an `app` cross-module compiled to NIR plus a `linker` driver (`nativelink/linker`) run in its own
+// JVM. Requires `clang` on the PATH.
+object nativelink extends Module:
+  object app extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = Task:
+      (settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+        :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "src")
+    // The C header the xenophile FFI call navigates is read by the macro at compile time, so it must
+    // be on the compile classpath (as well as packaged for completeness).
+    def resources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
+    def compileResources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
+    def compileMvnDeps = nativeToolchain.runtimeDeps
+    override def mainClass = Some("nativelink.Main")
+    override def moduleDeps = Seq(
+      vacuous.core.native, xenophile.scalanative.native, gossamer.core.native,
+      hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native,
+      ambience.core.native, coaxial.core.native, enigmatic.openssl.native, parasite.core.native)
+
+  // Real test suites compiled for Native and linked as binaries — each runs `<module>.Tests`
+  // natively, the end-state check that `probably` and a green module's entire suite work as a
+  // native binary. Only suites free of `demilitarize` blocks qualify (larceny is a JVM compiler
+  // plugin, excluded from the native cross, so its `CompileError` values cannot exist at native
+  // link time). To enrol a suite, add its module name here and its mapping in
+  // `NativeSuite.testModule`.
+  object suite extends Cross[NativeSuite]("hypotenuse", "denominative", "monotonous")
+
+  // The JVM test module's sources compiled with the same `Tests`-trait flags (larceny and
+  // beneficence plugins, `settings.cc`) plus `nscplugin` for NIR, against the `.native` variants
+  // of its dependency graph (`nativeDeps` maps them; JVM-only components like `larceny.plugin`
+  // drop out).
+  trait NativeSuite extends ScalaModule, Toolchain, Cross.Module[String]:
+    def testModule: Tests = crossValue match
+      case "hypotenuse"   => hypotenuse.test
+      case "denominative" => denominative.test
+      case "monotonous"   => monotonous.test
+
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = Task:
+      settings.cc(settings.scalaOptions)
+        :+ s"-Xplugin:${larceny.plugin.assembly().path}"
+        :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+        :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "lib" / crossValue / "src" / "test")
+    def compileMvnDeps = nativeToolchain.runtimeDeps
+    override def mainClass = Some(crossValue + ".Tests")
+    override def moduleDeps = nativeDeps(testModule.moduleDeps)
+
+    def binary: T[PathRef] = Task:
+      // The union of both classpaths: `compileClasspath` carries the Scala Native runtime jars
+      // (they are `compileMvnDeps`, absent from the run classpath), while `runClasspath` adds
+      // the upstream modules' resource directories, which the linker embeds in the binary
+      // (`embedResources`) — hieroglyph's UNIDATA tables are read back at run time through
+      // `getResourceAsStream`.
+      val classpath =
+        (compile().classes.path +: (compileClasspath() ++ runClasspath()).toSeq.map(_.path))
+        . distinct.filter(os.exists)
+      val driverClasspath =
+        linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+      os.proc("java", "-cp", driverClasspath, "nativelink.link", Task.dest.toString,
+        crossValue + ".Tests", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
+      . call(stdout = os.Inherit, stderr = os.Inherit)
+
+      PathRef(Task.dest / "soundness-native")
+
+  // Links every enrolled suite and runs each binary; a failing suite (nonzero exit) fails the
+  // task, so `mill nativelink.testSuites` is the one-shot native-test sweep.
+  def testSuites: T[Unit] = Task:
+    Task.traverse(suite.crossModules.toSeq)(_.binary)().foreach: binary =>
+      os.proc(binary.path.toString).call(stdout = os.Inherit, stderr = os.Inherit)
+
+  object linker extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "linker")
+    // The linker's own scala3-library comes from the fork (via `Toolchain`); exclude the stock
+    // 3.1.x that `tools` declares so the driver runs against a single, fork-consistent stdlib.
+    def mvnDeps = Seq(mvn"org.scala-native:tools_3:${settings.scalaNativeVersion}"
+      .exclude("org.scala-lang" -> "scala3-library_3", "org.scala-lang" -> "scala-library"))
+
+  def binary: T[PathRef] = Task:
+    val classpath =
+      (app.compile().classes.path +: app.compileClasspath().toSeq.map(_.path)).filter(os.exists)
+    val driverClasspath =
+      linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driverClasspath, "nativelink.link", Task.dest.toString,
+      "nativelink.Main", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(Task.dest / "soundness-native")
 
 // The Wasm-component end-to-end check (`etc/ci/wasm-e2e.sh`, `make wasm-e2e`): compiles a small
 // scenario app (tests/wasm/src) against every `.wasi` backend under `-scalajs` — expanding the
