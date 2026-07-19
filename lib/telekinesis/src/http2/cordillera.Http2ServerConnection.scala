@@ -227,6 +227,14 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
   def sendData(streamId: Int, payload: Bytes, endStream: Boolean): Unit =
     send(Frame.Data(streamId, payload, endStream))
 
+  // Send a trailing HEADERS block (always end-stream) on `streamId` — the
+  // response trailers, e.g. gRPC's `grpc-status`. A response with trailers must
+  // leave `endStream` unset on its HEADERS and DATA, so this block closes the
+  // stream. Encoded with a fresh (always-literal) HPACK encoder.
+  def sendTrailers(streamId: Int, entries: List[HpackEntry]): Unit =
+    val encoder = Hpack()
+    send(Frame.Headers(streamId, encoder.encode(entries), endStream = true, endHeaders = true))
+
   def close(): Unit =
     send(Frame.GoAway(0, ErrorCode.NoError.code, IArray.empty[Byte]))
     outbound.stop()

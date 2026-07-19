@@ -38,6 +38,7 @@ import anticipation.*
 import coaxial.*
 import contingency.*
 import cordillera.*
+import gossamer.*
 import parasite.*
 import prepositional.*
 import proscenium.*
@@ -102,18 +103,37 @@ object Http2Serve:
           // transforming body such as a text encoder does not terminate under).
           val respond: HttpConnection.Respond^ = new HttpConnection.Respond:
             def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
-              val headerEntries = PseudoHeaders.entries(response)
+              // A `Trailer` header (RFC 7230 §4.4) names response headers to be
+              // sent as HTTP/2 trailers — a trailing HEADERS block after the body
+              // (e.g. gRPC's `grpc-status`) — rather than in the initial block.
+              val trailerNames: Set[Text] =
+                response.textHeaders
+                  . filter(_.key.lower == t"trailer")
+                  . flatMap(_.value.cut(t",").map(_.trim.lower))
+                  . to(Set)
+
+              val (trailerEntries, headEntries) =
+                PseudoHeaders.entries(response).partition: entry =>
+                  trailerNames.contains(entry.name)
+
+              val trailing: Boolean = !trailerEntries.isEmpty
+
+              def sendTrailers(): Unit =
+                if trailing then connection0.sendTrailers(streamId, trailerEntries)
 
               response.body match
                 case Http.Body.Empty =>
-                  connection0.sendHeaders(streamId, headerEntries, endStream = true)
+                  connection0.sendHeaders(streamId, headEntries, endStream = !trailing)
+                  sendTrailers()
 
                 case Http.Body.Fixed(data) =>
-                  connection0.sendHeaders(streamId, headerEntries, endStream = data.isEmpty)
-                  if !data.isEmpty then connection0.sendData(streamId, data, endStream = true)
+                  val headEnd = data.isEmpty && !trailing
+                  connection0.sendHeaders(streamId, headEntries, endStream = headEnd)
+                  if !data.isEmpty then connection0.sendData(streamId, data, endStream = !trailing)
+                  sendTrailers()
 
                 case Http.Body.Flowing(source) =>
-                  connection0.sendHeaders(streamId, headerEntries, endStream = false)
+                  connection0.sendHeaders(streamId, headEntries, endStream = false)
 
                   source().sweep: (storage, start, size) =>
                     val block = storage.asInstanceOf[Array[Byte]]
@@ -121,8 +141,9 @@ object Http2Serve:
 
                     connection0.sendData(streamId, block, endStream = false)
 
-                  // An empty END_STREAM DATA frame closes the response.
-                  connection0.sendData(streamId, IArray.empty[Byte], endStream = true)
+                  // Trailers close the stream; otherwise an empty END_STREAM DATA.
+                  if trailing then sendTrailers()
+                  else connection0.sendData(streamId, IArray.empty[Byte], endStream = true)
 
           val connection1 = new HttpConnection(request, true, port, respond)
           connection1.respond(handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response])

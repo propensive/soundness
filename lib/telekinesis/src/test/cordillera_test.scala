@@ -357,6 +357,43 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
       . assert(_ == t"echo:GET:/hello")
 
+      test(m"the server role emits response trailers the client reads"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val server = Http2ServerConnection(serverSide)
+          val serverRef: AnyRef = server.asInstanceOf[AnyRef]
+
+          daemon:
+            safely:
+              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+
+              server0.accepted.stream.records.each: stream =>
+                unsafely:
+                  stream.headers.await()
+                  // HEADERS + DATA left open, then a trailing HEADERS block
+                  // (gRPC status) closes the stream.
+                  val head = List(HpackEntry(t":status", t"200"))
+                  server0.sendHeaders(stream.id, head, endStream = false)
+                  server0.sendData(stream.id, ascii(t"body"), endStream = false)
+                  server0.sendTrailers(stream.id, List(HpackEntry(t"grpc-status", t"0")))
+
+          val client = Http2Connection(clientSide)
+          val serverStarted = async(server.start())
+          client.start()
+          serverStarted.await()
+
+          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/call", Nil,
+              () => Stream(ascii(t"ping")))
+
+          val (stream, response) = client.fetch(request, t"http", t"unix")
+          val body = response.body.stream.memoize.utf8
+          val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
+          client.close()
+          server.close()
+          (body, grpcStatus.getOrElse(t"?"))
+
+      . assert(_ == (t"body", t"0"))
+
       test(m"a session lends one connection to several multiplexed requests"):
         supervise:
           val (clientSide, serverSide) = pair()
