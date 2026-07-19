@@ -2060,7 +2060,7 @@ object savagery extends Library:
       settings.cc(super.scalacOptions())
 
 object scintillate extends Library:
-  object server extends Component(telekinesis.core):
+  object server extends Component(telekinesis.core, telekinesis.http2):
     override def scalaJs = false // HTTP server via `telekinesis`/`coaxial` sockets
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))

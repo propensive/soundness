@@ -282,7 +282,21 @@ extends RequestServable:
         val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
 
         ssl.lay(jn.ServerSocket(port, 0, address)): context =>
-          context.getServerSocketFactory.nn.createServerSocket(port, 0, address).nn
+          val socket = context.getServerSocketFactory.nn.createServerSocket(port, 0, address).nn
+
+          // Offer `h2` then `http/1.1` by ALPN, so a client that speaks HTTP/2
+          // negotiates it during the TLS handshake; accepted sockets inherit
+          // these parameters. Plaintext servers have no ALPN.
+          socket match
+            case ssl: jns.SSLServerSocket =>
+              val params = ssl.getSSLParameters.nn
+              params.setApplicationProtocols(Array[String | Null]("h2", "http/1.1"))
+              ssl.setSSLParameters(params)
+
+            case _ =>
+              ()
+
+          socket
       catch case error: jn.BindException => abort(ServerError(port))
 
     val serverSocket = startServer()
@@ -316,13 +330,29 @@ extends RequestServable:
               try
                 socket1.setSoTimeout(idleTimeout)
 
-                val h = handler0.asInstanceOf[AnyRef => AnyRef]
+                val in = socket1.getInputStream.nn
+                val out = socket1.getOutputStream.nn
+                given HttpServerEvent is Loggable = loggable0.asInstanceOf[HttpServerEvent is Loggable]
+                val h0 = handler0.asInstanceOf[AnyRef => AnyRef]
 
-                self.asInstanceOf[SocketServer]
-                . serveConnection
-                    (h(summon[HttpConnection].asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
-                    (socket1.getInputStream.nn, socket1.getOutputStream.nn)
-                    (using loggable0.asInstanceOf[HttpServerEvent is Loggable])
+                // A TLS socket may have negotiated `h2` by ALPN; force the
+                // handshake to learn the protocol, then dispatch to the native
+                // HTTP/2 engine. Everything else (plaintext, or ALPN `http/1.1`)
+                // takes the HTTP/1.1 keep-alive path.
+                val protocol: Text = socket1 match
+                  case tls: jns.SSLSocket =>
+                    safely(tls.startHandshake())
+                    Optional(tls.getApplicationProtocol).let(_.tt).or(t"")
+
+                  case _ =>
+                    t""
+
+                if protocol == t"h2" then Http2Serve.serve(h0, in, out, port)
+                else
+                  self.asInstanceOf[SocketServer]
+                  . serveConnection
+                      (h0(summon[HttpConnection].asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
+                      (in, out)
 
               finally safely(socket1.close())
 

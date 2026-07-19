@@ -133,8 +133,12 @@ object Http2ServerConnection:
 // each header block is encoded with a fresh (always-literal) HPACK encoder, so
 // no encoder state is shared. Must be created within a `supervise`-provided
 // `Monitor`.
-class Http2ServerConnection(duplex: Duplex)(using Monitor, Probate):
+class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
   import Http2ServerConnection.*
+
+  // A socket-backed `Duplex` captures its I/O capabilities, so it crosses into
+  // the reader/writer daemons (and reaches `close`) as a neutral `AnyRef` rim.
+  private val duplexRef: AnyRef = duplex.asInstanceOf[AnyRef]
 
   private[cordillera] val streams: scc.TrieMap[Int, Http2Stream] = scc.TrieMap()
   private val outbound: Relay[Frame] = Relay()
@@ -163,15 +167,18 @@ class Http2ServerConnection(duplex: Duplex)(using Monitor, Probate):
         // Everything the fibers touch is bound to locals (or neutral carriers)
         // before they spawn: a daemon body may not capture the instance under
         // construction, and its context function must stay pure.
-        val duplex0: Duplex = duplex
+        val duplex0Ref: AnyRef = duplexRef
         val outbound0: Relay[Frame] = outbound
         val self: AnyRef = this.asInstanceOf[AnyRef]
 
         val writer = daemon:
+          val duplex0 = duplex0Ref.asInstanceOf[Duplex^]
+
           outbound0.stream.records.each: frame =>
             duplex0.send(zephyrine.Stream(frame.serialize))
 
-        val frameReaderRef: AnyRef = FrameReader(duplex0.source).asInstanceOf[AnyRef]
+        val frameReaderRef: AnyRef =
+          FrameReader(duplexRef.asInstanceOf[Duplex^].source).asInstanceOf[AnyRef]
 
         val reader = daemon:
           // A protocol error tears down just this connection; throw it to the
@@ -203,6 +210,13 @@ class Http2ServerConnection(duplex: Duplex)(using Monitor, Probate):
     send(Frame.Settings(serverSettings, ack = false))
     started.await()
 
+  // Run `handler` for each client-initiated stream as it arrives, on the
+  // reader-driven serve loop; returns when the connection ends. The handler
+  // typically spawns a per-stream fiber so requests multiplexed on the one
+  // connection are served concurrently.
+  def eachStream(handler: Http2Stream => Unit): Unit =
+    accepted.stream.records.each(handler)
+
   // Send a response header block on `streamId`, encoded with a fresh
   // (always-literal) HPACK encoder. `endStream` marks a bodiless response.
   def sendHeaders(streamId: Int, entries: List[HpackEntry], endStream: Boolean): Unit =
@@ -219,4 +233,4 @@ class Http2ServerConnection(duplex: Duplex)(using Monitor, Probate):
     accepted.stop()
     reader.cancel()
     writer.cancel()
-    duplex.close()
+    duplexRef.asInstanceOf[Duplex^].close()
