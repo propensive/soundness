@@ -52,17 +52,19 @@ import prepositional.*
 import serpentine.*
 
 object Linkage:
-  // The `.sjsir` link family: the three portable backends share the Scala.js linker pipeline,
-  // differing only in the configuration they mandate and the artifact they produce.
-  private class Sjs[target <: Backend.Portable]
+  // The sjsir link family: JavaScript, browser Wasm and WASI components share the Scala.js
+  // linker pipeline, differing only in the configuration they mandate and the artifact they
+  // produce.
+  private class Sjs[artifact <: Artifact.Sjs]
     ( base: StandardConfig => StandardConfig, artifact: (Path on Linux) => (Path on Linux) )
-  extends Linkage[target]:
+  extends Linkage[artifact]:
+    type Origin = Universe.Sjsir
     private[anthology] type Form = StandardConfig
     private[anthology] def initial: StandardConfig = base(StandardConfig())
 
     private[anthology] def link
       ( form:        StandardConfig,
-        compilation: Compilation[target],
+        compilation: Compilation[Universe.Sjsir],
         entryPoints: List[Linker.EntryPoint],
         out:         Path on Linux )
     :   Path on Linux logs LinkEvent raises LinkError =
@@ -103,16 +105,17 @@ object Linkage:
       catch case suc.NonFatal(error) =>
         abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
 
-  given js: Linkage[Backend.Js] =
+  given js: (Linkage[Artifact.Js] from Universe.Sjsir) =
     Sjs(_.withModuleKind(ModuleKind.ESModule), _ / "main.js")
 
-  given wasm: Linkage[Backend.Wasm] =
+  given wasm: (Linkage[Artifact.Wasm] from Universe.Sjsir) =
     Sjs
       ( _.withModuleKind(ModuleKind.ESModule)
         . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true)),
         _ / "main.wasm" )
 
-  given wasi(using toolchain: WasiToolchain, world: WitWorld): Linkage[Backend.Wasi] =
+  given wasi(using toolchain: WasiToolchain, world: WitWorld)
+  :   (Linkage[Artifact.Wasi[0.2]] from Universe.Sjsir) =
     Sjs
       ( _.withModuleKind(ModuleKind.WasmComponent)
         . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
@@ -122,18 +125,20 @@ object Linkage:
             . withWitWorld(Some(world.world.s)),
         _ / "main.wasm" )
 
-// Determines how each linked backend's compilations become artifacts: the underlying linker
-// configuration type (`Form`), the configuration the backend mandates, and the link pipeline
-// itself. Instances whose runtime prerequisites can be absent are conditional upon evidence of
-// them: `wasi` upon a `WasiToolchain` and a `WitWorld`, and the Scala Native instance (in the
-// `nir` module) upon probing the C toolchain.
-trait Linkage[target <: Backend.Linked]:
+// Determines how an artifact is linked from a compilation in its source universe: the
+// underlying linker-configuration type (`Form`), the configuration the artifact mandates, and
+// the link pipeline itself. Instances exist only for artifacts that are currently producible,
+// and those whose runtime prerequisites can be absent are conditional upon evidence of them:
+// `wasi` (version 0.2, the one WASI version the linker supports) upon a `WasiToolchain` and a
+// `WitWorld`, and the native-binary instance (in the `nir` module) upon probing the C
+// toolchain.
+trait Linkage[artifact <: Artifact] extends Provenance[artifact]:
   private[anthology] type Form
   private[anthology] def initial: Form
 
   private[anthology] def link
     ( form:        Form,
-      compilation: Compilation[target],
+      compilation: Compilation[Origin],
       entryPoints: List[Linker.EntryPoint],
       out:         Path on Linux )
   :   Path on Linux logs LinkEvent raises LinkError

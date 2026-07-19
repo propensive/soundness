@@ -49,37 +49,33 @@ import workingDirectories.javaWorkingDirectory
 
 private type JnfPath = java.nio.file.Path
 
-// Unexecuted definitions whose successful compilation asserts the variance properties of
-// `Compilation`: a portable compilation may be linked as any concrete portable backend.
-def portableLinksAsJs(compilation: Compilation[Backend.Portable]): Compilation[Backend.Js] =
-  compilation
+// Unexecuted definitions whose successful compilation assert `Provenance`'s tier structure:
+// choosing an artifact determines the universe a compilation must inhabit.
+def producingWasi(scalac: Scalac[3.8, Universe.Bytecode]): Scalac[3.8, Universe.Sjsir] =
+  scalac.targeting[Universe.Bytecode].producing[Artifact.Wasi[0.2]]
 
-def portableLinksAsWasi(compilation: Compilation[Backend.Portable]): Compilation[Backend.Wasi] =
-  compilation
+def producingBinary(scalac: Scalac[3.8, Universe.Bytecode]): Scalac[3.8, Universe.Nir] =
+  scalac.producing[Artifact.Binary]
 
 object Tests extends Suite(m"Anthology Tests"):
   def run(): Unit =
-    test(m"A single-type-argument Scalac targets the JVM"):
-      val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](Nil)
+    test(m"A single-type-argument Scalac targets the bytecode universe"):
+      val scalac: Scalac[3.6, Universe.Bytecode] = Scalac[3.6](Nil)
       scalac.commandLineArguments
     . assert(_ == Nil)
 
     test(m"Retargeting a Scalac preserves its options"):
-      Scalac[3.8](List(scalacOptions.experimental)).targeting[Backend.Portable]
+      Scalac[3.8](List(scalacOptions.experimental)).targeting[Universe.Sjsir]
       . commandLineArguments
     . assert(_ == List(t"-experimental"))
 
-    test(m"The JVM backend adds no compiler flags"):
-      summon[Backend.Emission[Backend.Jvm]].flags
+    test(m"The bytecode universe adds no compiler flags"):
+      summon[Universe.Emission[Universe.Bytecode]].flags
     . assert(_ == Nil)
 
-    test(m"Every portable backend adds the -scalajs flag"):
-      List
-        ( summon[Backend.Emission[Backend.Js]].flags,
-          summon[Backend.Emission[Backend.Wasm]].flags,
-          summon[Backend.Emission[Backend.Wasi]].flags,
-          summon[Backend.Emission[Backend.Portable]].flags )
-    . assert(_.forall(_ == List(t"-scalajs")))
+    test(m"The sjsir universe adds the -scalajs flag"):
+      summon[Universe.Emission[Universe.Sjsir]].flags
+    . assert(_ == List(t"-scalajs"))
 
     test(m"Module-kind options configure the linker"):
       linkerOptions.moduleKind.commonJs.edit(StandardConfig()).asInstanceOf[StandardConfig]
@@ -87,71 +83,80 @@ object Tests extends Suite(m"Anthology Tests"):
     . assert(_ == ModuleKind.CommonJSModule)
 
     test(m"The JavaScript linkage produces an ES module"):
-      summon[Linkage[Backend.Js]].initial.asInstanceOf[StandardConfig].moduleKind
+      summon[Linkage[Artifact.Js]].initial.asInstanceOf[StandardConfig].moduleKind
     . assert(_ == ModuleKind.ESModule)
 
     test(m"The browser Wasm linkage enables the WebAssembly backend"):
-      summon[Linkage[Backend.Wasm]].initial.asInstanceOf[StandardConfig]
+      summon[Linkage[Artifact.Wasm]].initial.asInstanceOf[StandardConfig]
       . esFeatures.useWebAssembly
     . assert(_ == true)
 
     test(m"A module-kind option is not applicable to a Wasm linker"):
       demilitarize:
-        Linker[Backend.Wasm](List(linkerOptions.moduleKind.esModule))
+        Linker[Artifact.Wasm](List(linkerOptions.moduleKind.esModule))
     . assert(_.nonEmpty)
 
     test(m"A WASI linkage is not available without toolchain and WIT world"):
       demilitarize:
-        summon[Linkage[Backend.Wasi]]
+        summon[Linkage[Artifact.Wasi[0.2]]]
     . assert(_.nonEmpty)
 
-    test(m"A JVM compilation cannot be linked"):
+    test(m"WASI 0.3 is not linkable even with the 0.2 prerequisites"):
       demilitarize:
-        val compilation: Compilation[Backend.Jvm] = ???
-        portableLinksAsJs(compilation)
+        given WasiToolchain = ???
+        given WitWorld = ???
+        summon[Linkage[Artifact.Wasi[0.3]]]
     . assert(_.nonEmpty)
 
-    test(m"A portable compilation is not a native compilation"):
+    test(m"A bytecode compilation cannot be linked as JavaScript"):
       demilitarize:
-        val compilation: Compilation[Backend.Portable] = ???
-        val native: Compilation[Backend.Native] = compilation
+        val compilation: Compilation[Universe.Bytecode] = ???
+        Linker[Artifact.Js](Nil).link(compilation, ???)
+    . assert(_.nonEmpty)
+
+    test(m"An sjsir compilation is not a native compilation"):
+      demilitarize:
+        val compilation: Compilation[Universe.Sjsir] = ???
+        val native: Compilation[Universe.Nir] = compilation
     . assert(_.nonEmpty)
 
     test(m"A native option is not applicable to a JavaScript linker"):
       demilitarize:
-        Linker[Backend.Js](List(nativeOptions.gc.immix))
+        Linker[Artifact.Js](List(nativeOptions.gc.immix))
     . assert(_.nonEmpty)
 
     test(m"An sjsir option is not applicable to a native linker"):
       demilitarize:
-        Linker[Backend.Native](List(linkerOptions.optimize.fast))
+        Linker[Artifact.Binary](List(linkerOptions.optimize.fast))
     . assert(_.nonEmpty)
 
     test(m"A native linkage is not available without probing the C toolchain"):
       demilitarize:
-        summon[Linkage[Backend.Native]]
+        summon[Linkage[Artifact.Binary]]
     . assert(_.nonEmpty)
 
-    test(m"Compiling for the native backend requires plugin evidence"):
+    test(m"Compiling into the nir universe requires plugin evidence"):
       demilitarize:
-        summon[Backend.Emission[Backend.Native]]
+        summon[Universe.Emission[Universe.Nir]]
     . assert(_.nonEmpty)
 
     test(m"Triples render as LLVM target triples"):
       Triple.Arm64MacOs.text
     . assert(_ == t"arm64-apple-darwin")
 
-    test(m"A portable compilation cannot be bundled as an executable JAR"):
+    test(m"An sjsir compilation cannot be bundled as an executable JAR"):
       demilitarize:
-        val compilation: Compilation[Backend.Portable] = ???
+        val compilation: Compilation[Universe.Sjsir] = ???
         Bundler.bundle(compilation, Unset, Unset)
     . assert(_.nonEmpty)
 
-    test(m"A JVM compilation cannot be bundled as an sjsir library"):
+    test(m"Any universe's compilation can be bundled as a library JAR"):
       demilitarize:
-        val compilation: Compilation[Backend.Jvm] = ???
-        Bundler.library(compilation, Unset)
-    . assert(_.nonEmpty)
+        def bytecode(compilation: Compilation[Universe.Bytecode]) =
+          Bundler.library(compilation, Unset)
+        def nir(compilation: Compilation[Universe.Nir]) =
+          Bundler.library(compilation, Unset)
+    . assert(_.isEmpty)
 
     // An end-to-end exercise of the portable pipeline—compile with `-scalajs`, then link as
     // JavaScript—which runs only when a cached proscala toolchain (whose distribution includes
@@ -167,7 +172,7 @@ object Tests extends Suite(m"Anthology Tests"):
         Files.createDirectories(Paths.get(out.encode.s))
 
         val process =
-          Scalac[3.8](Nil).targeting[Backend.Portable]
+          Scalac[3.8](Nil).producing[Artifact.Js]
             (classpath)(Map(t"hello.scala" -> source), out)
 
         test(m"A portable compilation succeeds"):
@@ -182,7 +187,7 @@ object Tests extends Suite(m"Anthology Tests"):
         val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
         test(m"Linking as JavaScript produces a nonempty main.js"):
-          Linker[Backend.Js]
+          Linker[Artifact.Js]
             ( List(linkerOptions.moduleKind.esModule),
               List(Linker.EntryPoint(Fqcn(t"Main"))) )
           . link(Compilation(out, classpath), linked)
@@ -199,7 +204,7 @@ object Tests extends Suite(m"Anthology Tests"):
         Files.createDirectories(Paths.get(out.encode.s))
 
         val process =
-          Scalac[3.8](Nil).targeting[Backend.Native]
+          Scalac[3.8](Nil).targeting[Universe.Nir]
             (classpath)(Map(t"hello.scala" -> source), out)
 
         test(m"A native compilation succeeds"):
@@ -211,12 +216,12 @@ object Tests extends Suite(m"Anthology Tests"):
           . exists(_.getFileName.nn.toString.endsWith(".nir"))
         . assert(_ == true)
 
-        safely(NativeLinkage()).let: linkage =>
-          given Linkage[Backend.Native] = linkage
+        safely(NativeLinkage()).let: nativeLinkage =>
+          given (Linkage[Artifact.Binary] from Universe.Nir) = nativeLinkage
           val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
 
           test(m"Linking natively produces a runnable binary"):
-            Linker[Backend.Native](Nil, List(Linker.EntryPoint(Fqcn(t"Main"))))
+            Linker[Artifact.Binary](Nil, List(Linker.EntryPoint(Fqcn(t"Main"))))
             . link(Compilation(out, classpath), linked)
             . pipe: artifact =>
                 mute[ExecEvent](sh"$artifact".exec[Text]()).trim

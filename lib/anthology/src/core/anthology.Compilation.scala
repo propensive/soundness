@@ -38,8 +38,8 @@ import prepositional.*
 import serpentine.*
 
 // A token pairing a compilation's output directory with the classpath it was compiled against,
-// tagged with the backend it targeted. Contravariance means a `Compilation[Backend.Portable]`
-// is acceptable wherever a compilation for any single portable backend is required, while a
-// JVM compilation can never be linked and a portable compilation can never be bundled as an
+// tagged with the universe it inhabits. A `Compilation[Universe.Sjsir]` may be linked as any
+// sjsir artifact (JavaScript, browser Wasm or a WASI component), a `Compilation[Universe.Nir]`
+// as a native binary for any target, and a `Compilation[Universe.Bytecode]` bundled as an
 // executable JAR.
-case class Compilation[-backend <: Backend](out: Path on Linux, classpath: LocalClasspath)
+case class Compilation[universe <: Universe](out: Path on Linux, classpath: LocalClasspath)

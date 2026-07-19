@@ -52,7 +52,7 @@ object Isolation extends Rig:
 
   def stage(out: Path on Linux): Classloader = classpath(out).classloader()
 
-  val scalac: Scalac[3.6, Backend.Jvm] = Scalac[3.6](List(scalacOptions.experimental))
+  val scalac: Scalac[3.6, Universe.Bytecode] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
     stage.remote: input =>

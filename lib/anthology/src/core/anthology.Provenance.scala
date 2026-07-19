@@ -32,41 +32,27 @@
                                                                                                   */
 package anthology
 
-import anticipation.*
-import gossamer.*
-import serpentine.*
+import prepositional.*
 
-object Backend:
-  type Jvm = Backend.Jvm.type
-  type Js = Backend.Js.type
-  type Wasm = Backend.Wasm.type
-  type Wasi = Backend.Wasi.type
-  type Native = Backend.Native.type
+object Provenance:
+  given jar: (Provenance[Artifact.Jar] from Universe.Bytecode):
+    type Origin = Universe.Bytecode
 
-  // The backends whose compilations emit target-neutral `.sjsir`, deferring the choice of
-  // linked representation (JavaScript, browser Wasm or a WASI component) until link time.
-  type Portable = Js | Wasm | Wasi
+  given js: (Provenance[Artifact.Js] from Universe.Sjsir):
+    type Origin = Universe.Sjsir
 
-  // Every backend whose compilations emit a linkable intermediate representation—`.sjsir` for
-  // the portable backends, `.nir` for Scala Native—and whose products are made by a `Linker`.
-  type Linked = Portable | Native
+  given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):
+    type Origin = Universe.Sjsir
 
-  // Determines the additional compiler flags each backend requires; contravariance lets the
-  // single `portable` instance serve every member of the `Portable` union.
-  trait Emission[-backend <: Backend]:
-    def flags: List[Text]
+  given wasi: [version <: Artifact.Wasi.Versions]
+  =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
+    type Origin = Universe.Sjsir
 
-  given jvm: Emission[Jvm]:
-    def flags: List[Text] = Nil
+  given binary: (Provenance[Artifact.Binary] from Universe.Nir):
+    type Origin = Universe.Nir
 
-  given portable: Emission[Portable]:
-    def flags: List[Text] = List(t"-scalajs")
-
-  // NIR is emitted by the Scala Native compiler plugin rather than by a backend built into the
-  // compiler, so compiling for `Backend.Native` requires evidence of the plugin's location.
-  given native(using plugin: NirPlugin): Emission[Native] =
-    new Emission[Native]:
-      def flags: List[Text] = List(t"-Xplugin:${plugin.jar.encode}")
-
-enum Backend:
-  case Jvm, Js, Wasm, Wasi, Native
+// Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
+// has a provenance, whether or not it is currently linkable, so it can drive compilation
+// (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
+trait Provenance[artifact <: Artifact]:
+  type Origin <: Universe

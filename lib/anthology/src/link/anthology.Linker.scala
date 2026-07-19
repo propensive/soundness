@@ -47,22 +47,23 @@ object Linker:
     // Sound by construction: options are only creatable through the per-family DSLs, each of
     // which types its options at a subset of exactly one link family, and every `Linkage` of
     // that family fixes `Form` to the type the DSL edits; no option is typed across families.
-    private[anthology] def apply[target <: Backend.Linked, form](edit0: form => form)
-    :   Option[target] =
+    private[anthology] def apply[artifact <: Artifact, form](edit0: form => form)
+    :   Option[artifact] =
 
-      new Option[target]:
+      new Option[artifact]:
         private[anthology] def edit(form0: Any): Any = edit0(form0.asInstanceOf[form])
 
   // Options are constructible only through the per-family DSLs, keeping the underlying linker
   // configuration types out of the public API; contravariance permits an option declared for a
-  // union of backends in the options list of any of that union's linkers.
-  trait Option[-target <: Backend.Linked]:
+  // union of artifacts in the options list of any of that union's linkers.
+  trait Option[-artifact <: Artifact]:
     private[anthology] def edit(form0: Any): Any
 
-case class Linker[target <: Backend.Linked]
-  ( options: List[Linker.Option[target]], entryPoints: List[Linker.EntryPoint] = Nil ):
+case class Linker[artifact <: Artifact]
+  ( options: List[Linker.Option[artifact]], entryPoints: List[Linker.EntryPoint] = Nil ):
 
-  def link(compilation: Compilation[target], out: Path on Linux)(using linkage: Linkage[target])
+  def link(using linkage: Linkage[artifact])
+    ( compilation: Compilation[linkage.Origin], out: Path on Linux )
   :   Path on Linux logs LinkEvent raises LinkError =
 
     Log.info(LinkEvent.Start)

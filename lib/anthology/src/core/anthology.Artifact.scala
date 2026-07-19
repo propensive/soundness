@@ -32,90 +32,33 @@
                                                                                                   */
 package anthology
 
-import java.nio.file as jnf
+object Artifact:
+  // Bytecode universe: an executable JAR, bound to the JDK.
+  sealed trait Jar extends Artifact
 
-import scala.concurrent.*
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration.*
-import scala.scalanative.build.{Build, Config, GC, LTO, Mode, NativeConfig}
-import scala.scalanative.util.Scope
-import scala.util.control as suc
+  // Sjsir universe: a JavaScript module or script, bound to a JavaScript host (a browser's DOM
+  // or a runtime such as Node).
+  sealed trait Js extends Artifact
 
-import ambience.*
-import anticipation.*
-import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import guillotine.*
-import hellenism.*
-import prepositional.*
-import serpentine.*
-import vacuous.*
+  // Sjsir universe: a core WebAssembly module with JavaScript glue, bound to a JavaScript host.
+  sealed trait Wasm extends Artifact
 
-// The Scala Native link family. An instance exists only via the probing `apply`, which verifies
-// that the C toolchain (`clang` and `clang++`) the link shells out to is present—so, as with
-// WASI components, a native link whose native tooling is absent is not expressible. Put one in
-// scope with `given NativeLinkage = NativeLinkage()`.
-object NativeLinkage:
-  def apply()(using WorkingDirectory)
-  :   (Linkage[Artifact.Binary] from Universe.Nir) raises ToolchainError =
+  object Wasi:
+    // WASI interface versions: 0.1 (preview 1) is a flat, libc-style syscall ABI on core
+    // modules; 0.2 is the component model, with imports and exports described by WIT; 0.3 adds
+    // native asynchrony. Versions determine the artifact's ABI, so they are part of its type.
+    type Versions = 0.1 | 0.2 | 0.3
 
-    new NativeLinkage(probe(t"clang"), probe(t"clang++"))
+  // A standalone WebAssembly artifact bound to a version of the WASI system interface.
+  sealed trait Wasi[+version <: Wasi.Versions] extends Artifact
 
-  private def probe(tool: Text)(using WorkingDirectory): Text raises ToolchainError =
-    safely(mute[ExecEvent](sh"which $tool".exec[Text]())).let(_.trim)
-    . or(abort(ToolchainError(tool)))
+  // Nir universe: a machine-code executable, bound to an operating system's C library; the
+  // platform and architecture are selected at link time as a `Triple`.
+  sealed trait Binary extends Artifact
 
-class NativeLinkage private (clang: Text, clangpp: Text)
-extends Linkage[Artifact.Binary]:
-  type Origin = Universe.Nir
-  private[anthology] type Form = NativeConfig
+  // The artifacts linked from `.sjsir` by the Scala.js linker, sharing one options family.
+  type Sjs = Js | Wasm | Wasi[Wasi.Versions]
 
-  private[anthology] def initial: NativeConfig =
-    NativeConfig.empty
-    . withClang(jnf.Paths.get(clang.s).nn)
-    . withClangPP(jnf.Paths.get(clangpp.s).nn)
-    . withGC(GC.immix)
-    . withMode(Mode.debug)
-    . withLTO(LTO.none)
-    . withBaseName("main")
-
-  private[anthology] def link
-    ( form:        NativeConfig,
-      compilation: Compilation[Universe.Nir],
-      entryPoints: List[Linker.EntryPoint],
-      out:         Path on Linux )
-  :   Path on Linux logs LinkEvent raises LinkError =
-
-    val main = entryPoints match
-      case List(entry) => entry.mainClass.text
-      case _           => abort(LinkError(LinkError.Reason.NoEntryPoint))
-
-    val entries: List[jnf.Path] =
-      jnf.Paths.get(compilation.out.encode.s).nn ::
-        compilation.classpath.entries.to(List).flatMap:
-          case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
-          case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
-          case _                                   => Nil
-
-    try
-      val outPath = jnf.Paths.get(out.encode.s).nn
-      jnf.Files.createDirectories(outPath)
-      given Scope = Scope.forever
-
-      val config =
-        Config.empty
-        . withBaseDir(outPath.toAbsolutePath.nn)
-        . withMainClass(Some(main.s))
-        . withClassPath(entries)
-        . withModuleName("main")
-        . withCompilerConfig(form)
-
-      val artifact = Await.result(Build.build(config), 1800.seconds)
-      unsafely(artifact.toString.tt.as[Path on Linux])
-
-    catch case suc.NonFatal(error) =>
-      abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+// A linked product of a compilation: the tier users choose from. Each artifact is producible
+// from exactly one universe, witnessed by `Provenance`.
+sealed trait Artifact
