@@ -35,6 +35,11 @@ object Artifact:
   // Classfile universe: an executable JAR, bound to the JDK.
   sealed trait Jar extends Artifact
 
+  // Any universe: a library JAR of the compilation's output—classfiles, and any `.sjsir` or
+  // `.nir` alongside them—for downstream assembly rather than execution. Packaging rather than
+  // closed-world linking, but produced through the same `Linker` verb.
+  sealed trait Library[+universe <: Universe] extends Artifact
+
   // Classfile universe: Dalvik executable bytecode, bound to the Android runtime. Nameable but
   // not yet producible: no `Linkage` exists for it.
   sealed trait Dex extends Artifact
@@ -67,6 +72,9 @@ object Artifact:
 
   // The artifacts linked from `.sjsir` by the Scala.js linker, sharing one options family.
   type Sjs = Js[Js.Modules] | Wasm | Wasi[Wasi.Versions]
+
+  // The JAR-packaged artifacts, sharing one options family.
+  type Packaged = Jar | Library[Universe]
 
 // A linked product of a compilation: the tier users choose from. Each artifact is producible
 // from exactly one universe, witnessed by `Provenance`.

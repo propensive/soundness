@@ -38,6 +38,8 @@ import org.scalajs.linker.interface.{ModuleKind, StandardConfig}
 
 import soundness.*
 
+import sjsLinkages.given
+
 import galilei.Linux.pathOnLinux
 import logging.silentLogging
 import probates.cancelProbate
@@ -152,19 +154,26 @@ object Tests extends Suite(m"Anthology Tests"):
       Triple.Arm64MacOs.text
     . assert(_ == t"arm64-apple-darwin")
 
-    test(m"An sjsir compilation cannot be bundled as an executable JAR"):
+    test(m"An sjsir compilation cannot be linked as an executable JAR"):
       demilitarize:
         val compilation: Compilation[Universe.Sjsir] = ???
-        Bundler.bundle(compilation, Unset, Unset)
+        Linker[Artifact.Jar](Nil).link(compilation, ???)
     . assert(_.nonEmpty)
 
-    test(m"Any universe's compilation can be bundled as a library JAR"):
+    test(m"JAR and library packaging need no imports or evidence"):
       demilitarize:
-        def classfile(compilation: Compilation[Universe.Classfile]) =
-          Bundler.library(compilation, Unset)
-        def nir(compilation: Compilation[Universe.Nir]) =
-          Bundler.library(compilation, Unset)
+        ( summon[Linkage[Artifact.Jar]],
+          summon[Linkage[Artifact.Library[Universe.Classfile]]],
+          summon[Linkage[Artifact.Library[Universe.Sjsir]]],
+          summon[Linkage[Artifact.Library[Universe.Nir]]] )
     . assert(_.isEmpty)
+
+    test(m"A library JAR's universe must match its compilation's"):
+      demilitarize:
+        val compilation: Compilation[Universe.Sjsir] = ???
+        val out: soundness.Path on Linux = ???
+        unsafely(Linker[Artifact.Library[Universe.Nir]](Nil).link(compilation, out))
+    . assert(_.nonEmpty)
 
     // An end-to-end exercise of the portable pipeline—compile with `-scalajs`, then link as
     // JavaScript—which runs only when a cached proscala toolchain (whose distribution includes
@@ -200,6 +209,39 @@ object Tests extends Suite(m"Anthology Tests"):
           . pipe: artifact =>
               Files.size(Paths.get(artifact.encode.s))
         . assert(_ > 100L)
+
+        test(m"Packaging an sjsir library JAR produces a nonempty archive"):
+          Linker[Artifact.Library[Universe.Sjsir]](Nil)
+          . link(Compilation(out, classpath), linked)
+          . pipe: artifact =>
+              Files.size(Paths.get(artifact.encode.s))
+        . assert(_ > 100L)
+
+    // The packaging pipeline: compile against the fork standard library alone, link an
+    // executable JAR, and run it under `java -jar`.
+    proscalaLibrary().let: lib =>
+      supervise:
+        val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
+        val classpath = LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+        Files.createDirectories(Paths.get(out.encode.s))
+
+        val process = Scalac[3.8](Nil)(classpath)(Map(t"hello.scala" -> source), out)
+
+        test(m"A classfile compilation succeeds"):
+          process.complete()
+        . assert(_ == CompileResult.Success)
+
+        val linked: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+
+        test(m"Linking a JAR produces a runnable artifact"):
+          Linker[Artifact.Jar]
+            ( List(jarOptions.name(t"app.jar")),
+              List(Linker.EntryPoint(Fqcn(t"Main"))) )
+          . link(Compilation(out, classpath), linked)
+          . pipe: artifact =>
+              mute[ExecEvent](sh"java -jar $artifact".exec[Text]()).trim
+        . assert(_ == t"hello")
 
     // The native counterpart—compile with the Scala Native plugin, link with clang, and run the
     // binary—which runs only when the plugin and runtime JARs are cached and clang is present.
