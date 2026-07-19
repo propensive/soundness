@@ -2625,43 +2625,58 @@ object nativelink extends Module:
       hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native,
       ambience.core.native, coaxial.core.native, enigmatic.openssl.native, parasite.core.native)
 
-  // A real test suite compiled for Native — the end-state check that `probably` (and a green
-  // module's entire suite) runs as a native binary. Hypotenuse: 100+ numeric tests and no
-  // `demilitarize` blocks (larceny is a JVM compiler plugin whose `CompileError` values would
-  // otherwise be needed at native link time). The same `Tests`-trait flags apply (larceny and
-  // beneficence plugins, `settings.cc`), plus `nscplugin` for NIR.
-  object testapp extends ScalaModule, Toolchain:
+  // Real test suites compiled for Native and linked as binaries — each runs `<module>.Tests`
+  // natively, the end-state check that `probably` and a green module's entire suite work as a
+  // native binary. Only suites free of `demilitarize` blocks qualify (larceny is a JVM compiler
+  // plugin, excluded from the native cross, so its `CompileError` values cannot exist at native
+  // link time). To enrol a suite, add its module name here and its mapping in
+  // `NativeSuite.testModule`.
+  object suite extends Cross[NativeSuite]("hypotenuse", "denominative", "monotonous")
+
+  // The JVM test module's sources compiled with the same `Tests`-trait flags (larceny and
+  // beneficence plugins, `settings.cc`) plus `nscplugin` for NIR, against the `.native` variants
+  // of its dependency graph (`nativeDeps` maps them; JVM-only components like `larceny.plugin`
+  // drop out).
+  trait NativeSuite extends ScalaModule, Toolchain, Cross.Module[String]:
+    def testModule: Tests = crossValue match
+      case "hypotenuse"   => hypotenuse.test
+      case "denominative" => denominative.test
+      case "monotonous"   => monotonous.test
+
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
       settings.cc(settings.scalaOptions)
         :+ s"-Xplugin:${larceny.plugin.assembly().path}"
         :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
         :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
-    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "lib" / "hypotenuse" / "src" / "test")
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "lib" / crossValue / "src" / "test")
     def compileMvnDeps = nativeToolchain.runtimeDeps
-    override def mainClass = Some("hypotenuse.Tests")
-    override def moduleDeps = Seq(
-      probably.cli.native, proscenium.core.native, hypotenuse.core.native,
-      quantitative.units.native, abacist.core.native)
+    override def mainClass = Some(crossValue + ".Tests")
+    override def moduleDeps = nativeDeps(testModule.moduleDeps)
 
-  def testBinary: T[PathRef] = Task:
-    // The union of both classpaths: `compileClasspath` carries the Scala Native runtime jars
-    // (they are `compileMvnDeps`, absent from the run classpath), while `runClasspath` adds the
-    // upstream modules' resource directories, which the linker embeds in the binary
-    // (`embedResources`) — hieroglyph's UNIDATA tables are read back at run time through
-    // `getResourceAsStream`.
-    val classpath =
-      (testapp.compile().classes.path
-        +: (testapp.compileClasspath() ++ testapp.runClasspath()).toSeq.map(_.path))
-      . distinct.filter(os.exists)
-    val driverClasspath =
-      linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+    def binary: T[PathRef] = Task:
+      // The union of both classpaths: `compileClasspath` carries the Scala Native runtime jars
+      // (they are `compileMvnDeps`, absent from the run classpath), while `runClasspath` adds
+      // the upstream modules' resource directories, which the linker embeds in the binary
+      // (`embedResources`) — hieroglyph's UNIDATA tables are read back at run time through
+      // `getResourceAsStream`.
+      val classpath =
+        (compile().classes.path +: (compileClasspath() ++ runClasspath()).toSeq.map(_.path))
+        . distinct.filter(os.exists)
+      val driverClasspath =
+        linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
 
-    os.proc("java", "-cp", driverClasspath, "nativelink.link", Task.dest.toString,
-      "hypotenuse.Tests", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
-    . call(stdout = os.Inherit, stderr = os.Inherit)
+      os.proc("java", "-cp", driverClasspath, "nativelink.link", Task.dest.toString,
+        crossValue + ".Tests", classpath.map(_.toString).mkString(java.io.File.pathSeparator))
+      . call(stdout = os.Inherit, stderr = os.Inherit)
 
-    PathRef(Task.dest / "soundness-native")
+      PathRef(Task.dest / "soundness-native")
+
+  // Links every enrolled suite and runs each binary; a failing suite (nonzero exit) fails the
+  // task, so `mill nativelink.testSuites` is the one-shot native-test sweep.
+  def testSuites: T[Unit] = Task:
+    Task.traverse(suite.crossModules.toSeq)(_.binary)().foreach: binary =>
+      os.proc(binary.path.toString).call(stdout = os.Inherit, stderr = os.Inherit)
 
   object linker extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion
