@@ -394,6 +394,63 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
       . assert(_ == (t"body", t"0"))
 
+      test(m"a flow window drains in bounded chunks and blocks until replenished"):
+        supervise:
+          val window = FlowWindow(10)
+          val a = window.acquire(4)    // all requested: 4
+          val b = window.acquire(100)  // capped at the remaining 6
+
+          // The window is now empty; this acquire blocks until `release` tops it
+          // up. The result is 3 whichever way `release` and the blocked `acquire`
+          // interleave, so the test needs no timing.
+          val blocked: Promise[Int] = Promise()
+          async(blocked.offer(window.acquire(5)))
+          window.release(3)
+          val c = blocked.await()
+
+          (a, b, c)
+
+      . assert(_ == (4, 6, 3))
+
+      test(m"a response larger than the connection window streams intact"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val server = Http2ServerConnection(serverSide)
+          val serverRef: AnyRef = server.asInstanceOf[AnyRef]
+
+          // A body well over the 65535-byte connection window, so the server
+          // must split DATA frames and wait for the client's WINDOW_UPDATEs.
+          val size = 200000
+          val payload: Data = IArray.tabulate(size)(i => (i%256).toByte)
+          val payloadRef: AnyRef = payload.asInstanceOf[AnyRef]
+
+          daemon:
+            safely:
+              val server0 = serverRef.asInstanceOf[Http2ServerConnection]
+              val body = payloadRef.asInstanceOf[Data]
+
+              server0.accepted.stream.records.each: stream =>
+                unsafely:
+                  stream.headers.await()
+                  server0.sendHeaders(stream.id, List(HpackEntry(t":status", t"200")), false)
+                  server0.sendData(stream.id, body, endStream = true)
+
+          val client = Http2Connection(clientSide)
+          val serverStarted = async(server.start())
+          client.start()
+          serverStarted.await()
+
+          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/big", Nil,
+              () => Http.emptyBody())
+
+          val (_, response) = client.fetch(request, t"http", t"unix")
+          val received = response.body.stream.memoize
+          client.close()
+          server.close()
+          (received.length, received.to(List) == payload.to(List))
+
+      . assert(_ == (200000, true))
+
       test(m"a session lends one connection to several multiplexed requests"):
         supervise:
           val (clientSide, serverSide) = pair()
