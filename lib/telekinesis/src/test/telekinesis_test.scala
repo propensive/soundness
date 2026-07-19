@@ -572,6 +572,19 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert(_ == true)
 
+      test(m"A session pins one connection across its fetches"):
+        val target = t"http://127.0.0.1:$port".as[HttpUrl]
+
+        target.session: session ?=>
+          val request = Http.Request(Http.Get, 1.1, t"127.0.0.1".as[Host], t"/port", Nil,
+              () => Http.emptyBody())
+
+          val first = session.fetch(request).body.stream.memoize.utf8
+          val second = session.fetch(request).body.stream.memoize.utf8
+          first == second
+
+      . assert(_ == true)
+
       server.stop(0)
 
     // The `https` path of the native backend: ALPN negotiation during the TLS
@@ -637,10 +650,13 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert(_ == (Http.Ok, t"secure-native"))
 
-      test(m"ALPN selects h2 and the request is served over HTTP/2"):
-        import cordillera.{FrameReader, Hpack, HpackEntry}
-        import cordillera.Http2.Frame
+      import cordillera.{FrameReader, Hpack, HpackEntry}
+      import cordillera.Http2.Frame
 
+      // A minimal frame-level HTTP/2 server for a single TLS connection, with
+      // ALPN pinned to `h2`: exchange SETTINGS, then answer each request
+      // HEADERS with a 200 and a DATA frame.
+      def h2Server(): javax.net.ssl.SSLServerSocket =
         val serverSocket =
           serverContext.getServerSocketFactory.nn.createServerSocket(0).nn
           . asInstanceOf[javax.net.ssl.SSLServerSocket]
@@ -649,11 +665,8 @@ object Tests extends Suite(m"Telekinesis tests"):
         params.setApplicationProtocols(scala.Array[String | Null]("h2"))
         serverSocket.setSSLParameters(params)
         serverSocket.setSoTimeout(10000)
-        val port = serverSocket.getLocalPort
 
-        // A minimal frame-level HTTP/2 server for a single connection: exchange
-        // SETTINGS, then answer the request HEADERS with a 200 and a DATA frame.
-        val serverThread = java.lang.Thread.ofVirtual().nn.start({ () =>
+        java.lang.Thread.ofVirtual().nn.start({ () =>
           try
             val socket = serverSocket.accept().nn
             val in = socket.getInputStream.nn
@@ -684,7 +697,13 @@ object Tests extends Suite(m"Telekinesis tests"):
                     write(Frame.Data(id, t"h2-native".in[Data], true))
 
                   case _ => ()
-          catch case error: Exception => () }).nn
+          catch case error: Exception => () })
+
+        serverSocket
+
+      test(m"ALPN selects h2 and the request is served over HTTP/2"):
+        val serverSocket = h2Server()
+        val port = serverSocket.getLocalPort
 
         val response =
           backend.request(t"https://localhost:$port/", Http.Get, Nil, () => Http.emptyBody())
@@ -693,6 +712,23 @@ object Tests extends Suite(m"Telekinesis tests"):
         (response.status, response.body.stream.memoize.utf8)
 
       . assert(_ == (Http.Ok, t"h2-native"))
+
+      test(m"A TLS session multiplexes several fetches on one h2 connection"):
+        val serverSocket = h2Server()
+        val port = serverSocket.getLocalPort
+        val target = t"https://localhost:$port".as[HttpUrl]
+
+        val texts = target.session: session ?=>
+          val request = Http.Request(Http.Get, 1.1, t"localhost".as[Host], t"/", Nil,
+              () => Http.emptyBody())
+
+          List(session.fetch(request), session.fetch(request)).map: response =>
+            response.body.stream.memoize.utf8
+
+        serverSocket.close()
+        texts
+
+      . assert(_ == List(t"h2-native", t"h2-native"))
 
     // The suites below depend on external services (httpbin.org, badssl.com)
     // whose availability and configuration fluctuate; they are aspirational
