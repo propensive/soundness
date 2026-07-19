@@ -585,6 +585,20 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert(_ == true)
 
+      // A session survives an unconsumed streaming response: the next fetch
+      // drains the previous body's remainder to reach the response boundary.
+      test(m"An unconsumed response does not derail the next fetch"):
+        val target = t"http://127.0.0.1:$port".as[HttpUrl]
+
+        target.session: session ?=>
+          val request = Http.Request(Http.Get, 1.1, t"127.0.0.1".as[Host], t"/fixed", Nil,
+              () => Http.emptyBody())
+
+          session.fetch(request) // never consumed
+          session.fetch(request).body.stream.memoize.utf8
+
+      . assert(_ == t"Hello, native!")
+
       server.stop(0)
 
     // The `https` path of the native backend: ALPN negotiation during the TLS

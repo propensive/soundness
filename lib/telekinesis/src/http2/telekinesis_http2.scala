@@ -33,6 +33,8 @@
 package telekinesis
 
 import java.io as ji
+import java.net as jn
+import javax.net.ssl as jns
 
 import anticipation.*
 import coaxial.*
@@ -49,61 +51,20 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-object HttpSession:
-  // The sequential HTTP/1.1 form: one exchange at a time over the pinned,
-  // kept-alive connection. Each fetch leaves the wire positioned at the next
-  // response, which is what permits the next fetch.
-  private[telekinesis] class Sequential(duplex: Duplex)(using Buffering) extends HttpSession:
-    def fetch(request: Http.Request)(using Tactic[ConnectError]): Http.Response =
-      sequentialFetch(duplex, request)
-
-  // The multiplexed HTTP/2 form, over a live `Http2Connection`.
-  private[telekinesis] class Multiplexed(connection: Http2Connection, authority: Text)
-  extends HttpSession:
-    def fetch(request: Http.Request)(using Tactic[ConnectError]): Http.Response =
-      import ConnectError.Reason.*
-
-      // RFC 7540 §8.1.2.2: connection-specific headers must not appear in h2.
-      val headers: List[Http.Header] = request.textHeaders.filter: header =>
-        header.key.lower != t"connection"
-
-      val request2 = Http.Request
-        ( request.method, request.version, request.host, request.target, headers, request.body )
-
-      try
-        unsafely:
-          val (_, response) = connection.fetch(request2, t"https", authority)
-          repackage(response, response.body.stream.memoize)
-
-      catch
-        case error: Http2Error  => abort(ConnectError(Unknown))
-        case error: AsyncError  => abort(ConnectError(Unknown))
-        case error: StreamError => abort(ConnectError(Unknown))
-
-// An HTTP session: a single client connection to one origin, over which several
-// requests may be exchanged. The protocol is fixed for the session's lifetime —
-// for `https`, by ALPN during the TLS handshake (a `Multiplexed` HTTP/2 session
-// on which concurrent fetches interleave, or a `Sequential` HTTP/1.1 one); for
-// plaintext `http`, always sequential HTTP/1.1 with keep-alive.
-sealed abstract class HttpSession:
-  def fetch(request: Http.Request)(using Tactic[ConnectError]): Http.Response
-
-// A session on an HTTP or HTTPS URL: the connection to the URL's origin is
-// opened once, lent to the lambda as an `HttpSession`, and closed when the
-// scope ends. Bounded like `Fetchable.httpUrl` so `url"https://..."` literals
-// (whose types are scheme-refined subtypes of `HttpUrl`) resolve the instance.
-given httpUrlSessionable: [url <: HttpUrl]
-=>  (online: Online)
-=>  ( backend:      SocketBackend,
-      options:      Every[SocketOption.Tcp],
-      buffering:    Buffering,
-      tls:          Tls,
-      connectError: Tactic[ConnectError] )
-=>  (url is Sessionable { type Session = HttpSession }) = new Sessionable:
+// A named instance class rather than an anonymous given: an anonymous subclass
+// would freshen the capability types in its inferred `Session` member.
+class UrlSessionable[url <: HttpUrl]
+  ( using online:       Online,
+          backend:      SocketBackend,
+          options:      Every[SocketOption.Tcp],
+          buffering:    Buffering,
+          tls:          Tls,
+          connectError: Tactic[ConnectError] )
+extends Sessionable:
   type Self = url
-  type Session = HttpSession
+  type Session = HttpSession^{caps.any}
 
-  def session[result](target: url)(lambda: (session: HttpSession) ?=> result): result =
+  def session[result](target: url)(lambda: (session: Session) ?=> result): result =
     import ConnectError.Reason.*
 
     val scheme: Text = target.scheme.name
@@ -157,3 +118,46 @@ given httpUrlSessionable: [url <: HttpUrl]
             lambda(using HttpSession.Sequential(duplex))
 
       finally duplex.close()
+
+// A session on an HTTP or HTTPS URL: the connection to the URL's origin is
+// opened once, lent to the lambda as an `HttpSession`, and closed when the
+// scope ends. Bounded like `Fetchable.httpUrl` so `url"https://..."` literals
+// (whose types are scheme-refined subtypes of `HttpUrl`) resolve the instance.
+given httpUrlSessionable: [url <: HttpUrl]
+=>  (online: Online)
+=>  ( backend:      SocketBackend,
+      options:      Every[SocketOption.Tcp],
+      buffering:    Buffering,
+      tls:          Tls,
+      connectError: Tactic[ConnectError] )
+=>  (UrlSessionable[url]^{online, connectError, caps.any}) =
+  UrlSessionable[url]()
+
+// Open the TLS connection for an `https` exchange, offering `h2` and `http/1.1`
+// by ALPN, and mapping handshake and connection failures onto `ConnectError`.
+private[telekinesis] def secureConnect(host: Host, port: Int)
+  ( using online: Online, options: Every[SocketOption.Tcp], tls: Tls )
+  ( using Tactic[ConnectError] )
+:   Duplex =
+
+  import ConnectError.Reason.*, Ssl.Reason.*
+
+  val alpn: Tls = Tls(tls.context, tls.verify, List(t"h2", t"http/1.1"), tls.versions)
+
+  try
+    SecureEndpoint.connectable(using online)(using options, alpn)
+    . connect(SecureEndpoint(host.show, port), Unset)
+  catch
+    case error: jns.SSLHandshakeException      => abort(ConnectError(Ssl(Handshake)))
+    case error: jns.SSLProtocolException       => abort(ConnectError(Ssl(Protocol)))
+    case error: jns.SSLPeerUnverifiedException => abort(ConnectError(Ssl(Peer)))
+    case error: jns.SSLKeyException            => abort(ConnectError(Ssl(Key)))
+    case error: jn.UnknownHostException        => abort(ConnectError(Dns))
+
+    case error: jn.ConnectException =>
+      error.getMessage() match
+        case "Connection refused"   => abort(ConnectError(Refused))
+        case "Connection timed out" => abort(ConnectError(Timeout))
+        case _                      => abort(ConnectError(Unknown))
+
+    case error: ji.IOException => abort(ConnectError(Unknown))

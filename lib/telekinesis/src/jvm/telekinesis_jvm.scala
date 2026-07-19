@@ -384,35 +384,6 @@ private def httpsExchange
 
       try sequentialFetch(duplex, httpRequest) finally duplex.close()
 
-// Open the TLS connection for an `https` exchange, offering `h2` and `http/1.1`
-// by ALPN, and mapping handshake and connection failures onto `ConnectError`.
-private def secureConnect(host: Host, port: Int)
-  ( using online: Online, options: Every[SocketOption.Tcp], tls: Tls )
-  ( using Tactic[ConnectError] )
-:   Duplex =
-
-  import ConnectError.Reason.*, Ssl.Reason.*
-
-  val alpn: Tls = Tls(tls.context, tls.verify, List(t"h2", t"http/1.1"), tls.versions)
-
-  try
-    SecureEndpoint.connectable(using online)(using options, alpn)
-    . connect(SecureEndpoint(host.show, port), Unset)
-  catch
-    case error: jns.SSLHandshakeException      => abort(ConnectError(Ssl(Handshake)))
-    case error: jns.SSLProtocolException       => abort(ConnectError(Ssl(Protocol)))
-    case error: jns.SSLPeerUnverifiedException => abort(ConnectError(Ssl(Peer)))
-    case error: jns.SSLKeyException            => abort(ConnectError(Ssl(Key)))
-    case error: jn.UnknownHostException        => abort(ConnectError(Dns))
-
-    case error: jn.ConnectException =>
-      error.getMessage() match
-        case "Connection refused"   => abort(ConnectError(Refused))
-        case "Connection timed out" => abort(ConnectError(Timeout))
-        case _                      => abort(ConnectError(Unknown))
-
-    case error: ji.IOException => abort(ConnectError(Unknown))
-
 // One sequential HTTP/1.1 exchange over an open connection: send the request,
 // parse the framed response, drain its body, and leave the connection open,
 // positioned at the next response. `101` upgrades are refused (the upgraded
