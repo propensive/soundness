@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package coaxial
 
 import java.security as js
 import java.security.cert as jsc
@@ -129,6 +129,19 @@ object TlsAcceptance:
       else parameters.setEndpointIdentificationAlgorithm(null)
 
       (context, parameters)
+
+    // Present this acceptance as a `Tls` configuration — the form the raw-socket
+    // transport (`SecureEndpoint`) consumes — optionally offering the given ALPN
+    // `protocols`, so one contextual trust policy can govern both the
+    // `java.net.http` backend and the native one.
+    def tls(protocols: List[Text] = Nil): Tls =
+      val (context, _) = acceptance.materialize()
+
+      Tls
+        ( context,
+          verify = acceptance.trust.hostname,
+          protocols = protocols,
+          versions = acceptance.versions.map(_.id) )
 
   private def platformManager(anchors: List[jsc.X509Certificate])
   :   jns.X509ExtendedTrustManager =

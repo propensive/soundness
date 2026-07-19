@@ -34,15 +34,25 @@ package coaxial
 
 import javax.net.ssl.SSLContext
 
+import anticipation.*
 import vacuous.*
 
 // Configuration for a TLS client connection (a `SecureEndpoint`). `context` supplies the
 // trust and key material — `Unset` means the JVM default `SSLContext` (the system trust
 // store), which is what you want for a public `wss`/HTTPS peer. `verify` toggles hostname
 // verification (RFC 2818 endpoint identification); it is ON by default and should only be
-// turned off for a self-signed peer whose certificate you already trust out of band. The
-// default `given` is fully secure.
+// turned off for a self-signed peer whose certificate you already trust out of band.
+// `protocols` lists the ALPN application protocols to offer, in preference order (e.g.
+// `h2`, `http/1.1`); empty means no ALPN is offered, preserving the plain-TLS handshake a
+// `wss` peer expects. `versions` restricts the TLS protocol versions (e.g. `TLSv1.3`);
+// empty accepts the context's defaults. The default `given` is fully secure and offers no
+// ALPN. A `TlsAcceptance` (the richer, permit-gated trust policy) is presented in this
+// form via its `tls(...)` extension.
 object Tls:
   given Tls = Tls()
 
-case class Tls(context: Optional[SSLContext] = Unset, verify: Boolean = true)
+case class Tls
+  ( context:   Optional[SSLContext] = Unset,
+    verify:    Boolean = true,
+    protocols: List[Text] = Nil,
+    versions:  List[Text] = Nil )
