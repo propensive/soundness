@@ -57,23 +57,18 @@ import systems.javaSystem
 import workingDirectories.javaWorkingDirectory
 
 object Bundler:
-  def classpath(out: Path on Linux): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match
+  // The classpath of the running application, as introspected from the thread-context
+  // classloader (or the `java.class.path` system property as a fallback). A staging rig pairs
+  // this with its compiled output as a `Compilation` and links it into a self-contained JAR
+  // with `Linker[Artifact.Jar]`, so the JAR carries the rig's own executor and dependencies.
+  def applicationClasspath: LocalClasspath =
+    val entries = classloaders.threadContextClassloader.classpath.match
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>
-        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries)
+        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries
 
     LocalClasspath(entries*)
-
-
-  // Bundles the running application's classpath, together with the given directory's contents,
-  // as an executable JAR: the self-replication path used by staging rigs. For a compilation's
-  // products, use `Linker[Artifact.Jar]` or `Linker[Artifact.Library[universe]]` instead.
-  def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
-  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
-
-    assemble(classpath(directory), jarfile0.or(directory.peer("tmpfile.jar")), main)
 
 
   private[anthology] def assemble

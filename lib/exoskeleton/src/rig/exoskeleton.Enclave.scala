@@ -105,12 +105,14 @@ extends Rig:
     val target = unsafely(out / name)
 
     unsafely:
-      val name2 = t"$name.jar"
-      val jarfile = out / name2
       // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
       // fails capture-variable unification when expanded in a capture-checked module.
       val executor: Fqcn = safely(Fqcn(t"superlunary.Executor2")).vouch
-      val bundle = Bundler.bundle(out, jarfile, executor)
+      val compilation = Compilation[Universe.Classfile](out, Bundler.applicationClasspath)
+
+      val jarfile =
+        Linker[Artifact.Jar](List(jarOptions.name(t"$name.jar")), List(Linker.EntryPoint(executor)))
+        . link(compilation, out)
 
       val cmd = (buildId: @unchecked) match
         case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
