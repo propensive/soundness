@@ -9,16 +9,17 @@ exists for it), `Artifact.Js[module]` (JavaScript, bound to a JavaScript host th
 `"es"`, `"commonjs"` or `"script"` module system), `Artifact.Wasm` (a core WebAssembly module
 with JavaScript glue), `Artifact.Wasi[version]` (a standalone WebAssembly artifact bound to a
 version of the WASI system interface: `0.1`, `0.2` or `0.3`) and `Artifact.Binary` (a
-machine-code executable).
+machine-code executable). `Artifact.Library[universe]`—a library JAR of a compilation's
+unlinked output, for downstream assembly—is available in every universe.
 
 Where a variant changes an artifact's binding contract—the module system a JavaScript host
 imports it through, or the WASI interface version—it is part of the artifact's type; open-ended
 refinements such as native target triples or ECMAScript versions remain link options.
 
 Each artifact is produced from exactly one universe, witnessed by a `Provenance` instance:
-`Jar` and `Dex` from `Classfile`; `Js`, `Wasm` and `Wasi` from `Sjsir`; `Binary` from `Nir`.
-The sjsir universe defers the choice among its artifacts until link time, so one compilation
-may be linked as any of them.
+`Jar` and `Dex` from `Classfile`; `Js`, `Wasm` and `Wasi` from `Sjsir`; `Binary` from `Nir`;
+`Library[universe]` from its own universe. The sjsir universe defers the choice among its
+artifacts until link time, so one compilation may be linked as any of them.
 
 ### Compiling
 
@@ -52,14 +53,19 @@ described by a `Compilation`, tagged with its universe:
 val compilation: Compilation[Universe.Sjsir] = Compilation(out, classpath)
 ```
 
- - `Bundler.bundle(compilation, jarfile, main)` produces an executable JAR from a classfile
-   compilation
- - `Bundler.library(compilation, jarfile)` produces a library JAR from a compilation in _any_
-   universe—classfiles, `.sjsir` or `.nir`—for downstream assembly
- - `Linker[artifact](options, entryPoints).link(compilation, out)` produces a fully-linked
-   artifact, and requires a compilation from that artifact's origin universe
+Every artifact is produced by the same verb:
+`Linker[artifact](options, entryPoints).link(compilation, out)`, which requires a compilation
+from the artifact's origin universe. `Linker[Artifact.Jar]` produces an executable JAR from a
+classfile compilation (with at most one entry point becoming its `Main-Class`, and
+`jarOptions.name` choosing its filename); `Linker[Artifact.Library[universe]]` packages any
+compilation's unlinked output as a library JAR. (`Bundler.bundle` remains for the distinct task
+of bundling the _running application's_ classpath, as staging rigs do.)
 
 ### Linking
+
+The sjsir linkages live outside `Linkage`'s implicit scope, so import them where sjsir
+artifacts are linked: `import sjsLinkages.given`. (JAR and library packaging need no import,
+and the WASI and native linkages are contextual values you construct anyway.)
 
 A `Linker` is parameterized by the artifact it produces, with options whose validity is checked
 against that artifact at compile time, mirroring `scalacOptions`:

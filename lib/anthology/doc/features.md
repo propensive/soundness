@@ -13,8 +13,8 @@
   binary), with each artifact's origin universe inferred
 - variants that change an artifact's binding contract are part of its type: WASI versions
   (0.1, 0.2, 0.3) and JavaScript module systems (es, commonjs, script)
-- fully-linked `.js` and `.wasm` artifacts and native binaries, or unlinked `.sjsir`/`.nir`
-  library JARs for downstream assembly
+- one verb for every product: executable JARs, `.js`, `.wasm`, native binaries and unlinked
+  library JARs are all produced by `Linker[artifact]`
 - native links may select a target platform (e.g. arm64/macOS) as a typed LLVM triple
 - linker options are typechecked against the link target
 - a WASI component link will not typecheck until its native tooling is proven present

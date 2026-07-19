@@ -32,7 +32,24 @@
                                                                                                   */
 package anthology
 
-import org.scalajs.linker.interface.{ESVersion, StandardConfig}
+import java.nio.file as jnf
+
+import scala.concurrent.*
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.*
+import scala.util.control as suc
+
+import org.scalajs.linker.interface.{ESVersion, ModuleInitializer, ModuleKind, StandardConfig}
+import org.scalajs.linker.{PathIRContainer, PathOutputDirectory, StandardImpl}
+import org.scalajs.logging.{Level, Logger}
+
+import anticipation.*
+import contingency.*
+import digression.*
+import galilei.*
+import hellenism.*
+import prepositional.*
+import serpentine.*
 
 object linkerOptions:
   private def sjs[artifact <: Artifact.Sjs](edit: StandardConfig => StandardConfig)
@@ -59,3 +76,85 @@ object linkerOptions:
   object optimize:
     val none: Linker.Option[Artifact.Sjs] = sjs(_.withOptimizer(false))
     val fast: Linker.Option[Artifact.Sjs] = sjs(_.withOptimizer(true))
+
+// The sjsir link family: JavaScript, browser Wasm and WASI components share the Scala.js
+// linker pipeline, differing only in the configuration they mandate and the artifact they
+// produce. Since these linkages live outside `Linkage`'s implicit scope, import them where
+// sjsir artifacts are linked: `import sjsLinkages.given`.
+object sjsLinkages:
+  private class Sjs[artifact <: Artifact.Sjs]
+    ( base: StandardConfig => StandardConfig, artifact: (Path on Linux) => (Path on Linux) )
+  extends Linkage[artifact]:
+    type Origin = Universe.Sjsir
+    private[anthology] type Form = StandardConfig
+    private[anthology] def initial: StandardConfig = base(StandardConfig())
+
+    private[anthology] def link
+      ( form:        StandardConfig,
+        compilation: Compilation[Universe.Sjsir],
+        entryPoints: List[Linker.EntryPoint],
+        out:         Path on Linux )
+    :   Path on Linux logs LinkEvent raises LinkError =
+
+      val entries: List[jnf.Path] =
+        jnf.Paths.get(compilation.out.encode.s).nn ::
+          compilation.classpath.entries.to(List).flatMap:
+            case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
+            case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
+            case _                                   => Nil
+
+      val initializers: List[ModuleInitializer] = entryPoints.map: entry =>
+        ModuleInitializer.mainMethodWithArgs(entry.mainClass.text.s, "main")
+
+      object logger extends Logger:
+        def log(level: Level, message: => String): Unit =
+          if level == Level.Error || level == Level.Warn
+          then Log.warn(LinkEvent.Message(message.tt))
+          else if level == Level.Info then Log.info(LinkEvent.Message(message.tt))
+          else Log.fine(LinkEvent.Message(message.tt))
+
+        def trace(error: => Throwable): Unit = Log.warn(LinkEvent.Message(error.toString.tt))
+
+      try
+        val outPath = jnf.Paths.get(out.encode.s).nn
+        jnf.Files.createDirectories(outPath)
+        val linker = StandardImpl.linker(form)
+        val cache = StandardImpl.irFileCache().newCache
+
+        val (containers, _) =
+          Await.result(PathIRContainer.fromClasspath(entries), 300.seconds)
+
+        val irFiles = Await.result(cache.cached(containers), 300.seconds)
+        val output = PathOutputDirectory(outPath)
+        Await.result(linker.link(irFiles, initializers, output, logger), 1800.seconds)
+        artifact(out)
+
+      catch case suc.NonFatal(error) =>
+        abort(LinkError(LinkError.Reason.Failed(error.stackTrace)))
+
+  given jsEs: (Linkage[Artifact.Js["es"]] from Universe.Sjsir) =
+    Sjs(_.withModuleKind(ModuleKind.ESModule), _ / "main.js")
+
+  given jsCommonJs: (Linkage[Artifact.Js["commonjs"]] from Universe.Sjsir) =
+    Sjs(_.withModuleKind(ModuleKind.CommonJSModule), _ / "main.js")
+
+  given jsScript: (Linkage[Artifact.Js["script"]] from Universe.Sjsir) =
+    Sjs(_.withModuleKind(ModuleKind.NoModule), _ / "main.js")
+
+  given wasm: (Linkage[Artifact.Wasm] from Universe.Sjsir) =
+    Sjs
+      ( _.withModuleKind(ModuleKind.ESModule)
+        . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true)),
+        _ / "main.wasm" )
+
+  given wasi(using toolchain: WasiToolchain, world: WitWorld)
+  :   (Linkage[Artifact.Wasi[0.2]] from Universe.Sjsir) =
+
+    Sjs
+      ( _.withModuleKind(ModuleKind.WasmComponent)
+        . withESFeatures(_.withESVersion(ESVersion.ES2022).withUseWebAssembly(true))
+        . withWasmFeatures: features =>
+            features
+            . withWitDirectory(Some(world.directory.encode.s))
+            . withWitWorld(Some(world.world.s)),
+        _ / "main.wasm" )

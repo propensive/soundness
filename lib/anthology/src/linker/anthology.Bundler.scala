@@ -30,8 +30,92 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anthology
 
-export
-  anthology
-  . { linkerOptions, sjsLinkages, WasiToolchain, WitWorld }
+import ambience.*
+import anticipation.*
+import contingency.*
+import digression.*
+import distillate.*
+import eucalyptus.*
+import galilei.*
+import gossamer.*
+import hellenism.*
+import prepositional.*
+import revolution.*
+import serpentine.*
+import turbulence.*
+import vacuous.*
+import zeppelin.*
+
+import filesystemBackends.virtualMachine
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemTraversal.preOrderTraversal
+import logging.silentLogging
+import manifestAttributes.*
+import systems.javaSystem
+import workingDirectories.javaWorkingDirectory
+
+object Bundler:
+  def classpath(out: Path on Linux): LocalClasspath =
+    val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match
+      case classpath: LocalClasspath => classpath.entries
+
+      case _ =>
+        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries)
+
+    LocalClasspath(entries*)
+
+
+  // Bundles the running application's classpath, together with the given directory's contents,
+  // as an executable JAR: the self-replication path used by staging rigs. For a compilation's
+  // products, use `Linker[Artifact.Jar]` or `Linker[Artifact.Library[universe]]` instead.
+  def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
+  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
+
+    assemble(classpath(directory), jarfile0.or(directory.peer("tmpfile.jar")), main)
+
+
+  private[anthology] def assemble
+    ( classpath: LocalClasspath, jarfile: Path on Linux, main: Optional[Fqcn] )
+  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
+
+    val manifest =
+      main.let(MainClass(_)).let: main =>
+        Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
+
+      . or:
+          Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
+
+
+    val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
+
+    Zipfile.write(jarfile):
+      val entries =
+        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
+          classpath.entries.to(List).flatMap:
+          case ClasspathEntry.Directory(directory) =>
+            val root = directory.as[Path on Linux]
+            root.descendants.to(List).filter: entry => !omissions(entry.name)
+            . map: file =>
+              if file.entry() == Directory then Unset else
+                val ref = %.on[Zip] + root.toward(file).on[Zip]
+                Zip.Entry(ref, file.read[Data])
+
+            . compact
+
+          case ClasspathEntry.Jar(jar) =>
+            val jarfile = workingDirectory[Path on Linux].resolve(jar)
+
+            // Re-emit each entry verbatim: it already carries its compressed bytes, so no
+            // decompression or recompression is needed.
+            Zipfile.read(jarfile).entries.to(List).filter: entry =>
+              val name: Text = entry.ref.encode
+              !entry.directory && name != t"META-INF/MANIFEST.MF"
+
+          case _ =>
+            Nil
+
+      entries.distinctBy(_.ref)
+
+    jarfile

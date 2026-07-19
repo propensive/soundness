@@ -480,7 +480,7 @@ object soundness extends Toolchain:
 
   object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
-    harlequin.md, harlequin.ansi, austronesian.core, anthology.bundle, anthology.`scala`,
+    harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.`scala`,
     exegesis.core, hellenism.jvm)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
@@ -672,11 +672,11 @@ object anthology extends Library:
     override def scalaJs = false // wraps the Java compiler tooling
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object bundle extends Component(core, zeppelin.core, revolution.core, eucalyptus.core):
-    override def scalaJs = false // depends on JVM-only `anthology.core`/`zeppelin`
+  object linker extends Component(core, zeppelin.core, revolution.core, eucalyptus.core):
+    override def scalaJs = false // JAR packaging and the engine-independent `Linker` machinery
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object link extends Component(core, eucalyptus.core, guillotine.core):
+  object link extends Component(linker, guillotine.core):
     override def scalaJs = false // drives the Scala.js linker (a JVM library) via its API
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -686,7 +686,7 @@ object anthology extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-native:tools_3:0.5.12")
-  object test extends Tests(`scala`, `java`, core, bundle, link, nir, spectacular.core):
+  object test extends Tests(`scala`, `java`, core, linker, link, nir, spectacular.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -1281,7 +1281,7 @@ object exoskeleton extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
-  object rig extends Internal(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
+  object rig extends Internal(completions, superlunary.core, ethereal.core, anthology.linker, quantitative.units):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps =
@@ -1952,7 +1952,7 @@ object scintillate extends Library:
 object sedentary extends Library:
   object core
   extends Component
-    (superlunary.jvm, anthology.bundle, diuretic.core, parasite.core, quantitative.units):
+    (superlunary.jvm, anthology.linker, diuretic.core, parasite.core, quantitative.units):
     override def scalaJs = false // benchmarking via JVM-only `superlunary`/`anthology`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")

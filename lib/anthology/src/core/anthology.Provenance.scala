@@ -55,6 +55,9 @@ object Provenance:
   given binary: (Provenance[Artifact.Binary] from Universe.Nir):
     type Origin = Universe.Nir
 
+  given library: [universe <: Universe] => (Provenance[Artifact.Library[universe]] from universe):
+    type Origin = universe
+
 // Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
 // has a provenance, whether or not it is currently linkable, so it can drive compilation
 // (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
