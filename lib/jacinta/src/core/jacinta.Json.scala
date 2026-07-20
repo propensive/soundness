@@ -1177,6 +1177,182 @@ object Json extends Json2, Dynamic:
   object Ast extends Format:
     def name: Text = "JSON"
 
+    // Sealed per the codec-thunk pattern (see `Json.aggregable` and rep/DECISIONS.md).
+    given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
+      caps.unsafe.unsafeAssumePure:
+        new Aggregable:
+          type Self = Json.Ast
+          type Operand = Data
+
+          def aggregate(source: LazyList[Data]): Json.Ast = Json.Ast.parse(source.iterator)
+          override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
+            // See `readJson`: the non-consume `accept` signature crosses to the
+            // consuming parser as a neutral reference.
+            Json.Ast.parse(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^])
+
+    // Renders a `Json.Ast` node to its serialized text. The whole serialization fold lives in this
+    // instance so that `ast.show` is the single route to JSON text; the producer is driven
+    // synchronously and the result collected into one `Text`. Number nodes are emitted from their
+    // BCD representation directly (preserving every digit the parser saw), and objects/heterogeneous
+    // arrays are distinguished by the length parity of their boxed `IArray[Any]` backing.
+    given showable: (formatting: Json.Formatting) => Json.Ast is Showable = ast =>
+      Producer.collect[Text](): producer =>
+        def newlineIndent(level: Int): Unit = formatting.indent.let: unit =>
+          producer.put("\n")
+          var i = 0
+
+          while i < level do
+            producer.put(unit)
+            i += 1
+
+        def unicode(char: Char): Text =
+          val hex = Integer.toHexString(char.toInt).nn
+          if hex.length == 1 then t"\\u000$hex" else t"\\u00$hex"
+
+        // JSON string escaping (RFC 8259): the quote and backslash, the named control escapes, and any
+        // other U+0000-001F control character as a `\uXXXX` reference.
+        def writeString(string: String): Unit =
+          producer.put("\"")
+          val length = string.length
+          var start = 0
+          var index = 0
+
+          inline def escape(entity: Text): Unit =
+            if index > start then producer.put(string.tt, start.z, index - start)
+            producer.put(entity)
+            start = index + 1
+
+          while index < length do
+            string.charAt(index) match
+              case '"'          => escape(t"\\\"")
+              case '\\'         => escape(t"\\\\")
+              case '\b'         => escape(t"\\b")
+              case '\f'         => escape(t"\\f")
+              case '\n'         => escape(t"\\n")
+              case '\r'         => escape(t"\\r")
+              case '\t'         => escape(t"\\t")
+              case c if c < ' ' => escape(unicode(c))
+              case _            => ()
+
+            index += 1
+
+          if length > start then producer.put(string.tt, start.z, length - start)
+          producer.put("\"")
+
+        def writeObject(node: IArray[Any], level: Int): Unit =
+          val n = node.length/2
+          producer.put("{")
+          val last = n - 1
+          var index = 0
+
+          while index < n do
+            newlineIndent(level)
+
+            writeString(node(index*2).asInstanceOf[String])
+            producer.put(":")
+            if formatting.indent.present then producer.put(" ")
+            recur(node(index*2 + 1).asInstanceOf[Json.Ast], level + 1)
+
+            if index < last then producer.put(",")
+            index += 1
+
+          newlineIndent(level - 1)
+
+          producer.put("}")
+
+        def writeArray(elements: IArray[Any], level: Int): Unit =
+          // Strip the sentinel pad if present (parity-padded heterogeneous arrays
+          // carry one for empty/even-length cases).
+          val raw = elements.length
+
+          val n =
+            if raw > 0 && (elements(raw - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
+            then raw - 1
+            else raw
+
+          producer.put("[")
+          val last = n - 1
+          var index = 0
+
+          while index < n do
+            newlineIndent(level)
+
+            recur(elements(index).asInstanceOf[Json.Ast], level + 1)
+            if index < last then producer.put(",")
+            index += 1
+
+          newlineIndent(level - 1)
+
+          producer.put("]")
+
+        def writeBcdLongArray(bcds: Array[Long]): Unit =
+          val n = bcds.length
+          producer.put("[")
+          val last = n - 1
+          var index = 0
+
+          while index < n do
+            producer.put(Bcd.bcdLongText(bcds(index)).tt)
+            if index < last then producer.put(",")
+            index += 1
+
+          producer.put("]")
+
+        def writeSmallBcdArray(smalls: Array[Int]): Unit =
+          val n = smalls.length
+          producer.put("[")
+          val last = n - 1
+          var index = 0
+
+          while index < n do
+            producer.put(Bcd.bcdIntText(smalls(index)).tt)
+            if index < last then producer.put(",")
+            index += 1
+
+          producer.put("]")
+
+        def recur(json: Json.Ast, level: Int): Unit = json.asMatchable match
+          case bcds: Array[Long] @unchecked =>
+            writeBcdLongArray(bcds)
+
+          case smalls: Array[Int] @unchecked =>
+            writeSmallBcdArray(smalls)
+
+          case bcd: Array[Double] @unchecked =>
+            // High-precision number — emit the canonical JSON-number text from the
+            // BCD nibble stream directly; this preserves all digits the parser saw,
+            // in contrast to a `Double.toString` round-trip.
+            producer.put(bcd.asInstanceOf[Bcd].text.tt)
+
+          case smallBcd: Int =>
+            // Small-BCD number — at most 7 nibbles packed into one Int.
+            producer.put(Bcd.bcdIntText(smallBcd).tt)
+
+          case arr: IArray[Any] @unchecked =>
+            // Heterogeneous array or object, distinguished by length parity: even =
+            // object (alternating key/value); odd = array (with optional sentinel
+            // pad on the end).
+            if (arr.length & 1) == 0 then writeObject(arr, level) else writeArray(arr, level)
+
+          case long: Long =>
+            producer.put(long.toString.tt)
+
+          case double: Double =>
+            producer.put(double.toString.tt)
+
+          case string: String =>
+            writeString(string)
+
+          case boolean: Boolean =>
+            producer.put(boolean.toString.tt)
+
+          case _ =>
+            producer.put("null")
+
+        recur(ast, 1)
+        if formatting.trailingNewline then producer.put("\n")
+
+
     case class Position
       ( line:                Int,
         column:              Int,

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export embarcadero.{ImageOpenable, openable}
+export embarcadero.{ImageOpenable, imagePathOpenable}

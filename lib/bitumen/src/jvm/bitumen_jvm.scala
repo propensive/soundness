@@ -45,7 +45,7 @@ import filesystemBackends.virtualMachine
 
 // Opening a filesystem path or building an archive from disk needs `bitumen.jvm`; re-exported
 // through `soundness.*`, so `path.open[Tar]` and `Tar.Entry(...)` resolve as before on the JVM.
-given openable: [path: Abstractable across Paths to Text]
+given tarPathOpenable: [path: Abstractable across Paths to Text]
 =>  ( Tactic[TarError], Tactic[StreamError] )
 =>  ( TarOpenable[path]^ ) =
   TarOpenable[path]
