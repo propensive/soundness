@@ -316,11 +316,13 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"lo")
 
       test(m"from slices a List by ordinal"):
-        trek(List(0, 1, 2, 3, 4).from(Ter))
+        import asymptotics.linearSizeComplexity
+        List(0, 1, 2, 3, 4).from(Ter)
       . assert(_ == List(2, 3, 4))
 
       test(m"after slices a List by ordinal"):
-        trek(List(0, 1, 2, 3, 4).after(Ter))
+        import asymptotics.linearSizeComplexity
+        List(0, 1, 2, 3, 4).after(Ter)
       . assert(_ == List(3, 4))
 
       test(m"upto slices an IArray by ordinal"):

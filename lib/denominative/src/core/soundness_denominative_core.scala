@@ -35,7 +35,12 @@ package soundness
 export
   denominative
   . { aka, Countable, Populable, gamut, Interval, iterate, nil, Ordinal, Prim, Quat, Quin, Sec,
-      Sen, Sept, Span, Ter, u, z, Zerary }
+      Sen, Sept, Span, Ter, u, z, Zerary, LinearSizeComplexity, LinearAccessComplexity,
+      UnboundedSizeComplexity }
+
+package asymptotics:
+  export denominative.asymptotics.{linearSizeComplexity, linearAccessComplexity,
+      unboundedSizeComplexity}
 
 package ordinalTextualizables:
   export

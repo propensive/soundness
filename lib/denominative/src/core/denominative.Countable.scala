@@ -38,7 +38,6 @@ import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 import anticipation.*
 import prepositional.*
-import vacuous.{Trek, Exhaust}
 
 object Countable:
   given iarray: [element] => IArray[element] is Countable = (iarray: IArray[element]) => iarray.length
@@ -52,9 +51,9 @@ object Countable:
     def size(self: Option[element]): Int = if self == None then 0 else 1
     override def nil(self: Option[element]): Boolean = self.isEmpty
 
-  // `List#size` is O(n), so the `Countable` instance is gated behind `Trek`; the O(1)
+  // `List#size` is O(n), so the `Countable` instance is gated behind `LinearSizeComplexity`; the O(1)
   // `nil`/`occupied` come from the ungated `Populable.list` instead.
-  given list: [element] => (erased trek: Trek) => List[element] is Countable:
+  given list: [element] => (complexity: LinearSizeComplexity) => List[element] is Countable:
     def size(self: List[element]): Int = self.stdlib.length
     override def nil(self: List[element]): Boolean = self.stdlib.isEmpty
 
@@ -76,9 +75,9 @@ object Countable:
     override def nil(self: HashMap[key, element]): Boolean = self.isEmpty
 
   // `Progression#length` forces the whole stream (and diverges on infinite ones), so the
-  // `Countable` instance is gated behind `Exhaust`; the O(1) `nil` comes from the ungated
-  // `Populable.lazyList` instead.
-  given lazyList: [element] => (erased exhaust: Exhaust) => Progression[element] is Countable:
+  // `Countable` instance is gated behind `UnboundedSizeComplexity`; the O(1) `nil` comes from the
+  // ungated `Populable.lazyList` instead.
+  given lazyList: [element] => (complexity: UnboundedSizeComplexity) => Progression[element] is Countable:
     def size(self: Progression[element]): Int = self.stdlib.length
     override def nil(self: Progression[element]): Boolean = self.stdlib.isEmpty
 

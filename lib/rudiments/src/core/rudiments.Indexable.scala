@@ -41,7 +41,6 @@ import scala.collection.mutable as scm
 import anticipation.*
 import denominative.*
 import prepositional.*
-import vacuous.Trek
 
 object Indexable:
   given iarray: [element] => IArray[element] is Indexable:
@@ -75,8 +74,8 @@ object Indexable:
 
     def access(series: Series[element], index: Ordinal): Result = series.stdlib(index.n0)
 
-  // Opaque `List`: positional access is O(n), so the instance is gated behind `Trek`.
-  given list: [element] => (erased trek: Trek) => List[element] is Indexable:
+  // Opaque `List`: positional access is O(n), so the instance is gated behind `LinearAccessComplexity`.
+  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Indexable:
     type Self = List[element]
     type Operand = Ordinal
     type Result = element

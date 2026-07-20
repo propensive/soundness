@@ -304,23 +304,26 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == 6)
 
     suite(m"Countable tests"):
-      // `List`'s `Countable` (hence `gamut`) is O(n), so it is gated behind `Trek`.
+      // `List`'s `Countable` (hence `gamut`) is O(n), so it is gated behind `LinearSizeComplexity`,
+      // enabled here for the whole suite by importing the acknowledgement.
+      import asymptotics.linearSizeComplexity
+
       test(m"a list's gamut spans all its elements"):
         val list = List(1, 2, 3)
-        trek(list.gamut.size)
+        list.gamut.size
       . assert(_ == 3)
 
       test(m"a list's gamut starts at Prim"):
         val list = List(1, 2, 3)
-        trek(list.gamut.start)
+        list.gamut.start
       . assert(_ == Prim)
 
       test(m"a list's gamut ends at its last ordinal"):
         val list = List(1, 2, 3)
-        trek(list.gamut.end)
+        list.gamut.end
       . assert(_ == Ter)
 
-      // `nil` is O(1) and ungated (from `Populable.list`), so it needs no `Trek`.
+      // `nil` is O(1) and ungated (from `Populable.list`), so it needs no acknowledgement.
       test(m"an empty list is nil"):
         val list = List[Int]()
         list.nil

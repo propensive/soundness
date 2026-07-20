@@ -547,7 +547,7 @@ extension [element](sequence: List[element])
   // variable on the union — which is spurious (and an error) when `element` is a pure type such as
   // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
   // Only `prim` gets this ungated `List` special case (O(1)); `sec`/`ter` go through the
-  // `Trek`-gated `Indexable` route like every other positional access on `List`.
+  // `LinearAccessComplexity`-gated `Indexable` route like every other positional access on `List`.
   def prim: Optional[element] = if sequence.stdlib.isEmpty then Unset else sequence.stdlib.head
 
   def unique: Optional[element] =

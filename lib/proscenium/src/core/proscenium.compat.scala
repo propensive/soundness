@@ -241,7 +241,8 @@ extension [key, value](list: List[(key, value)])
 // MIGRATION SHIMS for the opaque `Progression`. Non-umbrella names only — `map`/`filter`/`flatMap`/
 // `fold`/`each` come from the typeclass surface (`Traversable`/`Reshapable`). Forcing operations
 // (`length`/`size`) are deliberately NOT shimmed: they must announce themselves via `.stdlib` so
-// the `Exhaust`-gated `Countable.lazyList` is not silently bypassed. Laziness is preserved: `tail`,
+// the `UnboundedSizeComplexity`-gated `Countable.lazyList` is not silently bypassed. Laziness is
+// preserved: `tail`,
 // `take`, `drop`, `takeWhile`, `dropWhile` and `lazyAppendedAll` do not force the stream's tail.
 extension [element](lazyList: Progression[element])
   inline def head: element = lazyList.stdlib.head

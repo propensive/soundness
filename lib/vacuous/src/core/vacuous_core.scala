@@ -46,19 +46,6 @@ inline def default[value](using default: Default[value]): value = default()
 inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optional[value] =
   lambda(Unset)
 
-// Scoped acknowledgements of expensive operations: `trek(list.size)` grants the O(n) pass,
-// `exhaust(stream.size)` grants forcing a lazy structure, within the block only. The context
-// parameter is erased at consuming positions, so neither leaves any runtime residue.
-inline def trek[result](inline block: (erased Trek) ?=> result): result = block(using Trek)
-
-inline def exhaust[result](inline block: (erased Exhaust) ?=> result): result =
-  block(using Exhaust)
-
-// Blanket, per-file enablement of expensive operations: `import vacuous.expenditures.given`.
-package expenditures:
-  given trek: Trek = Trek
-  given exhaust: Exhaust = Exhaust
-
 export vacuous.Optional.Unset
 
 type Optional[value] = Unset | value

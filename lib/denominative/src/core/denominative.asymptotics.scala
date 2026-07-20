@@ -30,15 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package vacuous
+package denominative
 
-// A capability token gating operations whose cost is asymptotically surprising for their name — a
-// full O(n) trek across a strict structure whose interface suggests O(1), such as computing the
-// length of a linked list or accessing it positionally. Like `Unsafe`, it is a real singleton
-// rather than an `erased` one (the Scala.js backend crashes on closures carrying an `erased`
-// parameter), but consuming positions take it `using erased`, so it leaves no runtime residue.
-// (Not `Sweep` or `Scan`: both names are already taken by savagery and facsimile, and vacuous is
-// wildcard-imported nearly everywhere, where file-level imports shadow package-mates.)
-object Trek extends Trek
+// Gates for operations whose asymptotic cost is worse than their name implies. Each is a plain marker
+// type — *not* a capability — required in a `using` position by the instance that provides the
+// expensive operation. A downstream file opts into a whole class of such operations by importing the
+// matching enabler from the `asymptotics` package, e.g. `import asymptotics.linearSizeComplexity`,
+// which leaves every acknowledgement greppable. Because they carry no authority, they need none of
+// the `erased`/scope-function machinery a capability would; a harmless runtime residue is fine.
 
-sealed trait Trek
+// Computing the length of a strict linked structure — `List.size`, and the size-derived ordinal
+// operations `gamut`/`limit`/`ult`/`pen`/`ant` — each an O(n) traversal.
+sealed trait LinearSizeComplexity
+
+// Positional access into a strict linked structure — indexing a `List` via `at` (and `sec`/`ter`,
+// which call it) — an O(n) walk to the requested index. `prim`/first stays free (O(1) head access).
+sealed trait LinearAccessComplexity
+
+// Computing the size of a lazy structure — `Progression.size` — which forces the whole stream and
+// diverges on an infinite one: unbounded rather than merely linear.
+sealed trait UnboundedSizeComplexity
+
+package asymptotics:
+  given linearSizeComplexity: LinearSizeComplexity = new LinearSizeComplexity {}
+  given linearAccessComplexity: LinearAccessComplexity = new LinearAccessComplexity {}
+  given unboundedSizeComplexity: UnboundedSizeComplexity = new UnboundedSizeComplexity {}

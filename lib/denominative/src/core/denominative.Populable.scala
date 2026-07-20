@@ -35,9 +35,10 @@ package denominative
 import prepositional.*
 
 // Emptiness alone, split from `Countable`: `nil` is O(1) for every collection, including those
-// (like `List`) whose `size` is O(n) and gated behind `Trek`, and those (like `Progression`) whose
-// `size` may diverge and is gated behind `Exhaust`. Types whose size is cheap implement `Countable`,
-// which extends this trait; `nil`-only consumers should demand only `Populable`.
+// (like `List`) whose `size` is O(n) and gated behind `LinearSizeComplexity`, and those (like
+// `Progression`) whose `size` may diverge and is gated behind `UnboundedSizeComplexity`. Types whose
+// size is cheap implement `Countable`, which extends this trait; `nil`-only consumers should demand
+// only `Populable`.
 object Populable:
   // Implicit search for `X is Populable` consults this companion and those of `Populable`'s
   // *parents*, but never the companions of its subclasses, so instances defined in `Countable`'s
@@ -45,13 +46,13 @@ object Populable:
   given countable: [self] => (countable: self is Countable) => self is Populable = countable
 
   // `List`'s emptiness is O(1), so it gets an ungated instance here rather than relying on
-  // the `Trek`-gated `Countable.list` through the `countable` bridge; being more specific,
-  // it wins whenever both are in scope.
+  // the `LinearSizeComplexity`-gated `Countable.list` through the `countable` bridge; being more
+  // specific, it wins whenever both are in scope.
   given list: [element] => List[element] is Populable:
     def nil(self: List[element]): Boolean = self.stdlib.isEmpty
 
   // `Progression`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
-  // ungated instance here rather than reaching the `Exhaust`-gated `Countable.lazyList`.
+  // ungated instance here rather than reaching the `UnboundedSizeComplexity`-gated `Countable.lazyList`.
   given lazyList: [element] => Progression[element] is Populable:
     def nil(self: Progression[element]): Boolean = self.stdlib.isEmpty
 
