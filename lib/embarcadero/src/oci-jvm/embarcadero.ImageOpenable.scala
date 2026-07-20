@@ -63,7 +63,7 @@ extends Openable:
       block(using new ImageHandle(tar.entries) with Granting[grants] {})
 
 // Re-exported through `soundness.*`, so `path.open[Image]` resolves on the JVM as before.
-given openable: [path: Abstractable across Paths to Text]
+given imagePathOpenable: [path: Abstractable across Paths to Text]
 =>  ( Tactic[OciError], Tactic[TarError], Tactic[StreamError] )
 =>  ( ImageOpenable[path]^ ) =
   ImageOpenable[path]
