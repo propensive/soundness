@@ -550,10 +550,10 @@ object soundness extends Toolchain:
 
   object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
-    harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.`scala`,
-    exegesis.core, hellenism.jvm)
+    harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
+    anthology.`scala`, exegesis.core, hellenism.jvm)
 
-  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
+  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
@@ -561,7 +561,7 @@ object soundness extends Toolchain:
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, telekinesis.http2, embarcadero.containerd, obligatory.grpc,
     xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
-    xenophile.wit, telekinesis.core, graffiti.core)
+    xenophile.wit, xenophile.cffi, xenophile.scalanative, telekinesis.core, graffiti.core)
 
   // The three platform aggregates. `jvm` is every JVM module (the group bundles); `wasi` is the
   // WASI backends (compiled here as ordinary JVM, which typechecks their deferred `invoke`
@@ -596,6 +596,36 @@ object test extends Toolchain:
   def sources = Task.Sources(moduleDir / ".." / "src" / "test")
   override def finalMainClass: Task.Simple[String] = "soundness.Tests"
 
+// The cross-module benchmark corpus (formerly the `crossparse` library): a single set of domain
+// types decoded through every soundness format and against third-party rivals. Not a published
+// library — it lives in `src/bench` and is run like the test aggregate (`make bench`). The `model`
+// sub-module compiles one phase ahead so each format's `Inlinable` expansion-time instance
+// evaluation can load the corpus types (and resolve the companion `Inlinable` givens). The sources
+// keep `package crossparse` and the `crossparse.Benchmarks`/`crossparse.matrixConfig` object names
+// so the benchmark's superlunary self-quotes (`'{ crossparse.Benchmarks.… }`) still resolve.
+object bench extends BaseScalaModule:
+  override def finalMainClass: Task.Simple[String] = "crossparse.Benchmarks"
+  override def sources = Task.Sources(moduleDir / ".." / "src" / "bench" / "main")
+  override def moduleDeps: Seq[JavaModule] = Seq(model, probably.cli, sedentary.core, quantitative.units)
+  override def mvnDeps = Seq(
+    mvn"io.circe::circe-parser:0.14.13",
+    mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.35.3",
+    mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.35.3",
+    mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.35.3",
+    // The per-format best-in-class baselines for the document matrix.
+    mvn"io.bullet::borer-core:1.16.1",
+    mvn"io.bullet::borer-derivation:1.16.1",
+    mvn"com.google.protobuf:protobuf-java:4.29.3",
+    mvn"com.fasterxml:aalto-xml:1.3.3",
+    mvn"org.snakeyaml:snakeyaml-engine:2.7"
+  )
+
+  object model extends Internal(jacinta.staged, stratiform.staged, stratiform.binaryStaged,
+                                xylophone.staged, breviloquence.staged, locomotion.staged, ypsiloid.core):
+    override def sources = Task.Sources(moduleDir / ".." / ".." / "src" / "bench" / "model")
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+
 // ------------------------ VALIDATION ------------------------
 
 object groupCheck extends Module:
@@ -609,13 +639,22 @@ object groupCheck extends Module:
   // `soundness-all` transitively as dependencies of bundled modules. Non-published modules
   // (demos, examples) use the `Internal` trait instead and
   // are not subject to this check.
+  //
+  // Also excluded: the `.staged` expansion-time (staging-compiler) variants and the
+  // `prescience.*` compile-time-evaluation modules. These are deliberately split out of their
+  // `core`s so users don't inherit the compiler/staging jars unless they opt in, so they stay
+  // out of `soundness-all` rather than joining a group bundle. (`prescience.leaves` is a shim
+  // that only orders compilation.)
   def excluded: Set[String] = Set(
     "anticipation.codec", "anticipation.color", "anticipation.generic", "anticipation.gfx",
     "anticipation.html", "anticipation.http", "anticipation.log", "anticipation.opaque",
     "anticipation.path", "anticipation.print", "anticipation.text", "anticipation.time",
     "anticipation.url",
     "beneficence.core", "beneficence.plugin",
-    "proscenium.core"
+    "proscenium.core",
+    "breviloquence.staged", "jacinta.staged", "locomotion.staged", "stratiform.staged",
+    "stratiform.binaryStaged", "xylophone.staged",
+    "prescience.core", "prescience.leaves"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -1069,32 +1108,6 @@ object cosmopolite extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
     override def enabled = false
-
-object crossparse extends Library:
-  // The corpus's domain types, compiled one phase before the benchmarks so
-  // that each format's `Inlinable` expansion-time instance evaluation can
-  // load them (and resolve the companion `Inlinable` givens) at the bench's
-  // expansion.
-  object model
-      extends Component(jacinta.staged, stratiform.staged, stratiform.binaryStaged,
-                       xylophone.staged, breviloquence.staged, locomotion.staged, ypsiloid.core):
-    override def scalaJs = false // depends on the staged components (compiler jars)
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-
-  object bench extends Benchmarks(model, quantitative.units):
-    def mvnDeps = Seq(
-      mvn"io.circe::circe-parser:0.14.13",
-      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.35.3",
-      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.35.3",
-      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.35.3",
-      // The per-format best-in-class baselines for the document matrix.
-      mvn"io.bullet::borer-core:1.16.1",
-      mvn"io.bullet::borer-derivation:1.16.1",
-      mvn"com.google.protobuf:protobuf-java:4.29.3",
-      mvn"com.fasterxml:aalto-xml:1.3.3",
-      mvn"org.snakeyaml:snakeyaml-engine:2.7"
-    )
 
 object dendrology extends Library:
   object tree extends Component(gossamer.core):
@@ -2564,7 +2577,8 @@ val allLibraries: Seq[Library] = Seq(
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
-  perihelion, phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, prescience,
+  perihelion, phoenicia, plutocrat, pneumatic, polaris, polysyllabic, polyvinyl, prepositional,
+  prescience,
   probably, profanity,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
