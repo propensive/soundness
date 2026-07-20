@@ -72,7 +72,7 @@ object Inspectable extends Inspectable2:
 
   given text: Text is Inspectable = text =>
     val builder: StringBuilder = new StringBuilder()
-    text.s.map(escape(_, true)).each(builder.append)
+    text.each { char => builder.append(escape(char, true).s) }
 
     ("t\""+builder.toString+"\"").tt
 
@@ -132,7 +132,7 @@ object Inspectable extends Inspectable2:
       caps.unsafe.unsafeAssumePure(() => inspectableValue)
 
     entries =>
-      entries.map: (key, value) =>
+      entries.remap: (key, value) =>
         inspKey().text(key).s+" → "+inspValue().text(value).s
 
       . mkString("{", ", ", "}").tt

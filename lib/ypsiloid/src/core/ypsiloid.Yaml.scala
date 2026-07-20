@@ -238,7 +238,7 @@ trait Yaml2:
             // `@name[Yaml]` / bare `@name` variant renames: map the serialized
             // discriminator back to the variant name before delegating.
             val variantNames: Map[Text, Text] =
-              variantRelabelling[derivation, Yaml].map: (variant, wire) => wire -> variant
+              variantRelabelling[derivation, Yaml].remap: (variant, wire) => wire -> variant
 
             val resolved: Optional[Text] =
               discriminable.discriminate(yaml).let: wire =>

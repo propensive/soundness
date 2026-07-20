@@ -102,6 +102,34 @@ object Tests extends Suite(m"Rudiments Tests"):
         Map(t"a" -> 1, t"b" -> 2).defines(t"c")
       . assert(_ == false)
 
+    suite(m"Mapping tests"):
+      // The `Map[…]`/`Set[…]` ascriptions are the established pattern for opaque-alias literals
+      // under `soundness.*` + `compat.*` (a bare literal in a receiver position mis-elaborates).
+      test(m"List map preserves shape"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.map(_ + 1)
+      . assert(_ == List(2, 3, 4))
+
+      test(m"Set map preserves shape"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.map(_ + 1)
+      . assert(_ == Set(2, 3, 4))
+
+      test(m"Map map transforms values, preserving keys"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.map(_ + 10)
+      . assert(_ == Map(t"a" -> 11, t"b" -> 12))
+
+      test(m"Map map operand is the value, not the pair"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.map(_*2)
+      . assert(_ == Map(t"a" -> 2, t"b" -> 4))
+
+      test(m"remap transforms entries pairwise into a Map"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.remap { (key, value) => value -> key }
+      . assert(_ == Map(1 -> t"a", 2 -> t"b"))
+
     suite(m"Confined index tests"):
       val text = t"hello"
       val array = IArray(10, 20, 30)

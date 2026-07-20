@@ -184,20 +184,6 @@ extension [self](self: self)(using traversable: self is Traversable)
       start <= last && part.indices.forall: offset =>
         whole(start + offset) == part(offset)
 
-  // The transforming operations, rebuilt through `Reshapable`: the result shape is chosen by
-  // implicit search from the (source shape, new element type) pair. These are plain `def`s, not
-  // `inline`: under capture checking inline expansion re-infers result types at each call site
-  // (see the note on `prim` below). The result type is bound as an inferred type parameter
-  // (`to result`) rather than referenced path-dependently (`reshapable.Result`): the
-  // path-dependent form fails at the cross-package `export` forwarder (#1411), as with `total`.
-  // While the collection aliases remain transparent, member methods of the stdlib collections
-  // shadow these for stdlib receivers; they activate per-type as the aliases become opaque.
-  def map[element2, result](lambda: traversable.Operand => element2)
-    ( using reshapable: self is Reshapable by element2 to result )
-  :   result =
-
-    reshapable.reshape(traversable.traverse(self).map(lambda))
-
   // The preferred name for monadic binding at explicit call sites; `flatMap` (below) is the
   // same operation, retained solely because `for`-comprehensions desugar to that name.
   def bind[inner, element2, result](lambda: traversable.Operand => inner)
@@ -282,6 +268,32 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape(traversable.traverse(self).distinct)
+
+// The shape-preserving `map`, driven by `Mappable` rather than `Traversable`+`Reshapable`, so a
+// `Map` maps its *values* (keys preserved) instead of iterating `(key, value)` pairs; `remap`
+// (below) covers the pairwise/entry case. Two design points work together: `mappable` is summoned
+// at the *extension* level so the lambda's parameter type is the concrete `mappable.Operand` —
+// elaborated before the lambda, so `xs.map(_.field)` infers the element type (the same technique
+// that made the original `Traversable`-driven `map` infer operands); and the mapped-container
+// constructor is bound as the higher-kinded type parameter `result[_]`, matched from the
+// instance's `Result` refinement, so the return type `result[element2]` is a plain application —
+// never a path-dependent projection (`mappable.Result[element2]`) — which is what survives the
+// cross-package export forwarder (#1411). While the collection aliases remain transparent, stdlib
+// member `map` shadows this for stdlib receivers.
+extension [self, result[_]](self: self)
+  (using mappable: self is Mappable { type Result[element2] = result[element2] })
+  def map[element2](lambda: mappable.Operand => element2): result[element2] =
+    mappable.map(self, lambda)
+
+// The pairwise/entry transformation, for the shapes `map` no longer covers uniformly: a `Map`'s
+// entries are presented as `(key, value)` pairs and rebuilt through `Reshapable` into whatever
+// shape the lambda's result implies (another `Map` for pair results, else a `List`).
+extension [self](self: self)(using traversable: self is Traversable)
+  def remap[element2, result](lambda: traversable.Operand => element2)
+    ( using reshapable: self is Reshapable by element2 to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).map(lambda))
 
 // Operations that are partial on possibly-empty collections but *total* on receivers carrying a
 // `Populated` proof (obtained from `occupied`, whose bounds check is thereby discharged exactly
