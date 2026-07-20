@@ -34,6 +34,8 @@ package kaleidoscope
 
 import proscenium.compat.*
 
+import rudiments.*
+
 object GlobToken:
   private val needsEscaping: Set[Char] = Set.from("\\.[]{}()<>*+-=!?^$|".iterator)
 
@@ -45,7 +47,7 @@ enum GlobToken:
 
   def regex: String = this match
     case Exact(char) =>
-      (if GlobToken.needsEscaping.contains(char) then "\\" else "")+char
+      (if GlobToken.needsEscaping.has(char) then "\\" else "")+char
 
     case Star =>
       "[^/\\\\]*"

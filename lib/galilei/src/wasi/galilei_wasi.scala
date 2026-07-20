@@ -357,17 +357,17 @@ package filesystemBackends:
 
           // open-flags: create (1) | exclusive (4) | truncate (8); descriptor-flags: read (1) |
           // write (2).
-          val create = if flags.stdlib.contains(OpenFlag.Create) then 1 else 0
-          val exclusive = if flags.stdlib.contains(OpenFlag.Exclusive) then 4 else 0
-          val truncate = if flags.stdlib.contains(OpenFlag.Truncate) then 8 else 0
+          val create = if flags.has(OpenFlag.Create) then 1 else 0
+          val exclusive = if flags.has(OpenFlag.Exclusive) then 4 else 0
+          val truncate = if flags.has(OpenFlag.Truncate) then 8 else 0
           val openFlags = create | exclusive | truncate
 
-          val writing = flags.stdlib.contains(OpenFlag.Write) || flags.stdlib.contains(OpenFlag.Append)
+          val writing = flags.has(OpenFlag.Write) || flags.has(OpenFlag.Append)
 
           val descriptorFlags =
-            (if flags.stdlib.contains(OpenFlag.Read) then 1 else 0) | (if writing then 2 else 0)
+            (if flags.has(OpenFlag.Read) then 1 else 0) | (if writing then 2 else 0)
 
-          val pathFlags = follow(!flags.stdlib.contains(OpenFlag.NoFollow))
+          val pathFlags = follow(!flags.has(OpenFlag.NoFollow))
 
           try
             val opened =
@@ -394,7 +394,7 @@ package filesystemBackends:
 
             def write(data: Progression[Data]): Unit =
               val streamHandle =
-                if flags.stdlib.contains(OpenFlag.Append)
+                if flags.has(OpenFlag.Append)
                 then target.`append-via-stream`.invoke[WitHandle of "output-stream"]
                 else target.`write-via-stream`(U64(0L.bits)).invoke[WitHandle of "output-stream"]
 

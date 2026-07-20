@@ -41,6 +41,7 @@ import contingency.*
 import prepositional.*
 import turbulence.*
 import zephyrine.*
+import rudiments.*
 
 // Opening a filesystem *path* as an OCI image, delegating the TAR bracket to bitumen's disk-backed
 // `TarOpenable`. Split from `embarcadero.oci`'s cross-platform sources because it needs
@@ -59,7 +60,7 @@ extends Openable:
     ( block: ((ImageHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
 
     TarOpenable[path]().open(value, mode, Nil): tar ?=>
       block(using new ImageHandle(tar.entries) with Granting[grants] {})

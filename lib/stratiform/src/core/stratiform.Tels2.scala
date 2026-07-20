@@ -42,6 +42,7 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 import wisteria.*
+import rudiments.*
 
 import Tels.Polarity
 
@@ -129,7 +130,7 @@ object Tels2:
           case Morphology.Arr(_) | Morphology.Opt(_) => Polarity.Loose
 
           case _ =>
-            if required.stdlib.contains(label) then Polarity.Tight else Polarity.Loose
+            if required.has(label) then Polarity.Tight else Polarity.Loose
 
         Tels.Field
           ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )

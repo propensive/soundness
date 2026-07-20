@@ -148,7 +148,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val codes = CorpusLoader.expectedCodes(testcase)
         if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
-            codes.stdlib.contains:
+            codes.has:
               capture[TelError](Tel.Parser.parse(Cursor[Data](testcase.source)))
               .reason.number
           . assert(_ == true)
@@ -1427,7 +1427,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // parser surfaces a different code first (e.g. e118 → E117).
         if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
           test(m"raises an expected E1xx error on ${testcase.stem}"):
-            codes.stdlib.contains(capture[TelError](testcase.source.read[Tel]).reason.number)
+            codes.has(capture[TelError](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
 
     suite(m"BASE-256 codec"):

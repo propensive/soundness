@@ -44,7 +44,6 @@ import proscenium.{List, Map, Set, Progression}
 // emptiness is the completion signal for the `Set` migration. Not auto-imported: `-Yimports`
 // pulls only top-level `proscenium` members, so every use is greppable.
 extension [element](set: Set[element])
-  inline def contains(element: element): Boolean = set.stdlib.contains(element)
   inline def apply(element: element): Boolean = set.stdlib(element)
   inline def forall(predicate: element => Boolean): Boolean = set.stdlib.forall(predicate)
   inline def count(predicate: element => Boolean): Int = set.stdlib.count(predicate)

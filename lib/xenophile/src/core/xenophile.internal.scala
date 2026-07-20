@@ -279,7 +279,7 @@ object Xenophile:
     val element = topicRepr.dealias match
       case Refinement(parent, "Transport", TypeBounds(_, element)) => parent.dealias match
         case ConstantType(StringConstant(constructor))
-        if arrayConstructors.stdlib.contains(constructor.tt) =>
+        if arrayConstructors.has(constructor.tt) =>
           element
 
         case _ =>

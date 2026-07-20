@@ -57,7 +57,7 @@ private[facsimile] object Trees:
 
     node match
       case Cos.Ref(number, _) =>
-        if visited.contains(number) then List()
+        if visited.has(number) then List()
         else pairs(pdf.resolved(node), key, visited + number)
 
       case Cos.Dictionary(entries) =>

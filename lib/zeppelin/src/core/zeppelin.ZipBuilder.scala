@@ -147,11 +147,11 @@ object ZipBuilder:
 
     val target = jnf.Path.of(filename.s).nn
 
-    if !flags.stdlib.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+    if !flags.has(CreateFlag.Replace) && jnf.Files.exists(target)
     then abort(ZipError(ZipError.Reason.AlreadyExists))
 
     try
-      if flags.stdlib.contains(CreateFlag.Parents) then
+      if flags.has(CreateFlag.Parents) then
         Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
 
       val parent = target.toAbsolutePath.nn.getParent

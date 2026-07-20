@@ -126,7 +126,7 @@ object LspServer:
 
     json =>
       safely(json.method.as[Text]).lay(routes.stdlib.head._2(json)): method =>
-        routes.stdlib.find(_._1.stdlib.contains(method)) match
+        routes.stdlib.find(_._1.has(method)) match
           case Some((_, dispatch)) => dispatch(json)
           case None                => Unset
 

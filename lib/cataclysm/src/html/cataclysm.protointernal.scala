@@ -42,6 +42,7 @@ import gigantism.*
 import gossamer.*
 import hellenism.*
 import vacuous.*
+import rudiments.*
 
 // Compile-time machinery behind `Styles` and the `cssBindings.checkedBinding` given. A
 // `Styles` marker carries a stylesheet's classpath path as its `Locus` type; the
@@ -117,10 +118,10 @@ private[cataclysm] object protointernal:
     val (classes, ids) = references(stylesPath)
 
     val attribute =
-      if classes.stdlib.contains(target) && ids.stdlib.contains(target)
+      if classes.has(target) && ids.has(target)
       then halt(m"cataclysm: $target is both a class and an id in the stylesheet; rename one")
-      else if classes.stdlib.contains(target) then "class"
-      else if ids.stdlib.contains(target) then "id"
+      else if classes.has(target) then "class"
+      else if ids.has(target) then "id"
       else halt(m"cataclysm: $target is not a class or id in the stylesheet")
 
     '{${Expr(attribute)}.tt}

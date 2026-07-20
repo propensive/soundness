@@ -499,7 +499,7 @@ object internal:
     def codecProbe(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
       args.nonEmpty && inferWith(instanceOf(tpe), args.map(instanceOf)).let: tree =>
 
-        !isSentinel(tree) && !wrappers.stdlib.contains(rootSymbol(tree))
+        !isSentinel(tree) && !wrappers.has(rootSymbol(tree))
 
       . or(false)
 
@@ -516,7 +516,7 @@ object internal:
         val tpe = raw.dealias
         val key = tpe.show
 
-        if !seen.contains(key) then
+        if !seen.has(key) then
           seen += key
           val args = List.of(tpe.typeArgs)
 
@@ -556,7 +556,7 @@ object internal:
                     val childPath =
                       if parentPath.isEmpty then field.name else parentPath+"."+field.name
 
-                    if keys.contains(childPath) then
+                    if keys.has(childPath) then
                       ()
                     else if keys.stdlib.exists(_.startsWith(childPath+".")) then
                       visit(carrierType(fieldType, root, childPath), false)
@@ -984,7 +984,7 @@ object internal:
       case Some((root, parentPath, given_, keys)) =>
         val childPath = if parentPath.isEmpty then fieldName else parentPath+"."+fieldName
 
-        if keys.contains(childPath) then
+        if keys.has(childPath) then
           // Take the override's value from the given's runtime `instances` map (cast to the field's
           // type) — never re-splice its tree.
           val specific = given_.asExprOf[vicarious.Specific]

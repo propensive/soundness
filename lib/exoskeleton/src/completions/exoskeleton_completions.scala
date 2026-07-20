@@ -100,7 +100,7 @@ def helpTree
       seen:        Set[List[Text]] )
   :   Help =
 
-    if seen.contains(prefix) then Help(command, description, Nil, Nil) else
+    if seen.has(prefix) then Help(command, description, Nil, Nil) else
       val (suggestions, flags) = probe(prefix)
 
       val parameters = flags.map: flag =>

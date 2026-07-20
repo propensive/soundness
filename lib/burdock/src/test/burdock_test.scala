@@ -176,15 +176,15 @@ object Tests extends Suite(m"Burdock Tests"):
         Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == t"META-INF/MANIFEST.MF").get.read[Data].utf8
 
       test(m"keeps the application's own class"):
-        names.stdlib.contains(t"com/example/Main.class")
+        names.has(t"com/example/Main.class")
       .assert(_ == true)
 
       test(m"inlines the unpublished cached dependency"):
-        names.stdlib.contains(t"dep/Lib.class")
+        names.has(t"dep/Lib.class")
       .assert(_ == true)
 
       test(m"force-includes the bootstrap class"):
-        names.stdlib.contains(t"burdock/Bootstrap.class")
+        names.has(t"burdock/Bootstrap.class")
       .assert(_ == true)
 
       test(m"sets Main-Class to the burdock bootstrap"):
@@ -231,11 +231,11 @@ object Tests extends Suite(m"Burdock Tests"):
       .assert(_ == true)
 
       test(m"no zero-byte slash-less package entry remains"):
-        names.stdlib.contains(t"com/example")
+        names.has(t"com/example")
       .assert(_ == false)
 
       test(m"the application's own class is kept"):
-        names.stdlib.contains(t"com/example/Main.class")
+        names.has(t"com/example/Main.class")
       .assert(_ == true)
 
       test(m"the summary records the skipped directory entry"):
@@ -330,15 +330,15 @@ object Tests extends Suite(m"Burdock Tests"):
         . read[Data].utf8
 
       test(m"strips a published dependency's bundled class"):
-        names.stdlib.contains(t"published/Lib.class")
+        names.has(t"published/Lib.class")
       .assert(_ == false)
 
       test(m"keeps the application's own class"):
-        names.stdlib.contains(t"com/example/Main.class")
+        names.has(t"com/example/Main.class")
       .assert(_ == true)
 
       test(m"keeps an unpublished dependency's bundled class"):
-        names.stdlib.contains(t"unpublished/Lib.class")
+        names.has(t"unpublished/Lib.class")
       .assert(_ == true)
 
       test(m"records the published dependency as a requirement"):

@@ -50,6 +50,7 @@ import prepositional.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*, parsing.trackPositions
+import rudiments.*
 
 // The scoped capability provided by opening an oci-archive as `Image`:
 // `path.open[Image]()`. The entries come from bitumen's memoized sequential reader, so
@@ -119,7 +120,7 @@ extends caps.ExclusiveCapability:
   // A layer's content as the uncompressed tar byte stream, decompressing according to
   // the descriptor's media type; unrecognised types stream verbatim.
   def layer(descriptor: Descriptor): Progression[Data] raises OciError =
-    if descriptor.mediaType.suffixes.stdlib.contains(Media.Suffix.Gzip)
+    if descriptor.mediaType.suffixes.has(Media.Suffix.Gzip)
     then compressed(descriptor).decompress[Gzip]
     else compressed(descriptor)
 
@@ -178,5 +179,5 @@ extends Openable:
     ( block: ((ImageHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
     block(using new ImageHandle(Tarfile.read(Progression(value))) with Granting[grants] {})

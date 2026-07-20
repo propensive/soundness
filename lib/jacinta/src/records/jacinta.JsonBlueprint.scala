@@ -47,6 +47,7 @@ import rudiments.map
 import symbolism.*
 import urticose.*
 import vacuous.*
+import rudiments.*
 
 import strategies.throwUnsafely
 
@@ -377,14 +378,14 @@ object JsonBlueprint:
 
     def arrayFields =
       items.let(x => Map.from(x.stdlib.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.stdlib.contains(key))))
+        key -> value.as[Property].field(requiredFields.has(key))))
 
       . or:
           panic(m"Some items were missing")
 
     def objectFields =
       properties.let(x => Map.from(x.stdlib.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.stdlib.contains(key))))
+        key -> value.as[Property].field(requiredFields.has(key))))
 
       . or:
           panic(m"Some properties were missing")

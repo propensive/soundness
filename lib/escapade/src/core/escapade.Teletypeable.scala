@@ -105,7 +105,7 @@ object Teletypeable:
         case Nil          => done.reverse
 
         case head :: tail =>
-          if seen.contains(head) then dedup(tail, seen, done)
+          if seen.has(head) then dedup(tail, seen, done)
           else dedup(tail, seen + head, head :: done)
 
     val packages: Map[Text, Color in Srgb] =

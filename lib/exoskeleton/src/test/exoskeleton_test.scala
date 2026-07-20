@@ -458,7 +458,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
       .assert(_ == List(t"alpha", t"beta", t"distribution"))
 
       test(m"Help excludes hidden subcommands"):
-        HelpApp.tree.subcommands.map(_.command).stdlib.contains(t"gamma")
+        HelpApp.tree.subcommands.map(_.command).has(t"gamma")
       .assert(_ == false)
 
       test(m"Help descends into nested subcommands"):

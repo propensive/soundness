@@ -43,6 +43,7 @@ import prepositional.*
 import pneumatic.*
 import turbulence.*
 import zephyrine.*
+import rudiments.*
 
 // The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
 // sequential format, so `entries` streams lazily from the underlying source (memoized by the
@@ -62,7 +63,7 @@ class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Opena
     ( block: ((TarHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
     val entries = TarHandle.entries(Progression(value), flags)
     block(using new TarHandle(entries) with Granting[grants] {})
 

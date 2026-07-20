@@ -191,7 +191,7 @@ object Tarfile:
               val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
 
               val extras: Map[Text, Text] =
-                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.stdlib.contains(k) })
+                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.has(k) })
 
               val entry =
                 Tar.Entry.Sparse
@@ -204,7 +204,7 @@ object Tarfile:
               val path = decodePath(nameText)
 
               val extras: Map[Text, Text] =
-                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.stdlib.contains(k) })
+                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.has(k) })
 
               // The body streams off the shared cursor; forcing the tail of
               // this cons (the next entry) drains whatever of it was unread.
@@ -221,7 +221,7 @@ object Tarfile:
               val path = decodePath(nameText)
 
               val extras: Map[Text, Text] =
-                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.stdlib.contains(k) })
+                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.has(k) })
 
               val entry =
                 buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras, header,
@@ -431,7 +431,7 @@ object Tarfile:
       if name.in[Data].length > 32 then builder += ((t"gname", name))
 
     paxOf(entry).stdlib.foreach: (k, v) =>
-      if !structuralPaxKeys.stdlib.contains(k) then builder += ((k, v))
+      if !structuralPaxKeys.has(k) then builder += ((k, v))
 
     List.of(builder.result())
 

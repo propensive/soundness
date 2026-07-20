@@ -94,7 +94,7 @@ object Jar:
       ( block: (JarHandle & Granting[grants]) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
 
       val channel =
         jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
@@ -115,7 +115,7 @@ object Jar:
       ( block: (JarHandle & Granting[grants]) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
       block(using new JarHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})
 
   given openable: [path: Abstractable across Paths to Text]

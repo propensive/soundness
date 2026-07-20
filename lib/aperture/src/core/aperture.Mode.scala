@@ -41,7 +41,7 @@ import proscenium.compat.*
 // expansion or macros.
 //
 // A composite mode is identified at runtime by the set of atomic modes it was composed from:
-// an `Openable` instance interrogates `atoms` (e.g. `mode.atoms.contains(Read)`) to translate
+// an `Openable` instance interrogates `atoms` (e.g. `mode.atoms.has(Read)`) to translate
 // the mode into whatever operational terms its backend needs, such as OS open flags. Atomic
 // modes are global values, compared by reference.
 class Mode:

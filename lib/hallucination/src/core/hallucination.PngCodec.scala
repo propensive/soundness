@@ -93,9 +93,9 @@ private[hallucination] object PngCodec:
             interlace = u8(data, position + 20)
 
             val legal = colorType match
-              case 0 => List(1, 2, 4, 8, 16).stdlib.contains(depth)
+              case 0 => List(1, 2, 4, 8, 16).has(depth)
               case 2 => depth == 8 || depth == 16
-              case 3 => List(1, 2, 4, 8).stdlib.contains(depth)
+              case 3 => List(1, 2, 4, 8).has(depth)
               case 4 => depth == 8 || depth == 16
               case 6 => depth == 8 || depth == 16
               case _ => false

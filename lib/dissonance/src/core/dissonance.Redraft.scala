@@ -213,7 +213,7 @@ object Redraft:
       if ambiguous.nil then directives
       else deambiguate:
         directives.zipWithIndex.map: (directive, index) =>
-          if !ambiguous.contains(index) then directive else directive match
+          if !ambiguous.has(index) then directive else directive match
             case Directive.Mark(load, true)  => Directive.Add(load)
             case Directive.Mark(load, false) => Directive.Cut(load)
             case other                       => other
@@ -246,7 +246,7 @@ object Redraft:
     val dropped = scala.collection.mutable.Set[Int]()
 
     def remaining: List[Directive] =
-      array.indices.to(List).filter(!dropped.contains(_)).map(array(_))
+      array.indices.to(List).filter(!dropped.has(_)).map(array(_))
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)

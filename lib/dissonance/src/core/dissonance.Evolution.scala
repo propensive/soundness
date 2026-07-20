@@ -35,11 +35,12 @@ package dissonance
 import proscenium.compat.*
 
 import denominative.*
+import rudiments.*
 
 object Evolution:
   case class Atom[element](value: element, presence: Set[Ordinal]):
     def add(n: Ordinal): Atom[element] = copy(presence = presence + n)
-    def has(n: Ordinal): Boolean = presence.contains(n)
+    def has(n: Ordinal): Boolean = presence.has(n)
 
 case class Evolution[element](sequence: List[Evolution.Atom[element]]):
   def apply(version: Ordinal): List[element] =

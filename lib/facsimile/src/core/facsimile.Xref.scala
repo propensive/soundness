@@ -66,7 +66,7 @@ private[facsimile] object Xref:
         visited: scala.collection.immutable.Set[Long] )
     :   Xref =
 
-      if visited.contains(offset) || offset < 0 || offset >= source.size
+      if visited.has(offset) || offset < 0 || offset >= source.size
       then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
       val (classicEntries, sectionTrailer) = section(source, offset)
@@ -81,7 +81,7 @@ private[facsimile] object Xref:
 
           Map.of:
             hybridEntries.stdlib ++ classicEntries.stdlib.filter: (number, entry) =>
-              entry != Entry.Free || !hybridEntries.stdlib.contains(number)
+              entry != Entry.Free || !hybridEntries.defines(number)
 
       val mergedEntries = Map.of(sectionEntries.stdlib ++ entries.stdlib)
       val mergedTrailer = Map.of(sectionTrailer.stdlib ++ trailer.stdlib)

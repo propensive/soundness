@@ -273,7 +273,7 @@ extends caps.ExclusiveCapability:
 
       node match
         case Cos.Ref(reference, _) =>
-          if visited.contains(reference)
+          if visited.has(reference)
           then abort(PdfError(PdfError.Reason.CircularPageTree))
 
           visited += reference
@@ -342,7 +342,7 @@ extends caps.ExclusiveCapability:
 
     def item(value: Cos): List[Bookmark] raises PdfError = value match
       case Cos.Ref(number, _) =>
-        if visited.contains(number) then List() else
+        if visited.has(number) then List() else
           visited += number
           item(resolved(value))
 

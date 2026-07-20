@@ -133,6 +133,6 @@ object PseudoHeaders:
       HpackEntry(header.key.lower, header.value)
 
     . filter: entry =>
-        !forbidden.stdlib.contains(entry.name)
+        !forbidden.has(entry.name)
 
     List.of(HpackEntry(t":status", response.status.code.show) :: regular.stdlib)

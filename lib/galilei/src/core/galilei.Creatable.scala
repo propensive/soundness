@@ -61,7 +61,7 @@ object Creation:
     ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
   :   Unit =
 
-    if flags.stdlib.contains(Parents) then
+    if flags.has(Parents) then
       def ancestors(current: Path on filesystem): List[Path on filesystem] =
         safely(current.parent).let { parent => (parent :: ancestors(parent)): List[Path on filesystem] }
         . or(Nil)
@@ -74,7 +74,7 @@ object Creation:
     ( using backend: FilesystemBackend on filesystem, tactic: Tactic[IoError] )
   :   Unit =
 
-    if flags.stdlib.contains(Replace) && backend.exists(path, false) then wipe(path)
+    if flags.has(Replace) && backend.exists(path, false) then wipe(path)
 
   // Public: shared with `Scratch`-style cleanup and called from creation rollback.
   def wipe[filesystem: Filesystem](path: Path on filesystem)
@@ -162,7 +162,7 @@ object Creation:
       Log.info(IoEvent.Create((value: Path on filesystem).show))
       ensure(value, flags)
 
-      if !flags.stdlib.contains(Replace) && backend.exists(value, false)
+      if !flags.has(Replace) && backend.exists(value, false)
       then abort(IoError(value, Operation.Create, Reason.AlreadyExists))
 
       // `peer` needs a statically-known `Topic`, which an abstract `path` lacks, so the

@@ -180,7 +180,7 @@ case class Ttf(data: Data):
     (0 until count).each: id =>
       offsets(id) = position
 
-      if retained.contains(id) then
+      if retained.has(id) then
         val bytes = glyphs(id).bytes
         parts += bytes
         position += bytes.length
@@ -232,7 +232,7 @@ case class Ttf(data: Data):
         seen
 
       case head :: tail =>
-        val fresh = table(head).components.filter(!seen.contains(_))
+        val fresh = table(head).components.filter(!seen.has(_))
         expand(List.of(fresh.stdlib ++ tail.stdlib), Set.of(seen.stdlib ++ fresh.stdlib))
 
     expand(glyphIds.toList, glyphIds)

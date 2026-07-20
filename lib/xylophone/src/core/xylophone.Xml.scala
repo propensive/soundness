@@ -539,7 +539,7 @@ object Xml extends Tag.Container
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
                   val discriminant = variantNames.stdlib.getOrElse(wire, wire)
-                  if labels.stdlib.contains(discriminant) then discriminant else Unset
+                  if labels.has(discriminant) then discriminant else Unset
 
               resolved.let: discriminant =>
                 delegate(discriminant): [variant <: derivation] =>

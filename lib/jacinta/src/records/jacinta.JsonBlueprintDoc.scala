@@ -37,6 +37,7 @@ import proscenium.compat.*
 import anticipation.*
 import polyvinyl.*
 import vacuous.*
+import rudiments.*
 
 case class JsonBlueprintDoc
   ( `$schema`:  Text,
@@ -49,4 +50,4 @@ case class JsonBlueprintDoc
   lazy val requiredFields: Set[Text] = Set.from(required.or(Nil).stdlib)
 
   def fields: Map[Text, Member] = Map.from:
-    properties.stdlib.map: (key, value) => key -> value.field(requiredFields.stdlib.contains(key))
+    properties.stdlib.map: (key, value) => key -> value.field(requiredFields.has(key))

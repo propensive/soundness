@@ -823,7 +823,7 @@ object internal:
           // the collection type before inspecting the constructor.
           TypeRepr.of[tpe].widen.dealias match
             case AppliedType(constructor, scala.collection.immutable.List(element))
-            if aliasCollectionSyms.contains(constructor.typeSymbol) =>
+            if aliasCollectionSyms.has(constructor.typeSymbol) =>
               element.asType.absolve match
                 case '[t] =>
                   spreadIterable[t]('{$value.asInstanceOf[Iterable[t]]}, TypeRepr.of[tpe], pos)
@@ -877,7 +877,7 @@ object internal:
         val pieces = indexed.toList.map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
-                if spreads.contains(holeIndex) then
+                if spreads.has(holeIndex) then
                   if idx != n - 1 then halt:
                     m"a `*`-spread is only allowed as the last element of an array"
 
@@ -932,7 +932,7 @@ object internal:
 
       def serialize(node: Any): Expr[Json.Ast] = node.asMatchable match
         case Unset =>
-          if spreads.contains(holeIndex) then halt:
+          if spreads.has(holeIndex) then halt:
             m"a `*`-spread is only allowed as the last element of an array"
 
           encodeValue(consumeHole())
@@ -1026,7 +1026,7 @@ object internal:
             // Value-position hole: capture scrutinee as Json
             val idx = nextHole
 
-            if spreads.contains(idx) then halt:
+            if spreads.has(idx) then halt:
               m"a `*`-spread is only allowed as the last element of an array"
 
             nextHole += 1
@@ -1119,7 +1119,7 @@ object internal:
 
         val tailSpread: Boolean =
           n > 0 && (elements(n - 1).asMatchable match
-            case Unset => spreads.contains(nextHole + countHolesInPrefix(elements, n - 1))
+            case Unset => spreads.has(nextHole + countHolesInPrefix(elements, n - 1))
             case _     => false)
 
         val prefixLen = if tailSpread then n - 1 else n
@@ -1258,7 +1258,7 @@ object internal:
                       keysSet += $scrutinee.objectKey(k)
                       k += 1
 
-                    ${Expr(literalKeys)}.forall(keysSet.contains)
+                    ${Expr(literalKeys)}.forall(keysSet.has(_))
                   }
               }
           else
@@ -1275,7 +1275,7 @@ object internal:
                         keysSet += $scrutinee.objectKey(k)
                         k += 1
 
-                      ${Expr(literalKeys)}.forall(keysSet.contains)
+                      ${Expr(literalKeys)}.forall(keysSet.has(_))
                     }
                   }
               }

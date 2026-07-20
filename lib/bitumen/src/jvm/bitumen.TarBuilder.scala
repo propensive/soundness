@@ -207,11 +207,11 @@ object TarBuilder:
           val filename = value.generic
           val target = jnf.Path.of(filename.s).nn
 
-          if !createFlags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+          if !createFlags.has(CreateFlag.Replace) && jnf.Files.exists(target)
           then abort(TarError(TarError.Reason.AlreadyExists))
 
           try
-            if createFlags.contains(CreateFlag.Parents) then
+            if createFlags.has(CreateFlag.Parents) then
               Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
 
             val temporary =
@@ -248,11 +248,11 @@ object TarBuilder:
 
     val target = jnf.Path.of(filename.s).nn
 
-    if !flags.stdlib.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+    if !flags.has(CreateFlag.Replace) && jnf.Files.exists(target)
     then abort(TarError(TarError.Reason.AlreadyExists))
 
     try
-      if flags.stdlib.contains(CreateFlag.Parents) then
+      if flags.has(CreateFlag.Parents) then
         Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
 
       val temporary = target.resolveSibling(t".${filename.s.split('/').nn.last.nn}.part".s).nn

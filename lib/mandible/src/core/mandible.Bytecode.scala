@@ -1482,8 +1482,8 @@ case class Bytecode
 
         val target: Optional[(Text, Text, Text)] = instr.opcode match
           case Invokestatic(o, n, d)                                          => (o, n, d)
-          case Invokevirtual(o, n, d)    if callsite.contains(instr.offset)   => (o, n, d)
-          case Invokeinterface(o, n, d, _) if callsite.contains(instr.offset) => (o, n, d)
+          case Invokevirtual(o, n, d)    if callsite.has(instr.offset)   => (o, n, d)
+          case Invokeinterface(o, n, d, _) if callsite.has(instr.offset) => (o, n, d)
           case _                                                              => Unset
 
         target.let: (owner, name, descriptor) =>

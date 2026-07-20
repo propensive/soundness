@@ -140,7 +140,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         case file: Tar.Entry.File if file.entryName == t"oci-layout" => bytesOf(file.data)
 
       test(m"archive contains the oci-layout marker and index.json"):
-        (names.contains(t"oci-layout"), names.contains(t"index.json"))
+        (names.has(t"oci-layout"), names.has(t"index.json"))
       . assert(_ == (true, true))
 
       test(m"archive contains one blob per config, layer and manifest"):

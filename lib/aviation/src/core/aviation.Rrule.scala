@@ -238,9 +238,9 @@ object Rrule:
 
   private def subDayMatch(timestamp: Timestamp, rule: Rrule[?])(using RomanCalendar): Boolean =
     dailyMatch(timestamp.date, rule) &&
-      (rule.byHour.isEmpty || rule.byHour.stdlib.contains(timestamp.hour)) &&
-      (rule.byMinute.isEmpty || rule.byMinute.stdlib.contains(timestamp.minute)) &&
-      (rule.bySecond.isEmpty || rule.bySecond.stdlib.contains(timestamp.second))
+      (rule.byHour.isEmpty || rule.byHour.has(timestamp.hour)) &&
+      (rule.byMinute.isEmpty || rule.byMinute.has(timestamp.minute)) &&
+      (rule.bySecond.isEmpty || rule.bySecond.has(timestamp.second))
 
   // The date that is the `n`th day of `year` (negative counts back from the end).
   private def yearDay(year: Int, n: Int)(using calendar: RomanCalendar): Optional[Date] =
@@ -335,7 +335,7 @@ object Rrule:
 
     val candidates =
       if byDayDates.present && byMonthDayDates.present
-      then byDayDates.vouch.filter(byMonthDayDates.vouch.stdlib.contains)
+      then byDayDates.vouch.filter(byMonthDayDates.vouch.has(_))
       else if byDayDates.present then byDayDates.vouch
       else if byMonthDayDates.present then byMonthDayDates.vouch
       else list(monthDay(year, month, dayOf(start)))
@@ -350,12 +350,12 @@ object Rrule:
     val weekdays = if rule.byDay.nonEmpty then rule.byDay.map(_.weekday) else List(start.weekday)
 
     (0 to 6).to(List).map(weekStart.addDays(_)).filter: date =>
-      weekdays.stdlib.contains(date.weekday) && monthAllowed(date, rule)
+      weekdays.has(date.weekday) && monthAllowed(date, rule)
 
   private def dailyMatch(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
     monthAllowed(date, rule) &&
       (rule.byMonthDay.isEmpty || rule.byMonthDay.exists(monthDayMatches(date, _))) &&
-      (rule.byDay.isEmpty || rule.byDay.map(_.weekday).stdlib.contains(date.weekday))
+      (rule.byDay.isEmpty || rule.byDay.map(_.weekday).has(date.weekday))
 
   private def monthAllowed(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
     rule.byMonth.isEmpty || rule.byMonth.stdlib.map(_.numerical).contains(monthOf(date))

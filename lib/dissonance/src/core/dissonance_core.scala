@@ -39,6 +39,7 @@ import denominative.*
 import fulminate.*
 import symbolism.*
 import vacuous.*
+import rudiments.*
 
 
 def evolve[element: ClassTag]

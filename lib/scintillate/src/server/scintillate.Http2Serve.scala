@@ -106,7 +106,7 @@ object Http2Serve:
 
               val (trailerEntries, headEntries) =
                 PseudoHeaders.entries(response).stdlib.partition: entry =>
-                  trailerNames.contains(entry.name)
+                  trailerNames.has(entry.name)
 
               val trailing: Boolean = !trailerEntries.isEmpty
 
