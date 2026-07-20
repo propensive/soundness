@@ -49,10 +49,10 @@ object Frame:
   // than its contents); the maximum is the smaller of its own maximum and the
   // sum of its children's maxima (any unbounded child makes the sum unbounded).
   private def alongLimits(own: Limits, children: List[Limits]): Limits =
-    val minSum = children.stdlib.foldLeft(0): (acc, child) =>
+    val minSum = children.fold(0): (acc, child: Limits) =>
       acc + child.min
 
-    val maxSum: Optional[Int] = children.stdlib.foldLeft(0: Optional[Int]): (acc, child) =>
+    val maxSum: Optional[Int] = children.fold(0: Optional[Int]): (acc, child: Limits) =>
       acc.let: total =>
         child.max.let(total + _)
 
@@ -62,10 +62,10 @@ object Frame:
   // cross extent must hold every child); the maximum is the smallest child
   // maximum.
   private def crossLimits(own: Limits, children: List[Limits]): Limits =
-    val minMax = children.stdlib.foldLeft(0): (acc, child) =>
+    val minMax = children.fold(0): (acc, child: Limits) =>
       acc.max(child.min)
 
-    val maxMin = children.stdlib.foldLeft(Unset: Optional[Int]): (acc, child) =>
+    val maxMin = children.fold(Unset: Optional[Int]): (acc, child: Limits) =>
       lesser(acc, child.max)
 
     Limits(own.min.max(minMax), lesser(own.max, maxMin))

@@ -70,7 +70,7 @@ object Aggregable:
       gather(streamRef.asInstanceOf[(Stream[Data] over Credit)^])
 
     def aggregate(source0: Progression[Data]): Data =
-      val size = source0.stdlib.foldLeft(0)(_ + _.length)
+      val size = source0.fold(0)(_ + _.length)
 
       var source = source0
 

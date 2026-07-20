@@ -121,7 +121,7 @@ object Teletypeable:
 
     val rows: List[Row] =
       List.of:
-        stack.frames.stdlib.foldLeft((List.empty[Row].stdlib, t"", t"")):
+        stack.frames.fold((List.empty[Row].stdlib, t"", t"")):
           case ((acc, lastClass, lastFile), frame) =>
             val sameClass = frame.method.className == lastClass
             val sameFile = frame.file == lastFile

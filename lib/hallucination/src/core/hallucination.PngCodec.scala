@@ -261,7 +261,7 @@ private[hallucination] object PngCodec:
         val passes = List((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4),
                           (1, 0, 2, 2), (0, 1, 1, 2))
 
-        passes.stdlib.foldLeft(0):
+        passes.fold(0):
           case (offset, (startX, startY, stepX, stepY)) =>
             val passWidth = (width - startX + stepX - 1)/stepX
             val passHeight = (height - startY + stepY - 1)/stepY

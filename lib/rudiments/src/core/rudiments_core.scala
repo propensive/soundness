@@ -525,7 +525,7 @@ extension [key, value](map: Map[key, value])
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
     Map.of:
-      right.stdlib.foldLeft(map.stdlib): (state, next) =>
+      right.fold(map.stdlib): (state, next) =>
         state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1))))
 
 extension [key, value](map: scm.Map[key, value])

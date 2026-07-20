@@ -430,7 +430,7 @@ object Tarfile:
     group.name.let: name =>
       if name.in[Data].length > 32 then builder += ((t"gname", name))
 
-    paxOf(entry).stdlib.foreach: (k, v) =>
+    paxOf(entry).each: (k, v) =>
       if !structuralPaxKeys.has(k) then builder += ((k, v))
 
     List.of(builder.result())

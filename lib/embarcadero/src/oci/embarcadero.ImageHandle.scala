@@ -142,7 +142,7 @@ extends caps.ExclusiveCapability:
     bytes
 
   private def gather(stream: Progression[Data]): Data =
-    stream.stdlib.foldLeft(IArray.empty[Byte])(_ ++ _)
+    stream.fold(IArray.empty[Byte])(_ ++ _)
 
   // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
   private def document(name: Text, reason: OciError.Reason): Data raises OciError =
