@@ -144,6 +144,12 @@ object Tests extends Suite(m"Parasite tests"):
           promise.apply()
         . assert(_ == 1)
 
+        test(m"Offer with a null value completes the promise"):
+          val promise = Promise[Text]()
+          promise.offer(null.asInstanceOf[Text])
+          promise.complete
+        . assert(_ == true)
+
         test(m"Offer on cancelled promise leaves it cancelled"):
           val promise = Promise[Int]()
           promise.cancel()
@@ -270,6 +276,10 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Simple task produces a result"):
           async(42).await()
         . assert(_ == 42)
+
+        test(m"Async strand completing with null delivers null"):
+          async(null.asInstanceOf[Text]).await().asInstanceOf[AnyRef]
+        . assert(_ == null)
 
         test(m"Task with side effect produces effect"):
           val counter = juca.AtomicInteger(0)

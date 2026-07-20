@@ -84,7 +84,7 @@ final class Promise[value]():
   // once `Complete` is installed, `enqueue` adds no further waiters.
   private def completeIncomplete(supplied: value)(current: State[value] | Null): State[value] =
     current.nn match
-      case Incomplete(_) => Complete(supplied.nn)
+      case Incomplete(_) => Complete(supplied)
       case current       => current
 
   def fulfill(supplied: => value): Unit raises AsyncError =
