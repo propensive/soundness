@@ -34,6 +34,8 @@ package chiaroscuro
 
 import soundness.*
 
+import proscenium.compat.*
+
 case class Person(name: Text, age: Int)
 case class Organization(name: Text, ceo: Person, staff: List[Person])
 
@@ -81,7 +83,8 @@ object Tests extends Suite(m"Chiaroscuro tests"):
                  Organization(t"Acme", Person(t"Bill", 29), Nil))
 
       test(m"Decompose a sequence"):
-        List('a', 'b').decompose
+        val list: List[Char] = List('a', 'b')
+        list.decompose
 
       . assert:
           _ == Sequence(t"List", List(Primitive(t"Char", t"a", 'a'),

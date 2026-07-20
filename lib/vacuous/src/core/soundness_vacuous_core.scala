@@ -34,7 +34,10 @@ package soundness
 
 export
   vacuous
-  . { absent, assume, compact, Concrete, Default, default, Distinct, Extractor, invite,
-      javaOptional, lay, layGiven, let, letGiven, Mandatable, mask, only, optimizable, option,
-      Optional, optional, Optionality, or, per, present, presume, puncture, unless, Unsafe, Unset,
-      UnsetError, vouch }
+  . { absent, assume, compact, Concrete, Default, default, Distinct, Exhaust, exhaust, Extractor,
+      invite, javaOptional, lay, layGiven, let, letGiven, Mandatable, mask, only, optimizable,
+      option, Optional, optional, Optionality, or, per, present, presume, puncture, Trek, trek,
+      unless, Unsafe, Unset, UnsetError, vouch }
+
+package expenditures:
+  export vacuous.expenditures.{exhaust, trek}

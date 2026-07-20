@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import anticipation.*
 import prepositional.*
 import spectacular.*

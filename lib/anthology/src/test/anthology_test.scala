@@ -300,7 +300,7 @@ object Tests extends Suite(m"Anthology Tests"):
       def contents = Files.list(lib).nn.iterator.nn.asScala
 
       val complete =
-        fixed.forall { name => Files.exists(lib.resolve(name.s)) }
+        fixed.stdlib.forall { name => Files.exists(lib.resolve(name.s)) }
         && contents.exists(_.getFileName.nn.toString.startsWith("scalajs-javalib"))
         && contents.exists(_.getFileName.nn.toString.startsWith("scalajs-library_2.13"))
 
@@ -309,7 +309,7 @@ object Tests extends Suite(m"Anthology Tests"):
           val name = jar.getFileName.nn.toString
           name.startsWith("scalajs-javalib") || name.startsWith("scalajs-library_2.13")
 
-        val jars = fixed.map { name => lib.resolve(name.s).nn } ++ globbed
+        val jars = fixed.stdlib.map { name => lib.resolve(name.s).nn } ++ globbed
         LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
 
   // Yields the Scala Native compiler plugin and the runtime JARs a native compilation needs
@@ -336,9 +336,9 @@ object Tests extends Suite(m"Anthology Tests"):
     proscalaLibrary().let: proscala =>
       caches
       . map(_.resolve("https/repo1.maven.org/maven2/org/scala-native").nn)
-      . find { base => artifacts.forall { jar => Files.exists(base.resolve(jar.s)) } }
+      . find { base => artifacts.stdlib.forall { jar => Files.exists(base.resolve(jar.s)) } }
       . map: base =>
-          val jars = artifacts.map { jar => base.resolve(jar.s).nn }
+          val jars = artifacts.stdlib.map { jar => base.resolve(jar.s).nn }
           val stdlib = List("scala-library.jar", "scala3-library.jar").map(proscala.resolve(_).nn)
           val plugin = unsafely(jars.head.toString.tt.as[soundness.Path on Linux])
 

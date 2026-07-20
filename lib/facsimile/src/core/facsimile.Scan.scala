@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 
 private[facsimile] object Scan:

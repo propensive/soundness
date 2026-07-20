@@ -32,6 +32,8 @@
                                                                                                   */
 package gossamer
 
+import scala.collection.immutable.IndexedSeq
+
 import java.lang as jl
 
 import scala.reflect.*

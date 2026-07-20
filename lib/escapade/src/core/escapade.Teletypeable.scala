@@ -32,6 +32,9 @@
                                                                                                   */
 package escapade
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 import digression.*
 import escritoire.*
@@ -106,11 +109,10 @@ object Teletypeable:
           else dedup(tail, seen + head, head :: done)
 
     val packages: Map[Text, Color in Srgb] =
-      dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-      . zipWithIndex.map: (prefix, index) =>
-          prefix -> accent(index)
-
-      . to(Map)
+      Map.from:
+        dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil).stdlib
+        . zipWithIndex.map: (prefix, index) =>
+            prefix -> accent(index)
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${palette.message}($fullClass): ${stack.message}"
@@ -118,13 +120,14 @@ object Teletypeable:
     case class Row(frame: StackTrace.Frame, sameClass: Boolean, sameFile: Boolean)
 
     val rows: List[Row] =
-      stack.frames.foldLeft((List.empty[Row], t"", t"")):
-        case ((acc, lastClass, lastFile), frame) =>
-          val sameClass = frame.method.className == lastClass
-          val sameFile = frame.file == lastFile
-          (Row(frame, sameClass, sameFile) :: acc, frame.method.className, frame.file)
+      List.of:
+        stack.frames.stdlib.foldLeft((List.empty[Row].stdlib, t"", t"")):
+          case ((acc, lastClass, lastFile), frame) =>
+            val sameClass = frame.method.className == lastClass
+            val sameFile = frame.file == lastFile
+            (Row(frame, sameClass, sameFile) :: acc, frame.method.className, frame.file)
 
-      . _1.reverse
+        . _1.reverse
 
     def classCell(row: Row): Teletype =
       val frame = row.frame
@@ -175,9 +178,10 @@ object Teletypeable:
 
     val grid = scaffold.tabulate(rows).grid(200)
     val dataOnly = grid.copy(sections = grid.sections.tail)
-    val tableLines = dataOnly.render.to(List)
+    val tableLines = List.from(dataOnly.render.stdlib)
 
-    val root = (init :: tableLines).join(e"\n")
+    val allLines = init :: (tableLines: List[Teletype])
+    val root = (allLines: Iterable[Teletype]).join(e"\n")
 
     stack.cause.lay(root): cause =>
       e"$root\n${palette.message}(caused by:)\n$cause"

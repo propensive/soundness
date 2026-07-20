@@ -34,6 +34,8 @@ package embarcadero
 
 import soundness.*
 
+import proscenium.compat.*
+
 import providers.javaStdlibProvider
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
@@ -50,13 +52,13 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
          user  = UnixUser(0),
          group = UnixGroup(0),
          mtime = 0.bits.u32,
-         data  = LazyList(content.in[Data]) )
+         data  = Progression(content.in[Data]) )
 
-    def bytesOf(stream: LazyList[Data]): Data = stream.foldLeft(IArray.empty[Byte])(_ ++ _)
+    def bytesOf(stream: Progression[Data]): Data = stream.foldLeft(IArray.empty[Byte])(_ ++ _)
 
-    val layerTar = Tarfile(LazyList(fileEntry(t"hello.txt", t"hello world\n")))
+    val layerTar = Tarfile(Progression(fileEntry(t"hello.txt", t"hello world\n")))
     val layer    = Layer(layerTar)
-    val image    = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
+    val image    = Image(List(layer), config = ContainerConfig(Cmd = proscenium.List(t"/bin/sh")))
 
     suite(m"Layer digests"):
       val raw = layerTar.source[Data].memoize
@@ -82,7 +84,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == media"application/vnd.oci.image.layer.v1.tar+gzip")
 
       test(m"the blob is a valid gzipped tar round-tripping to the original entry"):
-        Tarfile.fromGzip(LazyList(layer.blob)).map(_.entryName).to(List)
+        Tarfile.fromGzip(Progression(layer.blob)).map(_.entryName).stdlib.to(List)
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
@@ -132,7 +134,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tarfile.read(image.archive.source[Data]).to(List)
+      val entries    = Tarfile.read(image.archive.source[Data]).stdlib.to(List)
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
         case file: Tar.Entry.File if file.entryName == t"oci-layout" => bytesOf(file.data)
@@ -162,8 +164,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       // The archive with its entry list transformed: for exercising failure paths.
       def rebuilt(transform: List[Tar.Entry] => List[Tar.Entry]): Data =
-        val entries = Tarfile.read(LazyList(archiveData)).to(List)
-        Tarfile(LazyList.from(transform(entries))).source[Data].memoize
+        val entries = Tarfile.read(Progression(archiveData)).stdlib.to(List)
+        Tarfile(Progression.from(transform(entries).stdlib)).source[Data].memoize
 
       def failure[result](body: => result): Optional[OciError.Reason] =
         try
@@ -274,7 +276,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
-                  fields.find(_.name == t"containerd-namespace").each: entry =>
+                  fields.stdlib.find(_.name == t"containerd-namespace").foreach: entry =>
                     namespace.offer(entry.value)
 
                   val status = hpack.encode(List(HpackEntry(t":status", t"200"),
@@ -501,12 +503,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                   serverSide.send(zephyrine.Stream(Frame.Headers(id, status, false, true).serialize))
 
-                  if failures.contains(path) then
+                  if failures.has(path) then
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"3")))
                     serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
                   else
                     val body =
-                      responses.getOrElse(path, GrpcFraming.encode(Empty().in[Protobuf].encode))
+                      responses.stdlib.getOrElse(path, GrpcFraming.encode(Empty().in[Protobuf].encode))
 
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
                     serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))
@@ -619,6 +621,6 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
         val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
-        val restored = LazyList(container.in[Protobuf].encode).read[Container in Protobuf]
+        val restored = proscenium.Progression(container.in[Protobuf].encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Unix]
       . assert(_ == moment)

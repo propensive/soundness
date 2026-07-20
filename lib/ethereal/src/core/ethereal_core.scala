@@ -32,7 +32,11 @@
                                                                                                   */
 package ethereal
 
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
+
+import scala.caps
 
 import java.io as ji
 import java.lang as jl
@@ -192,7 +196,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
                     if !cacheDir.exists() then cacheDir.create[Directory](CreateFlag.Parents)
-                    cacheRunner.open[File](Write, OpenFlag.Create)(file.write(LazyList(bytes)))
+                    cacheRunner.open[File](Write, OpenFlag.Create)(file.write(Progression(bytes)))
                     bytes
 
             // ML-DSA-44 public key used by the runner to verify upgrades.
@@ -338,8 +342,8 @@ def cli[bus <: Matchable](using executive: Executive)
         val script: Text = line()
         val pwd: Text = line()
         val count: Int = line().as[Int]
-        val textArguments: List[Text] = chunk().cut(t"\u0000").take(count).to(List)
-        val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
+        val textArguments: List[Text] = List.of(chunk().cut(t"\u0000").stdlib.take(count))
+        val environment: List[Text] = List.of(chunk().cut(t"\u0000").stdlib.init)
 
         DaemonEvent.Init(pid, login, pwd, script, stdin, textArguments, environment)
 
@@ -463,7 +467,7 @@ def cli[bus <: Matchable](using executive: Executive)
         try
           val cli: executive.Interface =
             executive.invocation
-              ( textArguments,
+              ( textArguments.stdlib,
                 environment,
                 () => directory,
                 stdio,
@@ -490,7 +494,7 @@ def cli[bus <: Matchable](using executive: Executive)
           connection.close()
           Log.info(DaemonLogEvent.CloseConnection(pid))
 
-  application(using executives.directExecutive(using backstops.silentBackstop))(Nil):
+  application(using executives.directExecutive(using backstops.silentBackstop))(scala.collection.immutable.Nil):
     import environments.javaEnvironment
     import termcaps.environmentTermcap
     import stdios.virtualMachineStdio
@@ -535,7 +539,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
           task(n"pid-watcher"):
             safely:
-              List[Path on Local](socketFile, buildFile, pidFile).open[Watch](): watcher ?=>
+              scala.collection.immutable.List[Path on Local](socketFile, buildFile, pidFile)
+              . open[Watch](): watcher ?=>
                 watcher.stream.each:
                   case Delete(_, _) | Modify(_, _) =>
                     Log.warn(DaemonLogEvent.Termination)

@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import scala.caps
+
 import java.io as ji
 import java.nio as jn
 
@@ -44,7 +46,7 @@ import zephyrine.*
 
 // A target which can be opened as a push endpoint: the successor to
 // `Writable`, accepting writes incrementally through an `Intake` instead of
-// consuming a whole `LazyList`. As with `Writable`, a write failure `raise`s
+// consuming a whole `Progression`. As with `Writable`, a write failure `raise`s
 // a typed `StreamError` through an `Emit` captured by the given — a writer
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
@@ -161,11 +163,11 @@ object Sink:
 
           mark0 = 0
 
-  // Adapts a whole-`LazyList` writing function to the incremental `Intake`
+  // Adapts a whole-`Progression` writing function to the incremental `Intake`
   // protocol by accumulating chunks until `finish` — the basis of the
   // transitional `Writable` bridges below.
   def buffered[target, medium]
-    ( target: target, write: (target, LazyList[medium]) => Unit )
+    ( target: target, write: (target, Progression[medium]) => Unit )
     ( using addressable0: medium is Addressable )
   :   (Intake[medium] over Credit)^{write, caps.any} =
 
@@ -178,7 +180,7 @@ object Sink:
       private val storage: addressable0.Storage =
         addressable0.allocate(block).asInstanceOf[addressable0.Storage]
       private var mark0: Int = 0
-      private var chunks: List[medium] = Nil
+      private var chunks: scala.collection.immutable.List[medium] = Nil.stdlib
 
       def demand: Credit = Credit(Long.MaxValue)
       protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
@@ -197,7 +199,7 @@ object Sink:
 
       update def finish(): Unit =
         drain()
-        write(target, chunks.reverse.to(LazyList))
+        write(target, chunks.reverse.to(Progression))
 
       private update def drain(): Unit =
         if mark0 > 0 then

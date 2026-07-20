@@ -32,7 +32,9 @@
                                                                                                   */
 package turbulence
 
-import language.adhocExtensions
+import scala.caps
+
+import scala.language.adhocExtensions
 
 import java.io as ji
 import java.lang as jl
@@ -45,6 +47,7 @@ import hieroglyph.*
 import hypotenuse.*
 import parasite.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -281,20 +284,20 @@ package lineSeparation:
     case "\n"      => linefeedLineSeparation
     case _: String => adaptiveLinefeedLineSeparation
 
-extension [element](stream: LazyList[element])
-  def deduplicate: LazyList[element] =
-    def recur(last: element, stream: LazyList[element]): LazyList[element] =
-      stream.flow(LazyList()):
+extension [element](stream: Progression[element])
+  def deduplicate: Progression[element] =
+    def recur(last: element, stream: Progression[element]): Progression[element] =
+      stream.flow(Progression()):
         if last == next then recur(last, more) else next #:: recur(next, more)
 
-    stream.flow(LazyList())(next #:: recur(next, more))
+    stream.flow(Progression())(next #:: recur(next, more))
 
 
   // `next`/`more` are bound with `aka`-label refinements; under capture checking the
   // labelled singleton type does not simplify away in every position (the aka-Tagged/
   // castbox class), so use sites strip it with `next.asInstanceOf[element]`.
   inline def flow[result](inline termination: => result)
-    ( inline proceed: (element aka "next", LazyList[element] aka "more") ?=> result )
+    ( inline proceed: (element aka "next", Progression[element] aka "more") ?=> result )
   :   result =
 
     stream match
@@ -302,16 +305,19 @@ extension [element](stream: LazyList[element])
       case _             => termination
 
 
-  def strict: LazyList[element] = stream.length yet stream
+  def strict: Progression[element] = stream.stdlib.length yet stream
 
-extension (obj: LazyList.type)
-  def defer[element](stream: => LazyList[element]): LazyList[element] =
-    (null.asInstanceOf[element] #:: stream).tail
+extension (obj: Progression.type)
+  // Defers evaluation of `stream` until the result is forced. `empty.lazyAppendedAll(=> stream)`
+  // keeps the by-name suffix unforced — equivalent to (and cheaper than) the old
+  // `(dummy #:: stream).tail`, and it sidesteps the captured-by-name cons under cc.
+  def defer[element](stream: => Progression[element]): Progression[element] =
+    Progression().lazyAppendedAll(stream)
 
 
-extension (stream: LazyList[Data])
-  def discard(bytes: Bytes): LazyList[Data] =
-    def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] = stream.flow(LazyList()):
+extension (stream: Progression[Data])
+  def discard(bytes: Bytes): Progression[Data] =
+    def recur(stream: Progression[Data], count: Bytes): Progression[Data] = stream.flow(Progression()):
       if next.bytes < count
       then recur(more, count - next.bytes)
       else
@@ -322,13 +328,13 @@ extension (stream: LazyList[Data])
 
     recur(stream, bytes)
 
-  def shred(mean: Double, variance: Double)(using Random): LazyList[Data] =
+  def shred(mean: Double, variance: Double)(using Random): Progression[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
     def newArray(): Array[Byte]^ = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
-    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
-    :   LazyList[Data] =
+    def recur(stream: Progression[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
+    :   Progression[Data] =
 
       stream match
         case source #:: more =>
@@ -346,21 +352,21 @@ extension (stream: LazyList[Data])
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
         case _ =>
-          if destPos == 0 then LazyList()
+          if destPos == 0 then Progression()
           else
             // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
             val out = new Array[Byte](destPos)
             jl.System.arraycopy(dest, 0, out, 0, destPos)
-            LazyList(out.immutable(using Unsafe).asInstanceOf[Data])
+            Progression(out.immutable(using Unsafe).asInstanceOf[Data])
 
     recur(stream, 0, newArray(), 0)
 
-  def chunked(size: Int, zeroPadding: Boolean = false): LazyList[Data] =
+  def chunked(size: Int, zeroPadding: Boolean = false): Progression[Data] =
     def newArray(): Array[Byte]^ = new Array[Byte](size)
 
 
-    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
-    :   LazyList[Data] =
+    def recur(stream: Progression[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
+    :   Progression[Data] =
 
       stream match
         case source #:: more =>
@@ -378,30 +384,30 @@ extension (stream: LazyList[Data])
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
         case _ =>
-          if destPos == 0 then LazyList()
+          if destPos == 0 then Progression()
           else
             // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
             val length = if zeroPadding then dest.length else destPos
             val out = new Array[Byte](length)
             jl.System.arraycopy(dest, 0, out, 0, length)
-            LazyList(out.immutable(using Unsafe).asInstanceOf[Data])
+            Progression(out.immutable(using Unsafe).asInstanceOf[Data])
 
 
     recur(stream, 0, newArray(), 0)
 
-  def take(bytes: Bytes): LazyList[Data] =
-    def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] =
-      stream.flow(LazyList()):
+  def take(bytes: Bytes): Progression[Data] =
+    def recur(stream: Progression[Data], count: Bytes): Progression[Data] =
+      stream.flow(Progression()):
         if next.bytes < count then
           val head: Data = next
           head #:: recur(more, count - next.bytes)
-        else LazyList(next.take(count.long.toInt).asInstanceOf[Data])
+        else Progression(next.take(count.long.toInt).asInstanceOf[Data])
 
     recur(stream, bytes)
 
   def inputStream: ji.InputStream = new ji.InputStream:
     // A JDK adapter, not a capability class: its staging slots are untracked.
-    @caps.unsafe.untrackedCaptures private var current: LazyList[Data] = stream
+    @caps.unsafe.untrackedCaptures private var current: Progression[Data] = stream
     @caps.unsafe.untrackedCaptures private var offset: Int = 0
     @caps.unsafe.untrackedCaptures private var focus: Data = IArray.empty[Byte].asInstanceOf[Data]
 

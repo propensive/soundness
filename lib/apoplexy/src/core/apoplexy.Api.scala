@@ -32,7 +32,9 @@
                                                                                                   */
 package apoplexy
 
-import language.dynamics
+import scala.compiletime
+
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -80,7 +82,7 @@ object Api:
     import charEncoders.utf8Encoder
 
     val substituted =
-      request.substitutions.foldLeft(request.path): (path, entry) =>
+      request.substitutions.fold(request.path): (path, entry) =>
         path.sub(t"{${entry(0)}}", entry(1))
 
     val full =

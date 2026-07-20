@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import proscenium.compat.*
+
 import anticipation.*
 import polyvinyl.*
 import vacuous.*
@@ -42,9 +44,9 @@ case class JsonBlueprintDoc
     title:      Text,
     `type`:     Text,
     properties: Map[Text, JsonBlueprint.Property],
-    required:   Optional[Set[Text]] ):
+    required:   Optional[List[Text]] ):
 
-  lazy val requiredFields: Set[Text] = required.or(Set())
+  lazy val requiredFields: Set[Text] = Set.from(required.or(Nil).stdlib)
 
-  def fields: Map[Text, Member] =
-    properties.map: (key, value) => key -> value.field(requiredFields.contains(key))
+  def fields: Map[Text, Member] = Map.from:
+    properties.stdlib.map: (key, value) => key -> value.field(requiredFields.stdlib.contains(key))

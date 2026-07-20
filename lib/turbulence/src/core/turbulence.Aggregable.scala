@@ -36,6 +36,7 @@ import anticipation.*
 import denominative.*
 import hieroglyph.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -68,8 +69,8 @@ object Aggregable:
       val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
       gather(streamRef.asInstanceOf[(Stream[Data] over Credit)^])
 
-    def aggregate(source0: LazyList[Data]): Data =
-      val size = source0.foldLeft(0)(_ + _.length)
+    def aggregate(source0: Progression[Data]): Data =
+      val size = source0.stdlib.foldLeft(0)(_ + _.length)
 
       var source = source0
 
@@ -95,7 +96,7 @@ object Aggregable:
       val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
       gather(streamRef.asInstanceOf[(Stream[Text] over Credit)^])
 
-    def aggregate(source0: LazyList[Text]): Text =
+    def aggregate(source0: Progression[Text]): Text =
       var source = source0
 
       val builder = new StringBuilder()
@@ -108,21 +109,21 @@ object Aggregable:
 
 
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
-  =>  LazyList[element2] is Aggregable by element =
+  =>  Progression[element2] is Aggregable by element =
 
-    element => LazyList(aggregable.aggregate(element))
+    element => Progression(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
   // The capturing self type permits instances that capture (e.g. a resolution-scoped
   // tactic) while keeping the explicit self name the 3.9 SAM adaptation requires.
   aggregable: Aggregable^ =>
-  def aggregate(source: LazyList[Operand]): Self
+  def aggregate(source: Progression[Operand]): Self
 
   // Consume a pull endpoint. The default materializes one chunk per refill
   // and delegates to the legacy `aggregate`; instances override it to build
   // directly from the stream's windows.
   def accept(stream: (Stream[Operand] over Credit)^): Self =
-    def recur(): LazyList[Operand] =
+    def recur(): Progression[Operand] =
       stream.refill(Credit(Long.MaxValue)) match
         case count: Int =>
           val chunk =
@@ -132,9 +133,9 @@ trait Aggregable extends Typeclass, Operable:
           chunk #:: recur()
 
         case _ =>
-          LazyList()
+          Progression()
 
-    aggregate(LazyList.defer(recur()))
+    aggregate(Progression.defer(recur()))
 
   def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{this, lambda} = source =>
     lambda(aggregable.aggregate(source))

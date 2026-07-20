@@ -34,6 +34,8 @@ package legerdemain
 
 import anamnesis.*
 import anticipation.*
+import rudiments.*
+import vacuous.*
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -59,7 +61,12 @@ object Elicitable extends Elicitable2:
     def input(value: enumerable): Text = enumerable.name(value)
 
     def widget(id: Text, label: Text, value: Text): Combobox =
-      Combobox(id, enumerable.values.to(List).map(enumerable.name(_)), value)
+      Combobox
+        ( id,
+          List.from:
+            scala.collection.immutable.ArraySeq
+            . unsafeWrapArray(enumerable.values.mutable(using Unsafe)).map(enumerable.name(_)),
+          value )
 
 
   given reference: [entity <: Entity: {Listable, Showable, Referenceable}]

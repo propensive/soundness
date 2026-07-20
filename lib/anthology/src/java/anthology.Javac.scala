@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import proscenium.compat.*
+
 import java.net as jn
 import java.util as ju
 import javax.tools as jt
@@ -94,7 +96,7 @@ case class Javac(options: List[JavacOption]):
                 span )
 
     val options = List(t"-classpath", classpath(), t"-d", out.generic)
-    val javaSources = sources.map(JavaSource(_, _)).asJava
+    val javaSources = sources.stdlib.map(JavaSource(_, _)).asJava
     Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
 
     async:
@@ -103,7 +105,7 @@ case class Javac(options: List[JavacOption]):
           process.put(CompileProgress(0.1, t"javac"))
 
           Javac.compiler()
-          . getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
+          . getTask(null, null, diagnostics, options.stdlib.map(_.s).asJava, null, javaSources)
           . nn.call().nn.booleanValue()
 
         if success then process.put(CompileProgress(1.0, t"javac"))

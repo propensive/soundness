@@ -77,7 +77,7 @@ object Juxtaposition:
         case Juxtaposition.Collation(name, comparison, _, _) =>
           import tableStyles.defaultTableStyle
           val columns = 110
-          val length = comparison.length
+          val length = comparison.stdlib.length
           val topRule = e"\n$subdued(────┬${(t"─"*(length.min(columns)))}┬────)\n"
           val midRule = e"$subdued(────┼${(t"─"*(length.min(columns)))}┼────)\n"
           val bottomRule = e"$subdued(────┴${(t"─"*(length%columns))}┴────)\n"
@@ -91,9 +91,9 @@ object Juxtaposition:
             var bottomSum = 0
             def pad(value: Text): Char = value.at(Prim).let(Unicode.visible).or(' ')
 
-            comparison.grouped(columns).zipWithIndex.map: (comparison2, index) =>
+            comparison.stdlib.grouped(columns).zipWithIndex.map: (comparison2, index) =>
               val first = index == 0
-              val last = index == comparison.length/columns
+              val last = index == comparison.stdlib.length/columns
 
               val observed = comparison2.map:
                 case (_, Same(char))            => e"$informative(${pad(char)})"
@@ -135,7 +135,7 @@ object Juxtaposition:
               case Different(left, right, difference)    => Nil
 
               case Collation(_, comparison, left, right) =>
-                if comparison.all(_(1).singleChar) then Nil else comparison.to(List)
+                if comparison.all(_(1).singleChar) then Nil else comparison
 
             case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
 
@@ -188,7 +188,7 @@ object Juxtaposition:
                   Column(e"Details")(_.memo.teletype) )
 
             table
-            . tabulate(TreeDiagram.by(children(_))(comparison*).render(line))
+            . tabulate(TreeDiagram.by(children(_))(comparison*).render(line).stdlib.to(List))
             . grid(200)
             . render
             . join(e"\n")
@@ -215,9 +215,9 @@ enum Juxtaposition:
   def leftWidth: Int = this match
     case Same(value)                    => value.length
     case Different(left, _, _)          => left.length
-    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).leftWidth)
+    case Collation(_, comparison, _, _) => comparison.stdlib.sumBy(_(1).leftWidth)
 
   def rightWidth: Int = this match
     case Same(value)                    => value.length
     case Different(_, right, _)         => right.length
-    case Collation(_, comparison, _, _) => comparison.sumBy(_(1).rightWidth)
+    case Collation(_, comparison, _, _) => comparison.stdlib.sumBy(_(1).rightWidth)

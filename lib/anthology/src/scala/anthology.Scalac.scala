@@ -32,7 +32,9 @@
                                                                                                   */
 package anthology
 
-import language.adhocExtensions
+import proscenium.compat.*
+
+import scala.language.adhocExtensions
 
 import scala.annotation.targetName
 import scala.util.control as suc
@@ -77,7 +79,7 @@ object Scalac:
 case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   ( options: List[Scalac.Option[version]] ):
 
-  def commandLineArguments: List[Text] = options.flatMap(_.flags)
+  def commandLineArguments: List[Text] = options.bind(_.flags)
 
   def targeting[universe2 <: Universe]: Scalac[version, universe2] = new Scalac(options)
 
@@ -146,7 +148,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
             List(t"")
 
         Log.info(CompileEvent.Running(arguments))
-        setup(arguments.map(_.s).to(Array), context).map(_(1)).get
+        setup(arguments.stdlib.map(_.s).toArray, context).map(_(1)).get
 
       def run(): CompileProcess =
         given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
@@ -155,8 +157,9 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
           . setCompilerCallback(callbackApi)
           . setProgressCallback(ProgressApi)
 
-        val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
-          dtdu.SourceFile.virtual(name.s, content.s)
+        val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
+          sources.stdlib.toList.map: (name, content) =>
+            dtdu.SourceFile.virtual(name.s, content.s)
 
         scalacProcess.put:
           task(n"scalac"):

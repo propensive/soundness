@@ -32,7 +32,7 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 
 extension (inline context: StringContext)

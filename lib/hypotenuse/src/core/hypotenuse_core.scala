@@ -32,8 +32,12 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.genericNumberLiterals
-import language.experimental.into
+import scala.math
+
+import proscenium.compat.*
+
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
 
 import java.lang.{Integer as JInt, Long as JLong, Double as JDouble, Float as JFloat}
 

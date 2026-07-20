@@ -32,7 +32,7 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import fulminate.*

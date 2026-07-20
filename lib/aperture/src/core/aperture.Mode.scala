@@ -32,6 +32,8 @@
                                                                                                   */
 package aperture
 
+import proscenium.compat.*
+
 // A term-level selection of the grants an `open` call should confer, carrying them as the
 // `Grants` type member so the mode chosen at the call site determines the handle's type inside
 // the `open` block. `&` composes dependently — `Read & Write` has

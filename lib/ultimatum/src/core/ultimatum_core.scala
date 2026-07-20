@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import scala.collection.immutable.IndexedSeq
+
 import anticipation.*
 import denominative.*
 import parasite.*
@@ -134,17 +136,17 @@ def border
   // The middle band: the child flanked by whichever vertical edges are requested.
   val middle =
     val edge = if left then List(verticalRule) else Nil
-    file((edge ++ List(child) ++ (if right then List(verticalRule) else Nil))*)
+    file((edge.stdlib ++ scala.collection.immutable.List(child) ++ (if right then scala.collection.immutable.List(verticalRule) else scala.collection.immutable.Nil))*)
 
   // A horizontal band (the top or bottom): a rule flanked by whichever corners
   // are requested (a corner appears only where a vertical edge also meets it).
   def band(leftCorner: Text, rightCorner: Text): Pane =
     val start = if left then List(corner(leftCorner)) else Nil
-    file((start ++ List(horizontalRule) ++ (if right then List(corner(rightCorner)) else Nil))*)
+    file((start.stdlib ++ scala.collection.immutable.List(horizontalRule) ++ (if right then scala.collection.immutable.List(corner(rightCorner)) else scala.collection.immutable.Nil))*)
 
   val head = if top then List(band(style.topLeft, style.topRight)) else Nil
   val foot = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
-  rank((head ++ List(middle) ++ foot)*)
+  rank((head.stdlib ++ scala.collection.immutable.List(middle) ++ foot.stdlib)*)
 
 // Drive an interactive layout, looping over terminal events until the user exits.
 // Used inside `interactive`. In `Fullscreen` mode the layout takes over the
@@ -195,11 +197,16 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 // since the last layout, plus any whose content changed this frame. A leaf whose
 // rectangle and content are both unchanged is omitted, so it is left untouched on
 // screen — the basis of flicker-free redraw.
-def dirtyCells(previous: IndexedSeq[Rect], current: IndexedSeq[Rect], changed: Set[Int]): Set[Int] =
+def dirtyCells
+  ( previous: IndexedSeq[Rect],
+    current:  IndexedSeq[Rect],
+    changed:  scala.collection.immutable.Set[Int] )
+:   scala.collection.immutable.Set[Int] =
+
   val moved = current.indices.filter: i =>
     i >= previous.length || previous(i) != current(i)
 
-  moved.to(Set) ++ changed
+  moved.toSet ++ changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
 // rectangle (no event loop). An `InlineRoot` is sized to the height its content
@@ -219,7 +226,7 @@ def paint(root: Canvas^, pane: Pane): Unit =
   // An explicit iterator loop rather than `.each`: the per-cell closure constructs a `FlowExtent`
   // over the `root` canvas (a capability), and capture checking rejects that fresh capability
   // leaking out through the `.each` lambda's inferred parameter type.
-  val cells = pane.leaves.zip(placement.cells).iterator
+  val cells = pane.leaves.stdlib.zip(placement.cells.stdlib).iterator
   while cells.hasNext do
     val (leaf, rect) = cells.next()
     val extent = FlowExtent(root, rect)

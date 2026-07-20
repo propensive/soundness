@@ -39,6 +39,6 @@ import zephyrine.*
 
 object Asset:
   def apply[entity: {Media, Streamable by Data over Credit}](name: Text, content: entity): Asset =
-    Asset(name, content.mediaType, content.source[Data].toLazyList)
+    Asset(name, content.mediaType, content.source[Data].toProgression)
 
-case class Asset(name: Text, media: MediaType, stream: LazyList[Data])
+case class Asset(name: Text, media: MediaType, stream: Progression[Data])

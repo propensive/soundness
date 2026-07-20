@@ -32,6 +32,8 @@
                                                                                                   */
 package vacuous
 
+import scala.collection.immutable.{List, Nil, ::}
+
 import scala.quoted.*
 
 import fulminate.*

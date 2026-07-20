@@ -38,5 +38,5 @@ trait Tabular[text] extends Typeclass:
   type Element
 
   def table(value: Self): Scaffold[Element, text]
-  def rows(value: Self): Seq[Element]
+  def rows(value: Self): List[Element]
   def tabulate(value: Self): Tabulation[text] = table(value).tabulate(rows(value))

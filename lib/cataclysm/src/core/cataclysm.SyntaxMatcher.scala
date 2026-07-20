@@ -32,10 +32,16 @@
                                                                                                   */
 package cataclysm
 
+// Deliberate stdlib opt-out: internal keyword tables used as predicates.
+import scala.collection.immutable.{Map, Set}
+
 import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
+import proscenium.compat.*
+
+import rudiments.*
 import hellenism.*
 import jacinta.*
 import turbulence.*
@@ -60,8 +66,8 @@ object SyntaxMatcher:
   private lazy val rawComposites: Map[Text, Text] =
     import contingency.strategies.throwUnsafely
 
-    val entries = cp"/cataclysm/syntaxes.json".read[Json].as[Map[Text, Entry]]
-    entries.view.mapValues(_.syntax).toMap
+    val entries = cp"/cataclysm/syntaxes.json".read[Json].as[proscenium.Map[Text, Entry]]
+    entries.stdlib.view.mapValues(_.syntax).toMap
 
   private val cache: scala.collection.mutable.HashMap[Text, Optional[Syntax]] =
     scala.collection.mutable.HashMap()
@@ -146,11 +152,11 @@ object SyntaxMatcher:
         functionMatch(name, body, tokens)
 
       case Syntax.Sequence(terms) =>
-        terms.foldLeft(List(tokens)): (states, term) =>
-          states.flatMap(consume(term, _))
+        terms.fold(List(tokens)): (states, term) =>
+          states.bind(consume(term, _))
 
       case Syntax.OneOf(options) =>
-        options.flatMap(consume(_, tokens))
+        options.bind(consume(_, tokens))
 
       case Syntax.AllOf(terms) =>
         allOf(terms, tokens)
@@ -167,19 +173,19 @@ object SyntaxMatcher:
     private def pickEach(terms: List[Syntax], tokens: List[ValueToken])
     :   List[(List[Syntax], List[ValueToken])] =
 
-      terms.indices.to(List).flatMap: index =>
+      List.range(0, terms.stdlib.length).bind: index =>
         consume(terms(index), tokens).map: rem =>
-          (terms.patch(index, Nil, 1), rem)
+          (List.of(terms.stdlib.patch(index, scala.collection.immutable.Nil, 1)), rem)
 
     private def allOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       if terms.nil then List(tokens)
       else
-        pickEach(terms, tokens).flatMap: (rest, rem) =>
+        pickEach(terms, tokens).bind: (rest, rem) =>
           allOf(rest, rem)
 
     private def anyOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
-      pickEach(terms, tokens).flatMap: (rest, rem) =>
-        rem :: anyOf(rest, rem)
+      pickEach(terms, tokens).bind: (rest, rem) =>
+        (rem :: anyOf(rest, rem)): List[List[ValueToken]]
 
     private def repeat
       ( term: Syntax, min: Int, max: Optional[Int], separated: Boolean, tokens: List[ValueToken] )
@@ -192,7 +198,7 @@ object SyntaxMatcher:
         if !more then stop
         else
           val starts = if count > 0 && separated then comma(toks) else List(toks)
-          stop ::: starts.flatMap(consume(term, _)).flatMap(go(count + 1, _))
+          stop ::: starts.bind(consume(term, _)).bind(go(count + 1, _))
 
       go(0, tokens)
 
@@ -389,7 +395,7 @@ object SyntaxMatcher:
 
     // `<ratio> = <number> [ / <number> ]?`
     private def ratioLeaf(tokens: List[ValueToken]): List[List[ValueToken]] =
-      numberLeaf(tokens).flatMap: rest =>
+      numberLeaf(tokens).bind: rest =>
         rest match
           case ValueToken.Delim('/') :: tail => numberLeaf(tail)
           case _                             => List(rest)

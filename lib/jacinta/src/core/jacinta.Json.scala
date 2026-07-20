@@ -32,8 +32,15 @@
                                                                                                   */
 package jacinta
 
-import language.dynamics
-import language.experimental.pureFunctions
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
+import scala.language.experimental.pureFunctions
 
 import scala.collection.Factory
 import scala.collection.mutable as scm
@@ -185,6 +192,33 @@ trait Json2 extends Json3:
   =>  collection[element] is Json.Field =
     Json.Field(Json.Parsable.iterable[collection, element](field))
 
+  // Alias counterparts of `fieldArray`: the opaque prelude collections do not
+  // conform to `Iterable`, so each alias gets its own instance, built at the
+  // underlying stdlib type and cast (a no-op at erasure).
+  given fieldList: [list <: List, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( field: => (element is Json.Field)^ )
+  =>  list[element] is Json.Field =
+    Json.Field(Json.Parsable.iterable[scala.collection.immutable.List, element](field))
+    . asInstanceOf[list[element] is Json.Field]
+
+  given fieldSet: [set <: Set, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( field: => (element is Json.Field)^ )
+  =>  set[element] is Json.Field =
+    Json.Field(Json.Parsable.iterable[scala.collection.immutable.Set, element](field))
+    . asInstanceOf[set[element] is Json.Field]
+
+  given fieldSeries: [series <: Series, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( field: => (element is Json.Field)^ )
+  =>  series[element] is Json.Field =
+    Json.Field(Json.Parsable.iterable[Vector, element](field))
+    . asInstanceOf[series[element] is Json.Field]
+
   given fieldMap: [key: distillate.Decodable in Text, element]
   =>  Tactic[JsonError]
   =>  ( field: => (element is Json.Field)^ )
@@ -213,7 +247,7 @@ trait Json2 extends Json3:
         type Self = value in Json
         type Operand = Data
 
-        def aggregate(bytes: LazyList[Data]): value in Json =
+        def aggregate(bytes: Progression[Data]): value in Json =
           Json.readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
@@ -284,14 +318,14 @@ trait Json2 extends Json3:
       // Built immutably: `build`'s per-field lambda is polymorphic (`[field] => …`) and must be
       // pure, so it may only close over pure values — a mutable map would be a capability.
       val values: Map[String, Json.Ast] =
-        val builder = Map.newBuilder[String, Json.Ast]
+        val builder = scala.collection.immutable.Map.newBuilder[String, Json.Ast]
         var i = 0
 
         while i < n do
           builder += root.objectKey(i) -> root.objectValue(i)
           i += 1
 
-        builder.result()
+        Map.of(builder.result())
 
       // `@name[Json]` / bare `@name` renames: field name -> JSON key, read
       // back the same way they are written.
@@ -308,7 +342,7 @@ trait Json2 extends Json3:
               JsonPointer
                 ( base.url,
                   Path[JsonPointer, JsonPointer.type, Tuple]
-                    ( base.path.root, base.path.descent :+ key ) )
+                    ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
             Json.Focus(newPointer)
           }):
@@ -336,13 +370,13 @@ trait Json2 extends Json3:
 
               // `@name[Json]` / bare `@name` variant renames: map the serialized
               // discriminator back to the variant name before delegating.
-              val variantNames: Map[Text, Text] =
-                variantRelabelling[derivation, Json].map: (variant, wire) => wire -> variant
+              val variantNames: Map[Text, Text] = Map.from:
+                variantRelabelling[derivation, Json].stdlib.map: (variant, wire) => wire -> variant
 
               val wire: Text = discriminable.discriminate(json).or:
                 focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
 
-              val discriminant: Text = variantNames.getOrElse(wire, wire)
+              val discriminant: Text = variantNames.stdlib.getOrElse(wire, wire)
 
               // The variant decodes the whole value for the internal-field
               // shape (its tag is simply skipped as an unknown key — no need
@@ -391,8 +425,8 @@ trait Json2 extends Json3:
         // Wire tag → variant label, a per-derivation constant: built once
         // here rather than on every `parse` call, whose profile it dominated
         // (map building plus generic-equality lookups, per occurrence).
-        val variantNames: Map[Text, Text] =
-          variantRelabelling[derivation, Json].map: (variant, wire) =>
+        val variantNames: Map[Text, Text] = Map.from:
+          variantRelabelling[derivation, Json].stdlib.map: (variant, wire) =>
             wire -> variant
 
         infer[derivation is Discriminable in Json] match
@@ -409,7 +443,7 @@ trait Json2 extends Json3:
 
                     // The variant re-reads the whole object, skipping the
                     // tag as an unknown key.
-                    delegate(variantNames.getOrElse(wire, wire)):
+                    delegate(variantNames.stdlib.getOrElse(wire, wire)):
                       [variant <: derivation] => context => context.parse(reader)
 
           case wrapper: Json.DiscriminantWrapper[?] =>
@@ -424,7 +458,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.key().or(abort(JsonError(Reason.Absent)))
 
                     val result =
-                      delegate(variantNames.getOrElse(wire, wire)):
+                      delegate(variantNames.stdlib.getOrElse(wire, wire)):
                         [variant <: derivation] => context => context.parse(reader)
 
                     // A wrapper is a single-key object; anything more means
@@ -443,7 +477,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.discriminant(envelope.tagField).or:
                       abort(JsonError(Reason.Absent))
 
-                    val name = variantNames.getOrElse(wire, wire)
+                    val name = variantNames.stdlib.getOrElse(wire, wire)
                     reader.openObject()
                     var result: Optional[derivation] = Unset
                     var continue = true
@@ -492,7 +526,7 @@ trait Json2 extends Json3:
                     JsonPointer
                       ( base.url,
                         Path[JsonPointer, JsonPointer.type, Tuple]
-                          ( base.path.root, base.path.descent :+ key ) )
+                          ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
                   Json.Focus(newPointer)
                 }):
@@ -518,7 +552,7 @@ trait Json2 extends Json3:
 
           variant(value): [variant <: derivation] =>
             value =>
-              discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+              discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
 
 object Json extends Json2, Dynamic:
   // Controls how a `Json` value is serialized. `indent` is the whitespace unit per nesting level;
@@ -809,7 +843,7 @@ object Json extends Json2, Dynamic:
         JsonPointer
           ( base.url,
             Path[JsonPointer, JsonPointer.type, Tuple]
-              ( base.path.root, base.path.descent :+ key ) )
+              ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
       Json.Focus(pointer)
 
@@ -1968,6 +2002,31 @@ object Json extends Json2, Dynamic:
   =>  collection[element] is Json.Parsable =
     Json.Parsable.iterable[collection, element](parsable)
 
+  // Alias counterparts of `arrayParsable` (see `fieldList`).
+  given listParsable: [list <: List, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( parsable: => (element is Json.Parsable)^ )
+  =>  list[element] is Json.Parsable =
+    Json.Parsable.iterable[scala.collection.immutable.List, element](parsable)
+    . asInstanceOf[list[element] is Json.Parsable]
+
+  given setParsable: [set <: Set, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( parsable: => (element is Json.Parsable)^ )
+  =>  set[element] is Json.Parsable =
+    Json.Parsable.iterable[scala.collection.immutable.Set, element](parsable)
+    . asInstanceOf[set[element] is Json.Parsable]
+
+  given seriesParsable: [series <: Series, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( parsable: => (element is Json.Parsable)^ )
+  =>  series[element] is Json.Parsable =
+    Json.Parsable.iterable[Vector, element](parsable)
+    . asInstanceOf[series[element] is Json.Parsable]
+
   given mapParsable: [key: distillate.Decodable in Text, element]
   =>  Tactic[JsonError]
   =>  ( parsable: => (element is Json.Parsable)^ )
@@ -2042,7 +2101,9 @@ object Json extends Json2, Dynamic:
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
       Json.Encodable(shape):
-        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
+        values =>
+          val roots = IArray.from(values.stdlib.map(encodable.encoded(_).root))
+          Json.ast(Json.Ast.arr(roots.asInstanceOf[IArray[Any]]))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => (element is Json.Encodable))
@@ -2056,7 +2117,7 @@ object Json extends Json2, Dynamic:
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
       Json.Encodable(shape):
-        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
+        values => Json.ast(Json.Ast.arr(IArray.from(values.stdlib.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
   given seriesEncodable: [series <: Series, element] => (encodable: => (element is Json.Encodable))
@@ -2070,7 +2131,7 @@ object Json extends Json2, Dynamic:
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
       Json.Encodable(shape):
-        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
+        values => Json.ast(Json.Ast.arr(IArray.from(values.stdlib.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
   given array: [collection <: Iterable, element]
@@ -2101,7 +2162,7 @@ object Json extends Json2, Dynamic:
               JsonPointer
                 ( base.url,
                   Path[JsonPointer, JsonPointer.type, Tuple]
-                    ( base.path.root, base.path.descent :+ ordinal.n0.toString.tt ) )
+                    ( base.path.root, (base.path.descent :+ ordinal.n0.toString.tt).to(List) ) )
 
             Json.Focus(newPointer)
           }):
@@ -2109,6 +2170,31 @@ object Json extends Json2, Dynamic:
 
         builder.result()
 
+
+  // Alias counterparts of `array` (see `fieldList`).
+  given listDecodable: [list <: List, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( decodable: => (element is Json.Decodable)^ )
+  =>  list[element] is Json.Decodable =
+    array[scala.collection.immutable.List, element]
+    . asInstanceOf[list[element] is Json.Decodable]
+
+  given setDecodable: [set <: Set, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( decodable: => (element is Json.Decodable)^ )
+  =>  set[element] is Json.Decodable =
+    array[scala.collection.immutable.Set, element]
+    . asInstanceOf[set[element] is Json.Decodable]
+
+  given seriesDecodable: [series <: Series, element]
+  =>  ( tactic: Tactic[JsonError],
+        foci:   Foci[Json.Focus] )
+  =>  ( decodable: => (element is Json.Decodable)^ )
+  =>  series[element] is Json.Decodable =
+    array[Vector, element]
+    . asInstanceOf[series[element] is Json.Decodable]
 
   given map: [key: distillate.Decodable in Text, element]
   =>  ( decodable: => (element is Json.Decodable)^ )
@@ -2154,8 +2240,9 @@ object Json extends Json2, Dynamic:
 
     Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to(List)
-      val values = IArray.from(keys.map(map(_).encode.root))
-      Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)).asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))
+      val values = IArray.from(keys.stdlib.map(map(_).encode.root))
+      val keysArr = IArray.from(keys.stdlib.map(_.encode.s))
+      Json.ast(Json.Ast.obj(keysArr.asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))
 
 
   given jsonEncodableInText: Json is anticipation.Encodable in Text = json =>
@@ -2173,7 +2260,7 @@ object Json extends Json2, Dynamic:
         type Self = Json
         type Operand = Data
 
-        def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
+        def aggregate(bytes: Progression[Data]): Json = readJson(bytes.iterator)
         override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
 
@@ -2192,7 +2279,7 @@ object Json extends Json2, Dynamic:
         type Self = value in Json
         type Operand = Data
 
-        def aggregate(bytes: LazyList[Data]): value in Json =
+        def aggregate(bytes: Progression[Data]): value in Json =
           // A single in-memory block — the common case — skips the iterator
           // plumbing entirely.
           if !bytes.isEmpty && bytes.tail.isEmpty
@@ -2237,12 +2324,12 @@ object Json extends Json2, Dynamic:
   given decodable: (tactic: Tactic[ParseError])
   =>  Json is distillate.Decodable in Text =
     caps.unsafe.unsafeAssumePure:
-      text => LazyList(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
+      text => Progression(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
 
   given instantiable: (tactic: Tactic[ParseError])
   =>  Json is Instantiable across HttpRequests from Text =
     caps.unsafe.unsafeAssumePure:
-      text => LazyList(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
+      text => Progression(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0))).asInstanceOf[IArray[String]]

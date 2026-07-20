@@ -32,7 +32,9 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.caps
+
+import scala.language.experimental.genericNumberLiterals
 
 import scala.util as su
 
@@ -63,5 +65,5 @@ class Random(private val generator: su.Random) extends Findable, caps.Unscoped:
   def unitInterval(): Double = generator.nextDouble()
   def apply[value: Randomizable](): value = value.randomize(this)
 
-  transparent inline def shuffle[element](sequence: Seq[element]): Seq[element] =
-    generator.shuffle(sequence)
+  transparent inline def shuffle[element](sequence: List[element]): List[element] =
+    List.of(generator.shuffle(sequence.stdlib))

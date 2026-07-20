@@ -32,7 +32,9 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import scala.annotation.*
 
@@ -41,19 +43,19 @@ import fulminate.*
 import vacuous.*
 
 object Errors:
-  private def format(errors: Seq[(Text, Error)]): Message =
+  private def format(errors: List[(Text, Error)]): Message =
     val joined =
-      errors.reverse.map: (focus, error) =>
+      errors.stdlib.reverse.map: (focus, error) =>
         s"${error.message.text} at $focus".tt
 
       . mkString("; ")
       . tt
 
-    m"${errors.size} accrued errors: $joined"
+    m"${errors.stdlib.size} accrued errors: $joined"
 
 case class Errors(errors: (Text, Error)*)(using Diagnostics)
-extends Error(218, 0)(Errors.format(errors)):
-  private lazy val errorMap: Map[Text, Error] = errors.to(Map)
+extends Error(218, 0)(Errors.format(errors.to(List))):
+  private lazy val errorMap: scala.collection.immutable.Map[Text, Error] = errors.to(scala.collection.immutable.Map)
 
   @targetName("add")
   infix def + (focus: Text, error: Error): Errors = Errors((focus, error) +: errors*)

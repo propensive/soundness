@@ -33,6 +33,7 @@
 package jacinta
 
 import soundness.*
+import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -85,7 +86,7 @@ enum Player:
   case Drummer(person: Person)
   case Bassist(person: Person)
 
-case class NewBand(members: Set[Player])
+case class NewBand(members: List[Player])
 
 case class Role(name: String)
 case class Entity(name: String, age: Int, roles: List[Role])
@@ -214,15 +215,15 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == t"null")
 
       test(m"Serialize a list of integers"):
-        List(1, 2, 3).in[Json].show
+        (List(1, 2, 3): List[Int]).in[Json].show
       . assert(_ == t"[1,2,3]")
 
       test(m"Serialize an empty list"):
-        List[Int]().in[Json].show
+        (List[Int](): List[Int]).in[Json].show
       . assert(_ == t"[]")
 
       test(m"Serialize a list of strings"):
-        List(t"a", t"b").in[Json].show
+        (List(t"a", t"b"): List[Text]).in[Json].show
       . assert(_ == t"""["a","b"]""")
 
       test(m"Serialize a map"):
@@ -374,7 +375,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Player.Bassist(paulObj))
 
       import Player.*
-      val newBand = NewBand(Set(Bassist(paulObj), Drummer(ringoObj), Guitarist(Person(t"John", 40)),
+      val newBand = NewBand(List(Bassist(paulObj), Drummer(ringoObj), Guitarist(Person(t"John", 40)),
           Guitarist(Person(t"George", 58))))
 
       val newBandText = test(m"Serialize NewBand"):
@@ -755,7 +756,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Set(t"a", t"b"))
 
       test(m"Decode a map preserves values"):
-        t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values.toSet
+        Set.from(t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]].values)
       . assert(_ == Set(1, 2))
 
       test(m"primitive of a string is String"):
@@ -1250,7 +1251,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Indented printer pretty-prints arrays"):
         import formatting.indentedJsonFormatting
-        val printed = List(1, 2, 3).in[Json].show
+        val printed = (List(1, 2, 3): List[Int]).in[Json].show
         printed.contains(t"\n")
       . assert(identity)
 

@@ -32,7 +32,11 @@
                                                                                                   */
 package caesura
 
-import language.dynamics
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import scala.compiletime.*
 
@@ -203,7 +207,7 @@ object Dsv extends Dsv2:
         type Self = value in Dsv
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): value in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Progression[Text]): value in Dsv = accept(Stream(text.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
           val reader =
@@ -220,7 +224,7 @@ object Dsv extends Dsv2:
         type Self = List[value] in Dsv
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): List[value] in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Progression[Text]): List[value] in Dsv = accept(Stream(text.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
           val reader =
@@ -377,11 +381,12 @@ object Dsv extends Dsv2:
 
       value =>
         val cells =
-          fields(value):
+          val arrays = fields(value):
             [field] => field => contextual.encode(field).data
 
-          . to(List)
-          . flatten
+          val builder = scala.collection.immutable.List.newBuilder[Text]
+          arrays.foreach { inner => inner.each(builder += _) }
+          IArray.from(builder.result())
 
         Dsv(cells)
 
@@ -389,7 +394,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
   def as[cell: Decodable in Dsv]: cell raises DsvError tracks CellRef = cell.decoded(this)
 
   def header: Optional[IArray[Text]] = columns.let: map =>
-    val columns = map.map(_.swap)
+    val columns = map.stdlib.map(_.swap)
     IArray.tabulate(columns.size)(columns(_))
 
 

@@ -43,7 +43,7 @@ object Distributive:
       type Operand = Double
 
       def parts(value: Quantity[measure]): List[Double] = List(value.value)
-      def place(value: Quantity[measure], parts: List[Text]): Text = t"${parts(0)} $units"
+      def place(value: Quantity[measure], parts: List[Text]): Text = t"${parts.stdlib(0)} $units"
 
   inline given distributive: [measure <: Measure] => Quantity[measure] is Distributive by Double =
     Distributive[measure](Quantity.units[measure])

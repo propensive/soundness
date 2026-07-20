@@ -35,6 +35,7 @@ package superlunary
 import java.lang as jl
 
 import scala.quoted.*
+import scala.Predef
 
 import soundness.*
 
@@ -52,7 +53,7 @@ object Tests extends Suite(m"Superlunary Tests"):
         ' {
             val x = ${message.name}
             val y = ${message.count}
-            println(y)
+            Predef.println(y)
             Example(t"Time: $x $y ${jl.System.currentTimeMillis - ${message}.count}", 9)
           }
 

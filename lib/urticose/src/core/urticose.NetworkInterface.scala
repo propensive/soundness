@@ -40,6 +40,7 @@ import scala.jdk.CollectionConverters.*
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -52,7 +53,7 @@ object NetworkInterface:
     def recur(interfaces: ju.Enumeration[jn.NetworkInterface], acc: List[NetworkInterface])
     :   List[NetworkInterface] =
 
-      if !interfaces.hasMoreElements then acc.reverse
+      if !interfaces.hasMoreElements then List.of(acc.stdlib.reverse)
       else recur(interfaces, read(interfaces.nextElement.nn) :: acc)
 
     Optional(jn.NetworkInterface.getNetworkInterfaces).lay(Nil)(recur(_, Nil))
@@ -139,5 +140,7 @@ case class NetworkInterface
     multicast:    Boolean,
     virtual:      Boolean ):
 
-  def ipv4: List[Ipv4] = addresses.map(_.address).collect { case ip: (Ipv4 @unchecked) => ip }
-  def ipv6: List[Ipv6] = addresses.map(_.address).collect { case ip: Ipv6 => ip }
+  def ipv4: List[Ipv4] =
+    List.of(addresses.stdlib.map(_.address).collect { case ip: (Ipv4 @unchecked) => ip })
+  def ipv6: List[Ipv6] =
+    List.of(addresses.stdlib.map(_.address).collect { case ip: Ipv6 => ip })

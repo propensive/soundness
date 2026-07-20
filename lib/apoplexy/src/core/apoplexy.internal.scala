@@ -32,6 +32,10 @@
                                                                                                   */
 package apoplexy
 
+import scala.collection.immutable.Seq
+
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import anticipation.*
@@ -78,7 +82,7 @@ object Apoplexy:
   // --- refinement-type helpers (mirroring xenophile) ----------------------
 
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :   Map[Text, quotes.reflect.TypeRepr] =
+  :   scala.collection.immutable.Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -86,7 +90,7 @@ object Apoplexy:
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
-      case _                                           => Map()
+      case _                                           => scala.collection.immutable.Map()
 
   private def stringOf(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
     import quotes.reflect.*
@@ -118,7 +122,7 @@ object Apoplexy:
   private def receiver(using quotes: Quotes)(self: Expr[Api]): (Text, Text, Wire) =
     import quotes.reflect.*
 
-    val members = refinements(self.asTerm.tpe.widen)
+    val members = Map.of(refinements(self.asTerm.tpe.widen))
     val locus = members.at(t"Locus").lay(t"/")(stringOf(_))
     val source = members.at(t"Source").or(halt(m"apoplexy: the receiver has no spec `Source`"))
     val wire = members.at(t"Transport").lay(Wire.Json)(wireOfRepr(_))
@@ -127,7 +131,7 @@ object Apoplexy:
 
   // --- path utilities ------------------------------------------------------
 
-  private def segments(path: Text): List[Text] = path.cut(t"/").filter(_ != t"").to(List)
+  private def segments(path: Text): List[Text] = path.cut(t"/").filter(_ != t"")
   private def isTemplate(segment: Text): Boolean = segment.starts(t"{") && segment.s.endsWith("}")
   private def templateName(segment: Text): Text = segment.skip(1).keep(segment.length - 2)
 
@@ -186,7 +190,7 @@ object Apoplexy:
 
     val params =
       doc.paths.at(path).lay(List[OpenApi.Parameter]()): item =>
-        item.operations.values.flatMap(_.parameters).to(List)
+        item.operations.stdlib.values.flatMap(_.parameters.stdlib).to(List)
 
     params.find { p => p.name == parameter && p.`in` == OpenApi.Parameter.In.Path } match
       case Some(param) => param.schema.lay(TypeRepr.of[Text])(schemaType(doc, _))
@@ -206,13 +210,13 @@ object Apoplexy:
   // JSON wins ties (the OpenAPI default, and the historical behaviour).
   private def wireOf(content: Map[Text, OpenApi.MediaTypeObject]): Optional[Wire] =
     if content.nil then Unset
-    else if content.contains(t"application/json") then Wire.Json
-    else if content.contains(t"application/xml") || content.contains(t"text/xml") then Wire.Xml
+    else if content.defines(t"application/json") then Wire.Json
+    else if content.defines(t"application/xml") || content.defines(t"text/xml") then Wire.Xml
     else Wire.Json
 
   // The wire format of an operation's first 2xx response body, if any.
   private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
-    val status = operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim
+    val status = operation.responses.keys.filter(_.starts(t"2")).to(List).sort(_.s).prim
 
     status.let(operation.responses.at(_)).let: response =>
       wireOf(response.content)
@@ -222,10 +226,10 @@ object Apoplexy:
   // per operation by `invoke`.
   private def uniformWire(doc: OpenApi): Wire =
     val wires =
-      doc.paths.values.flatMap(_.operations.values).to(List).flatMap: operation =>
+      doc.paths.values.flatMap(_.operations.values).to(List).bind: operation =>
         responseWire(operation).lay(List[Wire]())(List(_))
 
-    . to(Set)
+    . toSet
 
     if wires.size == 1 then wires.head else Wire.Json
 
@@ -288,10 +292,10 @@ object Apoplexy:
       if !named.exists(_(0) == param.name)
       then halt(m"apoplexy: required query parameter ${param.name} is missing")
 
-    val queryExpr = Expr.ofList(queryEntries)
+    val queryExpr = Expr.ofList(queryEntries.stdlib)
 
     val status =
-      operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim.or(t"200")
+      operation.responses.keys.filter(_.starts(t"2")).to(List).sort(_.s).prim.or(t"200")
 
     // The wire format the spec dictates for this operation: the response body's
     // media type, else the request body's, else JSON. An operation that mixes
@@ -361,7 +365,7 @@ object Apoplexy:
               $self.request.copy
                 ( method = $mExpr,
                   path   = $locusExpr.tt,
-                  query  = $queryExpr,
+                  query  = List.of($queryExpr),
                   body   = $bodyExpr )
 
             Api.Response.make(request).asInstanceOf[result]
@@ -403,14 +407,14 @@ object Apoplexy:
         halt(m"apoplexy: arguments must be passed directly")
 
   private def defines(using Quotes)(doc: OpenApi, locus: Text, method: Http.Method): Boolean =
-    doc.paths.at(locus).let(_.operations.contains(method)).or(false)
+    doc.paths.at(locus).let(_.operations.defines(method)).or(false)
 
   // --- macros --------------------------------------------------------------
 
   def root(resource: Expr[Resource]): Macro[Api] =
     import quotes.reflect.*
 
-    val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
+    val members = Map.of(refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen))
 
     val source =
       members.at(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
@@ -575,7 +579,7 @@ object Apoplexy:
 
   // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
   private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
-    val segments = pointer.cut(t"/").to(List).drop(1)
+    val segments = pointer.cut(t"/").stdlib.drop(1)
 
     val node =
       segments.foldLeft(specJson(source)): (node, segment) =>
@@ -594,10 +598,10 @@ object Apoplexy:
     def simpleName(repr: TypeRepr): Text = repr.dealias.typeSymbol.name.tt
 
     def listElement(repr: TypeRepr): Optional[TypeRepr] = repr match
-      case AppliedType(_, List(element)) if repr <:< TypeRepr.of[List[Any]] => element
+      case AppliedType(_, scala.collection.immutable.List(element)) if repr <:< TypeRepr.of[List[Any]] => element
       case _                                                                => Unset
 
-    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").to(List).last
+    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").stdlib.last
 
     def ok(value: TypeRepr, schema: JsonSchema): Boolean = schema match
       case ref: JsonSchema.Ref   => simpleName(value) == componentName(ref.pointer)
@@ -636,7 +640,7 @@ object Apoplexy:
         valueRepr =:= TypeRepr.of[Unit]
 
     if !raw then
-      val members = refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)
+      val members = Map.of(refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen))
 
       val pointer =
         members.at(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))

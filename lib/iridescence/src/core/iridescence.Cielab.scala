@@ -32,6 +32,8 @@
                                                                                                   */
 package iridescence
 
+import scala.math
+
 import prepositional.*
 
 object Cielab:

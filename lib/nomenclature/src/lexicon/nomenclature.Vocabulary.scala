@@ -32,6 +32,8 @@
                                                                                                   */
 package nomenclature
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -50,16 +52,16 @@ object Vocabulary:
     new Vocabulary(load(adjectives), load(animals)).asInstanceOf[Vocabulary over transport]
 
   private def load[source: Streamable by Data over Credit](resource: source): List[Text] =
-    resource.read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
+    List.of(resource.read[Text].cut(t"\n").stdlib.map(_.trim).filter(_ != t""))
 
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport
 
-  private val adjectiveArray: IArray[Text] = IArray.from(adjectives)
-  private val animalArray:    IArray[Text] = IArray.from(animals)
+  private val adjectiveArray: IArray[Text] = IArray.from(adjectives.stdlib)
+  private val animalArray:    IArray[Text] = IArray.from(animals.stdlib)
   private val animalCount:    Int          = animals.length
-  private val adjectiveIndex: Map[Text, Int] = adjectives.zipWithIndex.to(Map)
-  private val animalIndex:    Map[Text, Int] = animals.zipWithIndex.to(Map)
+  private val adjectiveIndex: Map[Text, Int] = Map.from(adjectives.stdlib.zipWithIndex)
+  private val animalIndex:    Map[Text, Int] = Map.from(animals.stdlib.zipWithIndex)
 
   def size: Int = adjectiveArray.length*animalCount
 

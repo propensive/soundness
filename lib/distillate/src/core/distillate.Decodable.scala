@@ -32,11 +32,16 @@
                                                                                                   */
 package distillate
 
+import scala.reflect
+
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import digression.*
 import inimitable.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
 

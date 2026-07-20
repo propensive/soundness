@@ -32,6 +32,8 @@
                                                                                                   */
 package adversaria
 
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import anticipation.*
@@ -47,4 +49,4 @@ trait Dereferenceable extends Typeclass, Resultant:
   def values(entity: Self): Iterable[Result] = members(entity).values
 
   def members(entity: Self): Map[Text, Result] =
-    names(entity).map { member => member -> select(entity, member) }.to(Map)
+    Map.from(names(entity).stdlib.map { member => member -> select(entity, member) })

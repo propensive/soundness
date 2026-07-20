@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -57,7 +59,11 @@ private[facsimile] object Xref:
   private def strict(source: ByteSource): Xref raises PdfError =
     val head = startxref(source)
 
-    def recur(offset: Long, entries: Map[Int, Entry], trailer: Map[Text, Cos], visited: Set[Long])
+    def recur
+      ( offset:  Long,
+        entries: Map[Int, Entry],
+        trailer: Map[Text, Cos],
+        visited: scala.collection.immutable.Set[Long] )
     :   Xref =
 
       if visited.contains(offset) || offset < 0 || offset >= source.size
@@ -73,16 +79,17 @@ private[facsimile] object Xref:
         hybrid =>
           val (hybridEntries, _) = stream(source, hybrid)
 
-          hybridEntries ++ classicEntries.filter: (number, entry) =>
-            entry != Entry.Free || !hybridEntries.contains(number)
+          Map.of:
+            hybridEntries.stdlib ++ classicEntries.stdlib.filter: (number, entry) =>
+              entry != Entry.Free || !hybridEntries.stdlib.contains(number)
 
-      val mergedEntries = sectionEntries ++ entries
-      val mergedTrailer = sectionTrailer ++ trailer
+      val mergedEntries = Map.of(sectionEntries.stdlib ++ entries.stdlib)
+      val mergedTrailer = Map.of(sectionTrailer.stdlib ++ trailer.stdlib)
 
       sectionTrailer.at(t"Prev").let(_.long).lay(Xref(mergedEntries, mergedTrailer, head)): previous =>
         recur(previous, mergedEntries, mergedTrailer, visited + offset)
 
-    recur(head, Map(), Map(), Set())
+    recur(head, Map(), Map(), scala.collection.immutable.Set())
 
   // Recovers a cross-reference table from a damaged file by scanning for `N G obj` markers,
   // the latest offset of each object number winning (an incremental update's newer copy
@@ -91,7 +98,7 @@ private[facsimile] object Xref:
   // the catalog among the recovered objects.
   private[facsimile] def rebuild(source: ByteSource): Xref raises PdfError =
     var entries = Map[Int, Entry]()
-    val objectStreams = List.newBuilder[Int]
+    val objectStreams = scala.collection.immutable.List.newBuilder[Int]
     val size = source.size
     val chunkSize = 65536
     val overlap = 32 // long enough to hold "NNNNNN GGGGG obj" split across a chunk boundary
@@ -120,7 +127,7 @@ private[facsimile] object Xref:
     // unless a direct copy of that member was already recovered (a later direct object wins).
     val direct = entries
 
-    direct.foreach: (container, entry) =>
+    direct.stdlib.each: (container, entry) =>
       entry match
         case Entry.Direct(offset, _) =>
           safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
@@ -128,7 +135,7 @@ private[facsimile] object Xref:
               case body @ Cos.Body(dictionary, _)
               if dictionary.at(t"Type").let(_.name) == t"ObjStm" =>
                 objStmMembers(source, body).each: number =>
-                  if !direct.contains(number)
+                  if !direct.defines(number)
                   then entries = entries.updated(number, Entry.Compressed(container, 0))
 
               case _ =>
@@ -187,18 +194,18 @@ private[facsimile] object Xref:
   // synthesized around the catalog found among the recovered objects.
   private def recoverTrailer(source: ByteSource, entries: Map[Int, Entry]): Map[Text, Cos] =
     lastTrailer(source).or:
-      entries.view.flatMap: (number, entry) =>
+      entries.stdlib.view.flatMap: (number, entry) =>
         entry match
           case Entry.Direct(offset, generation) =>
             safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
               content.dictionary.let(_.at(t"Type")).let(_.name) match
-                case t"Catalog" => List(number -> generation)
-                case _          => List()
+                case t"Catalog" => scala.collection.immutable.List(number -> generation)
+                case _          => scala.collection.immutable.List()
 
-            . or(List())
+            . or(scala.collection.immutable.List())
 
           case _ =>
-            List()
+            scala.collection.immutable.List()
 
       . headOption.map: (number, generation) =>
           Map(t"Root" -> Cos.Ref(number, generation))

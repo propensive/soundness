@@ -43,8 +43,9 @@ infix type by [refined <: { type Operand }, operand] = refined { type Operand = 
 // Original
 infix type from [refined <: { type Origin }, origin] = refined { type Origin = origin }
 
-// Formal
-infix type in [refined, form] = refined { type Form = form }
+// Formal. The `form` parameter admits any kind, so a `Form` member declared `<: AnyKind` (as in
+// `Convertible`) can be refined with an unapplied constructor: `self is Convertible in Map`.
+infix type in [refined, form <: AnyKind] = refined { type Form = form }
 
 // Resultant
 infix type to [refined <: { type Result }, result] = refined { type Result = result }

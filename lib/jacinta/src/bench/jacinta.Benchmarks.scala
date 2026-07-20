@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import scala.sys
+
 import scala.quoted.*
 
 import ambience.*, environments.javaEnvironment, systems.javaSystem
@@ -105,8 +107,8 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // parse tokens straight into the records with `Parsable`; or use
   // Jsoniter's macro-generated direct codec (the state of the art for
   // direct-to-case-class parsing on the JVM).
-  def decodeUsersAst(): BenchUsers = LazyList(jsonBytes4).read[Json].as[BenchUsers]
-  def decodeUsersDirect(): BenchUsers = LazyList(jsonBytes4).read[BenchUsers in Json]
+  def decodeUsersAst(): BenchUsers = Progression(jsonBytes4).read[Json].as[BenchUsers]
+  def decodeUsersDirect(): BenchUsers = Progression(jsonBytes4).read[BenchUsers in Json]
   def decodeUsersDirectData(): BenchUsers = jsonBytes4.read[BenchUsers in Json]
 
   // A hand-written parser over the public reader API: the "ceiling" for

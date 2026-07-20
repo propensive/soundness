@@ -81,13 +81,13 @@ object internal extends Hellenism2:
     // `into opaque type Text` literal is rechecked into a spurious `Text^…` (which fails); building
     // the `Text`s at runtime from lifted `String`s keeps the opaque out of the rechecked tree.
     val rootString: String = path.root.s
-    val descentStrings: List[String] = path.descent.map(_.s).to(List)
+    val descentStrings = path.descent.map(_.s).toList
 
     val resource =
       ' {
           Resource:
             Path[Classpath, Classpath.type, Tuple]
-              ( ${Expr(rootString)}.tt, ${Expr(descentStrings)}.map(_.tt) )
+              ( ${Expr(rootString)}.tt, List.of(${Expr(descentStrings)}.map(_.tt)) )
         }
 
     val locus = ConstantType(StringConstant(name))

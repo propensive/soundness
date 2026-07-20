@@ -120,5 +120,5 @@ object Tests extends Suite(m"Adversaria tests"):
     . assert(_ == Map(t"foo" -> 42, t"baz" -> 12))
 
     test(m"Get all members of a particular type"):
-      Example1.membersOfType[Int].to(Set)
+      Example1.membersOfType[Int].pipe(Set.from(_))
     . assert(_ == Set(12, 42))

@@ -32,6 +32,9 @@
                                                                                                   */
 package acyclicity
 
+// Deliberate stdlib opt-out, as in `Dag`.
+import scala.collection.immutable.{Map, Set}
+
 import scala.collection.mutable as scm
 
 

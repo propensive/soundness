@@ -32,6 +32,8 @@
                                                                                                   */
 package denominative
 
+import scala.collection.immutable.IndexedSeq
+
 import soundness.*
 
 object Tests extends Suite(m"Denominative Tests"):
@@ -302,39 +304,43 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == 6)
 
     suite(m"Countable tests"):
+      // `List`'s `Countable` (hence `gamut`) is O(n), so it is gated behind `Trek`.
       test(m"a list's gamut spans all its elements"):
-        List(1, 2, 3).gamut.size
+        val list = List(1, 2, 3)
+        trek(list.gamut.size)
       . assert(_ == 3)
 
       test(m"a list's gamut starts at Prim"):
-        List(1, 2, 3).gamut.start
+        val list = List(1, 2, 3)
+        trek(list.gamut.start)
       . assert(_ == Prim)
 
       test(m"a list's gamut ends at its last ordinal"):
-        List(1, 2, 3).gamut.end
+        val list = List(1, 2, 3)
+        trek(list.gamut.end)
       . assert(_ == Ter)
 
+      // `nil` is O(1) and ungated (from `Populable.list`), so it needs no `Trek`.
       test(m"an empty list is nil"):
-        List[Int]().nil
+        val list = List[Int]()
+        list.nil
       . assert(identity(_))
 
       test(m"a non-empty list is not nil"):
-        List(1).nil
+        val list = List(1)
+        list.nil
       . assert(_ == false)
 
       test(m"a set's gamut spans all its elements"):
-        Set(1, 2, 3, 4).gamut.size
+        // Bound to a `val` first: the inline `gamut` proxy otherwise dealiases the opaque `Set`.
+        val set = Set(1, 2, 3, 4)
+        set.gamut.size
       . assert(_ == 4)
 
       test(m"an indexed sequence's gamut spans all its elements"):
         val sequence: IndexedSeq[Int] = Series(1, 2)
         sequence.gamut.size
       . assert(_ == 2)
-
-      test(m"a general sequence's gamut spans all its elements"):
-        val sequence: Seq[Int] = Seq(1, 2, 3)
-        sequence.gamut.size
-      . assert(_ == 3)
 
       test(m"an immutable array's gamut spans all its elements"):
         IArray(1, 2, 3).gamut.size

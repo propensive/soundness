@@ -35,6 +35,9 @@ package aviation
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import proscenium.compat.*
+
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -134,7 +137,7 @@ object Vernacular:
       t"$count ${if count == 1 then word(unit)(0) else word(unit)(1)}"
 
     def everyDuration(span: Timespan): Text =
-      val first = Vernacular.components(span).headOption.map(_(1)).getOrElse(TimeUnit.Days)
+      val first = Vernacular.components(span).stdlib.headOption.map(_(1)).getOrElse(TimeUnit.Days)
       t"${article(first)} ${conjoin(durations(span))}"
 
     def everyUnit(interval: Int, unit: TimeUnit): Text =
@@ -204,7 +207,7 @@ object Vernacular:
           t"noveno", t"décimo")
 
     private def ordinal(n: Int): Text =
-      if n >= 1 && n <= ordinalWords.length then ordinalWords(n - 1) else t"$n.º"
+      if n >= 1 && n <= ordinalWords.stdlib.length then ordinalWords.stdlib(n - 1) else t"$n.º"
 
     private def monthDay(n: Int): Text = if n == -1 then t"último día" else t"día $n"
 
@@ -255,7 +258,7 @@ trait Vernacular:
   protected final def conjoin(items: List[Text]): Text = items match
     case Nil        => t""
     case List(item) => item
-    case other      => t"${other.init.join(t", ")} $conjunction ${other.last}"
+    case other      => t"${List.of(other.stdlib.init).join(t", ")} $conjunction ${other.stdlib.last}"
 
   protected final def quantity(pair: (Long, TimeUnit)): Text = units(pair(0).abs, pair(1))
   protected final def durations(span: Timespan): List[Text] = Vernacular.components(span).map(quantity)
@@ -268,7 +271,7 @@ trait Vernacular:
 
     case parts =>
       val body = conjoin(parts.map(quantity))
-      if parts.head(0) < 0 then past(body) else future(body)
+      if parts.stdlib.head(0) < 0 then past(body) else future(body)
 
   final def recurrence(period: Timespan, repetitions: Optional[Int], start: Text): Text =
     t"${everyDuration(period)}${repetitions.lay(t"")(times)} ${from(start)}"
@@ -291,7 +294,10 @@ trait Vernacular:
       if rule.bySetPos.isEmpty then Unset else takingPositions(rule.bySetPos)
 
     val clauses =
-      List(cadence) ++ onClause.lay(Nil)(List(_)) ++ monthClause.lay(Nil)(List(_))
-        ++ setPosClause.lay(Nil)(List(_))
+      List.of:
+        scala.collection.immutable.List(cadence)
+        ++ onClause.lay(scala.collection.immutable.Nil)(scala.collection.immutable.List(_))
+        ++ monthClause.lay(scala.collection.immutable.Nil)(scala.collection.immutable.List(_))
+        ++ setPosClause.lay(scala.collection.immutable.Nil)(scala.collection.immutable.List(_))
 
     t"${clauses.join(t" ")}${rule.count.lay(t"")(times)}"

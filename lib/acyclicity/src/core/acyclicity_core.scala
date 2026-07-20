@@ -32,6 +32,9 @@
                                                                                                   */
 package acyclicity
 
+// Deliberate stdlib opt-out, as in `Dag`.
+import scala.collection.immutable.{Map, Set}
+
 import anticipation.*
 import denominative.*
 import rudiments.*
@@ -50,7 +53,7 @@ extension [node](start: node)
     @tailrec
     def recur(map: Map[node, Set[node]], todo: Set[node], done: Set[node]): Dag[node] =
 
-      if todo.nil then new Dag(map) else
+      if todo.isEmpty then new Dag(map) else
         val key = todo.head
 
         dependencies(key).pipe: children =>

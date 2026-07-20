@@ -126,21 +126,33 @@ object Tests extends Suite(m"Revolution Tests"):
         . assert(_.absent)
 
     suite(m"Semantic version precedence"):
-      val ordered =
-        List
-          ( v"1.0.0-alpha",
-            v"1.0.0-alpha.1",
-            v"1.0.0-alpha.beta",
-            v"1.0.0-beta",
-            v"1.0.0-beta.2",
-            v"1.0.0-beta.11",
-            v"1.0.0-rc.1",
-            v"1.0.0" )
+      test(m"Check that 1.0.0-alpha < 1.0.0-alpha.1"):
+        v"1.0.0-alpha" < v"1.0.0-alpha.1"
+      . assert(identity(_))
 
-      for List(left, right) <- ordered.sliding(2) do
-        test(m"Check that $left < $right"):
-          left < right
-        . assert(identity(_))
+      test(m"Check that 1.0.0-alpha.1 < 1.0.0-alpha.beta"):
+        v"1.0.0-alpha.1" < v"1.0.0-alpha.beta"
+      . assert(identity(_))
+
+      test(m"Check that 1.0.0-alpha.beta < 1.0.0-beta"):
+        v"1.0.0-alpha.beta" < v"1.0.0-beta"
+      . assert(identity(_))
+
+      test(m"Check that 1.0.0-beta < 1.0.0-beta.2"):
+        v"1.0.0-beta" < v"1.0.0-beta.2"
+      . assert(identity(_))
+
+      test(m"Check that 1.0.0-beta.2 < 1.0.0-beta.11"):
+        v"1.0.0-beta.2" < v"1.0.0-beta.11"
+      . assert(identity(_))
+
+      test(m"Check that 1.0.0-beta.11 < 1.0.0-rc.1"):
+        v"1.0.0-beta.11" < v"1.0.0-rc.1"
+      . assert(identity(_))
+
+      test(m"Check that 1.0.0-rc.1 < 1.0.0"):
+        v"1.0.0-rc.1" < v"1.0.0"
+      . assert(identity(_))
 
       test(m"Equal versions are not less than each other"):
         v"1.0.0" < v"1.0.0"

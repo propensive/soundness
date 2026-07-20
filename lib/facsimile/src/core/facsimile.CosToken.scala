@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 
 // The lexical vocabulary of ISO 32000-2 §7.2. Literal and hex strings both land in `Chars`,

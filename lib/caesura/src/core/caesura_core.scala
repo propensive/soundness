@@ -32,6 +32,8 @@
                                                                                                   */
 package caesura
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -59,8 +61,8 @@ package dsvRedesignations:
 
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
-extension [encodable: Encodable in Dsv](value: Seq[encodable])
-  def dsv: Sheet = Sheet(IArray.from(value.map(encodable.encode(_))))
+extension [encodable: Encodable in Dsv](value: List[encodable])
+  def dsv: Sheet = Sheet(IArray.from(value.stdlib.map(encodable.encode(_))))
 
 extension (consume stream: (Stream[Text] over Credit)^)
   // The rows of a character stream of DSV data, as a single-consumer

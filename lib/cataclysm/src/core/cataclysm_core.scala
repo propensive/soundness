@@ -32,12 +32,15 @@
                                                                                                   */
 package cataclysm
 
+import proscenium.compat.*
+
 import anticipation.*
 import contextual.*
 import contingency.*
 import fulminate.*
 import nomenclature.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 
@@ -62,24 +65,28 @@ given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Te
 // nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
 extension (css: Css)
   def classes: Set[Name[CssClass]] =
-    simples(css.rules).collect { case Simple.Class(name) => name }.to(Set)
+    Set.from(simples(css.rules).stdlib.collect { case Simple.Class(name) => name })
 
-  def ids: Set[Name[DomId]] = simples(css.rules).collect { case Simple.Id(name) => name }.to(Set)
+  def ids: Set[Name[DomId]] =
+    Set.from(simples(css.rules).stdlib.collect { case Simple.Id(name) => name })
 
 private def simples(nodes: List[Css.Node]): List[Simple] =
-  nodes.flatMap:
-    case Css.Node.Rule(selector, body) => listSimples(selector) ++ simples(body)
+  nodes.bind:
+    case Css.Node.Rule(selector, body) =>
+      List.of(listSimples(selector).stdlib ++ simples(body).stdlib)
     case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
     case Css.Node.Declaration(_, _)    => Nil
 
 private def listSimples(list: SelectorList): List[Simple] =
-  list.selectors.flatMap: selector =>
-    (selector.head :: selector.rest.map(_(1))).flatMap(compoundSimples)
+  list.selectors.bind: selector =>
+    ((selector.head :: selector.rest.map(_(1))): List[Compound]).bind(compoundSimples)
 
 private def compoundSimples(compound: Compound): List[Simple] =
-  compound.parts.flatMap:
-    case simple@ Simple.PseudoClass(_, argument)   => simple :: argumentSimples(argument)
-    case simple@ Simple.PseudoElement(_, argument) => simple :: argumentSimples(argument)
+  compound.parts.bind:
+    case simple@ Simple.PseudoClass(_, argument)   =>
+      (simple :: argumentSimples(argument)): List[Simple]
+    case simple@ Simple.PseudoElement(_, argument) =>
+      (simple :: argumentSimples(argument)): List[Simple]
     case simple                                    => List(simple)
 
 private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =

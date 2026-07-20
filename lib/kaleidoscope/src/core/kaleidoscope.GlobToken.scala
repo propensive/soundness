@@ -32,8 +32,10 @@
                                                                                                   */
 package kaleidoscope
 
+import proscenium.compat.*
+
 object GlobToken:
-  private val needsEscaping: Set[Char] = "\\.[]{}()<>*+-=!?^$|".iterator.toSet
+  private val needsEscaping: Set[Char] = Set.from("\\.[]{}()<>*+-=!?^$|".iterator)
 
 enum GlobToken:
   case Star, Globstar, OneChar

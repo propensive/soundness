@@ -32,7 +32,7 @@
                                                                                                   */
 package ethereal
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import exoskeleton.*

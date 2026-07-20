@@ -32,6 +32,8 @@
                                                                                                   */
 package quantitative
 
+import scala.caps
+
 trait Dimension extends caps.Pure
 
 sealed trait Distance extends Dimension

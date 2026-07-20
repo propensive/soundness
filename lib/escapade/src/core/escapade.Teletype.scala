@@ -32,7 +32,9 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import scala.util.*
 
@@ -266,8 +268,9 @@ case class Teletype
       newStyles(runs) = styles(n)
       (IArray.unsafeFromArray(newStyles), IArray.unsafeFromArray(newBoundaries))
 
-  def explicit: Text = render(termcapDefinitions.xtermTrueColorTermcap).bind: char =>
-    if char.toInt == 27 then t"\\e" else char.show
+  def explicit: Text = Text:
+    render(termcapDefinitions.xtermTrueColorTermcap).s.flatMap: char =>
+      if char.toInt == 27 then "\\e" else char.toString
 
   @targetName("add")
   def append(text: Text): Teletype =
@@ -325,9 +328,10 @@ case class Teletype
       val combinedPlain = plain+that.plain
 
       val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
-        hyperlinks ++ that.hyperlinks.map: (k, v) => (k + aN) -> v
+        Map.of:
+          hyperlinks.stdlib ++ that.hyperlinks.stdlib.map: (k, v) => (k + aN) -> v
 
-      val shiftedInsertions = if that.insertions.nil then insertions else
+      val shiftedInsertions = if that.insertions.isEmpty then insertions else
         insertions ++ that.insertions.map: (k, v) => (k + aN) -> v
 
       if isDense && that.isDense then
@@ -388,7 +392,7 @@ case class Teletype
       if keepLength <= 0 then Teletype.empty
       else if n <= 0 then this
       else
-        val newHyperlinks = hyperlinks.collect { case (k, v) if k >= n => (k - n) -> v }
+        val newHyperlinks = Map.from(hyperlinks.stdlib.collect { case (k, v) if k >= n => (k - n) -> v })
 
         val newInsertions =
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
@@ -448,7 +452,7 @@ case class Teletype
       if n <= 0 then Teletype.empty
       else if n >= plain.length then this
       else
-        val newHyperlinks = hyperlinks.filter: (k, _) => k < n
+        val newHyperlinks = Map.of(hyperlinks.stdlib.filter { (k, _) => k < n })
         val newInsertions = insertions.rangeUntil(n)
 
         if isDense then
@@ -510,7 +514,7 @@ case class Teletype
         if from < to then
           val ins = insertions.range(from, to)
 
-          if ins.nil then buffer.add(plain.s.substring(from, to).nn.tt)
+          if ins.isEmpty then buffer.add(plain.s.substring(from, to).nn.tt)
           else
             var p = from
             // An explicit iterator loop rather than `.each`: under capture checking the

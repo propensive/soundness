@@ -34,6 +34,8 @@ package xylophone
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import threading.virtualThreading
@@ -856,7 +858,7 @@ object Tests extends Suite(m"Xylophone tests"):
       test(m"emit indents a document and adds the header and trailing newlines"):
         import formatting.indentedXmlFormatting
         val document = Document[Xml](elem(t"a", elem(t"b")), Header(t"1.0", Unset, Unset))
-        supervise(Xml.emit(document).to(List).join)
+        supervise(scala.collection.immutable.List.from(Xml.emit(document)).join)
       . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
 
 

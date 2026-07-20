@@ -32,6 +32,11 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable.Vector
+
+import scala.{annotation, caps}
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
 
@@ -132,8 +137,8 @@ object stagedInternal:
 
   private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
 
-  private val primitiveClasses: Map[String, Class[?]] =
-    Map
+  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
+    scala.collection.immutable.Map
       ( "scala.Int"     -> classOf[Int],
         "scala.Long"    -> classOf[Long],
         "scala.Double"  -> classOf[Double],
@@ -313,6 +318,27 @@ object stagedInternal:
     else if tpe =:= TypeRepr.of[String] then Some(Inlinable.string)
     else None
 
+  // The opaque prelude `List`/`Set`/`Series` map to their underlying stdlib
+  // collection (used to summon a `Factory`, since the opaque companion exposes
+  // only a `Conversion`, not a direct instance).
+  private[stratiform] def aliasCollectionUnderlying(using Quotes)
+    (tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+    import quotes.reflect.*
+    val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+
+    tpe.dealias match
+      case AppliedType(constructor, args) if constructor.typeSymbol == listSym =>
+        Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(args.last))
+      case AppliedType(constructor, args) if constructor.typeSymbol == setSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(args.last))
+      case AppliedType(constructor, args) if constructor.typeSymbol == seriesSym =>
+        Some(TypeRepr.of[Vector].appliedTo(args.last))
+      case _ =>
+        None
+
   private def structuralFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
 
@@ -322,7 +348,8 @@ object stagedInternal:
     // repeated field of tuples — it stays on the runtime seam.
     val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
 
-    if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+    if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || aliasCollectionUnderlying(tpe).isDefined)
+    then tpe match
       case AppliedType(_, arguments) =>
         arguments.last.asType match
           case '[element] =>
@@ -431,18 +458,23 @@ object stagedInternal:
 
     import quotes.reflect.*
 
+    // The opaque prelude collections have no direct `Factory`, so build at the
+    // underlying stdlib type and cast the result (a no-op at erasure).
+    val factoryType =
+      aliasCollectionUnderlying(TypeRepr.of[collection]).getOrElse(TypeRepr.of[collection])
+
     TypeRepr.of[collection].dealias match
       case AppliedType(_, arguments) =>
-        arguments.last.asType match
-          case '[element] =>
+        (arguments.last.asType, factoryType.asType) match
+          case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
             '{
               def parseElement(): element = ${ instance.parse(reader, indent) }
-              val factory = infer[scala.collection.Factory[element, collection]]
+              val factory = infer[scala.collection.Factory[element, stdlib]]
               val builder = factory.newBuilder
               builder += parseElement()
-              builder.result()
+              builder.result().asInstanceOf[collection]
             }
 
       case _ =>
@@ -599,13 +631,23 @@ object stagedInternal:
                             TypeRepr.of[scm.Builder[element, fieldType]],
                             Flags.EmptyFlags, Symbol.noSymbol )
 
-                      val builderDef =
-                        ValDef
-                          ( builderSymbol,
-                            Some:
+                      // Opaque alias fields have no direct `Factory`: summon at the
+                      // underlying stdlib type and cast (a no-op at erasure).
+                      val builderRhs: Expr[Any] =
+                        aliasCollectionUnderlying(fieldTypes(index)) match
+                          case Some(underlying) => underlying.asType match
+                            case '[stdlib] =>
                               '{
-                                infer[scala.collection.Factory[element, fieldType]].newBuilder
-                              }.asTerm )
+                                infer[scala.collection.Factory[element, stdlib]].newBuilder
+                                . asInstanceOf[scm.Builder[element, fieldType]]
+                              }
+                            case _ => report.errorAndAbort("stratiform: unreachable")
+                          case None =>
+                            '{
+                              infer[scala.collection.Factory[element, fieldType]].newBuilder
+                            }
+
+                      val builderDef = ValDef(builderSymbol, Some(builderRhs.asTerm))
 
                       val elementSymbol =
                         Symbol.newMethod
@@ -891,8 +933,8 @@ object stagedInternal:
                         Tel.Parsable.gathered[fieldType]
                           ( $instanceRef,
                             $bufferRef match
-                              case null   => Nil
-                              case buffer => buffer.toList )
+                              case null   => proscenium.Nil
+                              case buffer => proscenium.List.of(buffer.toList) )
                     }.asTerm )
 
               If

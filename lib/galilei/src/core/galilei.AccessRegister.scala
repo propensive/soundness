@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import proscenium.compat.*
+
 import anticipation.*
 import aperture.*
 import gossamer.*
@@ -59,7 +61,7 @@ object AccessRegister:
   def acquire(real: Text, atoms: Set[Mode]): Boolean = synchronized:
     val real2 = normalize(real)
 
-    val conflict = registrations.exists: registration =>
+    val conflict = registrations.stdlib.exists: registration =>
       overlapping(real2, registration.real)
         && (atoms.contains(Exclusive) || registration.atoms.contains(Exclusive))
 

@@ -34,6 +34,8 @@ package ypsiloid
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
@@ -84,7 +86,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
 
       test(m"Pointers identify the missing fields"):
         val yaml = t"name: Alice\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to(Set)
+        validateYaml(yaml)(_.as[APerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
@@ -106,7 +108,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
 
       test(m"Pointers identify the wrong-type fields"):
         val yaml = t"name: 42\nage: thirty\nemail: x@y\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to(Set)
+        validateYaml(yaml)(_.as[APerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/name", "#/age"))
 
       test(m"Wrong-type errors have reason NotType"):
@@ -120,7 +122,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
     suite(m"Missing + wrong-type mixed"):
       test(m"One wrong-type plus two missing: three errors at the right pointers"):
         val yaml = t"name: 42\n".read[Yaml]
-        validateYaml(yaml)(_.as[APerson]).items.map(_(0).s).to(Set)
+        validateYaml(yaml)(_.as[APerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/name", "#/age", "#/email"))
 
     suite(m"Nested case-class errors"):
@@ -130,7 +132,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
         // which builds against an empty mapping and lets each sub-
         // field raise its own missing-field error.
         val yaml = t"company: Acme\n".read[Yaml]
-        validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to(Set)
+        validateYaml(yaml)(_.as[AContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert: paths =>
           paths == Set
            ( "#/person/name",
@@ -141,5 +143,5 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
         val yaml = t"person:\n  name: D\ncompany: Acme\n".read[Yaml]
         // person is present but missing `age` and `email`; company is
         // present.
-        validateYaml(yaml)(_.as[AContact]).items.map(_(0).s).to(Set)
+        validateYaml(yaml)(_.as[AContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/person/age", "#/person/email"))

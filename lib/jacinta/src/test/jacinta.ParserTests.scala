@@ -32,7 +32,11 @@
                                                                                                   */
 package jacinta
 
+import scala.math
+
 import soundness.*
+
+import proscenium.compat.*
 
 import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
@@ -78,15 +82,15 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         . filter(_.name.starts(t"y_"))
         . map: file =>
             (file.name, file.read[Data])
-        . to(List)
+        . stdlib.to(List)
 
     val negativeCases: List[(Text, Data)] =
       tests.children
         . filter(_.name.starts(t"n_"))
-        . filter { file => !deeplyNested.contains(file.name) }
+        . filter { file => !deeplyNested.has(file.name) }
         . map: file =>
             (file.name, file.read[Data])
-        . to(List)
+        . stdlib.to(List)
 
     suite(m"Positive tests"):
       positiveCases.each: (name, data) =>
@@ -197,7 +201,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         sizes.iterator.flatMap: size =>
           if offset >= bytes.length then None else
             val end = math.min(offset + size, bytes.length)
-            val slice: Data = IArray.from(bytes.slice(offset, end))
+            val slice: Data = bytes.slice(offset, end).immutable(using Unsafe)
             offset = end
             Some(slice)
 
@@ -234,12 +238,12 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == Json.Ast(42L))
 
     suite(m"Hole-mode parsing"):
-      def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+      def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
 
       def shape(node: Any): Any = node.asMatchable match
         case nums: Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
-          nums.toList.map: d =>
+          scala.collection.immutable.ArraySeq.unsafeWrapArray(nums).to(List).map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d
@@ -293,7 +297,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           case ParseError(_, _, _) => true
 
     suite(m"Position ranges"):
-      def asBytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+      def asBytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
       def position(input: Text): Json.Ast.Position =
         capture[ParseError](Json.Ast.parse(asBytes(input)))
         . position.asInstanceOf[Json.Ast.Position]
@@ -310,7 +314,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == (1: Int))
 
     suite(m"Number-only arrays"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe))
 
       test(m"Pure integer array uses the unboxed small-BCD Array[Int] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
@@ -397,7 +401,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(identity)
 
     suite(m"Boxed-array storage"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe))
 
       test(m"Empty array round-trips via the printer"):
         given Json.Formatting = Json.Formatting(Unset, false)

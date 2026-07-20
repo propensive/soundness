@@ -32,6 +32,11 @@
                                                                                                   */
 package quantitative
 
+import scala.{caps, compiletime, math}
+
+// Deliberate stdlib opt-out: macro-internal unit algebra.
+import scala.collection.immutable.{List, Map, Nil, ::}
+
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -77,20 +82,20 @@ trait protointernal extends caps.Pure:
         case AnnotatedType(underlying, _) => strip(underlying)
         case other                        => other
 
-      def recur(repr: TypeRepr): Map[DimensionRef, UnitPower] =
+      def recur(repr: TypeRepr): scala.collection.immutable.Map[DimensionRef, UnitPower] =
         strip(repr).asMatchable match
           case AndType(left, right) => recur(left) ++ recur(right)
 
           case AppliedType(_, List(_)) =>
             val unitPower = readUnitPower(repr)
-            Map(unitPower.ref.dimensionRef -> unitPower)
+            scala.collection.immutable.Map(unitPower.ref.dimensionRef -> unitPower)
 
           case other =>
-            Map()
+            scala.collection.immutable.Map()
 
       new UnitsMap(recur(quotes.reflect.TypeRepr.of[measure]))
 
-  case class Dimensionality(map: Map[DimensionRef, Int]):
+  case class Dimensionality(map: scala.collection.immutable.Map[DimensionRef, Int]):
     def quantityName(using Quotes): Option[String] =
       import quotes.reflect.*
 
@@ -126,7 +131,7 @@ trait protointernal extends caps.Pure:
             case unit@TypeRef(_, _) =>
               UnitPower(UnitRef(unit.asType, unit.show), power)
 
-  case class UnitsMap(map: Map[DimensionRef, UnitPower]):
+  case class UnitsMap(map: scala.collection.immutable.Map[DimensionRef, UnitPower]):
     def repr(using Quotes): Option[quotes.reflect.TypeRepr] = apply(map.values.to(List))
 
     def inverseMap: Map[DimensionRef, UnitPower] =
@@ -139,7 +144,7 @@ trait protointernal extends caps.Pure:
     @targetName("multiply")
     infix def * (that: UnitsMap): UnitsMap =
       new UnitsMap
-        ( (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+        ( (dimensions ++ that.dimensions).toSet.to(List).map: dim =>
             val dimUnit = unit(dim).orElse(that.unit(dim)).get
             dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
 
@@ -148,7 +153,7 @@ trait protointernal extends caps.Pure:
     @targetName("divide")
     infix def / (that: UnitsMap): UnitsMap =
       new UnitsMap
-        ( (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
+        ( (dimensions ++ that.dimensions).toSet.to(List).map: dim =>
             val dimUnit = unit(dim).orElse(that.unit(dim)).get
             dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
 
@@ -333,8 +338,9 @@ trait protointernal extends caps.Pure:
     recur(units.dimensions, units, init)
 
 
-  def collectUnits[units <: Measure: Type]: Macro[Map[Text, Int]] =
-    def recur(expr: Expr[Map[Text, Int]], todo: List[UnitPower]): Expr[Map[Text, Int]] =
+  def collectUnits[units <: Measure: Type]: Macro[proscenium.Map[Text, Int]] =
+    def recur(expr: Expr[proscenium.Map[Text, Int]], todo: List[UnitPower])
+    :   Expr[proscenium.Map[Text, Int]] =
       todo match
         case Nil => expr
 
@@ -342,14 +348,14 @@ trait protointernal extends caps.Pure:
           unit.power(1).asType.absolve match
             case '[ref] =>
               val designation = Expr.summon[Designation[ref]].get
-              recur('{$expr.updated($designation.text, ${Expr(power)})}, todo2)
+              recur('{proscenium.Map.of($expr.stdlib.updated($designation.text, ${Expr(power)}))}, todo2)
 
     Expr.summon[Redesignation[units]].absolve match
       case Some('{$redesignation: Redesignation[?]}) =>
-        '{Map[Text, Int](($redesignation.name -> 1))}
+        '{proscenium.Map[Text, Int](($redesignation.name -> 1))}
 
       case None =>
-        recur('{Map[Text, Int]()}, UnitsMap[units].map.values.to(List))
+        recur('{proscenium.Map[Text, Int]()}, UnitsMap[units].map.values.to(List))
 
 
   def multiply[left <: Measure: Type, right <: Measure: Type]
@@ -468,7 +474,7 @@ trait protointernal extends caps.Pure:
   def divTypeclass2[right <: Measure: Type, divisor <: Quantity[right]: Type]
   :   Macro[Double is Divisible by divisor] =
 
-    val left = UnitsMap(Map())
+    val left = UnitsMap(scala.collection.immutable.Map())
     val right = UnitsMap[right]
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})
@@ -490,7 +496,7 @@ trait protointernal extends caps.Pure:
   def divTypeclass3[right <: Measure: Type, divisor <: Quantity[right]: Type]
   :   Macro[Int is Divisible by divisor] =
 
-    val left = UnitsMap(Map())
+    val left = UnitsMap(scala.collection.immutable.Map())
     val right = UnitsMap[right]
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})

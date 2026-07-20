@@ -48,7 +48,7 @@ abstract class References():
   type Transport <: Object
 
   private var ref: Optional[Expr[Array[Object]]] = Unset
-  private var allocations: List[Transport] = List()
+  private var allocations: scala.collection.immutable.List[Transport] = scala.collection.immutable.Nil
 
   def update(expr: Expr[Array[Object]]): Unit = ref = expr
   def array: Expr[Array[Object]] = ref.vouch

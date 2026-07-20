@@ -66,7 +66,7 @@ private[bitumen] object TarFilesystem:
     path.entry() match
       case galilei.File =>
         val bytes: Array[Byte] = jnf.Files.readAllBytes(path.javaPath).nn
-        val data: LazyList[Data] = LazyList(bytes.immutable(using Unsafe))
+        val data: Progression[Data] = Progression(bytes.immutable(using Unsafe))
 
         Tar.Entry.File(ref, mode, user, group, mtime, data)
 
@@ -104,7 +104,7 @@ private[bitumen] object TarFilesystem:
       case f: Tar.Entry.File =>
         val path = absolutize(root, f.path)
         jnf.Files.createDirectories(path.javaPath.getParent)
-        val bytes: Array[Byte] = f.data.flatMap(_.iterator).toArray
+        val bytes: Array[Byte] = f.data.stdlib.flatMap(_.iterator).toArray
         jnf.Files.write(path.javaPath, bytes)
         applyPermissions(path.javaPath, f.mode)
         applyTimestamps(path.javaPath, f.mtime)

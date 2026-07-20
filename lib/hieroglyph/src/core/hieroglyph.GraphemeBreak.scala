@@ -32,8 +32,12 @@
                                                                                                   */
 package hieroglyph
 
+
+import scala.caps
+
 import java.io as ji
 
+import scala.collection.immutable as sci
 import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
@@ -64,7 +68,7 @@ object GraphemeBreak:
 
   private def parseEntries
     ( in: ji.InputStream, classify: Text => Optional[Int] )
-  :   List[Entry] =
+  :   sci.List[Entry] =
 
     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
@@ -102,7 +106,7 @@ object GraphemeBreak:
     val Extend: Int = 1
     val Linker: Int = 2
 
-  private def parseIncbEntries(in: ji.InputStream): List[Entry] =
+  private def parseIncbEntries(in: ji.InputStream): sci.List[Entry] =
     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
@@ -125,7 +129,7 @@ object GraphemeBreak:
 
   private case class Tables(starts: IArray[Int], ends: IArray[Int], props: IArray[Byte])
 
-  private def buildTables(entries: List[Entry]): Tables =
+  private def buildTables(entries: sci.List[Entry]): Tables =
     val sorted = entries.sortBy(_.start).toArray
     val count = sorted.length
     val starts = new Array[Int](count)

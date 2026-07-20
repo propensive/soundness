@@ -32,6 +32,8 @@
                                                                                                   */
 package cataclysm
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -58,12 +60,13 @@ object PropertyDef:
 
     val entries = cp"/cataclysm/properties.json".read[Json].as[Map[Text, Entry]]
 
-    entries.to(List).map: (name, entry) =>
-      PropertyDef(name, entry.syntax)
+    List.of:
+     entries.stdlib.toList.map: (name, entry) =>
+       PropertyDef(name, entry.syntax)
 
   // The same properties keyed by name in a `Dictionary` for fast lookup.
   lazy val all: Dictionary[PropertyDef] =
-    val pairs = list.map: property =>
+    val pairs = list.stdlib.map: property =>
       (property.name, property)
 
     Dictionary(pairs*)

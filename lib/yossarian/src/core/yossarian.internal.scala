@@ -32,6 +32,8 @@
                                                                                                   */
 package yossarian
 
+import scala.math
+
 import scala.reflect.*
 
 import anticipation.*

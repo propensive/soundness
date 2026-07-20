@@ -60,10 +60,10 @@ extends Figure:
     attrs += t"width" -> width.show
     attrs += t"height" -> height.show
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.stdlib.nonEmpty
+    then attrs += t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" ")
 
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
+    Element(t"rect", Attributes.from(Map.of(attrs.result())), IArray())
 
 case class Outline
   ( ops:        List[Stroke]       = Nil,
@@ -75,16 +75,16 @@ extends Figure:
   import Stroke.*
 
   def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
+    val d: Text = List.of(ops.stdlib.reverse.map(_.encode)).join(t" ")
     val attrs = SeqMap.newBuilder[Text, Text]
     attrs += t"d" -> d
     id.let: svgId => attrs += t"id" -> svgId.text
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.stdlib.nonEmpty
+    then attrs += t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" ")
 
     style.let: css => attrs += t"style" -> css.text
-    Element(t"path", Attributes.from(attrs.result()), IArray())
+    Element(t"path", Attributes.from(Map.of(attrs.result())), IArray())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
@@ -137,7 +137,7 @@ extends Figure:
       attrs += t"rx" -> xRadius.show
       attrs += t"ry" -> yRadius.show
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.stdlib.nonEmpty
+    then attrs += t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" ")
 
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+    Element(if circle then t"circle" else t"ellipse", Attributes.from(Map.of(attrs.result())), IArray())

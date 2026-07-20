@@ -46,7 +46,7 @@ object Watch:
   def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
   :   Watch raises WatchError =
 
-    val pathGroups: Map[jnf.Path, Iterable[Text -> Boolean]] =
+    val pathGroups: scala.collection.immutable.Map[jnf.Path, Iterable[Text -> Boolean]] =
       paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else
@@ -54,13 +54,13 @@ object Watch:
           val filename = javaPath.getFileName.nn.toString.tt
           (parent, (_: Text) == filename)
 
-      . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
+      . groupBy(_(0)).view.mapValues(_.map(_(1))).toMap
 
-    val directories: Map[jnf.Path, Text -> Boolean] =
+    val directories: Map[jnf.Path, Text -> Boolean] = Map.of:
       pathGroups.view.mapValues: predicates =>
         (value: Text) => predicates.exists(_(value))
 
-      . to(Map)
+      . toMap
 
     val spool: Relay[WatchEvent] = Relay()
 
@@ -82,7 +82,7 @@ object Watch:
 class Watch(spool: Relay[WatchEvent], registration: Watcher.Registration):
   // The legacy view of the event relay (the audited bridge): one lazy,
   // single-owner drain of the shared queue, as before.
-  def stream: LazyList[WatchEvent] = LazyList.from(spool.stream.records)
+  def stream: Progression[WatchEvent] = Progression.from(spool.stream.records)
 
   def unregister(): Unit =
     registration.cancel()

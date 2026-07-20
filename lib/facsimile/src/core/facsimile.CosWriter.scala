@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import hieroglyph.*
@@ -74,7 +76,7 @@ private[facsimile] object CosWriter:
       case Cos.Sequence(elements) =>
         builder += '['.toByte
 
-        elements.zipWithIndex.each: (element, index) =>
+        elements.stdlib.zipWithIndex.each: (element, index) =>
           if index > 0 then builder += ' '.toByte
           append(builder, element)
 
@@ -92,7 +94,7 @@ private[facsimile] object CosWriter:
 
     bytes(builder, "<<")
 
-    entries.each: (key, value) =>
+    entries.stdlib.each: (key, value) =>
       builder += ' '.toByte
       name(builder, key)
       builder += ' '.toByte

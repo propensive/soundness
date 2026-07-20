@@ -57,9 +57,9 @@ object Tests extends Suite(m"Ethereal Tests"):
       // over from an earlier run) never collide on process names, state
       // directories, or `pkill`/`killall` targets — a collision corrupts the
       // daemon handshake and makes these tests flaky under load.
-      val name:        Text = t"e${Uuid().text.cut(t"-").head}"
-      val upgradeName: Text = t"u${Uuid().text.cut(t"-").head}"
-      val selfuName:   Text = t"s${Uuid().text.cut(t"-").head}"
+      val name:        Text = t"e${Uuid().text.cut(t"-").stdlib.head}"
+      val upgradeName: Text = t"u${Uuid().text.cut(t"-").stdlib.head}"
+      val selfuName:   Text = t"s${Uuid().text.cut(t"-").stdlib.head}"
 
       safely(sh"pkill $name".exec[Exit]())
       snooze(0.1*Second)
@@ -477,7 +477,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"$tool".exec[Unit]()
               val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim
               val parent = sh"ps -p $jvmPid -o ppid=".exec[Text]().trim
-              sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").last
+              sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").stdlib.last
 
             . assert(_ == name)
 

@@ -32,6 +32,8 @@
                                                                                                   */
 package punctuation
 
+import scala.caps
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -73,7 +75,7 @@ private[punctuation] object Serializer:
     if !refs.nil then
       if writer.written && !writer.atLineStart then writer.newline()
 
-      refs.each: ref =>
+      refs.each: (ref: Markdown.LinkRef) =>
         writer.raw(t"[")
         writer.raw(escapeLinkLabel(ref.label))
         writer.raw(t"]: ")
@@ -276,7 +278,7 @@ private[punctuation] object Serializer:
 
   // Render the inline content of a heading to a fresh `Text`, applying first-character block-start
   // protection so a leading `#` etc. does not re-parse as a new block.
-  private def inlineLine(children: Seq[Prose]): Text =
+  private def inlineLine(children: List[Prose]): Text =
     val buf = StringBuilder()
     children.each(prose(buf, _))
     val out = buf.text
@@ -294,7 +296,7 @@ private[punctuation] object Serializer:
 
   // Render a sequence of blocks to a `Text` — the indented body of a block quote or list item,
   // which is then re-emitted with a line prefix.
-  private def render(nodes: Seq[Layout], width: Int): Text =
+  private def render(nodes: List[Layout], width: Int): Text =
     Producer.collect[Text](): producer =>
       val inner = Writer(producer, width)
       var first = true
@@ -308,7 +310,7 @@ private[punctuation] object Serializer:
 
   // Word-wrap a paragraph's inline content: textual nodes break at their spaces, inline constructs
   // are atomic. `protectFirst` backslash-escapes a leading block-start character.
-  private def flow(writer: Writer^, children: Seq[Prose], protectFirst: Boolean): Unit =
+  private def flow(writer: Writer^, children: List[Prose], protectFirst: Boolean): Unit =
     if protectFirst then writer.protectNext()
 
     children.each:
@@ -323,11 +325,11 @@ private[punctuation] object Serializer:
     case Layout.Heading(_, level, children*) =>
       writer.raw(t"#"*level)
       writer.raw(t" ")
-      writer.raw(inlineLine(children))
+      writer.raw(inlineLine(List.of(children.toList)))
       writer.newline()
 
     case Layout.Paragraph(_, children*) =>
-      flow(writer, children, protectFirst = true)
+      flow(writer, List.of(children.toList), protectFirst = true)
       writer.newline()
 
     case Layout.ThematicBreak(_) =>
@@ -337,7 +339,7 @@ private[punctuation] object Serializer:
     case Layout.CodeBlock(_, info, code) =>
       val fence = codeBlockFence(code)
       writer.raw(fence)
-      if !info.nil then writer.raw(info.map(_.s).mkString(" ").tt)
+      if !info.nil then writer.raw(info.stdlib.map(_.s).mkString(" ").tt)
       writer.newline()
       writer.raw(code)
       if !code.ends(t"\n") then writer.newline()
@@ -345,7 +347,7 @@ private[punctuation] object Serializer:
       writer.newline()
 
     case Layout.BlockQuote(_, children*) =>
-      trimNewline(render(children, writer.width)).cut(t"\n").each: line =>
+      trimNewline(render(List.of(children.toList), writer.width)).cut(t"\n").each: line =>
         if line.length == 0 then writer.raw(t">")
         else
           writer.raw(t"> ")

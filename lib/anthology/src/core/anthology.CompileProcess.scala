@@ -75,5 +75,5 @@ class CompileProcess():
 
   // `lazy val`s deliberately share ONE memoizing view per relay, so several
   // observers may traverse the same stream (the one Spool-era replay use).
-  lazy val progress: LazyList[CompileProgress] = LazyList.from(progressSpool.stream.records)
-  lazy val notices: LazyList[Notice] = LazyList.from(noticesSpool.stream.records)
+  lazy val progress: Progression[CompileProgress] = Progression.from(progressSpool.stream.records)
+  lazy val notices: Progression[Notice] = Progression.from(noticesSpool.stream.records)

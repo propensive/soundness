@@ -32,6 +32,8 @@
                                                                                                   */
 package scintillate
 
+import scala.caps
+
 import java.io as ji
 
 import com.sun.net.httpserver as csnh
@@ -74,12 +76,13 @@ object HttpConnection:
     val method = exchange.getRequestMethod.nn.show.as[Http.Method]
 
     val headers: List[Http.Header] =
-      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
-        pair.absolve match
-          case (key, values) => values.map: value =>
-            Http.Header(key, value.tt)
+      List.of:
+        exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.toList).flatMap: pair =>
+          pair.absolve match
+            case (key, values) => values.map: value =>
+              Http.Header(key, value.tt)
 
-      . to(List)
+        . toList
 
     val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 

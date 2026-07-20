@@ -32,6 +32,9 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -57,7 +60,7 @@ object Tarfile:
   given streamable: Tarfile is Streamable by Data over Credit = tarfile =>
     Stream(tarfile.blocks.iterator)
 
-  def read(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
+  def read(stream: Progression[Data]): Progression[Tar.Entry] raises TarError =
     readEntries(Cursor[Data](stream.filter(_.nonEmpty).iterator), Map.empty, Map.empty, Unset,
         Unset)
 
@@ -65,23 +68,23 @@ object Tarfile:
   // forced entry advances the cursor past it), absorbing arbitrary chunk
   // boundaries — the archive need never be materialized. The resulting
   // entries are single-owner: consume them in order, on one thread.
-  def read(consume stream: (Stream[Data] over Credit)^): LazyList[Tar.Entry] raises TarError =
+  def read(consume stream: (Stream[Data] over Credit)^): Progression[Tar.Entry] raises TarError =
     readEntries(Cursor[Data](stream), Map.empty, Map.empty, Unset, Unset)
 
-  def from(stream: LazyList[Data]): Tarfile raises TarError = Tarfile(read(stream))
+  def from(stream: Progression[Data]): Tarfile raises TarError = Tarfile(read(stream))
 
-  def fromGzip(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
+  def fromGzip(stream: Progression[Data]): Progression[Tar.Entry] raises TarError =
     read(stream.decompress[Gzip])
 
-  def fromZlib(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
+  def fromZlib(stream: Progression[Data]): Progression[Tar.Entry] raises TarError =
     read(stream.decompress[Zlib])
 
-  def fromDeflate(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
+  def fromDeflate(stream: Progression[Data]): Progression[Tar.Entry] raises TarError =
     read(stream.decompress[Deflate])
 
   // Per-entry body accounting for the streaming reader. A file's payload
   // streams lazily off the shared cursor in bounded chunks; forcing the NEXT
-  // entry first forces whatever of this body was not yet read (its `LazyList`
+  // entry first forces whatever of this body was not yet read (its `Progression`
   // memoizes, so this materializes only skipped-over payloads — an in-order
   // consumer streams with bounded memory, while listing entries before
   // reading a body still works, at the cost of buffering the passed-over
@@ -94,12 +97,12 @@ object Tarfile:
 
     // A single memoizing chain per body: every consumer (including `drain`)
     // shares it, so the cursor region is read exactly once.
-    lazy val stream: LazyList[Data] = chunk(0)
+    lazy val stream: Progression[Data] = chunk(0)
 
-    private def chunk(offset: Int): LazyList[Data] = LazyList.defer:
+    private def chunk(offset: Int): Progression[Data] = Progression.defer:
       if offset >= size then
         finishPadding()
-        LazyList()
+        Progression()
       else
         val n = (size - offset).min(chunkSize)
 
@@ -128,16 +131,16 @@ object Tarfile:
       globalOverlay: Map[Text, Text],
       longName:      Optional[Text],
       longLink:      Optional[Text] )
-  :   LazyList[Tar.Entry] raises TarError = LazyList.defer:
+  :   Progression[Tar.Entry] raises TarError = Progression.defer:
     val block = takeBlock(cursor)
 
     if block.absent then
       // The archive ended without its terminating zero blocks.
       raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
-      LazyList()
+      Progression()
     else
       val head = block.vouch
-      if TarHeader.isZeroBlock(head) then LazyList() else
+      if TarHeader.isZeroBlock(head) then Progression() else
           val header = TarHeader.parse(head)
           val checksum = TarHeader.decodeOctal(header.checksum, t"checksum")
           TarHeader.verifyChecksum(head, checksum)
@@ -161,11 +164,11 @@ object Tarfile:
           header.typeFlag.toInt & 0xff match
             case 'x' =>
               val pax = Pax.parse(takeData(cursor, size))
-              readEntries(cursor, paxOverlay ++ pax, globalOverlay, longName, longLink)
+              readEntries(cursor, Map.of(paxOverlay.stdlib ++ pax.stdlib), globalOverlay, longName, longLink)
 
             case 'g' =>
               val pax = Pax.parse(takeData(cursor, size))
-              readEntries(cursor, paxOverlay, globalOverlay ++ pax, longName, longLink)
+              readEntries(cursor, paxOverlay, Map.of(globalOverlay.stdlib ++ pax.stdlib), longName, longLink)
 
             case 'L' =>
               val name = TarHeader.decodeNulText(takeData(cursor, size))
@@ -179,7 +182,7 @@ object Tarfile:
               val nameText = resolveName(header, paxOverlay, globalOverlay, longName)
               val path = decodePath(nameText)
 
-              val inlineSegments: List[SparseSegment] = readInlineSparseMap(head)
+              val inlineSegments = readInlineSparseMap(head)
               val isExtended: Boolean = head(482) != 0.toByte
               val realSize: Long = TarHeader.decodeOctal(head.slice(483, 495), t"realsize").long
               val extSegments = readSparseExtensions(cursor, isExtended)
@@ -188,11 +191,11 @@ object Tarfile:
               val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
 
               val extras: Map[Text, Text] =
-                (globalOverlay ++ paxOverlay).filter: (k, _) => !structuralPaxKeys.contains(k)
+                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.stdlib.contains(k) })
 
               val entry =
                 Tar.Entry.Sparse
-                  ( path, mode, user, group, mtime, realSize, allSegments, LazyList(data), extras )
+                  ( path, mode, user, group, mtime, realSize, List.of(allSegments), Progression(data), extras )
 
               entry #:: readEntries(cursor, Map.empty, globalOverlay, Unset, Unset)
 
@@ -201,14 +204,14 @@ object Tarfile:
               val path = decodePath(nameText)
 
               val extras: Map[Text, Text] =
-                (globalOverlay ++ paxOverlay).filter: (k, _) => !structuralPaxKeys.contains(k)
+                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.stdlib.contains(k) })
 
               // The body streams off the shared cursor; forcing the tail of
               // this cons (the next entry) drains whatever of it was unread.
               val body = TarBody(cursor, size, ((size + 511)/512)*512)
               val entry = Tar.Entry.File(path, mode, user, group, mtime, body.stream, extras)
 
-              entry #:: LazyList.defer:
+              entry #:: Progression.defer:
                 body.drain()
                 readEntries(cursor, Map.empty, globalOverlay, Unset, Unset)
 
@@ -218,7 +221,7 @@ object Tarfile:
               val path = decodePath(nameText)
 
               val extras: Map[Text, Text] =
-                (globalOverlay ++ paxOverlay).filter: (k, _) => !structuralPaxKeys.contains(k)
+                Map.of((globalOverlay.stdlib ++ paxOverlay.stdlib).filter { (k, _) => !structuralPaxKeys.stdlib.contains(k) })
 
               val entry =
                 buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras, header,
@@ -293,8 +296,10 @@ object Tarfile:
 
     if allZero then 0L else TarHeader.decodeOctal(data, t"sparse.field").long
 
-  private def readInlineSparseMap(headerBlock: Data): List[SparseSegment] raises TarError =
-    val builder = List.newBuilder[SparseSegment]
+  private def readInlineSparseMap(headerBlock: Data)
+  :   scala.collection.immutable.List[SparseSegment] raises TarError =
+
+    val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
     var pos = 386
     var i = 0
 
@@ -309,17 +314,17 @@ object Tarfile:
     builder.result()
 
   private def readSparseExtensions(cursor: Cursor[Data, {}]^, hasMore: Boolean)
-  :   List[SparseSegment] raises TarError =
+  :   scala.collection.immutable.List[SparseSegment] raises TarError =
 
-    if !hasMore then Nil else
+    if !hasMore then Nil.stdlib else
       val block = takeBlock(cursor)
 
       if block.absent then
         raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
-        Nil
+        Nil.stdlib
       else
         val head = block.vouch
-        val builder = List.newBuilder[SparseSegment]
+        val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
         var pos = 0
         var i = 0
 
@@ -380,38 +385,38 @@ object Tarfile:
   // depend only on names and attributes — never on the payload size — so the
   // streaming writer can emit them before an unknown-length body.
   private[bitumen] def preamble(entry: Tar.Entry, longNameFormat: LongNameFormat)
-  :   LazyList[Data] =
+  :   Progression[Data] =
 
-    val longNamePart: LazyList[Data] = longNameFormat match
-      case LongNameFormat.Pax => LazyList()
+    val longNamePart: Progression[Data] = longNameFormat match
+      case LongNameFormat.Pax => Progression()
 
       case LongNameFormat.Gnu =>
         val nameBlocks =
           if entry.entryName.in[Data].length > 100
           then Tar.Entry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
-          else LazyList()
+          else Progression()
 
         val linkBlocks = entry.link.let: l =>
           if l.in[Data].length > 100 then Tar.Entry.GnuLong(TypeFlag.LongLink, l).serialize
-          else LazyList()
+          else Progression()
 
-        . or(LazyList())
+        . or(Progression())
 
         nameBlocks #::: linkBlocks
 
-    val records = paxRecordsFor(entry).filter: (key, _) =>
+    val records = paxRecordsFor(entry).stdlib.filter: (key, _) =>
       longNameFormat match
         case LongNameFormat.Pax => true
         case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
 
-    val paxPart: LazyList[Data] =
-      if records.nil then LazyList()
+    val paxPart: Progression[Data] =
+      if records.isEmpty then Progression()
       else Tar.Entry.Pax(Pax.records(records)).serialize
 
     longNamePart #::: paxPart
 
   private def paxRecordsFor(entry: Tar.Entry): List[(Text, Text)] =
-    val builder = List.newBuilder[(Text, Text)]
+    val builder = scala.collection.immutable.List.newBuilder[(Text, Text)]
     if entry.entryName.in[Data].length > 100 then builder += ((t"path", entry.entryName))
 
     entry.link.let: link =>
@@ -425,10 +430,10 @@ object Tarfile:
     group.name.let: name =>
       if name.in[Data].length > 32 then builder += ((t"gname", name))
 
-    paxOf(entry).foreach: (k, v) =>
-      if !structuralPaxKeys.contains(k) then builder += ((k, v))
+    paxOf(entry).stdlib.foreach: (k, v) =>
+      if !structuralPaxKeys.stdlib.contains(k) then builder += ((k, v))
 
-    builder.result()
+    List.of(builder.result())
 
   private def userAndGroup(entry: Tar.Entry): (UnixUser, UnixGroup) = entry match
     case f: Tar.Entry.File         => (f.user, f.group)
@@ -455,16 +460,16 @@ object Tarfile:
     case _: Tar.Entry.GnuLong      => Map.empty
 
 case class Tarfile
-  ( entries: LazyList[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax ):
+  ( entries: Progression[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax ):
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
   // Reach this externally through the `Streamable` given, i.e. `tarfile.source[Data]`.
-  private[bitumen] def blocks: LazyList[Data] =
-    entries.flatMap(emitEntry) #::: LazyList(Tarfile.zeroBlock, Tarfile.zeroBlock)
+  private[bitumen] def blocks: Progression[Data] =
+    entries.flatMap(emitEntry) #::: Progression(Tarfile.zeroBlock, Tarfile.zeroBlock)
 
   // Compressed views of the archive's TAR stream.
-  def gzip: LazyList[Data] = blocks.compress[Gzip]
-  def zlib: LazyList[Data] = blocks.compress[Zlib]
-  def deflate: LazyList[Data] = blocks.compress[Deflate]
+  def gzip: Progression[Data] = blocks.compress[Gzip]
+  def zlib: Progression[Data] = blocks.compress[Zlib]
+  def deflate: Progression[Data] = blocks.compress[Deflate]
 
-  private def emitEntry(entry: Tar.Entry): LazyList[Data] =
+  private def emitEntry(entry: Tar.Entry): Progression[Data] =
     Tarfile.preamble(entry, longNameFormat) #::: entry.serialize

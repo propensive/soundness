@@ -32,6 +32,8 @@
                                                                                                   */
 package cosmopolite
 
+import scala.compiletime
+
 
 case class Polyglot[+value, language](values: Map[Language, value]):
   @targetName("or")
@@ -39,10 +41,11 @@ case class Polyglot[+value, language](values: Map[Language, value]):
   :   Polyglot[value2, language & language2] | value2 =
 
     compiletime.summonFrom:
-      case locale: Locale[language & language2] => (values ++ polyglot.values)(locale.language)
+      case locale: Locale[language & language2] =>
+        (values.stdlib ++ polyglot.values.stdlib)(locale.language)
 
       case _ =>
-        Polyglot[value2, language & language2](values ++ polyglot.values)
+        Polyglot[value2, language & language2](Map.of(values.stdlib ++ polyglot.values.stdlib))
 
 
-  def apply()(using locale: Locale[language]): value = values(locale.language)
+  def apply()(using locale: Locale[language]): value = values.stdlib(locale.language)

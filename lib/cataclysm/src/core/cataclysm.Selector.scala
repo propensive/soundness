@@ -45,7 +45,7 @@ import vacuous.*
 // `Compound` (simple selectors with no whitespace between them, the tightest).
 
 object SelectorList:
-  given showable: SelectorList is Showable = _.selectors.map(_.show).join(t", ")
+  given showable: SelectorList is Showable = selectorList => List.of(selectorList.selectors.stdlib.map(_.show)).join(t", ")
 
   // A non-raising parse of already-validated selector text, used by the `css"…"`
   // interpolator to rebuild a rule's selector at runtime.
@@ -59,12 +59,12 @@ object Selector:
       case Combinator.Descendant => t""
       case other                 => t"${other.show} "
 
-    val rest = selector.rest.map: (combinator, compound) =>
+    val rest = selector.rest.stdlib.map: (combinator, compound) =>
       combinator match
         case Combinator.Descendant => t" ${compound.show}"
         case other                 => t" ${other.show} ${compound.show}"
 
-    t"$lead${selector.head.show}${rest.join}"
+    t"$lead${selector.head.show}${List.of(rest).join}"
 
 // A complex selector: a head compound followed by combinator/compound steps.
 // `lead` is set only for a relative selector (e.g. the `>` in `:has(> img)`).
@@ -72,7 +72,7 @@ case class Selector(lead: Optional[Combinator], head: Compound, rest: List[(Comb
 derives CanEqual
 
 object Compound:
-  given showable: Compound is Showable = _.parts.map(_.show).join
+  given showable: Compound is Showable = compound => List.of(compound.parts.stdlib.map(_.show)).join
 
 // A compound selector: a run of simple selectors bound together with no
 // combinator (hence no whitespace) between them.

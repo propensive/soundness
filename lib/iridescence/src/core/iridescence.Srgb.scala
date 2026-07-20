@@ -34,6 +34,7 @@ package iridescence
 
 import hypotenuse.*
 import prepositional.*
+import rudiments.*
 
 object Srgb:
   given xyz: Colorimetry => Srgb is Perceptual in Xyz =

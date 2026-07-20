@@ -32,6 +32,8 @@
                                                                                                   */
 package ulysses
 
+import scala.collection.immutable.IndexedSeq
+
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -122,7 +124,7 @@ case class Palimpsest(data: Data, length: Int):
                   if body(k) != 0.toByte then allZero = false
                   k += 1
 
-                if allZero then matched.reverse else Unset
+                if allZero then List.of(matched.stdlib.reverse) else Unset
               else
                 val o         = cadence.offset(item)
                 val prefixLen = if item == 0 then cadence.initial else cadence.regular

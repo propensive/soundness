@@ -46,7 +46,7 @@ object Tests extends Suite(m"Monotonous tests"):
 
   val allNumbers = IArray.from((0 to 18).map(_.toByte))
 
-  val stream = LazyList(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
+  val stream = Progression(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
       Data(11, 12, 13, 14, 15), Data(16, 17, 18, 19, 20, 21), Data(22, 23, 24, 25, 26, 27, 28))
 
   def run(): Unit = stochastic:
@@ -61,7 +61,7 @@ object Tests extends Suite(m"Monotonous tests"):
       // `Text.deserialize` produces. Strides not aligned to the group size
       // exercise the carry at every intra-group offset.
       def chunks(text: Text, size: Int): (Stream[Text] over Credit)^ =
-        Stream(text.s.grouped(size).map(_.tt).to(LazyList).iterator)
+        Stream(text.s.grouped(size).map(_.tt).to(Progression).iterator)
 
       val base64Text = allNumbers.serialize[Base64]
       val hexText = allNumbers.serialize[Hex]

@@ -66,7 +66,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
   def redraw(size: Int): Unit = if !silent then
     if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
 
-    active.reverse.each: test =>
+    active.stdlib.reverse.each: test =>
       Out.println(e"> ${WebColors.CadetBlue}(${test.id})${" "*(test.depth*2)}${test.name}\e[K")
 
     Out.print(e"\e[J")
@@ -74,7 +74,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
 
   def run[result](test: Test[result]^): Trial[result] =
     mutex:
-      val size = active.size
+      val size = active.stdlib.size
       active ::= test.id
       redraw(size)
 
@@ -87,9 +87,9 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
       val result: result = test.action(context)
       val ns: Long = System.nanoTime - ns0
 
-      Trial.Returns(result, ns, context.captured.to(Map)).also:
+      Trial.Returns(result, ns, Map.from(context.captured)).also:
         mutex:
-          val size = active.size
+          val size = active.stdlib.size
           active = active.filter(_ != test.id)
           redraw(size)
 
@@ -100,9 +100,9 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
         given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw error
 
-      Trial.Throws(lazyException, ns, context.captured.to(Map)).also:
+      Trial.Throws(lazyException, ns, Map.from(context.captured)).also:
         mutex:
-          val size = active.size
+          val size = active.stdlib.size
           active = active.filter(_ != test.id)
           redraw(size)
 
@@ -112,7 +112,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
   def suite(suite: Testable, block: Testable ?=> Unit): Unit =
     if !skip(suite.id) then
       mutex:
-        val size = active.size
+        val size = active.stdlib.size
         active ::= suite.id
         redraw(size)
 
@@ -120,12 +120,12 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
       block(using suite)
 
       mutex:
-        val size = active.size
+        val size = active.stdlib.size
         active = active.filter(_ != suite.id)
         redraw(size)
 
   def terminate(error: Throwable): Unit = mutex:
-    reporter.fail(report, error, active.to(Set))
+    reporter.fail(report, error, Set.from(active.stdlib))
     reporter.complete(report)
 
   def complete(): Unit =

@@ -59,11 +59,11 @@ object Classfile:
 
 class Classfile(data: Data):
   val sourceFile: Optional[Text] =
-    model.attributes.nn.iterator.nn.asScala.to(List).collect:
+    model.attributes.nn.iterator.nn.asScala.toList.collect:
       case attribute: jlca.SourceFileAttribute =>
         attribute.sourceFile().nn.stringValue.nn.tt
 
-    . prim
+    . headOption.getOrElse(Unset)
 
   class Method(model: jlc.MethodModel):
     def name: Text = model.methodName.nn.toString.tt
@@ -75,26 +75,26 @@ class Classfile(data: Data):
 
       val elements = code.elementList.nn.asScala.to(List)
 
-      val labels: Map[jlc.Label, Int] =
-        val builder = Map.newBuilder[jlc.Label, Int]
+      val labels: scala.collection.immutable.Map[jlc.Label, Int] =
+        val builder = scala.collection.immutable.Map.newBuilder[jlc.Label, Int]
         var offset = 0
 
-        elements.foreach:
+        elements.each:
           case instr: jlc.Instruction       => offset += instr.sizeInBytes
           case target: jlci.LabelTarget     => builder += target.label.nn -> offset
           case _                            => ()
 
         builder.result()
 
-      val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
+      val stackMaps: scala.collection.immutable.Map[jlc.Label, List[Bytecode.Frame]] =
         val attr =
           code.attributes.nn.iterator.nn.asScala.collectFirst:
             case smt: jlca.StackMapTableAttribute => smt
 
-        attr.fold(Map.empty): smt =>
+        attr.fold(scala.collection.immutable.Map.empty): smt =>
           smt.entries.nn.asScala.iterator.map: entry =>
             val frames =
-              entry.stack.nn.asScala.toList.map(Bytecode.Frame.fromVerificationType).reverse
+              List.of(entry.stack.nn.asScala.toList.map(Bytecode.Frame.fromVerificationType).reverse)
 
             entry.target.nn -> frames
 
@@ -109,7 +109,7 @@ class Classfile(data: Data):
       :   List[Bytecode.Instruction] =
 
         todo match
-          case Nil => done.reverse
+          case Nil => List.of(done.stdlib.reverse)
 
           case next :: todo =>
             next match

@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -82,7 +84,7 @@ private[facsimile] object PdfWriter:
 
     ascii(t"trailer\n<< /Size ${maxNumber + 1}")
 
-    List(t"Root", t"Info", t"ID").each: key =>
+    List(t"Root", t"Info", t"ID").each: (key: Text) =>
       pdf.trailerOverrides.at(key).or(pdf.trailer.at(key)).let: value =>
         ascii(t" /$key ")
         appendObject(pdf, raw, ascii, value)
@@ -109,7 +111,7 @@ private[facsimile] object PdfWriter:
     val changed = pdf.overlay.keys.to(List).sorted
     val offsets = scala.collection.mutable.HashMap[Int, Long]()
 
-    changed.each: number =>
+    changed.each: (number: Int) =>
       offsets(number) = baseOffset + length
       val generation = pdf.xref.entries.at(number) match
         case Xref.Entry.Direct(_, gen) => gen
@@ -131,7 +133,9 @@ private[facsimile] object PdfWriter:
 
     // Group the updated and freed object numbers (plus object 0, the free-list head, when
     // anything is freed) into ascending consecutive subsections.
-    val numbers = (changed ++ freed ++ (if freed.isEmpty then Nil else List(0))).distinct.sorted
+    val numbers = List.of:
+      (changed.stdlib ++ freed.stdlib ++ (if freed.stdlib.isEmpty then scala.collection.immutable.Nil else scala.collection.immutable.List(0)))
+      . distinct.sorted
 
     ascii(t"xref\n")
 
@@ -157,10 +161,10 @@ private[facsimile] object PdfWriter:
 
     // The trailer carries forward the original `/Root`, `/Info`, `/Encrypt` and `/ID`, with
     // any write-scope overrides (e.g. a newly-created `/Info`) taking precedence.
-    val carried = List(t"Root", t"Info", t"Encrypt", t"ID").flatMap: key =>
+    val carried = List(t"Root", t"Info", t"Encrypt", t"ID").bind: key =>
       pdf.trailer.at(key).let(value => List(key -> value)).or(Nil)
 
-    val entries = (carried.to(Map) ++ pdf.trailerOverrides).to(List)
+    val entries = (carried.stdlib.toMap ++ pdf.trailerOverrides).toList
 
     ascii(t"trailer\n<< /Size $size")
 
@@ -208,10 +212,10 @@ private[facsimile] object PdfWriter:
         Cos.Sequence(elements.map(encryptStrings(_, guard, number, generation)))
 
       case Cos.Dictionary(entries) =>
-        Cos.Dictionary(entries.view.mapValues(encryptStrings(_, guard, number, generation)).toMap)
+        Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap))
 
       case Cos.Body(entries, start) =>
-        Cos.Body(entries.view.mapValues(encryptStrings(_, guard, number, generation)).toMap, start)
+        Cos.Body(Map.of(entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap), start)
 
       case other =>
         other
@@ -223,23 +227,23 @@ private[facsimile] object PdfWriter:
         Nil
 
       case head :: _ =>
-        val runs = List.newBuilder[(Int, List[Int])]
-        var run = List.newBuilder[Int]
+        val runs = scala.collection.immutable.List.newBuilder[(Int, List[Int])]
+        var run = scala.collection.immutable.List.newBuilder[Int]
         var first = head
         var previous = head - 1
 
         numbers.each: number =>
           if number == previous + 1 then run += number
           else
-            runs += ((first, run.result()))
-            run = List.newBuilder[Int]
+            runs += ((first, List.of(run.result())))
+            run = scala.collection.immutable.List.newBuilder[Int]
             run += number
             first = number
 
           previous = number
 
-        runs += ((first, run.result()))
-        runs.result()
+        runs += ((first, List.of(run.result())))
+        List.of(runs.result())
 
   private def pad10(value: Long): Text =
     val digits = value.toString

@@ -37,4 +37,4 @@ import prepositional.*
 trait Schema extends Formal, Topical, Operable:
   type Form <: { type Topic }
 
-  def parse(source: LazyList[Text]): Form of Topic
+  def parse(source: Progression[Text]): Form of Topic

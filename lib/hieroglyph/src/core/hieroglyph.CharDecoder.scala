@@ -32,13 +32,14 @@
                                                                                                   */
 package hieroglyph
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
 import beneficence.*
 import denominative.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -57,12 +58,12 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
 
   def decoded(bytes: Data, omit: Boolean): Text =
     val buffer: StringBuilder = StringBuilder()
-    decoded(LazyList(bytes)).each: text => buffer.append(text.s)
+    decoded(Progression(bytes)).each: text => buffer.append(text.s)
     buffer.toString.tt
 
   def decoded(bytes: Data): Text = decoded(bytes, false)
 
-  def decoded(stream: LazyList[Data]): LazyList[Text] =
+  def decoded(stream: Progression[Data]): Progression[Text] =
     val decoder = encoding.charset.newDecoder().nn
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn
@@ -71,7 +72,7 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
     // would give every element a reach capability that leaks into `recur`. The
     // buffer only reads from the chunk, so the mutable view is taken at the
     // single `put` site, under `Unsafe`.
-    def recur(todo: LazyList[Data], offset: Int = 0, total: Int = 0): LazyList[Text] =
+    def recur(todo: Progression[Data], offset: Int = 0, total: Int = 0): Progression[Text] =
       val count = in.remaining
 
       if !todo.nil then
@@ -92,7 +93,7 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
       out.clear()
 
       def continue =
-        if todo.nil && !status.isOverflow then LazyList()
+        if todo.nil && !status.isOverflow then Progression()
         else if !todo.nil && count >= todo.head.length - offset
         then recur(todo.tail, 0, total + todo.head.length - offset)
         else recur(todo, offset + count, total + count)

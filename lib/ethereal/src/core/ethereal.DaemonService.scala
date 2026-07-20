@@ -32,8 +32,10 @@
                                                                                                   */
 package ethereal
 
+import scala.caps
+
 import galilei.*
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 
@@ -53,7 +55,7 @@ case class DaemonService[bus <: Matchable]
     cliInput:   Stdin,
     executable: Path on Local,
     deliver:    bus => Unit,
-    bus:        LazyList[bus],
+    bus:        Progression[bus],
     script:     Text,
     startTime:  Long,
     helpThunk:  () => Optional[Help] )

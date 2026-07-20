@@ -32,6 +32,9 @@
                                                                                                   */
 package jacinta
 
+import scala.{annotation, caps}
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
 
@@ -125,8 +128,8 @@ object stagedInternal:
 
   private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
 
-  private val primitiveClasses: Map[String, Class[?]] =
-    Map
+  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
+    scala.collection.immutable.Map
       ( "scala.Int"     -> classOf[Int],
         "scala.Long"    -> classOf[Long],
         "scala.Double"  -> classOf[Double],

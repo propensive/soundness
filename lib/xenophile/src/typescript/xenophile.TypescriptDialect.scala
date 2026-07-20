@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import vacuous.*
@@ -50,7 +52,9 @@ object TypescriptDialect extends Dialect:
       char == '>'
 
   private def tokenize(source: String): List[String] =
-    def recur(index: Int, current: String, tokens: List[String]): List[String] =
+    def recur(index: Int, current: String, tokens: scala.collection.immutable.List[String])
+    :   scala.collection.immutable.List[String] =
+
       if index >= source.length
       then (if current.isEmpty then tokens else current :: tokens).reverse
       else
@@ -63,7 +67,7 @@ object TypescriptDialect extends Dialect:
           if punctuation(char) then recur(index + 1, "", char.toString :: flushed)
           else recur(index + 1, "", flushed)
 
-    recur(0, "", Nil)
+    List.of(recur(0, "", Nil.stdlib))
 
   private def interfaces(tokens: List[String], acc: Map[Text, Map[Text, Prototype]])
   :   Map[Text, Map[Text, Prototype]] =
@@ -130,7 +134,7 @@ object TypescriptDialect extends Dialect:
 
         rest match
           case "," :: more => arguments(more, arg :: acc)
-          case ">" :: more => ((arg :: acc).reverse, more)
+          case ">" :: more => (List.of((arg :: acc).reverse), more)
           case _           => arguments(rest, acc)
 
   private def membersOf(tokens: List[String], acc: Map[Text, Prototype])

@@ -32,10 +32,13 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import anticipation.*
 import fulminate.*
 import hieroglyph.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -164,10 +167,10 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 
 // ─── terminal operations and explicit replay ───────────────────────────────────────────
 //
-// The safe front-end replacing the LazyList views: pipeline stages compose with the
+// The safe front-end replacing the Progression views: pipeline stages compose with the
 // consume-typed `through`, and these terminal operations drain an exclusive endpoint
 // without exposing its window — each borrow is read, used and skipped before the next
-// refill. `memoize` is the explicit replacement for LazyList's implicit caching: it
+// refill. `memoize` is the explicit replacement for Progression's implicit caching: it
 // drains the stream once into an immutable value, which may then be shared freely.
 
 extension [medium](consume stream: (Stream[medium] over Credit)^)
@@ -191,7 +194,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
     try loop() finally stream.close()
 
   // Drain the stream into a single immutable value: the explicit, bounded replacement
-  // for a LazyList's implicit memoization. The result is frozen and freely shareable.
+  // for a Progression's implicit memoization. The result is frozen and freely shareable.
   def memoize(using buffering: Buffering): medium =
     val addressable = stream.addressable
     val target = addressable.blank(buffering.capacity(addressable.substrate))
@@ -234,18 +237,18 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // `drop`, ZIO `ZStream.drop`.)
   def drop(count: Long): (Stream[medium] over Credit)^ = dropStream(stream, count)
 
-  // The legacy view: a lazy `LazyList` of one materialized chunk per refill,
+  // The legacy view: a lazy `Progression` of one materialized chunk per refill,
   // strictly demand-driven — construction pulls nothing, and each forced cell
   // pulls at most one refill (the deferral `Cursor.remainder` documents). This
   // is the audited bridge for consumers not yet converted to the kernel:
-  // `LazyList` is pure, so it cannot carry the endpoint capability its cells
+  // `Progression` is pure, so it cannot carry the endpoint capability its cells
   // close over, and the ownership discipline is suspended beyond this point —
   // implicit memoization retains every forced chunk. Prefer the kernel
   // terminals above; never introduce new bridges elsewhere.
-  def toLazyList(using buffering: Buffering): LazyList[medium] =
+  def toProgression(using buffering: Buffering): Progression[medium] =
     val block = buffering.transfer(stream.addressable.substrate)
 
-    def recur(): LazyList[medium] = stream.refill(Credit(block)) match
+    def recur(): Progression[medium] = stream.refill(Credit(block)) match
       case count: Int =>
         val chunk =
           stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
@@ -255,9 +258,9 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
       case _ =>
         stream.close()
-        LazyList.empty
+        Progression.empty
 
-    LazyList.empty.lazyAppendedAll(recur())
+    Progression.empty.lazyAppendedAll(recur())
 
 extension [record](consume stream: (Stream[IArray[record]] over Credit)^)
   // Element-wise access to a stream of records: a single-consumer iterator over

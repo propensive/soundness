@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import scala.caps
+
 import ambience.*
 import anthology.*
 import anticipation.*
@@ -87,7 +89,7 @@ object Enclave:
       block(using tool).also:
         sh"$path '{admin}' kill".exec[Exit]()
 
-        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item =>
+        completionScripts.trim.lines.map(_.as[Path on Linux]).each: (item: Path on Linux) =>
           safely(item.delete())
 
 

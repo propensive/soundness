@@ -32,6 +32,12 @@
                                                                                                   */
 package facsimile
 
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -223,7 +229,7 @@ extends caps.ExclusiveCapability:
   // recorded as freed so the incremental update writes a free entry for it.
   private[facsimile] def remove(number: Int): Unit =
     overlay.remove(number)
-    if xref.entries.contains(number) then freed += number
+    if xref.entries.defines(number) then freed += number
 
   // Rewrites an object's dictionary in place, reading its current value (overlay-aware) so
   // successive edits within a scope compose.
@@ -248,7 +254,7 @@ extends caps.ExclusiveCapability:
 
   def trailer: Map[Text, Cos] = xref.trailer
 
-  def encrypted: Boolean = trailer.contains(t"Encrypt")
+  def encrypted: Boolean = trailer.defines(t"Encrypt")
 
   def catalog: Map[Text, Cos] raises PdfError =
     resolved(trailer.at(t"Root").or(Cos.Nil)).dictionary
@@ -260,7 +266,7 @@ extends caps.ExclusiveCapability:
   private[facsimile] def pageEntries
   :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] raises PdfError =
 
-    var visited = Set[Int]()
+    var visited = scala.collection.immutable.Set[Int]()
 
     def recur(node: Cos, number: Optional[Int], inherited: Page.Inherited)
     :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
@@ -278,7 +284,7 @@ extends caps.ExclusiveCapability:
             val updated = inherited.update(entries)
 
             resolved(entries.at(t"Kids").or(Cos.Nil)).elements.lay(Vector()): kids =>
-              kids.to(Vector).flatMap(recur(_, Unset, updated))
+              kids.stdlib.toVector.flatMap(recur(_, Unset, updated))
 
           case _ =>
             Vector((number, entries, inherited))
@@ -296,10 +302,10 @@ extends caps.ExclusiveCapability:
   // destinations that refer to pages by reference.
   private[facsimile] def pageNumbers: Map[Int, Ordinal] raises PdfError =
     pageEntries.zipWithIndex.flatMap: (entry, index) =>
-      entry(0).lay(List()): number =>
-        List(number -> index.z)
+      entry(0).lay(scala.collection.immutable.List()): number =>
+        scala.collection.immutable.List(number -> index.z)
 
-    . to(Map)
+    . pipe(Map.from(_))
 
   // Named destinations from both homes: the old-style `/Dests` dictionary and the
   // `/Names /Dests` name tree, still as raw COS values.
@@ -307,25 +313,25 @@ extends caps.ExclusiveCapability:
     val old = resolved(catalog.at(t"Dests").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
 
     val tree = resolved(catalog.at(t"Names").or(Cos.Nil))(t"Dests")
-      . let(Trees.names(_)(using this).to(Map)).or(Map[Text, Cos]())
+      . let(Trees.names(_)(using this).stdlib.pipe(Map.from(_))).or(Map[Text, Cos]())
 
-    old ++ tree
+    Map.of(old.stdlib ++ (tree: Map[Text, Cos]).stdlib)
 
   def destinations: Map[Text, Destination] raises PdfError =
     val pages = pageNumbers
     val raw = rawDestinations
 
-    raw.to(List).flatMap: (name, value) =>
+    raw.stdlib.toList.flatMap: (name, value) =>
       Destination.read(value, pages, raw.at(_))(using this)
-      . lay(List()): destination =>
-          List(name -> destination)
+      . lay(scala.collection.immutable.List()): destination =>
+          scala.collection.immutable.List(name -> destination)
 
-    . to(Map)
+    . pipe(Map.from(_))
 
   def bookmarks: List[Bookmark] raises PdfError =
     val pages = pageNumbers
     val raw = rawDestinations
-    var visited = Set[Int]()
+    var visited = scala.collection.immutable.Set[Int]()
 
     // `/Dest` directly, or the `/D` of a `/GoTo` action.
     def target(entries: Map[Text, Cos]): Optional[Cos] raises PdfError =
@@ -510,10 +516,10 @@ extends caps.ExclusiveCapability:
         Cos.Sequence(elements.map(decryptStrings(_, number, generation, guard)))
 
       case Cos.Dictionary(entries) =>
-        Cos.Dictionary(entries.view.mapValues(decryptStrings(_, number, generation, guard)).toMap)
+        Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap))
 
       case Cos.Body(entries, start) =>
-        val decrypted = entries.view.mapValues(decryptStrings(_, number, generation, guard)).toMap
+        val decrypted = Map.of(entries.stdlib.view.mapValues(decryptStrings(_, number, generation, guard)).toMap)
         Cos.Body(decrypted, start)
 
       case other =>
@@ -682,7 +688,7 @@ extends caps.ExclusiveCapability:
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.
   private def deepResolved(value: Cos): Cos raises PdfError = resolved(value) match
     case Cos.Sequence(elements)  => Cos.Sequence(elements.map(resolved(_)))
-    case Cos.Dictionary(entries) => Cos.Dictionary(entries.view.mapValues(resolved(_)).toMap)
+    case Cos.Dictionary(entries) => Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(resolved(_)).toMap))
     case other                   => other
 
   private def containerStream(container: Int): ObjectStream raises PdfError =

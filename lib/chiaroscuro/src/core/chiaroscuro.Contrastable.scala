@@ -32,6 +32,8 @@
                                                                                                   */
 package chiaroscuro
 
+import proscenium.compat.*
+
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -96,18 +98,21 @@ object Contrastable:
     given set: [element: Showable] => Set[element] is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left.show) else
-          val leftOnly: Set[Text] = (left -- right).map(_.show)
-          val rightOnly: Set[Text] = (right -- left).map(_.show)
+          val leftOnly: scala.collection.immutable.Set[Text] =
+            (left.stdlib -- right.stdlib).map(_.show)
 
-          def describe(set: Set[Text]): Text =
+          val rightOnly: scala.collection.immutable.Set[Text] =
+            (right.stdlib -- left.stdlib).map(_.show)
+
+          def describe(set: scala.collection.immutable.Set[Text]): Text =
             ( if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}"
               else set.to(List) )
 
             . join(t"{", t", ", t"}")
 
           val message =
-            if leftOnly.nil then t"+${describe(rightOnly)}"
-            else if rightOnly.nil then t"-${describe(leftOnly)}"
+            if leftOnly.isEmpty then t"+${describe(rightOnly)}"
+            else if rightOnly.isEmpty then t"-${describe(leftOnly)}"
             else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
 
           Juxtaposition.Different(left.show, right.show, message)
@@ -212,7 +217,7 @@ object Contrastable:
 
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = IArray.from:
-        diff(left, right).rdiff(_ == _, 10).changes.map:
+        dissonance.diff(Series.from(left), Series.from(right)).rdiff(_ == _, 10).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show

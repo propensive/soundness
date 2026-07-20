@@ -32,6 +32,11 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable.Seq
+
+import scala.{annotation, caps}
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -800,9 +805,10 @@ object internal:
                         Tel.Parsable.focusing($foci, $keyText):
                           Tel.Parsable.gathered[fieldType]
                             ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
-                              $bufferExpr match
-                                case null   => Nil
-                                case buffer => buffer.toList )
+                              proscenium.List.of
+                                ( $bufferExpr match
+                                    case null   => Nil
+                                    case buffer => buffer.toList ) )
                       }.asTerm )
 
                 If('{ $repeatables(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)

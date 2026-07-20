@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import scala.caps
+
 import scala.annotation.implicitNotFound
 
 // Capability evidence that a `concession` (a weak algorithm, key length or mode)

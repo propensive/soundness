@@ -34,6 +34,8 @@ package panopticon
 
 import soundness.*
 
+import proscenium.compat.*
+
 case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
 case class Role(name: String, salary: Int)
@@ -57,12 +59,12 @@ object Tests extends Suite(m"Panopticon tests"):
     . assert(_ == Company(Person("Bill", List(Role("CEO", 1), Role("CFO", 2), Role("CIO", 3))), "Acme"))
 
     test(m"update company CEO roles"):
-      company.lens(_.ceo.roles = Nil)
+      company.lens(_.ceo.roles = List.empty[Role])
     . assert(_ == Company(Person("John", Nil), "Acme"))
 
     test(m"update company CEO roles and name"):
       company.lens
-        ( _.ceo.roles = Nil,
+        ( _.ceo.roles = List.empty[Role],
           _.ceo.name = "Bill" )
     . assert(_ == Company(Person("Bill", Nil), "Acme"))
 
@@ -118,7 +120,7 @@ object Tests extends Suite(m"Panopticon tests"):
       org.lens
         ( _.name = "Beta",
           _.hq   = addr2,
-          _.depts = Nil )
+          _.depts = List.empty[Department] )
     . assert(_ == Org("Beta", addr2, Nil))
 
     test(m"2 updates sharing depth-3 prefix"):
@@ -234,10 +236,10 @@ object Tests extends Suite(m"Panopticon tests"):
       Bag(Series(1, 2, 3)).lens(_.items(Sec) = 9)
     . assert(_ == Bag(Series(1, 9, 3)))
 
-    case class Crew(members: Seq[Text])
-    test(m"ordinal optic on a Seq field"):
-      Crew(Seq(t"a", t"b", t"c")).lens(_.members(Prim) = t"z")
-    . assert(_ == Crew(Seq(t"z", t"b", t"c")))
+    case class Crew(members: List[Text])
+    test(m"ordinal optic on a List field"):
+      Crew(List(t"a", t"b", t"c")).lens(_.members(Prim) = t"z")
+    . assert(_ == Crew(List(t"z", t"b", t"c")))
 
     test(m"filter-by-key traversal over a Map field"):
       user.lens(_.roles(Filter[Text](_ == t"cfo")).name = "X")

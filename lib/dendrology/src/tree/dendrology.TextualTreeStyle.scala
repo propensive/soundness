@@ -35,6 +35,7 @@ package dendrology
 import anticipation.*
 import gossamer.*
 import gossamer.Textual.concatenable
+import rudiments.*
 import symbolism.*
 
 case class TextualTreeStyle[line: Textual](space: Text, last: Text, branch: Text, extender: Text)

@@ -32,6 +32,9 @@
                                                                                                   */
 package stratiform
 
+import proscenium.compat.*
+import rudiments.mutable
+
 import adversaria.*
 import anticipation.*
 import distillate.*
@@ -117,7 +120,7 @@ object Tels2:
           IArray.empty )
 
     case Morphology.Obj(fields, required) =>
-      val members = fields.map: (label, fieldShape) =>
+      val members = fields.stdlib.map: (label, fieldShape) =>
         val repeatable = fieldShape match
           case Morphology.Arr(_) => Polarity.Loose
           case _                 => Polarity.Implicit
@@ -126,7 +129,7 @@ object Tels2:
           case Morphology.Arr(_) | Morphology.Opt(_) => Polarity.Loose
 
           case _ =>
-            if required.contains(label) then Polarity.Tight else Polarity.Loose
+            if required.stdlib.contains(label) then Polarity.Tight else Polarity.Loose
 
         Tels.Field
           ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )
@@ -203,7 +206,7 @@ trait Tels2:
   // sum's schema is a `Reference`, so its document root is a struct with a single
   // select member referencing the registered `SelectDefinition`.
   def tels[value](name: Text)(using schematic: value is TelSchematic over Tels.Type): Tels =
-    val selects: IArray[Tels.SelectDefinition] = IArray.from(schematic.selectDefinitions)
+    val selects: IArray[Tels.SelectDefinition] = IArray.from(schematic.selectDefinitions.stdlib)
 
     schematic.schema().absolve match
       case struct: Tels.Struct =>
@@ -222,12 +225,15 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
       val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
       val members =
-        contexts[derivation]():
-          [field] => schematic =>
-            val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
-            Tels.Field(schematic.polarity, schematic.repeatable, keyword, schematic.schema(), Unset)
+        val array =
+          contexts[derivation]():
+            [field] => schematic =>
+              val keyword: Text = renames.stdlib.getOrElse(label, Tel.camelToKebab(label.s))
 
-        . to(List)
+              Tels.Field
+                ( schematic.polarity, schematic.repeatable, keyword, schematic.schema(), Unset )
+
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(array.mutable(using Unsafe))
 
       Tels.Struct(IArray.from(members), IArray.empty)
 
@@ -248,12 +254,13 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
     val name: Text = wisteria.internal.sumName[derivation]
 
-    val selectVariants: List[Tels.Variant] =
-      choices:
-        [variant <: derivation] => schematic =>
-          Tels.Variant(Tel.camelToKebab(label.s), schematic.schema())
+    val selectVariants =
+      val array =
+        choices:
+          [variant <: derivation] => schematic =>
+            Tels.Variant(Tel.camelToKebab(label.s), schematic.schema())
 
-      . to(List)
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(array.mutable(using Unsafe))
 
     val select = Tels.SelectDefinition(name, IArray.from(selectVariants), IArray.empty)
     selectSchematic(select).asInstanceOf[derivation is TelSchematic over Tels.Type]

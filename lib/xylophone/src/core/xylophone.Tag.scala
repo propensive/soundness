@@ -32,7 +32,7 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import prepositional.*
@@ -57,7 +57,7 @@ object Tag:
     ( presets: Attributes = Attributes.empty )
   :   Container of label over children in schema =
 
-    val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+    val admissible: Set[Text] = Set.from(children.reification().stdlib.map(_.tt))
 
     Container(valueOf[label].tt, presets, admissible)
     . of[label]

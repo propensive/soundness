@@ -32,7 +32,9 @@
                                                                                                   */
 package exoskeleton
 
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import contingency.*
 import rudiments.*

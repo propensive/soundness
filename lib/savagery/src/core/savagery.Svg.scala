@@ -106,15 +106,18 @@ extends Documentary:
           t"width"   -> width.show,
           t"height"  -> height.show )
 
-    val defsElement: Seq[Xml] =
-      if defs.nil then Nil
-      else Seq(Element(t"defs", Attributes.empty, defs.map(_.xml).toSeq.nodes))
+    val defsElement: scala.collection.immutable.List[Xml] =
+      if defs.nil then scala.collection.immutable.Nil
+      else scala.collection.immutable.List
+        (Element(t"defs", Attributes.empty, defs.stdlib.map(_.xml).nodes))
 
-    val figureNodes: Seq[Xml] =
-      if transforms.nil then figures.map(_.xml)
+    val figureNodes: scala.collection.immutable.List[Xml] =
+      if transforms.nil then figures.stdlib.map(_.xml)
       else
-        val groupAttrs = SeqMap(t"transform" -> transforms.map(_.encode).join(t" "))
-        Seq(Element(t"g", Attributes.from(groupAttrs), figures.map(_.xml).toSeq.nodes))
+        val groupAttrs =
+          SeqMap(t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" "))
+        scala.collection.immutable.List
+          (Element(t"g", Attributes.from(Map.of(groupAttrs)), figures.stdlib.map(_.xml).nodes))
 
     val children: IArray[Node] = (defsElement ++ figureNodes).nodes
-    Element(t"svg", Attributes.from(attrs), children)
+    Element(t"svg", Attributes.from(Map.of(attrs)), children)

@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -66,8 +68,9 @@ object Tint:
   given encodable: Tint is Encodable in Text = _.toString.tt.lower
 
 object VerifyTests extends Suite(m"Stratiform verify tests"):
-  def keywords(struct: Tels.Struct): List[Text] = struct.members.to(List).collect:
-    case field: Tels.Field => field.keyword
+  def keywords(struct: Tels.Struct): List[Text] = List.of:
+    struct.members.to(List).stdlib.collect:
+      case field: Tels.Field => field.keyword
 
   def run(): Unit =
     suite(m"Runtime verification"):
@@ -117,31 +120,35 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
       . assert(_ == List(t"name", t"age"))
 
       test(m"A required field has Tight polarity"):
-        Tels.tels[Worker](t"worker").document.members.to(List).collect:
-          case field: Tels.Field if field.keyword == t"name" => field.required
+        List.of:
+          Tels.tels[Worker](t"worker").document.members.to(List).stdlib.collect:
+            case field: Tels.Field if field.keyword == t"name" => field.required
       . assert(_ == List(Tels.Polarity.Tight))
 
       test(m"An Optional field loosens to Loose polarity"):
-        Tels.tels[Nicked](t"nicked").document.members.to(List).collect:
-          case field: Tels.Field if field.keyword == t"nick" => field.required
+        List.of:
+          Tels.tels[Nicked](t"nicked").document.members.to(List).stdlib.collect:
+            case field: Tels.Field if field.keyword == t"nick" => field.required
       . assert(_ == List(Tels.Polarity.Loose))
 
       test(m"A collection field is repeatable, typed as the element struct"):
-        Tels.tels[Crew](t"crew").document.members.to(List).collect:
-          case field: Tels.Field if field.keyword == t"members" =>
-            field.repeatable -> field.fieldType
-        . collect:
-            case (repeatable, struct: Tels.Struct) => repeatable -> keywords(struct)
+        List.of:
+          Tels.tels[Crew](t"crew").document.members.to(List).stdlib.collect:
+            case field: Tels.Field if field.keyword == t"members" =>
+              field.repeatable -> field.fieldType
+          . collect:
+              case (repeatable, struct: Tels.Struct) => repeatable -> keywords(struct)
       . assert(_ == List(Tels.Polarity.Loose -> List(t"name", t"age")))
 
       test(m"A map field's type is a Struct of repeatable `entries` of key/value"):
-        Tels.tels[Config](t"config").document.members.to(List).collect:
-          case field: Tels.Field if field.keyword == t"prefs" => field.fieldType
-        . collect:
-            case struct: Tels.Struct => struct.members.to(List).collect:
-              case field: Tels.Field if field.keyword == t"entries" => field.fieldType
-        . flatten.collect:
-            case struct: Tels.Struct => keywords(struct)
+        List.of:
+          Tels.tels[Config](t"config").document.members.to(List).stdlib.collect:
+            case field: Tels.Field if field.keyword == t"prefs" => field.fieldType
+          . collect:
+              case struct: Tels.Struct => struct.members.to(List).stdlib.collect:
+                case field: Tels.Field if field.keyword == t"entries" => field.fieldType
+          . flatten.collect:
+              case struct: Tels.Struct => keywords(struct)
       . assert(_ == List(List(t"key", t"value")))
 
     suite(m"Schema coherence (the carried shape tracks the codec)"):

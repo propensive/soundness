@@ -34,6 +34,8 @@ package rudiments
 
 import soundness.*
 
+import proscenium.compat.*
+
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Rudiments Tests"):
@@ -484,3 +486,48 @@ object Tests extends Suite(m"Rudiments Tests"):
     //     def factorial(n: Int): Int = fix[Int] { i => if i <= 0 then 1 else i*recur(i - 1) } (n)
     //     factorial(4)
     //   .assert(_ == 24)
+
+    // While the collection aliases remain transparent, the stdlib member `to(Factory)` shadows
+    // the kind-polymorphic `to` for collection receivers, so `Text` (no such member) is the
+    // receiver these tests exercise; collection receivers activate as the aliases become opaque.
+    suite(m"Convertible tests"):
+      test(m"Text to List of chars"):
+        "abc".tt.to[List]
+      . assert(_ == List('a', 'b', 'c'))
+
+      test(m"Text to Set of chars deduplicates"):
+        "aba".tt.to[Set]
+      . assert(_ == Set('a', 'b'))
+
+      test(m"Text to Series of chars"):
+        "abc".tt.to[Series]
+      . assert(_ == Series('a', 'b', 'c'))
+
+      test(m"Text to Text is the identity"):
+        "abc".tt.to[Text]
+      . assert(_ == "abc".tt)
+
+      test(m"Result type of to[List] is inferred fully applied"):
+        val list: List[Char] = "xy".tt.to[List]
+        list.length
+      . assert(_ == 2)
+
+    suite(m"Populable tests"):
+      test(m"non-empty Text is not nil"):
+        "abc".tt.nil
+      . assert(_ == false)
+
+      test(m"empty Text is nil"):
+        "".tt.nil
+      . assert(_ == true)
+
+    suite(m"confine tests"):
+      test(m"confined Map key accesses bare value"):
+        val map = Map(1 -> "one".tt, 2 -> "two".tt)
+        map.confine(1).let(map.at(_))
+      . assert(_ == "one".tt)
+
+      test(m"absent Map key does not confine"):
+        val map = Map(1 -> "one".tt)
+        map.confine(9).let(map.at(_))
+      . assert(_ == Unset)

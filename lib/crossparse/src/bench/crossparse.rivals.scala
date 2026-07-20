@@ -32,6 +32,8 @@
                                                                                                   */
 package crossparse
 
+import scala.sys
+
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import proscenium.*

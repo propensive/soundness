@@ -32,7 +32,9 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.caps
+
+import scala.language.experimental.genericNumberLiterals
 
 import hypotenuse.*
 import prepositional.*
@@ -66,7 +68,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     caps.unsafe.unsafeAssumePure:
       random =>
         given random0: Random = random
-        Set.fill(size.generate(random))(randomizable.randomize(random))
+        Set.from(List.fill(size.generate(random))(randomizable.randomize(random)).stdlib)
 
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
@@ -89,7 +91,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
   inline def disjunction[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):
-      val labels = variantLabels
+      val labels = variantLabels.stdlib
 
       delegate(labels(random.long().abs.toInt%labels.length)):
         [variant <: derivation] => _.randomize(summon[Random])

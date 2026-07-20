@@ -32,6 +32,9 @@
                                                                                                   */
 package urticose
 
+import scala.collection.immutable.Seq
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*

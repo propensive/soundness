@@ -32,6 +32,10 @@
                                                                                                   */
 package caesura
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.lang as jl
 import java.util as ju
 
@@ -75,14 +79,14 @@ object Sheet:
         val stream: (Stream[Data] over Credit)^ =
           dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
 
-        (mediaType, HttpStreams.Body(stream.toLazyList.iterator))
+        (mediaType, HttpStreams.Body(stream.toProgression.iterator))
 
 
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
 
-    def rows(value: Sheet): Seq[Dsv] =
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(value.rows.mutable(using Unsafe))
+    def rows(value: Sheet): List[Dsv] =
+      List.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(value.rows.mutable(using Unsafe)))
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
@@ -106,7 +110,7 @@ object Sheet:
         type Self = Sheet
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
+        def aggregate(text: Progression[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
         override def accept(stream: (Stream[Text] over Credit)^): Sheet =
           // The non-consume `accept` crosses to the consuming parser as a
           // neutral reference; each accept delivers a single-use stream.
@@ -369,14 +373,14 @@ object Sheet:
     private[caesura] update def advanceData(): Boolean =
       if advance() then
         if isHeader && headings.absent then
-          val mapBuilder = Map.newBuilder[Text, Int]
+          val mapBuilder = scala.collection.immutable.Map.newBuilder[Text, Int]
           var i = 0
 
           while i < cellsBuf.length do
             mapBuilder += cellsBuf(i) -> i
             i += 1
 
-          headings = mapBuilder.result()
+          headings = Map.of(mapBuilder.result())
           advanceData()
         else true
       else false

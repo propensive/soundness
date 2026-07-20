@@ -32,6 +32,8 @@
                                                                                                   */
 package spectacular
 
+import scala.collection.immutable.Vector
+
 import soundness.*
 
 case class Person(name: Text, age: Int)
@@ -281,8 +283,15 @@ object Tests extends Suite(m"Spectacular Tests"):
         Map(1 -> 2).inspect
       . assert(_ == t"{1 → 2}")
 
+      // Raw `Vector` is no longer `Series` (opaque) and matches no curated instance (the
+      // `IndexedSeq` instance's `Self` is invariant), so it falls back to the quoted
+      // `toString` rendering; `Series` itself renders as `⟨ 1 2 3 ⟩`.
       test(m"serialize vector"):
         Vector(1, 2, 3).inspect
+      . assert(_ == t"“Vector(1, 2, 3)”")
+
+      test(m"serialize series"):
+        Series(1, 2, 3).inspect
       . assert(_ == t"⟨ 1 2 3 ⟩")
 
       test(m"serialize empty list"):

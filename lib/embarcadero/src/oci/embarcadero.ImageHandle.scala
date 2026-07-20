@@ -32,6 +32,10 @@
                                                                                                   */
 package embarcadero
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 import aperture.*
 import bitumen.*
@@ -52,18 +56,18 @@ import zephyrine.*, parsing.trackPositions
 // blobs are found by name over the entry list; scanning past a blob retains its chunks
 // for the scope's duration, the flat cost of TAR's sequentiality. Archives written by
 // `Image.archive` place `index.json` before the blobs, so the metadata path is cheap.
-class ImageHandle private[embarcadero] (entries: LazyList[Tar.Entry])
+class ImageHandle private[embarcadero] (entries: Progression[Tar.Entry])
 extends caps.ExclusiveCapability:
 
   // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
   // (for layers: compressed) chunks — undecoded and unverified.
-  def blob(digest: Text): LazyList[Data] raises OciError =
+  def blob(digest: Text): Progression[Data] raises OciError =
     if !digest.s.startsWith("sha256:")
     then abort(OciError(OciError.Reason.UnsupportedDigest(digest.cut(t":").head)))
 
     val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
-    entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
+    entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
     . getOrElse(abort(OciError(OciError.Reason.MissingBlob(digest))))
 
   // The decoded top-level index, after validating the `oci-layout` marker.
@@ -109,13 +113,13 @@ extends caps.ExclusiveCapability:
       bytes.read[Json].as[ImageConfig]
 
   // A layer's stored blob, verbatim: for OCI layers, the gzip-compressed tar.
-  def compressed(descriptor: Descriptor): LazyList[Data] raises OciError =
+  def compressed(descriptor: Descriptor): Progression[Data] raises OciError =
     blob(descriptor.digest)
 
   // A layer's content as the uncompressed tar byte stream, decompressing according to
   // the descriptor's media type; unrecognised types stream verbatim.
-  def layer(descriptor: Descriptor): LazyList[Data] raises OciError =
-    if descriptor.mediaType.suffixes.contains(Media.Suffix.Gzip)
+  def layer(descriptor: Descriptor): Progression[Data] raises OciError =
+    if descriptor.mediaType.suffixes.stdlib.contains(Media.Suffix.Gzip)
     then compressed(descriptor).decompress[Gzip]
     else compressed(descriptor)
 
@@ -136,13 +140,13 @@ extends caps.ExclusiveCapability:
 
     bytes
 
-  private def gather(stream: LazyList[Data]): Data =
-    stream.foldLeft(IArray.empty[Byte])(_ ++ _)
+  private def gather(stream: Progression[Data]): Data =
+    stream.stdlib.foldLeft(IArray.empty[Byte])(_ ++ _)
 
   // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
   private def document(name: Text, reason: OciError.Reason): Data raises OciError =
     val bytes =
-      entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
+      entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
       . getOrElse(abort(OciError(reason)))
 
     gather(bytes)
@@ -175,4 +179,4 @@ extends Openable:
   :   result =
 
     if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
-    block(using new ImageHandle(Tarfile.read(LazyList(value))) with Granting[grants] {})
+    block(using new ImageHandle(Tarfile.read(Progression(value))) with Granting[grants] {})

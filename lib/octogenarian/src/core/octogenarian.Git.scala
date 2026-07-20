@@ -32,6 +32,8 @@
                                                                                                   */
 package octogenarian
 
+import scala.caps
+
 import scala.compiletime.*
 
 import ambience.*
@@ -58,7 +60,7 @@ import GitError.Reason.*
 object Git:
   // Drop consecutive equal values from a single-pass iterator — git repeats a
   // progress percentage across many carriage-return updates. Replaces the
-  // LazyList-only `deduplicate` combinator, matching its consecutive semantics.
+  // Progression-only `deduplicate` combinator, matching its consecutive semantics.
   private def distinctConsecutive(iterator: Iterator[Progress]): Iterator[Progress] =
     var previous: Optional[Progress] = Unset
 
@@ -72,7 +74,7 @@ object Git:
     // `delineate` splits on `\n`, `\r\n` and `\r`, so git's carriage-return
     // progress updates each become their own line — subsuming the old manual
     // `cut(r"[\n\r]")`. The stderr line iterator is laundered pure (exactly as
-    // the old `toLazyList` bridge did) so the progress iterator is a plain,
+    // the old `toProgression` bridge did) so the progress iterator is a plain,
     // single-owner value the fetching `Job` carries alongside its result.
     val stages = safely[StreamError]:
       val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)

@@ -32,6 +32,8 @@
                                                                                                   */
 package geodesy
 
+import scala.math
+
 import anticipation.*
 import gossamer.*
 import hypotenuse.*

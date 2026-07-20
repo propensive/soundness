@@ -151,7 +151,7 @@ object Writable:
 
 // A target which accepts a whole stream of `Operand` chunks and writes it to
 // completion: the stream parameter is a single-owner pull endpoint which the
-// writer drains (formerly a `LazyList`). `Sink` is the endpoint-minting
+// writer drains (formerly a `Progression`). `Sink` is the endpoint-minting
 // counterpart, for callers that push.
 trait Writable extends Typeclass, Operable:
   def write(target: Self, stream: (Stream[Operand] over Credit)^): Unit

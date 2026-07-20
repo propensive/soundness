@@ -43,6 +43,9 @@ import kaleidoscope.*
 import prepositional.*
 import spectacular.*
 import symbolism.*
+import proscenium.compat.*
+
+import rudiments.*
 import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
@@ -75,7 +78,7 @@ object Semver:
             raise(SemverError(text, SemverError.Reason.EmptyIdentifier))
 
           for
-            extra   <- List(prerelease2, build2).compact
+            extra   <- List(prerelease2, build2).stdlib.compact
             element <- extra
           do element match
             case r"0[0-9]+"       => raise(SemverError(text, SemverError.Reason.LeadingZero))
@@ -113,23 +116,25 @@ object Semver:
           abort(SemverError(text, SemverError.Reason.BadFormat))
 
   given ordering: Ordering[Semver] = Ordering.fromLessThan: (left, right) =>
-    def compare(left: List[Long | Text], right: List[Long | Text]): Boolean =
-      (left, right).absolve match
-        case (Nil, Nil) => false
-        case (Nil, _)   => true
-        case (_, Nil)   => false
+    def compare(left0: List[Long | Text], right0: List[Long | Text]): Boolean =
+      val left = left0.stdlib
+      val right = right0.stdlib
+      if left.isEmpty && right.isEmpty then false
+      else if left.isEmpty then true
+      else if right.isEmpty then false
+      else
+        val lh = left.head
+        val rh = right.head
+        val lts = List.of(left.tail)
+        val rts = List.of(right.tail)
+        lh.absolve match
+          case lh: Text => rh.absolve match
+            case rh: Long => false
+            case rh: Text => if lh == rh then compare(lts, rts) else lh.s.compareTo(rh.s) < 0
 
-        case (left :: lefts, right :: rights) =>
-          left.absolve match
-            case left: Text => right.absolve match
-              case right: Long => false
-
-              case right: Text =>
-                if left == right then compare(lefts, rights) else left.s.compareTo(right.s) < 0
-
-            case left: Long => right.absolve match
-              case right: Text => true
-              case right: Long => if left == right then compare(lefts, rights) else left < right
+          case lh: Long => rh.absolve match
+            case rh: Text => true
+            case rh: Long => if lh == rh then compare(lts, rts) else lh < rh
 
     if left.major == right.major then
       if left.minor == right.minor then

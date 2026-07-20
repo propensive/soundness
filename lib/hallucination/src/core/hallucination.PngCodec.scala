@@ -35,6 +35,7 @@ package hallucination
 import java.io as ji
 
 import scala.collection.mutable as scm
+import scala.math
 
 import anticipation.*
 import contingency.*
@@ -92,9 +93,9 @@ private[hallucination] object PngCodec:
             interlace = u8(data, position + 20)
 
             val legal = colorType match
-              case 0 => List(1, 2, 4, 8, 16).contains(depth)
+              case 0 => List(1, 2, 4, 8, 16).stdlib.contains(depth)
               case 2 => depth == 8 || depth == 16
-              case 3 => List(1, 2, 4, 8).contains(depth)
+              case 3 => List(1, 2, 4, 8).stdlib.contains(depth)
               case 4 => depth == 8 || depth == 16
               case 6 => depth == 8 || depth == 16
               case _ => false
@@ -129,7 +130,7 @@ private[hallucination] object PngCodec:
       val inflated: Array[Byte] =
         val deflated = idat.result().immutable(using Unsafe)
 
-        try concatenate(Zlib.compression.decompress(LazyList(deflated)))
+        try concatenate(Zlib.compression.decompress(Progression(deflated)))
         catch case _: IllegalStateException => abort(RasterError(Png(), Reason.Truncated))
 
       val channels = colorType match
@@ -260,7 +261,7 @@ private[hallucination] object PngCodec:
         val passes = List((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4),
                           (1, 0, 2, 2), (0, 1, 1, 2))
 
-        passes.foldLeft(0):
+        passes.stdlib.foldLeft(0):
           case (offset, (startX, startY, stepX, stepY)) =>
             val passWidth = (width - startX + stepX - 1)/stepX
             val passHeight = (height - startY + stepY - 1)/stepY
@@ -340,7 +341,7 @@ private[hallucination] object PngCodec:
       System.arraycopy(current, 0, previous, 0, rowBytes)
 
     val compressed =
-      concatenate(Zlib.compression.compress(LazyList(raw.immutable(using Unsafe))))
+      concatenate(Zlib.compression.compress(Progression(raw.immutable(using Unsafe))))
 
     val output = ji.ByteArrayOutputStream()
     signature.foreach(output.write(_))
@@ -380,10 +381,10 @@ private[hallucination] object PngCodec:
     output.write((value >> 8)&0xff)
     output.write(value&0xff)
 
-  private def concatenate(stream: LazyList[Data]): Array[Byte] =
+  private def concatenate(stream: Progression[Data]): Array[Byte] =
     val output = ji.ByteArrayOutputStream()
 
-    stream.foreach: data =>
+    stream.each: data =>
       output.write(data.mutable(using Unsafe))
 
     output.toByteArray.nn

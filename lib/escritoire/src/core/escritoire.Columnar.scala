@@ -32,6 +32,8 @@
                                                                                                   */
 package escritoire
 
+import scala.collection.immutable.IndexedSeq
+
 import anticipation.*
 import gossamer.*
 import hieroglyph.*

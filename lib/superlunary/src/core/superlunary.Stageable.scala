@@ -53,10 +53,19 @@ object Stageable:
         given RemoteError mitigates JsonError =
           error => RemoteError(RemoteError.Reason.Deserialization)
 
-        Array.from(provide[Json is Decodable in Text](text.nn.as[Json].as[List[Json]]))
+        provide[Tactic[JsonError]]:
+          provide[Json is Decodable in Text]:
+            val elements: IArray[Json.Ast] = Json.unseal(text.nn.as[Json]).array
+            val out = new Array[Object](elements.length)
+            var i = 0
+            while i < elements.length do
+              out(i) = Json.ast(elements(i))
+              i += 1
+            out
 
     inline def serialize(value: Array[Object]): Text =
-      value.iterator.to(List).map(_.asInstanceOf[Json]).in[Json].encode
+      val roots = IArray.from(value.iterator.map { obj => Json.unseal(obj.asInstanceOf[Json]) })
+      Json.ast(Json.Ast.arr(roots.asInstanceOf[IArray[Any]])).encode
 
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.in[Json])
 

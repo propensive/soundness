@@ -504,7 +504,7 @@ private[hallucination] object Vp8Decoder:
         left.complexity(y + 1) = leftComplexity
         y += 1
 
-      for j <- List(5, 7) do
+      for j <- List(5, 7).stdlib do
         var yy = 0
 
         while yy < 2 do
@@ -687,7 +687,7 @@ private[hallucination] object Vp8Decoder:
         // Filter across the internal vertical subblock edges.
         if doSubblock then
           if filterType then
-            for x <- List(4, 8, 12) do
+            for x <- List(4, 8, 12).stdlib do
               var y = 0
 
               while y < 16 do
@@ -696,7 +696,7 @@ private[hallucination] object Vp8Decoder:
 
                 y += 1
           else
-            for x <- List(4, 8, 12) do
+            for x <- List(4, 8, 12).stdlib do
               var y = 0
 
               while y < 16 do
@@ -747,7 +747,7 @@ private[hallucination] object Vp8Decoder:
         // Filter across the internal horizontal subblock edges.
         if doSubblock then
           if filterType then
-            for y <- List(4, 8, 12) do
+            for y <- List(4, 8, 12).stdlib do
               var x = 0
 
               while x < 16 do
@@ -756,7 +756,7 @@ private[hallucination] object Vp8Decoder:
 
                 x += 1
           else
-            for y <- List(4, 8, 12) do
+            for y <- List(4, 8, 12).stdlib do
               var x = 0
 
               while x < 16 do

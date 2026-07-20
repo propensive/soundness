@@ -49,6 +49,7 @@ import digression.*
 import galilei.*
 import hellenism.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 
 object linkerOptions:
@@ -98,7 +99,7 @@ object sjsLinkages:
 
       val entries: List[jnf.Path] =
         jnf.Paths.get(compilation.out.encode.s).nn ::
-          compilation.classpath.entries.to(List).flatMap:
+          compilation.classpath.entries.bind:
             case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
             case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
             case _                                   => Nil
@@ -122,11 +123,11 @@ object sjsLinkages:
         val cache = StandardImpl.irFileCache().newCache
 
         val (containers, _) =
-          Await.result(PathIRContainer.fromClasspath(entries), 300.seconds)
+          Await.result(PathIRContainer.fromClasspath(entries.stdlib), 300.seconds)
 
         val irFiles = Await.result(cache.cached(containers), 300.seconds)
         val output = PathOutputDirectory(outPath)
-        Await.result(linker.link(irFiles, initializers, output, logger), 1800.seconds)
+        Await.result(linker.link(irFiles, initializers.stdlib, output, logger), 1800.seconds)
         artifact(out)
 
       catch case suc.NonFatal(error) =>

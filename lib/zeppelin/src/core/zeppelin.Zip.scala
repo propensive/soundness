@@ -126,7 +126,7 @@ object Zip:
       val uncompressed = raw.length.toLong
 
       def stored: Entry =
-        Entry(ref, Method.Stored, crc, uncompressed, uncompressed, () => LazyList(raw), time, date)
+        Entry(ref, Method.Stored, crc, uncompressed, uncompressed, () => Progression(raw), time, date)
 
       compression match
         case Compression.Stored => stored
@@ -136,7 +136,7 @@ object Zip:
 
           if deflated.length >= raw.length then stored
           else Entry(ref, Method.Deflate, crc, uncompressed, deflated.length.toLong,
-              () => LazyList(deflated), time, date)
+              () => Progression(deflated), time, date)
 
     // Used by the random-access reader to rebuild an entry from central-directory metadata
     // without recompressing; `storedBytes` reads the already-compressed payload lazily.
@@ -146,7 +146,7 @@ object Zip:
        crc32:            Int,
        uncompressedSize: Long,
        compressedSize:   Long,
-       storedBytes:      () => LazyList[Data],
+       storedBytes:      () => Progression[Data],
        dosTime:          Int,
        dosDate:          Int,
        directory:        Boolean,
@@ -157,7 +157,7 @@ object Zip:
           directory, comment)
 
     given streamable: Entry is Streamable by Data over Credit = entry =>
-      entry.contents.iterator.stream
+      entry.contents.stdlib.iterator.stream
 
   case class Entry
     ( ref:              Path on Zip,
@@ -165,16 +165,16 @@ object Zip:
      crc32:            Int,
      uncompressedSize: Long,
      compressedSize:   Long,
-     storedBytes:      () => LazyList[Data],
+     storedBytes:      () => Progression[Data],
      dosTime:          Int               = Zip.epochTime,
      dosDate:          Int               = Zip.epochDate,
      directory:        Boolean           = false,
      comment:          Optional[Text]    = Unset ):
 
     // The decompressed content of the entry.
-    def contents: LazyList[Data] = method match
+    def contents: Progression[Data] = method match
       case Method.Stored  => storedBytes()
-      case Method.Deflate => LazyList(inflate(gather(storedBytes())))
+      case Method.Deflate => Progression(inflate(gather(storedBytes())))
 
   // 00:00:00, 1 January 1980 — the minimum value representable in a DOS timestamp.
   private[zeppelin] val epochTime: Int = 0x0000
@@ -260,7 +260,7 @@ object Zip:
   // over the whole value.
   private[zeppelin] def inflate(data: Data): Data = data.decompress[Deflate]
 
-  private[zeppelin] def gather(stream: LazyList[Data]): Data =
+  private[zeppelin] def gather(stream: Progression[Data]): Data =
     val out = ji.ByteArrayOutputStream()
     stream.each: chunk => out.write(chunk.mutable(using Unsafe))
     out.toByteArray.nn.immutable(using Unsafe)

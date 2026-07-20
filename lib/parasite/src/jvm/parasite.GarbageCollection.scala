@@ -32,8 +32,12 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.lang.management as jlm
 import javax.management as jm
@@ -93,7 +97,7 @@ object GarbageCollection:
 
     def register(value: Os.type, action: GarbageCollection => Unit): () => Unit =
       val listeners =
-        jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.asScala.to(List).flatMap:
+        jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.asScala.to(List).bind:
           case emitter: jm.NotificationEmitter =>
             val listener: jm.NotificationListener^ = (notification, handback) =>
               if
@@ -114,7 +118,7 @@ object GarbageCollection:
                         key.tt ->
                           (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
 
-                      .to(Map)
+                      .pipe(Map.from(_))
 
                     action(GarbageCollection(gcInfo.getId.toInt.z, collector, cause, memory))
 
@@ -145,6 +149,6 @@ case class GarbageCollection
     collector: GarbageCollection.Collector,
     cause:     GarbageCollection.Cause,
     bytes:     Map[Text, (before: Bytes, after: Bytes)] ):
-  def before: Bytes = bytes.to(List).map(_(1)(0)).total
-  def after: Bytes = bytes.to(List).map(_(1)(1)).total
+  def before: Bytes = bytes.toList.map(_(1)(0)).stdlib.total
+  def after: Bytes = bytes.toList.map(_(1)(1)).stdlib.total
   def reduction: Bytes = before - after

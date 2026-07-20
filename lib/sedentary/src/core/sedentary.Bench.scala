@@ -32,6 +32,8 @@
                                                                                                   */
 package sedentary
 
+import scala.math
+
 import java.lang as jl
 
 import galilei.*
@@ -162,8 +164,8 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
         }
 
     val results0 = dispatch(body)
-    val sample: Long = results0(0)
-    val results = results0.drop(1)
+    val sample: Long = results0.stdlib(0)
+    val results = results0.stdlib.drop(1)
     val total = results.sum
     val iterations0: Optional[Int] = iterations
     val runs = iterations0.or(5)

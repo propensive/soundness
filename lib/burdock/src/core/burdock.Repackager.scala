@@ -32,6 +32,8 @@
                                                                                                   */
 package burdock
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import digression.*
@@ -118,8 +120,8 @@ object Repackager:
       progress: Progress = (_, _) => () )
   :   (List[Requirement], List[Zip.Entry]) raises RepackageError =
 
-    val requirements = List.newBuilder[Requirement]
-    val inlined = List.newBuilder[Zip.Entry]
+    val requirements = scala.collection.immutable.List.newBuilder[Requirement]
+    val inlined = scala.collection.immutable.List.newBuilder[Zip.Entry]
     val total: Int = hashes.length
     var completed: Int = 0
 
@@ -142,7 +144,7 @@ object Repackager:
 
     . protect:
         supervise:
-          hashes.grouped(parallelism).to(List).each: group =>
+          hashes.stdlib.grouped(parallelism).toList.each: group =>
             val tasks = group.map: hash =>
               async((hash, classify(hash)))
 
@@ -150,13 +152,13 @@ object Repackager:
               val (reqs, entries) =
                 result.lest(RepackageError(m"dependency $hash is neither published nor cached"))
 
-              requirements ++= reqs
-              inlined ++= entries
+              requirements ++= reqs.stdlib
+              inlined ++= entries.stdlib
 
             completed += group.length
             progress(completed, total)
 
-    (requirements.result(), inlined.result())
+    (List.of(requirements.result()), List.of(inlined.result()))
 
 
   // Rewrites `inputJar` into `outputJar`: keeps the application's own classes,
@@ -186,7 +188,7 @@ object Repackager:
         var depsData: Optional[Data] = Unset
         var inputCount: Int = 0
         var directoriesSkipped: Int = 0
-        val ownBuilder = List.newBuilder[Zip.Entry]
+        val ownBuilder = scala.collection.immutable.List.newBuilder[Zip.Entry]
 
         Zipfile.read(inputJar).entries.each: entry =>
           inputCount += 1
@@ -216,7 +218,7 @@ object Repackager:
           depsData.lest(RepackageError(m"the JAR has no $resource resource")).utf8
           . cut(t"\n").filter(_ != t"")
 
-        val ownEntries: List[Zip.Entry] = ownBuilder.result()
+        val ownEntries: List[Zip.Entry] = List.of(ownBuilder.result())
         val (requirements, inlined) = partition(hashes, resolve, cached, progress)
 
         // Published dependencies are downloaded and added to the classpath at runtime, so
@@ -224,10 +226,11 @@ object Repackager:
         // them by name from each published dependency's cached JAR (payloads are not read); a
         // dependency absent from the cache can't be identified, so its entries stay bundled —
         // still correct, just not slimmed.
-        val publishedEntries: List[Zip.Entry] = requirements.flatMap: requirement =>
+        val publishedEntries: List[Zip.Entry] = requirements.bind: requirement =>
           cached(requirement.digest).or(Nil)
 
-        val stripped: Set[Text] = publishedEntries.map(_.ref.show).to(Set)
+        val stripped: scala.collection.immutable.Set[Text] =
+          publishedEntries.stdlib.map(_.ref.show).toSet
 
         val keptEntries: List[Zip.Entry] = ownEntries.filter: entry =>
           !stripped.contains(entry.ref.show)
@@ -254,9 +257,9 @@ object Repackager:
         // carries `burdock/Bootstrap.class`), and a bundled class over an inlined cache copy.
         // Without this, `Zipfile.write` rejects the duplicate entry.
         val entries: List[Zip.Entry] =
-          (bootstrap :: keptEntries ++ inlined).distinctBy(_.ref.show)
+          List.of((bootstrap :: keptEntries.stdlib ++ inlined.stdlib).distinctBy(_.ref.show))
 
-        Zipfile.write(outputJar)(manifestEntry #:: entries.to(LazyList))
+        Zipfile.write(outputJar)(manifestEntry #:: Progression.from(entries.stdlib))
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

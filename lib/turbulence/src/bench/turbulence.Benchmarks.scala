@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import scala.collection.immutable.IndexedSeq
+
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import enigmatic.*, blockCipherMode.cbc, blockCipherPadding.pkcs7
 import gastronomy.providers.javaStdlibProvider, gastronomy.crypto.permitUnauthenticatedCrypto
@@ -102,8 +104,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     scala.collection.immutable.ArraySeq.unsafeWrapArray(inputArray)
   // The same 4 MB split into 64 KiB chunks, so aggregation/write loops iterate
   // (a single in-memory chunk would let `read[Data]` fold to an identity).
-  lazy val inputChunks: LazyList[Data] =
-    LazyList.from((0 until input.length by 65536).map: offset =>
+  lazy val inputChunks: Progression[Data] =
+    Progression.from((0 until input.length by 65536).map: offset =>
       input.slice(offset, (offset + 65536).min(input.length)))
   // The 4 MB split into four equal parts, one per source stream for fan-in.
   lazy val quarters: IndexedSeq[Data] =
@@ -203,7 +205,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedInputArray))
             . covary[cats.effect.IO]
-            . through(comp.gunzip()).flatMap(_.content)
+            . through(comp.gunzip()).bind(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -371,7 +373,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             import cats.effect.unsafe.implicits.global
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
-            . through(comp.gzip()).through(comp.gunzip()).flatMap(_.content)
+            . through(comp.gzip()).through(comp.gunzip()).bind(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -422,7 +424,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             import cats.effect.unsafe.implicits.global
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedTextArray)).covary[cats.effect.IO]
-            . through(comp.gunzip()).flatMap(_.content)
+            . through(comp.gunzip()).bind(_.content)
             . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
         }
 
@@ -456,7 +458,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             . through(comp.gzip())
             . through(fs2.text.base64.encode)
             . through(fs2.text.base64.decode)
-            . through(comp.gunzip()).flatMap(_.content)
+            . through(comp.gunzip()).bind(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -669,14 +671,14 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     // Example E: AES-256-CBC encrypt. Soundness `enigmatic` streaming encryption
-    // drives the JCE cipher over the legacy `LazyList` view. ZIO/FS2/Kyo have no
+    // drives the JCE cipher over the legacy `Progression` view. ZIO/FS2/Kyo have no
     // native block cipher, so only the JDK reference is shown.
     suite(m"AES-256-CBC encrypt (4 MB)"):
       bench(m"Soundness  enigmatic encryptStream")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
             turbulence.Benchmarks.aesKey.uncloak:
-              LazyList(turbulence.Benchmarks.input).encrypt(InitializationVector.random)
+              Progression(turbulence.Benchmarks.input).encrypt(InitializationVector.random)
               . map(_.length.toLong).sum
         }
 
@@ -758,7 +760,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Raw  OutputStream.write")(target = 1*Second, operationSize = size):
         '{
             val out = new java.io.ByteArrayOutputStream(turbulence.Benchmarks.input.length)
-            turbulence.Benchmarks.inputChunks.foreach(chunk => out.write(chunk.asInstanceOf[Array[Byte]]))
+            turbulence.Benchmarks.inputChunks.each(chunk => out.write(chunk.asInstanceOf[Array[Byte]]))
             out.size
         }
 
@@ -799,7 +801,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
             stream.sweep((_, _, count) => total += count)
@@ -812,7 +814,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val queue = new java.util.concurrent.ArrayBlockingQueue[AnyRef](8)
             val end = new Object
             val producer = new Thread(() =>
-              turbulence.Benchmarks.inputChunks.foreach(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              turbulence.Benchmarks.inputChunks.each(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
               queue.put(end))
             producer.start()
             var total = 0L
@@ -828,7 +830,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO, cats.syntax.all.*
-            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
               val produce =
                 turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
                   io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
@@ -916,7 +918,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*
               ZIO.scoped:
-                ZStream.fromChunk(Chunk.fromArray(turbulence.Benchmarks.inputArray)).broadcast(3, 16).flatMap: streams =>
+                ZStream.fromChunk(Chunk.fromArray(turbulence.Benchmarks.inputArray)).broadcast(3, 16).bind: streams =>
                   ZIO.foreachPar(streams)(_.runCount).map(_.sum)
         }
 
@@ -932,7 +934,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
             stream.sweep((_, _, count) => total += count)
@@ -944,7 +946,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
-            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
               val produce =
                 turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
                   io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
@@ -979,7 +981,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
             stream.sweep((_, _, count) => total += count)
@@ -991,7 +993,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             import cats.effect.IO
-            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
               val produce =
                 turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
                   io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
@@ -1043,7 +1045,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedInputArray))
             . covary[cats.effect.IO]
-            . through(comp.gunzip()).flatMap(_.content)
+            . through(comp.gunzip()).bind(_.content)
             . compile.count.unsafeRunSync()
         }
 
@@ -1104,7 +1106,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           '{
               val (intake, stream) = Conduit[Data]()
               val producer = Thread.ofVirtual.start(() =>
-                turbulence.Benchmarks.inputChunks.foreach(intake.put)
+                turbulence.Benchmarks.inputChunks.each(intake.put)
                 intake.finish())
               var total = 0L
               stream.sweep((_, _, count) => total += count)
@@ -1117,7 +1119,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           '{
               import cats.effect.unsafe.implicits.global
               import cats.effect.IO
-              val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+              val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).bind: channel =>
                 val produce =
                   turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
                     io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
@@ -1152,7 +1154,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
             stream.sweep((_, _, count) => total += count)
@@ -1168,7 +1170,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             val (intake, stream) = Conduit[Data]()
             val producer = Thread.ofVirtual.start(() =>
-              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              turbulence.Benchmarks.inputChunks.each(intake.put)
               intake.finish())
             var total = 0L
             stream.sweep((_, _, count) => total += count)

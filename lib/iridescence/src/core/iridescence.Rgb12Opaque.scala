@@ -32,6 +32,8 @@
                                                                                                   */
 package iridescence
 
+import proscenium.compat.*
+
 import anticipation.*
 import prepositional.*
 import rudiments.*

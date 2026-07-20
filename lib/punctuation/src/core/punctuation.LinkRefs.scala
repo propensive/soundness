@@ -81,4 +81,4 @@ private[punctuation] final class LinkRefs:
       case Some(ref) => ref
       case None      => vacuous.Unset
 
-  def all: List[Markdown.LinkRef] = table.values.to(List)
+  def all: List[Markdown.LinkRef] = List.of(table.values.toList)

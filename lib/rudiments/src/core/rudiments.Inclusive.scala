@@ -46,15 +46,31 @@ import prepositional.*
 // `list.has(wrongType)`. With the exact element, `Map`'s element is a key/value
 // pair, so `map.has(key)` is a compile error; key membership is `Indexable`'s
 // `defines`.
-object Inclusive:
+object Inclusive extends Inclusive.Fallback:
   type Element[collection] = collection match
     case Iterable[element] => element
 
-  given iterable: [collection <: Iterable[?]] => collection is Inclusive by Element[collection] =
-    (collection, value) => collection.exists(_ == value)
+  // The blanket `Iterable` instance lives in a lower-priority parent: for an *unrefined*
+  // `X is Inclusive` query the compiler otherwise reports it ambiguous with the per-alias
+  // instances below, without ever reducing `Element` to discover the mismatch.
+  trait Fallback:
+    given iterable: [collection <: Iterable[?]] => collection is Inclusive by Element[collection] =
+      (collection, value) => collection.exists(_ == value)
 
   given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
     (iarray, value) => iarray.exists(_ == value)
+
+  // Opaque `Series` is no longer an `Iterable` subtype, so it needs its own instance.
+  given series: [element] => Series[element] is Inclusive by element =
+    (series, value) => series.stdlib.exists(_ == value)
+
+  // Opaque `Set` likewise.
+  given set: [element] => Set[element] is Inclusive by element =
+    (set, value) => set.stdlib.contains(value)
+
+  // Opaque `List` likewise (membership is a single linear pass, so ungated).
+  given list: [element] => List[element] is Inclusive by element =
+    (list, value) => list.stdlib.contains(value)
 
   given array: [element <: Matchable] => Array[element] is Inclusive by element =
     (array, value) => array.exists(_ == value)

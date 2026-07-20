@@ -32,6 +32,8 @@
                                                                                                   */
 package zeppelin
 
+import scala.math
+
 import java.io as ji
 import java.nio as jn
 import java.nio.channels as jnc
@@ -47,6 +49,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import nomenclature.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
@@ -68,7 +71,7 @@ object Zipfile:
     checkDuplicates(entries)
     val out = ji.FileOutputStream(ji.File(path.generic.s))
 
-    try Zipfile(entries.to(LazyList), Unset, prefix).serialize.each: chunk =>
+    try Zipfile(entries.to(Progression), Unset, prefix).serialize.each: chunk =>
       out.write(chunk.mutable(using Unsafe))
     finally out.close()
 
@@ -78,7 +81,7 @@ object Zipfile:
   :   Zipfile logs ZipEvent raises ZipError =
 
     val zipfile = parse(FileSource(path.generic))
-    Log.info(ZipEvent.Read(path.generic, zipfile.entries.size))
+    Log.info(ZipEvent.Read(path.generic, zipfile.entries.stdlib.size))
     zipfile
 
   def read(data: Data): Zipfile raises ZipError = parse(DataSource(data))
@@ -86,7 +89,7 @@ object Zipfile:
   private def checkDuplicates(entries: Iterable[Zip.Entry]): Unit raises ZipError =
     val seen = scala.collection.mutable.HashSet[Text]()
 
-    entries.foreach: entry =>
+    entries.each: entry =>
       if !seen.add(entry.ref.encode)
       then raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
 
@@ -201,7 +204,7 @@ object Zipfile:
     val prefixDelta = cdActualStart - cdOffset
 
     val central = source.read(cdActualStart, cdSize.toInt)
-    val builder = List.newBuilder[Zip.Entry]
+    val builder = scala.collection.immutable.List.newBuilder[Zip.Entry]
     var p = 0
     var count = 0L
     var earliestEntry = Long.MaxValue
@@ -279,12 +282,12 @@ object Zipfile:
       if payloadOffset < earliestEntry then earliestEntry = payloadOffset
       val payloadSize = compressedSize
 
-      val storedBytes: () => LazyList[Data] = () =>
+      val storedBytes: () => Progression[Data] = () =>
         val header = source.read(payloadOffset, 30)
         val headerNameLength = Zip.u16(header, 26)
         val headerExtraLength = Zip.u16(header, 28)
         val start = payloadOffset + 30 + headerNameLength + headerExtraLength
-        LazyList(source.read(start, payloadSize.toInt))
+        Progression(source.read(start, payloadSize.toInt))
 
       builder += Zip.Entry.precompressed(ref, method, crc, uncompressedSize, compressedSize,
           storedBytes, dosTime, dosDate, directory, entryComment)
@@ -299,7 +302,7 @@ object Zipfile:
     val prefix: Optional[Data] =
       if prefixSize > 0 then source.read(0, prefixSize.toInt) else Unset
 
-    Zipfile(builder.result().to(LazyList), comment, prefix)
+    Zipfile(builder.result().to(Progression), comment, prefix)
 
   private def decodeText(bytes: Data): Text =
     String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
@@ -348,7 +351,7 @@ object Zipfile:
 
     val extra: Data =
       if !zip64 then IArray.empty[Byte] else
-        val fields = List.newBuilder[Long]
+        val fields = scala.collection.immutable.List.newBuilder[Long]
         if needUncompressed then fields += entry.uncompressedSize
         if needCompressed then fields += entry.compressedSize
         if needOffset then fields += localOffset
@@ -359,7 +362,7 @@ object Zipfile:
           Zip.putU16(array, 2, values.length*8)
           var offset = 4
 
-          values.foreach: value =>
+          values.each: value =>
             Zip.putU64(array, offset, value)
             offset += 8
 
@@ -435,19 +438,19 @@ object Zipfile:
       List(record, locator, eocd)
 
 case class Zipfile
-  ( entries: LazyList[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
+  ( entries: Progression[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
   def entry(ref: Path on Zip): Zip.Entry raises ZipError =
-    entries.find(_.ref == ref).getOrElse(abort(ZipError(ZipError.Reason.NotFound(ref))))
+    entries.stdlib.find(_.ref == ref).getOrElse(abort(ZipError(ZipError.Reason.NotFound(ref))))
 
-  def serialize: LazyList[Data] =
+  def serialize: Progression[Data] =
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
     val prefixBytes: Data = prefix.or(IArray.empty[Byte])
-    val entryList = entries.to(List)
+    val entryList = List.from(entries.stdlib)
     var offset = prefixBytes.length.toLong
-    val builder = List.newBuilder[(Zip.Entry, Data, Data, Long)]
+    val builder = scala.collection.immutable.List.newBuilder[(Zip.Entry, Data, Data, Long)]
 
-    entryList.foreach: entry =>
+    entryList.each: entry =>
       val name = Zipfile.nameBytes(entry)
       val header = Zipfile.localHeader(entry, name)
       builder += ((entry, name, header, offset))
@@ -459,10 +462,10 @@ case class Zipfile
     val cdSize = central.foldLeft(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
 
-    val prefixStream: LazyList[Data] =
-      if prefixBytes.length == 0 then LazyList() else LazyList(prefixBytes)
+    val prefixStream: Progression[Data] =
+      if prefixBytes.length == 0 then Progression() else Progression(prefixBytes)
 
-    val local: LazyList[Data] =
-      records.to(LazyList).flatMap: (entry, _, header, _) => header #:: entry.storedBytes()
+    val local: Progression[Data] =
+      records.to(Progression).bind: (entry, _, header, _) => (header #:: entry.storedBytes()): Progression[IArray[Byte]]
 
-    prefixStream #::: local #::: central.to(LazyList) #::: tail.to(LazyList)
+    prefixStream #::: local #::: central.to(Progression) #::: tail.stdlib.to(Progression)

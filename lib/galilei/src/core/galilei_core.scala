@@ -74,7 +74,7 @@ package filesystemTraversal:
 
 extension [plane: Filesystem](path: Path on plane)
 
-  inline def children(using explorable: plane is Explorable): LazyList[Path on plane] =
+  inline def children(using explorable: plane is Explorable): Progression[Path on plane] =
     explorable.children(path)
 
   // Write `content` to the file in its entirety as a single, direct operation: the whole file is
@@ -122,19 +122,19 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
-  :   LazyList[Path on plane] raises IoError =
+  :   Progression[Path on plane] raises IoError =
 
-    path.children.flatMap: child =>
+    path.children.bind: child =>
       summon[TraversalOrder] match
         case TraversalOrder.PreOrder  => child #:: child.descendants
-        case TraversalOrder.PostOrder => child.descendants #::: LazyList(child)
+        case TraversalOrder.PostOrder => child.descendants #::: Progression(child)
 
 
   def size()(using plane is Explorable, FilesystemBackend on plane): Bytes raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
 
-    descendants.fuse(summon[FilesystemBackend on plane].stat(path, false).size.b):
+    descendants.stdlib.fuse(summon[FilesystemBackend on plane].stat(path, false).size.b):
       state + next.size()
 
 

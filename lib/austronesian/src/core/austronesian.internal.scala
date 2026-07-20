@@ -32,6 +32,10 @@
                                                                                                   */
 package austronesian
 
+import scala.collection.immutable.Vector
+
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -105,6 +109,21 @@ object internal:
 
       iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
+    // Alias counterparts of `list`/`collection`: the opaque prelude collections
+    // do not conform to `Iterable`, so each gets its own instance built at the
+    // underlying stdlib type and cast (a no-op at erasure).
+    given listEncodable: [list <: List, element: Encodable in Pojo]
+    =>  list[element] is Encodable in Pojo =
+      list.asInstanceOf[list[element] is Encodable in Pojo]
+
+    given setEncodable: [set <: Set, element: Encodable in Pojo]
+    =>  set[element] is Encodable in Pojo =
+      list.asInstanceOf[set[element] is Encodable in Pojo]
+
+    given seriesEncodable: [series <: Series, element: Encodable in Pojo]
+    =>  series[element] is Encodable in Pojo =
+      list.asInstanceOf[series[element] is Encodable in Pojo]
+
 
     given text2: Text is Decodable:
       type Form = Pojo
@@ -167,6 +186,27 @@ object internal:
 
         case other =>
           abort(PojoError())
+
+    given listDecodable: [list <: List, element]
+    =>  ( tactic: Tactic[PojoError] )
+    =>  ( decodable: => element is Decodable in Pojo )
+    =>  list[element] is Decodable in Pojo =
+      collection[scala.collection.immutable.List, element]
+      . asInstanceOf[list[element] is Decodable in Pojo]
+
+    given setDecodable: [set <: Set, element]
+    =>  ( tactic: Tactic[PojoError] )
+    =>  ( decodable: => element is Decodable in Pojo )
+    =>  set[element] is Decodable in Pojo =
+      collection[scala.collection.immutable.Set, element]
+      . asInstanceOf[set[element] is Decodable in Pojo]
+
+    given seriesDecodable: [series <: Series, element]
+    =>  ( tactic: Tactic[PojoError] )
+    =>  ( decodable: => element is Decodable in Pojo )
+    =>  series[element] is Decodable in Pojo =
+      collection[Vector, element]
+      . asInstanceOf[series[element] is Decodable in Pojo]
 
 
     extension (pojo: Pojo)

@@ -47,9 +47,11 @@ extension (inline cardinal: Int)
   inline def z: Ordinal = Ordinal.zerary(cardinal)
   inline def u: Ordinal = Ordinal.uniary(cardinal)
 
+extension [populable: Populable](value: populable)
+  inline def nil: Boolean = populable.nil(value)
+
 extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval.initial(countable.size(value))
-  inline def nil: Boolean = countable.nil(value)
 
   inline def iterate(inline lambda: (Ordinal in value.type) => Unit): Unit =
     var index: Int = 0

@@ -122,7 +122,7 @@ class ProtobufParser(data: Data):
 
       accumulator.getOrElseUpdate(number, scm.ListBuffer()).addOne(value)
 
-    accumulator.view.mapValues(_.to(List)).to(Map)
+    Map.from(accumulator.view.mapValues(_.to(List)))
 
   // ── The direct rim ─────────────────────────────────────────────────────
   // Byte-level reads for direct parsing (`Protobuf.Parsable`), bounded by a
@@ -332,7 +332,7 @@ class ProtobufParser(data: Data):
   // concatenated scalar values) into one wire value per element. `wireType` is the
   // element encoding, supplied by the element's `Packable` instance.
   def packed(wireType: WireType): List[Protobuf] raises ProtobufError =
-    val builder = List.newBuilder[Protobuf]
+    val builder = scala.collection.immutable.List.newBuilder[Protobuf]
 
     while !atEnd do
       val value = wireType match
@@ -347,4 +347,4 @@ class ProtobufParser(data: Data):
 
       builder += value
 
-    builder.result()
+    List.of(builder.result())

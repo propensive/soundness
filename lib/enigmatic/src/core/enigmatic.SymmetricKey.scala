@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.annotation.targetName
+
 import anticipation.*
 import gastronomy.ProcessingPermit
 import prepositional.*
@@ -58,7 +60,7 @@ object SymmetricKey:
   // Adopt externally-supplied key material from a mutable array, which is zeroed as it is
   // cloaked, leaving the cloaked copy as the only key material. (The `@targetName`
   // disambiguates from the `Data` overload, with which it clashes after erasure.)
-  @annotation.targetName("applyMutable")
+  @targetName("applyMutable")
   def apply[cipher <: Cipher](bytes: Array[Byte])(using cloak: Cloak^)
   :   SymmetricKey[cipher]^{cloak} =
 

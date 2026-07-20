@@ -32,7 +32,7 @@
                                                                                                   */
 package pneumatic
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import scala.annotation.*
 
@@ -70,9 +70,9 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
     stream.via(compression.decompressor()).asInstanceOf[(Stream[Data] over Credit)^]
 
-extension (stream: LazyList[Data])
-  def compress[compression <: Compressor: Compression]: LazyList[Data] =
+extension (stream: Progression[Data])
+  def compress[compression <: Compressor: Compression]: Progression[Data] =
     compression.compress(stream)
 
-  def decompress[compression <: Compressor: Compression]: LazyList[Data] =
+  def decompress[compression <: Compressor: Compression]: Progression[Data] =
     compression.decompress(stream)

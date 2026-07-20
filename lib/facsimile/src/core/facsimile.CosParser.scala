@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -103,7 +106,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
   // `Unset` at the end of the stream. Operands left dangling by a truncated stream are
   // dropped, matching viewer behaviour.
   private[facsimile] def instruction(): Optional[(List[Cos], Text)] raises PdfError =
-    val operands = List.newBuilder[Cos]
+    val operands = scala.collection.immutable.List.newBuilder[Cos]
 
     def recur(): Optional[(List[Cos], Text)] = advance() match
       case CosToken.End =>
@@ -123,7 +126,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           recur()
 
         case _ =>
-          (operands.result(), word)
+          (List.of(operands.result()), word)
 
       case token =>
         operands += interpret(token)
@@ -170,7 +173,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
       abort(PdfError(PdfError.Reason.Unparseable(offset, t"an object")))
 
   private def sequence(): Cos raises PdfError =
-    val elements = List.newBuilder[Cos]
+    val elements = scala.collection.immutable.List.newBuilder[Cos]
 
     while
       advance() match
@@ -185,10 +188,10 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           true
     do ()
 
-    Cos.Sequence(elements.result())
+    Cos.Sequence(List.of(elements.result()))
 
   private def dictionary(): Cos raises PdfError =
-    val entries = Map.newBuilder[Text, Cos]
+    val entries = scala.collection.immutable.Map.newBuilder[Text, Cos]
 
     while
       advance() match
@@ -206,4 +209,4 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           abort(PdfError(PdfError.Reason.Unparseable(offset, t"a name key")))
     do ()
 
-    Cos.Dictionary(entries.result())
+    Cos.Dictionary(Map.of(entries.result()))

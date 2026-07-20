@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import scala.caps
+
 // A destination for log messages of a given `carrier` type. `eucalyptus.Logger` is the concrete
 // implementation; abstracting it here lets `Loggable.fanOut` collect every in-scope sink (via
 // `gigantism.Every`) without `anticipation.log` depending on the logging runtime.

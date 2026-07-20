@@ -32,6 +32,8 @@
                                                                                                   */
 package dissonance
 
+import proscenium.compat.*
+
 import denominative.*
 
 object Evolution:
@@ -41,4 +43,4 @@ object Evolution:
 
 case class Evolution[element](sequence: List[Evolution.Atom[element]]):
   def apply(version: Ordinal): List[element] =
-    sequence.filter(_.has(version)).map(_.value)
+    List.of(sequence.stdlib.filter(_.has(version)).map(_.value))

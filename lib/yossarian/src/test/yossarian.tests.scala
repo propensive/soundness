@@ -52,7 +52,7 @@ object Tests extends Suite(m"Yossarian Tests"):
 
     def drainOutput(pty: Pty): Text =
       pty.output.stop()
-      pty.stream.to(List).map(_.s).mkString.tt
+      pty.stream.stdlib.to(List).map(_.s).mkString.tt
 
     suite(m"Plain text"):
       test(m"writing text places characters in cells"):
@@ -284,10 +284,10 @@ object Tests extends Suite(m"Yossarian Tests"):
     val Pty24x80: () => Pty = () => Pty(80, 24)
 
     def screen(pty: Pty): List[Text] =
-      (0 until pty.buffer.height).toList.map(y => row(pty, y.z))
+      List.of((0 until pty.buffer.height).toList.map(y => row(pty, y.z)))
 
     // Local Text helpers so we don't depend on extension-method imports that
-    // collide with LazyList[Data] versions.
+    // collide with Progression[Data] versions.
     def take(text: Text, n: Int): Text = Text(text.s.substring(0, n).nn)
     def trim(text: Text): Text = Text(text.s.trim.nn)
     def head(text: Text): Char = text.s.charAt(0)

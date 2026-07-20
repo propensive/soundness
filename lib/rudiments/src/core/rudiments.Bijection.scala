@@ -32,13 +32,16 @@
                                                                                                   */
 package rudiments
 
+import scala.collection.immutable.Seq
+
 import scala.collection as sc
+import scala.collection.immutable as sci
 
 object Bijection:
-  def apply[key, value](map: Map[key, value]): Bijection[key, value] =
-    Bijection(map, map.map(_.swap).to(Map))
+  def apply[key, value](map: sci.Map[key, value]): Bijection[key, value] =
+    Bijection(map, map.map(_.swap).to(sci.Map))
 
-case class Bijection[key, value](map: Map[key, value], transposition: Map[value, key])
+case class Bijection[key, value](map: sci.Map[key, value], transposition: sci.Map[value, key])
 extends Iterable[(key, value)], sc.Map[key, value]:
   private inline def bijection: this.type = this
   def iterator: Iterator[(key, value)] = map.iterator

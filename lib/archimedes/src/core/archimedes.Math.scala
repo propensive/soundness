@@ -32,6 +32,10 @@
                                                                                                   */
 package archimedes
 
+import scala.math
+
+import proscenium.compat.*
+
 import anticipation.*
 import baroque.*
 import contingency.*
@@ -99,8 +103,8 @@ object Math:
 
 
   given renderable: (Math is Renderable { type Form = "math" }) = math =>
-    val pairs = math.attributePairs.map { case (key, value) => (key, value: Optional[Text]) }
-    val children = math.contents.map(_.html)
+    val pairs = math.attributePairs.stdlib.map { case (key, value) => (key, value: Optional[Text]) }
+    val children = math.contents.stdlib.map(_.html)
     honeycomb.doms.html.whatwg.Math.node(honeycomb.Attributes(pairs*))(children*)
 
   def apply(children: Mathml*): Math = Math(children.to(List))
@@ -143,25 +147,27 @@ object Math:
   given vector: [element: Encodable in Math, size <: Int]
   =>  Vector[element, size] is Encodable in Math =
     vector =>
-      Math(fenced(Mtable(vector.list.map { element => Mtr(Mtd(element.mathml)) }*), t"(", t")"))
+      Math(fenced(Mtable(vector.list.stdlib.map { element => Mtr(Mtd(element.mathml)) }*), t"(", t")"))
 
   given matrix: [element: Encodable in Math, height <: Int, width <: Int]
   =>  Matrix[element, height, width] is Encodable in Math =
     matrix =>
-      val rows = (0 until matrix.rows).to(List).map: row =>
-        Mtr((0 until matrix.columns).to(List).map { column => Mtd(matrix(row, column).mathml) }*)
+      val rows = (0 until matrix.rows).toList.map: row =>
+        Mtr((0 until matrix.columns).toList.map { column => Mtd(matrix(row, column).mathml) }*)
 
       Math(fenced(Mtable(rows*), t"[", t"]"))
 
   private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
-    val unitNodes: List[Mathml] = units.to(List).sortBy(_._1.s).map: (symbol, power) =>
-      if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
+    val unitNodes: scala.collection.immutable.List[Mathml] =
+      units.stdlib.toList.sortBy(_._1.s).map: (symbol, power) =>
+        if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
 
-    product(Mn(value.toString.tt) :: unitNodes)
+    product(List.of(Mn(value.toString.tt) :: unitNodes))
 
   private def product(nodes: List[Mathml]): Mathml = nodes match
     case one :: Nil   => one
-    case head :: tail => Mrow(head :: tail.flatMap { node => List(Mo(t"⁢"), node) })
+    case head :: tail =>
+      Mrow(List.of(head :: tail.stdlib.flatMap { node => scala.collection.immutable.List(Mo(t"⁢"), node) }))
     case Nil          => Mrow(Nil)
 
   private def fenced(inner: Mathml, open: Text, close: Text): Mathml =
@@ -185,7 +191,7 @@ extends Documentary:
     (t"xmlns" -> mathmlNamespace) :: displayPairs ::: attributes
 
   def xml: Xml =
-    val children: IArray[Node] = contents.map(_.xml).nodes
+    val children: IArray[Node] = contents.stdlib.map(_.xml).nodes
     Element(t"math", Attributes(attributePairs*), children)
 
   def html: Html of "math" = Math.renderable.render(this)

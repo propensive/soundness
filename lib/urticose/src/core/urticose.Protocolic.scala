@@ -32,6 +32,8 @@
                                                                                                   */
 package urticose
 
+import scala.caps
+
 import prepositional.*
 
 trait Protocolic extends Typeclass, Transportive:

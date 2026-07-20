@@ -34,6 +34,8 @@ package savagery
 
 import soundness.*
 
+import proscenium.compat.*
+
 import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely

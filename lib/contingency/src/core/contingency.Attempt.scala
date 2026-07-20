@@ -34,7 +34,7 @@ package contingency
 
 import fulminate.Hazard
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 
 enum Attempt[+success, +error <: Hazard]:

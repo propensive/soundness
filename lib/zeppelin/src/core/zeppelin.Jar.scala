@@ -32,6 +32,8 @@
                                                                                                   */
 package zeppelin
 
+import proscenium.compat.*
+
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
@@ -57,9 +59,9 @@ object Jar:
     // rejoin the preceding attribute, and parsing stops at the first blank line, which ends
     // the main section. An archive without a manifest has no attributes.
     def manifest: Map[Text, Text] =
-      zipfile.entries.find(_.ref.encode == ManifestName).map: entry =>
+      zipfile.entries.stdlib.find(_.ref.encode == ManifestName).map: entry =>
         val bytes: Array[Byte] =
-          entry.contents.foldLeft(Array.empty[Byte]) { (acc, data) => acc ++ data.mutable(using Unsafe) }
+          entry.contents.stdlib.foldLeft(Array.empty[Byte]) { (acc, data) => acc ++ data.mutable(using Unsafe) }
 
         val text: Text = String(bytes, "UTF-8").tt
         val unfolded = text.s.split("\r\n|\r|\n", -1).nn.map(_.nn)
@@ -69,11 +71,11 @@ object Jar:
           if line.startsWith(" ") && acc.nonEmpty then (acc.head + line.drop(1)) :: acc.tail
           else line :: acc
 
-        rejoined.reverse.flatMap: line =>
+        rejoined.reverse.bind: line =>
           line.indexOf(": ") match
             case -1    => Nil
             case index => List((line.take(index).tt, line.drop(index + 2).tt))
-        . to(Map)
+        . pipe(l => Map.from(l.stdlib))
 
       . getOrElse(Map())
 

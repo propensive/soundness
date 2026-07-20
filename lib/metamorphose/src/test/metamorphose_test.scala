@@ -32,7 +32,7 @@
                                                                                                   */
 package metamorphose
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 import soundness.*
 
@@ -95,7 +95,7 @@ object Tests extends Suite(m"Metamorphose tests"):
 
     suite(m"Factoradic decoding"):
       test(m"Check distinctness of factoradic expansions"):
-        (0 to 1000).map(Factoradic(_).expand).to(Set).size
+        (0 to 1000).map(Factoradic(_).expand).toSet.size
       . assert(_ == 1001)
 
     suite(m"Permutations"):
@@ -134,7 +134,7 @@ object Tests extends Suite(m"Metamorphose tests"):
 
       test(m"Check uniqueness of permutations"):
         val list = List("one", "two", "three", "four", "five", "six", "seven")
-        Permutation.bySize(7).map(_(list)).to(Set).size
+        Permutation.bySize(7).map(_(list)).stdlib.toSet.size
       . assert(_ == 5040)
 
       Permutation.bySize(6).each: permutation =>

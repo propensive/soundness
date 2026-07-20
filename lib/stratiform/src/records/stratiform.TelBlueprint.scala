@@ -154,7 +154,7 @@ object TelBlueprint:
 
       i += 1
 
-    builder.toMap
+    Map.of(builder.toMap)
 
   // Map a single Tels.Field to its polyvinyl Member representation.
   // Scalar / Flag / Reference types are translated to a Value member

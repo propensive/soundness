@@ -32,7 +32,12 @@
                                                                                                   */
 package ypsiloid
 
-import language.dynamics
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import scala.language.dynamics
 
 import scala.collection.Factory
 import scala.collection.mutable as scm
@@ -237,8 +242,8 @@ trait Yaml2:
 
             val resolved: Optional[Text] =
               discriminable.discriminate(yaml).let: wire =>
-                val discriminant = variantNames.getOrElse(wire, wire)
-                if labels.contains(discriminant) then discriminant else Unset
+                val discriminant = variantNames.stdlib.getOrElse(wire, wire)
+                if labels.stdlib.contains(discriminant) then discriminant else Unset
 
             resolved.let: discriminant =>
               delegate(discriminant): [variant <: derivation] =>
@@ -289,7 +294,7 @@ trait Yaml2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+          discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
@@ -1264,6 +1269,33 @@ object Yaml extends Yaml2, Dynamic:
     if yaml.root.isNull then ()
     else primitiveFault(yaml, YamlPrimitive.Null, ())
 
+  // Alias counterparts of `iterable`/`iterableEncodable`: the opaque prelude
+  // collections do not conform to `Iterable`, so each alias gets its own
+  // instance, built at the underlying stdlib type and cast (a no-op at erasure).
+  given listDecodable: [list <: List, element]
+  =>  ( tactic: Tactic[YamlError],
+        foci:   Foci[Yaml.Focus] )
+  =>  ( decodable: => (element is Decodable in Yaml)^ )
+  =>  ((list[element] is Decodable in Yaml)^{tactic, caps.any}) =
+    iterable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Decodable in Yaml)^{tactic, caps.any}]
+
+  given setDecodable: [set <: Set, element]
+  =>  ( tactic: Tactic[YamlError],
+        foci:   Foci[Yaml.Focus] )
+  =>  ( decodable: => (element is Decodable in Yaml)^ )
+  =>  ((set[element] is Decodable in Yaml)^{tactic, caps.any}) =
+    iterable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Decodable in Yaml)^{tactic, caps.any}]
+
+  given seriesDecodable: [series <: Series, element]
+  =>  ( tactic: Tactic[YamlError],
+        foci:   Foci[Yaml.Focus] )
+  =>  ( decodable: => (element is Decodable in Yaml)^ )
+  =>  ((series[element] is Decodable in Yaml)^{tactic, caps.any}) =
+    iterable[Vector, element]
+    . asInstanceOf[(series[element] is Decodable in Yaml)^{tactic, caps.any}]
+
   given iterable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
         tactic:    Tactic[YamlError],
@@ -1311,7 +1343,7 @@ object Yaml extends Yaml2, Dynamic:
         case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
           // Mapping (even length, alternating keys and values flat).
           val n = xs.length / 2
-          var result = Map.empty[Text, value]
+          var result = scala.collection.immutable.Map.empty[Text, value]
           var i = 0
 
           while i < n do
@@ -1333,7 +1365,7 @@ object Yaml extends Yaml2, Dynamic:
             result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
             i += 1
 
-          result
+          Map.of(result)
 
         case other =>
           raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
@@ -1372,6 +1404,24 @@ object Yaml extends Yaml2, Dynamic:
   given unitEncodable: Unit is Encodable in Yaml = _ => Yaml.ast(Yaml.Ast.Null)
 
 
+  given listEncodable: [list <: List, element]
+  =>  ( encodable: => (element is Encodable in Yaml)^ )
+  =>  ((list[element] is Encodable in Yaml)^) =
+    iterableEncodable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Encodable in Yaml)^]
+
+  given setAliasEncodable: [set <: Set, element]
+  =>  ( encodable: => (element is Encodable in Yaml)^ )
+  =>  ((set[element] is Encodable in Yaml)^) =
+    iterableEncodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Encodable in Yaml)^]
+
+  given seriesAliasEncodable: [series <: Series, element]
+  =>  ( encodable: => (element is Encodable in Yaml)^ )
+  =>  ((series[element] is Encodable in Yaml)^) =
+    iterableEncodable[Vector, element]
+    . asInstanceOf[(series[element] is Encodable in Yaml)^]
+
   given iterableEncodable: [collection <: Iterable, element]
   =>  ( encodable: => (element is Encodable in Yaml)^ )
   =>  ((collection[element] is Encodable in Yaml)^) =
@@ -1385,13 +1435,13 @@ object Yaml extends Yaml2, Dynamic:
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: (element is Encodable in Yaml)^ )
   =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
-    val keys: List[key] = map.keys.to(List)
+    val keys: scala.collection.immutable.List[key] = map.stdlib.keys.toList
     val arr = new Array[Any](keys.size*2)
     var i = 0
 
-    keys.foreach: k =>
+    keys.each: k =>
       arr(i*2) = Yaml.Ast.Str(k.encode).asInstanceOf[Any]
-      arr(i*2 + 1) = encodable.encode(map(k)).root.asInstanceOf[Any]
+      arr(i*2 + 1) = encodable.encode(map.stdlib(k)).root.asInstanceOf[Any]
       i += 1
 
     Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
@@ -1575,7 +1625,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = Yaml
       type Operand = Text
 
-      def aggregate(stream: LazyList[Text]): Yaml =
+      def aggregate(stream: Progression[Text]): Yaml =
         fromText(summon[Text is Aggregable by Text].aggregate(stream))
 
       override def accept(stream: (Stream[Text] over Credit)^): Yaml =
@@ -1592,7 +1642,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = Yaml
       type Operand = Data
 
-      def aggregate(stream: LazyList[Data]): Yaml = fromStream(Stream(stream.iterator))
+      def aggregate(stream: Progression[Data]): Yaml = fromStream(Stream(stream.stdlib.iterator))
 
       override def accept(stream: (Stream[Data] over Credit)^): Yaml =
         // See `aggregable` above.
@@ -1607,7 +1657,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = List[Yaml]
       type Operand = Text
 
-      def aggregate(stream: LazyList[Text]): List[Yaml] =
+      def aggregate(stream: Progression[Text]): List[Yaml] =
         parseAll(summon[Text is Aggregable by Text].aggregate(stream))
 
       override def accept(stream: (Stream[Text] over Credit)^): List[Yaml] =
@@ -1635,7 +1685,7 @@ object Yaml extends Yaml2, Dynamic:
   given instantiable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
   =>  ((Yaml is Instantiable across HttpRequests from Text)^{tactic}) =
 
-    text => LazyList(text).read[Yaml]
+    text => Progression(text).read[Yaml]
 
   // `source.read[Foo in Yaml]` shorthand for
   // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
@@ -1650,7 +1700,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = value in Yaml
       type Operand = Text
 
-      def aggregate(stream: LazyList[Text]): value in Yaml =
+      def aggregate(stream: Progression[Text]): value in Yaml =
         fromText(summon[Text is Aggregable by Text].aggregate(stream))
         . as[value].asInstanceOf[value in Yaml]
 
@@ -2272,7 +2322,7 @@ object Yaml extends Yaml2, Dynamic:
             lastDocEndedWithFooter = consumeOptionalDocumentEnd()
             firstDoc = false
 
-      docs.toList
+      List.of(docs.toList)
 
     // Tracked variant of `parseAll`: parses every document like `parseAll`
     // but also captures a per-document `PositionIndex` for the
@@ -2363,7 +2413,7 @@ object Yaml extends Yaml2, Dynamic:
               lastDocEndedWithFooter = consumeOptionalDocumentEnd()
               firstDoc = false
 
-        docs.toList
+        List.of(docs.toList)
 
     // Consume `---` if at the current position. Returns true if consumed.
     // Per spec the marker requires either a following line-boundary

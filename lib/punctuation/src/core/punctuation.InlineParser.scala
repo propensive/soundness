@@ -35,6 +35,7 @@ package punctuation
 import scala.collection.mutable
 
 import anticipation.*
+import rudiments.*
 import gossamer.*
 import vacuous.*
 
@@ -46,7 +47,7 @@ import vacuous.*
 //      `LinkData` / `ImageData` and process emphasis within it.
 //   2. After tokenization, run a final emphasis pass over any remaining
 //      delimiters outside successfully-matched links.
-// The resulting list is then converted to a `Seq[Prose]`.
+// The resulting list is then converted to a `List[Prose]`.
 
 private[punctuation] object InlineParser:
 
@@ -72,7 +73,7 @@ private[punctuation] object InlineParser:
       val sourceStart: Int,
       var active:      Boolean = true )
 
-  def parse(text: Text, refs: LinkRefs): Seq[Prose] =
+  def parse(text: Text, refs: LinkRefs): List[Prose] =
     val s = text.s
     val n = s.length
 
@@ -279,12 +280,12 @@ private[punctuation] object InlineParser:
         // Replace bracket node with the link/image wrapper
         list.remove(entry.node)
 
-        if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.toList))
+        if entry.isImage then list.append(ImageData(lm.dest, lm.title, List.of(children.toList)))
         else
-          list.append(LinkData(lm.dest, lm.title, children.toList))
+          list.append(LinkData(lm.dest, lm.title, List.of(children.toList)))
           // Deactivate any earlier `[` link markers (no nested links). Image
           // markers stay active — images can contain links.
-          brackets.foreach: b => if !b.isImage then b.active = false
+          brackets.each: b => if !b.isImage then b.active = false
 
         lm.end
 

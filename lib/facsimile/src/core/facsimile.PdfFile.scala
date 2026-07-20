@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import aperture.*
@@ -83,10 +85,10 @@ object PdfFile:
     . protect:
         val target: Path on Local = workingDirectory[Path on Local].resolve(filename)
 
-        if !flags.contains(CreateFlag.Replace) && target.exists()
+        if !flags.stdlib.contains(CreateFlag.Replace) && target.exists()
         then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
 
-        if flags.contains(CreateFlag.Parents) then
+        if flags.stdlib.contains(CreateFlag.Parents) then
           target.parent.let: parent =>
             if !parent.exists() then parent.create[Directory]()
 

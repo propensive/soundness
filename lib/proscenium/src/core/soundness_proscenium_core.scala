@@ -32,10 +32,15 @@
                                                                                                   */
 package soundness
 
-export scala.collection.immutable.Vector as Series
+import scala.compiletime
+
+export proscenium.Series
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
-export scala.collection.immutable.{List, ListMap, Map, Set, TreeMap, TreeSet}
+export proscenium.Set
+export proscenium.Map
+export proscenium.{List, Nil, `::`, Progression, `#::`}
+export scala.collection.immutable.{ListMap, TreeMap, TreeSet}
 export scala.collection.concurrent.TrieMap
 
 export

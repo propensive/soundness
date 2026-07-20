@@ -32,6 +32,8 @@
                                                                                                   */
 package breviloquence
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import vacuous.*

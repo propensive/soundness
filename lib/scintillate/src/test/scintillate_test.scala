@@ -32,7 +32,11 @@
                                                                                                   */
 package scintillate
 
+import scala.caps
+
 import soundness.*
+
+import proscenium.compat.*
 
 import logging.silentLogging
 import strategies.throwUnsafely
@@ -453,7 +457,7 @@ object Tests extends Suite(m"Scintillate tests"):
       . assert(_.contains(t"431"))
 
       test(m"A streaming response to HTTP/1.0 is close-delimited, not chunked"):
-        val body = Http.Body.Flowing(() => Stream(LazyList(t"Hello".in[Data], t"World".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Progression(t"Hello".in[Data], t"World".in[Data]).iterator))
         inProcess(Http.Response(Http.Ok)(body), t"GET / HTTP/1.0\r\nHost: x\r\n\r\n")
 
       . assert: response =>

@@ -38,6 +38,7 @@ import doms.html.whatwg.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import rudiments.{bind, flatMap, map}
 import spectacular.*
 import vacuous.*
 
@@ -46,10 +47,10 @@ object Renderable:
     type Form = Phrasing
 
       def render(message: Message): Html of Phrasing =
-        val elements: List[Html of Phrasing] = message.segments.flatMap:
-          case message: Message => List(render(message))
-          case text: Text       => List(text)
-          case _                => Nil
+        val elements: List[Html of Phrasing] = message.segments.bind:
+          case message: Message => List[Html of Phrasing](render(message))
+          case text: Text       => List[Html of Phrasing](text)
+          case _                => List[Html of Phrasing]()
 
         Fragment(elements*)
 
@@ -57,7 +58,7 @@ object Renderable:
     given attribution: (Attribution of "at" | "class" | "stack" | "method" | "file" | "line") =
       Attribution.classes()
 
-    val rows = stackTrace.frames.map: frame =>
+    val rows = stackTrace.frames.map: (frame: StackTrace.Frame) =>
       Tr
         ( Td.at(Code(t"at")),
           Td.`class`(Code(frame.method.className)),

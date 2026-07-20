@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -41,6 +43,7 @@ import inimitable.*
 import kaleidoscope.*
 import polyvinyl.*
 import prepositional.*
+import rudiments.map
 import symbolism.*
 import urticose.*
 import vacuous.*
@@ -364,24 +367,24 @@ object JsonBlueprint:
     ( `type`:     Text,
       properties: Optional[Map[Text, Json]],
       items:      Optional[Map[Text, Json]],
-      required:   Optional[Set[Text]],
+      required:   Optional[List[Text]],
       minimum:    Optional[Int],
       maximum:    Optional[Int],
       format:     Optional[Text],
       pattern:    Optional[Text] ):
 
-    def requiredFields: Set[Text] = required.or(Set())
+    def requiredFields: Set[Text] = Set.from(required.or(Nil).stdlib)
 
     def arrayFields =
-      items.let(_.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.contains(key)))
+      items.let(x => Map.from(x.stdlib.map: (key, value) =>
+        key -> value.as[Property].field(requiredFields.stdlib.contains(key))))
 
       . or:
           panic(m"Some items were missing")
 
     def objectFields =
-      properties.let(_.map: (key, value) =>
-        key -> value.as[Property].field(requiredFields.contains(key)))
+      properties.let(x => Map.from(x.stdlib.map: (key, value) =>
+        key -> value.as[Property].field(requiredFields.stdlib.contains(key))))
 
       . or:
           panic(m"Some properties were missing")

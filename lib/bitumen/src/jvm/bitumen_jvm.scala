@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import galilei.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
@@ -65,7 +66,7 @@ extension (companion: Tarfile.type)
             Tactic[TarError] )
   :   Tarfile =
 
-    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
+    val entries: Progression[Tar.Entry] = root.descendants.map: path =>
       TarFilesystem.entryFor(root, path)
 
     Tarfile(entries)
@@ -79,5 +80,5 @@ extension (tarfile: Tarfile)
             Tactic[TarError] )
   :   Unit =
 
-    tarfile.entries.foreach: entry =>
+    tarfile.entries.each: entry =>
       TarFilesystem.applyEntry(root, entry)

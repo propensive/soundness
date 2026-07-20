@@ -46,7 +46,7 @@ object Routable:
     type Connection = backend.Courier
 
     def connect(endpoint: Endpoint[UdpPort], interface: Optional[MacAddress]): Connection =
-      backend.routeUdp(endpoint, interface, options.values)
+      backend.routeUdp(endpoint, interface, List.of(options.values))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       backend.dispatch(connection, input)
@@ -55,7 +55,7 @@ object Routable:
     type Connection = backend.Courier
 
     def connect(port: UdpPort, interface: Optional[MacAddress]): Connection =
-      backend.routeUdpPort(port, interface, options.values)
+      backend.routeUdpPort(port, interface, List.of(options.values))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       backend.dispatch(connection, input)

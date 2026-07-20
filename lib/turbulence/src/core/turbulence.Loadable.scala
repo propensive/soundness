@@ -34,7 +34,7 @@ package turbulence
 
 import zephyrine.{stream as _, *}
 
-import language.experimental.captureChecking
+import scala.language.experimental.captureChecking
 
 import prepositional.*
 

@@ -32,13 +32,16 @@
                                                                                                   */
 package rudiments
 
-import language.experimental.pureFunctions
+import scala.collection.immutable.IndexedSeq
+
+import scala.language.experimental.pureFunctions
 
 import scala.collection.mutable as scm
 
 import anticipation.*
 import denominative.*
 import prepositional.*
+import vacuous.Trek
 
 object Indexable:
   given iarray: [element] => IArray[element] is Indexable:
@@ -61,6 +64,28 @@ object Indexable:
 
     def access(sequence: IndexedSeq[element], index: Ordinal): Result = sequence(index.n0)
 
+  // Opaque `Series` is no longer an `IndexedSeq` subtype, so it needs its own instance.
+  given series: [element] => Series[element] is Indexable:
+    type Self = Series[element]
+    type Operand = Ordinal
+    type Result = element
+
+    def contains(series: Series[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < series.stdlib.length
+
+    def access(series: Series[element], index: Ordinal): Result = series.stdlib(index.n0)
+
+  // Opaque `List`: positional access is O(n), so the instance is gated behind `Trek`.
+  given list: [element] => (erased trek: Trek) => List[element] is Indexable:
+    type Self = List[element]
+    type Operand = Ordinal
+    type Result = element
+
+    def contains(list: List[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < list.stdlib.length
+
+    def access(list: List[element], index: Ordinal): Result = list.stdlib(index.n0)
+
   given text: [element] => Text is Indexable:
     type Self = Text
     type Operand = Ordinal
@@ -74,8 +99,8 @@ object Indexable:
     type Operand = key
     type Result = value
 
-    def contains(value: Self, index: key): Boolean = value.contains(index)
-    def access(value: Self, index: key): value = value(index)
+    def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
+    def access(value: Self, index: key): value = value.stdlib(index)
 
   given bijection: [key, value] => Bijection[key, value] is Indexable:
     type Self = Bijection[key, value]

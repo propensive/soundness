@@ -32,6 +32,10 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -126,9 +130,9 @@ object Ram:
 
       val writable = mode.atoms.contains(Write) || mode.atoms.contains(Exclusive)
 
-      val options: Seq[jnf.StandardOpenOption] =
-        if writable then Seq(jnf.StandardOpenOption.READ, jnf.StandardOpenOption.WRITE)
-        else Seq(jnf.StandardOpenOption.READ)
+      val options: List[jnf.StandardOpenOption] =
+        if writable then List(jnf.StandardOpenOption.READ, jnf.StandardOpenOption.WRITE)
+        else List(jnf.StandardOpenOption.READ)
 
       value.protect(Operation.Open):
         val channel = jnc.FileChannel.open(value.javaPath, options*).nn

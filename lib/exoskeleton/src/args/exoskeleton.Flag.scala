@@ -32,7 +32,7 @@
                                                                                                   */
 package exoskeleton
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import denominative.*
@@ -84,7 +84,7 @@ extends Topical:
       if key().starts(t"--") then key().skip(2) else if key().starts(t"-")
       then key().at(Sec) else Unset
 
-    flag == name || aliases.contains(flag)
+    flag == name || aliases.stdlib.contains(flag)
 
 
   def apply()
@@ -103,7 +103,7 @@ extends Topical:
   :   Optional[Topic] =
 
     val mapping: Map[Text, Topic] =
-      options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
+      Map.from(options.map { option => (suggestible.suggest(option).text, option) })
 
     given interpretable: Topic is Interpretable =
       case List(value) => mapping.at(value())

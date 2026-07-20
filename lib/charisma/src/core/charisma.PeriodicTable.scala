@@ -175,7 +175,7 @@ object PeriodicTable:
   def apply(number: Int): Optional[ChemicalElement] =
     if 1 <= number <= 118 then elements(number - 1) else Unset
 
-  def apply(symbol: Text): Optional[ChemicalElement] = symbols.getOrElse(symbol, Unset)
+  def apply(symbol: Text): Optional[ChemicalElement] = symbols.stdlib.getOrElse(symbol, Unset)
 
   private val prefixes: IArray[Text] =
     IArray(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")

@@ -32,6 +32,8 @@
                                                                                                   */
 package metamorphose
 
+import proscenium.compat.*
+
 import scala.annotation.*
 
 import contingency.*

@@ -48,7 +48,7 @@ import proscenium.*
 object grpcInternal:
   // Derive a client stub for a service interface of `@rpc`-annotated methods. Each
   // method takes a single request message and returns either a response message
-  // (unary) or a `LazyList` of them (server-streaming); the generated body delegates to
+  // (unary) or a `Progression` of them (server-streaming); the generated body delegates to
   // `GrpcChannel`, with the `:path` built from `service` and the method's own name.
   // The protobuf codecs and the call's error capabilities are summoned at the call
   // site, so `remote` must be invoked where they are in scope.
@@ -67,7 +67,7 @@ object grpcInternal:
     def decls(classSymbol: Symbol) = rpcMethods.map: method =>
       Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
 
-    val parents = List(TypeTree.of[Object], TypeTree.of[interface])
+    val parents = scala.collection.immutable.List(TypeTree.of[Object], TypeTree.of[interface])
 
     val module =
       Symbol.newModule
@@ -85,7 +85,7 @@ object grpcInternal:
       val runSym = classSymbol.declaredMethod(method.name).head
 
       DefDef(runSym, {
-        case List(params) =>
+        case scala.collection.immutable.List(params) =>
           given Quotes = runSym.asQuotes
           val argument = params.head
           val name = Expr(method.name.tt)
@@ -111,13 +111,13 @@ object grpcInternal:
               halt(m"no ${TypeRepr.of[response is Decodable in Protobuf].show} instance was found")
 
           runSym.info.absolve match
-            case MethodType(_, List(parameter), result) => parameter.asType.absolve match
+            case MethodType(_, scala.collection.immutable.List(parameter), result) => parameter.asType.absolve match
               case '[request] =>
                 val enc = encoder[request]
                 val req = argument.asExprOf[request]
 
                 result.asType.absolve match
-                  case '[LazyList[response]] =>
+                  case '[Progression[response]] =>
                     val dec = decoder[response]
 
                     Some:

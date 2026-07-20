@@ -32,7 +32,9 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.{caps, compiletime}
+
+import scala.language.dynamics
 
 import java.lang as jl
 import java.util as ju
@@ -93,7 +95,7 @@ object Html extends Tag.Container
 
   def doctype: Doctype = Doctype(t"html")
 
-  extension (html: Seq[Html])
+  extension (html: List[Html])
     def nodes: IArray[Node] =
       var count = 0
 
@@ -169,12 +171,12 @@ object Html extends Tag.Container
       type Self = Html of content
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html of content =
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
-        HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
+      def aggregate(input: Progression[Text]): Html of content =
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        HtmlParser.fromIterator(input.stdlib.iterator, permissive = false).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom, tactic: Tactic[ParseError])
@@ -184,8 +186,8 @@ object Html extends Tag.Container
       type Self = Html
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html =
-        HtmlParser.fromIterator(input.iterator, permissive = false)
+      def aggregate(input: Progression[Text]): Html =
+        HtmlParser.fromIterator(input.stdlib.iterator, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
       override def accept(stream: (Stream[Text] over Credit)^): Html =
@@ -226,16 +228,16 @@ object Html extends Tag.Container
       type Self = Html of content
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html of content =
+      def aggregate(input: Progression[Text]): Html of content =
         given Tactic[ParseError] = lenientTactic
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
 
         lenient(Fragment().of[content]):
-          HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
+          HtmlParser.fromIterator(input.stdlib.iterator, permissive = true).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         given Tactic[ParseError] = lenientTactic
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
 
         lenient(Fragment().of[content]):
           HtmlParser.fromStream(stream, permissive = true).parseHtml(root).of[content]
@@ -247,11 +249,11 @@ object Html extends Tag.Container
       type Self = Html
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html =
+      def aggregate(input: Progression[Text]): Html =
         given Tactic[ParseError] = lenientTactic
 
         lenient(Fragment()):
-          HtmlParser.fromIterator(input.iterator, permissive = true)
+          HtmlParser.fromIterator(input.stdlib.iterator, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
       override def accept(stream: (Stream[Text] over Credit)^): Html =
@@ -433,7 +435,7 @@ object Html extends Tag.Container
       def apply(children: Optional[Html of (? <: node.Transport)]*)
       :   Element of node.Topic in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.to(List).nodes, node.foreign):
           type Topic = node.Topic
           type Form = node.Form
 
@@ -443,7 +445,7 @@ object Html extends Tag.Container
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
       :   Element of labels in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.to(List).nodes, node.foreign):
           type Topic = labels
           type Form = node.Form
 
@@ -477,9 +479,9 @@ object Html extends Tag.Container
 
 
   given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
-  =>  Conversion[Seq[nodal], Seq[html]] =
+  =>  Conversion[List[nodal], List[html]] =
 
-    (sequence: Seq[nodal]) =>
+    (sequence: List[nodal]) =>
       sequence.map(conversion(_))
 
 
@@ -1448,7 +1450,8 @@ object Html extends Tag.Container
       def read(parent: Tag, admissible: Set[Text], map: Attributes, count: Int): Node =
 
         def admit(child: Text): Boolean =
-          parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
+          parent.foreign || parent.admissible.stdlib(child)
+          || parent.transparent && admissible.stdlib(child)
 
         lay(finish(parent, map, count)):
           case '\u0000' =>
@@ -1848,13 +1851,13 @@ object Element:
   def foreign(label: Text, attributes: Attributes, children: Html of "#foreign"*)
   :   Element of "#foreign" =
 
-    Element(label, attributes, children.nodes, true).of["#foreign"]
+    Element(label, attributes, children.to(List).nodes, true).of["#foreign"]
 
   // Convenience for callers that still hold a Map.
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
   :   Element of "#foreign" =
 
-    Element(label, Attributes.from(attributes), children.nodes, true).of["#foreign"]
+    Element(label, Attributes.from(attributes), children.to(List).nodes, true).of["#foreign"]
 
 case class Element
   ( label:      Text,
@@ -1970,7 +1973,7 @@ extends Node, Topical, Transportive, Dynamic:
 object Fragment:
   @targetName("make")
   def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
-    new Fragment(nodes.nodes*).of[topic]
+    new Fragment(nodes.to(List).nodes*).of[topic]
 
 case class Fragment(nodes: Node*) extends Html:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

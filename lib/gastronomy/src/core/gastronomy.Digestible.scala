@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import scala.{caps, util}
+
 import java.lang as jl
 
 import anticipation.*
@@ -80,14 +82,14 @@ object Digestible extends Derivable[Digestible]:
   =>  set[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
-    (digestion, set) => set.each(dig().digest(digestion, _))
+    (digestion, set) => set.stdlib.each(dig().digest(digestion, _))
 
 
   given series: [series <: Series, value] => (digestible: => value is Digestible)
   =>  series[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
-    (digestion, series) => series.each(dig().digest(digestion, _))
+    (digestion, series) => series.stdlib.each(dig().digest(digestion, _))
 
 
   given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =
@@ -105,12 +107,12 @@ object Digestible extends Derivable[Digestible]:
       caps.unsafe.unsafeAssumePure(() => valueDigestible)
 
     (digestion, map) =>
-      map.each: (key, value) =>
+      map.stdlib.each: (key, value) =>
         digKey().digest(digestion, key)
         digValue().digest(digestion, value)
 
 
-  given stream: [value] => (digestible: => value is Digestible) => LazyList[value] is Digestible =
+  given stream: [value] => (digestible: => value is Digestible) => Progression[value] is Digestible =
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, iterable) => iterable.each(dig().digest(digestion, _))
 

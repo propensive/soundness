@@ -53,7 +53,7 @@ private[cataclysm] object protointernal:
 
   // Every `type X = …` member of a (possibly nested) refinement type, as a map.
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :   Map[Text, quotes.reflect.TypeRepr] =
+  :   scala.collection.immutable.Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -61,7 +61,7 @@ private[cataclysm] object protointernal:
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
-      case _                                           => Map()
+      case _                                           => scala.collection.immutable.Map()
 
   // The path of the `Styles` stylesheet in scope, read from its `Locus` type.
   private def stylesPath(using quotes: Quotes): Text =
@@ -95,7 +95,7 @@ private[cataclysm] object protointernal:
       halt(m"cataclysm: could not parse the stylesheet at $path")
 
     // Upcast the typed names to `Text` for comparison against the requested name.
-    (css.classes.map(identity[Text]), css.ids.map(identity[Text]))
+    (Set.of(css.classes.stdlib.map(identity[Text])), Set.of(css.ids.stdlib.map(identity[Text])))
 
   // Decide whether `name` is a class or an id in the in-scope stylesheet, or halt.
   def attributeFor[name <: Label: Type]: Macro[Text] =
@@ -117,10 +117,10 @@ private[cataclysm] object protointernal:
     val (classes, ids) = references(stylesPath)
 
     val attribute =
-      if classes.contains(target) && ids.contains(target)
+      if classes.stdlib.contains(target) && ids.stdlib.contains(target)
       then halt(m"cataclysm: $target is both a class and an id in the stylesheet; rename one")
-      else if classes.contains(target) then "class"
-      else if ids.contains(target) then "id"
+      else if classes.stdlib.contains(target) then "class"
+      else if ids.stdlib.contains(target) then "id"
       else halt(m"cataclysm: $target is not a class or id in the stylesheet")
 
     '{${Expr(attribute)}.tt}

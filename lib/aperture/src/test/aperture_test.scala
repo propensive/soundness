@@ -32,7 +32,11 @@
                                                                                                   */
 package aperture
 
+import scala.caps
+
 import soundness.*
+
+import proscenium.compat.*
 
 // Openable instances for testing: an in-memory "document" openable in two different forms
 // from the same target type (to exercise form selection and its ambiguity), and in a unique
@@ -49,7 +53,7 @@ enum TestFlag:
 class DocHandle(val name: Text, val flags: List[TestFlag]) extends caps.ExclusiveCapability:
   private var appended: List[Text] = Nil
   def titleOf: Text = t"doc:$name"
-  def appendedText: Text = appended.reverse.join
+  def appendedText: Text = appended.stdlib.reverse.join
 
 extension (handle: (DocHandle & Granting[Grant.Read])^)
   def title: Text = handle.titleOf
@@ -181,7 +185,7 @@ object Tests extends Suite(m"Aperture Tests"):
     test(m"Instantiation creates an empty artifact and returns the target"):
       val vault = Vault()
       val target = VaultRef(vault).create()
-      (target.vault.made, vault.committed)
+      (target.vault.made, vault.committed.vouch)
     . assert(_ == (true, Nil))
 
     test(m"Scoped authoring commits at scope close"):
@@ -191,7 +195,7 @@ object Tests extends Suite(m"Aperture Tests"):
         scribe.append(t"first")
         scribe.append(t"second")
 
-      vault.committed
+      vault.committed.vouch
     . assert(_ == List(t"first", t"second"))
 
     test(m"An exception escaping the scope commits nothing"):

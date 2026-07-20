@@ -115,7 +115,7 @@ private[cataclysm] object SelectorParser:
         else
           continue = false
 
-      SelectorList(acc.toList)
+      SelectorList(List.of(acc.toList))
 
     private def complex(relative: Boolean): Selector =
       ws()
@@ -130,7 +130,7 @@ private[cataclysm] object SelectorParser:
           case comb: Combinator => rest.append((comb, compound()))
           case _                => continue = false
 
-      Selector(lead, head, rest.toList)
+      Selector(lead, head, List.of(rest.toList))
 
     private def combinator(kind: Combinator): Combinator =
       cursor.advance()
@@ -184,7 +184,7 @@ private[cataclysm] object SelectorParser:
         else continue = false
 
       if parts.isEmpty then fail(CssError.Reason.EmptySelector)
-      Compound(parts.toList)
+      Compound(List.of(parts.toList))
 
     private def nesting(parts: scala.collection.mutable.ListBuffer[Simple]): Unit =
       cursor.advance()
