@@ -54,6 +54,13 @@ extension (inline context: StringContext)
 // referencing a trait member would make the codec/optic lambdas capture `Tel2.this`, which the
 // pure `Encodable`/`Optic` SAMs reject under capture checking.
 
+// The empty document — an `Optional`'s `Unset` encoding. It contributes no compound to a struct
+// body (the same shape an empty collection produces), so the product encoder omits the field and
+// both the text and binary formats decode it back to `Unset` via the field's `absent()` path.
+private[stratiform] def emptyDocument: Tel =
+  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
+      IArray(Tel.Block(IArray.empty, Unset, IArray.empty, 0))))
+
 // Encodes a collection by flattening each element's compound(s) into one document's children.
 private[stratiform] def collectionDocument[value]
     (values: Iterable[value])(using encodable: value is Encodable in Tel)

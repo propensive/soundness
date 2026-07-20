@@ -422,7 +422,7 @@ trait Tel2 extends Tel3:
   =>  ( encodable: inner is Tel.Encodable )
   =>  value is Tel.Encodable =
     Tel.Encodable(() => Morphology.Opt(encodable.shape())): opt =>
-      opt.let(_.asInstanceOf[inner]).lay(Tel.empty)(_.encode)
+      opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(_.encode)
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  Tactic[TelError]
