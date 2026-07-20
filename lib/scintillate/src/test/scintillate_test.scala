@@ -41,6 +41,19 @@ import webserverErrorPages.minimalErrorPage
 import threading.virtualThreading
 import probates.awaitProbate
 
+// A value served as a streaming `text/plain` body: `Servable` synthesises an
+// `Http.Body.Flowing` whose source runs the text stream through the char-encoder
+// duct (`.via`) — the path #1629 hung on. Kept in-module so the test needs no
+// honeycomb dependency; a real `Document[Html]` is served the same way.
+case class TextPage(lines: List[Text])
+
+object TextPage:
+  given media: TextPage is Media:
+    extension (value: TextPage) def mediaType: MediaType = media"text/plain"(charset = "UTF-8")
+
+  given streamable: (TextPage is Streamable by Text over Credit) =
+    value => Stream(value.lines.iterator)
+
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit =
     CaptureTests()
@@ -172,6 +185,79 @@ object Tests extends Suite(m"Scintillate tests"):
           response
 
         . assert(r => r.contains(t"101 Switching Protocols") && r.ends(t"PING"))
+
+        test(m"A streaming Text body via the char-encoder is returned (#1629)"):
+          val port = freePort()
+
+          // Serve a `Streamable by Text` value: `Servable` wraps it as an
+          // `Http.Body.Flowing` whose source pipes the text through the
+          // char-encoder duct. #1629 hung here (a self-referential `given
+          // encoder = summonInline[CharEncoder]` in `Servable` spun at 100% CPU).
+          val page = TextPage(List.tabulate(4000)(i => t"line-$i\n"))
+          val server = SocketServer(port).handle(Http.Response(Http.Ok)(page))
+
+          val socket = java.net.Socket("localhost", port)
+          socket.setSoTimeout(5000)
+          val out = socket.getOutputStream.nn
+          out.write(t"GET / HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n".s.getBytes("US-ASCII").nn)
+          out.flush()
+          socket.shutdownOutput()
+
+          val response =
+            try String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
+            catch case _: java.net.SocketTimeoutException => t"<timed out>"
+
+          socket.close()
+          server.cancel()
+          response
+
+        . assert(r => r.contains(t"line-0\n") && r.contains(t"line-3999\n"))
+
+        test(m"A streaming body from an async producer is fully returned"):
+          val port = freePort()
+
+          // A body produced on a *separate fiber* and drained through the
+          // producer's bounded queue: larger than the window (window*block) so
+          // `put` must block, making the producer genuinely depend on the
+          // connection draining it concurrently — the async-producer streaming
+          // path the native server previously had no coverage for.
+          // Sealed with `unsafeAssumePure` exactly as the `Servable.serve` API
+          // boundary seals the monitor the async producer captures (its return
+          // type is an unadorned `Http.Response`); this is what lets a real
+          // honeycomb page compile through `.handle`.
+          val server = SocketServer(port).handle:
+            caps.unsafe.unsafeAssumePure:
+              Http.Response(Http.Ok):
+                Http.Body.Flowing: () =>
+                  val producer = Producer[Data](4096)
+
+                  async:
+                    var i = 0
+                    while i < 4000 do
+                      producer.put(t"line-$i\n".in[Data])
+                      i += 1
+                    producer.finish()
+
+                  Stream(producer.iterator)
+
+          // A read timeout turns a serving deadlock into a fast failure rather
+          // than a hung suite.
+          val socket = java.net.Socket("localhost", port)
+          socket.setSoTimeout(5000)
+          val out = socket.getOutputStream.nn
+          out.write(t"GET / HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n".s.getBytes("US-ASCII").nn)
+          out.flush()
+          socket.shutdownOutput()
+
+          val response =
+            try String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
+            catch case _: java.net.SocketTimeoutException => t"<timed out>"
+
+          socket.close()
+          server.cancel()
+          response
+
+        . assert(r => r.contains(t"line-0\n") && r.contains(t"line-3999\n"))
 
       suite(m"Loopback load over real sockets"):
         val clients = 32
