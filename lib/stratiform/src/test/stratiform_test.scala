@@ -256,6 +256,18 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tests.Team(t"Reds", Nil).encode.childCompounds.filter(_.keyword == t"members").length
       . assert(_ == 0)
 
+      test(m"an unset Optional field encodes as no compounds"):
+        Tests.OptField(7, Unset).encode.childCompounds.filter(_.keyword == t"note").length
+      . assert(_ == 0)
+
+      test(m"an unset Optional field round-trips as Unset through the text format"):
+        Tests.OptField(7, Unset).encode.as[Tests.OptField]
+      . assert(_ == Tests.OptField(7, Unset))
+
+      test(m"a present empty Optional field round-trips as empty text"):
+        Tests.OptField(7, t"").encode.as[Tests.OptField]
+      . assert(_ == Tests.OptField(7, t""))
+
       test(m"a sum encodes its variant as a child keyed by the variant name"):
         val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
         shape.encode.childCompounds.head.keyword
@@ -2230,14 +2242,25 @@ object Tests extends Suite(m"Stratiform Tests"):
         Bintel.parse[Tests.OptField](Tests.OptField(7, t"note").bintel)
       . assert(_ == Tests.OptField(7, t"note"))
 
+      test(m"an unset Optional field round-trips as Unset through the encoder"):
+        // The encoder omits an unset `Optional` field entirely (it contributes
+        // no child to the struct body), so both decode paths see it as absent.
+        Bintel.read[Tests.OptField](Tests.OptField(7, Unset).bintel)
+      . assert(_ == Tests.OptField(7, Unset))
+
       test(m"an unset Optional agrees with the AST path"):
-        // The BinTEL *encoder* writes an unset `Optional` as a present,
-        // empty scalar, which the AST path restores as empty text rather
-        // than `Unset` — the direct parser reproduces that behavior
-        // exactly. (The encoder-side round-trip is a separate question.)
+        // Both paths now decode the omitted field as `Unset`.
         val bytes = Tests.OptField(7, Unset).bintel
         Bintel.parse[Tests.OptField](bytes) == Bintel.read[Tests.OptField](bytes)
       . assert(identity)
+
+      test(m"an unset Optional reads Unset on the direct path too"):
+        Bintel.parse[Tests.OptField](Tests.OptField(7, Unset).bintel)
+      . assert(_ == Tests.OptField(7, Unset))
+
+      test(m"a present empty Optional field round-trips as empty text through BinTEL"):
+        Bintel.read[Tests.OptField](Tests.OptField(7, t"").bintel)
+      . assert(_ == Tests.OptField(7, t""))
 
       test(m"a truly absent Optional field reads Unset"):
         // A hand-built body: one child, index 0 ("x"), scalar "7" — the
