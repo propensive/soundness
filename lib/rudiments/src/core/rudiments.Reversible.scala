@@ -30,41 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package kaleidoscope
-
-import proscenium.compat.*
+package rudiments
 
 import anticipation.*
+import prepositional.*
 
-object Glob:
-  import GlobToken.*
+// Order-reversal, unified across shapes so a single `reverse` extension serves both collections
+// (`List`/`Series`) and textual types (gossamer contributes a `Reversible` *instance* for `Textual`,
+// not a competing extension — that is what keeps the name un-clashed at the `soundness` umbrella).
+// Instances are subtype-parametric (`container <: List[element]`) to match `& Populated` receivers
+// and the distinct `soundness.*` re-export aliases; `Result` is bound as an ordinary type parameter
+// at the extension, never referenced path-dependently, so it survives the cross-package export
+// forwarder (#1411). Unordered shapes (`Set`, `Map`) have no instance: reversing them is meaningless.
+object Reversible:
+  given list: [element, container <: List[element]]
+  =>  (container is Reversible { type Result = List[element] }) =
+    new Reversible:
+      type Self = container
+      type Result = List[element]
+      def reverse(self: container): List[element] = List.of(self.stdlib.reverse)
 
-  def parse(text: Text): Glob =
-    def range(text: String): GlobToken =
-      val inverse = text.startsWith("!")
-      val text2 = if inverse then text.drop(1) else text
+  given series: [element, container <: Series[element]]
+  =>  (container is Reversible { type Result = Series[element] }) =
+    new Reversible:
+      type Self = container
+      type Result = Series[element]
+      def reverse(self: container): Series[element] = Series.of(self.stdlib.reverse)
 
-      if text2.length == 3 && text2(1) == '-' then GlobToken.Range(text2(0), text2(2), inverse)
-      else GlobToken.Specific(text2, inverse)
+  // `Text`'s companion (in `anticipation`) cannot host this — it sits below both `Reversible` and
+  // `Textual` — but `Reversible`'s own companion is in implicit scope for `Text is Reversible`, and
+  // `anticipation` exposes the `.s` bridge. `StringBuilder#reverse` is surrogate-pair-aware.
+  given text: [text <: Text] => (text is Reversible { type Result = Text }) =
+    new Reversible:
+      type Self = text
+      type Result = Text
+      def reverse(value: text): Text = StringBuilder(value.s).reverse.nn.toString.nn.tt
 
-    def recur(index: Int, tokens: List[GlobToken]): Glob =
-      if index >= text.s.length then Glob(tokens.stdlib.reverse*) else text.s(index) match
-        case '*' =>
-          tokens match
-            case Star :: tail => recur(index + 1, Globstar :: (tail: List[GlobToken]))
-            case _            => recur(index + 1, Star :: tokens)
+extension [self, result](value: self)(using reversible: self is Reversible { type Result = result })
+  def reverse: result = reversible.reverse(value)
 
-        case '?' =>
-          recur(index + 1, OneChar :: tokens)
-
-        case '[' =>
-          val end = text.s.indexOf(']', index + 1)
-          recur(end + 1, range(text.s.substring(index + 1, end).nn) :: tokens)
-
-        case char =>
-          recur(index + 1, Exact(char) :: tokens)
-
-    recur(0, Nil)
-
-case class Glob(tokens: GlobToken*):
-  def regex: Text = Text(tokens.map(_.regex).mkString)
+trait Reversible extends Typeclass.Pure, Resultant:
+  def reverse(self: Self): Result

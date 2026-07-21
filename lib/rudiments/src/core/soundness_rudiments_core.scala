@@ -45,6 +45,7 @@ export
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
       mean2, unique, limit, ult, ant, pen, Traversable, seek, where, subsumes, Reshapable, map,
       Mappable, remap, bind, flatMap, filter, withFilter, foreach, fold, group, sort, distinct,
+      Reversible, reverse,
       Convertible, Populated, head, reduce, confine, populatedEquality }
 
 // `zip` is deliberately NOT re-exported: zeppelin's contextual archive accessor owns the bare

@@ -84,6 +84,10 @@ object Teletype:
       stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[IArray[Teletype]] over Credit)^]
       . records.each(Err.print(_))
 
+  // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to gossamer's
+  // shared textual reversal so `teletype.reverse` resolves through the single `rudiments` `reverse`.
+  given reversible: (Teletype is Reversible { type Result = Teletype }) = reversibleTextual
+
   given textual: Teletype is Textual:
     type Result = Char
     type Show[value] = value is Teletypeable

@@ -96,7 +96,7 @@ object TypescriptDialect extends Dialect:
           union(rest, next :: acc)
 
         case _ =>
-          (acc.reverse, todo)
+          (List.of(acc.stdlib.reverse), todo)
 
     val (members, rest) = union(rest0, List(first))
     val result = if members.length == 1 then members.head else Foreign.Type.Union(members)
@@ -127,7 +127,7 @@ object TypescriptDialect extends Dialect:
 
     tokens match
       case ">" :: rest =>
-        (acc.reverse, rest)
+        (List.of(acc.stdlib.reverse), rest)
 
       case _ =>
         val (arg, rest) = typeOf(tokens)
@@ -179,7 +179,7 @@ object TypescriptDialect extends Dialect:
 
     tokens match
       case ")" :: rest =>
-        (acc.reverse, rest)
+        (List.of(acc.stdlib.reverse), rest)
 
       case name :: ":" :: rest =>
         val (kind, rest2) = typeOf(rest)
@@ -192,7 +192,7 @@ object TypescriptDialect extends Dialect:
         params(rest, acc)
 
       case Nil =>
-        (acc.reverse, Nil)
+        (List.of(acc.stdlib.reverse), Nil)
 
   private def semicolon(tokens: List[String]): List[String] = tokens match
     case ";" :: rest => rest

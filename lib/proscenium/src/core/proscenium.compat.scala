@@ -176,7 +176,6 @@ extension [element](list: List[element])
     val (left, right) = list.stdlib.partition(predicate)
     (List.of(left), List.of(right))
 
-  inline def reverse: List[element] = List.of(list.stdlib.reverse)
   inline def isEmpty: Boolean = list.stdlib.isEmpty
   inline def nonEmpty: Boolean = list.stdlib.nonEmpty
   inline def length: Int = list.stdlib.length

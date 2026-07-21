@@ -157,6 +157,28 @@ extension [value: {Segmentable, Countable}](value: value)
   def from(ordinal: Ordinal): value = value.segment(ordinal thru value.limit)
   def after(ordinal: Ordinal): value = value.segment((ordinal + 1) till value.limit)
 
+// A textual value reverses to its own type. Exposed as a factory rather than a blanket given because
+// `Reversible`'s companion (in `rudiments`) cannot reference `Textual`, so a generic given would not
+// be in implicit scope; each textual type instead publishes `given … is Reversible = reversibleTextual`
+// in its own companion (e.g. `Teletype`), which keeps the single `rudiments` `reverse` serving both
+// text and collections with no competing extension at the umbrella.
+def reversibleTextual[textual](using textual0: textual is Textual)
+:   textual is Reversible { type Result = textual } =
+  new Reversible:
+    type Self = textual
+    type Result = textual
+
+    def reverse(text: textual): textual =
+      val n = textual0.length(text)
+      val builder = textual0.builder(n)
+      var index = n - 1
+
+      while index >= 0 do
+        builder.append(textual0.single(textual0.access(text, index.z)))
+        index -= 1
+
+      builder()
+
 extension [textual: Textual](text: textual)
   inline def length: Int = textual.length(text)
   def plain: Text = textual.text(text)
@@ -197,17 +219,6 @@ extension [textual: Textual](text: textual)
 
   def punch(n: Ordinal): (textual, textual) =
     (text.segment(Prim till n), text.segment((n + 1) till text.limit))
-
-  def reverse: textual =
-    val n = text.length
-    val builder = textual.builder(n)
-    var index = n - 1
-
-    while index >= 0 do
-      builder.append(textual.single(textual.access(text, index.z)))
-      index -= 1
-
-    builder()
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
 
