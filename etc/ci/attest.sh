@@ -134,6 +134,7 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
     make runners-build \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false test.assembly \
       && CLAUDECODE=1 make ci \
       && CLAUDECODE=1 make wasm-e2e
@@ -175,6 +176,7 @@ statement = {
         "commands": [
             "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
             "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
+            "./mill --no-daemon -j 6 --ticker false soundness.native.compile",
             "./mill --no-daemon -j 6 --ticker false test.assembly",
             "make ci",
             "make wasm-e2e",
