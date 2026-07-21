@@ -430,7 +430,7 @@ object Html extends Tag.Container
     t"a", t"b", t"big", t"code", t"em", t"font", t"i", t"nobr",
     t"s", t"small", t"strike", t"strong", t"tt", t"u" )
 
-  trait Populable:
+  trait Vacuiscible:
     node: Element =>
       def apply(children: Optional[Html of (? <: node.Transport)]*)
       :   Element of node.Topic in node.Form =

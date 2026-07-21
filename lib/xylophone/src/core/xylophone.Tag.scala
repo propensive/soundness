@@ -71,10 +71,10 @@ object Tag:
       admissible: Set[Text]  = Set() )
   extends Tag(label, presets, admissible):
 
-    type Result = Element & Xml.Populable of Topic over Transport in Form
+    type Result = Element & Xml.Vacuiscible of Topic over Transport in Form
 
     def node(attributes: Attributes): Result =
-      new Element(label, presets ++ attributes, IArray()) with Xml.Populable()
+      new Element(label, presets ++ attributes, IArray()) with Xml.Vacuiscible()
       . of[Topic]
       . over[Transport]
       . in[Form]

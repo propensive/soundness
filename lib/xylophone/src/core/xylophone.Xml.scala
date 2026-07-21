@@ -1796,7 +1796,7 @@ object Xml extends Tag.Container
   private enum Level:
     case Ascend, Descend, Peer
 
-  trait Populable:
+  trait Vacuiscible:
     node: Element =>
       def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
         new Element(node.label, node.attributes, children.compact.nodes):

@@ -47,7 +47,7 @@ extension (inline cardinal: Int)
   inline def z: Ordinal = Ordinal.zerary(cardinal)
   inline def u: Ordinal = Ordinal.uniary(cardinal)
 
-extension [populable: Populable](value: populable)
+extension [populable: Vacuiscible](value: populable)
   inline def nil: Boolean = populable.nil(value)
 
 extension [countable: Countable](value: countable)

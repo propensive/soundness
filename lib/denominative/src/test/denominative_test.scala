@@ -323,7 +323,7 @@ object Tests extends Suite(m"Denominative Tests"):
         list.gamut.end
       . assert(_ == Ter)
 
-      // `nil` is O(1) and ungated (from `Populable.list`), so it needs no acknowledgement.
+      // `nil` is O(1) and ungated (from `Vacuiscible.list`), so it needs no acknowledgement.
       test(m"an empty list is nil"):
         val list = List[Int]()
         list.nil

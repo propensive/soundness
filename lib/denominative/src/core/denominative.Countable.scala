@@ -52,7 +52,7 @@ object Countable:
     override def nil(self: Option[element]): Boolean = self.isEmpty
 
   // `List#size` is O(n), so the `Countable` instance is gated behind `LinearSizeComplexity`; the O(1)
-  // `nil`/`occupied` come from the ungated `Populable.list` instead.
+  // `nil`/`occupied` come from the ungated `Vacuiscible.list` instead.
   given list: [element] => (complexity: LinearSizeComplexity) => List[element] is Countable:
     def size(self: List[element]): Int = self.stdlib.length
     override def nil(self: List[element]): Boolean = self.stdlib.isEmpty
@@ -76,7 +76,7 @@ object Countable:
 
   // `Progression#length` forces the whole stream (and diverges on infinite ones), so the
   // `Countable` instance is gated behind `UnboundedSizeComplexity`; the O(1) `nil` comes from the
-  // ungated `Populable.lazyList` instead.
+  // ungated `Vacuiscible.lazyList` instead.
   given lazyList: [element] => (complexity: UnboundedSizeComplexity) => Progression[element] is Countable:
     def size(self: Progression[element]): Int = self.stdlib.length
     override def nil(self: Progression[element]): Boolean = self.stdlib.isEmpty
@@ -103,6 +103,6 @@ object Countable:
     def size(self: Text): Int = self.s.length
     override def nil(self: Text): Boolean = self.s.isEmpty
 
-trait Countable extends Populable:
+trait Countable extends Vacuiscible:
   def size(self: Self): Int
   def nil(self: Self): Boolean = size(self) == 0

@@ -540,7 +540,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         list.length
       . assert(_ == 2)
 
-    suite(m"Populable tests"):
+    suite(m"Vacuiscible tests"):
       test(m"non-empty Text is not nil"):
         "abc".tt.nil
       . assert(_ == false)

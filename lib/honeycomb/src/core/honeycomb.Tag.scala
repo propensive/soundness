@@ -138,7 +138,7 @@ object Tag:
       boundary:   Boolean                   = false )
   extends Tag
     ( label, autoclose, mode, presets, admissible, insertable, foreign, false, false, boundary ):
-    type Result = Element & Html.Populable of Topic over Transport in Form
+    type Result = Element & Html.Vacuiscible of Topic over Transport in Form
 
     def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
@@ -163,7 +163,7 @@ object Tag:
 
     def node(attributes: Attributes): Result =
       new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
-      with Html.Populable()
+      with Html.Vacuiscible()
       . of[Topic]
       . over[Transport]
       . in[Form]

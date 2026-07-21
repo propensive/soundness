@@ -38,23 +38,23 @@ import prepositional.*
 // (like `List`) whose `size` is O(n) and gated behind `LinearSizeComplexity`, and those (like
 // `Progression`) whose `size` may diverge and is gated behind `UnboundedSizeComplexity`. Types whose
 // size is cheap implement `Countable`, which extends this trait; `nil`-only consumers should demand
-// only `Populable`.
-object Populable:
-  // Implicit search for `X is Populable` consults this companion and those of `Populable`'s
+// only `Vacuiscible`.
+object Vacuiscible:
+  // Implicit search for `X is Vacuiscible` consults this companion and those of `Vacuiscible`'s
   // *parents*, but never the companions of its subclasses, so instances defined in `Countable`'s
   // companion would not be found without this bridge.
-  given countable: [self] => (countable: self is Countable) => self is Populable = countable
+  given countable: [self] => (countable: self is Countable) => self is Vacuiscible = countable
 
   // `List`'s emptiness is O(1), so it gets an ungated instance here rather than relying on
   // the `LinearSizeComplexity`-gated `Countable.list` through the `countable` bridge; being more
   // specific, it wins whenever both are in scope.
-  given list: [element] => List[element] is Populable:
+  given list: [element] => List[element] is Vacuiscible:
     def nil(self: List[element]): Boolean = self.stdlib.isEmpty
 
   // `Progression`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
   // ungated instance here rather than reaching the `UnboundedSizeComplexity`-gated `Countable.lazyList`.
-  given lazyList: [element] => Progression[element] is Populable:
+  given lazyList: [element] => Progression[element] is Vacuiscible:
     def nil(self: Progression[element]): Boolean = self.stdlib.isEmpty
 
-trait Populable extends Typeclass.Pure:
+trait Vacuiscible extends Typeclass.Pure:
   def nil(self: Self): Boolean

@@ -34,7 +34,7 @@ package soundness
 
 export
   denominative
-  . { aka, Countable, Populable, gamut, Interval, iterate, nil, Ordinal, Prim, Quat, Quin, Sec,
+  . { aka, Countable, Vacuiscible, gamut, Interval, iterate, nil, Ordinal, Prim, Quat, Quin, Sec,
       Sen, Sept, Span, Ter, u, z, Zerary, LinearSizeComplexity, LinearAccessComplexity,
       UnboundedSizeComplexity }
 
