@@ -2630,6 +2630,19 @@ val nativeComponents: Seq[ScalaModule] =
     case component: Component if component.scalaNative     => component.native
     case component: BareComponent if component.scalaNative => component.native
 
+// The platform crosses that must NOT be published: the `.js` cross of a `scalaJs = false` module
+// and the `.native` cross of a `scalaNative = false` module are dormant — never compiled by the
+// `soundness.js`/`soundness.native` aggregates and unable to cross-compile (e.g. a compiler plugin
+// under Scala.js). `release.sh` subtracts these from `__.publishArtifacts`, since mill has no
+// per-module publish skip. Path matching can't identify them (the `xenophile.js`/`.native`
+// *components* are not crosses), so they are derived here from the capability flags.
+def dormantCrosses: T[Seq[String]] = Task:
+  allLibraries.flatMap(_.moduleDirectChildren).flatMap:
+    case component: PlatformCross =>
+      val base = component.moduleSegments.render
+      Option.when(!component.scalaJs)(s"$base.js") ++ Option.when(!component.scalaNative)(s"$base.native")
+    case _ => Nil
+
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a
 // `java.*` class Scala.js does not implement (the runtime counterpart to the

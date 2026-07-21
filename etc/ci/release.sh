@@ -96,8 +96,28 @@ for module in beneficence.plugin decorum.plugin rudiments.core; do
   fi
 done
 
+# Build the publish selector: every PublishModule EXCEPT the dormant platform crosses (the `.js`
+# cross of a `scalaJs = false` module and the `.native` cross of a `scalaNative = false` module).
+# Those can't cross-compile, and mill has no per-module publish skip, so subtract `dormantCrosses`
+# (derived in build.mill from the capability flags) from the `__.publishArtifacts` wildcard.
+dormant_file=$(mktemp)
+./mill show dormantCrosses 2>/dev/null \
+  | python3 -c 'import json,sys; [print(x) for x in json.load(sys.stdin)]' \
+  | sort > "$dormant_file"
+keep=$(./mill resolve '__.publishArtifacts' 2>/dev/null \
+  | grep -E '^[a-zA-Z].*\.publishArtifacts$' \
+  | sed -E 's/\.publishArtifacts$//' \
+  | sort | grep -vxF -f "$dormant_file")
+rm -f "$dormant_file"
+if [[ -z "$keep" ]]; then
+  echo "release: computed an empty publish set; aborting" >&2
+  git tag -d "$VERSION" >/dev/null; exit 1
+fi
+publish_selector="{$(printf '%s\n' "$keep" | paste -sd, -)}.publishArtifacts"
+echo "release: publishing $(printf '%s\n' "$keep" | grep -c .) modules (dormant crosses excluded)"
+
 if ! ./mill mill.javalib.SonatypeCentralPublishModule/publishAll \
-       --publishArtifacts __.publishArtifacts \
+       --publishArtifacts "$publish_selector" \
        --shouldRelease true \
        --bundleName "dev.soundness-soundness:$VERSION"; then
   echo "release: publish failed; removing local tag $VERSION" >&2
