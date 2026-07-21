@@ -37,14 +37,14 @@ export
   . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
       DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit,
       fuse, gib,
-      give, has, immutable, Indexable, indexBy, intercalate, javaInputStream, kib,
+      give, immutable, Indexable, indexBy, intercalate, javaInputStream, kib,
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
       sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, limit, ult, ant, pen, seek, where, subsumes, map,
-      remap, bind, flatMap, filter, withFilter, foreach, fold, group, sort, distinct,
+      mean2, unique, limit, ult, ant, pen, seek, where, subsumes,
+      bind, flatMap, filter, withFilter, foreach, fold, group, sort, distinct,
       Populated, head, reduce, confine, populatedEquality }
 
 // `zip` is deliberately NOT re-exported: zeppelin's contextual archive accessor owns the bare
