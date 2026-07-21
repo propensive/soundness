@@ -519,17 +519,6 @@ extension (data: Data)
   def bytes: Bytes = Bytes(data.mutable(using Unsafe).length)
 
 
-extension [countable: Countable](inline value: countable)
-  inline def limit: Ordinal = countable.size(value).z
-
-  inline def ult: Optional[Ordinal] =
-    if countable.size(value) >= 1 then (countable.size(value) - 1).z else Unset
-
-  inline def pen: Optional[Ordinal] =
-    if countable.size(value) >= 1 then (countable.size(value) - 2).z else Unset
-
-  inline def ant: Optional[Ordinal] =
-    if countable.size(value) >= 1 then (countable.size(value) - 3).z else Unset
 
 extension [product <: Product: Mirror.ProductOf](value: product)
   def tuple: product.MirroredElemTypes = Tuple.fromProductTyped(value)

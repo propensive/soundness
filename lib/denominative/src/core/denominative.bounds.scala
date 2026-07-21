@@ -30,21 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package denominative
 
-export
-  denominative
-  . { aka, Countable, Vacuiscible, Indexable, gamut, Interval, iterate, nil, Ordinal, Prim, Quat, Quin, Sec,
-      Sen, Sept, Span, Ter, u, z, Zerary, limit, ult, ant, pen, LinearSizeComplexity, LinearAccessComplexity,
-      UnboundedSizeComplexity }
+import vacuous.*
 
-package asymptotics:
-  export denominative.asymptotics.{linearSizeComplexity, linearAccessComplexity,
-      unboundedSizeComplexity}
+// The bounding ordinals of any `Countable` value: `limit` is the exclusive upper bound (the ordinal
+// one past the last element), and `ult`/`pen`/`ant` are the ultimate/penultimate/antepenultimate
+// element ordinals (`Unset` when the value is too short). These are `Ordinal`-valued, so they live
+// with denominative rather than rudiments.
+extension [countable: Countable](inline value: countable)
+  inline def limit: Ordinal = countable.size(value).z
 
-package ordinalTextualizables:
-  export
-    denominative.ordinalTextualizables
-    . { englishOrdinal, englishSuperscriptOrdinal, frenchOrdinal, intermediateOrdinal,
-        italianOrdinal, nominalOrdinal, russianOrdinal, spanishOrdinal, uniaryOrdinal,
-        unmarkedUniaryOrdinal, unmarkedZeraryOrdinal, zeraryOrdinal }
+  inline def ult: Optional[Ordinal] =
+    if countable.size(value) >= 1 then (countable.size(value) - 1).z else Unset
+
+  inline def pen: Optional[Ordinal] =
+    if countable.size(value) >= 1 then (countable.size(value) - 2).z else Unset
+
+  inline def ant: Optional[Ordinal] =
+    if countable.size(value) >= 1 then (countable.size(value) - 3).z else Unset
