@@ -79,6 +79,23 @@ export MILL_PGP_PASSPHRASE=$(read_secret soundness.pgp.passphrase)
 # version.
 git tag -s "$VERSION" -m "Version $VERSION"
 
+# Drive the published version explicitly rather than letting each module re-derive it from git.
+# `publishVersion` reads this (build.mill); it is the single source of truth for the release, so
+# every artifact carries exactly $VERSION regardless of `out/` cache state or git-describe quirks.
+export SOUNDNESS_RELEASE_VERSION="$VERSION"
+
+# Guard: every published module must resolve to exactly $VERSION before anything leaves the machine.
+# Probes both compiler plugins (which shipped a stale 0.63.0 in the 0.64.0 bundle) plus a normal
+# module; the env var makes all modules resolve identically, so a representative few suffice.
+for module in beneficence.plugin decorum.plugin rudiments.core; do
+  resolved=$(./mill show "$module.publishVersion" | tr -d '"')
+  if [[ "$resolved" != "$VERSION" ]]; then
+    echo "release: $module.publishVersion=$resolved, expected $VERSION; aborting" >&2
+    git tag -d "$VERSION" >/dev/null
+    exit 1
+  fi
+done
+
 if ! ./mill mill.javalib.SonatypeCentralPublishModule/publishAll \
        --publishArtifacts __.publishArtifacts \
        --shouldRelease true \
