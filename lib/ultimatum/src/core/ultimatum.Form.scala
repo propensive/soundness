@@ -116,7 +116,7 @@ class Form
 
     def project(node: Pane): Frame = node match
       case Pane.Branch(sizing, axis, panes) =>
-        Frame.Split(sizing, axis, panes.contents.map(project).to[List])
+        Frame.Split(sizing, axis, panes.contents.map(project).transmute[List])
 
       case Pane.Leaf(sizing, _) =>
         index += 1

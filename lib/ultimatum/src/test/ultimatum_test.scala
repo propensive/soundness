@@ -872,7 +872,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.append(b)
-        panes.contents.to[List] == List(a, b)
+        panes.contents.transmute[List] == List(a, b)
       . assert(_ == true)
 
       test(m"prepend adds a pane at the start"):
@@ -880,7 +880,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.prepend(b)
-        panes.contents.to[List] == List(b, a)
+        panes.contents.transmute[List] == List(b, a)
       . assert(_ == true)
 
       test(m"insertBefore places a pane immediately before the reference"):
@@ -889,7 +889,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertBefore(b, c)
-        panes.contents.to[List] == List(a, c, b)
+        panes.contents.transmute[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"insertAfter places a pane immediately after the reference"):
@@ -898,7 +898,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertAfter(a, c)
-        panes.contents.to[List] == List(a, c, b)
+        panes.contents.transmute[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"remove deletes a pane by identity"):
@@ -906,7 +906,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a, b)
         panes.remove(a)
-        panes.contents.to[List] == List(b)
+        panes.contents.transmute[List] == List(b)
       . assert(_ == true)
 
       // Drive a running form, append a pane mid-loop (the synthetic iterator

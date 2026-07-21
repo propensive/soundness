@@ -520,23 +520,23 @@ object Tests extends Suite(m"Rudiments Tests"):
     // receiver these tests exercise; collection receivers activate as the aliases become opaque.
     suite(m"Convertible tests"):
       test(m"Text to List of chars"):
-        "abc".tt.to[List]
+        "abc".tt.transmute[List]
       . assert(_ == List('a', 'b', 'c'))
 
       test(m"Text to Set of chars deduplicates"):
-        "aba".tt.to[Set]
+        "aba".tt.transmute[Set]
       . assert(_ == Set('a', 'b'))
 
       test(m"Text to Series of chars"):
-        "abc".tt.to[Series]
+        "abc".tt.transmute[Series]
       . assert(_ == Series('a', 'b', 'c'))
 
       test(m"Text to Text is the identity"):
-        "abc".tt.to[Text]
+        "abc".tt.transmute[Text]
       . assert(_ == "abc".tt)
 
       test(m"Result type of to[List] is inferred fully applied"):
-        val list: List[Char] = "xy".tt.to[List]
+        val list: List[Char] = "xy".tt.transmute[List]
         list.length
       . assert(_ == 2)
 

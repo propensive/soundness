@@ -41,8 +41,8 @@ import prepositional.*
 
 // Conversion to a *requested shape*: `Form` names the target — a proper type (`Text`) or an
 // unapplied constructor (`Map`, `List`) — and `Result` the fully-applied result implicit search
-// derives for it. It is driven by the kind-polymorphic `to` extension: `pairs.to[Map]` yields a
-// `Map[key, value]`, `chars.to[Text]` a `Text`. `Form` is declared `<: AnyKind` so one method
+// derives for it. It is driven by the kind-polymorphic `transmute` extension: `pairs.transmute[Map]` yields a
+// `Map[key, value]`, `chars.transmute[Text]` a `Text`. `Form` is declared `<: AnyKind` so one method
 // serves both kinds, uniformly, unlike the stdlib's `Factory`-taking `to`.
 object Convertible:
   given list: [self] => (traversable: self is Traversable)

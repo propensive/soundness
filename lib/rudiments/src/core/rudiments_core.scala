@@ -192,7 +192,7 @@ extension [self <: Populated](value: self)(using traversable: self is Traversabl
     traversable.traverse(value).reduce(lambda)
 
 // Conversion to a requested shape, which may be a proper type or an unapplied constructor:
-// `chars.to[List]`, `text.to[Set]`. `transparent inline` so the umbrella export forwards it by
+// `chars.transmute[List]`, `text.transmute[Set]`. `transparent inline` so the umbrella export forwards it by
 // inlining: a plain def's path-dependent result fails at the cross-package forwarder (#1411),
 // and the result cannot be bound as a second type parameter here because the explicit `form`
 // argument precludes partial type application.
@@ -202,18 +202,59 @@ extension [self <: Populated](value: self)(using traversable: self is Traversabl
 // candidate for *every* `.to` call, and extension resolution commits to a lexical candidate
 // without falling through when its givens fail — shadowing companion-hosted `to` extensions
 // found via implicit scope, such as quantitative's unit conversion (`quantity.to[Pounds]`).
+// `transmute` is the temporary name for the kind-polymorphic collection conversion during the
+// `.to(Companion)` -> `.transmute[Type]` migration: a distinct name coexists with the stdlib-style
+// `.to(Factory)` (which they would otherwise clash with) so call sites can migrate incrementally;
+// once every `.to(Companion)` is gone and the `Factory` conversions removed, `transmute` is renamed
+// back to `to`. Receiver-specific per collection alias, for the same reason `to` was (a fully-generic
+// receiver commits lexically and shadows companion-hosted conversions like `quantity.to[Pounds]`).
 extension (text: Text)
-  transparent inline def to[form <: AnyKind](using convertible: Text is Convertible in form)
+  transparent inline def transmute[form <: AnyKind](using convertible: Text is Convertible in form)
   :   convertible.Result =
 
     convertible.convert(text)
 
 extension [element](series: Series[element])
-  transparent inline def to[form <: AnyKind]
+  transparent inline def transmute[form <: AnyKind]
     ( using convertible: Series[element] is Convertible in form )
   :   convertible.Result =
 
     convertible.convert(series)
+
+extension [element](list: List[element])
+  transparent inline def transmute[form <: AnyKind]
+    ( using convertible: List[element] is Convertible in form )
+  :   convertible.Result =
+
+    convertible.convert(list)
+
+extension [element](set: Set[element])
+  transparent inline def transmute[form <: AnyKind]
+    ( using convertible: Set[element] is Convertible in form )
+  :   convertible.Result =
+
+    convertible.convert(set)
+
+extension [element](progression: Progression[element])
+  transparent inline def transmute[form <: AnyKind]
+    ( using convertible: Progression[element] is Convertible in form )
+  :   convertible.Result =
+
+    convertible.convert(progression)
+
+extension [key, value](map: Map[key, value])
+  transparent inline def transmute[form <: AnyKind]
+    ( using convertible: Map[key, value] is Convertible in form )
+  :   convertible.Result =
+
+    convertible.convert(map)
+
+extension [element](iarray: IArray[element])
+  transparent inline def transmute[form <: AnyKind]
+    ( using convertible: IArray[element] is Convertible in form )
+  :   convertible.Result =
+
+    convertible.convert(iarray)
 
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
