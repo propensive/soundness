@@ -37,7 +37,7 @@ export
   . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
       DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit,
       fuse, gib,
-      give, immutable, Indexable, indexBy, intercalate, javaInputStream, kib,
+      give, immutable, indexBy, intercalate, javaInputStream, kib,
       longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,

@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package denominative
 
 import scala.collection.immutable.IndexedSeq
 
@@ -39,7 +39,6 @@ import scala.language.experimental.pureFunctions
 import scala.collection.mutable as scm
 
 import anticipation.*
-import denominative.*
 import prepositional.*
 
 object Indexable:
@@ -100,14 +99,6 @@ object Indexable:
 
     def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
     def access(value: Self, index: key): value = value.stdlib(index)
-
-  given bijection: [key, value] => Bijection[key, value] is Indexable:
-    type Self = Bijection[key, value]
-    type Operand = key
-    type Result = value
-
-    def contains(value: Self, index: key): Boolean = value.map.contains(index)
-    def access(value: Self, index: key): value = value.map(index)
 
   given hashMap: [key, value] => scm.HashMap[key, value] is Indexable:
     type Self = scm.HashMap[key, value]
