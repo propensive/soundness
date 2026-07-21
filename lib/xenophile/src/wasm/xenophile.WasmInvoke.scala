@@ -213,8 +213,14 @@ object WasmInvoke:
 
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
+    // The opaque `proscenium.List` erases to `sci.List` and is representationally identical, but its
+    // type does not dealias to `sci.List` outside its defining module, so match its symbol too.
+    val opaqueListSymbol = TypeRepr.of[proscenium.List[Any]] match
+      case AppliedType(list, _) => list.typeSymbol
+      case tpe                  => tpe.typeSymbol
+
     def isList(scala: TypeRepr): Boolean = scala.dealias match
-      case AppliedType(list, List(_)) => list.typeSymbol == listClass
+      case AppliedType(list, List(_)) => list.typeSymbol == listClass || list.typeSymbol == opaqueListSymbol
       case _                          => false
 
     def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
@@ -342,7 +348,11 @@ object WasmInvoke:
             val wrapped = '{_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray($elements)}
 
             val mapped = Select.overloaded(wrapped.asTerm, "map", List(elementType), List(mapper))
-            Select.unique(mapped, "toList").asExprOf[Any]
+
+            // `.toList` yields an `sci.List`; cast to the target type so an opaque `proscenium.List`
+            // result (representationally identical) is accepted by the checked `.asExprOf[result]`.
+            val listTerm = Select.unique(mapped, "toList")
+            TypeApply(Select.unique(listTerm, "asInstanceOf"), List(Inferred(scala))).asExprOf[Any]
 
           (arrayCarrier, decode)
 
