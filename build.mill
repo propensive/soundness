@@ -392,13 +392,13 @@ trait Library extends Module:
 // therefore gets a complete JS dependency graph; one that (transitively) reaches a JVM-only module
 // like `hellenism` will be missing that dependency and fail to compile — the signal to mark it
 // `scalaJs = false` too.
-def jsDeps(deps: Seq[mill.api.Module]): Seq[ScalaJSModule] = deps.collect:
+def jsDeps(deps: Seq[mill.api.Module]): Seq[ScalaJSModule & PublishModule] = deps.collect:
   case component: Component if component.scalaJs         => component.js
   case component: BareComponent if component.scalaJs     => component.js
 
 // The Scala Native counterpart of `jsDeps`: maps JVM `moduleDeps` to the corresponding `.native`
 // cross-modules, skipping any dependency not itself Native-capable (`scalaNative = false`).
-def nativeDeps(deps: Seq[mill.api.Module]): Seq[ScalaModule] = deps.collect:
+def nativeDeps(deps: Seq[mill.api.Module]): Seq[ScalaModule & PublishModule] = deps.collect:
   case component: Component if component.scalaNative     => component.native
   case component: BareComponent if component.scalaNative => component.native
 
@@ -421,14 +421,14 @@ trait PlatformCross extends BaseScalaModule:
   jvm =>
   def scalaJs: Boolean = true
   def scalaNative: Boolean = scalaJs
-  def jsModuleDeps: Seq[ScalaJSModule]
-  def nativeModuleDeps: Seq[ScalaModule]
+  def jsModuleDeps: Seq[ScalaJSModule & PublishModule]
+  def nativeModuleDeps: Seq[ScalaModule & PublishModule]
   // The sources of the cross-modules: the JVM module's sources by default, overridable for
   // components with platform-specific implementations (e.g. `pneumatic.flate`).
   def jsSources: T[Seq[PathRef]] = sources
   def nativeSources: T[Seq[PathRef]] = sources
 
-  object js extends ScalaJSModule, Toolchain:
+  object js extends ScalaJSModule, Toolchain, SonatypeCentralPublishModule:
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     def scalacOptions = jvm.scalacOptions
@@ -438,8 +438,15 @@ trait PlatformCross extends BaseScalaModule:
     def mvnDeps = jvm.mvnDeps
     def compileMvnDeps = jvm.compileMvnDeps
     override def moduleDeps = jvm.jsModuleDeps
+    // Published as `<jvm-artifact>_sjs1_3`: it does NOT extend `BaseScalaModule`, so it keeps mill's
+    // Scala.js platform suffix instead of inheriting `artifactSuffix = ""`. Coordinate base, release
+    // version and POM are shared with the JVM module; the docJar is the same empty jar it uses.
+    override def artifactName = jvm.artifactName()
+    def publishVersion = Task(jvm.publishVersion())
+    def pomSettings = Task(jvm.pomSettings())
+    override def docJar = Task(jvm.docJar())
 
-  object native extends ScalaModule, Toolchain:
+  object native extends ScalaModule, Toolchain, SonatypeCentralPublishModule:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
       jvm.scalacOptions() :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
@@ -451,6 +458,16 @@ trait PlatformCross extends BaseScalaModule:
     // consumes); the fork's JVM stdlib remains present for the compiler itself via `Toolchain`.
     def compileMvnDeps = Task { jvm.compileMvnDeps() ++ nativeToolchain.runtimeDeps }
     override def moduleDeps = jvm.nativeModuleDeps
+    // Published as `<jvm-artifact>_native0.5_3`. It is a plain `ScalaModule` (the NIR comes from the
+    // nscplugin, not a `ScalaNativeModule`), so mill would otherwise give it a JVM-style `_3` and it
+    // would masquerade as the JVM coordinate — force the Scala Native platform suffix. Coordinate
+    // base, release version and POM are shared with the JVM module.
+    override def platformSuffix =
+      Task(s"_native${settings.scalaNativeVersion.split('.').take(2).mkString(".")}")
+    override def artifactName = jvm.artifactName()
+    def publishVersion = Task(jvm.publishVersion())
+    def pomSettings = Task(jvm.pomSettings())
+    override def docJar = Task(jvm.docJar())
 
 trait BareComponent(dependencies: PublishModule*)
 extends BaseScalaModule, SonatypeCentralPublishModule, PlatformCross:
