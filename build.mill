@@ -352,11 +352,21 @@ trait BaseScalaModule extends Toolchain:
   override def assemblyRules =
     super.assemblyRules :+ mill.javalib.Assembly.Rule.AppendPattern("META-INF/givens/.*")
 
-  def publishVersion = Task:
-    try
-      val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
-      os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
-    catch case error: Exception => "unknown"
+  // A `Task.Input` (not a cached `Task`), because the published version is external state Mill
+  // can't see: a plain cached target reads `git` once and persists the string in `out/`, so a
+  // release that reuses `out/` across a tag bump can re-serve a stale version (this is exactly how
+  // 0.64.0 shipped 0.63.0 plugin jars — the earliest-built, most-stable plugin modules kept a
+  // pre-tag cache). The release drives the authoritative version through `SOUNDNESS_RELEASE_VERSION`
+  // (set by `etc/ci/release.sh`); the git-describe fallback is only for local `publishLocal`.
+  def publishVersion = Task.Input:
+    // `Task.env`, not `sys.env`: the mill daemon is long-lived and freezes `sys.env` at daemon
+    // start, but `release.sh` exports the version to a *later* `./mill` invocation that reuses that
+    // daemon. `Task.env` is the client invocation's forwarded environment, so the export is seen.
+    Task.env.get("SOUNDNESS_RELEASE_VERSION").filter(_.nonEmpty).getOrElse:
+      try
+        val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
+        os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
+      catch case error: Exception => "unknown"
 
   override def docJar = Task:
     val jar = Task.dest / "empty.jar"
