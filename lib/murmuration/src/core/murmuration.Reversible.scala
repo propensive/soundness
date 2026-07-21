@@ -30,54 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package murmuration
 
 import anticipation.*
 import prepositional.*
 
-// A type whose values can be tested for membership of a value (the queried type
-// is its `Operand`, bound with `by` — e.g. `List[Int] is Inclusive by Int`).
-// Backs the `collection.has(value)` extension. Distinct from `Indexable`, whose
-// `defines` answers whether a *key/index* is present rather than a *value*.
-// The single `Iterable` instance fixes the queried type to the collection's
-// *exact* element type via the `Element` match type, rather than a bounded
-// `collection <: Iterable[element]` whose covariance would widen the element to
-// `Matchable` — silently accepting `map.has(key)` (a key, not a value) or
-// `list.has(wrongType)`. With the exact element, `Map`'s element is a key/value
-// pair, so `map.has(key)` is a compile error; key membership is `Indexable`'s
-// `defines`.
-object Inclusive extends Inclusive.Fallback:
-  type Element[collection] = collection match
-    case Iterable[element] => element
+// Order-reversal, unified across shapes so a single `reverse` extension serves both collections
+// (`List`/`Series`) and textual types (gossamer contributes a `Reversible` *instance* for `Textual`,
+// not a competing extension — that is what keeps the name un-clashed at the `soundness` umbrella).
+// Instances are subtype-parametric (`container <: List[element]`) to match `& Populated` receivers
+// and the distinct `soundness.*` re-export aliases; `Result` is bound as an ordinary type parameter
+// at the extension, never referenced path-dependently, so it survives the cross-package export
+// forwarder (#1411). Unordered shapes (`Set`, `Map`) have no instance: reversing them is meaningless.
+object Reversible:
+  given list: [element, container <: List[element]]
+  =>  (container is Reversible { type Result = List[element] }) =
+    new Reversible:
+      type Self = container
+      type Result = List[element]
+      def reverse(self: container): List[element] = List.of(self.stdlib.reverse)
 
-  // The blanket `Iterable` instance lives in a lower-priority parent: for an *unrefined*
-  // `X is Inclusive` query the compiler otherwise reports it ambiguous with the per-alias
-  // instances below, without ever reducing `Element` to discover the mismatch.
-  trait Fallback:
-    given iterable: [collection <: Iterable[?]] => collection is Inclusive by Element[collection] =
-      (collection, value) => collection.exists(_ == value)
+  given series: [element, container <: Series[element]]
+  =>  (container is Reversible { type Result = Series[element] }) =
+    new Reversible:
+      type Self = container
+      type Result = Series[element]
+      def reverse(self: container): Series[element] = Series.of(self.stdlib.reverse)
 
-  given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
-    (iarray, value) => iarray.exists(_ == value)
+  // `Text`'s companion (in `anticipation`) cannot host this — it sits below both `Reversible` and
+  // `Textual` — but `Reversible`'s own companion is in implicit scope for `Text is Reversible`, and
+  // `anticipation` exposes the `.s` bridge. `StringBuilder#reverse` is surrogate-pair-aware.
+  given text: [text <: Text] => (text is Reversible { type Result = Text }) =
+    new Reversible:
+      type Self = text
+      type Result = Text
+      def reverse(value: text): Text = StringBuilder(value.s).reverse.nn.toString.nn.tt
 
-  // Opaque `Series` is no longer an `Iterable` subtype, so it needs its own instance.
-  given series: [element] => Series[element] is Inclusive by element =
-    (series, value) => series.stdlib.exists(_ == value)
+extension [self, result](value: self)(using reversible: self is Reversible { type Result = result })
+  def reverse: result = reversible.reverse(value)
 
-  // Opaque `Set` likewise.
-  given set: [element] => Set[element] is Inclusive by element =
-    (set, value) => set.stdlib.contains(value)
-
-  // Opaque `List` likewise (membership is a single linear pass, so ungated).
-  given list: [element] => List[element] is Inclusive by element =
-    (list, value) => list.stdlib.contains(value)
-
-  given array: [element <: Matchable] => Array[element] is Inclusive by element =
-    (array, value) => array.exists(_ == value)
-
-  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own
-  // instance for `text.has(char)`; substring containment is `subsumes` instead.
-  given text: Text is Inclusive by Char = (text, char) => text.s.indexOf(char.toInt) >= 0
-
-trait Inclusive extends Typeclass.Pure, Operable:
-  def has(self: Self, value: Operand): Boolean
+trait Reversible extends Typeclass.Pure, Resultant:
+  def reverse(self: Self): Result

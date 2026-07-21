@@ -30,24 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package rudiments
 
-export
-  rudiments
-  . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit,
-      fuse, gib,
-      give, has, immutable, Indexable, indexBy, intercalate, javaInputStream, kib,
-      longestTrain,
-      Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
-      prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
-      sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
-      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, limit, ult, ant, pen, seek, where, subsumes, map,
-      remap, bind, flatMap, filter, withFilter, foreach, fold, group, sort, distinct,
-      Populated, head, reduce, confine, populatedEquality }
-
-// `zip` is deliberately NOT re-exported: zeppelin's contextual archive accessor owns the bare
-// name `zip` in this package, and a generic-receiver extension overload commits without falling
-// through when its givens fail. The extension remains available via `import rudiments.*`; the
-// collection aliases will host `zip` in their companions (implicit scope) once opaque.
+// `murmuration` hosts the collection typeclasses (moved below `denominative`/`vacuous`); re-export
+// them so `import rudiments.*` keeps exposing the whole surface unchanged.
+export murmuration.{Traversable, Reshapable, Mappable, Reversible, Inclusive, Convertible, reverse}

@@ -30,55 +30,58 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
-
-import scala.collection.immutable.IndexedSeq
-
-import scala.reflect.ClassTag
+package murmuration
 
 import anticipation.*
 import prepositional.*
 
-// Conversion to a *requested shape*: `Form` names the target — a proper type (`Text`) or an
-// unapplied constructor (`Map`, `List`) — and `Result` the fully-applied result implicit search
-// derives for it. It is driven by the kind-polymorphic `to` extension: `pairs.to[Map]` yields a
-// `Map[key, value]`, `chars.to[Text]` a `Text`. `Form` is declared `<: AnyKind` so one method
-// serves both kinds, uniformly, unlike the stdlib's `Factory`-taking `to`.
-object Convertible:
-  given list: [self] => (traversable: self is Traversable)
-  =>  self is Convertible in List to List[traversable.Operand] =
-    self => List.from(traversable.traverse(self))
+// A type that can be traversed as a sequence of its elements (its `Operand`, bound
+// with `by` — e.g. `List[Int] is Traversable by Int`). It is the basis for
+// element-oriented operations like `where` that need to visit elements in order and
+// short-circuit, and for the transforming operations (`map`, `filter`, …) built with
+// `Reshapable`. `traverse` returns a fresh, one-shot `Iterator`, which callers
+// consume only as far as they need; it is internal currency, never user-facing.
+// The blanket `Iterable` instance lives in a parent trait so per-alias instances in the
+// object take priority (the compiler otherwise reports an ambiguity for alias receivers).
+transparent trait Traversable2:
+  given iterable: [element, collection <: Iterable[element]]
+  =>  collection is Traversable by element =
+    _.iterator
 
-  given set: [self] => (traversable: self is Traversable)
-  =>  self is Convertible in Set to Set[traversable.Operand] =
-    self => Set.from(traversable.traverse(self))
+object Traversable extends Traversable2:
 
-  given series: [self] => (traversable: self is Traversable)
-  =>  self is Convertible in Series to Series[traversable.Operand] =
-    self => Series.from(traversable.traverse(self))
+  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own instance;
+  // placing it here (the typeclass companion) keeps it in implicit scope for
+  // `Text is Traversable` without an explicit `import`, unlike a top-level given. `Self` is
+  // subtype-parametric so intersections like `Text & Populated` (from `occupied`) also match.
+  given text: [text <: Text] => text is Traversable by Char = _.s.iterator
 
-  given indexedSeq: [self] => (traversable: self is Traversable)
-  =>  self is Convertible in IndexedSeq to IndexedSeq[traversable.Operand] =
-    self => IndexedSeq.from(traversable.traverse(self))
+  // Opaque `List` likewise; subtype-parametric for `List[e] & Populated` receivers.
+  given list: [element, list <: List[element]] => list is Traversable by element =
+    _.stdlib.iterator
 
-  given lazyList: [self] => (traversable: self is Traversable)
-  =>  self is Convertible in Progression to Progression[traversable.Operand] =
-    self => Progression.from(traversable.traverse(self))
+  // Opaque `Progression` likewise; `.stdlib.iterator` is lazy (pulls elements on demand).
+  given lazyList: [element, lazyList <: Progression[element]] => lazyList is Traversable by element =
+    _.stdlib.iterator
 
-  given map: [self, key, value] => (traversable: self is Traversable by (key, value))
-  =>  self is Convertible in Map to Map[key, value] =
-    self => Map.from(traversable.traverse(self))
+  // Opaque `Series` likewise; subtype-parametric for `Series[e] & Populated` receivers.
+  given series: [element, series <: Series[element]] => series is Traversable by element =
+    _.stdlib.iterator
 
-  given iarray: [self]
-  =>  (traversable: self is Traversable)
-  =>  (tag: ClassTag[traversable.Operand])
-  =>  self is Convertible in IArray to IArray[traversable.Operand] =
-    self => IArray.from(traversable.traverse(self))(using tag)
+  // Opaque `Set` likewise.
+  given set: [element, set <: Set[element]] => set is Traversable by element =
+    _.stdlib.iterator
 
-  given text: [self] => (traversable: self is Traversable by Char)
-  =>  self is Convertible in Text to Text =
-    self => Text(traversable.traverse(self).mkString)
+  // Opaque `Map` traverses as its pairs.
+  given map: [key, value] => Map[key, value] is Traversable by (key, value) =
+    _.stdlib.iterator
 
-trait Convertible extends Typeclass.Pure, Resultant:
-  type Form <: AnyKind
-  def convert(self: Self): Result
+  // `IArray` is not an `Iterable`, so the blanket instance cannot serve it; the immutable
+  // wrapper is allocation-free and the cast never escapes.
+  given iarray: [element] => IArray[element] is Traversable by element =
+    iarray =>
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[Array[element]])
+      . iterator
+
+trait Traversable extends Typeclass.Pure, Operable:
+  def traverse(self: Self): Iterator[Operand]

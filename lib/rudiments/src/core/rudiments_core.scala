@@ -47,6 +47,7 @@ import scala.quoted.*
 
 import anticipation.*
 import denominative.*
+import murmuration.*
 import prepositional.*
 import symbolism.*
 import vacuous.*

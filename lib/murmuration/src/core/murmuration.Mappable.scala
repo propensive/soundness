@@ -30,58 +30,87 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package murmuration
 
-import anticipation.*
+import scala.collection.immutable as sci
+
 import prepositional.*
 
-// A type that can be traversed as a sequence of its elements (its `Operand`, bound
-// with `by` — e.g. `List[Int] is Traversable by Int`). It is the basis for
-// element-oriented operations like `where` that need to visit elements in order and
-// short-circuit, and for the transforming operations (`map`, `filter`, …) built with
-// `Reshapable`. `traverse` returns a fresh, one-shot `Iterator`, which callers
-// consume only as far as they need; it is internal currency, never user-facing.
-// The blanket `Iterable` instance lives in a parent trait so per-alias instances in the
-// object take priority (the compiler otherwise reports an ambiguity for alias receivers).
-transparent trait Traversable2:
-  given iterable: [element, collection <: Iterable[element]]
-  =>  collection is Traversable by element =
-    _.iterator
+// The shape-preserving `map`, pulled out of `Traversable` so a `Map`'s `map` maps its *values*
+// (keys structural) rather than iterating `(key, value)` pairs. `Operand` is the element the lambda
+// receives (the value for a `Map`); `Result[_]` is the mapped-container constructor. Each instance
+// is keyed on the container alone — `Operand` and `Result[_]` are fixed by the shape, independent of
+// the new element type — so a `Self`-keyed summon determines both before the lambda is elaborated
+// (`xs.map(_.field)` works). `map` (below, in `rudiments_core`) binds `Result[_]` as an HK type
+// *parameter* matched from this refinement, so its return type is a plain application, never a path-
+// dependent projection: that is what survives the cross-package export forwarder (#1411). Not
+// `Resultant`: its `Result` has kind `*`, but here `Result` must be `* -> *`.
+// The instances are subtype-parametric (`container <: List[element]`, not an exact `List[element]`),
+// mirroring the `Traversable` givens: this is what matches both `List[e] & Populated` receivers and
+// the `soundness.*` re-export aliases (which are *distinct* opaque types from the `proscenium`
+// originals) — an exact match would let the `Iterable` fallback win for them (wrong shape for `Set`,
+// pair operand for `Map`).
+object Mappable extends Mappable.Fallback:
+  given list: [element, container <: List[element]]
+  =>  (container is Mappable { type Operand = element; type Result[element2] = List[element2] }) =
+    new Mappable:
+      type Self = container
+      type Operand = element
+      type Result[element2] = List[element2]
+      def map[element2](self: container, lambda: element => element2): List[element2] =
+        List.of(self.stdlib.map(lambda))
 
-object Traversable extends Traversable2:
+  given set: [element, container <: Set[element]]
+  =>  (container is Mappable { type Operand = element; type Result[element2] = Set[element2] }) =
+    new Mappable:
+      type Self = container
+      type Operand = element
+      type Result[element2] = Set[element2]
+      def map[element2](self: container, lambda: element => element2): Set[element2] =
+        Set.of(self.stdlib.map(lambda))
 
-  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own instance;
-  // placing it here (the typeclass companion) keeps it in implicit scope for
-  // `Text is Traversable` without an explicit `import`, unlike a top-level given. `Self` is
-  // subtype-parametric so intersections like `Text & Populated` (from `occupied`) also match.
-  given text: [text <: Text] => text is Traversable by Char = _.s.iterator
+  given series: [element, container <: Series[element]]
+  =>  (container is Mappable { type Operand = element; type Result[element2] = Series[element2] }) =
+    new Mappable:
+      type Self = container
+      type Operand = element
+      type Result[element2] = Series[element2]
+      def map[element2](self: container, lambda: element => element2): Series[element2] =
+        Series.of(self.stdlib.map(lambda))
 
-  // Opaque `List` likewise; subtype-parametric for `List[e] & Populated` receivers.
-  given list: [element, list <: List[element]] => list is Traversable by element =
-    _.stdlib.iterator
+  given progression: [element, container <: Progression[element]]
+  =>  (container is Mappable
+         { type Operand = element; type Result[element2] = Progression[element2] }) =
+    new Mappable:
+      type Self = container
+      type Operand = element
+      type Result[element2] = Progression[element2]
+      def map[element2](self: container, lambda: element => element2): Progression[element2] =
+        Progression.of(self.stdlib.map(lambda))
 
-  // Opaque `Progression` likewise; `.stdlib.iterator` is lazy (pulls elements on demand).
-  given lazyList: [element, lazyList <: Progression[element]] => lazyList is Traversable by element =
-    _.stdlib.iterator
+  // A `Map` maps its *values*, preserving keys: `Operand` is the value type; `Result` re-
+  // parameterizes the value, with `key` fixed by the receiver.
+  given map: [key, value, container <: Map[key, value]]
+  =>  (container is Mappable { type Operand = value; type Result[value2] = Map[key, value2] }) =
+    new Mappable:
+      type Self = container
+      type Operand = value
+      type Result[value2] = Map[key, value2]
+      def map[value2](self: container, lambda: value => value2): Map[key, value2] =
+        Map.of(self.stdlib.view.mapValues(lambda).toMap)
 
-  // Opaque `Series` likewise; subtype-parametric for `Series[e] & Populated` receivers.
-  given series: [element, series <: Series[element]] => series is Traversable by element =
-    _.stdlib.iterator
+  trait Fallback:
+    // Any raw `Iterable` (stdlib collections, ranges, …) maps to a `List`, as the old umbrella `map`
+    // did. Lower priority than the alias instances above (companion-parent placement).
+    given iterable: [element, collection <: Iterable[element]]
+    =>  (collection is Mappable { type Operand = element; type Result[element2] = List[element2] }) =
+      new Mappable:
+        type Self = collection
+        type Operand = element
+        type Result[element2] = List[element2]
+        def map[element2](self: collection, lambda: element => element2): List[element2] =
+          List.of(self.iterator.map(lambda).to(sci.List))
 
-  // Opaque `Set` likewise.
-  given set: [element, set <: Set[element]] => set is Traversable by element =
-    _.stdlib.iterator
-
-  // Opaque `Map` traverses as its pairs.
-  given map: [key, value] => Map[key, value] is Traversable by (key, value) =
-    _.stdlib.iterator
-
-  // `IArray` is not an `Iterable`, so the blanket instance cannot serve it; the immutable
-  // wrapper is allocation-free and the cast never escapes.
-  given iarray: [element] => IArray[element] is Traversable by element =
-    iarray =>
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[Array[element]])
-      . iterator
-
-trait Traversable extends Typeclass.Pure, Operable:
-  def traverse(self: Self): Iterator[Operand]
+trait Mappable extends Typeclass.Pure, Operable:
+  type Result[_]
+  def map[element2](self: Self, lambda: Operand => element2): Result[element2]
