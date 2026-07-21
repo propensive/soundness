@@ -51,7 +51,7 @@ object TreeDiagram:
     def recur(level: List[TreeTile], input: List[node]): Progression[(List[TreeTile], node)] =
       val last = input.stdlib.size - 1
 
-      input.stdlib.zipWithIndex.to(Progression).flatMap: (item, index) =>
+      input.stdlib.zipWithIndex.transmute[Progression].flatMap: (item, index) =>
         val tiles: List[TreeTile] =
           List.of(((if index == last then Last else Branch) :: level).reverse)
 

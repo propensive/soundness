@@ -200,7 +200,7 @@ private[facsimile] object Guard:
       val keySalt = user.slice(40, 48)
 
       try
-        if hash6(passwordBytes, salt, IArray.empty[Byte]).to(List) != user.take(32).to(List)
+        if hash6(passwordBytes, salt, IArray.empty[Byte]).transmute[List] != user.take(32).transmute[List]
         then Unset
         else
           val intermediate = hash6(passwordBytes, keySalt, IArray.empty[Byte])

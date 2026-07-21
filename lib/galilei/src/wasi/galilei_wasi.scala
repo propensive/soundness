@@ -214,7 +214,7 @@ package filesystemBackends:
                 if entry.absent then done = true else names = entry.vouch(1) :: names
 
               streamHandle.dispose()
-              names.stdlib.reverse.to(Progression)
+              names.stdlib.reverse.transmute[Progression]
             finally listing.dispose()
           finally descriptor.dispose()
 
@@ -315,7 +315,7 @@ package filesystemBackends:
           . invoke[Unit]
 
       def hidden(path: Path on Plane)(using Tactic[IoError]): Boolean =
-        path.descent.to(List).prim.let(_.starts(t".")).or(false)
+        path.descent.transmute[List].prim.let(_.starts(t".")).or(false)
 
       def volume(path: Path on Plane)(using Tactic[IoError]): Volume =
         abort(IoError(path, Operation.Metadata, Reason.Unsupported))
@@ -390,7 +390,7 @@ package filesystemBackends:
               catch case error: WitError => ()
 
               streamHandle.dispose()
-              chunks.stdlib.reverse.to(Progression)
+              chunks.stdlib.reverse.transmute[Progression]
 
             def write(data: Progression[Data]): Unit =
               val streamHandle =

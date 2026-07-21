@@ -125,7 +125,7 @@ object ForeignLibrary:
       case Nil =>
         throw IllegalArgumentException("no native library could be loaded from "+paths)
 
-    registered.add(attempt(paths.to(List)))
+    registered.add(attempt(paths.transmute[List]))
 
   def downcall(symbol: Text, descriptor: FunctionDescriptor): MethodHandle =
     handles.computeIfAbsent(symbol, _ => bind(symbol, descriptor)).nn

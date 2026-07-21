@@ -209,7 +209,7 @@ case class Ttf(data: Data):
     newHead(50) = 0
     newHead(51) = 1
 
-    val carried = tables.values.to(List).bind: ref =>
+    val carried = tables.values.transmute[List].bind: ref =>
       if ref.id == TtfTag.Glyf || ref.id == TtfTag.Loca || ref.id == TtfTag.Head then Nil
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
@@ -523,7 +523,7 @@ case class Ttf(data: Data):
     lazy val version = B16(data, offset).u16.int
     lazy val numTables = B16(data, offset + 2).u16.int
 
-    lazy val glyphEncodings: List[GlyphEncoding] = (0 until numTables).to(List).map: n =>
+    lazy val glyphEncodings: List[GlyphEncoding] = (0 until numTables).transmute[List].map: n =>
       val platformId = B16(data, offset + 4 + n*8).u16.int
       val encodingId = B16(data, offset + 6 + n*8).u16.int
       val subOffset = B32(data, offset + 8 + n*8).s32.int

@@ -138,7 +138,7 @@ final class Report(using Environment)(using palette: TestPalette):
     private val mutex: Mutex = Mutex()
     private var tests: ListMap[TestId, ReportLine] = ListMap()
 
-    def list: List[(TestId, ReportLine)] = mutex(tests.to(List))
+    def list: List[(TestId, ReportLine)] = mutex(tests.transmute[List])
     def apply(testId: TestId): ReportLine = mutex(tests(testId))
 
     def update(testId: TestId, reportLine: ReportLine) = mutex:
@@ -791,7 +791,7 @@ final class Report(using Environment)(using palette: TestPalette):
         ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Benchmarks", suiteName)
 
       val comparisons: List[ReportLine.Bench] =
-        benchmarks.filter(!_.benchmark.baseline.absent).to(List)
+        benchmarks.filter(!_.benchmark.baseline.absent).transmute[List]
 
       def confInt(b: Benchmark): Teletype =
         if b.confidenceInterval == 0 || b.mean == 0.0 then e""
@@ -875,7 +875,7 @@ final class Report(using Environment)(using palette: TestPalette):
         )*
       )
 
-      bench.tabulate(benchmarks.to(List).sort(-_.benchmark.throughput))
+      bench.tabulate(benchmarks.transmute[List].sort(-_.benchmark.throughput))
       . grid(columns).render.each(Out.println(_))
 
       if githubActions then GithubActions.endGroup()
@@ -903,7 +903,7 @@ final class Report(using Environment)(using palette: TestPalette):
       val series
       :   scala.collection.immutable.List
             [(Text, Map[Int, probably.Strain], Optional[probably.Strain])] =
-        rows.to(List).stdlib.groupBy(_.test.codepoint).toList
+        rows.transmute[List].stdlib.groupBy(_.test.codepoint).toList
         . sortBy(_(1).map(_.test.timestamp).min)
         . map: (_, group) =>
             val name = group.head.test.name.text
@@ -969,7 +969,7 @@ final class Report(using Environment)(using palette: TestPalette):
         Out.println(e"")
 
       val comparisons: List[ReportLine.Strain] =
-        rows.filter(!_.strain.baseline.absent).to(List)
+        rows.filter(!_.strain.baseline.absent).transmute[List]
 
       def frequency(strain: probably.Strain): Teletype =
         if strain.throughput == 0 then e""
@@ -1045,7 +1045,7 @@ final class Report(using Environment)(using palette: TestPalette):
         )*
       )
 
-      strain.tabulate(rows.to(List).sort(_.test.timestamp))
+      strain.tabulate(rows.transmute[List].sort(_.test.timestamp))
       . grid(columns).render.each(Out.println(_))
 
       if githubActions then GithubActions.endGroup()
@@ -1076,7 +1076,7 @@ final class Report(using Environment)(using palette: TestPalette):
         case 4 => stackPalette.accent4
         case _ => stackPalette.accent5
 
-      rows.to(List).sort(_.test.timestamp).each: row =>
+      rows.transmute[List].sort(_.test.timestamp).each: row =>
         Out.println(e"$Bold(${Fg(palette.foreground)}(${row.test.name}))")
         val max = row.hotspots.frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
 
@@ -1143,7 +1143,7 @@ final class Report(using Environment)(using palette: TestPalette):
 
         case _ => ()
 
-    details.to(List).sort(_(0).timestamp).each: (id, info) =>
+    details.transmute[List].sort(_(0).timestamp).each: (id, info) =>
       val ribbon =
         Ribbon(palette.fail, palette.subdue(palette.fail, 0.5), palette.subdue(palette.fail, 0.75))
 

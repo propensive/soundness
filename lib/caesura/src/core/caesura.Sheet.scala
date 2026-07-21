@@ -90,9 +90,9 @@ object Sheet:
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
-        dsv.columns.let(_.to(List)).or:
+        dsv.columns.let(_.transmute[List]).or:
           dsv.rows.prim.let: head =>
-            (1 to head.data.length).to(List).map(_.toString.tt)
+            (1 to head.data.length).transmute[List].map(_.toString.tt)
 
         . or(Nil)
 
@@ -121,7 +121,7 @@ object Sheet:
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
           else Sheet(rows, format)
 
-  given showable: DsvFormat => Sheet is Showable = _.rows.to(List).map(_.show).join(t"\n")
+  given showable: DsvFormat => Sheet is Showable = _.rows.transmute[List].map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.iterator.map(_.show+t"\n"))
 
@@ -398,7 +398,7 @@ case class Sheet
     columns: Optional[IArray[Text]] = Unset ):
 
   def as[value: Decodable in Dsv]: List[value] raises DsvError tracks CellRef =
-    rows.to(List).map(_.as[value])
+    rows.transmute[List].map(_.as[value])
 
   override def hashCode: Int =
     (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[Array[Object | Null]])*31

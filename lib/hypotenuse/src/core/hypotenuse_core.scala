@@ -134,11 +134,11 @@ extension [value](iterable: Iterable[value])
 
     if size == 0 then Unset
     else if size%2 == 0 then
-      val first = recur((size - 1)/2, iterable.to(List))
-      val second = recur((size + 1)/2, iterable.to(List))
+      val first = recur((size - 1)/2, iterable.transmute[List])
+      val second = recur((size + 1)/2, iterable.transmute[List])
       first + (second - first)/2.0
     else
-      val result: value = recur((size - 1)/2, iterable.to(List))
+      val result: value = recur((size - 1)/2, iterable.transmute[List])
       result + (result - result)/1.0
 
 

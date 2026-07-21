@@ -71,7 +71,7 @@ object Zipfile:
     checkDuplicates(entries)
     val out = ji.FileOutputStream(ji.File(path.generic.s))
 
-    try Zipfile(entries.to(Progression), Unset, prefix).serialize.each: chunk =>
+    try Zipfile(entries.transmute[Progression], Unset, prefix).serialize.each: chunk =>
       out.write(chunk.mutable(using Unsafe))
     finally out.close()
 
@@ -302,7 +302,7 @@ object Zipfile:
     val prefix: Optional[Data] =
       if prefixSize > 0 then source.read(0, prefixSize.toInt) else Unset
 
-    Zipfile(builder.result().to(Progression), comment, prefix)
+    Zipfile(builder.result().transmute[Progression], comment, prefix)
 
   private def decodeText(bytes: Data): Text =
     String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
@@ -466,6 +466,6 @@ case class Zipfile
       if prefixBytes.length == 0 then Progression() else Progression(prefixBytes)
 
     val local: Progression[Data] =
-      records.to(Progression).bind: (entry, _, header, _) => (header #:: entry.storedBytes()): Progression[IArray[Byte]]
+      records.transmute[Progression].bind: (entry, _, header, _) => (header #:: entry.storedBytes()): Progression[IArray[Byte]]
 
-    prefixStream #::: local #::: central.to(Progression) #::: tail.stdlib.to(Progression)
+    prefixStream #::: local #::: central.transmute[Progression] #::: tail.stdlib.transmute[Progression]

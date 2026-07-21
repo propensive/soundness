@@ -85,7 +85,7 @@ object PseudoHeaders:
     val status: Http.Status =
       Http.Status.unapply(code).optional.lest(Http2Error(Reason.Protocol(t"missing :status")))
 
-    status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body.stdlib.iterator)))
+    status(headers.transmute[List], Http.Body.Flowing(() => zephyrine.Stream(body.stdlib.iterator)))
 
   // Reconstruct an `Http.Request` from a decoded request HEADERS block and the
   // body spring: `:method`/`:path` select the method and target, `:authority`
@@ -120,7 +120,7 @@ object PseudoHeaders:
     val target: Text = pathText.lest(Http2Error(Reason.Protocol(t"missing :path")))
     val method: Http.Method = methodText.lest(Http2Error(Reason.Protocol(t"missing :method"))).as
 
-    Http.Request(method, 2.0, host, target, headers.to(List), body)
+    Http.Request(method, 2.0, host, target, headers.transmute[List], body)
 
   // Build the HPACK header list for a response: `:status` first, then the
   // regular headers lowercased, with connection-specific headers stripped

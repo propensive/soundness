@@ -58,7 +58,7 @@ object MathmlParser:
 
   def rootElement(xml: Xml)(using Tactic[MathmlError]): Element = xml match
     case element: Element if element.label == t"math" => element
-    case Fragment(nodes*)                             => findMath(nodes.to(List))
+    case Fragment(nodes*)                             => findMath(nodes.transmute[List])
 
     case other =>
       abort(MathmlError(MathmlError.Reason.NotMathml(labelOf(other))))

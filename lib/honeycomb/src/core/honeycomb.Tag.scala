@@ -145,7 +145,7 @@ object Tag:
       ( using attribution: Attribution of (? >: className) )
     :   Element of Topic over Transport in Form =
 
-      val nodes = children.compact.to(List).nodes
+      val nodes = children.compact.transmute[List].nodes
 
       val presets2 =
         if attribution.attribute == t"" then presets
@@ -205,7 +205,7 @@ object Tag:
 
           presets.updated(attribution.attribute, value)
 
-      val nodes: IArray[Node] = children.compact.to(List).nodes
+      val nodes: IArray[Node] = children.compact.transmute[List].nodes
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 

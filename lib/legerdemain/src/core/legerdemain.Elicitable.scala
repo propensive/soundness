@@ -78,7 +78,7 @@ object Elicitable extends Elicitable2:
     def input(ref: Reference[entity]): Text = ref.encode
 
     def widget(id: Text, label: Text, value: Text): Dropdown =
-      val items = enumerate[entity].map { item => item.encode -> item().show }.to(List)
+      val items = enumerate[entity].map { item => item.encode -> item().show }.transmute[List]
       Dropdown(id, items, value)
 
 trait Elicitable extends Typeclass, Operable:

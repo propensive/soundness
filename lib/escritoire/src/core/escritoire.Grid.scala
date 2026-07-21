@@ -81,7 +81,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 
             . join(leftEdge, midEdge, rightEdge)
 
-          lines.to(Progression) #::: recur(widths, tail)
+          lines.transmute[Progression] #::: recur(widths, tail)
 
         case _ =>
           Progression()
@@ -136,7 +136,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
         Progression(rule(sections.stdlib.head.widths, Unset))
 
     val body =
-      sections.stdlib.to(Progression).bind: section =>
+      sections.stdlib.transmute[Progression].bind: section =>
         (midRule #:: recur(section.widths, section.rows)): Progression[text]
 
     topLine #::: body.tail #::: bottomLine

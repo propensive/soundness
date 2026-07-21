@@ -58,7 +58,7 @@ def evolve[element: ClassTag]
       case left :: right :: more =>
         val changes: List[Change[element]] =
           val diff0 = diff(Series.from(left.stdlib), Series.from(right.stdlib))
-          similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
+          similar.lay(diff0.edits)(diff0.rdiff(_).changes).transmute[List]
 
 
         def merge

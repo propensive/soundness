@@ -305,7 +305,7 @@ object Rrule:
   // day-level rule is present, or else the start's own month.
   private def yearMonths(year: Int, start: Date, rule: Rrule[?])(using RomanCalendar): List[Int] =
     if rule.byMonth.nonEmpty then rule.byMonth.map(_.numerical).sorted
-    else if rule.byDay.nonEmpty || rule.byMonthDay.nonEmpty then (1 to 12).to(List)
+    else if rule.byDay.nonEmpty || rule.byMonthDay.nonEmpty then (1 to 12).transmute[List]
     else List(monthOf(start))
 
   // The ascending (year, month) periods for `Monthly`, stepping `interval` months from the start.
@@ -349,7 +349,7 @@ object Rrule:
 
     val weekdays = if rule.byDay.nonEmpty then rule.byDay.map(_.weekday) else List(start.weekday)
 
-    (0 to 6).to(List).map(weekStart.addDays(_)).filter: date =>
+    (0 to 6).transmute[List].map(weekStart.addDays(_)).filter: date =>
       weekdays.has(date.weekday) && monthAllowed(date, rule)
 
   private def dailyMatch(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
@@ -383,7 +383,7 @@ object Rrule:
     list(date(year, month, 1)).bind: first =>
       val offset = (weekday.ordinal - first.weekday.ordinal + 7)%7
       Progression.iterate(first.addDays(offset))(_.addDays(7))
-        .takeWhile(monthOf(_) == month).stdlib.to(List)
+        .takeWhile(monthOf(_) == month).stdlib.transmute[List]
 
   // The `ordinal`-th `weekday` of the month (positive from the start, negative from the end).
   private def nthWeekday(year: Int, month: Int, weekday: Weekday, ordinal: Int)(using RomanCalendar)

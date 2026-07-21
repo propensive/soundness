@@ -232,7 +232,7 @@ object Dsv extends Dsv2:
 
           val buffer = scala.collection.mutable.ListBuffer[value]()
           while reader.nextRow() do buffer += parsable.parse(reader, 0)
-          buffer.to(List).asInstanceOf[List[value] in Dsv]
+          buffer.transmute[List].asInstanceOf[List[value] in Dsv]
 
   // ---- Direct (AST-free) parsing --------------------------------------------
   //

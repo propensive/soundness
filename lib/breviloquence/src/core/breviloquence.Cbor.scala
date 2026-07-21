@@ -824,7 +824,7 @@ object Cbor extends Cbor2, Dynamic:
   =>  Map[key, element] is Encodable in Cbor =
 
     map =>
-      val keys: List[key] = map.keys.to(List)
+      val keys: List[key] = map.keys.transmute[List]
       val values = IArray.from(keys.stdlib.map(map(_).encode.root))
       ast(Ast.map(IArray.from(keys.stdlib.map{ k => k.encode.s }), values))
 

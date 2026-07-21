@@ -140,7 +140,7 @@ trait Protobuf2:
     // An honest capability: the instance retains the by-name element codec, itself a
     // capability (every given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
-      val occurrences = values.to(List).bind(encodable.encode(_).occurrences)
+      val occurrences = values.transmute[List].bind(encodable.encode(_).occurrences)
       if occurrences.isEmpty then Protobuf.Absent else Protobuf.Repeated(occurrences)
 
   given listDecodable: [collection <: Iterable, element]
@@ -446,7 +446,7 @@ object Protobuf extends Protobuf2:
   =>  ((collection[element] is Encodable in Protobuf)^) =
     // An honest capability, as `listEncodable` above.
     values =>
-      val list = values.to(List)
+      val list = values.transmute[List]
 
       if list.isEmpty then Absent else
         val bytes = printed: printer =>

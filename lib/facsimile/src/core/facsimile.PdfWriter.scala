@@ -108,7 +108,7 @@ private[facsimile] object PdfWriter:
     // A leading end-of-line guards against the original file not ending in one.
     ascii(t"\n")
 
-    val changed = pdf.overlay.keys.to(List).sorted
+    val changed = pdf.overlay.keys.transmute[List].sorted
     val offsets = scala.collection.mutable.HashMap[Int, Long]()
 
     changed.each: (number: Int) =>
@@ -129,7 +129,7 @@ private[facsimile] object PdfWriter:
       ascii(t"\nendobj\n")
 
     val xrefOffset = baseOffset + length
-    val freed = pdf.freed.to(List).sorted
+    val freed = pdf.freed.transmute[List].sorted
 
     // Group the updated and freed object numbers (plus object 0, the free-list head, when
     // anything is freed) into ascending consecutive subsections.

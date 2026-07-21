@@ -115,7 +115,7 @@ def repackage(): Unit = application(scala.collection.immutable.Nil):
           Zipfile.read(cacheJar).entries.filter: entry =>
             !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
 
-          . stdlib.to(List)
+          . stdlib.transmute[List]
 
       val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
 

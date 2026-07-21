@@ -104,7 +104,7 @@ extends caps.ExclusiveCapability:
     sink.lay:
       val buffer = scm.ArrayBuffer[Data]()
       val outcome = block(using TarEntryWriter(buffer += _))
-      insert(Tar.Entry.File(name, mode, user, group, mtime, buffer.to(Progression)))
+      insert(Tar.Entry.File(name, mode, user, group, mtime, buffer.transmute[Progression]))
       outcome
 
     . apply: out =>
@@ -161,7 +161,7 @@ extends caps.ExclusiveCapability:
     write(out, Tarfile.zeroBlock)
 
   private[bitumen] def tarfile(format: LongNameFormat): Tarfile =
-    Tarfile(stack.stdlib.reverse.to(Progression), format)
+    Tarfile(stack.stdlib.reverse.transmute[Progression], format)
 
 object TarBuilder:
   class TarCreatable[path: Abstractable across Paths to Text](using Tactic[TarError])

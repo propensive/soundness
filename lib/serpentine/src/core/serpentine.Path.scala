@@ -85,7 +85,7 @@ object Path:
 
 
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
-    path.descent.to(List).prim.or(path.root)
+    path.descent.transmute[List].prim.or(path.root)
 
 
   given trustedInstantiable: [filesystem: Filesystem]
@@ -170,7 +170,7 @@ object Path:
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple
 
-  def name: Text = descent.to(List).prim.or(root)
+  def name: Text = descent.transmute[List].prim.or(root)
   def nil: Boolean = descent.isEmpty
 
   inline def knownElementTypes: Boolean = inline !![Topic] match
@@ -227,7 +227,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       this.asInstanceOf[Path of Topic under Limit on filesystem]
 
     case _ =>
-      check[Topic, filesystem](descent.to(List))
+      check[Topic, filesystem](descent.transmute[List])
 
       summonFrom:
         case limit: (Limit is Submissible on `filesystem`)                 => limit.check(root)
@@ -244,10 +244,10 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       this.asInstanceOf[Path of Topic under Limit on filesystem]
 
   def graft[radical: Radical on Plane](root: radical): Path of Topic under root.type =
-    Path(radical.encode(root), descent.to(List))
+    Path(radical.encode(root), descent.transmute[List])
 
   def shift(n: Int): Path on Plane under Limit =
-    Path(root, descent.take(depth - n).to(List))
+    Path(root, descent.take(depth - n).transmute[List])
 
   transparent inline def sameRoot(right: Path): Boolean = summonFrom:
     case plane: (Plane is Filesystem) =>
@@ -258,7 +258,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def rename(lambda: (Text aka "prior") ?=> Text): Optional[Path] =
     parent.let: parent =>
-      descent.to(List).prim.let: prior => parent / lambda(using prior.aka["prior"])
+      descent.transmute[List].prim.let: prior => parent / lambda(using prior.aka["prior"])
 
   def relative: Relative of Topic on Plane under 0 =
     Relative[Plane, Topic, 0](0, descent*)
@@ -281,26 +281,26 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def parent: Optional[Path on Plane under Limit] =
     inline !![Topic] match
-      case head *: tail => Path[Plane, Limit, tail.type](root, descent.tail.to(List))
+      case head *: tail => Path[Plane, Limit, tail.type](root, descent.tail.transmute[List])
       case EmptyTuple   => Unset
 
       case _ =>
         if descent.isEmpty then Unset
-        else Path[Plane, Limit, Tuple](root, descent.tail.to(List))
+        else Path[Plane, Limit, Tuple](root, descent.tail.transmute[List])
 
   def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => (parent :: parent.ancestors): List[Path on Plane under Limit] }
     . or(Nil)
 
   def child(value: Text)(using erased unsafe: Unsafe): Path on Plane under Limit =
-    Path[Plane, Limit, Text *: Topic](root, (value +: descent).to(List))
+    Path[Plane, Limit, Text *: Topic](root, (value +: descent).transmute[List])
 
   @targetName("slash")
   transparent inline infix def / (child: Any): Path of (child.type *: Topic) under Limit =
     summonFrom:
       case given ((? >: child.type) is Admissible on Plane) =>
         Path[Plane, Limit, child.type *: Topic]
-          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent).to(List) )
+          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent).transmute[List] )
 
       case _ =>
         Path.unplatformed[Limit, child.type *: Topic]
@@ -315,11 +315,11 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
     inline caps.unsafe.unsafeErasedValue[Topic] match
       case _: (head *: tail) =>
         Path[Plane, Limit, child.type *: tail]
-          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
+          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).transmute[List] )
 
       case _ =>
         Path[Plane, Limit, Tuple]
-          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).to(List) )
+          ( root, (infer[child.type is Navigable on Plane].follow(child) +: descent.drop(1)).transmute[List] )
 
 
   transparent inline def + (relative: Relative): Path =

@@ -154,7 +154,7 @@ case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = Yam
   // Serpentine's `/`, which adds at the leaf side — the wrong
   // direction for focus supplementing.
   private[ypsiloid] def prepend(segment: Text): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ segment).to(List)))
+    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ segment).transmute[List]))
 
   private[ypsiloid] def prepend(ordinal: Ordinal): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ ordinal.n0.toString.tt).to(List)))
+    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ ordinal.n0.toString.tt).transmute[List]))

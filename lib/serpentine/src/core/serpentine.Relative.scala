@@ -57,7 +57,7 @@ object Relative:
   def apply[filesystem, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic on filesystem under limit =
 
-    new Relative(ascent, descent.to(List)):
+    new Relative(ascent, descent.transmute[List]):
       type Plane = filesystem
       type Topic = topic
       type Limit = limit

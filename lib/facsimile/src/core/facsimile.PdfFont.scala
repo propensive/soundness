@@ -259,7 +259,7 @@ enum PdfFont:
     if common.twoByte then
       List.range(0, string.length/2).map: index =>
         ((string(index*2) & 0xff) << 8) | (string(index*2 + 1) & 0xff)
-    else string.to(List).map(_.toInt & 0xff)
+    else string.transmute[List].map(_.toInt & 0xff)
 
   def decode(string: Data): Text =
     val builder = StringBuilder()

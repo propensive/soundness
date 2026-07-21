@@ -59,7 +59,7 @@ object SvgParser:
 
   def rootElement(xml: Xml)(using Tactic[SvgError]): Element = xml match
     case e: Element if e.label == t"svg" => e
-    case Fragment(nodes*)                => findSvg(nodes.to(List))
+    case Fragment(nodes*)                => findSvg(nodes.transmute[List])
 
     case other =>
       abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))

@@ -190,7 +190,7 @@ object Apoplexy:
 
     val params =
       doc.paths.at(path).lay(List[OpenApi.Parameter]()): item =>
-        item.operations.stdlib.values.flatMap(_.parameters.stdlib).to(List)
+        item.operations.stdlib.values.flatMap(_.parameters.stdlib).transmute[List]
 
     params.find { p => p.name == parameter && p.`in` == OpenApi.Parameter.In.Path } match
       case Some(param) => param.schema.lay(TypeRepr.of[Text])(schemaType(doc, _))
@@ -216,7 +216,7 @@ object Apoplexy:
 
   // The wire format of an operation's first 2xx response body, if any.
   private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
-    val status = operation.responses.keys.filter(_.starts(t"2")).to(List).sort(_.s).prim
+    val status = operation.responses.keys.filter(_.starts(t"2")).transmute[List].sort(_.s).prim
 
     status.let(operation.responses.at(_)).let: response =>
       wireOf(response.content)
@@ -226,7 +226,7 @@ object Apoplexy:
   // per operation by `invoke`.
   private def uniformWire(doc: OpenApi): Wire =
     val wires =
-      doc.paths.values.flatMap(_.operations.values).to(List).bind: operation =>
+      doc.paths.values.flatMap(_.operations.values).transmute[List].bind: operation =>
         responseWire(operation).lay(List[Wire]())(List(_))
 
     . toSet
@@ -295,7 +295,7 @@ object Apoplexy:
     val queryExpr = Expr.ofList(queryEntries.stdlib)
 
     val status =
-      operation.responses.keys.filter(_.starts(t"2")).to(List).sort(_.s).prim.or(t"200")
+      operation.responses.keys.filter(_.starts(t"2")).transmute[List].sort(_.s).prim.or(t"200")
 
     // The wire format the spec dictates for this operation: the response body's
     // media type, else the request body's, else JSON. An operation that mixes
@@ -381,7 +381,7 @@ object Apoplexy:
 
     val methods =
       doc.paths.at(locus).lay(List[Http.Method]()): item =>
-        item.operations.keys.filter(_ != Http.Delete).to(List)
+        item.operations.keys.filter(_ != Http.Delete).transmute[List]
 
     methods match
       case List(method) =>
@@ -446,7 +446,7 @@ object Apoplexy:
 
     val newLocus = join(locus, name)
     val newSegs = segments(newLocus)
-    val keys = doc.paths.keys.map(segments).to(List)
+    val keys = doc.paths.keys.map(segments).transmute[List]
 
     if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 
@@ -472,7 +472,7 @@ object Apoplexy:
       case _ =>
         val newLocus = join(locus, name)
         val newSegs = segments(newLocus)
-        val keys = doc.paths.keys.map(segments).to(List)
+        val keys = doc.paths.keys.map(segments).transmute[List]
 
         if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 
@@ -548,7 +548,7 @@ object Apoplexy:
       case _ =>
         val newLocus = join(locus, name)
         val newSegs = segments(newLocus)
-        val keys = doc.paths.keys.map(segments).to(List)
+        val keys = doc.paths.keys.map(segments).transmute[List]
 
         if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 

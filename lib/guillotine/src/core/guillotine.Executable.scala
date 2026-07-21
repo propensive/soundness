@@ -101,10 +101,10 @@ object Command:
     . join(t" ")
 
   given inspectable: Command is Inspectable = command =>
-    val commandText: Text = formattedArguments(command.arguments.to(List))
+    val commandText: Text = formattedArguments(command.arguments.transmute[List])
     if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
 
-  given showable: Command is Showable = command => formattedArguments(command.arguments.to(List))
+  given showable: Command is Showable = command => formattedArguments(command.arguments.transmute[List])
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
@@ -147,7 +147,7 @@ case class Pipeline(commands: Command*) extends Executable:
 
       processBuilder.nn
 
-    Log.info(ExecEvent.PipelineStart(commands.to(List)))
+    Log.info(ExecEvent.PipelineStart(commands.transmute[List]))
 
     val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.last
     new Job[Exec, result](pipeline)

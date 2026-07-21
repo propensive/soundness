@@ -120,7 +120,7 @@ object SyntaxMatcher:
       val matcher = Matcher()
 
       if matcher.consume(grammar, tokens).exists(_.nil) then Outcome.Valid
-      else if matcher.unsupported.nonEmpty then Outcome.Unsupported(matcher.unsupported.to(List))
+      else if matcher.unsupported.nonEmpty then Outcome.Unsupported(matcher.unsupported.transmute[List])
       else Outcome.Invalid
 
   // ── the backtracking matcher ─────────────────────────────────────────────

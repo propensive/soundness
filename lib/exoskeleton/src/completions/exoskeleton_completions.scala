@@ -91,7 +91,7 @@ def helpTree
           login )
 
     block(using completion)
-    (completion.cursorSuggestions, completion.flags.keySet.to(List))
+    (completion.cursorSuggestions, completion.flags.keySet.transmute[List])
 
   def build
     ( prefix:      List[Text],
@@ -151,7 +151,7 @@ package executives:
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
           val restParts = if parts.length > 1 then parts.tail else List(t"")
-          val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
+          val tab = Completions.tab(tty, Completions.Tab(arguments.transmute[List], focus, cursor))
 
           Completion
             ( Cli.arguments(arguments, focus, posInWord, tab),
@@ -194,7 +194,7 @@ package executives:
             val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
 
             val position = if shell == Shell.Bash then Unset else position0
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
+            val tab = Completions.tab(tty, Completions.Tab(arguments.transmute[List], focus, position0))
             val equalses = rest.stdlib.take(focus0).count(_ == t"=")
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 

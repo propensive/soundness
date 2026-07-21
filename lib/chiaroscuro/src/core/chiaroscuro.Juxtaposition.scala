@@ -188,7 +188,7 @@ object Juxtaposition:
                   Column(e"Details")(_.memo.teletype) )
 
             table
-            . tabulate(TreeDiagram.by(children(_))(comparison*).render(line).stdlib.to(List))
+            . tabulate(TreeDiagram.by(children(_))(comparison*).render(line).stdlib.transmute[List])
             . grid(200)
             . render
             . join(e"\n")

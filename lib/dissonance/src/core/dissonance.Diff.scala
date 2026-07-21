@@ -149,7 +149,7 @@ case class Diff[element](edits: Edit[element]*):
     case _            => true
 
   def flip: Diff[Optional[element]] =
-    val edits2: List[Edit[Optional[element]]] = edits.to(List).map:
+    val edits2: List[Edit[Optional[element]]] = edits.transmute[List].map:
       case Par(left, right, value) => Par(right, left, value)
       case Del(left, value)        => Ins(left, value)
       case Ins(right, value)       => Del(right, value)
@@ -164,14 +164,14 @@ case class Diff[element](edits: Edit[element]*):
   :   Progression[element] =
 
     def recur(todo: List[Edit[element]], sequence: List[element]): Progression[element] = todo match
-      case Nil                   => sequence.stdlib.to(Progression)
+      case Nil                   => sequence.stdlib.transmute[Progression]
       case Ins(_, value) :: tail => value #:: recur(tail, sequence)
       case Del(_, _) :: tail     => recur(tail, sequence.tail)
 
       case Par(_, _, value) :: tail =>
         value.let(update(_, sequence.head)).or(sequence.head) #:: recur(tail, sequence.tail)
 
-    recur(edits.to(List), sequence)
+    recur(edits.transmute[List], sequence)
 
 
   def rdiff(similar: (element, element) => Boolean, subSize: Int = 1): RDiff[element] =
@@ -203,7 +203,7 @@ case class Diff[element](edits: Edit[element]*):
     RDiff(changes*)
 
   def collate: List[Region[element]] =
-    edits.to(List).runsBy:
+    edits.transmute[List].runsBy:
       case Par(_, _, _) => true
       case _            => false
 
@@ -235,4 +235,4 @@ case class Diff[element](edits: Edit[element]*):
             recur
               ( todo.drop(dels.size + inss.size), position + dels.length, position + inss.length )
 
-    recur(edits.to(List), 0, 0)
+    recur(edits.transmute[List], 0, 0)

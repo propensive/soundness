@@ -95,11 +95,11 @@ extends Cli:
 
     interpreter.focus(parameters).let: argument =>
       if operands.headOption.contains(argument) then
-        val allSuggestions = discoverable.discover(tab).to(List)
+        val allSuggestions = discoverable.discover(tab).transmute[List]
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
       if flag.matches(argument) && currentArgument == argument.position + 1 then
-        val allSuggestions = discoverable.discover(tab).to(List)
+        val allSuggestions = discoverable.discover(tab).transmute[List]
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
     if !flag.secret then flags(flag) = discoverable
@@ -125,7 +125,7 @@ extends Cli:
 
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
-    (flags.keySet -- seenFlags).to(List).bind: flag =>
+    (flags.keySet -- seenFlags).transmute[List].bind: flag =>
       val allFlags = (flag.name :: flag.aliases)
 
       if longOnly then

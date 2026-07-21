@@ -108,7 +108,7 @@ object Tmux:
         while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
-        screenshot().screen.to(List)
+        screenshot().screen.transmute[List]
           .filter(!_.starts(t">"))
           .map(_.trim)
           .filter(_.length > 0)
