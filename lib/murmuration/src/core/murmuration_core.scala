@@ -32,6 +32,9 @@
                                                                                                   */
 package murmuration
 
+import scala.collection.immutable as sci
+import scala.math.Ordering
+
 import prepositional.*
 
 // `collection.has(value)` (value membership) for any `collection` that is `Inclusive`; the queried
@@ -51,12 +54,98 @@ extension [self, result[_]](self: self)
   def map[element2](lambda: mappable.Operand => element2): result[element2] =
     mappable.map(self, lambda)
 
-// The pairwise/entry transformation, for the shapes `map` no longer covers uniformly: a `Map`'s
-// entries are presented as `(key, value)` pairs and rebuilt through `Reshapable` into whatever shape
-// the lambda's result implies (another `Map` for pair results, else a `List`).
+// The transforming operations over any `Traversable`, rebuilt through `Reshapable`. `remap` is the
+// pairwise/entry map (a `Map`'s entries as `(key, value)` pairs, reshaped into whatever the lambda's
+// result implies). The `Ordinal`-indexed `each` and `Optional`-returning `seek`/`where` stay in
+// rudiments (they depend on denominative/vacuous, which sit above this module).
 extension [self](self: self)(using traversable: self is Traversable)
   def remap[element2, result](lambda: traversable.Operand => element2)
     ( using reshapable: self is Reshapable by element2 to result )
   :   result =
 
     reshapable.reshape(traversable.traverse(self).map(lambda))
+
+  // `subsumes` tests whether `subsequence` occurs as a contiguous run of elements within `self` — a
+  // substring, for `Text`. The empty subsequence is always present.
+  def subsumes(subsequence: self): Boolean =
+    val whole = sci.Vector.from(traversable.traverse(self))
+    val part  = sci.Vector.from(traversable.traverse(subsequence))
+    val last  = whole.length - part.length
+
+    part.isEmpty || whole.indices.exists: start =>
+      start <= last && part.indices.forall: offset =>
+        whole(start + offset) == part(offset)
+
+  // The preferred name for monadic binding at explicit call sites; `flatMap` (below) is the same
+  // operation, retained solely because `for`-comprehensions desugar to that name.
+  def bind[inner, element2, result](lambda: traversable.Operand => inner)
+    ( using innerTraversable: inner is Traversable by element2,
+            reshapable:       self is Reshapable by element2 to result )
+  :   result =
+
+    reshapable.reshape:
+      traversable.traverse(self).flatMap { element => innerTraversable.traverse(lambda(element)) }
+
+  def flatMap[inner, element2, result](lambda: traversable.Operand => inner)
+    ( using innerTraversable: inner is Traversable by element2,
+            reshapable:       self is Reshapable by element2 to result )
+  :   result =
+
+    reshapable.reshape:
+      traversable.traverse(self).flatMap { element => innerTraversable.traverse(lambda(element)) }
+
+  def filter[result](predicate: traversable.Operand => Boolean)
+    ( using reshapable: self is Reshapable by traversable.Operand to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).filter(predicate))
+
+  // For-comprehension desugaring requires the literal name `withFilter`; this is *strict*, a
+  // deliberate divergence from the stdlib's lazy `WithFilter` carrier, whose captured predicate
+  // would have to thread through every desugared stage under capture checking.
+  def withFilter[result](predicate: traversable.Operand => Boolean)
+    ( using reshapable: self is Reshapable by traversable.Operand to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).filter(predicate))
+
+  def foreach(lambda: traversable.Operand => Unit): Unit =
+    traversable.traverse(self).foreach(lambda)
+
+  inline def exists(predicate: traversable.Operand => Boolean): Boolean =
+    traversable.traverse(self).exists(predicate)
+
+  def fold[state](initial: state)(lambda: (state, traversable.Operand) => state): state =
+    traversable.traverse(self).foldLeft(initial)(lambda)
+
+  def zip[that, result](that: that)
+    ( using thatTraversable: that is Traversable,
+            reshapable:      self is Reshapable.Stable
+                             by (traversable.Operand, thatTraversable.Operand) to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).zip(thatTraversable.traverse(that)))
+
+  // Each group is rebuilt in the source's own shape.
+  def group[key, result](lambda: traversable.Operand => key)
+    ( using reshapable: self is Reshapable by traversable.Operand to result )
+  :   Map[key, result] =
+
+    Map.of:
+      traversable.traverse(self).toList.groupBy(lambda).map: (key, elements) =>
+        (key, reshapable.reshape(elements.iterator))
+
+  // `Stable` receivers only: sorting an unordered shape (`Set`, `Map`) is honestly unavailable
+  // rather than silently order-dropping.
+  def sort[key, result](lambda: traversable.Operand => key)
+    ( using ordering:   Ordering[key],
+            reshapable: self is Reshapable.Stable by traversable.Operand to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).toList.sortBy(lambda).iterator)
+
+  def distinct[result]
+    ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).distinct)
