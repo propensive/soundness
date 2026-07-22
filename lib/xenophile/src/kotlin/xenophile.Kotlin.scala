@@ -45,9 +45,6 @@ object Kotlin:
   inline def make[kotlinType](inline arguments: Any*): Facade over kotlinType =
     ${KotlinFacade.construct[kotlinType]('arguments)}
 
-  // The facade of a class's companion object, through which its members are reachable:
-  // `Kotlin.companion[Regex].escape(t"a.b")`.
-  transparent inline def companion[kotlinType]: Any = ${KotlinFacade.companion[kotlinType]}
 
   given int: (Int is Interoperable in Kotlin of "kotlin.Int") =
     Interoperable[Int, Kotlin, "kotlin.Int"]()

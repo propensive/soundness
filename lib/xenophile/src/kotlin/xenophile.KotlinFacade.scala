@@ -193,7 +193,114 @@ object KotlinFacade:
     val transported =
       Xenophile.refinements(argument.tpe.widen).at(t"Transport").lay(false)(_ <:< target)
 
-    argument.tpe.widen <:< target || (textual && stringy) || transported
+    val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
+
+    direct || samCompatible(argument, target)
+
+  // The arity of a Kotlin function type, when the parameter is one.
+  private def samArity(using quotes: Quotes)(target: quotes.reflect.TypeRepr): Optional[Int] =
+    target.classSymbol.map(_.fullName).getOrElse("") match
+      case "kotlin.jvm.functions.Function0" => 0
+      case "kotlin.jvm.functions.Function1" => 1
+      case "kotlin.jvm.functions.Function2" => 2
+      case _                                => Unset
+
+  private def samCompatible(using quotes: Quotes)
+    ( argument: quotes.reflect.Term, target: quotes.reflect.TypeRepr )
+  :   Boolean =
+
+    import quotes.reflect.*
+
+    samArity(target).lay(false):
+      case 0 => argument.tpe.widen <:< TypeRepr.of[() => Any]
+      case 1 => argument.tpe.widen <:< TypeRepr.of[Nothing => Any]
+      case 2 => argument.tpe.widen <:< TypeRepr.of[(Nothing, Nothing) => Any]
+      case _ => false
+
+  // Adapts a Scala lambda to a Kotlin function-type parameter by implementing the
+  // corresponding `kotlin.jvm.functions.FunctionN` interface around it. Inputs wrap as
+  // `Facade`s when the lambda declares facade parameters, and a facade result unwraps, so the
+  // lambda works in facade terms while Kotlin receives raw values.
+  private def samAdapted(using quotes: Quotes)
+    ( argument: quotes.reflect.Term, target: quotes.reflect.TypeRepr )
+  :   Optional[quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    // The lambda's own declared parameter types, to decide which inputs expect facades.
+    val declared: List[TypeRepr] = argument.tpe.widen.dealias match
+      case AppliedType(_, arguments) => arguments.dropRight(1)
+      case _                         => Nil
+
+    def facaded(index: Int): Boolean =
+      declared.lift(index).map(_ <:< TypeRepr.of[Facade]).getOrElse(false)
+
+    def inward[p: Type](index: Int, value: Expr[p]): Expr[Any] =
+      if facaded(index) then '{Facade[p]($value)} else value
+
+    def outward(value: Expr[Any]): Expr[Any] =
+      ' {
+          $value.absolve match
+            case facade: Facade => facade.unwrap
+            case other          => other
+        }
+
+    // Kotlin emits use-site variance (`? super P, ? extends R`), which reflects as bounds
+    // rather than types; each is replaced by its meaningful end so the interface type is
+    // concrete enough to implement.
+    val concrete = solid(target).dealias match
+      case AppliedType(constructor, arguments) =>
+        val flattened = arguments.map:
+          case TypeBounds(low, high) =>
+            if low =:= TypeRepr.of[Nothing] then solid(high) else solid(low)
+
+          case argument =>
+            solid(argument)
+
+        AppliedType(constructor, flattened)
+
+      case other =>
+        other
+
+    samArity(target).let: arity =>
+      concrete.asType.absolve match
+        case '[kotlin.jvm.functions.Function0[r]] if arity == 0 =>
+          val lambda = argument.asExprOf[() => Any]
+
+          ' {
+              new kotlin.jvm.functions.Function0[r]:
+                def invoke(): r | Null = ${outward('{$lambda()})}.asInstanceOf[r]
+            }
+
+          . asTerm
+
+        case '[kotlin.jvm.functions.Function1[p, r]] if arity == 1 =>
+          val lambda = '{${argument.asExpr}.asInstanceOf[Any => Any]}
+
+          ' {
+              new kotlin.jvm.functions.Function1[p, r]:
+                def invoke(input: p | Null): r | Null =
+                  ${outward('{$lambda(${inward[p](0, '{input.asInstanceOf[p]})})})}
+                  . asInstanceOf[r]
+            }
+
+          . asTerm
+
+        case '[kotlin.jvm.functions.Function2[p1, p2, r]] if arity == 2 =>
+          val lambda = '{${argument.asExpr}.asInstanceOf[(Any, Any) => Any]}
+
+          ' {
+              new kotlin.jvm.functions.Function2[p1, p2, r]:
+                def invoke(input1: p1 | Null, input2: p2 | Null): r | Null =
+                  val first = ${inward[p1](0, '{input1.asInstanceOf[p1]})}
+                  val second = ${inward[p2](1, '{input2.asInstanceOf[p2]})}
+                  ${outward('{$lambda(first, second)})}.asInstanceOf[r]
+            }
+
+          . asTerm
+
+        case _ =>
+          Unset
 
   // The argument term as passed to the JVM method: facades unwrap, and anything not already
   // conforming (an opaque `Text` against `String`) is cast, which is free at runtime.
@@ -203,7 +310,9 @@ object KotlinFacade:
 
     import quotes.reflect.*
 
-    val unwrapped =
+    val sam = samAdapted(argument, solid(parameter))
+
+    val unwrapped = sam.or:
       if argument.tpe.widen <:< TypeRepr.of[Facade]
       then '{${argument.asExprOf[Facade]}.unwrap}.asTerm
       else argument
@@ -287,13 +396,17 @@ object KotlinFacade:
           case _ =>
             Nil
 
+    // Each metadata candidate scans the same-named JVM methods, so a symbol satisfiable
+    // through more than one candidate would repeat; overload identity is the symbol.
+    val distinct = resolved.distinctBy(_(0))
+
     // Exact conformance outranks adaptation, so `Text` never makes two `String`-flavoured
     // overloads ambiguous when one matches the arguments as given.
-    val exact = resolved.filter: (_, types) =>
+    val exact = distinct.filter: (_, types) =>
       args.zip(types).forall: (argument, parameter) =>
         argument.tpe.widen <:< solid(parameter)
 
-    val (method, types) = (if exact.nonEmpty then exact else resolved) match
+    val (method, types) = (if exact.nonEmpty then exact else distinct) match
       case List(one) => one
 
       case Nil =>

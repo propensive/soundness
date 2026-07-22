@@ -158,7 +158,7 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.nonEmpty)
 
       test(m"a companion object's members are reachable"):
-        val escaped: Text = Kotlin.companion[kotlin.text.Regex].escape(t"a.b")
+        val escaped: Text = companion[kotlin.text.Regex].escape(t"a.b")
         escaped
       . assert(_ == t"\\Qa.b\\E")
 
@@ -170,8 +170,22 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"a class without a companion object is rejected"):
         demilitarize:
-          Kotlin.companion[kotlin.Pair[Text, Text]]
+          companion[kotlin.Pair[Text, Text]]
       . assert(_.nonEmpty)
+
+      test(m"a Scala lambda satisfies a Kotlin function-type parameter"):
+        val replaced: Text = regex.replace(t"a1b2",
+            (m: Facade over kotlin.text.MatchResult) => t"<${m.value}>")
+
+        replaced
+      . assert(_ == t"a<1>b<2>")
+
+      test(m"a lambda's facade parameter navigates the Kotlin type inside"):
+        val upper: Text = regex.replace(t"3x4", (m: Facade over kotlin.text.MatchResult) =>
+            t"${m.value}${m.value}")
+
+        upper
+      . assert(_ == t"33x44")
 
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 

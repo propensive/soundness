@@ -30,7 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{companion, Facade, Kotlin, KotlinDialect, KotlinFacade, KotlinInvoke,
-    kotlinInvocation}
+// The facade of a Kotlin class's companion object, through which its members are reachable:
+// `companion[Regex].escape(t"a.b")`.
+transparent inline def companion[kotlinType]: Any = ${KotlinFacade.companion[kotlinType]}
