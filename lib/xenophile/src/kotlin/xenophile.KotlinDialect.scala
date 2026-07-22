@@ -62,7 +62,8 @@ object KotlinDialect extends Dialect:
       property:   Boolean,
       field:      Boolean,
       arity:      Int,
-      defaults:   List[Boolean] )
+      defaults:   List[Boolean],
+      parameters: List[Text] )
 
   private case class Entry(name: Text, member: JvmMember, prototype: Prototype)
 
@@ -71,7 +72,8 @@ object KotlinDialect extends Dialect:
       members:    Map[Text, List[JvmMember]],
       setters:    Map[Text, JvmMember],
       typeParams: List[Int],
-      companion:  Optional[Text] )
+      companion:  Optional[Text],
+      entries:    List[Text] )
 
   // Never parses a text resource: this dialect exists only through `resolve`.
   def parse(source: Text): Map[Text, Map[Text, Prototype]] = Map()
@@ -99,6 +101,10 @@ object KotlinDialect extends Dialect:
   // The simple name of the class's companion object, when it declares one.
   private[xenophile] def companionName(typeName: Text): Optional[Text] =
     resolved(typeName).let(_.companion)
+
+  // The entry names of an `enum class`, in declaration order.
+  private[xenophile] def enumEntries(typeName: Text): List[Text] =
+    resolved(typeName).let(_.entries).or(Nil)
 
   // Cached per type name for the lifetime of a compilation run, like the core `parsed` cache.
   private val cache: scm.HashMap[Text, Optional[Resolution]] = scm.HashMap()
@@ -142,7 +148,10 @@ object KotlinDialect extends Dialect:
 
               val setters = propertySetters(typeName, kmClass.getProperties.nn.asScala.to(List))
 
-              collate(entries, setters, identifiers, companion)
+              val enumeration =
+                kmClass.getKmEnumEntries.nn.asScala.to(List).map(_.nn.getName.nn.tt)
+
+              collate(entries, setters, identifiers, companion, enumeration)
 
             case metadata: KotlinClassMetadata.FileFacade =>
               val kmPackage = metadata.getKmPackage.nn
@@ -150,7 +159,7 @@ object KotlinDialect extends Dialect:
               val entries =
                 functions(typeName, kmPackage.getFunctions.nn.asScala.to(List), true)
 
-              collate(entries, Map(), Nil, Unset)
+              collate(entries, Map(), Nil, Unset, Nil)
 
             case metadata: KotlinClassMetadata.MultiFileClassFacade =>
               // Members live in the part classes; each records its *own* class as the JVM owner.
@@ -169,12 +178,96 @@ object KotlinDialect extends Dialect:
 
                 . or(Nil)
 
-              collate(entries, Map(), Nil, Unset)
+              collate(entries, Map(), Nil, Unset, Nil)
 
             case _ =>
               Unset
 
         catch case _: Throwable => Unset
+
+      . or(javaResolution(typeName, cls))
+
+  // The fallback for classes with no Kotlin `@Metadata` (`android.jar` and other plain Java):
+  // the same member model, built by reflection over the public surface. Java declares no
+  // nullability, so every reference type reads as definite; a later refinement could consult
+  // `@Nullable` annotations.
+  // Array traversal without `Predef`'s `ArrayOps` (this module compiles with `-Yno-predef`).
+  private def listOf[element](array: Array[element | Null] | Null): List[element] =
+    val definite = array.nn
+
+    def recur(index: Int, acc: List[element]): List[element] =
+      if index < 0 then acc else recur(index - 1, definite(index).nn :: acc)
+
+    recur(definite.length - 1, Nil)
+
+  private def javaResolution(typeName: Text, cls: Class[?]): Optional[Resolution] =
+    try
+      val methods = listOf(cls.getMethods).filter(!_.isSynthetic)
+
+      val entries = methods.map: method =>
+        val parameters = listOf(method.getParameterTypes)
+        val static = java.lang.reflect.Modifier.isStatic(method.getModifiers)
+
+        Entry
+          ( method.getName.nn.tt,
+            JvmMember
+              ( typeName, method.getName.nn.tt, descriptorOf(method), static, false, false,
+                parameters.length, Nil, Nil ),
+            Prototype(parameters.map(javaType), javaType(method.getReturnType.nn)) )
+
+      val fields = listOf(cls.getFields).filter(!_.isSynthetic)
+
+      val fieldEntries = fields.map: field =>
+        Entry
+          ( field.getName.nn.tt,
+            JvmMember
+              ( typeName, field.getName.nn.tt, t"", false, true, true, 0, Nil, Nil ),
+            Prototype(Unset, javaType(field.getType.nn)) )
+
+      val constructorEntries = listOf(cls.getConstructors).map: constructor =>
+        val parameters = listOf(constructor.getParameterTypes)
+
+        Entry
+          ( t"<init>",
+            JvmMember
+              ( typeName, t"<init>", t"", false, false, false, parameters.length, Nil, Nil ),
+            Prototype(parameters.map(javaType), Foreign.Type.Named(typeName)) )
+
+      collate(entries ++ fieldEntries ++ constructorEntries, Map(), Nil, Unset, Nil)
+
+    catch case _: Throwable => Unset
+
+  private def descriptorOf(method: java.lang.reflect.Method): Text =
+    def encode(cls: Class[?]): String =
+      if cls == java.lang.Void.TYPE then "V"
+      else if cls == java.lang.Integer.TYPE then "I"
+      else if cls == java.lang.Long.TYPE then "J"
+      else if cls == java.lang.Boolean.TYPE then "Z"
+      else if cls == java.lang.Double.TYPE then "D"
+      else if cls == java.lang.Float.TYPE then "F"
+      else if cls == java.lang.Short.TYPE then "S"
+      else if cls == java.lang.Byte.TYPE then "B"
+      else if cls == java.lang.Character.TYPE then "C"
+      else if cls.isArray then s"[${encode(cls.getComponentType.nn)}"
+      else s"L${cls.getName.nn.replace('.', '/')};"
+
+    val parameters = listOf(method.getParameterTypes).map(encode)
+    t"(${parameters.mkString})${encode(method.getReturnType.nn)}"
+
+  // Java types read through the same Kotlin-named model, so the rest of the machinery (`Text`
+  // for strings, primitives, facade wrapping) applies uniformly.
+  private def javaType(cls: Class[?]): Foreign.Type =
+    if cls == java.lang.Void.TYPE then Foreign.Type.Named(t"kotlin.Unit")
+    else if cls == java.lang.Integer.TYPE then Foreign.Type.Named(t"kotlin.Int")
+    else if cls == java.lang.Long.TYPE then Foreign.Type.Named(t"kotlin.Long")
+    else if cls == java.lang.Boolean.TYPE then Foreign.Type.Named(t"kotlin.Boolean")
+    else if cls == java.lang.Double.TYPE then Foreign.Type.Named(t"kotlin.Double")
+    else if cls == java.lang.Float.TYPE then Foreign.Type.Named(t"kotlin.Float")
+    else if cls == java.lang.Short.TYPE then Foreign.Type.Named(t"kotlin.Short")
+    else if cls == java.lang.Byte.TYPE then Foreign.Type.Named(t"kotlin.Byte")
+    else if cls == java.lang.Character.TYPE then Foreign.Type.Named(t"kotlin.Char")
+    else if cls == classOf[String] then Foreign.Type.Named(t"kotlin.String")
+    else Foreign.Type.Named(cls.getName.nn.replace('$', '.').nn.tt)
 
   private def metadataOf(cls: Class[?]): Optional[KotlinClassMetadata] =
     // Plain Java classes (android.jar et al.) carry no `@Metadata`; a reflection-based fallback
@@ -193,13 +286,14 @@ object KotlinDialect extends Dialect:
             foreignType(parameter.getType.nn)
 
           val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
+          val names = parameters.map(_.getName.nn.tt)
 
           List:
             Entry
               ( function.getName.nn.tt,
                 JvmMember
                   ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, static,
-                    false, false, parameters.length, defaults ),
+                    false, false, parameters.length, defaults, names ),
                 Prototype(types, foreignType(function.getReturnType.nn)) )
 
         . or(Nil)
@@ -216,7 +310,7 @@ object KotlinDialect extends Dialect:
             ( property.getName.nn.tt,
               JvmMember
                 ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, false, true,
-                  false, 0, Nil ),
+                  false, 0, Nil, Nil ),
               Prototype(Unset, result) )
 
       . or:
@@ -226,7 +320,7 @@ object KotlinDialect extends Dialect:
                 ( property.getName.nn.tt,
                   JvmMember
                     ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, false, true,
-                      true, 0, Nil ),
+                      true, 0, Nil, Nil ),
                   Prototype(Unset, result) )
 
           . or(Nil)
@@ -240,7 +334,7 @@ object KotlinDialect extends Dialect:
           property.getName.nn.tt ->
             JvmMember
               ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, false, true,
-                false, 1, Nil )
+                false, 1, Nil, Nil )
 
       . or(Nil)
 
@@ -255,13 +349,14 @@ object KotlinDialect extends Dialect:
           foreignType(parameter.getType.nn)
 
         val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
+        val names = parameters.map(_.getName.nn.tt)
 
         List:
           Entry
             ( t"<init>",
               JvmMember
                 ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, false, false,
-                  false, parameters.length, defaults ),
+                  false, parameters.length, defaults, names ),
               Prototype(types, Foreign.Type.Named(owner)) )
 
       . or(Nil)
@@ -270,7 +365,8 @@ object KotlinDialect extends Dialect:
     ( entries:     List[Entry],
       setters:     Map[Text, JvmMember],
       identifiers: List[Int],
-      companion:   Optional[Text] )
+      companion:   Optional[Text],
+      enumeration: List[Text] )
   :   Resolution =
 
     val prototypes: Map[Text, Prototype] =
@@ -279,7 +375,7 @@ object KotlinDialect extends Dialect:
     val jvmMembers: Map[Text, List[JvmMember]] =
       entries.groupBy(_.name).view.mapValues(_.map(_.member)).to(Map)
 
-    Resolution(prototypes, jvmMembers, setters, identifiers, companion)
+    Resolution(prototypes, jvmMembers, setters, identifiers, companion, enumeration)
 
   // Maps a Kotlin metadata type to the ecosystem-neutral foreign form: named classes by their
   // fully-qualified Kotlin name, generic applications through `Applied`, nullability as a union

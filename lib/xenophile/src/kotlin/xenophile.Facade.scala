@@ -62,8 +62,20 @@ trait Facade extends Dynamic, Transportive:
   transparent inline def applyDynamic(name: String)(inline arguments: Any*): Any =
     ${KotlinFacade.applied('this, 'name, 'arguments)}
 
+  transparent inline def applyDynamicNamed(name: String)(inline arguments: (String, Any)*)
+  :   Any =
+
+    ${KotlinFacade.appliedNamed('this, 'name, 'arguments)}
+
   inline def updateDynamic(name: String)(inline value: Any): Unit =
     ${KotlinFacade.update('this, 'name, 'value)}
+
+  // A data class's components as a Scala tuple: `pair.tuple` is `(first, second)`.
+  transparent inline def tuple: Any = ${KotlinFacade.tuple('this)}
+
+  // An explicit copy of a Kotlin/Java collection into the immutable Scala equivalent, with
+  // `String` elements reading as `Text`.
+  transparent inline def scala: Any = ${KotlinFacade.scalaCollection('this)}
 
   // Kotlin's index-access operators: `facade(key)` reaches `operator fun get`, and
   // `facade(key) = value` reaches `operator fun set`.

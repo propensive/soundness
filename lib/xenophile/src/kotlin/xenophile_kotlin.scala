@@ -38,3 +38,8 @@ transparent inline def companion[kotlinType]: Any = ${KotlinFacade.companion[kot
 
 // The facade of a Kotlin `object` singleton: `singleton[Typography].quote`.
 transparent inline def singleton[kotlinType]: Any = ${KotlinFacade.singleton[kotlinType]}
+
+// The facade of an `enum class` entry: `entry[RegexOption](t"IGNORE_CASE")`.
+transparent inline def entry[kotlinType](inline name: String): Any =
+  ${KotlinFacade.entry[kotlinType]('name)}
+

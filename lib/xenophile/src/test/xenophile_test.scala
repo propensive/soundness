@@ -152,11 +152,6 @@ object Tests extends Suite(m"Xenophile tests"):
           Kotlin.make[kotlin.text.Regex](42)
       . assert(_.nonEmpty)
 
-      test(m"a non-Kotlin class cannot be made into a facade"):
-        demilitarize:
-          Kotlin.make[java.lang.StringBuilder](t"x")
-      . assert(_.nonEmpty)
-
       test(m"a companion object's members are reachable"):
         val escaped: Text = companion[kotlin.text.Regex].escape(t"a.b")
         escaped
@@ -216,6 +211,49 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"operator get is reachable as apply"):
         regex.find(t"a1b").let(_.groups(0)).let(_.value)
       . assert(_ == t"1")
+
+      // Note `unwrap.toString`: `toString`/`equals`/`hashCode` are real members of the facade
+      // wrapper itself, so `Dynamic` cannot intercept them.
+      test(m"a plain Java class resolves through the reflection fallback"):
+        Kotlin.make[java.lang.StringBuilder](t"ab").reverse().unwrap.toString.tt
+      . assert(_ == t"ba")
+
+      test(m"an enum entry is reachable by name, and usable as an argument"):
+        val relaxed = Kotlin.make[kotlin.text.Regex]
+          ( t"[a-z]+", entry[kotlin.text.RegexOption]("IGNORE_CASE") )
+
+        val matches: Boolean = relaxed.matches(t"ABC")
+        matches
+      . assert(_ == true)
+
+      test(m"an unknown enum entry lists the real ones"):
+        demilitarize:
+          entry[kotlin.text.RegexOption]("IGNORE_CAES")
+        . map(_.message)
+      . assert(_.exists(_.contains("IGNORE_CASE")))
+
+      test(m"a data class destructures into a typed tuple"):
+        Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").tuple
+      . assert(_ == (t"a", t"b"))
+
+      test(m"a Kotlin list result copies out as a Scala List of Text"):
+        val parts: List[Text] = regex.split(t"a1b2").scala
+        parts
+      . assert(_ == List(t"a", t"b", t""))
+
+      test(m"a named argument selects its declared parameter"):
+        regex.find(input = t"a5b").let(_.value)
+      . assert(_ == t"5")
+
+      test(m"named arguments reorder to their declared positions"):
+        regex.find(startIndex = 2, input = t"1a2b").let(_.value)
+      . assert(_ == t"2")
+
+      test(m"an unknown parameter name lists the declared ones"):
+        demilitarize:
+          regex.find(inpit = t"a5b")
+        . map(_.message)
+      . assert(_.exists(_.contains("input")))
 
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 

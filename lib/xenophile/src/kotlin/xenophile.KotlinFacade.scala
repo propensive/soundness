@@ -423,7 +423,8 @@ object KotlinFacade:
 
       defaulted match
         case member :: _ =>
-          return defaultCall(self, repr, className, field, member, args, prototype)
+          val provided = args.zipWithIndex.map(_.swap).to(Map)
+          return bridgeCall(self, repr, className, member, provided, prototype)
 
         case Nil =>
           // `facade.property(x)` arrives as one Dynamic application; when the member is a
@@ -438,7 +439,24 @@ object KotlinFacade:
           val count = args.length
           halt(m"xenophile: $className declares $declared, which does not take $count arguments")
 
+    invocation(self, repr, className, field, args, prototype)
+
+  // Resolves an ordered-argument call against the Scala view of the class and emits it.
+  private def invocation(using Quotes)
+    ( self:      Expr[Facade],
+      repr:      quotes.reflect.TypeRepr,
+      className: Text,
+      field:     Text,
+      args:      List[quotes.reflect.Term],
+      prototype: Prototype )
+  :   Expr[Any] =
+
+    import quotes.reflect.*
+
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
+
+    val candidates = KotlinDialect.members(className, field).filter: member =>
+      !member.property && member.arity == args.length
 
     // Resolution against the *Scala view* of the class: among the metadata's candidates, the
     // methods whose (substituted) parameter types every argument satisfies.
@@ -559,16 +577,15 @@ object KotlinFacade:
       case '[c] => '{Facade[c](${term.asExpr}.asInstanceOf[c])}
 
   // Calls a member through its synthetic `name$default` bridge: a static method taking the
-  // receiver, every declared parameter (omitted ones as zero values), a bitmask of the omitted
+  // receiver, every declared parameter (absent ones as zero values), a bitmask of the absent
   // positions, and a marker. The bridge is ACC_SYNTHETIC — invisible to the symbol table — so
   // the call goes through `KotlinRuntime`'s cached `MethodHandle` rather than a direct emission.
-  private def defaultCall(using Quotes)
+  private def bridgeCall(using Quotes)
     ( self:      Expr[Facade],
       repr:      quotes.reflect.TypeRepr,
       className: Text,
-      field:     Text,
       member:    KotlinDialect.JvmMember,
-      args:      List[quotes.reflect.Term],
+      provided:  Map[Int, quotes.reflect.Term],
       prototype: Prototype )
   :   Expr[Any] =
 
@@ -600,22 +617,21 @@ object KotlinFacade:
       else if parameter <:< TypeRepr.of[Char] then '{0.toChar}
       else '{null}
 
-    val supplied = args.zip(types.take(args.length)).map: (argument, parameter) =>
-      adapted(argument, parameter).asExpr
-
-    val omitted = types.drop(args.length).map(zero)
+    val values = types.zipWithIndex.map: (parameter, index) =>
+      provided.at(index).let { argument => adapted(argument, parameter).asExpr }.or(zero(parameter))
 
     // Bit `i` set means parameter `i` takes its default.
-    val mask = ((1 << member.arity) - 1) & ~((1 << args.length) - 1)
-
-    val trailer = List(Expr(mask).asExprOf[Any | Null], '{null}.asExprOf[Any | Null])
-    val values = (supplied ++ omitted).map(_.asExprOf[Any | Null])
-    val head = receiver(self, repr).asExprOf[Any | Null]
-    val arguments = Varargs[Any | Null](head :: values ::: trailer)
+    val mask: Int = types.indices.filter(!provided.contains(_)).foldLeft(0): (acc, index) =>
+      acc | (1 << index)
 
     val ownerClass = Literal(ClassOfConstant(repr.dealias match
       case AppliedType(constructor, _) => constructor
       case other                       => other))
+
+    val trailer = List(Expr[Int](mask).asExprOf[Any | Null], '{null}.asExprOf[Any | Null])
+    val head = receiver(self, repr).asExprOf[Any | Null]
+    val boxed = values.map(_.asExprOf[Any | Null])
+    val arguments = Varargs[Any | Null](head :: boxed ::: trailer)
 
     val call: Expr[Any | Null] =
       ' {
@@ -680,3 +696,158 @@ object KotlinFacade:
     val term = Select(Ref(classSymbol.companionModule), field)
 
     '{Facade[kotlinType](${term.asExpr}.asInstanceOf[kotlinType])}
+
+  // Named (and mixed) arguments: each named value is assigned to its declared parameter's
+  // position; positional values fill the earliest unassigned positions. A full assignment
+  // resolves as an ordinary call; missing positions must declare defaults, and route through
+  // the `$default` bridge.
+  def appliedNamed
+    ( self: Expr[Facade], name: Expr[String], arguments: Expr[Seq[(String, Any)]] )
+    ( using Quotes )
+  :   Expr[Any] =
+
+    import quotes.reflect.*
+
+    val field = name.valueOrAbort.tt
+    val repr = transport(self)
+    val className = classNameOf(repr)
+
+    val pairs: List[(Text, Term)] = arguments match
+      case Varargs(exprs) => exprs.to(List).map:
+        case '{($key: String, $value: v)} => (key.valueOrAbort.tt, value.asTerm)
+        case other                        => (t"", other.asTerm)
+
+      case _ =>
+        halt(m"xenophile: the arguments must be passed directly")
+
+    val prototype = KotlinDialect.memberPrototype(className, field).or:
+      missing(className, field)
+
+    val candidates = KotlinDialect.members(className, field).filter: member =>
+      !member.property && member.parameters.nonEmpty
+
+    val member = candidates match
+      case member :: _ => member
+      case Nil         => halt(m"xenophile: $className.$field takes no named arguments")
+
+    val positions: Map[Text, Int] = member.parameters.zipWithIndex.to(Map)
+
+    val provided: Map[Int, Term] =
+      def assign(pairs: List[(Text, Term)], next: Int, acc: Map[Int, Term]): Map[Int, Term] =
+        pairs match
+          case Nil =>
+            acc
+
+          case (t"", term) :: rest =>
+            val index = (0 until member.arity).find(!acc.contains(_)).getOrElse:
+              halt(m"xenophile: too many arguments for $className.$field")
+
+            assign(rest, next, acc.updated(index, term))
+
+          case (key, term) :: rest =>
+            val index = positions.at(key).or:
+              val declared = member.parameters.join(t", ")
+              halt(m"xenophile: $className.$field has no parameter $key; it declares: $declared")
+
+            assign(rest, next, acc.updated(index, term))
+
+      assign(pairs, 0, Map())
+
+    val absent = (0 until member.arity).filter(!provided.contains(_)).to(List)
+
+    if absent.isEmpty then
+      val ordered = (0 until member.arity).to(List).map(provided(_))
+      invocation(self, repr, className, field, ordered, prototype)
+    else
+      val undefaulted = absent.filter: index =>
+        !member.defaults.lift(index).getOrElse(false)
+
+      if undefaulted.nonEmpty then
+        val names = undefaulted.map { index => member.parameters(index) }.join(t", ")
+        halt(m"xenophile: $className.$field requires arguments for: $names")
+
+      bridgeCall(self, repr, className, member, provided, prototype)
+
+  // The facade of an `enum class` entry, a static field of the enum's own type.
+  def entry[kotlinType: Type](name: Expr[String])(using Quotes): Expr[Any] =
+    import quotes.reflect.*
+
+    val repr = TypeRepr.of[kotlinType]
+    val className = classNameOf(repr)
+    val entryName = name.valueOrAbort.tt
+
+    val entries = KotlinDialect.enumEntries(className)
+
+    if entries.nonEmpty && !entries.contains(entryName) then
+      val listed = entries.join(t", ")
+      halt(m"xenophile: $className has no entry $entryName; its entries are: $listed")
+
+    val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
+    val field = classSymbol.companionModule.fieldMember(entryName.s)
+
+    if !field.exists then halt(m"xenophile: $className has no entry $entryName")
+
+    val term = Select(Ref(classSymbol.companionModule), field)
+
+    '{Facade[kotlinType](${term.asExpr}.asInstanceOf[kotlinType])}
+
+  // A data class's components, as a Scala tuple with each component's facade-refined type.
+  def tuple(self: Expr[Facade])(using Quotes): Expr[Any] =
+    val repr = transport(self)
+    val className = classNameOf(repr)
+
+    def components(index: Int, acc: List[Expr[Any]]): List[Expr[Any]] =
+      val name = t"component$index"
+
+      if KotlinDialect.members(className, name).exists(!_.property)
+      then components(index + 1, applied(self, Expr(name.s), Varargs(Nil)) :: acc)
+      else acc.reverse
+
+    components(1, Nil) match
+      case Nil        => halt(m"xenophile: $className declares no components to destructure")
+      case components => Expr.ofTupleFromSeq(components)
+
+  // Copies a Kotlin/Java collection out to the corresponding immutable Scala collection, with
+  // `String` elements reading as `Text`. The copy is explicit: facades themselves stay
+  // zero-cost views.
+  def scalaCollection(self: Expr[Facade])(using Quotes): Expr[Any] =
+    import quotes.reflect.*
+
+    val repr = transport(self)
+
+    def textual(element: TypeRepr): TypeRepr =
+      if solid(element) <:< TypeRepr.of[String] then TypeRepr.of[Text] else solid(element)
+
+    val unwrapped = '{$self.unwrap}
+
+    repr.dealias match
+      case AppliedType(constructor, List(element)) if repr <:< TypeRepr.of[java.util.List[?]] =>
+        textual(element).asType.absolve match
+          case '[e] =>
+            ' {
+                List.from[e]:
+                  scala.jdk.javaapi.CollectionConverters
+                  . asScala($unwrapped.asInstanceOf[java.util.List[e]])
+              }
+
+      case AppliedType(constructor, List(element)) if repr <:< TypeRepr.of[java.util.Set[?]] =>
+        textual(element).asType.absolve match
+          case '[e] =>
+            ' {
+                Set.from[e]:
+                  scala.jdk.javaapi.CollectionConverters
+                  . asScala($unwrapped.asInstanceOf[java.util.Set[e]])
+              }
+
+      case AppliedType(constructor, List(key, value))
+      if repr <:< TypeRepr.of[java.util.Map[?, ?]] =>
+        (textual(key).asType, textual(value).asType).absolve match
+          case ('[k], '[v]) =>
+            ' {
+                Map.from[k, v]:
+                  scala.jdk.javaapi.CollectionConverters
+                  . asScala($unwrapped.asInstanceOf[java.util.Map[k, v]])
+              }
+
+      case _ =>
+        halt(m"xenophile: ${repr.show} is not a collection type")

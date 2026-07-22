@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export xenophile.{companion, singleton, Facade, Kotlin, KotlinDialect, KotlinFacade,
+export xenophile.{companion, entry, singleton, Facade, Kotlin, KotlinDialect, KotlinFacade,
     KotlinInvoke, KotlinRuntime, kotlinInvocation}
