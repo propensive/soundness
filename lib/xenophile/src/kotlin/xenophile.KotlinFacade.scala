@@ -209,7 +209,7 @@ object KotlinFacade:
     import quotes.reflect.*
 
     repr.asType.absolve match
-      case '[u] => '{$self.unwrap.asInstanceOf[u]}.asTerm
+      case '[u] => '{$self.raw.asInstanceOf[u]}.asTerm
 
   // Whether an argument can satisfy a JVM parameter type, given Kotlin's view of the boundary:
   // a conforming value always can; `Text` satisfies any parameter that accepts a `String` or
@@ -313,7 +313,7 @@ object KotlinFacade:
     def outward(value: Expr[Any]): Expr[Any] =
       ' {
           $value.absolve match
-            case facade: Facade => facade.unwrap
+            case facade: Facade => facade.raw
             case other          => other
         }
 
@@ -386,7 +386,7 @@ object KotlinFacade:
 
     val unwrapped = sam.or:
       if argument.tpe.widen <:< TypeRepr.of[Facade]
-      then '{${argument.asExprOf[Facade]}.unwrap}.asTerm
+      then '{${argument.asExprOf[Facade]}.raw}.asTerm
       else argument
 
     if unwrapped.tpe <:< parameter then unwrapped
@@ -595,7 +595,7 @@ object KotlinFacade:
         val rest = args.drop(fixed.length).map: argument =>
           val unwrapped =
             if argument.tpe.widen <:< TypeRepr.of[Facade]
-            then '{${argument.asExprOf[Facade]}.unwrap}.asTerm
+            then '{${argument.asExprOf[Facade]}.raw}.asTerm
             else argument
 
           TypeApply(Select.unique(unwrapped, "asInstanceOf"), List(Inferred(target)))
@@ -926,7 +926,7 @@ object KotlinFacade:
     def textual(element: TypeRepr): TypeRepr =
       if solid(element) <:< TypeRepr.of[String] then TypeRepr.of[Text] else solid(element)
 
-    val unwrapped = '{$self.unwrap}
+    val unwrapped = '{$self.raw}
 
     repr.dealias match
       case AppliedType(constructor, List(element)) if repr <:< TypeRepr.of[java.util.List[?]] =>
@@ -959,3 +959,14 @@ object KotlinFacade:
 
       case _ =>
         halt(m"xenophile: ${repr.show} is not a collection type")
+
+  // The underlying value at the facade's full recorded Scala type, so handing it to plain
+  // Java-level code needs no cast.
+  def unwrapped(self: Expr[Facade])(using Quotes): Expr[Any] =
+    import quotes.reflect.*
+
+    val transport = Xenophile.refinements(self.asTerm.tpe.widen).at(t"Transport")
+
+    if transport.absent then '{$self.raw} else
+      transport.vouch.asType.absolve match
+        case '[u] => '{$self.raw.asInstanceOf[u]}
