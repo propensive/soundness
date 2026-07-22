@@ -581,7 +581,7 @@ object soundness extends Toolchain:
   object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
-    anthology.`scala`, exegesis.core, hellenism.jvm)
+    anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -1187,6 +1187,21 @@ object decorum extends Library:
     override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   object test extends Tests(plugin):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
+
+object delicious extends Library:
+  object core extends Component(gossamer.core, vacuous.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+
+  object `scala` extends Component(core, stenography.core, anthology.core):
+    override def scalaJs = false // wraps the Scala compiler (dotty)
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(core, `scala`, anthology.`scala`):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -2640,7 +2655,7 @@ val allLibraries: Seq[Library] = Seq(
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
   charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
-  decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
+  decorum, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,
   frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
