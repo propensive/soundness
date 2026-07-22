@@ -171,3 +171,63 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
     .assert(!_.contains(t"diet"))
+
+    // Keyword completions come from prophesy's curated pattern tree over the reversed lexeme
+    // context at the caret; tokenized depth suffices, so no compiler givens are needed.
+    suite(m"Keyword completions"):
+      def keywordsAt(source: Text): List[Text] =
+        Scala.highlight(source, caret = source.length.z).completions
+        . lay(Nil)(_.items.map(_.name))
+
+      test(m"a partial identifier at the start of input completes to keywords"):
+        keywordsAt(t"va")
+      . assert(_ == List(t"val", t"var"))
+
+      test(m"imp completes to import, and implicit is never offered"):
+        keywordsAt(t"imp")
+      . assert(_ == List(t"import"))
+
+      test(m"transparent offers inline and trait"):
+        keywordsAt(t"transparent ")
+      . assert { words => words.contains(t"inline") && words.contains(t"trait") }
+
+      test(m"transparent inline unambiguously offers definitions"):
+        keywordsAt(t"transparent inline ")
+      . assert(_ == List(t"def", t"given"))
+
+      test(m"a definition's parameter list offers using"):
+        keywordsAt(t"def f(")
+      . assert(_.contains(t"using"))
+
+      test(m"a call's argument list offers expressions, not definitions"):
+        val words = keywordsAt(t"foo(")
+        (words.contains(t"new"), words.contains(t"val"))
+      . assert(_ == (true, false))
+
+      test(m"a member selection offers no statement keywords"):
+        keywordsAt(t"foo.")
+      . assert(!_.contains(t"val"))
+
+      test(m"a fresh binding position suppresses all completions"):
+        Scala.highlight(t"val ", caret = t"val ".length.z).completions.let(_.items.length)
+      . assert(_ == 0)
+
+      test(m"a new statement line offers statement keywords"):
+        keywordsAt(t"val x = 1\nva")
+      . assert(_ == List(t"val", t"var"))
+
+      test(m"an indented continuation after = is an expression position"):
+        keywordsAt(t"val x =\n  ")
+      . assert(_.contains(t"new"))
+
+      test(m"a value on the same line offers match"):
+        keywordsAt(t"xs ")
+      . assert(_.contains(t"match"))
+
+      test(m"an if condition is followed by then"):
+        keywordsAt(t"if x ")
+      . assert(_.contains(t"then"))
+
+      test(m"match is followed by case"):
+        keywordsAt(t"xs match ")
+      . assert(_ == List(t"case"))

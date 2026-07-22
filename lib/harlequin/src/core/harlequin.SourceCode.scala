@@ -88,7 +88,32 @@ object SourceCode:
 
     val metaMap: Map[(Int, Int), Syntax] = resolved.lay(Map())(_(0))
     val diagnostics: List[Diagnostic] = resolved.lay(Nil)(_(1))
-    val completions: Optional[Completions] = resolved.lay(Unset)(_(2))
+    val resolvedCompletions: Optional[Completions] = resolved.lay(Unset)(_(2))
+
+    // Keyword completions come from the curated pattern tree over the reversed lexeme
+    // context at the caret — no compiler run, so they are offered in every depth, including
+    // `Tokenized` (where they are the only completions). In a binding position (a fresh name
+    // is expected) the resolved member completions are deliberately dropped.
+    val completions: Optional[Completions] =
+      if language != Scala then resolvedCompletions else
+        caret.lay(resolvedCompletions): caret =>
+          val (prefix, context) = Lexis.context(text, caret)
+          val found = prophesy.ScalaKeywords.pattern(context)
+          val words = prefix.lay(found.keywords): p =>
+            found.keywords.filter(_.starts(p))
+          val prefixLength = prefix.lay(0)(_.length)
+          val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
+
+          val items = words.to(List).sortBy(_.s).map: word =>
+            Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
+
+          val binding =
+            found.expectation == prophesy.KeywordPattern.Expectation.TermBinding ||
+              found.expectation == prophesy.KeywordPattern.Expectation.TypeBinding
+
+          if binding then Completions(replace, items)
+          else if items.isEmpty then resolvedCompletions
+          else Completions(replace, items ::: resolvedCompletions.lay(Nil)(_.items))
 
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val context0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)

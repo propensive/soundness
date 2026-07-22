@@ -206,8 +206,12 @@ object ScalaKeywords:
            word(t"infix") -> leaf(Set(t"def", t"type", t"class", t"trait", t"enum",
                t"abstract")),
 
-           word(t"inline") -> leaf(Set(t"def", t"given", t"val", t"if", t"match",
-               t"infix")),
+           // After bare `inline`, a definition or an inline conditional may follow; after
+           // `transparent inline`, only a definition can.
+           word(t"inline") ->
+             KeywordPattern
+               ( Keywords(Set(t"def", t"given", t"val", t"if", t"match", t"infix")),
+                 List(word(t"transparent") -> leaf(Set(t"def", t"given"))) ),
            word(t"transparent") -> leaf(Set(t"inline", t"trait", t"def", t"class")),
            word(t"implicit") -> leaf(Set(t"val", t"def", t"class", t"object", t"lazy",
                t"final")),
