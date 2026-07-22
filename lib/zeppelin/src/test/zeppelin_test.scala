@@ -155,6 +155,26 @@ object Tests extends Suite(m"Zeppelin tests"):
         Zip.Entry(zipRef(t"a.txt"), (t"abcd"*64).in[Data]).method
       . assert(_ == Zip.Method.Stored)
 
+      test(m"an aligned entry's data begins on its byte boundary"):
+        given Zip.Compression = Zip.Compression.Stored
+        // "hello.txt" is 9 bytes, so unaligned data would begin at 30+9 = 39; alignment to 4
+        // pads the extra field so 30 + nameLength + extraLength is a multiple of 4.
+        val stored = Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).aligned(4)
+        val bytes = bytesOf(writeZip(t"aligned.zip", stored))
+
+        def u16(offset: Int): Int =
+          (bytes(offset).toInt & 0xff) | ((bytes(offset + 1).toInt & 0xff) << 8)
+
+        (30 + u16(26) + u16(28))%4
+      . assert(_ == 0)
+
+      test(m"an aligned entry still reads back through the JDK"):
+        given Zip.Compression = Zip.Compression.Stored
+        val stored = Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).aligned(4)
+        val path = writeZip(t"aligned2.zip", stored)
+        jdkContent(path, t"hello.txt").to(List)
+      . assert(_ == t"Hello world".in[Data].to(List))
+
     suite(m"Writing ZIP archives"):
       test(m"single-entry archive begins with the ZIP local-header magic"):
         bytesOf(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
