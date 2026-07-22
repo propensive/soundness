@@ -33,25 +33,30 @@
 package prophesy
 
 import anticipation.*
-import denominative.*
-import stenography.*
-import vacuous.*
 
-@unexported
-object Completion:
-  enum Kind:
-    case Term, Method, Given, Extension, Type, Module, Package, Keyword
+object Lexeme:
+  enum Bracket:
+    case Round, Square, Brace
 
-// A single completion candidate at a requested position. `name` is the text to
-// insert; `kind` distinguishes methods, extensions, types, etc.; `signature` is
-// the member's type rendered as a Stenography `Syntax` (a method's full
-// parameter/result signature, a value's type, …).
-case class Completion
-  ( name:          Text,
-    kind:          Completion.Kind,
-    signature:     Syntax,
-    documentation: Optional[Text] = Unset )
-
-// The result of a completion request: `replace` is the source region the chosen
-// completion replaces (an `Offset`-mode `Span`), and `items` the candidates.
-case class Completions(replace: Span, items: List[Completion])
+// The alphabet of "significant values" a keyword-completion pattern matches against: the
+// abstraction of a token stream in which identifier text is irrelevant (a term identifier is
+// just `Term`) but each keyword and each symbolic token is individually significant. A
+// tokenizer (such as Harlequin's) maps its tokens onto lexemes; the `KeywordPattern` tree
+// pattern-matches on *reversed* sequences of them leading back from the caret.
+//
+// `Keyword` covers hard keywords and soft modifiers alike, identified by exact text — near a
+// caret a soft modifier is lexically indistinguishable from an identifier, so the mapping is
+// by text, not by the tokenizer's classification. `Break` marks a statement boundary (a line
+// break whose continuation is not more deeply indented); a line break that merely continues
+// an expression contributes nothing. `Start` marks the beginning of the input.
+enum Lexeme:
+  case Keyword(word: Text)
+  case Symbol(glyph: Text)
+  case Open(bracket: Lexeme.Bracket)
+  case Close(bracket: Lexeme.Bracket)
+  case Term
+  case Typal
+  case Literal
+  case Break
+  case Start
+  case Error

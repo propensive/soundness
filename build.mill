@@ -1126,6 +1126,10 @@ object prophesy extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
+
 object contextual extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
