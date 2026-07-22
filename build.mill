@@ -2435,7 +2435,7 @@ object wisteria extends Library:
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
-    vacuous.core):
+    vacuous.core, completive.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object typescript extends Component(core):
@@ -2484,7 +2484,8 @@ object xenophile extends Library:
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit, webidl, wasm, hellenism.core):
+  object test extends Tests(typescript, native, wit, webidl, wasm, hellenism.core,
+      harlequin.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 

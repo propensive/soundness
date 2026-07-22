@@ -37,8 +37,11 @@ import scala.language.dynamics
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
+import stenography.*
+import vacuous.*
 
-object Foreign:
+object Foreign extends completive.Completable:
   // A foreign expression: a reference to a named foreign value, a member selection (recording the
   // `owner` foreign type it is selected from, which backends needing that type's layout — e.g. the
   // native evaluator — use, while self-describing backends like JSON ignore it), a function
@@ -66,6 +69,36 @@ object Foreign:
     def expr: Expression = tree
 
   transparent inline def apply[name <: Label, origin]: Foreign = ${Xenophile.root[name, origin]}
+
+  // Dynamic tab completions, invoked reflectively through `Completable` by a completion engine
+  // (such as Harlequin's): the members of the receiver's foreign type, enumerated from the
+  // definitions resource its `Locus` refinement records. A receiver with a compound topic (a
+  // union), or one whose root recorded no `Locus`, offers nothing.
+  def completions(using quotes: scala.quoted.Quotes)
+    ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+  :   List[completive.Completion] =
+
+    import quotes.reflect.*
+
+    val members = Xenophile.refinements(receiver)
+
+    members.at(t"Topic").lay(Nil): topicRepr =>
+      members.at(t"Origin").lay(Nil): originRepr =>
+        members.at(t"Locus").lay(Nil): locusRepr =>
+          (topicRepr.dealias, locusRepr.dealias) match
+            case (ConstantType(StringConstant(topic)), ConstantType(StringConstant(locus))) =>
+              Xenophile.definitions(originRepr, locus.tt).at(topic.tt).lay(Nil): prototypes =>
+                prototypes.to(List).sortBy(_(0).s).map: (name, prototype) =>
+                  val kind = prototype.parameters.lay(completive.Completion.Kind.Term): _ =>
+                    completive.Completion.Kind.Method
+
+                  val signature = prototype.parameters.lay(prototype.result.text): parameters =>
+                    t"(${parameters.map(_.text).join(t", ")}): ${prototype.result.text}"
+
+                  completive.Completion(name, kind, Syntax.Symbolic(signature))
+
+            case _ =>
+              Nil
 
   // A Scala value with an `Interoperable` instance converts into a `Foreign` literal carrying the
   // value verbatim; the foreign type is the instance's `Topic`.

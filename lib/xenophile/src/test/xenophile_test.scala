@@ -34,6 +34,8 @@ package xenophile
 
 import soundness.*
 
+import ambience.systems.javaSystem
+
 type TsInterface = Interface in Typescript at "/xenophile/definitions.ts"
 given tsInterface: TsInterface = Interface[Typescript](cp"/xenophile/definitions.ts")
 
@@ -403,3 +405,33 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"passing a DOM argument of the wrong foreign type is a compile error"):
         demilitarize(node.appendChild(Foreign["Event", WebIdlDom])).map(_.message)
       . assert(_ == List(t"xenophile: appendChild expects an argument of foreign type Node"))
+
+    // The end-to-end dynamic-completions route: Harlequin's typechecked pipeline finds the
+    // `Foreign` companion through `Completable`, which enumerates the receiver's foreign type's
+    // members from the definitions resource recorded in its `Locus` refinement. The highlighted
+    // snippet compiles against this test module's own classes, so the fixture `Interface` givens
+    // above are importable by name.
+    suite(m"Dynamic completions"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      def completionsAt(source: Text): List[completive.Completion] =
+        Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items)
+
+      val header = t"import xenophile.*\nimport xenophile.tsInterface\n"
+
+      test(m"a partial member on a Foreign receiver completes from the definitions"):
+        completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.ba").map(_.name)
+      . assert(_ == List(t"bar", t"baz"))
+
+      test(m"a method member completes as a method with its signature"):
+        completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.gre")
+      . assert: items =>
+          items.map { item => (item.name, item.kind) } ==
+            List((t"greet", completive.Completion.Kind.Method))
+
+      test(m"completion works on a navigated (non-root) receiver"):
+        completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.bar.qu")
+        . map(_.name)
+      . assert(_ == List(t"qux"))

@@ -88,7 +88,7 @@ object Xenophile:
         result
 
   // Collects every `type X = …` member from a (possibly nested) refinement type into a map.
-  private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  private[xenophile] def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   :   Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
@@ -127,29 +127,48 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: a compound foreign type (such as a union) has no members to select")
 
-  // Summons the `Interface` given for a source language and reads its definitions path (`Locus`).
-  private[xenophile] def locusOf(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Text =
+  // The receiver's recorded definitions path: the `Locus` member of its refinement, if the
+  // navigation began from a root that had an `Interface` in scope to record it.
+  private[xenophile] def receiverLocus(using quotes: Quotes)(self: Expr[Foreign])
+  :   Optional[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    refinements(self.asTerm.tpe.widen).at(t"Locus")
+
+  // Summons the `Interface` given for a source language and reads its definitions path (`Locus`)
+  // as the singleton path type, or `Unset` when no such `Interface` (or no path) is in scope.
+  private[xenophile] def summonedLocus(using quotes: Quotes)(origin: quotes.reflect.TypeRepr)
+  :   Optional[quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
 
     val interfaceType = Refinement(TypeRepr.of[Interface], "Form", TypeBounds(origin, origin))
 
-    val interfaceTerm = interfaceType.asType.absolve match
-      case '[interface] =>
-        val found = Expr.summon[interface].getOrElse:
-          halt(m"xenophile: no `Interface` is available for the foreign source language")
+    interfaceType.asType.absolve match
+      case '[interface] => Expr.summon[interface] match
+        case None => Unset
 
-        found.asTerm
+        case Some(found) =>
+          val members = refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen)
+          members.at(t"Locus")
 
-    val members = refinements(interfaceTerm.tpe) ++ refinements(interfaceTerm.tpe.widen)
+  // The definitions path carried by a `Locus` singleton type.
+  private[xenophile] def locusText(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
+    import quotes.reflect.*
 
-    val locusRepr = members.at(t"Locus").or:
-      halt(m"xenophile: the `Interface` does not specify a definitions path (it has no `Locus`)")
-
-    locusRepr.absolve match
+    repr.absolve match
       case ConstantType(StringConstant(path)) => path.tt
 
       case _ =>
         halt(m"xenophile: the definitions path is not a string literal type")
+
+  // The definitions path for a source language, from the summoned `Interface`; halts if none is
+  // available.
+  private[xenophile] def locusOf(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Text =
+    locusText:
+      summonedLocus(origin).or:
+        halt(m"xenophile: no `Interface` with a definitions path is in scope")
 
   // Builds the type-level representation of a foreign type: a string-singleton for a named type, a
   // bare union for `Union`, and `constructor over (arguments…)` (the prepositional `over`, i.e.
@@ -183,18 +202,27 @@ object Xenophile:
 
         Refinement(ctor, "Transport", TypeBounds(argument, argument))
 
-  // Builds the refined type `Foreign of <topic> from <origin>`.
-  private def foreignType(using quotes: Quotes)(kind: Foreign.Type, origin: quotes.reflect.TypeRepr)
+  // Builds the refined type `Foreign of <topic> from <origin>`, recording the definitions path
+  // as a third `Locus` member when it is known — so later navigation steps (and completion
+  // engines, which cannot summon the `Interface`) can read it back from the type alone.
+  private def foreignType(using quotes: Quotes)
+    ( kind:   Foreign.Type,
+      origin: quotes.reflect.TypeRepr,
+      locus:  Optional[quotes.reflect.TypeRepr] )
   :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
 
     val topicType = reprOf(kind)
 
-    Refinement
-      ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(topicType, topicType)),
-        "Origin",
-        TypeBounds(origin, origin) )
+    val base =
+      Refinement
+        ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(topicType, topicType)),
+          "Origin",
+          TypeBounds(origin, origin) )
+
+    locus.lay(base): locusRepr =>
+      Refinement(base, "Locus", TypeBounds(locusRepr, locusRepr))
 
   // Builds the `Expression` for a single method argument. Every argument arrives as a `Foreign`
   // (either already, or converted from a Scala value at the call site by the `converter`
@@ -238,7 +266,11 @@ object Xenophile:
     val (topicRepr, originRepr) = receiver(self)
     val topic = topicName(topicRepr)
 
-    val typeMembers = definitions(originRepr, locusOf(originRepr)).at(topic).or:
+    val locusRepr = receiverLocus(self).or:
+      summonedLocus(originRepr).or:
+        halt(m"xenophile: no `Interface` with a definitions path is in scope")
+
+    val typeMembers = definitions(originRepr, locusText(locusRepr)).at(topic).or:
       halt(m"xenophile: the foreign type $topic is not defined")
 
     val signature = typeMembers.at(fieldName).or:
@@ -252,7 +284,7 @@ object Xenophile:
       if !parameters.isEmpty
       then halt(m"xenophile: $fieldName is a method of $topic and must be called with arguments")
 
-    foreignType(signature.result, originRepr).asType.absolve match
+    foreignType(signature.result, originRepr, locusRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
         val member = Expr(fieldName.s)
         val owner = Expr(topic.s)
@@ -271,6 +303,7 @@ object Xenophile:
     import quotes.reflect.*
 
     val (topicRepr, originRepr) = receiver(self)
+    val locus = receiverLocus(self)
 
     val element = topicRepr.dealias match
       case Refinement(parent, "Transport", TypeBounds(_, element)) => parent.dealias match
@@ -284,11 +317,14 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: this foreign type is not an indexable array type")
 
-    val resultType =
+    val base =
       Refinement
         ( Refinement(TypeRepr.of[Foreign], "Topic", TypeBounds(element, element)),
           "Origin",
           TypeBounds(originRepr, originRepr) )
+
+    val resultType = locus.lay(base): locusRepr =>
+      Refinement(base, "Locus", TypeBounds(locusRepr, locusRepr))
 
     resultType.asType.absolve match
       case '[type result <: Foreign; result] =>
@@ -302,7 +338,11 @@ object Xenophile:
     val (topicRepr, originRepr) = receiver(self)
     val topic = topicName(topicRepr)
 
-    val typeMembers = definitions(originRepr, locusOf(originRepr)).at(topic).or:
+    val locusRepr = receiverLocus(self).or:
+      summonedLocus(originRepr).or:
+        halt(m"xenophile: no `Interface` with a definitions path is in scope")
+
+    val typeMembers = definitions(originRepr, locusText(locusRepr)).at(topic).or:
       halt(m"xenophile: the foreign type $topic is not defined")
 
     val signature = typeMembers.at(fieldName).or:
@@ -328,7 +368,7 @@ object Xenophile:
     val target = '{Foreign.Expression.Select($self.expr, $member.tt, $owner.tt)}
     val tree = '{Foreign.Expression.Apply($target, ${Expr.ofList(argTrees)})}
 
-    foreignType(signature.result, originRepr).asType.absolve match
+    foreignType(signature.result, originRepr, locusRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
         '{Foreign.make($tree).asInstanceOf[result]}
 
@@ -382,6 +422,11 @@ object Xenophile:
       case _ =>
         halt(m"xenophile: the foreign type name must be a string literal type")
 
-    foreignType(Foreign.Type.Named(name.tt), TypeRepr.of[origin]).asType.absolve match
+    // Record the definitions path in the root's type when an `Interface` is in scope here; a
+    // root without one still navigates (each step summons the `Interface` afresh), but offers
+    // no dynamic completions.
+    val locus = summonedLocus(TypeRepr.of[origin])
+
+    foreignType(Foreign.Type.Named(name.tt), TypeRepr.of[origin], locus).asType.absolve match
       case '[type result <: Foreign; result] =>
         '{Foreign.make(Foreign.Expression.Reference(${Expr(name)}.tt)).asInstanceOf[result]}
