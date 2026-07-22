@@ -88,7 +88,32 @@ object SourceCode:
 
     val metaMap: Map[(Int, Int), Syntax] = resolved.lay(Map())(_(0))
     val diagnostics: List[Diagnostic] = resolved.lay(Nil)(_(1))
-    val completions: Optional[Completions] = resolved.lay(Unset)(_(2))
+    val resolvedCompletions: Optional[Completions] = resolved.lay(Unset)(_(2))
+
+    // Keyword completions come from the curated pattern tree over the reversed lexeme
+    // context at the caret — no compiler run, so they are offered in every depth, including
+    // `Tokenized` (where they are the only completions). In a binding position (a fresh name
+    // is expected) the resolved member completions are deliberately dropped.
+    val completions: Optional[Completions] =
+      if language != Scala then resolvedCompletions else
+        caret.lay(resolvedCompletions): caret =>
+          val (prefix, context) = Lexis.context(text, caret)
+          val found = prophesy.ScalaKeywords.pattern(context)
+          val words = prefix.lay(found.keywords): p =>
+            found.keywords.filter(_.starts(p))
+          val prefixLength = prefix.lay(0)(_.length)
+          val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
+
+          val items = words.to(List).sortBy(_.s).map: word =>
+            Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
+
+          val binding =
+            found.expectation == prophesy.KeywordPattern.Expectation.TermBinding ||
+              found.expectation == prophesy.KeywordPattern.Expectation.TypeBinding
+
+          if binding then Completions(replace, items)
+          else if items.isEmpty then resolvedCompletions
+          else Completions(replace, items ::: resolvedCompletions.lay(Nil)(_.items))
 
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val context0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
@@ -185,17 +210,18 @@ object SourceCode:
     // such trailing run back into the error token, so an in-progress string (or char
     // or backquoted identifier) highlights as one consistent unit rather than having
     // its last character mis-coloured.
-    def coalesce(sequence: List[Token]): List[Token] = sequence match
-      case Nil => Nil
+    @annotation.tailrec
+    def coalesce(sequence: List[Token], done: List[Token] = Nil): List[Token] = sequence match
+      case Nil => done.reverse
 
       case head :: tail if head.accent == Accent.Error && quoted(head.text) =>
         val (spill, rest) = tail.span(_.accent != Accent.Unparsed)
 
-        if spill.nil then head :: coalesce(tail)
-        else head.copy(text = t"${head.text}${spill.map(_.text).join}") :: coalesce(rest)
+        if spill.nil then coalesce(tail, head :: done)
+        else coalesce(rest, head.copy(text = t"${head.text}${spill.map(_.text).join}") :: done)
 
       case head :: tail =>
-        head :: coalesce(tail)
+        coalesce(tail, head :: done)
 
     val tokens: List[Token] = coalesce(soften(stream()).to(List))
 
@@ -442,8 +468,6 @@ object SourceCode:
 
     Completions(Span.offset(offset.z, 0), items)
 
-  private def identifierChar(char: Char): Boolean = char.isLetterOrDigit || char == '_'
-
   // Members reached through a `Dynamic` receiver are not symbols, so the interactive engine
   // cannot offer them; but the receiver's refined type often determines them fully (Xenophile's
   // `Foreign`, say, records the foreign type in its `Topic` refinement). If the caret sits on a
@@ -466,7 +490,7 @@ object SourceCode:
     val point = caret.n0.min(content.length)
     var start = point
 
-    while start > 0 && identifierChar(content(start - 1)) do start -= 1
+    while start > 0 && Lexis.identifierChar(content(start - 1)) do start -= 1
 
     // A member selection needs a `.` before the partial name, and a qualifier before that.
     if start < 2 || content(start - 1) != '.' then Unset else

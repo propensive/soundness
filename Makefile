@@ -18,6 +18,10 @@ bench:
 	./mill bench.assembly
 	java -Xss2m -Xmx4g -cp out/bench/assembly.dest/out.jar crossparse.Benchmarks
 
+keywords:
+	./mill keywords.assembly
+	java -Xss2m -Xmx4g -cp out/keywords/assembly.dest/out.jar keywords.Analysis $(KEYWORDS_ARGS)
+
 check-givens:
 	python3 etc/check-given-uniqueness.py
 
