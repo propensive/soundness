@@ -141,6 +141,33 @@ object Tests extends Suite(m"Harlequin Tests"):
       Scala.highlight(snippet).completions
     .assert(_ == Unset)
 
+    test(m"a bare type position completes in-scope types"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source = t"val x: Li"
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(_.contains(t"List"))
+
+    test(m"a type application completes in-scope types"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source = t"val x = collection.mutable.Map[Li"
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(_.contains(t"List"))
+
+    test(m"a bare term position completes in-scope names"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source = t"val x = Li"
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(_.contains(t"List"))
+
     test(m"completions at a member selection include the type's methods"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
