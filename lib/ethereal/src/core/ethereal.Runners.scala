@@ -59,7 +59,7 @@ case class RunnerError(detail: Message)(using Diagnostics) extends Error(detail)
 // coordinates and per-platform SHA-256 hashes are hard-coded below. Bumping to a newly
 // published release is a one-line change to `version` plus a refresh of `hashes`.
 object Runners:
-  val version: Text = t"0.1"
+  val version: Text = t"0.2"
 
   val baseUrl: Text =
     t"https://github.com/propensive/soundness/releases/download/runners-$version"
@@ -68,11 +68,11 @@ object Runners:
   // `etc/runners/$version.tsv`.
   val hashes: Map[Text, Text] =
     Map
-      ( t"linux-arm64" -> t"8578172c97897eb94dc2fa4829f112e06d9284407b08ea0970e24e232ebcd21e",
-       t"linux-x64" -> t"fb98e23e5e2861e5bd492f471668b676f9f4bef94544d37619eef4ed22f2b638",
-       t"macos-arm64" -> t"3593278b1f12fd456f545e04aae9e369b8675daf43bcb583f449b4cca8c1caf2",
-       t"macos-x64" -> t"f1f32cc2bc4ed59a2a7615413b686c4180fd65a08197046b6e6c7a72f2edef7e",
-       t"windows-x64" -> t"7d6f5c5a2e6a8ad71dcc568e494b8c34f59dcf0a6271c8205c0dfa53d9d31dae" )
+      ( t"linux-arm64" -> t"cac8b3623b5f1131744552607b91a4efef088d8dcce6106ddb9d8fcd14132f5e",
+       t"linux-x64" -> t"74bebddce65adddaf259693ff4a4efa198b8f46b1e6b4bd5508a98968a59ccd2",
+       t"macos-arm64" -> t"5072d2e92749ef6c39b874977f5d2e5b79504d4351756b104c6a24537cc306a1",
+       t"macos-x64" -> t"1a20699428bc7e7680c2749614db26644e87823a186df9c331583966e177da31",
+       t"windows-x64" -> t"30dc92dfd8654de42d5368d1ab130d1a48a620f84168f82ef7f1c3b219a387bb" )
 
   // The published filename for a platform's bare runner stub (Windows stubs carry `.exe`).
   def runnerName(label: Text): Text =
