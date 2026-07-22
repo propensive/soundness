@@ -58,6 +58,10 @@ case class Client(pid: Pid) extends Topical:
 
   val stderr: Promise[ji.OutputStream] = Promise()
 
+  // The launcher's control channel, on which the daemon asks for the client's terminal to be
+  // put into a different mode. Absent for a piped stdin, and for launchers predating it.
+  val control: Promise[ji.OutputStream] = Promise()
+
   // An `AnyRef` rim: the `Cli` capability crosses the promise between the signal-dispatch
   // fiber and the invocation fiber, and a capability type argument cannot (the
   // fiber-crossing recipe; cast at both ends).

@@ -139,6 +139,22 @@ fn main() {
         }
     };
 
+    // The control channel lets the running command ask for a cooked (canonical) terminal —
+    // ordinary echo and line editing — instead of the raw mode set above, and ask for raw
+    // mode back afterwards. Only opened for a real terminal: with a pipe there is nothing
+    // to switch, and the extra connection would be pure cost.
+    if tty::stdin_is_tty() {
+        match UnixStream::connect(&socket_file) {
+            Ok(mut control) => {
+                protocol::send_control_request(&mut control, info.pid);
+                debug!("main: control channel open");
+                spawn_control(control, saved_tty);
+            }
+
+            Err(error) => debug!("main: control channel unavailable: {}", error),
+        }
+    }
+
     let stdin_reader = std::io::Cursor::new(leftover).chain(std::io::stdin());
     spawn_forwarder(
         stdin_reader,
@@ -221,6 +237,25 @@ fn spawn_forwarder(
     flush_each_chunk: bool,
 ) -> std::thread::JoinHandle<()> {
     std::thread::spawn(move || forward(reader, writer, flush_each_chunk))
+}
+
+// Apply terminal-mode commands from the daemon as they arrive. The thread ends when the
+// daemon closes the connection at client exit; the main path's `restore_tty_state` remains
+// the backstop for whatever mode we were left in.
+fn spawn_control(mut reader: UnixStream, saved: tty::TtyState) -> std::thread::JoinHandle<()> {
+    std::thread::spawn(move || {
+        let mut byte = [0u8; 1];
+        loop {
+            match reader.read(&mut byte) {
+                Ok(0) | Err(_) => break,
+                Ok(_) => match byte[0] {
+                    b'c' => tty::set_cooked_mode(&saved),
+                    b'r' => tty::set_raw_mode(),
+                    _    => debug!("main: unrecognised control byte {}", byte[0]),
+                },
+            }
+        }
+    })
 }
 
 fn forward(mut reader: impl Read, mut writer: impl Write, flush_each_chunk: bool) {

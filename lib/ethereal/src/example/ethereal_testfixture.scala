@@ -96,6 +96,15 @@ def fixture(): Unit = cli:
         val line: Text = reader.readLine().nn.tt
         Out.print(line) yet Exit.Ok
 
+    case Argument("cooked") :: Nil =>
+      execute:
+        service.cooked:
+          val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
+          val line: Text = reader.readLine().nn.tt
+          Out.print(t"[$line]")
+
+        Exit.Ok
+
     case Argument("version") :: Nil =>
       execute:
         val id: Text = safely(System.properties.build.id[Text]()).or:

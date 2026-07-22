@@ -54,6 +54,7 @@ object DaemonLogEvent:
     case ExitStatusRequest(pid)    => m"exit status requested from $pid"
     case CloseConnection(pid)      => m"closing the connection from $pid"
     case StderrRequest(pid)        => m"stderr requested from $pid"
+    case ControlRequest(pid)       => m"terminal control requested from $pid"
     case Init(pid)                 => m"initialising $pid"
 
 enum DaemonLogEvent:
@@ -68,4 +69,5 @@ enum DaemonLogEvent:
   case ExitStatusRequest(pid: Pid) extends DaemonLogEvent, Log.Process
   case CloseConnection(pid: Pid) extends DaemonLogEvent, Log.Network
   case StderrRequest(pid: Pid) extends DaemonLogEvent, Log.Process
+  case ControlRequest(pid: Pid) extends DaemonLogEvent, Log.Process
   case Init(pid: Pid) extends DaemonLogEvent, Log.Process

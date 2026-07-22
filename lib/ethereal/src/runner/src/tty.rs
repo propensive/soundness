@@ -2,12 +2,14 @@
 use std::io::Write;
 
 #[cfg(unix)]
+#[derive(Clone, Copy)]
 pub struct TtyState {
     termios: Option<libc::termios>,
     is_tty: bool,
 }
 
 #[cfg(windows)]
+#[derive(Clone, Copy)]
 pub struct TtyState {
     stdin_mode: Option<u32>,
     stdout_mode: Option<u32>,
@@ -219,6 +221,79 @@ pub fn set_raw_mode() {
             );
         } else {
             crate::debug!("tty: set_raw_mode — raw mode set");
+        }
+    }
+}
+
+// Put the terminal back into canonical ("cooked") mode, at the daemon's request, so a
+// line-based command gets the driver's own echo and line editing. The saved pre-launch
+// termios *is* the user's cooked mode, so prefer restoring it verbatim; only when nothing
+// was saved (tcgetattr failed) do we synthesise a plausible cooked setting.
+#[cfg(unix)]
+pub fn set_cooked_mode(state: &TtyState) {
+    if !stdin_is_tty() {
+        crate::debug!("tty: set_cooked_mode skipped — stdin is not a tty");
+        return;
+    }
+    if state.termios.is_some() {
+        restore_tty_state(state);
+        crate::debug!("tty: set_cooked_mode — restored saved (cooked) termios");
+        return;
+    }
+    unsafe {
+        let mut t: libc::termios = std::mem::zeroed();
+        if libc::tcgetattr(libc::STDIN_FILENO, &mut t) != 0 {
+            crate::debug!(
+                "tty: set_cooked_mode — tcgetattr failed: {}",
+                std::io::Error::last_os_error(),
+            );
+            return;
+        }
+        t.c_lflag |= libc::ICANON | libc::ECHO | libc::ECHOE | libc::ISIG | libc::IEXTEN;
+        t.c_iflag |= libc::ICRNL | libc::IXON | libc::BRKINT;
+        t.c_oflag |= libc::OPOST | libc::ONLCR;
+        t.c_cc[libc::VINTR] = 3;
+        if libc::tcsetattr(libc::STDIN_FILENO, libc::TCSANOW, &t) != 0 {
+            crate::debug!(
+                "tty: set_cooked_mode — tcsetattr failed: {}",
+                std::io::Error::last_os_error(),
+            );
+        } else {
+            crate::debug!("tty: set_cooked_mode — synthesised cooked mode set");
+        }
+    }
+}
+
+#[cfg(windows)]
+pub fn set_cooked_mode(state: &TtyState) {
+    use windows_sys::Win32::System::Console::{
+        GetConsoleMode, GetStdHandle, SetConsoleMode, STD_INPUT_HANDLE,
+        ENABLE_ECHO_INPUT, ENABLE_LINE_INPUT, ENABLE_PROCESSED_INPUT,
+        ENABLE_VIRTUAL_TERMINAL_INPUT,
+    };
+    if !state.is_tty {
+        crate::debug!("tty: set_cooked_mode skipped — stdin is not a console");
+        return;
+    }
+    unsafe {
+        let h_in = GetStdHandle(STD_INPUT_HANDLE);
+        let mut in_mode: u32 = 0;
+        if GetConsoleMode(h_in, &mut in_mode) == 0 {
+            crate::debug!(
+                "tty: set_cooked_mode — GetConsoleMode(stdin) failed: {}",
+                std::io::Error::last_os_error(),
+            );
+            return;
+        }
+        in_mode |= ENABLE_ECHO_INPUT | ENABLE_LINE_INPUT | ENABLE_PROCESSED_INPUT;
+        in_mode &= !ENABLE_VIRTUAL_TERMINAL_INPUT;
+        if SetConsoleMode(h_in, in_mode) == 0 {
+            crate::debug!(
+                "tty: set_cooked_mode — SetConsoleMode(stdin) failed: {}",
+                std::io::Error::last_os_error(),
+            );
+        } else {
+            crate::debug!("tty: set_cooked_mode — stdin cooked mode set");
         }
     }
 }

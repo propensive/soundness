@@ -317,6 +317,10 @@ def cli[bus <: Matchable](using executive: Executive)
         val pid: Pid = line().as[Pid]
         DaemonEvent.Stderr(pid)
 
+      case t"m" =>
+        val pid: Pid = line().as[Pid]
+        DaemonEvent.Control(pid)
+
       case t"s" =>
         val pid: Pid = line().as[Pid]
         val name: Text = line()
@@ -382,6 +386,13 @@ def cli[bus <: Matchable](using executive: Executive)
         safely(stderrClient.exitPromise.await())
         safely(connection.close())
 
+      case DaemonEvent.Control(pid) =>
+        Log.fine(DaemonLogEvent.ControlRequest(pid))
+        val controlClient = client(pid)
+        controlClient.control.offer(rawOut)
+        safely(controlClient.exitPromise.await())
+        safely(connection.close())
+
       case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
         Log.fine(DaemonLogEvent.Init(pid))
         val clientState = client(pid)
@@ -435,6 +446,15 @@ def cli[bus <: Matchable](using executive: Executive)
               in,
               termcap )
 
+        // Only the launcher can change the client's terminal mode, so the request travels back
+        // over its control channel. A launcher that never opened one (a pipe, or a stub built
+        // before the channel existed) leaves the promise unfulfilled: the brief await expires
+        // and the command runs with the raw mode it would have had anyway.
+        def setMode(mode: TerminalMode): Unit =
+          safely(clientState.control.await(0.1*Second)(using monitor = monitor0)).let: out =>
+            out.write(mode.byte)
+            out.flush()
+
         def deliver(sourcePid: Pid, message: bus): Unit =
           clients.each: (pid, client) =>
             if sourcePid != pid then client.receive(message)
@@ -456,7 +476,8 @@ def cli[bus <: Matchable](using executive: Executive)
               clientState.bus.lazyList,
               name,
               startTime,
-              () => helpValue )
+              () => helpValue,
+              setMode )
 
         Log.fine(DaemonLogEvent.NewCli)
 

@@ -42,6 +42,15 @@ pub fn send_stderr_request(connection: &mut UnixStream, pid: u32) {
     let _ = connection.flush();
 }
 
+// The control channel: a side-connection the daemon writes single-byte terminal-mode
+// commands to (`c` = cooked/canonical, `r` = raw). The launcher is the only process that
+// can change the client's tty mode, and it has already raw-moded the terminal by the time
+// the daemon knows which command is running, so the request has to be pushed back here.
+pub fn send_control_request(connection: &mut UnixStream, pid: u32) {
+    let _ = write!(connection, "m\n{}\n", pid);
+    let _ = connection.flush();
+}
+
 pub fn send_signal(socket_path: &Path, pid: u32, name: &str, timeout_ms: u64) -> SignalAck {
     let mut connection = match UnixStream::connect(socket_path) {
         Ok(connection) => connection,
