@@ -69,7 +69,11 @@ object KotlinDialect extends Dialect:
       arity:     Int,
       prototype: Prototype )
 
-  private type Resolution = (Map[Text, Prototype], Map[Text, List[JvmMember]], List[Int])
+  private case class Resolution
+    ( prototypes: Map[Text, Prototype],
+      members:    Map[Text, List[JvmMember]],
+      typeParams: List[Int],
+      companion:  Optional[Text] )
 
   // Never parses a text resource: this dialect exists only through `resolve`.
   def parse(source: Text): Map[Text, Map[Text, Prototype]] = Map()
@@ -77,18 +81,22 @@ object KotlinDialect extends Dialect:
   override def resolves: Boolean = true
 
   override def resolve(typeName: Text): Optional[Map[Text, Prototype]] =
-    resolved(typeName).let(_(0))
+    resolved(typeName).let(_.prototypes)
 
   private[xenophile] def members(typeName: Text, name: Text): List[JvmMember] =
-    resolved(typeName).let(_(1).at(name)).or(Nil)
+    resolved(typeName).let(_.members.at(name)).or(Nil)
 
   private[xenophile] def memberPrototype(typeName: Text, name: Text): Optional[Prototype] =
-    resolved(typeName).let(_(0).at(name))
+    resolved(typeName).let(_.prototypes.at(name))
 
   // The declaration-order identifiers of a class's type parameters, for substituting a
   // `Facade`'s Scala type arguments into `#<id>` type-parameter references.
   private[xenophile] def typeParameters(typeName: Text): List[Int] =
-    resolved(typeName).let(_(2)).or(Nil)
+    resolved(typeName).let(_.typeParams).or(Nil)
+
+  // The simple name of the class's companion object, when it declares one.
+  private[xenophile] def companionName(typeName: Text): Optional[Text] =
+    resolved(typeName).let(_.companion)
 
   // Cached per type name for the lifetime of a compilation run, like the core `parsed` cache.
   private val cache: scm.HashMap[Text, Optional[Resolution]] = scm.HashMap()
@@ -97,12 +105,24 @@ object KotlinDialect extends Dialect:
     cache.synchronized(cache.getOrElseUpdate(typeName, compute(typeName)))
 
   // Loads a class through this object's own classloader — the macro classloader, which sees the
-  // unified downstream compile classpath — without running its static initializers.
+  // unified downstream compile classpath — without running its static initializers. A nested
+  // class arrives dot-separated (`Regex.Companion`); its binary name replaces the separators of
+  // nesting levels with `$`, tried rightmost-first.
   private def loadable(name: Text): Optional[Class[?]] =
-    try
-      val loader = KotlinDialect.getClass.getClassLoader
-      if loader == null then Unset else Optional(Class.forName(name.s, false, loader))
-    catch case _: Throwable => Unset
+    def attempt(name: Text): Optional[Class[?]] =
+      try
+        val loader = KotlinDialect.getClass.getClassLoader
+        if loader == null then Unset else Optional(Class.forName(name.s, false, loader))
+      catch case _: Throwable => Unset
+
+    def nested(name: Text): Optional[Class[?]] =
+      attempt(name).or:
+        val index = name.s.lastIndexOf('.')
+
+        if index < 0 then Unset else
+          nested(t"${name.s.substring(0, index).nn}$$${name.s.substring(index + 1).nn}")
+
+    nested(name)
 
   private def compute(typeName: Text): Optional[Resolution] =
     loadable(typeName).let: cls =>
@@ -139,11 +159,13 @@ object KotlinDialect extends Dialect:
 
                 . or(Nil)
 
+              val companion = Optional(kmClass.getCompanionObject).let(_.tt)
+
               collate(functions(typeName, kmClass, false) ++ properties ++ constructors,
-                  identifiers)
+                  identifiers, companion)
 
             case metadata: KotlinClassMetadata.FileFacade =>
-              collate(packageFunctions(typeName, metadata.getKmPackage.nn), Nil)
+              collate(packageFunctions(typeName, metadata.getKmPackage.nn), Nil, Unset)
 
             case metadata: KotlinClassMetadata.MultiFileClassFacade =>
               // Members live in the part classes; each records its *own* class as the JVM owner.
@@ -161,7 +183,7 @@ object KotlinDialect extends Dialect:
 
                 . or(Nil)
 
-              collate(entries, Nil)
+              collate(entries, Nil, Unset)
 
             case _ =>
               Unset
@@ -193,7 +215,9 @@ object KotlinDialect extends Dialect:
           ( owner, function.getName.nn.tt, signature, static, false, parameters.length,
             Prototype(parameters, foreignType(function.getReturnType.nn)) )
 
-  private def collate(entries: List[Entry], identifiers: List[Int]): Resolution =
+  private def collate(entries: List[Entry], identifiers: List[Int], companion: Optional[Text])
+  :   Resolution =
+
     val prototypes: Map[Text, Prototype] =
       entries.groupBy(_.name).view.mapValues(_.head.prototype).to(Map)
 
@@ -210,7 +234,7 @@ object KotlinDialect extends Dialect:
 
       . to(Map)
 
-    (prototypes, jvmMembers, identifiers)
+    Resolution(prototypes, jvmMembers, identifiers, companion)
 
   // Maps a Kotlin metadata type to the ecosystem-neutral foreign form: named classes by their
   // fully-qualified Kotlin name, generic applications through `Applied`, nullability as a union

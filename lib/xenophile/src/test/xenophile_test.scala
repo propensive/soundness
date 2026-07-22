@@ -157,6 +157,22 @@ object Tests extends Suite(m"Xenophile tests"):
           Kotlin.make[java.lang.StringBuilder](t"x")
       . assert(_.nonEmpty)
 
+      test(m"a companion object's members are reachable"):
+        val escaped: Text = Kotlin.companion[kotlin.text.Regex].escape(t"a.b")
+        escaped
+      . assert(_ == t"\\Qa.b\\E")
+
+      test(m"an unknown member's error suggests near misses in Kotlin syntax"):
+        demilitarize:
+          Kotlin.make[kotlin.text.Regex](t"x").matchez(t"y")
+        . map(_.message)
+      . assert(_.exists(_.contains("did you mean")))
+
+      test(m"a class without a companion object is rejected"):
+        demilitarize:
+          Kotlin.companion[kotlin.Pair[Text, Text]]
+      . assert(_.nonEmpty)
+
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):

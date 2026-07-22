@@ -58,8 +58,51 @@ object KotlinFacade:
       halt(m"xenophile: the facade does not record its underlying type")
 
   private def classNameOf(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
-    repr.dealias.classSymbol.map(_.fullName.tt).getOrElse:
+    // A nested Java class's owner may surface as the module class (`Regex$.Companion`);
+    // normalizing to plain dots leaves `KotlinDialect` to derive the `$`-separated binary name.
+    repr.dealias.classSymbol.map(_.fullName.replace("$.", ".").nn.tt).getOrElse:
       halt(m"xenophile: ${repr.show} does not name a class")
+
+  // Renders a foreign type in Kotlin syntax — simple names, `?` for nullability — for
+  // diagnostics that quote the API as its author declared it.
+  private def kotlinType(tpe: Foreign.Type): Text = tpe match
+    case Foreign.Type.Union(members) =>
+      members.filter(_ != Foreign.Type.Named(t"null")) match
+        case List(inner) if members.length == 2 => t"${kotlinType(inner)}?"
+        case _                                  => members.map(kotlinType).join(t" | ")
+
+    case Foreign.Type.Named(name) =>
+      simple(name)
+
+    case Foreign.Type.Applied(name, arguments) =>
+      t"${simple(name)}<${arguments.map(kotlinType).join(t", ")}>"
+
+  private def simple(name: Text): Text =
+    if name.s.startsWith("#") then t"T"
+    else name.s.substring(name.s.lastIndexOf('.') + 1).nn.tt
+
+  private def rendered(name: Text, prototype: Prototype): Text =
+    prototype.parameters.lay(t"val $name: ${kotlinType(prototype.result)}"): parameters =>
+      t"fun $name(${parameters.map(kotlinType).join(t", ")}): ${kotlinType(prototype.result)}"
+
+  // Near misses among the type's members, rendered in Kotlin syntax, for `did you mean`.
+  private def similar(className: Text, name: Text): List[Text] =
+    KotlinDialect.resolve(className).lay(Nil): members =>
+      members.to(List).filter: (memberName, _) =>
+        val left = memberName.s.toLowerCase.nn
+        val right = name.s.toLowerCase.nn
+        left.startsWith(right.take(3)) || right.startsWith(left.take(3))
+
+      . sortBy(_(0).s).take(4).map(rendered)
+
+  private def missing(using Quotes)(className: Text, name: Text): Nothing =
+    similar(className, name) match
+      case Nil =>
+        halt(m"xenophile: $className has no member $name")
+
+      case candidates =>
+        val listed = candidates.join(t"; ")
+        halt(m"xenophile: $className has no member $name; did you mean: $listed")
 
   // Whether the Kotlin-level result type is nullable, and its non-null form.
   private def denull(km: Foreign.Type): (Foreign.Type, Boolean) = km match
@@ -187,12 +230,10 @@ object KotlinFacade:
 
     val member = KotlinDialect.members(className, field).filter(_.property) match
       case member :: _ => member
-
-      case Nil =>
-        halt(m"xenophile: $className has no property $field")
+      case Nil         => missing(className, field)
 
     val prototype = KotlinDialect.memberPrototype(className, field).or:
-      halt(m"xenophile: $className has no member $field")
+      missing(className, field)
 
     val method =
       repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
@@ -219,18 +260,23 @@ object KotlinFacade:
     val candidates = KotlinDialect.members(className, field).filter: member =>
       !member.property && member.arity == args.length
 
-    if candidates.isEmpty
-    then halt(m"xenophile: $className has no method $field taking ${args.length} arguments")
-
     val prototype = KotlinDialect.memberPrototype(className, field).or:
-      halt(m"xenophile: $className has no member $field")
+      missing(className, field)
+
+    if candidates.isEmpty then
+      val declared = rendered(field, prototype)
+      val count = args.length
+      halt(m"xenophile: $className declares $declared, which does not take $count arguments")
 
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
     // Resolution against the *Scala view* of the class: among the metadata's candidates, the
     // methods whose (substituted) parameter types every argument satisfies.
     val resolved = candidates.flatMap: member =>
-      classSymbol.methodMember(member.jvmName.s).flatMap: method =>
+      val real = classSymbol.methodMember(member.jvmName.s).filter: method =>
+        !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Artifact)
+
+      real.flatMap: method =>
         parameterTypes(repr, method) match
           case types: List[TypeRepr] @unchecked =>
             val fits = args.zip(types).forall: (argument, parameter) =>
@@ -241,10 +287,22 @@ object KotlinFacade:
           case _ =>
             Nil
 
-    val (method, types) = resolved match
+    // Exact conformance outranks adaptation, so `Text` never makes two `String`-flavoured
+    // overloads ambiguous when one matches the arguments as given.
+    val exact = resolved.filter: (_, types) =>
+      args.zip(types).forall: (argument, parameter) =>
+        argument.tpe.widen <:< solid(parameter)
+
+    val (method, types) = (if exact.nonEmpty then exact else resolved) match
       case List(one) => one
-      case one :: _  => one
-      case Nil       => halt(m"xenophile: no overload of $className.$field accepts these args")
+
+      case Nil =>
+        val declared = rendered(field, prototype)
+        val supplied = args.map(_.tpe.widen.show.tt).join(t", ")
+        halt(m"xenophile: $className declares $declared, which cannot accept ($supplied)")
+
+      case _ =>
+        halt(m"xenophile: the call to $className.$field is ambiguous between overloads")
 
     val adaptedArgs = args.zip(types).map: (argument, parameter) =>
       adapted(argument, parameter)
@@ -305,3 +363,23 @@ object KotlinFacade:
     val created = Apply(application, adaptedArgs)
 
     '{Facade[kotlinType](${created.asExprOf[Any]}.asInstanceOf[kotlinType])}
+
+  def companion[kotlinType: Type](using Quotes): Expr[Any] =
+    import quotes.reflect.*
+
+    val repr = TypeRepr.of[kotlinType]
+    val className = classNameOf(repr)
+
+    val name = KotlinDialect.companionName(className).or:
+      halt(m"xenophile: $className has no companion object")
+
+    val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
+    val field = classSymbol.companionModule.fieldMember(name.s)
+
+    if !field.exists
+    then halt(m"xenophile: the companion object of $className is not accessible")
+
+    val term = Select(Ref(classSymbol.companionModule), field)
+
+    solid(term.tpe).asType.absolve match
+      case '[c] => '{Facade[c](${term.asExpr}.asInstanceOf[c])}
