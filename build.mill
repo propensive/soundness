@@ -2492,6 +2492,14 @@ object xenophile extends Library:
   object webidl extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The JVM/Kotlin ecosystem: resolves foreign definitions on demand from the `@Metadata`
+  // annotation in Kotlin-compiled classfiles (via kotlin-metadata-jvm), and materializes
+  // navigations as direct JVM calls.
+  object kotlin extends Component(core, gossamer.core, prepositional.core, vacuous.core):
+    override def scalaJs = false // reads classfiles from the compile classpath; emits JVM calls
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+    def mvnDeps = Seq(mvn"org.jetbrains.kotlin:kotlin-metadata-jvm:2.4.10")
   object wasm extends Component(core, wit, hypotenuse.core, anticipation.codec, distillate.core,
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
@@ -2503,10 +2511,13 @@ object xenophile extends Library:
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit, webidl, wasm, hellenism.core,
+  object test extends Tests(typescript, native, wit, webidl, wasm, kotlin, hellenism.core,
       harlequin.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
+    // kotlin-stdlib is the Kotlin-classfile fixture: its `@Metadata`-annotated classes let the
+    // suite exercise real Kotlin APIs without compiling any Kotlin source.
+    def mvnDeps = Seq(mvn"org.jetbrains.kotlin:kotlin-stdlib:2.4.10")
 
 object querencia extends Library:
   object core extends Component(xenophile.webidl, honeycomb.core, hypotenuse.core, gossamer.core,

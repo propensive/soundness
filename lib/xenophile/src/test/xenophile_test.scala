@@ -61,6 +61,21 @@ given webIdlDom: WebIdlDomSource = Interface[WebIdlDom](cp"/xenophile/dom.idl")
 // (by ascription) and the expression AST, plus the compile-time safety diagnostics.
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
+    suite(m"Kotlin phase-0 spike"):
+      val functions = KotlinSpike.functions("kotlin.text.StringsKt")
+
+      test(m"the spike reports which classloader saw the classfile"):
+        functions.head
+      . assert(_ == "own-classloader")
+
+      test(m"Kotlin @Metadata is readable at macro-expansion time"):
+        functions
+      . assert(_.exists(_ == "repeat:repeat(Ljava/lang/CharSequence;I)Ljava/lang/String;"))
+
+      test(m"a Kotlin file-facade function can be invoked directly"):
+        KotlinSpike.pair("a", "b").toString
+      . assert(_ == "(a, b)")
+
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):
