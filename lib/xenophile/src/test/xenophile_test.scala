@@ -187,6 +187,36 @@ object Tests extends Suite(m"Xenophile tests"):
         upper
       . assert(_ == t"33x44")
 
+      test(m"a var property accepts assignment through its setter"):
+        val parameter = Kotlin.make[kotlin.metadata.KmValueParameter](t"x")
+        parameter.name = t"y"
+        val name: Text = parameter.name
+        name
+      . assert(_ == t"y")
+
+      test(m"assignment to a val property is rejected"):
+        demilitarize:
+          Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").first = t"z"
+      . assert(_.nonEmpty)
+
+      test(m"an object singleton's constant properties are reachable"):
+        val quote: Char = singleton[kotlin.text.Typography].quote
+        quote
+      . assert(_ == '"')
+
+      test(m"a class is not mistaken for an object singleton"):
+        demilitarize:
+          singleton[kotlin.Pair[Text, Text]]
+      . assert(_.nonEmpty)
+
+      test(m"omitted trailing parameters fall back to Kotlin defaults"):
+        regex.find(t"a7b").let(_.value)
+      . assert(_ == t"7")
+
+      test(m"operator get is reachable as apply"):
+        regex.find(t"a1b").let(_.groups(0)).let(_.value)
+      . assert(_ == t"1")
+
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):

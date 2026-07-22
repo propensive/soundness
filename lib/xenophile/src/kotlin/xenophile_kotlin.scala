@@ -35,3 +35,6 @@ package xenophile
 // The facade of a Kotlin class's companion object, through which its members are reachable:
 // `companion[Regex].escape(t"a.b")`.
 transparent inline def companion[kotlinType]: Any = ${KotlinFacade.companion[kotlinType]}
+
+// The facade of a Kotlin `object` singleton: `singleton[Typography].quote`.
+transparent inline def singleton[kotlinType]: Any = ${KotlinFacade.singleton[kotlinType]}

@@ -146,8 +146,34 @@ object KotlinFacade:
       case Foreign.Type.Named(t"kotlin.String" | t"kotlin.CharSequence") =>
         '{Optional(${call.asExpr}.asInstanceOf[Text | Null])}
 
-      case Foreign.Type.Named(name) if passthrough(name) =>
-        halt(m"xenophile: nullable primitive results are not yet supported")
+      // A nullable primitive arrives boxed; absence maps to `Unset` and presence unboxes.
+      case Foreign.Type.Named(t"kotlin.Int") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Integer | Null]).let(_.intValue)}
+
+      case Foreign.Type.Named(t"kotlin.Long") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Long | Null]).let(_.longValue)}
+
+      case Foreign.Type.Named(t"kotlin.Short") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Short | Null]).let(_.shortValue)}
+
+      case Foreign.Type.Named(t"kotlin.Byte") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Byte | Null]).let(_.byteValue)}
+
+      case Foreign.Type.Named(t"kotlin.Boolean") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Boolean | Null]).let(_.booleanValue)}
+
+      case Foreign.Type.Named(t"kotlin.Double") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Double | Null]).let(_.doubleValue)}
+
+      case Foreign.Type.Named(t"kotlin.Float") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Float | Null]).let(_.floatValue)}
+
+      case Foreign.Type.Named(t"kotlin.Char") =>
+        '{Optional(${call.asExpr}.asInstanceOf[java.lang.Character | Null]).let(_.charValue)}
+
+      // A substituted type parameter is already the user's own Scala type: no facade wrapping.
+      case Foreign.Type.Named(name) if passthrough(name) => underlying.asType.absolve match
+        case '[u] => '{Optional(${call.asExpr}.asInstanceOf[u | Null])}
 
       case _ => underlying.asType.absolve match
         case '[u] =>
@@ -344,14 +370,30 @@ object KotlinFacade:
     val prototype = KotlinDialect.memberPrototype(className, field).or:
       missing(className, field)
 
-    val method =
-      repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
-      . methodMember(member.jvmName.s)
-      . filter(parameterTypes(repr, _) == Optional(Nil)) match
-        case method :: _ => method
-        case Nil         => halt(m"xenophile: no JVM getter ${member.jvmName} on $className")
+    val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
-    refined(Apply(Select(receiver(self, repr), method), Nil), prototype.result)
+    // A `const`/`@JvmField` property is a bare field — static on the companion module for an
+    // `object`'s members, or an instance field otherwise — read directly.
+    if member.field then
+      val static = classSymbol.companionModule.fieldMember(member.jvmName.s)
+
+      val term =
+        if static.exists then Select(Ref(classSymbol.companionModule), static) else
+          val instance = classSymbol.fieldMember(member.jvmName.s)
+
+          if instance.exists then Select(receiver(self, repr), instance)
+          else halt(m"xenophile: no JVM field ${member.jvmName} on $className")
+
+      refined(term, prototype.result)
+
+    else
+      val method =
+        classSymbol.methodMember(member.jvmName.s)
+        . filter(parameterTypes(repr, _) == Optional(Nil)) match
+          case method :: _ => method
+          case Nil         => halt(m"xenophile: no JVM getter ${member.jvmName} on $className")
+
+      refined(Apply(Select(receiver(self, repr), method), Nil), prototype.result)
 
   def applied(self: Expr[Facade], name: Expr[String], arguments: Expr[Seq[Any]])(using Quotes)
   :   Expr[Any] =
@@ -372,10 +414,29 @@ object KotlinFacade:
     val prototype = KotlinDialect.memberPrototype(className, field).or:
       missing(className, field)
 
+    // With no member of this arity, a member whose omitted trailing parameters all declare
+    // defaults is called through its synthetic `$default` bridge instead.
     if candidates.isEmpty then
-      val declared = rendered(field, prototype)
-      val count = args.length
-      halt(m"xenophile: $className declares $declared, which does not take $count arguments")
+      val defaulted = KotlinDialect.members(className, field).filter: member =>
+        val trailing = member.defaults.drop(args.length).forall(identity)
+        !member.property && member.arity > args.length && trailing
+
+      defaulted match
+        case member :: _ =>
+          return defaultCall(self, repr, className, field, member, args, prototype)
+
+        case Nil =>
+          // `facade.property(x)` arrives as one Dynamic application; when the member is a
+          // property, it reads as property access followed by Kotlin's `operator fun get`.
+          if KotlinDialect.members(className, field).exists(_.property) then
+            val target = select(self, name)
+
+            if target.asTerm.tpe.widen <:< TypeRepr.of[Facade]
+            then return applied(target.asExprOf[Facade], Expr("get"), arguments)
+
+          val declared = rendered(field, prototype)
+          val count = args.length
+          halt(m"xenophile: $className declares $declared, which does not take $count arguments")
 
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
@@ -496,3 +557,126 @@ object KotlinFacade:
 
     solid(term.tpe).asType.absolve match
       case '[c] => '{Facade[c](${term.asExpr}.asInstanceOf[c])}
+
+  // Calls a member through its synthetic `name$default` bridge: a static method taking the
+  // receiver, every declared parameter (omitted ones as zero values), a bitmask of the omitted
+  // positions, and a marker. The bridge is ACC_SYNTHETIC — invisible to the symbol table — so
+  // the call goes through `KotlinRuntime`'s cached `MethodHandle` rather than a direct emission.
+  private def defaultCall(using Quotes)
+    ( self:      Expr[Facade],
+      repr:      quotes.reflect.TypeRepr,
+      className: Text,
+      field:     Text,
+      member:    KotlinDialect.JvmMember,
+      args:      List[quotes.reflect.Term],
+      prototype: Prototype )
+  :   Expr[Any] =
+
+    import quotes.reflect.*
+
+    val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
+    val bridgeName = t"${member.jvmName}$$default"
+
+    // The visible sibling: the real method, whose signature supplies the parameter types for
+    // adaptation and zero-filling, and the precise result type.
+    val method =
+      classSymbol.methodMember(member.jvmName.s)
+      . filter(parameterTypes(repr, _).let(_.length).or(-1) == member.arity) match
+        case method :: _ => method
+        case Nil         => halt(m"xenophile: no JVM method ${member.jvmName} on $className")
+
+    val (types, result) = repr.memberType(method) match
+      case MethodType(_, types, result) => (types, result)
+      case _                            => halt(m"xenophile: ${member.jvmName} is unsupported")
+
+    def zero(parameter: TypeRepr): Expr[Any] =
+      if parameter <:< TypeRepr.of[Int] then '{0}
+      else if parameter <:< TypeRepr.of[Long] then '{0L}
+      else if parameter <:< TypeRepr.of[Boolean] then '{false}
+      else if parameter <:< TypeRepr.of[Double] then '{0.0}
+      else if parameter <:< TypeRepr.of[Float] then '{0.0f}
+      else if parameter <:< TypeRepr.of[Short] then '{0.toShort}
+      else if parameter <:< TypeRepr.of[Byte] then '{0.toByte}
+      else if parameter <:< TypeRepr.of[Char] then '{0.toChar}
+      else '{null}
+
+    val supplied = args.zip(types.take(args.length)).map: (argument, parameter) =>
+      adapted(argument, parameter).asExpr
+
+    val omitted = types.drop(args.length).map(zero)
+
+    // Bit `i` set means parameter `i` takes its default.
+    val mask = ((1 << member.arity) - 1) & ~((1 << args.length) - 1)
+
+    val trailer = List(Expr(mask).asExprOf[Any | Null], '{null}.asExprOf[Any | Null])
+    val values = (supplied ++ omitted).map(_.asExprOf[Any | Null])
+    val head = receiver(self, repr).asExprOf[Any | Null]
+    val arguments = Varargs[Any | Null](head :: values ::: trailer)
+
+    val ownerClass = Literal(ClassOfConstant(repr.dealias match
+      case AppliedType(constructor, _) => constructor
+      case other                       => other))
+
+    val call: Expr[Any | Null] =
+      ' {
+          KotlinRuntime.invokeDefault
+            ( ${ownerClass.asExprOf[Class[?]]},
+              ${Expr(bridgeName.s)},
+              Array[Any | Null]($arguments*) )
+        }
+
+    val cast = TypeApply(Select.unique(call.asTerm, "asInstanceOf"), List(Inferred(solid(result))))
+
+    refined(cast, prototype.result)
+
+  // Assignment to a `var` property: `facade.name = value` emits the Kotlin setter.
+  def update(self: Expr[Facade], name: Expr[String], value: Expr[Any])(using Quotes)
+  :   Expr[Unit] =
+
+    import quotes.reflect.*
+
+    val field = name.valueOrAbort.tt
+    val repr = transport(self)
+    val className = classNameOf(repr)
+
+    val setter = KotlinDialect.setter(className, field).or:
+      halt(m"xenophile: $className has no mutable property $field")
+
+    val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
+
+    val method = classSymbol.methodMember(setter.jvmName.s) match
+      case method :: _ => method
+      case Nil         => halt(m"xenophile: no JVM setter ${setter.jvmName} on $className")
+
+    val parameter = parameterTypes(repr, method).or(Nil) match
+      case parameter :: _ => parameter
+      case Nil            => halt(m"xenophile: ${setter.jvmName} is not a setter")
+
+    val call = Apply(Select(receiver(self, repr), method), List(adapted(value.asTerm, parameter)))
+
+    '{${call.asExpr}; ()}
+
+  // The `facade(…) = value` form: Kotlin's `operator fun set`, its result discarded.
+  def discarded(self: Expr[Facade], name: Expr[String], arguments: Expr[Seq[Any]])(using Quotes)
+  :   Expr[Unit] =
+
+    '{${applied(self, name, arguments)}; ()}
+
+  // The facade of a Kotlin `object` singleton, through its static `INSTANCE` field.
+  def singleton[kotlinType: Type](using Quotes): Expr[Any] =
+    import quotes.reflect.*
+
+    val repr = TypeRepr.of[kotlinType]
+    val className = classNameOf(repr)
+
+    if KotlinDialect.resolve(className).absent
+    then halt(m"xenophile: $className is not a Kotlin class on the compile classpath")
+
+    val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
+    val field = classSymbol.companionModule.fieldMember("INSTANCE")
+
+    if !field.exists then halt(m"xenophile: $className is not a Kotlin object")
+
+    val term = Select(Ref(classSymbol.companionModule), field)
+
+    '{Facade[kotlinType](${term.asExpr}.asInstanceOf[kotlinType])}

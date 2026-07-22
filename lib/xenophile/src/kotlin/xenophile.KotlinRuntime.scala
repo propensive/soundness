@@ -32,43 +32,28 @@
                                                                                                   */
 package xenophile
 
-import scala.language.dynamics
+import java.lang.invoke as jli
+import java.util.concurrent as juc
 
-import prepositional.*
+// The one reflective edge of the Kotlin ecosystem: Kotlin's synthetic `$default` bridges (the
+// carriers of default-argument values) are marked ACC_SYNTHETIC, which the compiler's classfile
+// reader omits from the symbol table, so no direct call to one can be emitted. Instead, the
+// bridge is resolved once per call shape into a cached `MethodHandle` and invoked through it —
+// the same linkage-time trade the Panama backend makes for `dlsym`.
+object KotlinRuntime:
+  private val handles: juc.ConcurrentHashMap[String, jli.MethodHandle] =
+    juc.ConcurrentHashMap()
 
-object Facade:
-  // The sole constructor: wraps a JVM value originating from Kotlin. Zero-cost at the boundary;
-  // the value travels verbatim and every navigation is a direct call on it.
-  def apply[underlying](value: underlying): Facade over underlying =
-    val facade = new Facade:
-      def unwrap: Any = value
+  def invokeDefault(owner: Class[?], name: String, arguments: Array[Any | Null]): Any | Null =
+    val key = s"${owner.getName}#$name#${arguments.length}"
 
-    facade.asInstanceOf[Facade over underlying]
+    val handle = handles.computeIfAbsent(key, _ =>
+      owner.getMethods.nn.find: method =>
+        method.nn.getName == name && method.nn.getParameterCount == arguments.length
 
-// An eager facade over a live Kotlin/JVM value, typed `Facade over T` where `T` is the real
-// Scala view of the underlying class — type arguments included, so `Facade over Pair[Text,
-// Text]` knows its components are `Text`. Unlike `Foreign` (a deferred expression AST for
-// cross-runtime ecosystems), every member access materializes immediately as a direct,
-// statically-typed JVM call, transparently typed by the Kotlin metadata of the underlying
-// class: nullable results become `Optional`, `kotlin.String` becomes `Text`, and Kotlin-typed
-// results are wrapped as further facades.
-trait Facade extends Dynamic, Transportive:
-  // The raw underlying value: the escape hatch back to plain Java-level interop.
-  def unwrap: Any
+      . map: method =>
+          jli.MethodHandles.lookup.nn.unreflect(method.nn).nn
 
-  transparent inline def selectDynamic(name: String): Any =
-    ${KotlinFacade.select('this, 'name)}
+      . getOrElse(throw IllegalStateException(s"xenophile: no $name bridge on ${owner.getName}")))
 
-  transparent inline def applyDynamic(name: String)(inline arguments: Any*): Any =
-    ${KotlinFacade.applied('this, 'name, 'arguments)}
-
-  inline def updateDynamic(name: String)(inline value: Any): Unit =
-    ${KotlinFacade.update('this, 'name, 'value)}
-
-  // Kotlin's index-access operators: `facade(key)` reaches `operator fun get`, and
-  // `facade(key) = value` reaches `operator fun set`.
-  transparent inline def apply(inline arguments: Any*): Any =
-    ${KotlinFacade.applied('this, '{"get"}, 'arguments)}
-
-  inline def update(inline arguments: Any*): Unit =
-    ${KotlinFacade.discarded('this, '{"set"}, 'arguments)}
+    handle.nn.invokeWithArguments(arguments.toSeq*)
