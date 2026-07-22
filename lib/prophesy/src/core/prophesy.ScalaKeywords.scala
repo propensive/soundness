@@ -124,9 +124,33 @@ object ScalaKeywords:
            // singleton `.type` and import/export `.given`; member completions remain valid.
            glyph(t".") -> leaf(Set(t"match", t"type", t"given"), Expectation.Nothing),
 
-           // Type ascriptions, annotations and bounds expect a type; after `:` the union
-           // with an indented template body's definition keywords is offered.
-           glyph(t":") -> leaf(definition, Expectation.TypeIdentifier),
+           // After `:`, a pure type position is recognized where the preceding tokens make
+           // it unambiguous — a context bound (`[T: `), a parameter or member ascription
+           // (`(x: `, `val x: `, `def x: `) — and offers no keywords at all; elsewhere the
+           // union with an indented template body's definition keywords is offered, since
+           // the lexeme stream cannot separate `class Foo:` from an ascription.
+           glyph(t":") ->
+             KeywordPattern
+               ( Keywords(definition, Expectation.TypeIdentifier),
+                 List
+                  ( Element.Exact(Lexeme.Typal) ->
+                    KeywordPattern
+                      ( Unset,
+                        List
+                         ( Element.Exact(Lexeme.Open(Bracket.Square)) ->
+                           leaf(Set(), Expectation.TypeIdentifier),
+                           glyph(t",") -> leaf(Set(), Expectation.TypeIdentifier) ) ),
+                    Element.Exact(Lexeme.Term) ->
+                      KeywordPattern
+                        ( Unset,
+                          List
+                           ( Element.Exact(Lexeme.Open(Bracket.Round)) ->
+                             leaf(Set(), Expectation.TypeIdentifier),
+                             glyph(t",") -> leaf(Set(), Expectation.TypeIdentifier),
+                             word(t"val") -> leaf(Set(), Expectation.TypeIdentifier),
+                             word(t"var") -> leaf(Set(), Expectation.TypeIdentifier),
+                             word(t"def") ->
+                               leaf(Set(), Expectation.TypeIdentifier) ) ) ) ),
            glyph(t"@") -> leaf(Set(t"inline"), Expectation.TypeIdentifier),
            glyph(t"<:") -> leaf(Set(), Expectation.TypeIdentifier),
            glyph(t">:") -> leaf(Set(), Expectation.TypeIdentifier),
@@ -170,8 +194,12 @@ object ScalaKeywords:
                     glyph(t"@") -> leaf(statement) ) ),
 
            Element.Exact(Lexeme.Typal) ->
-             leaf(continuation ++ Set(t"val", t"def", t"type", t"case", t"class", t"private",
-                 t"protected")),
+             KeywordPattern
+               ( Keywords(continuation ++ Set(t"val", t"def", t"type", t"case", t"class",
+                   t"private", t"protected")),
+                 // An annotation name lexes as a type: `@tailrec` is followed by the
+                 // annotated definition, exactly as in the `Term` branch.
+                 List(glyph(t"@") -> leaf(statement)) ),
 
            Element.Exact(Lexeme.Literal) -> leaf(continuation),
            Element.Exact(Lexeme.Close(Bracket.Round)) -> leaf(continuation ++ definition),
@@ -258,4 +286,8 @@ object ScalaKeywords:
            word(t"case") -> leaf(Set(t"class", t"object", t"given")),
            word(t"with") -> leaf(Set(t"def", t"val", t"type", t"override", t"given")),
            word(t"end") -> leaf(Set(t"if", t"match", t"for", t"while", t"try", t"given",
-               t"extension")) ) )
+               t"extension")),
+
+           // The open class of operators the exact branches above do not enumerate: an
+           // expression continues after `+`, `::`, `++` and their kin.
+           Element.AnySymbol -> leaf(expression) ) )

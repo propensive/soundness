@@ -231,3 +231,23 @@ object Tests extends Suite(m"Harlequin Tests"):
       test(m"match is followed by case"):
         keywordsAt(t"xs match ")
       . assert(_ == List(t"case"))
+
+      test(m"a context bound offers no keywords"):
+        keywordsAt(t"def fn[T: ")
+      . assert(_ == Nil)
+
+      test(m"a parameter type ascription offers no keywords"):
+        keywordsAt(t"def f(x: ")
+      . assert(_ == Nil)
+
+      test(m"a val type ascription offers no keywords"):
+        keywordsAt(t"val x: ")
+      . assert(_ == Nil)
+
+      test(m"an indented template body after a colon offers definitions"):
+        keywordsAt(t"class Foo:\n  va")
+      . assert(_ == List(t"val", t"var"))
+
+      test(m"an operator continues an expression"):
+        keywordsAt(t"val x = 1 + ")
+      . assert { words => words.contains(t"new") && !words.contains(t"val") }

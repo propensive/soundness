@@ -54,9 +54,29 @@ object Lexis:
   private[harlequin] def identifierChar(char: Char): Boolean =
     char.isLetterOrDigit || char == '_'
 
+  // True of a token whose text is pure punctuation: no identifier characters and no quotes.
+  // Such a token is classified by its text alone, never by its accent: the parse-tree overlay
+  // that refines accents works from error-recovery trees on incomplete input — the norm at a
+  // completion caret — and a recovery tree's span can land exactly on a punctuation token,
+  // re-accenting a `:` as a type. A glyph's identity must not depend on that.
+  private def glyphic(text: Text): Boolean =
+    text.length > 0 && text.s.forall: char =>
+      !char.isLetterOrDigit && char != '_' && char != '`' && char != '"' && char != '\''
+
   // The lexeme of a single token, or `Unset` for tokens (whitespace) that contribute nothing.
   def lexeme(token: Token): Optional[Lexeme] = token.accent match
     case Accent.Unparsed => Unset
+
+    case _ if glyphic(token.text) && token.accent != Accent.String &&
+      token.accent != Accent.Error =>
+      token.text match
+        case t"(" => Lexeme.Open(Lexeme.Bracket.Round)
+        case t")" => Lexeme.Close(Lexeme.Bracket.Round)
+        case t"[" => Lexeme.Open(Lexeme.Bracket.Square)
+        case t"]" => Lexeme.Close(Lexeme.Bracket.Square)
+        case t"{" => Lexeme.Open(Lexeme.Bracket.Brace)
+        case t"}" => Lexeme.Close(Lexeme.Bracket.Brace)
+        case _    => Lexeme.Symbol(token.text)
 
     case Accent.Keyword | Accent.Modifier =>
       Lexeme.Keyword(token.text)
@@ -69,16 +89,9 @@ object Lexis:
     case Accent.String => Lexeme.Literal
     case Accent.Error  => Lexeme.Error
 
-    // The scanner classifies brackets in the same id range as the other symbolic tokens, so
-    // they are distinguished here by text.
-    case Accent.Symbol | Accent.Parens => token.text match
-      case t"(" => Lexeme.Open(Lexeme.Bracket.Round)
-      case t")" => Lexeme.Close(Lexeme.Bracket.Round)
-      case t"[" => Lexeme.Open(Lexeme.Bracket.Square)
-      case t"]" => Lexeme.Close(Lexeme.Bracket.Square)
-      case t"{" => Lexeme.Open(Lexeme.Bracket.Brace)
-      case t"}" => Lexeme.Close(Lexeme.Bracket.Brace)
-      case _    => Lexeme.Symbol(token.text)
+    // Non-glyphic symbol-accented tokens (e.g. a backquoted identifier the scanner reports
+    // in the symbol range) keep their text as an uninterpreted symbol.
+    case Accent.Symbol | Accent.Parens => Lexeme.Symbol(token.text)
 
   // The whole-stream lexeme sequence of a `SourceCode`, `Start` first, with `Break` inserted
   // at each line boundary that begins a new statement: a non-blank line indented at-or-below

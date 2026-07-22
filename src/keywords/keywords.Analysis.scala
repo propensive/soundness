@@ -38,6 +38,7 @@ import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.*
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import harlequin.*
 import prophesy.*
@@ -89,8 +90,15 @@ object Analysis:
     case Lexeme.Close(bracket) => s"Lexeme.Close(Bracket.$bracket)"
     case other                 => s"Lexeme.$other"
 
+  // In --simulate mode, every `sampleRate`th keyword occurrence is checked the way
+  // completion time would see it: the source is truncated at the keyword and the context
+  // recomputed by `Lexis.context` — so tokenization differences on incomplete input (error
+  // recovery, accent overlays) are measured, not assumed away.
+  private val sampleRate: Int = 50
+
   def main(args: Array[String]): Unit =
     val check = args.exists(_ == "--check")
+    val simulate = args.exists(_ == "--simulate")
     val given0 = args.toList.filter(!_.startsWith("--"))
     val given1 = if given0.isEmpty then List("lib") else given0
 
@@ -115,9 +123,47 @@ object Analysis:
     var checked = 0
     var hits = 0
 
+    // Simulation state: sampled truncated-context checks.
+    val simMisses = scm.HashMap[(Text, List[Lexeme]), Int]()
+    var simChecked = 0
+    var simHits = 0
+    var occurrenceIndex = 0
+
+    // Absolute character offsets are reconstructed from per-line token widths, which only
+    // agree with the raw text when no tab expansion or CR stripping occurred.
+    def simulateFile(text: Text): Unit =
+      if text.s.indexOf('\t') < 0 && text.s.indexOf('\r') < 0 then
+        val code = SourceCode(Scala, text, Unset)
+        var lineStart = 0
+
+        code.lines.foreach: line =>
+          line.foreach: token =>
+            Lexis.lexeme(token) match
+              case Lexeme.Keyword(word) =>
+                occurrenceIndex += 1
+
+                if occurrenceIndex % sampleRate == 0 then
+                  val offset = lineStart + token.span.startColumn.lay(0)(_.n0)
+                  simChecked += 1
+
+                  val (_, context) = Lexis.context(text, offset.z)
+
+                  if ScalaKeywords.pattern(context).keywords.contains(word) then simHits += 1
+                  else
+                    simMisses.updateWith((word, context.take(depth))):
+                      _.map(_ + 1).orElse(Some(1))
+
+              case _ =>
+                ()
+
+          lineStart += line.map(_.length).sum + 1
+
     files.foreach: file =>
       try
         val text = String(jnf.Files.readAllBytes(file), "UTF-8").tt
+
+        if simulate then simulateFile(text)
+
         val lexemes = Lexis.lexemes(SourceCode(Scala, text, Unset))
         var before: List[Lexeme] = Nil
 
@@ -148,6 +194,16 @@ object Analysis:
 
     println(s"keyword occurrences: $occurrences (unreadable files: $failures)")
 
+    if simulate then
+      val recall = if simChecked == 0 then 0.0 else simHits.toDouble / simChecked * 100
+      println(f"simulated recall (every $sampleRate%dth occurrence, caret-truncated): " +
+        f"$simHits/$simChecked ($recall%.2f%%)")
+      println("simulated top misses:")
+
+      simMisses.toList.sortBy(-_(1)).take(40).foreach:
+        case ((word, context), count) =>
+          println(f"  $count%7d  $word%-12s after ${renderContext(context)}")
+
     if check then
       val recall = if checked == 0 then 0.0 else hits.toDouble / checked * 100
       println(f"recall: $hits/$checked ($recall%.2f%%)")
@@ -156,7 +212,7 @@ object Analysis:
       misses.toList.sortBy(-_(1)).take(60).foreach:
         case ((word, context), count) =>
           println(f"  $count%7d  $word%-12s after ${renderContext(context)}")
-    else
+    else if !simulate then
       report(contexts)
 
   private type Counts = Map[Text, Int]
