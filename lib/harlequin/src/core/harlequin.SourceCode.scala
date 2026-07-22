@@ -442,8 +442,6 @@ object SourceCode:
 
     Completions(Span.offset(offset.z, 0), items)
 
-  private def identifierChar(char: Char): Boolean = char.isLetterOrDigit || char == '_'
-
   // Members reached through a `Dynamic` receiver are not symbols, so the interactive engine
   // cannot offer them; but the receiver's refined type often determines them fully (Xenophile's
   // `Foreign`, say, records the foreign type in its `Topic` refinement). If the caret sits on a
@@ -466,7 +464,7 @@ object SourceCode:
     val point = caret.n0.min(content.length)
     var start = point
 
-    while start > 0 && identifierChar(content(start - 1)) do start -= 1
+    while start > 0 && Lexis.identifierChar(content(start - 1)) do start -= 1
 
     // A member selection needs a `.` before the partial name, and a qualifier before that.
     if start < 2 || content(start - 1) != '.' then Unset else
