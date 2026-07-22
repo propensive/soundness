@@ -32,9 +32,28 @@
                                                                                                   */
 package harlequin
 
+import scala.language.dynamics
+
 import soundness.*
 
 import ambience.systems.javaSystem
+
+// A `Dynamic` type with a `Completable` companion, exercising the dynamic-completions route: its
+// valid member names are not symbols, so only the companion can offer them. The companion is
+// found from the receiver's type at the caret and loaded reflectively from this test module's
+// own classes.
+object Creature extends Completable:
+  def completions(using quotes: scala.quoted.Quotes)
+    ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+  :   List[completive.Completion] =
+
+    import quotes.reflect.*
+
+    List(t"habitat", t"diet").map: name =>
+      completive.Completion(name, completive.Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
+
+trait Creature extends Dynamic:
+  def selectDynamic(name: String): Text = t""
 
 object Tests extends Suite(m"Harlequin Tests"):
   def run(): Unit =
@@ -130,3 +149,25 @@ object Tests extends Suite(m"Harlequin Tests"):
       val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
     .assert(_.contains(t"map"))
+
+    test(m"a Dynamic receiver completes through its Completable companion"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source =
+        t"val creature: harlequin.Creature = new harlequin.Creature {}\nval x = creature.ha"
+
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(_.contains(t"habitat"))
+
+    test(m"dynamic completions are filtered by the partial member name"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source =
+        t"val creature: harlequin.Creature = new harlequin.Creature {}\nval x = creature.ha"
+
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(!_.contains(t"diet"))

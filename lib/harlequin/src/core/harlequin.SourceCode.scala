@@ -435,7 +435,96 @@ object SourceCode:
         Completion
           ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
-    Completions(Span.offset(offset.z, 0), items)
+    val standard = Completions(Span.offset(offset.z, 0), items)
+
+    dynamicCompletions(unit, caret).lay(standard): dynamic =>
+      Completions(dynamic.replace, dynamic.items ::: standard.items)
+
+  private def identifierChar(char: Char): Boolean = char.isLetterOrDigit || char == '_'
+
+  // Members reached through a `Dynamic` receiver are not symbols, so the interactive engine
+  // cannot offer them; but the receiver's refined type often determines them fully (Xenophile's
+  // `Foreign`, say, records the foreign type in its `Topic` refinement). If the caret sits on a
+  // member selection whose qualifier derives from `scala.Dynamic`, find the base `Dynamic`
+  // type's companion object and — if it implements `completive.Completable` — load it
+  // reflectively in this JVM (as Xenophile loads its grammars at macro time) and ask it which
+  // members the refinement admits. Any failure — an untyped qualifier, no companion, a
+  // companion that is not `Completable`, a provider exception — degrades to `Unset`, never an
+  // error.
+  private def dynamicCompletions(unit: CompilationUnit, caret: Ordinal)
+    ( using context: Contexts.Context, quotes: scala.quoted.Quotes )
+  :   Optional[Completions] =
+
+    val content = unit.source.content()
+    val point = caret.n0.min(content.length)
+    var start = point
+
+    while start > 0 && identifierChar(content(start - 1)) do start -= 1
+
+    // A member selection needs a `.` before the partial name, and a qualifier before that.
+    if start < 2 || content(start - 1) != '.' then Unset else
+      val prefix: Text = String(content, start, point - start).tt
+
+      // The deepest typed, error-free term tree containing the qualifier's final character is
+      // the full qualifier: the member name's characters belong to the enclosing `Select`'s
+      // span, not to any deeper tree — so even when the selection itself failed to type (the
+      // partial name is no member), the qualifier beneath it retains its type.
+      val qualifierPoint = start - 2
+
+      var qualifier: Optional[ast.tpd.Tree] = Unset
+
+      object finder extends ast.tpd.TreeTraverser:
+        def traverse(tree: ast.tpd.Tree)(using Contexts.Context): Unit =
+          val within =
+            tree.span.exists && tree.span.start <= qualifierPoint &&
+              qualifierPoint < tree.span.end
+
+          if within && tree.isTerm && !tree.tpe.isError then
+            val narrower = qualifier.let: previous =>
+              tree.span.end - tree.span.start <= previous.span.end - previous.span.start
+
+            if narrower.or(true) then qualifier = tree
+
+          traverseChildren(tree)
+
+      finder.traverse(unit.tpdTree)
+
+      qualifier.lay(Unset): tree =>
+        import quotes.reflect.*
+
+        val repr = tree.tpe.widen.asInstanceOf[TypeRepr]
+        val dynamicClass = Symbol.requiredClass("scala.Dynamic")
+
+        if !repr.derivesFrom(dynamicClass) then Unset else
+          // The base classes that introduce `Dynamic`, tried in linearization order: the first
+          // whose companion loads and implements `Completable` provides the completions.
+          val candidates = repr.baseClasses.filter: cls =>
+            cls != dynamicClass && cls.typeRef.derivesFrom(dynamicClass) &&
+              cls.companionModule.exists
+
+          val provided = candidates.view.map: cls =>
+            try
+              // The module class's full name is the JVM binary name (already `$`-suffixed);
+              // its singleton is the static `MODULE$` field.
+              val module =
+                Class.forName(cls.companionModule.moduleClass.fullName).nn
+                . getField("MODULE$").nn
+                . get(null).nn
+
+              module match
+                case completable: completive.Completable =>
+                  val items =
+                    completable.completions(repr, prefix).filter(_.name.s.startsWith(prefix.s))
+
+                  if items.isEmpty then Unset
+                  else Completions(Span.offset(start.z, prefix.length), items)
+
+                case _ =>
+                  Unset
+
+            catch case scala.util.control.NonFatal(_) => Unset
+
+          provided.collectFirst { case completions: Completions => completions }.getOrElse(Unset)
 
   private def collectTypes(run: Run): Map[(Int, Int), Syntax] =
     // Use the run's own context: the compilation advanced the compiler's periods,
