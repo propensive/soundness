@@ -61,20 +61,44 @@ given webIdlDom: WebIdlDomSource = Interface[WebIdlDom](cp"/xenophile/dom.idl")
 // (by ascription) and the expression AST, plus the compile-time safety diagnostics.
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
-    suite(m"Kotlin phase-0 spike"):
-      val functions = KotlinSpike.functions("kotlin.text.StringsKt")
+    suite(m"Kotlin ecosystem"):
+      import kotlinInvocation.invoke
 
-      test(m"the spike reports which classloader saw the classfile"):
-        functions.head
-      . assert(_ == "own-classloader")
+      test(m"a top-level Kotlin function call materializes as a direct JVM call"):
+        Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
+        . getProgressionLastElement(1, 10, 2)
+        . invoke[Int]
+      . assert(_ == 9)
 
-      test(m"Kotlin @Metadata is readable at macro-expansion time"):
-        functions
-      . assert(_.exists(_ == "repeat:repeat(Ljava/lang/CharSequence;I)Ljava/lang/String;"))
+      test(m"a Kotlin navigation records the member's foreign result type"):
+        val result = Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
+        . getProgressionLastElement(1, 10, 2)
 
-      test(m"a Kotlin file-facade function can be invoked directly"):
-        KotlinSpike.pair("a", "b").toString
-      . assert(_ == "(a, b)")
+        (result: Foreign of "kotlin.Int" from Kotlin).expr
+      . assert:
+          case Foreign.Expression.Apply(_, arguments) => arguments.length == 3
+          case _                                      => false
+
+      test(m"a class absent from the classpath is rejected"):
+        demilitarize:
+          Foreign["kotlin.absent.NowhereKt", Kotlin].missing(1)
+      . assert(_.nonEmpty)
+
+      test(m"an unknown member of a Kotlin type is rejected"):
+        demilitarize:
+          Foreign["kotlin.internal.ProgressionUtilKt", Kotlin].missing(1)
+      . assert(_.nonEmpty)
+
+      test(m"a call with the wrong arity is rejected"):
+        demilitarize:
+          Foreign["kotlin.internal.ProgressionUtilKt", Kotlin].getProgressionLastElement(1)
+      . assert(_.nonEmpty)
+
+      test(m"a call with a wrongly-typed argument is rejected"):
+        demilitarize:
+          Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
+          . getProgressionLastElement(t"one", 10, 2)
+      . assert(_.nonEmpty)
 
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 

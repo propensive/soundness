@@ -261,17 +261,35 @@ object Xenophile:
     if argTopic <:< paramTopic || okArm.lay(false)(argTopic <:< _) || pointerOk then '{$arg.expr}
     else halt(m"xenophile: $method expects an argument of foreign type ${paramType.text}")
 
+  // The member prototypes for `topic`: resolved on demand by a self-resolving dialect (which
+  // records no `Locus`), or read from the definitions resource at the receiver's — or the
+  // summoned `Interface`'s — locus.
+  private[xenophile] def prototypes(using quotes: Quotes)
+    ( self: Expr[Foreign], originRepr: quotes.reflect.TypeRepr, topic: Text )
+  :   (Map[Text, Prototype], Optional[quotes.reflect.TypeRepr]) =
+
+    val dialect = dialectFor(originRepr)
+
+    if dialect.resolves then
+      val members = dialect.resolve(topic).or:
+        halt(m"xenophile: the foreign type $topic is not defined on the compile classpath")
+
+      (members, Unset)
+    else
+      val locusRepr = receiverLocus(self).or:
+        summonedLocus(originRepr).or:
+          halt(m"xenophile: no `Interface` with a definitions path is in scope")
+
+      val members = definitions(originRepr, locusText(locusRepr)).at(topic).or:
+        halt(m"xenophile: the foreign type $topic is not defined")
+
+      (members, locusRepr)
+
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
     val fieldName = field.valueOrAbort.tt
     val (topicRepr, originRepr) = receiver(self)
     val topic = topicName(topicRepr)
-
-    val locusRepr = receiverLocus(self).or:
-      summonedLocus(originRepr).or:
-        halt(m"xenophile: no `Interface` with a definitions path is in scope")
-
-    val typeMembers = definitions(originRepr, locusText(locusRepr)).at(topic).or:
-      halt(m"xenophile: the foreign type $topic is not defined")
+    val (typeMembers, locusRepr) = prototypes(self, originRepr, topic)
 
     val signature = typeMembers.at(fieldName).or:
       halt(m"xenophile: the foreign type $topic has no member $fieldName")
@@ -337,13 +355,7 @@ object Xenophile:
     val fieldName = field.valueOrAbort.tt
     val (topicRepr, originRepr) = receiver(self)
     val topic = topicName(topicRepr)
-
-    val locusRepr = receiverLocus(self).or:
-      summonedLocus(originRepr).or:
-        halt(m"xenophile: no `Interface` with a definitions path is in scope")
-
-    val typeMembers = definitions(originRepr, locusText(locusRepr)).at(topic).or:
-      halt(m"xenophile: the foreign type $topic is not defined")
+    val (typeMembers, locusRepr) = prototypes(self, originRepr, topic)
 
     val signature = typeMembers.at(fieldName).or:
       halt(m"xenophile: the foreign type $topic has no member $fieldName")
