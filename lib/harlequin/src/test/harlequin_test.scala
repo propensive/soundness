@@ -45,12 +45,12 @@ import ambience.systems.javaSystem
 object Creature extends Completable:
   def completions(using quotes: scala.quoted.Quotes)
     ( receiver: quotes.reflect.TypeRepr, prefix: Text )
-  :   List[completive.Completion] =
+  :   List[prophesy.Completion] =
 
     import quotes.reflect.*
 
     List(t"habitat", t"diet").map: name =>
-      completive.Completion(name, completive.Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
+      prophesy.Completion(name, prophesy.Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
 
 trait Creature extends Dynamic:
   def selectDynamic(name: String): Text = t""

@@ -448,7 +448,7 @@ object SourceCode:
   // cannot offer them; but the receiver's refined type often determines them fully (Xenophile's
   // `Foreign`, say, records the foreign type in its `Topic` refinement). If the caret sits on a
   // member selection whose qualifier derives from `scala.Dynamic`, find the base `Dynamic`
-  // type's companion object and — if it implements `completive.Completable` — load it
+  // type's companion object and — if it implements `prophesy.Completable` — load it
   // reflectively in this JVM (as Xenophile loads its grammars at macro time) and ask it which
   // members the refinement admits.
   //
@@ -533,7 +533,7 @@ object SourceCode:
                 . get(null).nn
 
               module match
-                case completable: completive.Completable =>
+                case completable: prophesy.Completable =>
                   val items =
                     completable.completions(repr, prefix).filter(_.name.s.startsWith(prefix.s))
 

@@ -416,7 +416,7 @@ object Tests extends Suite(m"Xenophile tests"):
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
-      def completionsAt(source: Text): List[completive.Completion] =
+      def completionsAt(source: Text): List[prophesy.Completion] =
         Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items)
 
       val header = t"import xenophile.*\nimport xenophile.tsInterface\n"
@@ -429,7 +429,7 @@ object Tests extends Suite(m"Xenophile tests"):
         completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.gre")
       . assert: items =>
           items.map { item => (item.name, item.kind) } ==
-            List((t"greet", completive.Completion.Kind.Method))
+            List((t"greet", prophesy.Completion.Kind.Method))
 
       test(m"completion works on a navigated (non-root) receiver"):
         completionsAt(t"${header}val foo = Foreign[\"Foo\", Typescript]\nval x = foo.bar.qu")

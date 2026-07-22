@@ -552,7 +552,7 @@ object soundness extends Toolchain:
     pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
-    completive.core)
+    prophesy.core)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
@@ -1114,7 +1114,7 @@ object coaxial extends Library:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm)
 
-object completive extends Library:
+object prophesy extends Library:
   object core extends Component(stenography.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -1588,7 +1588,7 @@ object hallucination extends Library:
 
 object harlequin extends Library:
   object core extends Component(anthology.scala, stenography.core, hellenism.jvm,
-      completive.core):
+      prophesy.core):
     override def scalaJs = false // syntax highlighting via `anthology.scala` (the compiler)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -2435,7 +2435,7 @@ object wisteria extends Library:
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
-    vacuous.core, completive.core):
+    vacuous.core, prophesy.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object typescript extends Component(core):
@@ -2602,7 +2602,7 @@ val allLibraries: Seq[Library] = Seq(
   breviloquence,
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
-  charisma, chiaroscuro, coaxial, completive, contextual, contingency, cosmopolite,
+  charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,
@@ -2614,7 +2614,7 @@ val allLibraries: Seq[Library] = Seq(
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   perihelion, phoenicia, plutocrat, pneumatic, polaris, polysyllabic, polyvinyl, prepositional,
   prescience,
-  probably, profanity,
+  probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,

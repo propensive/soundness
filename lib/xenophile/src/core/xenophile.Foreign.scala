@@ -41,7 +41,7 @@ import rudiments.*
 import stenography.*
 import vacuous.*
 
-object Foreign extends completive.Completable:
+object Foreign extends prophesy.Completable:
   // A foreign expression: a reference to a named foreign value, a member selection (recording the
   // `owner` foreign type it is selected from, which backends needing that type's layout — e.g. the
   // native evaluator — use, while self-describing backends like JSON ignore it), a function
@@ -76,7 +76,7 @@ object Foreign extends completive.Completable:
   // union), or one whose root recorded no `Locus`, offers nothing.
   def completions(using quotes: scala.quoted.Quotes)
     ( receiver: quotes.reflect.TypeRepr, prefix: Text )
-  :   List[completive.Completion] =
+  :   List[prophesy.Completion] =
 
     import quotes.reflect.*
 
@@ -89,13 +89,13 @@ object Foreign extends completive.Completable:
             case (ConstantType(StringConstant(topic)), ConstantType(StringConstant(locus))) =>
               Xenophile.definitions(originRepr, locus.tt).at(topic.tt).lay(Nil): prototypes =>
                 prototypes.to(List).sortBy(_(0).s).map: (name, prototype) =>
-                  val kind = prototype.parameters.lay(completive.Completion.Kind.Term): _ =>
-                    completive.Completion.Kind.Method
+                  val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
+                    prophesy.Completion.Kind.Method
 
                   val signature = prototype.parameters.lay(prototype.result.text): parameters =>
                     t"(${parameters.map(_.text).join(t", ")}): ${prototype.result.text}"
 
-                  completive.Completion(name, kind, Syntax.Symbolic(signature))
+                  prophesy.Completion(name, kind, Syntax.Symbolic(signature))
 
             case _ =>
               Nil

@@ -32,7 +32,7 @@
                                                                                                   */
 package harlequin
 
-// `Completion` and `Completions` moved to the `completive` module (so `Dynamic` types can
+// `Completion` and `Completions` moved to the `prophesy` module (so `Dynamic` types can
 // implement `Completable` providers without depending on the compiler); re-exported here for
 // compatibility, since Harlequin's completion results are expressed in these types.
-export completive.{Completion, Completions}
+export prophesy.{Completion, Completions}
