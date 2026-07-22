@@ -656,6 +656,14 @@ object bench extends BaseScalaModule:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
 
+// The keyword-corpus analysis tool (`make keywords`): derives and checks the pattern data in
+// `prophesy.ScalaKeywords` by tokenizing the Soundness (and proscala) sources with harlequin.
+// A development-time tool, outside `lib/`, never published.
+object keywords extends BaseScalaModule:
+  override def finalMainClass: Task.Simple[String] = "keywords.Analysis"
+  override def sources = Task.Sources(moduleDir / ".." / "src" / "keywords")
+  override def moduleDeps: Seq[JavaModule] = Seq(harlequin.core)
+
 // ------------------------ VALIDATION ------------------------
 
 object groupCheck extends Module:
@@ -1122,7 +1130,7 @@ object coaxial extends Library:
   object test extends Tests(core, jvm)
 
 object prophesy extends Library:
-  object core extends Component(stenography.core):
+  object core extends Component(stenography.core, gossamer.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 

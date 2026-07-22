@@ -185,17 +185,18 @@ object SourceCode:
     // such trailing run back into the error token, so an in-progress string (or char
     // or backquoted identifier) highlights as one consistent unit rather than having
     // its last character mis-coloured.
-    def coalesce(sequence: List[Token]): List[Token] = sequence match
-      case Nil => Nil
+    @annotation.tailrec
+    def coalesce(sequence: List[Token], done: List[Token] = Nil): List[Token] = sequence match
+      case Nil => done.reverse
 
       case head :: tail if head.accent == Accent.Error && quoted(head.text) =>
         val (spill, rest) = tail.span(_.accent != Accent.Unparsed)
 
-        if spill.nil then head :: coalesce(tail)
-        else head.copy(text = t"${head.text}${spill.map(_.text).join}") :: coalesce(rest)
+        if spill.nil then coalesce(tail, head :: done)
+        else coalesce(rest, head.copy(text = t"${head.text}${spill.map(_.text).join}") :: done)
 
       case head :: tail =>
-        head :: coalesce(tail)
+        coalesce(tail, head :: done)
 
     val tokens: List[Token] = coalesce(soften(stream()).to(List))
 

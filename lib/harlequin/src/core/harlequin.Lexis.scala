@@ -64,13 +64,14 @@ object Lexis:
     case Accent.Term =>
       if soft.has(token.text) then Lexeme.Keyword(token.text) else Lexeme.Term
 
-    case Accent.Typal           => Lexeme.Typal
-    case Accent.Number          => Lexeme.Literal
-    case Accent.String          => Lexeme.Literal
-    case Accent.Error           => Lexeme.Error
-    case Accent.Symbol          => Lexeme.Symbol(token.text)
+    case Accent.Typal  => Lexeme.Typal
+    case Accent.Number => Lexeme.Literal
+    case Accent.String => Lexeme.Literal
+    case Accent.Error  => Lexeme.Error
 
-    case Accent.Parens => token.text match
+    // The scanner classifies brackets in the same id range as the other symbolic tokens, so
+    // they are distinguished here by text.
+    case Accent.Symbol | Accent.Parens => token.text match
       case t"(" => Lexeme.Open(Lexeme.Bracket.Round)
       case t")" => Lexeme.Close(Lexeme.Bracket.Round)
       case t"[" => Lexeme.Open(Lexeme.Bracket.Square)
