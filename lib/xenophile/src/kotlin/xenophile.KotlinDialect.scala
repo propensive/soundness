@@ -63,7 +63,8 @@ object KotlinDialect extends Dialect:
       field:      Boolean,
       arity:      Int,
       defaults:   List[Boolean],
-      parameters: List[Text] )
+      parameters: List[Text],
+      vararg:     Boolean = false )
 
   private case class Entry(name: Text, member: JvmMember, prototype: Prototype)
 
@@ -212,7 +213,7 @@ object KotlinDialect extends Dialect:
           ( method.getName.nn.tt,
             JvmMember
               ( typeName, method.getName.nn.tt, descriptorOf(method), static, false, false,
-                parameters.length, Nil, Nil ),
+                parameters.length, Nil, Nil, method.isVarArgs ),
             Prototype(parameters.map(javaType), javaType(method.getReturnType.nn)) )
 
       val fields = listOf(cls.getFields).filter(!_.isSynthetic)
@@ -230,7 +231,8 @@ object KotlinDialect extends Dialect:
         Entry
           ( t"<init>",
             JvmMember
-              ( typeName, t"<init>", t"", false, false, false, parameters.length, Nil, Nil ),
+              ( typeName, t"<init>", t"", false, false, false, parameters.length, Nil, Nil,
+                constructor.isVarArgs ),
             Prototype(parameters.map(javaType), Foreign.Type.Named(typeName)) )
 
       collate(entries ++ fieldEntries ++ constructorEntries, Map(), Nil, Unset, Nil)
@@ -287,13 +289,14 @@ object KotlinDialect extends Dialect:
 
           val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
           val names = parameters.map(_.getName.nn.tt)
+          val vararg = parameters.lastOption.exists(_.getVarargElementType != null)
 
           List:
             Entry
               ( function.getName.nn.tt,
                 JvmMember
                   ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, static,
-                    false, false, parameters.length, defaults, names ),
+                    false, false, parameters.length, defaults, names, vararg ),
                 Prototype(types, foreignType(function.getReturnType.nn)) )
 
         . or(Nil)
@@ -350,13 +353,14 @@ object KotlinDialect extends Dialect:
 
         val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
         val names = parameters.map(_.getName.nn.tt)
+        val vararg = parameters.lastOption.exists(_.getVarargElementType != null)
 
         List:
           Entry
             ( t"<init>",
               JvmMember
                 ( owner, signature.getName.nn.tt, signature.getDescriptor.nn.tt, false, false,
-                  false, parameters.length, defaults, names ),
+                  false, parameters.length, defaults, names, vararg ),
               Prototype(types, Foreign.Type.Named(owner)) )
 
       . or(Nil)

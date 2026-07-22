@@ -255,6 +255,22 @@ object Tests extends Suite(m"Xenophile tests"):
         . map(_.message)
       . assert(_.exists(_.contains("input")))
 
+      test(m"a Scala List argument satisfies a Java collection parameter"):
+        val wrapped = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"b"))
+        val size: Int = wrapped.size()
+        size
+      . assert(_ == 2)
+
+      test(m"surplus arguments collect into a vararg tail"):
+        Kotlin.make[java.util.Formatter]().format(t"[%s:%s]", t"x", t"y").unwrap.toString.tt
+      . assert(_ == t"[x:y]")
+
+      test(m"a value-class member is rejected with a clear diagnostic"):
+        demilitarize:
+          companion[kotlin.time.Duration].parse(t"1s")
+        . map(_.message)
+      . assert(_.exists(_.contains("value class")))
+
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):

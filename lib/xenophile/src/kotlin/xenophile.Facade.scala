@@ -34,9 +34,35 @@ package xenophile
 
 import scala.language.dynamics
 
+import anticipation.*
+import gossamer.*
 import prepositional.*
+import rudiments.*
+import stenography.*
+import vacuous.*
 
-object Facade:
+object Facade extends prophesy.Completable:
+  // Dynamic tab completions, invoked reflectively through `Completable` by a completion
+  // engine: the members of the underlying Kotlin class, rendered in Kotlin syntax.
+  def completions(using quotes: scala.quoted.Quotes)
+    ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+  :   List[prophesy.Completion] =
+
+    Xenophile.refinements(receiver).at(t"Transport").lay(Nil): transport =>
+      val className =
+        transport.dealias.classSymbol.map(_.fullName.replace("$.", ".").nn.tt)
+
+      className.map: className =>
+        KotlinDialect.resolve(className).lay(List[prophesy.Completion]()): members =>
+          members.to(List).sortBy(_(0).s).map: (name, prototype) =>
+            val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
+              prophesy.Completion.Kind.Method
+
+            val signature = KotlinFacade.rendered(name, prototype)
+            prophesy.Completion(name, kind, Syntax.Symbolic(signature))
+
+      . getOrElse(Nil)
+
   // The sole constructor: wraps a JVM value originating from Kotlin. Zero-cost at the boundary;
   // the value travels verbatim and every navigation is a direct call on it.
   def apply[underlying](value: underlying): Facade over underlying =

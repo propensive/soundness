@@ -65,7 +65,7 @@ object KotlinFacade:
 
   // Renders a foreign type in Kotlin syntax — simple names, `?` for nullability — for
   // diagnostics that quote the API as its author declared it.
-  private def kotlinType(tpe: Foreign.Type): Text = tpe match
+  private[xenophile] def kotlinType(tpe: Foreign.Type): Text = tpe match
     case Foreign.Type.Union(members) =>
       members.filter(_ != Foreign.Type.Named(t"null")) match
         case List(inner) if members.length == 2 => t"${kotlinType(inner)}?"
@@ -81,7 +81,7 @@ object KotlinFacade:
     if name.s.startsWith("#") then t"T"
     else name.s.substring(name.s.lastIndexOf('.') + 1).nn.tt
 
-  private def rendered(name: Text, prototype: Prototype): Text =
+  private[xenophile] def rendered(name: Text, prototype: Prototype): Text =
     prototype.parameters.lay(t"val $name: ${kotlinType(prototype.result)}"): parameters =>
       t"fun $name(${parameters.map(kotlinType).join(t", ")}): ${kotlinType(prototype.result)}"
 
@@ -94,6 +94,13 @@ object KotlinFacade:
         left.startsWith(right.take(3)) || right.startsWith(left.take(3))
 
       . sortBy(_(0).s).take(4).map(rendered)
+
+  // Kotlin value classes mangle their members' JVM names (`-impl` hashes); such members are
+  // not yet callable, and say so rather than failing obscurely downstream.
+  private def mangled(using Quotes)(className: Text, member: KotlinDialect.JvmMember): Unit =
+    if member.jvmName.s.contains("-") then
+      val jvmName = member.jvmName
+      halt(m"xenophile: $jvmName of $className involves an unsupported Kotlin value class")
 
   private def missing(using Quotes)(className: Text, name: Text): Nothing =
     similar(className, name) match
@@ -124,6 +131,7 @@ object KotlinFacade:
     repr.widen match
       case OrType(left, right) if right =:= TypeRepr.of[Null] => solid(left)
       case FlexibleType(underlying)                           => solid(underlying)
+      case AnnotatedType(underlying, _)                       => solid(underlying)
       case other                                              => other
 
   // Refines a raw call into the facade-typed result: `kotlin.String` reads as `Text`, a
@@ -221,7 +229,45 @@ object KotlinFacade:
 
     val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
 
-    direct || samCompatible(argument, target)
+    val functional = samCompatible(argument, target)
+    val bridged = functional || collectionCompatible(argument.tpe.widen, target)
+
+    direct || bridged
+
+  // Whether a Scala collection argument can satisfy a Java collection parameter through an
+  // `asJava` view (constant-time, no copy).
+  private def collectionCompatible(using quotes: Quotes)
+    ( argument: quotes.reflect.TypeRepr, target: quotes.reflect.TypeRepr )
+  :   Boolean =
+
+    import quotes.reflect.*
+
+    val mapLike = target <:< TypeRepr.of[java.util.Map[?, ?]] && argument <:< TypeRepr.of[Map[?, ?]]
+    val setLike = target <:< TypeRepr.of[java.util.Set[?]] && argument <:< TypeRepr.of[Set[?]]
+
+    val seqLike =
+      target <:< TypeRepr.of[java.util.Collection[?]] && argument <:< TypeRepr.of[Seq[?]]
+
+    mapLike || setLike || seqLike
+
+  private def collectionAdapted(using quotes: Quotes)
+    ( argument: quotes.reflect.Term, target: quotes.reflect.TypeRepr )
+  :   Optional[quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    val tpe = argument.tpe.widen
+
+    if !collectionCompatible(tpe, solid(target)) then Unset else
+      val view =
+        if tpe <:< TypeRepr.of[Map[?, ?]] then
+          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Map[?, ?]]})}
+        else if tpe <:< TypeRepr.of[Set[?]] then
+          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Set[?]]})}
+        else
+          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Seq[?]]})}
+
+      TypeApply(Select.unique(view.asTerm, "asInstanceOf"), List(Inferred(solid(target))))
 
   // The arity of a Kotlin function type, when the parameter is one.
   private def samArity(using quotes: Quotes)(target: quotes.reflect.TypeRepr): Optional[Int] =
@@ -336,7 +382,7 @@ object KotlinFacade:
 
     import quotes.reflect.*
 
-    val sam = samAdapted(argument, solid(parameter))
+    val sam = samAdapted(argument, solid(parameter)).or(collectionAdapted(argument, parameter))
 
     val unwrapped = sam.or:
       if argument.tpe.widen <:< TypeRepr.of[Facade]
@@ -387,6 +433,8 @@ object KotlinFacade:
       refined(term, prototype.result)
 
     else
+      mangled(className, member)
+
       val method =
         classSymbol.methodMember(member.jvmName.s)
         . filter(parameterTypes(repr, _) == Optional(Nil)) match
@@ -456,10 +504,28 @@ object KotlinFacade:
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
     val candidates = KotlinDialect.members(className, field).filter: member =>
-      !member.property && member.arity == args.length
+      val fits = member.arity == args.length
+      val variadic = member.vararg && args.length >= member.arity - 1
+      !member.property && (fits || variadic)
+
+    candidates.foreach(mangled(className, _))
+
+    // Whether a parameter is the repeated (vararg) tail in the Scala view.
+    def repeated(parameter: TypeRepr): Optional[TypeRepr] = parameter match
+      case AnnotatedType(AppliedType(_, List(element)), annotation)
+      if annotation.tpe.typeSymbol == defn.RepeatedAnnot =>
+        element
+
+      case AppliedType(constructor, List(element))
+      if constructor.typeSymbol == defn.RepeatedParamClass =>
+        element
+
+      case _ =>
+        Unset
 
     // Resolution against the *Scala view* of the class: among the metadata's candidates, the
-    // methods whose (substituted) parameter types every argument satisfies.
+    // methods whose (substituted) parameter types every argument satisfies; a vararg tail
+    // absorbs the surplus arguments, each checked against the element type.
     val resolved = candidates.flatMap: member =>
       val real = classSymbol.methodMember(member.jvmName.s).filter: method =>
         !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Artifact)
@@ -467,10 +533,23 @@ object KotlinFacade:
       real.flatMap: method =>
         parameterTypes(repr, method) match
           case types: List[TypeRepr] @unchecked =>
-            val fits = args.zip(types).forall: (argument, parameter) =>
-              satisfies(argument, parameter)
+            types.lastOption.map(repeated).getOrElse(Unset) match
+              case element: TypeRepr @unchecked =>
+                val fixed = types.init
 
-            if types.length == args.length && fits then List((method, types)) else Nil
+                val front = args.take(fixed.length).zip(fixed).forall: (argument, parameter) =>
+                  satisfies(argument, parameter)
+
+                val rest = args.drop(fixed.length).forall(satisfies(_, element))
+                val fits = args.length >= fixed.length && front && rest
+
+                if fits then List((method, types)) else Nil
+
+              case _ =>
+                val fits = args.zip(types).forall: (argument, parameter) =>
+                  satisfies(argument, parameter)
+
+                if types.length == args.length && fits then List((method, types)) else Nil
 
           case _ =>
             Nil
@@ -496,8 +575,37 @@ object KotlinFacade:
       case _ =>
         halt(m"xenophile: the call to $className.$field is ambiguous between overloads")
 
-    val adaptedArgs = args.zip(types).map: (argument, parameter) =>
-      adapted(argument, parameter)
+    val adaptedArgs = types.lastOption.map(repeated).getOrElse(Unset) match
+      case element: TypeRepr @unchecked =>
+        val fixed = types.init
+
+        val front = args.take(fixed.length).zip(fixed).map: (argument, parameter) =>
+          adapted(argument, parameter)
+
+        // The element type may carry capture-set variables that a pure argument conforms to
+        // but a retype outside the inference context rejects; every element is cast to the
+        // bare class type, which is free at runtime.
+        val target = element.dealias match
+          case AppliedType(_, _) =>
+            solid(element)
+
+          case other =>
+            other.classSymbol.map { symbol => symbol.typeRef: TypeRepr }.getOrElse(solid(element))
+
+        val rest = args.drop(fixed.length).map: argument =>
+          val unwrapped =
+            if argument.tpe.widen <:< TypeRepr.of[Facade]
+            then '{${argument.asExprOf[Facade]}.unwrap}.asTerm
+            else argument
+
+          TypeApply(Select.unique(unwrapped, "asInstanceOf"), List(Inferred(target)))
+
+        val repeatedType = AppliedType(defn.RepeatedParamClass.typeRef, List(target))
+        front :+ Typed(Repeated(rest, Inferred(target)), Inferred(repeatedType))
+
+      case _ =>
+        args.zip(types).map: (argument, parameter) =>
+          adapted(argument, parameter)
 
     val call = Apply(Select(receiver(self, repr), method), adaptedArgs)
 
