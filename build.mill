@@ -325,7 +325,9 @@ object nativeToolchain extends mill.javalib.CoursierModule:
 // version-string ceremony.
 trait Toolchain extends ScalaModule:
   override def repositories: T[Seq[String]] = Task:
-    super.repositories() :+ s"file://${toolchain.repo().path}"
+    // Google's repository serves the artifacts absent from Maven Central (R8, for dexing), and
+    // is listed last so it is only consulted for them.
+    super.repositories() :+ s"file://${toolchain.repo().path}" :+ "https://maven.google.com"
 
   override def scalaCompilerClasspath: T[Seq[PathRef]] = Task:
     // The fork-built jars come from the repository view because Zinc locates the standard
@@ -831,7 +833,12 @@ object anthology extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-native:tools_3:0.5.12")
-  object test extends Tests(`scala`, `java`, core, linker, link, nir, spectacular.core):
+  object dex extends Component(linker):
+    override def scalaJs = false // drives R8's D8 dexer (a JVM library) via its API
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(mvn"com.android.tools:r8:8.13.19")
+  object test extends Tests(`scala`, `java`, core, linker, link, nir, dex, spectacular.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
