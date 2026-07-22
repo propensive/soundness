@@ -30,12 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ethereal
 
-export
-  ethereal
-  . { Assembler, cli, Client, DaemonEvent, DaemonLogEvent, daemonLogEvent, DaemonService, Installer,
-      LazyEnvironment, Runners, service, Stdin, TerminalMode, Upgrade, UpgradeError }
+// The mode of the client's terminal. The Ethereal launcher raw-modes a terminal stdin so it
+// can forward individual keypresses to an interactive session; a command that wants ordinary
+// line input asks, through the control channel, for `Canonical` instead — and the terminal
+// driver then provides echo and line editing itself.
+enum TerminalMode:
+  case Raw, Canonical
 
-package workingDirectories:
-  export ambience.workingDirectories.daemonClientWorkingDirectory
+  // The single byte the daemon writes to the launcher's control channel.
+  def byte: Int = this match
+    case Raw       => 'r'
+    case Canonical => 'c'

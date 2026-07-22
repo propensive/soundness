@@ -56,9 +56,20 @@ case class DaemonService[bus <: Matchable]
     bus:        LazyList[bus],
     script:     Text,
     startTime:  Long,
-    helpThunk:  () => Optional[Help] )
+    helpThunk:  () => Optional[Help],
+    setMode:    TerminalMode => Unit )
 extends Entrypoint, caps.ExclusiveCapability:
   def broadcast(message: bus): Unit = deliver(message)
+
+  // Run `block` with the client's terminal in cooked (canonical) mode, so the terminal driver
+  // provides echo and line editing for a command that just wants to read lines, then put it
+  // back into the raw mode the launcher established. A no-op unless stdin is a terminal, and
+  // silently ineffective (leaving today's raw-mode behaviour) if the launcher is too old to
+  // offer a control channel.
+  def cooked[result](block: => result): result =
+    if cliInput != Stdin.Terminal then block else
+      setMode(TerminalMode.Canonical)
+      try block finally setMode(TerminalMode.Raw)
 
   // The structured help tree for this command, generated lazily by re-running the application
   // in tab-completion mode. Falls back to a name-only root if the executive cannot generate it.

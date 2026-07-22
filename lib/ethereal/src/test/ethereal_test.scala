@@ -123,6 +123,15 @@ object Tests extends Suite(m"Ethereal Tests"):
                     val line: Text = reader.readLine().nn.tt
                     Out.print(line) yet Exit.Ok
 
+                case Argument("cooked") :: Nil =>
+                  execute:
+                    service.cooked:
+                      val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
+                      val line: Text = reader.readLine().nn.tt
+                      Out.print(t"[$line]")
+
+                    Exit.Ok
+
                 case Argument("signal") :: Nil =>
                   execute:
                     val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
@@ -469,6 +478,78 @@ object Tests extends Suite(m"Ethereal Tests"):
               (sh"echo 'piped input'" | sh"$tool cat").exec[Text]()
 
             . assert(_ == t"piped input")
+
+          suite(m"Cooked terminal mode"):
+            // These need a real terminal, so they run inside a tmux pane. The launcher
+            // raw-modes any terminal stdin; `service.cooked` asks it, over the control
+            // channel, to hand canonical mode back for the duration of the block, which is
+            // observable as the driver's own echo and line editing.
+            val command: Text = summon[Enclave.Tool].command
+
+            def awaitScreen(predicate: Text => Boolean)(using Tmux)(using WorkingDirectory)
+            :   Boolean =
+
+              var found = false
+              var attempts = 0
+
+              while !found && attempts < 200 do
+                found = Tmux.screenshot().screen.filter(predicate).length > 0
+                if !found then snooze(0.05*Second) yet (attempts += 1)
+
+              found
+
+            test(m"typed characters are echoed in a cooked block"):
+              sh"$tool echo probe".exec[Unit]()
+
+              Shell.Bash.tmux():
+                Tmux.enter(t"$command cooked")
+                Tmux.enter('\r')
+                snooze(0.5*Second)
+                Tmux.enter(t"kestrel")
+                awaitScreen(_.contains(t"kestrel"))
+
+            . assert(_ == true)
+
+            test(m"a cooked line is delivered to the application"):
+              sh"$tool echo probe".exec[Unit]()
+
+              Shell.Bash.tmux():
+                Tmux.enter(t"$command cooked")
+                Tmux.enter('\r')
+                snooze(0.5*Second)
+                Tmux.enter(t"osprey")
+                Tmux.enter('\r')
+                awaitScreen(_.contains(t"[osprey]"))
+
+            . assert(_ == true)
+
+            test(m"backspace edits the line rather than reaching the application"):
+              sh"$tool echo probe".exec[Unit]()
+
+              Shell.Bash.tmux():
+                Tmux.enter(t"$command cooked")
+                Tmux.enter('\r')
+                snooze(0.5*Second)
+                Tmux.enter(t"merlix")
+                Tmux.enter(t"BSpace")
+                Tmux.enter(t"n")
+                Tmux.enter('\r')
+                awaitScreen(_.contains(t"[merlin]"))
+
+            . assert(_ == true)
+
+            test(m"a command without a cooked block still gets raw, unechoed input"):
+              sh"$tool echo probe".exec[Unit]()
+
+              Shell.Bash.tmux():
+                Tmux.enter(t"$command cat")
+                Tmux.enter('\r')
+                snooze(0.5*Second)
+                Tmux.enter(t"harrier")
+                snooze(0.5*Second)
+                Tmux.screenshot().screen.filter(_.contains(t"harrier")).length > 0
+
+            . assert(_ == false)
 
           suite(m"Process renaming"):
             // The JVM is still named `java`; the killable process is its parent
