@@ -32,33 +32,28 @@
                                                                                                   */
 package xenophile
 
-import anticipation.*
-import vacuous.*
+import java.lang.invoke as jli
+import java.util.concurrent as juc
 
-// The prototype of a member of a foreign type: a field has no parameters (`Unset`); a method
-// records its parameter types. `result` is the foreign type the member produces. `module`, when
-// set, qualifies the member with the fully-qualified module it belongs to — used by ecosystems
-// (such as WIT) whose members must be addressed by a module identifier at the point of invocation;
-// it is `Unset` for grammars that need no such qualifier. `resource`, when set, names the stateful
-// foreign type (a WIT `resource`) the member is a method of, so an invocation can address it (e.g.
-// `[method]output-stream.blocking-write-and-flush`) and thread the receiver's handle. A `static`
-// member of a resource (a WIT `static` function or `constructor`) is addressed through the
-// resource but takes no receiver.
-case class Prototype
-  ( parameters: Optional[List[Foreign.Type]],
-    result:     Foreign.Type,
-    module:     Optional[Text] = Unset,
-    resource:   Optional[Text] = Unset,
-    static:     Boolean = false )
+// The one reflective edge of the Kotlin ecosystem: Kotlin's synthetic `$default` bridges (the
+// carriers of default-argument values) are marked ACC_SYNTHETIC, which the compiler's classfile
+// reader omits from the symbol table, so no direct call to one can be emitted. Instead, the
+// bridge is resolved once per call shape into a cached `MethodHandle` and invoked through it —
+// the same linkage-time trade the Panama backend makes for `dlsym`.
+object KotlinRuntime:
+  private val handles: juc.ConcurrentHashMap[String, jli.MethodHandle] =
+    juc.ConcurrentHashMap()
 
-// A grammar for a particular foreign type system: parses a definitions source into a map from each
-// foreign type name to its members' prototypes. Keyed on an ecosystem so the macro stays agnostic.
-//
-// A dialect whose definitions live in compiled artefacts on the classpath (such as Kotlin
-// `@Metadata` in classfiles) rather than in a text resource declares itself self-resolving
-// (`resolves`) and answers `resolve` on demand, per foreign type name; such an ecosystem needs
-// no `Interface` (there is no `Locus`), and an `Unset` resolution means the type is unknown.
-trait Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Prototype]]
-  def resolves: Boolean = false
-  def resolve(typeName: Text): Optional[Map[Text, Prototype]] = Unset
+  def invokeDefault(owner: Class[?], name: String, arguments: Array[Any | Null]): Any | Null =
+    val key = s"${owner.getName}#$name#${arguments.length}"
+
+    val handle = handles.computeIfAbsent(key, _ =>
+      owner.getMethods.nn.find: method =>
+        method.nn.getName == name && method.nn.getParameterCount == arguments.length
+
+      . map: method =>
+          jli.MethodHandles.lookup.nn.unreflect(method.nn).nn
+
+      . getOrElse(throw IllegalStateException(s"xenophile: no $name bridge on ${owner.getName}")))
+
+    handle.nn.invokeWithArguments(arguments.toSeq*)

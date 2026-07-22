@@ -32,33 +32,14 @@
                                                                                                   */
 package xenophile
 
-import anticipation.*
-import vacuous.*
+// The facade of a Kotlin class's companion object, through which its members are reachable:
+// `companion[Regex].escape(t"a.b")`.
+transparent inline def companion[kotlinType]: Any = ${KotlinFacade.companion[kotlinType]}
 
-// The prototype of a member of a foreign type: a field has no parameters (`Unset`); a method
-// records its parameter types. `result` is the foreign type the member produces. `module`, when
-// set, qualifies the member with the fully-qualified module it belongs to — used by ecosystems
-// (such as WIT) whose members must be addressed by a module identifier at the point of invocation;
-// it is `Unset` for grammars that need no such qualifier. `resource`, when set, names the stateful
-// foreign type (a WIT `resource`) the member is a method of, so an invocation can address it (e.g.
-// `[method]output-stream.blocking-write-and-flush`) and thread the receiver's handle. A `static`
-// member of a resource (a WIT `static` function or `constructor`) is addressed through the
-// resource but takes no receiver.
-case class Prototype
-  ( parameters: Optional[List[Foreign.Type]],
-    result:     Foreign.Type,
-    module:     Optional[Text] = Unset,
-    resource:   Optional[Text] = Unset,
-    static:     Boolean = false )
+// The facade of a Kotlin `object` singleton: `singleton[Typography].quote`.
+transparent inline def singleton[kotlinType]: Any = ${KotlinFacade.singleton[kotlinType]}
 
-// A grammar for a particular foreign type system: parses a definitions source into a map from each
-// foreign type name to its members' prototypes. Keyed on an ecosystem so the macro stays agnostic.
-//
-// A dialect whose definitions live in compiled artefacts on the classpath (such as Kotlin
-// `@Metadata` in classfiles) rather than in a text resource declares itself self-resolving
-// (`resolves`) and answers `resolve` on demand, per foreign type name; such an ecosystem needs
-// no `Interface` (there is no `Locus`), and an `Unset` resolution means the type is unknown.
-trait Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Prototype]]
-  def resolves: Boolean = false
-  def resolve(typeName: Text): Optional[Map[Text, Prototype]] = Unset
+// The facade of an `enum class` entry: `entry[RegexOption](t"IGNORE_CASE")`.
+transparent inline def entry[kotlinType](inline name: String): Any =
+  ${KotlinFacade.entry[kotlinType]('name)}
+

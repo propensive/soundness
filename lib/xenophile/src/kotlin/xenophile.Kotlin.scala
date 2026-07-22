@@ -33,32 +33,60 @@
 package xenophile
 
 import anticipation.*
+import prepositional.*
 import vacuous.*
 
-// The prototype of a member of a foreign type: a field has no parameters (`Unset`); a method
-// records its parameter types. `result` is the foreign type the member produces. `module`, when
-// set, qualifies the member with the fully-qualified module it belongs to — used by ecosystems
-// (such as WIT) whose members must be addressed by a module identifier at the point of invocation;
-// it is `Unset` for grammars that need no such qualifier. `resource`, when set, names the stateful
-// foreign type (a WIT `resource`) the member is a method of, so an invocation can address it (e.g.
-// `[method]output-stream.blocking-write-and-flush`) and thread the receiver's handle. A `static`
-// member of a resource (a WIT `static` function or `constructor`) is addressed through the
-// resource but takes no receiver.
-case class Prototype
-  ( parameters: Optional[List[Foreign.Type]],
-    result:     Foreign.Type,
-    module:     Optional[Text] = Unset,
-    resource:   Optional[Text] = Unset,
-    static:     Boolean = false )
+// The Kotlin/JVM ecosystem: `Interoperable` markers associating Scala types with the Kotlin
+// types `KotlinDialect` resolves on demand from `@Metadata` in classfiles on the compile
+// classpath. A nullable Kotlin type `T?` resolves as `T | "null"`, so `Optional` interop
+// mirrors WIT's `option` (`T | "none"`) and TypeScript's `T | "undefined"`.
+object Kotlin:
+  // Instantiates a Kotlin class through its facade: `Kotlin.make[Pair[Text, Text]](t"a", t"b")`.
+  inline def make[kotlinType](inline arguments: Any*): Facade over kotlinType =
+    ${KotlinFacade.construct[kotlinType]('arguments)}
 
-// A grammar for a particular foreign type system: parses a definitions source into a map from each
-// foreign type name to its members' prototypes. Keyed on an ecosystem so the macro stays agnostic.
-//
-// A dialect whose definitions live in compiled artefacts on the classpath (such as Kotlin
-// `@Metadata` in classfiles) rather than in a text resource declares itself self-resolving
-// (`resolves`) and answers `resolve` on demand, per foreign type name; such an ecosystem needs
-// no `Interface` (there is no `Locus`), and an `Unset` resolution means the type is unknown.
-trait Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Prototype]]
-  def resolves: Boolean = false
-  def resolve(typeName: Text): Optional[Map[Text, Prototype]] = Unset
+
+  given int: (Int is Interoperable in Kotlin of "kotlin.Int") =
+    Interoperable[Int, Kotlin, "kotlin.Int"]()
+
+  given long: (Long is Interoperable in Kotlin of "kotlin.Long") =
+    Interoperable[Long, Kotlin, "kotlin.Long"]()
+
+  given short: (Short is Interoperable in Kotlin of "kotlin.Short") =
+    Interoperable[Short, Kotlin, "kotlin.Short"]()
+
+  given byte: (Byte is Interoperable in Kotlin of "kotlin.Byte") =
+    Interoperable[Byte, Kotlin, "kotlin.Byte"]()
+
+  given boolean: (Boolean is Interoperable in Kotlin of "kotlin.Boolean") =
+    Interoperable[Boolean, Kotlin, "kotlin.Boolean"]()
+
+  given double: (Double is Interoperable in Kotlin of "kotlin.Double") =
+    Interoperable[Double, Kotlin, "kotlin.Double"]()
+
+  given float: (Float is Interoperable in Kotlin of "kotlin.Float") =
+    Interoperable[Float, Kotlin, "kotlin.Float"]()
+
+  given char: (Char is Interoperable in Kotlin of "kotlin.Char") =
+    Interoperable[Char, Kotlin, "kotlin.Char"]()
+
+  given text: (Text is Interoperable in Kotlin of "kotlin.String") =
+    Interoperable[Text, Kotlin, "kotlin.String"]()
+
+  given unit: (Unit is Interoperable in Kotlin of "kotlin.Unit") =
+    Interoperable[Unit, Kotlin, "kotlin.Unit"]()
+
+  // Kotlin `null` (produced by reading `T?` as `T | null`) is the absent `Optional` value.
+  given none: (Unset.type is Interoperable in Kotlin of "null") =
+    Interoperable[Unset.type, Kotlin, "null"]()
+
+  // A nullable Kotlin type `T?` (read as `T | null`) corresponds to a Scala `Optional`. The
+  // `Mandatable` constraint identifies the mandatory type `inner`, so the instance applies only
+  // to genuine optionals and never competes with `inner`'s instance.
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner, topic]
+  =>  ( inner is Interoperable in Kotlin of topic )
+  =>  ( value is Interoperable in Kotlin of (topic | "null") ) =
+    Interoperable[value, Kotlin, (topic | "null")]()
+
+trait Kotlin extends Ecosystem:
+  type Grammar = KotlinDialect.type

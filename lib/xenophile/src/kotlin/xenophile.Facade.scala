@@ -32,33 +32,81 @@
                                                                                                   */
 package xenophile
 
+import scala.language.dynamics
+
 import anticipation.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import stenography.*
 import vacuous.*
 
-// The prototype of a member of a foreign type: a field has no parameters (`Unset`); a method
-// records its parameter types. `result` is the foreign type the member produces. `module`, when
-// set, qualifies the member with the fully-qualified module it belongs to — used by ecosystems
-// (such as WIT) whose members must be addressed by a module identifier at the point of invocation;
-// it is `Unset` for grammars that need no such qualifier. `resource`, when set, names the stateful
-// foreign type (a WIT `resource`) the member is a method of, so an invocation can address it (e.g.
-// `[method]output-stream.blocking-write-and-flush`) and thread the receiver's handle. A `static`
-// member of a resource (a WIT `static` function or `constructor`) is addressed through the
-// resource but takes no receiver.
-case class Prototype
-  ( parameters: Optional[List[Foreign.Type]],
-    result:     Foreign.Type,
-    module:     Optional[Text] = Unset,
-    resource:   Optional[Text] = Unset,
-    static:     Boolean = false )
+object Facade extends prophesy.Completable:
+  // Dynamic tab completions, invoked reflectively through `Completable` by a completion
+  // engine: the members of the underlying Kotlin class, rendered in Kotlin syntax.
+  def completions(using quotes: scala.quoted.Quotes)
+    ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+  :   List[prophesy.Completion] =
 
-// A grammar for a particular foreign type system: parses a definitions source into a map from each
-// foreign type name to its members' prototypes. Keyed on an ecosystem so the macro stays agnostic.
-//
-// A dialect whose definitions live in compiled artefacts on the classpath (such as Kotlin
-// `@Metadata` in classfiles) rather than in a text resource declares itself self-resolving
-// (`resolves`) and answers `resolve` on demand, per foreign type name; such an ecosystem needs
-// no `Interface` (there is no `Locus`), and an `Unset` resolution means the type is unknown.
-trait Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Prototype]]
-  def resolves: Boolean = false
-  def resolve(typeName: Text): Optional[Map[Text, Prototype]] = Unset
+    Xenophile.refinements(receiver).at(t"Transport").lay(Nil): transport =>
+      val className =
+        transport.dealias.classSymbol.map(_.fullName.replace("$.", ".").nn.tt)
+
+      className.map: className =>
+        KotlinDialect.resolve(className).lay(List[prophesy.Completion]()): members =>
+          members.to(List).sortBy(_(0).s).map: (name, prototype) =>
+            val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
+              prophesy.Completion.Kind.Method
+
+            val signature = KotlinFacade.rendered(name, prototype)
+            prophesy.Completion(name, kind, Syntax.Symbolic(signature))
+
+      . getOrElse(Nil)
+
+  // The sole constructor: wraps a JVM value originating from Kotlin. Zero-cost at the boundary;
+  // the value travels verbatim and every navigation is a direct call on it.
+  def apply[underlying](value: underlying): Facade over underlying =
+    val facade = new Facade:
+      def unwrap: Any = value
+
+    facade.asInstanceOf[Facade over underlying]
+
+// An eager facade over a live Kotlin/JVM value, typed `Facade over T` where `T` is the real
+// Scala view of the underlying class — type arguments included, so `Facade over Pair[Text,
+// Text]` knows its components are `Text`. Unlike `Foreign` (a deferred expression AST for
+// cross-runtime ecosystems), every member access materializes immediately as a direct,
+// statically-typed JVM call, transparently typed by the Kotlin metadata of the underlying
+// class: nullable results become `Optional`, `kotlin.String` becomes `Text`, and Kotlin-typed
+// results are wrapped as further facades.
+trait Facade extends Dynamic, Transportive:
+  // The raw underlying value: the escape hatch back to plain Java-level interop.
+  def unwrap: Any
+
+  transparent inline def selectDynamic(name: String): Any =
+    ${KotlinFacade.select('this, 'name)}
+
+  transparent inline def applyDynamic(name: String)(inline arguments: Any*): Any =
+    ${KotlinFacade.applied('this, 'name, 'arguments)}
+
+  transparent inline def applyDynamicNamed(name: String)(inline arguments: (String, Any)*)
+  :   Any =
+
+    ${KotlinFacade.appliedNamed('this, 'name, 'arguments)}
+
+  inline def updateDynamic(name: String)(inline value: Any): Unit =
+    ${KotlinFacade.update('this, 'name, 'value)}
+
+  // A data class's components as a Scala tuple: `pair.tuple` is `(first, second)`.
+  transparent inline def tuple: Any = ${KotlinFacade.tuple('this)}
+
+  // An explicit copy of a Kotlin/Java collection into the immutable Scala equivalent, with
+  // `String` elements reading as `Text`.
+  transparent inline def scala: Any = ${KotlinFacade.scalaCollection('this)}
+
+  // Kotlin's index-access operators: `facade(key)` reaches `operator fun get`, and
+  // `facade(key) = value` reaches `operator fun set`.
+  transparent inline def apply(inline arguments: Any*): Any =
+    ${KotlinFacade.applied('this, '{"get"}, 'arguments)}
+
+  inline def update(inline arguments: Any*): Unit =
+    ${KotlinFacade.discarded('this, '{"set"}, 'arguments)}

@@ -61,6 +61,216 @@ given webIdlDom: WebIdlDomSource = Interface[WebIdlDom](cp"/xenophile/dom.idl")
 // (by ascription) and the expression AST, plus the compile-time safety diagnostics.
 object Tests extends Suite(m"Xenophile tests"):
   def run(): Unit =
+    suite(m"Kotlin ecosystem"):
+      import kotlinInvocation.invoke
+
+      test(m"a top-level Kotlin function call materializes as a direct JVM call"):
+        Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
+        . getProgressionLastElement(1, 10, 2)
+        . invoke[Int]
+      . assert(_ == 9)
+
+      test(m"a Kotlin navigation records the member's foreign result type"):
+        val result = Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
+        . getProgressionLastElement(1, 10, 2)
+
+        (result: Foreign of "kotlin.Int" from Kotlin).expr
+      . assert:
+          case Foreign.Expression.Apply(_, arguments) => arguments.length == 3
+          case _                                      => false
+
+      test(m"a class absent from the classpath is rejected"):
+        demilitarize:
+          Foreign["kotlin.absent.NowhereKt", Kotlin].missing(1)
+      . assert(_.nonEmpty)
+
+      test(m"an unknown member of a Kotlin type is rejected"):
+        demilitarize:
+          Foreign["kotlin.internal.ProgressionUtilKt", Kotlin].missing(1)
+      . assert(_.nonEmpty)
+
+      test(m"a call with the wrong arity is rejected"):
+        demilitarize:
+          Foreign["kotlin.internal.ProgressionUtilKt", Kotlin].getProgressionLastElement(1)
+      . assert(_.nonEmpty)
+
+      test(m"a call with a wrongly-typed argument is rejected"):
+        demilitarize:
+          Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
+          . getProgressionLastElement(t"one", 10, 2)
+      . assert(_.nonEmpty)
+
+    suite(m"Kotlin facades"):
+      val pair = Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b")
+
+      test(m"a Kotlin class constructs through its facade"):
+        pair.unwrap.toString.tt
+      . assert(_ == t"(a, b)")
+
+      test(m"a property substitutes the facade's type arguments"):
+        val first: Text = pair.first
+        first
+      . assert(_ == t"a")
+
+      test(m"the second component reads likewise"):
+        val second: Text = pair.second
+        second
+      . assert(_ == t"b")
+
+      val regex = Kotlin.make[kotlin.text.Regex](t"[0-9]+")
+
+      test(m"an instance method accepts Text for a CharSequence parameter"):
+        val matches: Boolean = regex.matches(t"123")
+        matches
+      . assert(_ == true)
+
+      test(m"a non-matching input reports false"):
+        val matches: Boolean = regex.matches(t"abc")
+        matches
+      . assert(_ == false)
+
+      test(m"a nullable result is an Optional, absent on no match"):
+        regex.find(t"abc", 0).absent
+      . assert(_ == true)
+
+      test(m"a nullable result is present on a match, as a facade"):
+        regex.find(t"a1b2", 0).let { result => result.value: Text }
+      . assert(_ == t"1")
+
+      test(m"a Kotlin String property reads as Text"):
+        val pattern: Text = regex.pattern
+        pattern
+      . assert(_ == t"[0-9]+")
+
+      test(m"an unknown property is rejected"):
+        demilitarize:
+          Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").third
+      . assert(_.nonEmpty)
+
+      test(m"a wrongly-typed constructor argument is rejected"):
+        demilitarize:
+          Kotlin.make[kotlin.text.Regex](42)
+      . assert(_.nonEmpty)
+
+      test(m"a companion object's members are reachable"):
+        val escaped: Text = companion[kotlin.text.Regex].escape(t"a.b")
+        escaped
+      . assert(_ == t"\\Qa.b\\E")
+
+      test(m"an unknown member's error suggests near misses in Kotlin syntax"):
+        demilitarize:
+          Kotlin.make[kotlin.text.Regex](t"x").matchez(t"y")
+        . map(_.message)
+      . assert(_.exists(_.contains("did you mean")))
+
+      test(m"a class without a companion object is rejected"):
+        demilitarize:
+          companion[kotlin.Pair[Text, Text]]
+      . assert(_.nonEmpty)
+
+      test(m"a Scala lambda satisfies a Kotlin function-type parameter"):
+        val replaced: Text = regex.replace(t"a1b2",
+            (m: Facade over kotlin.text.MatchResult) => t"<${m.value}>")
+
+        replaced
+      . assert(_ == t"a<1>b<2>")
+
+      test(m"a lambda's facade parameter navigates the Kotlin type inside"):
+        val upper: Text = regex.replace(t"3x4", (m: Facade over kotlin.text.MatchResult) =>
+            t"${m.value}${m.value}")
+
+        upper
+      . assert(_ == t"33x44")
+
+      test(m"a var property accepts assignment through its setter"):
+        val parameter = Kotlin.make[kotlin.metadata.KmValueParameter](t"x")
+        parameter.name = t"y"
+        val name: Text = parameter.name
+        name
+      . assert(_ == t"y")
+
+      test(m"assignment to a val property is rejected"):
+        demilitarize:
+          Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").first = t"z"
+      . assert(_.nonEmpty)
+
+      test(m"an object singleton's constant properties are reachable"):
+        val quote: Char = singleton[kotlin.text.Typography].quote
+        quote
+      . assert(_ == '"')
+
+      test(m"a class is not mistaken for an object singleton"):
+        demilitarize:
+          singleton[kotlin.Pair[Text, Text]]
+      . assert(_.nonEmpty)
+
+      test(m"omitted trailing parameters fall back to Kotlin defaults"):
+        regex.find(t"a7b").let(_.value)
+      . assert(_ == t"7")
+
+      test(m"operator get is reachable as apply"):
+        regex.find(t"a1b").let(_.groups(0)).let(_.value)
+      . assert(_ == t"1")
+
+      // Note `unwrap.toString`: `toString`/`equals`/`hashCode` are real members of the facade
+      // wrapper itself, so `Dynamic` cannot intercept them.
+      test(m"a plain Java class resolves through the reflection fallback"):
+        Kotlin.make[java.lang.StringBuilder](t"ab").reverse().unwrap.toString.tt
+      . assert(_ == t"ba")
+
+      test(m"an enum entry is reachable by name, and usable as an argument"):
+        val relaxed = Kotlin.make[kotlin.text.Regex]
+          ( t"[a-z]+", entry[kotlin.text.RegexOption]("IGNORE_CASE") )
+
+        val matches: Boolean = relaxed.matches(t"ABC")
+        matches
+      . assert(_ == true)
+
+      test(m"an unknown enum entry lists the real ones"):
+        demilitarize:
+          entry[kotlin.text.RegexOption]("IGNORE_CAES")
+        . map(_.message)
+      . assert(_.exists(_.contains("IGNORE_CASE")))
+
+      test(m"a data class destructures into a typed tuple"):
+        Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").tuple
+      . assert(_ == (t"a", t"b"))
+
+      test(m"a Kotlin list result copies out as a Scala List of Text"):
+        val parts: List[Text] = regex.split(t"a1b2").scala
+        parts
+      . assert(_ == List(t"a", t"b", t""))
+
+      test(m"a named argument selects its declared parameter"):
+        regex.find(input = t"a5b").let(_.value)
+      . assert(_ == t"5")
+
+      test(m"named arguments reorder to their declared positions"):
+        regex.find(startIndex = 2, input = t"1a2b").let(_.value)
+      . assert(_ == t"2")
+
+      test(m"an unknown parameter name lists the declared ones"):
+        demilitarize:
+          regex.find(inpit = t"a5b")
+        . map(_.message)
+      . assert(_.exists(_.contains("input")))
+
+      test(m"a Scala List argument satisfies a Java collection parameter"):
+        val wrapped = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"b"))
+        val size: Int = wrapped.size()
+        size
+      . assert(_ == 2)
+
+      test(m"surplus arguments collect into a vararg tail"):
+        Kotlin.make[java.util.Formatter]().format(t"[%s:%s]", t"x", t"y").unwrap.toString.tt
+      . assert(_ == t"[x:y]")
+
+      test(m"a value-class member is rejected with a clear diagnostic"):
+        demilitarize:
+          companion[kotlin.time.Duration].parse(t"1s")
+        . map(_.message)
+      . assert(_.exists(_.contains("value class")))
+
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):
