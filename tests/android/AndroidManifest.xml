@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="dev.soundness.dice"
+    android:versionCode="1"
+    android:versionName="1.0">
+  <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="36"/>
+  <uses-permission android:name="android.permission.VIBRATE"/>
+  <application android:label="Dice Roller"
+      android:theme="@android:style/Theme.Material.Light">
+    <activity android:name="dice.DiceActivity" android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
