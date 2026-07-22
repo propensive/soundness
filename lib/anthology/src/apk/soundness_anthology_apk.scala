@@ -30,39 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package soundness
 
-import prepositional.*
-
-object Provenance:
-  given jar: (Provenance[Artifact.Jar] from Universe.Classfile):
-    type Origin = Universe.Classfile
-
-  given dex: (Provenance[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
-
-  given apk: (Provenance[Artifact.Apk] from Universe.Classfile):
-    type Origin = Universe.Classfile
-
-  given js: [module <: Artifact.Js.Modules]
-  =>  (Provenance[Artifact.Js[module]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasi: [version <: Artifact.Wasi.Versions]
-  =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given binary: (Provenance[Artifact.Binary] from Universe.Nir):
-    type Origin = Universe.Nir
-
-  given library: [universe <: Universe] => (Provenance[Artifact.Library[universe]] from universe):
-    type Origin = universe
-
-// Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
-// has a provenance, whether or not it is currently linkable, so it can drive compilation
-// (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
-trait Provenance[artifact <: Artifact]:
-  type Origin <: Universe
+export anthology.{apkLinkages, apkOptions, ApkConfiguration, Axml, ApkManifest,
+    ApkSigner}

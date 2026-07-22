@@ -32,37 +32,40 @@
                                                                                                   */
 package anthology
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
 
-object Provenance:
-  given jar: (Provenance[Artifact.Jar] from Universe.Classfile):
-    type Origin = Universe.Classfile
+object ApkConfiguration:
+  // The conventional Android debug keystore (shared with Android Studio), a PKCS#12 store with a
+  // well-known alias and password. The defaults produce a debuggable, emulator-installable APK.
+  def default: ApkConfiguration =
+    val home = java.lang.System.getProperty("user.home").nn.tt
 
-  given dex: (Provenance[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
+    ApkConfiguration
+      ( minApi      = 26,
+        targetApi   = 34,
+        packageName = t"dev.soundness.app",
+        versionCode = 1,
+        versionName = t"1.0",
+        label       = t"Soundness App",
+        permissions = Nil,
+        keystore    = t"$home/.android/debug.keystore",
+        storePass   = t"android",
+        alias       = t"androiddebugkey",
+        keyPass     = t"android" )
 
-  given apk: (Provenance[Artifact.Apk] from Universe.Classfile):
-    type Origin = Universe.Classfile
-
-  given js: [module <: Artifact.Js.Modules]
-  =>  (Provenance[Artifact.Js[module]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given wasi: [version <: Artifact.Wasi.Versions]
-  =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
-
-  given binary: (Provenance[Artifact.Binary] from Universe.Nir):
-    type Origin = Universe.Nir
-
-  given library: [universe <: Universe] => (Provenance[Artifact.Library[universe]] from universe):
-    type Origin = universe
-
-// Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
-// has a provenance, whether or not it is currently linkable, so it can drive compilation
-// (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
-trait Provenance[artifact <: Artifact]:
-  type Origin <: Universe
+// What an Android application package needs beyond its compiled code: the Android API level it
+// targets, the package name and human label, the requested runtime permissions, and the keystore
+// to sign with. The launcher activity is the compilation's entry point.
+case class ApkConfiguration
+  ( minApi:       Int,
+    targetApi:    Int,
+    packageName:  Text,
+    versionCode:  Int,
+    versionName:  Text,
+    label:        Text,
+    permissions:  List[Text],
+    keystore:     Text,
+    storePass:    Text,
+    alias:        Text,
+    keyPass:      Text )

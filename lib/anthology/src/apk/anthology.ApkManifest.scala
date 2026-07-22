@@ -32,37 +32,86 @@
                                                                                                   */
 package anthology
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import vacuous.*
 
-object Provenance:
-  given jar: (Provenance[Artifact.Jar] from Universe.Classfile):
-    type Origin = Universe.Classfile
+// Builds the `Axml.Element` tree for an Android manifest. The resource IDs below are the stable,
+// public `android.R.attr.*` constants (verified against `aapt`'s own output); public resource
+// IDs never change across platform versions, so hardcoding the handful a manifest needs avoids
+// depending on the platform `android.jar`'s resource table at all.
+object ApkManifest:
+  private val versionCode:      Int = 0x0101021b
+  private val versionName:      Int = 0x0101021c
+  private val minSdkVersion:    Int = 0x0101020c
+  private val targetSdkVersion: Int = 0x01010270
+  private val nameAttr:         Int = 0x01010003
+  private val labelAttr:        Int = 0x01010001
+  private val exportedAttr:     Int = 0x01010010
 
-  given dex: (Provenance[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
+  private def android(name: Text, id: Int, value: Axml.Value): Axml.Attribute =
+    Axml.Attribute(Axml.androidUri, name, id, value)
 
-  given apk: (Provenance[Artifact.Apk] from Universe.Classfile):
-    type Origin = Universe.Classfile
+  def apply
+    ( packageName:  Text,
+      versionCode:  Int,
+      versionName:  Text,
+      minSdk:       Int,
+      targetSdk:    Int,
+      label:        Text,
+      activity:     Text,
+      permissions:  List[Text] )
+  :   Axml.Element =
 
-  given js: [module <: Artifact.Js.Modules]
-  =>  (Provenance[Artifact.Js[module]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
+    // Each requested runtime permission is a `<uses-permission android:name="…"/>` element.
+    val permissionElements = permissions.map: permission =>
+      Axml.Element
+        ( t"uses-permission",
+          List(android(t"name", nameAttr, Axml.Value.Str(permission))),
+          Nil )
 
-  given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
+    val launcher =
+      Axml.Element
+        ( t"intent-filter",
+          Nil,
+          List
+            ( Axml.Element
+                ( t"action",
+                  List(android(t"name", nameAttr,
+                      Axml.Value.Str(t"android.intent.action.MAIN"))),
+                  Nil ),
+              Axml.Element
+                ( t"category",
+                  List(android(t"name", nameAttr,
+                      Axml.Value.Str(t"android.intent.category.LAUNCHER"))),
+                  Nil ) ) )
 
-  given wasi: [version <: Artifact.Wasi.Versions]
-  =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
+    val activityElement =
+      Axml.Element
+        ( t"activity",
+          List
+            ( android(t"name", nameAttr, Axml.Value.Str(activity)),
+              android(t"exported", exportedAttr, Axml.Value.Bool(true)) ),
+          List(launcher) )
 
-  given binary: (Provenance[Artifact.Binary] from Universe.Nir):
-    type Origin = Universe.Nir
+    val application =
+      Axml.Element
+        ( t"application",
+          List(android(t"label", labelAttr, Axml.Value.Str(label))),
+          List(activityElement) )
 
-  given library: [universe <: Universe] => (Provenance[Artifact.Library[universe]] from universe):
-    type Origin = universe
+    val usesSdk =
+      Axml.Element
+        ( t"uses-sdk",
+          List
+            ( android(t"minSdkVersion", minSdkVersion, Axml.Value.Num(minSdk)),
+              android(t"targetSdkVersion", targetSdkVersion, Axml.Value.Num(targetSdk)) ),
+          Nil )
 
-// Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
-// has a provenance, whether or not it is currently linkable, so it can drive compilation
-// (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
-trait Provenance[artifact <: Artifact]:
-  type Origin <: Universe
+    Axml.Element
+      ( t"manifest",
+        List
+          ( Axml.Attribute(Unset, t"package", Unset, Axml.Value.Str(packageName)),
+            android(t"versionCode", ApkManifest.versionCode, Axml.Value.Num(versionCode)),
+            android(t"versionName", ApkManifest.versionName, Axml.Value.Str(versionName)) ),
+        usesSdk :: permissionElements ++ List(application) )

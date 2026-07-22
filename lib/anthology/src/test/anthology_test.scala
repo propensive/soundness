@@ -116,6 +116,33 @@ object Tests extends Suite(m"Anthology Tests"):
         Linker[Artifact.Jar](List(dexOptions.minApi(24)))
     . assert(_.nonEmpty)
 
+    test(m"The AXML encoder emits the binary-XML chunk header"):
+      val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
+      List(axml(0), axml(1), axml(2), axml(3)).map(_.toInt & 0xff)
+    . assert(_ == List(0x03, 0x00, 0x08, 0x00))
+
+    test(m"The AXML total-size field equals the encoded length"):
+      val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
+      def u8(index: Int): Int = axml(index).toInt & 0xff
+      val declared = u8(4) | (u8(5) << 8) | (u8(6) << 16) | (u8(7) << 24)
+      declared == axml.length
+    . assert(_ == true)
+
+    test(m"An APK linkage is not available without importing apkLinkages"):
+      demilitarize:
+        summon[Linkage[Artifact.Apk]]
+    . assert(_.nonEmpty)
+
+    test(m"The APK linkage defaults to API level 26"):
+      import apkLinkages.given
+      summon[Linkage[Artifact.Apk]].initial.asInstanceOf[ApkConfiguration].minApi
+    . assert(_ == 26)
+
+    test(m"An APK option is not applicable to a dex linker"):
+      demilitarize:
+        Linker[Artifact.Dex](List(apkOptions.minApi(24)))
+    . assert(_.nonEmpty)
+
     test(m"A WASI linkage is not available without toolchain and WIT world"):
       demilitarize:
         summon[Linkage[Artifact.Wasi[0.2]]]
