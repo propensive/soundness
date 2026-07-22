@@ -30,6 +30,34 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Facade, Kotlin, KotlinDialect, KotlinFacade, KotlinInvoke, kotlinInvocation}
+import scala.language.dynamics
+
+import prepositional.*
+
+object Facade:
+  // The sole constructor: wraps a JVM value originating from Kotlin. Zero-cost at the boundary;
+  // the value travels verbatim and every navigation is a direct call on it.
+  def apply[underlying](value: underlying): Facade over underlying =
+    val facade = new Facade:
+      def unwrap: Any = value
+
+    facade.asInstanceOf[Facade over underlying]
+
+// An eager facade over a live Kotlin/JVM value, typed `Facade over T` where `T` is the real
+// Scala view of the underlying class — type arguments included, so `Facade over Pair[Text,
+// Text]` knows its components are `Text`. Unlike `Foreign` (a deferred expression AST for
+// cross-runtime ecosystems), every member access materializes immediately as a direct,
+// statically-typed JVM call, transparently typed by the Kotlin metadata of the underlying
+// class: nullable results become `Optional`, `kotlin.String` becomes `Text`, and Kotlin-typed
+// results are wrapped as further facades.
+trait Facade extends Dynamic, Transportive:
+  // The raw underlying value: the escape hatch back to plain Java-level interop.
+  def unwrap: Any
+
+  transparent inline def selectDynamic(name: String): Any =
+    ${KotlinFacade.select('this, 'name)}
+
+  transparent inline def applyDynamic(name: String)(inline arguments: Any*): Any =
+    ${KotlinFacade.applied('this, 'name, 'arguments)}

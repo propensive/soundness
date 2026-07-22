@@ -46,17 +46,30 @@ import vacuous.*
 // the identically-named class on the compile classpath (which the macro classloader sees),
 // parsed with kotlin-metadata-jvm. Alongside the ecosystem-neutral `Prototype`s it retains a
 // side-table of each member's JVM-level identity — the declaring class (which, for a multi-file
-// facade, is the *part* class), the method's name and descriptor — for `KotlinInvoke` to emit
-// direct JVM calls from.
+// facade, is the *part* class), the method's name and descriptor — for the materializers
+// (`KotlinInvoke`, `KotlinFacade`) to emit direct JVM calls from. Functions, `val`/`var`
+// properties (through their getters) and constructors (under the name `<init>`) are resolved;
+// suspending functions are deferred (their JVM shape takes a hidden continuation parameter),
+// and omitted so the diagnostic is `no member`.
 object KotlinDialect extends Dialect:
   case class JvmMember
     ( owner:      Text,
       jvmName:    Text,
       descriptor: Text,
       static:     Boolean,
+      property:   Boolean,
       arity:      Int )
 
-  private type Resolution = (Map[Text, Prototype], Map[Text, List[JvmMember]])
+  private case class Entry
+    ( owner:     Text,
+      name:      Text,
+      signature: JvmMethodSignature,
+      static:    Boolean,
+      property:  Boolean,
+      arity:     Int,
+      prototype: Prototype )
+
+  private type Resolution = (Map[Text, Prototype], Map[Text, List[JvmMember]], List[Int])
 
   // Never parses a text resource: this dialect exists only through `resolve`.
   def parse(source: Text): Map[Text, Map[Text, Prototype]] = Map()
@@ -68,6 +81,14 @@ object KotlinDialect extends Dialect:
 
   private[xenophile] def members(typeName: Text, name: Text): List[JvmMember] =
     resolved(typeName).let(_(1).at(name)).or(Nil)
+
+  private[xenophile] def memberPrototype(typeName: Text, name: Text): Optional[Prototype] =
+    resolved(typeName).let(_(0).at(name))
+
+  // The declaration-order identifiers of a class's type parameters, for substituting a
+  // `Facade`'s Scala type arguments into `#<id>` type-parameter references.
+  private[xenophile] def typeParameters(typeName: Text): List[Int] =
+    resolved(typeName).let(_(2)).or(Nil)
 
   // Cached per type name for the lifetime of a compilation run, like the core `parsed` cache.
   private val cache: scm.HashMap[Text, Optional[Resolution]] = scm.HashMap()
@@ -89,27 +110,58 @@ object KotlinDialect extends Dialect:
         try
           metadata match
             case metadata: KotlinClassMetadata.Class =>
-              collate(functionsOf(typeName, metadata.getKmClass.nn, static = false))
+              val kmClass = metadata.getKmClass.nn
+
+              val identifiers = kmClass.getTypeParameters.nn.asScala.to(List).map(_.getId)
+
+              val constructors = kmClass.getConstructors.nn.asScala.to(List).flatMap:
+                constructor =>
+                  Optional(JvmExtensionsKt.getSignature(constructor)).let: signature =>
+                    val parameters =
+                      constructor.getValueParameters.nn.asScala.to(List).map: parameter =>
+                        foreignType(parameter.getType.nn)
+
+                    List:
+                      Entry
+                        ( typeName, t"<init>", signature, false, false, parameters.length,
+                          Prototype(parameters, Foreign.Type.Named(typeName)) )
+
+                  . or(Nil)
+
+              val properties = kmClass.getProperties.nn.asScala.to(List).flatMap: property =>
+                Optional(JvmExtensionsKt.getGetterSignature(property)).let: signature =>
+                  val result = foreignType(property.getReturnType.nn)
+
+                  List:
+                    Entry
+                      ( typeName, property.getName.nn.tt, signature, false, true, 0,
+                        Prototype(Unset, result) )
+
+                . or(Nil)
+
+              collate(functions(typeName, kmClass, false) ++ properties ++ constructors,
+                  identifiers)
 
             case metadata: KotlinClassMetadata.FileFacade =>
-              collate(packageFunctions(typeName, metadata.getKmPackage.nn))
+              collate(packageFunctions(typeName, metadata.getKmPackage.nn), Nil)
 
             case metadata: KotlinClassMetadata.MultiFileClassFacade =>
               // Members live in the part classes; each records its *own* class as the JVM owner.
               val parts = metadata.getPartClassNames.nn.asScala.to(List).map(_.nn.tt)
 
-              collate:
-                parts.flatMap: part =>
-                  val binary = part.s.replace("/", ".").nn.tt
+              val entries = parts.flatMap: part =>
+                val binary = part.s.replace("/", ".").nn.tt
 
-                  loadable(binary).let(metadataOf(_)).let:
-                    case metadata: KotlinClassMetadata.MultiFileClassPart =>
-                      packageFunctions(binary, metadata.getKmPackage.nn)
+                loadable(binary).let(metadataOf(_)).let:
+                  case metadata: KotlinClassMetadata.MultiFileClassPart =>
+                    packageFunctions(binary, metadata.getKmPackage.nn)
 
-                    case _ =>
-                      Nil
+                  case _ =>
+                    Nil
 
-                  . or(Nil)
+                . or(Nil)
+
+              collate(entries, Nil)
 
             case _ =>
               Unset
@@ -123,57 +175,47 @@ object KotlinDialect extends Dialect:
       try KotlinClassMetadata.readStrict(annotation).nn
       catch case _: Throwable => Unset
 
-  private def functionsOf(owner: Text, kmClass: KmClass, static: Boolean)
-  :   List[(Text, KmFunction, JvmMethodSignature, Boolean)] =
-
+  private def functions(owner: Text, kmClass: KmClass, static: Boolean): List[Entry] =
     kmClass.getFunctions.nn.asScala.to(List).flatMap: function =>
-      signatureOf(function).let { signature => List((owner, function, signature, static)) }.or(Nil)
+      entry(owner, function, static).let(List(_)).or(Nil)
 
-  private def packageFunctions(owner: Text, kmPackage: KmPackage)
-  :   List[(Text, KmFunction, JvmMethodSignature, Boolean)] =
-
+  private def packageFunctions(owner: Text, kmPackage: KmPackage): List[Entry] =
     kmPackage.getFunctions.nn.asScala.to(List).flatMap: function =>
-      signatureOf(function).let { signature => List((owner, function, signature, true)) }.or(Nil)
+      entry(owner, function, true).let(List(_)).or(Nil)
 
-  // Suspending functions take a hidden continuation parameter, so their JVM shape diverges from
-  // their Kotlin declaration; they are deferred, and omitted so the error is `no member`.
-  private def signatureOf(function: KmFunction): Optional[JvmMethodSignature] =
-    if Attributes.isSuspend(function) then Unset
-    else Optional(JvmExtensionsKt.getSignature(function))
+  private def entry(owner: Text, function: KmFunction, static: Boolean): Optional[Entry] =
+    if Attributes.isSuspend(function) then Unset else
+      Optional(JvmExtensionsKt.getSignature(function)).let: signature =>
+        val parameters = function.getValueParameters.nn.asScala.to(List).map: parameter =>
+          foreignType(parameter.getType.nn)
 
-  private def collate(functions: List[(Text, KmFunction, JvmMethodSignature, Boolean)])
-  :   Resolution =
+        Entry
+          ( owner, function.getName.nn.tt, signature, static, false, parameters.length,
+            Prototype(parameters, foreignType(function.getReturnType.nn)) )
 
+  private def collate(entries: List[Entry], identifiers: List[Int]): Resolution =
     val prototypes: Map[Text, Prototype] =
-      functions.groupBy(_(1).getName.nn.tt).view.mapValues: overloads =>
-        prototype(overloads.head(1))
-
-      . to(Map)
+      entries.groupBy(_.name).view.mapValues(_.head.prototype).to(Map)
 
     val jvmMembers: Map[Text, List[JvmMember]] =
-      functions.groupBy(_(1).getName.nn.tt).view.mapValues: overloads =>
-        overloads.map: (owner, function, signature, static) =>
+      entries.groupBy(_.name).view.mapValues: overloads =>
+        overloads.map: entry =>
           JvmMember
-            ( owner,
-              signature.getName.nn.tt,
-              signature.getDescriptor.nn.tt,
-              static,
-              function.getValueParameters.nn.size )
+            ( entry.owner,
+              entry.signature.getName.nn.tt,
+              entry.signature.getDescriptor.nn.tt,
+              entry.static,
+              entry.property,
+              entry.arity )
 
       . to(Map)
 
-    (prototypes, jvmMembers)
-
-  private def prototype(function: KmFunction): Prototype =
-    val parameters = function.getValueParameters.nn.asScala.to(List).map: parameter =>
-      foreignType(parameter.getType.nn)
-
-    Prototype(parameters, foreignType(function.getReturnType.nn))
+    (prototypes, jvmMembers, identifiers)
 
   // Maps a Kotlin metadata type to the ecosystem-neutral foreign form: named classes by their
-  // fully-qualified Kotlin name, generic applications through `Applied`, and nullability as a
-  // union with `"null"`. A type-parameter reference has no stable name at this level; it maps
-  // to `"*"`, which no argument satisfies — generic members are deferred.
+  // fully-qualified Kotlin name, generic applications through `Applied`, nullability as a union
+  // with `"null"`, and a type-parameter reference as `#<id>` — resolved against the receiver's
+  // type arguments by `KotlinFacade`, and satisfiable by no argument elsewhere.
   private def foreignType(tpe: KmType): Foreign.Type =
     val base: Foreign.Type = tpe.classifier match
       case classifier: KmClassifier.Class =>
@@ -187,6 +229,9 @@ object KotlinDialect extends Dialect:
 
       case classifier: KmClassifier.TypeAlias =>
         Foreign.Type.Named(classifier.getName.nn.replace("/", ".").nn.tt)
+
+      case classifier: KmClassifier.TypeParameter =>
+        Foreign.Type.Named(t"#${classifier.getId}")
 
       case _ =>
         Foreign.Type.Named(t"*")

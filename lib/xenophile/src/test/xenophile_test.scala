@@ -100,6 +100,63 @@ object Tests extends Suite(m"Xenophile tests"):
           . getProgressionLastElement(t"one", 10, 2)
       . assert(_.nonEmpty)
 
+    suite(m"Kotlin facades"):
+      val pair = Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b")
+
+      test(m"a Kotlin class constructs through its facade"):
+        pair.unwrap.toString.tt
+      . assert(_ == t"(a, b)")
+
+      test(m"a property substitutes the facade's type arguments"):
+        val first: Text = pair.first
+        first
+      . assert(_ == t"a")
+
+      test(m"the second component reads likewise"):
+        val second: Text = pair.second
+        second
+      . assert(_ == t"b")
+
+      val regex = Kotlin.make[kotlin.text.Regex](t"[0-9]+")
+
+      test(m"an instance method accepts Text for a CharSequence parameter"):
+        val matches: Boolean = regex.matches(t"123")
+        matches
+      . assert(_ == true)
+
+      test(m"a non-matching input reports false"):
+        val matches: Boolean = regex.matches(t"abc")
+        matches
+      . assert(_ == false)
+
+      test(m"a nullable result is an Optional, absent on no match"):
+        regex.find(t"abc", 0).absent
+      . assert(_ == true)
+
+      test(m"a nullable result is present on a match, as a facade"):
+        regex.find(t"a1b2", 0).let { result => result.value: Text }
+      . assert(_ == t"1")
+
+      test(m"a Kotlin String property reads as Text"):
+        val pattern: Text = regex.pattern
+        pattern
+      . assert(_ == t"[0-9]+")
+
+      test(m"an unknown property is rejected"):
+        demilitarize:
+          Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").third
+      . assert(_.nonEmpty)
+
+      test(m"a wrongly-typed constructor argument is rejected"):
+        demilitarize:
+          Kotlin.make[kotlin.text.Regex](42)
+      . assert(_.nonEmpty)
+
+      test(m"a non-Kotlin class cannot be made into a facade"):
+        demilitarize:
+          Kotlin.make[java.lang.StringBuilder](t"x")
+      . assert(_.nonEmpty)
+
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):
