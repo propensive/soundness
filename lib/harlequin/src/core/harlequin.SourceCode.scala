@@ -350,7 +350,12 @@ object SourceCode:
         context.setSetting(context.settings.YstopAfter, List("typer"))
 
     val metaMap = collectTypes(typerRun)
-    val completions = caret.let(collectCompletions(typerRun, _))
+
+    val completions = caret.let: caret =>
+      val standard = collectCompletions(typerRun, caret)
+
+      dynamicCompletions(text, scalac, cp, caret).lay(standard): dynamic =>
+        Completions(dynamic.replace, dynamic.items ::: standard.items)
 
     // `Compiled` runs the post-typer phases (stopping before bytecode generation,
     // so nothing is written to disk) purely to surface later diagnostics.
@@ -436,6 +441,111 @@ object SourceCode:
           ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
     Completions(Span.offset(offset.z, 0), items)
+
+  private def identifierChar(char: Char): Boolean = char.isLetterOrDigit || char == '_'
+
+  // Members reached through a `Dynamic` receiver are not symbols, so the interactive engine
+  // cannot offer them; but the receiver's refined type often determines them fully (Xenophile's
+  // `Foreign`, say, records the foreign type in its `Topic` refinement). If the caret sits on a
+  // member selection whose qualifier derives from `scala.Dynamic`, find the base `Dynamic`
+  // type's companion object and — if it implements `prophesy.Completable` — load it
+  // reflectively in this JVM (as Xenophile loads its grammars at macro time) and ask it which
+  // members the refinement admits.
+  //
+  // The qualifier's type comes from a dedicated typer run over the source with `.partial`
+  // excised: in the main run the very selection being completed is usually an error (the
+  // partial name is no member — a macro-checked `selectDynamic` halts on it), and the error
+  // destroys the statement's typed tree, taking the qualifier with it. Truncated, the
+  // statement is just the qualifier expression, which types. Any failure — an untyped
+  // qualifier, no companion, a companion that is not `Completable`, a provider exception —
+  // degrades to `Unset`, never an error.
+  private def dynamicCompletions(text: Text, scalac: Scalac[?, ?], cp: Text, caret: Ordinal)
+  :   Optional[Completions] =
+
+    val content = text.s.toCharArray.nn
+    val point = caret.n0.min(content.length)
+    var start = point
+
+    while start > 0 && identifierChar(content(start - 1)) do start -= 1
+
+    // A member selection needs a `.` before the partial name, and a qualifier before that.
+    if start < 2 || content(start - 1) != '.' then Unset else
+      val prefix: Text = String(content, start, point - start).tt
+
+      val truncated: Text =
+        t"${String(content, 0, start - 1)}${String(content, point, content.length - point)}"
+
+      val (run, _, _) =
+        frontend(truncated, scalac, cp): context =>
+          context.setSetting(context.settings.YstopAfter, List("typer"))
+
+      val unit = run.units.head
+
+      given context: Contexts.Context =
+        dotty.tools.dotc.quoted.QuotesCache.init(run.runContext.fresh.setCompilationUnit(unit))
+
+      given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()(using context)
+
+      // The qualifier is the OUTERMOST `Dynamic`-typed, error-free term tree ending exactly at
+      // the removed `.` — a macro-expanded qualifier (an `Inlined` chain such as Xenophile's)
+      // contains call-site-spanned inner trees of unrelated types, so neither "deepest" nor
+      // type-agnostic selection would find the expansion's own refined type.
+      val qualifierEnd = start - 1
+
+      var qualifier: Optional[ast.tpd.Tree] = Unset
+
+      object finder extends ast.tpd.TreeTraverser:
+        def traverse(tree: ast.tpd.Tree)(using Contexts.Context): Unit =
+          val matches =
+            tree.span.exists && tree.span.end == qualifierEnd && tree.isTerm &&
+              !tree.tpe.isError && tree.tpe.derivesFrom(Symbols.defn.DynamicClass)
+
+          if matches then
+            val wider = qualifier.let: previous =>
+              tree.span.start < previous.span.start
+
+            if wider.or(true) then qualifier = tree
+
+          traverseChildren(tree)
+
+      finder.traverse(unit.tpdTree)
+
+      qualifier.lay(Unset): tree =>
+        import quotes.reflect.*
+
+        val repr = tree.tpe.widen.asInstanceOf[TypeRepr]
+        val dynamicClass = Symbol.requiredClass("scala.Dynamic")
+
+        if !repr.derivesFrom(dynamicClass) then Unset else
+          // The base classes that introduce `Dynamic`, tried in linearization order: the first
+          // whose companion loads and implements `Completable` provides the completions.
+          val candidates = repr.baseClasses.filter: cls =>
+            cls != dynamicClass && cls.typeRef.derivesFrom(dynamicClass) &&
+              cls.companionModule.exists
+
+          val provided = candidates.view.map: cls =>
+            try
+              // The module class's full name is the JVM binary name (already `$`-suffixed);
+              // its singleton is the static `MODULE$` field.
+              val module =
+                Class.forName(cls.companionModule.moduleClass.fullName).nn
+                . getField("MODULE$").nn
+                . get(null).nn
+
+              module match
+                case completable: prophesy.Completable =>
+                  val items =
+                    completable.completions(repr, prefix).filter(_.name.s.startsWith(prefix.s))
+
+                  if items.isEmpty then Unset
+                  else Completions(Span.offset(start.z, prefix.length), items)
+
+                case _ =>
+                  Unset
+
+            catch case scala.util.control.NonFatal(_) => Unset
+
+          provided.collectFirst { case completions: Completions => completions }.getOrElse(Unset)
 
   private def collectTypes(run: Run): Map[(Int, Int), Syntax] =
     // Use the run's own context: the compilation advanced the compiler's periods,

@@ -551,7 +551,8 @@ object soundness extends Toolchain:
     parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     pneumatic.core, pneumatic.flate,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
-    typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core)
+    typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core,
+    prophesy.core)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
@@ -1113,6 +1114,11 @@ object coaxial extends Library:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm)
 
+object prophesy extends Library:
+  object core extends Component(stenography.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+
 object contextual extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
@@ -1581,7 +1587,8 @@ object hallucination extends Library:
       settings.cc(super.scalacOptions())
 
 object harlequin extends Library:
-  object core extends Component(anthology.scala, stenography.core, hellenism.jvm):
+  object core extends Component(anthology.scala, stenography.core, hellenism.jvm,
+      prophesy.core):
     override def scalaJs = false // syntax highlighting via `anthology.scala` (the compiler)
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -2428,7 +2435,7 @@ object wisteria extends Library:
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
-    vacuous.core):
+    vacuous.core, prophesy.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object typescript extends Component(core):
@@ -2477,7 +2484,8 @@ object xenophile extends Library:
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit, webidl, wasm, hellenism.core):
+  object test extends Tests(typescript, native, wit, webidl, wasm, hellenism.core,
+      harlequin.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -2606,7 +2614,7 @@ val allLibraries: Seq[Library] = Seq(
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   perihelion, phoenicia, plutocrat, pneumatic, polaris, polysyllabic, polyvinyl, prepositional,
   prescience,
-  probably, profanity,
+  probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
