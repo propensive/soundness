@@ -99,8 +99,10 @@ object SourceCode:
         caret.lay(resolvedCompletions): caret =>
           val (prefix, context) = Lexis.context(text, caret)
           val found = prophesy.ScalaKeywords.pattern(context)
+
           val words = prefix.lay(found.keywords): p =>
             found.keywords.filter(_.starts(p))
+
           val prefixLength = prefix.lay(0)(_.length)
           val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
 
@@ -111,9 +113,25 @@ object SourceCode:
             found.expectation == prophesy.KeywordPattern.Expectation.TermBinding ||
               found.expectation == prophesy.KeywordPattern.Expectation.TypeBinding
 
+          val typal =
+            found.expectation == prophesy.KeywordPattern.Expectation.TypeIdentifier
+
+          // In a pure type position, only type-shaped resolved items (and the packages and
+          // modules that prefix them) are offered.
+          val resolvedItems: List[Completion] =
+            if typal then
+              resolvedCompletions.lay(Nil): resolved =>
+                resolved.items.filter: item =>
+                  item.kind == Completion.Kind.Type || item.kind == Completion.Kind.Module ||
+                    item.kind == Completion.Kind.Package
+            else
+              resolvedCompletions.lay(Nil)(_.items)
+
+          val merged = items ::: resolvedItems
+
           if binding then Completions(replace, items)
-          else if items.isEmpty then resolvedCompletions
-          else Completions(replace, items ::: resolvedCompletions.lay(Nil)(_.items))
+          else if merged.isEmpty then resolvedCompletions
+          else Completions(replace, merged)
 
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val context0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
@@ -378,7 +396,12 @@ object SourceCode:
     val metaMap = collectTypes(typerRun)
 
     val completions = caret.let: caret =>
-      val standard = collectCompletions(typerRun, caret)
+      // The interactive driver is the primary completion source: unlike the batch typer run,
+      // it retains error trees, so a bare unresolved identifier — the normal state of the
+      // very name being completed — still has a tree at the caret to complete against. The
+      // batch run remains as the fallback if the driver fails outright.
+      val standard =
+        interactiveCompletions(text, scalac, cp, caret).or(collectCompletions(typerRun, caret))
 
       dynamicCompletions(text, scalac, cp, caret).lay(standard): dynamic =>
         Completions(dynamic.replace, dynamic.items ::: standard.items)
@@ -446,6 +469,41 @@ object SourceCode:
     else if symbol.is(Flags.Given) then Completion.Kind.Given
     else if symbol.is(Flags.Method) then Completion.Kind.Method
     else Completion.Kind.Term
+
+  // Completions from a dedicated `InteractiveDriver` run: the presentation compiler's entry
+  // point, which types in interactive mode and *retains error trees*, so scope completions
+  // work for bare (necessarily unresolved) identifiers in both term and type position — the
+  // batch run destroys the enclosing statement's tree in exactly those cases. Any failure
+  // degrades to `Unset` and the batch route below takes over.
+  private def interactiveCompletions(text: Text, scalac: Scalac[?, ?], cp: Text, caret: Ordinal)
+  :   Optional[Completions] =
+
+    try
+      val settings = ("-classpath" :: cp.s :: scalac.commandLineArguments.map(_.s)).map(_.nn)
+      val driver = interactive.InteractiveDriver(settings)
+      // The driver resolves the URI as a path, so it must use the `file` scheme, though no
+      // file exists there: the source text is supplied directly.
+      val uri = java.nio.file.Path.of("/harlequin-highlighting.scala").nn.toUri.nn
+      driver.run(uri, text.s)
+
+      val unit = driver.compilationUnits(uri)
+
+      given context: Contexts.Context =
+        dotty.tools.dotc.quoted.QuotesCache.init(driver.currentCtx.fresh.setCompilationUnit(unit))
+
+      given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()(using context)
+
+      val position = SourcePosition(unit.source, Spans.Span(caret.n0))
+      val (offset, raw) = interactive.Completion.completions(position)
+
+      val items = raw.flatMap: completion =>
+        completion.symbols.map: symbol =>
+          Completion
+            ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
+
+      if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), items)
+
+    catch case scala.util.control.NonFatal(_) => Unset
 
   // Reuse the compiler's interactive completion engine over the typed tree, so we
   // inherit its full behaviour — direct members, inherited members, extension

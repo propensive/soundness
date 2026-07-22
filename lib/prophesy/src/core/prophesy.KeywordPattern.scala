@@ -43,6 +43,7 @@ object KeywordPattern:
   enum Element:
     case Exact(lexeme: Lexeme)
     case AnyKeyword
+    case AnySymbol
     case ValueEnd
     case TypeEnd
     case AnyOf(lexemes: Set[Lexeme])
@@ -54,6 +55,12 @@ object KeywordPattern:
       case AnyKeyword => lexeme match
         case Lexeme.Keyword(_) => true
         case _                 => false
+
+      // Any symbolic token: in a branch list this follows the `Exact` symbol branches, so it
+      // catches the open class of operators (`+`, `::`, `++`…) they do not enumerate.
+      case AnySymbol => lexeme match
+        case Lexeme.Symbol(_) => true
+        case _                => false
 
       // "An expression just ended": a closing bracket, a term identifier or a literal.
       case ValueEnd => lexeme match

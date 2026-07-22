@@ -141,6 +141,33 @@ object Tests extends Suite(m"Harlequin Tests"):
       Scala.highlight(snippet).completions
     .assert(_ == Unset)
 
+    test(m"a bare type position completes in-scope types"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source = t"val x: Li"
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(_.contains(t"List"))
+
+    test(m"a type application completes in-scope types"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source = t"val x = collection.mutable.Map[Li"
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(_.contains(t"List"))
+
+    test(m"a bare term position completes in-scope names"):
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      import highlighting.typecheckedScala
+
+      val source = t"val x = Li"
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+    .assert(_.contains(t"List"))
+
     test(m"completions at a member selection include the type's methods"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
@@ -231,3 +258,23 @@ object Tests extends Suite(m"Harlequin Tests"):
       test(m"match is followed by case"):
         keywordsAt(t"xs match ")
       . assert(_ == List(t"case"))
+
+      test(m"a context bound offers no keywords"):
+        keywordsAt(t"def fn[T: ")
+      . assert(_ == Nil)
+
+      test(m"a parameter type ascription offers no keywords"):
+        keywordsAt(t"def f(x: ")
+      . assert(_ == Nil)
+
+      test(m"a val type ascription offers no keywords"):
+        keywordsAt(t"val x: ")
+      . assert(_ == Nil)
+
+      test(m"an indented template body after a colon offers definitions"):
+        keywordsAt(t"class Foo:\n  va")
+      . assert(_ == List(t"val", t"var"))
+
+      test(m"an operator continues an expression"):
+        keywordsAt(t"val x = 1 + ")
+      . assert { words => words.contains(t"new") && !words.contains(t"val") }
