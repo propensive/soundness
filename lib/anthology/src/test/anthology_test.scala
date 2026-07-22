@@ -101,9 +101,19 @@ object Tests extends Suite(m"Anthology Tests"):
         summon[Linkage[Artifact.Js["amd"]]]
     . assert(_.nonEmpty)
 
-    test(m"Dex is nameable but not linkable"):
+    test(m"A dex linkage is not available without importing dexLinkages"):
       demilitarize:
         summon[Linkage[Artifact.Dex]]
+    . assert(_.nonEmpty)
+
+    test(m"The dex linkage defaults to API level 26"):
+      import dexLinkages.given
+      summon[Linkage[Artifact.Dex]].initial.asInstanceOf[DexConfiguration].minApi
+    . assert(_ == 26)
+
+    test(m"A dex option is not applicable to a JAR linker"):
+      demilitarize:
+        Linker[Artifact.Jar](List(dexOptions.minApi(24)))
     . assert(_.nonEmpty)
 
     test(m"A WASI linkage is not available without toolchain and WIT world"):
@@ -242,6 +252,18 @@ object Tests extends Suite(m"Anthology Tests"):
           . pipe: artifact =>
               mute[ExecEvent](sh"java -jar $artifact".exec[Text]()).trim
         . assert(_ == t"hello")
+
+        test(m"Linking as DEX produces an archive containing classes.dex"):
+          import dexLinkages.given
+
+          Linker[Artifact.Dex](Nil)
+          . link(Compilation(out, classpath), linked)
+          . pipe: artifact =>
+              val zipfile = java.util.zip.ZipFile(artifact.encode.s)
+
+              try zipfile.entries.nn.asScala.exists(_.getName == "classes.dex")
+              finally zipfile.close()
+        . assert(_ == true)
 
     // The native counterpart—compile with the Scala Native plugin, link with clang, and run the
     // binary—which runs only when the plugin and runtime JARs are cached and clang is present.
