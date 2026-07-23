@@ -30,15 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package soundness
 
-import anticipation.*
-import denominative.*
-import vacuous.*
-
-case class Notice
-     (importance: Importance,
-      file:       Text,
-      message:    Text,
-      span:       Optional[Span],
-      markup:     Optional[Text] = Unset)
+export delicious.{Markup, Placeholder, PlaceholderKind, SemanticMessage, Style}

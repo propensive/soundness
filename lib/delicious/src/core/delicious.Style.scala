@@ -30,15 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package delicious
 
 import anticipation.*
-import denominative.*
 import vacuous.*
 
-case class Notice
-     (importance: Importance,
-      file:       Text,
-      message:    Text,
-      span:       Optional[Span],
-      markup:     Optional[Text] = Unset)
+object Style:
+  def apply(text: Optional[Text]): Style = text.lay(Style.Default): text =>
+    text.s match
+      case "dcl"     => Declaration
+      case "located" => Located
+      case "full"    => Full
+      case _         => Default
+
+enum Style:
+  case Default, Declaration, Located, Full

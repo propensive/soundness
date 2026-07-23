@@ -45,7 +45,7 @@ import publish.*
 import os.Path
 
 object settings:
-  // The Scala compiler is the propensive/scala fork: the 3.9.0-RC1 tree merged with the
+  // The Scala compiler is the propensive/scala fork: the 3.9.0-RC4 tree merged with the
   // capture-checking fix branches (the stock compiler mis-boxes pure values, mishandles quote
   // type-holes, alias and context-result capabilities, cast type-arguments, and cycles on JDK 25
   // sealed-classfile parsing — see rep/DECISIONS.md). It is consumed in one of two modes:
@@ -54,7 +54,7 @@ object settings:
   //      https://github.com/propensive/proscala/releases; each release ships a single
   //      `proscala-<tag>.tar.gz` asset whose contents are a `lib` directory (the unversioned core
   //      jars plus the versioned third-party jars). The `toolchain` module below downloads
-  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.0-RC1-p3`, the latest in the 3.9.0 stream) and
+  //      `SOUNDNESS_SCALA_RELEASE` (default `3.9.0-RC4-p1`, the latest in the 3.9.0 stream) and
   //      extracts it into a shared cache, exposing its jars to every coursier resolution — no
   //      local compiler build and no publishing step needed. Switch streams by setting
   //      `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.0-dev-p2`).
@@ -68,11 +68,11 @@ object settings:
   // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
   // must match the version string the jars were built with (`compiler.properties`), or
   // coursier/zinc caches poison each other across compilers. The release tag
-  // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept: `3.9.0-RC1-p3` ships jars built as
-  // `3.9.0-RC1-propensive`. Override the coordinate with `SOUNDNESS_SCALA_VERSION` (e.g. the
-  // 3.10.0 row is version "3.10.0-propensive").
-  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC1-propensive")
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC1-p3")
+  // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept, though from `3.9.0-RC4-p1` on the two
+  // coincide (earlier releases shipped jars built as e.g. `3.9.0-RC1-propensive`). Override the
+  // coordinate with `SOUNDNESS_SCALA_VERSION`.
+  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC4-p6")
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC4-p6")
   // Empty by default → download `scalaRelease`. Set to a local `release` directory to use its
   // `release/lib` jars directly (fork-developer mode).
   val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")
@@ -83,7 +83,8 @@ object settings:
   // no fork-republished Native artifacts are needed. `scalaNativeScalaVersion` is the *base*
   // version those artifacts are published for (the fork's `-propensive` suffix is dropped).
   val scalaNativeVersion = "0.5.12"
-  val scalaNativeScalaVersion = "3.9.0-RC1"
+  // Nearest published base version (no RC4 Native artifacts yet); TASTy-identical to RC4.
+  val scalaNativeScalaVersion = "3.9.0-RC3"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -581,7 +582,7 @@ object soundness extends Toolchain:
   object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
-    anthology.`scala`, exegesis.core, hellenism.jvm)
+    anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -1187,6 +1188,21 @@ object decorum extends Library:
     override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   object test extends Tests(plugin):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
+
+object delicious extends Library:
+  object core extends Component(gossamer.core, vacuous.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+
+  object `scala` extends Component(core, stenography.core, anthology.core):
+    override def scalaJs = false // wraps the Scala compiler (dotty)
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object test extends Tests(core, `scala`, anthology.`scala`):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -2640,7 +2656,7 @@ val allLibraries: Seq[Library] = Seq(
   burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
   charisma, chiaroscuro, coaxial, contextual, contingency, cosmopolite,
-  decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
+  decorum, delicious, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton, facsimile,
   frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,

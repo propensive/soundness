@@ -30,15 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package delicious
 
 import anticipation.*
-import denominative.*
-import vacuous.*
+import gossamer.*
 
-case class Notice
-     (importance: Importance,
-      file:       Text,
-      message:    Text,
-      span:       Optional[Span],
-      markup:     Optional[Text] = Unset)
+object SemanticMessage:
+  /** Does the text contain semantic-diagnostic markers? */
+  def marked(text: Text): Boolean = Markup.marked(text)
+
+  def parse(text: Text): SemanticMessage = SemanticMessage(Markup.parse(text))
+
+case class SemanticMessage(markup: List[Markup]):
+  def plain: Text = markup.map(_.plain).join
+
+  def types: List[Markup.Typed] =
+    def recur(nodes: List[Markup]): List[Markup.Typed] = nodes.flatMap:
+      case node@Markup.Typed(_, _, _, children) => node :: recur(children)
+      case Markup.Textual(_)                    => Nil
+      case Markup.Symbolic(_, _, _, children)   => recur(children)
+      case Markup.Named(_, _, children)         => recur(children)
+      case Markup.Code(_, children)             => recur(children)
+      case Markup.Spanned(_, _, children)       => recur(children)
+
+    recur(markup)

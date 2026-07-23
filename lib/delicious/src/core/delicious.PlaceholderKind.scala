@@ -30,15 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package delicious
 
 import anticipation.*
-import denominative.*
-import vacuous.*
 
-case class Notice
-     (importance: Importance,
-      file:       Text,
-      message:    Text,
-      span:       Optional[Span],
-      markup:     Optional[Text] = Unset)
+object PlaceholderKind:
+  def apply(text: Text): PlaceholderKind = text.s match
+    case "local-type" => LocalType
+    case "local-term" => LocalTerm
+    case "error"      => Error
+    case "typevar"    => Typevar
+    case "skolem"     => Skolem
+    case _            => Other(text)
+
+enum PlaceholderKind:
+  case LocalType, LocalTerm, Error, Typevar, Skolem
+  case Other(kind: Text)

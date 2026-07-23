@@ -50,6 +50,8 @@ object scalacOptions:
 
   val experimental = Scalac.Option[3.4 | 3.5 | 3.6 | 3.7 | 3.8](t"-experimental")
 
+  val semanticDiagnostics = Scalac.Option[3.9](t"-Xsemantic-diagnostics")
+
   object warnings:
     val feature = Scalac.Option[Scalac.Versions](t"-feature")
     val deprecation = Scalac.Option[Scalac.Versions](t"-deprecation")
@@ -134,6 +136,13 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
   val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
   val message: Text = diagnostic.message.tt
 
+  // Under `-Xsemantic-diagnostics`, the raw message carries in-band semantic
+  // markers (stripped from the `message` accessor above); preserve it so
+  // consumers can interpret them, e.g. with the `delicious` module.
+  val markup: Optional[Text] =
+    val raw = diagnostic.msg.message
+    if raw.exists(_ == '\uE000') then raw.tt else Unset
+
   diagnostic.position.map: position =>
     position.nn.pipe: position =>
       val span =
@@ -143,8 +152,8 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
             position.endLine.nn.z,
             position.endColumn.nn.z )
 
-      Notice(importance, file, message, span)
+      Notice(importance, file, message, span, markup)
 
   . nn
-  . orElse(Notice(importance, file, message, Unset))
+  . orElse(Notice(importance, file, message, Unset, markup))
   . nn
