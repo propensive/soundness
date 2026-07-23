@@ -250,7 +250,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Decode small message (3 fields)"):
       bench(m"Decode (typed) with Locomotion")
-        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size1 ):
         '{ locomotion.Benchmarks.decodeSmall }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size1):
@@ -258,7 +258,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Decode 100 user records"):
       bench(m"Decode (typed) with Locomotion")
-        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size2 ):
         '{ locomotion.Benchmarks.decodeUsers }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size2):
@@ -266,7 +266,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Decode 500 log entries"):
       bench(m"Decode (typed) with Locomotion")
-        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size3 ):
         '{ locomotion.Benchmarks.decodeLogs }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size3):
@@ -274,7 +274,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Decode 1000 packed integers"):
       bench(m"Decode (typed) with Locomotion")
-        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size4 ):
         '{ locomotion.Benchmarks.decodeInts }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size4):
@@ -282,7 +282,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Decode 50-entry string map"):
       bench(m"Decode (typed) with Locomotion")
-        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size5 ):
         '{ locomotion.Benchmarks.decodeAttributes }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size5):
@@ -290,7 +290,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Decode 5-level nested message"):
       bench(m"Decode (typed) with Locomotion")
-        ( target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size6 ):
         '{ locomotion.Benchmarks.decodeNested }
 
       bench(m"Walk with protobuf-java")(target = 1*Second, operationSize = size6):
@@ -305,7 +305,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Encode small message (3 fields)"):
       bench(m"Encode with Locomotion")
-        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size1 ):
         '{ locomotion.Benchmarks.encodeSmall }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size1):
@@ -313,7 +313,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Encode 100 user records"):
       bench(m"Encode with Locomotion")
-        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size2 ):
         '{ locomotion.Benchmarks.encodeUsers }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size2):
@@ -321,7 +321,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Encode 1000 packed integers"):
       bench(m"Encode with Locomotion")
-        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size4 ):
         '{ locomotion.Benchmarks.encodeInts }
 
       bench(m"Encode with protobuf-java")(target = 1*Second, operationSize = size4):
@@ -329,15 +329,15 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
     suite(m"Encode 500 log entries (Locomotion only)"):
       bench(m"Encode with Locomotion")
-        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size3 ):
         '{ locomotion.Benchmarks.encodeLogs }
 
     suite(m"Encode 50-entry string map (Locomotion only)"):
       bench(m"Encode with Locomotion")
-        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size5 ):
         '{ locomotion.Benchmarks.encodeAttributes }
 
     suite(m"Encode 5-level nested message (Locomotion only)"):
       bench(m"Encode with Locomotion")
-        ( target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size6 ):
         '{ locomotion.Benchmarks.encodeNested }

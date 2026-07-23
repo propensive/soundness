@@ -30,129 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package nomenclature
 
 import anticipation.*
-import chiaroscuro.*
-import digression.*
 import fulminate.*
-import gossamer.*
-import hypotenuse.*
-import iridescence.*
-import nomenclature.*
-import prepositional.*
-import symbolism.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
+// Requires that a name is a valid Java identifier: nonempty, a Java identifier start
+// character followed by Java identifier part characters (as defined by
+// `java.lang.Character`). Keywords are not excluded. The `description` type parameter is
+// the human-readable phrasing used in error messages.
+object JavaIdentifier extends Rule
+  ( { description => m"must be $description" },
+    { (name, _) => identifierRules.java(name) } )
 
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{Cadential, Temporal}
-export Baseline.Mode.{Arithmetic, Geometric}
-
-// Exported at package level so that `n"…"` moniker literals work wherever probably is
-// imported, without a separate `import Probing.nominative` in every suite.
-export Probing.nominative
-
-// A real trait, not a structural refinement of `Palette`: structural member selection goes
-// through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
-// support — whereas these are ordinary virtual calls.
-trait TestPalette extends Juxtaposition.JuxtapositionPalette:
-  type Form = Srgb
-  def warning: Color in Srgb
-  def critical: Color in Srgb
-  def benchmark: Color in Srgb
-  def mixed: Color in Srgb
-  def informative: Color in Srgb
-  def cold: Color in Srgb
-  def warm: Color in Srgb
-  def hot: Color in Srgb
-  def accented: Color in Srgb
-  def highlight: Color in Srgb
-  def detail: Color in Srgb
-  def pass: Color in Srgb
-  def fail: Color in Srgb
-  def aspirePass: Color in Srgb
-  def aspireFail: Color in Srgb
-  def subdued: Color in Srgb
-  def unaccented: Color in Srgb
-  def positive: Color in Srgb
-  def negative: Color in Srgb
-
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
-
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
-
-extension [value](value: value)
-  @targetName("plusOrMinus")
-  inline infix def +/- (tolerance: value)
-  ( using inline commensurable: value is Commensurable against value,
-          addable:              value is Addable by value,
-          equality:             addable.Result =:= value,
-          subtractable:         value is Subtractable by value,
-          equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
-
-    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
-
-
-  @targetName("plusOrMinus2")
-  inline infix def ± (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
-
-    value +/- (tolerance)
-
-
-def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
-  TestId(name, suite, codepoint)
-
-
-// Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
-// its description. The moniker addresses the test in selections and charts, independently
-// of edits to the description.
-def test[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, codepoint: Codepoint )
-:   TestId =
-
-  TestId(description, suite, codepoint, name)
-
-
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(name, suite), block)
-
-
-def suite[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, runner: Runner[report] )
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(description, suite, name), block)
-
-
-extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${probably.internal.debug('value, 'test)}
-
-package harnesses:
-  given threadLocal: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
-    override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
-
-package autopsies:
-  given contrastExpectations: Autopsy:
-    type Analyse = true
-
-  given none: Autopsy:
-    type Analyse = false
+sealed trait JavaIdentifier[description <: Label] extends Check[description]

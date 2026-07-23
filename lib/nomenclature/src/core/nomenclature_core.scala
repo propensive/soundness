@@ -94,6 +94,22 @@ private[nomenclature] object identifierRules:
 
       valid
 
+  // Java identifier: an identifier-start character followed by identifier-part
+  // characters, per `java.lang.Character`'s definition. Keywords are not excluded.
+  def java(name: Text): Boolean =
+    val text = name.s
+    val length = text.length
+
+    if length == 0 || !Character.isJavaIdentifierStart(text.charAt(0)) then false else
+      var index = 1
+      var valid = true
+
+      while valid && index < length do
+        if !Character.isJavaIdentifierPart(text.charAt(index)) then valid = false
+        index += 1
+
+      valid
+
 transparent inline def disintersect[intersection] =
   ${protointernal.disintersection[intersection]}
 

@@ -2054,7 +2054,8 @@ object proscenium extends Library:
       settings.cc(super.scalacOptions())
 
 object probably extends Library:
-  object core extends Component(chiaroscuro.core, ambience.core, eucalyptus.core, coverage):
+  object core extends Component(chiaroscuro.core, ambience.core, eucalyptus.core,
+      nomenclature.core, coverage):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")

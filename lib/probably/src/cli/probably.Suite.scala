@@ -40,8 +40,10 @@ import contingency.*
 import digression.*
 import escapade.*
 import fulminate.*
+import gossamer.*
 import iridescence.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 
@@ -52,7 +54,7 @@ import themes.solarizedTheme
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdios.virtualMachineStdio).vouch
 
-  var runner0: Runner[Report] =
+  private def makeRunner(selection: Selection): Runner[Report] =
     given stdio: Stdio = suiteIo
 
     given palette: (theme: Theme) => TestPalette = new TestPalette:
@@ -85,10 +87,14 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       def positive:    Color in Srgb = pass
       def negative:    Color in Srgb = fail
 
-    try Runner() catch case error: EnvironmentError =>
+    try Runner(selection) catch case error: EnvironmentError =>
       jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???
 
+  var runner0: Runner[Report] = makeRunner(Selection.all)
+
+  // An alias given is memoized on first use, which is safe here only because `main`
+  // replaces `runner0` with a selection-aware runner before anything summons it.
   given runner: Runner[Report] = runner0
 
   // A pure `Testable` view of this suite rather than `this`: the suite itself captures its
@@ -105,14 +111,46 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     runner.suite(testableView, run())
 
   final def main(arguments: IArray[Text]): Unit =
-    try runner.suite(testableView, run())
-    catch case error: Throwable =>
-      runner.terminate(error)
-      jl.System.exit(2)
-    finally
+    val selection = Selection.parse(arguments.to(List))
+    if !arguments.isEmpty then runner0 = makeRunner(selection)
+
+    if selection.listOnly then
+      given stdio: Stdio = suiteIo
+
       try
-        runner.complete()
-        if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
-      catch case error: EnvironmentError =>
-        jl.System.out.nn.println(StackTrace(error).teletype)
-        jl.System.exit(3)
+        runner.suite(testableView, run())
+
+        runner.listed.each: (id, kind) =>
+          val path =
+            def names(id: TestId): List[Text] =
+              id.suite.let { suite => names(suite.id) }.or(Nil) :+ id.moniker.or(id.name.text)
+            names(id).join(t"/")
+
+          Out.println(t"${id.id}  ${kindName(kind)}  $path")
+
+        jl.System.exit(0)
+      catch case error: Throwable =>
+        jl.System.out.nn.println(StackTrace(error).teletype.render)
+        jl.System.exit(2)
+    else
+      try runner.suite(testableView, run())
+      catch case error: Throwable =>
+        runner.terminate(error)
+        jl.System.exit(2)
+      finally
+        try
+          if runner.admitted == 0 && !selection.trivial then
+            given stdio: Stdio = suiteIo
+            Out.println(t"No tests matched the selection.")
+
+          runner.complete()
+          if runner.report.passed then jl.System.exit(0) else jl.System.exit(1)
+        catch case error: EnvironmentError =>
+          jl.System.out.nn.println(StackTrace(error).teletype)
+          jl.System.exit(3)
+
+  private def kindName(kind: Entry.Kind): Text = kind match
+    case Entry.Kind.Check   => t"test"
+    case Entry.Kind.Bench   => t"bench"
+    case Entry.Kind.Stress  => t"stress"
+    case Entry.Kind.Profile => t"profile"

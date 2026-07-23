@@ -47,6 +47,7 @@ import quantitative.*
 import rudiments.*
 import sedentary.*
 import spectacular.*
+import superlunary.embeddings.automatic
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
@@ -70,6 +71,12 @@ object BenchUsers:
 // `String`, so the two targets are materially identical).
 case class JsoniterUser(id: Int, username: String, email: String, active: Boolean, role: String)
 case class JsoniterUsers(users: List[JsoniterUser])
+
+enum JsonParser:
+  case Merino, MerinoTracking, Jawn, Circe, Jsoniter, Jackson
+
+enum Document:
+  case Example1, Example2, Example3, Users, Logs, Integers, Decimals
 
 object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   sealed trait Information extends Dimension
@@ -419,114 +426,74 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[JsoniterUsers]
       ( jsonBytes4.mutable(using Unsafe) )(using jsoniterUsersCodec)
 
+  def textFor(document: Document): String = document match
+    case Document.Example1 => jsonText1
+    case Document.Example2 => jsonText2
+    case Document.Example3 => jsonText3
+    case Document.Users    => jsonText4
+    case Document.Logs     => jsonText5
+    case Document.Integers => jsonText7
+    case Document.Decimals => jsonText8
+
+  // Byte-array transport has no JSON codec, so Merino's cells receive the document as
+  // text and re-encode it in the measuring JVM — through a single-slot cache keyed by
+  // reference identity (the extracted document is memoized, so its identity is stable),
+  // costing one comparison per iteration rather than one copy.
+  private var utf8Key: String | Null = null
+  private var utf8Value: Data = IArray[Byte]()
+
+  def utf8(text: String): Data =
+    if utf8Key ne text then
+      utf8Key = text
+      utf8Value = text.getBytes("UTF-8").nn.immutable(using Unsafe)
+
+    utf8Value
+
   def run(): Unit =
     // The spike must agree with the production decoder before being timed.
     assert(decodeUsersFused() == decodeUsersDirectData(), "fused spike disagrees")
 
     val bench = Bench()
 
-    val size1 = jsonBytes1.length*Byte
-    val size2 = jsonBytes2.length*Byte
-    val size3 = jsonBytes3.length*Byte
     val size4 = jsonBytes4.length*Byte
-    val size5 = jsonBytes5.length*Byte
     val size6 = jsonBytes6.length*Byte
 
-    suite(m"Parse example 1"):
-      bench(m"Parse file with Merino")
-        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
-        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes1) }
+    // One benchmark, two axes: six parsers against seven documents, anchored to Merino.
+    // Each document rides `References` as a spliced value: ONE staged tree per parser,
+    // with seven dispatches each carrying a different document, extracted once per run.
+    // operationSize is dropped: sizes vary per document and per-cell sizing isn't
+    // supported yet.
+    bench(m"Parse JSON documents")
+      ( target = 1*Second, baseline = JsonParser.Merino, comparison = Baseline(compare = Min) )
 
-      bench(m"Parse file with Merino (tracking)")(target = 1*Second, operationSize = size1):
-        '{ Json.Ast.parseTracked(jacinta.Benchmarks.jsonBytes1) }
+    . over(JsonParser, Document):
+        case (parser, document) =>
+          val text: String = jacinta.Benchmarks.textFor(document)
 
-      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size1):
-        ' {
-            import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(jacinta.Benchmarks.jsonText1)
-          }
+          parser match
+            case JsonParser.Merino =>
+              '{ Json.Ast.parse(jacinta.Benchmarks.utf8($text)) }
 
-      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size1):
-        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText1) }
+            case JsonParser.MerinoTracking =>
+              '{ Json.Ast.parseTracked(jacinta.Benchmarks.utf8($text)) }
 
-      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size1):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText1) }
+            case JsonParser.Jawn =>
+              ' {
+                  import org.typelevel.jawn.ast.JParser
+                  JParser.parseFromString($text)
+                }
 
-      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size1):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText1) }
+            case JsonParser.Circe =>
+              '{ io.circe.parser.parse($text) }
 
-    suite(m"Parse example 2"):
-      bench(m"Parse file with Merino")
-        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
-        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes2) }
+            case JsonParser.Jsoniter =>
+              '{ jacinta.Benchmarks.parseWithJsoniter($text) }
 
-      bench(m"Parse file with Merino (tracking)")(target = 1*Second, operationSize = size2):
-        '{ Json.Ast.parseTracked(jacinta.Benchmarks.jsonBytes2) }
-
-      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size2):
-        ' {
-            import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(jacinta.Benchmarks.jsonText2)
-          }
-
-      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size2):
-        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText2) }
-
-      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size2):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText2) }
-
-      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size2):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText2) }
-
-    suite(m"Parse example 3"):
-      bench(m"Parse file with Merino")
-        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
-        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes3) }
-
-      bench(m"Parse file with Merino (tracking)")(target = 1*Second, operationSize = size3):
-        '{ Json.Ast.parseTracked(jacinta.Benchmarks.jsonBytes3) }
-
-      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size3):
-        ' {
-            import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(jacinta.Benchmarks.jsonText3)
-          }
-
-      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size3):
-        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText3) }
-
-      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size3):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText3) }
-
-      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size3):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText3) }
-
-    suite(m"Parse example 4 (100 user records)"):
-      bench(m"Parse file with Merino")
-        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
-        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes4) }
-
-      bench(m"Parse file with Merino (tracking)")(target = 1*Second, operationSize = size4):
-        '{ Json.Ast.parseTracked(jacinta.Benchmarks.jsonBytes4) }
-
-      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size4):
-        ' {
-            import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(jacinta.Benchmarks.jsonText4)
-          }
-
-      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size4):
-        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText4) }
-
-      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText4) }
-
-      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size4):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText4) }
+            case JsonParser.Jackson =>
+              '{ jacinta.Benchmarks.parseWithJackson($text) }
 
     suite(m"Decode example 4 into records (100 user records)"):
-      bench(m"Decode via the Json AST")
-        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
+      bench(m"Decode via the Json AST")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersAst() }
 
       bench(m"Decode directly with Parsable")(target = 1*Second, operationSize = size4):
@@ -552,35 +519,12 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       bench(m"Decode directly with Jsoniter")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersJsoniter() }
 
-    suite(m"Parse example 5 (500 log entries)"):
-      bench(m"Parse file with Merino")
-        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
-        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes5) }
-
-      bench(m"Parse file with Merino (tracking)")(target = 1*Second, operationSize = size5):
-        '{ Json.Ast.parseTracked(jacinta.Benchmarks.jsonBytes5) }
-
-      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size5):
-        ' {
-            import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(jacinta.Benchmarks.jsonText5)
-          }
-
-      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size5):
-        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText5) }
-
-      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText5) }
-
-      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size5):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText5) }
-
     suite(m"Parse example 6 (50 high-precision blockchain transactions)"):
       // Three Merino rows exercising each `NumberMode` to visualise the
       // precision-vs-throughput trade-off on inputs that overflow the
       // in-Long fast path (every wei/gas value here is >15 nibbles).
       bench(m"Parse file with Merino (Full / Bcd Array[Double])")
-        ( target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min) ):
+        (target = 1*Second, operationSize = size6):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes6)(using jacinta.NumberMode.Full) }
 
       bench(m"Parse file with Merino (Full, tracking)")
@@ -613,56 +557,6 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     suite(m"Print high-precision-number AST"):
       bench(m"Print blockchain example (50 transactions)")(target = 1*Second):
         '{ jacinta.Benchmarks.printBlockchain() }
-
-    suite(m"Parse example 7 (1000 small integers)"):
-      val size7 = jsonBytes7.length*Byte
-
-      bench(m"Parse file with Merino")
-        ( target = 1*Second, operationSize = size7, baseline = Baseline(compare = Min) ):
-        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes7) }
-
-      bench(m"Parse file with Merino (tracking)")(target = 1*Second, operationSize = size7):
-        '{ Json.Ast.parseTracked(jacinta.Benchmarks.jsonBytes7) }
-
-      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size7):
-        ' {
-            import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(jacinta.Benchmarks.jsonText7)
-          }
-
-      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size7):
-        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText7) }
-
-      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size7):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText7) }
-
-      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size7):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText7) }
-
-    suite(m"Parse example 8 (1000 small decimals)"):
-      val size8 = jsonBytes8.length*Byte
-
-      bench(m"Parse file with Merino")
-        ( target = 1*Second, operationSize = size8, baseline = Baseline(compare = Min) ):
-        '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes8) }
-
-      bench(m"Parse file with Merino (tracking)")(target = 1*Second, operationSize = size8):
-        '{ Json.Ast.parseTracked(jacinta.Benchmarks.jsonBytes8) }
-
-      bench(m"Parse file with Jawn")(target = 1*Second, operationSize = size8):
-        ' {
-            import org.typelevel.jawn.ast.JParser
-            JParser.parseFromString(jacinta.Benchmarks.jsonText8)
-          }
-
-      bench(m"Parse file with Circe")(target = 1*Second, operationSize = size8):
-        '{ io.circe.parser.parse(jacinta.Benchmarks.jsonText8) }
-
-      bench(m"Parse file with Jsoniter")(target = 1*Second, operationSize = size8):
-        '{ jacinta.Benchmarks.parseWithJsoniter(jacinta.Benchmarks.jsonText8) }
-
-      bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size8):
-        '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText8) }
 
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s

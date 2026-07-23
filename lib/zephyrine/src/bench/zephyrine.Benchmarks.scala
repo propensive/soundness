@@ -220,7 +220,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
     suite(m"Linear iteration"):
       bench(m"java.lang.String charAt loop (baseline)")
-        ( target = 1*Second, operationSize = text10kSize, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = text10kSize ):
         '{ zephyrine.Benchmarks.stringCharAtSum(zephyrine.Benchmarks.text10k) }
 
       bench(m"Cursor.next, single 10 KB block")
@@ -245,7 +245,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
     suite(m"Hold and capture"):
       bench(m"empty hold {} × 1000 (Held alloc)")
-        ( target = 1*Second, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second ):
         '{ zephyrine.Benchmarks.cursorEmptyHoldLoop(zephyrine.Benchmarks.text10k, 1000) }
 
       bench(m"hold + mark + grab 16 chars in-block × 100")
@@ -273,7 +273,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
     suite(m"Safe peek"):
       bench(m"datum + manual sentinel loop, 10 KB bytes (baseline)")
-        ( target = 1*Second, operationSize = text10kSize, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = text10kSize ):
         '{ zephyrine.Benchmarks.dataDatumLoop(zephyrine.Benchmarks.data10k) }
 
       bench(m"peek loop, 10 KB bytes")

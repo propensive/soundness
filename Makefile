@@ -3,12 +3,12 @@ publishLocal:
 
 test:
 	./mill test.assembly
-	java -Xss2m -Xmx4g -cp out/test/assembly.dest/out.jar soundness.Tests
+	java -Xss2m -Xmx4g -cp out/test/assembly.dest/out.jar soundness.Tests $(TESTS)
 
 test.%:
 	./mill clean $*.test
 	./mill $*.test.assembly
-	java -Xss2m -Xmx4g -cp out/$*/test/assembly.dest/out.jar $*.Tests
+	java -Xss2m -Xmx4g -cp out/$*/test/assembly.dest/out.jar $*.Tests $(TESTS)
 
 failing:
 	./mill test.assembly
@@ -16,7 +16,7 @@ failing:
 
 bench:
 	./mill bench.assembly
-	java -Xss2m -Xmx4g -cp out/bench/assembly.dest/out.jar crossparse.Benchmarks
+	java -Xss2m -Xmx4g -cp out/bench/assembly.dest/out.jar crossparse.Benchmarks $(TESTS)
 
 keywords:
 	./mill keywords.assembly

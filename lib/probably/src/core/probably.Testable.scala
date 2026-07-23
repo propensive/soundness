@@ -35,10 +35,14 @@ package probably
 import beneficence.*
 import digression.*
 import fulminate.*
+import nomenclature.*
 import rudiments.*
 import vacuous.*
 
-class Testable(val name: Message, val parent: Optional[Testable] = Unset)
+class Testable
+  ( val name:    Message,
+    val parent:  Optional[Testable] = Unset,
+    val moniker: Optional[Name[Probing]] = Unset )
   ( using codepoint: Codepoint )
 extends Findable:
 
@@ -48,4 +52,4 @@ extends Findable:
 
   override def hashCode: Int = name.hashCode + parent.lay(0)(_.hashCode)
 
-  val id: TestId = TestId(name, parent, codepoint)
+  val id: TestId = TestId(name, parent, codepoint, moniker)

@@ -128,7 +128,7 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
     suite(m"Concatenate 10 fragments"):
       bench(m"append Teletype × 10")
-        ( target = 1*Second, operationSize = fragSize*10, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = fragSize*10 ):
         ' {
             val f = escapade.Benchmarks.fragment
             escapade.Benchmarks.appendN(f, f, 10)
@@ -136,7 +136,7 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
     suite(m"Concatenate 100 fragments"):
       bench(m"append Teletype × 100")
-        ( target = 1*Second, operationSize = fragSize*100, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = fragSize*100 ):
         ' {
             val f = escapade.Benchmarks.fragment
             escapade.Benchmarks.appendN(f, f, 100)
@@ -144,7 +144,7 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
     suite(m"Concatenate 1000 fragments"):
       bench(m"append Teletype × 1000")
-        ( target = 1*Second, operationSize = fragSize*1000, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = fragSize*1000 ):
         ' {
             val f = escapade.Benchmarks.fragment
             escapade.Benchmarks.appendN(f, f, 1000)
@@ -154,7 +154,7 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
     suite(m"Slice (dropChars / takeChars on long styled text)"):
       bench(m"dropChars(100) on a ~4.5k-char paragraph")
-        ( target = 1*Second, operationSize = paraSize, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = paraSize ):
         '{ escapade.Benchmarks.paragraph.dropChars(100) }
 
       bench(m"takeChars(half) on a ~4.5k-char paragraph")
@@ -169,7 +169,7 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
     suite(m"Render (Teletype → Text)"):
       bench(m"render long paragraph (true colour)")
-        ( target = 1*Second, operationSize = paraSize, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = paraSize ):
         '{ escapade.Benchmarks.renderTrueColor(escapade.Benchmarks.paragraph) }
 
       bench(m"render long paragraph (xterm-256)")(target = 1*Second, operationSize = paraSize):
@@ -183,5 +183,5 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
 
     suite(m"Build (e\"...\" interpolation)"):
       bench(m"interpolate a nested-markup expression")
-        ( target = 1*Second, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second ):
         '{ escapade.Benchmarks.buildInterpolation() }

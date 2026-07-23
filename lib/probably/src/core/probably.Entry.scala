@@ -32,127 +32,76 @@
                                                                                                   */
 package probably
 
+import scala.collection.mutable as scm
+
 import anticipation.*
-import chiaroscuro.*
-import digression.*
-import fulminate.*
-import gossamer.*
-import hypotenuse.*
-import iridescence.*
-import nomenclature.*
-import prepositional.*
-import symbolism.*
+import rudiments.*
+import vacuous.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
+object Entry:
+  enum Kind:
+    case Check, Bench, Stress, Profile
 
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{Cadential, Temporal}
-export Baseline.Mode.{Arithmetic, Geometric}
+object Run:
+  // Structure that a numeric metric cannot carry: a profile's hot frames, or preformatted
+  // operation-size and operation-rate units from a benchmark.
+  enum Payload:
+    case Frames(hotspots: Hotspots)
+    case Sizing(operationSize: Optional[Text], operationRate: Optional[Text])
 
-// Exported at package level so that `n"…"` moniker literals work wherever probably is
-// imported, without a separate `import Probing.nominative` in every suite.
-export Probing.nominative
+// One execution of one cell: a verdict for unit tests (absent for measurements), a map of
+// recorded metrics (whose insertion order is their presentation order), failure details,
+// and any structural payload. In a capacity search, `sustained` marks the winning run.
+case class Run
+  ( verdict:   Optional[Verdict]       = Unset,
+    metrics:   ListMap[Metric, Double] = ListMap(),
+    details:   List[Verdict.Detail]    = Nil,
+    payload:   Optional[Run.Payload]   = Unset,
+    sustained: Boolean                 = false )
 
-// A real trait, not a structural refinement of `Palette`: structural member selection goes
-// through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
-// support — whereas these are ordinary virtual calls.
-trait TestPalette extends Juxtaposition.JuxtapositionPalette:
-  type Form = Srgb
-  def warning: Color in Srgb
-  def critical: Color in Srgb
-  def benchmark: Color in Srgb
-  def mixed: Color in Srgb
-  def informative: Color in Srgb
-  def cold: Color in Srgb
-  def warm: Color in Srgb
-  def hot: Color in Srgb
-  def accented: Color in Srgb
-  def highlight: Color in Srgb
-  def detail: Color in Srgb
-  def pass: Color in Srgb
-  def fail: Color in Srgb
-  def aspirePass: Color in Srgb
-  def aspireFail: Color in Srgb
-  def subdued: Color in Srgb
-  def unaccented: Color in Srgb
-  def positive: Color in Srgb
-  def negative: Color in Srgb
+// The accumulated runs at one coordinate of a test: repeated executions of the same cell
+// gather here, generalizing repeated-verdict accumulation to every test kind.
+final class Cell():
+  private val mutex: Mutex = Mutex()
+  private val runs0: scm.ArrayBuffer[Run] = scm.ArrayBuffer()
 
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
+  def record(run: Run): Unit = mutex(runs0.append(run))
+  def runs: List[Run] = mutex(runs0.to(List))
 
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
+// One named test and its results: an ordered list of axes (which may grow during the run,
+// as emergent axes acquire coordinates), and a sparse map of cells keyed by coordinates in
+// axis space. A test with no axes has exactly one cell, at `Nil`; combinations of axis
+// values without a cell are gaps, rendered as empty positions in a grid.
+final class Entry(val id: TestId, val kind: Entry.Kind):
+  private val mutex: Mutex = Mutex()
+  private var axes0: List[Axis.Spec] = Nil
+  private var ticks0: Map[Axis.Spec, List[Value]] = Map()
+  private var cells0: ListMap[List[Value], Cell] = ListMap()
 
-extension [value](value: value)
-  @targetName("plusOrMinus")
-  inline infix def +/- (tolerance: value)
-  ( using inline commensurable: value is Commensurable against value,
-          addable:              value is Addable by value,
-          equality:             addable.Result =:= value,
-          subtractable:         value is Subtractable by value,
-          equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+  var headline: Optional[Metric] = Unset
+  var anchor: Optional[Anchor] = Unset
 
-    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
+  def axes: List[Axis.Spec] = mutex(axes0)
+  def cells: List[(List[Value], Cell)] = mutex(cells0.to(List))
 
+  // Returns the cell at the given coordinates, creating it if absent. Appends any
+  // not-yet-seen axes (emergent axes extend the axis list as their coordinates arrive) and
+  // registers each axis's values in first-appearance order.
+  def cell(coordinates: List[(Axis.Spec, Value)]): Cell = mutex:
+    coordinates.each: (axis, value) =>
+      if !axes0.contains(axis) then axes0 = axes0 :+ axis
+      val seen = ticks0.at(axis).or(Nil)
+      if !seen.contains(value) then ticks0 = ticks0.updated(axis, seen :+ value)
 
-  @targetName("plusOrMinus2")
-  inline infix def ± (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+    val address = coordinates.map(_(1))
+    if !cells0.defines(address) then cells0 = cells0.updated(address, Cell())
+    cells0(address)
 
-    value +/- (tolerance)
+  // The coordinate values of one axis in presentation order: first-appearance order for
+  // discrete axes, numeric order for integral and decimal axes.
+  def values(axis: Axis.Spec): List[Value] =
+    val seen = mutex(ticks0.at(axis).or(Nil))
 
-
-def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
-  TestId(name, suite, codepoint)
-
-
-// Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
-// its description. The moniker addresses the test in selections and charts, independently
-// of edits to the description.
-def test[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, codepoint: Codepoint )
-:   TestId =
-
-  TestId(description, suite, codepoint, name)
-
-
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(name, suite), block)
-
-
-def suite[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, runner: Runner[report] )
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(description, suite, name), block)
-
-
-extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${probably.internal.debug('value, 'test)}
-
-package harnesses:
-  given threadLocal: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
-    override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
-
-package autopsies:
-  given contrastExpectations: Autopsy:
-    type Analyse = true
-
-  given none: Autopsy:
-    type Analyse = false
+    axis.domain match
+      case Axis.Domain.Discrete => seen
+      case _                    => seen.sortBy(_.numeric.or(0.0))

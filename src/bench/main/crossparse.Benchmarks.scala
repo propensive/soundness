@@ -298,7 +298,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
       // The suite's first row absorbs the JVM's compile ramp, so it warms
       // longer than the rest.
       bench(m"JSON inlined")
-        (target = 1*Second, warmups = 15, baseline = Baseline(compare = Min)):
+        (target = 1*Second, warmups = 15):
         '{ crossparse.Benchmarks.decodeJsonInlined() }
 
       bench(m"JSON via AST")(target = 1*Second):

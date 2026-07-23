@@ -33,126 +33,60 @@
 package probably
 
 import anticipation.*
-import chiaroscuro.*
-import digression.*
 import fulminate.*
-import gossamer.*
-import hypotenuse.*
-import iridescence.*
-import nomenclature.*
-import prepositional.*
-import symbolism.*
+import vacuous.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
+// The renderer-agnostic report document: one structural representation of a test report,
+// built by `Documenting` and rendered by `AnsiRenderer` (full colour) or `TerseRenderer`
+// (plain text). Data is semantic, never preformatted: backends decide colour and glyphs,
+// and `Format` decides digits, so the two output modes cannot drift structurally.
+private[probably] object Doc:
+  enum Datum:
+    case Blank
+    case Gap                                     // a sparse-grid hole: an omitted combination
+    case Str(text: Text)
+    case Hash(id: Text)
+    case Title(name: Message, depth: Int)
+    case Mark(status: Report.Status)             // a glyph in colour output, a word in terse
+    case Num(value: Long)
+    case Time(nanos: Long)
+    case Memory(bytes: Long)
+    case Rate(perSecond: Long)                   // operations per second
+    case Percent(fraction: Double)
+    case Conf(percentile: Int, basisPoints: Long)  // e.g. P95 ±2.10%
+    case Ratio(factor: Double)                   // baseline-relative; 1.0 renders as ★
+    case Delta(datum: Datum, negative: Boolean)  // arithmetic baseline-relative: signed
 
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{Cadential, Temporal}
-export Baseline.Mode.{Arithmetic, Geometric}
+  case class Column(title: Text, numeric: Boolean = false)
 
-// Exported at package level so that `n"…"` moniker literals work wherever probably is
-// imported, without a separate `import Probing.nominative` in every suite.
-export Probing.nominative
+  // One series of a sparkline panel: block levels (1-8) per step, with cells beyond the
+  // sustained concurrency flagged for subdual, and the sustained (N, throughput) summary.
+  case class Spark
+    ( label:     Text,
+      cells:     List[Optional[(Int, Boolean)]],
+      sustained: Optional[(Long, Long)] )
 
-// A real trait, not a structural refinement of `Palette`: structural member selection goes
-// through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
-// support — whereas these are ordinary virtual calls.
-trait TestPalette extends Juxtaposition.JuxtapositionPalette:
-  type Form = Srgb
-  def warning: Color in Srgb
-  def critical: Color in Srgb
-  def benchmark: Color in Srgb
-  def mixed: Color in Srgb
-  def informative: Color in Srgb
-  def cold: Color in Srgb
-  def warm: Color in Srgb
-  def hot: Color in Srgb
-  def accented: Color in Srgb
-  def highlight: Color in Srgb
-  def detail: Color in Srgb
-  def pass: Color in Srgb
-  def fail: Color in Srgb
-  def aspirePass: Color in Srgb
-  def aspireFail: Color in Srgb
-  def subdued: Color in Srgb
-  def unaccented: Color in Srgb
-  def positive: Color in Srgb
-  def negative: Color in Srgb
+  enum Block:
+    // A table of cells; a biaxial entry renders as a crosstab: its second axis's values
+    // become the columns and each cell holds only the headline datum.
+    case Table(title: Optional[TestId], columns: List[Column], rows: List[List[Datum]])
+    case Sparkline(steps: List[Long], series: List[Spark])
+    case Histogram(title: Optional[TestId], total: Long, frames: List[Hotspots.Frame])
 
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
+  // A group of measurement blocks belonging to one suite, of one kind, rendered with a
+  // ribbon header (and a GitHub Actions group when applicable).
+  case class Group(suite: Optional[Testable], kind: Entry.Kind, blocks: List[Block])
 
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
+  // One row of the global results table, aggregating a test's runs across all its cells.
+  case class SummaryRow
+    ( status: Report.Status, id: TestId, count: Int, min: Long, max: Long, avg: Long )
 
-extension [value](value: value)
-  @targetName("plusOrMinus")
-  inline infix def +/- (tolerance: value)
-  ( using inline commensurable: value is Commensurable against value,
-          addable:              value is Addable by value,
-          equality:             addable.Result =:= value,
-          subtractable:         value is Subtractable by value,
-          equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+  case class Totals(passed: Int, failed: Int, aspirePassed: Int, aspireFailed: Int):
+    def total: Int = passed + failed + aspirePassed + aspireFailed
 
-    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
-
-
-  @targetName("plusOrMinus2")
-  inline infix def ± (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
-
-    value +/- (tolerance)
-
-
-def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
-  TestId(name, suite, codepoint)
-
-
-// Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
-// its description. The moniker addresses the test in selections and charts, independently
-// of edits to the description.
-def test[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, codepoint: Codepoint )
-:   TestId =
-
-  TestId(description, suite, codepoint, name)
-
-
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(name, suite), block)
-
-
-def suite[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, runner: Runner[report] )
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(description, suite, name), block)
-
-
-extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${probably.internal.debug('value, 'test)}
-
-package harnesses:
-  given threadLocal: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
-    override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
-
-package autopsies:
-  given contrastExpectations: Autopsy:
-    type Analyse = true
-
-  given none: Autopsy:
-    type Analyse = false
+  case class Document
+    ( results:  List[SummaryRow],
+      totals:   Totals,
+      groups:   List[Group],
+      failures: List[(TestId, List[Verdict.Detail])],
+      fatal:    Optional[(Throwable, Set[TestId])] )

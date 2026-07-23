@@ -53,7 +53,13 @@ object Stageable:
         given RemoteError mitigates JsonError =
           error => RemoteError(RemoteError.Reason.Deserialization)
 
-        Array.from(provide[Json is Decodable in Text](text.nn.as[Json].as[List[Json]]))
+        given RemoteError mitigates zephyrine.ParseError =
+          error => RemoteError(RemoteError.Reason.Deserialization)
+
+        // `Json.decodable` is named explicitly rather than left to `provide`'s deferred
+        // search: this inline body expands inside staged programs, where the search is
+        // sensitive to sibling expansions and can land on an inapplicable derivation.
+        Array.from(text.nn.as[Json](using Json.decodable).as[List[Json]])
 
     inline def serialize(value: Array[Object]): Text =
       value.iterator.to(List).map(_.asInstanceOf[Json]).in[Json].encode

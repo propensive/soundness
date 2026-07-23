@@ -28,7 +28,9 @@ TIMEOUT="${SOUNDNESS_CI_TEST_TIMEOUT:-1800}"
 # regardless of host size. Override with SOUNDNESS_CI_TEST_HEAP.
 HEAP="${SOUNDNESS_CI_TEST_HEAP:-4g}"
 
-java -Xss2m "-Xmx$HEAP" -cp "$JAR" soundness.Tests &
+# SOUNDNESS_TEST_SELECT is intentionally unquoted: it word-splits into selection terms.
+# shellcheck disable=SC2086
+java -Xss2m "-Xmx$HEAP" -cp "$JAR" soundness.Tests ${SOUNDNESS_TEST_SELECT:-} &
 pid=$!
 
 # Watchdog: if the suite is still alive after $TIMEOUT, capture a full thread

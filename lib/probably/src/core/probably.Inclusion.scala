@@ -32,5 +32,14 @@
                                                                                                   */
 package probably
 
+// How a piece of test data (a verdict, a benchmark, a strain or a profile) is included in
+// a report, at particular coordinates of a particular test. Data recorded without
+// coordinates belongs to the test's single cell; reports which do not model coordinates
+// may ignore them.
 trait Inclusion[report, data]:
-  def include(report: report, testId: TestId, data: data): report
+  def include
+    ( report: report, testId: TestId, coordinates: List[(Axis.Spec, Value)], data: data )
+  :   report
+
+  def include(report: report, testId: TestId, data: data): report =
+    include(report, testId, Nil, data)

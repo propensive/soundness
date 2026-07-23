@@ -34,7 +34,56 @@ package sedentary
 
 import soundness.*
 
+import classloaders.threadContextClassloader
+import environments.javaEnvironment
+import strategies.throwUnsafely
+import superlunary.embeddings.automatic
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
+
 given BenchmarkDevice = LocalhostDevice
 
+enum Summation:
+  case Loop, Formula
+
 object Tests extends Suite(m"Sedentary Tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    val bench = Bench()
+
+    // Two implementations on one axis: distinct staged trees, so each compiles once, and
+    // the anchor produces a comparison column against `Formula`.
+    bench(m"sum of the first thousand integers")
+      ( target = 50*Milli(Second), iterations = 2, warmups = 1,
+        baseline = Summation.Formula )
+
+    . over(Summation):
+        case Summation.Loop =>
+          ' {
+              var i = 1L
+              var sum = 0L
+
+              while i <= 1000L do
+                sum += i
+                i += 1L
+
+              sum
+            }
+
+        case Summation.Formula =>
+          '{1000L*1001L/2L}
+
+    // One implementation over a data axis: the limit rides `References`, so both cells
+    // share a single compilation and differ only in transported data; extraction is
+    // memoized per slot, so the splice costs a cached read per iteration, not a decode.
+    bench(m"count up to a limit")(target = 50*Milli(Second), iterations = 2, warmups = 1)
+    . over(Axis(t"limit")(1000, 4000)): limit =>
+        ' {
+            var i = 0
+            var count = 0
+
+            while i < $limit do
+              count += 1
+              i += 1
+
+            count
+          }

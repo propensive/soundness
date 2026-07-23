@@ -33,126 +33,63 @@
 package probably
 
 import anticipation.*
-import chiaroscuro.*
-import digression.*
-import fulminate.*
 import gossamer.*
-import hypotenuse.*
-import iridescence.*
-import nomenclature.*
-import prepositional.*
+import hieroglyph.*
+import spectacular.*
 import symbolism.*
 
-given decimalizer: Decimalizer = Decimalizer(4)
+// Numeric formatting shared by both report renderers: one implementation decides digits
+// and units; the renderers decide only colour and styling.
+private[probably] object Format:
+  val metrics = textMetrics.wideCharacterWidthMetric
 
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{Cadential, Temporal}
-export Baseline.Mode.{Arithmetic, Geometric}
+  given measurable: Char is Measurable:
+    def width(char: Char): Int = char match
+      case '✓' | '✗' | '⎇' | '↑' | '↓' => 1
+      case _                           => metrics.width(char)
 
-// Exported at package level so that `n"…"` moniker literals work wherever probably is
-// imported, without a separate `import Probing.nominative` in every suite.
-export Probing.nominative
+  // A scaled quantity: `unit` counts how many divisions by 1000 were applied (0-2 selects
+  // µs/ms/s or kB/MB/GB); 3 means the value overflowed the unit sequence and `whole` holds
+  // the raw number with no fraction.
+  case class Figure(whole: Text, fraction: Text, unit: Int)
 
-// A real trait, not a structural refinement of `Palette`: structural member selection goes
-// through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
-// support — whereas these are ordinary virtual calls.
-trait TestPalette extends Juxtaposition.JuxtapositionPalette:
-  type Form = Srgb
-  def warning: Color in Srgb
-  def critical: Color in Srgb
-  def benchmark: Color in Srgb
-  def mixed: Color in Srgb
-  def informative: Color in Srgb
-  def cold: Color in Srgb
-  def warm: Color in Srgb
-  def hot: Color in Srgb
-  def accented: Color in Srgb
-  def highlight: Color in Srgb
-  def detail: Color in Srgb
-  def pass: Color in Srgb
-  def fail: Color in Srgb
-  def aspirePass: Color in Srgb
-  def aspireFail: Color in Srgb
-  def subdued: Color in Srgb
-  def unaccented: Color in Srgb
-  def positive: Color in Srgb
-  def negative: Color in Srgb
+  def scaled(n: Long, unit: Int = 0): Figure =
+    if unit >= 3 then Figure(n.show, t"", 3)
+    else if n > 100000L then scaled(n/1000L, unit + 1)
+    else Figure((n/1000L).show, (n%1000L).show.pad(3, Rtl, '0'), unit)
 
-extension [left](left: left)
-  infix def === [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    checkable.check(left, right)
+  val timeUnits: List[Text] = List(t"µs", t"ms", t"s ")
+  val memoryUnits: List[Text] = List(t"kB", t"MB", t"GB")
 
-  infix def !== [right](right: right)(using checkable: left is Checkable against right): Boolean =
-    !checkable.check(left, right)
+  // Basis points of `part` within `whole`, for percentages rendered to two decimal places.
+  def basisPoints(part: Double, whole: Double): Long =
+    if whole == 0.0 then 0L else (part*10000.0/whole).toLong
 
-extension [value](value: value)
-  @targetName("plusOrMinus")
-  inline infix def +/- (tolerance: value)
-  ( using inline commensurable: value is Commensurable against value,
-          addable:              value is Addable by value,
-          equality:             addable.Result =:= value,
-          subtractable:         value is Subtractable by value,
-          equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+  def percent(basisPoints: Long): Text =
+    t"${basisPoints/100}.${(basisPoints%100).show.pad(2, Rtl, '0')}"
 
-    Tolerance[value](value, tolerance)(_ >= _, _ + _, _ - _)
+  // A histogram bar of `samples` scaled against `max` over a 40-cell span: full blocks
+  // with a final fractional character from the eighth-block series. Any nonzero count
+  // shows at least the thinnest bar.
+  def bar(samples: Long, max: Long): Text =
+    val eighths = (if max == 0L then 0L else samples*320L/max).max(if samples > 0L then 1L else 0L)
+    val partial = List(t"", t"▏", t"▎", t"▍", t"▌", t"▋", t"▊", t"▉")
+    t"█"*(eighths/8L).toInt + partial((eighths%8L).toInt)
 
+  val sparkBlocks: List[Text] = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
 
-  @targetName("plusOrMinus2")
-  inline infix def ± (tolerance: value)
-    ( using inline commensurable: value is Commensurable against value,
-            addable:              value is Addable by value,
-            equality:             addable.Result =:= value,
-            subtractable:         value is Subtractable by value,
-            equality2:            subtractable.Result =:= value )
-  :   Tolerance[value] =
+  def truncate(text: Text, max: Int = 800): Text =
+    if text.length <= max then text else t"${text.keep(max)}…"
 
-    value +/- (tolerance)
-
-
-def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
-  TestId(name, suite, codepoint)
-
-
-// Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
-// its description. The moniker addresses the test in selections and charts, independently
-// of edits to the description.
-def test[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, codepoint: Codepoint )
-:   TestId =
-
-  TestId(description, suite, codepoint, name)
-
-
-def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(name, suite), block)
-
-
-def suite[report](name: Name[Probing], description: Message)
-  ( using suite: Testable, runner: Runner[report] )
-  ( block: Testable ?=> Unit )
-:   Unit =
-
-  runner.suite(Testable(description, suite, name), block)
-
-
-extension [value](inline value: value)(using inline test: Harness)
-  inline def debug: value = ${probably.internal.debug('value, 'test)}
-
-package harnesses:
-  given threadLocal: Harness:
-    private val delegate: Option[Harness] =
-      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
-
-    override def capture[value: Decomposable](name: Text, value: value): value =
-      delegate.map(_.capture[value](name, value)).getOrElse(value)
-
-package autopsies:
-  given contrastExpectations: Autopsy:
-    type Analyse = true
-
-  given none: Autopsy:
-    type Analyse = false
+  def statusWord(status: Report.Status): Text = status match
+    case Report.Status.Pass        => t"pass"
+    case Report.Status.Fail        => t"fail"
+    case Report.Status.Throws      => t"throws"
+    case Report.Status.CheckThrows => t"check-throws"
+    case Report.Status.Mixed       => t"mixed"
+    case Report.Status.Suite       => t"suite"
+    case Report.Status.Bench       => t"bench"
+    case Report.Status.Stress      => t"stress"
+    case Report.Status.Profile     => t"profile"
+    case Report.Status.AspirePass  => t"aspire-pass"
+    case Report.Status.AspireFail  => t"aspire-fail"

@@ -51,12 +51,14 @@ object internal:
     ( test:         Expr[Test[test]^],
       predicate:    Expr[test => Boolean],
       action:       Expr[Trial[test] => result],
-      aspirational: Boolean )
+      aspirational: Boolean,
+      discard:      Boolean )
   :   Macro[result] =
 
     import quotes.reflect.*
 
     val aspirationalExpr: Expr[Boolean] = Expr(aspirational)
+    val discardExpr: Expr[Boolean] = Expr(discard)
 
     Expr.summon[Runner[?]].getOrElse(halt(m"No `Runner` instance is available")).absolve match
       case '{$runner: Runner[report]} =>
@@ -111,7 +113,9 @@ object internal:
                   $inclusion,
                   $inclusion2,
                   Decomposable.any[test],
-                  $aspirationalExpr )
+                  $aspirationalExpr,
+                  Nil,
+                  $discardExpr )
             }
 
         if analyse.or(false) then exp match
@@ -138,7 +142,9 @@ object internal:
                     $inclusion,
                     $inclusion2,
                     decompose,
-                    $aspirationalExpr )
+                    $aspirationalExpr,
+                    Nil,
+                    $discardExpr )
               }
 
           case _ =>
@@ -147,14 +153,17 @@ object internal:
         else plain
 
 
+  // `check` returns its value into subsequent test code, so an unselected `check` still
+  // executes (it just records nothing); `assert` and `aspire` results are discardable, so
+  // unselected ones never run at all.
   def check[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[test] =
-    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get}, false)
+    handle[test, test](test, predicate, '{(t: Trial[test]) => t.get}, false, false)
 
   def assert[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit](test, predicate, '{_ => ()}, false)
+    handle[test, Unit](test, predicate, '{_ => ()}, false, true)
 
   def aspire[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[Unit] =
-    handle[test, Unit](test, predicate, '{_ => ()}, true)
+    handle[test, Unit](test, predicate, '{_ => ()}, true, true)
 
   def succeed: Any => Boolean = (value: Any) => true
 
@@ -168,43 +177,55 @@ object internal:
       inc:          Inclusion[report, Verdict],
       inc2:         Inclusion[report, Verdict.Detail],
       decomposable: test is Decomposable,
-      aspirational: Boolean )
+      aspirational: Boolean,
+      coordinates:  List[(Axis.Spec, Value)],
+      discard:      Boolean )
   :   result =
 
-    runner.run(test).pipe: run =>
-      val verdict = run match
-        case Trial.Throws(err, duration, map) =>
-          val exception: Exception = try err() catch case exc: Exception => exc
-          if !map.nil then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+    val selected = !runner.skip(test.id, Entry.Kind.Check, coordinates)
 
-          if aspirational then Verdict.AspireFail(duration)
-          else Verdict.Throws(exception, duration)
+    // A discardable, unselected assertion never runs; an unselected `check` must still run
+    // (its value flows onward) but records nothing. The cast is sound: `discard` is true
+    // only for `assert`/`aspire`, whose `result` is `Unit`.
+    if discard && !selected then ().asInstanceOf[result] else
+      runner.run(test).pipe: run =>
+        val verdict = run match
+          case Trial.Throws(err, duration, map) =>
+            val exception: Exception = try err() catch case exc: Exception => exc
 
-        case Trial.Returns(value, duration, map) =>
-          try
-            if predicate(value) then
-              if aspirational then Verdict.AspirePass(duration) else Verdict.Pass(duration)
-            else
-              expectation.let: pair =>
-                val (exp, contrast) = pair
-                inc2.include
-                  ( runner.report,
-                    test.id,
-                    Verdict.Detail.Compare
-                      ( decomposable.decomposition(exp).text,
-                        decomposable.decomposition(value).text,
-                        contrast.juxtaposition(exp, value) ) )
+            if !map.nil && selected
+            then inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
 
-              if !map.nil
-              then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
-
-              if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
-          catch case error: Exception =>
             if aspirational then Verdict.AspireFail(duration)
-            else Verdict.CheckThrows(error, duration)
+            else Verdict.Throws(exception, duration)
 
-      inc.include(runner.report, test.id, verdict)
-      result(run)
+          case Trial.Returns(value, duration, map) =>
+            try
+              if predicate(value) then
+                if aspirational then Verdict.AspirePass(duration) else Verdict.Pass(duration)
+              else
+                if selected then
+                  expectation.let: pair =>
+                    val (exp, contrast) = pair
+                    inc2.include
+                      ( runner.report,
+                        test.id,
+                        coordinates,
+                        Verdict.Detail.Compare
+                          ( decomposable.decomposition(exp).text,
+                            decomposable.decomposition(value).text,
+                            contrast.juxtaposition(exp, value) ) )
+
+                  if !map.nil
+                  then inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
+
+                if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
+            catch case error: Exception =>
+              if aspirational then Verdict.AspireFail(duration)
+              else Verdict.CheckThrows(error, duration)
+
+        if selected then inc.include(runner.report, test.id, coordinates, verdict)
+        result(run)
 
 
   def debug[test: Type](expr: Expr[test], test: Expr[Harness]): Macro[test] =

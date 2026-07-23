@@ -61,7 +61,10 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
   protected def invoke[output](stage: Stage[output, Form, Target]): Result[output]
 
-  private var cache: Map[Codepoint, (Target, juf.Function[Form, Form])] = Map()
+  // Keyed by call site AND the staged tree's printed form: one call site may legitimately
+  // dispatch different trees (an axial benchmark stages one tree per implementation), and
+  // trees which differ only in `References`-transported data share one compilation.
+  private var cache: Map[(Codepoint, Text), (Target, juf.Function[Form, Form])] = Map()
 
   protected val classloader = classloader0
 
@@ -92,8 +95,27 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
     val references: References over Transport = References[Transport]()
 
+    // A throwaway probe pass constructs the tree once to fingerprint it, before deciding
+    // whether it is already compiled; its `References` instance is discarded so that the
+    // real allocation happens exactly once on either path below.
+    val fingerprint: Text =
+      val probe: References over Transport = References[Transport]()
+      given staging.Compiler = compiler2
+
+      staging.withQuotes:
+        ' {
+            (array: Array[Object]) =>
+              $ {
+                  probe() = 'array
+                  body(using probe)
+                }
+          }
+        . show.tt
+
+    val key: (Codepoint, Text) = (codepoint, fingerprint)
+
     val (target, function): (Target, juf.Function[Form, Form]) =
-      if cache.contains(codepoint) then
+      if cache.contains(key) then
         given staging.Compiler = compiler2
 
         // This is necessary to allocate references as a side effect
@@ -106,7 +128,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                   }
             }
 
-        cache(codepoint)
+        cache(key)
 
       else
         val uuid = Uuid()
@@ -127,6 +149,13 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
         val function: juf.Function[Form, Form] = staging.run:
           ' {
               form =>
+                // Bound once: splices read transported values from this array, so it must
+                // not be re-deserialized per evaluation — a spliced value inside a hot loop
+                // would otherwise decode the whole transport on every iteration.
+                val incoming: Array[Object] =
+                  import strategies.throwUnsafely
+                  stageable.deserialize(form)
+
                 stageable.serialize:
 
                   val array = new Array[Object](1)
@@ -134,7 +163,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                   array(0) =
                     stageable.embed[output]:
                       $ {
-                          references() = '{stageable.deserialize(form)}
+                          references() = 'incoming
                           body(using references)
                         }
 
@@ -142,7 +171,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             }
 
         val target = stage(out)
-        cache = cache.updated(codepoint, (target, function))
+        cache = cache.updated(key, (target, function))
 
         (target, function)
 

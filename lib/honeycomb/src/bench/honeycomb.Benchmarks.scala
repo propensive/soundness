@@ -78,7 +78,7 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
 
     suite(m"Parse example 1 (small page)"):
       bench(m"Parse file with Honeycomb")
-        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size1 ):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html1) }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size1):
@@ -86,7 +86,7 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
 
     suite(m"Parse example 2 (typical layout)"):
       bench(m"Parse file with Honeycomb")
-        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size2 ):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html2) }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size2):
@@ -94,7 +94,7 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
 
     suite(m"Parse example 3 (rich article)"):
       bench(m"Parse file with Honeycomb")
-        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size3 ):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html3) }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size3):
@@ -102,7 +102,7 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
 
     suite(m"Parse example 4 (100 product cards)"):
       bench(m"Parse file with Honeycomb")
-        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size4 ):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html4) }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size4):
@@ -110,7 +110,7 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
 
     suite(m"Parse example 5 (500 table rows)"):
       bench(m"Parse file with Honeycomb")
-        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size5 ):
         '{ honeycomb.Benchmarks.parseHoneycomb(honeycomb.Benchmarks.html5) }
 
       bench(m"Parse file with jsoup")(target = 1*Second, operationSize = size5):

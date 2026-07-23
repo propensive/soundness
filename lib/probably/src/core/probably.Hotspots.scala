@@ -36,8 +36,21 @@ import anticipation.*
 
 object Hotspots:
   given inclusion: Inclusion[Report, Hotspots]:
-    def include(report: Report, testId: TestId, hotspots: Hotspots): Report =
-      report.addHotspots(testId, hotspots)
+    def include
+      ( report:      Report,
+        testId:      TestId,
+        coordinates: List[(Axis.Spec, Value)],
+        hotspots:    Hotspots )
+    :   Report =
+
+      report.record
+        ( testId,
+          Entry.Kind.Profile,
+          coordinates,
+          Run
+            ( metrics = ListMap(Metric.Samples -> hotspots.total.toDouble),
+              payload = Run.Payload.Frames(hotspots) ),
+          Metric.Samples )
 
   // One hot method: the (demangled) class and method names, and how many execution samples
   // landed in it — self time, i.e. the sample's top frame.
