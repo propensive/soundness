@@ -32,9 +32,11 @@
                                                                                                   */
 package jacinta
 
-import language.dynamics
-import language.experimental.pureFunctions
-import language.experimental.separationChecking
+import scala.{caps, math}
+
+import scala.language.dynamics
+import scala.language.experimental.pureFunctions
+import scala.language.experimental.separationChecking
 
 import scala.collection.mutable as scm
 import scala.compiletime.*

@@ -71,5 +71,5 @@ object Tests extends Suite(m"Proscenium Tests"):
     test(m"load services from META-INF/services"):
       import systems.javaSystem
       val classpath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
-      classpath.services[TestService].map(_.name)
+      Set.from(classpath.services[TestService].stdlib.map(_.name))
     . assert(_ == Set(t"A", t"B"))

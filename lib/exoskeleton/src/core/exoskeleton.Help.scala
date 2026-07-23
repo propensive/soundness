@@ -32,13 +32,14 @@
                                                                                                   */
 package exoskeleton
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import escapade.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import symbolism.*
+import rudiments.*
 import vacuous.*
 
 object Help:
@@ -60,7 +61,8 @@ case class Help
 
   def teletype: Teletype = lines(0).join(e"\n")
 
-  private def label(param: Help.Param): Text = (param.name :: param.aliases).join(t", ")
+  private def label(param: Help.Param): Text =
+    ((param.name :: param.aliases): List[Text]).join(t", ")
 
   private def lines(depth: Int): List[Teletype] =
     val indent: Text = t"  "*depth
@@ -70,7 +72,7 @@ case class Help
       case text: Text         => e"$indent$Bold($command)  $text"
       case teletype: Teletype => e"$indent$Bold($command)  $teletype"
 
-    val width: Int = parameters.map(label(_).length).maxOption.getOrElse(0)
+    val width: Int = parameters.stdlib.map(label(_).length).maxOption.getOrElse(0)
 
     val paramLines: List[Teletype] = parameters.map: param =>
       param.description.absolve match
@@ -78,6 +80,6 @@ case class Help
         case text: Text         => e"$indent    ${label(param).fit(width)}  $text"
         case teletype: Teletype => e"$indent    ${label(param).fit(width)}  $teletype"
 
-    val subLines: List[Teletype] = subcommands.flatMap(_.lines(depth + 1))
+    val subLines: List[Teletype] = subcommands.bind(_.lines(depth + 1))
 
-    title :: paramLines ::: subLines
+    List.of(title :: paramLines.stdlib ::: subLines.stdlib)

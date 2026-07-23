@@ -33,6 +33,7 @@
 package hallucination
 
 import scala.compiletime.*
+import scala.caps
 
 import aperture.*
 import iridescence.*

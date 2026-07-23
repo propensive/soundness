@@ -342,7 +342,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
       case t"!" => GitStatus.Ignored
       case _    => Unset
 
-    sh"$git $repoOptions status --porcelain $ignoredParam".exec[List[Text]]().flatMap:
+    sh"$git $repoOptions status --porcelain $ignoredParam".exec[List[Text]]().bind:
       case r"$key1([ ACDMRU?!])$key2([ ADMU?!]) $path(.*)$path2( -> (.*))?" =>
         val optionalPath = path2.let(_.skip(4)).let(unescape)
         List(GitPathStatus(key(key1), key(key2), unescape(path), optionalPath))

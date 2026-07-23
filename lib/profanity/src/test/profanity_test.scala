@@ -36,6 +36,8 @@ import java.lang as jl
 
 import soundness.*
 
+import proscenium.compat.*
+
 import classloaders.systemClassloader
 import environments.javaEnvironment
 import systems.javaSystem
@@ -388,7 +390,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 case _            => editor
 
           completingEditor
-           ( LazyList(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+           ( Progression(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
                     Keypress.Enter).iterator,
              LineEditor() )
            (_(_))
@@ -397,35 +399,35 @@ object Tests extends Suite(m"Profanity Tests"):
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '1', '3', ';', '2', 'u')).head
+          Keyboard.Standard().process(Progression('', '[', '1', '3', ';', '2', 'u')).head
       . assert:
           case Keypress.Shift(Keypress.Enter) => true
           case _                              => false
 
       test(m"plain Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '1', '3', 'u')).head
+          Keyboard.Standard().process(Progression('', '[', '1', '3', 'u')).head
       . assert:
           case Keypress.Enter => true
           case _              => false
 
       test(m"Escape is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '2', '7', 'u')).head
+          Keyboard.Standard().process(Progression('', '[', '2', '7', 'u')).head
       . assert:
           case Keypress.Escape => true
           case _               => false
 
       test(m"Ctrl+C is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '9', '9', ';', '5', 'u')).head
+          Keyboard.Standard().process(Progression('', '[', '9', '9', ';', '5', 'u')).head
       . assert:
           case Keypress.Ctrl('C') => true
           case _                  => false
 
       test(m"a plain letter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '9', '7', 'u')).head
+          Keyboard.Standard().process(Progression('', '[', '9', '7', 'u')).head
       . assert:
           case Keypress.CharKey('a') => true
           case _                     => false
@@ -434,7 +436,7 @@ object Tests extends Suite(m"Profanity Tests"):
       // it as an anchor reply when the resize trap queued one.
       test(m"a plain CPR decodes to a WindowSize"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '1', '2', ';', '3', '4', 'R')).head
+          Keyboard.Standard().process(Progression('', '[', '1', '2', ';', '3', '4', 'R')).head
       . assert:
           case TerminalInfo.WindowSize(12, 34) => true
           case _                               => false
@@ -443,7 +445,7 @@ object Tests extends Suite(m"Profanity Tests"):
       test(m"a DECXCPR reply decodes to a CursorPosition"):
         supervise:
           Keyboard.Standard()
-          . process(LazyList('', '[', '?', '1', '2', ';', '3', '4', 'R'))
+          . process(Progression('', '[', '?', '1', '2', ';', '3', '4', 'R'))
           . head
       . assert:
           case TerminalInfo.CursorPosition(12, 34) => true
@@ -453,7 +455,7 @@ object Tests extends Suite(m"Profanity Tests"):
       test(m"a three-field DECXCPR reply decodes, dropping the page"):
         supervise:
           Keyboard.Standard()
-          . process(LazyList('', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
+          . process(Progression('', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
           . head
       . assert:
           case TerminalInfo.CursorPosition(12, 34) => true
@@ -461,7 +463,7 @@ object Tests extends Suite(m"Profanity Tests"):
 
       test(m"a malformed report is dropped and the stream continues"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '?', ';', 'R', 'z')).head
+          Keyboard.Standard().process(Progression('', '[', '?', ';', 'R', 'z')).head
       . assert:
           case Keypress.CharKey('z') => true
           case _                     => false
@@ -511,10 +513,10 @@ object Tests extends Suite(m"Profanity Tests"):
         test(m"SIGSYS is 31") (Signal.Sys.id)   .assert(_ == 31)
 
         test(m"every signal id is positive"):
-          Signal.values.toList.map(_.id).forall(_ > 0)
+          scala.collection.immutable.ArraySeq.unsafeWrapArray(Signal.values).to(List).map(_.id).forall(_ > 0)
         . assert(identity(_))
 
         test(m"signal ids are distinct"):
-          val ids = Signal.values.toList.map(_.id)
+          val ids = scala.collection.immutable.ArraySeq.unsafeWrapArray(Signal.values).to(List).map(_.id)
           ids.length == ids.distinct.length
         . assert(identity(_))

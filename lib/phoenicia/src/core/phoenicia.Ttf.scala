@@ -32,6 +32,8 @@
                                                                                                   */
 package phoenicia
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -98,7 +100,7 @@ case class Ttf(data: Data):
         case TtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
         case _           => None
 
-    . to(Map)
+    . pipe(Map.from(_))
 
   def head: HeadTable raises FontError =
     tables.at(TtfTag.Head).let: ref =>
@@ -167,18 +169,18 @@ case class Ttf(data: Data):
   // glyphs keep empty outlines, so character mappings, metrics and glyph references remain
   // valid. Every other table is carried over unchanged.
   def subset(chars: Set[Char]): Ttf raises FontError =
-    val retained = glyphClosure(chars.map(glyph(_).id) + 0)
+    val retained = glyphClosure(Set.of(chars.stdlib.map(glyph(_).id) + 0))
     val glyphs = glyf
     val count = maxp.glyphCount
 
     val offsets = new Array[Int](count + 1)
-    val parts = List.newBuilder[Data]
+    val parts = scala.collection.immutable.List.newBuilder[Data]
     var position = 0
 
     (0 until count).each: id =>
       offsets(id) = position
 
-      if retained.contains(id) then
+      if retained.has(id) then
         val bytes = glyphs(id).bytes
         parts += bytes
         position += bytes.length
@@ -207,18 +209,18 @@ case class Ttf(data: Data):
     newHead(50) = 0
     newHead(51) = 1
 
-    val carried = tables.values.to(List).flatMap: ref =>
+    val carried = tables.values.transmute[List].bind: ref =>
       if ref.id == TtfTag.Glyf || ref.id == TtfTag.Loca || ref.id == TtfTag.Head then Nil
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
     val entries =
       (t"glyf", newGlyf.immutable(using Unsafe)) ::
         (t"loca", newLoca.immutable(using Unsafe)) ::
-        (t"head", newHead.immutable(using Unsafe)) :: carried
+        (t"head", newHead.immutable(using Unsafe)) :: (carried: List[(Text, Data)])
 
-    Ttf(Sfnt.assemble(data.slice(0, 4), entries))
+    Ttf(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 
-  def subset(text: Text): Ttf raises FontError = subset(text.chars.to(Set))
+  def subset(text: Text): Ttf raises FontError = subset(Set.from(text.chars))
 
   // The transitive closure of a set of glyphs under composite-glyph components: every glyph
   // needed to render the given ones.
@@ -230,10 +232,10 @@ case class Ttf(data: Data):
         seen
 
       case head :: tail =>
-        val fresh = table(head).components.filter(!seen.contains(_))
-        expand(fresh ++ tail, seen ++ fresh)
+        val fresh = table(head).components.filter(!seen.has(_))
+        expand(List.of(fresh.stdlib ++ tail.stdlib), Set.of(seen.stdlib ++ fresh.stdlib))
 
-    expand(glyphIds.to(List), glyphIds)
+    expand(glyphIds.toList, glyphIds)
 
   // The font's PostScript name, by which PDF and PostScript documents reference it.
   def fontName: Optional[Text] = safely(name(Ttf.NameId.PostScriptName))
@@ -321,7 +323,7 @@ case class Ttf(data: Data):
 
       lazy val components: List[Int] =
         if !composite then Nil else
-          val builder = List.newBuilder[Int]
+          val builder = scala.collection.immutable.List.newBuilder[Int]
           var position = start + 10
           var more = true
 
@@ -336,7 +338,7 @@ case class Ttf(data: Data):
 
             more = (flags & 0x0020) != 0
 
-          builder.result()
+          List.of(builder.result())
 
   // The maximum-profile table; only the glyph count is of interest here.
   case class MaxpTable(offset: Int):
@@ -521,7 +523,7 @@ case class Ttf(data: Data):
     lazy val version = B16(data, offset).u16.int
     lazy val numTables = B16(data, offset + 2).u16.int
 
-    lazy val glyphEncodings: Seq[GlyphEncoding] = (0 until numTables).map: n =>
+    lazy val glyphEncodings: List[GlyphEncoding] = (0 until numTables).transmute[List].map: n =>
       val platformId = B16(data, offset + 4 + n*8).u16.int
       val encodingId = B16(data, offset + 6 + n*8).u16.int
       val subOffset = B32(data, offset + 8 + n*8).s32.int

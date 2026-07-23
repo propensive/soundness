@@ -34,6 +34,8 @@ package cataclysm
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
@@ -43,17 +45,18 @@ import Css.Node.*
 object Tests extends Suite(m"Cataclysm Tests"):
   // ── CSS-structure helpers ───────────────────────────────────────────────
   def decl(key: Text, value: Text): Css.Node = Declaration(key, value)
-  def at(name: Text, prelude: Text, body: Css.Node*): Css.Node = At(name, prelude, body.toList)
+  def at(name: Text, prelude: Text, body: Css.Node*): Css.Node =
+    At(name, prelude, proscenium.List.of(body.toList))
 
   def rule(selector: Text, body: Css.Node*): Css.Node =
-    Rule(SelectorParser.parse(selector), body.toList)
+    Rule(SelectorParser.parse(selector), List.of(body.toList))
 
   // ── selector helpers ────────────────────────────────────────────────────
   def parse(text: Text): SelectorList = SelectorParser.parse(text)
-  def sl(parts: Selector*): SelectorList = SelectorList(parts.toList)
-  def cx(head: Compound, rest: (Combinator, Compound)*): Selector = Selector(Unset, head, rest.toList)
+  def sl(parts: Selector*): SelectorList = SelectorList(List.of(parts.toList))
+  def cx(head: Compound, rest: (Combinator, Compound)*): Selector = Selector(Unset, head, List.of(rest.toList))
   def rel(lead: Combinator, head: Compound): Selector = Selector(lead, head, Nil)
-  def cpd(parts: Simple*): Compound = Compound(parts.toList)
+  def cpd(parts: Simple*): Compound = Compound(List.of(parts.toList))
   def typ(name: Text): Simple = Simple.Type(Unset, name)
   def cls(name: Text): Simple = Simple.Class(Name[CssClass](name))
   def hid(name: Text): Simple = Simple.Id(Name[DomId](name))
@@ -72,7 +75,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def ty(name: Text): Syntax = Syntax.Type(name, Unset)
 
   // ── value-tokenizer helpers ──────────────────────────────────────────────
-  def vt(text: Text): List[ValueToken] = ValueTokenizer.tokens(text)
+  def vt(text: Text): scala.collection.immutable.List[ValueToken] = ValueTokenizer.tokens(text).stdlib
   val ws: ValueToken = ValueToken.Whitespace
   def num(n: Int): ValueToken = ValueToken.Number(n, true, n.toString.tt)
   def dim(n: Int, unit: Text): ValueToken = ValueToken.Dimension(n, unit, (n.toString+unit.s).tt)
@@ -407,9 +410,9 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == 663)
 
     suite(m"Value tokenizer"):
-      val rgbMid = List(num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma, ws, num(3))
-      val rgbTokens = ValueToken.Function(t"rgb") :: rgbMid ::: List(ValueToken.Close)
-      val calcMid = List(dim(1, t"px"), ws, ValueToken.Delim('+'), ws, dim(2, t"px"))
+      val rgbMid = scala.collection.immutable.List(num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma, ws, num(3))
+      val rgbTokens = ValueToken.Function(t"rgb") :: rgbMid ::: scala.collection.immutable.List(ValueToken.Close)
+      val calcMid = scala.collection.immutable.List(dim(1, t"px"), ws, ValueToken.Delim('+'), ws, dim(2, t"px"))
       val calcTokens = ValueToken.Function(t"calc") :: calcMid ::: List(ValueToken.Close)
 
       test(m"an identifier"):
@@ -547,11 +550,11 @@ object Tests extends Suite(m"Cataclysm Tests"):
       val css = t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css]
 
       test(m"class names are collected, including nested and inside :not()"):
-        css.classes.map(name => name: Text)
+        Set.from(css.classes.stdlib.map(name => name: Text))
       . assert(_ == Set(t"a", t"c", t"d"))
 
       test(m"id names are collected, including nested"):
-        css.ids.map(name => name: Text)
+        Set.from(css.ids.stdlib.map(name => name: Text))
       . assert(_ == Set(t"b", t"f"))
 
     suite(m"CSS-checked attributions"):

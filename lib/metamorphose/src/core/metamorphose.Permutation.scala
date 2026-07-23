@@ -32,6 +32,8 @@
                                                                                                   */
 package metamorphose
 
+import proscenium.compat.*
+
 import scala.annotation.*
 import scala.collection.mutable.BitSet
 
@@ -41,10 +43,11 @@ import denominative.*
 import rudiments.*
 
 object Permutation:
-  def bySize(n: Int): LazyList[Permutation] = LazyList.range[BigInt](0, Factorial(n)).map: i =>
+  def bySize(n: Int): Progression[Permutation] = Progression.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
-  def apply(sequence: IndexedSeq[Int]): Permutation raises PermutationError =
+  def apply(series: Series[Int]): Permutation raises PermutationError =
+    val sequence = series.stdlib
     val array: Array[Int] = new Array(sequence.length)
     val seen: BitSet = BitSet()
 
@@ -110,6 +113,6 @@ case class Permutation(factoradic: Factoradic):
         recur(index + 1, tail)
 
       case Nil =>
-        unsafely(Permutation(IArray.from(array.iterator)))
+        unsafely(Permutation(Series.from(array.iterator)))
 
     recur(0, expansion)

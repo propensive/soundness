@@ -46,7 +46,7 @@ object Regime:
   case class Segment(from: Date, calendar: RomanCalendar)
 
   def apply(name: Text, segments: Segment*): Regime =
-    new Regime(name, segments.to(List).sortBy(_.from.jdn))
+    new Regime(name, List.of(segments.toList.sortBy(_.from.jdn)))
 
 class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(name):
   import Regime.Segment
@@ -55,13 +55,13 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   // bound is the next segment's first day: the two calendars are aligned so that the last day of
   // one and the first day of the next share a Julian day number (Julian 1582-10-04 and Gregorian
   // 1582-10-15 are the same day), so that shared day is valid under both — the bound is inclusive.
-  private val bounded: List[(Segment, Int)] =
-    segments.zip(segments.drop(1).map(_.from.jdn) :+ Int.MaxValue)
+  private val bounded: scala.collection.immutable.List[(Segment, Int)] =
+    segments.stdlib.zip(segments.stdlib.drop(1).map(_.from.jdn) :+ Int.MaxValue)
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =
     bounded.filter(_(0).from.jdn <= date.jdn).lastOption.map(_(0).calendar).getOrElse:
-      segments.head.calendar
+      segments.stdlib.head.calendar
 
   // The regime's Julian day number for a field date, or `Unset` if it falls in a gap between two
   // calendars (e.g. 1582-10-10 under the Papal cutover) or is otherwise an invalid date.
@@ -78,11 +78,11 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
       case Nil =>
         Unset
 
-    recur(bounded)
+    recur(List.of(bounded))
 
   // The calendar governing a year, sampled at its midpoint (never inside a historical cutover gap).
   private def governing(year: Year): RomanCalendar =
-    locate(year, Jun, Day(15)).let(at).or(segments.last.calendar)
+    locate(year, Jun, Day(15)).let(at).or(segments.stdlib.last.calendar)
 
   override def annual(date: Date): Year = at(date).annual(date)
   override def mensual(date: Date): Month = at(date).mensual(date)

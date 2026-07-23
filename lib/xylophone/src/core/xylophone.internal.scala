@@ -32,11 +32,19 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.collection.immutable.Seq
+import scala.collection.immutable.IndexedSeq
+
+import scala.{annotation, caps}
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import java.lang as jl
 
 import scala.collection.immutable.ListMap
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -73,7 +81,8 @@ object internal:
         case Nil          => repr
 
     abortive:
-      var holes: Map[Ordinal, Xml.Hole] = Map()
+      var holes: scala.collection.immutable.Map[Ordinal, Xml.Hole] =
+        scala.collection.immutable.Map()
       def capture(ordinal: Ordinal, hole: Xml.Hole) = holes = holes.updated(ordinal, hole)
 
       given XmlSchema = XmlSchema.Freeform
@@ -470,7 +479,8 @@ object internal:
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
       case Varargs(insertions) => insertions
 
-    var holes: Map[Ordinal, Xml.Hole] = Map()
+    var holes: scala.collection.immutable.Map[Ordinal, Xml.Hole] =
+        scala.collection.immutable.Map()
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
     given XmlSchema = XmlSchema.Freeform
@@ -615,12 +625,16 @@ object internal:
             . asExprOf[(Text, Text)]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
-          val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
+          val elements =
+            val serialized = scala.collection.immutable.ArraySeq
+            . unsafeWrapArray(children.asInstanceOf[Array[Node]]).flatMap(serialize(_)).toList
+
+            '{IArray(${Expr.ofList(serialized)}*)}
 
           List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
 
         case Comment(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -633,7 +647,7 @@ object internal:
           List('{Comment($content.tt)})
 
         case Cdata(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -646,7 +660,7 @@ object internal:
           List('{Cdata($content.tt)})
 
         case ProcessingInstruction(target, data0) =>
-          val parts = data0.cut(t"\u0000").map(_.s)
+          val parts = data0.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -662,7 +676,7 @@ object internal:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -677,11 +691,11 @@ object internal:
         case Doctype(text) =>
           List('{Doctype(${Expr(text)})})
 
-      def resultType(xml: Xml): Set[String] = xml match
-        case TextNode(_)        => Set("#text")
-        case Element(tag, _, _) => Set(tag.s)
-        case Fragment(values*)  => values.to(Set).flatMap(resultType(_))
-        case _                  => Set()
+      def resultType(xml: Xml): scala.collection.immutable.Set[String] = xml match
+        case TextNode(_)        => scala.collection.immutable.Set("#text")
+        case Element(tag, _, _) => scala.collection.immutable.Set(tag.s)
+        case Fragment(values*)  => values.toSet.flatMap(resultType(_))
+        case _                  => scala.collection.immutable.Set()
 
       resultType(xml)
       . map: label => ConstantType(StringConstant(label))
@@ -757,7 +771,7 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(Attributes.from(${Expr.ofList(attributes)}.compact.to(Map)))}.asExprOf[result]
+    '{$tag.node(Attributes.from(Map.from(${Expr.ofList(attributes)}.compact)))}.asExprOf[result]
 
   opaque type Attributes <: IArray[String] = IArray[String]
 
@@ -787,12 +801,13 @@ object internal:
         arr.immutable(using Unsafe)
 
     def from(map: Map[Text, Text]): Attributes =
-      if map.isEmpty then empty else
-        val n = map.size
+      val entries = map.stdlib
+      if entries.isEmpty then empty else
+        val n = entries.size
         val arr = new Array[String](n*2)
         var i = 0
 
-        map.foreach: (k, v) =>
+        entries.foreach: (k, v) =>
           arr(i*2) = k.s
           arr(i*2 + 1) = v.s
           i += 1
@@ -892,7 +907,7 @@ object internal:
             i += 2
             pair
 
-      def toMap: Map[Text, Text] =
+      def toMap: Map[Text, Text] = Map.of:
         val a = storage(attrs)
 
         if a.length == 0 then ListMap.empty else
@@ -1038,7 +1053,7 @@ object internal:
             tu.immutable(using Unsafe)
 
       def `++`(other: Map[Text, Text]): Attributes =
-        if other.isEmpty then attrs else attrs ++ Attributes.from(other)
+        if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
 
       // Same set of (key, value) pairs (order-insensitive). Iterates the left,
       // looks up each key in the right.
@@ -1531,8 +1546,8 @@ object internal:
                           Xml.Parsable.gathered[fieldType]
                             ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing],
                               $bufferExpr match
-                                case null   => Nil
-                                case buffer => buffer.toList )
+                                case null   => proscenium.Nil
+                                case buffer => proscenium.List.of(buffer.toList) )
                       }.asTerm )
 
                 If('{ $repeatables(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
@@ -1600,7 +1615,7 @@ object internal:
                   if $repeatables(${Expr(index)}) then
                     Xml.Parsable.focusing($foci, $keyText):
                       Xml.Parsable.gathered[fieldType]
-                        ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], Nil )
+                        ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
                   else $declared
                 }
 

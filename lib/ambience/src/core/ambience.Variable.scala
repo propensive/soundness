@@ -32,12 +32,15 @@
                                                                                                   */
 package ambience
 
-import language.dynamics
+import scala.caps
+
+import scala.language.dynamics
 
 import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Variable extends Protovariable:
@@ -57,7 +60,7 @@ object Variable extends Protovariable:
   :   Variable[name, List[path]] =
 
     caps.unsafe.unsafeAssumePure:
-      _.cut(system(t"path.separator").or(t":")).to(List).map(instantiable(_))
+      _.cut(system(t"path.separator").or(t":")).map(instantiable(_))
 
   given path: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )

@@ -32,12 +32,15 @@
                                                                                                   */
 package spectacular
 
+import scala.reflect
+
 import scala.quoted.*
 
 import anticipation.*
 import denominative.*
 import digression.*
 import fulminate.*
+import proscenium.compat.mkString
 import inimitable.*
 import prepositional.*
 import rudiments.*
@@ -61,13 +64,13 @@ object Showable:
   given enumeration: [enumeration <: reflect.Enum] => enumeration is Showable = _.toString.tt
 
   given set: [element: Showable] => Set[element] is Showable =
-    _.map(_.show).mkString("{", ", ", "}").tt
+    _.map(_.show).stdlib.mkString("{", ", ", "}").tt
 
   given list: [element: Showable] => List[element] is Showable =
     _.map(_.show).mkString("[", ", ", "]").tt
 
   given series: [element: Showable] => Series[element] is Showable =
-    _.map(_.show).mkString("[ ", " ", " ]").tt
+    _.map(_.show).stdlib.mkString("[ ", " ", " ]").tt
 
   given none: None.type is Showable = none => "none".tt
 
@@ -83,13 +86,13 @@ object Showable:
     stenography.internal.name[meta](using _)
 
   given stackTrace: StackTrace is Showable = stack =>
-    val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
+    val methodWidth = stack.frames.map(_.method.method.s.length).stdlib.maxOption.getOrElse(0)
+    val classWidth = stack.frames.map(_.method.className.s.length).stdlib.maxOption.getOrElse(0)
+    val fileWidth = stack.frames.map(_.file.s.length).stdlib.maxOption.getOrElse(0)
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
 
-    val root = stack.frames.foldLeft(init):
+    val root = stack.frames.fold(init):
       case (msg, frame) =>
         val obj = frame.method.className.s.endsWith("#")
         val drop = if obj then 1 else 0

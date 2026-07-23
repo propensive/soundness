@@ -61,9 +61,9 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
 
   private def hash(value: element): BigInt =
     def recur(count: Int = 0, data: List[Array[Byte]] = Nil): BigInt =
-      if data.map(_.length).sum*8 < requiredEntropyBits
+      if data.stdlib.map(_.length).sum*8 < requiredEntropyBits
       then recur(count + 1, (count, value).digest[algorithm].data.mutable(using Unsafe) :: data)
-      else BigInt(data.iterator.flatMap(_.iterator).toArray).abs
+      else BigInt(data.stdlib.iterator.flatMap(_.iterator).toArray).abs
 
     recur()
 

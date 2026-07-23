@@ -32,6 +32,8 @@
                                                                                                   */
 package zeppelin
 
+import proscenium.compat.*
+
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
@@ -68,11 +70,11 @@ object Jar:
           if line.startsWith(" ") && acc.nonEmpty then (acc.head + line.drop(1)) :: acc.tail
           else line :: acc
 
-        rejoined.reverse.flatMap: line =>
+        rejoined.reverse.bind: line =>
           line.indexOf(": ") match
             case -1    => Nil
             case index => List((line.take(index).tt, line.drop(index + 2).tt))
-        . to(Map)
+        . pipe(l => Map.from(l.stdlib))
 
       . getOrElse(Map())
 
@@ -91,7 +93,7 @@ object Jar:
       ( block: (JarHandle & Granting[grants]) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
 
       val channel =
         jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
@@ -112,7 +114,7 @@ object Jar:
       ( block: (JarHandle & Granting[grants]) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+      if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
       block(using new JarHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})
 
   given openable: [path: Abstractable across Paths to Text]

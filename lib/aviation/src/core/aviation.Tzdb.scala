@@ -35,6 +35,8 @@ package aviation
 import scala.io.*
 
 import anticipation.*
+import proscenium.compat.*
+import rudiments.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -74,19 +76,19 @@ object Tzdb:
   def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
     Log.fine(TimeEvent.ParseTzdb(name))
 
-    val lines: LazyList[Text] =
+    val lines: Progression[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
 
       val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 
-      Source.fromInputStream(stream2).getLines().map(Text(_)).map(_.cut(t"\t").head.lower)
-      . to(LazyList)
+      Source.fromInputStream(stream2).getLines().map(Text(_)).map(_.cut(t"\t").stdlib.head.lower)
+      . to(Progression)
 
     parse(name, lines)
 
-  def parse(name: Text, lines: LazyList[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
-    def parseDuration(lineNo: Int, string: Text) = string.cut(t":").to(List) match
+  def parse(name: Text, lines: Progression[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
+    def parseDuration(lineNo: Int, string: Text) = string.cut(t":") match
       case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
       case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Duration(h, m, s)
@@ -94,7 +96,7 @@ object Tzdb:
       case other =>
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
-    def parseTime(lineNo: Int, string: Text) = string.cut(t":").to(List) match
+    def parseTime(lineNo: Int, string: Text) = string.cut(t":") match
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)s" :: Nil   => Time(h, m, 0, 's')
       case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)u" :: Nil   => Time(h, m, 0, 'u')
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Time(h, m, 0, Unset)
@@ -125,7 +127,7 @@ object Tzdb:
 
     def parseZone(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Zone = arguments match
       case name :: rest =>
-        name.cut(t"/", 2).to(List) match
+        name.cut(t"/", 2) match
           case area :: location :: Nil =>
             Tzdb.Entry.Zone(area, Some(location), Series(parseZoneInfo(lineNo, rest)))
 
@@ -142,7 +144,7 @@ object Tzdb:
       case stdoff :: rules :: format :: until =>
         val s = parseDuration(lineNo, stdoff)
 
-        def f(string: Text) = format.cut(t"%s", 2).to(List).absolve match
+        def f(string: Text) = format.cut(t"%s", 2).absolve match
           case value :: Nil           => value
           case before :: after :: Nil => before+string+after
 
@@ -177,31 +179,31 @@ object Tzdb:
       case _                 => abort(TzdbError(TzdbError.Reason.UnexpectedLink, lineNo))
 
     def addToZone(lineNo: Int, arguments: List[Text], zone: Tzdb.Entry.Zone): Tzdb.Entry.Zone =
-      zone.copy(info = zone.info :+ parseZoneInfo(lineNo, arguments))
+      zone.copy(info = Series.of(zone.info.stdlib :+ parseZoneInfo(lineNo, arguments)))
 
     @tailrec
     def recur
       ( lineNo:  Int,
-        lines:   LazyList[Text],
+        lines:   Progression[Text],
         entries: List[Tzdb.Entry]        = Nil,
         zone:    Option[Tzdb.Entry.Zone] = None )
     :   List[Tzdb.Entry] =
 
-      if lines.nil then entries ++ zone else
+      if lines.nil then List.of(entries.stdlib ++ zone.toList) else
         val line: Text = lines.head.upto(_ == '#')
 
-        line.cut(unsafely(r"\s+")).to(List) match
+        line.cut(unsafely(r"\s+")) match
           case t"Rule" :: tail =>
-            recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: (zone.to(List) ++ entries))
+            recur(lineNo + 1, lines.tail, parseRule(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
 
           case t"Link" :: tail =>
-            recur(lineNo + 1, lines.tail, parseLink(lineNo, tail) :: (zone.to(List) ++ entries))
+            recur(lineNo + 1, lines.tail, parseLink(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
 
           case t"Zone" :: tail =>
-            recur(lineNo + 1, lines.tail, entries ++ zone.to(List), Some(parseZone(lineNo, tail)))
+            recur(lineNo + 1, lines.tail, List.of(entries.stdlib ++ zone.toList), Some(parseZone(lineNo, tail)))
 
           case t"Leap" :: tail =>
-            recur(lineNo + 1, lines.tail, parseLeap(lineNo, tail) :: (zone.to(List) ++ entries))
+            recur(lineNo + 1, lines.tail, parseLeap(lineNo, tail) :: List.of(zone.toList ++ entries.stdlib))
 
           case t"" :: Nil =>
             recur(lineNo + 1, lines.tail, entries, zone)

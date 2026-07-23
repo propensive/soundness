@@ -32,6 +32,8 @@
                                                                                                   */
 package iridescence
 
+import scala.annotation.targetName
+
 export Rgb12Opaque.Rgb12
 export Rgb32Opaque.Rgb32
 export PixelOpaque.Pixel
@@ -48,7 +50,7 @@ extension (chroma: anticipation.Chroma)
   def pixel: Pixel[Rgb] = Pixel.make(chroma.underlying&0xffffff)
 
 extension (rgb32: Rgb32)
-  @annotation.targetName("rgb32Pixel")
+  @targetName("rgb32Pixel")
   def pixel: Pixel[(Red[10], Green[12], Blue[10])] =
     Pixel.make(rgb32.red.toLong << 22 | rgb32.green.toLong << 10 | rgb32.blue.toLong)
 

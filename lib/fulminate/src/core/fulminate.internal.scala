@@ -32,7 +32,9 @@
                                                                                                   */
 package fulminate
 
-import language.experimental.into
+import proscenium.compat.*
+
+import scala.language.experimental.into
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -52,7 +54,7 @@ object internal:
   transparent inline def mSubMessages[param](inline subs: param): List[Message] =
     inline subs.asMatchable match
       case tuple: Tuple =>
-        Message[tuple.type](tuple, Nil)
+        Message[tuple.type](tuple, scala.collection.immutable.Nil)
 
       case other =>
         import unsafeExceptions.canThrowAny
@@ -61,7 +63,7 @@ object internal:
   def mMacro[param: Type](context: Expr[StringContext], subs: Expr[param]): Macro[Message] =
     import quotes.reflect.*
 
-    val parts: List[String] = context.valueOrAbort.parts.toList
+    val parts: List[String] = List.from(context.valueOrAbort.parts)
 
     def parseUnicode(part: String, current: Int): Char =
       if current + 4 > part.length
@@ -99,7 +101,7 @@ object internal:
 
       loop(0, "")
 
-    val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.toList
+    val groups: List[String] = parts.mkString("\u0000").split("`", -1).nn.map(_.nn).iterator.to(List)
 
     if groups.size%2 == 0
     then report.errorAndAbort("the m\"\" interpolator has an unmatched backtick")
@@ -107,27 +109,30 @@ object internal:
     def toMessage(items: List[String | Expr[Message]]): Expr[Message] =
       val texts: List[String] = items.collect { case text: String => text }
       val msgs:  List[Expr[Message]] = items.collect { case expr: Expr[Message] @unchecked => expr }
-      val textsExpr: Expr[List[Text]] = Expr.ofList(texts.map { text => '{${Expr(text)}.tt} })
+      val textsExpr: Expr[List[Text]] =
+        '{List.of(${Expr.ofList(texts.stdlib.map { text => '{${Expr(text)}.tt} })})}
 
-      '{Message($textsExpr, ${Expr.ofList(msgs)})}
+      '{Message($textsExpr, List.of(${Expr.ofList(msgs.stdlib)}))}
 
 
     def sequence(group: String, startIndex: Int, subListRef: Expr[List[Message]])
     :   (List[String | Expr[Message]], Int) =
 
-      val segments = group.split("\u0000", -1).nn.map(_.nn).iterator.toList
+      val segments = group.split("\u0000", -1).nn.map(_.nn).iterator.to(List)
 
-      val items: List[String | Expr[Message]] = segments.zipWithIndex.flatMap: (segment, index) =>
-        val text = decode(segment)
+      val items: List[String | Expr[Message]] = List.of:
+        segments.stdlib.zipWithIndex.flatMap: (segment, index) =>
+          val text = decode(segment)
 
-        if index < segments.size - 1 then List(text, '{$subListRef(${Expr(startIndex + index)})})
-        else List(text)
+          if index < segments.stdlib.size - 1
+          then List(text, '{$subListRef(${Expr(startIndex + index)})}).stdlib
+          else List(text).stdlib
 
-      (items, startIndex + segments.size - 1)
+      (items, startIndex + segments.stdlib.size - 1)
 
 
     def assemble(subListRef: Expr[List[Message]]): Expr[Message] =
-      val (items, _) = groups.zipWithIndex.foldLeft((List[String | Expr[Message]](), 0)):
+      val (items, _) = groups.stdlib.zipWithIndex.foldLeft((List[String | Expr[Message]](), 0)):
         case ((accumulator, index), (group, i)) =>
           val (groups, nextIndex) = sequence(group, index, subListRef)
           val addition = if i % 2 == 0 then groups else List(toMessage(groups))

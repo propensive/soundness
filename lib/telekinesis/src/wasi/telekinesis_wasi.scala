@@ -95,7 +95,7 @@ package httpBackends:
       val fieldsHandle = Foreign["fields", Wit].constructor.invoke[WitHandle of "fields"]
       val fields: Foreign of "fields" from Wit = fieldsHandle
 
-      headers.each: header =>
+      headers.each: (header: Http.Header) =>
         fields.append(header.key, bytes(header.value)).invoke[Unit]
 
       // Applied calls need stable receivers with visible `Origin`s, so the argument conversions
@@ -172,7 +172,7 @@ package httpBackends:
       val responseFields: Foreign of "fields" from Wit = headersHandle
 
       val textHeaders: List[Http.Header] =
-        responseFields.entries.invoke[List[(Text, Data)]].map: (key, value) =>
+        responseFields.entries.invoke[List[(Text, Data)]].map: (key: Text, value: Data) =>
           Http.Header(key, value.utf8)
 
       headersHandle.dispose()
@@ -195,7 +195,7 @@ package httpBackends:
       bodyHandle.dispose()
       responseHandle.dispose()
 
-      val content: Data = chunks.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+      val content: Data = chunks.stdlib.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
       status(textHeaders, Http.Body.Fixed(content))
 
 // Serves HTTP from a Wasm Component: the bridge from `wasi:http/incoming-handler`'s exported
@@ -224,7 +224,7 @@ object WasiHttpServer:
     val requestFields: Foreign of "fields" from Wit = headersHandle
 
     val textHeaders: List[Http.Header] =
-      requestFields.entries.invoke[List[(Text, Data)]].map: (key, value) =>
+      requestFields.entries.invoke[List[(Text, Data)]].map: (key: Text, value: Data) =>
         Http.Header(key, value.utf8)
 
     headersHandle.dispose()
@@ -245,7 +245,7 @@ object WasiHttpServer:
     bodyHandle.dispose()
     requestHandle.dispose()
 
-    val content: Data = chunks.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+    val content: Data = chunks.stdlib.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
 
     // The request's host is the server's own; a component behind `wasi:http` is not addressed by
     // hostname, so `Localhost` stands in (and avoids parsing the authority, which would reach the
@@ -266,7 +266,7 @@ object WasiHttpServer:
     val fieldsHandle = Foreign["fields", Wit].constructor.invoke[WitHandle of "fields"]
     val fields: Foreign of "fields" from Wit = fieldsHandle
 
-    response.textHeaders.each: header =>
+    response.textHeaders.each: (header: Http.Header) =>
       fields.append(header.key, bytes(header.value)).invoke[Unit]
 
     val outgoingResponse =

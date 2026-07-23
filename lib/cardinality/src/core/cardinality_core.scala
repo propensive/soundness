@@ -32,7 +32,7 @@
                                                                                                   */
 package cardinality
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 import scala.annotation.*
 

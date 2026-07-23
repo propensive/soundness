@@ -32,6 +32,8 @@
                                                                                                   */
 package adversaria
 
+import scala.collection.immutable.{List, Nil, ::}
+
 import java.lang as jl
 
 import scala.quoted.*
@@ -116,10 +118,10 @@ object internal:
 
       val fields =
         params2.flatMap: param =>
-          if param.annotations.nil then Nil else
-            List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.to(Set))})
+          if param.annotations.isEmpty then Nil else
+            List(param.name -> '{(${Expr(param.name)}.tt, ${matching(param.annotations)}.pipe(Set.from(_)))})
 
-        . to(Map)
+        . to(scala.collection.immutable.Map)
 
       if fields.size == 1
       then
@@ -130,21 +132,21 @@ object internal:
           case ('[topic], '[type target <: Label; target]) =>
             ' {
                 Annotated.AnnotatedField[operand, self, plane, limit, topic, target]
-                  ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
+                  ( $annotations.pipe(Set.from(_)), ${Expr.ofList(fields.values.to(List))}.pipe(Map.from(_)) )
               }
       else
         ' {
             Annotated.AnnotatedFields[operand, self, plane, limit]
-              ( $annotations.to(Set), ${Expr.ofList(fields.values.to(List))}.to(Map) )
+              ( $annotations.pipe(Set.from(_)), ${Expr.ofList(fields.values.to(List))}.pipe(Map.from(_)) )
           }
 
     else
       val subtypes = limit.typeSymbol.children.map: subtype =>
-        '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.to(Set))}
+        '{(${Expr(subtype.name)}.tt, ${matching(subtype.annotations)}.pipe(Set.from(_)))}
 
       ' {
           Annotated.AnnotatedSubtypes[operand, self, plane, limit]
-            ( ${Expr.ofList(subtypes)}.to(Map) )
+            ( ${Expr.ofList(subtypes)}.pipe(Map.from(_)) )
         }
 
 
@@ -171,7 +173,8 @@ object internal:
         new Dereferenceable:
           type Self = entity
           type Result = value
-          private val lambdas: Map[Text, Self => Result] = ${lambdaMap}.toMap
-          def names(entity: Self): List[Text] = ${namesList}
+          private val lambdas: scala.collection.immutable.Map[Text, Self => Result] =
+            ${lambdaMap}.toMap
+          def names(entity: Self): proscenium.List[Text] = proscenium.List.of(${namesList})
           def select(entity: entity, name: Text): Result = lambdas(name)(entity)
       }

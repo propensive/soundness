@@ -54,5 +54,5 @@ trait Xml2 extends Xml3:
   =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
 
     input =>
-      Xml.XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]
+      Xml.XmlParser.fromIterator(input.stdlib.iterator).parseXml(headers0 = false).as[value]
       . asInstanceOf[value in Xml]

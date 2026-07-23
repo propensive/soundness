@@ -69,7 +69,7 @@ case class Linker[artifact <: Artifact]
     Log.info(LinkEvent.Start)
 
     val form: linkage.Form =
-      options.foldLeft(linkage.initial): (form, option) =>
+      options.stdlib.foldLeft(linkage.initial): (form, option) =>
         option.edit(form).asInstanceOf[linkage.Form]
 
     val result = linkage.link(form, compilation, entryPoints, out)

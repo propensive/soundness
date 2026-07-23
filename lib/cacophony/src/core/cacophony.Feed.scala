@@ -44,15 +44,17 @@ import vacuous.*
 
 object Feed:
   def list: List[Feed] =
-    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
-      val info = info0.nn
-      val mixer = jss.AudioSystem.getMixer(info).nn
+    List.of:
+      jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
+        val info = info0.nn
+        val mixer = jss.AudioSystem.getMixer(info).nn
 
-      val canRecord = mixer.getTargetLineInfo.nn.exists:
-        case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.TargetDataLine]
-        case _                      => false
+        val canRecord = mixer.getTargetLineInfo.nn.exists:
+          case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.TargetDataLine]
+          case _                      => false
 
-      if canRecord then List(Feed(info)) else Nil
+        if canRecord then scala.collection.immutable.List(Feed(info))
+        else scala.collection.immutable.Nil
 
 case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def name:        Text = mixerInfo.getName.nn.tt
@@ -62,7 +64,8 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def configurations: List[Configuration] =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-    mixer.getTargetLineInfo.nn.iterator.toList.flatMap:
+    List.of:
+     mixer.getTargetLineInfo.nn.iterator.toList.flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.TargetDataLine] =>
         dli.getFormats.nn.iterator.toList.map: f0 =>
           val f = f0.nn
@@ -76,7 +79,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
 
           Configuration(f.getChannels, rate, f.getSampleSizeInBits, encoding, f.isBigEndian)
 
-      case _ => Nil
+      case _ => scala.collection.immutable.Nil
 
   def supports[layout: ChannelLayout as cl](rate: Quantity[Seconds[-1]], bits: Int): Boolean =
     val sampleRate = rate.value.toFloat
@@ -141,17 +144,17 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
           line.stop()
           line.close()
 
-      def stream: LazyList[Audio across layout] =
-        def recur: LazyList[Audio across layout] =
-          if stopped then LazyList() else
+      def stream: Progression[Audio across layout] =
+        def recur: Progression[Audio across layout] =
+          if stopped then Progression() else
             val buf: Array[Byte] = new Array[Byte](chunkBytes)
             val n = line.read(buf, 0, buf.length)
 
-            if n <= 0 then LazyList() else
+            if n <= 0 then Progression() else
               val chunk =
                 if n == buf.length then buf
                 else java.util.Arrays.copyOf(buf, n).nn
 
               Audio.of[layout](line.getFormat.nn, chunk) #:: recur
 
-        LazyList.defer(recur)
+        Progression.defer(recur)

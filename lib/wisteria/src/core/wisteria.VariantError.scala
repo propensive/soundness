@@ -47,5 +47,5 @@ case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])(
 extends Error
   ( m"""
       the specified variant ($inputLabel) is not one of the valid variants
-      (${validVariants.mkString(", ").tt}) of sum type $sum
+      (${validVariants.stdlib.mkString(", ").tt}) of sum type $sum
     """ )

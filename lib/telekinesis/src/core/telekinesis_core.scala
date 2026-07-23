@@ -32,7 +32,7 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import distillate.*

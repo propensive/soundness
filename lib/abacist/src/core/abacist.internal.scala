@@ -32,6 +32,8 @@
                                                                                                   */
 package abacist
 
+import scala.collection.immutable.Seq
+
 import scala.collection.immutable.*
 import scala.quoted.*
 
@@ -257,7 +259,7 @@ object internal:
     val cascade: List[UnitPower] = units.map(readUnitPower)
     val dimension = cascade.head.ref.dimensionRef
 
-    cascade.tail.foreach: unitPower =>
+    cascade.tail.each: unitPower =>
       if unitPower.ref.dimensionRef != dimension then halt:
         m"""
           the Quanta type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
@@ -269,7 +271,9 @@ object internal:
 
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
-        val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
+        val value2 =
+          (if tail.isEmpty then Unset else tail.head)
+          . let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
 
         recur
           ( tail,

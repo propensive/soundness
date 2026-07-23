@@ -37,10 +37,16 @@ export
   . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
       DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit,
       fuse, gib,
-      give, has, immutable, Inclusive, Indexable, indexBy, intercalate, javaInputStream, kib,
+      give, immutable, indexBy, intercalate, javaInputStream, kib,
       longestTrain,
-      Loop, loop, matchable, mean, mib, mutable, Mutex, next, occupied, ordinal, pipe, place, plus,
+      Loop, loop, matchable, mean, mib, mutable, Mutex, next, ordinal, pipe, place, plus,
       prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
-      sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
+      sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, transmute, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, limit, ult, ant, pen, Traversable, seek, where, subsumes }
+      mean2, unique, seek, where,
+      Populated, head, reduce, confine, populatedEquality }
+
+// `zip` is deliberately NOT re-exported: zeppelin's contextual archive accessor owns the bare
+// name `zip` in this package, and a generic-receiver extension overload commits without falling
+// through when its givens fail. The extension remains available via `import rudiments.*`; the
+// collection aliases will host `zip` in their companions (implicit scope) once opaque.

@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -47,7 +49,7 @@ import vacuous.*
 private[facsimile] object CharMap:
   def parse(data: Data): CharMap raises PdfError =
     val parser = CosParser(CosLexer(Scan(data)), references = false)
-    val entries = Map.newBuilder[Int, Text]
+    val entries = scala.collection.immutable.Map.newBuilder[Int, Text]
     var codeBytes = 1
     var done = false
 
@@ -80,7 +82,7 @@ private[facsimile] object CharMap:
               ()
 
           case "endbfchar" =>
-            operands.grouped(2).foreach:
+            operands.batched(2).each:
               case List(source, destination) =>
                 code(source).let: code =>
                   target(destination).let { text => entries += code -> text }
@@ -89,13 +91,13 @@ private[facsimile] object CharMap:
                 ()
 
           case "endbfrange" =>
-            operands.grouped(3).foreach:
+            operands.batched(3).each:
               case List(low, high, destination) =>
                 code(low).let: start =>
                   code(high).let: end =>
                     if end - start >= 0 && end - start <= 65535 then destination match
                       case Cos.Sequence(elements) =>
-                        elements.zipWithIndex.each: (element, index) =>
+                        elements.stdlib.zipWithIndex.each: (element, index) =>
                           target(element).let { text => entries += (start + index) -> text }
 
                       case single =>
@@ -115,7 +117,7 @@ private[facsimile] object CharMap:
       . or:
           done = true
 
-    CharMap(entries.result(), codeBytes)
+    CharMap(Map.of(entries.result()), codeBytes)
 
 private[facsimile] case class CharMap(entries: Map[Int, Text], codeBytes: Int):
   def apply(code: Int): Optional[Text] = entries.at(code)

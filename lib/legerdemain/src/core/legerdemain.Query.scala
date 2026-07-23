@@ -32,7 +32,7 @@
                                                                                                   */
 package legerdemain
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.compiletime.*
 
@@ -120,15 +120,15 @@ object Query extends Dynamic:
   def apply(parameters: List[(Text, Text)]): Query = new Query(parameters)
 
   given addable: Query is Addable by Query to Query =
-    Addable: (left, right) => new Query(left.values ++ right.values)
+    Addable: (left, right) => new Query(List.of(left.values.stdlib ++ right.values.stdlib))
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   // private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
-  def append(more: Query): Query = new Query(values ++ more.values)
+  def append(more: Query): Query = new Query(List.of(values.stdlib ++ more.values.stdlib))
   def nil: Boolean = values.nil
 
   @targetName("appendAll")
-  infix def ++ (query: Query) = Query(values ++ query.values)
+  infix def ++ (query: Query) = Query(List.of(values.stdlib ++ query.values.stdlib))
 
 
   def selectDynamic[result](label: String)(using erased parametric: label.type is Parametric to result)
@@ -143,12 +143,12 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     ( value: result )
   :   Query =
 
-    val updates: List[(Text, Text)] = value.encode.values
+    val updates = value.encode.values.stdlib
 
     val values2 =
       if updates.length == 1 && updates(0)(0) == ""
       then (label.tt, updates(0)(1)) :: values
-      else values ++ (updates.map { (key, value) => (t"$label.$key", value) })
+      else List.of(values.stdlib ++ (updates.map { (key, value) => (t"$label.$key", value) }))
 
     new Query(values2)
 
@@ -164,9 +164,10 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     val prefix = label+t"."
 
     Query:
-      values.collect:
-        case (`label`, value)                   => (t"", value)
-        case (key, value) if key.starts(prefix) => (key.skip(prefix.length), value)
+      List.of:
+        values.stdlib.collect:
+          case (`label`, value)                   => (t"", value)
+          case (key, value) if key.starts(prefix) => (key.skip(prefix.length), value)
 
   def prefix(string: Text): Query = Query:
     values.map: (key, value) =>

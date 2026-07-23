@@ -32,6 +32,12 @@
                                                                                                   */
 package dendrology
 
+import scala.collection.immutable.Vector
+
+// Deliberate stdlib opt-out: these internals consume acyclicity's `Dag`, whose set algebra
+// remains on the stdlib `Set` for now.
+import scala.collection.immutable.{List, Map, Nil, Set, ::}
+
 import scala.collection.mutable as scm
 
 import acyclicity.*
@@ -80,7 +86,7 @@ object LayeredDagDiagram:
         case _                            => Space
 
   def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises DagError =
-    val nodes: Series[node] = dag.sorted.to(Series)
+    val nodes: Vector[node] = dag.sorted.to(Vector)
 
     if nodes.isEmpty then LayeredDagDiagram(Nil) else
       val parents: Map[node, Set[node]] = dag.edgeMap
@@ -90,12 +96,12 @@ object LayeredDagDiagram:
 
       for n <- nodes do
         val ps = parents.getOrElse(n, Set.empty)
-        level(n) = if ps.nil then 0 else ps.iterator.map(level).max + 1
+        level(n) = if ps.isEmpty then 0 else ps.iterator.map(level).max + 1
 
       val maxLevel: Int = level.values.max
 
-      val byLevel: Series[Series[node]] =
-        (0 to maxLevel).to(Series).map: l =>
+      val byLevel: Vector[Vector[node]] =
+        (0 to maxLevel).to(Vector).map: l =>
           nodes.filter(level(_) == l)
 
       val state: scm.HashMap[Int, Lane[node]] = scm.HashMap()
@@ -108,14 +114,14 @@ object LayeredDagDiagram:
         val terminating = state.toMap.filter: (_, lane) => level(lane.target) == l
         val continuing = state.toMap -- terminating.keys
 
-        val incomingByNode: Map[node, Series[Int]] =
+        val incomingByNode: Map[node, Vector[Int]] =
           terminating
             . groupBy(_._2.target)
             . map: (n, m) =>
-                n -> m.keys.to(Series).sorted
+                n -> m.keys.to(Vector).sorted
 
         val desired: Map[node, Int] = levelNodes.map: n =>
-          val incoming = incomingByNode.getOrElse(n, Series.empty)
+          val incoming = incomingByNode.getOrElse(n, Vector.empty)
 
           val centre =
             if incoming.nonEmpty then incoming(incoming.length/2)
@@ -144,7 +150,7 @@ object LayeredDagDiagram:
 
         for n <- ordered do
           val outgoing = forward.getOrElse(n, Set.empty).filter(level(_) > l)
-          val sortedOut = outgoing.to(Series).sortBy(level)
+          val sortedOut = outgoing.to(Vector).sortBy(level)
 
           for target <- sortedOut do
             var col = nodeCol(n)
@@ -249,7 +255,7 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
 
     rows.map: (tiles, nodesAt) =>
       val glyphs: Map[Int, line] = nodesAt.map: (col, n) => col -> glyph(n)
-      style.serialize(tiles, glyphs, widthsList, Unset)
+      style.serialize(proscenium.List.of(tiles), glyphs, proscenium.List.of(widthsList), Unset)
 
   def tiles: List[List[DagTile]] = rows.map(_(0))
   def nodesAt: List[Map[Int, node]] = rows.map(_(1))

@@ -34,6 +34,8 @@ package escritoire
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
+import vacuous.*
 
 object Scaffold:
   @targetName("make")
@@ -48,16 +50,19 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
 
     val columns: IArray[Column[row, text]] = IArray.from(columns0)
 
-    val titles: Seq[IArray[IArray[text]]] =
-      Seq(IArray.from(columns.map { column => IArray.from(column.title.cut(t"\n")) }))
+    val titles: List[IArray[IArray[text]]] =
+      List:
+        IArray.from:
+          scala.collection.immutable.ArraySeq.unsafeWrapArray(columns.mutable(using Unsafe))
+          . map { column => IArray.from(column.title.cut(t"\n").stdlib) }
 
-    def tabulate(data: Seq[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
+    def tabulate(data: List[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
 
       val columns: IArray[Column[Row, text]] = scaffold.columns
-      val titles: Seq[IArray[IArray[text]]] = scaffold.titles
-      val dataLength: Int = data.length
+      val titles: List[IArray[IArray[text]]] = scaffold.titles
+      val dataLength: Int = data.stdlib.length
 
-      val rows: Seq[IArray[IArray[text]]] =
+      val rows: List[IArray[IArray[text]]] =
         data.map: row =>
-          columns.map: column => IArray.from(column.get(row).lines)
+          columns.map: column => IArray.from(column.get(row).lines.stdlib)

@@ -32,6 +32,10 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.io as ji
 import java.security as js
 import java.util as ju
@@ -60,9 +64,9 @@ object Keystore:
 
     def aliases: List[Text] =
       val enumeration = keystore.aliases.nn
-      val builder = List.newBuilder[Text]
+      val builder = scala.collection.immutable.List.newBuilder[Text]
       while enumeration.hasMoreElements do builder += enumeration.nextElement.nn.tt
-      builder.result()
+      List.of(builder.result())
 
     // The DER-encoded (X.509) certificate stored under `alias`, if any.
     def certificate(alias: Text): Optional[Data] =
@@ -86,7 +90,7 @@ object Keystore:
       ( block: ((KeystoreHandle & Granting[grants])^) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write)
+      if mode.atoms.has(Write)
       then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
 
       val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))

@@ -32,6 +32,8 @@
                                                                                                   */
 package yossarian
 
+import scala.math
+
 import scala.reflect.*
 
 import anticipation.*
@@ -200,7 +202,7 @@ object internal:
           t"C"  -> Bit.Conceal(style),
           t"R"  -> Bit.Reverse(style) )
 
-      .   map: (key, value) => if value then key else t"!$key"
+      .   remap: (key, value) => if value then key else t"!$key"
       .   join(t"[", t" ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
 
     enum Bit:

@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+
 import anticipation.*
 import contingency.*
 import rudiments.*

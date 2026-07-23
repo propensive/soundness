@@ -32,8 +32,11 @@
                                                                                                   */
 package dissonance
 
+import scala.collection.immutable as sci
+
 import anticipation.*
 import contingency.*
+import proscenium.compat.*
 import denominative.*
 import fulminate.*
 import prepositional.*
@@ -45,9 +48,9 @@ object Diff:
   given aggregable: (tactic: Tactic[DiffError])
   =>  ((Diff[Text] is Aggregable by Text)^{tactic}) = parse(_)
 
-  private def parse(lines: LazyList[Text]): Diff[Text] raises DiffError =
+  private def parse(lines: Progression[Text]): Diff[Text] raises DiffError =
     def recur
-      ( todo:          LazyList[Text],
+      ( todo:          Progression[Text],
         line:          Int,
         edits:         List[Edit[Text]],
         position:      Int,
@@ -120,7 +123,10 @@ object Diff:
     def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
       Redraft.render(diff, context)
 
-    def serialize: LazyList[Text] = diff.chunks.flatMap:
+    // The inner line list is assembled with stdlib members (the `:::` chain otherwise trips the
+    // opaque-`List` alias distinctness inside the umbrella `flatMap`) and wrapped once via
+    // `List.of` so the umbrella flatMap sees a `Traversable` opaque `List`.
+    def serialize: Progression[Text] = diff.chunks.flatMap:
       case Chunk(left, right, dels, inss) =>
         def range(start: Int, end: Int): Text =
           s"$start${if start == end then "" else s",$end"}".tt
@@ -130,11 +136,12 @@ object Diff:
           else if inss.nil then s"${range(left + 1, left + dels.size)}d${right}".tt
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
-        val delSeq = dels.map: del => Text("< "+del.value)
-        val sep = if inss.size > 0 && dels.size > 0 then List(Text("---")) else List()
-        val insSeq = inss.map: ins => Text("> "+ins.value)
+        val delSeq = dels.stdlib.map: del => Text("< "+del.value)
+        val sep =
+          if inss.size > 0 && dels.size > 0 then sci.List(Text("---")) else sci.List()
+        val insSeq = inss.stdlib.map: ins => Text("> "+ins.value)
 
-        command :: delSeq ::: sep ::: insSeq
+        List.of(command +: (delSeq ++ sep ++ insSeq))
 
 case class Diff[element](edits: Edit[element]*):
   def size: Int = edits.count:
@@ -142,7 +149,7 @@ case class Diff[element](edits: Edit[element]*):
     case _            => true
 
   def flip: Diff[Optional[element]] =
-    val edits2: Seq[Edit[Optional[element]]] = edits.map:
+    val edits2: List[Edit[Optional[element]]] = edits.transmute[List].map:
       case Par(left, right, value) => Par(right, left, value)
       case Del(left, value)        => Ins(left, value)
       case Ins(right, value)       => Del(right, value)
@@ -153,44 +160,50 @@ case class Diff[element](edits: Edit[element]*):
     Diff(edits.map(_.map(lambda))*)
 
 
-  def patch(sequence: Seq[element], update: (element, element) -> element = (left, right) => left)
-  :   LazyList[element] =
+  def patch(sequence: List[element], update: (element, element) -> element = (left, right) => left)
+  :   Progression[element] =
 
-    def recur(todo: List[Edit[element]], sequence: Seq[element]): LazyList[element] = todo match
-      case Nil                   => sequence.to(LazyList)
+    def recur(todo: List[Edit[element]], sequence: List[element]): Progression[element] = todo match
+      case Nil                   => sequence.stdlib.transmute[Progression]
       case Ins(_, value) :: tail => value #:: recur(tail, sequence)
       case Del(_, _) :: tail     => recur(tail, sequence.tail)
 
       case Par(_, _, value) :: tail =>
         value.let(update(_, sequence.head)).or(sequence.head) #:: recur(tail, sequence.tail)
 
-    recur(edits.to(List), sequence)
+    recur(edits.transmute[List], sequence)
 
 
   def rdiff(similar: (element, element) => Boolean, subSize: Int = 1): RDiff[element] =
-    val changes = collate.flatMap:
-      case Region.Unchanged(pars)    => pars
-      case Region.Changed(dels, Nil) => dels
-      case Region.Changed(Nil, inss) => inss
+    val changes = collate.bind:
+      case Region.Unchanged(pars)    => (pars: List[Change[element]])
+      case Region.Changed(dels, Nil) => (dels: List[Change[element]])
+      case Region.Changed(Nil, inss) => (inss: List[Change[element]])
 
       case Region.Changed(dels, inss) =>
         if inss.length == dels.length && inss.length <= subSize
-        then dels.zip(inss).map: (del, ins) => Sub(del.left, ins.right, del.value, ins.value)
-        else
-          val delsSeq = dels.map(_.value.vouch).to(IndexedSeq)
-          val inssSeq = inss.map(_.value).to(IndexedSeq)
+        then
+          val subs = dels.zip(inss).map: (del, ins) =>
+            Sub(del.left, ins.right, del.value, ins.value)
 
-          diff(delsSeq, inssSeq, similar).edits.map:
+          (subs: List[Change[element]])
+        else
+          val delsSeq = Series.from(dels.stdlib.map(_.value.vouch))
+          val inssSeq = Series.from(inss.stdlib.map(_.value))
+
+          val subs = dissonance.diff(delsSeq, inssSeq, similar).edits.toList.map:
             case Del(index, _) => Del(dels(index).left, dels(index).value)
             case Ins(index, _) => Ins(inss(index).right, inss(index).value)
 
             case Par(left, right, _) =>
               Sub(dels(left).left, inss(right).right, dels(left).value, inss(right).value)
 
+          (List.of(subs): List[Change[element]])
+
     RDiff(changes*)
 
   def collate: List[Region[element]] =
-    edits.runsBy:
+    edits.transmute[List].runsBy:
       case Par(_, _, _) => true
       case _            => false
 
@@ -203,12 +216,12 @@ case class Diff[element](edits: Edit[element]*):
             ( xs.collect { case del: Del[element] => del },
               xs.collect { case ins: Ins[element] => ins } )
 
-  def chunks: LazyList[Chunk[element]] =
+  def chunks: Progression[Chunk[element]] =
     def recur(todo: List[Edit[element]], position: Int, rightPosition: Int)
-    :   LazyList[Chunk[element]] =
+    :   Progression[Chunk[element]] =
 
       todo match
-        case Nil                         => LazyList()
+        case Nil                         => Progression()
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
 
         case _ =>
@@ -222,4 +235,4 @@ case class Diff[element](edits: Edit[element]*):
             recur
               ( todo.drop(dels.size + inss.size), position + dels.length, position + inss.length )
 
-    recur(edits.to(List), 0, 0)
+    recur(edits.transmute[List], 0, 0)

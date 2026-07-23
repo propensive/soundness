@@ -32,7 +32,7 @@
                                                                                                   */
 package parasite
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.atomic as juca
@@ -49,7 +49,7 @@ import unsafeExceptions.canThrowAny
 
 object Promise:
   enum State[+value]:
-    case Incomplete(waiting: Set[Strand])
+    case Incomplete(waiting: scala.collection.immutable.Set[Strand])
     case Complete(value: value)
     case Cancelled
 
@@ -59,7 +59,7 @@ final class Promise[value]():
   import Promise.State, State.{Incomplete, Complete, Cancelled}
 
   private val state: juca.AtomicReference[State[value]] =
-    juca.AtomicReference(Incomplete(Set()))
+    juca.AtomicReference(Incomplete(scala.collection.immutable.Set()))
 
   def cancelled: Boolean = state.get() == Cancelled
 

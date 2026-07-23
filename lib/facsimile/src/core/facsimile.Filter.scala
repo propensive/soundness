@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -101,9 +103,10 @@ private[facsimile] object Filter:
       case _ =>
         abort(PdfError(PdfError.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
-    names.zipWithIndex.map: (name, index) =>
-      val id = Id.parse(name).or(abort(PdfError(PdfError.Reason.UnknownFilter(name))))
-      (id, if index < parameters.length then parameters(index) else Map())
+    List.of:
+      names.stdlib.zipWithIndex.map: (name, index) =>
+        val id = Id.parse(name).or(abort(PdfError(PdfError.Reason.UnknownFilter(name))))
+        (id, if index < parameters.stdlib.length then parameters.stdlib(index) else Map())
 
   // A streaming plan is plain data — closures at most — because ducts, being scoped
   // capabilities, may only be minted at the `via` call site (a lambda cannot return a fresh
@@ -119,23 +122,27 @@ private[facsimile] object Filter:
   // input and decode on flush, which is immaterial at their typical sizes.
   def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[PdfError])
   :   List[Step^{tactic}] =
-    chain.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
-      val predicted = parms.at(t"Predictor").let(_.long).or(1L) > 1
+    List.of:
+      chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
+        val predicted = parms.at(t"Predictor").let(_.long).or(1L) > 1
 
-      id match
-        case Id.Flate =>
-          if predicted then List(Step.Inflate, Step.Gather(predict(_, parms)))
-          else List(Step.Inflate)
+        id match
+          case Id.Flate =>
+            if predicted
+            then scala.collection.immutable.List(Step.Inflate, Step.Gather(predict(_, parms)))
+            else scala.collection.immutable.List(Step.Inflate)
 
-        case Id.Lzw =>
-          if predicted then List(Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)))
-          else List(Step.Unlzw(earlyChange(parms)))
+          case Id.Lzw =>
+            if predicted
+            then scala.collection.immutable.List
+              (Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)))
+            else scala.collection.immutable.List(Step.Unlzw(earlyChange(parms)))
 
-        case Id.Crypt =>
-          List()
+          case Id.Crypt =>
+            scala.collection.immutable.List()
 
-        case other =>
-          List(Step.Gather(stage(_, other, parms)))
+          case other =>
+            scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
   def decode(data: Data, chain: List[(Id, Map[Text, Cos])]): Data raises PdfError =
@@ -156,7 +163,7 @@ private[facsimile] object Filter:
     case _            => data
 
   private def lzw(data: Data, parms: Map[Text, Cos]): Data raises PdfError =
-    try Lzw.decompress(LazyList(data), earlyChange(parms)).foldLeft(IArray.empty[Byte])(_ ++ _)
+    try Lzw.decompress(Progression(data), earlyChange(parms)).foldLeft(IArray.empty[Byte])(_ ++ _)
     catch case _: IllegalStateException =>
       abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
 
@@ -183,7 +190,7 @@ private[facsimile] object Filter:
 
     try
       val chunks =
-        if nowrap then LazyList(data).decompress[Deflate] else LazyList(data).decompress[Zlib]
+        if nowrap then Progression(data).decompress[Deflate] else Progression(data).decompress[Zlib]
 
       // Forcing the stream incrementally means a truncated (but valid-so-far) input keeps
       // whatever it decoded before the bytes ran out, matching the eager inflater's

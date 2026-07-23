@@ -32,6 +32,8 @@
                                                                                                   */
 package wisteria
 
+import scala.compiletime
+
 import scala.compiletime.*
 
 import anticipation.*

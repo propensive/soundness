@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
 import scala.annotation.nowarn
 
 import anticipation.*
@@ -118,14 +120,14 @@ package filesystemBackends:
         def covers(preopen: Text): Boolean =
           target == preopen || preopen == t"/" || target.starts(t"$preopen/")
 
-        val covering = preopens.filter: entry =>
+        val covering = preopens.stdlib.filter: entry =>
           covers(entry(1))
 
         if covering.isEmpty then
           preopens.each(_(0).dispose())
           abort(IoError(path, operation, Reason.PermissionDenied))
         else
-          val (descriptor, prefix) = covering.maxBy(_(1).length)
+          val (descriptor, prefix) = covering.maxBy(_(1).s.length)
 
           preopens.each: entry =>
             if entry(0) != descriptor then entry(0).dispose()
@@ -186,7 +188,7 @@ package filesystemBackends:
           stat(path, dereference) yet true
         catch case error: Exception => false
 
-      def children(path: Path on Plane)(using Tactic[IoError]): LazyList[Text] =
+      def children(path: Path on Plane)(using Tactic[IoError]): Progression[Text] =
         protect(path, Operation.Read):
           val (descriptor, relative) = resolve(path, Operation.Read)
           val directory: Foreign of "descriptor" from Wit = descriptor
@@ -212,7 +214,7 @@ package filesystemBackends:
                 if entry.absent then done = true else names = entry.vouch(1) :: names
 
               streamHandle.dispose()
-              names.reverse.to(LazyList)
+              names.stdlib.reverse.transmute[Progression]
             finally listing.dispose()
           finally descriptor.dispose()
 
@@ -313,7 +315,7 @@ package filesystemBackends:
           . invoke[Unit]
 
       def hidden(path: Path on Plane)(using Tactic[IoError]): Boolean =
-        path.descent.prim.let(_.starts(t".")).or(false)
+        path.descent.transmute[List].prim.let(_.starts(t".")).or(false)
 
       def volume(path: Path on Plane)(using Tactic[IoError]): Volume =
         abort(IoError(path, Operation.Metadata, Reason.Unsupported))
@@ -355,17 +357,17 @@ package filesystemBackends:
 
           // open-flags: create (1) | exclusive (4) | truncate (8); descriptor-flags: read (1) |
           // write (2).
-          val create = if flags.contains(OpenFlag.Create) then 1 else 0
-          val exclusive = if flags.contains(OpenFlag.Exclusive) then 4 else 0
-          val truncate = if flags.contains(OpenFlag.Truncate) then 8 else 0
+          val create = if flags.has(OpenFlag.Create) then 1 else 0
+          val exclusive = if flags.has(OpenFlag.Exclusive) then 4 else 0
+          val truncate = if flags.has(OpenFlag.Truncate) then 8 else 0
           val openFlags = create | exclusive | truncate
 
-          val writing = flags.contains(OpenFlag.Write) || flags.contains(OpenFlag.Append)
+          val writing = flags.has(OpenFlag.Write) || flags.has(OpenFlag.Append)
 
           val descriptorFlags =
-            (if flags.contains(OpenFlag.Read) then 1 else 0) | (if writing then 2 else 0)
+            (if flags.has(OpenFlag.Read) then 1 else 0) | (if writing then 2 else 0)
 
-          val pathFlags = follow(!flags.contains(OpenFlag.NoFollow))
+          val pathFlags = follow(!flags.has(OpenFlag.NoFollow))
 
           try
             val opened =
@@ -375,7 +377,7 @@ package filesystemBackends:
 
             val target: Foreign of "descriptor" from Wit = opened
 
-            def read(): LazyList[Data] =
+            def read(): Progression[Data] =
               val streamHandle =
                 target.`read-via-stream`(U64(0L.bits)).invoke[WitHandle of "input-stream"]
 
@@ -388,11 +390,11 @@ package filesystemBackends:
               catch case error: WitError => ()
 
               streamHandle.dispose()
-              chunks.reverse.to(LazyList)
+              chunks.stdlib.reverse.transmute[Progression]
 
-            def write(data: LazyList[Data]): Unit =
+            def write(data: Progression[Data]): Unit =
               val streamHandle =
-                if flags.contains(OpenFlag.Append)
+                if flags.has(OpenFlag.Append)
                 then target.`append-via-stream`.invoke[WitHandle of "output-stream"]
                 else target.`write-via-stream`(U64(0L.bits)).invoke[WitHandle of "output-stream"]
 
@@ -409,7 +411,7 @@ package filesystemBackends:
             // expands at under capture checking.
             val handle =
               Handle(() => read(), write(_))
-                ( () => zephyrine.Stream(read().iterator),
+                ( () => zephyrine.Stream(read().stdlib.iterator),
                   () => turbulence.Sink.buffered((), (_, stream) => write(stream)) )
 
             try lambda(handle) finally opened.dispose()

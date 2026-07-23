@@ -32,7 +32,9 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.math
+
+import scala.language.experimental.genericNumberLiterals
 
 import java.security as js
 import java.util as ju

@@ -178,7 +178,16 @@ object Tests extends Suite(m"Caesura tests"):
       test(m"Parse TSV data with header"):
         import dsvFormats.tsvWithHeaderFormat
         t"Greeting\tAddressee\nHello\tWorld\n".read[Sheet]
-      . assert(_ == Sheet(IArray(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeaderFormat, IArray(t"Greeting", t"Addressee")))
+      . assert: sheet =>
+          // `x <: Optional[x.type]` conformance is rejected for the binary opaque `Map` when its
+          // key type arrives via the `soundness` export alias (a compiler quirk to investigate);
+          // the cast is erasure-identical.
+          val columns =
+            Map.of[Text, Int](scala.collection.immutable.Map(t"Greeting" -> 0, t"Addressee" -> 1))
+            . asInstanceOf[Optional[Map[Text, Int]]]
+          val expected = Sheet(IArray(Dsv(IArray(t"Hello", t"World"), columns)),
+              dsvFormats.tsvWithHeaderFormat, IArray(t"Greeting", t"Addressee"))
+          sheet == expected
 
 
 
@@ -283,7 +292,7 @@ object Tests extends Suite(m"Caesura tests"):
 
     test(m"convert case class to TSV"):
       import dsvFormats.tsvFormat
-      Seq(Foo(t"hello", t"world")).dsv.show
+      List(Foo(t"hello", t"world")).dsv.show
     . assert(_ == t"hello\tworld")
 
     suite(m"Optics"):

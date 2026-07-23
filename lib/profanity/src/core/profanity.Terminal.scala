@@ -32,6 +32,8 @@
                                                                                                   */
 package profanity
 
+import scala.caps
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -39,6 +41,7 @@ import distillate.*
 import gossamer.*
 import iridescence.*
 import parasite.*
+import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import zephyrine.*
@@ -106,7 +109,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
   metrics.mode = safely:
     def hex(text: Text): Int = Integer.parseInt(text.s, 16)
 
-    Environment.terminalBg.cut(t"/").to(List) match
+    Environment.terminalBg.cut(t"/") match
       case red :: green :: blue :: Nil =>
         if Terminal.dark(hex(red), hex(green), hex(blue)) then Brightness.Dark
         else Brightness.Light
@@ -188,7 +191,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
   // A daemon body must be a pure context function, so everything it needs is bound to
   // block locals first: the untracked `Metrics` holder and `Spool` cross directly, the
   // capability-typed keyboard crosses as an `AnyRef` rim (the cordillera recipe), and the
-  // stdin stream is a `LazyList`, which is not capture-tracked, so it crosses as a plain
+  // stdin stream is a `Progression`, which is not capture-tracked, so it crosses as a plain
   // value.
   val pumpInput: Daemon =
     val keyboard0: AnyRef = keyboard.asInstanceOf[AnyRef]
@@ -197,12 +200,12 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     // The terminal reads chars one at a time from the same stdio reader the
     // `Lookahead` consults (the former element-typed `Streamable by Char`
     // instance, now private to its one user).
-    val chars: LazyList[Char] =
-      def recur(): LazyList[Char] = console.stdio.readChar() match
-        case -1  => LazyList()
+    val chars: Progression[Char] =
+      def recur(): Progression[Char] = console.stdio.readChar() match
+        case -1  => Progression()
         case int => int.toChar #:: recur()
 
-      LazyList.defer(recur())
+      Progression.defer(recur())
 
     contain:
       case _ => events0.stop(); Remedy.Accept

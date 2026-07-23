@@ -32,15 +32,18 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Process:
-  private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.asScala.to(List)
+  private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.transmute[List]
 
   def apply(pid: Pid)(using pidError: Tactic[PidError]^): Process =
     val handle = ProcessHandle.of(pid.value).nn
@@ -50,17 +53,17 @@ object Process:
   // whose result type another scope owns (the Spring rule); built in the method body, the
   // handles box into the (capture-boxed) list element type.
   private def processes(handles: List[ProcessHandle]): List[Process] =
-    val builder = List.newBuilder[Process]
-    var remaining = handles
+    val builder = scala.collection.immutable.List.newBuilder[Process]
+    var remaining = handles.stdlib
 
     while !remaining.isEmpty do
       builder += new Process(remaining.head)
       remaining = remaining.tail
 
-    builder.result()
+    List.of(builder.result())
 
   def all: List[Process] = processes(allHandles)
-  def roots: List[Process] = processes(allHandles.filter(!_.parent.nn.isPresent))
+  def roots: List[Process] = processes(List.of(allHandles.stdlib.filter(!_.parent.nn.isPresent)))
   def apply(): Process = new Process(ProcessHandle.current.nn)
 
 // A `Process` is a *capability*, like `Job`: a live handle to a running operating-system
@@ -77,7 +80,7 @@ class Process private (java: ProcessHandle) extends ProcessRef, caps.ExclusiveCa
     if parent.isPresent then new Process(parent.get.nn) else Unset
 
   def children: List[Process] =
-    Process.processes(java.children.nn.iterator.nn.asScala.to(List))
+    Process.processes(java.children.nn.iterator.nn.transmute[List])
 
   def startTime[instantiable: Instantiable across Instants from Long]: Optional[instantiable] =
     val instant = java.info.nn.startInstant.nn

@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import scala.compiletime
+
 import anticipation.*
 import contingency.*
 import gesticulate.*
@@ -55,7 +57,7 @@ object Servable:
     def serve(content: Content): Http.Response =
       val headers = List(Http.Header(t"content-type", content.media.show))
 
-      Http.Ok(headers, Http.Body.Flowing(() => content.stream.iterator.stream))
+      Http.Ok(headers, Http.Body.Flowing(() => content.stream.stdlib.iterator.stream))
 
 
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]

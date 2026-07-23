@@ -63,7 +63,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A file opened for writing can be written and read back"):
         unsafely:
           dest.open[File](Write, OpenFlag.Create): handle ?=>
-            handle.write(LazyList(t"Hello world".in[Data]))
+            handle.write(Progression(t"Hello world".in[Data]))
 
           dest.read[Text]
       . assert(_ == t"Hello world")
@@ -75,7 +75,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"Opening an Eof appends to the file"):
         unsafely:
           Eof(dest).open(Write): handle ?=>
-            handle.write(LazyList(t"!".in[Data]))
+            handle.write(Progression(t"!".in[Data]))
 
           dest.read[Text]
       . assert(_ == t"Hello world!")
@@ -111,7 +111,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"The entries of the directory root are listed"):
         unsafely:
           root.open[Directory](): dir ?=>
-            dir.base.entries.to(List).map(_.name)
+            dir.base.entries.stdlib.to(List).map(_.name)
       . assert(_ == List(t"greeting.txt"))
 
       test(m"A removed entry is no longer extant"):
@@ -216,7 +216,7 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "staged.txt"
 
           target.create[File](): handle ?=>
-            handle.write(LazyList(t"payload".in[Data]))
+            handle.write(Progression(t"payload".in[Data]))
 
           target.read[Text]
       . assert(_ == t"payload")
@@ -227,7 +227,7 @@ object Tests extends Suite(m"Galilei tests"):
 
           capture[IoError]:
             target.create[File](): handle ?=>
-              handle.write(LazyList(t"data".in[Data]))
+              handle.write(Progression(t"data".in[Data]))
               abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
 
           target.exists()

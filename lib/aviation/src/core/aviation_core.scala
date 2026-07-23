@@ -33,6 +33,8 @@
 package aviation
 
 import anticipation.*
+import proscenium.compat.*
+import rudiments.*
 import contextual.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
@@ -587,15 +589,15 @@ extension (inline context: StringContext)
 // Combinators over any `Recurrent` (a `Recurrence`, an `Rrule`, …): its occurrence stream and ways
 // to bound it. `occurrences` is lazy and may be infinite — bound it with `until`/`within`/`take`.
 extension [series](series: series)(using recurrent: series is Recurrent)
-  def occurrences: LazyList[recurrent.Topic] = recurrent.occurrences(series)
+  def occurrences: Progression[recurrent.Topic] = recurrent.occurrences(series)
 
   def until(limit: recurrent.Topic)(using order: Ordering[recurrent.Topic])
-  :   LazyList[recurrent.Topic] =
+  :   Progression[recurrent.Topic] =
 
     recurrent.occurrences(series).takeWhile(order.lt(_, limit))
 
   def within(window: Period[recurrent.Topic])(using order: Ordering[recurrent.Topic])
-  :   LazyList[recurrent.Topic] =
+  :   Progression[recurrent.Topic] =
 
     recurrent.occurrences(series).dropWhile(order.lt(_, window.start))
       .takeWhile(order.lt(_, window.finish))

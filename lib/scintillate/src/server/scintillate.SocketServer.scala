@@ -186,7 +186,7 @@ extends RequestServable:
           // the post-response drain share it, so the handler pulls what it
           // reads and the drain consumes the rest. A second `body()` call
           // RESUMES rather than replaying — explicit `memoize` replaces the
-          // former LazyList view's implicit caching.
+          // former Progression view's implicit caching.
           val bodyStream: Stream[Data] over Credit =
             if upgrade then streamOf(cursor) else requestBody(cursor, head)
 

@@ -32,7 +32,8 @@
                                                                                                   */
 package cardinality
 
-import language.experimental.genericNumberLiterals
+
+import scala.language.experimental.genericNumberLiterals
 
 import scala.compiletime.ops.double.*
 import scala.reflect.TypeTest
@@ -41,13 +42,13 @@ import scala.util.FromDigits
 import internal.{Asym, Min4, Max4}
 
 object NumericRange:
-  @annotation.targetName("Range")
+  @scala.annotation.targetName("Range")
   opaque infix type ~ [min <: Double, max <: Double] = Double
 
   def apply[min <: Double, max <: Double](value: Double): min ~ max =
     value
 
-  @annotation.targetName("Range")
+  @scala.annotation.targetName("Range")
   object `~`:
     given comparable: [min <: Double & Singleton, max <: Double & Singleton]
     =>  ( min: ValueOf[min], max: ValueOf[max] )
@@ -71,24 +72,24 @@ object NumericRange:
     extension [leftMin <: Double, leftMax <: Double](left: leftMin ~ leftMax)
       def double: Double = left
 
-      @annotation.targetName("add")
+      @scala.annotation.targetName("add")
       infix def + [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :   (leftMin + rightMin) ~ (leftMax + rightMax) =
 
         left + right
 
 
-      @annotation.targetName("add2")
+      @scala.annotation.targetName("add2")
       infix def + [E <: Double & Singleton](right: E)
       :   (leftMin + right.type) ~ (leftMax + right.type) =
 
         left + right
 
 
-      @annotation.targetName("add3")
+      @scala.annotation.targetName("add3")
       infix def + (right: Double): Double = left + right
 
-      @annotation.targetName("times")
+      @scala.annotation.targetName("times")
       infix def * [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :   (Min4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin]) ~
         (Max4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin]) =
@@ -96,18 +97,18 @@ object NumericRange:
         left*right
 
 
-      @annotation.targetName("times2")
+      @scala.annotation.targetName("times2")
       infix def * [right <: Double & Singleton](right: right)
       :   Min[leftMin*right, leftMax*right] ~ Max[leftMin*right, leftMax*right] =
 
         left*right
 
 
-      @annotation.targetName("times3")
+      @scala.annotation.targetName("times3")
       infix def * (right: Double): Double = left*right
 
 
-      @annotation.targetName("minus")
+      @scala.annotation.targetName("minus")
       infix def - [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
       :   ( Min[leftMin - rightMin, leftMin - rightMax] ~
         Max[leftMax - rightMin, leftMax - rightMax] ) =
@@ -115,25 +116,25 @@ object NumericRange:
           left - right
 
 
-      @annotation.targetName("minus2")
+      @scala.annotation.targetName("minus2")
       infix def - [right <: Double & Singleton](right: right)
       :   Min[leftMin - right, leftMax - right] ~ Max[leftMin - right, leftMax - right] =
 
         left - right
 
 
-      @annotation.targetName("minus3")
+      @scala.annotation.targetName("minus3")
       infix def - (right: Double): Double = left - right
 
 
-      @annotation.targetName("divide")
+      @scala.annotation.targetName("divide")
       infix def / [right <: Double & Singleton](right: right)
       :   Min[leftMin/right, leftMax/right] ~ Max[leftMin/right, leftMax/right] =
 
         left/right
 
 
-      @annotation.targetName("divide2")
+      @scala.annotation.targetName("divide2")
       infix def / [rightMin <: Double, rightMax <: Double]
         ( right: rightMin ~ rightMax )
       :
@@ -149,5 +150,5 @@ object NumericRange:
           left/right
 
 
-      @annotation.targetName("divide3")
+      @scala.annotation.targetName("divide3")
       infix def / (right: Double): Double = left/right

@@ -32,6 +32,8 @@
                                                                                                   */
 package locomotion
 
+import scala.caps
+
 import anticipation.*
 import zephyrine.*
 
@@ -77,7 +79,7 @@ class ProtobufPrinter(out: (Producer.Bytes)^) extends caps.ExclusiveCapability, 
 
   update def field(number: Int, value: Protobuf): Unit = value match
     case Protobuf.Absent           => ()
-    case Protobuf.Repeated(values) => values.foreach(field(number, _))
+    case Protobuf.Repeated(values) => values.stdlib.foreach(field(number, _))
 
     case Protobuf.Wire(wireType, bytes) =>
       tag(number, wireType)

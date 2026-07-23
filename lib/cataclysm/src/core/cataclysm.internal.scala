@@ -32,6 +32,9 @@
                                                                                                   */
 package cataclysm
 
+import scala.collection.immutable.{Seq, ::}
+import scala.collection.`+:`
+
 import scala.quoted.*
 
 import anticipation.*
@@ -71,15 +74,15 @@ object internal:
 
     val insertions: Seq[Expr[Any]] = insertions0 match
       case Varargs(insertions) => insertions
-      case _                   => Nil
+      case _                   => scala.collection.immutable.Nil
 
-    def partList[tuple: Type]: List[String] = Type.of[tuple] match
+    def partList[tuple: Type]: scala.collection.immutable.List[String] = Type.of[tuple] match
       case '[head *: tail] => TypeRepr.of[head] match
         case ConstantType(StringConstant(part)) => part :: partList[tail]
         case _                                  => halt(m"cataclysm: a CSS part was not a literal")
 
       case _ =>
-        Nil
+        scala.collection.immutable.Nil
 
     // `contextual` builds the `Transport` tuple in reverse, so restore source order.
     val parts = partList[parts].reverse
@@ -136,9 +139,9 @@ object internal:
     // sentinel and interleave the (name-typed) holes between the literal segments.
     def assembleSelector(text: Text): Expr[SelectorList] =
       val segments = text.cut(placeholder)
-      var acc: Expr[String] = Expr(segments.head.s)
+      var acc: Expr[String] = Expr(segments.stdlib.head.s)
 
-      for segment <- segments.tail do
+      for segment <- segments.stdlib.tail do
         acc = '{$acc + ${selectorFragment()}.s + ${Expr(segment.s)}}
 
       '{SelectorList.read($acc.tt)}
@@ -156,7 +159,8 @@ object internal:
       else
         lift(value)
 
-    def listExpr(nodes: List[Css.Node]): Expr[List[Css.Node]] = Expr.ofList(nodes.map(nodeExpr))
+    def listExpr(nodes: List[Css.Node]): Expr[List[Css.Node]] =
+      '{List.of(${Expr.ofList(nodes.stdlib.map(nodeExpr))})}
 
     def nodeExpr(node: Css.Node): Expr[Css.Node] = node match
       case Css.Node.Rule(selector, body) =>
@@ -196,8 +200,8 @@ object internal:
     // or at-rule are an inline style set (`Css.Style`); anything with a rule or at-rule
     // is a stylesheet (`Css`). The `transparent inline` interpolator returns whichever.
     val result: Expr[Css | Css.Style] =
-      if css.rules.nonEmpty && css.rules.forall(isDeclaration)
-      then '{Css.Style.of(${Expr.ofList(css.rules.map(stylePair))})}
+      if css.rules.stdlib.nonEmpty && css.rules.stdlib.forall(isDeclaration)
+      then '{Css.Style.of(List.of(${Expr.ofList(css.rules.stdlib.map(stylePair))}))}
       else '{Css(${listExpr(css.rules)})}
 
     if holeIndex != insertions.length
@@ -212,7 +216,8 @@ object internal:
   // type); and that type is checked against the property's grammar, so e.g.
   // `Css.Style(color = 4.0*Px)` and `Css.Style(notAProperty = …)` fail to compile.
   def style(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Css.Style] =
-    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(Text, Text)]] = exprs match
+    def recur(exprs: Seq[Expr[(Label, Any)]])
+    :   scala.collection.immutable.List[Expr[(Text, Text)]] = exprs match
       case '{type key <: Label; ($key: key, $value: value)} +: tail =>
         val convertible = Expr.summon[value is CssConvertible].getOrElse:
           halt(m"cataclysm: no CSS value is available for this property's value")
@@ -224,21 +229,22 @@ object internal:
         '{(${Expr(property)}, $convertible.value($value))} :: recur(tail)
 
       case _ =>
-        Nil
+        scala.collection.immutable.Nil
 
     properties match
-      case Varargs(exprs) => '{Css.Style.of(${Expr.ofList(recur(exprs))})}
+      case Varargs(exprs) => '{Css.Style.of(List.of(${Expr.ofList(recur(exprs))}))}
       case _              => '{Css.Style.of(Nil)}
 
   // The VDS type a `CssConvertible` instance tags its values with (or "" if none).
   def topicOf(using quotes: Quotes)(convertible: Expr[Any]): Text =
     import quotes.reflect.*
 
-    def refinements(repr: TypeRepr): Map[Text, TypeRepr] = repr.dealias match
+    def refinements(repr: TypeRepr): scala.collection.immutable.Map[Text, TypeRepr] =
+      repr.dealias match
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
-      case _                                           => Map()
+      case _                                           => scala.collection.immutable.Map()
 
     val members = refinements(convertible.asTerm.tpe) ++ refinements(convertible.asTerm.tpe.widen)
 

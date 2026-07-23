@@ -32,6 +32,8 @@
                                                                                                   */
 package anamnesis
 
+import proscenium.compat.*
+
 import beneficence.*
 import contingency.*
 import prepositional.*
@@ -119,6 +121,6 @@ class Database(size: Int) extends Findable:
     val relation2: Map[Ref, Set[Ref]] =
       relation.updated(left, relation.at(left).let(_ - right).or(Set()))
 
-    val corelation2 = corelation - right
+    val corelation2 = corelation.removed(right)
     relations(relationIndex) = relation2
     corelations(relationIndex) = corelation2

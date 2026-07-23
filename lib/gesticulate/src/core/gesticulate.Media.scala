@@ -32,7 +32,7 @@
                                                                                                   */
 package gesticulate
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -50,7 +50,9 @@ object Media:
 
   given nominable: [nominable: Nominable] => nominable is Media:
     extension (value: nominable)
-      def mediaType: MediaType = Extensions.guess(nominable.name(value).cut(t".").last)
+      def mediaType: MediaType =
+        val parts = nominable.name(value).cut(t".").stdlib
+        Extensions.guess(parts.last)
 
   object Group:
     given inspectable: Group is Inspectable = _.name
@@ -91,23 +93,28 @@ object Media:
 
   def parse(string: Text)(using Tactic[MediaTypeError]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
-      if ps == List("")
-      then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
+      ps.stdlib match
+        case scala.collection.immutable.List(t"") =>
+          raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
 
-      ps.map(_.cut(t"=", 2).to(List)).map: p => p(0).show -> p(1).show
+        case _ =>
+          ()
+
+      ps.map((param: Text) => param.cut(t"=", 2).stdlib).map: (p: scala.collection.immutable.List[Text]) =>
+        p(0).show -> p(1).show
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
-      suffixes.map(_.lower.capitalize).flatMap: suffix =>
+      suffixes.map(_.lower.capitalize).bind: suffix =>
         try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
           abort(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)))
 
     def parseInit(string: Text): (Subtype, List[Suffix]) =
-      val xs: List[Text] = string.cut(t"+").to(List)
+      val xs: List[Text] = string.cut(t"+")
 
       xs.absolve match
-        case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
+        case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(List.of(xs.stdlib.tail)))
 
-    def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/").to(List) match
+    def parseBasic(string: Text): (Group, Subtype, List[Suffix]) = string.cut(t"/") match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
 
       case _ =>
@@ -122,9 +129,12 @@ object Media:
       def notAllowed(char: Char): Boolean =
         char.isWhitespace || char.isControl || specials.has(char)
 
-      string.chars.find(notAllowed(_)).map: char =>
+      val chars = scala.collection.immutable.ArraySeq.unsafeWrapArray:
+        string.chars.mutable(using Unsafe)
+
+      chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))
-        Subtype.X(string.chars.filter(!notAllowed(_)).text)
+        Subtype.X(IArray.from(chars.filter(!notAllowed(_))).text)
 
       . getOrElse:
           if string.starts(t"vnd.") then Subtype.Vendor(string.skip(4))
@@ -132,12 +142,12 @@ object Media:
           else if string.starts(t"x.") || string.starts(t"x-") then Subtype.X(string.skip(2))
           else Subtype.Standard(string)
 
-    val xs: List[Text] = string.cut(t";").to(List).map(_.trim)
+    val xs: List[Text] = string.cut(t";").map(_.trim)
 
     xs.absolve match
       case (h: Text) :: _ =>
         val basic = parseBasic(h)
-        MediaType(basic(0), basic(1), basic(2), parseParams(xs.tail))
+        MediaType(basic(0), basic(1), basic(2), parseParams(List.of(xs.stdlib.tail)))
 
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')

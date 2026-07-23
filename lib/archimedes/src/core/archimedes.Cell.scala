@@ -32,6 +32,11 @@
                                                                                                   */
 package archimedes
 
+import scala.collection.immutable.IndexedSeq
+
+// Deliberate stdlib opt-out: internal typesetting tables are set-algebraic.
+import scala.collection.immutable.{Map, Set}
+
 import anticipation.*
 import gossamer.*
 import hieroglyph.Measurable
@@ -91,15 +96,15 @@ object Cell:
     case Nil => empty
 
     case _ =>
-      val ascent = cells.map(_.baseline).reduceLeft(max)
-      val descent = cells.map { cell => cell.height - 1 - cell.baseline }.reduceLeft(max)
-      val framed = cells.map(_.framed(ascent, descent))
+      val ascent = cells.stdlib.map(_.baseline).reduceLeft(max)
+      val descent = cells.stdlib.map { cell => cell.height - 1 - cell.baseline }.reduceLeft(max)
+      val framed = cells.stdlib.map(_.framed(ascent, descent))
       val height = ascent + descent + 1
 
       val lines = (0 until height).to(IndexedSeq).map: row =>
-        Writing(framed.map { cell => cell.lines(row).text }.join)
+        Writing(List.of(framed.map { cell => cell.lines(row).text }).join)
 
-      Cell(lines, cells.map(_.width).reduceLeft(_ + _), ascent)
+      Cell(lines, cells.stdlib.map(_.width).reduceLeft(_ + _), ascent)
 
   def fraction(numerator: Cell, denominator: Cell): Cell =
     val width = max(numerator.width, denominator.width) + 2
@@ -312,7 +317,7 @@ object Cell:
   // Lay out a sequence of nodes as a row, stretching any bracket or integral
   // operators to the height of the surrounding (non-stretchy) content.
   def row(nodes: List[Mathml]): Cell =
-    val content = nodes.filter { node => stretchyChar(node).absent }.map(of)
+    val content = nodes.stdlib.filter { node => stretchyChar(node).absent }.map(of)
     val ascent = if content.isEmpty then 0 else content.map(_.baseline).reduceLeft(max)
 
     val descent =
@@ -321,7 +326,7 @@ object Cell:
 
     val height = ascent + descent + 1
 
-    val cells = nodes.map: node =>
+    val cells = nodes.stdlib.map: node =>
       stretchyChar(node).lay(of(node)): char =>
         // A one-line subject keeps the plain glyph; taller subjects grow the art.
         if bigOperators.contains(char) then
@@ -332,7 +337,7 @@ object Cell:
         else
           bracket(char, height, ascent, opening(char))
 
-    beside(cells)
+    beside(List.of(cells))
 
   def of(node: Mathml): Cell = node match
     case Mo(value, _)              => line(operator(value))

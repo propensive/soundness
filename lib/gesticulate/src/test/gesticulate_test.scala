@@ -32,6 +32,8 @@
                                                                                                   */
 package gesticulate
 
+import scala.math
+
 import soundness.*
 
 import charEncoders.utf8Encoder
@@ -46,10 +48,10 @@ object Tests extends Suite(m"Gesticulate tests"):
       // "--<name>--\r\n". Tests are parameterised over a variety of block
       // sizes including very small ones to exercise cross-block detection.
 
-      def chunks(text: Text, size: Int): LazyList[Data] =
+      def chunks(text: Text, size: Int): Progression[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): LazyList[Data] =
-          if offset >= data.length then LazyList() else
+        def go(offset: Int): Progression[Data] =
+          if offset >= data.length then Progression() else
             val end = math.min(offset + size, data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
@@ -86,47 +88,47 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       for blockSize <- blockSizes do
         test(m"Single part: count at block size $blockSize"):
-          Multipart.parse(chunks(singlePart, blockSize)).parts.length
+          Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.length
 
         . assert(_ == 1)
 
         test(m"Single part: name at block size $blockSize"):
-          Multipart.parse(chunks(singlePart, blockSize)).parts.head.name.or(t"")
+          Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.head.name.or(t"")
 
         . assert(_ == t"field1")
 
         test(m"Single part: body at block size $blockSize"):
-          bodyText(Multipart.parse(chunks(singlePart, blockSize)).parts.head)
+          bodyText(Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.head)
 
         . assert(_ == t"value1")
 
         test(m"Two parts: count at block size $blockSize"):
-          Multipart.parse(chunks(twoParts, blockSize)).parts.length
+          Multipart.parse(chunks(twoParts, blockSize)).parts.stdlib.length
 
         . assert(_ == 2)
 
         test(m"Two parts: names at block size $blockSize"):
           Multipart.parse(chunks(twoParts, blockSize)).parts.map(_.name.or(t""))
 
-        . assert(_ == LazyList(t"field1", t"field2"))
+        . assert(_ == Progression(t"field1", t"field2"))
 
         test(m"Two parts: bodies at block size $blockSize"):
           Multipart.parse(chunks(twoParts, blockSize)).parts.map(bodyText)
 
-        . assert(_ == LazyList(t"value1", t"value2"))
+        . assert(_ == Progression(t"value1", t"value2"))
 
       test(m"Filename extraction"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.head.filename.or(t"")
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.filename.or(t"")
 
       . assert(_ == t"hello.txt")
 
       test(m"Disposition is FormData"):
-        Multipart.parse(chunks(singlePart, 4096)).parts.head.disposition
+        Multipart.parse(chunks(singlePart, 4096)).parts.stdlib.head.disposition
 
       . assert(_ == Multipart.Disposition.FormData)
 
       test(m"Headers map preserved"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.head.headers
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.headers
           .at(t"Content-Type").or(t"")
 
       . assert(_ == t"text/plain")
@@ -138,7 +140,7 @@ object Tests extends Suite(m"Gesticulate tests"):
           t"\r\n" +
           t"line1\rline2\r\n" +
           t"--xyz--\r\n"
-        bodyText(Multipart.parse(chunks(body, 4096)).parts.head)
+        bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
       . assert(_ == t"line1\rline2")
 
@@ -149,7 +151,7 @@ object Tests extends Suite(m"Gesticulate tests"):
           t"\r\n" +
           t"line1\r\nstill body\r\n" +
           t"--xyz--\r\n"
-        bodyText(Multipart.parse(chunks(body, 4096)).parts.head)
+        bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
       . assert(_ == t"line1\r\nstill body")
 
@@ -160,12 +162,12 @@ object Tests extends Suite(m"Gesticulate tests"):
           t"\r\n" +
           t"--xy not the boundary\r\n" +
           t"--xyz--\r\n"
-        bodyText(Multipart.parse(chunks(body, 4096)).parts.head)
+        bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
 
       . assert(_ == t"--xy not the boundary")
 
       test(m"Empty input throws"):
-        capture[MultipartError](Multipart.parse(LazyList[Data]())).reason
+        capture[MultipartError](Multipart.parse(Progression[Data]())).reason
 
       . assert:
           case MultipartError.Reason.Expected(_) => true
@@ -173,14 +175,14 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       test(m"Non-dash leading byte throws Expected('-')"):
         val body = t"X--xyz\r\n\r\n\r\n--xyz--\r\n"
-        capture[MultipartError](Multipart.parse(LazyList(body.in[Data]))).reason
+        capture[MultipartError](Multipart.parse(Progression(body.in[Data]))).reason
 
       . assert(_ == MultipartError.Reason.Expected('-'))
 
       test(m"Single-dash leading sequence throws Expected('-')"):
         val body =
           t"-xyz\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\nv\r\n-xyz--\r\n"
-        capture[MultipartError](Multipart.parse(LazyList(body.in[Data]))).reason
+        capture[MultipartError](Multipart.parse(Progression(body.in[Data]))).reason
 
       . assert(_ == MultipartError.Reason.Expected('-'))
 

@@ -69,8 +69,8 @@ object MathmlReader:
     result
 
   private def toXmlElement(element: honeycomb.Element): Element =
-    val pairs: Seq[(Text, Text)] =
-      element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(Seq)
+    val pairs: List[(Text, Text)] =
+      element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
 
     val nodes: IArray[Node] = element.children.map(toXmlNode)
     Element(element.label, Attributes(pairs*), nodes)

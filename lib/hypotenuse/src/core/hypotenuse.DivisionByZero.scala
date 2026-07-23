@@ -32,7 +32,7 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.into
+import scala.language.experimental.into
 
 trait DivisionByZero:
   type Wrap[result]

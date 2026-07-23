@@ -32,6 +32,8 @@
                                                                                                   */
 package polaris
 
+import scala.caps
+
 import anticipation.*
 import beneficence.*
 

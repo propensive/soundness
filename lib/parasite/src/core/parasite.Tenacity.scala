@@ -32,6 +32,8 @@
                                                                                                   */
 package parasite
 
+import scala.math
+
 import anticipation.*
 import contingency.*
 import denominative.*

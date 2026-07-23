@@ -41,6 +41,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import hypotenuse.*
 import prepositional.*
+import rudiments.map
 import serpentine.*
 import spectacular.*
 import turbulence.*
@@ -105,9 +106,10 @@ case class Image
   // and the manifest.
   def blobs: List[(Text, Data)] =
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
-    (configDescriptor.digest, configBytes) ::
-      layerBlobs :::
-      List((manifestDescriptor.digest, manifestBytes))
+    List.of:
+      (configDescriptor.digest, configBytes) ::
+        layerBlobs.stdlib :::
+        scala.collection.immutable.List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under

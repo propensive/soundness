@@ -32,8 +32,10 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.atomic as juca

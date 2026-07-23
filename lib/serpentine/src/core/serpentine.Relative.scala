@@ -57,7 +57,7 @@ object Relative:
   def apply[filesystem, topic <: Tuple, limit <: Int](ascent: Int, descent: Text*)
   :   Relative of topic on filesystem under limit =
 
-    new Relative(ascent, descent.to(List)):
+    new Relative(ascent, descent.transmute[List]):
       type Plane = filesystem
       type Topic = topic
       type Limit = limit
@@ -70,9 +70,9 @@ object Relative:
   given decodable: [filesystem: Filesystem] => (Relative on filesystem) is Decodable in Text =
     text =>
       if text == filesystem.self then ? else
-        text.cut(filesystem.separator).pipe: parts =>
+        text.cut(filesystem.separator).stdlib.pipe: parts =>
           (if parts.last == t"" then parts.init else parts).pipe: parts =>
-            if parts.nil then Relative(0) else
+            if parts.isEmpty then Relative(0) else
               (if parts.head == filesystem.self then parts.tail else parts).pipe: parts =>
                 val ascent = parts.takeWhile(_ == filesystem.parent).length
                 val descent = parts.drop(ascent).reverse
@@ -95,6 +95,7 @@ object Relative:
         val ascender = filesystem.parent+filesystem.separator
         relative
         . descent
+        . stdlib
         . reverse
         . join(ascender*relative.ascent, filesystem.separator, t"")
 
@@ -117,12 +118,11 @@ object Relative:
         case _: Relative =>
           val relative = relative0.asInstanceOf[Relative on filesystem]
 
-          relative.descent match
-            case Nil | _ :: Nil => None
-            case _ :: _ :: Nil  => Some((relative.descent(1), relative.descent(0)))
+          val descent0 = relative.descent.stdlib
 
-            case _ =>
-              Some((relative.descent.last, Relative(0, relative.descent.init*)))
+          if descent0.length < 2 then None
+          else if descent0.length == 2 then Some((descent0(1), descent0(0)))
+          else Some((descent0.last, Relative(0, descent0.init*)))
 
         case _ =>
           None
@@ -134,7 +134,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   type Topic <: Tuple
   type Limit <: Int
 
-  def delta: Int = descent.length - ascent
+  def delta: Int = descent.stdlib.length - ascent
   def name: Optional[Text] = descent.prim
   def self: Boolean = ascent == 0 && descent == Nil
 
@@ -145,8 +145,8 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   private inline def check[topic, filesystem](path: List[Text]): Unit =
     inline !![topic] match
       case _: (head *: tail) =>
-        infer[head is Admissible on filesystem].check(path.head)
-        check[tail, filesystem](path.tail).unit
+        infer[head is Admissible on filesystem].check(path.stdlib.head)
+        check[tail, filesystem](List.of(path.stdlib.tail)).unit
 
       case EmptyTuple =>
         ()
@@ -160,24 +160,24 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
 
       case _ =>
-        check[Topic, filesystem](descent.to(List))
+        check[Topic, filesystem](descent)
         this.asInstanceOf[Relative of Topic under Limit on filesystem]
 
   inline def unqualified: Relative of Topic under Limit = this
 
   transparent inline def parent = inline !![Topic] match
-    case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.tail*)
+    case head *: tail => Relative[Plane, tail.type, Limit](ascent, descent.stdlib.tail*)
     case EmptyTuple   => Relative[Plane, Zero, S[Limit]](ascent)
 
     case _ =>
       if descent.nil then Relative[Plane, Topic, S[Limit]](ascent + 1)
-      else Relative[Plane, Topic, Limit](ascent, descent.tail*)
+      else Relative[Plane, Topic, Limit](ascent, descent.stdlib.tail*)
 
   transparent inline def / (child: Any): Relative of (child.type *: Topic) under Limit =
     summonFrom:
       case given (child.type is Admissible on Plane) =>
         Relative[Plane, child.type *: Topic, Limit]
-          ( ascent, infer[child.type is Navigable].follow(child) +: descent* )
+          ( ascent, (infer[child.type is Navigable].follow(child) +: descent.stdlib)* )
 
       case _ =>
         Relative[Plane, child.type *: Topic, Limit]

@@ -70,11 +70,11 @@ object Multipart:
     cursor.next()
     cursor.expect('\n')(expected('\n'))
 
-    def headers(list: List[(Text, Text)]): Map[Text, Text] =
+    def headers(list: List[(Text, Text)]): scala.collection.immutable.Map[Text, Text] =
       if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
-        list.to(Map)
+        list.stdlib.toMap
 
       else
         val key: Text = cursor.hold:
@@ -98,7 +98,7 @@ object Multipart:
       var i = 0
       while i < count && cursor.next() do i += 1
 
-    def body(): LazyList[Data] = cursor.hold:
+    def body(): Progression[Data] = cursor.hold:
       val bodyStart = cursor.mark
       var bodyEnd: Optional[Cursor.Mark] = Unset
       var continue = true
@@ -129,16 +129,17 @@ object Multipart:
         // Position is at the body-ending '\r'. Skip past "\r\n<boundary>" which
         // is boundary.length + 2 bytes total.
         skipBytes(boundary.length + 2)
-        LazyList(out)
+        Progression(out)
 
-      . or(LazyList(cursor.grab(bodyStart, cursor.mark)))
+      . or(Progression(cursor.grab(bodyStart, cursor.mark)))
 
-    def parsePart(headers: Map[Text, Text], stream: LazyList[Data]): Part =
-      headers.at(t"Content-Disposition").let: disposition =>
+    def parsePart(headers: scala.collection.immutable.Map[Text, Text], stream: Progression[Data])
+    :   Part =
+      headers.get(t"Content-Disposition").optional.let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
 
-        val params: Map[Text, Text] =
-          parts.drop(1).map: param =>
+        val params: scala.collection.immutable.Map[Text, Text] =
+          parts.stdlib.drop(1).map: param =>
             param.cut(t"=", 2) match
               case List(key, value) =>
                 if value.starts(t"\"") && value.ends(t"\"")
@@ -148,7 +149,7 @@ object Multipart:
               case _ =>
                 abort(MultipartError(Reason.BadDisposition))
 
-          . to(Map)
+          . toMap
 
         val dispositionValue = parts.prim match
           case t"inline"     => Multipart.Disposition.Inline
@@ -158,19 +159,19 @@ object Multipart:
           case _ =>
             abort(MultipartError(Reason.BadDisposition))
 
-        val filename = params.at(t"filename")
-        val name = params.at(t"name")
+        val filename = params.get(t"filename").optional
+        val name = params.get(t"name").optional
 
-        Part(dispositionValue, headers, name, filename, stream)
+        Part(dispositionValue, Map.of(headers), name, filename, stream)
 
       . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
-    def parts(): LazyList[Part] =
+    def parts(): Progression[Part] =
       val part = parsePart(headers(Nil), body())
 
       if cursor.finished then
         raise(expected('-'))
-        LazyList()
+        Progression()
       else if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
@@ -183,14 +184,14 @@ object Multipart:
         cursor.expect('\r')(expected('\r'))
         cursor.expect('\n')(expected('\n'))
 
-        LazyList(part)
+        Progression(part)
 
       else
         raise(expected('-'))
-        LazyList()
+        Progression()
 
     Multipart(parts())
 
 
-case class Multipart(parts: LazyList[Part]):
-  def at(name: Text): Optional[Part] = parts.find(_.name == name).getOrElse(Unset)
+case class Multipart(parts: Progression[Part]):
+  def at(name: Text): Optional[Part] = parts.stdlib.find(_.name == name).getOrElse(Unset)

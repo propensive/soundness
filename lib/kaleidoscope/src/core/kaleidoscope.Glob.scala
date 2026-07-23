@@ -32,6 +32,8 @@
                                                                                                   */
 package kaleidoscope
 
+import proscenium.compat.*
+
 import anticipation.*
 
 object Glob:
@@ -46,10 +48,10 @@ object Glob:
       else GlobToken.Specific(text2, inverse)
 
     def recur(index: Int, tokens: List[GlobToken]): Glob =
-      if index >= text.s.length then Glob(tokens.reverse*) else text.s(index) match
+      if index >= text.s.length then Glob(tokens.stdlib.reverse*) else text.s(index) match
         case '*' =>
           tokens match
-            case Star :: tail => recur(index + 1, Globstar :: tail)
+            case Star :: tail => recur(index + 1, Globstar :: (tail: List[GlobToken]))
             case _            => recur(index + 1, Star :: tokens)
 
         case '?' =>

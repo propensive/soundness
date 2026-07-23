@@ -52,7 +52,7 @@ object Hyphenation:
   // Patterns look like `t"hy3ph"`; exceptions look like `t"as-so-ciate"`.
   def apply
     ( patterns:   Iterable[Text],
-      exceptions: Iterable[Text] = Nil,
+      exceptions: Iterable[Text] = Iterable(),
       leftMin:    Int            = 2,
       rightMin:   Int            = 3 )
   :   Hyphenation =
@@ -313,8 +313,8 @@ trait Hyphenation:
   def rightMin: Int
 
   def extending
-    ( patterns:   Iterable[Text] = Nil,
-      exceptions: Iterable[Text] = Nil,
+    ( patterns:   Iterable[Text] = Iterable(),
+      exceptions: Iterable[Text] = Iterable(),
       leftMin:    Optional[Int]  = Unset,
       rightMin:   Optional[Int]  = Unset )
   :   Hyphenation =

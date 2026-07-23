@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import scala.caps
+
 import java.io as ji
 
 import soundness.*
@@ -51,18 +53,18 @@ object Tests extends Suite(m"Turbulence tests"):
       given Seed = Seed(1L)
       import randomization.seededRandomization
       val data: Data = Data.fill(1000)(_.toByte)
-      val stream: LazyList[Data] = LazyList(data)
-      val shredded: Iterable[LazyList[Data]] = stochastic:
+      val stream: Progression[Data] = Progression(data)
+      val shredded: Iterable[Progression[Data]] = stochastic:
         (0 until 100).map: index =>
           stream.shred(20.0, 10.0)
 
       shredded.each: stream =>
         test(m"correct length after shredding"):
-          stream.map(_.length).total
+          stream.map(_.length).stdlib.total
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
-          stream.reduce(_ ++ _)
+          stream.stdlib.reduce(_ ++ _)
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
@@ -83,13 +85,13 @@ object Tests extends Suite(m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.in[Data].grouped(bs).to(LazyList)
+          val stream = string.in[Data].grouped(bs).to(proscenium.Progression)
           val result = stream.read[Text]
           result.in[Data].length
         . assert(_ == string.in[Data].length)
 
         test(m"roundtrip tests"):
-          val stream = string.in[Data].grouped(bs).to(LazyList)
+          val stream = string.in[Data].grouped(bs).to(proscenium.Progression)
           val result = stream.read[Text]
 
           result.s
@@ -100,18 +102,18 @@ object Tests extends Suite(m"Turbulence tests"):
         val high = gothic.s.charAt(0).toString.tt
         val low = gothic.s.charAt(1).toString.tt
 
-        summon[CharEncoder].encoded(LazyList(t"a", high, low, t"b"))
-        . to(List).reduce(_ ++ _).to(List)
+        summon[CharEncoder].encoded(Progression(t"a", high, low, t"b"))
+        . stdlib.to(List).reduce(_ ++ _).to(List)
       . assert(_ == t"a𐍈b".in[Data].to(List))
 
       test(m"per-char-chunk streams roundtrip through encode and decode"):
         val string = "aë€𐍈z"
 
         val chunks =
-          (0 until string.length).map { index => string.charAt(index).toString.tt }.to(LazyList)
+          (0 until string.length).map { index => string.charAt(index).toString.tt }.to(Progression)
 
         summon[CharDecoder].decoded(summon[CharEncoder].encoded(chunks))
-        . to(List).map(_.s).mkString
+        . stdlib.to(List).map(_.s).mkString
       . assert(_ == "aë€𐍈z")
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
@@ -119,29 +121,29 @@ object Tests extends Suite(m"Turbulence tests"):
 
     object Ref:
       given textSource: Ref is Streamable by Text over Credit =
-        ref => Stream(LazyList(t"abc", t"def").iterator)
+        ref => Stream(Progression(t"abc", t"def").iterator)
       given dataSource: Ref is Streamable by Data over Credit =
-        ref => Stream(LazyList(t"abc".in[Data], t"def".in[Data]).iterator)
+        ref => Stream(Progression(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Streamable by Text over Credit = ref => Stream(LazyList(t"abc", t"def").iterator)
+      given Ref2 is Streamable by Text over Credit = ref => Stream(Progression(t"abc", t"def").iterator)
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Streamable by Data over Credit = ref => Stream(LazyList(t"abc".in[Data], t"def".in[Data]).iterator)
+      given Ref3 is Streamable by Data over Credit = ref => Stream(Progression(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref3()
 
     suite(m"Reading tests"):
-      test(m"Bridge Text source to LazyList"):
-        qbf.source[Text].toLazyList.join
+      test(m"Bridge Text source to Progression"):
+        qbf.source[Text].toProgression.join
       . assert(_ == qbf)
 
-      test(m"Bridge Data source to LazyList"):
-        qbf.source[Data].toLazyList.reduce(_ ++ _).to(List)
+      test(m"Bridge Data source to Progression"):
+        qbf.source[Data].toProgression.stdlib.reduce(_ ++ _).to(List)
       . assert(_ == qbfData.to(List))
 
       test(m"Read Text as Text"):
@@ -172,41 +174,41 @@ object Tests extends Suite(m"Turbulence tests"):
         Ref3().read[Data].to(List)
       . assert(_ == t"abcdef".in[Data].to(List))
 
-      test(m"Read Text as LazyList[Text]"):
-        qbf.read[LazyList[Text]].join
+      test(m"Read Text as Progression[Text]"):
+        qbf.read[Progression[Text]].join
       . assert(_ == qbf)
 
       test(m"Read Text as Data"):
         qbf.read[Data]
       . assert(_.to(List) == qbfData.to(List))
 
-      test(m"Read Text as LazyList[Data]"):
-        qbf.read[LazyList[Data]]
-      . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
+      test(m"Read Text as Progression[Data]"):
+        qbf.read[Progression[Data]]
+      . assert(_.stdlib.reduce(_ ++ _).to(List) == qbfData.to(List))
 
       test(m"Read Data as Text"):
         qbfData.read[Text].s
       . assert(_ == qbf.s)
 
-      test(m"Read Data as LazyList[Text]"):
-        qbfData.read[LazyList[Text]].join
+      test(m"Read Data as Progression[Text]"):
+        qbfData.read[Progression[Text]].join
       . assert(_ == qbf)
 
       test(m"Read Data as Data"):
         qbfData.read[Data]
       . assert(_.to(List) == qbfData.to(List))
 
-      test(m"Read Data as LazyList[Data]"):
-        qbfData.read[LazyList[Data]]
-      . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
+      test(m"Read Data as Progression[Data]"):
+        qbfData.read[Progression[Data]]
+      . assert(_.stdlib.reduce(_ ++ _).to(List) == qbfData.to(List))
 
       // test(m"Read Text as Lines"):
-      //   qbf.read[LazyList[Line]]
-      // .assert(_ == LazyList(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
+      //   qbf.read[Progression[Line]]
+      // .assert(_ == Progression(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
 
       // test(m"Read Data as Lines"):
-      //   qbfData.read[LazyList[Line]]
-      // .assert(_ == LazyList(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
+      //   qbfData.read[Progression[Line]]
+      // .assert(_ == Progression(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
 
     suite(m"Writing tests"):
 
@@ -216,12 +218,12 @@ object Tests extends Suite(m"Turbulence tests"):
 
       object GeneralStore:
         given GeneralStore is Writable by Data = (store, stream) =>
-          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
             data.each: byte =>
               store.arrayBuffer.append(byte)
 
         given GeneralStore is Writable by Text = (store, stream) =>
-          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
             text.in[Data].each: byte =>
               store.arrayBuffer.append(byte)
 
@@ -231,7 +233,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       object ByteStore:
         given ByteStore is Writable by Data = (store, stream) =>
-          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
+          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^]).each: data =>
             data.each: byte =>
               store.arrayBuffer.append(byte)
 
@@ -241,7 +243,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       object TextStore:
         given TextStore is Writable by Text = (store, stream) =>
-          zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
+          zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]).each: text =>
             store.text = store.text + text
 
       test(m"Write Text to some reference with Text and Data instances"):
@@ -256,15 +258,15 @@ object Tests extends Suite(m"Turbulence tests"):
         store().s
       . assert(_ == qbf.s)
 
-      test(m"Write LazyList[Text] with Text and Data instances"):
+      test(m"Write Progression[Text] with Text and Data instances"):
         val store = GeneralStore()
-        LazyList(qbf).writeTo(store)
+        Progression(qbf).writeTo(store)
         store()
       . assert(_ == qbf)
 
-      test(m"Write LazyList[Data] with Text and Data instances"):
+      test(m"Write Progression[Data] with Text and Data instances"):
         val store = GeneralStore()
-        LazyList(qbfData).writeTo(store)
+        Progression(qbfData).writeTo(store)
         store()
       . assert(_ == qbf)
 
@@ -280,15 +282,15 @@ object Tests extends Suite(m"Turbulence tests"):
         store().s
       . assert(_ == qbf.s)
 
-      test(m"Write LazyList[Text] with only Data instance"):
+      test(m"Write Progression[Text] with only Data instance"):
         val store = ByteStore()
-        LazyList(qbf).writeTo(store)
+        Progression(qbf).writeTo(store)
         store()
       . assert(_ == qbf)
 
-      test(m"Write LazyList[Data] with only Data instance"):
+      test(m"Write Progression[Data] with only Data instance"):
         val store = ByteStore()
-        LazyList(qbfData).writeTo(store)
+        Progression(qbfData).writeTo(store)
         store()
       . assert(_ == qbf)
 
@@ -304,15 +306,15 @@ object Tests extends Suite(m"Turbulence tests"):
         store().s
       . assert(_ == qbf.s)
 
-      test(m"Write LazyList[Text] with only Text instance"):
+      test(m"Write Progression[Text] with only Text instance"):
         val store = TextStore()
-        LazyList(qbf).writeTo(store)
+        Progression(qbf).writeTo(store)
         store()
       . assert(_ == qbf)
 
-      test(m"Write LazyList[Data] with only Text instance"):
+      test(m"Write Progression[Data] with only Text instance"):
         val store = TextStore()
-        LazyList(qbfData).writeTo(store)
+        Progression(qbfData).writeTo(store)
         store()
       . assert(_ == qbf)
 
@@ -360,15 +362,15 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append LazyList[Text] with Text and Data instances"):
+      // test(m"Append Progression[Text] with Text and Data instances"):
       //   val store = GeneralStore()
-      //   LazyList(qbf).appendTo(store)
+      //   Progression(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append LazyList[Data] with Text and Data instances"):
+      // test(m"Append Progression[Data] with Text and Data instances"):
       //   val store = GeneralStore()
-      //   LazyList(qbfData).appendTo(store)
+      //   Progression(qbfData).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
@@ -384,15 +386,15 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append LazyList[Text] with only Data instance"):
+      // test(m"Append Progression[Text] with only Data instance"):
       //   val store = ByteStore()
-      //   LazyList(qbf).appendTo(store)
+      //   Progression(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append LazyList[Data] with only Data instance"):
+      // test(m"Append Progression[Data] with only Data instance"):
       //   val store = ByteStore()
-      //   LazyList(qbfData).appendTo(store)
+      //   Progression(qbfData).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
@@ -408,15 +410,15 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append LazyList[Text] with only Text instance"):
+      // test(m"Append Progression[Text] with only Text instance"):
       //   val store = TextStore()
-      //   LazyList(qbf).appendTo(store)
+      //   Progression(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append LazyList[Data] with only Text instance"):
+      // test(m"Append Progression[Data] with only Text instance"):
       //   val store = TextStore()
-      //   LazyList(qbfData).appendTo(store)
+      //   Progression(qbfData).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
@@ -468,11 +470,11 @@ object Tests extends Suite(m"Turbulence tests"):
               async:
                 for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
-          val reader = async(relay.stream.records.to(Set))
+          val reader = async(Set.from(relay.stream.records))
           producers.each(_.await())
           relay.stop()
           unsafely(reader.await())
-      . assert(_ == (for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}").to(Set))
+      . assert(_ == Set.from(for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}"))
 
       test(m"per-producer order is preserved through the relay"):
         supervise:
@@ -503,7 +505,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
         for fragment <- List(-1, 0, 1, 3) do
-          cases.zipWithIndex.each: (row, index) =>
+          cases.stdlib.zipWithIndex.each: (row, index) =>
             test(m"$policy, case $index, chunk size $fragment"):
               splitLines(row(0), fragment)
             . assert(_ == row(1))
@@ -602,14 +604,14 @@ object Tests extends Suite(m"Turbulence tests"):
         val source = summon[ji.ByteArrayInputStream is Streamable by Data over Credit]
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         source.stream(input).pump(sink.intake(output))
-        output.toByteArray.nn.to(List)
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(output.toByteArray.nn).to(List)
       . assert(_ == payload.to(List))
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
-        output.toByteArray.nn.to(List)
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(output.toByteArray.nn).to(List)
       . assert(_ == payload.to(List))
 
       val original = t"The quick brown fox jumps over the lazy dog"*100
@@ -638,11 +640,11 @@ object Tests extends Suite(m"Turbulence tests"):
         stream.memoize.to(List)
       . assert(_ == payload.to(List))
 
-      test(m"a LazyList is a Source through its native instance"):
+      test(m"a Progression is a Source through its native instance"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
-        val source = summon[LazyList[Data] is Streamable by Data over Credit]
-        source.stream(LazyList(payload, payload)).pump(sink.intake(output))
+        val source = summon[Progression[Data] is Streamable by Data over Credit]
+        source.stream(Progression(payload, payload)).pump(sink.intake(output))
         output.toByteArray.nn.length
       . assert(_ == payload.length*2)
 
@@ -673,7 +675,7 @@ object Tests extends Suite(m"Turbulence tests"):
         supervise:
           val sources = (1 to 4).map { index => Data.fill(1000)(_ => index.toByte) }
           // built in a while-loop: fresh endpoints cannot leave a `map` lambda
-          val builder = List.newBuilder[AnyRef]
+          val builder = scala.collection.immutable.List.newBuilder[AnyRef]
           var index = 0
           while index < sources.length do
             builder += summon[Data is Streamable by Data over Credit].stream(sources(index)).asInstanceOf[AnyRef]
@@ -730,7 +732,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"confluence snapshots transient sources into the merge"):
         supervise:
-          val builder = List.newBuilder[AnyRef]
+          val builder = scala.collection.immutable.List.newBuilder[AnyRef]
           var index = 0
           while index < 3 do
             builder +=

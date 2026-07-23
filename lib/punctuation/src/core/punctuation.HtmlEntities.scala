@@ -43,15 +43,16 @@ import turbulence.*
 // trailing semicolon are kept, since CommonMark requires the `;` terminator
 // for named entities to be valid.
 private[punctuation] object HtmlEntities:
-  private lazy val table: Map[String, String] =
-    val builder = Map.newBuilder[String, String]
+  private lazy val table: scala.collection.immutable.Map[String, String] =
+    val builder = scala.collection.immutable.Map.newBuilder[String, String]
     loadInto(cp"/honeycomb/entities-html4.tsv".read[Text].s, builder)
     loadInto(cp"/honeycomb/entities-extra.tsv".read[Text].s, builder)
     builder.result()
 
   private def loadInto
     ( tsv:     String,
-      builder: scala.collection.mutable.Builder[(String, String), Map[String, String]] )
+      builder: scala.collection.mutable.Builder
+                 [(String, String), scala.collection.immutable.Map[String, String]] )
   :   Unit =
 
     val lines = tsv.split("\n").nn

@@ -68,13 +68,13 @@ object DepsDev:
     val result: QueryResult = mute[HttpEvent](query.fetch().receive[Json]).as[QueryResult]
 
     val key: VersionKey =
-      result.results.map(_.version.versionKey).find(_.system == t"MAVEN")
+      result.results.stdlib.map(_.version.versionKey).find(_.system == t"MAVEN")
       . getOrElse(abort(Unresolved()))
 
     // `name` is `group:artifact`; the Maven Central path uses `/` for the group.
     val parts: List[Text] = key.name.cut(t":")
-    val group: Text = parts.head.cut(t".").join(t"/")
-    val artifact: Text = parts.last
+    val group: Text = parts.stdlib.head.cut(t".").join(t"/")
+    val artifact: Text = parts.stdlib.last
     val version: Text = key.version
     val jar: Text = t"$artifact-$version.jar"
 

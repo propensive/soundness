@@ -32,11 +32,17 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.collection.immutable.Seq
+import scala.collection.immutable.IndexedSeq
+
+import scala.caps
+
+import scala.language.dynamics
 
 import java.lang as jl
 
 import scala.collection.immutable.ListMap
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -73,14 +79,15 @@ object internal:
         case Nil          => repr
 
     abortive:
-      var holes: Map[Ordinal, Html.Hole] = Map()
+      var holes: scala.collection.immutable.Map[Ordinal, Html.Hole] =
+        scala.collection.immutable.Map()
       def capture(ordinal: Ordinal, hole: Html.Hole) = holes = holes.updated(ordinal, hole)
 
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
-      val iterator = holes2.to(Iterator)
+      val iterator = holes2.iterator
       var index: Int = -1
 
       var types: List[TypeRepr] = Nil
@@ -184,9 +191,11 @@ object internal:
 
             iterator.next() match
               case Html.Hole.Node(label) =>
-                types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
-                  intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
+                val tpe = whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
+                  intersect(tag.admissible.stdlib.map(_.s).toList).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Node of children]
+
+                types = tpe :: types
 
               case _ =>
                 panic(m"unexpected hole type")
@@ -215,9 +224,11 @@ object internal:
 
             iterator.next() match
               case Html.Hole.Element(label) =>
-                types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
-                  intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
+                val tpe = whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
+                  intersect(tag.admissible.stdlib.map(_.s).toList).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Element of children]
+
+                types = tpe :: types
 
               case _ =>
                 halt(m"unexpected hole type")
@@ -347,7 +358,8 @@ object internal:
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
       case Varargs(insertions) => insertions
 
-    var holes: Map[Ordinal, Html.Hole] = Map()
+    var holes: scala.collection.immutable.Map[Ordinal, Html.Hole] =
+        scala.collection.immutable.Map()
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
     // Custom HaltTactic: translate parser ParseError positions to source-file ranges.
@@ -500,7 +512,7 @@ object internal:
           else List('{Doctype(${Expr(text)})})
 
         case Comment(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -516,7 +528,7 @@ object internal:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -528,12 +540,12 @@ object internal:
 
           List('{TextNode($content.tt)})
 
-      def resultType(html: Html): Set[String] = html match
-        case TextNode(_)           => Set("#text")
-        case Element(tag, _, _, _) => Set(tag.s)
-        case Fragment(values*)     => values.to(Set).flatMap(resultType(_))
-        case Comment(_)            => Set()
-        case Doctype(_)            => Set()
+      def resultType(html: Html): scala.collection.immutable.Set[String] = html match
+        case TextNode(_)           => scala.collection.immutable.Set("#text")
+        case Element(tag, _, _, _) => scala.collection.immutable.Set(tag.s)
+        case Fragment(values*)     => values.toSet.flatMap(resultType(_))
+        case Comment(_)            => scala.collection.immutable.Set()
+        case Doctype(_)            => scala.collection.immutable.Set()
 
       resultType(html)
       . map: label => ConstantType(StringConstant(label))
@@ -611,7 +623,7 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    val attrsExpr = '{Attributes.from($presets ++ ${Expr.ofList(attributes)}.compact.to(Map))}
+    val attrsExpr = '{Attributes.from(Map.of($presets.stdlib ++ ${Expr.ofList(attributes)}.compact.toMap))}
     '{$tag.node($attrsExpr)}.asExprOf[result]
 
   opaque type Attributes = IArray[String | Null]
@@ -636,12 +648,13 @@ object internal:
         arr.immutable(using Unsafe)
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
-      if map.isEmpty then empty else
-        val n = map.size
+      val entries = map.stdlib
+      if entries.isEmpty then empty else
+        val n = entries.size
         val arr = new Array[String | Null](n*2)
         var i = 0
 
-        map.foreach: (k, v) =>
+        entries.foreach: (k, v) =>
           arr(i*2) = k.s
           arr(i*2 + 1) = v.lay(null: String | Null)(_.s)
           i += 1
@@ -754,7 +767,7 @@ object internal:
 
         b.result()
 
-      def toMap: Map[Text, Optional[Text]] =
+      def toMap: Map[Text, Optional[Text]] = Map.of:
         val a = storage(attrs)
 
         if a.length == 0 then ListMap.empty else
@@ -908,7 +921,7 @@ object internal:
             tu.immutable(using Unsafe)
 
       def `++`(other: Map[Text, Optional[Text]]): Attributes =
-        if other.isEmpty then attrs else attrs ++ Attributes.from(other)
+        if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
 
       // Structural equality: same key/value pairs in the same order. Provided
       // explicitly because `Object.equals` on the underlying `IArray` would

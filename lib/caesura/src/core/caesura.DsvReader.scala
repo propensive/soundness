@@ -32,6 +32,8 @@
                                                                                                   */
 package caesura
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import vacuous.*

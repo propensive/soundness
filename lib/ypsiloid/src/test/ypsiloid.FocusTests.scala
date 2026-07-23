@@ -34,6 +34,8 @@ package ypsiloid
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
@@ -67,12 +69,12 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
     suite(m"Pointer-only focus (untracked Yaml)"):
       test(m"Missing field reports the focus pointer (no position)"):
         val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
+        captureFoci(yaml)(_.as[FPerson]).stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/email"))
 
       test(m"Wrong-type field reports the focus pointer (no position)"):
         val yaml = t"name: Alice\nage: thirty\nemail: a@b".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
+        captureFoci(yaml)(_.as[FPerson]).stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/age"))
 
       test(m"Nested case-class missing field reports root-first path"):
@@ -88,7 +90,7 @@ address:
         // decoders raise+yet on the `Unset` sentinel so both accrue
         // their own errors rather than the first one aborting the
         // whole decode.
-        captureFoci(yaml)(_.as[FContact]).map(_(0).s).to(Set)
+        captureFoci(yaml)(_.as[FContact]).stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/address/city", "#/address/zip"))
 
       test(m"Untracked roots leave the focus position Unset"):
@@ -107,7 +109,7 @@ address:
         // either way, so we verify that path here and exercise the
         // `withPosition` plumbing in a separate direct test below.
         val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
+        captureFoci(yaml)(_.as[FPerson]).stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/email"))
 
       test(m"Nested missing field reports root-first path on a tracked root"):
@@ -118,7 +120,7 @@ address:
 address:
   street: X
 """
-        captureFoci(source.read[Yaml])(_.as[FContact]).map(_(0).s).to(Set)
+        captureFoci(source.read[Yaml])(_.as[FContact]).stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/address/city", "#/address/zip"))
 
       test(m"withPosition on a tracked Yaml resolves the pointer to a real position"):

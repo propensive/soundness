@@ -33,6 +33,8 @@
 package urticose
 
 import soundness.*
+
+import proscenium.compat.*
 import fulminate.errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
@@ -731,7 +733,7 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_.nonEmpty)
 
       test(m"There is a loopback interface"):
-        NetworkInterface.all().exists(_.loopback)
+        NetworkInterface.all().stdlib.exists(_.loopback)
       . assert(_ == true)
 
       test(m"An interface can be looked up by its name"):

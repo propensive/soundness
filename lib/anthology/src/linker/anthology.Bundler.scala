@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -42,6 +44,7 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import prepositional.*
+import rudiments.*
 import revolution.*
 import serpentine.*
 import turbulence.*
@@ -88,10 +91,10 @@ object Bundler:
     Zipfile.write(jarfile):
       val entries =
         Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
-          classpath.entries.to(List).flatMap:
+          classpath.entries.bind:
           case ClasspathEntry.Directory(directory) =>
             val root = directory.as[Path on Linux]
-            root.descendants.to(List).filter: entry => !omissions(entry.name)
+            root.descendants.stdlib.filter: entry => !omissions(entry.name)
             . map: file =>
               if file.entry() == Directory then Unset else
                 val ref = %.on[Zip] + root.toward(file).on[Zip]
@@ -104,12 +107,12 @@ object Bundler:
 
             // Re-emit each entry verbatim: it already carries its compressed bytes, so no
             // decompression or recompression is needed.
-            Zipfile.read(jarfile).entries.to(List).filter: entry =>
+            Zipfile.read(jarfile).entries.stdlib.filter: entry =>
               val name: Text = entry.ref.encode
               !entry.directory && name != t"META-INF/MANIFEST.MF"
 
           case _ =>
-            Nil
+            scala.collection.immutable.Nil
 
       entries.distinctBy(_.ref)
 

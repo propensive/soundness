@@ -43,4 +43,4 @@ import prepositional.*
 // givens to generate (an `Addable` for `Recurrence`, a `Calendar` for `Rrule`); the instance
 // carries them in its given clause.
 trait Recurrent extends Typeclass, Topical:
-  def occurrences(self: Self): LazyList[Topic]
+  def occurrences(self: Self): Progression[Topic]

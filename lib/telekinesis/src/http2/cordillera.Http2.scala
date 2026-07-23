@@ -32,6 +32,8 @@
                                                                                                   */
 package cordillera
 
+import scala.caps
+
 import scala.collection.mutable as scm
 
 import anticipation.{Data as Bytes, *}
@@ -225,7 +227,7 @@ object Http2:
 
     private def decodeSettings(payload: Bytes): List[Setting] raises Http2Error =
       if payload.length%6 != 0 then abort(Http2Error(Reason.Protocol(t"bad SETTINGS length")))
-      val builder = List.newBuilder[Setting]
+      val builder = scala.collection.immutable.List.newBuilder[Setting]
       var i = 0
 
       while i < payload.length do
@@ -233,7 +235,7 @@ object Http2:
         builder += Setting(id, uint32(payload, i + 2))
         i += 6
 
-      builder.result()
+      List.of(builder.result())
 
     private def frameType(frame: Frame): FrameType = frame match
       case _: Frame.Headers      => FrameType.Headers
@@ -286,7 +288,7 @@ object Http2:
         frameBuilder: buf =>
           // A while-loop rather than `each`: the closure may not capture the
           // exclusive buffer.
-          var rest = settings
+          var rest = settings.stdlib
 
           while !rest.isEmpty do
             val setting = rest.head

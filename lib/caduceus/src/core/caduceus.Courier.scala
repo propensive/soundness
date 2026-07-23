@@ -32,6 +32,8 @@
                                                                                                   */
 package caduceus
 
+import scala.caps
+
 import beneficence.*
 import prepositional.*
 import turbulence.*

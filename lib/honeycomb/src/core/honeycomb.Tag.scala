@@ -32,7 +32,11 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import anticipation.*
 import fulminate.*
@@ -89,7 +93,7 @@ object Tag:
       boundary:   Boolean                   = false )
   :   Container of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.pipe(x => Set.from(x.stdlib.map(_.tt)))
 
     Container
       ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
@@ -103,7 +107,7 @@ object Tag:
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   :   Transparent of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.pipe(x => Set.from(x.stdlib.map(_.tt)))
 
     transparent(valueOf[label].tt, admissible, presets, boundary = boundary)
     . of[label]
@@ -134,14 +138,14 @@ object Tag:
       boundary:   Boolean                   = false )
   extends Tag
     ( label, autoclose, mode, presets, admissible, insertable, foreign, false, false, boundary ):
-    type Result = Element & Html.Populable of Topic over Transport in Form
+    type Result = Element & Html.Vacuiscible of Topic over Transport in Form
 
     def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
       ( using attribution: Attribution of (? >: className) )
     :   Element of Topic over Transport in Form =
 
-      val nodes = children.compact.nodes
+      val nodes = children.compact.transmute[List].nodes
 
       val presets2 =
         if attribution.attribute == t"" then presets
@@ -159,7 +163,7 @@ object Tag:
 
     def node(attributes: Attributes): Result =
       new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
-      with Html.Populable()
+      with Html.Vacuiscible()
       . of[Topic]
       . over[Transport]
       . in[Form]
@@ -201,7 +205,7 @@ object Tag:
 
           presets.updated(attribution.attribute, value)
 
-      val nodes: IArray[Node] = children.compact.nodes
+      val nodes: IArray[Node] = children.compact.transmute[List].nodes
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 

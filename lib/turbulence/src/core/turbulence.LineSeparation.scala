@@ -78,7 +78,7 @@ object LineSeparation:
           // End-of-stream lines (the resolved `pending` may complete some, plus
           // the final unterminated line), built once and drained by `flush`.
           private var drained: Boolean = false
-          private var tail: List[Text] = Nil
+          private var tail: scala.collection.immutable.List[Text] = Nil.stdlib
 
           def regulation: Credit is Regulation = summon[Credit is Regulation]
 
@@ -208,7 +208,7 @@ object LineSeparation:
 
             if !drained then
               drained = true
-              var lines: List[Text] = Nil
+              var lines: scala.collection.immutable.List[Text] = Nil.stdlib
 
               // A dangling separator-initial char at end-of-stream resolves as
               // its bare single-char sequence.
@@ -230,7 +230,7 @@ object LineSeparation:
 
             var count: Int = 0
 
-            while count < targetSpace && tail != Nil do
+            while count < targetSpace && tail.nonEmpty do
               target.asInstanceOf[Array[AnyRef]^](targetOffset + count) =
                 tail.head.asInstanceOf[AnyRef]
 

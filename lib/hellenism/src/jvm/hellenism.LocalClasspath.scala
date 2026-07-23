@@ -32,6 +32,8 @@
                                                                                                   */
 package hellenism
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -53,20 +55,21 @@ object LocalClasspath:
   =>  LocalClasspath is Decodable in Text =
 
     classpath =>
-      val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
-        classpath.cut(System.properties.path.separator()).map: path =>
+      val entries =
+        classpath.cut(System.properties.path.separator()).stdlib
+        . map[ClasspathEntry.Directory | ClasspathEntry.Jar]: path =>
           if path.ends(t"/") then ClasspathEntry.Directory(path)
           else if path.ends(t".jar") then ClasspathEntry.Jar(path)
           else ClasspathEntry.Directory(path)
 
-      new LocalClasspath(entries, entries.to(Set))
+      new LocalClasspath(List.of(entries), Set.from(entries))
 
 
   def apply
     ( entries: (ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type)* )
   :   LocalClasspath =
 
-    new LocalClasspath(entries.toList, entries.to(Set))
+    new LocalClasspath(List.of(entries.toList), Set.from(entries))
 
 
   def apply[path: Abstractable across Paths to Text]
@@ -90,7 +93,7 @@ object LocalClasspath:
           case _         => ClasspathEntry.Jar(path.encode)
 
         if classpath.entrySet.has(entry) then classpath
-        else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
+        else new LocalClasspath(entry :: classpath.entries, Set.of(classpath.entrySet.stdlib + entry))
 
 
 class LocalClasspath private
@@ -99,7 +102,7 @@ class LocalClasspath private
     val entrySet: Set[ClasspathEntry] )
 extends Classpath:
   def apply()(using System): Text =
-    entries.flatMap:
+    entries.bind:
       case ClasspathEntry.Directory(directory) => List(directory)
       case ClasspathEntry.Jar(jar)             => List(jar)
       case _                                   => Nil

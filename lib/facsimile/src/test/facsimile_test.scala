@@ -32,7 +32,10 @@
                                                                                                   */
 package facsimile
 
+import scala.collection.immutable.Seq
+
 import soundness.*
+import proscenium.compat.*
 
 import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
@@ -48,6 +51,8 @@ import _root_.javax.crypto.spec as jcs
 import pneumatic.*
 
 object Tests extends Suite(m"Facsimile tests"):
+  val noParms: Map[Text, Cos] = Map()
+
   def run(): Unit =
     def parse(text: Text): Cos = CosParser(CosLexer(Scan(text.in[Data]))).value()
 
@@ -56,7 +61,7 @@ object Tests extends Suite(m"Facsimile tests"):
         String(bytes.mutable(using Unsafe), "UTF-8").tt
       . or(t"")
 
-    def bytesOf(cos: Cos): List[Int] = cos.chars.let(_.to(List).map(_.toInt & 0xff)).or(List())
+    def bytesOf(cos: Cos): scala.collection.immutable.List[Int] = cos.chars.let(v => v.to(List).toList.map(_.toInt & 0xff)).or(scala.collection.immutable.List())
 
     def data(values: Int*): Data = values.map(_.toByte).to(Array).immutable(using Unsafe)
 
@@ -80,7 +85,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
     def documentWith(trailerExtra: Text, bodies: Data*): Data =
       var out: Data = t"%PDF-1.7\n".in[Data]
-      val offsets = List.newBuilder[Long]
+      val offsets = scala.collection.immutable.List.newBuilder[Long]
 
       bodies.zipWithIndex.each: (body, index) =>
         offsets += out.length.toLong
@@ -119,7 +124,7 @@ object Tests extends Suite(m"Facsimile tests"):
         values.flatMap: value =>
           Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
-    def utf16(text: Text): Data = IArray.from(text.s.getBytes("UTF-16BE").nn)
+    def utf16(text: Text): Data = text.s.getBytes("UTF-16BE").nn.immutable(using Unsafe)
 
     // A minimal but real TrueType font: glyphs A and B with simple outlines and C a composite
     // of both, at 1000 units per em, carrying the bounding box (-50, -200, 1000, 800), an
@@ -162,12 +167,12 @@ object Tests extends Suite(m"Facsimile tests"):
           t"post" -> post)
 
       var offset = 12 + tables.length*16
-      val directory = List.newBuilder[Data]
-      val parts = List.newBuilder[Data]
+      val directory = scala.collection.immutable.List.newBuilder[Data]
+      val parts = scala.collection.immutable.List.newBuilder[Data]
 
       tables.each: (tag, table) =>
         val padding = (4 - table.length%4)%4
-        val entry = IArray.from(tag.s.getBytes("US-ASCII").nn)
+        val entry = tag.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
         directory += entry ++ big32(0L, offset.toLong, table.length.toLong)
         parts += table ++ IArray.fill[Byte](padding)(0)
         offset += table.length + padding
@@ -234,7 +239,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a literal string with control escapes"):
         bytesOf(parse(t"(a\\n\\t\\r\\b\\fz)"))
-      . assert(_ == List('a', 0x0a, 0x09, 0x0d, 0x08, 0x0c, 'z'))
+      . assert(_ == List[Int]('a', 0x0a, 0x09, 0x0d, 0x08, 0x0c, 'z'))
 
       test(m"a literal string with octal escapes"):
         textOf(parse(t"(\\101\\102\\103)"))
@@ -242,7 +247,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a short octal escape ends at a non-octal character"):
         bytesOf(parse(t"(\\53Z)"))
-      . assert(_ == List(43, 'Z'))
+      . assert(_ == List[Int](43, 'Z'))
 
       test(m"nested parentheses need no escaping"):
         textOf(parse(t"((nested) text)"))
@@ -254,7 +259,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"an unescaped CRLF in a string is a single line feed"):
         bytesOf(parse(t"(a\r\nb)"))
-      . assert(_ == List('a', 0x0a, 'b'))
+      . assert(_ == List[Int]('a', 0x0a, 'b'))
 
       test(m"an unknown escape drops the reverse solidus"):
         textOf(parse(t"(\\q)"))
@@ -307,15 +312,15 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Stream filters"):
       test(m"FlateDecode round-trips deflated data"):
         val expected = t"The quick brown fox jumps over the lazy dog".in[Data]
-        Filter.decode(deflate(expected), List((Filter.Id.Flate, Map()))).to(List)
+        Filter.decode(deflate(expected), List((Filter.Id.Flate, noParms))).to(List)
       . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to(List))
 
       test(m"ASCIIHexDecode"):
-        Filter.decode(t"48656c6C6F>".in[Data], List((Filter.Id.AsciiHex, Map()))).to(List)
+        Filter.decode(t"48656c6C6F>".in[Data], List((Filter.Id.AsciiHex, noParms))).to(List)
       . assert(_ == t"Hello".in[Data].to(List))
 
       test(m"RunLengthDecode literal and repeated runs"):
-        Filter.decode(data(2, 'a', 'b', 'c', 254, 'x', 128), List((Filter.Id.RunLength, Map())))
+        Filter.decode(data(2, 'a', 'b', 'c', 254, 'x', 128), List((Filter.Id.RunLength, noParms)))
         . to(List).map(_.toInt)
       . assert(_ == List[Int]('a', 'b', 'c', 'x', 'x', 'x'))
 
@@ -336,7 +341,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == List(10, 15, 20, 3, 4, 5))
 
       test(m"a predictor after FlateDecode"):
-        val parms = Map(t"Predictor" -> Cos.Integral(12), t"Columns" -> Cos.Integral(3))
+        val parms: Map[Text, Cos] = Map(t"Predictor" -> Cos.Integral(12), t"Columns" -> Cos.Integral(3))
 
         Filter.decode(deflate(data(2, 1, 2, 3, 2, 3, 3, 3)), List((Filter.Id.Flate, parms)))
         . to(List).map(_.toInt)
@@ -784,10 +789,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont))
-          val dict = doc.resolved(font).dictionary.or(Map[Text, Cos]())
+          val dict = doc.resolved(font).dictionary.or(noParms)
 
           val descriptor =
-            doc.resolved(dict.at(t"FontDescriptor").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+            doc.resolved(dict.at(t"FontDescriptor").or(Cos.Nil)).dictionary.or(noParms)
 
           ( descriptor.at(t"FontBBox"),
             descriptor.at(t"ItalicAngle"),
@@ -801,7 +806,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont))
-          val dict = doc.resolved(font).dictionary.or(Map[Text, Cos]())
+          val dict = doc.resolved(font).dictionary.or(noParms)
 
           dict.at(t"Widths") match
             case Cos.Sequence(widths) => (widths('A' - 32), widths('z' - 32))
@@ -1041,7 +1046,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"a graphics-state and text block parses to typed operators"):
         operators(t"q 1 0 0 1 50 60 cm BT /F1 12 Tf 72 720 Td (Hi) Tj ET Q").map(_.ordinal)
       . assert: ordinals =>
-          ordinals == List(PdfOperator.Save, PdfOperator.Concat(PdfMatrix.Identity),
+          ordinals == proscenium.List(PdfOperator.Save, PdfOperator.Concat(PdfMatrix.Identity),
               PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12), PdfOperator.Offset(72, 720),
               PdfOperator.ShowText(IArray[Byte]()), PdfOperator.EndText, PdfOperator.Restore)
             . map(_.ordinal)
@@ -1064,7 +1069,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == List(PdfOperator.SetDashPattern(List(2.0, 1.0), 0.0)))
 
       test(m"TJ mixes strings and kerning adjustments"):
-        operators(t"BT [(A) -500 (B)] TJ ET") match
+        operators(t"BT [(A) -500 (B)] TJ ET").stdlib match
           case List(_, PdfOperator.ShowTexts(elements), _) =>
             elements.map:
               case value: Double => value
@@ -1087,7 +1092,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == PdfError.Reason.MalformedOperator(t"w"))
 
       test(m"an inline image folds into one operator"):
-        operators(t"BI /W 2 /H 2 /L 4 ID  EI") match
+        operators(t"BI /W 2 /H 2 /L 4 ID  EI").stdlib match
           case List(PdfOperator.InlineImage(parameters, data)) =>
             (parameters.at(t"W"), data.length)
 
@@ -1187,7 +1192,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"runs carry their positions in points"):
         PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")).open():
-          pdf.pages(0).runs match
+          pdf.pages(0).runs.stdlib match
             case List(run) => (run.x, run.y, run.size, run.text)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
                                   Quantity[Points[1]](0.0), t"")
@@ -1196,7 +1201,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"the transformation matrix scales positions"):
         PdfFile(contentPage(t"q 2 0 0 2 0 0 cm BT /F1 12 Tf 50 100 Td (X) Tj ET Q")).open():
-          pdf.pages(0).runs match
+          pdf.pages(0).runs.stdlib match
             case List(run) => (run.x, run.size)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0))
       . assert(_ == (Quantity[Points[1]](100.0), Quantity[Points[1]](24.0)))
@@ -1300,7 +1305,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       def md5(chunks: Array[Byte]*): Array[Byte] =
         val digest = js.MessageDigest.getInstance("MD5").nn
-        chunks.foreach(digest.update(_))
+        chunks.each(digest.update(_))
         digest.digest().nn
 
       // A test-side implementation of the standard security handler's *encryption* — the
@@ -1373,7 +1378,7 @@ object Tests extends Suite(m"Facsimile tests"):
       // Assembles a document with an `/Encrypt` entry (object N+1) and an `/ID`.
       def buildEncrypted(encrypt: Text, bodies: Data*): Data =
         var out: Data = t"%PDF-1.6\n".in[Data]
-        val offsets = List.newBuilder[Long]
+        val offsets = scala.collection.immutable.List.newBuilder[Long]
 
         bodies.zipWithIndex.each: (body, index) =>
           offsets += out.length.toLong
@@ -1789,24 +1794,24 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"ASCII85Decode decodes a full group"):
         String
-          ( Filter.decode(t"9jqo^~>".in[Data], List((Filter.Id.Ascii85, Map())))
+          ( Filter.decode(t"9jqo^~>".in[Data], List((Filter.Id.Ascii85, noParms)))
             . mutable(using Unsafe), "UTF-8" ).tt
       . assert(_ == t"Man ")
 
       test(m"ASCII85Decode decodes a partial final group"):
         String
-          ( Filter.decode(t"9jqo~>".in[Data], List((Filter.Id.Ascii85, Map())))
+          ( Filter.decode(t"9jqo~>".in[Data], List((Filter.Id.Ascii85, noParms)))
             . mutable(using Unsafe), "UTF-8" ).tt
       . assert(_ == t"Man")
 
       test(m"the z shorthand is four zero bytes"):
-        Filter.decode(t"z~>".in[Data], List((Filter.Id.Ascii85, Map()))).to(List).map(_.toInt)
+        Filter.decode(t"z~>".in[Data], List((Filter.Id.Ascii85, noParms))).to(List).map(_.toInt)
       . assert(_ == List(0, 0, 0, 0))
 
       test(m"LZWDecode decodes the specification's example"):
         val encoded = data(0x80, 0x0b, 0x60, 0x50, 0x22, 0x0c, 0x0c, 0x85, 0x01)
         String
-          ( Filter.decode(encoded, List((Filter.Id.Lzw, Map()))).mutable(using Unsafe),
+          ( Filter.decode(encoded, List((Filter.Id.Lzw, noParms))).mutable(using Unsafe),
             "UTF-8" ).tt
       . assert(_ == t"-----A---B")
 

@@ -34,6 +34,9 @@ package decorum
 
 import soundness.*
 
+import scala.collection.immutable.{List, Nil, ::}
+
+
 object Tests extends Suite(m"Decorum Tests"):
   def stub(body: String): String =
     val builder = new StringBuilder
@@ -52,21 +55,20 @@ object Tests extends Suite(m"Decorum Tests"):
   def rules(body: String): List[String] = violations(body).map(_.rule)
 
   def exportRules
-     (body: String, siblings: List[String], unexported: Set[String] = Set.empty)
+     (body: String, siblings: List[String], unexported: scala.collection.immutable.Set[String] = scala.collection.immutable.Set.empty)
   :   List[String] =
     Checker.check("<test>", Some("soundness"), stub(body), siblings, Nil, unexported).toList.map(_.rule)
 
   def extensionExportRules
-     (body: String, extensions: List[String], unexported: Set[String] = Set.empty)
+     (body: String, extensions: List[String], unexported: scala.collection.immutable.Set[String] = scala.collection.immutable.Set.empty)
   :   List[String] =
-    Checker.check("<test>", Some("soundness"), stub(body), Nil, extensions, unexported).toList
-      .map(_.rule)
+    Checker.check("<test>", Some("soundness"), stub(body), Nil, extensions, unexported).toList.map(_.rule)
 
   def extractedExtensions(body: String): List[String] =
     val (tree, source) = Parsing.parse("<test>", stub(body))
     Extensions.extract(tree, source)
 
-  def extractedUnexported(body: String): Set[String] =
+  def extractedUnexported(body: String): scala.collection.immutable.Set[String] =
     val (tree, source) = Parsing.parse("<test>", stub(body))
     Annotations.unexported(tree)
 

@@ -32,6 +32,10 @@
                                                                                                   */
 package gesticulate
 
+import scala.collection.immutable.Seq
+
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import anticipation.*
@@ -56,11 +60,11 @@ object internal:
   // gesticulate's own types.
   private lazy val systemMediaTypes: Set[Text] =
     Optional(getClass.getResourceAsStream("/gesticulate/media.types")).lay(Set()): stream =>
-      scala.io.Source.fromInputStream(stream)
-      . getLines()
-      . map(Text(_))
-      . map(_.cut(t"\t").head.lower)
-      . to(Set)
+      Set.from:
+        scala.io.Source.fromInputStream(stream)
+        . getLines()
+        . map(Text(_))
+        . map(_.cut(t"\t").head.lower)
 
   private val validGroups: Set[Text] =
     Set
@@ -71,14 +75,14 @@ object internal:
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
   def validateLiteral(text: Text): Optional[Message] =
-    val parts: List[Text] = text.cut(t";").map(_.trim).to(List)
+    val parts: List[Text] = text.cut(t";").map(_.trim)
 
     parts.absolve match
       case Nil          => m"empty media type"
       case basic :: _   => validateBasic(basic)
 
   private def validateBasic(basic: Text): Optional[Message] =
-    basic.cut(t"/").to(List).absolve match
+    basic.cut(t"/").absolve match
       case List(group, subtype) =>
         val groupLower = group.lower
 
@@ -92,7 +96,7 @@ object internal:
     // The full subtype may be a `main+suffix` (e.g. `svg+xml`); the
     // character check applies to each segment individually since `+`
     // is itself a separator, not a body character.
-    val segments: List[Text] = subtype.cut(t"+").to(List)
+    val segments: List[Text] = subtype.cut(t"+")
 
     val badChar: Option[Char] = segments.iterator.flatMap: seg =>
       seg.chars.find: c =>

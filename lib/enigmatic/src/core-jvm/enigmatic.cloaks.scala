@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import java.lang.foreign as jlf
 import java.security as js
 import java.util as ju

@@ -32,6 +32,8 @@
                                                                                                   */
 package diuretic
 
+import scala.caps
+
 import java.io as ji
 
 import anticipation.*

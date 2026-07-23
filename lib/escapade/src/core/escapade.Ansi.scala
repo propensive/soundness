@@ -32,7 +32,11 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import scala.compiletime
+
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import scala.collection.mutable as scm
 
@@ -147,7 +151,7 @@ object Ansi extends Ansi2:
       if triggerLink then linkArmed = false
 
       if text.hyperlinks.nonEmpty then
-        text.hyperlinks.each: (k, v) => hyperlinks(n + k) = v
+        text.hyperlinks.stdlib.each: (k, v) => hyperlinks(n + k) = v
 
       if text.insertions.nonEmpty then
         text.insertions.each: (k, v) => insertions(n + k) = v
@@ -303,7 +307,7 @@ object Ansi extends Ansi2:
       Teletype
         ( plainText,
           newStyles,
-          state.hyperlinks.toMap,
+          Map.of(state.hyperlinks.toMap),
           state.insertions.to(TreeMap),
           newBoundaries )
 

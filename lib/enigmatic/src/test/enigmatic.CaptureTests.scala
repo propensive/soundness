@@ -36,7 +36,7 @@ package enigmatic
 // without it (its `NoPadding` tests summon a tactic-capturing padding given that
 // pure `using cipher` parameters cannot yet accept). The import is part of the
 // source text, so larceny's sub-compilation of `demilitarize` blocks sees it too.
-import language.experimental.captureChecking
+import scala.language.experimental.captureChecking
 
 import soundness.*
 
@@ -102,7 +102,7 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
       . map(_.message)
     . assert(_.exists(_.contains("is not included in the allowed capture set")))
 
-    // A lazily-encrypted stream may leave the block: the ciphertext `LazyList` is
+    // A lazily-encrypted stream may leave the block: the ciphertext `Progression` is
     // pure (the key bytes are baked into the deferred JCE cipher, beyond the reach
     // of capture checking), which is why `encrypt`'s documentation says to drain
     // streams within the `uncloak` block. This is an executable record of that
@@ -111,7 +111,7 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         val ciphertext = key.uncloak:
-          LazyList(t"Hello world".in[Data]).encrypt(InitializationVector.random)
+          Progression(t"Hello world".in[Data]).encrypt(InitializationVector.random)
     . assert(_ == Nil)
 
     test(m"a password's cleartext is available within uncloak"):

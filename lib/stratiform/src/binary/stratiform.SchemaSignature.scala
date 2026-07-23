@@ -84,7 +84,7 @@ object SchemaSignature:
   :   Data =
 
     val (baseHash, layerHashes) = componentsOf(root, axiom)
-    encode(baseHash :: layerHashes)
+    encode(baseHash :: (layerHashes: List[Data]))
 
   // The component hashes a schema signature is built from: the base-schema hash `h₀`, together with
   // one layer hash `h_i` per `layer` compound in source order (zip with `Tels.layers` for their
@@ -123,10 +123,12 @@ object SchemaSignature:
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
-        layerChildren.toList.map: layer =>
+        val hashes = layerChildren.toList.map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
+
+        (List.of(hashes): List[Data])
 
       .or(Nil)
 
@@ -175,7 +177,7 @@ object SchemaSignature:
   def encode(hashes: List[Data]): Data raises BintelError =
     if hashes.nil then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    val it = hashes.iterator
+    val it = hashes.stdlib.iterator
     var bad = false
 
     while it.hasNext && !bad do
@@ -183,7 +185,7 @@ object SchemaSignature:
 
     if bad then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    Palimpsest(hashes.toIndexedSeq).data
+    Palimpsest(hashes.stdlib.toIndexedSeq).data
 
   // Decode a palimpsest schema signature against a library of candidate
   // component hashes. The cadence is recovered from the trailing byte
@@ -207,6 +209,6 @@ object SchemaSignature:
     val n: Int = cadence.hashCount(total - 1).or:
       abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    given Bibliography = Bibliography(library)
+    given Bibliography = Bibliography(library.stdlib)
 
     Palimpsest(signature, n).resolve.or(abort(BintelError(BintelError.Reason.BadSignature)))

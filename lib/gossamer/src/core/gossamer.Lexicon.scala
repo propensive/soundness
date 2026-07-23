@@ -32,6 +32,8 @@
                                                                                                   */
 package gossamer
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -52,14 +54,16 @@ object Lexicon:
     def search(query: Text, radius: Int): Set[element] = lexicon.lay(Set())(_.search(query, radius))
 
   def apply(terms: List[Text])(using Proximity { type Triangulable = true } by Int): Lexicon[Text] =
-    apply(terms.bi.to(Map))
+    apply(Map.from(terms.stdlib.bi))
 
 
   def apply[element](terms: Map[Text, element])(using Proximity { type Triangulable = true } by Int)
   :   Lexicon[element] =
 
-    if terms.nil then apply() else Node(terms.head(0), terms.head(1)).tap: tree =>
-      terms.drop(1).each(tree(_) = _)
+    if terms.nil then apply() else
+      val entries = terms.stdlib
+      Node(entries.head(0), entries.head(1)).tap: tree =>
+        entries.drop(1).each(tree(_) = _)
 
 
   class Node[element](term: Text, value: element)(using Proximity by Int) extends Lexicon[element]:
@@ -72,13 +76,14 @@ object Lexicon:
     def search(query: Text, radius: Int): Set[element] =
       val distance = query.proximity(term)
 
-      children.collect:
-        case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
-          tree.search(query, radius)
+      val descendants: Set[element] = Set.from:
+        children.collect:
+          case (key, tree) if (distance - radius) <= key <= (distance + radius) =>
+            tree.search(query, radius)
 
-      . to(Set)
-      . flatten ++
-        (if distance <= radius then Set(value) else Set())
+        . flatMap(_.stdlib)
+
+      descendants ++ (if distance <= radius then Set(value) else Set[element]())
 
 trait Lexicon[element]:
   def update(key: Text, value: element): Unit

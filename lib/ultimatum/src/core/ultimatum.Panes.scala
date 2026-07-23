@@ -32,6 +32,10 @@
                                                                                                   */
 package ultimatum
 
+import scala.collection.immutable.Vector
+
+import scala.caps
+
 // A mutable, ordered container of child panes, backed by a `Series` for random
 // access. Holding a reference to it lets the layout change while a `form` is
 // running: appending a pane, or inserting one before or after an existing pane,
@@ -42,7 +46,9 @@ package ultimatum
 // Panes themselves are pure (a pane tree captures nothing), so `Panes` need not be a capability. Its
 // one effectful field is the installed repaint callback.
 class Panes(initial: Pane*):
-  private var series: Series[Pane] = initial.to(Series)
+  // Internally a raw `Vector`: this is imperative container state, and the mutation operations
+  // (`patch`, `indexWhere`, `:+`) belong to the stdlib surface. The public API exposes `Series`.
+  private var vector: Vector[Pane] = initial.to(Vector)
 
   // Installed by the running form so a mutation requests a repaint; a no-op until the container is
   // bound. Typed as a *pure* function so a pane tree (and `Panes`) captures nothing and can be freely
@@ -58,30 +64,30 @@ class Panes(initial: Pane*):
   private[ultimatum] def bindWake(wake: () => Unit): Unit =
     onChange = caps.unsafe.unsafeAssumePure(wake)
 
-  def contents: Series[Pane] = series
-  def size: Int = series.length
-  def apply(index: Int): Pane = series(index)
+  def contents: Series[Pane] = Series.of(vector)
+  def size: Int = vector.length
+  def apply(index: Int): Pane = vector(index)
 
-  private def revise(updated: Series[Pane]): Unit =
-    series = updated
+  private def revise(updated: Vector[Pane]): Unit =
+    vector = updated
     onChange()
 
-  def append(pane: Pane): Unit = revise(series :+ pane)
-  def prepend(pane: Pane): Unit = revise(pane +: series)
+  def append(pane: Pane): Unit = revise(vector :+ pane)
+  def prepend(pane: Pane): Unit = revise(pane +: vector)
 
   // Insert at a position, clamped to the container's bounds.
   def insert(index: Int, pane: Pane): Unit =
-    revise(series.patch(index.min(series.length).max(0), Series(pane), 0))
+    revise(vector.patch(index.min(vector.length).max(0), Vector(pane), 0))
 
   // Insert immediately before `reference` (by identity); appends if it is absent.
   def insertBefore(reference: Pane, pane: Pane): Unit =
-    val index = series.indexWhere(_ eq reference)
+    val index = vector.indexWhere(_ eq reference)
     if index < 0 then append(pane) else insert(index, pane)
 
   // Insert immediately after `reference` (by identity); appends if it is absent.
   def insertAfter(reference: Pane, pane: Pane): Unit =
-    val index = series.indexWhere(_ eq reference)
+    val index = vector.indexWhere(_ eq reference)
     if index < 0 then append(pane) else insert(index + 1, pane)
 
   // Remove `reference` (by identity), if present.
-  def remove(reference: Pane): Unit = revise(series.filter(_ ne reference))
+  def remove(reference: Pane): Unit = revise(vector.filter(_ ne reference))

@@ -70,7 +70,7 @@ object internal:
   private def writeResource(outputDir: jnf.Path, hashes: List[String]): Unit =
     val metaInf: jnf.Path = outputDir.resolve("META-INF").nn
     jnf.Files.createDirectories(metaInf)
-    val content: String = hashes.mkString("\n")
+    val content: String = hashes.stdlib.mkString("\n")
     jnf.Files.write(metaInf.resolve("burdock.deps").nn, content.getBytes("UTF-8").nn)
 
   // Runs at compile time, in the compiler JVM: pure java.* so it needs nothing from the
@@ -81,7 +81,7 @@ object internal:
     jnf.Files.createDirectories(cacheDir)
 
     val entries: Array[String | Null] = classpath.split(java.io.File.pathSeparator).nn
-    val hashes = List.newBuilder[String]
+    val hashes = scala.collection.immutable.List.newBuilder[String]
     var i = 0
 
     while i < entries.length do
@@ -101,4 +101,4 @@ object internal:
 
         hashes += hex
 
-    hashes.result()
+    List.of(hashes.result())

@@ -61,7 +61,7 @@ trait FilesystemBackend extends Planar:
   def exists(path: Path on Plane, dereference: Boolean): Boolean
 
   // The names (not paths) of the directory's immediate children.
-  def children(path: Path on Plane)(using Tactic[IoError]): LazyList[Text]
+  def children(path: Path on Plane)(using Tactic[IoError]): Progression[Text]
 
   def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit
   def createFile(path: Path on Plane)(using Tactic[IoError]): Unit

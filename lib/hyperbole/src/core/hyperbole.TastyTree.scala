@@ -61,13 +61,13 @@ object TastyTree:
         val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
 
         Expansion
-          ( e"${tiles.drop(1).map(treeStyles.defaultTreeStyle.text(_)).join}$tag2 $text",
+          ( e"${List.of(tiles.stdlib.drop(1).map(treeStyles.defaultTreeStyle.text(_))).join}$tag2 $text",
             node.typeName,
             node.param,
             node.shortCode,
             node.source.teletype )
 
-    . to(List)
+    . stdlib.to(List)
 
 
   given teletypeable: (palette: TastyPalette) => TastyTree is Teletypeable =
@@ -76,7 +76,7 @@ object TastyTree:
       val expansions = expand(tastyTree)
 
       val indents =
-        expansions.filter(!_.source.nil).map(_.source.plain.keep(_ == ' ').length)
+        expansions.stdlib.filter(!_.source.nil).map(_.source.plain.keep(_ == ' ').length)
 
       val crop = indents.min
 

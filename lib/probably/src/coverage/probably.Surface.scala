@@ -36,11 +36,15 @@ import rudiments.*
 
 object Surface:
   def collapse(todo: List[Juncture], done: List[Surface]): List[Surface] = todo match
-    case Nil => done.reverse
+    case Nil => List.of(done.stdlib.reverse)
 
     case head :: tail =>
-      val todo2 = tail.takeWhile(head.contains(_))
-      collapse(tail.drop(todo2.length), Surface(head, collapse(todo2, Nil)) :: done)
+      val tail2 = tail.stdlib
+      val todo2 = tail2.takeWhile(head.contains(_))
+
+      collapse
+        ( List.of(tail2.drop(todo2.length)),
+          Surface(head, collapse(List.of(todo2), Nil)) :: done )
 
 case class Surface(juncture: Juncture, children: List[Surface]):
   def covered(hits: Set[Int]): Boolean =

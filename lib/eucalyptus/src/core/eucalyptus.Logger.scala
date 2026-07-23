@@ -32,7 +32,11 @@
                                                                                                   */
 package eucalyptus
 
-import language.experimental.pureFunctions
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import java.util.concurrent as juc
 

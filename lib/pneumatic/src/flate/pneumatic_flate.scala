@@ -39,11 +39,11 @@ import vacuous.*
 // One-shot gzip/gunzip for a whole `Data` block, over the pure-Scala DEFLATE implementation, and
 // therefore available on every platform.
 extension (bytes: Data)
-  def gzip: Data = concatenate(Gzip.compression.compress(LazyList(bytes)))
-  def gunzip: Data = concatenate(Gzip.compression.decompress(LazyList(bytes)))
+  def gzip: Data = concatenate(Gzip.compression.compress(Progression(bytes)))
+  def gunzip: Data = concatenate(Gzip.compression.decompress(Progression(bytes)))
 
-private def concatenate(stream: LazyList[Data]): Data =
-  val chunks = stream.to(List)
+private def concatenate(stream: Progression[Data]): Data =
+  val chunks = List.from(stream.stdlib)
   var total = 0
 
   chunks.each: chunk =>

@@ -34,8 +34,10 @@ package quantitative
 
 import soundness.*
 
-import language.strictEquality
-import language.experimental.into
+import proscenium.compat.*
+
+import scala.language.strictEquality
+import scala.language.experimental.into
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
@@ -96,14 +98,14 @@ object Tests extends Suite(m"Quantitative Tests"):
         demilitarize:
           (20*Metre*Second)/(Metre*Second): Double
         .map(_.message)
-      . assert(_.nil)
+      . assert(_.isEmpty)
 
       test(m"Principal units are preferred"):
         demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
-      . assert(_.nil)
+      . assert(_.isEmpty)
 
       test(m"Non-principal units are not preferred"):
         demilitarize:
@@ -496,14 +498,14 @@ object Tests extends Suite(m"Quantitative Tests"):
       // the typeclass operation is inlined and don't count.
       def callsTypeclassOp(bytecode: Bytecode): Boolean =
         val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
             case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
             case _                                              => false
 
       def hasBoxing(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokestatic(owner, method, _) =>
               (owner.s.contains("Double") || owner.s.contains("BoxesRunTime"))
@@ -512,31 +514,31 @@ object Tests extends Suite(m"Quantitative Tests"):
               false
 
       def containsDneg(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dneg => true
             case _                    => false
 
       def containsDmul(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dmul => true
             case _                    => false
 
       def containsDdiv(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Ddiv => true
             case _                    => false
 
       def containsDadd(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dadd => true
             case _                    => false
 
       def containsDsub(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dsub => true
             case _                    => false

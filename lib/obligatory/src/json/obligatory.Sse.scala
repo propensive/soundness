@@ -32,6 +32,8 @@
                                                                                                   */
 package obligatory
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -49,11 +51,11 @@ import vacuous.*
 import zephyrine.*
 
 object Sse:
-  given servable: LazyList[Sse] is Servable =
+  given servable: Progression[Sse] is Servable =
     import charEncoders.utf8Encoder
 
-    Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
-      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).iterator))
+    Servable[Progression[Sse]](_ => media"text/event-stream"): stream =>
+      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).stdlib.iterator))
 
   given framable: Text is Framable by Sse = input =>
     val cursor = Cursor(input)
@@ -105,7 +107,7 @@ object Sse:
 
             case _ => raise(SseError(SseError.Reason.UnknownField))
 
-      Sse(event, data.reverse, id, retry)
+      Sse(event, List.of(data.stdlib.reverse), id, retry)
 
   given encodable: Sse is Encodable in Text =
     sse =>

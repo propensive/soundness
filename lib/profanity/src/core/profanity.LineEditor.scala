@@ -120,9 +120,12 @@ extends Question[Text]:
     case _                            => false
 
   // The logical lines, their start offsets, and the index of the cursor's line.
-  private def layout: (List[Text], List[Int], Int) =
-    val lines:  List[Text] = value.cut(t"\n").to(List)
-    val starts: List[Int]  = lines.scanLeft(0)(_ + _.length + 1).init
+  private def layout
+  :   ( scala.collection.immutable.List[Text],
+        scala.collection.immutable.List[Int],
+        Int ) =
+    val lines  = value.cut(t"\n").stdlib
+    val starts = lines.scanLeft(0)(_ + _.length + 1).init
     (lines, starts, starts.lastIndexWhere(_ <= position).max(0))
 
   private def moveVertically(rows: Int): LineEditor =

@@ -32,6 +32,8 @@
                                                                                                   */
 package adversaria
 
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import anticipation.*

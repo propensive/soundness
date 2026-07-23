@@ -76,7 +76,7 @@ object Hostname:
 
       case _ =>
         val label = builder()
-        if label.nil then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))
+        if label.nil then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.stdlib.length)))
         if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))
         if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))
         val dnsLabels2 = DnsLabel(label) :: dnsLabels

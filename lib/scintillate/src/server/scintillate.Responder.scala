@@ -35,5 +35,5 @@ package scintillate
 import anticipation.*
 
 trait Responder:
-  def sendBody(status: Int, body: LazyList[Data]): Unit
+  def sendBody(status: Int, body: Progression[Data]): Unit
   def addHeader(key: Text, value: Text): Unit

@@ -32,6 +32,13 @@
                                                                                                   */
 package stenography
 
+import scala.annotation
+
+import proscenium.compat.*
+
+private def sciList[element](elements: element*): scala.collection.immutable.List[element] =
+  scala.collection.immutable.List(elements*)
+
 import scala.collection.immutable.ListMap
 import scala.quoted.*
 
@@ -89,32 +96,33 @@ object Syntax:
 
 
   def contextBounds(using Quotes, Bindings)(clauses: List[quotes.reflect.ParamClause])
-  :   Map[Text, Syntax] =
+  :   scala.collection.immutable.Map[Text, Syntax] =
 
     import quotes.reflect.*
 
-    clauses.flatMap:
+    clauses.bind:
       case TermParamClause(defs) =>
         defs.collect:
           case ValDef(name, meta, default) if name.startsWith("evidence$") =>
 
           apply(meta.tpe) match
-            case Infix(Simple(typename), "is", right)          => List(typename -> right)
-            case Application(Simple(typename), List(right), _) => List(typename -> right)
-            case _                                             => Nil
+            case Infix(Simple(typename), "is", right)          => sciList(typename -> right)
+            case Application(Simple(typename), List(right), _) => sciList(typename -> right)
+            case _                                             => sciList()
 
       case _ =>
-        Nil
+        sciList()
 
-    . flatten
-    . groupBy(_(0).name)
+    . flatMap(elements => elements)
+    . group(_(0).name)
+    . stdlib
     . view
     . mapValues: bounds =>
         bounds.length match
           case 1 => bounds(0)(1)
           case _ => Sequence('{', bounds.map(_(1)))
 
-    . to(Map)
+    . to(scala.collection.immutable.Map)
 
 
   def clause(using Quotes, Bindings)
@@ -146,7 +154,7 @@ object Syntax:
 
               if valDef.symbol.flags.is(Flags.Inline) then Prefix("inline", syntax) else syntax
 
-        if !parens then items(0) else Sequence('(', items)
+        if !parens then items(0) else Sequence('(', List.of(items))
 
       case TypeParamClause(typeDefs) =>
         val items = typeDefs.map:
@@ -166,7 +174,7 @@ object Syntax:
 
             context.at(name.tt).lay(syntax)(Infix(syntax, ": ", _))
 
-        Sequence('[', items)
+        Sequence('[', List.of(items))
 
 
   def signature(using Quotes, Bindings)(name: Text, repr: quotes.reflect.TypeRepr): Declaration =
@@ -177,7 +185,7 @@ object Syntax:
         val params =
           arguments0.zip(types).map: (argument, tpe) => Named(false, argument, apply(tpe))
 
-        Declaration(true, List(Sequence('(', params)), apply(result))
+        Declaration(true, List(Sequence('(', List.of(params))), apply(result))
 
       case ByNameType(tpe) =>
         Declaration(true, List(), apply(tpe))
@@ -189,7 +197,7 @@ object Syntax:
         val arguments = arguments0.zip(bounds).map:
           case (argument, TypeBounds(lower, upper)) => typeBounds(symbolic(argument), lower, upper)
 
-        Declaration(false, List(Sequence('[', arguments)), apply(tpe))
+        Declaration(false, List(Sequence('[', List.of(arguments))), apply(tpe))
 
       case other =>
         Declaration(true, List(), apply(other))
@@ -290,8 +298,8 @@ object Syntax:
         case typ@AppliedType(base, arguments0) =>
           if typ.isFunctionType then
             val arguments = arguments0.init match
-              case List(one) => apply(one)
-              case many      => Sequence('(', many.map(apply(_)))
+              case scala.List(one) => apply(one)
+              case many      => Sequence('(', List.of(many.map(apply(_))))
 
             val arrow = if typ.isContextFunctionType then "?=>" else "=>"
 
@@ -301,10 +309,10 @@ object Syntax:
             Suffix(apply(arguments0.head), " *")
           else if arguments0.length == 2 && repr.typeSymbol.flags.is(Flags.Infix)
           then
-            Application(apply(base), arguments0.map(apply(_)), true)
+            Application(apply(base), List.of(arguments0.map(apply(_))), true)
           else if defn.isTupleClass(base.typeSymbol)
           then
-            Sequence('(', arguments0.map(apply(_)))
+            Sequence('(', List.of(arguments0.map(apply(_))))
           else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
           then
             arguments0(0).absolve match
@@ -312,16 +320,17 @@ object Syntax:
                 case Sequence(_, elements) =>
                   Sequence
                     ( '(',
-                      names.zip(elements).map:
-                        _.absolve match
-                          case (ConstantType(StringConstant(name)), element) =>
-                            Named(false, name.tt, element) )
+                      List.of:
+                        names.zip(elements.stdlib).map:
+                          _.absolve match
+                            case (ConstantType(StringConstant(name)), element) =>
+                              Named(false, name.tt, element) )
 
               case ref@TypeRef(prefix, name) =>
                 apply(ref)
 
           else
-            Application(apply(base), arguments0.map(apply(_)), false)
+            Application(apply(base), List.of(arguments0.map(apply(_))), false)
 
         case ConstantType(constant) =>
           constant.absolve match
@@ -364,13 +373,14 @@ object Syntax:
           val unnamed = arguments0.forall(_.startsWith("x$"))
 
           val arguments =
-            if arguments0.nil then Sequence('(', Nil)
-            else if unnamed then Sequence('(', types.map(apply(_)))
+            if arguments0.isEmpty then Sequence('(', Nil)
+            else if unnamed then Sequence('(', List.of(types.map(apply(_))))
             else
               Sequence
                 ( '(',
-                  arguments0.zip(types).map: (member, typ) =>
-                    Named(false, member, apply(typ)) )
+                  List.of:
+                    arguments0.zip(types).map: (member, typ) =>
+                      Named(false, member, apply(typ)) )
 
           val arrow = if method.isContextual then "?=>" else "=>"
 
@@ -383,14 +393,14 @@ object Syntax:
             case (name, TypeBounds(lower, upper)) =>
               typeBounds(symbolic(name), lower, upper)
 
-          Infix(Sequence('[', arguments), "=>", apply(result))
+          Infix(Sequence('[', List.of(arguments)), "=>", apply(result))
 
         case TypeLambda(arguments0, bounds, tpe) =>
           val arguments = arguments0.zip(bounds).map:
             case (argument, TypeBounds(lower, upper)) =>
               typeBounds(symbolic(argument), lower, upper)
 
-          Infix(Sequence('[', arguments), "=>>", apply(tpe))
+          Infix(Sequence('[', List.of(arguments)), "=>>", apply(tpe))
 
         case ParamRef(binder, n) =>
           binder match
@@ -411,7 +421,7 @@ object Syntax:
             case TypeLambda(_, _, body) => renderCase(body)
             case other                  => apply(other)
 
-          Syntax.Match(apply(scrutinee), cases.map(renderCase))
+          Syntax.Match(apply(scrutinee), List.of(cases.map(renderCase)))
 
         case MatchCase(pattern, rhs) =>
           Prefix("case", Infix(apply(pattern), "=>", apply(rhs)))

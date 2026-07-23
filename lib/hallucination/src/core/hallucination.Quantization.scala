@@ -59,7 +59,7 @@ private[hallucination] object Quantization:
         var best = 0
         var bestShift = 16
 
-        for shift <- List(16, 8, 0) do
+        for shift <- List(16, 8, 0).stdlib do
           var minimum = 255
           var maximum = 0
 

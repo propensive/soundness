@@ -32,6 +32,8 @@
                                                                                                   */
 package iridescence
 
+import scala.compiletime
+
 import soundness.*
 
 given Colorimetry = colorimetry.daylight
@@ -50,7 +52,7 @@ object Tests extends Suite(m"Iridescence tests"):
         && left.saturation === (right.saturation +/- 0.05)
         && left.value === (right.value +/- 0.05)
 
-      for color <- WebColors.colors.reverse do
+      for color <- WebColors.colors.stdlib.reverse do
         test(m"sRGB to L*a*b*"):
           color.to[Cielab].to[Srgb]
         . assert(_ === color.to[Srgb])

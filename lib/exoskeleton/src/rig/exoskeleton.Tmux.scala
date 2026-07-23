@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import scala.caps
+
 import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
@@ -75,7 +77,7 @@ object Tmux:
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
     . protect:
-        val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
+        val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)
         val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
         val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()
         val x = cx.trim.as[Int].z
@@ -106,12 +108,12 @@ object Tmux:
         while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
-        screenshot().screen.to(List)
+        screenshot().screen.transmute[List]
           .filter(!_.starts(t">"))
           .map(_.trim)
           .filter(_.length > 0)
           .flatMap: line =>
-            line.cut(t"@@") match
+            line.cut(t"@@").stdlib match
               case List(name, desc) => List(t"$name  ($desc)")
               case List(name)       => List(name)
               case _                => Nil

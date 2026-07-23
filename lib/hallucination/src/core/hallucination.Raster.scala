@@ -33,6 +33,7 @@
 package hallucination
 
 import scala.compiletime.*
+import scala.annotation.targetName
 
 import anticipation.*
 import contingency.*
@@ -47,7 +48,7 @@ object Raster:
     Raster[Rgb](width, height): (x, y) =>
       iridescence.pixel(pixel(x, y))
 
-  @annotation.targetName("applyLayout")
+  @targetName("applyLayout")
   inline def apply[layout <: Tuple](width: Int, height: Int)
     ( pixel: (Int, Int) => Pixel[layout] )
   :   Raster by layout =
@@ -158,7 +159,7 @@ object Raster:
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(image.source[Data].toLazyList.iterator))
+      (format.mediaType.basic, HttpStreams.Body(image.source[Data].toProgression.stdlib.iterator))
 
   given graphical: Raster is Graphical:
     def pixel(raster: Raster, x: Int, y: Int): Chroma = raster(x, y)

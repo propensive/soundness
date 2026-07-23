@@ -32,6 +32,8 @@
                                                                                                   */
 package wisteria
 
+import scala.{compiletime, math}
+
 import soundness.*
 
 import scala.language.dynamics
@@ -75,7 +77,7 @@ object Tests extends Suite(m"Wisteria tests"):
     given boolean: Readable[Boolean] = _ == t"yes"
 
     inline def conjunction[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
-      text.s.split(",").nn.to(List).map(_.nn).pipe:
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(text.s.split(",").nn).to(List).map(_.nn).pipe:
         array =>
           build[derivation]:
             [field] =>
@@ -83,7 +85,7 @@ object Tests extends Suite(m"Wisteria tests"):
                 if index < array.length then readable.read(array(index).tt) else default.or(???)
 
     inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
-      text.s.split(":").nn.to(List).map(_.nn.tt).absolve match
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(text.s.split(":").nn).to(List).map(_.nn.tt).absolve match
         case List(variant, text2) =>
           // Seal the variant-dispatch tactic inside the instance (the austronesian/jacinta
           // pattern): without it the derived instance captures the enclosing scope's
@@ -134,7 +136,7 @@ object Tests extends Suite(m"Wisteria tests"):
       def parse(s: String): Option[Boolean] = s.toBooleanOption
 
     inline def conjunction[derivation <: Product: ProductReflection]: Parser[derivation] = input =>
-      IArray.from(input.split(',')).pipe: inputArr =>
+      IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(input.split(','))).pipe: inputArr =>
         construct[Option, derivation](
           [in, out] => _.flatMap,
           [monadic] => Some(_),
@@ -543,7 +545,7 @@ object Tests extends Suite(m"Wisteria tests"):
             case root.cto.name() => nameCodec
             case root.ceo.age()  => ageCodec
 
-        wisteria.internal.overridePaths[CodecJson, Company].to(Set)
+        wisteria.internal.overridePaths[CodecJson, Company].stdlib.pipe(Set.from(_))
       . assert(_ == Set(t"cto.name", t"ceo.age"))
 
       test(m"A Specific for a different typeclass is ignored"):

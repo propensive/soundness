@@ -32,6 +32,10 @@
                                                                                                   */
 package mandible
 
+import rudiments.*
+
+import proscenium.compat.*
+
 import java.lang.classfile as jlc
 import java.lang.classfile.attribute as jlca
 import java.lang.classfile.instruction as jlci
@@ -158,7 +162,7 @@ object Bytecode:
       val result: Optional[Frame] =
         if s.charAt(cursor) == 'V' then Unset else Frame.parseOne(descriptor, cursor)._1
 
-      Descriptor(argsBuf.toList, result)
+      Descriptor(List.of(argsBuf.toList), result)
 
   case class Descriptor(args: List[Frame], result: Optional[Frame])
 
@@ -167,10 +171,10 @@ object Bytecode:
 
   object Linearized:
     given teletypeable: (palette: BytecodePalette) => List[Linearized] is Teletypeable = lines =>
-      lines.map: line =>
+      lines.map: (line: Linearized) =>
         val indent: Text = Text("  ".repeat(line.depth).nn)
 
-        val src =
+        val src: Teletype =
           if line.source == t"" then e""
           else e"${Fg(palette.bytecode)}(${line.source})  "
 
@@ -193,7 +197,10 @@ object Bytecode:
       case jlc.TypeKind.REFERENCE => Frame.L(t"?")
       case jlc.TypeKind.VOID      => panic(m"void TypeKind has no Frame representation")
 
-    def apply(source: jlc.Instruction, labels: Map[jlc.Label, Int] = Map.empty)
+    def apply
+      ( source: jlc.Instruction,
+        labels: scala.collection.immutable.Map[jlc.Label, Int] =
+          scala.collection.immutable.Map.empty )
     :   Opcode =
 
       source match
@@ -329,7 +336,7 @@ object Bytecode:
         case tswitch: jlci.TableSwitchInstruction =>
           val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
 
-          val targets = tswitch.cases.nn.asScala.toList.map: c =>
+          val targets = tswitch.cases.nn.transmute[List].map: c =>
             labels.getOrElse(c.nn.target.nn, 0)
 
           Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
@@ -337,7 +344,7 @@ object Bytecode:
         case lswitch: jlci.LookupSwitchInstruction =>
           val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
 
-          val cases = lswitch.cases.nn.asScala.toList.map: c =>
+          val cases = lswitch.cases.nn.transmute[List].map: c =>
             (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
 
           Lookupswitch(default, cases)
@@ -1294,15 +1301,19 @@ object Bytecode:
       case 3 => rgb"#b31250"
       case _ => rgb"#777777"
 
-    def transform(stack: List[Frame]): List[Frame] =
+    def transform(stack0: List[Frame]): List[Frame] = List.of(transform0(stack0.stdlib))
+
+    private def transform0(stack: scala.collection.immutable.List[Frame])
+    :   scala.collection.immutable.List[Frame] =
+      import scala.collection.immutable.{Nil, ::}
       import Frame.*
 
-      def invokeWithReceiver(descriptor: Text): List[Frame] =
+      def invokeWithReceiver(descriptor: Text): scala.collection.immutable.List[Frame] =
         val parsed = Descriptor.parse(descriptor)
         val popped = stack.drop(parsed.args.size + 1)
         parsed.result.lay(popped)(_ :: popped)
 
-      def invokeStaticOrDynamic(descriptor: Text): List[Frame] =
+      def invokeStaticOrDynamic(descriptor: Text): scala.collection.immutable.List[Frame] =
         val parsed = Descriptor.parse(descriptor)
         val popped = stack.drop(parsed.args.size)
         parsed.result.lay(popped)(_ :: popped)
@@ -1447,7 +1458,7 @@ case class Bytecode
     maxLocals:    Int ):
 
   def embed(codepoint: Codepoint): Bytecode =
-    val instructions2 = instructions.map: instruction =>
+    val instructions2 = instructions.map: (instruction: Bytecode.Instruction) =>
       instruction.copy(line = instruction.line.let(_ + codepoint.line - 1))
 
     copy(sourceFile = codepoint.source.cut(t"/").last, instructions = instructions2)
@@ -1466,13 +1477,13 @@ case class Bytecode
     def expand(bc: Bytecode, depth: Int, source: Text): Unit =
       val callsite = bc.effectivelyStaticCalls
 
-      bc.instructions.iterator.takeWhile(_ => budget > 0).foreach: instr =>
+      bc.instructions.iterator.takeWhile(_ => budget > 0).each: instr =>
         budget -= 1
 
         val target: Optional[(Text, Text, Text)] = instr.opcode match
           case Invokestatic(o, n, d)                                          => (o, n, d)
-          case Invokevirtual(o, n, d)    if callsite.contains(instr.offset)   => (o, n, d)
-          case Invokeinterface(o, n, d, _) if callsite.contains(instr.offset) => (o, n, d)
+          case Invokevirtual(o, n, d)    if callsite.has(instr.offset)   => (o, n, d)
+          case Invokeinterface(o, n, d, _) if callsite.has(instr.offset) => (o, n, d)
           case _                                                              => Unset
 
         target.let: (owner, name, descriptor) =>
@@ -1488,17 +1499,19 @@ case class Bytecode
         . or(results += Bytecode.Linearized(depth, source, instr))
 
     expand(this, 0, t"")
-    results.toList
+    List.of(results.toList)
 
-  def effectivelyStaticCalls: Set[Int] =
+  def effectivelyStaticCalls: Set[Int] = Set.of(effectivelyStaticCalls0)
+
+  private def effectivelyStaticCalls0: scala.collection.immutable.Set[Int] =
     import Bytecode.Opcode.*
     val byOffset = instructions.iterator.map{ i => i.offset -> i }.toMap
 
-    val priorStacks: Map[Int, List[Bytecode.Frame]] =
+    val priorStacks: scala.collection.immutable.Map[Int, List[Bytecode.Frame]] =
       var prev: Optional[List[Bytecode.Frame]] = Nil
-      val builder = Map.newBuilder[Int, List[Bytecode.Frame]]
+      val builder = scala.collection.immutable.Map.newBuilder[Int, List[Bytecode.Frame]]
 
-      instructions.foreach: instr =>
+      instructions.each: instr =>
         prev.let(builder += instr.offset -> _)
         prev = instr.stack
 

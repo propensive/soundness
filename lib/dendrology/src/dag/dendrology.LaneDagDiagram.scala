@@ -32,6 +32,12 @@
                                                                                                   */
 package dendrology
 
+import scala.collection.immutable.Vector
+
+// Deliberate stdlib opt-out: these internals consume acyclicity's `Dag`, whose set algebra
+// remains on the stdlib `Set` for now.
+import scala.collection.immutable.{List, Map, Nil, Set, ::}
+
 import scala.collection.mutable as scm
 
 import acyclicity.*
@@ -75,7 +81,7 @@ object LaneDagDiagram:
         case _                            => Space
 
   def apply[node](dag: Dag[node]): LaneDagDiagram[node] raises DagError =
-    val nodes: Series[node] = dag.sorted.to(Series)
+    val nodes: Vector[node] = dag.sorted.to(Vector)
     val total: Int = nodes.length
 
     if total == 0 then LaneDagDiagram(Nil) else
@@ -84,7 +90,7 @@ object LaneDagDiagram:
 
       val nodeCol: Array[Int] = new Array[Int](total)
       val laneState: Array[Map[Int, Lane[node]]] = Array.fill(total + 1)(Map.empty[Int, Lane[node]])
-      val started: Array[Series[Lane[node]]] = Array.fill(total)(Series.empty[Lane[node]])
+      val started: Array[Vector[Lane[node]]] = Array.fill(total)(Vector.empty[Lane[node]])
       val directOut: Array[Boolean] = new Array[Boolean](total)
 
       for r <- 0 until total do
@@ -105,9 +111,9 @@ object LaneDagDiagram:
         nodeCol(r) = chosenCol
 
         val nextNode: Optional[node] = if r + 1 < total then nodes(r + 1) else Unset
-        val targets: Series[node] = forward.getOrElse(current, Set.empty).to(Series).sortBy(rowOf)
+        val targets: Vector[node] = forward.getOrElse(current, Set.empty).to(Vector).sortBy(rowOf)
 
-        val (directs, indirects) = nextNode.lay((Series.empty[node], targets)): nx =>
+        val (directs, indirects) = nextNode.lay((Vector.empty[node], targets)): nx =>
           targets.partition(_ == nx)
 
         directOut(r) = directs.nonEmpty
@@ -162,7 +168,7 @@ object LaneDagDiagram:
 
   private def connectorRow[node]
     ( state:        Map[Int, Lane[node]],
-      justStarted:  Series[Lane[node]],
+      justStarted:  Vector[Lane[node]],
       prevNodeCol:  Int,
       curNodeCol:   Int,
       directEdge:   Boolean,
@@ -270,7 +276,8 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
 
   def render[line](label: node => line)(using style: LaneDagStyle[line]): List[line] =
     val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
-    lines.map: (tiles, node) => style.serialize(tiles, Map.empty, widths, node.let(label))
+    lines.map: (tiles, node) =>
+      style.serialize(proscenium.List.of(tiles), Map.empty, proscenium.List.of(widths), node.let(label))
 
   def render[line](glyph: node => line, label: node => line)(using style: LaneDagStyle[line])
   :   List[line] =
@@ -284,7 +291,8 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
         if nodeIdx < 0 then Map.empty
         else node.let{ n => Map(nodeIdx -> glyph(n)) }.or(Map.empty)
 
-      style.serialize(tiles, glyphs, widths, node.let(label))
+      style.serialize
+        ( proscenium.List.of(tiles), glyphs, proscenium.List.of(widths), node.let(label) )
 
   def compact: LaneDagDiagram[node] = LaneDagDiagram(lines.filter(LaneDagDiagram.keepRow))
 

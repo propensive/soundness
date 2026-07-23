@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+
 // The VP8 loop filter, ported from image-rs/image-webp (`src/lossy/loop_filter.rs`,
 // MIT/Apache-2.0), per RFC 6386 §15. Buffers hold samples as `Int` in 0–255. Horizontal filters
 // act on eight consecutive samples `pixels(base + 0..7)` spanning a vertical edge; vertical

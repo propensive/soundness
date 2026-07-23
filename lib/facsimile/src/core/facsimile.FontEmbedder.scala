@@ -105,7 +105,7 @@ private[facsimile] object FontEmbedder:
 
     // Widths for codes 32–255 under WinAnsi: each code's glyph advance, or 0 where the font
     // has no glyph for it.
-    val widths = (32 to 255).to(List).map: code =>
+    val widths = (32 to 255).transmute[List].map: code =>
       val char = PdfEncoding.winAnsi(code)
 
       if char == ' ' && code != 32 then Cos.Integral(0L)
@@ -145,4 +145,4 @@ private[facsimile] object FontEmbedder:
 
     String(letters.toArray).tt
 
-  private def integers(values: Long*): Cos = Cos.Sequence(values.to(List).map(Cos.Integral(_)))
+  private def integers(values: Long*): Cos = Cos.Sequence(values.transmute[List].map(Cos.Integral(_)))

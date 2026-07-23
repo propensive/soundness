@@ -32,7 +32,7 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 case class UniformDistribution(start: Double, end: Double) extends Distribution:
   def transform(random: Random): Double =

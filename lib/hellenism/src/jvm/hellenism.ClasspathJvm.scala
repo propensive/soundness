@@ -55,16 +55,16 @@ extension (classloader: Classloader)
 extension (classpath: Classpath.type)
   def of(classloader: jn.URLClassLoader): Classpath =
     val entries =
-      classloader.getURLs.nn.iterator.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
+      classloader.getURLs.nn.iterator.map(_.nn).flatMap(ClasspathEntry(_).option).toList
 
     if entries.exists:
       case _: ClasspathEntry.Url => true
       case _                     => false
-    then OnlineClasspath(entries)
+    then OnlineClasspath(List.of(entries))
     else
       type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
 
-      val items: List[Entry] = entries.collect:
+      val items: scala.collection.immutable.List[Entry] = entries.collect:
         case directory: ClasspathEntry.Directory      => directory
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime

@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import scala.annotation.targetName
 
 import anticipation.Data
@@ -40,6 +42,7 @@ import contingency.*
 import denominative.*
 import fulminate.{Diagnostics, Hazard}
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -569,11 +572,11 @@ extends caps.Mutable:
   // interface dispatch that the abstract `Lineation` member would imply.
   inline def lineActive: Boolean = lineationActive
 
-  // LazyList of all unconsumed data from the current position onwards. Yields
+  // Progression of all unconsumed data from the current position onwards. Yields
   // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
   // then drains the loader, returning chunks as it goes. Caller-driven, so a
   // streaming consumer pays nothing until it pulls.
-  update def remainder: LazyList[data] =
+  update def remainder: Progression[data] =
     val tailLen = writeEnd - pos
 
     val tail: data =
@@ -590,16 +593,16 @@ extends caps.Mutable:
     // WebSocket upgrade, whose body is the post-handshake frame stream the peer
     // only sends after our `101`). `#::` keeps the non-empty branch lazy; the
     // empty branch must defer the call explicitly.
-    if tailLen > 0 then tail #:: loaderStream else LazyList.empty.lazyAppendedAll(loaderStream)
+    if tailLen > 0 then tail #:: loaderStream else Progression.empty.lazyAppendedAll(loaderStream)
 
-  private update def loaderStream: LazyList[data] =
-    if ended then LazyList.empty else load() match
+  private update def loaderStream: Progression[data] =
+    if ended then Progression.empty else load() match
       case chunk: data @unchecked =>
         if addressable.length(chunk) > 0 then chunk #:: loaderStream else loaderStream
 
       case _ =>
         ended = true
-        LazyList.empty
+        Progression.empty
 
 
   // ─── unsafe direct buffer access ──────────────────────────────────────────

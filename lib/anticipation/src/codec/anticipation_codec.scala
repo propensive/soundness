@@ -45,7 +45,7 @@ object Data:
   def fill(count: Int)(lambda: Int => Byte): Data = build(count): array =>
     for index <- 0 until count do array(index) = lambda(index)
 
-type Data = IArray[Byte]
+type Data = scala.IArray[Byte]
 
 extension [encodable: Encodable in Data](value: encodable)
   def bytestream: Data = encodable.encode(value)

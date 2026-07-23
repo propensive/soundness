@@ -34,6 +34,8 @@ package xylophone
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import parsing.trackPositions
 

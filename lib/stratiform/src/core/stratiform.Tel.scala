@@ -32,6 +32,13 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import proscenium.compat.*
+
 import scala.collection.Factory
 import scala.language.dynamics
 
@@ -240,7 +247,7 @@ object Tel extends Tel2:
 
           def gathered(elements: List[Any]): value =
             val compounds = IArray.from:
-              elements.map: element =>
+              elements.stdlib.map: element =>
                 element.asInstanceOf[Tel].subtree.absolve match
                   case compound: Tel.Compound => compound
 
@@ -484,7 +491,7 @@ object Tel extends Tel2:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            fields.map { (key, parser, _) => (Text(key), parser.shape()) }.to(List)
+            fields.map { (key, parser, _) => (Text(key), parser.shape()) }.transmute[List]
 
           Morphology.Obj
             ( entries, entries.collect { case (key, shape) if !shape.optional => key } )
@@ -571,7 +578,7 @@ object Tel extends Tel2:
 
             if parsing.repeatable then
               val elements: List[Any] = values(index) match
-                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.toList
+                case buffer: scala.collection.mutable.ListBuffer[?] => List.of(buffer.toList)
                 case _                                              => Nil
 
               parsing match
@@ -656,7 +663,7 @@ object Tel extends Tel2:
       raise(TelError(reason)) yet continuation
 
     def assign(tel: Tel, schema: Tels): Tel.Element raises TelError tracks Tel.Focus =
-      val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
+      val compounds: IArray[Tel.Compound] = tel.subtree.children.bind(_.compounds)
       val rootChildren = assignChildren(compounds, schema.document, schema)
 
       val rootElements =
@@ -763,7 +770,7 @@ object Tel extends Tel2:
 
         idx += 1
 
-      builder.toMap
+      Map.of(builder.toMap)
 
     private def atomAssignable(member: Member, schema: Tels): Boolean raises TelError =
       member match
@@ -951,7 +958,7 @@ object Tel extends Tel2:
       resolved match
         case s: Struct =>
           val atomElements = assignAtoms(compound.atoms, s, schema)
-          val childCompounds: IArray[Tel.Compound] = compound.children.flatMap(_.compounds)
+          val childCompounds: IArray[Tel.Compound] = compound.children.bind(_.compounds)
           val childElements = assignChildren(childCompounds, s, schema)
           val allElements = applyConstraints(s, atomElements, childElements, schema)
           Tel.Element.Node(entry.memberIndex, s, allElements)
@@ -1254,11 +1261,11 @@ object Tel extends Tel2:
   // Parse a multi-document source (§6.1) into its sequence of documents.
   // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
   // by the collection Aggregable typeclasses; user code should prefer
-  // `bytes.read[List[Tel]]` or `bytes.read[LazyList[Tel]]`.
+  // `bytes.read[List[Tel]]` or `bytes.read[Progression[Tel]]`.
   private[stratiform] def parseAll(bytes: Data): List[Tel] raises TelError =
     Tel.Parser.parseDocuments(bytes).map(Tel(_))
 
-  private[stratiform] def parseStream(bytes: Data): LazyList[Tel] raises TelError =
+  private[stratiform] def parseStream(bytes: Data): Progression[Tel] raises TelError =
     Tel.Parser.parseStream(bytes).map(Tel(_))
 
   // ── Position tracking (editor / tooling support) ──────────────────────────
@@ -1312,7 +1319,7 @@ object Tel extends Tel2:
     var cursor = 0
 
     def build(node: Tel.Subtree, line: Int, column: Int, length: Int): Array[Int] =
-      val children = node.children.flatMap(_.compounds)
+      val children = node.children.bind(_.compounds)
       val childDescriptors = new Array[Array[Int]](children.length)
       var k = 0
 
@@ -1362,11 +1369,11 @@ object Tel extends Tel2:
 
       def locate(value: Tel, path: TelPath): Optional[TelError.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, path.keywords.toIndexedSeq, 0, false)
+          walkIndex(value.subtree, index.ints, 0, path.keywords.stdlib.toIndexedSeq, 0, false)
 
       def locateKey(value: Tel, path: TelPath): Optional[TelError.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, path.keywords.toIndexedSeq, 0, true)
+          walkIndex(value.subtree, index.ints, 0, path.keywords.stdlib.toIndexedSeq, 0, true)
 
   // Walk the packed `PositionIndex` alongside the AST, following `segments`
   // (a root-first keyword path) from the descriptor at `offset`. TEL has no
@@ -1389,14 +1396,14 @@ object Tel extends Tel2:
           column = data(offset + 2),
           length = Optional(data(offset + 3)) )
     else
-      val children = node.children.flatMap(_.compounds)
+      val children = node.children.bind(_.compounds)
       val k = children.indexWhere(_.keyword == segments(i))
 
       if k < 0 then Unset
       else walkIndex(children(k), data, offset + data(offset + 5 + k), segments, i + 1, keyMode)
 
-  // Concatenate the chunks of a `LazyList[Data]` source into a single byte array.
-  private[stratiform] def concatenate(source: LazyList[Data]): Data =
+  // Concatenate the chunks of a `Progression[Data]` source into a single byte array.
+  private[stratiform] def concatenate(source: Progression[Data]): Data =
     import denominative.nil
 
     // A single in-memory block — the common case — is returned as-is
@@ -1412,7 +1419,7 @@ object Tel extends Tel2:
 
       acc
 
-  // `bytes.read[Tel]` for any LazyList[Data] source: concatenates the
+  // `bytes.read[Tel]` for any Progression[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
@@ -1547,6 +1554,29 @@ object Tel extends Tel2:
   =>  collection[element] is Tel.Parsable =
     Tel.Parsable.iterable[collection, element](parsable)
 
+  // Alias counterparts: the opaque prelude collections do not conform to
+  // `Iterable`, so each parses at the underlying stdlib type and casts.
+  given listParsable: [list <: List, element]
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( parsable: => (element is Tel.Parsable)^ )
+  =>  list[element] is Tel.Parsable =
+    Tel.Parsable.iterable[scala.collection.immutable.List, element](parsable)
+    . asInstanceOf[list[element] is Tel.Parsable]
+
+  given setParsable: [set <: Set, element]
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( parsable: => (element is Tel.Parsable)^ )
+  =>  set[element] is Tel.Parsable =
+    Tel.Parsable.iterable[scala.collection.immutable.Set, element](parsable)
+    . asInstanceOf[set[element] is Tel.Parsable]
+
+  given seriesParsable: [series <: Series, element]
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( parsable: => (element is Tel.Parsable)^ )
+  =>  series[element] is Tel.Parsable =
+    Tel.Parsable.iterable[Vector, element](parsable)
+    . asInstanceOf[series[element] is Tel.Parsable]
+
   // The direct read of a field type carried by a plain text codec — the
   // direct counterpart of `Tel2.decodable`'s `Decodable in Text` branch,
   // including its absence behavior (an empty `Tel`'s primary atom is the
@@ -1562,19 +1592,19 @@ object Tel extends Tel2:
       override def parse(reader: TelReader^): value = codec.decoded(t"")
       override def absent()(using Tactic[TelError]): value = codec.decoded(t"")
 
-  // `source.read[List[Tel]]` / `read[LazyList[Tel]]` for a multi-document source
-  // (§6.1). `List[Tel]` parses every document eagerly; `LazyList[Tel]` parses
+  // `source.read[List[Tel]]` / `read[Progression[Tel]]` for a multi-document source
+  // (§6.1). `List[Tel]` parses every document eagerly; `Progression[Tel]` parses
   // them lazily on demand (the more specific instance wins over turbulence's
-  // generic `LazyList` Aggregable, which would otherwise wrap the whole source as
+  // generic `Progression` Aggregable, which would otherwise wrap the whole source as
   // a single element).
   given listAggregable: (tactic: Tactic[TelError]) => ((List[Tel] is Aggregable by Data)^{tactic}) =
     source => parseAll(concatenate(source))
 
   given streamAggregable: (tactic: Tactic[TelError])
-  =>  ((LazyList[Tel] is Aggregable by Data)^{tactic}) =
+  =>  ((Progression[Tel] is Aggregable by Data)^{tactic}) =
     source => parseStream(concatenate(source))
 
-  // `text.load[Tel]` for any LazyList[Text] source: concatenates the
+  // `text.load[Tel]` for any Progression[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
   given loadable: (tactic: Tactic[TelError], buffering: Buffering)
@@ -1895,7 +1925,7 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), Unset)
       p.parseAllDocuments()
 
-    def parseStream(input: Data): LazyList[Tel.Document] raises TelError =
+    def parseStream(input: Data): Progression[Tel.Document] raises TelError =
       import zephyrine.Lineation.untrackedData
       // A dedicated parser instance, not the shared per-thread cache: the lazy
       // tail parses later document(s) on demand and must own its parser state.
@@ -2720,15 +2750,15 @@ object Tel extends Tel2:
         if terminatedBySeparator || !documentIsEmpty(doc) then buffer += doc
         if !terminatedBySeparator then continue = false
 
-      buffer.to(List)
+      buffer.transmute[List]
 
     // Lazy streaming parse: documents are parsed on demand as the returned
-    // `LazyList` is forced. Mirrors turbulence's deferred `Streamable` readers,
+    // `Progression` is forced. Mirrors turbulence's deferred `Streamable` readers,
     // which likewise capture the error capability in the lazy tail; the consumer
     // must drive the stream within the `raises TelError` handler's scope. Uses a
     // dedicated parser instance (never the shared per-thread cache) so the
     // parser state survives across element demands.
-    private def documentStream(first: Boolean): LazyList[Tel.Document] raises TelError =
+    private def documentStream(first: Boolean): Progression[Tel.Document] raises TelError =
       if first then
         syncFrom()
         checkBom()
@@ -2741,9 +2771,9 @@ object Tel extends Tel2:
         consumeSeparatorLine()
         doc #:: documentStream(first = false)
       else if documentIsEmpty(doc) then
-        LazyList.empty
+        Progression.empty
       else
-        LazyList(doc)
+        Progression(doc)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a
@@ -3045,7 +3075,7 @@ object Tel extends Tel2:
           i += 1
 
       if builder.nonEmpty then parts += builder.toString
-      parts.toList
+      List.of(parts.toList)
 
     // ── Margin determination ─────────────────────────────────────────────────
 
@@ -4970,7 +5000,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // All child compounds, flattened across the node's blocks (presentation-
   // level comments and tabulations are dropped from this view).
   def childCompounds: IArray[Tel.Compound] =
-    subtree.children.flatMap(_.compounds)
+    subtree.children.bind(_.compounds)
 
   // First child compound whose keyword matches `target`, if any.
   def field(target: Text): Optional[Tel] =

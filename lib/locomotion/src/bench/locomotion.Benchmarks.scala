@@ -216,12 +216,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // body. Each operation therefore goes through a fully-qualified helper method
   // the quote simply invokes.
 
-  def decodeSmall:      Small      = LazyList(bytes1).read[Small in Protobuf]
-  def decodeUsers:      Users      = LazyList(bytes2).read[Users in Protobuf]
-  def decodeLogs:       Logs       = LazyList(bytes3).read[Logs in Protobuf]
-  def decodeInts:       Ints       = LazyList(bytes4).read[Ints in Protobuf]
-  def decodeAttributes: Attributes = LazyList(bytes5).read[Attributes in Protobuf]
-  def decodeNested:     Deep1      = LazyList(bytes6).read[Deep1 in Protobuf]
+  def decodeSmall:      Small      = Progression(bytes1).read[Small in Protobuf]
+  def decodeUsers:      Users      = Progression(bytes2).read[Users in Protobuf]
+  def decodeLogs:       Logs       = Progression(bytes3).read[Logs in Protobuf]
+  def decodeInts:       Ints       = Progression(bytes4).read[Ints in Protobuf]
+  def decodeAttributes: Attributes = Progression(bytes5).read[Attributes in Protobuf]
+  def decodeNested:     Deep1      = Progression(bytes6).read[Deep1 in Protobuf]
 
   def encodeSmall:      Data = value1.in[Protobuf].encode
   def encodeUsers:      Data = value2.in[Protobuf].encode
@@ -244,7 +244,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     // Decode. Each corpus is decoded two ways: Locomotion typed decode (the
     // headline figure and the `Min` baseline) and the protobuf-java field walk.
     // The Locomotion row measures the full public decode path
-    // (`LazyList(...).read[...]`), which re-aggregates the single-chunk stream into
+    // (`Progression(...).read[...]`), which re-aggregates the single-chunk stream into
     // strict bytes on each iteration before parsing.
     // -------------------------------------------------------------------------
 

@@ -84,8 +84,9 @@ package alphabets:
   given base32WordSafe: Alphabet[Base32] = Alphabet(t"23456789CFGHJMPQRVWXcfghjmpqrvwx", false)
 
   private val crockfordAlternatives =
-    Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse ++ Map('o' -> 0, 'O' -> 0,
-        'i' -> 1, 'I' -> 1, 'L' -> 1)
+    Map.of:
+      Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse.stdlib
+      ++ scala.collection.immutable.Map('o' -> 0, 'O' -> 0, 'i' -> 1, 'I' -> 1, 'L' -> 1)
 
   given base32Crockford: Alphabet[Base32] =
     Alphabet(t"0123456789ABCDEFGHJKMNPQRSTVWXYZ", false, crockfordAlternatives)

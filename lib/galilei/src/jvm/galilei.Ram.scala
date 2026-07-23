@@ -32,6 +32,10 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -124,11 +128,11 @@ object Ram:
       ( block: (RamHandle & Granting[grants]) ?=> result )
     :   result =
 
-      val writable = mode.atoms.contains(Write) || mode.atoms.contains(Exclusive)
+      val writable = mode.atoms.has(Write) || mode.atoms.has(Exclusive)
 
-      val options: Seq[jnf.StandardOpenOption] =
-        if writable then Seq(jnf.StandardOpenOption.READ, jnf.StandardOpenOption.WRITE)
-        else Seq(jnf.StandardOpenOption.READ)
+      val options: List[jnf.StandardOpenOption] =
+        if writable then List(jnf.StandardOpenOption.READ, jnf.StandardOpenOption.WRITE)
+        else List(jnf.StandardOpenOption.READ)
 
       value.protect(Operation.Open):
         val channel = jnc.FileChannel.open(value.javaPath, options*).nn
@@ -141,7 +145,7 @@ object Ram:
           if size > Int.MaxValue then abort(IoError(value, Operation.Open, Reason.Unsupported))
 
           val lock =
-            if mode.atoms.contains(Exclusive) then
+            if mode.atoms.has(Exclusive) then
               try Option(channel.tryLock()) catch
                 case _: jnc.OverlappingFileLockException => None
             else Some(null)
@@ -149,7 +153,7 @@ object Ram:
           if lock.isEmpty then abort(IoError(value, Operation.Open, Reason.Busy))
 
           try
-            val write = mode.atoms.contains(Write)
+            val write = mode.atoms.has(Write)
             val handle = new RamHandle(channel, write, size) with Granting[grants] {}
             try block(using handle)
             finally if write then handle.flush()

@@ -72,21 +72,21 @@ object Tests extends Suite(m"Anamnesis tests"):
     . assert()
 
     test(m"Table now contains item"):
-      alpha.lookup[Pencil].map(_())
+      alpha.lookup[Pencil].stdlib.map(_())
 
     . assert(_ == Set(red))
 
     test(m"Can insert multiple items"):
       val greenRef = green.store()
       alpha.assign(greenRef)
-      alpha.lookup[Pencil].map(_())
+      alpha.lookup[Pencil].stdlib.map(_())
 
     . assert(_ == Set(red, green))
 
     test(m"Can delete an item"):
       val redRef = red.store()
       alpha.unassign(redRef)
-      alpha.lookup[Pencil].map(_())
+      alpha.lookup[Pencil].stdlib.map(_())
 
     . assert(_ == Set(green))
 

@@ -52,14 +52,14 @@ object SvgParser:
     case _          => t"<unknown>"
 
 
-  def findSvg(nodes: Seq[Node])(using Tactic[SvgError]): Element =
-    nodes.collectFirst { case e: Element if e.label == t"svg" => e }.getOrElse:
+  def findSvg(nodes: List[Node])(using Tactic[SvgError]): Element =
+    nodes.stdlib.collectFirst { case e: Element if e.label == t"svg" => e }.getOrElse:
       abort(SvgError(SvgError.Reason.NotAnSvg(t"<missing>")))
 
 
   def rootElement(xml: Xml)(using Tactic[SvgError]): Element = xml match
     case e: Element if e.label == t"svg" => e
-    case Fragment(nodes*)                => findSvg(nodes)
+    case Fragment(nodes*)                => findSvg(nodes.transmute[List])
 
     case other =>
       abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
@@ -93,7 +93,7 @@ object SvgParser:
         ()
 
     walk(elem)
-    Svg(width, height, defs.toList, figures.toList)
+    Svg(width, height, List.of(defs.toList), List.of(figures.toList))
 
 
   private def decodeFigure(elem: Element)(using Tactic[SvgError]): Optional[Figure] =
@@ -132,7 +132,7 @@ object SvgParser:
     val ops = parsePathData(d)
     val id = elem.attributes.at(t"id").let(SvgId(_))
     val transforms = elem.attributes.at(t"transform").let(parseTransforms).or(Nil)
-    Outline(ops = ops.reverse, id = id, transforms = transforms)
+    Outline(ops = List.of(ops.stdlib.reverse), id = id, transforms = transforms)
 
 
   private def decodeSvgDef(elem: Element)
@@ -150,8 +150,10 @@ object SvgParser:
 
     val id = elem.attributes.at(t"id").let(SvgId(_)).or(SvgId(t""))
 
-    val stops: Seq[Stop[Color in Srgb]] = elem.children.toSeq.collect:
-      case e: Element if e.label == t"stop" => decodeStop(e)
+    val stops: List[Stop[Color in Srgb]] =
+      List.of:
+        elem.children.toList.collect:
+          case e: Element if e.label == t"stop" => decodeStop(e)
 
     LinearGradient(id, stops*)
 
@@ -286,7 +288,7 @@ object SvgParser:
 
       skipWs()
 
-    ops.toList
+    List.of(ops.toList)
 
 
   // Transform list parser. Recognises translate/scale/rotate/skewX/skewY/matrix.
@@ -345,26 +347,26 @@ object SvgParser:
           if pos < s.length then pos += 1 // skip )
 
           (name, args.toList) match
-            case ("translate", List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
-            case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
-            case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
-            case ("scale", List(x, y))              => xs += Transform.Scale(x, y)
-            case ("rotate", List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
+            case ("translate", scala.collection.immutable.List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
+            case ("translate", scala.collection.immutable.List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
+            case ("scale", scala.collection.immutable.List(x))                 => xs += Transform.Scale(x, Unset)
+            case ("scale", scala.collection.immutable.List(x, y))              => xs += Transform.Scale(x, y)
+            case ("rotate", scala.collection.immutable.List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
 
-            case ("skewX", List(angle)) =>
+            case ("skewX", scala.collection.immutable.List(angle)) =>
               xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)
 
-            case ("skewY", List(angle)) =>
+            case ("skewY", scala.collection.immutable.List(angle)) =>
               xs += Transform.Skew(Angle.degrees(angle), Orientation.Vertical)
 
-            case ("matrix", List(a, b, c, d, e, f)) =>
+            case ("matrix", scala.collection.immutable.List(a, b, c, d, e, f)) =>
               xs += Transform.Matrix(Affine(a, b, c, d, e, f))
 
             case _                                  => () // ignore unknown
         else
           if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
 
-    xs.toList
+    List.of(xs.toList)
 
 
   // Color parser: handles #rgb, #rrggbb, rgb(r,g,b), and a few named colours.

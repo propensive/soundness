@@ -41,8 +41,8 @@ import zephyrine.*
 object Transmissible:
   given bytes: [bytes <: Data] => bytes is Transmissible = _.stream
 
-  given stream: [stream <: LazyList[Data]] => stream is Transmissible = value =>
-    value.iterator.stream
+  given stream: [stream <: Progression[Data]] => stream is Transmissible = value =>
+    value.stdlib.iterator.stream
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
     text => summon[CharEncoder].encoded(text).stream

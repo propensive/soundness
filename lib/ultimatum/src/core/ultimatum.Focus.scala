@@ -105,4 +105,4 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
 
   def handle(event: TerminalEvent): Unit = menu = menu.apply(event)
 
-  def measure(width: Int): (Int, Int) = (0, menu.options.length)
+  def measure(width: Int): (Int, Int) = (0, menu.options.stdlib.length)

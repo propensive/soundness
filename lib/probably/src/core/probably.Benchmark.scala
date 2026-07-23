@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import scala.math
+
 import anticipation.*
 import vacuous.*
 

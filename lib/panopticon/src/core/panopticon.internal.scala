@@ -32,6 +32,10 @@
                                                                                                   */
 package panopticon
 
+import scala.collection.immutable.Seq
+
+import scala.collection.immutable.{List, Nil, ::}
+
 import scala.quoted.*
 
 import anticipation.*
@@ -337,7 +341,7 @@ object internal:
         coerce[T](leafTerm)
 
     def emit[T: Type](origin: Expr[T], branches: List[Resolved]): Expr[T] =
-      if branches.nil then origin else
+      if branches.isEmpty then origin else
         var acc: Term = origin.asTerm
         val defs = scala.collection.mutable.ListBuffer.empty[Statement]
         val last = branches.length - 1
@@ -496,7 +500,7 @@ object internal:
       case None => fallback
 
       case Some(exprs) =>
-        if exprs.nil then valueExpr else
+        if exprs.isEmpty then valueExpr else
           val parsed = exprs.toList.map(parseLambda)
 
           if parsed.exists(_.nil) then

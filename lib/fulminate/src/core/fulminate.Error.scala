@@ -32,6 +32,10 @@
                                                                                                   */
 package fulminate
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 
 // The domain of raisable values: any pure exception. `Error` is pure by

@@ -145,15 +145,15 @@ object Completions:
             then Installation.InstallResult.ShellNotInstalled(Shell.Zsh)
             else
               val dirNamesCmd = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'"
-              val dirNames = dirNamesCmd.exec[Text]().cut(t",").to(List)
+              val dirNames = dirNamesCmd.exec[Text]().cut(t",")
 
               val dirs =
-                dirNames.filter(_.trim != t"").map: dir =>
+                dirNames.stdlib.filter(_.trim != t"").map: dir =>
                   safely(dir.as[Path on Linux])
 
                 . compact
 
-              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)
+              install(Shell.Zsh, command, Name[Linux](t"_$command"), List.of(dirs))
 
           val bash: Installation.InstallResult =
             if sh"sh -c 'command -v bash'".exec[Exit]() != Exit.Ok
@@ -164,7 +164,7 @@ object Completions:
                   command,
                   Name[Linux](command),
                   List
-                    ( Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
+                    ( Xdg.dataDirs[Path on Linux].stdlib.last/"bash-completion"/"completions",
                       Xdg.dataHome[Path on Linux]/"bash-completion"/"completions" ) )
 
           val fish: Installation.InstallResult =
@@ -176,7 +176,7 @@ object Completions:
                   command,
                   Name[Linux](t"$command.fish"),
                   List
-                    ( Xdg.dataDirs[Path on Linux].last/"fish"/"vendor_completions.d",
+                    ( Xdg.dataDirs[Path on Linux].stdlib.last/"fish"/"vendor_completions.d",
                       Xdg.configHome[Path on Linux]/"fish"/"completions" ) )
 
           val powershell: Installation.InstallResult =
@@ -283,7 +283,10 @@ object Completions:
     def paths: List[Text] =
       this match
         case CommandNotOnPath(_)              => Nil
-        case Shells(zsh, bash, fish, pwsh)    => List(zsh, bash, fish, pwsh).map(_.pathname).compact
+        case Shells(zsh, bash, fish, pwsh) =>
+          scala.collection.immutable.List(zsh, bash, fish, pwsh)
+          . map(_.pathname).collect { case text: Text => text } match
+              case texts => List.of(texts)
 
 object CliEvent:
   given execEvent: CliEvent transcribes ExecEvent = CliEvent.Exec(_)

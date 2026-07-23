@@ -32,6 +32,8 @@
                                                                                                   */
 package embarcadero
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import cordillera.*

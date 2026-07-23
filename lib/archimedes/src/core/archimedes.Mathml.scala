@@ -32,6 +32,8 @@
                                                                                                   */
 package archimedes
 
+import scala.math
+
 import anticipation.*
 import gossamer.*
 import honeycomb.Html
@@ -362,17 +364,19 @@ trait Mathml:
   def contents: List[Mathml]
   def text: Optional[Text]
 
-  def htmlAttributes: Seq[(Text, Optional[Text])] =
-    attributes.map { case (key, value) => (key, value: Optional[Text]) }
+  def htmlAttributes: List[(Text, Optional[Text])] =
+    List.of[(Text, Optional[Text])]
+     (attributes.stdlib.map { case (key, value) => (key, value: Optional[Text]) })
 
   def xml: Xml =
-    val children: Seq[Xml] = text.lay(contents.map(_.xml)): value =>
+    val children: List[Xml] = text.lay(List.of(contents.stdlib.map(_.xml))): value =>
       List(TextNode(value))
 
-    Element(label, Attributes(attributes*), children.nodes)
+    Element(label, Attributes(attributes*), children.stdlib.nodes)
 
   def html: Html of "#foreign" =
-    val children: Seq[Html of "#foreign"] = text.lay(contents.map(_.html)): value =>
-      List(honeycomb.Html.string2(value.s))
+    val children: List[Html of "#foreign"] =
+      text.lay(List.of(contents.stdlib.map(_.html))): value =>
+        List(honeycomb.Html.string2(value.s))
 
     honeycomb.Element.foreign(label, honeycomb.Attributes(htmlAttributes*), children*)

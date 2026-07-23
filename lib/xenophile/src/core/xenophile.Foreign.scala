@@ -49,7 +49,7 @@ object Foreign extends prophesy.Completable:
   enum Expression:
     case Reference(name: Text)
     case Select(target: Expression, member: Text, owner: Text)
-    case Apply(target: Expression, arguments: List[Expression])
+    case Apply(target: Expression, arguments: scala.collection.immutable.List[Expression])
     case Index(target: Expression, index: Expression)
     case Literal(value: Any)
 

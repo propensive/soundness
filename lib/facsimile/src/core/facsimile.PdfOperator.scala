@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -64,37 +66,37 @@ object PdfOperator:
     def malformed: Nothing = abort(PdfError(PdfError.Reason.MalformedOperator(operator)))
 
     def numbers(count: Int): List[Double] =
-      val values = operands.flatMap(_.double.lay(List())(List(_)))
-      if values.length != count || operands.length != count then malformed else values
+      val values = operands.bind(_.double.lay(List())(List(_)))
+      if values.stdlib.length != count || operands.stdlib.length != count then malformed else values
 
     def name(index: Int): Text =
-      if index < operands.length then operands(index).name.or(malformed) else malformed
+      if index < operands.stdlib.length then operands.stdlib(index).name.or(malformed) else malformed
 
     def chars(index: Int): Data =
-      if index < operands.length then operands(index).chars.or(malformed) else malformed
+      if index < operands.stdlib.length then operands.stdlib(index).chars.or(malformed) else malformed
 
     def matrix: PdfMatrix = numbers(6) match
       case List(a, b, c, d, e, f) => PdfMatrix(a, b, c, d, e, f)
       case _                      => malformed
 
     def int(limit: Int): Int =
-      val value = numbers(1)(0).toInt
+      val value = numbers(1).stdlib(0).toInt
       if value < 0 || value >= limit then malformed else value
 
     def pair(index: Int): Optional[Cos] =
-      if operands.length > index then operands(index) else Unset
+      if operands.stdlib.length > index then operands.stdlib(index) else Unset
 
     operator.s match
       // Graphics state (ISO 32000-2 §8.4.4)
       case "q"  => Save
       case "Q"  => Restore
       case "cm" => Concat(matrix)
-      case "w"  => SetLineWidth(numbers(1)(0))
+      case "w"  => SetLineWidth(numbers(1).stdlib(0))
       case "J"  => SetLineCap(LineCap.fromOrdinal(int(LineCap.values.length)))
       case "j"  => SetLineJoin(LineJoin.fromOrdinal(int(LineJoin.values.length)))
-      case "M"  => SetMiterLimit(numbers(1)(0))
+      case "M"  => SetMiterLimit(numbers(1).stdlib(0))
       case "ri" => SetIntent(name(0))
-      case "i"  => SetFlatness(numbers(1)(0))
+      case "i"  => SetFlatness(numbers(1).stdlib(0))
       case "gs" => SetParameters(name(0))
 
       case "d" => operands match
@@ -155,12 +157,12 @@ object PdfOperator:
         case _            => malformed
       case "Tm" => SetTextMatrix(matrix)
       case "T*" => NextLine
-      case "Tc" => SetCharSpacing(numbers(1)(0))
-      case "Tw" => SetWordSpacing(numbers(1)(0))
-      case "Tz" => SetScaling(numbers(1)(0))
-      case "TL" => SetLeading(numbers(1)(0))
+      case "Tc" => SetCharSpacing(numbers(1).stdlib(0))
+      case "Tw" => SetWordSpacing(numbers(1).stdlib(0))
+      case "Tz" => SetScaling(numbers(1).stdlib(0))
+      case "TL" => SetLeading(numbers(1).stdlib(0))
       case "Tr" => SetRenderMode(TextRenderMode.fromOrdinal(int(TextRenderMode.values.length)))
-      case "Ts" => SetRise(numbers(1)(0))
+      case "Ts" => SetRise(numbers(1).stdlib(0))
       case "Tj" => ShowText(chars(0))
       case "'"  => NextLineShow(chars(0))
 
@@ -187,8 +189,8 @@ object PdfOperator:
       // Colour (§8.6.8)
       case "CS" => StrokeSpace(name(0))
       case "cs" => FillSpace(name(0))
-      case "G"  => StrokeGray(numbers(1)(0))
-      case "g"  => FillGray(numbers(1)(0))
+      case "G"  => StrokeGray(numbers(1).stdlib(0))
+      case "g"  => FillGray(numbers(1).stdlib(0))
 
       case "RG" => numbers(3) match
         case List(red, green, blue) => StrokeRgb(Srgb(red, green, blue))

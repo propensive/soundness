@@ -32,6 +32,10 @@
                                                                                                   */
 package panopticon
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -49,19 +53,16 @@ object Optical:
   given ordinalSeries: [element] => Ordinal is Optical from Series[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
-        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
-        else origin
+        val vector = origin.stdlib
 
-  given ordinalSeq: [element] => Ordinal is Optical from Seq[element] onto element =
-    ordinal =>
-      Optic: (origin, lambda) =>
-        if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
+        if vector.length > ordinal.n0
+        then Series.of(vector.updated(ordinal.n0, lambda(vector(ordinal.n0))))
         else origin
 
   given at: [key, element] => key is Optical from Map[key, element] onto element =
     key =>
       Optic: (origin, lambda) =>
-        origin.at(key).let(lambda).lay(origin)(origin.updated(key, _))
+        origin.at(key).let(lambda).lay(origin)(value => Map.of(origin.stdlib.updated(key, value)))
 
   // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
   // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
@@ -71,8 +72,9 @@ object Optical:
       val predicate: key -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>
-        origin.map: (key, value) =>
-          if predicate(key) then (key, lambda(value)) else (key, value)
+        Map.of:
+          origin.stdlib.map: (key, value) =>
+            if predicate(key) then (key, lambda(value)) else (key, value)
 
   given filter2: [element] => Filter[element] is Optical from List[element] onto element =
     filter =>

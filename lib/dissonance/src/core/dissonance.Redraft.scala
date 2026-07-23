@@ -32,6 +32,10 @@
                                                                                                   */
 package dissonance
 
+import scala.collection.immutable.IndexedSeq
+
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -66,7 +70,7 @@ object Redraft:
   private def payload(text: Text): Text =
     (if text.s.length >= 2 then text.s.substring(2).nn else "").tt
 
-  def parse(lines: LazyList[Text]): Redraft =
+  def parse(lines: Progression[Text]): Redraft =
     val directives = lines.map: line =>
       val s = line.s
 
@@ -77,7 +81,7 @@ object Redraft:
       else if s.startsWith("\\") then Directive.Keep(s.substring(1).nn.tt)
       else Directive.Keep(line)
 
-    Redraft(directives.to(List)*)
+    Redraft(directives.stdlib*)
 
   private def render1(directive: Directive): Text = directive match
     case Directive.Keep(line)        => if needsEscape(line) then ("\\"+line.s).tt else line
@@ -185,7 +189,7 @@ object Redraft:
         if matcher.index != rightIndex
         then anomalies = Anomaly(matcher.line, matcher.text, Reason.Unanchored) :: anomalies
 
-    (edits.reverse, anomalies.sortBy(_.line))
+    (edits.reverse, anomalies.sort(_.line))
 
   def render(diff: Diff[Text], context: Context): Redraft =
     val original: IndexedSeq[Text] = diff.edits.collect:
@@ -194,7 +198,7 @@ object Redraft:
 
     . to(IndexedSeq)
 
-    val full: List[Directive] = diff.edits.to(List).flatMap:
+    val full: List[Directive] = diff.edits.transmute[List].bind:
       case Par(_, _, value) => List(Directive.Keep(value.vouch))
       case Del(_, value)    => List(Directive.Mark(value.vouch, insert = false))
       case Ins(_, value)    => List(Directive.Mark(value, insert = true))
@@ -202,15 +206,14 @@ object Redraft:
     // Promote any ambiguous primary `+`/`-` marker to the forced `>`/`<` spelling.
     def deambiguate(directives: List[Directive]): List[Directive] =
       val ambiguous =
-        analyze(directives, original, _ == _)(1).collect:
-          case Anomaly(line, _, Reason.Ambiguous) => line
-
-      . to(Set)
+        Set.from:
+          analyze(directives, original, _ == _)(1).stdlib.collect:
+            case Anomaly(line, _, Reason.Ambiguous) => line
 
       if ambiguous.nil then directives
       else deambiguate:
         directives.zipWithIndex.map: (directive, index) =>
-          if !ambiguous.contains(index) then directive else directive match
+          if !ambiguous.has(index) then directive else directive match
             case Directive.Mark(load, true)  => Directive.Add(load)
             case Directive.Mark(load, false) => Directive.Cut(load)
             case other                       => other
@@ -222,10 +225,10 @@ object Redraft:
       case Context.Fixed(k) => Redraft(trim(resolved, k)*)
 
       case Context.Minimal =>
-        Redraft(minimize(resolved, original, diff.patch(original).to(List))*)
+        Redraft(minimize(resolved, original, List.from(diff.patch(original.transmute[List]).stdlib))*)
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
-    val keep = directives.map { case Directive.Keep(_) => false; case _ => true }.to(Array)
+    val keep = directives.stdlib.map { case Directive.Keep(_) => false; case _ => true }.to(Array)
     val n = keep.length
 
     def near(index: Int): Boolean =
@@ -239,15 +242,15 @@ object Redraft:
     ( directives: List[Directive], original: IndexedSeq[Text], target: List[Text] )
   :   List[Directive] =
 
-    val array = directives.to(Array)
+    val array = directives.stdlib.to(Array)
     val dropped = scala.collection.mutable.Set[Int]()
 
     def remaining: List[Directive] =
-      array.indices.to(List).filter(!dropped.contains(_)).map(array(_))
+      array.indices.transmute[List].filter(!dropped.has(_)).map(array(_))
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
-      anomalies.nil && Diff(edits*).patch(original).to(List) == target
+      anomalies.nil && List.from(Diff(edits*).patch(original.transmute[List]).stdlib) == target
 
     val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 
@@ -267,23 +270,23 @@ object Redraft:
 
 
 case class Redraft(directives: Redraft.Directive*):
-  def serialize: LazyList[Text] = directives.map(Redraft.render1).to(LazyList)
+  def serialize: Progression[Text] = directives.map(Redraft.render1).transmute[Progression]
 
-  def resolve(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
+  def resolve(original: Series[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   Diff[Text] raises RedraftError =
 
-    val (edits, anomalies) = Redraft.analyze(directives.to(List), original, compare)
+    val (edits, anomalies) = Redraft.analyze(directives.transmute[List], original.stdlib, compare)
 
     anomalies match
       case anomaly :: _ => abort(RedraftError(anomaly.line, anomaly.text, anomaly.reason))
       case Nil          => Diff(edits*)
 
-  def verify(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
+  def verify(original: Series[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   List[Redraft.Anomaly] =
 
-    Redraft.analyze(directives.to(List), original, compare)(1)
+    Redraft.analyze(directives.transmute[List], original.stdlib, compare)(1)
 
-  def patch(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
-  :   LazyList[Text] raises RedraftError =
+  def patch(original: Series[Text], compare: (Text, Text) -> Boolean = _ == _)
+  :   Progression[Text] raises RedraftError =
 
-    resolve(original, compare).patch(original)
+    resolve(original, compare).patch(original.stdlib.transmute[List])

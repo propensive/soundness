@@ -32,6 +32,7 @@
                                                                                                   */
 package gigantism
 
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 type Macro[result] = Quotes ?=> Expr[result]

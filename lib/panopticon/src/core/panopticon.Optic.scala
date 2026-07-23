@@ -32,7 +32,7 @@
                                                                                                   */
 package panopticon
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.quoted.*
 
@@ -71,7 +71,7 @@ object Optic:
 
     Optic[Prim.type, List[element], element]: (origin, lambda) =>
       origin match
-        case head :: tail => lambda(head) :: tail
+        case head :: tail => List.of(lambda(head) :: tail.stdlib)
         case Nil          => Nil
 
 // `Optic` extends `Findable` (not the pure `Typeclass`): an optic that wraps a fallible transform

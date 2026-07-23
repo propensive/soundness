@@ -94,7 +94,7 @@ object Audio:
     new Audio(format, data):
       type Domain = layout
 
-  private def writeAudio(audio: Audio, formatName: Text): LazyList[Data] =
+  private def writeAudio(audio: Audio, formatName: Text): Progression[Data] =
     val ais = jss.AudioInputStream(ji.ByteArrayInputStream(audio.data), audio.format, audio.frames)
 
     val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == formatName.s).getOrElse:
@@ -107,12 +107,12 @@ object Audio:
 
   given streamable: [form: Audible]
   =>  (Audio in form) is Streamable by Data over Credit =
-    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
+    audio => zephyrine.Stream(writeAudio(audio, form.name).stdlib.iterator)
 
   given streamableAcross: [form: Audible, layout]
   =>  (Audio in form across layout) is Streamable by Data over Credit =
 
-    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
+    audio => zephyrine.Stream(writeAudio(audio, form.name).stdlib.iterator)
 
 
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:
@@ -120,7 +120,7 @@ object Audio:
     type Result = HttpStreams.Content
 
     def genericize(audio: Audio in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(audio.source[Data].toLazyList.iterator))
+      (format.mediaType.basic, HttpStreams.Body(audio.source[Data].toProgression.stdlib.iterator))
 
   given aggregable: [format: Audible as audible] => (tactic: Tactic[AudioError])
   =>  (((Audio in format) is Aggregable by Data)^{tactic}) =

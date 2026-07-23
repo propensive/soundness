@@ -38,6 +38,7 @@ import contingency.*
 import gigantism.*
 import gossamer.*
 import parasite.*
+import rudiments.*
 import turbulence.*
 
 given stdio: (terminal: Terminal) => Stdio = terminal.stdio
@@ -84,19 +85,19 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
     case Nil             => session
     case feature :: rest => feature(applyFeatures(rest))
 
-  applyFeatures(features.values)
+  applyFeatures(List.of(features.values))
 
 
 package keyboards:
   given rawKeyboard: Keyboard:
     type Keypress = Char
 
-    def process(stream: LazyList[Char]): LazyList[Keypress] = stream
+    def process(stream: Progression[Char]): Progression[Keypress] = stream
 
   given numericKeyboard: Keyboard:
     type Keypress = Int
 
-    def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
+    def process(stream: Progression[Char]): Progression[Int] = stream.map(_.toInt)
 
   // Honestly tracked: the keyboard's escape-disambiguation timeout runs `async`, so the
   // instance retains the monitor.

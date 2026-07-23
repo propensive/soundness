@@ -32,7 +32,9 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.caps
+
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -81,14 +83,14 @@ object Postable:
     // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
     Postable(media"text/plain", value => Stream(caps.unsafe.unsafeAssumePure(IArray.from(value.in[Data]))))
 
-  given textStream: (encoder: CharEncoder) => LazyList[Text] is Postable =
-    Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.in[Data]).iterator))
+  given textStream: (encoder: CharEncoder) => Progression[Text] is Postable =
+    Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.in[Data]).stdlib.iterator))
 
   given unit: Unit is Postable = Postable(media"text/plain", _ => Iterator.empty[Data].stream)
   given data: Data is Postable = Postable(media"application/octet-stream", _.stream)
 
-  given byteStream: LazyList[Data] is Postable =
-    Postable(media"application/octet-stream", lazyList => lazyList.iterator.stream)
+  given byteStream: Progression[Data] is Postable =
+    Postable(media"application/octet-stream", lazyList => lazyList.stdlib.iterator.stream)
 
   given query: Query is Postable =
     import charEncoders.utf8Encoder

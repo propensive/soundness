@@ -33,6 +33,8 @@
 package galilei
 
 import contingency.*
+import proscenium.compat.*
+import rudiments.*
 import prepositional.*
 import serpentine.*
 
@@ -51,4 +53,4 @@ object Explorable:
         unsafely(path.child(name))
 
 trait Explorable extends Typeclass:
-  def children(path: Path on Self): LazyList[Path on Self]
+  def children(path: Path on Self): Progression[Path on Self]

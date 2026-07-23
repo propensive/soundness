@@ -32,7 +32,7 @@
                                                                                                   */
 package larceny
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import scala.collection.mutable as scm
 import scala.util.chaining.*

@@ -33,6 +33,7 @@
 package legerdemain
 
 import anticipation.*
+import rudiments.*
 import contingency.*
 import fulminate.*
 import gossamer.*
@@ -55,7 +56,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
         query:       Query,
         validation:  Validation,
         formulation: Formulation )
-    :   Seq[Html of Flow] =
+    :   List[Html of Flow] =
 
       val message: Optional[Message] = validation(pointer)
       val widget = renderable.render(elicitable.widget(pointer.text, legend, query().or(t"")))
@@ -66,14 +67,14 @@ object Formulaic extends ProductDerivable[Formulaic]:
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Formulaic =
     (pointer, legend, query, errors, formulation) =>
-      val content: Seq[Html of Flow] =
+      val content: List[Html of Flow] =
         contexts[derivation]():
           [field] => context =>
             val label2 = if pointer == Pointer.Self then Pointer(label) else pointer(label)
             val legend = label.uncamel.map(_.lower.capitalize).spaced
             context.fields(label2, legend, query(label), errors, formulation)
 
-        . flatten
+        . map(_.stdlib).flatten.toList.pipe(proscenium.List.of(_))
 
       List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow))
 
@@ -85,4 +86,4 @@ trait Formulaic extends Typeclass:
       query:       Query,
       validation:  Validation,
       formulation: Formulation )
-  :   Seq[Html of Flow]
+  :   List[Html of Flow]

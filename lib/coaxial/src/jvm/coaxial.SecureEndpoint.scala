@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import java.net as jn
 import java.util as ju
 import javax.net.ssl as jns
@@ -58,7 +60,7 @@ object SecureEndpoint:
     def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
       val context = tls.context.or(jns.SSLContext.getDefault.nn)
       val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
-      configure(socket, options.values)
+      configure(socket, List.of(options.values))
 
       interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
         socket.bind(jn.InetSocketAddress(local, 0))
@@ -71,10 +73,11 @@ object SecureEndpoint:
 
       // Offer the ALPN protocols (in preference order) so the peer can select the
       // application protocol during the handshake; the choice is read back below.
-      if !tls.protocols.isEmpty then params.setApplicationProtocols(tls.protocols.map(_.s).toArray)
+      if !tls.protocols.stdlib.isEmpty
+      then params.setApplicationProtocols(tls.protocols.stdlib.map(_.s).toArray)
 
       // Restrict the TLS protocol versions when the configuration asks for it.
-      if !tls.versions.isEmpty then params.setProtocols(tls.versions.map(_.s).toArray)
+      if !tls.versions.stdlib.isEmpty then params.setProtocols(tls.versions.stdlib.map(_.s).toArray)
 
       socket.setSSLParameters(params)
 

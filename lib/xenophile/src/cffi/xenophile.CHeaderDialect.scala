@@ -32,6 +32,10 @@
                                                                                                   */
 package xenophile
 
+// Deliberate stdlib opt-out for `Map`: this dialect's parsing accumulators are map-algebraic
+// throughout; the single `parse` boundary re-wraps as the opaque `Map` (erasure-identical cast).
+import scala.collection.immutable.Map
+
 import scala.collection.immutable.ListMap
 
 import anticipation.*
@@ -47,7 +51,10 @@ import vacuous.*
 object CHeaderDialect extends Dialect:
   val library: Text = t"library"
 
-  def parse(source: Text): Map[Text, Map[Text, Prototype]] =
+  def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
+    parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
+
+  private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     val (structs, functions, typedefs) = declarations(tokenize(source.s), Map(), Map(), Map())
     val all = if functions.isEmpty then structs else structs.updated(library, functions)
 
@@ -69,7 +76,9 @@ object CHeaderDialect extends Dialect:
       else if source.charAt(index) == '*' && source.charAt(index + 1) == '/' then index + 2
       else skipBlock(index + 1)
 
-    def recur(index: Int, current: String, tokens: List[String]): List[String] =
+    def recur(index: Int, current: String, tokens: scala.collection.immutable.List[String])
+    :   scala.collection.immutable.List[String] =
+
       val flushed = if current.isEmpty then tokens else current :: tokens
 
       if index >= source.length then flushed.reverse else
@@ -82,7 +91,7 @@ object CHeaderDialect extends Dialect:
         else if punctuation(char) then recur(index + 1, "", char.toString :: flushed)
         else recur(index + 1, "", flushed)
 
-    recur(0, "", Nil)
+    List.of(recur(0, "", Nil.stdlib))
 
   private def isWord(token: String): Boolean =
     token.nonEmpty && (token.charAt(0).isLetter || token.charAt(0) == '_')
@@ -96,7 +105,7 @@ object CHeaderDialect extends Dialect:
   // names are mapped to the primitive of the same size (so the FFM layout stays correct). Widths
   // without a matching primitive (`int8_t`, `int16_t`, `short`) are left as-is.
   private def canonical(words: List[String]): Text =
-    val cleaned = words.filterNot: word =>
+    val cleaned = words.stdlib.filterNot: word =>
       word == "unsigned" || word == "signed"
 
     val name = if cleaned.isEmpty then t"int" else cleaned.mkString(" ").tt
@@ -120,11 +129,11 @@ object CHeaderDialect extends Dialect:
         case word :: more if isKeyword(word) =>
           typeWords(more, word :: acc)
 
-        case word :: more if isWord(word) && acc.isEmpty =>
+        case word :: more if isWord(word) && acc.stdlib.isEmpty =>
           (List(word), more)
 
         case _ =>
-          (acc.reverse, todo)
+          (List.of(acc.stdlib.reverse), todo)
 
     def stars(todo: List[String], count: Int): (Int, List[String]) = todo match
       case "*" :: more => stars(more, count + 1)
@@ -278,18 +287,18 @@ object CHeaderDialect extends Dialect:
 
     tokens match
       case ")" :: rest =>
-        (acc.reverse, rest)
+        (List.of(acc.stdlib.reverse), rest)
 
       case "void" :: ")" :: rest =>
-        (acc.reverse, rest)
+        (List.of(acc.stdlib.reverse), rest)
 
       case _ =>
         val (kind, _, rest) = declarator(tokens)
 
         rest match
           case "," :: more => parameters(more, kind :: acc)
-          case ")" :: more => ((kind :: acc).reverse, more)
-          case _           => (acc.reverse, skipStatement(rest))
+          case ")" :: more => (List.of((kind :: acc).reverse), more)
+          case _           => (List.of(acc.stdlib.reverse), skipStatement(rest))
 
   // Resolves every `typedef` alias appearing in a type, transitively.
   private def resolve
@@ -298,7 +307,7 @@ object CHeaderDialect extends Dialect:
 
     def expand(foreign: Foreign.Type): Foreign.Type = foreign match
       case Foreign.Type.Named(name) =>
-        typedefs.at(name).lay(foreign)(expand)
+        typedefs.get(name).optional.lay(foreign)(expand)
 
       case Foreign.Type.Union(members) =>
         Foreign.Type.Union(members.map(expand))

@@ -32,7 +32,7 @@
                                                                                                   */
 package quantitative
 
-import language.implicitConversions
+import scala.language.implicitConversions
 
 import anticipation.*
 import gossamer.*

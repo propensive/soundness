@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import proscenium.compat.*
+
 import scala.collection.immutable as sci
 
 import soundness.*
@@ -249,12 +251,12 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
       test(m"Foreign SVG tag"):
         t"""<div><svg><circle r="1"/></svg></div>""".read[Html of Flow]
-      . assert(_ == Div(Svg(Element.foreign("circle", sci.Map(t"r" -> t"1")))))
+      . assert(_ == Div(Svg(Element.foreign("circle", proscenium.Map[Text, Optional[Text]](t"r" -> t"1")))))
 
       test(m"Nontrivial MathML example"):
         t"""<div>The equation is <math><mfrac><msup><mi>π</mi><mn>2</mn></msup><mn>6</mn></mfrac></math>.</div>"""
         . read[Html of Flow]
-      . assert(_ == Div("The equation is ", Math(Element.foreign("mfrac", sci.Map(), Element.foreign("msup", sci.Map(), Element.foreign("mi", sci.Map(), "π"), Element.foreign("mn", sci.Map(), "2")), Element.foreign("mn", sci.Map(), "6"))), "."))
+      . assert(_ == Div("The equation is ", Math(Element.foreign("mfrac", proscenium.Map[Text, Optional[Text]](), Element.foreign("msup", proscenium.Map[Text, Optional[Text]](), Element.foreign("mi", proscenium.Map[Text, Optional[Text]](), "π"), Element.foreign("mn", proscenium.Map[Text, Optional[Text]](), "2")), Element.foreign("mn", proscenium.Map[Text, Optional[Text]](), "6"))), "."))
 
       test(m"transparent tag with text"):
         t"""<p>Go <a href="https://example.com">home</a>.</p>""".read[Html of "p"]
@@ -645,8 +647,8 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"nested SVG content"):
           t"""<svg><g><circle/></g></svg>""".read[Html of Flow]
         . assert: result =>
-            result == Svg(Element.foreign(t"g", sci.Map(),
-              Element.foreign(t"circle", sci.Map())))
+            result == Svg(Element.foreign(t"g", proscenium.Map[Text, Optional[Text]](),
+              Element.foreign(t"circle", proscenium.Map[Text, Optional[Text]]())))
 
         test(m"CDATA inside SVG"):
           val parsed = t"""<svg><![CDATA[raw <text>]]></svg>""".read[Html of Flow]
@@ -668,7 +670,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"SVG self-closing rect"):
           t"""<svg><rect/></svg>""".read[Html of Flow]
-        . assert(_ == Svg(Element.foreign(t"rect", sci.Map())))
+        . assert(_ == Svg(Element.foreign(t"rect", proscenium.Map[Text, Optional[Text]]())))
 
       suite(m"Error position reporting"):
         test(m"EOF inside open tag"):

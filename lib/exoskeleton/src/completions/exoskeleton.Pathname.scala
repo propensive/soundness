@@ -60,23 +60,27 @@ object Pathname:
 
       if argument() == t"." then argument.suggest:
         val wd: Path on Local = workingDirectory
-        suggest(t"../") ::
-          workingDirectory.children.to(List).filter(_.name.starts(t".")).map: path =>
-            val directory = safely(path.entry() == galilei.Directory).or(false)
-            suggest(if directory then path.name+t"/" else path.name)
+        List.of:
+          suggest(t"../") ::
+            workingDirectory.children.stdlib.toList.filter(_.name.starts(t".")).map: path =>
+              val directory = safely(path.entry() == galilei.Directory).or(false)
+              suggest(if directory then path.name+t"/" else path.name)
 
       else if argument() == t".." then argument.suggest:
-        suggest(t"../") ::
-          workingDirectory.children.to(List).filter(_.name.starts(t"..")).map: path =>
-            val directory = safely(path.entry() == galilei.Directory).or(false)
-            suggest(if directory then path.name+t"/" else path.name)
+        List.of:
+          suggest(t"../") ::
+            workingDirectory.children.stdlib.toList.filter(_.name.starts(t"..")).map: path =>
+              val directory = safely(path.entry() == galilei.Directory).or(false)
+              suggest(if directory then path.name+t"/" else path.name)
 
       else if argument().nil then argument.suggest:
-        val children0 = workingDirectory.children.to(List)
+        val children0 = workingDirectory.children.stdlib.toList
         val showAll = argument.tab.or(Prim) > Prim
-        val children = if !showAll then children0.filter(!_.name.starts(t".")) else children0
+        val children =
+          if !showAll then children0.filter(!_.name.starts(t".")) else children0
 
-        children.map: path =>
+        List.of:
+         children.map: path =>
           val directory = safely(path.entry() == galilei.Directory).or(false)
           suggest(if directory then path.name+t"/" else path.name)
 
@@ -86,15 +90,18 @@ object Pathname:
         val prototype = workingDirectory.resolve(argument())
         val showAll = argument.tab.or(Prim) > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
-        val children0 = base.lay(Nil)(_.children.to(List))
+        val children0 = base.lay(scala.collection.immutable.Nil)(_.children.stdlib.toList)
 
         val children =
-          if directory then children0 else children0.filter(_.name.starts(prototype.name))
+          if directory then children0
+          else children0.filter(_.name.starts(prototype.name))
 
         argument.suggest:
-          val children2 = if !showAll then children.filter(!_.name.starts(t".")) else children
+          val children2 =
+            if !showAll then children.filter(!_.name.starts(t".")) else children
 
-          children2.map: path =>
+          List.of:
+           children2.map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
             val slash = if directory then t"/" else t""
 

@@ -62,7 +62,8 @@ object Stageable:
         Array.from(text.nn.as[Json](using Json.decodable).as[List[Json]])
 
     inline def serialize(value: Array[Object]): Text =
-      value.iterator.to(List).map(_.asInstanceOf[Json]).in[Json].encode
+      val roots = IArray.from(value.iterator.map { obj => Json.unseal(obj.asInstanceOf[Json]) })
+      Json.ast(Json.Ast.arr(roots.asInstanceOf[IArray[Any]])).encode
 
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.in[Json])
 

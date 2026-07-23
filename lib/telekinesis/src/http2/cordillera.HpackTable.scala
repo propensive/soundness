@@ -32,6 +32,8 @@
                                                                                                   */
 package cordillera
 
+import scala.caps
+
 import scala.collection.mutable as scm
 
 import anticipation.*

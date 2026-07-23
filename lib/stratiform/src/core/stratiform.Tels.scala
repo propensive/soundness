@@ -605,7 +605,7 @@ object Tels extends Tels2:
         seqEq(a.selects, b.selects, selectEq)
 
     def fromTel(tel: Tel): Tels raises TelError =
-      val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
+      val compounds: IArray[Tel.Compound] = tel.subtree.children.bind(_.compounds)
 
       var name: Optional[Text] = Unset
       var sigil: Optional[Char] = Unset
@@ -660,7 +660,7 @@ object Tels extends Tels2:
       c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
 
     private def childCompounds(c: Tel.Compound): IArray[Tel.Compound] =
-      c.children.flatMap(_.compounds)
+      c.children.bind(_.compounds)
 
     private def parseType(name: Text): Type =
       if name == t"Flag" then Flag else Reference(name)
@@ -691,7 +691,7 @@ object Tels extends Tels2:
       val scName = firstAtomText(c).or(abort(TelError(Reason.RequiredMemberAbsent)))
       val children = childCompounds(c)
 
-      val validators = children.flatMap: cc =>
+      val validators = children.bind: cc =>
         if cc.keyword == t"validate" then atomTexts(cc) else IArray.empty[Text]
 
       ScalarDefinition(scName, validators, descriptionOf(children))

@@ -123,4 +123,4 @@ object Revision:
 case class Revision private[stratiform] (ops: IArray[Mutation.Op]):
   def ++ (next: Revision): Revision = new Revision(ops ++ next.ops)
 
-  def apply(tel: Tel): Tel raises MutationError = Mutation(tel, ops.toSeq)
+  def apply(tel: Tel): Tel raises MutationError = Mutation(tel, ops.to(List))

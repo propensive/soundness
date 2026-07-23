@@ -32,6 +32,8 @@
                                                                                                   */
 package monotonous
 
+import scala.caps
+
 import java.nio.charset.StandardCharsets
 
 import anticipation.*

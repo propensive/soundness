@@ -32,7 +32,7 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 trait Distribution:
   def transform(random: Random): Double

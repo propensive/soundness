@@ -32,7 +32,7 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -50,14 +50,14 @@ case class Stderr(text: Text)
 object Computable:
   given lineStream: Buffering => (Iterator[Text] is Computable) =
     // Line-oriented output as a single-consumer line iterator (the K-B
-    // adapter), replacing the memoizing `LazyList` bridge. `lines()` needs a
+    // adapter), replacing the memoizing `Progression` bridge. `lines()` needs a
     // `Tactic[StreamError]` and `.records` a `Buffering`; the endpoint the
     // iterator pulls from is laundered to fit the pure `Self` slot, so the
     // caller must drain it once. A read failure throws, as the `BufferedReader`
     // this replaced did.
     job => unsafely(job.lines().records.asInstanceOf[Iterator[Text]])
 
-  given list: List[Text] is Computable = job => unsafely(job.lines().records.to(List))
+  given list: List[Text] is Computable = job => unsafely(List.of(job.lines().records.toList))
 
   given text: Text is Computable = _.text()
 

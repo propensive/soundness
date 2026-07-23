@@ -58,7 +58,7 @@ object Patch:
 
   // Flattens every hunk's edits into a single Dissonance Diff[Text].
   def asDiff(file: FileDiff): Diff[Text] =
-    Diff(file.hunks.flatMap(_.edits)*)
+    Diff(file.hunks.stdlib.flatMap(_.edits.stdlib)*)
 
 
   private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
@@ -81,7 +81,7 @@ object Patch:
 
       def closeHunk(): State =
         hunk.lay(this): h =>
-          copy(hunks = h.copy(edits = edits.reverse) :: hunks, hunk = Unset, edits = Nil)
+          copy(hunks = h.copy(edits = List.of(edits.stdlib.reverse)) :: hunks, hunk = Unset, edits = Nil)
 
       def push(edit: Edit[Text]): State = copy(edits = edit :: edits)
 
@@ -147,13 +147,13 @@ object Patch:
       case _ =>
         state  // unrecognized header outside a hunk (e.g. `index ...`)
 
-    val finalState = body.foldLeft(initial)(step).closeHunk()
+    val finalState = body.stdlib.foldLeft(initial)(step).closeHunk()
 
     FileDiff
       ( finalState.oldPath,
         finalState.newPath,
         finalState.changeKind,
-        finalState.hunks.reverse )
+        List.of(finalState.hunks.stdlib.reverse) )
 
 
 case class Patch(files: List[FileDiff])

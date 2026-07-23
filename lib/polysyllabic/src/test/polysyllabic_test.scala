@@ -32,6 +32,8 @@
                                                                                                   */
 package polysyllabic
 
+import scala.collection.immutable.Seq
+
 import soundness.*
 
 import hyphenations.englishHyphenation

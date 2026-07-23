@@ -32,6 +32,8 @@
                                                                                                   */
 package revolution
 
+import scala.collection.immutable.Seq
+
 import scala.quoted.*
 
 import anticipation.*
@@ -43,20 +45,15 @@ import vacuous.*
 
 object internal:
   def semver(context0: Expr[StringContext]): Macro[Semver] =
-    val semver0 = context0.valueOrAbort match
+    val versionText = context0.valueOrAbort match
       case StringContext(text*) => text match
-        case List(text: String) => safely(text.tt.as[Semver])
+        case Seq(text: String) => text
         case _                  => panic(m"did not expect more than one part in StringContext")
 
-    val semver = semver0.or(halt(m"invalid semantic version"))
-    val major = Expr(semver.major)
-    val minor = Expr(semver.minor)
-    val patch = Expr(semver.patch)
+    // Validate at expansion time so a malformed literal fails to compile, then
+    // splice the (validated) text and re-decode at runtime. Re-encoding the parsed
+    // `Semver` back into a literal would require lifting its `List[Text | Long]`
+    // components, which the opaque `List` alias makes awkward inside a quote.
+    safely(versionText.tt.as[Semver]).or(halt(m"invalid semantic version"))
 
-    def lift(elements: List[Text | Long]): Expr[List[Text | Long]] = elements.absolve match
-      case Nil                  => '{Nil}
-      case (text: Text) :: more => '{${Expr(text)} :: ${lift(more)}}
-      case (long: Long) :: more => '{${Expr(long)} :: ${lift(more)}}
-
-
-    '{Semver($major, $minor, $patch, ${lift(semver.prerelease)}, ${lift(semver.build)})}
+    '{safely(${Expr(versionText)}.tt.as[Semver]).vouch}

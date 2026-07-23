@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -72,7 +74,7 @@ object Destination:
           case _                   => Unset
 
         def dimension(index: Int): Optional[Double] =
-          if index < rest.length then pdf.resolved(rest(index)).double else Unset
+          if index < rest.stdlib.length then pdf.resolved(rest.stdlib(index)).double else Unset
 
         page.let: page =>
           kind.s match

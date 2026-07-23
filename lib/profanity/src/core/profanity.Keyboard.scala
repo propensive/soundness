@@ -42,6 +42,8 @@ import quantitative.*
 import spectacular.*
 import turbulence.*
 import symbolism.*
+import proscenium.compat.*
+import rudiments.*
 import vacuous.*
 
 object Keyboard:
@@ -70,10 +72,10 @@ object Keyboard:
   // keypress. The codepoint is a Unicode value, with the C0 codes 13/9/27/127 for
   // Enter/Tab/Escape/Backspace; the modifier field is `1 + bitmask`.
   def csiu(params: List[Char]): profanity.Keypress =
-    val fields: List[Text] = params.map(_.show).join.cut(t";").to(List)
+    val fields: List[Text] = List.of(params.stdlib.map(_.show)).join.cut(t";")
 
     def number(index: Int, default: Int): Int =
-      safely(Integer.parseInt(fields(index).cut(t":").head.s)).or(default)
+      safely(Integer.parseInt(fields.stdlib(index).cut(t":").stdlib.head.s)).or(default)
 
     val bitmask: Int = (number(1, 1) - 1).max(0)
 
@@ -133,7 +135,7 @@ object Keyboard:
   // boundary (a fragmented SSH write), so it can be far shorter than the
   // 30ms every bare Escape formerly cost.
   trait Lookahead:
-    def sequenceFollows(rest: LazyList[Char]): Boolean
+    def sequenceFollows(rest: Progression[Char]): Boolean
 
   object Lookahead:
     // For pre-materialized input (tests, replays): a non-empty tail follows.
@@ -149,7 +151,7 @@ object Keyboard:
   class Standard()(using lookahead: Lookahead) extends Keyboard:
     type Keypress = profanity.Keypress | TerminalInfo
 
-    def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
+    def process(stream: Progression[Char]): Progression[Keypress] = stream match
       case '\u001b' #:: rest =>
         if !lookahead.sequenceFollows(rest) then Keypress.Escape #:: process(rest)
         else
@@ -173,18 +175,18 @@ object Keyboard:
                 Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
 
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
-                val size = tail.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~'))
+                val size = tail.stdlib.indexOfSlice(scala.collection.immutable.List('\u001b', '[', '2', '0', '1', '~'))
                 val content = tail.take(size).map(_.show).join
                 TerminalInfo.Paste(content) #:: process(tail.drop(size + 6))
 
               case other =>
                 val sequence = other.takeWhile(!_.isLetter)
 
-                other.drop(sequence.length) match
+                other.drop(sequence.stdlib.length) match
                   // CSI-u (kitty keyboard protocol): a key codepoint with optional
                   // sub-keys and modifiers, terminated by `u`.
                   case 'u' #:: tail =>
-                    Keyboard.csiu(sequence.to(List)) #:: process(tail)
+                    Keyboard.csiu(List.from(sequence.stdlib)) #:: process(tail)
 
                   case 'R' #:: tail =>
                     // A cursor-position report. The plain form (`\e[<row>;<col>R`) is
@@ -199,7 +201,7 @@ object Keyboard:
                     // scrutinee, which fails to unify under capture checking.
                     val raw: Text = sequence.map(_.show).join
                     val query: Boolean = raw.starts(t"?")
-                    val fields: List[Text] = (if query then raw.skip(1) else raw).cut(';').to(List)
+                    val fields: List[Text] = (if query then raw.skip(1) else raw).cut(';')
 
                     val report: Optional[TerminalInfo] = fields match
                       case List(rows, cols) =>
@@ -226,13 +228,13 @@ object Keyboard:
                     Keypress.EscapeSeq(char, sequence*) #:: process(tail)
 
                   case _ =>
-                    LazyList()
+                    Progression()
 
             case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
-              val content = rest.takeWhile(_ != '\u001b').mkString.tt
+              val content = rest.takeWhile(_ != '\u001b').stdlib.mkString.tt
               val continuation = rest.drop(content.length + 2)
 
-              content.cut(t"/").to(List) match
+              content.cut(t"/") match
                 case List(red, green, blue) =>
                   def decimal(hex: Text): Int = Integer.parseInt(hex.s, 16)
 
@@ -261,9 +263,9 @@ object Keyboard:
         Keypress.CharKey(other) #:: process(rest)
 
       case _ =>
-        LazyList()
+        Progression()
 
 trait Keyboard:
   type Keypress
 
-  def process(stream: LazyList[Char]): LazyList[Keypress]
+  def process(stream: Progression[Char]): Progression[Keypress]

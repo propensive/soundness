@@ -32,7 +32,11 @@
                                                                                                   */
 package breviloquence
 
+import scala.math
+
 import soundness.*
+
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -275,36 +279,36 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(identity)
 
     suite(m"Aggregable"):
-      test(m"Aggregate single-chunk LazyList[Data] to Cbor"):
+      test(m"Aggregate single-chunk Progression[Data] to Cbor"):
         val original = Point(3, 4)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        LazyList(bytes).read[Cbor].as[Point]
+        proscenium.Progression(bytes).read[Cbor].as[Point]
       . assert(_ == Point(3, 4))
 
-      test(m"Aggregate split-chunk LazyList[Data] to Cbor"):
+      test(m"Aggregate split-chunk Progression[Data] to Cbor"):
         val original = Person(t"Ada", 36)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         val half = bytes.length/2
-        LazyList(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
+        proscenium.Progression(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
       . assert(_ == Person(t"Ada", 36))
 
-      test(m"Aggregate single-chunk LazyList[Data] to Cbor.Ast"):
+      test(m"Aggregate single-chunk Progression[Data] to Cbor.Ast"):
         val original = Wrapper(List(1, 2, 3), t"hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        Cbor.ast(LazyList(bytes).read[Cbor.Ast]).as[Wrapper]
+        Cbor.ast(proscenium.Progression(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
         val original = Point(3, 4)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        LazyList(bytes).read[Point in Cbor]
+        proscenium.Progression(bytes).read[Point in Cbor]
       . assert(_ == Point(3, 4))
 
       test(m"`read[T in Cbor]` works for nested case classes"):
         val original = Wrapper(List(1, 2, 3), t"hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        LazyList(bytes).read[Wrapper in Cbor]
+        proscenium.Progression(bytes).read[Wrapper in Cbor]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"@name field renaming"):
@@ -537,7 +541,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"the aggregable trigger routes a stream through the direct parser"):
         val bytes = encoded(Person(t"Ada", 36))
-        LazyList(bytes).read[Person in Cbor]
+        proscenium.Progression(bytes).read[Person in Cbor]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"a recursive type degrades its recursive field to the seam"):

@@ -32,6 +32,11 @@
                                                                                                   */
 package contingency
 
+import scala.annotation
+
+import scala.collection.immutable.{List, Nil, ::}
+
+import scala.collection.immutable as sci
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -68,7 +73,7 @@ object internal:
 
 
   private def mapping[error <: Exception: Type](using Quotes)(handler: quotes.reflect.Term)
-  :   Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
+  :   sci.Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
 
     import quotes.reflect.*
 
@@ -118,9 +123,9 @@ object internal:
       case other =>
         halt(454, m"bad pattern")
 
-    def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
+    def unpack(repr: TypeRepr): sci.Set[TypeRepr] = repr.asMatchable match
       case OrType(left, right) => unpack(left) ++ unpack(right)
-      case other               => Set(other)
+      case other               => sci.Set(other)
 
     val requiredHandlers = unpack(TypeRepr.of[error]).map(_.typeSymbol)
 
@@ -145,7 +150,7 @@ object internal:
         case '{$rhs: rhsType} =>
           patternType(pattern).map(_.typeSymbol -> TypeRepr.of[rhsType].typeSymbol)
 
-    . to(Map)
+    . to(sci.Map)
 
 
   def unpack(using Quotes)(repr: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
@@ -162,7 +167,7 @@ object internal:
     import quotes.reflect.*
 
     val errors = mapping(handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val tactics = errors.keys.toList.map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
     val typeLambda =
@@ -187,7 +192,7 @@ object internal:
     import quotes.reflect.*
 
     val errors = mapping(handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val tactics = errors.keys.toList.map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
     val typeLambda =
@@ -304,7 +309,7 @@ object internal:
     import quotes.reflect.*
 
     val errors = mapping[Exception](handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val tactics = errors.keys.toList.map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
     TypeLambda

@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+
 import soundness.*
 
 import strategies.throwUnsafely
@@ -222,7 +224,7 @@ object Tests extends Suite(m"Hallucination Tests"):
 
     test(m"a decoded PNG has an eight-bit RGB or RGBA layout"):
       png.read[Raster in Png].descriptor.entries.map(_.depth)
-    . assert(_.forall(_ == 8))
+    . assert(_.stdlib.forall(_ == 8))
 
     test(m"repacking to the same layout returns the same raster"):
       val raster = stripes

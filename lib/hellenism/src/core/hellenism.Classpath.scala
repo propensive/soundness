@@ -32,6 +32,8 @@
                                                                                                   */
 package hellenism
 
+import scala.caps
+
 import java.net as jn
 import java.util as ju
 
@@ -106,9 +108,9 @@ object Classpath extends Root(t""):
     val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
 
     val urls: Array[jn.URL | Null] =
-      Array.from(classpath.entries.flatMap:
-        case ClasspathEntry.JavaRuntime => Nil
-        case other                      => List(other.javaUrl))
+      Array.from(classpath.entries.stdlib.flatMap:
+        case ClasspathEntry.JavaRuntime => Nil.stdlib
+        case other                      => List(other.javaUrl).stdlib)
 
     val loader = jn.URLClassLoader(urls, parent)
     val seen = scala.collection.mutable.Set.empty[Class[?]]
@@ -118,7 +120,7 @@ object Classpath extends Root(t""):
       val provider0 = provider.nn
       if seen.add(provider0.`type`.nn) then result += provider0.get.nn
 
-    result.toSet
+    Set.from(result)
 
   // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
   // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so
@@ -134,15 +136,15 @@ object Classpath extends Root(t""):
 
 trait Classpath:
   def entries: List[ClasspathEntry]
-  private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
+  private def array: Array[jn.URL | Null] = Array.from(entries.stdlib.map(_.javaUrl))
 
   def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
     new Classloader(Classpath.delegatingClassloader(array, parent.java))
 
   def classloader: Classloader =
-    val urls = entries.flatMap:
-      case ClasspathEntry.JavaRuntime => Nil
-      case other                      => List(other.javaUrl)
+    val urls = entries.stdlib.flatMap:
+      case ClasspathEntry.JavaRuntime => Nil.stdlib
+      case other                      => List(other.javaUrl).stdlib
 
     new Classloader
       ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )

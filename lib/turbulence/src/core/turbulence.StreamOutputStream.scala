@@ -45,7 +45,7 @@ class StreamOutputStream() extends ji.OutputStream:
   private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val chunks: Relay[Data] = Relay()
 
-  def stream: LazyList[Data] = chunks.lazyList
+  def stream: Progression[Data] = chunks.lazyList
   def write(int: Int): Unit = buffer.append(int.toByte)
   override def close(): Unit = flush().also(chunks.stop())
 

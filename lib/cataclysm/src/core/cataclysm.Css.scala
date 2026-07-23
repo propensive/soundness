@@ -32,7 +32,7 @@
                                                                                                   */
 package cataclysm
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import contextual.*
@@ -87,7 +87,7 @@ object Css:
     def block(body: List[Css.Node], indent: Int): Unit =
       put(if formatter.spaces then t" {" else t"{")
 
-      body.foreach: child =>
+      body.stdlib.foreach: child =>
         newline(indent + 1)
         emitNode(child, indent + 1)
 
@@ -114,7 +114,7 @@ object Css:
 
     var first = true
 
-    css.rules.foreach: child =>
+    css.rules.stdlib.foreach: child =>
       if first then first = false else newline(0)
       emitNode(child, 0)
 
@@ -137,7 +137,7 @@ object Css:
   // stylesheet of both rules.
   given addable: Css is Addable by Css to Css =
     Addable: (left, right) =>
-      Css(left.rules ++ right.rules)
+      Css(List.of(left.rules.stdlib ++ right.rules.stdlib))
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
@@ -163,10 +163,10 @@ object Css:
     // bare `css"…"`s) join into one.
     given addable: Style is Addable by Style to Style =
       Addable: (left, right) =>
-        Style.of(left.properties ++ right.properties)
+        Style.of(List.of(left.properties.stdlib ++ right.properties.stdlib))
 
   class Style private (val properties: List[(Text, Text)]):
-    def text: Text = properties.map { (name, value) => t"$name: $value" }.join(t"; ")
+    def text: Text = List.of(properties.stdlib.map { (name, value) => t"$name: $value" }).join(t"; ")
 
   // A typed CSS value tagged with its value-definition-syntax type (e.g.
   // `Css.Value of "length"`). Native types convert in via `CssConvertible`; the

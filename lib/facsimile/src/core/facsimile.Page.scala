@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -112,11 +114,11 @@ class Page private[facsimile]
       . dictionary.or(Map[Text, Cos]())
 
     pdf.resolved(resources.at(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
-    . to(List).flatMap: (name, value) =>
-        PdfFont.read(pdf.resolved(value))(using pdf).lay(List()): font =>
-          List(name -> font)
+    . stdlib.toList.flatMap: (name, value) =>
+        PdfFont.read(pdf.resolved(value))(using pdf).lay(scala.collection.immutable.List()): font =>
+          scala.collection.immutable.List(name -> font)
 
-    . to(Map)
+    . pipe(Map.from(_))
 
   // The page's content: its `/Contents` streams decoded and concatenated, which the
   // specification requires to be treated as a single stream, with whitespace between.

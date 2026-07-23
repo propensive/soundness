@@ -32,6 +32,9 @@
                                                                                                   */
 package gossamer
 
+import scala.collection.immutable.Seq
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -215,7 +218,7 @@ object internal:
       lambda:  Expr[Scanner ?=> textual ~> value],
       textual: Expr[textual is Textual] )
     ( using Quotes )
-  :   Expr[LazyList[value]] =
+  :   Expr[Progression[value]] =
 
     import quotes.reflect.*
 
@@ -245,8 +248,8 @@ object internal:
         ' {
             val input = $textual.text($text)
 
-            def step(from: Int): LazyList[value] =
-              if from >= input.s.length then LazyList() else
+            def step(from: Int): Progression[value] =
+              if from >= input.s.length then Progression() else
                 val scanner = Scanner(from)
 
                 $lambda(using scanner).lift($text) match
@@ -254,7 +257,7 @@ object internal:
                     head #:: step(scanner.matchEnd.or(input.s.length).max(from + 1))
 
                   case _ =>
-                    LazyList()
+                    Progression()
 
             step($start.n0)
           }
@@ -304,8 +307,8 @@ object internal:
             val length = input.s.length
             val cases = ${Expr.ofList(closures)}
 
-            def step(from: Int): LazyList[value] =
-              if from >= length then LazyList() else
+            def step(from: Int): Progression[value] =
+              if from >= length then Progression() else
                 var best: Optional[(Int, Int, value)] = Unset
                 val it = cases.iterator
 
@@ -320,7 +323,7 @@ object internal:
 
                     case _ =>
 
-                best.lay(LazyList()): triple =>
+                best.lay(Progression()): triple =>
                   triple(2) #:: step(triple(1).max(from + 1))
 
             step($start.n0)

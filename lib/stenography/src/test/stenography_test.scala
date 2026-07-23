@@ -32,7 +32,8 @@
                                                                                                   */
 package stenography
 
-import language.experimental.pureFunctions
+import scala.Enumeration
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import fulminate.*
@@ -85,7 +86,7 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"Double & Int & String")
 
     test(m"Show `List[Int]`"):
-      Syntax.name[List[Int]]
+      Syntax.name[scala.collection.immutable.List[Int]]
     . assert(_ == t"collection.immutable.List[Int]")
 
     test(m"Show constant String type"):
@@ -121,19 +122,19 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"'a'")
 
     test(m"Show wildcard type argument"):
-      Syntax.name[List[?]]
+      Syntax.name[scala.collection.immutable.List[?]]
     . assert(_ == t"collection.immutable.List[?]")
 
     test(m"Show upper-bounded wildcard"):
-      Syntax.name[List[? <: AnyRef]]
+      Syntax.name[scala.collection.immutable.List[? <: AnyRef]]
     . assert(_ == t"collection.immutable.List[? <: AnyRef]")
 
     test(m"Show lower-bounded wildcard"):
-      Syntax.name[List[? >: String]]
+      Syntax.name[scala.collection.immutable.List[? >: String]]
     . assert(_ == t"collection.immutable.List[? >: String]")
 
     test(m"Show wildcard with both bounds"):
-      Syntax.name[List[? >: String <: AnyRef]]
+      Syntax.name[scala.collection.immutable.List[? >: String <: AnyRef]]
     . assert(_ == t"collection.immutable.List[? >: String <: AnyRef]")
 
     test(m"Show into-annotated type"):
@@ -149,7 +150,7 @@ object Tests extends Suite(m"Stenography Tests"):
     test(m"Show match type with parametric case"):
       Syntax.name[[scrutinee] =>> scrutinee match
         case List[item] => item]
-    . assert(_ == t"[scrutinee] =>> scrutinee match { case collection.immutable.List[item] => item }")
+    . assert(_ == t"[scrutinee] =>> scrutinee match { case List[item] => item }")
 
     test(m"Show singleton type"):
       Syntax.name[None.type]

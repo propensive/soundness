@@ -33,4 +33,4 @@
 package escritoire
 
 
-case class TableSection[text](widths: IArray[Int], rows: LazyList[TableRow[text]])
+case class TableSection[text](widths: IArray[Int], rows: Progression[TableRow[text]])

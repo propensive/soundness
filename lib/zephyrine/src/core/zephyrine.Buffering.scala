@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 // Contextual configuration determining how streaming stages are instantiated
 // with buffers. `capacity` is consulted once per stage at construction time, so
 // an adaptive instance (e.g. one consulting available memory) sees each new

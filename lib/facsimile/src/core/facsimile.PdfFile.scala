@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import aperture.*
@@ -83,10 +85,10 @@ object PdfFile:
     . protect:
         val target: Path on Local = workingDirectory[Path on Local].resolve(filename)
 
-        if !flags.contains(CreateFlag.Replace) && target.exists()
+        if !flags.has(CreateFlag.Replace) && target.exists()
         then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
 
-        if flags.contains(CreateFlag.Parents) then
+        if flags.has(CreateFlag.Parents) then
           target.parent.let: parent =>
             if !parent.exists() then parent.create[Directory]()
 
@@ -115,7 +117,7 @@ object PdfFile:
       ( block: ((Pdf & Granting[grants])^) ?=> result )
     :   result =
 
-      value.openAs[grants, result](flags.prim, mode.atoms.contains(Write))(block)
+      value.openAs[grants, result](flags.prim, mode.atoms.has(Write))(block)
 
   // Opening a path or in-memory data directly as `Pdf`, without naming the `PdfFile` locator:
   // `path.open[Pdf]()`. (The form must be explicit for these targets, which are openable in
@@ -134,7 +136,7 @@ object PdfFile:
       ( block: ((Pdf & Granting[grants])^) ?=> result )
     :   result =
 
-      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.contains(Write))(block)
+      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.has(Write))(block)
 
   class PdfDataOpenable(using pdfError: Tactic[PdfError]) extends Openable:
     type Self = Data
@@ -147,7 +149,7 @@ object PdfFile:
       ( block: ((Pdf & Granting[grants])^) ?=> result )
     :   result =
 
-      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.contains(Write))(block)
+      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.has(Write))(block)
 
   // Anchored here so `pdfFile.open(...)` resolves — and, `PdfFile` having a unique instance,
   // infers the `Pdf` form — with no import.

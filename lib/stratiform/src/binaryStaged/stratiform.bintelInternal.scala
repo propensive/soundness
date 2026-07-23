@@ -32,6 +32,11 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable.Vector
+
+import scala.{annotation, caps}
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
 
@@ -118,8 +123,8 @@ object bintelInternal:
 
   private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
 
-  private val primitiveClasses: Map[String, Class[?]] =
-    Map
+  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
+    scala.collection.immutable.Map
       ( "scala.Int"     -> classOf[Int],
         "scala.Long"    -> classOf[Long],
         "scala.Double"  -> classOf[Double],
@@ -308,6 +313,26 @@ object bintelInternal:
       case OrType(left, right) if left =:= unset  => Some(right.dealias)
       case _                                      => None
 
+  // The opaque prelude `List`/`Set`/`Series` don't conform to `Iterable`; each
+  // maps to its underlying stdlib collection (used to summon a `Factory`, since
+  // the opaque companion exposes only a `Conversion`, not a direct instance).
+  private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+    import quotes.reflect.*
+    val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+
+    tpe match
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
+        Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == setSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(element))
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == seriesSym =>
+        Some(TypeRepr.of[Vector].appliedTo(element))
+      case _ =>
+        None
+
   private def planFor[product: Type](using Quotes)
     (fieldName: String, tpe0: quotes.reflect.TypeRepr, cache: Cache)
   :   Plan =
@@ -351,7 +376,8 @@ object bintelInternal:
         val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
 
         if isMap then reject("a Map (a nested `entries` struct on the wire)")
-        else if tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+        else if tpe <:< TypeRepr.of[Iterable[Any]] || aliasCollectionUnderlying(tpe).isDefined
+        then tpe match
           case AppliedType(_, arguments) =>
             val elementType = arguments.last.dealias
 
@@ -584,7 +610,7 @@ object bintelInternal:
              . decoded(Text($parser.directScalar()(using $btactic))) }
 
       // Per-field gathering state for repeatable fields.
-      val builders: Map[Int, Symbol] =
+      val builders: scala.collection.immutable.Map[Int, Symbol] =
         List.range(0, arity).flatMap: index =>
           plans(index) match
             case Plan.Gather(_, elementType0) =>
@@ -607,8 +633,17 @@ object bintelInternal:
 
             (elementType.asType, fieldTypes(index).asType) match
               case ('[element], '[fieldType]) =>
-                val rhs: Expr[Any] =
-                  '{ infer[scala.collection.Factory[element, fieldType]].newBuilder }
+                // Opaque alias fields have no direct `Factory`, so summon one at
+                // the underlying stdlib type and cast the builder (a no-op at
+                // erasure, as the opaque alias erases to that same type).
+                val rhs: Expr[Any] = aliasCollectionUnderlying(fieldTypes(index)) match
+                  case Some(underlying) => underlying.asType.absolve match
+                    case '[stdlib] =>
+                      '{ infer[scala.collection.Factory[element, stdlib]].newBuilder
+                         . asInstanceOf[scm.Builder[element, fieldType]] }
+
+                  case None =>
+                    '{ infer[scala.collection.Factory[element, fieldType]].newBuilder }
 
                 Some(ValDef(builders(index), Some(rhs.asTerm)))
 

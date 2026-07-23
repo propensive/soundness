@@ -34,6 +34,8 @@ package ziggurat
 
 import soundness.*
 
+import proscenium.compat.*
+
 import systems.javaSystem
 import environments.javaEnvironment
 import temporaryDirectories.systemTemporaryDirectory
@@ -69,15 +71,16 @@ object Tests extends Suite(m"Ziggurat tests"):
       tempDirs += dir
       dir
 
-    try runTestsBody(tempDir) finally tempDirs.foreach: dir =>
+    try runTestsBody(tempDir) finally tempDirs.each: dir =>
       safely(dir.delete())
 
   private def runTestsBody(tempDir: () => Path on Linux): Unit =
-    val labels = List(t"linux-x64", t"linux-arm64", t"macos-x64", t"macos-arm64")
+    val labels: List[Text] = List(t"linux-x64", t"linux-arm64", t"macos-x64", t"macos-arm64")
 
-    val payloads = labels.map: label =>
-      val src = t"#!/bin/sh\necho 'hello from $label'\n"
-      Payload(label, src.in[Data], gzip = true)
+    val payloads: proscenium.List[Payload] = proscenium.List.of:
+      labels.stdlib.map: (label: Text) =>
+        val src = t"#!/bin/sh\necho 'hello from $label'\n"
+        Payload(label, src.in[Data], gzip = true)
 
     val bundleBytes: Data = Xeq.installer(payloads)
 
@@ -86,11 +89,13 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"hello"
       script.create[File]()
       script.open[File](Write): handle ?=>
-        handle.write(LazyList(bundleBytes))
+        handle.write(Progression(bundleBytes))
       script.executable() = true
       (dir, script)
 
-    val dockerOk = safely(sh"docker --version".exec[Exit]()) == Exit.Ok
+    // `docker info` (unlike `docker --version`) contacts the daemon, so the container tests
+    // skip when the daemon is unreachable rather than failing.
+    val dockerOk = safely(sh"docker info".exec[Exit]()) == Exit.Ok
 
     val hostLabel = sh"uname -m".exec[Text]().trim match
       case t"arm64" | t"aarch64" => t"macos-arm64"
@@ -118,7 +123,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"fetch"
       script.create[File]()
       script.open[File](Write): handle ?=>
-        handle.write(LazyList(Xeq.onlineLauncher(jar, entries)))
+        handle.write(Progression(Xeq.onlineLauncher(jar, entries)))
       script.executable() = true
       script
 
@@ -130,11 +135,12 @@ object Tests extends Suite(m"Ziggurat tests"):
       bin.create[File]()
       val bytes = body.in[Data]
       bin.open[File](Write): handle ?=>
-        handle.write(LazyList(bytes))
+        handle.write(Progression(bytes))
       (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
 
     suite(m"onlineLauncher()"):
-      val entries = labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
+      val entries: proscenium.List[(Text, Text, Text)] =
+        proscenium.List.of(labels.stdlib.map(fileEntry(tempDir(), _, t"#!/bin/sh\n")))
       val script: Data = Xeq.onlineLauncher(t"JAR".in[Data], entries)
 
       test(m"output starts with bash shebang"):
@@ -155,16 +161,18 @@ object Tests extends Suite(m"Ziggurat tests"):
       // launcher's download → verify → append-embedded-JAR → exec path runs end-to-end.
       test(m"downloads, verifies, assembles and runs host binary"):
         val dir = tempDir()
-        val entries = labels.map: label =>
-          fileEntry(dir, label, t"#!/bin/sh\necho 'fetched $label'\nexit 0\n")
+        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.of:
+          labels.stdlib.map: (label: Text) =>
+            fileEntry(dir, label, t"#!/bin/sh\necho 'fetched $label'\nexit 0\n")
         sh"${stageDownloader(t"JAR".in[Data], entries)}".exec[Text]().trim
       .assert(_ == t"fetched $hostLabel")
 
       test(m"rejects a binary whose hash does not match"):
         val dir = tempDir()
         val badHash = t"0"*64
-        val entries = labels.map: label =>
-          fileEntry(dir, label, t"#!/bin/sh\necho oops\nexit 0\n", badHash)
+        val entries: proscenium.List[(Text, Text, Text)] = proscenium.List.of:
+          labels.stdlib.map: (label: Text) =>
+            fileEntry(dir, label, t"#!/bin/sh\necho oops\nexit 0\n", badHash)
         sh"${stageDownloader(t"JAR".in[Data], entries)}".exec[Exit]()
       .assert(_ != Exit.Ok)
 
@@ -217,7 +225,7 @@ object Tests extends Suite(m"Ziggurat tests"):
           ++ Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
 
         file.create[File]()
-        file.open[File](Write) { h ?=> h.write(LazyList(bytes.immutable(using Unsafe): Data)) }
+        file.open[File](Write) { h ?=> h.write(Progression(bytes.immutable(using Unsafe): Data)) }
 
       test(m"EmbedAll bundles the JAR once and every patched stub"):
         val dir: Path on Linux = tempDir()
@@ -225,7 +233,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open[File](Write) { h ?=> h.write(LazyList(t"JARBYTES".in[Data])) }
+        jar.open[File](Write) { h ?=> h.write(Progression(t"JARBYTES".in[Data])) }
 
         val out: Path on Linux = dir/t"hello"
 
@@ -250,10 +258,10 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open[File](Write) { h ?=> h.write(LazyList(t"JARBYTES".in[Data])) }
+        jar.open[File](Write) { h ?=> h.write(Progression(t"JARBYTES".in[Data])) }
 
         val out: Path on Linux = dir/t"hello"
-        val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to(Map)
+        val hashes: Map[Text, Text] = Map.from(labels.stdlib.map(_ -> t"0"*64))
 
         val packaging: Packaging =
           Packaging
@@ -310,7 +318,7 @@ class Hello { static void Main() { System.Console.WriteLine("hello from windows-
 Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputType ConsoleApplication
 """
         compilePs.open[File](Write): handle ?=>
-          handle.write(LazyList(psContent.in[Data]))
+          handle.write(Progression(psContent.in[Data]))
 
         val localExe: Path on Linux = workDir / t"hello.exe"
 
@@ -325,14 +333,15 @@ Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputTy
           safely(sh"ssh $host del /q ziggurat-test-*".exec[Exit]())
         else
           val winArm64Bytes: Data = localExe.read[Data]
-          val winBundle = Xeq.installer:
+          val allPayloads: proscenium.List[Payload] =
             payloads :+ Payload(t"windows-arm64", winArm64Bytes, gzip = false)
+          val winBundle = Xeq.installer(allPayloads)
 
           def stageAndCopy(extension: Text): Text =
             val script = workDir / t"hello-${Uuid().show}.$extension"
             script.create[File]()
             script.open[File](Write): handle ?=>
-              handle.write(LazyList(winBundle))
+              handle.write(Progression(winBundle))
             val remote = t"ziggurat-test-${Uuid().show}.$extension"
             sh"scp -q $script $host:$remote".exec[Exit]()
             remote

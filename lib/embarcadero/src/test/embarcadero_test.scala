@@ -34,6 +34,8 @@ package embarcadero
 
 import soundness.*
 
+import proscenium.compat.*
+
 import providers.javaStdlibProvider
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
@@ -55,7 +57,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
     
     val layerTar = Tarfile(List(fileEntry(t"hello.txt", t"hello world\n")))
     val layer    = Layer(layerTar)
-    val image    = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
+    val image    = Image(List(layer), config = ContainerConfig(Cmd = proscenium.List(t"/bin/sh")))
 
     suite(m"Layer digests"):
       val raw = layerTar.source[Data].memoize
@@ -131,13 +133,13 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tarfile.read(image.archive.source[Data]).to(List)
+      val entries    = Tarfile.read(image.archive.source[Data]).stdlib.to(List)
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
         case file: Tar.Entry.File if file.entryName == t"oci-layout" => file.data.memoize
 
       test(m"archive contains the oci-layout marker and index.json"):
-        (names.contains(t"oci-layout"), names.contains(t"index.json"))
+        (names.has(t"oci-layout"), names.has(t"index.json"))
       . assert(_ == (true, true))
 
       test(m"archive contains one blob per config, layer and manifest"):
@@ -273,7 +275,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
-                  fields.find(_.name == t"containerd-namespace").each: entry =>
+                  fields.stdlib.find(_.name == t"containerd-namespace").foreach: entry =>
                     namespace.offer(entry.value)
 
                   val status = hpack.encode(List(HpackEntry(t":status", t"200"),
@@ -500,12 +502,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                   serverSide.send(zephyrine.Stream(Frame.Headers(id, status, false, true).serialize))
 
-                  if failures.contains(path) then
+                  if failures.has(path) then
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"3")))
                     serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
                   else
                     val body =
-                      responses.getOrElse(path, GrpcFraming.encode(Empty().in[Protobuf].encode))
+                      responses.stdlib.getOrElse(path, GrpcFraming.encode(Empty().in[Protobuf].encode))
 
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
                     serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))
@@ -618,6 +620,6 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
         val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
-        val restored = LazyList(container.in[Protobuf].encode).read[Container in Protobuf]
+        val restored = proscenium.Progression(container.in[Protobuf].encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Unix]
       . assert(_ == moment)

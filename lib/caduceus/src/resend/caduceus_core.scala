@@ -100,7 +100,7 @@ package couriers:
             email.text,
             attachments )
 
-      def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
+      def error = CourierError(envelope.from, envelope.to.stdlib.head, envelope.subject)
 
       mitigate:
         case ConnectError(reason)     => Out.println(reason.communicate) yet error

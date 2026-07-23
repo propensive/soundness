@@ -32,6 +32,8 @@
                                                                                                   */
 package perihelion
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import hypotenuse.*

@@ -32,6 +32,8 @@
                                                                                                   */
 package baroque
 
+import scala.{compiletime, math}
+
 import scala.annotation.*
 
 import geodesy.*
@@ -70,14 +72,16 @@ object Complex:
     ( using Complex[distributive.Operand] is Showable, distributive.Operand is Zeroic )
   :   anticipation.Text =
 
-    val reParts: List[distributive.Operand] = distributive.parts(complex.real)
-    val imParts: List[distributive.Operand] = distributive.parts(complex.imaginary)
+    val reParts: scala.collection.immutable.List[distributive.Operand] =
+      distributive.parts(complex.real).stdlib
+    val imParts: scala.collection.immutable.List[distributive.Operand] =
+      distributive.parts(complex.imaginary).stdlib
     val parts = reParts.zip(imParts).map(Complex(_, _).show)
 
     val parts2 = parts.zip(imParts).map: (part, im) =>
       if im == zero[distributive.Operand] then part else t"($part)"
 
-    distributive.place(complex.real, parts2)
+    distributive.place(complex.real, List.of(parts2))
 
 
   given addable: [result, component2, component: Addable by component2 to result as addable]

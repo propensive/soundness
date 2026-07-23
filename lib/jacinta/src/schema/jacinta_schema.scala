@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import proscenium.compat.*
+
 import scala.annotation.*
 
 import anticipation.*
@@ -96,7 +98,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
     case obj: JsonSchema.Object => obj.oneOf match
       case variants: List[JsonSchema] @scala.unchecked =>
         if
-          !variants.exists: variant =>
+          !(variants: List[JsonSchema]).stdlib.exists: variant =>
             safely(conform(variant, ast)).present
         then
           mismatch(JsonPrimitive.Object)
@@ -105,7 +107,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
         if !ast.isObject then mismatch(JsonPrimitive.Object) else
           val absent = Json.Ast(Unset)
 
-          for (key, property) <- obj.properties do
+          for (key, property) <- obj.properties.stdlib do
             val index = ast.objectIndexOf(key.s)
             conform(property, if index < 0 then absent else ast.objectValue(index))
 

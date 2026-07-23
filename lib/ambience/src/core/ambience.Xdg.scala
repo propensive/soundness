@@ -32,12 +32,13 @@
                                                                                                   */
 package ambience
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Xdg:

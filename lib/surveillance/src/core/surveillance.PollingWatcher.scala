@@ -32,6 +32,8 @@
                                                                                                   */
 package surveillance
 
+import scala.caps
+
 import java.nio.file as jnf
 
 import scala.collection.mutable as scm
@@ -66,10 +68,10 @@ extends Watcher:
         val name = entry.getName.nn.tt
 
         if filter(name)
-        then List(name -> Entry(entry.isDirectory, entry.lastModified, entry.length))
-        else Nil
+        then List(name -> Entry(entry.isDirectory, entry.lastModified, entry.length)).stdlib
+        else Nil.stdlib
 
-      . to(Map)
+      . pipe(Map.from(_))
 
     . or(Map())
 
@@ -82,7 +84,7 @@ extends Watcher:
 
     val base = directory.toString.show
 
-    current.each: (name, entry) =>
+    current.stdlib.each: (name, entry) =>
       previous.at(name) match
         case last: Entry =>
           if !entry.directory && last != entry then spool.put(WatchEvent.Modify(base, name))
@@ -91,13 +93,13 @@ extends Watcher:
           if entry.directory then spool.put(WatchEvent.NewDirectory(base, name))
           else spool.put(WatchEvent.NewFile(base, name))
 
-    previous.each: (name, _) =>
-      if !current.contains(name) then spool.put(WatchEvent.Delete(base, name))
+    previous.stdlib.each: (name, _) =>
+      if !current.defines(name) then spool.put(WatchEvent.Delete(base, name))
 
   def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
-    directories.each: (directory, _) =>
+    directories.stdlib.each: (directory, _) =>
       val file = directory.toFile.nn
 
       if !file.exists then abort(WatchError(WatchError.Reason.Nonexistent))
@@ -105,7 +107,7 @@ extends Watcher:
 
     val snapshots: scm.HashMap[jnf.Path, Map[Text, Entry]] = scm.HashMap()
 
-    directories.each: (directory, filter) =>
+    directories.stdlib.each: (directory, filter) =>
       snapshots(directory) = scan(directory, filter)
 
     // Sealed per the pure-façade convention (D6), like `NativeWatcher`: the handle is held
@@ -117,7 +119,7 @@ extends Watcher:
             while true do
               snooze(interval)
 
-              directories.each: (directory, filter) =>
+              directories.stdlib.each: (directory, filter) =>
                 val current = scan(directory, filter)
                 diff(directory, snapshots.at(directory).or(Map()), current, spool)
                 snapshots(directory) = current

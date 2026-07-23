@@ -32,6 +32,8 @@
                                                                                                   */
 package cacophony
 
+import scala.math
+
 import javax.sound.sampled as jss
 
 import anticipation.*
@@ -42,15 +44,17 @@ import vacuous.*
 
 object Outlet:
   def list: List[Outlet] =
-    jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
-      val info = info0.nn
-      val mixer = jss.AudioSystem.getMixer(info).nn
+    List.of:
+      jss.AudioSystem.getMixerInfo.nn.iterator.toList.flatMap: info0 =>
+        val info = info0.nn
+        val mixer = jss.AudioSystem.getMixer(info).nn
 
-      val canPlay = mixer.getSourceLineInfo.nn.exists:
-        case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.SourceDataLine]
-        case _                      => false
+        val canPlay = mixer.getSourceLineInfo.nn.exists:
+          case dli: jss.DataLine.Info => dli.getLineClass == classOf[jss.SourceDataLine]
+          case _                      => false
 
-      if canPlay then List(Outlet(info)) else Nil
+        if canPlay then scala.collection.immutable.List(Outlet(info))
+        else scala.collection.immutable.Nil
 
 case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def name:        Text = mixerInfo.getName.nn.tt
@@ -60,7 +64,8 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
   def configurations: List[Configuration] =
     val mixer = jss.AudioSystem.getMixer(mixerInfo).nn
 
-    mixer.getSourceLineInfo.nn.iterator.toList.flatMap:
+    List.of:
+     mixer.getSourceLineInfo.nn.iterator.toList.flatMap:
       case dli: jss.DataLine.Info if dli.getLineClass == classOf[jss.SourceDataLine] =>
         dli.getFormats.nn.iterator.toList.map: f0 =>
           val f = f0.nn
@@ -74,7 +79,7 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
 
           Configuration(f.getChannels, rate, f.getSampleSizeInBits, encoding, f.isBigEndian)
 
-      case _ => Nil
+      case _ => scala.collection.immutable.Nil
 
   def supports[layout: ChannelLayout as cl](rate: Quantity[Seconds[-1]], bits: Int): Boolean =
     val sampleRate = rate.value.toFloat

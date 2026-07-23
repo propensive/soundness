@@ -138,7 +138,7 @@ object internal:
     =>  Vector[element, size] is Showable =
 
       vector =>
-        val items = vector.list.map(_.show)
+        val items = vector.list.stdlib.map(_.show)
         val width = items.maxBy(_.length).length
         val size = valueOf[size]
 

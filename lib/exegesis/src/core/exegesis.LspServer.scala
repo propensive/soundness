@@ -72,6 +72,14 @@ object LspServer:
       import strategies.throwUnsafely
       JsonRpc.serve[LspLifecycle](server)
 
+  // Materialized here because the `JsonRpc.serve` macro's `Expr.summon` cannot
+  // expand jacinta's inline `encodable` given for the opaque `List` alias.
+  private given documentSymbolList: (List[Lsp.DocumentSymbol] is Encodable in Json) =
+    scala.compiletime.summonInline[List[Lsp.DocumentSymbol] is Encodable in Json]
+
+  private given selectionRangeList: (List[Lsp.SelectionRange] is Encodable in Json) =
+    scala.compiletime.summonInline[List[Lsp.SelectionRange] is Encodable in Json]
+
   private object languageRoute:
     def apply(server: Lsp): Json => Optional[Json] =
       import strategies.throwUnsafely
@@ -117,8 +125,8 @@ object LspServer:
           JsonRpc.methods[LspResolve]    -> resolveRoute(server) )
 
     json =>
-      safely(json.method.as[Text]).lay(routes.head._2(json)): method =>
-        routes.find(_._1.contains(method)) match
+      safely(json.method.as[Text]).lay(routes.stdlib.head._2(json)): method =>
+        routes.stdlib.find(_._1.has(method)) match
           case Some((_, dispatch)) => dispatch(json)
           case None                => Unset
 
@@ -265,9 +273,9 @@ trait LspServer() extends Lsp:
       contentChanges: List[TextDocumentContentChangeEvent] )
   :   Unit =
 
-    if contentChanges.nonEmpty then documents.at(textDocument.uri).let: current =>
+    if contentChanges.stdlib.nonEmpty then documents.at(textDocument.uri).let: current =>
       documents(textDocument.uri) =
-        current.copy(version = textDocument.version, text = contentChanges.last.text)
+        current.copy(version = textDocument.version, text = contentChanges.stdlib.last.text)
 
     onChange(textDocument, contentChanges)(using lsp)
 
@@ -522,14 +530,14 @@ trait LspServer() extends Lsp:
 
     // The writer drains the channel and frames each message onto stdout.
     val writer: Task[Unit] = async:
-      outgoing.iterator.each: json =>
+      outgoing.stdlib.iterator.each: json =>
         val body: Text = json.encode
         val payload: Data = body.in[Data]
         summon[Stdio].write(t"Content-Length: ${payload.length}\r\n\r\n".in[Data])
         summon[Stdio].write(payload)
         summon[Stdio].out.flush()
 
-    summon[Stdio].in.source[Data].toLazyList.iterator.frames[ContentLength].each: frame =>
+    summon[Stdio].in.source[Data].toProgression.stdlib.iterator.frames[ContentLength].each: frame =>
       try dispatch(frame.utf8.as[Json]).let(put)
       catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").in[Json])
 

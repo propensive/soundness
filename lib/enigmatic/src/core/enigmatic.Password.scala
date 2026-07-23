@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import java.nio as jn
 import java.nio.charset as jnc
 import java.util as ju

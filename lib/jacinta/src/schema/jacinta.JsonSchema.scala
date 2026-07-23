@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import scala.caps
+
 import scala.annotation.*
 
 import adversaria.*
@@ -114,7 +116,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
     case Morphology.Obj(fields, required) =>
       JsonSchema.Object
-        ( properties = fields.map { (label, shape) => (label, reify(shape)) }.to(Map),
+        ( properties = Map.from(fields.stdlib.map { (label, shape) => (label, reify(shape)) }),
           required   = required )
 
   // Marks a schema as optional (used both by the schema-only `Schematic` and by
@@ -287,11 +289,11 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
         val textList: List[Text] is Json.Decodable =
           caps.unsafe.unsafeAssumePure
-            (Json.array[List, Text](using summon, jsonError, summon)(using textDecodable0))
+            (Json.listDecodable[List, Text](using jsonError, summon)(using textDecodable0))
 
         val schemaList: List[JsonSchema] is Json.Decodable =
           caps.unsafe.unsafeAssumePure
-            (Json.array[List, JsonSchema](using summon, jsonError, summon)(using self))
+            (Json.listDecodable[List, JsonSchema](using jsonError, summon)(using self))
 
         val schemaMap: Map[Text, JsonSchema] is Json.Decodable =
           caps.unsafe.unsafeAssumePure
@@ -334,11 +336,11 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         contexts[derivation]():
           [field] => schema =>
             val schema2 = descriptions.at(label).lay(schema.schema()): memo =>
-              schema.schema().description = memo.map(_.description).join(t"\n")
+              schema.schema().description = memo.stdlib.map(_.description).join(t"\n")
 
             (label, schema2)
 
-        .to(Map)
+        .pipe(Map.from(_))
 
       val required: List[Text] =
         contexts[derivation]():
@@ -360,7 +362,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         choices:
           [variant <: derivation] => schema =>
             descriptions.at(label).lay(schema.schema()): memo =>
-              schema.schema().description = memo.map(_.description).join(t"\n")
+              schema.schema().description = memo.stdlib.map(_.description).join(t"\n")
 
         . to(List)
 

@@ -36,7 +36,7 @@ export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum,
     Duct, Ductile, Expanse, Malleable, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
     Records, records, Regulation, Spring, Stream, Substrate, locate, locateKey, memoize, pump,
-    stream, streamOf, sweep, toLazyList}
+    stream, streamOf, sweep, toProgression}
 
 // Hand-written forwarders: the synthesized export forwarders for these dependent-typed
 // extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture

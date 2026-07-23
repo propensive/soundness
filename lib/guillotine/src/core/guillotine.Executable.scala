@@ -32,7 +32,7 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.io as ji
 
@@ -44,6 +44,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import kaleidoscope.*
+import rudiments.*
 import spectacular.*
 
 sealed trait Executable:
@@ -87,8 +88,8 @@ sealed trait Executable:
   infix def | (command: Executable): Pipeline = command(this)
 
 object Command:
-  private def formattedArguments(arguments: Seq[Text]): Text =
-    arguments.map: argument =>
+  private def formattedArguments(arguments: List[Text]): Text =
+    arguments.map: (argument: Text) =>
       if argument.contains(t"\"") && !argument.contains(t"'") then t"""'$argument'"""
       else if argument.contains(t"'") && !argument.contains(t"\"") then t""""$argument""""
       else if argument.contains(t"'") && argument.contains(t"\"")
@@ -100,10 +101,10 @@ object Command:
     . join(t" ")
 
   given inspectable: Command is Inspectable = command =>
-    val commandText: Text = formattedArguments(command.arguments)
+    val commandText: Text = formattedArguments(command.arguments.transmute[List])
     if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
 
-  given showable: Command is Showable = command => formattedArguments(command.arguments)
+  given showable: Command is Showable = command => formattedArguments(command.arguments.transmute[List])
 
 case class Command(arguments: Text*) extends Executable:
   def fork[result]()(using working: WorkingDirectory)
@@ -146,7 +147,7 @@ case class Pipeline(commands: Command*) extends Executable:
 
       processBuilder.nn
 
-    Log.info(ExecEvent.PipelineStart(commands))
+    Log.info(ExecEvent.PipelineStart(commands.transmute[List]))
 
-    val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last
+    val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.last
     new Job[Exec, result](pipeline)

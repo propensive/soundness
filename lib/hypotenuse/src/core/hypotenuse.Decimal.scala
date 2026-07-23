@@ -33,6 +33,7 @@
 package hypotenuse
 
 import scala.util.FromDigits
+import scala.math
 
 import anticipation.*
 import contingency.*

@@ -32,6 +32,8 @@
                                                                                                   */
 package cordillera
 
+import scala.caps
+
 import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
@@ -171,7 +173,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // spool so the writer exits.
   private def tearDown(): Unit =
     started.cancel()
-    streams.values.foreach(_.end())
+    streams.values.each(_.end())
     outbound.stop()
 
   // The writer drains the outbound spool to the socket, serialising all writes (so no
@@ -257,7 +259,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     val stream = this.request(headerBlock, payload)
     val responseHeaders = stream.headers.await()
 
-    (stream, PseudoHeaders.response(responseHeaders, LazyList.from(stream.body.stream.records)))
+    (stream, PseudoHeaders.response(responseHeaders, Progression.from(stream.body.stream.records)))
 
   def close(): Unit =
     send(Frame.GoAway(0, ErrorCode.NoError.code, IArray.empty[Byte]))

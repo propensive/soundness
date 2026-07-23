@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import scala.caps
+
 import java.io as ji
 import java.net as jn
 import javax.net.ssl as jns
@@ -80,7 +82,7 @@ extends Sessionable:
       val tcpPort: TcpPort = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
 
       val duplex: Duplex =
-        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values) catch
+        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
           case error: ji.IOException => abort(ConnectError(Unknown))
 
       try lambda(using HttpSession.Sequential(duplex)) finally duplex.close()

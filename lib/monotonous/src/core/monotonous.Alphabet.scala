@@ -32,6 +32,8 @@
                                                                                                   */
 package monotonous
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -304,13 +306,13 @@ case class Alphabet[encoding <: Serialization]
     else abort(SerializationError(position, char))
 
   lazy val inverse: Map[Char, Int] =
-    tolerance ++ chars.chars.zipWithIndex.to(Map)
+    Map.of(tolerance.stdlib ++ chars.chars.zipWithIndex.toMap)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.
   lazy val inversions: IArray[Int] =
-    val max = inverse.keysIterator.max
+    val max = inverse.stdlib.keysIterator.max
 
     caps.unsafe.unsafeAssumePure:
       IArray.tabulate(max + 1): index =>
-        inverse.getOrElse(index.toChar, -1)
+        inverse.stdlib.getOrElse(index.toChar, -1)

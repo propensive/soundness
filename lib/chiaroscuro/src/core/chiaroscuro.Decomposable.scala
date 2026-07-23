@@ -32,6 +32,8 @@
                                                                                                   */
 package chiaroscuro
 
+import scala.caps
+
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -69,7 +71,7 @@ object Decomposable extends Decomposable2:
   =>  collection is Decomposable =
 
     caps.unsafe.unsafeAssumePure: list =>
-        Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
+        Decomposition.Sequence(t"List", list.stdlib.map(decomposable.decomposition(_)), list)
 
 
   given series: [element, collection <: Series[element]]
@@ -77,7 +79,7 @@ object Decomposable extends Decomposable2:
   =>  collection is Decomposable =
 
     caps.unsafe.unsafeAssumePure: series =>
-        Decomposition.Sequence(t"Series", series.map(decomposable.decomposition(_)).to(List), series)
+        Decomposition.Sequence(t"Series", series.stdlib.map(decomposable.decomposition(_)), series)
 
 
   given iarray: [element]
@@ -86,7 +88,11 @@ object Decomposable extends Decomposable2:
 
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
-          ( t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray )
+          ( t"IArray",
+            scala.collection.immutable.ArraySeq.unsafeWrapArray:
+              iarray.asInstanceOf[Array[element]]
+            . map(decomposable.decomposition(_)),
+            iarray )
 
 
 trait Decomposable extends Typeclass:
@@ -130,7 +136,7 @@ trait Decomposable2 extends Decomposable3:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          fields(value) { [field] => field => label -> contextual.decomposition(field) }.to(Map)
+          Map.from(fields(value) { [field] => field => label -> contextual.decomposition(field) })
 
         Decomposition.Product(typeName, map, value)
 

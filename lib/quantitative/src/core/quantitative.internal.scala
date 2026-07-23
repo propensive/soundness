@@ -32,7 +32,9 @@
                                                                                                   */
 package quantitative
 
-import language.implicitConversions
+import proscenium.compat.*
+
+import scala.language.implicitConversions
 
 import scala.quoted.*
 
@@ -360,7 +362,7 @@ object internal extends protointernal:
       InspectableQuantity[units](_.express)
 
     def expressUnits(units: Map[Text, Int]): Text =
-      units.to(List).map: (unit, power) =>
+      units.toList.map: (unit, power) =>
         if power == 1 then unit else
           val exponent: Text =
             power.show.tr:

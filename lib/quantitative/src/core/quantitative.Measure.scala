@@ -32,4 +32,6 @@
                                                                                                   */
 package quantitative
 
+import scala.caps
+
 trait Measure extends caps.Pure

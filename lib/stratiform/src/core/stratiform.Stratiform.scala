@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable.Seq
+
 import scala.quoted.*
 
 import anticipation.*
@@ -52,7 +54,7 @@ import vacuous.*
 object Stratiform:
 
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :   Map[Text, quotes.reflect.TypeRepr] =
+  :   scala.collection.immutable.Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -60,7 +62,7 @@ object Stratiform:
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
-      case _                                           => Map()
+      case _                                           => scala.collection.immutable.Map()
 
   // Builds the refined type `Tel of <position> from <root>`.
   private def telType(using quotes: Quotes)
@@ -80,9 +82,15 @@ object Stratiform:
 
     import quotes.reflect.*
 
+    // The opaque prelude `List`/`Series` don't conform to `Seq`, so match their
+    // type constructors by symbol as well.
+    val listSym = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+
     repr.dealias match
-      case AppliedType(constructor, List(element))
-      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass =>
+      case AppliedType(constructor, scala.collection.immutable.List(element))
+      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass
+      || constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
         element
 
       case _ =>
@@ -93,7 +101,7 @@ object Stratiform:
   :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
-    val members = refinements(self.asTerm.tpe.widen)
+    val members = Map.of(refinements(self.asTerm.tpe.widen))
 
     members.at(t"Topic").let: position =>
       (position, members.at(t"Origin").or(position))

@@ -32,6 +32,8 @@
                                                                                                   */
 package quantitative
 
+import scala.{compiletime, math}
+
 import anticipation.*
 import gossamer.*
 import prepositional.*

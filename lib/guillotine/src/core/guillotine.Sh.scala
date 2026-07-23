@@ -32,20 +32,25 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contextual.*
 import fulminate.*
 import gossamer.*
+import scala.collection.immutable as sci
+import scala.collection.immutable.::
+import scala.collection.{`:+`, `+:`}
+
 import rudiments.*
+import vacuous.*
 import spectacular.*
 
 object Sh:
   enum Context:
     case Awaiting, Unquoted, Quotes2, Quotes1
 
-  case class State(current: Context, escape: Boolean, arguments: List[Text])
+  case class State(current: Context, escape: Boolean, arguments: sci.List[Text])
   case class Parameters(params: Text*)
 
   case class ShError(detail: Message) extends Exception(s"guillotine: ${detail.text.s}")
@@ -70,31 +75,34 @@ object Sh:
 
       Command(arguments*)
 
-    def initial: State = State(Awaiting, false, Nil)
+    def initial: State = State(Awaiting, false, Nil.stdlib)
     def skip(state: State): State = insert(state, Parameters(t"x"))
 
-    def insert(state: State, value: Parameters): State = value.params.to(List) match
+    def insert(state: State, value: Parameters): State = value.params.toList match
       case head :: tail =>
         if state.escape
         then throw ShError(m"escaping with '\\' is not allowed immediately before a substitution")
 
         state.absolve match
           case State(Awaiting, false, arguments) =>
-            State(Unquoted, false, arguments ++ (head :: tail))
+            State(Unquoted, false, arguments ++ ((head :: tail): sci.List[Text]))
 
           case State(Unquoted, false, arguments :+ last) =>
-            State(Unquoted, false, arguments ++ (t"$last$head" :: tail))
+            State(Unquoted, false, arguments ++ ((t"$last$head" :: tail): sci.List[Text]))
 
           case State(Quotes1, false, arguments :+ last) =>
-            State(Quotes1, false, arguments :+ (t"$last$head" :: tail).join(t" "))
+            State(Quotes1, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(t" "))
 
           case State(Quotes2, false, arguments :+ last) =>
-            State(Quotes2, false, arguments :+ (t"$last$head" :: tail).join(t" "))
+            State(Quotes2, false, arguments :+ ((t"$last$head" :: tail): sci.List[Text]).join(t" "))
 
       case _ =>
         state
 
-    def parse(current: State, text: Text): State = text.chars.to(List).fuse(current):
+    private def chars(text: Text): sci.ArraySeq[Char] =
+      sci.ArraySeq.unsafeWrapArray(text.chars.mutable(using Unsafe))
+
+    def parse(current: State, text: Text): State = chars(text).fuse(current):
       (state, next).absolve match
         case (State(Awaiting, _, arguments), ' ') => State(Awaiting, false, arguments)
 
@@ -128,8 +136,8 @@ object Sh:
           case (State(Awaiting, _, arguments), char) =>
             State(Unquoted, false, arguments :+ t"$char")
 
-          case (State(context, _, Nil), char) =>
-            State(context, false, List(t"$char"))
+          case (State(context, _, sci.Nil), char) =>
+            State(context, false, sci.List(t"$char"))
 
           case (State(context, _, more :+ current), char) =>
             State(context, false, more :+ t"$current$char")

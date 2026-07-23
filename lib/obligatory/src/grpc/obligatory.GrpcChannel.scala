@@ -32,6 +32,8 @@
                                                                                                   */
 package obligatory
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import cordillera.*
@@ -78,7 +80,7 @@ class GrpcChannel
   private def httpRequest(method: Grpc.Method, metadata: Grpc.Metadata, message: Data)
   :   Http.Request =
 
-    val metadataHeaders = (defaults.entries ++ metadata.entries).map: (key, value) =>
+    val metadataHeaders = (defaults.entries.stdlib ++ metadata.entries.stdlib).map: (key, value) =>
       Http.Header(key, value)
 
     val headers =
@@ -87,7 +89,7 @@ class GrpcChannel
         metadataHeaders
 
     val body: Spring[Data] = () => Stream(GrpcFraming.encode(message))
-    Http.Request(Http.Post, 2.0, host, method.path, headers, body)
+    Http.Request(Http.Post, 2.0, host, method.path, List.of(headers), body)
 
   // gRPC requires HTTP status 200; anything else is a transport-level failure.
   private def expectOk(response: Http.Response): Unit raises GrpcError =
@@ -105,7 +107,7 @@ class GrpcChannel
     ( using Monitor^, Tactic[GrpcError], Tactic[AsyncError] )
   :   Unit =
 
-    val fields = stream.trailers.await() ++ stream.headers.await()
+    val fields = stream.trailers.await().stdlib ++ stream.headers.await().stdlib
     val codeText = fields.find(_.name == t"grpc-status").optional.let(_.value)
     val message = fields.find(_.name == t"grpc-message").optional.let(_.value).or(t"")
 
@@ -127,7 +129,7 @@ class GrpcChannel
   private def decodeMessage[value](bytes: Data)(using decodable: value is Decodable in Protobuf)
   :   value raises ProtobufError =
 
-    decodable.decoded(LazyList(bytes).read[Protobuf])
+    decodable.decoded(Progression(bytes).read[Protobuf])
 
   // A unary call: send one message, read exactly one response message, then verify
   // the trailing status.
@@ -154,13 +156,13 @@ class GrpcChannel
 
   // A server-streaming call: send one message, then lazily decode each response
   // message. The trailing status is verified once the response stream is exhausted,
-  // so the returned `LazyList` must be consumed within the enclosing `supervise` scope.
+  // so the returned `Progression` must be consumed within the enclosing `supervise` scope.
   def serverStreaming[request, response]
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
     ( using Monitor^ )
     ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
-  :   LazyList[response] =
+  :   Progression[response] =
 
     val (stream, response) =
       connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
@@ -168,10 +170,10 @@ class GrpcChannel
     expectOk(response)
     val messages = stream.body.stream.records.frames[GrpcFraming]
 
-    def recur(): LazyList[response] =
+    def recur(): Progression[response] =
       if messages.hasNext then decodeMessage[response](messages.next()) #:: recur()
       else
         expectStatus(stream)
-        LazyList()
+        Progression()
 
     recur()

@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.math
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -108,12 +110,13 @@ object Mutation:
 
     Tel.make(transform(tel.subtree, pointerOf(op).steps, 0, op, sigil))
 
-  def apply(tel: Tel, ops: Seq[Op]): Tel raises MutationError =
+  def apply(tel: Tel, ops: List[Op]): Tel raises MutationError =
     var current = tel
+    val ops2 = ops.stdlib
     var i = 0
 
-    while i < ops.length do
-      current = apply(current, ops(i))
+    while i < ops2.length do
+      current = apply(current, ops2(i))
       i += 1
 
     current

@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import galilei.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
@@ -79,5 +80,5 @@ extension (tarfile: Tarfile)
             Tactic[TarError] )
   :   Unit =
 
-    tarfile.entries.foreach: entry =>
+    tarfile.entries.each: entry =>
       TarFilesystem.applyEntry(root, entry)

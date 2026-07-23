@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks.LockSupport
 

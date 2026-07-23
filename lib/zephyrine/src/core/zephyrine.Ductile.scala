@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*

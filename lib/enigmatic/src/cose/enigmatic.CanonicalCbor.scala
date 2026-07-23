@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.math
+
 import anticipation.*
 import breviloquence.*
 

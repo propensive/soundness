@@ -32,10 +32,11 @@
                                                                                                   */
 package proscenium
 
-export scala.collection.immutable.Vector as Series
+import scala.compiletime
+
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
-export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
+export scala.collection.immutable.{ListMap, TreeSet, TreeMap}
 export scala.collection.concurrent.TrieMap
 
 export Predef

@@ -50,31 +50,31 @@ object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
       test(m"Unframe by carriage-return lines"):
-        LazyList(t"one\rtwo\r", t"three").iterator.frames[CarriageReturn].to(List)
+        Progression(t"one\rtwo\r", t"three").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by carriage-return lines, without terminal line"):
-        LazyList(t"one\rtwo", t"\rthree\r").iterator.frames[CarriageReturn].to(List)
+        Progression(t"one\rtwo", t"\rthree\r").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines"):
-        LazyList(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
+        Progression(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines, without terminal line"):
-        LazyList(t"one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
+        Progression(t"one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines"):
-        LazyList(t"""one\r\ntwo\r\nthree""").iterator.frames[CrLf].to(List)
+        Progression(t"""one\r\ntwo\r\nthree""").iterator.frames[CrLf].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines, without terminal line"):
-        LazyList(t"""one\r\ntwo\r\nthree\r\n""").iterator.frames[CrLf].to(List)
+        Progression(t"""one\r\ntwo\r\nthree\r\n""").iterator.frames[CrLf].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Length-prefixed chunks"):
-        LazyList(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
+        Progression(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
         . iterator
         . frames[LengthPrefix]
         . to(List)
@@ -120,7 +120,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):
-      def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
+      def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
 
       test(m"encode prefixes a flag byte and 4-byte length"):
         GrpcFraming.encode(ascii(t"hi")).to(List)
@@ -128,17 +128,17 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"round-trip a single message"):
         val framed = GrpcFraming.encode(ascii(t"hello"))
-        LazyList(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
       . assert(_ == List(ascii(t"hello").to(List)))
 
       test(m"split two concatenated messages"):
         val framed = GrpcFraming.encode(ascii(t"one")) ++ GrpcFraming.encode(ascii(t"two"))
-        LazyList(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
       . assert(_ == List(ascii(t"one").to(List), ascii(t"two").to(List)))
 
       test(m"gzip-compressed message round-trips"):
         val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
-        LazyList(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
       . assert(_ == List(ascii(t"compress me please").to(List)))
 
       test(m"status code maps to the canonical name"):
@@ -258,7 +258,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
-          channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).to(List)
+          channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).stdlib.to(List)
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"a derived @rpc client stub round-trips a unary call"):

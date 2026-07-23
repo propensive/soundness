@@ -34,6 +34,8 @@ package caesura
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import dsvFormats.csvWithHeaderFormat
@@ -78,7 +80,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
       test(m"Columns identify the unparseable cells"):
         validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord])
-         .items.map(_(0).s).to(Set)
+         .items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("age", "height"))
 
       test(m"Each unparseable error has reason Unparseable"):
@@ -94,7 +96,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
       . assert(_ == 2)
 
       test(m"Columns identify the missing cells"):
-        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.map(_(0).s).to(Set)
+        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("age", "height"))
 
       test(m"Each missing-cell error has reason Absent"):
@@ -104,7 +106,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
     suite(m"Missing + unparseable mixed"):
       test(m"One unparseable plus one missing: two errors at the right columns"):
-        validateDsv(row(t"name,age,height\nAlice,thirty"))(_.as[ARecord]).items.map(_(0).s).to(Set)
+        validateDsv(row(t"name,age,height\nAlice,thirty"))(_.as[ARecord]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("age", "height"))
 
     suite(m"Regression: does not abort on the first bad cell"):

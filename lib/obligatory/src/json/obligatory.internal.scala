@@ -184,7 +184,7 @@ object internal:
     def decls(classSymbol: Symbol) = rpcMethods.map: method =>
       Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
 
-    val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
+    val parents  = scala.collection.immutable.List(TypeTree.of[Object], TypeTree.of[interface])
 
     val module =
       Symbol.newModule
@@ -203,7 +203,7 @@ object internal:
       val runSym = classSymbol.declaredMethod(method.name).head
 
       DefDef(runSym, {
-        case List(params) =>
+        case scala.collection.immutable.List(params) =>
           given Quotes = runSym.asQuotes
 
           val entries = params.zip(paramSymbols).map: (ident, param) =>
@@ -235,7 +235,7 @@ object internal:
               halt:
                 m"the type of method ${method.name} has the unexpected type, ${method.info.show}"
 
-          val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
+          val notification = result.dealias.typeSymbol == TypeRepr.of[Unit].dealias.typeSymbol
           val id = if notification then '{Unset} else Expr(Uuid().show)
           val methodName = Expr(method.name.tt)
 
@@ -310,7 +310,7 @@ object internal:
     def decls(classSymbol: Symbol) = rpcMethods.map: method =>
       Symbol.newMethod(classSymbol, method.name, method.info, Flags.EmptyFlags, Symbol.noSymbol)
 
-    val parents  = List(TypeTree.of[Object], TypeTree.of[interface])
+    val parents  = scala.collection.immutable.List(TypeTree.of[Object], TypeTree.of[interface])
 
     val module =
       Symbol.newModule
@@ -329,7 +329,7 @@ object internal:
       val runSym = classSymbol.declaredMethod(method.name).head
 
       DefDef(runSym, {
-        case List(params) =>
+        case scala.collection.immutable.List(params) =>
           given Quotes = runSym.asQuotes
 
           val entries = params.zip(paramSymbols).map: (ident, param) =>
@@ -357,7 +357,7 @@ object internal:
           val result: TypeRepr = runSym.info.absolve match
             case MethodType(_, _, result) => result
 
-          val notification = result.typeSymbol == TypeRepr.of[Unit].typeSymbol
+          val notification = result.dealias.typeSymbol == TypeRepr.of[Unit].dealias.typeSymbol
           val id = if notification then '{Unset} else Expr(Uuid().show)
           val methodName = Expr(method.name.tt)
 

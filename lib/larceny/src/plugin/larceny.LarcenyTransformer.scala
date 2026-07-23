@@ -32,7 +32,7 @@
                                                                                                   */
 package larceny
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import java.io.{File, FileInputStream}
 import java.util.Properties

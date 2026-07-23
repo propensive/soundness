@@ -39,7 +39,7 @@ import zephyrine.*
 
 // LZW, as used by TIFF and PDF: MSB-first codes of 9 to 12 bits, code 256 clearing the
 // table and 257 ending the data. The algorithm lives in plain engine classes — the moral
-// equivalent of `juz.Deflater`, so the lazy `LazyList` drivers may close over them exactly
+// equivalent of `juz.Deflater`, so the lazy `Progression` drivers may close over them exactly
 // as `Zlib`'s do over a deflater — and the `Duct` stages are thin wrappers.
 //
 // With `earlyChange` — the TIFF/PDF default — both sides widen their codes one table entry

@@ -32,7 +32,13 @@
                                                                                                   */
 package locomotion
 
-import language.experimental.pureFunctions
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.nio.charset.StandardCharsets.UTF_8
@@ -73,6 +79,46 @@ trait Protobuf2:
   // has a `Protobuf.Parsable`; when it does not, this resolves exactly as
   // before. `value in Protobuf` is just `value { type Form = Protobuf }`,
   // so the cast is a no-op at runtime.
+
+  // Alias counterparts: the opaque prelude collections do not conform to
+  // `Iterable`, so each alias gets its own instance, built at the underlying
+  // stdlib type and cast (a no-op at erasure).
+  given aliasListEncodable: [list <: List, element]
+  =>  ( encodable: => (element is Encodable in Protobuf)^ )
+  =>  ((list[element] is Encodable in Protobuf)^) =
+    listEncodable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Encodable in Protobuf)^]
+
+  given aliasListDecodable: [list <: List, element]
+  =>  ( decodable: => (element is Decodable in Protobuf)^ )
+  =>  ((list[element] is Decodable in Protobuf)^) =
+    listDecodable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Decodable in Protobuf)^]
+
+  given aliasSetEncodable: [set <: Set, element]
+  =>  ( encodable: => (element is Encodable in Protobuf)^ )
+  =>  ((set[element] is Encodable in Protobuf)^) =
+    listEncodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Encodable in Protobuf)^]
+
+  given aliasSetDecodable: [set <: Set, element]
+  =>  ( decodable: => (element is Decodable in Protobuf)^ )
+  =>  ((set[element] is Decodable in Protobuf)^) =
+    listDecodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Decodable in Protobuf)^]
+
+  given aliasSeriesEncodable: [series <: Series, element]
+  =>  ( encodable: => (element is Encodable in Protobuf)^ )
+  =>  ((series[element] is Encodable in Protobuf)^) =
+    listEncodable[Vector, element]
+    . asInstanceOf[(series[element] is Encodable in Protobuf)^]
+
+  given aliasSeriesDecodable: [series <: Series, element]
+  =>  ( decodable: => (element is Decodable in Protobuf)^ )
+  =>  ((series[element] is Decodable in Protobuf)^) =
+    listDecodable[Vector, element]
+    . asInstanceOf[(series[element] is Decodable in Protobuf)^]
+
   given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[ProtobufError])
   =>  (((value in Protobuf) is Aggregable by Data)^{tactic}) =
     bytes => Protobuf.message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
@@ -94,7 +140,7 @@ trait Protobuf2:
     // An honest capability: the instance retains the by-name element codec, itself a
     // capability (every given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
-      val occurrences = values.to(List).flatMap(encodable.encode(_).occurrences)
+      val occurrences = values.transmute[List].bind(encodable.encode(_).occurrences)
       if occurrences.isEmpty then Protobuf.Absent else Protobuf.Repeated(occurrences)
 
   given listDecodable: [collection <: Iterable, element]
@@ -105,7 +151,7 @@ trait Protobuf2:
     protobuf =>
       val builder = factory.newBuilder
 
-      protobuf.occurrences.foreach: wire =>
+      protobuf.occurrences.each: wire =>
         builder += decodable.decoded(wire)
 
       builder.result()
@@ -238,9 +284,9 @@ object Protobuf extends Protobuf2:
       safely:
         val fields = ProtobufParser(origin.payload).fields()
 
-        if !fields.contains(number) then origin else
+        if !fields.defines(number) then origin else
           val bytes = printed: printer =>
-            fields.each: (key, values) =>
+            fields.stdlib.each: (key, values) =>
               val value = Protobuf.Repeated(values)
               printer.field(key, if key == number then lambda(value) else value)
 
@@ -253,7 +299,7 @@ object Protobuf extends Protobuf2:
     Producer.collect[Data](): producer =>
       lambda(ProtobufPrinter(producer))
 
-  // LazyList a message's wire bytes incrementally (chunked); the producing code runs on a separate
+  // Progression a message's wire bytes incrementally (chunked); the producing code runs on a separate
   // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
   // their lengths must be known up front); this hands them out in bounded chunks.
   def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =
@@ -400,7 +446,7 @@ object Protobuf extends Protobuf2:
   =>  ((collection[element] is Encodable in Protobuf)^) =
     // An honest capability, as `listEncodable` above.
     values =>
-      val list = values.to(List)
+      val list = values.transmute[List]
 
       if list.isEmpty then Absent else
         val bytes = printed: printer =>
@@ -424,13 +470,57 @@ object Protobuf extends Protobuf2:
 
       // Accept both packed (one Len field of concatenated values) and unpacked (a
       // value per occurrence) wire forms, per the proto3 compatibility rule.
-      protobuf.occurrences.foreach: wire =>
+      protobuf.occurrences.each: wire =>
         if wire.wireKind == WireType.Len && packable.wireType != WireType.Len
-        then ProtobufParser(wire.payload).packed(packable.wireType).foreach: element =>
+        then ProtobufParser(wire.payload).packed(packable.wireType).each: element =>
           builder += decodable.decoded(element)
         else builder += decodable.decoded(wire)
 
       builder.result()
+
+  // Alias counterparts of the packed givens: the opaque prelude collections do
+  // not conform to `Iterable`, so each delegates at the underlying stdlib type
+  // and casts. Same scope as `packedEncodable`/`packedDecodable`, so they take
+  // priority over the unpacked alias givens in `Protobuf2` exactly as the
+  // blanket packed givens do over the unpacked blankets.
+  given packedListEncodable: [list <: List, element]
+  =>  ( encodable: => (element is Encodable in Protobuf)^, packable: element is Packable )
+  =>  ((list[element] is Encodable in Protobuf)^) =
+    packedEncodable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Encodable in Protobuf)^]
+
+  given packedListDecodable: [list <: List, element]
+  =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
+  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ((list[element] is Decodable in Protobuf)^{tactic, caps.any}) =
+    packedDecodable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Decodable in Protobuf)^{tactic, caps.any}]
+
+  given packedSetEncodable: [set <: Set, element]
+  =>  ( encodable: => (element is Encodable in Protobuf)^, packable: element is Packable )
+  =>  ((set[element] is Encodable in Protobuf)^) =
+    packedEncodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Encodable in Protobuf)^]
+
+  given packedSetDecodable: [set <: Set, element]
+  =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
+  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ((set[element] is Decodable in Protobuf)^{tactic, caps.any}) =
+    packedDecodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Decodable in Protobuf)^{tactic, caps.any}]
+
+  given packedSeriesEncodable: [series <: Series, element]
+  =>  ( encodable: => (element is Encodable in Protobuf)^, packable: element is Packable )
+  =>  ((series[element] is Encodable in Protobuf)^) =
+    packedEncodable[Vector, element]
+    . asInstanceOf[(series[element] is Encodable in Protobuf)^]
+
+  given packedSeriesDecodable: [series <: Series, element]
+  =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
+  =>  ( tactic: Tactic[ProtobufError] )
+  =>  ((series[element] is Decodable in Protobuf)^{tactic, caps.any}) =
+    packedDecodable[Vector, element]
+    . asInstanceOf[(series[element] is Decodable in Protobuf)^{tactic, caps.any}]
 
   // `Map[K, V]` encodes as a `repeated` message of map entries, each a two-field
   // message `{ key = 1; value = 2 }` — the proto3 map wire format.
@@ -442,7 +532,7 @@ object Protobuf extends Protobuf2:
 
     map =>
       if map.isEmpty then Absent else
-        val entries = map.to(List).map: (key, value) =>
+        val entries = map.toList.map: (key, value) =>
           val bytes = printed: printer =>
             printer.field(1, keyEncodable.encode(key))
             printer.field(2, valueEncodable.encode(value))
@@ -464,7 +554,7 @@ object Protobuf extends Protobuf2:
         val value = valueDecodable.decoded(Repeated(fields.at(2).or(Nil)))
         (key, value)
 
-      entries.to(Map)
+      Map.from(entries.stdlib)
 
   object EncodableDerivation extends Derivable[Encodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -497,7 +587,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      pairs.to(Map)
+      Map.from(pairs)
 
   object DecodableDerivation extends Derivable[Decodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -526,7 +616,7 @@ object Protobuf extends Protobuf2:
             val labels = variantLabels
 
             var index = 0
-            while index < labels.length && !map.contains(index + 1) do index += 1
+            while index < labels.length && !map.defines(index + 1) do index += 1
             if index >= labels.length then abort(ProtobufError(Reason.MissingField(0)))
 
             delegate(labels(index)):
@@ -543,7 +633,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      pairs.to(Map)
+      Map.from(pairs)
 
 // A single Protocol Buffers wire value, tagged with its wire type — the `Form` of
 // `Encodable`/`Decodable in Protobuf`. `Repeated` carries every occurrence of a
