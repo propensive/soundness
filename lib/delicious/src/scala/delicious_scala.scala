@@ -30,15 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package delicious
 
 import anticipation.*
-import denominative.*
+import gossamer.*
+import stenography.*
 import vacuous.*
 
-case class Notice
-     (importance: Importance,
-      file:       Text,
-      message:    Text,
-      span:       Optional[Span],
-      markup:     Optional[Text] = Unset)
+extension (notice: anthology.Notice)
+  /** The message's semantic structure, when it was compiled under
+   *  `-Xsemantic-diagnostics`. */
+  def semantic: Optional[SemanticMessage] = notice.markup.let(SemanticMessage.parse(_))
+
+extension (message: SemanticMessage)
+  /** Render the message with every type re-rendered through stenography,
+   *  abbreviated according to the given `Imports`; anything that cannot be
+   *  reified falls back to the compiler-printed text. */
+  def render(reifier: Reifier)(using Imports): Text =
+    def recur(nodes: List[Markup]): Text = nodes.map(node).join
+
+    def node(markup: Markup): Text = markup match
+      case Markup.Textual(text)                     => text
+      case typed@Markup.Typed(_, _, _, children)    => reifier.syntax(typed).let(_.text).or(recur(children))
+      case Markup.Symbolic(_, _, _, children)       => recur(children)
+      case Markup.Named(_, _, children)             => recur(children)
+      case Markup.Code(_, children)                 => recur(children)
+      case Markup.Spanned(_, _, children)           => recur(children)
+
+    recur(message.markup)

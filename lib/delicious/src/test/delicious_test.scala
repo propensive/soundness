@@ -32,11 +32,20 @@
                                                                                                   */
 package delicious
 
-import anticipation.*
-import fulminate.*
-import gossamer.*
-import probably.*
-import vacuous.*
+import java.nio.file.{Files, Paths}
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+
+import soundness.*
+
+import galilei.Linux.pathOnLinux
+import logging.silentLogging
+import probates.cancelProbate
+import strategies.throwUnsafely
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
+import threading.platformThreading
+import workingDirectories.javaWorkingDirectory
 
 object Tests extends Suite(m"Delicious Tests"):
   val Start: Char    = '\uE000'
@@ -169,3 +178,114 @@ object Tests extends Suite(m"Delicious Tests"):
     test(m"A message with markers is marked"):
       SemanticMessage.marked(mark(t"sym", Nil, t"foo"))
     . assert(_ == true)
+
+    test(m"Substitution replaces a placeholder sentinel"):
+      val placeholder =
+        Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, Unset, t"Bad.Local")
+
+      val list = Syntax.Simple(Typename(t"scala.collection.immutable.List"))
+      val syntax =
+        Syntax.Application(list, List(Syntax.Primitive(t"\"⟨scala-diag:0⟩\"")), false)
+
+      Reifier.substitute(syntax, List(placeholder))
+    . assert(_ == Syntax.Application
+        ( Syntax.Simple(Typename(t"scala.collection.immutable.List")),
+          List(Syntax.Symbolic(t"Bad.Local")),
+          false ))
+
+    test(m"Substitution unescapes an escaped genuine literal"):
+      Reifier.substitute(Syntax.Primitive(t"\"⟨scala-diag:esc:x⟩\""), Nil)
+    . assert(_ == Syntax.Primitive(t"\"x\""))
+
+    test(m"Substitution leaves other primitives alone"):
+      Reifier.substitute(Syntax.Primitive(t"42"), Nil)
+    . assert(_ == Syntax.Primitive(t"42"))
+
+    // Payloads captured from a semdiag compiler run over:
+    //   object Bad:
+    //     class Local
+    //     val xs: List[String] = List(1.5)
+    //     def f: Option[Int] = List(new Local)
+    // TASTy is version-locked (28.9-1), so these decode under any 3.9-stream compiler.
+    val stringPayload: Text =
+      t"XKGrH5yJgZpTY2FsYSAzLjkuMC1SQzEtcHJvcGVuc2l2ZQAadmNlJOIHAAAAAAAAAACeAYRBU1RzAYZTdHJpbmcBhGphdmEBhGxhbmcCgoKDgIR1gUCE"
+
+    val placeholderPayload: Text =
+      t"XKGrH5yJgZpTY2FsYSAzLjkuMC1SQzEtcHJvcGVuc2l2ZQDQKNr7HmsuAAAAAAAAAADGAYRBU1RzAYRMaXN0AYVzY2FsYQGKY29sbGVjdGlvbgKCgoMBiWltbXV0YWJsZQKChIUBkuKfqHNjYWxhLWRpYWc6MOKfqYCIoYZ1gUCGSoc="
+
+    proscalaLibrary().let: lib =>
+      val jars = List("scala-library.jar", "scala3-library.jar").map(lib.resolve(_).nn)
+      val classpath = LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+      val reifier = Reifier(classpath)
+      given Imports = Imports.empty
+
+      test(m"A pickled type payload reifies to a stenography rendering"):
+        reifier.syntax(Markup.Typed(stringPayload, Nil, Style.Default, Nil)).let(_.text)
+      . assert(_ == t"java.lang.String")
+
+      test(m"A placeholder payload reifies with its placeholder substituted"):
+        val placeholder =
+          Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, t"Bad.scala:2", t"Bad.Local")
+
+        reifier.syntax(Markup.Typed(placeholderPayload, List(placeholder), Style.Default, Nil))
+        . let(_.text)
+      . assert(_ == t"scala.collection.immutable.List[Bad.Local]")
+
+      test(m"An unpicklable payload degrades to Unset"):
+        reifier.syntax(Markup.Typed(t"bm90IHRhc3R5", Nil, Style.Default, Nil))
+      . assert(_ == Unset)
+
+      test(m"A marked message renders types through stenography"):
+        val typed = mark(t"type", List(t"tasty" -> stringPayload), t"printed")
+        SemanticMessage.parse(t"Required: $typed").render(reifier)
+      . assert(_ == t"Required: java.lang.String")
+
+      // End-to-end through the embedded compiler. Feature-detecting: a compiler
+      // without semdiag (releases up to p5) produces no markup, and only the
+      // fallback invariants are asserted.
+      supervise:
+        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+        Files.createDirectories(Paths.get(out.encode.s))
+
+        val source: Text =
+          t"""|object Bad:
+              |  class Local
+              |  val xs: List[String] = List(new Local)
+              |""".s.stripMargin.tt
+
+        val process =
+          Scalac[3.9](List(scalacOptions.semanticDiagnostics))
+            (classpath)(Map(t"bad.scala" -> source), out)
+
+        process.complete()
+        val notices = process.notices.to(List)
+
+        test(m"A failed compilation produces at least one error notice"):
+          notices.count(_.importance == Importance.Error)
+        . assert(_ > 0)
+
+        val marked = notices.filter(_.markup.present)
+
+        if marked.isEmpty then
+          test(m"Without semdiag support, messages are plain and unmarked"):
+            notices.forall { notice => !SemanticMessage.marked(notice.message) }
+          . assert(_ == true)
+        else
+          test(m"Semantic notices strip markers from the plain message"):
+            marked.forall { notice => !SemanticMessage.marked(notice.message) }
+          . assert(_ == true)
+
+          test(m"A semantic notice renders its types through stenography"):
+            marked.map { notice => notice.semantic.let(_.render(reifier)).or(t"") }
+            . join(t"\n")
+          . assert(_.contains(t"List["))
+
+  def proscalaLibrary(): Optional[java.nio.file.Path] =
+    val home = java.lang.System.getProperty("user.home").nn
+    val root = Paths.get(home, ".cache", "soundness", "proscala").nn
+
+    if !Files.isDirectory(root) then Unset else
+      Files.list(root).nn.iterator.nn.asScala.to(List).sortBy(_.toString).reverse
+      . map(_.resolve("lib").nn)
+      . find { lib => Files.isDirectory(lib) && Files.exists(lib.resolve("scala3-library.jar")) }
+      . getOrElse(Unset)
