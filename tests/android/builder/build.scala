@@ -30,39 +30,102 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package androidsample
 
-import prepositional.*
+import soundness.*
 
-object Provenance:
-  given jar: (Provenance[Artifact.Jar] from Universe.Classfile):
-    type Origin = Universe.Classfile
+import ambience.systems.javaSystem
+import logging.silentLogging
+import stdios.virtualMachineStdio
+import termcapDefinitions.basicTermcap
+import probates.cancelProbate
+import strategies.throwUnsafely
+import threading.platformThreading
 
-  given dex: (Provenance[Artifact.Dex] from Universe.Classfile):
-    type Origin = Universe.Classfile
+import java.nio.file.{Files, Paths}
 
-  given apk: (Provenance[Artifact.Apk] from Universe.Classfile):
-    type Origin = Universe.Classfile
+// The build driver for the Android sample: it compiles `dice.scala` against the Android platform
+// stubs and the facade runtime with anthology's `Scalac`, then links the compilation either as a
+// bare `Artifact.Dex` (for the SDK-tool packaging path) or — with no Android SDK tool whatsoever
+// — as a complete, signed `Artifact.Apk`.
+//
+// Arguments: <android.jar> <output directory> <app source file> <classpath file (one entry per
+// line: the app's compile-and-dex runtime, excluding the platform)>.
+object build:
+  // The runtime classpath (facade machinery + Scala/Kotlin standard libraries) the app both
+  // compiles against and is dexed with; the platform stubs are added for compilation only.
+  def runtime(classpathFile: String): List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
+    Files.readAllLines(Paths.get(classpathFile)).nn.toArray.nn.to(List).map(_.toString).map:
+      entry =>
+        if entry.endsWith(".jar") then ClasspathEntry.Jar(entry.tt)
+        else ClasspathEntry.Directory(entry.tt)
 
-  given js: [module <: Artifact.Js.Modules]
-  =>  (Provenance[Artifact.Js[module]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
+  // Compiles the app and returns the compilation to link. The platform stubs join the compile
+  // classpath but must not be dexed: on the device, the operating system provides the platform.
+  def compilation
+    ( androidJar: String, outDir: String, sourceFile: String, classpathFile: String )
+  :   Compilation[Universe.Classfile] =
 
-  given wasm: (Provenance[Artifact.Wasm] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
+    val source: Text = Files.readString(Paths.get(sourceFile)).nn.tt
+    val entries = runtime(classpathFile)
+    val platform: ClasspathEntry.Jar = ClasspathEntry.Jar(androidJar.tt)
+    val compileClasspath = LocalClasspath((platform :: entries)*)
 
-  given wasi: [version <: Artifact.Wasi.Versions]
-  =>  (Provenance[Artifact.Wasi[version]] from Universe.Sjsir):
-    type Origin = Universe.Sjsir
+    val classes = Paths.get(outDir, "classes").nn
+    Files.createDirectories(classes)
+    val classesPath: Path on Linux = unsafely(classes.toString.tt.as[Path on Linux])
 
-  given binary: (Provenance[Artifact.Binary] from Universe.Nir):
-    type Origin = Universe.Nir
+    supervise:
+      val process =
+        Scalac[3.8](List(scalacOptions.experimental))
+          (compileClasspath)
+          (Map(t"dice.scala" -> source), classesPath)
 
-  given library: [universe <: Universe] => (Provenance[Artifact.Library[universe]] from universe):
-    type Origin = universe
+      process.complete() match
+        case CompileResult.Success =>
+          Out.println(t"compiled $sourceFile")
 
-// Witnesses the universe an artifact is produced from—its origin. Unconditional: every artifact
-// has a provenance, whether or not it is currently linkable, so it can drive compilation
-// (`producing`) without demanding the link-time prerequisites that a `Linkage` may impose.
-trait Provenance[artifact <: Artifact]:
-  type Origin <: Universe
+        case other =>
+          process.notices.each { notice => Out.println(notice.message) }
+          Out.println(t"compilation failed: $other")
+          sys.exit(1)
+
+    Compilation(classesPath, LocalClasspath(entries*))
+
+// Links the compilation as a bare DEX archive, packaged into an APK afterwards by the SDK tools.
+@main
+def buildDice(androidJar: String, outDir: String, sourceFile: String, classpathFile: String)
+:   Unit =
+
+  import dexLinkages.given
+  val compiled = build.compilation(androidJar, outDir, sourceFile, classpathFile)
+  val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
+
+  val artifact =
+    Linker[Artifact.Dex](List(dexOptions.minApi(26), dexOptions.mode.release)).link(compiled, out)
+
+  Out.println(t"linked $artifact")
+
+// Links the compilation as a complete, signed APK — dexed, binary-manifested, zip-aligned and
+// v2-signed entirely by Soundness, with no `aapt2`, `zipalign` or `apksigner`.
+@main
+def buildApk(androidJar: String, outDir: String, sourceFile: String, classpathFile: String)
+:   Unit =
+
+  import apkLinkages.given
+  val compiled = build.compilation(androidJar, outDir, sourceFile, classpathFile)
+  val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
+
+  val artifact =
+    Linker[Artifact.Apk]
+      ( List
+          ( apkOptions.minApi(26),
+            apkOptions.targetApi(36),
+            apkOptions.packageName(t"dev.soundness.dice"),
+            apkOptions.label(t"Dice Roller"),
+            apkOptions.version(1, t"1.0"),
+            apkOptions.permission(t"android.permission.VIBRATE") ),
+        List(Linker.EntryPoint(Fqcn(t"dice.DiceActivity"))) )
+    . link(compiled, out)
+
+  Out.println(t"linked $artifact")

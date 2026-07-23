@@ -169,12 +169,21 @@ object Zip:
      dosTime:          Int               = Zip.epochTime,
      dosDate:          Int               = Zip.epochDate,
      directory:        Boolean           = false,
-     comment:          Optional[Text]    = Unset ):
+     comment:          Optional[Text]    = Unset,
+     alignment:        Int               = 1 ):
 
     // The decompressed content of the entry.
     def contents: LazyList[Data] = method match
       case Method.Stored  => storedBytes()
       case Method.Deflate => LazyList(inflate(gather(storedBytes())))
+
+    // The same entry, its data required to begin at a byte offset that is a multiple of
+    // `multiple` in the written archive — achieved by padding the local header's extra field.
+    // Meaningful only for stored (uncompressed) entries, whose bytes a reader may `mmap`
+    // directly: an aligned `classes.dex`, `resources.arsc`, or page-aligned (`4096`) native
+    // library needs no copy to be memory-mapped. This is the transform Android's `zipalign`
+    // performs.
+    def aligned(multiple: Int): Entry = copy(alignment = multiple)
 
   // 00:00:00, 1 January 1980 — the minimum value representable in a DOS timestamp.
   private[zeppelin] val epochTime: Int = 0x0000

@@ -846,7 +846,14 @@ object anthology extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"com.android.tools:r8:8.13.19")
-  object test extends Tests(`scala`, `java`, core, linker, link, nir, dex, spectacular.core):
+  // Assembles a complete, installable Android application package: binary manifest (`Axml`),
+  // zip-aligned archive (`zeppelin`), and APK v2 signature (`gastronomy` digests + `java.security`
+  // RSA) — reusing `dex` for the code, and needing no Android SDK build tool.
+  object apk extends Component(dex, gastronomy.core):
+    override def scalaJs = false // packages Android applications (`java.security`, `zeppelin`)
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(`scala`, `java`, core, linker, link, nir, dex, apk, spectacular.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -2873,3 +2880,75 @@ object wasm extends Module:
     os.proc(command).call(stdout = os.Inherit, stderr = os.Inherit)
 
     PathRef(Task.dest / "main.wasm")
+
+// The Android sample (`tests/android`; instructions in tests/android/README.md): builds Google's
+// Dice Roller codelab as a Soundness app — Scala source calling Android and Kotlin APIs through
+// xenophile's Kotlin facades — compiled by anthology's `Scalac` and linked as `Artifact.Dex`.
+// Needs the Android platform stubs (`ANDROID_HOME` with a `platforms/android-NN`, or a direct
+// `ANDROID_JAR`); it is not part of the ordinary build. Mirrors `object wasm`.
+object android extends Module:
+  // The runtime the app compiles against and dexes with (besides the platform stubs): the
+  // Kotlin facade machinery and its transitive closure, including kotlin-stdlib.
+  object runtime extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    override def moduleDeps = Seq(xenophile.kotlin, iridescence.core)
+
+  // The build driver, which runs anthology: see tests/android/builder/build.scala.
+  object builder extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = settings.cc(settings.scalaOptions)
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "android" / "builder")
+    override def moduleDeps = Seq(anthology.`scala`, anthology.dex, anthology.apk,
+      distillate.core, turbulence.core)
+
+  def appSource = Task.Source(mill.api.BuildCtx.workspaceRoot / "tests" / "android" / "src")
+
+  def dex: T[PathRef] = Task:
+    val androidJar = Task.env.getOrElse("ANDROID_JAR", {
+      val home = Task.env.getOrElse("ANDROID_HOME", throw Exception(
+        "Set ANDROID_HOME (an Android SDK with platforms/android-NN installed) or ANDROID_JAR "
+        + "(a platform android.jar) to build the Android sample"))
+      val platforms = os.list(os.Path(home) / "platforms").filter(p => os.exists(p / "android.jar"))
+      if platforms.isEmpty then throw Exception(s"no platforms/android-NN/android.jar under $home")
+      (platforms.sortBy(_.last).last / "android.jar").toString
+    })
+
+    val classpath = runtime.runClasspath().map(_.path).filter(os.exists)
+    val classpathFile = Task.dest / "classpath"
+    os.write.over(classpathFile, classpath.mkString("\n"))
+
+    val driverClasspath =
+      builder.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driverClasspath, "androidsample.buildDice", androidJar,
+        Task.dest.toString, (appSource().path / "dice.scala").toString, classpathFile.toString)
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(Task.dest / "main.dex.jar")
+
+  // The pure-Soundness packaging path: compile, then link `Artifact.Apk` — dexed, binary-
+  // manifested, zip-aligned and v2-signed with no Android SDK build tool. Produces an
+  // installable, signed `app.apk`. Needs `~/.android/debug.keystore` (a PKCS#12 debug keystore,
+  // as Android Studio and `keytool` create).
+  def apk: T[PathRef] = Task:
+    val androidJar = Task.env.getOrElse("ANDROID_JAR", {
+      val home = Task.env.getOrElse("ANDROID_HOME", throw Exception(
+        "Set ANDROID_HOME (an Android SDK with platforms/android-NN installed) or ANDROID_JAR "
+        + "(a platform android.jar) to build the Android sample"))
+      val platforms = os.list(os.Path(home) / "platforms").filter(p => os.exists(p / "android.jar"))
+      if platforms.isEmpty then throw Exception(s"no platforms/android-NN/android.jar under $home")
+      (platforms.sortBy(_.last).last / "android.jar").toString
+    })
+
+    val classpath = runtime.runClasspath().map(_.path).filter(os.exists)
+    val classpathFile = Task.dest / "classpath"
+    os.write.over(classpathFile, classpath.mkString("\n"))
+
+    val driverClasspath =
+      builder.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driverClasspath, "androidsample.buildApk", androidJar,
+        Task.dest.toString, (appSource().path / "dice.scala").toString, classpathFile.toString)
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(Task.dest / "app.apk")

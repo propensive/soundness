@@ -44,6 +44,23 @@ object KotlinRuntime:
   private val handles: juc.ConcurrentHashMap[String, jli.MethodHandle] =
     juc.ConcurrentHashMap()
 
+  // Unwraps a facade returned from an adapted lambda, so Kotlin/Java receives the raw value.
+  def dispatch(result: Any | Null): Object | Null = result match
+    case facade: Facade => facade.raw.asInstanceOf[Object | Null]
+    case other          => other.asInstanceOf[Object | Null]
+
+  // The invocation handler behind a functional-interface proxy: `equals`/`hashCode`/`toString`
+  // answer locally; everything else (the single abstract method) forwards to the lambda.
+  def forwarder(handler: (Array[Object | Null] | Null) => Object | Null)
+  :   java.lang.reflect.InvocationHandler^{handler} =
+
+    (proxy, method, arguments) =>
+      method.nn.getName match
+        case "equals"   => java.lang.Boolean.valueOf(proxy.nn eq arguments.nn(0))
+        case "hashCode" => java.lang.Integer.valueOf(java.lang.System.identityHashCode(proxy))
+        case "toString" => s"<function proxy>"
+        case _          => handler(arguments)
+
   def invokeDefault(owner: Class[?], name: String, arguments: Array[Any | Null]): Any | Null =
     val key = s"${owner.getName}#$name#${arguments.length}"
 

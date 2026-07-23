@@ -46,6 +46,11 @@ object Artifact:
   // `import dexLinkages.given`.
   sealed trait Dex extends Artifact
 
+  // Classfile universe: a complete, installable Android application package — the dexed code,
+  // a binary manifest, aligned and signed — bound to the Android runtime. Its linkage lives in
+  // the `apk` module: `import apkLinkages.given`.
+  sealed trait Apk extends Artifact
+
   object Js:
     // How a JavaScript host consumes the artifact: an ECMAScript module, a CommonJS module, or
     // a plain script. The module system is part of the artifact's binding contract, so it is

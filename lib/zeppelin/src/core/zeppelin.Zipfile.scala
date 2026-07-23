@@ -315,7 +315,20 @@ object Zipfile:
 
   private def utf8Flag(name: Data): Int = if name.exists(_ < 0) then 0x800 else 0
 
-  private def localHeader(entry: Zip.Entry, name: Data): Data =
+  // The base (non-padding) extra-field length of an entry's local header: the ZIP64 record
+  // when the entry's sizes overflow 32 bits, otherwise nothing.
+  private def baseExtraLength(entry: Zip.Entry): Int =
+    if entry.uncompressedSize > u32Max || entry.compressedSize > u32Max then 20 else 0
+
+  // The number of padding bytes to append to a local header's extra field so that the entry's
+  // data — which begins immediately after the header — starts at a multiple of the entry's
+  // alignment, given the header's own start offset.
+  private def alignmentPadding(entry: Zip.Entry, name: Data, offset: Long): Int =
+    if entry.alignment <= 1 then 0 else
+      val dataStart = offset + 30 + name.length + baseExtraLength(entry)
+      ((entry.alignment - dataStart%entry.alignment)%entry.alignment).toInt
+
+  private def localHeader(entry: Zip.Entry, name: Data, padding: Int = 0): Data =
     val zip64 = entry.uncompressedSize > u32Max || entry.compressedSize > u32Max
 
     val extra: Data =
@@ -325,7 +338,12 @@ object Zipfile:
         Zip.putU64(array, 4, entry.uncompressedSize)
         Zip.putU64(array, 12, entry.compressedSize)
 
-    Data.build(30 + name.length + extra.length): array =>
+    // Alignment padding follows any ZIP64 record as trailing zero bytes (the same padding
+    // classic `zipalign` emits): a reader takes the extra field's total length from offset 28
+    // and skips it, so the padding is inert, and the entry's data lands on its boundary.
+    val extraLength = extra.length + padding
+
+    Data.build(30 + name.length + extraLength): array =>
       Zip.putU32(array, 0, Zip.localHeaderSig.toLong & 0xffffffffL)
       Zip.putU16(array, 4, if zip64 then 45 else 20)
       Zip.putU16(array, 6, utf8Flag(name))
@@ -336,7 +354,7 @@ object Zipfile:
       Zip.putU32(array, 18, if zip64 then u32Max else entry.compressedSize)
       Zip.putU32(array, 22, if zip64 then u32Max else entry.uncompressedSize)
       Zip.putU16(array, 26, name.length)
-      Zip.putU16(array, 28, extra.length)
+      Zip.putU16(array, 28, extraLength)
       array.place(name, 30.z)
       if extra.length > 0 then array.place(extra, (30 + name.length).z)
 
@@ -449,7 +467,8 @@ case class Zipfile
 
     entryList.foreach: entry =>
       val name = Zipfile.nameBytes(entry)
-      val header = Zipfile.localHeader(entry, name)
+      val padding = Zipfile.alignmentPadding(entry, name, offset)
+      val header = Zipfile.localHeader(entry, name, padding)
       builder += ((entry, name, header, offset))
       offset += header.length + entry.compressedSize
 

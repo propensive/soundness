@@ -42,6 +42,7 @@ import stenography.*
 import vacuous.*
 
 object Facade extends prophesy.Completable:
+
   // Dynamic tab completions, invoked reflectively through `Completable` by a completion
   // engine: the members of the underlying Kotlin class, rendered in Kotlin syntax.
   def completions(using quotes: scala.quoted.Quotes)
@@ -67,7 +68,7 @@ object Facade extends prophesy.Completable:
   // the value travels verbatim and every navigation is a direct call on it.
   def apply[underlying](value: underlying): Facade over underlying =
     val facade = new Facade:
-      def unwrap: Any = value
+      def raw: Any = value
 
     facade.asInstanceOf[Facade over underlying]
 
@@ -79,8 +80,13 @@ object Facade extends prophesy.Completable:
 // class: nullable results become `Optional`, `kotlin.String` becomes `Text`, and Kotlin-typed
 // results are wrapped as further facades.
 trait Facade extends Dynamic, Transportive:
-  // The raw underlying value: the escape hatch back to plain Java-level interop.
-  def unwrap: Any
+  // The underlying value at its erased runtime type; the emission machinery's accessor. User
+  // code should prefer `unwrap`, which recovers the precise static type.
+  def raw: Any
+
+  // The underlying value, at the full Scala type the facade records: the escape hatch back to
+  // plain Java-level interop, typed so no cast is needed at the boundary.
+  transparent inline def unwrap: Any = ${KotlinFacade.unwrapped('this)}
 
   transparent inline def selectDynamic(name: String): Any =
     ${KotlinFacade.select('this, 'name)}
