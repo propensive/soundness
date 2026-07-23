@@ -37,7 +37,6 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -285,7 +284,9 @@ object KotlinFacade:
 
     import quotes.reflect.*
 
-    target.classSymbol match
+    // A Java method's parameter arrives as a flexible/nullable type (`Predicate[…] | Null`)
+    // under explicit nulls; strip that first, or the interface's class symbol is invisible.
+    solid(target).classSymbol match
       case Some(symbol) if isJavaFunctionalInterface(symbol) =>
         val abstractMethods = symbol.methodMembers.filter: method =>
           method.flags.is(Flags.Deferred) && !method.flags.is(Flags.Synthetic)
@@ -360,6 +361,77 @@ object KotlinFacade:
               }
 
           proxy.asTerm
+
+  // The Scala function type a Java functional-interface parameter maps to. Refining a method's
+  // parameter to this — rather than leaving it `Any` under `Dynamic` — is what lets an untyped
+  // lambda argument infer its parameter types: the refinement supplies the expected type.
+  private def samFunctionType(using quotes: Quotes)(target: quotes.reflect.TypeRepr)
+  :   Optional[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    // Resolve the interface's own wildcard type arguments to concrete types first
+    // (`Predicate<? super Text>` → `Predicate[Text]`), so the single abstract method's
+    // signature substitutes cleanly instead of leaving an unusable `Predicate[…]#T` projection.
+    // A wildcard collapses to its lower bound when it has one (the parameter position of a
+    // consumer-like interface), otherwise its upper bound.
+    def resolved(bound: TypeRepr): TypeRepr = bound match
+      case TypeBounds(low, high) =>
+        if low =:= TypeRepr.of[Nothing] then solid(high) else solid(low)
+
+      case other =>
+        solid(other)
+
+    val concrete = solid(target).dealias match
+      case AppliedType(constructor, args) => constructor.appliedTo(args.map(resolved))
+      case other                          => other
+
+    javaSam(concrete).let: (method, arity) =>
+      concrete.memberType(method).absolve match
+        case MethodType(_, paramTypes, resultType) =>
+          val args = paramTypes.map(solid(_)) :+ solid(resultType)
+          defn.FunctionClass(arity).typeRef.appliedTo(args)
+
+        case _ =>
+          Unset
+
+  // Refines `Facade over T` with those of T's methods that take a single functional-interface
+  // parameter, typing that parameter as a Scala function. A `Selectable` structural member: the
+  // refinement gives the call site a real function expected type (so a bare lambda infers),
+  // while runtime dispatch stays with `applyDynamic`, which adapts the function to the interface.
+  // Overloaded names are skipped (a refinement cannot express two members of one name).
+  private def functionRefinement(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   quotes.reflect.TypeRepr =
+
+    import quotes.reflect.*
+
+    val base = Refinement(TypeRepr.of[Facade], "Transport", TypeBounds(repr, repr))
+
+    repr.classSymbol.fold(base): classSymbol =>
+      def singleSam(method: Symbol): Boolean =
+        val usable = !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private)
+
+        usable && (repr.memberType(method) match
+          case MethodType(_, List(parameter), _) => samFunctionType(parameter).present
+          case _                                 => false)
+
+      // One method per name (overrides and bridges duplicate a name in `methodMembers`); a name
+      // with two genuinely different single-SAM signatures is a rare overload — take the first.
+      val candidates =
+        classSymbol.methodMembers.filter(singleSam).groupBy(_.name).values.map(_.head).to(List)
+
+      candidates.foldLeft(base): (accumulated, method) =>
+        repr.memberType(method).absolve match
+          case MethodType(names, List(parameter), result) =>
+            val function = samFunctionType(parameter).vouch
+
+            val signature =
+              MethodType(names)(_ => List(function), _ => solid(result))
+
+            Refinement(accumulated, method.name, signature)
+
+          case _ =>
+            accumulated
 
   private def samArity(using quotes: Quotes)(target: quotes.reflect.TypeRepr): Optional[Int] =
     target.classSymbol.map(_.fullName).getOrElse("") match
@@ -705,8 +777,7 @@ object KotlinFacade:
 
     refined(call, prototype.result)
 
-  def construct[kotlinType: Type](arguments: Expr[Seq[Any]])(using Quotes)
-  :   Expr[Facade over kotlinType] =
+  def construct[kotlinType: Type](arguments: Expr[Seq[Any]])(using Quotes): Expr[Any] =
 
     import quotes.reflect.*
 
@@ -756,7 +827,13 @@ object KotlinFacade:
 
     val created = Apply(application, adaptedArgs)
 
-    '{Facade[kotlinType](${created.asExprOf[Any]}.asInstanceOf[kotlinType])}
+    // Refine the facade type with function-typed methods, so lambdas passed to them infer
+    // (`list.removeIf(x => …)` with no ascription). The tree's `asInstanceOf[refined]` carries
+    // the precise type out through `make`'s transparent inlining.
+    functionRefinement(repr).asType.absolve match
+      case '[refined] =>
+        val facade = '{Facade[kotlinType](${created.asExprOf[Any]}.asInstanceOf[kotlinType])}
+        '{$facade.asInstanceOf[refined]}
 
   def companion[kotlinType: Type](using Quotes): Expr[Any] =
     import quotes.reflect.*

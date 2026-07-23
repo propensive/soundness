@@ -79,7 +79,7 @@ object Facade extends prophesy.Completable:
 // statically-typed JVM call, transparently typed by the Kotlin metadata of the underlying
 // class: nullable results become `Optional`, `kotlin.String` becomes `Text`, and Kotlin-typed
 // results are wrapped as further facades.
-trait Facade extends Dynamic, Transportive:
+trait Facade extends Selectable, Dynamic, Transportive:
   // The underlying value at its erased runtime type; the emission machinery's accessor. User
   // code should prefer `unwrap`, which recovers the precise static type.
   def raw: Any

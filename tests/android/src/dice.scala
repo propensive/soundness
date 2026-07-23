@@ -90,9 +90,9 @@ class DiceActivity extends Activity:
         // always fully typed, so `Runnable` needs no ascription at all…
         handler.postDelayed(() => animate(frames - 1), 45L)
 
-    // …and a unary lambda needs only its parameter's type (`Dynamic` erases the expected type,
-    // so the parameter cannot be inferred), with no anonymous class or `override` in sight.
-    button.setOnClickListener((_: View) => animate(6))
+    // …and a unary lambda on a freshly-made facade infers even its parameter type, from the
+    // functional interface, through the facade's generated `Selectable` refinement.
+    button.setOnClickListener: view => animate(6)
 
     val row = Kotlin.make[LinearLayout](this)
     row.setOrientation(LinearLayout.HORIZONTAL)

@@ -42,7 +42,7 @@ import vacuous.*
 // mirrors WIT's `option` (`T | "none"`) and TypeScript's `T | "undefined"`.
 object Kotlin:
   // Instantiates a Kotlin class through its facade: `Kotlin.make[Pair[Text, Text]](t"a", t"b")`.
-  inline def make[kotlinType](inline arguments: Any*): Facade over kotlinType =
+  transparent inline def make[kotlinType](inline arguments: Any*): Any =
     ${KotlinFacade.construct[kotlinType]('arguments)}
 
 
