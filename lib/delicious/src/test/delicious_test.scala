@@ -278,7 +278,11 @@ object Tests extends Suite(m"Delicious Tests"):
           test(m"A semantic notice renders its types through stenography"):
             marked.map { notice => notice.semantic.let(_.render(reifier)).or(t"") }
             . join(t"\n")
-          . assert(_.contains(t"List["))
+          . assert { rendered =>
+              // `java.lang.String` (not the compiler-printed `String`) proves the type
+              // came through stenography; `Bad.Local` proves placeholder substitution.
+              rendered.contains(t"java.lang.String") && rendered.contains(t"Bad.Local")
+            }
 
   def proscalaLibrary(): Optional[java.nio.file.Path] =
     val home = java.lang.System.getProperty("user.home").nn
