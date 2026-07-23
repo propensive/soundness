@@ -44,7 +44,30 @@ object Benchmark:
         benchmark:   Benchmark )
     :   Report =
 
-      report.addBenchmark(testId, benchmark)
+      val metrics =
+        ListMap
+          ( Metric.Iterations -> benchmark.iterations.toDouble,
+            Metric.Mean       -> benchmark.mean,
+            Metric.Least      -> benchmark.min,
+            Metric.Most       -> benchmark.max,
+            Metric.Deviation  -> benchmark.sd,
+            Metric.Percentile -> (benchmark.confidence: Int).toDouble,
+            Metric.Confidence -> (if benchmark.mean == 0.0 then 0.0
+                                  else benchmark.confidenceInterval/benchmark.mean),
+            Metric.Throughput -> benchmark.throughput.toDouble )
+
+      val payload: Optional[Run.Payload] =
+        if benchmark.operationSize.absent && benchmark.operationRate.absent then Unset
+        else Run.Payload.Sizing(benchmark.operationSize, benchmark.operationRate)
+
+      val headline = if benchmark.operationSize.present then Metric.Throughput else Metric.Mean
+
+      report.record
+        ( testId,
+          Entry.Kind.Bench,
+          coordinates,
+          Run(metrics = metrics, payload = payload),
+          headline )
 
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 

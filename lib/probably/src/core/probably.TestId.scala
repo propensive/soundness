@@ -56,10 +56,10 @@ case class TestId
   lazy val id: Text = (suite.lay(0)(_.hashCode) ^ name.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
   lazy val ids: List[Text] = id :: suite.let(_.id.ids).or(Nil)
 
-  // The test block may capture a capability (e.g. an error tactic, a decoder); that capture lands on
-  // the returned `Test` (`^{context}`), NOT on `result` — so a test that asserts a *pure* value
-  // (`Text`, `Optional`, …) computed via a capability does not spuriously stamp `^` on that pure
-  // result type at the `assert`/`check` site.
+  // The test block may capture a capability (e.g. an error tactic, a decoder); that capture
+  // lands on the returned `Test` (`^{context}`), NOT on `result` — so a test that asserts a
+  // *pure* value (`Text`, `Optional`, …) computed via a capability does not spuriously stamp
+  // `^` on that pure result type at the `assert`/`check` site.
   def apply[result](context: Harness ?=> result): (Test[result])^{context} =
     Test[result](this, context(using _))
 

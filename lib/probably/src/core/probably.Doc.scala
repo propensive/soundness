@@ -33,44 +33,60 @@
 package probably
 
 import anticipation.*
-import gossamer.*
+import fulminate.*
+import vacuous.*
 
-object Metric:
-  // The physical interpretation of a metric's value, used to choose formatting (time,
-  // memory or rate units) uniformly across test kinds.
-  enum Dimension:
-    case Time, Memory, Rate, Count, Fraction
+// The renderer-agnostic report document: one structural representation of a test report,
+// built by `Documenting` and rendered by `AnsiRenderer` (full colour) or `TerseRenderer`
+// (plain text). Data is semantic, never preformatted: backends decide colour and glyphs,
+// and `Format` decides digits, so the two output modes cannot drift structurally.
+private[probably] object Doc:
+  enum Datum:
+    case Blank
+    case Gap                                     // a sparse-grid hole: an omitted combination
+    case Str(text: Text)
+    case Hash(id: Text)
+    case Title(name: Message, depth: Int)
+    case Mark(status: Report.Status)             // a glyph in colour output, a word in terse
+    case Num(value: Long)
+    case Time(nanos: Long)
+    case Memory(bytes: Long)
+    case Rate(perSecond: Long)                   // operations per second
+    case Percent(fraction: Double)
+    case Conf(percentile: Int, basisPoints: Long)  // e.g. P95 ±2.10%
+    case Ratio(factor: Double)                   // baseline-relative; 1.0 renders as ★
+    case Delta(datum: Datum, negative: Boolean)  // arithmetic baseline-relative: signed
 
-  // Whether a smaller or a larger value is an improvement, used for baseline comparisons
-  // and chart orientation; `Neutral` metrics are informational only.
-  enum Sense:
-    case LowerIsBetter, HigherIsBetter, Neutral
+  case class Column(title: Text, numeric: Boolean = false)
 
-import Metric.{Dimension, Sense}
+  // One series of a sparkline panel: block levels (1-8) per step, with cells beyond the
+  // sustained concurrency flagged for subdual, and the sustained (N, throughput) summary.
+  case class Spark
+    ( label:     Text,
+      cells:     List[Optional[(Int, Boolean)]],
+      sustained: Optional[(Long, Long)] )
 
-// The closed set of quantities a test run can record. Each cell of a test stores a map of
-// these to values; one of them (or, for unit tests, the pass/fail status) is the test's
-// headline, used for grids and comparisons. Times are in nanoseconds, memory in bytes,
-// rates in operations per second and fractions in the unit interval.
-enum Metric(val dimension: Dimension, val sense: Sense, val label: Text):
-  case Duration extends Metric(Dimension.Time, Sense.LowerIsBetter, t"Time")
-  case Mean extends Metric(Dimension.Time, Sense.LowerIsBetter, t"μ")
-  case Least extends Metric(Dimension.Time, Sense.LowerIsBetter, t"Min")
-  case Most extends Metric(Dimension.Time, Sense.LowerIsBetter, t"Max")
-  case Deviation extends Metric(Dimension.Time, Sense.Neutral, t"σ")
-  case Percentile extends Metric(Dimension.Count, Sense.Neutral, t"P")
-  case Confidence extends Metric(Dimension.Fraction, Sense.Neutral, t"Confidence")
-  case Iterations extends Metric(Dimension.Count, Sense.Neutral, t"n")
-  case Throughput extends Metric(Dimension.Rate, Sense.HigherIsBetter, t"Throughput")
-  case Operations extends Metric(Dimension.Count, Sense.Neutral, t"Ops")
-  case Allocation extends Metric(Dimension.Memory, Sense.LowerIsBetter, t"Alloc·op¯¹")
-  case PeakHeap extends Metric(Dimension.Memory, Sense.LowerIsBetter, t"Peak")
-  case Retained extends Metric(Dimension.Memory, Sense.LowerIsBetter, t"Retained")
-  case GcCount extends Metric(Dimension.Count, Sense.LowerIsBetter, t"GC n")
-  case GcTime extends Metric(Dimension.Time, Sense.LowerIsBetter, t"GC t")
-  case P50 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p50")
-  case P90 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p90")
-  case P99 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p99")
-  case P999 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p999")
-  case Compliance extends Metric(Dimension.Fraction, Sense.HigherIsBetter, t"SLO")
-  case Samples extends Metric(Dimension.Count, Sense.Neutral, t"Samples")
+  enum Block:
+    // A table of cells; a biaxial entry renders as a crosstab: its second axis's values
+    // become the columns and each cell holds only the headline datum.
+    case Table(title: Optional[TestId], columns: List[Column], rows: List[List[Datum]])
+    case Sparkline(steps: List[Long], series: List[Spark])
+    case Histogram(title: Optional[TestId], total: Long, frames: List[Hotspots.Frame])
+
+  // A group of measurement blocks belonging to one suite, of one kind, rendered with a
+  // ribbon header (and a GitHub Actions group when applicable).
+  case class Group(suite: Optional[Testable], kind: Entry.Kind, blocks: List[Block])
+
+  // One row of the global results table, aggregating a test's runs across all its cells.
+  case class SummaryRow
+    ( status: Report.Status, id: TestId, count: Int, min: Long, max: Long, avg: Long )
+
+  case class Totals(passed: Int, failed: Int, aspirePassed: Int, aspireFailed: Int):
+    def total: Int = passed + failed + aspirePassed + aspireFailed
+
+  case class Document
+    ( results:  List[SummaryRow],
+      totals:   Totals,
+      groups:   List[Group],
+      failures: List[(TestId, List[Verdict.Detail])],
+      fatal:    Optional[(Throwable, Set[TestId])] )

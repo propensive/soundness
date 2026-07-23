@@ -424,15 +424,15 @@ extends Rig:
           results.toList
         }
 
+    // Every step lands under the SAME test id: the probed concurrency is a coordinate on
+    // the test's emergent `N` axis (supplied by `Strain`'s inclusion), so a sweep's steps
+    // accumulate as cells of one entry rather than as separately-named tests.
+    val testId = TestId(name, suite, codepoint)
+
     dispatch(body).grouped(14).to(List).each: step =>
       val n = step(0).toInt
       val compliance2: Optional[Double] = if step(12) < 0L then Unset else step(12)/10000.0
       val sustained: Boolean = step(13) == 1L
-
-      val testId =
-        if sustained then TestId(m"$name (sustained, N = $n)", suite, codepoint)
-        else if sweeping then TestId(m"$name (N = $n)", suite, codepoint)
-        else TestId(name, suite, codepoint)
 
       val strain =
         Strain

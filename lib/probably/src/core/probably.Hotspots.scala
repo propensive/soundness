@@ -43,7 +43,14 @@ object Hotspots:
         hotspots:    Hotspots )
     :   Report =
 
-      report.addHotspots(testId, hotspots)
+      report.record
+        ( testId,
+          Entry.Kind.Profile,
+          coordinates,
+          Run
+            ( metrics = ListMap(Metric.Samples -> hotspots.total.toDouble),
+              payload = Run.Payload.Frames(hotspots) ),
+          Metric.Samples )
 
   // One hot method: the (demangled) class and method names, and how many execution samples
   // landed in it — self time, i.e. the sample's top frame.

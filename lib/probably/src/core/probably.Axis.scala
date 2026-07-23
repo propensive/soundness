@@ -30,7 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-
 package probably
 
 import scala.deriving.*
@@ -41,14 +40,6 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 import vacuous.*
-
-// How a domain value becomes a point on an axis of a test: a stable textual label (used in
-// report rendering and by test selections) and, for numeric domains, its numeric value,
-// which makes the axis orderable and chartable.
-trait Axable extends Typeclass.Pure:
-  def domain: Axis.Domain = Axis.Domain.Discrete
-  def label(value: Self): Text
-  def numeric(value: Self): Optional[Double] = Unset
 
 object Axable:
   given int: Int is Axable:
@@ -72,6 +63,14 @@ object Axable:
   given enumerable: [enumeration <: reflect.Enum: Enumerable as evidence]
   =>  enumeration is Axable:
     def label(value: enumeration): Text = evidence.name(value)
+
+// How a domain value becomes a point on an axis of a test: a stable textual label (used in
+// report rendering and by test selections) and, for numeric domains, its numeric value,
+// which makes the axis orderable and chartable.
+trait Axable extends Typeclass.Pure:
+  def domain: Axis.Domain = Axis.Domain.Discrete
+  def label(value: Self): Text
+  def numeric(value: Self): Optional[Double] = Unset
 
 object Axis:
   // The domain kind of an axis: discrete labels presented in declaration order, or

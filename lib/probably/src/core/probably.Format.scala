@@ -34,43 +34,62 @@ package probably
 
 import anticipation.*
 import gossamer.*
+import hieroglyph.*
+import spectacular.*
+import symbolism.*
 
-object Metric:
-  // The physical interpretation of a metric's value, used to choose formatting (time,
-  // memory or rate units) uniformly across test kinds.
-  enum Dimension:
-    case Time, Memory, Rate, Count, Fraction
+// Numeric formatting shared by both report renderers: one implementation decides digits
+// and units; the renderers decide only colour and styling.
+private[probably] object Format:
+  val metrics = textMetrics.wideCharacterWidthMetric
 
-  // Whether a smaller or a larger value is an improvement, used for baseline comparisons
-  // and chart orientation; `Neutral` metrics are informational only.
-  enum Sense:
-    case LowerIsBetter, HigherIsBetter, Neutral
+  given measurable: Char is Measurable:
+    def width(char: Char): Int = char match
+      case '✓' | '✗' | '⎇' | '↑' | '↓' => 1
+      case _                           => metrics.width(char)
 
-import Metric.{Dimension, Sense}
+  // A scaled quantity: `unit` counts how many divisions by 1000 were applied (0-2 selects
+  // µs/ms/s or kB/MB/GB); 3 means the value overflowed the unit sequence and `whole` holds
+  // the raw number with no fraction.
+  case class Figure(whole: Text, fraction: Text, unit: Int)
 
-// The closed set of quantities a test run can record. Each cell of a test stores a map of
-// these to values; one of them (or, for unit tests, the pass/fail status) is the test's
-// headline, used for grids and comparisons. Times are in nanoseconds, memory in bytes,
-// rates in operations per second and fractions in the unit interval.
-enum Metric(val dimension: Dimension, val sense: Sense, val label: Text):
-  case Duration extends Metric(Dimension.Time, Sense.LowerIsBetter, t"Time")
-  case Mean extends Metric(Dimension.Time, Sense.LowerIsBetter, t"μ")
-  case Least extends Metric(Dimension.Time, Sense.LowerIsBetter, t"Min")
-  case Most extends Metric(Dimension.Time, Sense.LowerIsBetter, t"Max")
-  case Deviation extends Metric(Dimension.Time, Sense.Neutral, t"σ")
-  case Percentile extends Metric(Dimension.Count, Sense.Neutral, t"P")
-  case Confidence extends Metric(Dimension.Fraction, Sense.Neutral, t"Confidence")
-  case Iterations extends Metric(Dimension.Count, Sense.Neutral, t"n")
-  case Throughput extends Metric(Dimension.Rate, Sense.HigherIsBetter, t"Throughput")
-  case Operations extends Metric(Dimension.Count, Sense.Neutral, t"Ops")
-  case Allocation extends Metric(Dimension.Memory, Sense.LowerIsBetter, t"Alloc·op¯¹")
-  case PeakHeap extends Metric(Dimension.Memory, Sense.LowerIsBetter, t"Peak")
-  case Retained extends Metric(Dimension.Memory, Sense.LowerIsBetter, t"Retained")
-  case GcCount extends Metric(Dimension.Count, Sense.LowerIsBetter, t"GC n")
-  case GcTime extends Metric(Dimension.Time, Sense.LowerIsBetter, t"GC t")
-  case P50 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p50")
-  case P90 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p90")
-  case P99 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p99")
-  case P999 extends Metric(Dimension.Time, Sense.LowerIsBetter, t"p999")
-  case Compliance extends Metric(Dimension.Fraction, Sense.HigherIsBetter, t"SLO")
-  case Samples extends Metric(Dimension.Count, Sense.Neutral, t"Samples")
+  def scaled(n: Long, unit: Int = 0): Figure =
+    if unit >= 3 then Figure(n.show, t"", 3)
+    else if n > 100000L then scaled(n/1000L, unit + 1)
+    else Figure((n/1000L).show, (n%1000L).show.pad(3, Rtl, '0'), unit)
+
+  val timeUnits: List[Text] = List(t"µs", t"ms", t"s ")
+  val memoryUnits: List[Text] = List(t"kB", t"MB", t"GB")
+
+  // Basis points of `part` within `whole`, for percentages rendered to two decimal places.
+  def basisPoints(part: Double, whole: Double): Long =
+    if whole == 0.0 then 0L else (part*10000.0/whole).toLong
+
+  def percent(basisPoints: Long): Text =
+    t"${basisPoints/100}.${(basisPoints%100).show.pad(2, Rtl, '0')}"
+
+  // A histogram bar of `samples` scaled against `max` over a 40-cell span: full blocks
+  // with a final fractional character from the eighth-block series. Any nonzero count
+  // shows at least the thinnest bar.
+  def bar(samples: Long, max: Long): Text =
+    val eighths = (if max == 0L then 0L else samples*320L/max).max(if samples > 0L then 1L else 0L)
+    val partial = List(t"", t"▏", t"▎", t"▍", t"▌", t"▋", t"▊", t"▉")
+    t"█"*(eighths/8L).toInt + partial((eighths%8L).toInt)
+
+  val sparkBlocks: List[Text] = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
+
+  def truncate(text: Text, max: Int = 800): Text =
+    if text.length <= max then text else t"${text.keep(max)}…"
+
+  def statusWord(status: Report.Status): Text = status match
+    case Report.Status.Pass        => t"pass"
+    case Report.Status.Fail        => t"fail"
+    case Report.Status.Throws      => t"throws"
+    case Report.Status.CheckThrows => t"check-throws"
+    case Report.Status.Mixed       => t"mixed"
+    case Report.Status.Suite       => t"suite"
+    case Report.Status.Bench       => t"bench"
+    case Report.Status.Stress      => t"stress"
+    case Report.Status.Profile     => t"profile"
+    case Report.Status.AspirePass  => t"aspire-pass"
+    case Report.Status.AspireFail  => t"aspire-fail"

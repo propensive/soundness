@@ -30,7 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-
 package nomenclature
 
 import anticipation.*
@@ -40,7 +39,8 @@ import fulminate.*
 // character followed by Java identifier part characters (as defined by
 // `java.lang.Character`). Keywords are not excluded. The `description` type parameter is
 // the human-readable phrasing used in error messages.
-object JavaIdentifier
-extends Rule({ description => m"must be $description" }, { (name, _) => identifierRules.java(name) })
+object JavaIdentifier extends Rule
+  ( { description => m"must be $description" },
+    { (name, _) => identifierRules.java(name) } )
 
 sealed trait JavaIdentifier[description <: Label] extends Check[description]
