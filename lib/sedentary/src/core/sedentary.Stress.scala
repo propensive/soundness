@@ -105,8 +105,7 @@ extends Rig:
       concurrency: Optional[Int]      = Unset,
       sweep:       Optional[Int]      = Unset,
       threshold:   Optional[duration] = Unset,
-      compliance:  Optional[Int]      = Unset,
-      baseline:    Optional[Baseline] = Unset )
+      compliance:  Optional[Int]      = Unset )
     ( body0: (References over Transport) ?=> Quotes ?=> Expr[Any] )
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
@@ -436,7 +435,7 @@ extends Rig:
 
       val strain =
         Strain
-          ( n, step(1), step(2), step(3), step(4), step(5), step(6), step(7), baseline,
+          ( n, step(1), step(2), step(3), step(4), step(5), step(6), step(7),
             step(8), step(9), step(10), step(11), compliance2, sustained )
 
       inclusion.include(runner.report, testId, strain)

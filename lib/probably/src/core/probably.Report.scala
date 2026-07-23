@@ -67,6 +67,16 @@ object Report:
         case Verdict.CheckThrows(error, _) =>
           report2.addDetail(testId, Verdict.Detail.CheckThrows(StackTrace(error)))
 
+  given anchor: Inclusion[Report, Anchor]:
+    def include
+      ( report:      Report,
+        testId:      TestId,
+        coordinates: List[(Axis.Spec, Value)],
+        anchor:      Anchor )
+    :   Report =
+
+      report.anchor(testId, anchor)
+
   given detail: Inclusion[Report, Verdict.Detail]:
     def include
       ( report:      Report,
@@ -182,6 +192,13 @@ final class Report(using environment: Environment)(using palette: TestPalette):
 
   def addDetail(testId: TestId, info: Verdict.Detail): Report =
     this.also(details(testId) = details(testId).append(info))
+
+  // Sets the comparison anchor of a test's entry: the axis value against which its other
+  // cells are compared. A no-op if the test recorded no cells at all.
+  def anchor(testId: TestId, anchor: Anchor): Report = this.also:
+    resolve(testId.suite).tests.list.find(_(0) == testId).map(_(1)).each:
+      case ReportLine.Item(entry) => entry.anchor = anchor
+      case _: ReportLine.Suite    => ()
 
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
     val document = Documenting.document(this)

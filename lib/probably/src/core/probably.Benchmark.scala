@@ -80,7 +80,6 @@ case class Benchmark
     max:            Double,
     sd:             Double,
     confidence:     Benchmark.Percentiles,
-    baseline:       Optional[Baseline],
     operationSize:  Optional[Text] = Unset,
     operationRate:  Optional[Text] = Unset ):
 

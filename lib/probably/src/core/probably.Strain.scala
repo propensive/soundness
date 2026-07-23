@@ -103,7 +103,6 @@ case class Strain
     retained:    Long,
     gcCount:     Long,
     gcTime:      Long,
-    baseline:    Optional[Baseline],
     p50:         Optional[Long]   = Unset,
     p90:         Optional[Long]   = Unset,
     p99:         Optional[Long]   = Unset,

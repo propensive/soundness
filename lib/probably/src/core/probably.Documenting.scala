@@ -229,16 +229,61 @@ private[probably] object Documenting:
 
     table ::: axial.map(axialBench(_, sized))
 
+  // The baseline-relative datum of one run against the anchor's run, following the
+  // anchor's `Baseline` settings: the compared statistic (min/mean/max of the timing
+  // distribution), inverted to a rate for `Cadential`, as a ratio (`Geometric`, the
+  // anchor's own row showing ★) or a signed difference (`Arithmetic`).
+  private def relative(anchor: Anchor, anchorRun: Run, run0: Run): Datum =
+    val key = anchor.baseline.compare match
+      case Baseline.Compare.Min  => Metric.Least
+      case Baseline.Compare.Mean => Metric.Mean
+      case Baseline.Compare.Max  => Metric.Most
+
+    metric(run0, key).lay(Datum.Blank): value =>
+      metric(anchorRun, key).lay(Datum.Blank): anchorValue =>
+        if value == 0.0 || anchorValue == 0.0 then Datum.Blank else
+          val temporal = anchor.baseline.metric == Baseline.Metric.Temporal
+          def side(value: Double): Double = if temporal then value else 1.0/value
+
+          anchor.baseline.mode match
+            case Baseline.Mode.Geometric =>
+              Datum.Ratio(side(value)/side(anchorValue))
+
+            case Baseline.Mode.Arithmetic =>
+              val difference = side(value) - side(anchorValue)
+
+              if difference == 0.0 then Datum.Ratio(1.0) else
+                val magnitude =
+                  if temporal then Datum.Time(math.abs(difference).toLong)
+                  else Datum.Rate(math.abs(difference).toLong)
+
+                Datum.Delta(magnitude, difference < 0.0)
+
   // An entry with one axis renders as a table of its cells; with two, as a crosstab of
   // headline data; with more, as a flat listing of coordinates and headlines.
   private def axialBench(entry: Entry, sized: Boolean): Block = entry.axes match
     case axis :: Nil =>
-      val rows = entry.values(axis).flatMap: value =>
-        entry.cells.to(Map).at(List(value)).option.flatMap: cell =>
-          run(cell).option.map: run0 =>
-            Datum.Str(value.text) :: benchMetricCells(run0, sized)
+      val cells = entry.cells.to(Map)
 
-      Block.Table(entry.id, Column(axis.label) :: benchMetricColumns(sized), rows)
+      val anchored: Optional[(Anchor, Run)] =
+        entry.anchor.let: anchor =>
+          cells.at(List(anchor.value)).let(run(_)).let(anchor -> _)
+
+      val comparisonColumns = anchored.lay(Nil): (anchor, _) =>
+        List(Column(t"×${anchor.value.text}", numeric = true))
+
+      val rows = entry.values(axis).flatMap: value =>
+        cells.at(List(value)).option.flatMap: cell =>
+          run(cell).option.map: run0 =>
+            val comparison = anchored.lay(Nil): (anchor, anchorRun) =>
+              List(relative(anchor, anchorRun, run0))
+
+            Datum.Str(value.text) :: benchMetricCells(run0, sized) ::: comparison
+
+      Block.Table
+        ( entry.id,
+          Column(axis.label) :: benchMetricColumns(sized) ::: comparisonColumns,
+          rows )
 
     case first :: second :: Nil => crosstab(entry, first, second)
 
