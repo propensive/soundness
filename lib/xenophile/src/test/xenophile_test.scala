@@ -332,6 +332,25 @@ object Tests extends Suite(m"Xenophile tests"):
         list.size()
       . assert(_ == 2)
 
+      test(m"a setX(interface) property is assignable, inferring the lambda"):
+        val handler = make[java.util.logging.StreamHandler]()
+        // `setFilter(Filter)` reached as a `var`; `record` is inferred (a `LogRecord`).
+        handler.filter = (record => record.getLevel() != null)
+        handler.getFilter().k != null
+      . assert(_ == true)
+
+      test(m"a setX(interface) property with a two-argument SAM is assignable"):
+        var caught = false
+        val thread = make[java.lang.Thread](() => ())
+        // `setUncaughtExceptionHandler(UncaughtExceptionHandler)` reached as a `var`; the lambda's
+        // `who`/`error` parameters are inferred. A package-private `uncaughtExceptionHandler(handler)`
+        // method of the same name (JDK-internal) no longer shadows the generated setter.
+        thread.uncaughtExceptionHandler = ((who, error) => caught = true)
+        val installed = thread.getUncaughtExceptionHandler().k
+        installed.uncaughtException(thread.k, RuntimeException("boom"))
+        caught
+      . assert(_ == true)
+
       test(m"a nullary lambda satisfies a Runnable parameter with no ascription"):
         var ran = false
         val thread = make[java.lang.Thread](() => ran = true)

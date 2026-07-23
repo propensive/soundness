@@ -441,12 +441,19 @@ object KotlinFacade:
         val mapped = solid(result)
         mapped =:= TypeRepr.of[Unit] || mapped <:< TypeRepr.of[AnyVal]
 
+      // Only members a caller could actually invoke are worth refining. A non-empty `privateWithin`
+      // marks a package-private or protected-scoped Java member (e.g. JDK 25's internal
+      // `Thread.uncaughtExceptionHandler(handler)`, scoped to `java.lang`); refining it both
+      // exposes an inaccessible method and, worse, shadows the public `setX`-derived property of the
+      // same name — so the `x = …` setter would silently never be generated.
+      def accessible(method: Symbol): Boolean =
+        !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private)
+          && !method.flags.is(Flags.Protected) && method.privateWithin.isEmpty
+
       // A method worth refining: it has at least one functional-interface parameter (so a lambda
       // argument benefits) and a plain result.
       def candidate(method: Symbol): Boolean =
-        val usable = !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private)
-
-        usable && (repr.memberType(method) match
+        accessible(method) && (repr.memberType(method) match
           case MethodType(_, parameters, result) =>
             parameters.exists(samFunctionType(_).present) && plainResult(result)
 
@@ -470,13 +477,46 @@ object KotlinFacade:
       def parameterType(parameter: TypeRepr): TypeRepr =
         samFunctionType(parameter).or(TypeRepr.of[Any])
 
-      candidates.foldLeft(base): (accumulated, method) =>
+      val withMethods = candidates.foldLeft(base): (accumulated, method) =>
         repr.memberType(method).absolve match
           case MethodType(names, parameters, result) =>
             val signature =
               MethodType(names)(_ => parameters.map(parameterType), _ => solid(result))
 
             Refinement(accumulated, method.name, signature)
+
+          case _ =>
+            accumulated
+
+      // A `setX(SAM): void` method also becomes a `var`-like getter/setter pair (`x` and `x_=`)
+      // typed with the interface's function, so a lambda *assigned* with `x = …` infers its
+      // parameter types too (`button.onClickListener = view => …`), not only one passed to the
+      // method. Runtime dispatch of the `_=` returns to `setX` in `applied`.
+      val propertyNames = candidates.map(_.name).to(Set)
+
+      val setters = classSymbol.methodMembers.filter: method =>
+        val named = method.name.length > 3 && method.name.startsWith("set")
+
+        accessible(method) && named && (repr.memberType(method) match
+          case MethodType(_, List(parameter), result) =>
+            samFunctionType(parameter).present && solid(result) =:= TypeRepr.of[Unit]
+
+          case _ =>
+            false)
+
+      . groupBy(_.name).values.map(_.head).to(List)
+
+      setters.foldLeft(withMethods): (accumulated, method) =>
+        repr.memberType(method).absolve match
+          case MethodType(_, List(parameter), _) =>
+            val property = decapitalize(method.name.substring(3).nn.tt)
+
+            // Skip a property whose name a refined method already occupies.
+            if propertyNames.contains(property.s) then accumulated else
+              val function = samFunctionType(parameter).vouch
+              val getter = Refinement(accumulated, property.s, function)
+              val signature = MethodType(List("value"))(_ => List(function), _ => TypeRepr.of[Unit])
+              Refinement(getter, s"${property.s}_=", signature)
 
           case _ =>
             accumulated
@@ -637,6 +677,11 @@ object KotlinFacade:
     if text.s.isEmpty then text
     else t"${text.s.substring(0, 1).nn.toUpperCase.nn}${text.s.substring(1).nn}"
 
+  // The first letter lowercased (`OnClickListener` -> `onClickListener`).
+  private def decapitalize(text: Text): Text =
+    if text.s.isEmpty then text
+    else t"${text.s.substring(0, 1).nn.toLowerCase.nn}${text.s.substring(1).nn}"
+
   // The element type of a JVM array type (`Array[E]`), when the type is one.
   private def arrayElement(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   :   Optional[quotes.reflect.TypeRepr] =
@@ -783,12 +828,50 @@ object KotlinFacade:
 
           refined(Apply(Select(receiver(self, repr), method), Nil), prototype.result)
 
+  // A `setX(SAM)`-derived property assigned with `x = value` reaches this as `applyDynamic` of
+  // the synthesized setter name (`x_$eq`), routing to `setX` — where the value, typed by the
+  // refinement, is adapted (a lambda proxied to the interface).
+  private def setterCall(using quotes: Quotes)
+    ( self: Expr[Facade], field: Text, arguments: Expr[Seq[Any]] )
+  :   Expr[Any] =
+
+    import quotes.reflect.*
+
+    val suffix = if field.s.endsWith("_$eq") then 4 else 2
+    val property = field.s.substring(0, field.s.length - suffix).nn.tt
+    val setterName = t"set${capitalize(property)}"
+    val repr = transport(self)
+    val className = classNameOf(repr)
+    val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
+
+    val value = arguments match
+      case Varargs(Seq(single)) => single.asTerm
+      case _                    => halt(m"xenophile: an assignment takes a single value")
+
+    def parameterOf(method: Symbol): Optional[TypeRepr] = parameterTypes(repr, method).or(Nil) match
+      case parameter :: Nil => parameter
+      case _                => Unset
+
+    val candidates = classSymbol.methodMember(setterName.s).filter(parameterOf(_).present)
+
+    val method = candidates.find { m => parameterOf(m).lay(false)(satisfies(value, _)) }.getOrElse:
+      halt(m"xenophile: $className has no mutable property $property")
+
+    val parameter = parameterOf(method).vouch
+    val call = Apply(Select(receiver(self, repr), method), List(adapted(value, parameter)))
+
+    '{${call.asExpr}; ()}
+
   def applied(self: Expr[Facade], name: Expr[String], arguments: Expr[Seq[Any]])(using Quotes)
   :   Expr[Any] =
 
     import quotes.reflect.*
 
     val field = name.valueOrAbort.tt
+
+    if field.s.endsWith("_$eq") || field.s.endsWith("_=")
+    then return setterCall(self, field, arguments)
+
     val repr = transport(self)
     val className = classNameOf(repr)
 

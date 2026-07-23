@@ -63,7 +63,7 @@ class SketchActivity extends Activity:
 
     val clear = make[Button](this)
     clear.setText(t"Clear")
-    clear.setOnClickListener(view => canvas.clear())
+    clear.onClickListener = (view => canvas.clear())
 
     val color = make[Button](this)
     color.setText(t"Colour")
