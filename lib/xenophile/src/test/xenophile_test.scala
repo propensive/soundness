@@ -278,6 +278,26 @@ object Tests extends Suite(m"Xenophile tests"):
         size
       . assert(_ == 1)
 
+      test(m"an UNTYPED lambda infers against a functional-interface method"):
+        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
+        list.removeIf(text => text.length > 1)   // no ascription on `text`
+        val size: Int = list.size()
+        size
+      . assert(_ == 1)
+
+      test(m"an UNTYPED multi-argument lambda infers (an arity-2 interface)"):
+        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"ccc", t"a", t"bb"))
+        list.sort((left, right) => left.length - right.length)   // no ascriptions
+        list.get(0).unwrap.toString.tt
+      . assert(_ == t"a")
+
+      test(m"an UNTYPED lambda infers on a facade RETURNED from a method"):
+        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc", t"d"))
+        val sub = list.subList(0, 3)             // a facade returned from a call
+        sub.removeIf(text => text.length > 1)    // untyped lambda on the returned facade
+        sub.size()
+      . assert(_ == 1)
+
       test(m"a nullary lambda satisfies a Runnable parameter with no ascription"):
         var ran = false
         val thread = Kotlin.make[java.lang.Thread](() => ran = true)
