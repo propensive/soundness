@@ -271,6 +271,20 @@ object Tests extends Suite(m"Xenophile tests"):
         . map(_.message)
       . assert(_.exists(_.contains("value class")))
 
+      test(m"a typed lambda satisfies a Java functional-interface parameter"):
+        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
+        list.removeIf((text: Text) => text.length > 1)
+        val size: Int = list.size()
+        size
+      . assert(_ == 1)
+
+      test(m"a nullary lambda satisfies a Runnable parameter with no ascription"):
+        var ran = false
+        val thread = Kotlin.make[java.lang.Thread](() => ran = true)
+        thread.run()
+        ran
+      . assert(_ == true)
+
     val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
     suite(m"Foreign type navigation"):

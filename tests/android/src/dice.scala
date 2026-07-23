@@ -86,11 +86,13 @@ class DiceActivity extends Activity:
         left.setText(faces(random.nextInt(0, 6)))
         right.setText(faces(random.nextInt(0, 6)))
 
-        handler.postDelayed(new Runnable { def run(): Unit = animate(frames - 1) }, 45L)
+        // A lambda satisfies any Java functional-interface parameter: a nullary lambda is
+        // always fully typed, so `Runnable` needs no ascription at all…
+        handler.postDelayed(() => animate(frames - 1), 45L)
 
-    button.setOnClickListener:
-      new View.OnClickListener:
-        def onClick(view: View): Unit = animate(6)
+    // …and a unary lambda needs only its parameter's type (`Dynamic` erases the expected type,
+    // so the parameter cannot be inferred), with no anonymous class or `override` in sight.
+    button.setOnClickListener((_: View) => animate(6))
 
     val row = Kotlin.make[LinearLayout](this)
     row.setOrientation(LinearLayout.HORIZONTAL)

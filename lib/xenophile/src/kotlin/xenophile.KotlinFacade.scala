@@ -229,7 +229,7 @@ object KotlinFacade:
 
     val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
 
-    val functional = samCompatible(argument, target)
+    val functional = samCompatible(argument, target) || proxyCompatible(argument, target)
     val bridged = functional || collectionCompatible(argument.tpe.widen, target)
 
     direct || bridged
@@ -270,6 +270,97 @@ object KotlinFacade:
       TypeApply(Select.unique(view.asTerm, "asInstanceOf"), List(Inferred(solid(target))))
 
   // The arity of a Kotlin function type, when the parameter is one.
+  // A Java functional interface's single abstract method and its arity, when the parameter is
+  // one (`Runnable`, `View.OnClickListener`, `java.util.function.*`, …). Kotlin's `FunctionN`
+  // types are handled separately, since their adaptation implements a known interface directly.
+  private def isJavaFunctionalInterface(using quotes: Quotes)(symbol: quotes.reflect.Symbol)
+  :   Boolean =
+
+    import quotes.reflect.*
+    val java = symbol.flags.is(Flags.Trait) && symbol.flags.is(Flags.JavaDefined)
+    java && !symbol.fullName.startsWith("kotlin.jvm.functions.")
+
+  private def javaSam(using quotes: Quotes)(target: quotes.reflect.TypeRepr)
+  :   Optional[(quotes.reflect.Symbol, Int)] =
+
+    import quotes.reflect.*
+
+    target.classSymbol match
+      case Some(symbol) if isJavaFunctionalInterface(symbol) =>
+        val abstractMethods = symbol.methodMembers.filter: method =>
+          method.flags.is(Flags.Deferred) && !method.flags.is(Flags.Synthetic)
+
+        abstractMethods match
+          case List(method) => (method, method.paramSymss.flatten.length)
+          case _            => Unset
+
+      case _ =>
+        Unset
+
+  // Whether a *typed* Scala lambda can satisfy a Java functional-interface parameter. (An
+  // untyped lambda never reaches the macro: `Dynamic` gives arguments no expected type, so a
+  // lambda's parameter types must be written — `(_: View) => …` — though a `() => …` lambda is
+  // always fully typed.)
+  private def proxyCompatible(using quotes: Quotes)
+    ( argument: quotes.reflect.Term, target: quotes.reflect.TypeRepr )
+  :   Boolean =
+
+    import quotes.reflect.*
+
+    javaSam(target).lay(false): (_, arity) =>
+      arity match
+        case 0 => argument.tpe.widen <:< TypeRepr.of[() => Any]
+        case 1 => argument.tpe.widen <:< TypeRepr.of[Nothing => Any]
+        case 2 => argument.tpe.widen <:< TypeRepr.of[(Nothing, Nothing) => Any]
+        case _ => false
+
+  // Adapts a typed Scala lambda to a Java functional interface through a dynamic proxy: the
+  // proxy answers `equals`/`hashCode`/`toString` itself and forwards the single abstract method
+  // to the lambda, unwrapping any facade result. The `Proxy` machinery costs a reflective
+  // dispatch per invocation — negligible for callbacks like click listeners.
+  private def proxyAdapted(using quotes: Quotes)
+    ( argument: quotes.reflect.Term, target: quotes.reflect.TypeRepr )
+  :   Optional[quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    javaSam(target).let: (_, arity) =>
+      val interface = solid(target)
+
+      interface.asType.absolve match
+        case '[i] =>
+          val handler: Expr[(Array[Object | Null] | Null) => Object | Null] = arity match
+            case 0 =>
+              val lambda = argument.asExprOf[() => Any]
+              '{_ => KotlinRuntime.dispatch($lambda())}
+
+            case 1 =>
+              val lambda = '{${argument.asExpr}.asInstanceOf[Any => Any]}
+              '{args => KotlinRuntime.dispatch($lambda(args.nn(0)))}
+
+            case 2 =>
+              val lambda = '{${argument.asExpr}.asInstanceOf[(Any, Any) => Any]}
+              '{args => KotlinRuntime.dispatch($lambda(args.nn(0), args.nn(1)))}
+
+            case _ =>
+              halt(m"xenophile: functional interfaces above arity 2 are not yet supported")
+
+          // `classOf[Interface]` reaches the interface's runtime `Class` from its type, avoiding
+          // any reconstruction of the JVM binary name (a nested interface such as
+          // `View.OnClickListener` mangles to `View$OnClickListener`).
+          val samClass = Literal(ClassOfConstant(interface)).asExprOf[Class[i]]
+
+          val proxy =
+            ' {
+                val loader = $samClass.getClassLoader
+                val invocations = KotlinRuntime.forwarder($handler)
+
+                java.lang.reflect.Proxy.newProxyInstance(loader, Array($samClass), invocations)
+                . asInstanceOf[i]
+              }
+
+          proxy.asTerm
+
   private def samArity(using quotes: Quotes)(target: quotes.reflect.TypeRepr): Optional[Int] =
     target.classSymbol.map(_.fullName).getOrElse("") match
       case "kotlin.jvm.functions.Function0" => 0
@@ -382,7 +473,10 @@ object KotlinFacade:
 
     import quotes.reflect.*
 
-    val sam = samAdapted(argument, solid(parameter)).or(collectionAdapted(argument, parameter))
+    val sam =
+      samAdapted(argument, solid(parameter))
+      . or(proxyAdapted(argument, solid(parameter)))
+      . or(collectionAdapted(argument, parameter))
 
     val unwrapped = sam.or:
       if argument.tpe.widen <:< TypeRepr.of[Facade]
