@@ -2937,7 +2937,7 @@ object android extends Module:
       builder.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
 
     os.proc("java", "-cp", driverClasspath, "androidsample.buildDice", androidJar,
-        Task.dest.toString, (appSource().path / "dice.scala").toString, classpathFile.toString)
+        Task.dest.toString, appSource().path.toString, classpathFile.toString)
     . call(stdout = os.Inherit, stderr = os.Inherit)
 
     PathRef(Task.dest / "main.dex.jar")
@@ -2964,7 +2964,30 @@ object android extends Module:
       builder.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
 
     os.proc("java", "-cp", driverClasspath, "androidsample.buildApk", androidJar,
-        Task.dest.toString, (appSource().path / "dice.scala").toString, classpathFile.toString)
+        Task.dest.toString, appSource().path.toString, classpathFile.toString)
+    . call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(Task.dest / "app.apk")
+
+  // The richer showcase APK (`sketch.SketchActivity`), same pure pipeline as `apk`.
+  def sketch: T[PathRef] = Task:
+    val androidJar = Task.env.getOrElse("ANDROID_JAR", {
+      val home = Task.env.getOrElse("ANDROID_HOME", throw Exception(
+        "Set ANDROID_HOME or ANDROID_JAR to build the Android sample"))
+      val platforms = os.list(os.Path(home) / "platforms").filter(p => os.exists(p / "android.jar"))
+      if platforms.isEmpty then throw Exception(s"no platforms/android-NN/android.jar under $home")
+      (platforms.sortBy(_.last).last / "android.jar").toString
+    })
+
+    val classpath = runtime.runClasspath().map(_.path).filter(os.exists)
+    val classpathFile = Task.dest / "classpath"
+    os.write.over(classpathFile, classpath.mkString("\n"))
+
+    val driverClasspath =
+      builder.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+    os.proc("java", "-cp", driverClasspath, "androidsample.buildSketch", androidJar,
+        Task.dest.toString, appSource().path.toString, classpathFile.toString)
     . call(stdout = os.Inherit, stderr = os.Inherit)
 
     PathRef(Task.dest / "app.apk")

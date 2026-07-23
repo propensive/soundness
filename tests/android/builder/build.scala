@@ -60,13 +60,21 @@ object build:
         if entry.endsWith(".jar") then ClasspathEntry.Jar(entry.tt)
         else ClasspathEntry.Directory(entry.tt)
 
-  // Compiles the app and returns the compilation to link. The platform stubs join the compile
-  // classpath but must not be dexed: on the device, the operating system provides the platform.
+  // Compiles every `.scala` source in `sourceDir` and returns the compilation to link. The
+  // platform stubs join the compile classpath but must not be dexed: on the device, the
+  // operating system provides the platform.
   def compilation
-    ( androidJar: String, outDir: String, sourceFile: String, classpathFile: String )
+    ( androidJar: String, outDir: String, sourceDir: String, classpathFile: String )
   :   Compilation[Universe.Classfile] =
 
-    val source: Text = Files.readString(Paths.get(sourceFile)).nn.tt
+    val sources: Map[Text, Text] =
+      Files.list(Paths.get(sourceDir)).nn.toArray.nn.to(List).map(_.toString)
+      . filter(_.endsWith(".scala")).map: path =>
+          val name = Paths.get(path).nn.getFileName.nn.toString.tt
+          name -> Files.readString(Paths.get(path)).nn.tt
+
+      . to(Map)
+
     val entries = runtime(classpathFile)
     val platform: ClasspathEntry.Jar = ClasspathEntry.Jar(androidJar.tt)
     val compileClasspath = LocalClasspath((platform :: entries)*)
@@ -77,13 +85,11 @@ object build:
 
     supervise:
       val process =
-        Scalac[3.8](List(scalacOptions.experimental))
-          (compileClasspath)
-          (Map(t"dice.scala" -> source), classesPath)
+        Scalac[3.8](List(scalacOptions.experimental))(compileClasspath)(sources, classesPath)
 
       process.complete() match
         case CompileResult.Success =>
-          Out.println(t"compiled $sourceFile")
+          Out.println(t"compiled ${sources.size} sources")
 
         case other =>
           process.notices.each { notice => Out.println(notice.message) }
@@ -94,11 +100,11 @@ object build:
 
 // Links the compilation as a bare DEX archive, packaged into an APK afterwards by the SDK tools.
 @main
-def buildDice(androidJar: String, outDir: String, sourceFile: String, classpathFile: String)
+def buildDice(androidJar: String, outDir: String, sourceDir: String, classpathFile: String)
 :   Unit =
 
   import dexLinkages.given
-  val compiled = build.compilation(androidJar, outDir, sourceFile, classpathFile)
+  val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
   val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
 
   val artifact =
@@ -109,11 +115,11 @@ def buildDice(androidJar: String, outDir: String, sourceFile: String, classpathF
 // Links the compilation as a complete, signed APK — dexed, binary-manifested, zip-aligned and
 // v2-signed entirely by Soundness, with no `aapt2`, `zipalign` or `apksigner`.
 @main
-def buildApk(androidJar: String, outDir: String, sourceFile: String, classpathFile: String)
+def buildApk(androidJar: String, outDir: String, sourceDir: String, classpathFile: String)
 :   Unit =
 
   import apkLinkages.given
-  val compiled = build.compilation(androidJar, outDir, sourceFile, classpathFile)
+  val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
   val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
 
   val artifact =
@@ -126,6 +132,29 @@ def buildApk(androidJar: String, outDir: String, sourceFile: String, classpathFi
             apkOptions.version(1, t"1.0"),
             apkOptions.permission(t"android.permission.VIBRATE") ),
         List(Linker.EntryPoint(Fqcn(t"dice.DiceActivity"))) )
+    . link(compiled, out)
+
+  Out.println(t"linked $artifact")
+
+// A richer showcase app (`sketch.SketchActivity`) linked as a signed APK, exercising more of the
+// Android API surface through the facades.
+@main
+def buildSketch(androidJar: String, outDir: String, sourceDir: String, classpathFile: String)
+:   Unit =
+
+  import apkLinkages.given
+  val compiled = build.compilation(androidJar, outDir, sourceDir, classpathFile)
+  val out: Path on Linux = unsafely(outDir.tt.as[Path on Linux])
+
+  val artifact =
+    Linker[Artifact.Apk]
+      ( List
+          ( apkOptions.minApi(26),
+            apkOptions.targetApi(36),
+            apkOptions.packageName(t"dev.soundness.sketch"),
+            apkOptions.label(t"Sketch"),
+            apkOptions.version(1, t"1.0") ),
+        List(Linker.EntryPoint(Fqcn(t"sketch.SketchActivity"))) )
     . link(compiled, out)
 
   Out.println(t"linked $artifact")
