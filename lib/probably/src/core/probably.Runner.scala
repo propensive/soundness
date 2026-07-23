@@ -48,12 +48,29 @@ import beneficence.*
 object Runner:
   private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()
 
-class Runner[report]()(using reporter: Reporter[report]) extends Findable:
+class Runner[report](selection: Selection = Selection.all)(using reporter: Reporter[report])
+extends Findable:
   private val mutex: Mutex = Mutex()
   private var active: List[TestId] = Nil
+  private var listed0: List[(TestId, Entry.Kind)] = Nil
+  private var admitted0: Int = 0
   private val silent: Boolean = Ci.claudeCode || Ci()
 
-  def skip(id: TestId): Boolean = false
+  def skip(id: TestId): Boolean = skip(id, Entry.Kind.Check, Nil)
+
+  // Whether a test (or one cell of an axial test) is excluded by the selection. In listing
+  // mode every test is skipped, and those the selection admits are noted for enumeration.
+  def skip(id: TestId, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
+    if !selection.admits(id, kind, coordinates) then true
+    else if selection.listOnly then
+      mutex { listed0 = (id, kind) :: listed0 }
+      true
+    else
+      mutex { admitted0 += 1 }
+      false
+
+  def listed: List[(TestId, Entry.Kind)] = mutex(listed0.reverse.distinct)
+  def admitted: Int = mutex(admitted0)
 
   val report: report = reporter.report()
 
@@ -109,20 +126,21 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
     finally
       Runner.harnessThreadLocal.set(None)
 
+  // Suites are always entered, whatever the selection: their bodies are cheap, and pruning
+  // by name would defeat hash- and moniker-based selection of the tests within them.
   def suite(suite: Testable, block: Testable ?=> Unit): Unit =
-    if !skip(suite.id) then
-      mutex:
-        val size = active.size
-        active ::= suite.id
-        redraw(size)
+    mutex:
+      val size = active.size
+      active ::= suite.id
+      redraw(size)
 
-      reporter.declare(report, suite)
-      block(using suite)
+    reporter.declare(report, suite)
+    block(using suite)
 
-      mutex:
-        val size = active.size
-        active = active.filter(_ != suite.id)
-        redraw(size)
+    mutex:
+      val size = active.size
+      active = active.filter(_ != suite.id)
+      redraw(size)
 
   def terminate(error: Throwable): Unit = mutex:
     reporter.fail(report, error, active.to(Set))

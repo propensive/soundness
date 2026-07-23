@@ -118,7 +118,8 @@ object Spread:
             details,
             Decomposable.any[result],
             aspirational,
-            coordinates )
+            coordinates,
+            true )
 
       index += 1
 
@@ -208,7 +209,8 @@ object Spread2:
               details,
               Decomposable.any[result],
               aspirational,
-              coordinates )
+              coordinates,
+              true )
 
         rightIndex += 1
 

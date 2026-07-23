@@ -249,12 +249,14 @@ object Bench:
     :   Unit raises CompilerError raises RemoteError =
 
       val testId = TestId(name, suite, codepoint)
-      val results0 = bench.dispatch(Bench.measured(iterations, warmups, target)(body0))
 
-      inclusion.include
-        ( runner.report,
-          testId,
-          Bench.statistics(results0, iterations, confidence, operationSize) )
+      if !runner.skip(testId, Entry.Kind.Bench, Nil) then
+        val results0 = bench.dispatch(Bench.measured(iterations, warmups, target)(body0))
+
+        inclusion.include
+          ( runner.report,
+            testId,
+            Bench.statistics(results0, iterations, confidence, operationSize) )
 
     // One measurement per defined axis value, each a fresh dispatch: cells whose staged
     // trees coincide share one compilation (values carried by `References`), while each
@@ -284,14 +286,17 @@ object Bench:
       while index < values.length do
         val value = values(index)
 
-        if probe.isDefinedAt(value) then
+        val coordinates = List(axis.coordinate(value))
+
+        // An unselected cell is skipped BEFORE staging: it costs no compilation and no JVM.
+        if probe.isDefinedAt(value) && !runner.skip(testId, Entry.Kind.Bench, coordinates) then
           val results0 =
             bench.dispatch(Bench.measured(iterations, warmups, target)(body(value)))
 
           inclusion.include
             ( runner.report,
               testId,
-              List(axis.coordinate(value)),
+              coordinates,
               Bench.statistics(results0, iterations, confidence, operationSize) )
 
         index += 1
@@ -343,14 +348,18 @@ object Bench:
         while rightIndex < rights.length do
           val right = rights(rightIndex)
 
-          if probe.isDefinedAt((left, right)) then
+          val coordinates = List(first.coordinate(left), second.coordinate(right))
+
+          if probe.isDefinedAt((left, right))
+             && !runner.skip(testId, Entry.Kind.Bench, coordinates)
+          then
             val results0 =
               bench.dispatch(Bench.measured(iterations, warmups, target)(body((left, right))))
 
             inclusion.include
               ( runner.report,
                 testId,
-                List(first.coordinate(left), second.coordinate(right)),
+                coordinates,
                 Bench.statistics(results0, iterations, confidence, operationSize) )
 
           rightIndex += 1

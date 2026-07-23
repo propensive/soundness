@@ -166,23 +166,24 @@ extends Rig:
             (count.toString + "\t" + key).tt
         }
 
-    val results = dispatch(body)
+    if !runner.skip(testId, Entry.Kind.Profile, Nil) then
+      val results = dispatch(body)
 
-    val hotspots =
-      Hotspots
-        ( results.head.s.toLong,
-          results.tail.map: line =>
-            line.cut(t"\t").to(List) match
-              case count :: className :: method :: Nil =>
-                Hotspots.Frame
-                  ( StackTrace.rewrite(className.s),
-                    StackTrace.rewrite(method.s, method = true),
-                    count.s.toLong )
+      val hotspots =
+        Hotspots
+          ( results.head.s.toLong,
+            results.tail.map: line =>
+              line.cut(t"\t").to(List) match
+                case count :: className :: method :: Nil =>
+                  Hotspots.Frame
+                    ( StackTrace.rewrite(className.s),
+                      StackTrace.rewrite(method.s, method = true),
+                      count.s.toLong )
 
-              case other =>
-                Hotspots.Frame(t"?", line, 0L) )
+                case other =>
+                  Hotspots.Frame(t"?", line, 0L) )
 
-    inclusion.include(runner.report, testId, hotspots)
+      inclusion.include(runner.report, testId, hotspots)
 
 
   def stage(out: Path on Linux): Path on Linux = unsafely:

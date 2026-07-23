@@ -428,17 +428,18 @@ extends Rig:
     // accumulate as cells of one entry rather than as separately-named tests.
     val testId = TestId(name, suite, codepoint)
 
-    dispatch(body).grouped(14).to(List).each: step =>
-      val n = step(0).toInt
-      val compliance2: Optional[Double] = if step(12) < 0L then Unset else step(12)/10000.0
-      val sustained: Boolean = step(13) == 1L
+    if !runner.skip(testId, Entry.Kind.Stress, Nil) then
+      dispatch(body).grouped(14).to(List).each: step =>
+        val n = step(0).toInt
+        val compliance2: Optional[Double] = if step(12) < 0L then Unset else step(12)/10000.0
+        val sustained: Boolean = step(13) == 1L
 
-      val strain =
-        Strain
-          ( n, step(1), step(2), step(3), step(4), step(5), step(6), step(7),
-            step(8), step(9), step(10), step(11), compliance2, sustained )
+        val strain =
+          Strain
+            ( n, step(1), step(2), step(3), step(4), step(5), step(6), step(7),
+              step(8), step(9), step(10), step(11), compliance2, sustained )
 
-      inclusion.include(runner.report, testId, strain)
+        inclusion.include(runner.report, testId, strain)
 
 
   def stage(out: Path on Linux): Path on Linux = unsafely:
