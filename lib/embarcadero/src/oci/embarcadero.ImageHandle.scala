@@ -48,16 +48,16 @@ import vacuous.*
 import zephyrine.*, parsing.trackPositions
 
 // The scoped capability provided by opening an oci-archive as `Image`:
-// `path.open[Image]()`. The entries come from bitumen's memoized sequential reader, so
-// blobs are found by name over the entry list; scanning past a blob retains its chunks
+// `path.open[Image]()`. The entries are materialized from bitumen's sequential reader,
+// so blobs are found by name over the entry list; their memoized bodies are retained
 // for the scope's duration, the flat cost of TAR's sequentiality. Archives written by
 // `Image.archive` place `index.json` before the blobs, so the metadata path is cheap.
-class ImageHandle private[embarcadero] (entries: LazyList[Tar.Entry])
+class ImageHandle private[embarcadero] (entries: List[Tar.Entry])
 extends caps.ExclusiveCapability:
 
-  // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
+  // The body of the blob addressed by a canonical `sha256:<hex>` digest: its stored
   // (for layers: compressed) chunks — undecoded and unverified.
-  def blob(digest: Text): LazyList[Data] raises OciError =
+  private def body(digest: Text)(using Tactic[OciError]): TarBody =
     if !digest.s.startsWith("sha256:")
     then abort(OciError(OciError.Reason.UnsupportedDigest(digest.cut(t":").head)))
 
@@ -65,6 +65,13 @@ extends caps.ExclusiveCapability:
 
     entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
     . getOrElse(abort(OciError(OciError.Reason.MissingBlob(digest))))
+
+  // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
+  // (for layers: compressed) chunks — undecoded and unverified. (An explicit `Tactic`
+  // rather than `raises` sugar: a fresh capability in a context-function result cannot
+  // flow to a forwarding caller.)
+  def blob(digest: Text)(using Tactic[OciError]): (Stream[Data] over Credit)^ =
+    body(digest).stream
 
   // The decoded top-level index, after validating the `oci-layout` marker.
   def index: Index raises OciError =
@@ -109,12 +116,14 @@ extends caps.ExclusiveCapability:
       bytes.read[Json].as[ImageConfig]
 
   // A layer's stored blob, verbatim: for OCI layers, the gzip-compressed tar.
-  def compressed(descriptor: Descriptor): LazyList[Data] raises OciError =
+  def compressed(descriptor: Descriptor)(using Tactic[OciError])
+  :   (Stream[Data] over Credit)^ =
+
     blob(descriptor.digest)
 
   // A layer's content as the uncompressed tar byte stream, decompressing according to
   // the descriptor's media type; unrecognised types stream verbatim.
-  def layer(descriptor: Descriptor): LazyList[Data] raises OciError =
+  def layer(descriptor: Descriptor)(using Tactic[OciError]): (Stream[Data] over Credit)^ =
     if descriptor.mediaType.suffixes.contains(Media.Suffix.Gzip)
     then compressed(descriptor).decompress[Gzip]
     else compressed(descriptor)
@@ -122,7 +131,7 @@ extends caps.ExclusiveCapability:
   // A blob gathered eagerly and checked against its descriptor's digest and size — the
   // opt-in verified path, since checking a stream would force draining it.
   def verified(descriptor: Descriptor): Data raises OciError =
-    val bytes = gather(blob(descriptor.digest))
+    val bytes = body(descriptor.digest).memoize
     val digest = sha256(bytes)
 
     if digest != descriptor.digest
@@ -136,16 +145,11 @@ extends caps.ExclusiveCapability:
 
     bytes
 
-  private def gather(stream: LazyList[Data]): Data =
-    stream.foldLeft(IArray.empty[Byte])(_ ++ _)
-
   // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
   private def document(name: Text, reason: OciError.Reason): Data raises OciError =
-    val bytes =
-      entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
-      . getOrElse(abort(OciError(reason)))
-
-    gather(bytes)
+    entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
+    . getOrElse(abort(OciError(reason)))
+    . memoize
 
   // Runs a JSON decode, translating any failure — parse, JSON or media-type errors,
   // thrown under the call site's `throwUnsafely` — to an `InvalidBlob` on the given
@@ -175,4 +179,4 @@ extends Openable:
   :   result =
 
     if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
-    block(using new ImageHandle(Tarfile.read(LazyList(value))) with Granting[grants] {})
+    block(using new ImageHandle(Tarfile.read(value.stream).to(List)) with Granting[grants] {})

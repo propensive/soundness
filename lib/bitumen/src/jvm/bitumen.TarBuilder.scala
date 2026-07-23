@@ -82,9 +82,11 @@ extends caps.ExclusiveCapability:
   def insert[data: Streamable by Data over Credit as streamable](name: TarRef, data: data)
   :   Unit =
 
+    val iterator = streamable.stream(data).chunks
+
     insert(Tar.Entry.File
       ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
-        streamable.stream(data).toLazyList ))
+        TarBody.deferred(() => if iterator.hasNext then iterator.next() else Unset) ))
 
   // Author one entry with a streamed, unknown-length body: the block writes
   // chunks through the lent `TarEntryWriter`. On an uncompressed target the
@@ -102,11 +104,11 @@ extends caps.ExclusiveCapability:
     sink.lay:
       val buffer = scm.ArrayBuffer[Data]()
       val outcome = block(using TarEntryWriter(buffer += _))
-      insert(Tar.Entry.File(name, mode, user, group, mtime, buffer.to(LazyList)))
+      insert(Tar.Entry.File(name, mode, user, group, mtime, TarBody(buffer.to(Seq)*)))
       outcome
 
     . apply: out =>
-        val probe = Tar.Entry.File(name, mode, user, group, mtime, LazyList())
+        val probe = Tar.Entry.File(name, mode, user, group, mtime, TarBody.empty)
         Tarfile.preamble(probe, format).each { chunk => write(out, chunk) }
 
         val headerPosition = out.getFilePointer
@@ -132,7 +134,7 @@ extends caps.ExclusiveCapability:
         write(out, Tarfile.zeroBlock)
 
         var count: Long = 0
-        file.data.each { chunk => write(out, chunk); count += chunk.length }
+        file.data.chunks.foreach { chunk => write(out, chunk); count += chunk.length }
 
         pad(out, count)
         val end = out.getFilePointer
@@ -159,7 +161,7 @@ extends caps.ExclusiveCapability:
     write(out, Tarfile.zeroBlock)
 
   private[bitumen] def tarfile(format: LongNameFormat): Tarfile =
-    Tarfile(stack.reverse.to(LazyList), format)
+    Tarfile(stack.reverse, format)
 
 object TarBuilder:
   class TarCreatable[path: Abstractable across Paths to Text](using Tactic[TarError])
@@ -190,12 +192,11 @@ object TarBuilder:
           val outcome = block(using builder)
           val tarfile = builder.tarfile(format)
 
-          val stream: LazyList[Data] = tarFlag match
+          commit(value.generic, createFlags, tarFlag match
             case TarFlag.Gzip    => tarfile.gzip
             case TarFlag.Zlib    => tarfile.zlib
-            case TarFlag.Deflate => tarfile.deflate
+            case TarFlag.Deflate => tarfile.deflate)
 
-          commit(value.generic, createFlags, stream)
           outcome
 
         case None =>
@@ -240,7 +241,8 @@ object TarBuilder:
               abort(TarError(TarError.Reason.CannotWrite(error.getMessage.nn.tt)))
 
   // Serialize to a hidden temporary sibling, then move atomically onto the target.
-  private def commit(filename: Text, flags: List[CreateFlag], stream: LazyList[Data])
+  private def commit
+    ( filename: Text, flags: List[CreateFlag], consume stream: (Stream[Data] over Credit)^ )
     ( using Tactic[TarError] )
   :   Unit =
 
@@ -258,7 +260,9 @@ object TarBuilder:
       try
         val out = ji.FileOutputStream(temporary.toFile)
 
-        try stream.each { chunk => out.write(chunk.mutable(using Unsafe)) }
+        try
+          stream.sweep: (window, start, count) =>
+            out.write(window.asInstanceOf[Array[Byte]], start, count)
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

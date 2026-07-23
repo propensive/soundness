@@ -65,7 +65,7 @@ extension (companion: Tarfile.type)
             Tactic[TarError] )
   :   Tarfile =
 
-    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
+    val entries: List[Tar.Entry] = root.descendants.to(List).map: path =>
       TarFilesystem.entryFor(root, path)
 
     Tarfile(entries)

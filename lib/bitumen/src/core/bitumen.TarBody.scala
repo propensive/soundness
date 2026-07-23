@@ -30,40 +30,87 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package embarcadero
+package bitumen
 
 import anticipation.*
-import aperture.*
-import bitumen.*
-import contingency.*
 import prepositional.*
-import turbulence.*
+import rudiments.*
+import vacuous.*
 import zephyrine.*
 
-// Opening a filesystem *path* as an OCI image, delegating the TAR bracket to bitumen's disk-backed
-// `TarOpenable`. Split from `embarcadero.oci`'s cross-platform sources because it needs
-// `bitumen.jvm`; the in-memory `data.open[Image]` (via `ImageDataOpenable`) stays in the core.
-class ImageOpenable[path: Abstractable across Paths to Text]
-  ( using Tactic[OciError], Tactic[TarError], Tactic[StreamError] )
-extends Openable:
+object TarBody:
+  // An in-memory body: its chunks are given up front, and nothing pulls lazily.
+  def apply(chunks: Data*): TarBody =
+    new TarBody(chunks.filter(_.length > 0).to(List), () => Unset)
 
-  type Self = path
-  type Form = Image
-  type Operand = Nothing
-  type Result = ImageHandle
+  val empty: TarBody = TarBody()
 
-  def open[grants <: Grant, result]
-    ( value: path, mode: Mode granting grants, flags: List[Nothing] )
-    ( block: ((ImageHandle & Granting[grants])^) ?=> result )
-  :   result =
+  // A body fed lazily from a source the producer still owns (the shared cursor
+  // of a streaming read, or an unread source stream): `pull` yields the next
+  // chunk, or `Unset` when the body is complete. The producer's captures are
+  // erased at this audited point — exactly the laundering the memoizing
+  // `LazyList` chain this replaces performed implicitly through its cells —
+  // and the producer must remain valid until the body is drained.
+  private[bitumen] def deferred(pull: () => Optional[Data]): TarBody =
+    new TarBody(Nil, caps.unsafe.unsafeAssumePure(pull))
 
-    if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
+// The replayable body of an archive entry. Chunks pull lazily from the
+// producer and memoize, so the underlying region is read exactly once however
+// many consumers stream it, and each `stream` replays from the first chunk.
+// An in-order consumer of a streaming read holds memory bounded by the entries
+// it retains: a body's memoized chunks are reclaimed with its entry.
+class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
+  private val memo: scala.collection.mutable.ArrayBuffer[Data] =
+    scala.collection.mutable.ArrayBuffer.from(initial)
 
-    TarOpenable[path]().open(value, mode, Nil): tar ?=>
-      block(using new ImageHandle(tar.entries.to(List)) with Granting[grants] {})
+  private var exhausted: Boolean = false
 
-// Re-exported through `soundness.*`, so `path.open[Image]` resolves on the JVM as before.
-given imagePathOpenable: [path: Abstractable across Paths to Text]
-=>  ( Tactic[OciError], Tactic[TarError], Tactic[StreamError] )
-=>  ( ImageOpenable[path]^ ) =
-  ImageOpenable[path]
+  // Extend the memo by one chunk, or record exhaustion.
+  private def fetch(): Boolean =
+    if exhausted then false else
+      val next = pull()
+
+      if next.absent then
+        exhausted = true
+        false
+      else
+        val chunk = next.vouch
+        if chunk.length > 0 then memo += chunk
+        chunk.length > 0 || fetch()
+
+  // Read the remainder of the body from its producer, so the producer may move
+  // past it. Memoized chunks are never re-read.
+  private[bitumen] def drain(): Unit = while fetch() do ()
+
+  def size: Long =
+    drain()
+    memo.foldLeft(0L)(_ + _.length)
+
+  // The body's chunks, replayed from the start; unread chunks pull from the
+  // producer as the iterator advances.
+  def chunks: Iterator[Data] = new Iterator[Data]:
+    private var index: Int = 0
+
+    def hasNext: Boolean = index < memo.length || fetch()
+
+    def next(): Data =
+      val chunk = memo(index)
+      index += 1
+      chunk
+
+  // A fresh stream over the body's chunks, replayed from the start.
+  def stream: (Stream[Data] over Credit)^ = Stream(chunks)
+
+  // The whole body as a single value.
+  def memoize: Data =
+    drain()
+
+    if memo.length == 1 then memo(0) else
+      val whole = new Array[Byte](size.toInt)
+      var offset = 0
+
+      memo.each: chunk =>
+        System.arraycopy(chunk.mutable(using Unsafe), 0, whole, offset, chunk.length)
+        offset += chunk.length
+
+      whole.immutable(using Unsafe)
