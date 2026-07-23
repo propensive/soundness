@@ -32,8 +32,11 @@
                                                                                                   */
 package probably
 
+import scala.deriving.*
+
 import anticipation.*
 import digression.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
@@ -62,5 +65,47 @@ case class TestId
   // `^` on that pure result type at the `assert`/`check` site.
   def apply[result](context: Harness ?=> result): (Test[result])^{context} =
     Test[result](this, context(using _))
+
+  // Spreads the test over one axis: the body is evaluated per axis value (an enum
+  // companion object, a value list, or a range), producing one cell per defined value; a
+  // partial body (`{ case … }`) leaves gaps at the values it does not define.
+  def over[value, result](axis: Axis[value])(action: Harness ?=> (value ~> result))
+  :   Spread[value, result]^{action} =
+
+    Spread(this, axis, action(using _))
+
+  def over[value <: reflect.Enum: Enumerable, result](companion: { def values: Array[value] })
+    ( action: Harness ?=> (value ~> result) )
+  :   Spread[value, result]^{action} =
+
+    Spread(this, Axis(companion), action(using _))
+
+  // Spreads the test over two axes, producing a sparse grid of cells.
+  def over[left, right, result](first: Axis[left], second: Axis[right])
+    ( action: Harness ?=> (((left, right)) ~> result) )
+  :   Spread2[left, right, result]^{action} =
+
+    Spread2(this, first, second, action(using _))
+
+  def over[left <: reflect.Enum: Enumerable, right, result]
+    ( first: { def values: Array[left] }, second: Axis[right] )
+    ( action: Harness ?=> (((left, right)) ~> result) )
+  :   Spread2[left, right, result]^{action} =
+
+    Spread2(this, Axis(first), second, action(using _))
+
+  def over[left, right <: reflect.Enum: Enumerable, result]
+    ( first: Axis[left], second: { def values: Array[right] } )
+    ( action: Harness ?=> (((left, right)) ~> result) )
+  :   Spread2[left, right, result]^{action} =
+
+    Spread2(this, first, Axis(second), action(using _))
+
+  def over[left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, result]
+    ( first: { def values: Array[left] }, second: { def values: Array[right] } )
+    ( action: Harness ?=> (((left, right)) ~> result) )
+  :   Spread2[left, right, result]^{action} =
+
+    Spread2(this, Axis(first), Axis(second), action(using _))
 
   def depth: Int = suite.let(_.id.depth).or(0) + 1

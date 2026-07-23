@@ -111,7 +111,8 @@ object internal:
                   $inclusion,
                   $inclusion2,
                   Decomposable.any[test],
-                  $aspirationalExpr )
+                  $aspirationalExpr,
+                  Nil )
             }
 
         if analyse.or(false) then exp match
@@ -138,7 +139,8 @@ object internal:
                     $inclusion,
                     $inclusion2,
                     decompose,
-                    $aspirationalExpr )
+                    $aspirationalExpr,
+                    Nil )
               }
 
           case _ =>
@@ -168,14 +170,17 @@ object internal:
       inc:          Inclusion[report, Verdict],
       inc2:         Inclusion[report, Verdict.Detail],
       decomposable: test is Decomposable,
-      aspirational: Boolean )
+      aspirational: Boolean,
+      coordinates:  List[(Axis.Spec, Value)] )
   :   result =
 
     runner.run(test).pipe: run =>
       val verdict = run match
         case Trial.Throws(err, duration, map) =>
           val exception: Exception = try err() catch case exc: Exception => exc
-          if !map.nil then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+
+          if !map.nil
+          then inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
 
           if aspirational then Verdict.AspireFail(duration)
           else Verdict.Throws(exception, duration)
@@ -190,20 +195,21 @@ object internal:
                 inc2.include
                   ( runner.report,
                     test.id,
+                    coordinates,
                     Verdict.Detail.Compare
                       ( decomposable.decomposition(exp).text,
                         decomposable.decomposition(value).text,
                         contrast.juxtaposition(exp, value) ) )
 
               if !map.nil
-              then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))
+              then inc2.include(runner.report, test.id, coordinates, Verdict.Detail.Captures(map))
 
               if aspirational then Verdict.AspireFail(duration) else Verdict.Fail(duration)
           catch case error: Exception =>
             if aspirational then Verdict.AspireFail(duration)
             else Verdict.CheckThrows(error, duration)
 
-      inc.include(runner.report, test.id, verdict)
+      inc.include(runner.report, test.id, coordinates, verdict)
       result(run)
 
 

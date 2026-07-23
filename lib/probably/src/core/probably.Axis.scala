@@ -87,21 +87,35 @@ object Axis:
   def apply[value: Axable](label: Text)(values: value*): Axis[value] =
     new Axis(label, values.to(List))
 
+  // An axis from an enum's companion object: the axis is labelled with the lowercased enum
+  // name and its values are the enum's cases. `Enumerable.name` is the fully-shown type
+  // (and, when the type was inferred, may carry a capture annotation), so the label keeps
+  // only the simple name.
+  def apply[enumeration <: reflect.Enum: Enumerable as evidence]
+    ( companion: { def values: Array[enumeration] } )
+  :   Axis[enumeration] =
+
+    val label = evidence.name.cut(t" ").head.cut(t".").last.lower
+    new Axis(label, evidence.values.to(List))
+
   def apply(label: Text)(range: Range): Axis[Int] = new Axis(label, range.to(List))
 
   def emergent[value: Axable](label: Text): Axis[value] = new Axis(label, Nil, emergent = true)
 
   // An enum's companion object is its `Mirror.SumOf`, so a bare companion object can stand
-  // for an axis wherever an `into Axis[…]` is expected: the axis is labelled with the
-  // lowercased enum name and its values are the enum's cases.
+  // for an axis wherever a concrete `Axis[…]` is expected (as an `into` type). Generic
+  // positions such as `over` cannot drive this conversion (the element type is still a
+  // type variable there), so they take explicit companion overloads via `Axis(companion)`.
   given companion: [enumeration <: reflect.Enum: Enumerable as evidence]
-  =>  Conversion[Mirror.SumOf[enumeration], Axis[enumeration]] =
-    _ => new Axis(evidence.name.lower, evidence.values.to(List))
+  =>  Conversion[{ def values: Array[enumeration] }, Axis[enumeration]] =
+    Axis(_)
 
 // One input variable of a test: a labelled domain of values, each of which contributes one
 // coordinate of the test's cells. Most tests have no axes; a comparative benchmark has one
 // discrete axis of implementations; input data of different sizes forms a numeric axis.
-case class Axis[value](label: Text, values: List[value], emergent: Boolean = false)
+// An `into` type, so an enum companion object is accepted (via `Axis.companion`) wherever
+// an axis is expected, without a language import at the call site.
+into case class Axis[value](label: Text, values: List[value], emergent: Boolean = false)
   ( using val axable: value is Axable ):
 
   def spec: Axis.Spec = Axis.Spec(label, axable.domain, emergent)

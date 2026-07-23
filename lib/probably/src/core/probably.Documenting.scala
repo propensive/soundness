@@ -58,8 +58,8 @@ private[probably] object Documenting:
     val failed: Int = total - passed - aspirePassed - aspireFailed
 
     val groups =
-      List(Entry.Kind.Bench, Entry.Kind.Stress, Entry.Kind.Profile).flatMap: kind =>
-        suiteGroups(report.lines, kind)
+      List(Entry.Kind.Check, Entry.Kind.Bench, Entry.Kind.Stress, Entry.Kind.Profile)
+      . flatMap(suiteGroups(report.lines, _))
 
     val failures = report.details.to(List).sortBy(_(0).timestamp).map: (id, buffer) =>
       (id, buffer.to(List))
@@ -89,19 +89,25 @@ private[probably] object Documenting:
         val verdicts = entry.cells.flatMap(_(1).runs).flatMap(_.verdict.option)
 
         if verdicts.isEmpty then Nil else
-          val status =
-            if verdicts.all(_.typed[Verdict.Pass]) then Status.Pass
-            else if verdicts.all(_.typed[Verdict.Fail]) then Status.Fail
-            else if verdicts.all(_.typed[Verdict.Throws]) then Status.Throws
-            else if verdicts.all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
-            else if verdicts.all(_.typed[Verdict.AspirePass]) then Status.AspirePass
-            else if verdicts.all(_.typed[Verdict.AspireFail]) then Status.AspireFail
-            else Status.Mixed
-
           val durations = verdicts.map(_.duration)
           val avg = durations.sum/durations.length
+          val status = verdictStatus(verdicts)
 
           List(SummaryRow(status, entry.id, verdicts.length, durations.min, durations.max, avg))
+
+  // The collective status of a set of verdicts: their common status, or `Mixed` when they
+  // disagree.
+  private def verdictStatus(verdicts: List[Verdict]): Status =
+    if verdicts.all(_.typed[Verdict.Pass]) then Status.Pass
+    else if verdicts.all(_.typed[Verdict.Fail]) then Status.Fail
+    else if verdicts.all(_.typed[Verdict.Throws]) then Status.Throws
+    else if verdicts.all(_.typed[Verdict.CheckThrows]) then Status.CheckThrows
+    else if verdicts.all(_.typed[Verdict.AspirePass]) then Status.AspirePass
+    else if verdicts.all(_.typed[Verdict.AspireFail]) then Status.AspireFail
+    else Status.Mixed
+
+  private def cellStatus(cell: Cell): Status =
+    verdictStatus(cell.runs.flatMap(_.verdict.option))
 
   // Measurement entries group by their immediate suite, one `Group` per suite and kind, in
   // declaration order; nested suites follow their parents.
@@ -119,8 +125,9 @@ private[probably] object Documenting:
         case _: ReportLine.Item      => Nil
 
     val here =
-      if entries.isEmpty then Nil
-      else List(Group(line.suite, kind, blocks(kind, entries)))
+      if entries.isEmpty then Nil else
+        val blockList = blocks(kind, entries)
+        if blockList.isEmpty then Nil else List(Group(line.suite, kind, blockList))
 
     here ::: nested
 
@@ -129,7 +136,9 @@ private[probably] object Documenting:
     case Entry.Kind.Stress  => stressBlocks(entries)
     case Entry.Kind.Profile => entries.map(histogram)
 
-    case Entry.Kind.Check   => Nil
+    // Only axial unit tests need their own blocks (a table or grid of per-cell statuses);
+    // ordinary tests are fully described by the results table.
+    case Entry.Kind.Check   => entries.filter(_.axes.nonEmpty).map(axialCheck)
 
   // The first (usually only) run of a cell: measurements record one run per cell, and a
   // duplicated declaration keeps its first measurement, as it always has.
@@ -149,18 +158,9 @@ private[probably] object Documenting:
     case Metric.Dimension.Fraction => Datum.Percent(value)
 
   private def cellDatum(entry: Entry, cell: Cell): Datum =
-    run(cell).lay(Datum.Gap): run0 =>
-      entry.headline.lay(Datum.Mark(runStatus(run0))): headline =>
+    entry.headline.lay(Datum.Mark(cellStatus(cell))): headline =>
+      run(cell).lay(Datum.Gap): run0 =>
         metric(run0, headline).lay(Datum.Blank)(datum(headline, _))
-
-  private def runStatus(run: Run): Status =
-    run.verdict.lay(Status.Mixed):
-      case Verdict.Pass(_)           => Status.Pass
-      case Verdict.Fail(_)           => Status.Fail
-      case Verdict.Throws(_, _)      => Status.Throws
-      case Verdict.CheckThrows(_, _) => Status.CheckThrows
-      case Verdict.AspirePass(_)     => Status.AspirePass
-      case Verdict.AspireFail(_)     => Status.AspireFail
 
   private def confidence(run: Run): Datum =
     val basisPoints = (metric(run, Metric.Confidence).or(0.0)*10000.0).toLong
@@ -249,6 +249,36 @@ private[probably] object Documenting:
       Block.Table
         ( entry.id,
           List(Column(axes.map(_.label).join(t", ")), Column(t"Headline", numeric = true)),
+          rows )
+
+  // An axial unit test: one axis renders as a table of per-value statuses and timings; two
+  // axes render as a grid of statuses with gaps at undefined combinations.
+  private def axialCheck(entry: Entry): Block = entry.axes match
+    case axis :: Nil =>
+      val cells = entry.cells.to(Map)
+
+      val rows = entry.values(axis).flatMap: value =>
+        cells.at(List(value)).option.map: cell =>
+          val durations = cell.runs.flatMap(_.verdict.option).map(_.duration)
+          val avg = if durations.isEmpty then 0L else durations.sum/durations.length
+          val time = if avg == 0L then Datum.Blank else Datum.Time(avg)
+
+          List(Datum.Str(value.text), Datum.Mark(cellStatus(cell)), time)
+
+      Block.Table
+        ( entry.id,
+          List(Column(axis.label), Column(t"Status"), Column(t"Time", numeric = true)),
+          rows )
+
+    case first :: second :: Nil => crosstab(entry, first, second)
+
+    case axes =>
+      val rows = entry.cells.map: (address, cell) =>
+        List(Datum.Str(address.map(_.text).join(t", ")), cellDatum(entry, cell))
+
+      Block.Table
+        ( entry.id,
+          List(Column(axes.map(_.label).join(t", ")), Column(t"Status")),
           rows )
 
   // The biaxial grid: the first axis's values are rows, the second's are columns, and each

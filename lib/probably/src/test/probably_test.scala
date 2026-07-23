@@ -34,6 +34,21 @@ package probably
 
 import soundness.*
 
+enum Codec:
+  case Zip, Tar, Cpio
+
 object Tests extends Suite(m"Probably Tests"):
   def run(): Unit =
-    ()
+    test(n"square", m"square a number")(3*3).assert(_ == 9)
+
+    test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
+      n*2
+    . assert((n, result) => result == n*2)
+
+    test(m"enum companions form axes").over(Codec): codec =>
+      codec.ordinal
+    . assert((codec, ordinal) => ordinal >= 0 && ordinal < 3)
+
+    test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
+      case (x, y) if x + y != 23 => x*y
+    . assert((x, y, result) => result == x*y)
