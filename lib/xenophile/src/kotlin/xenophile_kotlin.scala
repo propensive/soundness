@@ -32,6 +32,10 @@
                                                                                                   */
 package xenophile
 
+// Constructs a Kotlin class through its facade: `make[Pair[Text, Text]](t"a", t"b")`.
+transparent inline def make[kotlinType](inline arguments: Any*): Any =
+  ${KotlinFacade.construct[kotlinType]('arguments)}
+
 // The facade of a Kotlin class's companion object, through which its members are reachable:
 // `companion[Regex].escape(t"a.b")`.
 transparent inline def companion[kotlinType]: Any = ${KotlinFacade.companion[kotlinType]}

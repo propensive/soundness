@@ -101,7 +101,7 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.nonEmpty)
 
     suite(m"Kotlin facades"):
-      val pair = Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b")
+      val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
 
       test(m"a Kotlin class constructs through its facade"):
         pair.unwrap.toString.tt
@@ -117,7 +117,7 @@ object Tests extends Suite(m"Xenophile tests"):
         second
       . assert(_ == t"b")
 
-      val regex = Kotlin.make[kotlin.text.Regex](t"[0-9]+")
+      val regex = make[kotlin.text.Regex](t"[0-9]+")
 
       test(m"an instance method accepts Text for a CharSequence parameter"):
         val matches: Boolean = regex.matches(t"123")
@@ -144,12 +144,12 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an unknown property is rejected"):
         demilitarize:
-          Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").third
+          make[kotlin.Pair[Text, Text]](t"a", t"b").third
       . assert(_.nonEmpty)
 
       test(m"a wrongly-typed constructor argument is rejected"):
         demilitarize:
-          Kotlin.make[kotlin.text.Regex](42)
+          make[kotlin.text.Regex](42)
       . assert(_.nonEmpty)
 
       test(m"a companion object's members are reachable"):
@@ -159,7 +159,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an unknown member's error suggests near misses in Kotlin syntax"):
         demilitarize:
-          Kotlin.make[kotlin.text.Regex](t"x").matchez(t"y")
+          make[kotlin.text.Regex](t"x").matchez(t"y")
         . map(_.message)
       . assert(_.exists(_.contains("did you mean")))
 
@@ -183,7 +183,7 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == t"33x44")
 
       test(m"a var property accepts assignment through its setter"):
-        val parameter = Kotlin.make[kotlin.metadata.KmValueParameter](t"x")
+        val parameter = make[kotlin.metadata.KmValueParameter](t"x")
         parameter.name = t"y"
         val name: Text = parameter.name
         name
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"assignment to a val property is rejected"):
         demilitarize:
-          Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").first = t"z"
+          make[kotlin.Pair[Text, Text]](t"a", t"b").first = t"z"
       . assert(_.nonEmpty)
 
       test(m"an object singleton's constant properties are reachable"):
@@ -215,11 +215,11 @@ object Tests extends Suite(m"Xenophile tests"):
       // Note `unwrap.toString`: `toString`/`equals`/`hashCode` are real members of the facade
       // wrapper itself, so `Dynamic` cannot intercept them.
       test(m"a plain Java class resolves through the reflection fallback"):
-        Kotlin.make[java.lang.StringBuilder](t"ab").reverse().unwrap.toString.tt
+        make[java.lang.StringBuilder](t"ab").reverse().unwrap.toString.tt
       . assert(_ == t"ba")
 
       test(m"an enum entry is reachable by name, and usable as an argument"):
-        val relaxed = Kotlin.make[kotlin.text.Regex]
+        val relaxed = make[kotlin.text.Regex]
           ( t"[a-z]+", entry[kotlin.text.RegexOption]("IGNORE_CASE") )
 
         val matches: Boolean = relaxed.matches(t"ABC")
@@ -233,7 +233,7 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.exists(_.contains("IGNORE_CASE")))
 
       test(m"a data class destructures into a typed tuple"):
-        Kotlin.make[kotlin.Pair[Text, Text]](t"a", t"b").tuple
+        make[kotlin.Pair[Text, Text]](t"a", t"b").tuple
       . assert(_ == (t"a", t"b"))
 
       test(m"a Kotlin list result copies out as a Scala List of Text"):
@@ -256,13 +256,13 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.exists(_.contains("input")))
 
       test(m"a Scala List argument satisfies a Java collection parameter"):
-        val wrapped = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"b"))
+        val wrapped = make[java.util.ArrayList[Text]](List(t"a", t"b"))
         val size: Int = wrapped.size()
         size
       . assert(_ == 2)
 
       test(m"surplus arguments collect into a vararg tail"):
-        Kotlin.make[java.util.Formatter]().format(t"[%s:%s]", t"x", t"y").unwrap.toString.tt
+        make[java.util.Formatter]().format(t"[%s:%s]", t"x", t"y").unwrap.toString.tt
       . assert(_ == t"[x:y]")
 
       test(m"a value-class member is rejected with a clear diagnostic"):
@@ -272,35 +272,50 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_.exists(_.contains("value class")))
 
       test(m"a typed lambda satisfies a Java functional-interface parameter"):
-        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
-        list.removeIf((text: Text) => text.length > 1)
+        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
+        val _ = list.removeIf((text: Text) => text.length > 1)
         val size: Int = list.size()
         size
       . assert(_ == 1)
 
       test(m"an UNTYPED lambda infers against a functional-interface method"):
-        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
-        list.removeIf(text => text.length > 1)   // no ascription on `text`
+        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
+        val _ = list.removeIf(text => text.length > 1)   // no ascription on `text`
         val size: Int = list.size()
         size
       . assert(_ == 1)
 
       test(m"an UNTYPED multi-argument lambda infers (an arity-2 interface)"):
-        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"ccc", t"a", t"bb"))
-        list.sort((left, right) => left.length - right.length)   // no ascriptions
+        val list = make[java.util.ArrayList[Text]](List(t"ccc", t"a", t"bb"))
+        val _ = list.sort((left, right) => left.length - right.length)   // no ascriptions
         list.get(0).unwrap.toString.tt
       . assert(_ == t"a")
 
       test(m"an UNTYPED lambda infers on a facade RETURNED from a method"):
-        val list = Kotlin.make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc", t"d"))
+        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc", t"d"))
         val sub = list.subList(0, 3)             // a facade returned from a call
-        sub.removeIf(text => text.length > 1)    // untyped lambda on the returned facade
+        val _ = sub.removeIf(text => text.length > 1)    // untyped lambda on the returned facade
         sub.size()
       . assert(_ == 1)
 
+      test(m"an Int argument widens to a Long parameter, no `L` suffix"):
+        // Both the constructor and `addAndGet` take `long`; the arguments are plain `Int`s.
+        val counter = make[java.util.concurrent.atomic.AtomicLong](0)
+        val _ = counter.addAndGet(5)
+        counter.get()
+      . assert(_ == 5L)
+
+      test(m"an in-scope Conversion fits an argument to a parameter"):
+        given Conversion[Int, Text] = _.toString.tt
+        // `ArrayList.add(E)` expects a `Text`; pass an `Int`, fitted by the conversion.
+        val list = make[java.util.ArrayList[Text]](List())
+        val _ = list.add(42)
+        list.get(0).unwrap.toString.tt
+      . assert(_ == t"42")
+
       test(m"a nullary lambda satisfies a Runnable parameter with no ascription"):
         var ran = false
-        val thread = Kotlin.make[java.lang.Thread](() => ran = true)
+        val thread = make[java.lang.Thread](() => ran = true)
         thread.run()
         ran
       . assert(_ == true)

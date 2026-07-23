@@ -248,7 +248,7 @@ object KotlinFacade:
     val functional = samCompatible(argument, target) || proxyCompatible(argument, target)
     val bridged = functional || collectionCompatible(argument.tpe.widen, target)
 
-    direct || bridged
+    direct || bridged || converted(argument, target).present
 
   // Whether a Scala collection argument can satisfy a Java collection parameter through an
   // `asJava` view (constant-time, no copy).
@@ -584,6 +584,51 @@ object KotlinFacade:
 
   // The argument term as passed to the JVM method: facades unwrap, and anything not already
   // conforming (an opaque `Text` against `String`) is cast, which is free at runtime.
+  // An argument fitted to a parameter it does not directly conform to, when the gap is closable:
+  // by primitive numeric widening (`45` to a `Long` parameter), or by an in-scope
+  // `scala.Conversion`. `Unset` when no conversion applies. Used both to judge a candidate
+  // overload and to emit the fitted argument, so the two never disagree.
+  private def converted(using quotes: Quotes)
+    ( argument: quotes.reflect.Term, parameter: quotes.reflect.TypeRepr )
+  :   Optional[quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    val from = argument.tpe.widen
+    val to = solid(parameter)
+
+    // The rank of a primitive numeric type in the widening order (`Char` sits with `Short`).
+    def rank(repr: TypeRepr): Optional[Int] =
+      if repr =:= TypeRepr.of[Byte] then 0
+      else if repr =:= TypeRepr.of[Short] then 1
+      else if repr =:= TypeRepr.of[Char] then 1
+      else if repr =:= TypeRepr.of[Int] then 2
+      else if repr =:= TypeRepr.of[Long] then 3
+      else if repr =:= TypeRepr.of[Float] then 4
+      else if repr =:= TypeRepr.of[Double] then 5
+      else Unset
+
+    def conversionMethod(repr: TypeRepr): Optional[Text] =
+      if repr =:= TypeRepr.of[Short] then t"toShort"
+      else if repr =:= TypeRepr.of[Int] then t"toInt"
+      else if repr =:= TypeRepr.of[Long] then t"toLong"
+      else if repr =:= TypeRepr.of[Float] then t"toFloat"
+      else if repr =:= TypeRepr.of[Double] then t"toDouble"
+      else Unset
+
+    val widened: Optional[Term] =
+      rank(from).let: low =>
+        rank(to).let: high =>
+          if low < high then conversionMethod(to).let(m => Select.unique(argument, m.s))
+          else Unset
+
+    // Failing a numeric widening, an in-scope implicit conversion `from => to`.
+    widened.or:
+      (from.asType, to.asType).absolve match
+        case ('[a], '[b]) => Expr.summon[Conversion[a, b]] match
+          case Some(conversion) => '{$conversion(${argument.asExprOf[a]})}.asTerm
+          case None             => Unset
+
   private def adapted(using quotes: Quotes)
     ( argument: quotes.reflect.Term, parameter: quotes.reflect.TypeRepr )
   :   quotes.reflect.Term =
@@ -601,7 +646,8 @@ object KotlinFacade:
       else argument
 
     if unwrapped.tpe <:< parameter then unwrapped
-    else TypeApply(Select.unique(unwrapped, "asInstanceOf"), List(Inferred(solid(parameter))))
+    else converted(unwrapped, parameter).or:
+      TypeApply(Select.unique(unwrapped, "asInstanceOf"), List(Inferred(solid(parameter))))
 
   private def parameterTypes(using quotes: Quotes)
     ( repr: quotes.reflect.TypeRepr, method: quotes.reflect.Symbol )

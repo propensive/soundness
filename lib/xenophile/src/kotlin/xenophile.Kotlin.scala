@@ -41,10 +41,6 @@ import vacuous.*
 // classpath. A nullable Kotlin type `T?` resolves as `T | "null"`, so `Optional` interop
 // mirrors WIT's `option` (`T | "none"`) and TypeScript's `T | "undefined"`.
 object Kotlin:
-  // Instantiates a Kotlin class through its facade: `Kotlin.make[Pair[Text, Text]](t"a", t"b")`.
-  transparent inline def make[kotlinType](inline arguments: Any*): Any =
-    ${KotlinFacade.construct[kotlinType]('arguments)}
-
 
   given int: (Int is Interoperable in Kotlin of "kotlin.Int") =
     Interoperable[Int, Kotlin, "kotlin.Int"]()
