@@ -59,7 +59,7 @@ object Zipfile:
   private val u16Max: Int  = 0xffff
 
   given streamable: Zipfile is Streamable by Data over Credit = zipfile =>
-    zipfile.serialize.iterator.stream
+    zipfile.serialize
 
   def write[path: Abstractable across Paths to Text]
     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
@@ -68,8 +68,8 @@ object Zipfile:
     checkDuplicates(entries)
     val out = ji.FileOutputStream(ji.File(path.generic.s))
 
-    try Zipfile(entries.to(LazyList), Unset, prefix).serialize.each: chunk =>
-      out.write(chunk.mutable(using Unsafe))
+    try Zipfile(entries.to(List), Unset, prefix).serialize.sweep: (window, start, count) =>
+      out.write(window.asInstanceOf[Array[Byte]], start, count)
     finally out.close()
 
     Log.info(ZipEvent.Wrote(path.generic, entries.size))
@@ -279,12 +279,16 @@ object Zipfile:
       if payloadOffset < earliestEntry then earliestEntry = payloadOffset
       val payloadSize = compressedSize
 
-      val storedBytes: () => LazyList[Data] = () =>
+      // Payloads stream in bounded chunks from the source; the local header is
+      // re-read per invocation to find the payload's true start, so an entry
+      // stays detached and reusable — and a payload larger than 2 GiB, which a
+      // single read could not represent, streams like any other.
+      val storedBytes: () => Stream[Data] over Credit = () =>
         val header = source.read(payloadOffset, 30)
         val headerNameLength = Zip.u16(header, 26)
         val headerExtraLength = Zip.u16(header, 28)
         val start = payloadOffset + 30 + headerNameLength + headerExtraLength
-        LazyList(source.read(start, payloadSize.toInt))
+        streamOf(source, start, payloadSize)
 
       builder += Zip.Entry.precompressed(ref, method, crc, uncompressedSize, compressedSize,
           storedBytes, dosTime, dosDate, directory, entryComment)
@@ -299,7 +303,7 @@ object Zipfile:
     val prefix: Optional[Data] =
       if prefixSize > 0 then source.read(0, prefixSize.toInt) else Unset
 
-    Zipfile(builder.result().to(LazyList), comment, prefix)
+    Zipfile(builder.result(), comment, prefix)
 
   private def decodeText(bytes: Data): Text =
     String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
@@ -453,19 +457,18 @@ object Zipfile:
       List(record, locator, eocd)
 
 case class Zipfile
-  ( entries: LazyList[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
+  ( entries: List[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
   def entry(ref: Path on Zip): Zip.Entry raises ZipError =
     entries.find(_.ref == ref).getOrElse(abort(ZipError(ZipError.Reason.NotFound(ref))))
 
-  def serialize: LazyList[Data] =
+  def serialize: Stream[Data] over Credit =
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
     val prefixBytes: Data = prefix.or(IArray.empty[Byte])
-    val entryList = entries.to(List)
     var offset = prefixBytes.length.toLong
     val builder = List.newBuilder[(Zip.Entry, Data, Data, Long)]
 
-    entryList.foreach: entry =>
+    entries.foreach: entry =>
       val name = Zipfile.nameBytes(entry)
       val padding = Zipfile.alignmentPadding(entry, name, offset)
       val header = Zipfile.localHeader(entry, name, padding)
@@ -478,10 +481,13 @@ case class Zipfile
     val cdSize = central.foldLeft(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
 
-    val prefixStream: LazyList[Data] =
-      if prefixBytes.length == 0 then LazyList() else LazyList(prefixBytes)
+    val prefixIterator: Iterator[Data] =
+      if prefixBytes.length == 0 then Iterator.empty else Iterator(prefixBytes)
 
-    val local: LazyList[Data] =
-      records.to(LazyList).flatMap: (entry, _, header, _) => header #:: entry.storedBytes()
+    // Each entry's payload stream is opened only when the serialization reaches
+    // it, and drained in bounded chunks.
+    val local: Iterator[Data] =
+      records.iterator.flatMap: (entry, _, header, _) =>
+        Iterator(header) ++ entry.storedBytes().chunks
 
-    prefixStream #::: local #::: central.to(LazyList) #::: tail.to(LazyList)
+    (prefixIterator ++ local ++ central.iterator ++ tail.iterator).stream

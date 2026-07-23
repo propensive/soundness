@@ -53,7 +53,7 @@ import zephyrine.*
 // compiled with capture checking; the annotations sharpen when the module joins the rollout.)
 class ZipHandle private[zeppelin] (private[zeppelin] val zipfile: Zipfile)
 extends caps.ExclusiveCapability:
-  def entries: LazyList[Zip.Entry] = zipfile.entries
+  def entries: List[Zip.Entry] = zipfile.entries
   def entry(ref: Path on Zip): Zip.Entry raises ZipError = zipfile.entry(ref)
   def comment: Optional[Text] = zipfile.comment
 

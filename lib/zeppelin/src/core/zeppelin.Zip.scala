@@ -126,7 +126,7 @@ object Zip:
       val uncompressed = raw.length.toLong
 
       def stored: Entry =
-        Entry(ref, Method.Stored, crc, uncompressed, uncompressed, () => LazyList(raw), time, date)
+        Entry(ref, Method.Stored, crc, uncompressed, uncompressed, () => raw.stream, time, date)
 
       compression match
         case Compression.Stored => stored
@@ -136,7 +136,7 @@ object Zip:
 
           if deflated.length >= raw.length then stored
           else Entry(ref, Method.Deflate, crc, uncompressed, deflated.length.toLong,
-              () => LazyList(deflated), time, date)
+              () => deflated.stream, time, date)
 
     // Used by the random-access reader to rebuild an entry from central-directory metadata
     // without recompressing; `storedBytes` reads the already-compressed payload lazily.
@@ -146,7 +146,7 @@ object Zip:
        crc32:            Int,
        uncompressedSize: Long,
        compressedSize:   Long,
-       storedBytes:      () => LazyList[Data],
+       storedBytes:      () => Stream[Data] over Credit,
        dosTime:          Int,
        dosDate:          Int,
        directory:        Boolean,
@@ -157,7 +157,7 @@ object Zip:
           directory, comment)
 
     given streamable: Entry is Streamable by Data over Credit = entry =>
-      entry.contents.iterator.stream
+      entry.contents
 
   case class Entry
     ( ref:              Path on Zip,
@@ -165,17 +165,19 @@ object Zip:
      crc32:            Int,
      uncompressedSize: Long,
      compressedSize:   Long,
-     storedBytes:      () => LazyList[Data],
+     storedBytes:      () => Stream[Data] over Credit,
      dosTime:          Int               = Zip.epochTime,
      dosDate:          Int               = Zip.epochDate,
      directory:        Boolean           = false,
      comment:          Optional[Text]    = Unset,
      alignment:        Int               = 1 ):
 
-    // The decompressed content of the entry.
-    def contents: LazyList[Data] = method match
+    // The decompressed content of the entry: a fresh stream per call, inflated
+    // incrementally through the `Deflate` duct, so a payload of any size is read,
+    // inflated and consumed in bounded chunks.
+    def contents: Stream[Data] over Credit = method match
       case Method.Stored  => storedBytes()
-      case Method.Deflate => LazyList(inflate(gather(storedBytes())))
+      case Method.Deflate => storedBytes().decompress[Deflate]
 
     // The same entry, its data required to begin at a byte offset that is a multiple of
     // `multiple` in the written archive — achieved by padding the local header's extra field.
@@ -184,6 +186,12 @@ object Zip:
     // library needs no copy to be memory-mapped. This is the transform Android's `zipalign`
     // performs.
     def aligned(multiple: Int): Entry = copy(alignment = multiple)
+
+    // The same entry, recorded as a directory: its name serializes with a trailing slash and
+    // the DOS directory attribute is set. (The case-class `copy` cannot be called from
+    // capture-checked code, since it would rethread the `storedBytes` producer through a pure
+    // parameter; transforms belong here, beside `aligned`.)
+    def asDirectory: Entry = copy(directory = true)
 
   // 00:00:00, 1 January 1980 — the minimum value representable in a DOS timestamp.
   private[zeppelin] val epochTime: Int = 0x0000
@@ -263,15 +271,6 @@ object Zip:
     val out = ji.ByteArrayOutputStream()
     while !deflater.finished() do out.write(buffer, 0, deflater.deflate(buffer))
     deflater.end()
-    out.toByteArray.nn.immutable(using Unsafe)
-
-  // Zip entries hold raw deflate data — the `Deflate` format's duct, driven
-  // over the whole value.
-  private[zeppelin] def inflate(data: Data): Data = data.decompress[Deflate]
-
-  private[zeppelin] def gather(stream: LazyList[Data]): Data =
-    val out = ji.ByteArrayOutputStream()
-    stream.each: chunk => out.write(chunk.mutable(using Unsafe))
     out.toByteArray.nn.immutable(using Unsafe)
 
 sealed trait Zip

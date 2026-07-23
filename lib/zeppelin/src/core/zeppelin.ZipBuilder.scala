@@ -75,7 +75,7 @@ extends caps.ExclusiveCapability:
 
   def comment(text: Text): Unit = remark = text
 
-  private[zeppelin] def zipfile: Zipfile = Zipfile(stack.reverse.to(LazyList), remark, Unset)
+  private[zeppelin] def zipfile: Zipfile = Zipfile(stack.reverse, remark, Unset)
 
 class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
 
@@ -156,7 +156,9 @@ object ZipBuilder:
       try
         val out = ji.FileOutputStream(temporary.toFile)
 
-        try zipfile.serialize.each { chunk => out.write(chunk.mutable(using Unsafe)) }
+        try
+          zipfile.serialize.sweep: (window, start, count) =>
+            out.write(window.asInstanceOf[Array[Byte]], start, count)
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

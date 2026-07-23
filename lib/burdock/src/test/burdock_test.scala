@@ -213,7 +213,7 @@ object Tests extends Suite(m"Burdock Tests"):
       Zipfile.write(inputJar):
         Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
         #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".in[Data])
-        #:: Zip.Entry(t"com/example".as[Path on Zip], t"".in[Data]).copy(directory = true)
+        #:: Zip.Entry(t"com/example".as[Path on Zip], t"".in[Data]).asDirectory
         #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
         #:: LazyList()
 

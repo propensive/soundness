@@ -112,10 +112,10 @@ object Tests extends Suite(m"Zeppelin tests"):
         case text: String    => text.tt
       finally zip.close()
 
-    def writeBytes(name: Text, stream: LazyList[Data]): Path on Linux =
+    def writeBytes(name: Text, data: Data): Path on Linux =
       val path = workDir/name
       val out = ji.FileOutputStream(ji.File(path.encode.s))
-      try stream.each { chunk => out.write(chunk.mutable(using Unsafe)) } finally out.close()
+      try out.write(data.mutable(using Unsafe)) finally out.close()
       path
 
     // The general-purpose bit flag of the first local file header.
@@ -228,8 +228,8 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == List(t"café.txt"))
 
       test(m"an archive comment round-trips through the JDK reader"):
-        val zipfile = Zipfile(LazyList(entry(t"a.txt", t"a")), t"hello comment")
-        jdkComment(writeBytes(t"comment.zip", zipfile.serialize))
+        val zipfile = Zipfile(List(entry(t"a.txt", t"a")), t"hello comment")
+        jdkComment(writeBytes(t"comment.zip", zipfile.read[Data]))
       . assert(_ == t"hello comment")
 
     suite(m"Reading ZIP archives"):
