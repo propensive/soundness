@@ -48,6 +48,25 @@ import threading.platformThreading
 import workingDirectories.javaWorkingDirectory
 
 object Tests extends Suite(m"Delicious Tests"):
+  given palette: ScalaSyntaxPalette = new Palette:
+    type Form = Srgb
+    def background: Color in Srgb       = WebColors.Black
+    def foreground: Color in Srgb       = WebColors.White
+    def scalaError: Color in Srgb       = WebColors.Red
+    def scalaNumber: Color in Srgb      = WebColors.Gold
+    def scalaString: Color in Srgb      = WebColors.LimeGreen
+    def scalaTerm: Color in Srgb        = WebColors.Silver
+    def scalaType: Color in Srgb        = WebColors.Turquoise
+    def scalaKeyword: Color in Srgb     = WebColors.Orange
+    def scalaSymbol: Color in Srgb      = WebColors.Gray
+    def scalaParenthesis: Color in Srgb = WebColors.Gray
+    def scalaModifier: Color in Srgb    = WebColors.Orchid
+    def scalaComment: Color in Srgb     = WebColors.DimGray
+    def subdued: Color in Srgb          = WebColors.DimGray
+    def accented: Color in Srgb         = WebColors.White
+    def margin: Color in Srgb           = WebColors.DimGray
+
+  val Esc: Char      = '\u001B'
   val Start: Char    = '\uE000'
   val End: Char      = '\uE001'
   val AttrsSep: Char = '\uE002'
@@ -239,6 +258,22 @@ object Tests extends Suite(m"Delicious Tests"):
         val typed = mark(t"type", List(t"tasty" -> stringPayload), t"printed")
         SemanticMessage.parse(t"Required: $typed").render(reifier)
       . assert(_ == t"Required: java.lang.String")
+
+      test(m"A styled rendering preserves the visible text"):
+        val code = mark(t"code", Nil, t"List(1.5)")
+        val typed = mark(t"type", List(t"tasty" -> stringPayload), t"printed")
+        SemanticMessage.parse(t"Tree: $code has type $typed").teletype(reifier).plain
+      . assert(_ == t"Tree: List(1.5) has type java.lang.String")
+
+      test(m"A code sample is syntax-highlighted, not plain"):
+        val code = mark(t"code", Nil, t"val x = 42")
+        SemanticMessage.parse(t"code: $code").teletype(reifier)
+      . assert(_ != e"code: val x = 42")
+
+      test(m"Compiler styling is stripped before highlighting"):
+        val code = mark(t"code", Nil, t"${Esc}[33m1.5d${Esc}[0m")
+        SemanticMessage.parse(t"Tree: $code").teletype(reifier).plain
+      . assert(_ == t"Tree: 1.5d")
 
       // End-to-end through the embedded compiler. Feature-detecting: a compiler
       // without semdiag (releases up to p5) produces no markup, and only the

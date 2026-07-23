@@ -582,7 +582,8 @@ object soundness extends Toolchain:
   object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
-    anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`)
+    anthology.`scala`, exegesis.core, hellenism.jvm, delicious.core, delicious.`scala`,
+    delicious.ansi)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, coaxial.jvm, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -1202,7 +1203,12 @@ object delicious extends Library:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests(core, `scala`, anthology.`scala`):
+  object ansi extends Component(`scala`, harlequin.ansi):
+    override def scalaJs = false // depends on JVM-only `harlequin.ansi`
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+
+  object test extends Tests(core, `scala`, ansi, anthology.`scala`):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
