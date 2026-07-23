@@ -104,7 +104,7 @@ object Tests extends Suite(m"Xenophile tests"):
       val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
 
       test(m"a Kotlin class constructs through its facade"):
-        pair.unwrap.toString.tt
+        pair.k.toString.tt
       . assert(_ == t"(a, b)")
 
       test(m"a property substitutes the facade's type arguments"):
@@ -215,7 +215,7 @@ object Tests extends Suite(m"Xenophile tests"):
       // Note `unwrap.toString`: `toString`/`equals`/`hashCode` are real members of the facade
       // wrapper itself, so `Dynamic` cannot intercept them.
       test(m"a plain Java class resolves through the reflection fallback"):
-        make[java.lang.StringBuilder](t"ab").reverse().unwrap.toString.tt
+        make[java.lang.StringBuilder](t"ab").reverse().k.toString.tt
       . assert(_ == t"ba")
 
       test(m"an enum entry is reachable by name, and usable as an argument"):
@@ -262,7 +262,7 @@ object Tests extends Suite(m"Xenophile tests"):
       . assert(_ == 2)
 
       test(m"surplus arguments collect into a vararg tail"):
-        make[java.util.Formatter]().format(t"[%s:%s]", t"x", t"y").unwrap.toString.tt
+        make[java.util.Formatter]().format(t"[%s:%s]", t"x", t"y").k.toString.tt
       . assert(_ == t"[x:y]")
 
       test(m"a value-class member is rejected with a clear diagnostic"):
@@ -288,7 +288,7 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"an UNTYPED multi-argument lambda infers (an arity-2 interface)"):
         val list = make[java.util.ArrayList[Text]](List(t"ccc", t"a", t"bb"))
         val _ = list.sort((left, right) => left.length - right.length)   // no ascriptions
-        list.get(0).unwrap.toString.tt
+        list.get(0).k.toString.tt
       . assert(_ == t"a")
 
       test(m"an UNTYPED lambda infers on a facade RETURNED from a method"):
@@ -310,8 +310,27 @@ object Tests extends Suite(m"Xenophile tests"):
         // `ArrayList.add(E)` expects a `Text`; pass an `Int`, fitted by the conversion.
         val list = make[java.util.ArrayList[Text]](List())
         val _ = list.add(42)
-        list.get(0).unwrap.toString.tt
+        list.get(0).k.toString.tt
       . assert(_ == t"42")
+
+      test(m"a Java bean getter reads as a short property name"):
+        val entry: Text = make[java.util.zip.ZipEntry](t"file.txt").name   // getName() -> .name
+        entry
+      . assert(_ == t"file.txt")
+
+      test(m"a Java bean setter writes via assignment"):
+        val entry = make[java.util.zip.ZipEntry](t"e")
+        entry.comment = t"hello"            // setComment(String) via `.comment = …`
+        val comment: Text = entry.comment   // getComment() -> .comment
+        comment
+      . assert(_ == t"hello")
+
+      test(m"a Scala array bridges to a Java array parameter (element conversion)"):
+        // The `E[]` constructor wants `CharSequence[]`; a Scala `Array[Text]` bridges to it.
+        val strings: Array[Text] = Array(t"a", t"bb")
+        val list = make[java.util.concurrent.CopyOnWriteArrayList[CharSequence]](strings)
+        list.size()
+      . assert(_ == 2)
 
       test(m"a nullary lambda satisfies a Runnable parameter with no ascription"):
         var ran = false

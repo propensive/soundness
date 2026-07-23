@@ -246,7 +246,10 @@ object KotlinFacade:
     val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
 
     val functional = samCompatible(argument, target) || proxyCompatible(argument, target)
-    val bridged = functional || collectionCompatible(argument.tpe.widen, target)
+
+    val collection = collectionCompatible(argument.tpe.widen, target)
+    val array = arrayCompatible(argument.tpe.widen, target)
+    val bridged = functional || collection || array
 
     direct || bridged || converted(argument, target).present
 
@@ -619,8 +622,8 @@ object KotlinFacade:
     val widened: Optional[Term] =
       rank(from).let: low =>
         rank(to).let: high =>
-          if low < high then conversionMethod(to).let(m => Select.unique(argument, m.s))
-          else Unset
+          if low >= high then Unset else conversionMethod(to).let: method =>
+            Select.unique(argument, method.s)
 
     // Failing a numeric widening, an in-scope implicit conversion `from => to`.
     widened.or:
@@ -628,6 +631,52 @@ object KotlinFacade:
         case ('[a], '[b]) => Expr.summon[Conversion[a, b]] match
           case Some(conversion) => '{$conversion(${argument.asExprOf[a]})}.asTerm
           case None             => Unset
+
+  // The first letter uppercased (`color` -> `Color`), for bean getter/setter synthesis.
+  private def capitalize(text: Text): Text =
+    if text.s.isEmpty then text
+    else t"${text.s.substring(0, 1).nn.toUpperCase.nn}${text.s.substring(1).nn}"
+
+  // The element type of a JVM array type (`Array[E]`), when the type is one.
+  private def arrayElement(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   Optional[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    repr.dealias match
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == defn.ArrayClass =>
+        element
+
+      case _ =>
+        Unset
+
+  // Whether a Scala array argument can satisfy a Java array parameter. Scala arrays are
+  // invariant, so `Array[Text]` does not conform to `CharSequence[]` statically — but each is a
+  // JVM `String[]`/`CharSequence[]`, covariantly assignable, so an element-compatible array is
+  // accepted and cast.
+  private def arrayCompatible(using quotes: Quotes)
+    ( argument: quotes.reflect.TypeRepr, target: quotes.reflect.TypeRepr )
+  :   Boolean =
+
+    import quotes.reflect.*
+
+    (arrayElement(argument), arrayElement(solid(target))).absolve match
+      case (element: TypeRepr @unchecked, wanted: TypeRepr @unchecked) =>
+        val textual = element <:< TypeRepr.of[Text]
+        val stringy = TypeRepr.of[String] <:< wanted || wanted =:= TypeRepr.of[CharSequence]
+        element <:< wanted || (textual && stringy)
+
+      case _ =>
+        false
+
+  private def arrayAdapted(using quotes: Quotes)
+    ( argument: quotes.reflect.Term, parameter: quotes.reflect.TypeRepr )
+  :   Optional[quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    if !arrayCompatible(argument.tpe.widen, parameter) then Unset
+    else TypeApply(Select.unique(argument, "asInstanceOf"), List(Inferred(solid(parameter))))
 
   private def adapted(using quotes: Quotes)
     ( argument: quotes.reflect.Term, parameter: quotes.reflect.TypeRepr )
@@ -639,6 +688,7 @@ object KotlinFacade:
       samAdapted(argument, solid(parameter))
       . or(proxyAdapted(argument, solid(parameter)))
       . or(collectionAdapted(argument, parameter))
+      . or(arrayAdapted(argument, parameter))
 
     val unwrapped = sam.or:
       if argument.tpe.widen <:< TypeRepr.of[Facade]
@@ -659,46 +709,79 @@ object KotlinFacade:
       case MethodType(_, types, _) => types
       case _                       => Unset
 
+  // A zero-argument method reached as a short property name: a Java bean getter (`x` reads
+  // `getX()` or `isX()`), so accessing platform state reads the natural Scala way.
+  private def beanGetter(using quotes: Quotes)
+    ( self:        Expr[Facade],
+      repr:        quotes.reflect.TypeRepr,
+      className:   Text,
+      classSymbol: quotes.reflect.Symbol,
+      field:       Text )
+  :   Optional[Expr[Any]] =
+
+    import quotes.reflect.*
+
+    val capital = capitalize(field)
+
+    def getter(name: Text): Optional[Expr[Any]] =
+      val members = KotlinDialect.members(className, name).filter: member =>
+        !member.property && member.arity == 0
+
+      (members, KotlinDialect.memberPrototype(className, name)).absolve match
+        case (member :: _, prototype: Prototype) =>
+          classSymbol.methodMember(member.jvmName.s)
+          . filter(parameterTypes(repr, _) == Optional(Nil)) match
+            case method :: _ =>
+              refined(Apply(Select(receiver(self, repr), method), Nil), prototype.result)
+
+            case Nil =>
+              Unset
+
+        case _ =>
+          Unset
+
+    getter(t"get$capital").or(getter(t"is$capital"))
+
   def select(self: Expr[Facade], name: Expr[String])(using Quotes): Expr[Any] =
     import quotes.reflect.*
 
     val field = name.valueOrAbort.tt
     val repr = transport(self)
     val className = classNameOf(repr)
-
-    val member = KotlinDialect.members(className, field).filter(_.property) match
-      case member :: _ => member
-      case Nil         => missing(className, field)
-
-    val prototype = KotlinDialect.memberPrototype(className, field).or:
-      missing(className, field)
-
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
-    // A `const`/`@JvmField` property is a bare field — static on the companion module for an
-    // `object`'s members, or an instance field otherwise — read directly.
-    if member.field then
-      val static = classSymbol.companionModule.fieldMember(member.jvmName.s)
+    KotlinDialect.members(className, field).filter(_.property) match
+      case Nil =>
+        beanGetter(self, repr, className, classSymbol, field).or(missing(className, field))
 
-      val term =
-        if static.exists then Select(Ref(classSymbol.companionModule), static) else
-          val instance = classSymbol.fieldMember(member.jvmName.s)
+      case member :: _ =>
+        val prototype =
+          KotlinDialect.memberPrototype(className, field).or(missing(className, field))
 
-          if instance.exists then Select(receiver(self, repr), instance)
-          else halt(m"xenophile: no JVM field ${member.jvmName} on $className")
+        // A `const`/`@JvmField` property is a bare field — static on the companion module for an
+        // `object`'s members, or an instance field otherwise — read directly.
+        if member.field then
+          val static = classSymbol.companionModule.fieldMember(member.jvmName.s)
 
-      refined(term, prototype.result)
+          val term =
+            if static.exists then Select(Ref(classSymbol.companionModule), static) else
+              val instance = classSymbol.fieldMember(member.jvmName.s)
 
-    else
-      mangled(className, member)
+              if instance.exists then Select(receiver(self, repr), instance)
+              else halt(m"xenophile: no JVM field ${member.jvmName} on $className")
 
-      val method =
-        classSymbol.methodMember(member.jvmName.s)
-        . filter(parameterTypes(repr, _) == Optional(Nil)) match
-          case method :: _ => method
-          case Nil         => halt(m"xenophile: no JVM getter ${member.jvmName} on $className")
+          refined(term, prototype.result)
 
-      refined(Apply(Select(receiver(self, repr), method), Nil), prototype.result)
+        else
+          mangled(className, member)
+
+          val method =
+            classSymbol.methodMember(member.jvmName.s)
+            . filter(parameterTypes(repr, _) == Optional(Nil)) match
+              case method :: _ => method
+              case Nil         => halt(m"xenophile: no getter ${member.jvmName} on $className")
+
+          refined(Apply(Select(receiver(self, repr), method), Nil), prototype.result)
 
   def applied(self: Expr[Facade], name: Expr[String], arguments: Expr[Seq[Any]])(using Quotes)
   :   Expr[Any] =
@@ -1025,19 +1108,38 @@ object KotlinFacade:
     val repr = transport(self)
     val className = classNameOf(repr)
 
-    val setter = KotlinDialect.setter(className, field).or:
-      halt(m"xenophile: $className has no mutable property $field")
-
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
-    val method = classSymbol.methodMember(setter.jvmName.s) match
-      case method :: _ => method
-      case Nil         => halt(m"xenophile: no JVM setter ${setter.jvmName} on $className")
+    // A Kotlin `var` setter, or — synthesized — a Java bean setter (`x = v` writes `setX(v)`).
+    val jvmName: Text = KotlinDialect.setter(className, field).let(_.jvmName).or:
+      val capital = capitalize(field)
 
-    val parameter = parameterTypes(repr, method).or(Nil) match
-      case parameter :: _ => parameter
-      case Nil            => halt(m"xenophile: ${setter.jvmName} is not a setter")
+      val setter = KotlinDialect.members(className, t"set$capital").find: member =>
+        !member.property && member.arity == 1
 
+      setter.map(_.jvmName.s.tt).getOrElse:
+        halt(m"xenophile: $className has no mutable property $field")
+
+    // A setter may be overloaded (`Paint.setColor(int)` and `setColor(long)`); choose the one
+    // whose parameter the assigned value fits, preferring an exact match over one reached by a
+    // conversion, so an `Int` colour is not silently widened into a wide-gamut `long`.
+    def parameterOf(method: Symbol): Optional[TypeRepr] =
+      parameterTypes(repr, method).or(Nil) match
+        case parameter :: Nil => parameter
+        case _                => Unset
+
+    val candidates = classSymbol.methodMember(jvmName.s).filter(parameterOf(_).present)
+    val valueType = value.asTerm.tpe.widen
+
+    def fits(predicate: (TypeRepr) => Boolean)(method: Symbol): Boolean =
+      parameterOf(method).lay(false)(predicate(_))
+
+    val chosen =
+      candidates.find(fits(valueType <:< _))
+      . orElse(candidates.find(fits(satisfies(value.asTerm, _))))
+
+    val method = chosen.getOrElse(halt(m"xenophile: no JVM setter $jvmName on $className"))
+    val parameter = parameterOf(method).or(halt(m"xenophile: $jvmName is not a setter"))
     val call = Apply(Select(receiver(self, repr), method), List(adapted(value.asTerm, parameter)))
 
     '{${call.asExpr}; ()}

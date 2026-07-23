@@ -84,9 +84,9 @@ trait Facade extends Selectable, Dynamic, Transportive:
   // code should prefer `unwrap`, which recovers the precise static type.
   def raw: Any
 
-  // The underlying value, at the full Scala type the facade records: the escape hatch back to
-  // plain Java-level interop, typed so no cast is needed at the boundary.
-  transparent inline def unwrap: Any = ${KotlinFacade.unwrapped('this)}
+  // The underlying value (`k` for "Kotlin"), at the full Scala type the facade records: the
+  // escape hatch back to plain Java-level interop, typed so no cast is needed at the boundary.
+  transparent inline def k: Any = ${KotlinFacade.unwrapped('this)}
 
   transparent inline def selectDynamic(name: String): Any =
     ${KotlinFacade.select('this, 'name)}
