@@ -67,16 +67,16 @@ class DiceActivity extends Activity:
       total += first + second + 2
 
       val color = dieColor(rolls)
-      left.setText(faces(first))
-      right.setText(faces(second))
-      left.setTextColor(color)
-      right.setTextColor(color)
+      left.text = faces(first)
+      right.text = faces(second)
+      left.textColor = color
+      right.textColor = color
 
       history = (t"${faces(first)}${faces(second)}" :: history).take(6)
-      historyView.setText(history.join(t"  "))
+      historyView.text = history.join(t"  ")
 
       val mean = ((total.toDouble/rolls*100).toInt/100.0).show
-      stats.setText(t"Rolls: $rolls   Total: $total   Mean: $mean")
+      stats.text = t"Rolls: $rolls   Total: $total   Mean: $mean"
 
       vibrator.vibrate(VibrationEffect.createOneShot(40L, VibrationEffect.DEFAULT_AMPLITUDE))
 
@@ -85,8 +85,8 @@ class DiceActivity extends Activity:
 
     def animate(frames: Int): Unit =
       if frames == 0 then settle() else
-        left.setText(faces(random.nextInt(0, 6)))
-        right.setText(faces(random.nextInt(0, 6)))
+        left.text = faces(random.nextInt(0, 6))
+        right.text = faces(random.nextInt(0, 6))
 
         // A lambda satisfies any Java functional-interface parameter, inferring its parameter
         // types with no ascription (`postDelayed` takes a `Runnable`). Its `Boolean` result is
@@ -98,17 +98,17 @@ class DiceActivity extends Activity:
     button.setOnClickListener(view => animate(6))
 
     val row = make[LinearLayout](this)
-    row.setOrientation(LinearLayout.HORIZONTAL)
-    row.setGravity(Gravity.CENTER)
+    row.orientation = LinearLayout.HORIZONTAL
+    row.gravity = Gravity.CENTER
     row.addView(left)
     row.addView(right)
 
     val layout = make[LinearLayout](this)
-    layout.setOrientation(LinearLayout.VERTICAL)
-    layout.setGravity(Gravity.CENTER)
+    layout.orientation = LinearLayout.VERTICAL
+    layout.gravity = Gravity.CENTER
     layout.addView(row)
     layout.addView(stats)
     layout.addView(historyView)
     layout.addView(button)
 
-    activity.setContentView(layout)
+    activity.contentView = layout
