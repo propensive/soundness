@@ -58,7 +58,13 @@ import tableStyles.defaultTableStyle
 
 object Report:
   given verdict: Inclusion[Report, Verdict]:
-    def include(report: Report, testId: TestId, verdict: Verdict): Report =
+    def include
+      ( report:      Report,
+        testId:      TestId,
+        coordinates: List[(Axis.Spec, Value)],
+        verdict:     Verdict )
+    :   Report =
+
       val report2 = report.addVerdict(testId, verdict)
 
       verdict match
@@ -73,7 +79,15 @@ object Report:
         case Verdict.CheckThrows(error, _) =>
           report2.addDetail(testId, Verdict.Detail.CheckThrows(StackTrace(error)))
 
-  given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
+  given detail: Inclusion[Report, Verdict.Detail]:
+    def include
+      ( report:      Report,
+        testId:      TestId,
+        coordinates: List[(Axis.Spec, Value)],
+        detail:      Verdict.Detail )
+    :   Report =
+
+      report.addDetail(testId, detail)
 
   enum Status:
     case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress, Profile, AspirePass,

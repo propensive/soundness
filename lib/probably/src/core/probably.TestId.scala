@@ -38,13 +38,18 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import hypotenuse.*
+import nomenclature.*
 import vacuous.*
 
 object TestId:
   given ordering: Ordering[TestId] =
     math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
 
-case class TestId(name: Message, suite: Optional[Testable], codepoint: Codepoint):
+case class TestId
+  ( name:      Message,
+    suite:     Optional[Testable],
+    codepoint: Codepoint,
+    moniker:   Optional[Name[Probing]] = Unset ):
   val timestamp: Long = System.currentTimeMillis
 
   import textMetrics.uniformMetric

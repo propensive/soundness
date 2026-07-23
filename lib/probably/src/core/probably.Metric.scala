@@ -30,51 +30,47 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+
 package probably
 
 import anticipation.*
-import vacuous.*
+import gossamer.*
 
-object Strain:
-  given inclusion: Inclusion[Report, Strain]:
-    def include
-      ( report:      Report,
-        testId:      TestId,
-        coordinates: List[(Axis.Spec, Value)],
-        strain:      Strain )
-    :   Report =
+object Metric:
+  // The physical interpretation of a metric's value, used to choose formatting (time,
+  // memory or rate units) uniformly across test kinds.
+  enum Dimension:
+    case Time, Memory, Rate, Count, Fraction
 
-      report.addStrain(testId, strain)
+  // Whether a smaller or a larger value is an improvement, used for baseline comparisons
+  // and chart orientation; `Neutral` metrics are informational only.
+  enum Sense:
+    case LowerIsBetter, HigherIsBetter, Neutral
 
-// The measured response to a stress test — the memory/scaling counterpart of `Benchmark`.
-// `concurrency` workers ran a body repeatedly
-// for a fixed wall-clock window of `nanoseconds`, completing `operations` operations in total.
-// `allocation` is the total heap allocation over the window; `peakHeap` the high-water mark of
-// the heap pools; `retained` the live set remaining after a post-run GC (bounded-memory designs
-// show a flat, small value here); `gcCount`/`gcTime` are the collector deltas over the window
-// (time in milliseconds). The optional `p50`/`p90`/`p99`/`p999` fields are per-operation
-// latency percentiles in nanoseconds, taken from a histogram accumulated across all workers.
-// In a capacity search, `compliance` is the measured fraction of operations completing
-// within the latency threshold, and `sustained` marks the winning row: the highest
-// concurrency whose (extended) window still met the compliance target.
-case class Strain
-  ( concurrency: Int,
-    operations:  Long,
-    nanoseconds: Long,
-    allocation:  Long,
-    peakHeap:    Long,
-    retained:    Long,
-    gcCount:     Long,
-    gcTime:      Long,
-    baseline:    Optional[Baseline],
-    p50:         Optional[Long]   = Unset,
-    p90:         Optional[Long]   = Unset,
-    p99:         Optional[Long]   = Unset,
-    p999:        Optional[Long]   = Unset,
-    compliance:  Optional[Double] = Unset,
-    sustained:   Boolean          = false ):
+import Metric.{Dimension, Sense}
 
-  def throughput: Long = if nanoseconds == 0L then 0L else (operations*1e9/nanoseconds).toLong
-
-  def allocationRate: Double =
-    if operations == 0L then 0.0 else allocation.toDouble/operations
+// The closed set of quantities a test run can record. Each cell of a test stores a map of
+// these to values; one of them (or, for unit tests, the pass/fail status) is the test's
+// headline, used for grids and comparisons. Times are in nanoseconds, memory in bytes,
+// rates in operations per second and fractions in the unit interval.
+enum Metric(val dimension: Dimension, val sense: Sense, val label: Text):
+  case Duration   extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"Time")
+  case Mean       extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"μ")
+  case Least      extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"Min")
+  case Most       extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"Max")
+  case Deviation  extends Metric(Dimension.Time,     Sense.Neutral,        t"σ")
+  case Confidence extends Metric(Dimension.Fraction, Sense.Neutral,        t"Confidence")
+  case Iterations extends Metric(Dimension.Count,    Sense.Neutral,        t"n")
+  case Throughput extends Metric(Dimension.Rate,     Sense.HigherIsBetter, t"Throughput")
+  case Operations extends Metric(Dimension.Count,    Sense.Neutral,        t"Ops")
+  case Allocation extends Metric(Dimension.Memory,   Sense.LowerIsBetter,  t"Alloc·op¯¹")
+  case PeakHeap   extends Metric(Dimension.Memory,   Sense.LowerIsBetter,  t"Peak")
+  case Retained   extends Metric(Dimension.Memory,   Sense.LowerIsBetter,  t"Retained")
+  case GcCount    extends Metric(Dimension.Count,    Sense.LowerIsBetter,  t"GC n")
+  case GcTime     extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"GC t")
+  case P50        extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"p50")
+  case P90        extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"p90")
+  case P99        extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"p99")
+  case P999       extends Metric(Dimension.Time,     Sense.LowerIsBetter,  t"p999")
+  case Compliance extends Metric(Dimension.Fraction, Sense.HigherIsBetter, t"SLO")
+  case Samples    extends Metric(Dimension.Count,    Sense.Neutral,        t"Samples")

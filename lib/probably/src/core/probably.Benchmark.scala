@@ -37,7 +37,13 @@ import vacuous.*
 
 object Benchmark:
   given inclusion: Inclusion[Report, Benchmark]:
-    def include(report: Report, testId: TestId, benchmark: Benchmark): Report =
+    def include
+      ( report:      Report,
+        testId:      TestId,
+        coordinates: List[(Axis.Spec, Value)],
+        benchmark:   Benchmark )
+    :   Report =
+
       report.addBenchmark(testId, benchmark)
 
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99

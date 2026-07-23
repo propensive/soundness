@@ -30,51 +30,110 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+
 package probably
 
+import scala.deriving.*
+
 import anticipation.*
+import distillate.*
+import gossamer.*
+import prepositional.*
+import spectacular.*
 import vacuous.*
 
-object Strain:
-  given inclusion: Inclusion[Report, Strain]:
-    def include
-      ( report:      Report,
-        testId:      TestId,
-        coordinates: List[(Axis.Spec, Value)],
-        strain:      Strain )
-    :   Report =
+// How a domain value becomes a point on an axis of a test: a stable textual label (used in
+// report rendering and by test selections) and, for numeric domains, its numeric value,
+// which makes the axis orderable and chartable.
+trait Axable extends Typeclass.Pure:
+  def domain: Axis.Domain = Axis.Domain.Discrete
+  def label(value: Self): Text
+  def numeric(value: Self): Optional[Double] = Unset
 
-      report.addStrain(testId, strain)
+object Axable:
+  given int: Int is Axable:
+    override def domain: Axis.Domain = Axis.Domain.Integral
+    def label(value: Int): Text = value.show
+    override def numeric(value: Int): Optional[Double] = value.toDouble
 
-// The measured response to a stress test — the memory/scaling counterpart of `Benchmark`.
-// `concurrency` workers ran a body repeatedly
-// for a fixed wall-clock window of `nanoseconds`, completing `operations` operations in total.
-// `allocation` is the total heap allocation over the window; `peakHeap` the high-water mark of
-// the heap pools; `retained` the live set remaining after a post-run GC (bounded-memory designs
-// show a flat, small value here); `gcCount`/`gcTime` are the collector deltas over the window
-// (time in milliseconds). The optional `p50`/`p90`/`p99`/`p999` fields are per-operation
-// latency percentiles in nanoseconds, taken from a histogram accumulated across all workers.
-// In a capacity search, `compliance` is the measured fraction of operations completing
-// within the latency threshold, and `sustained` marks the winning row: the highest
-// concurrency whose (extended) window still met the compliance target.
-case class Strain
-  ( concurrency: Int,
-    operations:  Long,
-    nanoseconds: Long,
-    allocation:  Long,
-    peakHeap:    Long,
-    retained:    Long,
-    gcCount:     Long,
-    gcTime:      Long,
-    baseline:    Optional[Baseline],
-    p50:         Optional[Long]   = Unset,
-    p90:         Optional[Long]   = Unset,
-    p99:         Optional[Long]   = Unset,
-    p999:        Optional[Long]   = Unset,
-    compliance:  Optional[Double] = Unset,
-    sustained:   Boolean          = false ):
+  given long: Long is Axable:
+    override def domain: Axis.Domain = Axis.Domain.Integral
+    def label(value: Long): Text = value.show
+    override def numeric(value: Long): Optional[Double] = value.toDouble
 
-  def throughput: Long = if nanoseconds == 0L then 0L else (operations*1e9/nanoseconds).toLong
+  given double: Double is Axable:
+    override def domain: Axis.Domain = Axis.Domain.Decimal
+    def label(value: Double): Text = value.show
+    override def numeric(value: Double): Optional[Double] = value
 
-  def allocationRate: Double =
-    if operations == 0L then 0.0 else allocation.toDouble/operations
+  given text: Text is Axable:
+    def label(value: Text): Text = value
+
+  given enumerable: [enumeration <: reflect.Enum: Enumerable as evidence]
+  =>  enumeration is Axable:
+    def label(value: enumeration): Text = evidence.name(value)
+
+object Axis:
+  // The domain kind of an axis: discrete labels presented in declaration order, or
+  // integer- or real-valued coordinates presented in numeric order.
+  enum Domain:
+    case Discrete, Integral, Decimal
+
+  // The erased description of an axis as it is recorded in a report: what selection,
+  // rendering and charting consume. An emergent axis acquires its coordinate values from
+  // the run itself (such as a stress sweep's concurrency) rather than from a declared
+  // domain.
+  case class Spec(label: Text, domain: Domain, emergent: Boolean = false)
+
+  def apply[value: Axable](label: Text)(values: value*): Axis[value] =
+    new Axis(label, values.to(List))
+
+  def apply(label: Text)(range: Range): Axis[Int] = new Axis(label, range.to(List))
+
+  def emergent[value: Axable](label: Text): Axis[value] = new Axis(label, Nil, emergent = true)
+
+  // An enum's companion object is its `Mirror.SumOf`, so a bare companion object can stand
+  // for an axis wherever an `into Axis[…]` is expected: the axis is labelled with the
+  // lowercased enum name and its values are the enum's cases.
+  given companion: [enumeration <: reflect.Enum: Enumerable as evidence]
+  =>  Conversion[Mirror.SumOf[enumeration], Axis[enumeration]] =
+    _ => new Axis(evidence.name.lower, evidence.values.to(List))
+
+// One input variable of a test: a labelled domain of values, each of which contributes one
+// coordinate of the test's cells. Most tests have no axes; a comparative benchmark has one
+// discrete axis of implementations; input data of different sizes forms a numeric axis.
+case class Axis[value](label: Text, values: List[value], emergent: Boolean = false)
+  ( using val axable: value is Axable ):
+
+  def spec: Axis.Spec = Axis.Spec(label, axable.domain, emergent)
+  def point(value0: value): Value = Value(value0)(using axable)
+  def coordinate(value0: value): (Axis.Spec, Value) = (spec, point(value0))
+
+object Value:
+  def apply[value: Axable as axable](value0: value): Value =
+    axable.numeric(value0).lay(Value.Discrete(axable.label(value0))): number =>
+      axable.domain match
+        case Axis.Domain.Decimal => Value.Decimal(number)
+        case _                   => Value.Integral(number.toLong)
+
+// One coordinate on one axis of a test. A cell of a test is addressed by a list of values,
+// positionally aligned with the test's axes; a test with no axes has the single address
+// `Nil`.
+enum Value:
+  case Discrete(label: Text)
+  case Integral(number: Long)
+  case Decimal(number: Double)
+
+  def text: Text = this match
+    case Discrete(label)  => label
+    case Integral(number) => number.show
+    case Decimal(number)  => number.show
+
+  def numeric: Optional[Double] = this match
+    case Discrete(_)      => Unset
+    case Integral(number) => number.toDouble
+    case Decimal(number)  => number
+
+// The distinguished comparison point of a test: one value on one of its axes, against
+// which every other cell along that axis is compared, using the `Baseline` settings.
+case class Anchor(axis: Axis.Spec, value: Value, baseline: Baseline)

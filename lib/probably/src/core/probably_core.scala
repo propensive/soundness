@@ -39,6 +39,7 @@ import fulminate.*
 import gossamer.*
 import hypotenuse.*
 import iridescence.*
+import nomenclature.*
 import prepositional.*
 import symbolism.*
 
@@ -47,6 +48,10 @@ given decimalizer: Decimalizer = Decimalizer(4)
 export Baseline.Compare.{Min, Mean, Max}
 export Baseline.Metric.{Cadential, Temporal}
 export Baseline.Mode.{Arithmetic, Geometric}
+
+// Exported at package level so that `n"…"` moniker literals work wherever probably is
+// imported, without a separate `import Probing.nominative` in every suite.
+export Probing.nominative
 
 // A real trait, not a structural refinement of `Palette`: structural member selection goes
 // through `iridescence.Palette.selectDynamic` — runtime reflection, which Scala Native does not
@@ -109,11 +114,29 @@ def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): Te
   TestId(name, suite, codepoint)
 
 
+// Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
+// its description. The moniker addresses the test in selections and charts, independently
+// of edits to the description.
+def test[report](name: Name[Probing], description: Message)
+  ( using suite: Testable, codepoint: Codepoint )
+:   TestId =
+
+  TestId(description, suite, codepoint, name)
+
+
 def suite[report](name: Message)(using suite: Testable, runner: Runner[report])
   ( block: Testable ?=> Unit )
 :   Unit =
 
   runner.suite(Testable(name, suite), block)
+
+
+def suite[report](name: Name[Probing], description: Message)
+  ( using suite: Testable, runner: Runner[report] )
+  ( block: Testable ?=> Unit )
+:   Unit =
+
+  runner.suite(Testable(description, suite, name), block)
 
 
 extension [value](inline value: value)(using inline test: Harness)

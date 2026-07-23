@@ -36,7 +36,13 @@ import anticipation.*
 
 object Hotspots:
   given inclusion: Inclusion[Report, Hotspots]:
-    def include(report: Report, testId: TestId, hotspots: Hotspots): Report =
+    def include
+      ( report:      Report,
+        testId:      TestId,
+        coordinates: List[(Axis.Spec, Value)],
+        hotspots:    Hotspots )
+    :   Report =
+
       report.addHotspots(testId, hotspots)
 
   // One hot method: the (demangled) class and method names, and how many execution samples

@@ -30,51 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+
 package probably
 
-import anticipation.*
-import vacuous.*
+import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-object Strain:
-  given inclusion: Inclusion[Report, Strain]:
-    def include
-      ( report:      Report,
-        testId:      TestId,
-        coordinates: List[(Axis.Spec, Value)],
-        strain:      Strain )
-    :   Report =
+// The naming plane for stable test identifiers: `Name[Probing]`. A moniker names a test,
+// suite or axis independently of its description, so selections, charts and historical
+// comparisons can address it stably; names are constrained to valid Java identifiers (see
+// `JavaIdentifier`).
+object Probing:
+  inline given nominative: Probing is Nominative under JavaIdentifier["a valid Java identifier"] =
+    !!
 
-      report.addStrain(testId, strain)
-
-// The measured response to a stress test — the memory/scaling counterpart of `Benchmark`.
-// `concurrency` workers ran a body repeatedly
-// for a fixed wall-clock window of `nanoseconds`, completing `operations` operations in total.
-// `allocation` is the total heap allocation over the window; `peakHeap` the high-water mark of
-// the heap pools; `retained` the live set remaining after a post-run GC (bounded-memory designs
-// show a flat, small value here); `gcCount`/`gcTime` are the collector deltas over the window
-// (time in milliseconds). The optional `p50`/`p90`/`p99`/`p999` fields are per-operation
-// latency percentiles in nanoseconds, taken from a histogram accumulated across all workers.
-// In a capacity search, `compliance` is the measured fraction of operations completing
-// within the latency threshold, and `sustained` marks the winning row: the highest
-// concurrency whose (extended) window still met the compliance target.
-case class Strain
-  ( concurrency: Int,
-    operations:  Long,
-    nanoseconds: Long,
-    allocation:  Long,
-    peakHeap:    Long,
-    retained:    Long,
-    gcCount:     Long,
-    gcTime:      Long,
-    baseline:    Optional[Baseline],
-    p50:         Optional[Long]   = Unset,
-    p90:         Optional[Long]   = Unset,
-    p99:         Optional[Long]   = Unset,
-    p999:        Optional[Long]   = Unset,
-    compliance:  Optional[Double] = Unset,
-    sustained:   Boolean          = false ):
-
-  def throughput: Long = if nanoseconds == 0L then 0L else (operations*1e9/nanoseconds).toLong
-
-  def allocationRate: Double =
-    if operations == 0L then 0.0 else allocation.toDouble/operations
+sealed trait Probing

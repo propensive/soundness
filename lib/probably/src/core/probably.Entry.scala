@@ -30,51 +30,79 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
+
 package probably
 
+import scala.collection.mutable as scm
+
 import anticipation.*
+import rudiments.*
 import vacuous.*
 
-object Strain:
-  given inclusion: Inclusion[Report, Strain]:
-    def include
-      ( report:      Report,
-        testId:      TestId,
-        coordinates: List[(Axis.Spec, Value)],
-        strain:      Strain )
-    :   Report =
+object Entry:
+  enum Kind:
+    case Check, Bench, Stress, Profile
 
-      report.addStrain(testId, strain)
+object Run:
+  // Structure that a numeric metric cannot carry: a profile's hot frames, or preformatted
+  // operation-size and operation-rate units from a benchmark.
+  enum Payload:
+    case Frames(hotspots: Hotspots)
+    case Sizing(operationSize: Optional[Text], operationRate: Optional[Text])
 
-// The measured response to a stress test — the memory/scaling counterpart of `Benchmark`.
-// `concurrency` workers ran a body repeatedly
-// for a fixed wall-clock window of `nanoseconds`, completing `operations` operations in total.
-// `allocation` is the total heap allocation over the window; `peakHeap` the high-water mark of
-// the heap pools; `retained` the live set remaining after a post-run GC (bounded-memory designs
-// show a flat, small value here); `gcCount`/`gcTime` are the collector deltas over the window
-// (time in milliseconds). The optional `p50`/`p90`/`p99`/`p999` fields are per-operation
-// latency percentiles in nanoseconds, taken from a histogram accumulated across all workers.
-// In a capacity search, `compliance` is the measured fraction of operations completing
-// within the latency threshold, and `sustained` marks the winning row: the highest
-// concurrency whose (extended) window still met the compliance target.
-case class Strain
-  ( concurrency: Int,
-    operations:  Long,
-    nanoseconds: Long,
-    allocation:  Long,
-    peakHeap:    Long,
-    retained:    Long,
-    gcCount:     Long,
-    gcTime:      Long,
-    baseline:    Optional[Baseline],
-    p50:         Optional[Long]   = Unset,
-    p90:         Optional[Long]   = Unset,
-    p99:         Optional[Long]   = Unset,
-    p999:        Optional[Long]   = Unset,
-    compliance:  Optional[Double] = Unset,
-    sustained:   Boolean          = false ):
+// One execution of one cell: a verdict for unit tests (absent for measurements), a map of
+// recorded metrics (whose insertion order is their presentation order), failure details,
+// and any structural payload. In a capacity search, `sustained` marks the winning run.
+case class Run
+  ( verdict:   Optional[Verdict]       = Unset,
+    metrics:   ListMap[Metric, Double] = ListMap(),
+    details:   List[Verdict.Detail]    = Nil,
+    payload:   Optional[Run.Payload]   = Unset,
+    sustained: Boolean                 = false )
 
-  def throughput: Long = if nanoseconds == 0L then 0L else (operations*1e9/nanoseconds).toLong
+// The accumulated runs at one coordinate of a test: repeated executions of the same cell
+// gather here, generalizing repeated-verdict accumulation to every test kind.
+final class Cell():
+  private val mutex: Mutex = Mutex()
+  private val runs0: scm.ArrayBuffer[Run] = scm.ArrayBuffer()
 
-  def allocationRate: Double =
-    if operations == 0L then 0.0 else allocation.toDouble/operations
+  def record(run: Run): Unit = mutex(runs0.append(run))
+  def runs: List[Run] = mutex(runs0.to(List))
+
+// One named test and its results: an ordered list of axes (which may grow during the run,
+// as emergent axes acquire coordinates), and a sparse map of cells keyed by coordinates in
+// axis space. A test with no axes has exactly one cell, at `Nil`; combinations of axis
+// values without a cell are gaps, rendered as empty positions in a grid.
+final class Entry(val id: TestId, val kind: Entry.Kind):
+  private val mutex: Mutex = Mutex()
+  private var axes0: List[Axis.Spec] = Nil
+  private var ticks0: Map[Axis.Spec, List[Value]] = Map()
+  private var cells0: ListMap[List[Value], Cell] = ListMap()
+
+  var headline: Optional[Metric] = Unset
+  var anchor: Optional[Anchor] = Unset
+
+  def axes: List[Axis.Spec] = mutex(axes0)
+  def cells: List[(List[Value], Cell)] = mutex(cells0.to(List))
+
+  // Returns the cell at the given coordinates, creating it if absent. Appends any
+  // not-yet-seen axes (emergent axes extend the axis list as their coordinates arrive) and
+  // registers each axis's values in first-appearance order.
+  def cell(coordinates: List[(Axis.Spec, Value)]): Cell = mutex:
+    coordinates.each: (axis, value) =>
+      if !axes0.contains(axis) then axes0 = axes0 :+ axis
+      val seen = ticks0.at(axis).or(Nil)
+      if !seen.contains(value) then ticks0 = ticks0.updated(axis, seen :+ value)
+
+    val address = coordinates.map(_(1))
+    if !cells0.defines(address) then cells0 = cells0.updated(address, Cell())
+    cells0(address)
+
+  // The coordinate values of one axis in presentation order: first-appearance order for
+  // discrete axes, numeric order for integral and decimal axes.
+  def values(axis: Axis.Spec): List[Value] =
+    val seen = mutex(ticks0.at(axis).or(Nil))
+
+    axis.domain match
+      case Axis.Domain.Discrete => seen
+      case _                    => seen.sortBy(_.numeric.or(0.0))
