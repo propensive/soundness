@@ -136,6 +136,23 @@ object KotlinFacade:
   // Refines a raw call into the facade-typed result: `kotlin.String` reads as `Text`, a
   // nullable result wraps as an `Optional`, primitives and substituted type parameters pass
   // through, and any other Kotlin-typed result wraps as a further `Facade`.
+  // Wraps a raw value as a facade of `repr`, carrying the same function-typed `Selectable`
+  // refinement `make` produces — so a facade *returned from a method call* also lets bare lambdas
+  // infer against its own functional-interface methods, not only a freshly-constructed one.
+  private def refinedFacade(using quotes: Quotes)
+    ( value: Expr[Any], repr: quotes.reflect.TypeRepr )
+  :   Expr[Any] =
+
+    import quotes.reflect.*
+
+    val facade = repr.asType.absolve match
+      case '[u] => '{Facade[u]($value.asInstanceOf[u])}.asTerm
+
+    // Cast to the refinement at term level: binding it as a type (`'[refined]`) would let its
+    // function members' capture sets escape the nested quote.
+    TypeApply(Select.unique(facade, "asInstanceOf"), List(Inferred(functionRefinement(repr))))
+    . asExprOf[Any]
+
   private def refined(using quotes: Quotes)(call: quotes.reflect.Term, km: Foreign.Type)
   :   Expr[Any] =
 
@@ -195,8 +212,8 @@ object KotlinFacade:
       case Foreign.Type.Named(name) if passthrough(name) => underlying.asType.absolve match
         case '[u] => '{${call.asExpr}.asInstanceOf[u]}
 
-      case _ => underlying.asType.absolve match
-        case '[u] => '{Facade[u](${call.asExpr}.asInstanceOf[u])}
+      case _ =>
+        refinedFacade(call.asExpr, underlying)
 
   // The receiver, unwrapped and cast to its full applied Scala type, so that member selection
   // substitutes the class's type parameters (`getFirst` on a `Pair[Text, Text]` types as
@@ -288,8 +305,13 @@ object KotlinFacade:
     // under explicit nulls; strip that first, or the interface's class symbol is invisible.
     solid(target).classSymbol match
       case Some(symbol) if isJavaFunctionalInterface(symbol) =>
+        // A functional interface has one abstract method — but, as Java's own rule allows, not
+        // counting public `Object` methods it redeclares (`Comparator` redeclares `equals`).
+        val objectMethods = Set("equals", "hashCode", "toString")
+
         val abstractMethods = symbol.methodMembers.filter: method =>
-          method.flags.is(Flags.Deferred) && !method.flags.is(Flags.Synthetic)
+          val deferred = method.flags.is(Flags.Deferred) && !method.flags.is(Flags.Synthetic)
+          deferred && !objectMethods.contains(method.name)
 
         abstractMethods match
           case List(method) => (method, method.paramSymss.flatten.length)
@@ -408,25 +430,48 @@ object KotlinFacade:
     val base = Refinement(TypeRepr.of[Facade], "Transport", TypeBounds(repr, repr))
 
     repr.classSymbol.fold(base): classSymbol =>
-      def singleSam(method: Symbol): Boolean =
+      // The refinement's declared result type must equal what `applyDynamic` returns at runtime,
+      // or the two disagree. That holds for `Unit` and primitive/boolean results (which map to
+      // themselves); a method returning a mapped reference type (a `Facade`, `Text`, `Optional`)
+      // is left to the `Dynamic` path, where a bare lambda argument still cannot infer.
+      def plainResult(result: TypeRepr): Boolean =
+        val mapped = solid(result)
+        mapped =:= TypeRepr.of[Unit] || mapped <:< TypeRepr.of[AnyVal]
+
+      // A method worth refining: it has at least one functional-interface parameter (so a lambda
+      // argument benefits) and a plain result.
+      def candidate(method: Symbol): Boolean =
         val usable = !method.flags.is(Flags.Synthetic) && !method.flags.is(Flags.Private)
 
         usable && (repr.memberType(method) match
-          case MethodType(_, List(parameter), _) => samFunctionType(parameter).present
-          case _                                 => false)
+          case MethodType(_, parameters, result) =>
+            parameters.exists(samFunctionType(_).present) && plainResult(result)
 
-      // One method per name (overrides and bridges duplicate a name in `methodMembers`); a name
-      // with two genuinely different single-SAM signatures is a rare overload — take the first.
+          case _ =>
+            false)
+
+      // One method per name (overrides and bridges duplicate a name in `methodMembers`); among a
+      // name's candidates take the fewest-parameter one — the public convenience overload,
+      // rather than an internal arity-padded variant (`removeIf(p, from, to)`).
+      def arity(method: Symbol): Int = repr.memberType(method) match
+        case MethodType(_, parameters, _) => parameters.length
+        case _                            => Int.MaxValue
+
       val candidates =
-        classSymbol.methodMembers.filter(singleSam).groupBy(_.name).values.map(_.head).to(List)
+        classSymbol.methodMembers.filter(candidate).groupBy(_.name).values
+        . map(_.minBy(arity(_))).to(List)
+
+      // A functional-interface parameter becomes a Scala function (so a lambda there infers);
+      // every other parameter stays `Any`, exactly as the `Dynamic` path accepts it (preserving
+      // the argument adaptations — `Text` for `String`, facade unwrapping — for non-lambda args).
+      def parameterType(parameter: TypeRepr): TypeRepr =
+        samFunctionType(parameter).or(TypeRepr.of[Any])
 
       candidates.foldLeft(base): (accumulated, method) =>
         repr.memberType(method).absolve match
-          case MethodType(names, List(parameter), result) =>
-            val function = samFunctionType(parameter).vouch
-
+          case MethodType(names, parameters, result) =>
             val signature =
-              MethodType(names)(_ => List(function), _ => solid(result))
+              MethodType(names)(_ => parameters.map(parameterType), _ => solid(result))
 
             Refinement(accumulated, method.name, signature)
 
