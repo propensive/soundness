@@ -7,6 +7,8 @@ import android.os.{Bundle, Handler, Looper, VibrationEffect, Vibrator}
 import android.view.{Gravity, View}
 import android.widget.{Button, LinearLayout, TextView, Toast}
 
+given Decimalizer(3)
+
 // The Dice Roller from Google's "Android Basics" codelab, grown up a little: two dice, an
 // animated roll, haptics, running statistics and a roll history — built programmatically (no
 // XML layouts). Android's APIs are reached through xenophile's Kotlin facades — every call
@@ -22,7 +24,7 @@ class DiceActivity extends Activity:
     // being compiled, so only `Activity` is resolvable), and then even the final handoff to
     // the platform — `setContentView` — is a facade call, and facades never need unwrapping.
     val activity = Facade(this: Activity)
-    val faces = IArray(t"⚀", t"⚁", t"⚂", t"⚃", t"⚄", t"⚅")
+    val faces = IArray("⚀", "⚁", "⚂", "⚃", "⚄", "⚅")
 
     var rolls = 0
     var total = 0
@@ -30,25 +32,25 @@ class DiceActivity extends Activity:
 
     val random = companion[kotlin.random.Random]
     val vibrator = Facade(getSystemService(classOf[Vibrator]))
-    val handler = Kotlin.make[Handler](Looper.getMainLooper)
+    val handler = make[Handler](Looper.getMainLooper)
 
     def textView(size: Float): Facade over TextView =
-      val view = Kotlin.make[TextView](this)
+      val view = make[TextView](this)
       view.setTextSize(size)
       view.setGravity(Gravity.CENTER_HORIZONTAL)
       view
 
-    val left = textView(110.0f)
-    val right = textView(110.0f)
-    val stats = textView(18.0f)
-    val historyView = textView(24.0f)
+    val left = textView(110.0)
+    val right = textView(110.0)
+    val stats = textView(18.0)
+    val historyView = textView(24.0)
 
     left.setText(faces(0))
     right.setText(faces(0))
-    stats.setText(t"Tap ROLL to begin")
+    stats.setText("Tap ROLL to begin")
 
-    val button = Kotlin.make[Button](this)
-    button.setText(t"Roll")
+    val button = make[Button](this)
+    button.setText("Roll")
 
     // Each roll advances the hue by the golden angle; iridescence converts HSV to sRGB, and
     // the platform packs the channels.
@@ -73,13 +75,13 @@ class DiceActivity extends Activity:
       history = (t"${faces(first)}${faces(second)}" :: history).take(6)
       historyView.setText(history.join(t"  "))
 
-      val mean = ((total.toDouble/rolls*100).toInt/100.0).toString.tt
+      val mean = ((total.toDouble/rolls*100).toInt/100.0).show
       stats.setText(t"Rolls: $rolls   Total: $total   Mean: $mean")
 
       vibrator.vibrate(VibrationEffect.createOneShot(40L, VibrationEffect.DEFAULT_AMPLITUDE))
 
       if first == second then
-        Toast.makeText(this, t"Doubles!".s, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, "Doubles!", Toast.LENGTH_SHORT).show()
 
     def animate(frames: Int): Unit =
       if frames == 0 then settle() else
@@ -89,19 +91,19 @@ class DiceActivity extends Activity:
         // A lambda satisfies any Java functional-interface parameter, inferring its parameter
         // types with no ascription (`postDelayed` takes a `Runnable`). Its `Boolean` result is
         // discarded.
-        val _ = handler.postDelayed(() => animate(frames - 1), 45L)
+        val _ = handler.postDelayed(() => animate(frames - 1), 45)
 
     // …and a unary lambda infers even its parameter type, from the functional interface,
     // through the facade's generated `Selectable` refinement.
     button.setOnClickListener(view => animate(6))
 
-    val row = Kotlin.make[LinearLayout](this)
+    val row = make[LinearLayout](this)
     row.setOrientation(LinearLayout.HORIZONTAL)
     row.setGravity(Gravity.CENTER)
     row.addView(left)
     row.addView(right)
 
-    val layout = Kotlin.make[LinearLayout](this)
+    val layout = make[LinearLayout](this)
     layout.setOrientation(LinearLayout.VERTICAL)
     layout.setGravity(Gravity.CENTER)
     layout.addView(row)
