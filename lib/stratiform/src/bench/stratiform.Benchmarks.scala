@@ -166,7 +166,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
 
     suite(m"Decode a BinTEL order corpus to case classes"):
       bench(m"BinTEL inlined")
-        (target = 1*Second, warmups = 15, baseline = Baseline(compare = Min)):
+        (target = 1*Second, warmups = 15):
         '{ stratiform.Benchmarks.decodeBintelInlined() }
 
       bench(m"BinTEL via AST")(target = 1*Second):
@@ -176,7 +176,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example1Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example1Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):
@@ -189,7 +189,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example2Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example2Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):
@@ -202,7 +202,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example3Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example3Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):
@@ -215,7 +215,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example4Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example4Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):
@@ -228,7 +228,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example5Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example5Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):
@@ -241,7 +241,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example6Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example6Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):
@@ -254,7 +254,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example7Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example7Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):
@@ -267,7 +267,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       val size = example8Bytes.length*Byte
 
       bench(m"Parse (no schema)")
-       ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+       ( target = 1*Second, operationSize = size ):
         '{ Tel.parse(stratiform.Benchmarks.example8Bytes) }
 
       bench(m"Parse (schema-aware)")(target = 1*Second, operationSize = size):

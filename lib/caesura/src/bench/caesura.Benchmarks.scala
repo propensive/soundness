@@ -45,10 +45,17 @@ import probably.*
 import proscenium.*
 import quantitative.*
 import sedentary.*
+import superlunary.embeddings.automatic
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
+
+enum Library:
+  case Caesura, Univocity, OpenCsv, CommonsCsv, FastCsv
+
+enum Corpus:
+  case Tiny, Medium, MediumQuoted, Large, Tsv
 
 object Benchmarks extends Suite(m"Caesura benchmarks"):
   sealed trait Information extends Dimension
@@ -257,96 +264,45 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
 
   // ─── benchmarks ───────────────────────────────────────────────────────────
 
+  def documentFor(corpus: Corpus): String = corpus match
+    case Corpus.Tiny         => csvSmall
+    case Corpus.Medium       => csvMedium
+    case Corpus.MediumQuoted => csvMediumQuoted
+    case Corpus.Large        => csvLarge
+    case Corpus.Tsv          => tsvMedium
+
   def run(): Unit =
     val bench = Bench()
 
-    val sizeSmall:        Quantity[Bytes[1]] = csvSmall.length*Byte
-    val sizeMedium:       Quantity[Bytes[1]] = csvMedium.length*Byte
-    val sizeMediumQuoted: Quantity[Bytes[1]] = csvMediumQuoted.length*Byte
-    val sizeLarge:        Quantity[Bytes[1]] = csvLarge.length*Byte
-    val sizeTsv:          Quantity[Bytes[1]] = tsvMedium.length*Byte
+    // One benchmark, two axes: five libraries against five corpora, anchored to Caesura,
+    // rendered as a grid of mean times followed by a grid of relative rates per corpus.
+    // Each corpus rides `References` as a spliced value: two staged trees per library (the
+    // TSV column parses through a different entry point), extracted once per run.
+    bench(m"Parse DSV documents")
+      ( target = 1*Second, baseline = Library.Caesura, comparison = Baseline(compare = Min) )
 
-    suite(m"Tiny CSV (10 rows × 5 numeric cols, no quoting)"):
-      bench(m"Caesura")
-        ( target = 1*Second, operationSize = sizeSmall, baseline = Baseline(compare = Min) ):
-        '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvSmallText) }
+    . over(Library, Corpus):
+        case (library, corpus) =>
+          val document: Text = Text(caesura.Benchmarks.documentFor(corpus))
+          val tsv: Boolean = corpus == Corpus.Tsv
 
-      bench(m"Univocity")(target = 1*Second, operationSize = sizeSmall):
-        '{ caesura.Benchmarks.univocityParseCsv(caesura.Benchmarks.csvSmall) }
+          library match
+            case Library.Caesura =>
+              if tsv then '{ caesura.Benchmarks.caesuraParseTsv($document) }
+              else '{ caesura.Benchmarks.caesuraParseCsv($document) }
 
-      bench(m"OpenCSV")(target = 1*Second, operationSize = sizeSmall):
-        '{ caesura.Benchmarks.openCsvParseCsv(caesura.Benchmarks.csvSmall) }
+            case Library.Univocity =>
+              if tsv then '{ caesura.Benchmarks.univocityParseTsv($document.s) }
+              else '{ caesura.Benchmarks.univocityParseCsv($document.s) }
 
-      bench(m"Commons CSV")(target = 1*Second, operationSize = sizeSmall):
-        '{ caesura.Benchmarks.commonsParseCsv(caesura.Benchmarks.csvSmall) }
+            case Library.OpenCsv =>
+              if tsv then '{ caesura.Benchmarks.openCsvParseTsv($document.s) }
+              else '{ caesura.Benchmarks.openCsvParseCsv($document.s) }
 
-      bench(m"FastCSV")(target = 1*Second, operationSize = sizeSmall):
-        '{ caesura.Benchmarks.fastCsvParseCsv(caesura.Benchmarks.csvSmall) }
+            case Library.CommonsCsv =>
+              if tsv then '{ caesura.Benchmarks.commonsParseTsv($document.s) }
+              else '{ caesura.Benchmarks.commonsParseCsv($document.s) }
 
-    suite(m"Medium CSV (1 000 rows × 8 cols, no quoting)"):
-      bench(m"Caesura")
-        ( target = 1*Second, operationSize = sizeMedium, baseline = Baseline(compare = Min) ):
-        '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvMediumText) }
-
-      bench(m"Univocity")(target = 1*Second, operationSize = sizeMedium):
-        '{ caesura.Benchmarks.univocityParseCsv(caesura.Benchmarks.csvMedium) }
-
-      bench(m"OpenCSV")(target = 1*Second, operationSize = sizeMedium):
-        '{ caesura.Benchmarks.openCsvParseCsv(caesura.Benchmarks.csvMedium) }
-
-      bench(m"Commons CSV")(target = 1*Second, operationSize = sizeMedium):
-        '{ caesura.Benchmarks.commonsParseCsv(caesura.Benchmarks.csvMedium) }
-
-      bench(m"FastCSV")(target = 1*Second, operationSize = sizeMedium):
-        '{ caesura.Benchmarks.fastCsvParseCsv(caesura.Benchmarks.csvMedium) }
-
-    suite(m"Medium CSV (1 000 rows × 8 cols, fully quoted with embedded commas/quotes)"):
-      bench(m"Caesura")
-        ( target = 1*Second, operationSize = sizeMediumQuoted, baseline = Baseline(compare = Min) ):
-        '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvMediumQuotedText) }
-
-      bench(m"Univocity")(target = 1*Second, operationSize = sizeMediumQuoted):
-        '{ caesura.Benchmarks.univocityParseCsv(caesura.Benchmarks.csvMediumQuoted) }
-
-      bench(m"OpenCSV")(target = 1*Second, operationSize = sizeMediumQuoted):
-        '{ caesura.Benchmarks.openCsvParseCsv(caesura.Benchmarks.csvMediumQuoted) }
-
-      bench(m"Commons CSV")(target = 1*Second, operationSize = sizeMediumQuoted):
-        '{ caesura.Benchmarks.commonsParseCsv(caesura.Benchmarks.csvMediumQuoted) }
-
-      bench(m"FastCSV")(target = 1*Second, operationSize = sizeMediumQuoted):
-        '{ caesura.Benchmarks.fastCsvParseCsv(caesura.Benchmarks.csvMediumQuoted) }
-
-    suite(m"Large CSV (100 000 rows × 10 cols, no quoting)"):
-      bench(m"Caesura")
-        ( target = 1*Second, operationSize = sizeLarge, baseline = Baseline(compare = Min) ):
-        '{ caesura.Benchmarks.caesuraParseCsv(caesura.Benchmarks.csvLargeText) }
-
-      bench(m"Univocity")(target = 1*Second, operationSize = sizeLarge):
-        '{ caesura.Benchmarks.univocityParseCsv(caesura.Benchmarks.csvLarge) }
-
-      bench(m"OpenCSV")(target = 1*Second, operationSize = sizeLarge):
-        '{ caesura.Benchmarks.openCsvParseCsv(caesura.Benchmarks.csvLarge) }
-
-      bench(m"Commons CSV")(target = 1*Second, operationSize = sizeLarge):
-        '{ caesura.Benchmarks.commonsParseCsv(caesura.Benchmarks.csvLarge) }
-
-      bench(m"FastCSV")(target = 1*Second, operationSize = sizeLarge):
-        '{ caesura.Benchmarks.fastCsvParseCsv(caesura.Benchmarks.csvLarge) }
-
-    suite(m"Medium TSV (1 000 rows × 8 cols, tab-delimited)"):
-      bench(m"Caesura")
-        ( target = 1*Second, operationSize = sizeTsv, baseline = Baseline(compare = Min) ):
-        '{ caesura.Benchmarks.caesuraParseTsv(caesura.Benchmarks.tsvMediumText) }
-
-      bench(m"Univocity")(target = 1*Second, operationSize = sizeTsv):
-        '{ caesura.Benchmarks.univocityParseTsv(caesura.Benchmarks.tsvMedium) }
-
-      bench(m"OpenCSV")(target = 1*Second, operationSize = sizeTsv):
-        '{ caesura.Benchmarks.openCsvParseTsv(caesura.Benchmarks.tsvMedium) }
-
-      bench(m"Commons CSV")(target = 1*Second, operationSize = sizeTsv):
-        '{ caesura.Benchmarks.commonsParseTsv(caesura.Benchmarks.tsvMedium) }
-
-      bench(m"FastCSV")(target = 1*Second, operationSize = sizeTsv):
-        '{ caesura.Benchmarks.fastCsvParseTsv(caesura.Benchmarks.tsvMedium) }
+            case Library.FastCsv =>
+              if tsv then '{ caesura.Benchmarks.fastCsvParseTsv($document.s) }
+              else '{ caesura.Benchmarks.fastCsvParseCsv($document.s) }

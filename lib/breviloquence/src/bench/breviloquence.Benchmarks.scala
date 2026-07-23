@@ -155,7 +155,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
     suite(m"Parse small object (3 fields)"):
       bench(m"Parse with Breviloquence")
-        ( target = 1*Second, operationSize = size1, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size1 ):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes1) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size1):
@@ -166,7 +166,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
     suite(m"Parse 100 user records"):
       bench(m"Parse with Breviloquence")
-        ( target = 1*Second, operationSize = size2, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size2 ):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes2) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size2):
@@ -177,7 +177,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
     suite(m"Parse 500 log entries"):
       bench(m"Parse with Breviloquence")
-        ( target = 1*Second, operationSize = size3, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size3 ):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes3) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size3):
@@ -188,7 +188,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
     suite(m"Parse 1000 small integers"):
       bench(m"Parse with Breviloquence")
-        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size4 ):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes4) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size4):
@@ -199,7 +199,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
     suite(m"Parse 100 byte strings"):
       bench(m"Parse with Breviloquence")
-        ( target = 1*Second, operationSize = size5, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size5 ):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes5) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size5):
@@ -210,7 +210,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
     suite(m"Parse 10-level nested map"):
       bench(m"Parse with Breviloquence")
-        ( target = 1*Second, operationSize = size6, baseline = Baseline(compare = Min) ):
+        ( target = 1*Second, operationSize = size6 ):
         '{ Cbor.Ast.parse(breviloquence.Benchmarks.cborBytes6) }
 
       bench(m"Parse with Jackson")(target = 1*Second, operationSize = size6):

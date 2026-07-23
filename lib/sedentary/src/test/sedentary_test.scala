@@ -73,7 +73,8 @@ object Tests extends Suite(m"Sedentary Tests"):
           '{1000L*1001L/2L}
 
     // One implementation over a data axis: the limit rides `References`, so both cells
-    // share a single compilation and differ only in transported data.
+    // share a single compilation and differ only in transported data; extraction is
+    // memoized per slot, so the splice costs a cached read per iteration, not a decode.
     bench(m"count up to a limit")(target = 50*Milli(Second), iterations = 2, warmups = 1)
     . over(Axis(t"limit")(1000, 4000)): limit =>
         ' {

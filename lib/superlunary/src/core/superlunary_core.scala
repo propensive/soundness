@@ -58,7 +58,17 @@ object embeddings:
 
       ' {
           import strategies.throwUnsafely
-          stageable.extract[value](${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport])
+          val array = ${refs.array}
+          val cached = array(${Expr(allocation)})
+
+          if cached.isInstanceOf[References.Boxed]
+          then cached.asInstanceOf[References.Boxed].value.asInstanceOf[value]
+          else
+            val extracted =
+              stageable.extract[value](cached.asInstanceOf[refs.Transport])
+
+            array(${Expr(allocation)}) = References.Boxed(extracted)
+            extracted
         }
 
 

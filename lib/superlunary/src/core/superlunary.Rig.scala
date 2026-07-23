@@ -149,6 +149,13 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
         val function: juf.Function[Form, Form] = staging.run:
           ' {
               form =>
+                // Bound once: splices read transported values from this array, so it must
+                // not be re-deserialized per evaluation — a spliced value inside a hot loop
+                // would otherwise decode the whole transport on every iteration.
+                val incoming: Array[Object] =
+                  import strategies.throwUnsafely
+                  stageable.deserialize(form)
+
                 stageable.serialize:
 
                   val array = new Array[Object](1)
@@ -156,7 +163,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                   array(0) =
                     stageable.embed[output]:
                       $ {
-                          references() = '{stageable.deserialize(form)}
+                          references() = 'incoming
                           body(using references)
                         }
 

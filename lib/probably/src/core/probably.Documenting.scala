@@ -227,7 +227,7 @@ private[probably] object Documenting:
             List(Column(t"Hash"), Column(t"Test")) ::: benchMetricColumns(sized),
             rows ))
 
-    table ::: axial.map(axialBench(_, sized))
+    table ::: axial.flatMap(axialBench(_, sized))
 
   // The baseline-relative datum of one run against the anchor's run, following the
   // anchor's `Baseline` settings: the compared statistic (min/mean/max of the timing
@@ -260,8 +260,9 @@ private[probably] object Documenting:
                 Datum.Delta(magnitude, difference < 0.0)
 
   // An entry with one axis renders as a table of its cells; with two, as a crosstab of
-  // headline data; with more, as a flat listing of coordinates and headlines.
-  private def axialBench(entry: Entry, sized: Boolean): Block = entry.axes match
+  // headline data (followed, when anchored, by a grid of baseline-relative figures); with
+  // more, as a flat listing of coordinates and headlines.
+  private def axialBench(entry: Entry, sized: Boolean): List[Block] = entry.axes match
     case axis :: Nil =>
       val cells = entry.cells.to(Map)
 
@@ -280,21 +281,22 @@ private[probably] object Documenting:
 
             Datum.Str(value.text) :: benchMetricCells(run0, sized) ::: comparison
 
-      Block.Table
+      List(Block.Table
         ( entry.id,
           Column(axis.label) :: benchMetricColumns(sized) ::: comparisonColumns,
-          rows )
+          rows ))
 
-    case first :: second :: Nil => crosstab(entry, first, second)
+    case first :: second :: Nil =>
+      crosstab(entry, first, second) :: relativesCrosstab(entry, first, second).option.to(List)
 
     case axes =>
       val rows = entry.cells.map: (address, cell) =>
         List(Datum.Str(address.map(_.text).join(t", ")), cellDatum(entry, cell))
 
-      Block.Table
+      List(Block.Table
         ( entry.id,
           List(Column(axes.map(_.label).join(t", ")), Column(t"Headline", numeric = true)),
-          rows )
+          rows ))
 
   // An axial unit test: one axis renders as a table of per-value statuses and timings; two
   // axes render as a grid of statuses with gaps at undefined combinations.
@@ -340,6 +342,30 @@ private[probably] object Documenting:
       Column(value.text, numeric = true)
 
     Block.Table(entry.id, columns, rows)
+
+  // The baseline-relative companion of a biaxial grid: each cell compared to the anchored
+  // value's cell within the same fiber (the same value of the other axis).
+  private def relativesCrosstab(entry: Entry, first: Axis.Spec, second: Axis.Spec)
+  :   Optional[Block] =
+
+    entry.anchor.let: anchor =>
+      val cells = entry.cells.to(Map)
+      val onFirst = anchor.axis == first
+      if !onFirst && anchor.axis != second then Unset else
+        val columnValues = entry.values(second)
+
+        val rows = entry.values(first).map: row =>
+          Datum.Str(row.text) :: columnValues.map: column =>
+            val anchorAddress = if onFirst then List(anchor.value, column) else List(row, anchor.value)
+
+            cells.at(List(row, column)).let(run(_)).lay(Datum.Gap): run0 =>
+              cells.at(anchorAddress).let(run(_)).lay(Datum.Blank): anchorRun =>
+                relative(anchor, anchorRun, run0)
+
+        val columns = Column(t"×${anchor.value.text}") :: columnValues.map: value =>
+          Column(value.text, numeric = true)
+
+        Block.Table(Unset, columns, rows)
 
   private def stressBlocks(entries: List[Entry]): List[Block] =
     // Each stress entry's cells form its scaling curve: concurrency (the N axis) against

@@ -52,7 +52,7 @@ object Benchmarks extends Suite(m"Serpentine benchmarks"):
 
     suite(m"Conjunctions"):
       bench(m"Find conjunction of 2-element paths")
-        ( target = 500*Milli(Second), baseline = Baseline(compare = Min) ):
+        ( target = 500*Milli(Second) ):
         ' {
             val p1 = % / "foo" / "bar"
             val p2 = % / "foo" / "baz"
