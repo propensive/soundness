@@ -50,11 +50,10 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
          user  = UnixUser(0),
          group = UnixGroup(0),
          mtime = 0.bits.u32,
-         data  = LazyList(content.in[Data]) )
+         data  = TarBody(content.in[Data]) )
 
-    def bytesOf(stream: LazyList[Data]): Data = stream.foldLeft(IArray.empty[Byte])(_ ++ _)
-
-    val layerTar = Tarfile(LazyList(fileEntry(t"hello.txt", t"hello world\n")))
+    
+    val layerTar = Tarfile(List(fileEntry(t"hello.txt", t"hello world\n")))
     val layer    = Layer(layerTar)
     val image    = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
 
@@ -82,7 +81,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == media"application/vnd.oci.image.layer.v1.tar+gzip")
 
       test(m"the blob is a valid gzipped tar round-tripping to the original entry"):
-        Tarfile.fromGzip(LazyList(layer.blob)).map(_.entryName).to(List)
+        Tarfile.read(layer.blob.stream.decompress[Gzip]).map(_.entryName).to(List)
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
@@ -135,7 +134,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       val entries    = Tarfile.read(image.archive.source[Data]).to(List)
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
-        case file: Tar.Entry.File if file.entryName == t"oci-layout" => bytesOf(file.data)
+        case file: Tar.Entry.File if file.entryName == t"oci-layout" => file.data.memoize
 
       test(m"archive contains the oci-layout marker and index.json"):
         (names.contains(t"oci-layout"), names.contains(t"index.json"))
@@ -162,8 +161,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       // The archive with its entry list transformed: for exercising failure paths.
       def rebuilt(transform: List[Tar.Entry] => List[Tar.Entry]): Data =
-        val entries = Tarfile.read(LazyList(archiveData)).to(List)
-        Tarfile(LazyList.from(transform(entries))).source[Data].memoize
+        val entries = Tarfile.read(archiveData.stream).to(List)
+        Tarfile(transform(entries)).source[Data].memoize
 
       def failure[result](body: => result): Optional[OciError.Reason] =
         try
@@ -184,11 +183,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.imageConfig)
 
       test(m"a layer's stored blob streams verbatim"):
-        archiveData.open[Image]() { handle ?=> bytesOf(handle.compressed(image.manifest.layers.head)).to(List) }
+        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to(List) }
       . assert(_ == layer.blob.to(List))
 
       test(m"a layer decompresses to the original tar bytes"):
-        archiveData.open[Image]() { handle ?=> bytesOf(handle.layer(image.manifest.layers.head)).to(List) }
+        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.head).memoize.to(List) }
       . assert(_ == layer.raw.to(List))
 
       test(m"verified gathers a blob and confirms its digest and size"):

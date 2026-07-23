@@ -256,7 +256,7 @@ object Repackager:
         val entries: List[Zip.Entry] =
           (bootstrap :: keptEntries ++ inlined).distinctBy(_.ref.show)
 
-        Zipfile.write(outputJar)(manifestEntry #:: entries.to(LazyList))
+        Zipfile.write(outputJar)(manifestEntry :: entries)
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

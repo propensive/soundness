@@ -83,14 +83,14 @@ object Tar:
       val mtimeU32: U32 =
         (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-      Entry.File(name, mode, user, group, mtimeU32, data.source[Data].toLazyList)
+      Entry.File(name, mode, user, group, mtimeU32, TarBody(data.source[Data].memoize))
 
     private[bitumen] val paxRef: TarRef =
       import strategies.throwUnsafely
       t"PaxHeaders/0".as[Relative on Tar]
 
-    private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): LazyList[Data] =
-      if segments.nil then LazyList()
+    private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): List[Data] =
+      if segments.nil then Nil
       else
         val (batch, rest) = segments.splitAt(21)
 
@@ -105,12 +105,41 @@ object Tar:
 
           if rest.nonEmpty then array(504) = 1.toByte
 
-        block #:: sparseExtensionBlocks(rest)
+        block :: sparseExtensionBlocks(rest)
 
     private[bitumen] def formatLongOctal(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
       (("0"*pad) + str).tt.in[Data]
+
+    // Re-blocks arbitrary chunks as 512-byte archive blocks, the final block
+    // zero-padded, without regard to the incoming chunk boundaries.
+    private[bitumen] def blocks512(chunks: Iterator[Data]): Iterator[Data] =
+      new Iterator[Data]:
+        private var chunk: Data = IArray.empty[Byte]
+        private var offset: Int = 0
+
+        // Establish a nonempty current chunk, or report exhaustion.
+        private def replenish(): Boolean =
+          while offset >= chunk.length && chunks.hasNext do
+            chunk = chunks.next()
+            offset = 0
+
+          offset < chunk.length
+
+        def hasNext: Boolean = replenish()
+
+        def next(): Data =
+          val block = new Array[Byte](512)
+          var position = 0
+
+          while position < 512 && replenish() do
+            val count = (chunk.length - offset).min(512 - position)
+            System.arraycopy(chunk.mutable(using Unsafe), offset, block, position, count)
+            offset += count
+            position += count
+
+          block.immutable(using Unsafe)
 
   enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File
@@ -119,7 +148,7 @@ object Tar:
         user:  UnixUser,
         group: UnixGroup,
         mtime: U32,
-        data:  LazyList[Data],
+        data:  TarBody,
         pax:   Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
@@ -195,30 +224,30 @@ object Tar:
         mtime:    U32,
         realSize: Long,
         segments: List[SparseSegment],
-        data:     LazyList[Data],
+        data:     TarBody,
         pax:      Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
 
     def size: U32 = this match
-      case file: File      => file.data.sumBy(_.length).bits.u32
+      case file: File      => file.data.size.toInt.bits.u32
       case pax: Pax        => pax.records.length.bits.u32
       case long: GnuLong   => (long.content.in[Data].length + 1).bits.u32
       case sparse: Sparse  => sparse.segments.map(_.length).sum.toInt.bits.u32
       case _               => 0
 
-    def dataBlocks: LazyList[Data] = this match
-      case file: File      => file.data.chunked(512, zeroPadding = true)
-      case pax: Pax        => LazyList(pax.records).chunked(512, zeroPadding = true)
+    def dataBlocks: Iterator[Data] = this match
+      case file: File      => Entry.blocks512(file.data.chunks)
+      case pax: Pax        => Entry.blocks512(Iterator(pax.records))
 
       case long: GnuLong =>
-        LazyList(long.content.in[Data] ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
+        Entry.blocks512(Iterator(long.content.in[Data] ++ IArray.fill[Byte](1)(0)))
 
       case sparse: Sparse =>
-        sparse.data.chunked(512, zeroPadding = true)
+        Entry.blocks512(sparse.data.chunks)
 
       case _ =>
-        LazyList()
+        Iterator.empty
 
     def typeFlag: TypeFlag = this match
       case _: File         => TypeFlag.File
@@ -305,12 +334,12 @@ object Tar:
       val total = array.iterator.map(_.bits.u8.u32).reduce(_ + _)
       array.place(format(total, 8), 148.z)
 
-    def serialize: LazyList[Data] = this match
+    def serialize: Iterator[Data] = this match
       case sparse: Sparse if sparse.segments.length > 4 =>
-        header #:: Entry.sparseExtensionBlocks(sparse.segments.drop(4)) #::: dataBlocks
+        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.drop(4)) ++ dataBlocks
 
       case _ =>
-        header #:: dataBlocks
+        Iterator(header) ++ dataBlocks
 
 case class SparseSegment(offset: Long, length: Long)
 

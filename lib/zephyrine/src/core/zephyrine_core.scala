@@ -234,6 +234,14 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // `drop`, ZIO `ZStream.drop`.)
   def drop(count: Long): (Stream[medium] over Credit)^ = dropStream(stream, count)
 
+  // A single-consumer iterator of materialized chunks, one per refill: the
+  // bridge by which stream content interleaves with other values (archive
+  // payloads between headers, parts between boundaries) without materializing
+  // the whole stream. The iterator owns the endpoint: it closes the stream
+  // when it reports exhaustion, so a consumer must drain it (or close the
+  // stream by other means) to release the upstream.
+  def chunks(using buffering: Buffering): Iterator[medium]^ = chunkIterator(stream)
+
   // The legacy view: a lazy `LazyList` of one materialized chunk per refill,
   // strictly demand-driven — construction pulls nothing, and each forced cell
   // pulls at most one refill (the deferral `Cursor.remainder` documents). This
@@ -326,6 +334,92 @@ def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
 
       // Deliberately not overridden: `close()` must leave the lent cursor open
       // for the caller to resume.
+
+// A pull endpoint over a bounded range of an `Expanse`: each refill reads the
+// next chunk of the range — sized by the buffering policy's transfer block — and
+// exposes the freshly-read buffer as the window, zero-copy. Reads are issued
+// only as the consumer demands them, so an unconsumed payload costs nothing and
+// a payload of any length streams in bounded memory. The expanse states its own
+// lifetime discipline (it may hold a resource open, or re-acquire one per
+// read), which the stream inherits.
+def streamOf(expanse: Expanse^, offset: Long, length: Long)(using buffering: Buffering)
+:   (Stream[Data] over Credit)^{expanse, caps.any} =
+
+    new Stream[Data]:
+      type Transport = Credit
+
+      private val block: Int = buffering.transfer(Substrate.Bytes)
+      private val end: Long = offset + length
+      private var position: Long = offset
+
+      // Each window is backed by the immutable chunk `read` returns, cast-erased
+      // and reached only through this endpoint; it is never written through, and
+      // the next refill replaces it wholesale (hence the pure placeholder
+      // initial, as in the cursor-lending factory above).
+      @caps.unsafe.untrackedCaptures
+      private var storage: AnyRef = ""
+      private var start0: Int = 0
+      private var limit0: Int = 0
+
+      // Every refill installs a fresh immutable chunk rather than overwriting a
+      // shared buffer, so previously-exposed ranges stay valid indefinitely.
+      override def windowStable: Boolean = true
+
+      protected def window0: AnyRef = storage
+      def start: Int = start0
+      def limit: Int = limit0
+      update def skip(count: Int): Unit = start0 += count
+
+      // Demand does not bound exposure: the transfer block sizes each read, and
+      // is what bounds memory (as the cursor-lending factory above notes).
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if position >= end then Unset
+        else
+          val granted = summon[Credit is Regulation].grant(demand)
+
+          if granted == 0 then 0 else
+            val count = (end - position).min(block.toLong).toInt
+            storage = expanse.read(position, count).asInstanceOf[AnyRef]
+            position += count
+            start0 = 0
+            limit0 = count
+            count
+
+private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
+  ( using buffering: Buffering )
+:   Iterator[medium]^ =
+
+    new Iterator[medium]:
+      private val block: Int = buffering.transfer(stream.addressable.substrate)
+
+      // A stdlib class cannot extend `Stateful`, so its state is untracked
+      // (the record-iterator precedent below).
+      @caps.unsafe.untrackedCaptures
+      private var chunk: Optional[medium] = Unset
+      @caps.unsafe.untrackedCaptures
+      private var done: Boolean = false
+
+      def hasNext: Boolean = !chunk.absent || (!done && advance())
+
+      private def advance(): Boolean = stream.refill(Credit(block)) match
+        case count: Int =>
+          chunk =
+            stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
+
+          stream.skip(count)
+          true
+
+        case _ =>
+          done = true
+          stream.close()
+          false
+
+      def next(): medium =
+        if !hasNext then panic(m"the stream is exhausted")
+        val result = chunk.vouch
+        chunk = Unset
+        result
 
 private def recordIterator[record]
   ( consume stream: (Stream[IArray[record]] over Credit)^ )

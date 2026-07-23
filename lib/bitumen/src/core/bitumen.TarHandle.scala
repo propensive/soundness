@@ -41,11 +41,18 @@ import turbulence.*
 import zephyrine.*
 
 // The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
-// sequential format, so `entries` streams lazily from the underlying source (memoized by the
-// `LazyList`, so revisiting an entry within the scope is free); payloads must be consumed
-// within the scope, while the source remains open.
-class TarHandle private[bitumen] (val entries: LazyList[Tar.Entry])
-extends caps.ExclusiveCapability
+// sequential format, so `entries` parses lazily from the underlying source, one entry per
+// step; payloads must be consumed within the scope, while the source remains open. The
+// iterator is single-pass: an entry passed over remains readable (its body memoizes when the
+// iterator advances), but the sequence itself is not replayable within the scope.
+class TarHandle private[bitumen] (entries0: Iterator[Tar.Entry]^)
+extends caps.ExclusiveCapability:
+
+  // Reached only through this exclusive handle, which scopes it; its capture
+  // of the underlying source is erased here, as the memoizing `LazyList` it
+  // replaces erased it implicitly through its pure cells.
+  @caps.unsafe.untrackedCaptures
+  val entries: Iterator[Tar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
 
 class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Openable:
   type Self = Data
@@ -59,26 +66,17 @@ class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Opena
   :   result =
 
     if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
-    val entries = TarHandle.entries(LazyList(value), flags)
+    val entries = TarHandle.entries(value.stream, flags)
     block(using new TarHandle(entries) with Granting[grants] {})
 
 object TarHandle:
   private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[TarFlag])
     ( using Tactic[TarError], Tactic[StreamError], Buffering )
-  :   LazyList[Tar.Entry] =
+  :   Iterator[Tar.Entry]^ =
 
-    flags.headOption match
-      case Some(TarFlag.Gzip)    => Tarfile.read(stream.decompress[Gzip])
-      case Some(TarFlag.Zlib)    => Tarfile.read(stream.decompress[Zlib])
-      case Some(TarFlag.Deflate) => Tarfile.read(stream.decompress[Deflate])
-      case _                     => Tarfile.read(stream)
-
-  private[bitumen] def entries(stream: LazyList[Data], flags: List[TarFlag])
-    ( using Tactic[TarError], Tactic[StreamError] )
-  :   LazyList[Tar.Entry] =
-
-    flags.headOption match
-      case Some(TarFlag.Gzip)    => Tarfile.fromGzip(stream)
-      case Some(TarFlag.Zlib)    => Tarfile.fromZlib(stream)
-      case Some(TarFlag.Deflate) => Tarfile.fromDeflate(stream)
-      case None                  => Tarfile.read(stream)
+    Tarfile.read:
+      flags.headOption match
+        case Some(TarFlag.Gzip)    => stream.decompress[Gzip]
+        case Some(TarFlag.Zlib)    => stream.decompress[Zlib]
+        case Some(TarFlag.Deflate) => stream.decompress[Deflate]
+        case _                     => stream

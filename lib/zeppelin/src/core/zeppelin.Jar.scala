@@ -42,6 +42,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 // The form for Java archives: `path.open[Jar]()`. A JAR is a ZIP, so a `JarHandle` is a
 // `ZipHandle` refined with the archive's parsed manifest; entries and their content behave
@@ -58,10 +59,8 @@ object Jar:
     // the main section. An archive without a manifest has no attributes.
     def manifest: Map[Text, Text] =
       zipfile.entries.find(_.ref.encode == ManifestName).map: entry =>
-        val bytes: Array[Byte] =
-          entry.contents.foldLeft(Array.empty[Byte]) { (acc, data) => acc ++ data.mutable(using Unsafe) }
-
-        val text: Text = String(bytes, "UTF-8").tt
+        val bytes: Data = entry.contents.memoize
+        val text: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
         val unfolded = text.s.split("\r\n|\r|\n", -1).nn.map(_.nn)
         val main = unfolded.takeWhile(_.nonEmpty)
 

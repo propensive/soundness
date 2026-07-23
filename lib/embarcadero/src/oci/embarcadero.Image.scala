@@ -121,7 +121,7 @@ case class Image
           user  = UnixUser(0),
           group = UnixGroup(0),
           mtime = 0.bits.u32,
-          data  = LazyList(content) )
+          data  = TarBody(content) )
 
     val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)
@@ -130,4 +130,4 @@ case class Image
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tarfile(LazyList.from(layoutEntry :: indexEntry :: blobEntries))
+    Tarfile(layoutEntry :: indexEntry :: blobEntries)

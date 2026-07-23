@@ -355,40 +355,6 @@ extension (stream: LazyList[Data])
 
     recur(stream, 0, newArray(), 0)
 
-  def chunked(size: Int, zeroPadding: Boolean = false): LazyList[Data] =
-    def newArray(): Array[Byte]^ = new Array[Byte](size)
-
-
-    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
-    :   LazyList[Data] =
-
-      stream match
-        case source #:: more =>
-          val ready = source.length - sourcePos
-          val free = dest.length - destPos
-
-          if ready < free then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, ready)
-            recur(more, 0, dest, destPos + ready)
-          else if free < ready then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
-          else // free == ready
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
-
-        case _ =>
-          if destPos == 0 then LazyList()
-          else
-            // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
-            val length = if zeroPadding then dest.length else destPos
-            val out = new Array[Byte](length)
-            jl.System.arraycopy(dest, 0, out, 0, length)
-            LazyList(out.immutable(using Unsafe).asInstanceOf[Data])
-
-
-    recur(stream, 0, newArray(), 0)
-
   def take(bytes: Bytes): LazyList[Data] =
     def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] =
       stream.flow(LazyList()):
