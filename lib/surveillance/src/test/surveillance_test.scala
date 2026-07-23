@@ -67,7 +67,7 @@ object Tests extends Suite(m"Surveillance tests"):
       // `Watch` layer directly.
       val watchSet = Watch(List(directory))
       watchSet.unregister()
-      watchSet.stream.to(List)
+      watchSet.stream.stdlib.to(List)
 
     . assert(_ == Nil)
 
@@ -80,7 +80,7 @@ object Tests extends Suite(m"Surveillance tests"):
       directory.open[Watch](): watcher ?=>
         (directory/leaf).create[File]()
 
-        watcher.stream.head match
+        watcher.stream.stdlib.head match
           case NewFile(_, file) => file == leaf
           case _                => false
 

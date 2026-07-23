@@ -62,8 +62,11 @@ private[stratiform] def collectionDocument[value]
   val compounds: IArray[Tel.Compound] = IArray.from:
     values.flatMap: element =>
       encodable.encoded(element).subtree match
-        case compound: Tel.Compound => List(compound)
-        case document: Tel.Document => document.children.flatMap(_.compounds).to(List)
+        case compound: Tel.Compound => List(compound).stdlib
+
+        case document: Tel.Document =>
+          scala.collection.immutable.ArraySeq.unsafeWrapArray
+            ( document.children.flatMap(_.compounds).mutable(using Unsafe) )
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       IArray(Tel.Block(IArray.empty, Unset, compounds, 0))))

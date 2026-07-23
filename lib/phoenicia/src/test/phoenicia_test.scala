@@ -32,6 +32,8 @@
                                                                                                   */
 package phoenicia
 
+import scala.collection.immutable.Seq
+
 import soundness.*
 
 import strategies.throwUnsafely
@@ -47,8 +49,8 @@ object Tests extends Suite(m"Phoenicia Tests"):
       values.flatMap: value =>
         Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
-  def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn)
-  def utf16(text: Text): Data = IArray.from(text.s.getBytes("UTF-16BE").nn)
+  def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+  def utf16(text: Text): Data = text.s.getBytes("UTF-16BE").nn.immutable(using Unsafe)
 
   // Assembles tables into an sfnt container: the header, a table directory, then the tables
   // themselves, four-byte aligned. Checksums are left zero: the parser does not verify them.
@@ -59,12 +61,12 @@ object Tests extends Suite(m"Phoenicia Tests"):
     val header = u32(0x00010000L) ++ u16(count, searchRange, entrySelector, count*16 - searchRange)
 
     var offset = 12 + count*16
-    val directory = List.newBuilder[Data]
-    val body = List.newBuilder[Data]
+    val directory = scala.collection.immutable.List.newBuilder[Data]
+    val body = scala.collection.immutable.List.newBuilder[Data]
 
     tables.each: (tag, table) =>
       val padding = if table.length%4 == 0 then 0 else 4 - table.length%4
-      val tagBytes = IArray.from(tag.s.getBytes("US-ASCII").nn)
+      val tagBytes = tag.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
       directory += tagBytes ++ u32(0L, offset.toLong, table.length.toLong)
       body += table ++ IArray.fill[Byte](padding)(0)
       offset += table.length + padding

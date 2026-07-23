@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+
 import java.io as ji
 
 import anticipation.*

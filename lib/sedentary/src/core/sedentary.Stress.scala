@@ -421,10 +421,10 @@ extends Rig:
 
           if jl.System.nanoTime < 0L then jl.System.err.nn.println(sink.get)
 
-          results.toList
+          List.of(results.toList)
         }
 
-    dispatch(body).grouped(14).to(List).each: step =>
+    dispatch(body).stdlib.grouped(14).toList.each: step =>
       val n = step(0).toInt
       val compliance2: Optional[Double] = if step(12) < 0L then Unset else step(12)/10000.0
       val sustained: Boolean = step(13) == 1L

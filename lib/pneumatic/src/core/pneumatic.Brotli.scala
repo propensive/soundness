@@ -33,6 +33,7 @@
 package pneumatic
 
 import anticipation.*
+import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -171,12 +172,12 @@ object Brotli:
 
       BrotliStage(BrotliDecoderEngine())
 
-    def compress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliEncoderEngine(), stream)
-    def decompress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliDecoderEngine(), stream)
+    def compress(stream: Progression[Data]): Progression[Data] = drive(BrotliEncoderEngine(), stream)
+    def decompress(stream: Progression[Data]): Progression[Data] = drive(BrotliDecoderEngine(), stream)
 
   // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
-  private def drive(engine: BrotliEngine, stream: LazyList[Data]): LazyList[Data] =
-    def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+  private def drive(engine: BrotliEngine, stream: Progression[Data]): Progression[Data] =
+    def recur(stream: Progression[Data]): Progression[Data] = stream match
       case head #:: tail =>
         engine.accept(head.mutable(using Unsafe), 0, head.length)
         recur(tail)
@@ -184,8 +185,8 @@ object Brotli:
       case _ =>
         engine.finish()
         val data = engine.gather()
-        if data.length > 0 then LazyList(data) else LazyList.empty
+        if data.length > 0 then Progression(data) else Progression.empty
 
-    LazyList.defer(recur(stream))
+    Progression.defer(recur(stream))
 
 sealed trait Brotli extends Compressor

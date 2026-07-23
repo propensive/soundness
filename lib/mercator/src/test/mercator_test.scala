@@ -32,6 +32,8 @@
                                                                                                   */
 package mercator
 
+import scala.collection.immutable.Vector
+
 import soundness.*
 
 import scala.util.{Try, Success}
@@ -44,16 +46,21 @@ object Tests extends Suite(m"Mercator tests"):
     . assert(_ == Some(1))
 
     test(m"Identity for List"):
-      summon[Identity[List]].point(1)
-    . assert(_ == List(1))
+      summon[Identity[scala.collection.immutable.List]].point(1)
+    . assert(_ == scala.collection.immutable.List(1))
 
+    // `scala.collection.immutable.Set`, not the opaque `Set`: mercator's derivation is for
+    // stdlib `Iterable` constructors (as with `Vector` above).
     test(m"Identity for Set"):
-      summon[Identity[Set]].point(1)
-    . assert(_ == Set(1))
+      summon[Identity[scala.collection.immutable.Set]].point(1)
+    . assert(_ == scala.collection.immutable.Set(1))
 
-    test(m"Identity for Series"):
-      summon[Identity[Series]].point(1)
-    . assert(_ == Series(1))
+    // `Vector`, not `Vector`: mercator's derivation is for stdlib `Iterable` constructors, which
+    // the opaque `Vector` deliberately is not. (Whether the opaque aliases should carry mercator
+    // instances is an open design question for the wider collections migration.)
+    test(m"Identity for Vector"):
+      summon[Identity[Vector]].point(1)
+    . assert(_ == Vector(1))
 
     test(m"Identity for Try"):
       summon[Identity[scala.util.Try]].point(1)
@@ -69,19 +76,19 @@ object Tests extends Suite(m"Mercator tests"):
     . assert(_ == Some(2))
 
     test(m"Functor for List"):
-      val functor = summon[Functor[List]]
-      functor.map(List(1, 2, 3))(_ + 1)
+      val functor = summon[Functor[scala.collection.immutable.List]]
+      functor.map(scala.collection.immutable.List(1, 2, 3))(_ + 1)
     . assert(_ == List(2, 3, 4))
 
     test(m"Functor for Set"):
-      val functor = summon[Functor[Set]]
-      functor.map(Set(1, 3, 5))(_ + 1)
-    . assert(_ == Set(2, 4, 6))
+      val functor = summon[Functor[scala.collection.immutable.Set]]
+      functor.map(scala.collection.immutable.Set(1, 3, 5))(_ + 1)
+    . assert(_ == scala.collection.immutable.Set(2, 4, 6))
 
-    test(m"Functor for Series"):
-      val functor = summon[Functor[Series]]
-      functor.map(Series(1, 2, 3))(_ + 1)
-    . assert(_ == Series(2, 3, 4))
+    test(m"Functor for Vector"):
+      val functor = summon[Functor[Vector]]
+      functor.map(Vector(1, 2, 3))(_ + 1)
+    . assert(_ == Vector(2, 3, 4))
 
     test(m"Functor for Try"):
       val functor = summon[Functor[scala.util.Try]]
@@ -95,44 +102,49 @@ object Tests extends Suite(m"Mercator tests"):
 
     test(m"Monad for Option"):
       val monad = summon[Monad[Option]]
-      monad.flatMap(Some(1)) { v => Some(v + 1) }
+      monad.bind(Some(1)) { v => Some(v + 1) }
     . assert(_ == Some(2))
 
     test(m"Monad for List"):
-      val monad = summon[Monad[List]]
-      monad.flatMap(List(1, 2, 3)) { v => if v > 1 then List(v + 1) else Nil }
+      val monad = summon[Monad[scala.collection.immutable.List]]
+      monad.bind(scala.collection.immutable.List(1, 2, 3)) { v => if v > 1 then scala.collection.immutable.List(v + 1) else scala.collection.immutable.List.empty }
     . assert(_ == List(3, 4))
 
     test(m"Monad for Set"):
-      val monad = summon[Monad[Set]]
-      monad.flatMap(Set(1, 3, 5)) { v => Set(v + 1) }
-    . assert(_ == Set(2, 4, 6))
+      val monad = summon[Monad[scala.collection.immutable.Set]]
+      monad.bind(scala.collection.immutable.Set(1, 3, 5)):
+        v => scala.collection.immutable.Set(v + 1)
+    . assert(_ == scala.collection.immutable.Set(2, 4, 6))
 
-    test(m"Monad for Series"):
-      val monad = summon[Monad[Series]]
-      monad.flatMap(Series(1, 2, 3)) { v => Series(v + 1, v + 1) }
-    . assert(_ == Series(2, 2, 3, 3, 4, 4))
+    test(m"Monad for Vector"):
+      val monad = summon[Monad[Vector]]
+      monad.bind(Vector(1, 2, 3)) { v => Vector(v + 1, v + 1) }
+    . assert(_ == Vector(2, 2, 3, 3, 4, 4))
 
     test(m"Monad for Try"):
       val monad = summon[Monad[scala.util.Try]]
-      monad.flatMap(scala.util.Success(1)) { v => scala.util.Try(v + 1) }
+      monad.bind(scala.util.Success(1)) { v => scala.util.Try(v + 1) }
     . assert(_ == scala.util.Success(2))
 
     test(m"Sequence on List/Try"):
-      List(Try(1), Try(2), Try(3)).sequence
-    . assert(_ == Success(List(1, 2, 3)))
+      scala.collection.immutable.List(Try(1), Try(2), Try(3)).sequence
+    . assert(_ == Success(scala.collection.immutable.List(1, 2, 3)))
 
-    // test(m"Sequence on Series/Try"):
-    //   Series(Try(1), Try(2), Try(3)).sequence
-    // .assert(_ == Success(Series(1, 2, 3)))
+    // test(m"Sequence on Vector/Try"):
+    //   Vector(Try(1), Try(2), Try(3)).sequence
+    // .assert(_ == Success(Vector(1, 2, 3)))
 
     test(m"Sequence on List/Set"):
-      List(Set(1), Set(2), Set(3)).sequence
-    . assert(_ == Set(List(1, 2, 3)))
+      scala.collection.immutable.List
+        ( scala.collection.immutable.Set(1),
+          scala.collection.immutable.Set(2),
+          scala.collection.immutable.Set(3) )
+      . sequence
+    . assert(_ == scala.collection.immutable.Set(scala.collection.immutable.List(1, 2, 3)))
 
     // test(m"Monad for Either"):
     //   val monad = summon[Monad[[T] =>> Either[Any, T]]]
-    //   monad.flatMap(Right(1)) { v => Right(v + 1) }
+    //   monad.bind(Right(1)) { v => Right(v + 1) }
     // .assert(_ == Right(2))
 
     test(m"Identity for Ordering does not exist"):

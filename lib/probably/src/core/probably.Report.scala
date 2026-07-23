@@ -32,6 +32,10 @@
                                                                                                   */
 package probably
 
+import scala.collection.immutable.IndexedSeq
+
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import ambience.*
@@ -134,7 +138,7 @@ final class Report(using Environment)(using palette: TestPalette):
     private val mutex: Mutex = Mutex()
     private var tests: ListMap[TestId, ReportLine] = ListMap()
 
-    def list: List[(TestId, ReportLine)] = mutex(tests.to(List))
+    def list: List[(TestId, ReportLine)] = mutex(tests.transmute[List])
     def apply(testId: TestId): ReportLine = mutex(tests(testId))
 
     def update(testId: TestId, reportLine: ReportLine) = mutex:
@@ -153,7 +157,7 @@ final class Report(using Environment)(using palette: TestPalette):
 
     def summaries: List[Summary] = this match
       case Suite(suite, tests) =>
-        val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
+        val rest: List[Summary] = tests.list.sort(_(0).timestamp).bind(_(1).summaries)
 
         if suite.absent then rest
         else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
@@ -218,18 +222,18 @@ final class Report(using Environment)(using palette: TestPalette):
 
   private def benches(line: ReportLine): Iterable[ReportLine.Bench] = line match
     case bench@ReportLine.Bench(_, _) => Iterable(bench)
-    case ReportLine.Suite(_, tests)   => tests.list.flatMap: (_, line) => benches(line)
-    case _                            => Nil
+    case ReportLine.Suite(_, tests)   => tests.list.stdlib.flatMap: (_, line) => benches(line)
+    case _                            => Nil.stdlib
 
   private def strains(line: ReportLine): Iterable[ReportLine.Strain] = line match
     case strain@ReportLine.Strain(_, _) => Iterable(strain)
-    case ReportLine.Suite(_, tests)     => tests.list.flatMap: (_, line) => strains(line)
-    case _                              => Nil
+    case ReportLine.Suite(_, tests)     => tests.list.stdlib.flatMap: (_, line) => strains(line)
+    case _                              => Nil.stdlib
 
   private def profiles(line: ReportLine): Iterable[ReportLine.Hotspots] = line match
     case profile@ReportLine.Hotspots(_, _) => Iterable(profile)
-    case ReportLine.Suite(_, tests)        => tests.list.flatMap: (_, line) => profiles(line)
-    case _                                 => Nil
+    case ReportLine.Suite(_, tests)        => tests.list.stdlib.flatMap: (_, line) => profiles(line)
+    case _                                 => Nil.stdlib
 
   // A histogram bar of `samples` scaled against `max` over a 40-cell span: full blocks
   // with a final fractional character from the eighth-block series. Any nonzero count
@@ -286,7 +290,7 @@ final class Report(using Environment)(using palette: TestPalette):
 
     val columns: Int = safely(Environment.columns.as[Int]).or(120)
     val summaryLines = lines.summaries
-    val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
+    val totals = summaryLines.group(_.status).stdlib.view.mapValues(_.size).toMap - Status.Suite
     val passed: Int =
       totals.getOrElse(Status.Pass, 0)
       + totals.getOrElse(Status.Bench, 0)
@@ -323,7 +327,7 @@ final class Report(using Environment)(using palette: TestPalette):
       val ln = frame.line.let(_.toString.tt).or(t"?")
       t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
 
-    val bySuite = benches(lines).to(List).groupBy(_.test.suite).to(List)
+    val bySuite = benches(lines).toList.groupBy(_.test.suite).toList
       . sortBy(_(1).iterator.map(_.test.timestamp).min)
 
     bySuite.each: (suite, benchmarks) =>
@@ -346,10 +350,10 @@ final class Report(using Environment)(using palette: TestPalette):
             val tp = b.benchmark.throughput
             if tp == 0 then e"" else e"$tp op/s" )
 
-      . tabulate(benchmarks.sortBy(_.test.timestamp)).grid(columns).render
+      . tabulate(List.of(benchmarks.sortBy(_.test.timestamp))).grid(columns).render
       . each(Out.println(_))
 
-    val strainBySuite = strains(lines).to(List).groupBy(_.test.suite).to(List)
+    val strainBySuite = strains(lines).toList.groupBy(_.test.suite).toList
       . sortBy(_(1).iterator.map(_.test.timestamp).min)
 
     strainBySuite.each: (suite, rows) =>
@@ -359,8 +363,9 @@ final class Report(using Environment)(using palette: TestPalette):
 
       // The same comparison panel as the human report, uncoloured: one throughput
       // sparkline per test across the probed concurrencies.
-      val series: List[(Text, Map[Int, probably.Strain], Optional[probably.Strain])] =
-        rows.groupBy(_.test.codepoint).to(List)
+      val series
+      :   scala.collection.immutable.List[(Text, Map[Int, probably.Strain], Optional[probably.Strain])] =
+        rows.groupBy(_.test.codepoint).toList
         . sortBy(_(1).map(_.test.timestamp).min)
         . map: (_, group) =>
             val name = group.head.test.name.text
@@ -368,18 +373,20 @@ final class Report(using Environment)(using palette: TestPalette):
             val cut2 = name.s.indexOf(" (sustained, N = ")
             val cut = if cut1 < 0 then cut2 else if cut2 < 0 then cut1 else cut1.min(cut2)
             val label = if cut < 0 then name else name.keep(cut)
-            val curve = group.map { row => row.strain.concurrency -> row.strain }.to(Map)
+            val curve = Map.from(group.map { row => row.strain.concurrency -> row.strain })
             val sustained: Optional[probably.Strain] = group.find(_.strain.sustained).map(_.strain).getOrElse(Unset)
             (label, curve, sustained)
 
       val steps: List[Int] =
-        val all = series.flatMap(_(1).keys)
+        val allBuffer = scm.ListBuffer[Int]()
+        series.each { entry => allBuffer ++= entry(1).stdlib.keys }
+        val all = allBuffer.toList
 
         val shared =
           if series.length < 2 then all.distinct
-          else all.groupBy(identity).filter(_(1).length > 1).keys.to(List)
+          else all.groupBy(identity).filter(_(1).length > 1).keys.toList
 
-        (if shared.length > 1 then shared else all.distinct).sorted
+        proscenium.List.of((if shared.length > 1 then shared else all.distinct).sorted)
 
       if steps.length > 1 then
         val labelWidth = series.map(_(0).length).max
@@ -430,10 +437,10 @@ final class Report(using Environment)(using palette: TestPalette):
           Column(e"GC", textAlign = TextAlignment.Right): s =>
             e"${s.strain.gcCount}" )
 
-      . tabulate(rows.sortBy(_.test.timestamp)).grid(columns).render
+      . tabulate(List.of(rows.sortBy(_.test.timestamp))).grid(columns).render
       . each(Out.println(_))
 
-    val profileBySuite = profiles(lines).to(List).groupBy(_.test.suite).to(List)
+    val profileBySuite = profiles(lines).toList.groupBy(_.test.suite).toList
       . sortBy(_(1).iterator.map(_.test.timestamp).min)
 
     profileBySuite.each: (suite, rows) =>
@@ -443,14 +450,14 @@ final class Report(using Environment)(using palette: TestPalette):
 
       rows.sortBy(_.test.timestamp).each: row =>
         Out.println(t"${row.test.id}  ${row.test.name.text}")
-        val max = row.hotspots.frames.map(_.samples).maxOption.getOrElse(0L)
+        val max = row.hotspots.frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
 
         def name(frame: probably.Hotspots.Frame): Text =
           val method = StackTrace.Method(frame.className, frame.method)
           val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
           t"${method.prefix}.$cls#${frame.method}"
 
-        val width = row.hotspots.frames.map(name(_).length).maxOption.getOrElse(0)
+        val width = row.hotspots.frames.stdlib.map(name(_).length).maxOption.getOrElse(0)
 
         row.hotspots.frames.each: frame =>
           val basisPoints =
@@ -482,7 +489,7 @@ final class Report(using Environment)(using palette: TestPalette):
 
       Out.println(t"")
 
-      failures.each: summary =>
+      failures.each: (summary: Summary) =>
         val location = t"${summary.id.codepoint.source}:${summary.id.codepoint.line}"
         Out.println(t"${summary.id.id}  ${summary.id.name.text} @ $location")
 
@@ -510,13 +517,13 @@ final class Report(using Environment)(using palette: TestPalette):
               Out.println(t"  ${truncate(text)}")
 
             case Verdict.Detail.Captures(captures) =>
-              captures.each: (expr, value) =>
+              captures.stdlib.each: (expr, value) =>
                 Out.println(t"  $expr = ${truncate(value)}")
 
         Out.println(t"")
 
     failure.let: (error, active) =>
-      val activeNames = active.to(List).map(_.name.text).join(t", ")
+      val activeNames = active.toList.map(_.name.text).join(t", ")
       val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
       val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
 
@@ -571,7 +578,7 @@ final class Report(using Environment)(using palette: TestPalette):
       case Verdict.Detail.Captures(_) | Unset =>
         t"Test failed"
 
-    coverage.each: coverage =>
+    coverage.foreach: coverage =>
       Out.println(e"$Bold($Underline(Test coverage))")
 
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
@@ -581,14 +588,16 @@ final class Report(using Environment)(using palette: TestPalette):
           if oldHits == 0 then main
           else e"${palette.detail}(${oldHits.show.subscripts}) $main"
 
-      val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
-        val hitCount: Int =
-          branches.to(List).map(_.id).map(coverage.hits.has).count(identity(_))
+      val data =
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(coverage.spec.mutable(using Unsafe))
+        . groupBy(_.path).toList.map: (path, branches) =>
+            val hitCount: Int =
+              branches.map(_.id).map(coverage.hits.has).count(identity(_))
 
-        val oldHitCount: Int =
-          branches.to(List).map(_.id).map(coverage.oldHits.has).count(identity(_))
+            val oldHitCount: Int =
+              branches.map(_.id).map(coverage.oldHits.has).count(identity(_))
 
-        CoverageData(path, branches.size, hitCount, oldHitCount)
+            CoverageData(path, branches.size, hitCount, oldHitCount)
 
       val maxHits = data.map(_.branches).maxOption
 
@@ -598,15 +607,15 @@ final class Report(using Environment)(using palette: TestPalette):
         if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"
         else e"• ${surface.juncture.shortCode}"
 
-      def render(junctures: List[Surface]): LazyList[(Surface, Teletype)] =
+      def render(junctures: List[Surface]): Progression[(Surface, Teletype)] =
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
         diagram.nodes.zip(diagram.render(describe))
 
       val allHits = coverage.hits ++ coverage.oldHits
 
       val junctures2 =
-        coverage.structure.values.flatten
-        . to(List)
+        coverage.structure.stdlib.values.flatMap(_.stdlib)
+        . toList
         . filter(!_.covered(allHits))
         . map(_.copy(children = Nil))
 
@@ -628,7 +637,7 @@ final class Report(using Environment)(using palette: TestPalette):
 
           Column(e"Symbol")(_(0).juncture.symbolName) )
 
-      . tabulate(render(junctures2))
+      . tabulate(List.from(render(List.of(junctures2)).stdlib))
       . grid(columns)(using tableStyles.horizontalTableStyle)
       . render
       . each(Out.println(_))
@@ -657,13 +666,13 @@ final class Report(using Environment)(using palette: TestPalette):
 
             bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
 
-      . tabulate(data).grid(columns).render.each(Out.println(_))
+      . tabulate(List.of(data)).grid(columns).render.each(Out.println(_))
 
       Out.println(e"")
 
     def totals(tabulation: Boolean): Unit =
       if summaryLines.exists(_.count > 0) then
-        val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
+        val totals = summaryLines.group(_.status).stdlib.view.mapValues(_.size).toMap - Status.Suite
         val passed: Int =
           totals.getOrElse(Status.Pass, 0)
           + totals.getOrElse(Status.Bench, 0)
@@ -750,9 +759,9 @@ final class Report(using Environment)(using palette: TestPalette):
         // parameter is a `List` and whose body uses the `Stdio` capability leaks the list's reach
         // capability into the surrounding `(using Stdio)` scope under capture checking.
         val cells: IndexedSeq[Teletype] =
-          allStatuses.map: status =>
+          allStatuses.map: (status: Status) =>
             gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
-          . to(IndexedSeq)
+          . stdlib.to(IndexedSeq)
 
         var cell = 0
         while cell < cells.length do
@@ -782,7 +791,7 @@ final class Report(using Environment)(using palette: TestPalette):
         ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Benchmarks", suiteName)
 
       val comparisons: List[ReportLine.Bench] =
-        benchmarks.filter(!_.benchmark.baseline.absent).to(List)
+        benchmarks.filter(!_.benchmark.baseline.absent).transmute[List]
 
       def confInt(b: Benchmark): Teletype =
         if b.confidenceInterval == 0 || b.mean == 0.0 then e""
@@ -800,20 +809,20 @@ final class Report(using Environment)(using palette: TestPalette):
 
       val bench: Scaffold[ReportLine.Bench, Teletype] = Scaffold[ReportLine.Bench](
         (List(
-          Column(e"$Bold(Hash)"): s =>
+          Column(e"$Bold(Hash)"): (s: ReportLine.Bench) =>
             e"${Fg(palette.informative)}(${s.test.id})",
-          Column(e"$Bold(Test)"): s =>
+          Column(e"$Bold(Test)"): (s: ReportLine.Bench) =>
             e"${s.test.name}",
-          Column(e"$Bold(n)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(n)", textAlign = TextAlignment.Right): (s: ReportLine.Bench) =>
             s.benchmark.iterations.toLong,
-          Column(e"$Bold(μ)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(μ)", textAlign = TextAlignment.Right): (s: ReportLine.Bench) =>
             showTime(s.benchmark.mean.toLong),
-          Column(e"$Bold(σ)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(σ)", textAlign = TextAlignment.Right): (s: ReportLine.Bench) =>
             showTime(s.benchmark.sd.toLong),
-          Column(e"$Bold(Confidence)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(Confidence)", textAlign = TextAlignment.Right): (s: ReportLine.Bench) =>
             e"P${s.benchmark.confidence: Int} ${confInt(s.benchmark)}",
 
-          Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): (s: ReportLine.Bench) =>
             e"${frequency(s.benchmark)}") :::
           (
           if benchmarks.exists(_.benchmark.operationSize.present) then List(
@@ -866,7 +875,7 @@ final class Report(using Environment)(using palette: TestPalette):
         )*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))
+      bench.tabulate(benchmarks.transmute[List].sort(-_.benchmark.throughput))
       . grid(columns).render.each(Out.println(_))
 
       if githubActions then GithubActions.endGroup()
@@ -891,8 +900,10 @@ final class Report(using Environment)(using palette: TestPalette):
       // comparable at a glance ahead of the detailed table. Probes of one test share their
       // call site, so grouping is by codepoint; `·` marks an unprobed N, and cells beyond a
       // test's sustained concurrency are subdued.
-      val series: List[(Text, Map[Int, probably.Strain], Optional[probably.Strain])] =
-        rows.to(List).groupBy(_.test.codepoint).to(List)
+      val series
+      :   scala.collection.immutable.List
+            [(Text, Map[Int, probably.Strain], Optional[probably.Strain])] =
+        rows.transmute[List].stdlib.groupBy(_.test.codepoint).toList
         . sortBy(_(1).map(_.test.timestamp).min)
         . map: (_, group) =>
             val name = group.head.test.name.text
@@ -900,18 +911,20 @@ final class Report(using Environment)(using palette: TestPalette):
             val cut2 = name.s.indexOf(" (sustained, N = ")
             val cut = if cut1 < 0 then cut2 else if cut2 < 0 then cut1 else cut1.min(cut2)
             val label = if cut < 0 then name else name.keep(cut)
-            val curve = group.map { row => row.strain.concurrency -> row.strain }.to(Map)
+            val curve = Map.from(group.map { row => row.strain.concurrency -> row.strain })
             val sustained: Optional[probably.Strain] = group.find(_.strain.sustained).map(_.strain).getOrElse(Unset)
             (label, curve, sustained)
 
       val steps: List[Int] =
-        val all = series.flatMap(_(1).keys)
+        val allBuffer = scm.ListBuffer[Int]()
+        series.each { entry => allBuffer ++= entry(1).stdlib.keys }
+        val all = allBuffer.toList
 
         val shared =
           if series.length < 2 then all.distinct
-          else all.groupBy(identity).filter(_(1).length > 1).keys.to(List)
+          else all.groupBy(identity).filter(_(1).length > 1).keys.toList
 
-        (if shared.length > 1 then shared else all.distinct).sorted
+        proscenium.List.of((if shared.length > 1 then shared else all.distinct).sorted)
 
       if steps.length > 1 then
         val stackPalette = summon[StackTrace.Palette]
@@ -956,7 +969,7 @@ final class Report(using Environment)(using palette: TestPalette):
         Out.println(e"")
 
       val comparisons: List[ReportLine.Strain] =
-        rows.filter(!_.strain.baseline.absent).to(List)
+        rows.filter(!_.strain.baseline.absent).transmute[List]
 
       def frequency(strain: probably.Strain): Teletype =
         if strain.throughput == 0 then e""
@@ -966,17 +979,17 @@ final class Report(using Environment)(using palette: TestPalette):
 
       val strain: Scaffold[ReportLine.Strain, Teletype] = Scaffold[ReportLine.Strain](
         (List(
-          Column(e"$Bold(Hash)"): s =>
+          Column(e"$Bold(Hash)"): (s: ReportLine.Strain) =>
             e"${Fg(palette.informative)}(${s.test.id})",
-          Column(e"$Bold(Test)"): s =>
+          Column(e"$Bold(Test)"): (s: ReportLine.Strain) =>
             e"${s.test.name}",
-          Column(e"$Bold(N)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(N)", textAlign = TextAlignment.Right): (s: ReportLine.Strain) =>
             s.strain.concurrency,
-          Column(e"$Bold(Ops)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(Ops)", textAlign = TextAlignment.Right): (s: ReportLine.Strain) =>
             s.strain.operations,
-          Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): (s: ReportLine.Strain) =>
             frequency(s.strain),
-          Column(e"$Bold(Alloc·op¯¹)", textAlign = TextAlignment.Right): s =>
+          Column(e"$Bold(Alloc·op¯¹)", textAlign = TextAlignment.Right): (s: ReportLine.Strain) =>
             showMemory(s.strain.allocationRate.toLong)) :::
           (
           if rows.exists(_.strain.p50.present) then List(
@@ -1032,7 +1045,7 @@ final class Report(using Environment)(using palette: TestPalette):
         )*
       )
 
-      strain.tabulate(rows.to(List).sortBy(_.test.timestamp))
+      strain.tabulate(rows.transmute[List].sort(_.test.timestamp))
       . grid(columns).render.each(Out.println(_))
 
       if githubActions then GithubActions.endGroup()
@@ -1063,23 +1076,21 @@ final class Report(using Environment)(using palette: TestPalette):
         case 4 => stackPalette.accent4
         case _ => stackPalette.accent5
 
-      rows.to(List).sortBy(_.test.timestamp).each: row =>
+      rows.transmute[List].sort(_.test.timestamp).each: row =>
         Out.println(e"$Bold(${Fg(palette.foreground)}(${row.test.name}))")
-        val max = row.hotspots.frames.map(_.samples).maxOption.getOrElse(0L)
+        val max = row.hotspots.frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
 
-        val packages: Map[Text, Color in Srgb] =
-          row.hotspots.frames.map: frame =>
+        val packages: Map[Text, Color in Srgb] = Map.from:
+          row.hotspots.frames.stdlib.map: frame =>
             StackTrace.Method(frame.className, frame.method).prefix
 
           . distinct.zipWithIndex.map: (prefix, index) =>
               prefix -> accent(index)
 
-          . to(Map)
-
         // The method column is leftmost and right-aligned against the bars, so the names
         // read into their histogram rows; the plain width is measured before styling.
         val width: Int =
-          row.hotspots.frames.map: frame =>
+          row.hotspots.frames.stdlib.map: frame =>
             val method = StackTrace.Method(frame.className, frame.method)
             val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
             method.prefix.length + 1 + cls.length + 1 + frame.method.length
@@ -1111,10 +1122,10 @@ final class Report(using Environment)(using palette: TestPalette):
       Out.println(t"─"*74)
 
       Out.println:
-        StackTrace.legend.to(List).map: (symbol, description) =>
+        StackTrace.legend.stdlib.toList.map: (symbol, description) =>
           e"$Bold(${Fg(palette.foreground)}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
 
-        . grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
+        . grouped(3).map(group => (group: Iterable[Teletype]).join).to(Iterable).join(e"${t"\n"}")
 
       Out.println(t"─"*74)
 
@@ -1132,7 +1143,7 @@ final class Report(using Environment)(using palette: TestPalette):
 
         case _ => ()
 
-    details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
+    details.transmute[List].sort(_(0).timestamp).each: (id, info) =>
       val ribbon =
         Ribbon(palette.fail, palette.subdue(palette.fail, 0.5), palette.subdue(palette.fail, 0.75))
 
@@ -1175,7 +1186,7 @@ final class Report(using Environment)(using palette: TestPalette):
               ( Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
                 Column(e"Value")(_(1)) )
 
-            . tabulate(map.to(List)).grid(140).render.each(Out.println(_))
+            . tabulate(map.toList).grid(140).render.each(Out.println(_))
 
           case Verdict.Detail.Message(text) =>
             Out.println(text)
@@ -1184,20 +1195,20 @@ final class Report(using Environment)(using palette: TestPalette):
       if githubActions then GithubActions.endGroup()
 
     failure.let: (error, active) =>
-      val explanation = active.to(List) match
+      val explanation = active.toList match
         case Nil => e"No tests were active when a fatal error occurred."
 
         case _ =>
           val were = if active.size == 1 then e"was" else e"were"
 
           val tests =
-            active.to(List).map: test => e"$Bold(${test.name})"
+            active.toList.map: test => e"$Bold(${test.name})"
             . join(e"", e", ", e" and ", e"")
 
           e"A fatal error occurred while $tests $were running."
 
       if githubActions then
-        val activeNames = active.to(List).map(_.name.text).join(t", ")
+        val activeNames = active.toList.map(_.name.text).join(t", ")
         val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
 

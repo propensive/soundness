@@ -34,6 +34,8 @@ package jacinta
 
 import soundness.*
 
+import proscenium.compat.*
+
 import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
@@ -100,7 +102,7 @@ object RecordsTests extends Suite(m"Jacinta records tests"):
 
     test(m"Get some values in a list"):
       capture:
-        record.children.map { elem => elem.height }.to(List)
+        record.children.map { elem => elem.height }
     . assert(_ == BoundsError(100, 1, 99))
 
     test(m"Get a boolean value"):

@@ -32,6 +32,8 @@
                                                                                                   */
 package graffiti
 
+import scala.caps
+
 import anticipation.*
 import cataclysm.*
 import cataclysm.formatting.standardCssFormatting

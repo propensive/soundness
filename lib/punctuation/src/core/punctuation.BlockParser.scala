@@ -35,6 +35,7 @@ package punctuation
 import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
+import rudiments.*
 import denominative.*
 import fulminate.*
 import prepositional.*
@@ -144,11 +145,11 @@ private[punctuation] final class BlockParser:
       case item: ListItemBuilder =>
         parent match
           case bl: BulletListBuilder =>
-            bl.items += item.children.toList
+            bl.items += List.of(item.children.toList)
             if item.hadBlank then bl.pendingBlank = true
 
           case ol: OrderedListBuilder =>
-            ol.items += item.children.toList
+            ol.items += List.of(item.children.toList)
             if item.hadBlank then ol.pendingBlank = true
 
           case _ => panic(m"ListItem parent must be a List")

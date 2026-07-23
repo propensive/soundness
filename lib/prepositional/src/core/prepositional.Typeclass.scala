@@ -32,6 +32,8 @@
                                                                                                   */
 package prepositional
 
+import scala.caps
+
 import beneficence.Findable
 
 // A `Typeclass` instance is not, in general, pure: many are constructed from capabilities (a

@@ -51,31 +51,32 @@ object MathmlParser:
     case element: Element => element.label
     case _                => t"<unknown>"
 
-  def findMath(nodes: Seq[Node])(using Tactic[MathmlError]): Element =
-    nodes.collectFirst { case element: Element if element.label == t"math" => element }.getOrElse:
+  def findMath(nodes: List[Node])(using Tactic[MathmlError]): Element =
+    nodes.stdlib.collectFirst { case element: Element if element.label == t"math" => element }
+    . getOrElse:
       abort(MathmlError(MathmlError.Reason.NotMathml(t"<missing>")))
 
   def rootElement(xml: Xml)(using Tactic[MathmlError]): Element = xml match
     case element: Element if element.label == t"math" => element
-    case Fragment(nodes*)                             => findMath(nodes)
+    case Fragment(nodes*)                             => findMath(nodes.transmute[List])
 
     case other =>
       abort(MathmlError(MathmlError.Reason.NotMathml(labelOf(other))))
 
   private def childElements(elem: Element): List[Element] =
-    elem.children.to(List).collect { case element: Element => element }
+    List.of(elem.children.toList.collect { case element: Element => element })
 
   private def attributesOf(elem: Element): List[(Text, Text)] =
-    elem.attributes.keys.map { key => (key, elem.attributes.at(key).or(t"")) }.to(List)
+    List.of(elem.attributes.keys.map { key => (key, elem.attributes.at(key).or(t"")) }.toList)
 
   private def textOf(elem: Element): Text =
-    elem.children.to(List).collect { case TextNode(text) => text }.join
+    List.of(elem.children.toList.collect { case TextNode(text) => text }).join
 
   private def children(elem: Element)(using Tactic[MathmlError]): List[Mathml] =
     childElements(elem).map(decodeNode)
 
   private def at(nodes: List[Mathml], index: Int): Mathml =
-    nodes.lift(index).getOrElse(Mrow(Nil))
+    nodes.stdlib.lift(index).getOrElse(Mrow(Nil))
 
   def decodeMath(elem: Element)(using Tactic[MathmlError]): Math =
     val kept = attributesOf(elem).filter { case (key, _) => key != t"xmlns" && key != t"display" }

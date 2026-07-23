@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import gigantism.*
@@ -50,7 +52,7 @@ object Serviceable:
     type Connection = backend.Exchange
 
     def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Connection =
-      backend.dialDomain(domainSocket, options.values)
+      backend.dialDomain(domainSocket, List.of(options.values))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       backend.request(connection, input)
@@ -69,7 +71,7 @@ object Serviceable:
     type Connection = backend.Exchange
 
     def connect(endpoint: Endpoint[TcpPort], interface: Optional[MacAddress]): Connection =
-      backend.dialTcp(endpoint, interface, options.values)
+      backend.dialTcp(endpoint, interface, List.of(options.values))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       backend.request(connection, input)
@@ -87,7 +89,7 @@ object Serviceable:
     type Connection = backend.Exchange
 
     def connect(port: TcpPort, interface: Optional[MacAddress]): Connection =
-      backend.dialTcpPort(port, interface, options.values)
+      backend.dialTcpPort(port, interface, List.of(options.values))
 
     def close(connection: Connection): Unit = backend.hangUp(connection)
 

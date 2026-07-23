@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*

@@ -34,6 +34,8 @@ package austronesian
 
 import soundness.*
 
+import proscenium.compat.*
+
 case class Person(name: Text, age: Int)
 case class Group(persons: List[Person], size: Int)
 
@@ -46,17 +48,17 @@ enum Color:
 object Tests extends Suite(m"Austronesian tests"):
   def run(): Unit =
     test(m"Serialize a case class")(Person("John", 30).pojo)
-    . assert(_ === Pojo(Array("John", 30: java.lang.Integer)))
+    . assert(_ === Pojo(Array("John", java.lang.Integer.valueOf(30).nn)))
 
     test(m"Serialize a list of longs")(List(1L, 99L, 203L).pojo)
-    . assert(_ === Pojo(Array[Object](1L: java.lang.Long, 99L: java.lang.Long, 203L: java.lang.Long)))
+    . assert(_ === Pojo(Array[Object](java.lang.Long.valueOf(1L).nn, java.lang.Long.valueOf(99L).nn, java.lang.Long.valueOf(203L).nn)))
 
     test(m"Serialize a list of case classes")(List(Person("John", 12), Person("Jane", 93)).pojo)
-    . assert(_ === Pojo(Array(Array("John", 12: java.lang.Integer), Array("Jane", 93: java.lang.Integer))))
+    . assert(_ === Pojo(Array(Array("John", java.lang.Integer.valueOf(12).nn), Array("Jane", java.lang.Integer.valueOf(93).nn))))
 
     test(m"Serialize a nested case class structure"):
       Group(List(Person("John", 30), Person("Jane", 25)), 2).pojo
-    . assert(_ === Pojo(Array(Array(Array("John", 30), Array("Jane", 25)), 2: java.lang.Integer)))
+    . assert(_ === Pojo(Array(Array(Array("John", 30), Array("Jane", 25)), java.lang.Integer.valueOf(2).nn)))
 
     val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
 

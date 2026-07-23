@@ -32,6 +32,8 @@
                                                                                                   */
 package escritoire
 
+import scala.compiletime
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
@@ -55,7 +57,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
         [field] => tabulable =>
           tabulable.table().columns.map: element =>
             element.contramap(dereference).retitle:
-              labels.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
+              labels.stdlib.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
 
       . flatten
 
@@ -74,4 +76,4 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
 trait Tabulable[text] extends Typeclass:
   def table(): Scaffold[Self, text]
   private lazy val tableValue: Scaffold[Self, text] = table()
-  def tabulate(data: Seq[Self]): Tabulation[text] = tableValue.tabulate(data)
+  def tabulate(data: List[Self]): Tabulation[text] = tableValue.tabulate(data)

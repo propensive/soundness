@@ -34,6 +34,8 @@ package xylophone
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 
 // The `Encodable in Xml` derivation is the exact mirror of the decoder, so the

@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+
 // The four VP8L reverse transforms, ported from image-rs/image-webp
 // (`src/lossless/decoder/reverse_transform.rs`, MIT/Apache-2.0). The reference uses chunked,
 // autovectorized loops; these are the equivalent scalar forms. All arithmetic on pixel bytes is

@@ -32,6 +32,8 @@
                                                                                                   */
 package chiaroscuro
 
+import proscenium.compat.*
+
 import scala.reflect.*
 
 import anticipation.*
@@ -66,7 +68,7 @@ enum Decomposition:
     case Sequence(_, values, _) => values.map(_.text).join(t"[", t", ", t"]")
 
     case Product(name, values, _) =>
-      t"$name(${values.map { (key, value) => t"$key: ${value.text}" }.join(t", ")}"
+      t"$name(${values.stdlib.map { (key, value) => t"$key: ${value.text}" }.join(t", ")}"
 
   def short: Text = this match
     case Primitive(_, text, _)  => text
@@ -117,7 +119,7 @@ enum Decomposition:
         val last = values.size
         append(t"\n"+(space*indent))
 
-        values.each: (key, value) =>
+        values.stdlib.each: (key, value) =>
           append(t"$space$key:")
           value.multiline(indent + 2, true)
 

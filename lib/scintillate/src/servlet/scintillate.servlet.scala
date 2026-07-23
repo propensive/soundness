@@ -41,7 +41,7 @@ import telekinesis.*
 class servlet extends MacroAnnotation:
   override def transform(using Quotes)
     ( tree: quotes.reflect.Definition, companion: Option[quotes.reflect.Definition] )
-  :   List[quotes.reflect.Definition] =
+  :   scala.collection.immutable.List[quotes.reflect.Definition] =
 
     import quotes.reflect.*
 
@@ -59,15 +59,15 @@ class servlet extends MacroAnnotation:
             . asExprOf[Any]
 
           val parents0 =
-            List('{new JavaServletFn($ref.asInstanceOf[HttpConnection => Http.Response])}.asTerm)
-          val parents = List(TypeTree.of[HttpConnection])
+            scala.collection.immutable.List('{new JavaServletFn($ref.asInstanceOf[HttpConnection => Http.Response])}.asTerm)
+          val parents = scala.collection.immutable.List(TypeTree.of[HttpConnection])
           val newClassName = Symbol.freshName(name)
 
           val cls =
-            Symbol.newClass(Symbol.spliceOwner, name, parents.map(_.tpe), _ => Nil, selfType = None)
+            Symbol.newClass(Symbol.spliceOwner, name, parents.map(_.tpe), _ => scala.collection.immutable.Nil, selfType = None)
 
-          val clsDef = ClassDef(cls, parents, body = Nil)
-          List(tree, clsDef)
+          val clsDef = ClassDef(cls, parents, body = scala.collection.immutable.Nil)
+          scala.collection.immutable.List(tree, clsDef)
 
         case other =>
           halt(m"the @servlet annotation must be applied to a method")

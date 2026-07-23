@@ -32,10 +32,13 @@
                                                                                                   */
 package galilei
 
+import proscenium.compat.*
+
 import aperture.*
 import contingency.*
 import prepositional.*
 import serpentine.*
+import rudiments.*
 
 // The `Openable` instance for opening a file's content: `path.open[File](Read & Write)`. A
 // named class rather than an anonymous given instance: instantiating an anonymous subclass
@@ -59,10 +62,10 @@ extends Openable:
     // translated to `OpenFlag.Exclusive`: POSIX `O_EXCL` governs exclusive *creation*, not
     // exclusive access, so honoring the `Exclusive` grant awaits the access register.
     val modeFlags =
-      (if mode.atoms.contains(Read) then List(OpenFlag.Read) else Nil) ++
-        (if mode.atoms.contains(Write) then List(OpenFlag.Write) else Nil)
+      (if mode.atoms.has(Read) then List(OpenFlag.Read).stdlib else Nil.stdlib) ++
+        (if mode.atoms.has(Write) then List(OpenFlag.Write).stdlib else Nil.stdlib)
 
-    backend.open(value, modeFlags ++ flags): handle =>
+    backend.open(value, List.of(modeFlags ++ flags.stdlib)): handle =>
       // `Granting` is a phantom marker, so the cast only refines the static type with the
       // grants that `modeFlags` has just made true operationally.
       block(using handle.asInstanceOf[Handle & Granting[grants]])

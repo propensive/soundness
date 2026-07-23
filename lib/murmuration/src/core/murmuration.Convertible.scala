@@ -30,25 +30,55 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package murmuration
+
+import scala.collection.immutable.IndexedSeq
+
+import scala.reflect.ClassTag
 
 import anticipation.*
 import prepositional.*
 
-// A type that can be traversed as a lazy sequence of its elements (its `Operand`,
-// bound with `by` — e.g. `List[Int] is Traversable by Int`). It is the basis for
-// element-oriented operations like `where` that need to visit elements in order
-// and short-circuit; `traverse` returns a `LazyList` (lazy) so callers only force
-// as much as they consume.
-object Traversable:
-  given iterable: [element, collection <: Iterable[element]]
-  =>  collection is Traversable by element =
-    _.to(LazyList)
+// Conversion to a *requested shape*: `Form` names the target — a proper type (`Text`) or an
+// unapplied constructor (`Map`, `List`) — and `Result` the fully-applied result implicit search
+// derives for it. It is driven by the kind-polymorphic `transmute` extension: `pairs.transmute[Map]` yields a
+// `Map[key, value]`, `chars.transmute[Text]` a `Text`. `Form` is declared `<: AnyKind` so one method
+// serves both kinds, uniformly, unlike the stdlib's `Factory`-taking `to`.
+object Convertible:
+  given list: [self] => (traversable: self is Traversable)
+  =>  self is Convertible in List to List[traversable.Operand] =
+    self => List.from(traversable.traverse(self))
 
-  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own instance;
-  // placing it here (the typeclass companion) keeps it in implicit scope for
-  // `Text is Traversable` without an explicit `import`, unlike a top-level given.
-  given text: Text is Traversable by Char = text => LazyList(text.s.toCharArray.nn*)
+  given set: [self] => (traversable: self is Traversable)
+  =>  self is Convertible in Set to Set[traversable.Operand] =
+    self => Set.from(traversable.traverse(self))
 
-trait Traversable extends Typeclass.Pure, Operable:
-  def traverse(self: Self): LazyList[Operand]
+  given series: [self] => (traversable: self is Traversable)
+  =>  self is Convertible in Series to Series[traversable.Operand] =
+    self => Series.from(traversable.traverse(self))
+
+  given indexedSeq: [self] => (traversable: self is Traversable)
+  =>  self is Convertible in IndexedSeq to IndexedSeq[traversable.Operand] =
+    self => IndexedSeq.from(traversable.traverse(self))
+
+  given lazyList: [self] => (traversable: self is Traversable)
+  =>  self is Convertible in Progression to Progression[traversable.Operand] =
+    self => Progression.from(traversable.traverse(self))
+
+  given map: [self, key, value] => (traversable: self is Traversable by (key, value))
+  =>  self is Convertible in Map to Map[key, value] =
+    self => Map.from(traversable.traverse(self))
+
+  given iarray: [self]
+  =>  (traversable: self is Traversable)
+  =>  (tag: ClassTag[traversable.Operand])
+  =>  self is Convertible in IArray to IArray[traversable.Operand] =
+    self => IArray.from(traversable.traverse(self))(using tag)
+
+  given text: [self] => (traversable: self is Traversable by Char)
+  =>  self is Convertible in Text to Text =
+    self => Text(traversable.traverse(self).mkString)
+
+trait Convertible extends Typeclass.Pure, Resultant:
+  type Form <: AnyKind
+  def convert(self: Self): Result

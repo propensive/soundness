@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable.Seq
+
 import scala.language.unsafeNulls
 
 import java.lang as jl
@@ -144,9 +146,9 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Streaming parser — negative corpus (E1xx)"):
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if codes.nonEmpty && codes.forall(_ < 200) then
+        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
-            codes.contains:
+            codes.has:
               capture[TelError](Tel.Parser.parse(Cursor[Data](testcase.source)))
               .reason.number
           . assert(_ == true)
@@ -168,7 +170,7 @@ object Tests extends Suite(m"Stratiform Tests"):
           val baseline = TelCheckTree.of(Tel.make(
             Tel.Parser.parse(Cursor[Data](testcase.source))))
           val sizes = List(1, 7, 64, 1024, testcase.source.length.max(1))
-          sizes.forall: n =>
+          sizes.stdlib.forall: n =>
             val tree = TelCheckTree.of(Tel.make(
               Tel.Parser.parse(chunkedCursor(testcase.source, n))))
             tree == baseline
@@ -179,31 +181,31 @@ object Tests extends Suite(m"Stratiform Tests"):
       // documents must match it document-for-document. Fixtures whose `.check`
       // carries an `errors:` section exercise per-document error *recovery* in
       // streaming mode (the reference still yields a recovered document and
-      // reports its errors). Stratiform's `LazyList[Tel]`/`List[Tel]` model is
+      // reports its errors). Stratiform's `Progression[Tel]`/`List[Tel]` model is
       // deliberately fail-fast (see "a malformed document in a stream raises"
       // below) and carries no per-document error list, so those fixtures are
       // skipped pending the in-progress upstream error-isolation work.
-      CorpusLoader.streaming.filterNot(_.check.s.contains("errors:")).each: testcase =>
+      CorpusLoader.streaming.filter(!_.check.s.contains("errors:")).each: testcase =>
         test(m"read[List[Tel]] parses ${testcase.stem}"):
           testcase.source.read[List[Tel]].map(TelCheckTree.of)
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
-        // `LazyList[Tel]` is proscenium's `LazyList[Tel]`; this file doesn't
+        // `Progression[Tel]` is proscenium's `Progression[Tel]`; this file doesn't
         // import the predef alias, so spell it out.
-        test(m"read[LazyList[Tel]] parses ${testcase.stem}"):
-          testcase.source.read[LazyList[Tel]].map(TelCheckTree.of).to(List)
+        test(m"read[Progression[Tel]] parses ${testcase.stem}"):
+          testcase.source.read[Progression[Tel]].map(TelCheckTree.of).stdlib.to(List)
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
       test(m"two documents yield a list of two"):
-        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].length
+        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].stdlib.length
       . assert(_ == 2)
 
       test(m"a trailing separator yields no empty trailing document"):
-        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].length
+        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].stdlib.length
       . assert(_ == 1)
 
       test(m"two consecutive separators yield an empty document between them"):
-        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].length
+        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].stdlib.length
       . assert(_ == 3)
 
       test(m"a malformed document in a stream raises (fail-fast)"):
@@ -212,9 +214,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](t"a 1\n##\nparent\n   bad".read[List[Tel]]).reason.number
       . assert(_ == 107)
 
-      test(m"read[LazyList[Tel]] is lazy past a malformed later document"):
+      test(m"read[Progression[Tel]] is lazy past a malformed later document"):
         val source = t"first ok\n##\nparent\n   bad"
-        TelCheckTree.of(source.read[LazyList[Tel]].head)
+        TelCheckTree.of(source.read[Progression[Tel]].stdlib.head)
       . assert(_ == TelCheckTree.of(t"first ok".read[Tel]))
 
     suite(m"Encode/decode primitives"):
@@ -299,7 +301,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"sum-type schema derivation"):
       test(m"a sum derives a select with one variant per case"):
-        Tels.tels[Tests.Shape2](t"shape").selects.flatMap(_.variants).map(_.keyword).to(List)
+        Tels.tels[Tests.Shape2](t"shape").selects.bind(_.variants).map(_.keyword).to(List)
       . assert(_ == List(t"circle", t"rectangle", t"dot"))
 
       test(m"each variant's fields are derived into its struct"):
@@ -605,7 +607,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         bytes.read[Tel].childCompounds.length
       . assert(_ > 0)
@@ -617,7 +619,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         val doc = bytes.read[Tel]
         try
@@ -634,7 +636,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         val doc = bytes.read[Tel]
         val reconstructed = Tels.Reconstructor.fromTel(doc)
@@ -653,7 +655,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"axiom declares the four built-in scalars"):
         Tels.Axiom.tels.scalars.map(_.name).toSet
       . assert: scalars =>
-          scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String")
+          scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String").stdlib
 
     suite(m"E107 schema-aware recovery (§19.5)"):
       // A schema where a root-level `parent` field references a
@@ -869,9 +871,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         val doc = t"age 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
-            children.collect:
+            val values = children.collect:
               case Tel.Element.Value(_, _, t) => t
-            .to(Set)
+
+            Set.from(values.toSeq)
 
           case _ => Set()
       . assert(_ == Set(t"Anonymous", t"30"))
@@ -1116,7 +1119,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"sequenced ops apply in order"):
         val tel    = doc("name Alice\n")
         val ptr    = Tel.Pointer.of(t"name")
-        val ops    = Seq
+        val ops    = List
                       ( Mutation.Op.UpdateAtom(ptr, 0, t"Bob"),
                         Mutation.Op.AttachRemark(ptr, t"note") )
         val result = Mutation(tel, ops)
@@ -1263,7 +1266,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
         val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
-        tel.fields(t"item").map(_.primaryAtom).toList
+        List.of(tel.fields(t"item").map(_.primaryAtom).toList)
       . assert(_ == List(t"1", t"2", t"3"))
 
       test(m"fields returns empty array when none match"):
@@ -1422,9 +1425,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         // present; the captured error must be one of them, since fixture
         // filenames sometimes describe a scenario while the reference
         // parser surfaces a different code first (e.g. e118 → E117).
-        if codes.nonEmpty && codes.forall(_ < 200) then
+        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
           test(m"raises an expected E1xx error on ${testcase.stem}"):
-            codes.contains(capture[TelError](testcase.source.read[Tel]).reason.number)
+            codes.has(capture[TelError](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
 
     suite(m"BASE-256 codec"):
@@ -1504,7 +1507,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         16384L -> "80 80 01"
       )
 
-      vectors.foreach: (value, expected) =>
+      vectors.each: (value, expected) =>
         test(m"encodes $value as $expected"):
           hex(Varint.encode(value))
         . assert(_ == expected)
@@ -1705,7 +1708,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val schema = Tels.tels[Tests.Shape2](t"shape")
 
         def values(element: Tel.Element): List[Text] = element match
-          case Tel.Element.Node(_, _, children) => children.to(List).flatMap(values)
+          case Tel.Element.Node(_, _, children) => children.to(List).bind(values)
           case Tel.Element.Value(_, _, text)    => List(text)
 
         values(Bintel.decode(shape.bintel, schema))
@@ -2005,7 +2008,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         sig.length
@@ -2016,7 +2019,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel(Tels.Axiom.tels)
@@ -2086,7 +2089,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
         val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.toSeq
@@ -2098,7 +2101,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         val refStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.bintel.hex").nn
         val refHex    =
@@ -2118,7 +2121,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
-          IArray.from(arr)
+          arr.immutable(using Unsafe)
 
         val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
         digest.data.toSeq.map(b => f"${b & 0xff}%02x").mkString
@@ -2286,7 +2289,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"trailing bytes are rejected"):
         val good = Tests.Person(t"Alice", 30).bintel
-        val padded = IArray.from(good.to(List) :+ 0.toByte)
+        val padded = IArray.from(good.to(List).stdlib :+ 0.toByte)
         capture[BintelError](Bintel.parse[Tests.Person](padded)).reason
       . assert(_ == BintelError.Reason.TrailingBytes)
 

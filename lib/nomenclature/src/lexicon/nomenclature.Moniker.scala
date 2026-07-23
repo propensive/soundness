@@ -32,6 +32,8 @@
                                                                                                   */
 package nomenclature
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import distillate.*

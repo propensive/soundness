@@ -32,6 +32,8 @@
                                                                                                   */
 package gossamer
 
+import scala.caps
+
 import denominative.*
 import rudiments.*
 import vacuous.*

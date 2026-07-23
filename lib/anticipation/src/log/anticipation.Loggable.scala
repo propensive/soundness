@@ -32,7 +32,9 @@
                                                                                                   */
 package anticipation
 
-import language.experimental.into
+import scala.caps
+
+import scala.language.experimental.into
 
 import gigantism.Every
 import prepositional.*

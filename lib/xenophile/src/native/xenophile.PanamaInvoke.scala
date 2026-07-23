@@ -35,6 +35,7 @@ package xenophile
 import java.lang.foreign.*
 
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, ::}
 
 import anticipation.*
 import fulminate.*
@@ -129,7 +130,7 @@ object PanamaInvoke:
     val prototype = members.at(function).or:
       halt(m"xenophile: the foreign type $owner has no member $function")
 
-    val parameterTypes = prototype.parameters.or(Nil)
+    val parameterTypes = prototype.parameters.let(_.stdlib).or(Nil)
 
     if argumentTerms.length != parameterTypes.length then
       halt(m"xenophile: wrong number of arguments for $owner.$function")

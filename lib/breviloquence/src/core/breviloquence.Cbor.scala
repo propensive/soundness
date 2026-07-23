@@ -32,8 +32,14 @@
                                                                                                   */
 package breviloquence
 
-import language.dynamics
-import language.experimental.pureFunctions
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
+import scala.language.experimental.pureFunctions
 
 import scala.collection as sc
 import scala.collection.mutable as scm
@@ -127,13 +133,13 @@ trait Cbor2:
       // Built immutably: `build`'s per-field lambda is polymorphic and must be pure, so it may only
       // close over pure values — a mutable map would be a capability.
       val values: Map[String, Ast] =
-        val builder = Map.newBuilder[String, Ast]
+        val builder = scala.collection.immutable.Map.newBuilder[String, Ast]
         var index = 0
         while index < count do
           val key = root.key(index)
           if key.isTextString then builder += key.string -> root.value(index)
           index += 1
-        builder.result()
+        Map.of(builder.result())
 
       // `@name[Cbor]` / bare `@name` renames: field name -> map key, read
       // back the same way they are written.
@@ -155,13 +161,13 @@ trait Cbor2:
 
             // `@name[Cbor]` / bare `@name` variant renames: map the serialized
             // discriminator back to the variant name before delegating.
-            val variantNames: Map[Text, Text] =
-              variantRelabelling[derivation, Cbor].map: (variant, wire) => wire -> variant
+            val variantNames: Map[Text, Text] = Map.from:
+              variantRelabelling[derivation, Cbor].stdlib.map: (variant, wire) => wire -> variant
 
             val wire: Text =
               discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
 
-            val discriminant: Text = variantNames.getOrElse(wire, wire)
+            val discriminant: Text = variantNames.stdlib.getOrElse(wire, wire)
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(cbor)
@@ -196,7 +202,7 @@ trait Cbor2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+          discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
 
 object Cbor extends Cbor2, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an
@@ -729,19 +735,19 @@ object Cbor extends Cbor2, Dynamic:
   given listEncodable: [list <: List, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((list[element] is Encodable in Cbor)^) =
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((set[element] is Encodable in Cbor)^) =
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
   given seriesEncodable: [series <: Series, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((series[element] is Encodable in Cbor)^) =
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    values => ast(Ast.array(IArray.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
   given collectionDecodable: [collection <: Iterable, element]
@@ -756,6 +762,38 @@ object Cbor extends Cbor2, Dynamic:
 
         builder.result()
 
+
+  // Alias counterparts: the opaque prelude collections do not conform to
+  // `Iterable`, so each inlines `collectionDecodable`'s loop at the underlying
+  // stdlib type (using the by-name `decodable` directly, so a recursive
+  // derivation — `List[Tree]` inside `Tree` — ties the knot exactly as the
+  // Iterable instance did before the flip) and casts.
+  given listDecodable: [list <: List, element]
+  =>  ( tactic: Tactic[CborError] )
+  =>  ( decodable: => (element is Decodable in Cbor)^ )
+  =>  ((list[element] is Decodable in Cbor)^{tactic, caps.any}) =
+    value =>
+      val builder = scala.collection.immutable.List.newBuilder[element]
+      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
+      builder.result().asInstanceOf[list[element]]
+
+  given setDecodable: [set <: Set, element]
+  =>  ( tactic: Tactic[CborError] )
+  =>  ( decodable: => (element is Decodable in Cbor)^ )
+  =>  ((set[element] is Decodable in Cbor)^{tactic, caps.any}) =
+    value =>
+      val builder = scala.collection.immutable.Set.newBuilder[element]
+      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
+      builder.result().asInstanceOf[set[element]]
+
+  given seriesDecodable: [series <: Series, element]
+  =>  ( tactic: Tactic[CborError] )
+  =>  ( decodable: => (element is Decodable in Cbor)^ )
+  =>  ((series[element] is Decodable in Cbor)^{tactic, caps.any}) =
+    value =>
+      val builder = Vector.newBuilder[element]
+      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
+      builder.result().asInstanceOf[series[element]]
 
   given mapDecodable: [key: Decodable in Text, element]
   =>  ( decodable: => (element is Decodable in Cbor)^ )
@@ -786,9 +824,9 @@ object Cbor extends Cbor2, Dynamic:
   =>  Map[key, element] is Encodable in Cbor =
 
     map =>
-      val keys: List[key] = map.keys.to(List)
-      val values = IArray.from(keys.map(map(_).encode.root))
-      ast(Ast.map(IArray.from(keys.map{ k => k.encode.s }), values))
+      val keys: List[key] = map.keys.transmute[List]
+      val values = IArray.from(keys.stdlib.map(map(_).encode.root))
+      ast(Ast.map(IArray.from(keys.stdlib.map{ k => k.encode.s }), values))
 
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Cbor)*): Cbor =

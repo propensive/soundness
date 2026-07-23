@@ -34,6 +34,7 @@ package dendrology
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 
 import TreeTile.*
@@ -44,24 +45,26 @@ object TreeDiagram:
 
   given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
     (diagram, termcap) =>
-      (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
+      (diagram.render[Text] { node => t"▪ $node" }).stdlib.join(t"\n")
 
-  def by[node](getChildren: node => Seq[node])(roots: node*): TreeDiagram[node] =
-    def recur(level: List[TreeTile], input: Seq[node]): LazyList[(List[TreeTile], node)] =
-      val last = input.size - 1
+  def by[node](getChildren: node => List[node])(roots: node*): TreeDiagram[node] =
+    def recur(level: List[TreeTile], input: List[node]): Progression[(List[TreeTile], node)] =
+      val last = input.stdlib.size - 1
 
-      input.zipWithIndex.to(LazyList).flatMap: (item, index) =>
-        val tiles: List[TreeTile] = ((if index == last then Last else Branch) :: level).reverse
+      input.stdlib.zipWithIndex.transmute[Progression].flatMap: (item, index) =>
+        val tiles: List[TreeTile] =
+          List.of(((if index == last then Last else Branch) :: level).reverse)
 
-        (tiles, item) #::
-          recur((if index == last then Space else Extender) :: level, getChildren(item))
+        ((tiles, item) #::
+          recur((if index == last then Space else Extender) :: level, getChildren(item)))
+        : Progression[(List[TreeTile], node)]
 
-    new TreeDiagram(recur(Nil, roots))
+    new TreeDiagram(recur(Nil, List.from(roots)))
 
-case class TreeDiagram[node](lines: LazyList[(List[TreeTile], node)]):
-  def render[line](line: node => line)(using style: TreeStyle[line]): LazyList[line] = map[line]:
+case class TreeDiagram[node](lines: Progression[(List[TreeTile], node)]):
+  def render[line](line: node => line)(using style: TreeStyle[line]): Progression[line] = map[line]:
     tiles => node => style.serialize(tiles, line(node))
 
-  def map[row](line: List[TreeTile] => node => row): LazyList[row] = lines.map(line(_)(_))
-  def nodes: LazyList[node] = lines.map(_(1))
-  def tiles: LazyList[List[TreeTile]] = lines.map(_(0))
+  def map[row](line: List[TreeTile] => node => row): Progression[row] = lines.map(line(_)(_))
+  def nodes: Progression[node] = lines.map(_(1))
+  def tiles: Progression[List[TreeTile]] = lines.map(_(0))

@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -43,24 +45,24 @@ import vacuous.*
 // with reference cycles guarded.
 private[facsimile] object Trees:
   def names(root: Cos)(using Pdf): List[(Text, Cos)] raises PdfError =
-    pairs(root, t"Names", Set()).flatMap: (key, value) =>
+    pairs(root, t"Names", scala.collection.immutable.Set()).bind: (key, value) =>
       key.text.let(text => List((text, value))).or(List())
 
   def numbers(root: Cos)(using Pdf): List[(Long, Cos)] raises PdfError =
-    pairs(root, t"Nums", Set()).flatMap: (key, value) =>
+    pairs(root, t"Nums", scala.collection.immutable.Set()).bind: (key, value) =>
       key.long.let(number => List((number, value))).or(List())
 
-  private def pairs(node: Cos, key: Text, visited: Set[Int])(using pdf: Pdf)
+  private def pairs(node: Cos, key: Text, visited: scala.collection.immutable.Set[Int])(using pdf: Pdf)
   :   List[(Cos, Cos)] raises PdfError =
 
     node match
       case Cos.Ref(number, _) =>
-        if visited.contains(number) then List()
+        if visited.has(number) then List()
         else pairs(pdf.resolved(node), key, visited + number)
 
       case Cos.Dictionary(entries) =>
         entries.at(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
-          kids.flatMap(pairs(_, key, visited))
+          kids.bind(pairs(_, key, visited))
 
       case _ =>
         List()
@@ -69,6 +71,6 @@ private[facsimile] object Trees:
   :   List[(Cos, Cos)] raises PdfError =
 
     pdf.resolved(entries.at(key).or(Cos.Nil)).elements.lay(List()): elements =>
-      elements.grouped(2).to(List).flatMap:
+      elements.batched(2).bind:
         case List(key, value) => List((pdf.resolved(key), value))
         case _                => List()

@@ -125,7 +125,7 @@ object GithubActions:
           line.let{ value => t"line=${value.show}" }.option,
           title.let{ text => t"title=${escapeProperty(text)}" }.option )
 
-      . flatten
+      . stdlib.flatten
 
-    val propsText = if props.nil then t"" else t" ${props.join(t",")}"
+    val propsText = if props.isEmpty then t"" else t" ${props.join(t",")}"
     Out.println(t"::$kind$propsText::${escape(message)}")

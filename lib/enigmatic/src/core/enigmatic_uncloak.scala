@@ -55,25 +55,25 @@ extension [value: Encodable in Data](value: value)
 
     algorithm.encrypt(value.bytestream, encryptor.bytes, iv)
 
-// Streaming encryption (block ciphers only) lazily transforms a `LazyList`, driving
+// Streaming encryption (block ciphers only) lazily transforms a `Progression`, driving
 // the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
 // and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
 // `uncloak` block: beyond leaking, a stream drained after the block ends would
 // read key bytes the cloak has already zeroed.
 
-extension (stream: LazyList[Data])
+extension (stream: Progression[Data])
   def encrypt[cipher <: BlockCipher](iv: InitializationVector)
     ( using encryptor: Encryptor[cipher],
             algorithm: cipher & Encryption,
             erased weakness: Permit[Weakness[cipher]],
             erased authentication: Permit[Authentication[cipher]] )
-  :   LazyList[Data] =
+  :   Progression[Data] =
 
     algorithm.encryptStream(stream, encryptor.bytes, iv)
 
 extension (stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
   // Kernel-native streaming encryption: the pipeline-stage counterpart of the
-  // `LazyList` form above, with the same IV-prefix framing.
+  // `Progression` form above, with the same IV-prefix framing.
   def encrypt[cipher <: BlockCipher](iv: InitializationVector)
     ( using encryptor:  Encryptor[cipher],
             algorithm:  cipher & Encryption,

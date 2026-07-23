@@ -98,34 +98,34 @@ object Http2Serve:
               // A `Trailer` header (RFC 7230 §4.4) names response headers to be
               // sent as HTTP/2 trailers — a trailing HEADERS block after the body
               // (e.g. gRPC's `grpc-status`) — rather than in the initial block.
-              val trailerNames: Set[Text] =
+              val trailerNames =
                 response.textHeaders
                   . filter(_.key.lower == t"trailer")
                   . flatMap(_.value.cut(t",").map(_.trim.lower))
-                  . to(Set)
+                  . stdlib.toSet
 
               val (trailerEntries, headEntries) =
-                PseudoHeaders.entries(response).partition: entry =>
-                  trailerNames.contains(entry.name)
+                PseudoHeaders.entries(response).stdlib.partition: entry =>
+                  trailerNames.has(entry.name)
 
               val trailing: Boolean = !trailerEntries.isEmpty
 
               def sendTrailers(): Unit =
-                if trailing then connection0.sendTrailers(streamId, trailerEntries)
+                if trailing then connection0.sendTrailers(streamId, List.of(trailerEntries))
 
               response.body match
                 case Http.Body.Empty =>
-                  connection0.sendHeaders(streamId, headEntries, endStream = !trailing)
+                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Fixed(data) =>
                   val headEnd = data.isEmpty && !trailing
-                  connection0.sendHeaders(streamId, headEntries, endStream = headEnd)
+                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = headEnd)
                   if !data.isEmpty then connection0.sendData(streamId, data, endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Flowing(source) =>
-                  connection0.sendHeaders(streamId, headEntries, endStream = false)
+                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
 
                   source().sweep: (storage, start, size) =>
                     val block = storage.asInstanceOf[Array[Byte]]

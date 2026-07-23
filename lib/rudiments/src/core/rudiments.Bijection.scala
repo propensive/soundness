@@ -32,13 +32,29 @@
                                                                                                   */
 package rudiments
 
+import scala.collection.immutable.Seq
+
 import scala.collection as sc
+import scala.collection.immutable as sci
+
+import denominative.*
+import prepositional.*
 
 object Bijection:
-  def apply[key, value](map: Map[key, value]): Bijection[key, value] =
-    Bijection(map, map.map(_.swap).to(Map))
+  def apply[key, value](map: sci.Map[key, value]): Bijection[key, value] =
+    Bijection(map, map.map(_.swap).to(sci.Map))
 
-case class Bijection[key, value](map: Map[key, value], transposition: Map[value, key])
+  // `Indexable` (in `denominative`) can't host this — `Bijection` lives above it — but `Bijection`'s
+  // own companion is in implicit scope for `Bijection is Indexable`, keeping `bijection.at(key)` working.
+  given indexable: [key, value] => Bijection[key, value] is Indexable:
+    type Self = Bijection[key, value]
+    type Operand = key
+    type Result = value
+
+    def contains(value: Self, index: key): Boolean = value.map.contains(index)
+    def access(value: Self, index: key): value = value.map(index)
+
+case class Bijection[key, value](map: sci.Map[key, value], transposition: sci.Map[value, key])
 extends Iterable[(key, value)], sc.Map[key, value]:
   private inline def bijection: this.type = this
   def iterator: Iterator[(key, value)] = map.iterator

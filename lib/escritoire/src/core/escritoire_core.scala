@@ -32,6 +32,8 @@
                                                                                                   */
 package escritoire
 
+import scala.collection.immutable.IndexedSeq
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -43,7 +45,7 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-extension [row](data: Seq[row])
+extension [row](data: List[row])
   def tabulation[text: Textual](using tabulable: row is Tabulable[text]): Tabulation[text] =
 
     tabulable.tabulate(data)
@@ -202,7 +204,7 @@ package columnar:
 
         recur(0, 0, 0, Nil)
 
-      lines.to(IndexedSeq).flatMap(format(_).reverse)
+      lines.to(IndexedSeq).bind(format(_).stdlib.reverse)
 
   object ParagraphOrBreak extends Columnar:
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
@@ -229,7 +231,7 @@ package columnar:
           (0 until count).each: index =>
             result = line.segment((width*index).z span width) :: result
 
-        result.reverse.to(Series)
+        result.stdlib.reverse.to(IndexedSeq)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)

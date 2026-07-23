@@ -32,8 +32,10 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -98,10 +100,10 @@ object Task:
     async(snooze(duration))
 
 
-  extension [result](tasks: Seq[Task[result]])
+  extension [result](tasks: List[Task[result]])
     // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
-    def sequence(using Monitor^, Probate^): Task[Seq[result]] emits AsyncError =
-      caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
+    def sequence(using Monitor^, Probate^): Task[List[result]] emits AsyncError =
+      caps.unsafe.unsafeAssumePure(async(List.of(tasks.stdlib.map(_.join()))))
 
   extension [result](tasks: Iterable[Task[result]])
     def race()(using Monitor^, Probate^): result raises AsyncError =

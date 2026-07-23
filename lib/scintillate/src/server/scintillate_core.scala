@@ -32,6 +32,8 @@
                                                                                                   */
 package scintillate
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import digression.*
@@ -147,10 +149,10 @@ package webserverErrorPages:
   private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
 
   given standardErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
-    Http.Response(Unfulfilled(LazyList(prefix, postfix).ascribe(media"text/html")))
+    Http.Response(Unfulfilled(Progression(prefix, postfix).ascribe(media"text/html")))
 
   given stackTracesErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8Encoder
 
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
-    Http.Response(Unfulfilled(LazyList(prefix, stack, postfix).ascribe(media"text/html")))
+    Http.Response(Unfulfilled(Progression(prefix, stack, postfix).ascribe(media"text/html")))

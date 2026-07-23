@@ -36,6 +36,8 @@ import java.lang as jl
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
@@ -73,7 +75,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skipSanitizer
-          charDecoders.utf8Decoder.decoded(japaneseData.grouped(chunk).to(LazyList)).join
+          charDecoders.utf8Decoder.decoded(japaneseData.grouped(chunk).to(Progression)).join
         . assert(_ == japanese)
 
       val badUtf8 = Data(45, -62, 49, 48)
@@ -233,7 +235,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
         var failures: List[(Int, String)] = Nil
 
-        lines.zipWithIndex.foreach: (rawLine, idx) =>
+        lines.zipWithIndex.each: (rawLine, idx) =>
           val withoutComment =
             if rawLine.indexOf('#') >= 0 then rawLine.substring(0, rawLine.indexOf('#')).nn
             else rawLine
@@ -241,7 +243,8 @@ object Tests extends Suite(m"Hieroglyph tests"):
           val trimmed = withoutComment.trim.nn
 
           if trimmed.nonEmpty then
-            val tokens: List[String] = trimmed.split("\\s+").nn.to(List).map(_.nn)
+            val tokens: scala.collection.immutable.List[String] =
+              scala.collection.immutable.ArraySeq.unsafeWrapArray(trimmed.split("\\s+").nn).toList.map(_.nn)
             val sb = jl.StringBuilder()
             val expected = scala.collection.mutable.ArrayBuffer[Int]()
 

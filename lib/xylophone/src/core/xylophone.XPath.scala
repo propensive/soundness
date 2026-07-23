@@ -134,4 +134,4 @@ case class XPath(path: Path on XPath = XPath):
   // root-first), not append at the leaf end like `element` does.
   private[xylophone] def prepend(name: Text, ordinal: Int = 1): XPath =
     val step = XPath.elementStep(name, ordinal)
-    XPath(Path[XPath, XPath.type, Tuple]("/", path.descent :+ step))
+    XPath(Path[XPath, XPath.type, Tuple]("/", (path.descent :+ step).to(List)))

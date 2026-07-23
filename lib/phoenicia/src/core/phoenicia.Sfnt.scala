@@ -44,7 +44,7 @@ private[phoenicia] object Sfnt:
   def assemble(version: Data, tables: List[(Text, Data)]): Data =
     def padded(length: Int): Int = (length + 3)/4*4
 
-    val sorted = tables.sortBy(_(0).s)
+    val sorted = tables.stdlib.sortBy(_(0).s)
     val count = sorted.length
     val entrySelector = 31 - Integer.numberOfLeadingZeros(count)
     val searchRange = (1 << entrySelector)*16

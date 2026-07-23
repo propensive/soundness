@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import scala.caps
+
 import java.util.concurrent.atomic as juca
 
 import ambience.*
@@ -57,7 +59,7 @@ object Cli:
   def done(): Unit = trigger.offer(())
   def log(input: Text): Unit = messages ::= input
   def await()(using Monitor^): List[Text] =
-    safely(trigger.await(10.0*Second)) yet messages.reverse
+    safely(trigger.await(10.0*Second)) yet List.of(messages.stdlib.reverse)
 
 
   def arguments
@@ -67,8 +69,9 @@ object Cli:
       tab:           Optional[Ordinal] = Unset )
   :   List[Argument] =
 
-    textArguments.to(List).padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
-      Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
+    List.of:
+      textArguments.toList.padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
+        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
 // A `Cli` is a *capability*: it carries the live stdio, signal-dispatch and completion state of
@@ -92,7 +95,7 @@ trait Cli extends Console, caps.ExclusiveCapability:
     ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
   :   Unit =
 
-    signalHandlers.updateAndGet(handler :: _.nn)
+    signalHandlers.updateAndGet(list => List.of(handler :: list.nn.stdlib))
 
 
   def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =

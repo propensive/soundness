@@ -32,6 +32,8 @@
                                                                                                   */
 package hieroglyph
 
+import proscenium.compat.*
+
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
@@ -59,7 +61,7 @@ extends Encodable, Findable:
   // stage through a `CharBuffer` — the mirror of `CharDecoder.decoded` — so
   // pairs carry whole across chunks; malformed and unmappable input is
   // replaced, matching `getBytes` on the whole-value path above.
-  def encoded(stream: LazyList[Text]): LazyList[Data] =
+  def encoded(stream: Progression[Text]): Progression[Data] =
     val encoder =
       encoding.charset.newEncoder().nn
       . onMalformedInput(jnc.CodingErrorAction.REPLACE).nn
@@ -68,7 +70,7 @@ extends Encodable, Findable:
     val in = jn.CharBuffer.allocate(4096).nn
     val out = jn.ByteBuffer.allocate(4096).nn
 
-    def recur(todo: LazyList[Text], offset: Int = 0): LazyList[Data] =
+    def recur(todo: Progression[Text], offset: Int = 0): Progression[Data] =
       val count = in.remaining
 
       if !todo.nil then
@@ -89,7 +91,7 @@ extends Encodable, Findable:
       in.compact()
 
       def continue =
-        if todo.nil && !status.isOverflow then LazyList()
+        if todo.nil && !status.isOverflow then Progression()
         else if !todo.nil && count >= todo.head.s.length - offset then recur(todo.tail, 0)
         else recur(todo, offset + count)
 

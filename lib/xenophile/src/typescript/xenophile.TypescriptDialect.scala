@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import vacuous.*
@@ -50,7 +52,9 @@ object TypescriptDialect extends Dialect:
       char == '>'
 
   private def tokenize(source: String): List[String] =
-    def recur(index: Int, current: String, tokens: List[String]): List[String] =
+    def recur(index: Int, current: String, tokens: scala.collection.immutable.List[String])
+    :   scala.collection.immutable.List[String] =
+
       if index >= source.length
       then (if current.isEmpty then tokens else current :: tokens).reverse
       else
@@ -63,7 +67,7 @@ object TypescriptDialect extends Dialect:
           if punctuation(char) then recur(index + 1, "", char.toString :: flushed)
           else recur(index + 1, "", flushed)
 
-    recur(0, "", Nil)
+    List.of(recur(0, "", Nil.stdlib))
 
   private def interfaces(tokens: List[String], acc: Map[Text, Map[Text, Prototype]])
   :   Map[Text, Map[Text, Prototype]] =
@@ -92,7 +96,7 @@ object TypescriptDialect extends Dialect:
           union(rest, next :: acc)
 
         case _ =>
-          (acc.reverse, todo)
+          (List.of(acc.stdlib.reverse), todo)
 
     val (members, rest) = union(rest0, List(first))
     val result = if members.length == 1 then members.head else Foreign.Type.Union(members)
@@ -123,14 +127,14 @@ object TypescriptDialect extends Dialect:
 
     tokens match
       case ">" :: rest =>
-        (acc.reverse, rest)
+        (List.of(acc.stdlib.reverse), rest)
 
       case _ =>
         val (arg, rest) = typeOf(tokens)
 
         rest match
           case "," :: more => arguments(more, arg :: acc)
-          case ">" :: more => ((arg :: acc).reverse, more)
+          case ">" :: more => (List.of((arg :: acc).reverse), more)
           case _           => arguments(rest, acc)
 
   private def membersOf(tokens: List[String], acc: Map[Text, Prototype])
@@ -175,7 +179,7 @@ object TypescriptDialect extends Dialect:
 
     tokens match
       case ")" :: rest =>
-        (acc.reverse, rest)
+        (List.of(acc.stdlib.reverse), rest)
 
       case name :: ":" :: rest =>
         val (kind, rest2) = typeOf(rest)
@@ -188,7 +192,7 @@ object TypescriptDialect extends Dialect:
         params(rest, acc)
 
       case Nil =>
-        (acc.reverse, Nil)
+        (List.of(acc.stdlib.reverse), Nil)
 
   private def semicolon(tokens: List[String]): List[String] = tokens match
     case ";" :: rest => rest

@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 // A running socket server is a capability: it owns the accept loop and the supervised
 // connection tasks (captured by `stopServer`) until `stop`ped. A named class rather than an
 // anonymous one so the `transparent inline` `listen` does not duplicate it at each call site.

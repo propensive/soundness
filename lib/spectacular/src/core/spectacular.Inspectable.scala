@@ -32,11 +32,18 @@
                                                                                                   */
 package spectacular
 
+import scala.collection.immutable.IndexedSeq
+
+import scala.reflect
+
+import scala.{caps, compiletime}
+
 import scala.collection.mutable as scm
 
 import anticipation.*
 import denominative.*
 import prepositional.*
+import proscenium.compat.{mkString, head, tail}
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -65,7 +72,7 @@ object Inspectable extends Inspectable2:
 
   given text: Text is Inspectable = text =>
     val builder: StringBuilder = new StringBuilder()
-    text.s.map(escape(_, true)).each(builder.append)
+    text.each { char => builder.append(escape(char, true).s) }
 
     ("t\""+builder.toString+"\"").tt
 
@@ -113,7 +120,7 @@ object Inspectable extends Inspectable2:
   // seal pattern; see rep/DECISIONS.md).
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
-    _.map(insp().text(_)).mkString("{", ", ", "}").tt
+    _.map(insp().text(_)).stdlib.mkString("{", ", ", "}").tt
 
   given map: [key, value]
   =>  ( inspectableKey: => key is Inspectable, inspectableValue: => value is Inspectable )
@@ -125,7 +132,7 @@ object Inspectable extends Inspectable2:
       caps.unsafe.unsafeAssumePure(() => inspectableValue)
 
     entries =>
-      entries.map: (key, value) =>
+      entries.remap: (key, value) =>
         inspKey().text(key).s+" → "+inspValue().text(value).s
 
       . mkString("{", ", ", "}").tt
@@ -135,7 +142,7 @@ object Inspectable extends Inspectable2:
   =>  Series[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
-    _.map(insp().text(_)).mkString("⟨ ", " ", " ⟩").tt
+    _.map(insp().text(_)).stdlib.mkString("⟨ ", " ", " ⟩").tt
 
 
   given indexedSeq: [element] => (inspectable: => element is Inspectable)
@@ -176,13 +183,15 @@ object Inspectable extends Inspectable2:
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
   given stream: [element] => (inspectable: => element is Inspectable)
-  =>  LazyList[element] is Inspectable =
+  =>  Progression[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     stream =>
-      def recur(stream: LazyList[element], todo: Int): Text =
+      def recur(stream: Progression[element], todo: Int): Text =
         if todo <= 0 then "..?".tt
+        // The opaque `Progression`'s runtime `toString` still comes from the underlying
+        // `sci.LazyList`, so the un-forced marker is spelt `LazyList(<not computed>)`.
         else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
         else if stream.nil then "⯁ ".tt
         else (insp().text(stream.head).s+" ⋰ "+recur(stream.tail, todo - 1)).tt

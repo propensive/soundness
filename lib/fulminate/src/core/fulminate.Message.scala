@@ -32,6 +32,8 @@
                                                                                                   */
 package fulminate
 
+import proscenium.compat.*
+
 import scala.annotation.targetName
 import scala.compiletime.*
 
@@ -48,7 +50,10 @@ object Message:
   given communicable: Message is Communicable = identity(_)
 
 
-  transparent inline def apply[tuple <: Tuple](inline messages: tuple, done: List[Message])
+  // The accumulator is `sci.List` internally: inline proxies are judged by their underlying
+  // type, so an opaque-typed accumulator dealiases mid-expansion and fails to recombine.
+  transparent inline def apply[tuple <: Tuple]
+    (inline messages: tuple, done: scala.collection.immutable.List[Message])
   :   List[Message] =
 
     inline erasedValue[tuple] match
@@ -60,22 +65,22 @@ object Message:
             apply[tail](tail.asInstanceOf[tail], communicable.message(message2) :: done)
 
       case _ =>
-        done.reverse
+        List.of(done.reverse)
 
 
 case class Message(texts: List[Text], messages: List[Message] = Nil):
   @targetName("append")
   infix def + (right: Message): Message =
     Message
-      ( texts.init ++ ((texts.last+right.texts.head) :: right.texts.tail),
-        messages ++ right.messages )
+      ( texts.init ::: ((texts.last+right.texts.head) :: right.texts.tail),
+        messages ::: right.messages )
 
   def segments: List[Text | Message] =
     def recur(parts: List[Text], messages: List[Message]): List[Text | Message] = parts match
-      case head :: tail => messages.head :: head :: recur(tail, messages.tail)
+      case head :: tail => List.of(messages.head :: head :: recur(tail, messages.tail).stdlib)
       case Nil          => Nil
 
-    texts.head :: recur(texts.tail, messages)
+    List.of(texts.head :: recur(texts.tail, messages).stdlib)
 
   def fold[render](initial: render)(append: (render, Text, Int) => render): render =
     def recur(done: render, textTodo: List[Text], messagesTodo: List[Message], level: Int): render =

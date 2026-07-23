@@ -32,6 +32,9 @@
                                                                                                   */
 package frontier
 
+import proscenium.compat.*
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import dotty.tools.dotc.*
@@ -114,7 +117,7 @@ object internal:
     case class Matched
       ( symbol:     Symbol,
         typeParams: List[Symbol],
-        bindings:   Map[Symbol, TypeRepr] )
+        bindings:   scala.collection.immutable.Map[Symbol, TypeRepr] )
 
     val givensCache = scala.collection.mutable.Map.empty[TypeRepr, List[Symbol]]
 
@@ -202,7 +205,7 @@ object internal:
         case tp if matched.bindings.contains(tp) =>
           s"${tp.name.toString} = ${stenography.internal.name(matched.bindings(tp)).s}"
 
-      if pairs.nil then baseName.tt
+      if pairs.isEmpty then baseName.tt
       else s"$baseName [${pairs.mkString(", ")}]".tt
 
     // Render a symbol's path via Stenography (so import-scope abbreviations
@@ -224,9 +227,11 @@ object internal:
       val typeParams =
         symbol.paramSymss.headOption.filter(_.forall(_.isType)).getOrElse(Nil)
 
-      if typeParams.nil then
+      if typeParams.isEmpty then
         val resultRaw = resultOf(symbol.info)
-        if resultRaw <:< target then Some(Matched(symbol, Nil, Map.empty)) else None
+        if resultRaw <:< target
+        then Some(Matched(symbol, Nil, scala.collection.immutable.Map.empty))
+        else None
       else
         candidateArgLists(symbol, target, typeParams)
         . iterator
@@ -290,7 +295,9 @@ object internal:
         case _ =>
           Nil
 
-    def boundsRespected(typeParams: List[Symbol], bindings: Map[Symbol, TypeRepr])
+    def boundsRespected
+      ( typeParams: List[Symbol],
+        bindings:   scala.collection.immutable.Map[Symbol, TypeRepr] )
     :   Boolean =
 
       typeParams.forall: tp =>
@@ -305,7 +312,7 @@ object internal:
     // rather than from the source AST, so the substitution applies to the
     // bound `TypeParamRef`s that `Symbol.tree` would expose unsubstituted.
     def usingTypesInstantiated(matched: Matched): List[TypeRepr] =
-      if matched.typeParams.nil then usingTypes(matched.symbol)
+      if matched.typeParams.isEmpty then usingTypes(matched.symbol)
       else
         val args = matched.typeParams.map(matched.bindings)
 
@@ -372,12 +379,12 @@ object internal:
     // alongside a concrete `target` and collect the implied parameter bindings.
     // Used to instantiate type variables in `using` clauses according to the
     // type that the proposed given is being asked to provide.
-    def unify(template: TypeRepr, target: TypeRepr, params: Set[Symbol])
-    :   Map[Symbol, TypeRepr] =
+    def unify(template: TypeRepr, target: TypeRepr, params: scala.collection.immutable.Set[Symbol])
+    :   scala.collection.immutable.Map[Symbol, TypeRepr] =
 
       val templateSymbol = template.typeSymbol
 
-      if params.contains(templateSymbol) then Map(templateSymbol -> target)
+      if params.contains(templateSymbol) then scala.collection.immutable.Map(templateSymbol -> target)
       else (template.dealias, target.dealias) match
         case (AppliedType(tTycon, tArgs), AppliedType(rTycon, rArgs))
         if tArgs.length == rArgs.length =>
@@ -390,14 +397,17 @@ object internal:
           val Refinement(tParent, tName, tInfo) = tRef
           val Refinement(rParent, rName, rInfo) = rRef
 
-          if tName != rName then Map.empty
+          if tName != rName then scala.collection.immutable.Map.empty
           else unify(tParent, rParent, params) ++ unifyInfo(tInfo, rInfo, params)
 
         case _ =>
-          Map.empty
+          scala.collection.immutable.Map.empty
 
-    def unifyInfo(template: TypeRepr, target: TypeRepr, params: Set[Symbol])
-    :   Map[Symbol, TypeRepr] =
+    def unifyInfo
+      ( template: TypeRepr,
+        target:   TypeRepr,
+        params:   scala.collection.immutable.Set[Symbol] )
+    :   scala.collection.immutable.Map[Symbol, TypeRepr] =
 
       (template, target) match
         case (TypeBounds(tLo, tHi), TypeBounds(rLo, rHi)) =>
@@ -501,17 +511,17 @@ object internal:
     // pre-rendered `Diagnostic` model the shared renderer consumes.
     def toDiagnostic(result: Result): Diagnostic = result match
       case Found(name, _) =>
-        Diagnostic.Found(name, Unset, Nil)
+        Diagnostic.Found(name, Unset, proscenium.Nil)
 
       case Available(name, requirements) =>
-        Diagnostic.Propose(name, Unset, requirements.map(toDiagnostic))
+        Diagnostic.Propose(name, Unset, proscenium.List.of(requirements.map(toDiagnostic)))
 
       case Candidate(name, _, missing) =>
-        Diagnostic.Candidate(name, Unset, missing.map(toDiagnostic))
+        Diagnostic.Candidate(name, Unset, proscenium.List.of(missing.map(toDiagnostic)))
 
       case Missing(name, available, candidates) =>
         val children = available.map(toDiagnostic) ++ candidates.map(toDiagnostic)
-        Diagnostic.Requires(name, Unset, children)
+        Diagnostic.Requires(name, Unset, proscenium.List.of(children))
 
     // Build the diagnostic tree rooted at the type Frontier was asked to
     // resolve, with its tried candidates and proposed alternatives beneath it.
@@ -521,7 +531,7 @@ object internal:
     // root is that deepest type — Frontier reports the innermost cause.
     def buildDiagnostic(missing: Missing): Diagnostic =
       val children = missing.available.map(toDiagnostic) ++ missing.candidates.map(toDiagnostic)
-      Diagnostic.Resolving(missing.name, Unset, children)
+      Diagnostic.Resolving(missing.name, Unset, proscenium.List.of(children))
 
     // The transparent catch-all cannot emit a terminal error from inside the
     // nested implicit search where it fires (Dotty buffers and shadows it).

@@ -144,7 +144,7 @@ object Cose:
       case _ =>
         val recipArray = body.element(3)
         if !recipArray.isArray then abort(CoseError(CoseError.Reason.MalformedStructure))
-        val builder = List.newBuilder[CoseRecipient]
+        val builder = scala.collection.immutable.List.newBuilder[CoseRecipient]
         var index = 0
 
         while index < recipArray.elements do
@@ -160,7 +160,7 @@ object Cose:
           builder += CoseRecipient(rp, Cbor.ast(ru), ra)
           index += 1
 
-        builder.result()
+        List.of(builder.result())
 
     new Cose
       ( protectedHeader, Cbor.ast(unprotectedAst), payload, contextString, tagNumber, recipients ):
@@ -184,11 +184,11 @@ class Cose
 
     val envelope = cborTag match
       case CoseTag.Sign1 | CoseTag.Mac0 =>
-        val auth = recipients.head.authentication
+        val auth = recipients.stdlib.head.authentication
         Cbor.Ast.array(IArray[Any](protectedHeader, unprotectedAst, payload, auth))
 
       case _ =>
-        val recipAst: IArray[Any] = IArray.from(recipients.map: r =>
+        val recipAst: IArray[Any] = IArray.from(recipients.stdlib.map: r =>
           Cbor.Ast.array(IArray[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
             r.authentication)))
 
@@ -210,5 +210,5 @@ class Cose
     val externalAad = IArray.empty[Byte]
     val tbs = Cose.toBeSigned(contextString, protectedHeader, externalAad, payload)
 
-    recipients.exists: recipient =>
+    recipients.stdlib.exists: recipient =>
       verifier.check(tbs, recipient.authentication, key)

@@ -32,7 +32,7 @@
                                                                                                   */
 package anthology
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import dotty.tools.dotc.reporting.*
 

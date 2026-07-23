@@ -32,6 +32,8 @@
                                                                                                   */
 package perihelion
 
+import scala.{caps, compiletime}
+
 import java.security.SecureRandom
 
 import anticipation.*
@@ -258,7 +260,7 @@ given wsClient: ( online:            Online,
       val headerBytes =
         readHandshake(inboundRef.asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^])
 
-      val response: Http.Response = Http.Response.parse(LazyList(headerBytes))
+      val response: Http.Response = Http.Response.parse(Progression(headerBytes))
 
       if response.status != Http.SwitchingProtocols then
         abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))
@@ -290,7 +292,7 @@ given wsClient: ( online:            Online,
         . messages.map(_.bytes)
 
       // One reassembled message per refill window: chunk boundaries frame messages.
-      zephyrine.Stream(messages.iterator)
+      zephyrine.Stream(messages.stdlib.iterator)
 
     def transmit
       ( connection: WsConnection,

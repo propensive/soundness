@@ -34,6 +34,8 @@ package cordillera
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import Http2.*
 
@@ -43,9 +45,9 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       IArray.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))
 
     def hex(data: Data): Text =
-      data.to(List).map(b => String.format("%02x", (b & 0xff): Integer).nn).mkString.tt
+      data.to(List).map(b => String.format("%02x", java.lang.Integer.valueOf(b & 0xff)).nn).mkString.tt
 
-    def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
+    def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
 
     suite(m"Huffman (RFC 7541 Appendix C)"):
       // C.4.1: "www.example.com" → Huffman
@@ -148,7 +150,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
       test(m"a request's pseudo-headers + headers survive a round-trip"):
         val encoded = Hpack().encode(headers)
-        Hpack().decode(encoded).map(e => (e.name, e.value))
+        Hpack().decode(encoded).stdlib.map(e => (e.name, e.value))
       . assert(_ == headers.map(e => (e.name, e.value)))
 
     suite(m"Frame codec — golden bytes"):
@@ -279,7 +281,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val (stream, response) = connection.fetch(request, t"http", t"unix")
           val bodyText = ascii(t"pong").to(List) == response.body.stream.memoize.to(List)
           val statusCode = response.status.code
-          val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
+          val grpcStatus = stream.trailers.await().stdlib.find(_.name == t"grpc-status").map(_.value)
           server.cancel()
           (statusCode, bodyText, grpcStatus.getOrElse(t"?"))
       . assert(_ == (200, true, t"0"))

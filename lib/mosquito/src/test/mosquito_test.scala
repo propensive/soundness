@@ -32,7 +32,11 @@
                                                                                                   */
 package mosquito
 
+import scala.math
+
 import soundness.*
+
+import proscenium.compat.*
 import textMetrics.uniformMetric
 
 given Decimalizer(4)
@@ -168,7 +172,7 @@ object Tests extends Suite(m"Mosquito tests"):
       . assert(_ != Unset)
 
       test(m"List.slide produces a stream of 2-tensors"):
-        List(1, 2, 3, 4).slide(2).to(List)
+        List(1, 2, 3, 4).slide(2).stdlib.to(List)
       . assert(_ == List(Vector(1, 2), Vector(2, 3), Vector(3, 4)))
 
     suite(m"Tensors of various sizes"):
@@ -597,14 +601,14 @@ object Tests extends Suite(m"Mosquito tests"):
     suite(m"Eigenvalues and eigenvectors"):
       test(m"Eigenvalues of 2x2 diagonal matrix"):
         val sorted =
-          Matrix[2, 2]((2.0, 0.0), (0.0, 3.0)).eigenvalues.let(_.list.sorted).vouch
+          Matrix[2, 2]((2.0, 0.0), (0.0, 3.0)).eigenvalues.let(_.list.stdlib.sorted).vouch
 
         math.abs(sorted(0) - 2.0) + math.abs(sorted(1) - 3.0)
       . assert(_ < 0.000001)
 
       test(m"Eigenvalues of [[2, 1], [1, 2]] are 1 and 3"):
         val sorted =
-          Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.list.sorted).vouch
+          Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues.let(_.list.stdlib.sorted).vouch
 
         math.abs(sorted(0) - 1.0) + math.abs(sorted(1) - 3.0)
       . assert(_ < 0.000001)

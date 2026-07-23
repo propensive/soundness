@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import scala.caps
+
 import anticipation.*
 import prepositional.*
 import turbulence.*

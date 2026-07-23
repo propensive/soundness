@@ -32,9 +32,13 @@
                                                                                                   */
 package ultimatum
 
+import scala.collection.immutable.IndexedSeq
+
 import java.io as ji
 
 import soundness.*
+
+import proscenium.compat.*
 
 object Tests extends Suite(m"Ultimatum Tests"):
   def run(): Unit =
@@ -143,7 +147,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"the rounded sizes always sum to the available space"):
         val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
-        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width).foldLeft(0)(_ + _)
+        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width).fold(0)(_ + _)
       . assert(_ == 100)
 
       test(m"a child whose minimum exceeds its share is fixed at the minimum"):
@@ -731,11 +735,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = new InlineRoot(() => w, () => 4)
 
         val events = new Iterator[TerminalEvent]:
-          private var remaining: List[() => TerminalEvent] = List(
-            () => Signal.Winch,
-            () => TerminalInfo.CursorPosition(2, 1),
-            () => { w = 4; TerminalInfo.WindowSize(4, 4) },
-            () => Keypress.Escape)
+          private var remaining: scala.collection.immutable.List[() => TerminalEvent] =
+            scala.collection.immutable.List(
+              () => Signal.Winch,
+              () => TerminalInfo.CursorPosition(2, 1),
+              () => { w = 4; TerminalInfo.WindowSize(4, 4) },
+              () => Keypress.Escape)
 
           def hasNext = remaining.nonEmpty
 
@@ -867,7 +872,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.append(b)
-        panes.contents.to(List) == List(a, b)
+        panes.contents.transmute[List] == List(a, b)
       . assert(_ == true)
 
       test(m"prepend adds a pane at the start"):
@@ -875,7 +880,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.prepend(b)
-        panes.contents.to(List) == List(b, a)
+        panes.contents.transmute[List] == List(b, a)
       . assert(_ == true)
 
       test(m"insertBefore places a pane immediately before the reference"):
@@ -884,7 +889,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertBefore(b, c)
-        panes.contents.to(List) == List(a, c, b)
+        panes.contents.transmute[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"insertAfter places a pane immediately after the reference"):
@@ -893,7 +898,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertAfter(a, c)
-        panes.contents.to(List) == List(a, c, b)
+        panes.contents.transmute[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"remove deletes a pane by identity"):
@@ -901,7 +906,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a, b)
         panes.remove(a)
-        panes.contents.to(List) == List(b)
+        panes.contents.transmute[List] == List(b)
       . assert(_ == true)
 
       // Drive a running form, append a pane mid-loop (the synthetic iterator

@@ -34,6 +34,8 @@ package stratiform
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
@@ -136,7 +138,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"Pointers identify the missing fields"):
         val tel = t"name Alice\n".read[Tel]
-        validateTel(tel)(_.as[APerson]).items.map(_(0).s).to(Set)
+        validateTel(tel)(_.as[APerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Each missing-field error has reason Absent"):
@@ -153,7 +155,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
 
       test(m"Pointers identify the wrong-type fields"):
         val tel = t"width wide\nheight tall\n".read[Tel]
-        validateTel(tel)(_.as[APair]).items.map(_(0).s).to(Set)
+        validateTel(tel)(_.as[APair]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert(_ == Set("#/width", "#/height"))
 
       test(m"Wrong-type errors have reason NotScalar"):
@@ -167,7 +169,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     suite(m"Nested case-class errors"):
       test(m"Missing nested case-class field expands per sub-field"):
         val tel = t"company Acme\n".read[Tel]
-        validateTel(tel)(_.as[AContact]).items.map(_(0).s).to(Set)
+        validateTel(tel)(_.as[AContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert: paths =>
           paths == Set
            ( "#/person/name",
@@ -222,23 +224,23 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       . assert(_ == 2)
 
       test(m"The accrued reasons span the pragma and the body"):
-        validateRead(t"tel bad\ngood \n").items.map(_(1).reason).to(Set)
+        validateRead(t"tel bad\ngood \n").items.stdlib.map(_(1).reason).pipe(Set.from(_))
       . assert(_ == Set(TelError.Reason.BadVersion, TelError.Reason.TrailingSpaces))
 
       test(m"A bad schema identifier recovers and the body still accrues"):
-        validateRead(t"tel 1.0 bad!id\ngood \n").items.map(_(1).reason).to(Set)
+        validateRead(t"tel 1.0 bad!id\ngood \n").items.stdlib.map(_(1).reason).pipe(Set.from(_))
       . assert(_ == Set(TelError.Reason.BadSchemaIdentifier, TelError.Reason.TrailingSpaces))
 
       test(m"Two odd-indented lines accrue two OddIndentation errors"):
-        validateRead(t"a\n b\n c\n").items.map(_(1).reason).to(List)
+        validateRead(t"a\n b\n c\n").items.stdlib.map(_(1).reason).to(List)
       . assert(_ == List(TelError.Reason.OddIndentation, TelError.Reason.OddIndentation))
 
       test(m"An over-indented line recovers and a later defect still accrues"):
-        validateRead(t"parent\n        too-deep\nc \n").items.map(_(1).reason).to(Set)
+        validateRead(t"parent\n        too-deep\nc \n").items.stdlib.map(_(1).reason).pipe(Set.from(_))
       . assert(_ == Set(TelError.Reason.OverIndentation, TelError.Reason.TrailingSpaces))
 
       test(m"Many defects across a document all accrue (LSP scenario)"):
-        validateRead(t"tel bad\nparent\n        too-deep\ntail \n").items.map(_(1).reason).to(Set)
+        validateRead(t"tel bad\nparent\n        too-deep\ntail \n").items.stdlib.map(_(1).reason).pipe(Set.from(_))
       . assert: reasons =>
           reasons == Set
            ( TelError.Reason.BadVersion,

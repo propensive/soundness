@@ -59,7 +59,7 @@ case class Juncture
       methodName == right.methodName
 
   def shortCode: Text =
-    val lines = code.flatMap(_.cut(t"\\n"))
+    val lines = code.stdlib.flatMap(_.cut(t"\\n").stdlib)
     if lines.length > 1 then t"${lines.head}..." else lines.head
 
   def method: StackTrace.Method =

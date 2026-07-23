@@ -32,6 +32,8 @@
                                                                                                   */
 package legerdemain
 
+import scala.collection.immutable.Seq
+
 import scala.quoted.*
 
 import anticipation.*
@@ -83,7 +85,7 @@ object internal:
           recur(tail, parameters :: done)
 
         case _ =>
-          '{Query(${Expr.ofList(done.reverse)}.flatten)}
+          '{Query(List.of(${Expr.ofList(done.stdlib.reverse)}.flatMap(_.stdlib)))}
 
     values.absolve match
       case Varargs(exprs) => recur(exprs.to(List))

@@ -32,8 +32,12 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.reflect
+
+import scala.compiletime
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.net.{URLEncoder, URLDecoder}
@@ -140,11 +144,40 @@ extension [textual: Textual { type Result = Char }](words: Iterable[textual])
   def kebab: textual = words.join(textual("-".tt))
   def spaced: textual = words.join(textual(" ".tt))
 
+extension [textual: Textual { type Result = Char }](words: List[textual])
+  def pascal: textual = words.stdlib.pascal
+  def camel: textual = words.stdlib.camel
+  def snake: textual = words.stdlib.snake
+  def kebab: textual = words.stdlib.kebab
+  def spaced: textual = words.stdlib.spaced
+
 extension [value: {Segmentable, Countable}](value: value)
   def before(ordinal: Ordinal): value = value.segment(Prim till ordinal)
   def upto(ordinal: Ordinal): value = value.segment(Prim thru ordinal)
   def from(ordinal: Ordinal): value = value.segment(ordinal thru value.limit)
   def after(ordinal: Ordinal): value = value.segment((ordinal + 1) till value.limit)
+
+// A textual value reverses to its own type. Exposed as a factory rather than a blanket given because
+// `Reversible`'s companion (in `rudiments`) cannot reference `Textual`, so a generic given would not
+// be in implicit scope; each textual type instead publishes `given … is Reversible = reversibleTextual`
+// in its own companion (e.g. `Teletype`), which keeps the single `rudiments` `reverse` serving both
+// text and collections with no competing extension at the umbrella.
+def reversibleTextual[textual](using textual0: textual is Textual)
+:   textual is Reversible { type Result = textual } =
+  new Reversible:
+    type Self = textual
+    type Result = textual
+
+    def reverse(text: textual): textual =
+      val n = textual0.length(text)
+      val builder = textual0.builder(n)
+      var index = n - 1
+
+      while index >= 0 do
+        builder.append(textual0.single(textual0.access(text, index.z)))
+        index -= 1
+
+      builder()
 
 extension [textual: Textual](text: textual)
   inline def length: Int = textual.length(text)
@@ -152,7 +185,7 @@ extension [textual: Textual](text: textual)
 
   // FIXME
   def justify(width: Int): textual =
-    val words = text.words
+    val words = text.words.stdlib
     val extra = width - text.length
 
     def recur(word: Ordinal, spaces: Int, result: textual): textual =
@@ -187,25 +220,14 @@ extension [textual: Textual](text: textual)
   def punch(n: Ordinal): (textual, textual) =
     (text.segment(Prim till n), text.segment((n + 1) till text.limit))
 
-  def reverse: textual =
-    val n = text.length
-    val builder = textual.builder(n)
-    var index = n - 1
-
-    while index >= 0 do
-      builder.append(textual.single(textual.access(text, index.z)))
-      index -= 1
-
-    builder()
-
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
 
-  def search(regex: Regex, overlap: Boolean = false): LazyList[textual] =
+  def search(regex: Regex, overlap: Boolean = false): Progression[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
   inline def extract[value](inline start: Ordinal = Prim)
     ( inline lambda: Scanner ?=> textual ~> value )
-  :   LazyList[value] =
+  :   Progression[value] =
 
     $ {
         gossamer.internal.extractMacro[textual, value]
@@ -319,7 +341,7 @@ extension [textual: Textual { type Result = Char }](text: textual)
   def tr(lambda: Char => Char): textual = textual.map(text)(lambda)
 
   def erase(chars: Char*): textual =
-    val set = chars.to(Set)
+    val set = chars.toSet
 
     textual.builder().build:
       textual.map(text): char =>
@@ -540,6 +562,34 @@ extension [textual: {Joinable, Textual}](values: Iterable[textual])
   def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
     Iterable(left, join(separator, penultimate), right).join
 
+extension [textual: {Joinable, Textual}](values: List[textual])
+  def join: textual = values.stdlib.join
+  def join(separator: textual): textual = values.stdlib.join(separator)
+
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.stdlib.join(left, separator, right)
+
+  def join(separator: textual, penultimate: textual): textual =
+    values.stdlib.join(separator, penultimate)
+
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
+    values.stdlib.join(left, separator, penultimate, right)
+
+// Opaque `Progression` is not an `Iterable`, so it needs its own `join` block bridging via
+// `stdlib` (joining forces the whole stream, which is the caller's intent here).
+extension [textual: {Joinable, Textual}](values: Progression[textual])
+  def join: textual = values.stdlib.join
+  def join(separator: textual): textual = values.stdlib.join(separator)
+
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.stdlib.join(left, separator, right)
+
+  def join(separator: textual, penultimate: textual): textual =
+    values.stdlib.join(separator, penultimate)
+
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
+    values.stdlib.join(left, separator, penultimate, right)
+
 extension (builder: StringBuilder)
   def add(text: Text): Unit = builder.append(text.s)
   def add(char: Char): Unit = builder.append(char)
@@ -551,16 +601,16 @@ package decimalConverters:
 
 package enumIdentification:
   given kebabCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.kebab, _.unkebab.pascal)
+    Identifiable(_.uncamel.stdlib.kebab, _.unkebab.stdlib.pascal)
 
   given snakeCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.snake, _.unsnake.pascal)
+    Identifiable(_.uncamel.stdlib.snake, _.unsnake.stdlib.pascal)
 
   given pascalCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(identity(_), identity(_))
 
   given camelCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.camel, _.unsnake.pascal)
+    Identifiable(_.uncamel.stdlib.camel, _.unsnake.stdlib.pascal)
 
 package caseSensitivity:
   given caseSensitive: CaseSensitivity = _ == _

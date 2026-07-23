@@ -384,7 +384,7 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == ())
 
     suite(m"Stdin and stderr"):
-      test(m"pipe LazyList[Data] into stdin"):
+      test(m"pipe Progression[Data] into stdin"):
         val proc = sh"cat".fork[Text]()
         proc.stdin(Stream(Data(104, 105, 10)))
         proc.await().trim
@@ -452,7 +452,7 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"echo hi"().trim
       . assert(_ == t"hi")
 
-      test(m"head() returns LazyList[Text]"):
+      test(m"head() returns Progression[Text]"):
         sh"head -n 1 /dev/null"().to(List)
       . assert(_ == Nil)
 

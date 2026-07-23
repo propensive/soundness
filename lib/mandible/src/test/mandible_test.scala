@@ -34,19 +34,21 @@ package mandible
 
 import soundness.*
 
+import proscenium.compat.*
+
 import classloaders.threadContextClassloader
 
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =
     test(m"Locate a known method on a classfile"):
       val rewrite =
-        Classfile[StackTrace].let(_.methods.find(_.name == t"rewrite").getOrElse(Unset)).vouch
+        Classfile[StackTrace].let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset)).vouch
     . assert()
 
     test(m"Disassemble a known method's bytecode"):
       val bytecode =
         Classfile[StackTrace]
-        . let(_.methods.find(_.name == t"rewrite").getOrElse(Unset))
+        . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
         . let(_.bytecode)
         . vouch
       bytecode.instructions.size
@@ -55,7 +57,7 @@ object Tests extends Suite(m"Mandible tests"):
     test(m"Bytecode carries declared maxStack and maxLocals"):
       val bytecode =
         Classfile[StackTrace]
-        . let(_.methods.find(_.name == t"rewrite").getOrElse(Unset))
+        . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
         . let(_.bytecode)
         . vouch
       (bytecode.maxStack, bytecode.maxLocals)
@@ -78,7 +80,7 @@ object Tests extends Suite(m"Mandible tests"):
         Bytecode.Instruction
           ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
             Unset,
-            moduleFrame :: Nil,
+            proscenium.List(moduleFrame),
             0 )
 
       val invoke =
@@ -97,7 +99,7 @@ object Tests extends Suite(m"Mandible tests"):
         Bytecode.Instruction
           ( Bytecode.Opcode.Getstatic(t"Bar", t"thing", t"Ljava/lang/Object;"),
             Unset,
-            opaqueFrame :: Nil,
+            proscenium.List(opaqueFrame),
             0 )
 
       val invoke =
@@ -108,7 +110,7 @@ object Tests extends Suite(m"Mandible tests"):
             3 )
 
       Bytecode(Unset, List(getstatic, invoke), 1, 0).effectivelyStaticCalls
-    . assert(_.isEmpty)
+    . assert(_.stdlib.isEmpty)
 
     test(m"Linearizer inlines a resolvable static-dispatchable call"):
       val moduleFrame = Bytecode.Frame.L(t"Foo$$")
@@ -116,7 +118,7 @@ object Tests extends Suite(m"Mandible tests"):
         Bytecode.Instruction
           ( Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"),
             Unset,
-            moduleFrame :: Nil,
+            proscenium.List(moduleFrame),
             0 )
 
       val invoke =
@@ -128,10 +130,9 @@ object Tests extends Suite(m"Mandible tests"):
 
       val caller = Bytecode(Unset, List(getstatic, invoke), 1, 0)
 
-      val calleeBody =
-        Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, Bytecode.Frame.I :: Nil, 0)
-        :: Bytecode.Instruction(Bytecode.Opcode.Ireturn, Unset, Nil, 1)
-        :: Nil
+      val calleeBody = proscenium.List
+        ( Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, proscenium.List(Bytecode.Frame.I), 0),
+          Bytecode.Instruction(Bytecode.Opcode.Ireturn, Unset, Nil, 1) )
       val callee = Bytecode(Unset, calleeBody, 1, 0)
 
       val resolver: (Text, Text, Text) => Optional[Bytecode] =

@@ -32,6 +32,8 @@
                                                                                                   */
 package imperial
 
+import scala.caps
+
 import ambience.*
 import anticipation.*
 import beneficence.*
@@ -51,7 +53,7 @@ object BaseLayout:
       if !home && path.nil then t"/"
       else
         val slash = if path.nil then t"" else t"/"
-        t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
+        t"${if home then homeDir else t""}$slash${path.stdlib.reverse.join(t"/")}"
 
 // `caps.Pure`: a layout is pure path data (`part`, `readOnly`, `Dir`); the marker also keeps the
 // `Home.type`/`Base.type` members of nested layouts' `Topic` tuples pure, without which the
@@ -76,7 +78,7 @@ extends caps.Pure:
 
 
   given dir: BaseLayout.Dir =
-    BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
+    BaseLayout.Dir(baseDir.home, part.let { p => (p :: baseDir.path): List[Text] }.or(baseDir.path))
 
 
   // `inline` so the `raises` context-functions resolve at the call site: a non-inline `raises`

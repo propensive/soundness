@@ -41,6 +41,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import hypotenuse.*
 import prepositional.*
+import rudiments.map
 import serpentine.*
 import spectacular.*
 import turbulence.*
@@ -105,9 +106,10 @@ case class Image
   // and the manifest.
   def blobs: List[(Text, Data)] =
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
-    (configDescriptor.digest, configBytes) ::
-      layerBlobs :::
-      List((manifestDescriptor.digest, manifestBytes))
+    List.of:
+      (configDescriptor.digest, configBytes) ::
+        layerBlobs.stdlib :::
+        scala.collection.immutable.List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under
@@ -121,7 +123,7 @@ case class Image
           user  = UnixUser(0),
           group = UnixGroup(0),
           mtime = 0.bits.u32,
-          data  = LazyList(content) )
+          data  = Progression(content) )
 
     val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)
@@ -130,4 +132,4 @@ case class Image
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tarfile(LazyList.from(layoutEntry :: indexEntry :: blobEntries))
+    Tarfile(Progression.from(layoutEntry :: indexEntry :: blobEntries.stdlib))

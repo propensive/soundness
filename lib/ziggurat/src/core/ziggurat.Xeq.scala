@@ -33,6 +33,7 @@
 package ziggurat
 
 import anticipation.*
+import rudiments.*
 import aperture.*
 import contingency.*
 import distillate.*
@@ -72,10 +73,10 @@ object Xeq:
     val prefix: Text =
       template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
 
-    val encoded: List[(Text, Text)] = payloads.map: payload =>
+    val encoded = payloads.stdlib.map: payload =>
       val raw: Data =
         if !payload.gzip then payload.bytes
-        else LazyList(payload.bytes).compress[Gzip].read[Data]
+        else Progression(payload.bytes).compress[Gzip].read[Data]
 
       payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
@@ -94,7 +95,7 @@ object Xeq:
     builder.add(indexEntries.join(t","))
     builder.add('\n')
 
-    encoded.foreach: (_, content) =>
+    encoded.each: (_, content) =>
       builder.add(t"-----BEGIN CERTIFICATE-----\n")
       builder.add(content)
       builder.add(t"-----END CERTIFICATE-----\n")
@@ -162,7 +163,7 @@ object Xeq:
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
-      handle.write(LazyList(data))
+      handle.write(Progression(data))
 
     output.executable() = true
 
@@ -171,12 +172,12 @@ object Xeq:
     val outputPath: Path on Linux = output.as[Path on Linux]
     val staging: Path on Linux = stagingDir.as[Path on Linux]
 
-    val children: List[Path on Linux] = staging.children.to(List)
+    val children: List[Path on Linux] = List.from(staging.children.stdlib)
 
     val runnerPayloads: List[Payload] =
       children
       . filter(_.name.starts(RunnerPrefix))
-      . sortBy(_.name.s)
+      . sort(_.name.s)
       . map: path =>
           val name = path.name
           val withoutPrefix = name.skip(RunnerPrefix.length)
@@ -198,7 +199,7 @@ object Xeq:
       else
         Unset
 
-    write(outputPath, installer(runnerPayloads ++ dataPayload.option))
+    write(outputPath, installer(List.of(runnerPayloads.stdlib ++ dataPayload.option)))
 
 
   private def downloaderMain(output: Text, url: Text, hash: Text): Unit = unsafely:
@@ -218,7 +219,7 @@ object Xeq:
         manifest.as[Path on Linux].read[Text].cut(t"\n").map(_.trim)
         . filter(_ != t"")
         . map: line =>
-            val fields: List[Text] = line.cut(t"\t").to(List)
+            val fields = line.cut(t"\t").stdlib
             val label: Text = fields.head
             val hash: Text = fields.last
 
@@ -231,7 +232,7 @@ object Xeq:
 
 
   def main(args: Array[String]): Unit =
-    args.iterator.toList match
+    List.of(args.iterator.toList) match
       case "installer" :: output :: staging :: Nil =>
         installerMain(output.tt, staging.tt)
 

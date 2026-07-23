@@ -32,6 +32,8 @@
                                                                                                   */
 package typonym
 
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import gigantism.*
@@ -61,35 +63,30 @@ object internal:
 
     Type.of[phantom] match
       case '[type list <: Tuple; TypeList[list]] =>
-        untuple[list].map(_.asType).map:
+        val elements = untuple[list].stdlib.map(_.asType).map:
           _.absolve match
             case '[element] => reify[element]
 
-        . reverse
-        . foldLeft('{Nil}): (list, next) => '{$next :: $list}
+        '{List.of(${Expr.ofList(elements)})}
 
       case '[type map <: Tuple; TypeMap[map]] =>
         val entries =
           val pairs: List[TypeRepr] = untuple[map]
 
-          val keyValues: List[Expr[(Any, Any)]] = pairs.map(_.asType).map:
+          val keyValues = pairs.stdlib.map(_.asType).map:
             _.absolve match
-              case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}
+              case '[(key, value)] => '{(${reify[key]}, ${reify[value]})}: Expr[(Any, Any)]
 
-          def recur(todo: List[Expr[(Any, Any)]]): Expr[List[(Any, Any)]] = todo match
-            case Nil          => '{Nil}
-            case head :: tail => '{$head :: ${recur(tail)}}
+          '{List.of(${Expr.ofList(keyValues)})}
 
-          recur(keyValues)
-
-        '{$entries.to(Map)}
+        '{Map.from($entries.stdlib)}
 
       case '[type set; TypeSet[set]] =>
         def recur(repr: TypeRepr): List[Expr[set]] = repr.dealias match
-          case OrType(left, right) => recur(left) ++ recur(right)
+          case OrType(left, right) => recur(left) ::: recur(right)
           case other               => List(constant(other).asExprOf[set])
 
-        '{List[set](${Varargs(recur(TypeRepr.of[set]))}*)}
+        '{List[set](${Varargs(recur(TypeRepr.of[set]).stdlib)}*)}
 
       case other => constant(TypeRepr.of[phantom])
 
@@ -103,7 +100,7 @@ object internal:
       case boolean: Boolean => ConstantType(BooleanConstant(boolean))
 
       case list: List[?] =>
-        val tuple = list.map(reflect).reverse.foldLeft(TypeRepr.of[Zero]): (tuple, next) =>
+        val tuple = list.stdlib.map(reflect).reverse.foldLeft(TypeRepr.of[Zero]): (tuple, next) =>
           tuple.asType.absolve match
             case '[type tuple <: Tuple; tuple] => next.asType.absolve match
               case '[next] => TypeRepr.of[next *: tuple]

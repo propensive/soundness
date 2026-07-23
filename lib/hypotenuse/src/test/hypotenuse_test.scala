@@ -32,6 +32,8 @@
                                                                                                   */
 package hypotenuse
 
+import scala.math
+
 import soundness.*
 
 object Tests extends Suite(m"Hypotenuse tests"):

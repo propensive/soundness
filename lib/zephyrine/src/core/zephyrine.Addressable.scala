@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import java.io as ji
 import java.lang as jl
 
@@ -50,7 +52,7 @@ object Addressable:
     type Target = ji.ByteArrayOutputStream
     type Storage = Array[Byte]
 
-    val empty: Data = IArray.from(Nil)
+    val empty: Data = IArray.from(Nil.stdlib)
 
     inline def substrate: Substrate = Substrate.Bytes
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)

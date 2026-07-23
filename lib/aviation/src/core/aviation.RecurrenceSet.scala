@@ -32,6 +32,9 @@
                                                                                                   */
 package aviation
 
+import proscenium.compat.*
+import rudiments.*
+
 // An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
 // e.g. each `rrule.occurrences`) plus explicit extra dates (`rdates`, RFC 5545 `RDATE`), minus
 // excluded dates (`exdates`, `EXDATE`). It is itself `Recurrent` — the streams are merged into one
@@ -42,30 +45,30 @@ object RecurrenceSet:
   =>  ( RecurrenceSet[point] is Recurrent { type Topic = point } ) =
 
     set =>
-      val excluded = set.exdates.to(Set)
-      val streams = set.include :+ LazyList.from(set.rdates.sorted)
+      val excluded = set.exdates.stdlib.toSet
+      val streams = List.of(set.include.stdlib :+ Progression.from(set.rdates.stdlib.sorted))
       dedup(merge(streams)).filterNot(excluded.contains)
 
   // Lazily merge ascending streams into one ascending stream (repeatedly emit the least head).
-  private def merge[point](streams: List[LazyList[point]])(using order: Ordering[point])
-  :   LazyList[point] =
+  private def merge[point](streams: List[Progression[point]])(using order: Ordering[point])
+  :   Progression[point] =
 
-    streams.filter(_.nonEmpty) match
-      case Nil => LazyList.empty
+    streams.stdlib.filter(_.nonEmpty) match
+      case Nil => Progression.empty
 
       case nonEmpty =>
         val index = nonEmpty.indices.minBy(nonEmpty(_).head)
         val chosen = nonEmpty(index)
 
-        chosen.head #:: merge(nonEmpty.updated(index, chosen.tail))
+        chosen.head #:: merge(List.of(nonEmpty.updated(index, chosen.tail)))
 
   // Drop duplicates from an ascending stream (equal values are adjacent).
-  private def dedup[point](stream: LazyList[point])(using order: Ordering[point]): LazyList[point] =
+  private def dedup[point](stream: Progression[point])(using order: Ordering[point]): Progression[point] =
     stream match
       case head #:: tail => head #:: dedup(tail.dropWhile(order.equiv(_, head)))
-      case _             => LazyList.empty
+      case _             => Progression.empty
 
 case class RecurrenceSet[point]
-  ( include: List[LazyList[point]] = Nil,
+  ( include: List[Progression[point]] = Nil,
     rdates:  List[point]           = Nil,
     exdates: List[point]           = Nil )

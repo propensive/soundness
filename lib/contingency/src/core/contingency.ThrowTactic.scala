@@ -32,7 +32,9 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.pureFunctions
 
 import fulminate.*
 

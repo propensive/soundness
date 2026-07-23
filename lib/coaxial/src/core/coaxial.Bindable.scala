@@ -49,7 +49,7 @@ object Bindable:
 
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
     def bind(domainSocket: DomainSocket, interface: Optional[MacAddress]): Binding =
-      backend.listenDomain(domainSocket, options.values)
+      backend.listenDomain(domainSocket, List.of(options.values))
 
     def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
 
@@ -65,7 +65,7 @@ object Bindable:
     type Output = Data
 
     def bind(port: TcpPort, interface: Optional[MacAddress]): Binding =
-      backend.listenTcp(port, interface, options.values)
+      backend.listenTcp(port, interface, List.of(options.values))
 
     def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
 
@@ -81,7 +81,7 @@ object Bindable:
     type Output = UdpResponse
 
     def bind(port: UdpPort, interface: Optional[MacAddress]): Binding =
-      backend.listenUdp(port, interface, options.values)
+      backend.listenUdp(port, interface, List.of(options.values))
 
     def connect(binding: Binding): Packet raises ConnectionError = backend.receive(binding)
 

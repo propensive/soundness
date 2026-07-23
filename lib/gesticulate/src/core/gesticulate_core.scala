@@ -46,4 +46,4 @@ extension [media](value: media)
     ( using streamable: (media is Streamable by Data over Credit)^, buffering: Buffering )
   :   Content =
 
-    Content(media, streamable.stream(value).toLazyList)
+    Content(media, streamable.stream(value).toProgression)

@@ -111,7 +111,7 @@ object JsonPointer extends Root(""):
 
         index += 1
 
-      text.skip(1).cut(t"/").filter(_ != t"").foldLeft(JsonPointer(): JsonPointer):
+      text.skip(1).cut(t"/").filter(_ != t"").fold(JsonPointer(): JsonPointer):
         (pointer, segment) => pointer(filesystem.unescape(segment))
 
   given divisible: JsonPointer is Divisible by Text to JsonPointer =

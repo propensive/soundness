@@ -32,6 +32,8 @@
                                                                                                   */
 package chiaroscuro
 
+import proscenium.compat.*
+
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -67,7 +69,7 @@ object Contrastable:
           val map = contexts[derivation](): [field] =>
             context => label -> context.juxtaposition(dereference(left), dereference(right))
 
-          Juxtaposition.Collation(typeName, map.to(List), show(left), show(right))
+          Juxtaposition.Collation(typeName, map.transmute[List], show(left), show(right))
 
     inline def disjunction[derivation: SumReflection]: derivation is Contrastable =
       (left, right) =>
@@ -96,18 +98,21 @@ object Contrastable:
     given set: [element: Showable] => Set[element] is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left.show) else
-          val leftOnly: Set[Text] = (left -- right).map(_.show)
-          val rightOnly: Set[Text] = (right -- left).map(_.show)
+          val leftOnly: scala.collection.immutable.Set[Text] =
+            (left.stdlib -- right.stdlib).map(_.show)
 
-          def describe(set: Set[Text]): Text =
-            ( if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}"
-              else set.to(List) )
+          val rightOnly: scala.collection.immutable.Set[Text] =
+            (right.stdlib -- left.stdlib).map(_.show)
+
+          def describe(set: scala.collection.immutable.Set[Text]): Text =
+            ( if set.size > 5 then set.take(4).transmute[List] :+ t"…${(set.size - 4).show.subscripts}"
+              else set.transmute[List] )
 
             . join(t"{", t", ", t"}")
 
           val message =
-            if leftOnly.nil then t"+${describe(rightOnly)}"
-            else if rightOnly.nil then t"-${describe(leftOnly)}"
+            if leftOnly.isEmpty then t"+${describe(rightOnly)}"
+            else if rightOnly.isEmpty then t"-${describe(leftOnly)}"
             else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
 
           Juxtaposition.Different(left.show, right.show, message)
@@ -170,7 +175,7 @@ object Contrastable:
 
         Juxtaposition.Collation
           ( name,
-            left.keys.to(List).map: key =>
+            left.keys.transmute[List].map: key =>
               key -> juxtaposition(t"", left(key), right(key)),
             leftName,
             rightName )
@@ -182,7 +187,7 @@ object Contrastable:
             val missing = Decomposition.Primitive(t"", t"", Unset)
 
             val entries =
-              keys.to(List).map: key =>
+              keys.transmute[List].map: key =>
                 key -> juxtaposition(t"", left.at(key).or(missing), right.at(key).or(missing))
 
             val name = if lname == rname then lname else t"$lname/$rname"
@@ -212,7 +217,7 @@ object Contrastable:
 
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = IArray.from:
-        diff(left, right).rdiff(_ == _, 10).changes.map:
+        dissonance.diff(Series.from(left), Series.from(right)).rdiff(_ == _, 10).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
@@ -233,7 +238,7 @@ object Contrastable:
 
             label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
-      Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
+      Juxtaposition.Collation(name, comparison.transmute[List], leftDebug, rightDebug)
 
 
   trait Foundation extends Contrastable:

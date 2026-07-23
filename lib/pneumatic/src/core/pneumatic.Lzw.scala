@@ -33,6 +33,7 @@
 package pneumatic
 
 import anticipation.*
+import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -55,10 +56,10 @@ object Lzw:
 
     LzwStage(LzwDecoder(earlyChange))
 
-  def compress(stream: LazyList[Data], earlyChange: Boolean = true): LazyList[Data] =
+  def compress(stream: Progression[Data], earlyChange: Boolean = true): Progression[Data] =
     drive(LzwEncoder(earlyChange), stream)
 
-  def decompress(stream: LazyList[Data], earlyChange: Boolean = true): LazyList[Data] =
+  def decompress(stream: Progression[Data], earlyChange: Boolean = true): Progression[Data] =
     drive(LzwDecoder(earlyChange), stream)
 
   given compression: Lzw is Compression:
@@ -74,12 +75,12 @@ object Lzw:
 
       LzwStage(LzwDecoder(true))
 
-    def compress(stream: LazyList[Data]): LazyList[Data] = Lzw.compress(stream)
-    def decompress(stream: LazyList[Data]): LazyList[Data] = Lzw.decompress(stream)
+    def compress(stream: Progression[Data]): Progression[Data] = Lzw.compress(stream)
+    def decompress(stream: Progression[Data]): Progression[Data] = Lzw.decompress(stream)
 
   // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
-  private def drive(engine: LzwEngine, stream: LazyList[Data]): LazyList[Data] =
-    def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+  private def drive(engine: LzwEngine, stream: Progression[Data]): Progression[Data] =
+    def recur(stream: Progression[Data]): Progression[Data] = stream match
       case head #:: tail =>
         engine.accept(head.mutable(using Unsafe), 0, head.length)
         val data = engine.gather()
@@ -88,8 +89,8 @@ object Lzw:
       case _ =>
         engine.finish()
         val data = engine.gather()
-        if data.length > 0 then LazyList(data) else LazyList.empty
+        if data.length > 0 then Progression(data) else Progression.empty
 
-    LazyList.defer(recur(stream))
+    Progression.defer(recur(stream))
 
 sealed trait Lzw extends Compressor

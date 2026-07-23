@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 // The contextual document within a `PdfFile.open` block: `pdf.trailer` rather than
 // `summon[Pdf].trailer`, following parasite's `monitor`.
 transparent inline def pdf: Pdf^ = infer[Pdf^]

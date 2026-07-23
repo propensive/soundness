@@ -80,13 +80,13 @@ object ForeignLibrary:
       case Nil =>
         throw IllegalArgumentException(t"no native library could be loaded from $paths".s)
 
-    val signatures = CHeaderDialect.parse(header).getOrElse(CHeaderDialect.library, Map())
+    val signatures = CHeaderDialect.parse(header).stdlib.getOrElse(CHeaderDialect.library, Map())
     new ForeignLibrary(attempt(paths), signatures)
 
   // The process-wide default lookup (the C standard library and already-loaded
   // images); useful for `libc` symbols without naming a library file.
   def system(header: Text): ForeignLibrary =
-    val signatures = CHeaderDialect.parse(header).getOrElse(CHeaderDialect.library, Map())
+    val signatures = CHeaderDialect.parse(header).stdlib.getOrElse(CHeaderDialect.library, Map())
     new ForeignLibrary(linker.defaultLookup.nn, signatures)
 
   // Copies bytes into freshly-allocated native memory in `arena`.
@@ -125,7 +125,7 @@ object ForeignLibrary:
       case Nil =>
         throw IllegalArgumentException("no native library could be loaded from "+paths)
 
-    registered.add(attempt(paths.to(List)))
+    registered.add(attempt(paths.transmute[List]))
 
   def downcall(symbol: Text, descriptor: FunctionDescriptor): MethodHandle =
     handles.computeIfAbsent(symbol, _ => bind(symbol, descriptor)).nn
@@ -141,7 +141,7 @@ object ForeignLibrary:
 
     val lookups: List[SymbolLookup] =
       import scala.jdk.CollectionConverters.ListHasAsScala
-      linker.defaultLookup.nn :: registered.asScala.to(List)
+      linker.defaultLookup.nn :: registered.transmute[List]
 
     linker.downcallHandle(search(lookups), descriptor).nn
 
@@ -155,6 +155,6 @@ class ForeignLibrary(lookup: SymbolLookup, signatures: Map[Text, Prototype]):
   // signature. Invoke it with `invokeWithArguments`, passing `MemorySegment`s for
   // pointer parameters and boxed primitives for the rest.
   def handle(function: Text): MethodHandle =
-    val signature = signatures.getOrElse(function, panic(m"no such foreign function: $function"))
+    val signature = signatures.stdlib.getOrElse(function, panic(m"no such foreign function: $function"))
     val symbol = lookup.find(function.s).nn.orElseThrow().nn
     ForeignLibrary.linker.downcallHandle(symbol, ForeignLibrary.descriptor(signature)).nn

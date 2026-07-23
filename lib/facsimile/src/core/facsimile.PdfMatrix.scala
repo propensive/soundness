@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 object PdfMatrix:
   val Identity: PdfMatrix = PdfMatrix(1, 0, 0, 1, 0, 0)
 

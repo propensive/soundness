@@ -42,7 +42,7 @@ object ChemicalFormula:
   def apply(molecule: Molecule): ChemicalFormula = ChemicalFormula(ListMap(molecule -> 1))
 
   given showable: ChemicalFormula is Showable = formula =>
-    formula.molecules.to(List).map: (molecule, count) =>
+    formula.molecules.transmute[List].map: (molecule, count) =>
       (if count == 1 then t"" else count.show)+molecule.show
 
     . join(t" + ")

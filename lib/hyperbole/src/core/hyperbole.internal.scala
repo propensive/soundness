@@ -32,6 +32,8 @@
                                                                                                   */
 package hyperbole
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 import scala.quoted.*
 
@@ -64,7 +66,7 @@ object internal:
                 ${Expr(name)},
                 ${Expr(expr)},
                 ${Expr(source)},
-                ${Expr.ofList(nodes2)},
+                List.of(${Expr.ofList(nodes2.stdlib)}),
                 $param2.asInstanceOf[Optional[Text]],
                 ${Expr(term)},
                 ${Expr(definitional)} )
@@ -98,16 +100,16 @@ object internal:
 
     extension (tastyTree: TastyTree)
       def children(nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(' ', _)))
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expand(' ', _))))
 
       def typeChildren(nodes2: TypeRepr*): TastyTree =
-        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expandType(_)))
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expandType(_))))
 
       def typed(nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand('t', _)))
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expand('t', _))))
 
       def add(tag: Char, nodes2: Tree*): TastyTree =
-        tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag, _)))
+        tastyTree.copy(nodes = List.of(tastyTree.nodes.stdlib ::: nodes2.toList.map(TastyTree.expand(tag, _))))
 
 
     object TastyTree:
@@ -477,7 +479,7 @@ object internal:
                 panic(m"unexpected parameter clause: ${clause.toString}")
 
             TastyTree(tag, typeName, t"DefDef", tree, parameter = name.tt)
-            . copy(nodes = clauses)
+            . copy(nodes = List.of(clauses))
             . typed(tpt)
             . children(rhs.to(List)*)
             . definition
@@ -633,21 +635,21 @@ object internal:
           t"Private within"   -> symbol.privateWithin.map(_.show).getOrElse(t""),
           t"Protected within" -> symbol.protectedWithin.map(_.show).getOrElse(t""),
           t"Documentation"    -> symbol.docstring.getOrElse("").tt,
-          t"Annotations"      -> symbol.annotations.map(annotation(_).plain),
-          t"Declared fields"  -> symbol.declaredFields.sortBy(_.name).map(_.name.tt),
-          t"Field members"    -> symbol.fieldMembers.sortBy(_.name).map(_.name.tt),
-          t"Declared methods" -> symbol.declaredMethods.sortBy(_.name).map(_.name.tt),
-          t"Method members"   -> symbol.methodMembers.sortBy(_.name).map(_.name),
-          t"Declared types"   -> symbol.declaredTypes.sortBy(_.name).map(_.name.tt),
-          t"Type members"     -> symbol.typeMembers.sortBy(_.name).map(_.name.tt),
-          t"Declarations"     -> symbol.declarations.sortBy(_.name).map(_.name.tt),
-          t"Children"         -> symbol.children.sortBy(_.name).map(_.name.tt),
+          t"Annotations"      -> List.of(symbol.annotations.map(annotation(_).plain)),
+          t"Declared fields"  -> List.of(symbol.declaredFields.sortBy(_.name).map(_.name.tt)),
+          t"Field members"    -> List.of(symbol.fieldMembers.sortBy(_.name).map(_.name.tt)),
+          t"Declared methods" -> List.of(symbol.declaredMethods.sortBy(_.name).map(_.name.tt)),
+          t"Method members"   -> List.of(symbol.methodMembers.sortBy(_.name).map(_.name.tt)),
+          t"Declared types"   -> List.of(symbol.declaredTypes.sortBy(_.name).map(_.name.tt)),
+          t"Type members"     -> List.of(symbol.typeMembers.sortBy(_.name).map(_.name.tt)),
+          t"Declarations"     -> List.of(symbol.declarations.sortBy(_.name).map(_.name.tt)),
+          t"Children"         -> List.of(symbol.children.sortBy(_.name).map(_.name.tt)),
 
           t"Parameters" ->
-            symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")")),
+            List.of(symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")"))),
 
           t"All overridden symbols" ->
-            symbol.allOverriddenSymbols.map(_.name.tt).to(List),
+            List.of(symbol.allOverriddenSymbols.map(_.name.tt).toList),
 
           t"Primary constructor" ->
             symbol.primaryConstructor.name.tt,
@@ -673,22 +675,22 @@ object internal:
 
 
   def serialize(symbol: TastySymbol): Macro[TastySymbol] =
-    val flags = symbol.flags.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
-    val properties = symbol.properties.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
+    val flags = symbol.flags.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
+    val properties = symbol.properties.stdlib.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
 
     val details =
-      symbol.details.map: pair =>
+      symbol.details.stdlib.map: pair =>
         pair.absolve match
           case (key, text: Text) => '{(${Expr(key)}, ${Expr(text)})}
 
           case (key, list: List[Text] @unchecked) =>
-            '{(${Expr(key)}, ${Expr.ofList(list.map(Expr(_)))})}
+            '{(${Expr(key)}, List.of(${Expr.ofList((list: List[Text]).stdlib.map(Expr(_)))}))}
 
     ' {
         TastySymbol
           ( ${Expr(symbol.prefix)},
             ${Expr(symbol.name)},
-            ${Expr.ofList(flags)},
-            ${Expr.ofList(properties)},
-            ${Expr.ofList(details)} )
+            List.of(${Expr.ofList(flags)}),
+            List.of(${Expr.ofList(properties)}),
+            List.of(${Expr.ofList(details)}) )
       }

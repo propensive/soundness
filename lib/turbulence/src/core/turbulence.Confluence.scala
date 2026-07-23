@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import scala.caps
+
 import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 

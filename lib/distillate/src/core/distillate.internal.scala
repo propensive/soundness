@@ -32,6 +32,8 @@
                                                                                                   */
 package distillate
 
+import scala.reflect
+
 import scala.quoted.*
 
 import anticipation.*

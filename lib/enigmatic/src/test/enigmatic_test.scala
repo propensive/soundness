@@ -128,11 +128,11 @@ object Tests extends Suite(m"Gastronomy tests"):
       val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
       val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
       val stream = chain.s.grouped(11).map(_.tt).stream
-      summon[LazyList[Pem] is Aggregable by Text].accept(stream).map(_.label).to(List)
+      summon[Progression[Pem] is Aggregable by Text].accept(stream).map(_.label).stdlib.to(List)
     . assert(_ == List.fill(3)(PemLabel.Proprietary(t"EXAMPLE")))
 
     test(m"PEM chain of an input without blocks is empty"):
-      summon[LazyList[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).to(List)
+      summon[Progression[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).stdlib.to(List)
     . assert(_ == List())
 
     test(m"PEM streams its armored form"):
@@ -221,14 +221,14 @@ object Tests extends Suite(m"Gastronomy tests"):
         . stream.decrypt.memoize.to(List)
     . assert(_ == t"Hello world".in[Data].to(List))
 
-    test(m"legacy LazyList encryption survives one-byte chunks"):
+    test(m"legacy Progression encryption survives one-byte chunks"):
       import blockCipherMode.cbc, blockCipherPadding.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]
-        val chunks = plain.grouped(1).map { chunk => chunk }.to(LazyList)
-        chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
+        val chunks = plain.grouped(1).map { chunk => chunk }.to(Progression)
+        chunks.encrypt(InitializationVector.random).stdlib.reduce(_ ++ _).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
@@ -344,8 +344,8 @@ object Tests extends Suite(m"Gastronomy tests"):
     test(m"Streaming encryption round-trips via one-shot decryption"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        val chunks = LazyList(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-        chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
+        val chunks = Progression(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
+        chunks.encrypt(InitializationVector.random).stdlib.reduce(_ ++ _).decrypt.as[Text]
     . assert(_ == t"Hello, streaming world!")
 
     test(m"Streaming and one-shot encryption agree for a fixed IV"):
@@ -353,7 +353,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val streamed =
-          LazyList(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).reduce(_ ++ _)
+          Progression(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.reduce(_ ++ _)
 
         streamed.serialize[Hex] == t"Hello, streaming world!".in[Data].encrypt(iv).serialize[Hex]
     . assert(_ == true)
@@ -482,8 +482,8 @@ object Tests extends Suite(m"Gastronomy tests"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.uncloak:
-          val chunks = LazyList(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-          chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
+          val chunks = Progression(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
+          chunks.encrypt(InitializationVector.random).stdlib.reduce(_ ++ _).decrypt.as[Text]
       . assert(_ == t"Hello, streaming world!")
 
     suite(m"Keystores"):

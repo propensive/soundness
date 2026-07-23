@@ -30,38 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package proscenium
 
-import anticipation.*
-import prepositional.*
+import scala.collection.immutable as sci
 
-// A type whose values can be tested for membership of a value (the queried type
-// is its `Operand`, bound with `by` — e.g. `List[Int] is Inclusive by Int`).
-// Backs the `collection.has(value)` extension. Distinct from `Indexable`, whose
-// `defines` answers whether a *key/index* is present rather than a *value*.
-// The single `Iterable` instance fixes the queried type to the collection's
-// *exact* element type via the `Element` match type, rather than a bounded
-// `collection <: Iterable[element]` whose covariance would widen the element to
-// `Matchable` — silently accepting `map.has(key)` (a key, not a value) or
-// `list.has(wrongType)`. With the exact element, `Map`'s element is a key/value
-// pair, so `map.has(key)` is a compile error; key membership is `Indexable`'s
-// `defines`.
-object Inclusive:
-  type Element[collection] = collection match
-    case Iterable[element] => element
+// The third opaque collection alias: an immutable map backed by `sci.Map`. Same design as
+// `Series` and `Set`: members invisible, API via typeclasses (`Indexable` provides `at`/`defines`/
+// `confine`; `Traversable by (key, value)` the transforming surface), construction and the
+// greppable `stdlib` bridge in the companion, casts at the boundary, and deliberately NO
+// `Conversion` to a stdlib supertype.
+object Map:
+  // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
+  // lambdas crashes the capture checker's boxer (boxDeeply assertion).
+  def of[key, value](map: sci.Map[key, value]): Map[key, value] =
+    map.asInstanceOf[Map[key, value]]
 
-  given iterable: [collection <: Iterable[?]] => collection is Inclusive by Element[collection] =
-    (collection, value) => collection.exists(_ == value)
+  def apply[key, value](pairs: (key, value)*): Map[key, value] = of(sci.Map(pairs*))
+  def empty[key, value]: Map[key, value] = of(sci.Map.empty[key, value])
 
-  given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
-    (iarray, value) => iarray.exists(_ == value)
+  def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
+    of(sci.Map.from(pairs))
 
-  given array: [element <: Matchable] => Array[element] is Inclusive by element =
-    (array, value) => array.exists(_ == value)
+  extension [key, value](map: Map[key, value])
+    inline def stdlib: sci.Map[key, value] = map.asInstanceOf[sci.Map[key, value]]
 
-  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own
-  // instance for `text.has(char)`; substring containment is `subsumes` instead.
-  given text: Text is Inclusive by Char = (text, char) => text.s.indexOf(char.toInt) >= 0
-
-trait Inclusive extends Typeclass.Pure, Operable:
-  def has(self: Self, value: Operand): Boolean
+opaque type Map[key, +value] = sci.Map[key, value]

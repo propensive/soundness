@@ -32,6 +32,8 @@
                                                                                                   */
 package superlunary
 
+import scala.Console
+
 object Executor:
   def run(input: String): String =
     val cls = Class.forName("Generated$Code$From$Quoted").nn

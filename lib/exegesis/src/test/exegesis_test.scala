@@ -136,7 +136,7 @@ object Tests extends Suite(m"Exegesis Tests"):
           . as[Json]
 
         dispatch(request)
-        TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
+        TestServer.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
       . assert(_ == t"textDocument/publishDiagnostics")
 
       test(m"a document-highlight request encodes its kind as a protocol number"):
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Exegesis Tests"):
           t"""{"jsonrpc":"2.0","id":2,"method":"textDocument/documentHighlight","params":{"textDocument":{"uri":"file:///x"},"position":{"line":1,"character":2}}}"""
           . as[Json]
 
-        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.DocumentHighlight]].head.kind)
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.DocumentHighlight]].stdlib.head.kind)
       . assert(_ == Lsp.DocumentHighlightKind.Write)
 
       test(m"a folding-range request is answered with the folding ranges"):
@@ -156,7 +156,7 @@ object Tests extends Suite(m"Exegesis Tests"):
           t"""{"jsonrpc":"2.0","id":3,"method":"textDocument/foldingRange","params":{"textDocument":{"uri":"file:///x"}}}"""
           . as[Json]
 
-        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.FoldingRange]].head.endLine)
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.FoldingRange]].stdlib.head.endLine)
       . assert(_ == 4)
 
       test(m"a prepareRename request decodes a position and returns a range"):
@@ -177,7 +177,7 @@ object Tests extends Suite(m"Exegesis Tests"):
           . as[Json]
 
         dispatch(request).let: response =>
-          response.as[JsonRpc.Response].result.as[List[Lsp.CallHierarchyIncomingCall]].head.from.name
+          response.as[JsonRpc.Response].result.as[List[Lsp.CallHierarchyIncomingCall]].stdlib.head.from.name
       . assert(_ == t"foo")
 
       test(m"an inlayHint request encodes its kind as a protocol number"):
@@ -187,7 +187,7 @@ object Tests extends Suite(m"Exegesis Tests"):
           t"""{"jsonrpc":"2.0","id":6,"method":"textDocument/inlayHint","params":{"textDocument":{"uri":"file:///x"},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}"""
           . as[Json]
 
-        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.InlayHint]].head.kind)
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.InlayHint]].stdlib.head.kind)
       . assert(_ == Lsp.InlayHintKind.Type)
 
       test(m"a workspace/executeCommand request decodes its command name"):
@@ -218,7 +218,7 @@ object Tests extends Suite(m"Exegesis Tests"):
           . as[Json]
 
         dispatch(request)
-        TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
+        TestServer.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
       . assert(_ == t"$$/progress")
 
       test(m"a completionItem/resolve request decodes a bare item and resolves it"):

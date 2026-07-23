@@ -33,6 +33,7 @@
 package pneumatic
 
 import anticipation.*
+import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -52,7 +53,7 @@ object Gzip:
 
       Inflation(gzip = true, nowrap = true)
 
-    def compress(stream: LazyList[Data]): LazyList[Data] =
+    def compress(stream: Progression[Data]): Progression[Data] =
       val deflater = FlateBackend.deflater(-1, true)
       val crc = FlateBackend.crc32()
       val buffer: Array[Byte] = new Array(4096)
@@ -75,7 +76,7 @@ object Gzip:
         while i < out.length do { result(i) = out(i); i += 1 }
         result.immutable(using Unsafe)
 
-      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+      def recur(stream: Progression[Data]): Progression[Data] = stream match
         case head #:: tail =>
           val bytes = head.mutable(using Unsafe)
           crc.update(bytes, 0, bytes.length)
@@ -110,11 +111,11 @@ object Gzip:
           val result = new Array[Byte](out.length)
           var i = 0
           while i < out.length do { result(i) = out(i); i += 1 }
-          LazyList(result.immutable(using Unsafe))
+          Progression(result.immutable(using Unsafe))
 
-      header #:: LazyList.defer(recur(stream))
+      header #:: Progression.defer(recur(stream))
 
-    def decompress(stream: LazyList[Data]): LazyList[Data] =
+    def decompress(stream: Progression[Data]): Progression[Data] =
       val inflater = FlateBackend.inflater(true)
       val buffer: Array[Byte] = new Array(4096)
       // Consume the gzip header from the start of the chunked stream, returning the number of
@@ -167,7 +168,7 @@ object Gzip:
 
         index
 
-      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+      def recur(stream: Progression[Data]): Progression[Data] = stream match
         case head #:: tail =>
           val bytes = head.mutable(using Unsafe)
           val skip = if headerDone then 0 else consumeHeader(bytes, 0, bytes.length)
@@ -189,8 +190,8 @@ object Gzip:
             result.immutable(using Unsafe) #:: recur(tail)
 
         case _ =>
-          LazyList()
+          Progression()
 
-      LazyList.defer(recur(stream))
+      Progression.defer(recur(stream))
 
 sealed trait Gzip extends Compressor

@@ -360,7 +360,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             test(m"'{admin}' install output lines are existing files"):
               val output = sh"$tool '{admin}' install".exec[Text]()
               val paths = output.trim.lines.filter(_.length > 0)
-              paths.forall: path =>
+              paths.all: path =>
                 safely(path.as[Path on Local]).let(_.exists()).or(false)
             .assert(_ == true)
 
@@ -400,7 +400,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             // behaviour for progressive completion.
             test(m"fish incomplete suggestion emits LCP duplicate"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --at ".exec[Text]()
-            .check(_.cut(t"\n").count(_.starts(t"src/")) >= 2)
+            .check(_.cut(t"\n").stdlib.count(_.starts(t"src/")) >= 2)
 
             // Regression check for #1109: with focus0 = 0 and position0 = 0 the
             // completions executive previously hit a `.get` on an empty Option in
@@ -458,18 +458,18 @@ object Tests extends Suite(m"Exoskeleton Tests"):
       .assert(_ == List(t"alpha", t"beta", t"distribution"))
 
       test(m"Help excludes hidden subcommands"):
-        HelpApp.tree.subcommands.map(_.command).contains(t"gamma")
+        HelpApp.tree.subcommands.map(_.command).has(t"gamma")
       .assert(_ == false)
 
       test(m"Help descends into nested subcommands"):
-        HelpApp.tree.subcommands.filter(_.command == t"distribution").flatMap: distribution =>
+        HelpApp.tree.subcommands.filter(_.command == t"distribution").bind: distribution =>
           distribution.subcommands.map(_.command)
       .assert(_ == List(t"red hat", t"ubuntu"))
 
       test(m"Help captures a leaf subcommand's flags"):
         HelpApp.tree.subcommands
-         .filter(_.command == t"distribution").flatMap(_.subcommands)
-         .filter(_.command == t"ubuntu").flatMap(_.parameters.map(_.name))
+         .filter(_.command == t"distribution").bind(_.subcommands)
+         .filter(_.command == t"ubuntu").bind(_.parameters.map(_.name))
       .assert(_ == List(t"--one", t"--two"))
 
       test(m"Help renders as Printable text mentioning a subcommand"):

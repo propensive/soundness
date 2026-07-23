@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -72,7 +74,7 @@ def helpTree
   def probe(prefix: List[Text]): (List[Suggestion], List[Flag]) =
     val focus = prefix.length
     val textArguments = prefix :+ t""
-    val synthesized = Cli.arguments(textArguments, focus, Unset, Prim)
+    val synthesized = Cli.arguments(textArguments.stdlib, focus, Unset, Prim)
 
     val completion =
       Completion
@@ -89,7 +91,7 @@ def helpTree
           login )
 
     block(using completion)
-    (completion.cursorSuggestions, completion.flags.keySet.to(List))
+    (completion.cursorSuggestions, completion.flags.keySet.transmute[List])
 
   def build
     ( prefix:      List[Text],
@@ -98,10 +100,10 @@ def helpTree
       seen:        Set[List[Text]] )
   :   Help =
 
-    if seen.contains(prefix) then Help(command, description, Nil, Nil) else
+    if seen.has(prefix) then Help(command, description, Nil, Nil) else
       val (suggestions, flags) = probe(prefix)
 
-      val parameters = flags.to(List).map: flag =>
+      val parameters = flags.map: flag =>
         Help.Param
           ( Flag.serialize(flag.name),
             flag.aliases.map(Flag.serialize(_)),
@@ -109,13 +111,13 @@ def helpTree
             flag.repeatable )
 
       val children =
-        suggestions.distinctBy(_.core).flatMap: suggestion =>
+        List.of(suggestions.stdlib.distinctBy(_.core)).bind: suggestion =>
           val childPrefix = prefix :+ suggestion.core
 
           if suggestion.hidden || suggestion.incomplete then Nil
           else List(build(childPrefix, suggestion.core, suggestion.description, seen + prefix))
 
-      Help(command, description, parameters, children.sortBy(_.command))
+      Help(command, description, parameters, children.sort(_.command))
 
   build(Nil, command, Unset, Set())
 
@@ -135,7 +137,7 @@ package executives:
       ( using interpreter: Interpreter )
     :   Cli =
 
-      arguments match
+      List.of(arguments.toList) match
         case
           t"{completions}" :: t"powershell" :: As.Int(cursor) :: _ :: tty ::
             t"--" ::
@@ -144,16 +146,16 @@ package executives:
 
           val parts0 = rawLine.cut(t" ")
           val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
-          val wordStarts = parts.scanLeft(0){ (pos, w) => pos + w.length + 1 }.init
+          val wordStarts = parts.stdlib.scanLeft(0){ (pos, w) => pos + w.length + 1 }.init
           val wordIdx = wordStarts.lastIndexWhere(_ <= cursor).max(0)
           val posInWord = cursor - wordStarts(wordIdx)
           val focus = (wordIdx - 1).max(0)
           val restParts = if parts.length > 1 then parts.tail else List(t"")
-          val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, cursor))
+          val tab = Completions.tab(tty, Completions.Tab(arguments.transmute[List], focus, cursor))
 
           Completion
             ( Cli.arguments(arguments, focus, posInWord, tab),
-              Cli.arguments(restParts, focus, posInWord, tab),
+              Cli.arguments(restParts.stdlib, focus, posInWord, tab),
               environment,
               workingDirectory,
               Shell.Powershell,
@@ -187,18 +189,18 @@ package executives:
               case head :: tail =>
                 read(tail, head.starts(t"--"), head :: done)
 
-            val rest2 = read(rest.to(List), false, Nil)
+            val rest2 = read(rest, false, Nil)
 
             val focus = focus1 - (if shell == Shell.Zsh then 2 else 1)
 
             val position = if shell == Shell.Bash then Unset else position0
-            val tab = Completions.tab(tty, Completions.Tab(arguments.to(List), focus, position0))
-            val equalses = rest.take(focus0).count(_ == t"=")
+            val tab = Completions.tab(tty, Completions.Tab(arguments.transmute[List], focus, position0))
+            val equalses = rest.stdlib.take(focus0).count(_ == t"=")
             val focus2 = focus - (if shell == Shell.Bash then equalses else 0)
 
             Completion
               ( Cli.arguments(arguments, focus2, position, tab),
-                Cli.arguments(rest2, focus2, position, tab),
+                Cli.arguments(rest2.stdlib, focus2, position, tab),
                 environment,
                 workingDirectory,
                 shell,

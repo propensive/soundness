@@ -32,8 +32,10 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.genericNumberLiterals
-import language.experimental.into
+import scala.{caps, math}
+
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
 
 import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
     Float as JFloat}

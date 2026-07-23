@@ -54,11 +54,11 @@ object Period:
 
       @scala.annotation.tailrec
       def recur(current: point, acc: List[Period[point]]): List[Period[point]] =
-        if !order.gt(period.finish, current) then acc.reverse else
+        if !order.gt(period.finish, current) then List.of(acc.stdlib.reverse) else
           val next = current + length
 
           if !order.gt(next, current) || order.gt(next, period.finish)
-          then (if partial then Period(current, period.finish) :: acc else acc).reverse
+          then List.of((if partial then Period(current, period.finish) :: acc.stdlib else acc.stdlib).reverse)
           else recur(next, Period(current, next) :: acc)
 
       recur(period.start, Nil)
@@ -67,12 +67,12 @@ object Period:
     // before `finish` (half-open, so `finish` itself is excluded). Lazy, so `.take(n)` is cheap.
     def by[step](step: step)
       ( using addable: point is Addable by step to point, order: Ordering[point] )
-    :   LazyList[point] =
+    :   Progression[point] =
 
-      def recur(current: point): LazyList[point] =
-        if !order.lt(current, period.finish) then LazyList.empty else
+      def recur(current: point): Progression[point] =
+        if !order.lt(current, period.finish) then Progression.empty else
           val next = current + step
-          if !order.gt(next, current) then LazyList(current) else current #:: recur(next)
+          if !order.gt(next, current) then Progression(current) else current #:: recur(next)
 
       recur(period.start)
 

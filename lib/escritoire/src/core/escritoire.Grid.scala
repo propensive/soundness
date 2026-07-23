@@ -32,7 +32,7 @@
                                                                                                   */
 package escritoire
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.collection.immutable as sci
 
@@ -40,6 +40,7 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -53,7 +54,7 @@ object Grid:
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
 case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
-  def render(using metrics: Text is Measurable, textual: text is Textual): LazyList[text] =
+  def render(using metrics: Text is Measurable, textual: text is Textual): Progression[text] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
 
@@ -63,7 +64,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
     val midEdge =
       Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
 
-    def recur(widths: IArray[Int], rows: LazyList[TableRow[text]]): LazyList[text] =
+    def recur(widths: IArray[Int], rows: Progression[TableRow[text]]): Progression[text] =
       rows match
         case row #:: tail =>
           val lines = (0 until row.height).map: lineNumber =>
@@ -80,10 +81,10 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 
             . join(leftEdge, midEdge, rightEdge)
 
-          lines.to(LazyList) #::: recur(widths, tail)
+          lines.transmute[Progression] #::: recur(widths, tail)
 
         case _ =>
-          LazyList()
+          Progression()
 
     def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): text =
       val width = above.or(below).vouch.pipe: widths =>
@@ -125,14 +126,17 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
                 left   = horizontal.or(BoxLine.Blank) )
 
     val topLine =
-      if style.topLine.absent then LazyList() else LazyList(rule(Unset, sections.head.widths))
+      if style.topLine.absent then Progression() else
+        Progression(rule(Unset, sections.stdlib.head.widths))
 
-    val midRule = rule(sections.head.widths, sections.head.widths)
+    val midRule = rule(sections.stdlib.head.widths, sections.stdlib.head.widths)
 
     val bottomLine =
-      if style.bottomLine.absent then LazyList() else LazyList(rule(sections.head.widths, Unset))
+      if style.bottomLine.absent then Progression() else
+        Progression(rule(sections.stdlib.head.widths, Unset))
 
     val body =
-      sections.to(LazyList).flatMap: section => midRule #:: recur(section.widths, section.rows)
+      sections.stdlib.transmute[Progression].bind: section =>
+        (midRule #:: recur(section.widths, section.rows)): Progression[text]
 
     topLine #::: body.tail #::: bottomLine

@@ -32,6 +32,9 @@
                                                                                                   */
 package ultimatum
 
+import scala.collection.immutable.IndexedSeq
+
+import rudiments.*
 import vacuous.*
 
 object Frame:
@@ -46,10 +49,10 @@ object Frame:
   // than its contents); the maximum is the smaller of its own maximum and the
   // sum of its children's maxima (any unbounded child makes the sum unbounded).
   private def alongLimits(own: Limits, children: List[Limits]): Limits =
-    val minSum = children.foldLeft(0): (acc, child) =>
+    val minSum = children.fold(0): (acc, child: Limits) =>
       acc + child.min
 
-    val maxSum: Optional[Int] = children.foldLeft(0: Optional[Int]): (acc, child) =>
+    val maxSum: Optional[Int] = children.fold(0: Optional[Int]): (acc, child: Limits) =>
       acc.let: total =>
         child.max.let(total + _)
 
@@ -59,10 +62,10 @@ object Frame:
   // cross extent must hold every child); the maximum is the smallest child
   // maximum.
   private def crossLimits(own: Limits, children: List[Limits]): Limits =
-    val minMax = children.foldLeft(0): (acc, child) =>
+    val minMax = children.fold(0): (acc, child: Limits) =>
       acc.max(child.min)
 
-    val maxMin = children.foldLeft(Unset: Optional[Int]): (acc, child) =>
+    val maxMin = children.fold(Unset: Optional[Int]): (acc, child: Limits) =>
       lesser(acc, child.max)
 
     Limits(own.min.max(minMax), lesser(own.max, maxMin))
@@ -73,10 +76,10 @@ object Frame:
   // fractional shares with largest-remainder (Hamilton) rounding so the sizes sum
   // to exactly `available`.
   def distribute(fractions: List[Double], limits: List[Limits], available: Int): IndexedSeq[Int] =
-    val n = fractions.length
-    val frac = fractions.toIndexedSeq
-    val min = limits.map(_.min).toIndexedSeq
-    val max = limits.map(_.max).toIndexedSeq
+    val n = fractions.stdlib.length
+    val frac = fractions.stdlib.toIndexedSeq
+    val min = limits.stdlib.map(_.min).toIndexedSeq
+    val max = limits.stdlib.map(_.max).toIndexedSeq
     val pinned = Array.fill[Optional[Int]](n)(Unset)
 
     def poolAndWeight(): (Int, Double) =
@@ -199,11 +202,11 @@ enum Frame:
 
       val offsets = sizes.scanLeft(start)(_ + _)
 
-      val placements = children.zipWithIndex.map: (child, i) =>
+      val placements = children.stdlib.zipWithIndex.map: (child, i) =>
         val childRect = axis match
           case Axis.File => Rect(offsets(i), rect.top, sizes(i), rect.height)
           case Axis.Rank => Rect(rect.left, offsets(i), rect.width, sizes(i))
 
         child.arrange(childRect)
 
-      Placement.Split(rect, placements)
+      Placement.Split(rect, List.of(placements))

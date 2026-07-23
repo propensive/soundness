@@ -158,21 +158,23 @@ extends Rig:
 
           // The hottest frames, in descending order of sample count, capped.
           val sorted =
-            scala.jdk.CollectionConverters.MapHasAsScala(counts).asScala.to(List)
+            scala.jdk.CollectionConverters.MapHasAsScala(counts).asScala.toList
             . sortBy(-_(1))
             . take(${Expr(frames2)})
 
-          total.toString.tt :: sorted.map: (key, count) =>
-            (count.toString + "\t" + key).tt
+          List.of:
+            total.toString.tt :: sorted.map: (key, count) =>
+              (count.toString + "\t" + key).tt
         }
 
     val results = dispatch(body)
 
     val hotspots =
       Hotspots
-        ( results.head.s.toLong,
-          results.tail.map: line =>
-            line.cut(t"\t").to(List) match
+        ( results.stdlib.head.s.toLong,
+          List.of:
+           results.stdlib.tail.map: line =>
+            line.cut(t"\t") match
               case count :: className :: method :: Nil =>
                 Hotspots.Frame
                   ( StackTrace.rewrite(className.s),

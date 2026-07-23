@@ -81,8 +81,8 @@ object Packager:
         abort(PackageError(m"Burdock remote dependencies are not yet supported (Stage C)"))
 
     config.delivery match
-      case Packaging.Delivery.Native if config.targets.length != 1 =>
-        val length = config.targets.length
+      case Packaging.Delivery.Native if config.targets.stdlib.length != 1 =>
+        val length: Int = config.targets.stdlib.length
         abort(PackageError(m"Native delivery requires exactly one target, but $length were given"))
 
       case _ =>
@@ -144,7 +144,7 @@ object Packager:
 
         config.delivery match
           case Packaging.Delivery.Native =>
-            binary(config.targets.head, config.output)
+            binary(config.targets.stdlib.head, config.output)
             config.output
 
           case Packaging.Delivery.EmbedAll =>
@@ -157,7 +157,7 @@ object Packager:
               Payload(label, patched, gzip = !label.starts(t"windows"))
 
             val data: Payload = Payload(DataName, appJar.read[Data], gzip = false)
-            write(config.output, Xeq.installer(stubs :+ data))
+            write(config.output, Xeq.installer(List.of(stubs.stdlib :+ data)))
             config.output
 
           case Packaging.Delivery.Download =>
@@ -189,6 +189,6 @@ object Packager:
   :   Unit raises IoError raises StreamError =
 
     output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
-      handle.write(LazyList(data))
+      handle.write(Progression(data))
 
     output.executable() = true

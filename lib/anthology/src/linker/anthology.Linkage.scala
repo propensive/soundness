@@ -69,7 +69,7 @@ object Linkage:
         jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
 
         val entries =
-          Classpath.Directory(compilation.out) :: compilation.classpath.entries.to(List)
+          Classpath.Directory(compilation.out) :: compilation.classpath.entries
 
         unsafely(Bundler.assemble(LocalClasspath(entries*), out / form, main))
 

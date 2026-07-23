@@ -34,6 +34,8 @@ package urticose
 
 import java.io as ji
 
+import scala.collection.immutable as sci
+
 import scala.compiletime.asMatchable
 import scala.quoted.*
 
@@ -76,14 +78,16 @@ object internal:
       scala.io.Source.fromInputStream(stream).getLines().map(_.tt).map(_.cut(t","))
 
     lines.flatMap: list =>
+      val fields = list.stdlib
+
       safely:
-        if list(2) == t"tcp" then List((true, list(0)) -> list(1).as[Int])
-        else if list(2) == t"udp" then List((false, list(0)) -> list(1).as[Int])
-        else Nil
+        if fields(2) == t"tcp" then List((true, fields(0)) -> fields(1).as[Int]).stdlib
+        else if fields(2) == t"udp" then List((false, fields(0)) -> fields(1).as[Int]).stdlib
+        else Nil.stdlib
 
-      . or(Nil)
+      . or(Nil.stdlib)
 
-    . to(Map)
+    . pipe(Map.from(_))
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
@@ -120,7 +124,7 @@ object internal:
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
 
       def parse(text: Text): Ipv4 raises IpAddressError =
-        val bytes = text.cut(t".")
+        val bytes = text.cut(t".").stdlib
 
         if bytes.length == 4 then
           mitigate:
@@ -152,10 +156,10 @@ object internal:
       def apply(value: Long): MacAddress = value
 
       def parse(text: Text): MacAddress raises MacAddressError =
-        val groups = text.cut(t"-").to(List)
+        val groups = text.cut(t"-")
 
-        if groups.length != 6
-        then raise(MacAddressError(WrongGroupCount(groups.length)))
+        if groups.stdlib.length != 6
+        then raise(MacAddressError(WrongGroupCount(groups.stdlib.length)))
 
         @tailrec
         def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
@@ -267,12 +271,12 @@ object internal:
       parse(_)
 
     def parse(text: Text): Ipv4Subnet raises IpAddressError =
-      text.cut(t"/").to(List) match
+      text.cut(t"/") match
         case List(address, prefixText) =>
           Ipv4.parse(address).subnet(subnetPrefix(prefixText, 32)(Ipv4SubnetPrefixOutOfRange(_)))
 
         case other =>
-          abort(IpAddressError(SubnetWrongFormat(other.length)))
+          abort(IpAddressError(SubnetWrongFormat(other.stdlib.length)))
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
 
@@ -297,10 +301,10 @@ object internal:
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
     given showable: Ipv6 is Showable = ip =>
-      def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
+      def unpack(long: Long, groups: sci.List[Int] = sci.Nil): sci.List[Int] =
         if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
 
-      def hex(values: List[Int]): Text =
+      def hex(values: sci.List[Int]): Text =
         values.map(_.hex).join(t":")
 
       val groups = unpack(ip.highBits) ++ unpack(ip.lowBits)
@@ -328,28 +332,31 @@ object internal:
     private val zeroes: List[Text] = List.fill(8)(t"0")
 
     def parse(text: Text): Ipv6 raises IpAddressError =
-      val groups: List[Text] = text.cut(t"::").to(List) match
-        case List(left, right) =>
-          val leftGroups = left.cut(t":").to(List).filter(_ != t"")
-          val rightGroups = right.cut(t":").to(List).filter(_ != t"")
+      val groups: sci.List[Text] = text.cut(t"::").stdlib match
+        case sci.List(left, right) =>
+          val leftGroups = left.cut(t":").stdlib.filter(_ != t"")
+          val rightGroups = right.cut(t":").stdlib.filter(_ != t"")
 
           if leftGroups.length + rightGroups.length > 7
           then
             raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
 
-          leftGroups ++ List.fill((8 - leftGroups.length - rightGroups.length))(t"0") ++ rightGroups
+          leftGroups ++ sci.List.fill((8 - leftGroups.length - rightGroups.length))(t"0") ++
+            rightGroups
 
-        case List(whole) =>
-          val groups = whole.cut(t":")
+        case sci.List(whole) =>
+          val groups = whole.cut(t":").stdlib
 
           if groups.length != 8
           then abort(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))
-          else groups.to(List)
+          else groups
 
         case _ =>
           abort(IpAddressError(Ipv6MultipleDoubleColons))
 
-      Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))
+      Ipv6
+        ( pack(List.of(groups.take(4).map(parseGroup))),
+          pack(List.of(groups.drop(4).map(parseGroup))) )
 
   case class Ipv6(highBits: Long, lowBits: Long)
 
@@ -380,12 +387,12 @@ object internal:
       parse(_)
 
     def parse(text: Text): Ipv6Subnet raises IpAddressError =
-      text.cut(t"/").to(List) match
+      text.cut(t"/") match
         case List(address, prefixText) =>
           Ipv6.parse(address).subnet(subnetPrefix(prefixText, 128)(Ipv6SubnetPrefixOutOfRange(_)))
 
         case other =>
-          abort(IpAddressError(SubnetWrongFormat(other.length)))
+          abort(IpAddressError(SubnetWrongFormat(other.stdlib.length)))
 
   case class Ipv6Subnet(ipv6: Ipv6, size: Int)
 
@@ -449,7 +456,7 @@ object internal:
     val text = Text(context.valueOrAbort.parts.head)
 
     abortive:
-      if text.cut(t"/").head.contains(t".") then
+      if text.cut(t"/").stdlib.head.contains(t".") then
         val subnet = Ipv4Subnet.parse(text)
         '{Ipv4Subnet(Ipv4(${Expr(subnet.ipv4.int)}), ${Expr(subnet.size)})}
 

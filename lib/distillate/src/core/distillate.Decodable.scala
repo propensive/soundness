@@ -32,11 +32,16 @@
                                                                                                   */
 package distillate
 
+import scala.reflect
+
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import digression.*
 import inimitable.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import wisteria.*
 
@@ -104,7 +109,7 @@ object Decodable extends Decodable2:
     value =>
 
       enumeration.value(identifiable.decode(value)).or:
-        val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
+        val names = enumeration.values.transmute[List].map(enumeration.name(_)).map(enumeration.encode(_))
         abort(VariantError(value, enumeration.name, names))
 
 trait Decodable extends Typeclass, Formal, Locative:

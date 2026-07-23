@@ -52,6 +52,7 @@ import gossamer.*
 import guillotine.*
 import hellenism.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import vacuous.*
 
@@ -96,7 +97,7 @@ extends Linkage[Artifact.Binary]:
 
     val entries: List[jnf.Path] =
       jnf.Paths.get(compilation.out.encode.s).nn ::
-        compilation.classpath.entries.to(List).flatMap:
+        compilation.classpath.entries.bind:
           case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
           case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
           case _                                   => Nil
@@ -110,7 +111,7 @@ extends Linkage[Artifact.Binary]:
         Config.empty
         . withBaseDir(outPath.toAbsolutePath.nn)
         . withMainClass(Some(main.s))
-        . withClassPath(entries)
+        . withClassPath(entries.stdlib)
         . withModuleName("main")
         . withCompilerConfig(form)
 

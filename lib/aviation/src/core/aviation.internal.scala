@@ -32,6 +32,8 @@
                                                                                                   */
 package aviation
 
+import scala.collection.immutable.Seq
+
 import java.time as jt
 
 import scala.quoted.*
@@ -152,9 +154,9 @@ object internal:
 
     val parts = recur[parts](Nil)
 
-    if parts.length != 1 then halt(m"a timezone literal cannot have substitutions")
+    if parts.stdlib.length != 1 then halt(m"a timezone literal cannot have substitutions")
 
-    val name: String = parts.head
+    val name: String = parts.stdlib.head
 
     try jt.ZoneId.of(name).nn
     catch case _: jt.zone.ZoneRulesException =>
@@ -281,7 +283,7 @@ object internal:
       val hourValue = hour.nn.toInt
       val minuteValue = minute.nn.toInt
       val secondValue = second.nn.toInt
-      val monthValue = monthNames.indexOf(month.nn) + 1
+      val monthValue = monthNames.stdlib.indexOf(month.nn) + 1
 
       val parsed = jdnOf(calendars.gregorianCalendar, year.nn.toInt, monthValue, day.nn.toInt)
 
@@ -340,9 +342,9 @@ object internal:
 
     val parts = recur[parts](Nil)
 
-    if parts.length != 1 then halt(m"a timestamp literal cannot contain substitutions")
+    if parts.stdlib.length != 1 then halt(m"a timestamp literal cannot contain substitutions")
 
-    parseTimestamp(parts.head) match
+    parseTimestamp(parts.stdlib.head) match
       case Left(error) =>
         halt(error)
 
@@ -384,9 +386,9 @@ object internal:
 
     val parts = recur[parts](Nil)
 
-    if parts.length != 1 then halt(m"a duration literal cannot contain substitutions")
+    if parts.stdlib.length != 1 then halt(m"a duration literal cannot contain substitutions")
 
-    parseDuration(parts.head) match
+    parseDuration(parts.stdlib.head) match
       case Left(error) =>
         halt(error)
 
@@ -408,9 +410,9 @@ object internal:
 
     val parts = recur[parts](Nil)
 
-    if parts.length != 1 then halt(m"a recurrence literal cannot contain substitutions")
+    if parts.stdlib.length != 1 then halt(m"a recurrence literal cannot contain substitutions")
 
-    parts.head.tt.cut(t"/").to(List).map(_.s) match
+    parts.stdlib.head.tt.cut(t"/").map(_.s) match
       case List(repeats, start, period) =>
         val repetitions: Option[Int] =
           if repeats == "R" then None
@@ -476,8 +478,8 @@ object internal:
     val leftTree = left.asTerm.underlyingArgument
     val rightTree = right.asTerm.underlyingArgument
 
-    val collector = new TreeAccumulator[Map[Symbol, Term]]:
-      def foldTree(env: Map[Symbol, Term], tree: Tree)(owner: Symbol): Map[Symbol, Term] =
+    val collector = new TreeAccumulator[scala.collection.immutable.Map[Symbol, Term]]:
+      def foldTree(env: scala.collection.immutable.Map[Symbol, Term], tree: Tree)(owner: Symbol): scala.collection.immutable.Map[Symbol, Term] =
         val env2 = tree match
           case valDef: ValDef => valDef.rhs match
             case Some(rhs) => env.updated(valDef.symbol, rhs)
@@ -489,8 +491,9 @@ object internal:
         foldOverTree(env2, tree)(owner)
 
     val owner = Symbol.spliceOwner
-    val leftEnv = collector.foldTree(Map(), leftTree)(owner)
-    val env: Map[Symbol, Term] = collector.foldTree(leftEnv, rightTree)(owner)
+    val leftEnv = collector.foldTree(scala.collection.immutable.Map(), leftTree)(owner)
+    val env: scala.collection.immutable.Map[Symbol, Term] =
+      collector.foldTree(leftEnv, rightTree)(owner)
 
     // Matches the synthesized `asInstanceOf`/`$asInstanceOf$` casts inlining inserts.
     object Cast:
@@ -511,12 +514,13 @@ object internal:
     // An `Int` constant, also peering through opaque wrappers like `Year(_)`/`Day(_)`.
     def constInt(term: Term): Optional[Int] = strip(term) match
       case Literal(IntConstant(value))                       => value
-      case Apply(fn, List(arg)) if fn.symbol.name == "apply" => constInt(arg)
+      case Apply(fn, scala.collection.immutable.List(arg)) if fn.symbol.name == "apply" =>
+        constInt(arg)
       case _                                                 => Unset
 
     // The zero-based ordinal of a `Month` enum-case reference (e.g. `Mar`).
     def monthOrdinal(term: Term): Optional[Int] =
-      monthNames.indexOf(strip(term).symbol.name) match
+      monthNames.stdlib.indexOf(strip(term).symbol.name) match
         case -1      => Unset
         case ordinal => ordinal
 
@@ -558,7 +562,7 @@ object internal:
     // the plain control flow (no `Optional.lay`/`let` around the quoted trees): wrapping inline
     // `Optional` combinators around quotes crashes the compiler in `pickleQuotes`.
     strip(leftTree) match
-      case Apply(fn, List(yearArg, monthArg))
+      case Apply(fn, scala.collection.immutable.List(yearArg, monthArg))
       if fn.symbol.name == "apply" || fn.symbol.name == "<init>" =>
         val year = constInt(yearArg)
         val month = monthOrdinal(monthArg)

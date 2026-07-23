@@ -122,7 +122,7 @@ object TlsAcceptance:
       val parameters = context.getDefaultSSLParameters().nn
 
       if acceptance.versions != Nil then
-        parameters.setProtocols(acceptance.versions.map(_.id.s).toArray)
+        parameters.setProtocols(acceptance.versions.stdlib.map(_.id.s).toArray)
 
       if acceptance.trust.hostname
       then parameters.setEndpointIdentificationAlgorithm("HTTPS")
@@ -151,7 +151,7 @@ object TlsAcceptance:
         val store = js.KeyStore.getInstance(js.KeyStore.getDefaultType.nn).nn
         store.load(null, null)
 
-        anchors.zipWithIndex.each: (anchor, index) =>
+        anchors.stdlib.zipWithIndex.each: (anchor, index) =>
           store.setCertificateEntry(s"anchor-$index", anchor)
 
         store

@@ -32,6 +32,10 @@
                                                                                                   */
 package escapade
 
+import scala.collection.immutable.Seq
+
+import proscenium.compat.*
+
 import soundness.*
 
 import strategies.throwUnsafely
@@ -762,20 +766,20 @@ object Tests extends Suite(m"Escapade tests"):
 
     suite(m"Joinable"):
       test(m"join with separator"):
-        List(e"a", e"b", e"c").join(e",").plain
+        scala.collection.immutable.List(e"a", e"b", e"c").join(e",").plain
       . assert(_ == t"a,b,c")
 
       test(m"join with bookends"):
-        List(e"a", e"b", e"c").join(e"[", e",", e"]").plain
+        scala.collection.immutable.List(e"a", e"b", e"c").join(e"[", e",", e"]").plain
       . assert(_ == t"[a,b,c]")
 
       test(m"join preserves nested styling"):
-        val parts = List(e"$Bold(a)", e"plain", e"$Italic(c)")
+        val parts = scala.collection.immutable.List(e"$Bold(a)", e"plain", e"$Italic(c)")
         emulate(parts.join(e",")).buffer.find(t"a").vouch.styles.all(_.bold)
       . assert(_ == true)
 
       test(m"empty list joins to empty"):
-        List[Teletype]().join(e",").plain
+        scala.collection.immutable.List[Teletype]().join(e",").plain
       . assert(_ == t"")
 
       test(m"concat via concat instance"):

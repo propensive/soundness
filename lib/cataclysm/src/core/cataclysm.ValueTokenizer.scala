@@ -51,7 +51,7 @@ private[cataclysm] object ValueTokenizer:
     def all(): List[ValueToken] =
       val acc = scala.collection.mutable.ListBuffer[ValueToken]()
       while !cursor.peek.isEnd do acc.append(next())
-      acc.toList
+      List.of(acc.toList)
 
     // ── primitives ──────────────────────────────────────────────────────────
 

@@ -34,6 +34,8 @@ package rudiments
 
 import soundness.*
 
+import proscenium.compat.*
+
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Rudiments Tests"):
@@ -99,6 +101,34 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"Map missing key"):
         Map(t"a" -> 1, t"b" -> 2).defines(t"c")
       . assert(_ == false)
+
+    suite(m"Mapping tests"):
+      // The `Map[…]`/`Set[…]` ascriptions are the established pattern for opaque-alias literals
+      // under `soundness.*` + `compat.*` (a bare literal in a receiver position mis-elaborates).
+      test(m"List map preserves shape"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.map(_ + 1)
+      . assert(_ == List(2, 3, 4))
+
+      test(m"Set map preserves shape"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.map(_ + 1)
+      . assert(_ == Set(2, 3, 4))
+
+      test(m"Map map transforms values, preserving keys"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.map(_ + 10)
+      . assert(_ == Map(t"a" -> 11, t"b" -> 12))
+
+      test(m"Map map operand is the value, not the pair"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.map(_*2)
+      . assert(_ == Map(t"a" -> 2, t"b" -> 4))
+
+      test(m"remap transforms entries pairwise into a Map"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.remap { (key, value) => value -> key }
+      . assert(_ == Map(1 -> t"a", 2 -> t"b"))
 
     suite(m"Confined index tests"):
       val text = t"hello"
@@ -484,3 +514,48 @@ object Tests extends Suite(m"Rudiments Tests"):
     //     def factorial(n: Int): Int = fix[Int] { i => if i <= 0 then 1 else i*recur(i - 1) } (n)
     //     factorial(4)
     //   .assert(_ == 24)
+
+    // While the collection aliases remain transparent, the stdlib member `to(Factory)` shadows
+    // the kind-polymorphic `to` for collection receivers, so `Text` (no such member) is the
+    // receiver these tests exercise; collection receivers activate as the aliases become opaque.
+    suite(m"Convertible tests"):
+      test(m"Text to List of chars"):
+        "abc".tt.transmute[List]
+      . assert(_ == List('a', 'b', 'c'))
+
+      test(m"Text to Set of chars deduplicates"):
+        "aba".tt.transmute[Set]
+      . assert(_ == Set('a', 'b'))
+
+      test(m"Text to Series of chars"):
+        "abc".tt.transmute[Series]
+      . assert(_ == Series('a', 'b', 'c'))
+
+      test(m"Text to Text is the identity"):
+        "abc".tt.transmute[Text]
+      . assert(_ == "abc".tt)
+
+      test(m"Result type of to[List] is inferred fully applied"):
+        val list: List[Char] = "xy".tt.transmute[List]
+        list.length
+      . assert(_ == 2)
+
+    suite(m"Vacuiscible tests"):
+      test(m"non-empty Text is not nil"):
+        "abc".tt.nil
+      . assert(_ == false)
+
+      test(m"empty Text is nil"):
+        "".tt.nil
+      . assert(_ == true)
+
+    suite(m"confine tests"):
+      test(m"confined Map key accesses bare value"):
+        val map = Map(1 -> "one".tt, 2 -> "two".tt)
+        map.confine(1).let(map.at(_))
+      . assert(_ == "one".tt)
+
+      test(m"absent Map key does not confine"):
+        val map = Map(1 -> "one".tt)
+        map.confine(9).let(map.at(_))
+      . assert(_ == Unset)

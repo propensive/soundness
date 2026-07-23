@@ -119,7 +119,7 @@ private[hallucination] object WebpLossless:
       var currentWidth = transformedWidth
       var image = buffer
 
-      for index <- order do
+      for index <- order.stdlib do
         val transform = transforms(index)
 
         transform.kind match

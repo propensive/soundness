@@ -34,6 +34,8 @@ package xylophone
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 
@@ -80,7 +82,7 @@ object DirectDefaultScope:
     val input = t"<root><title>Acme</title></root>"
     validate[Xml.Focus](PIssues()):
       case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
-    . protect(input.read[PFirm in Xml]).items.map(_(0).s).to(Set)
+    . protect(input.read[PFirm in Xml]).items.stdlib.map(_(0).s).pipe(Set.from(_))
 
 object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
 
@@ -94,7 +96,7 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
     Validate[PIssues, [r] =>> r raises XmlError, Xml.Focus]
       ( PIssues(),
         { case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error) } )
-    . protect(decode).items.map(_(0).s).to(Set)
+    . protect(decode).items.stdlib.map(_(0).s).pipe(Set.from(_))
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform

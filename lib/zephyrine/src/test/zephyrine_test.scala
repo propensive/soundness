@@ -34,8 +34,10 @@ package zephyrine
 
 import soundness.*
 
+import proscenium.compat.*
+
 // The kernel `Stream.take`/`drop` are shadowed here by turbulence's legacy
-// `LazyList[Data]` `take`/`drop` arriving through the `soundness.*` wildcard;
+// `Progression[Data]` `take`/`drop` arriving through the `soundness.*` wildcard;
 // the explicit imports restore the kernel versions under test.
 import zephyrine.{take, drop}
 
@@ -134,7 +136,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           test(m"String length $i, sent unitarily, async puts"):
             val producer = Producer[Text](5, 2)
             val fiber = async:
-              string.tt.chars.foreach: char =>
+              string.tt.chars.each: char =>
                 producer.put(char.toString)
               producer.finish()
             producer.iterator.foldLeft("")(_ + _)
@@ -412,7 +414,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == "onetwot")
 
       suite(m"Cursor[Data] tests"):
-        def stream = LazyList(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
+        def stream = Progression(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
         def byteCursor = Cursor[Data](stream.iterator)
 
         test(m"Cursor[Data] starts at first byte"):
@@ -459,25 +461,25 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == 15.toByte)
 
         test(m"Cursor[Data] remainder from start equals full stream"):
-          val blocks = LazyList(Data(1, 2, 3), Data(4, 5), Data(6, 7))
+          val blocks = Progression(Data(1, 2, 3), Data(4, 5), Data(6, 7))
           val cursor = Cursor[Data](blocks.iterator)
-          cursor.remainder.flatten.to(List)
+          cursor.remainder.stdlib.flatten.to(List)
 
         . assert(_ == List[Byte](1, 2, 3, 4, 5, 6, 7))
 
         test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
-          val blocks = LazyList(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+          val blocks = Progression(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
           val cursor = Cursor[Data](blocks.iterator)
           for i <- 0 until 3 do cursor.next()
-          cursor.remainder.flatten.to(List)
+          cursor.remainder.stdlib.flatten.to(List)
 
         . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
         test(m"Cursor[Data] remainder inside hold still emits unconsumed tail"):
-          val blocks = LazyList(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+          val blocks = Progression(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
           val cursor = Cursor[Data](blocks.iterator)
           for i <- 0 until 3 do cursor.next()
-          cursor.hold(cursor.remainder.flatten.to(List))
+          cursor.hold(cursor.remainder.stdlib.flatten.to(List))
 
         . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
@@ -760,7 +762,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val gather = Gather()
           exotic.stream.via(summon[CharEncoder]).pump(gather)
           gather.data.to(List)
-        . assert(_ == exotic.s.getBytes("UTF-8").nn.to(List))
+        . assert(_ == scala.collection.immutable.ArraySeq.unsafeWrapArray(exotic.s.getBytes("UTF-8").nn).to(List))
 
         // Malformed input — a stray continuation, an overlong lead, a
         // truncated sequence mid-stream and a bad continuation — must decode
@@ -901,6 +903,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
 
         test(m"fold reduces over windows without boxing"):
+          import zephyrine.fold
           bytes.stream.fold(0L): (total, storage, start, count) =>
             val array = storage.asInstanceOf[Array[Byte]]
             var sum = total
@@ -909,33 +912,33 @@ object Tests extends Suite(m"Zephyrine tests"):
             sum
         . assert(_ == bytes.to(List).map(_ & 0xff).sum.toLong)
 
-        test(m"toLazyList yields the stream's chunks in order"):
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5))).toLazyList.to(List)
+        test(m"toProgression yields the stream's chunks in order"):
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5))).toProgression.stdlib.to(List)
           . map(_.to(List))
         . assert(_ == List(List[Byte](1, 2, 3), List[Byte](4, 5)))
 
-        test(m"toLazyList of an empty stream is empty"):
-          Iterator.empty[Data].stream.toLazyList.to(List)
+        test(m"toProgression of an empty stream is empty"):
+          Iterator.empty[Data].stream.toProgression.stdlib.to(List)
         . assert(_ == List())
 
-        test(m"toLazyList construction pulls nothing"):
+        test(m"toProgression construction pulls nothing"):
           var pulled: Int = 0
           val chunks = Iterator(IArray[Byte](1.toByte), IArray[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
-          val list = chunks.stream.toLazyList
+          val list = chunks.stream.toProgression
           pulled
         . assert(_ == 0)
 
-        test(m"toLazyList pulls chunks only as cells are forced"):
+        test(m"toProgression pulls chunks only as cells are forced"):
           var pulled: Int = 0
           val chunks = Iterator(IArray[Byte](1.toByte), IArray[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
-          val list = chunks.stream.toLazyList
+          val list = chunks.stream.toProgression
           list.head
           pulled
         . assert(_ == 1)
 
-        test(m"toLazyList reassembles a transformed pipeline"):
-          val text = Stream(Iterator(IArray[Byte](104, 105))).via(summon[CharDecoder]).toLazyList
-          text.to(List).map(_.s).mkString
+        test(m"toProgression reassembles a transformed pipeline"):
+          val text = Stream(Iterator(IArray[Byte](104, 105))).via(summon[CharDecoder]).toProgression
+          text.stdlib.to(List).map(_.s).mkString
         . assert(_ == "hi")
 
         test(m"records iterates across chunks in order"):
@@ -964,7 +967,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"the lent cursor resumes at the boundary"):
           val cursor = Cursor(Data.fill(10)(_.toByte))
           streamOf(cursor, 4).memoize
-          cursor.remainder.to(List).flatMap(_.to(List))
+          cursor.remainder.stdlib.to(List).flatMap(_.to(List))
         . assert(_ == List[Byte](4, 5, 6, 7, 8, 9))
 
         test(m"streamOf without a length lends the whole remainder"):
@@ -980,7 +983,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"a lent sub-stream and the resumed cursor partition the input"):
           val cursor = Cursor(Iterator(IArray[Byte](0, 1, 2), IArray[Byte](3, 4, 5), IArray[Byte](6.toByte)))
           val lent = streamOf(cursor, 5).memoize.to(List)
-          val rest = cursor.remainder.to(List).flatMap(_.to(List))
+          val rest = cursor.remainder.stdlib.to(List).flatMap(_.to(List))
           (lent, rest)
         . assert(_ == (List[Byte](0, 1, 2, 3, 4), List[Byte](5, 6)))
 

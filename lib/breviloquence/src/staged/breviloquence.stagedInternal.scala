@@ -32,6 +32,11 @@
                                                                                                   */
 package breviloquence
 
+import scala.collection.immutable.Vector
+
+import scala.{annotation, caps}
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
 
@@ -140,8 +145,8 @@ object stagedInternal:
 
   private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
 
-  private val primitiveClasses: Map[String, Class[?]] =
-    Map
+  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
+    scala.collection.immutable.Map
       ( "scala.Int"     -> classOf[Int],
         "scala.Long"    -> classOf[Long],
         "scala.Double"  -> classOf[Double],
@@ -361,6 +366,26 @@ object stagedInternal:
     else if tpe =:= TypeRepr.of[Cbor] then Some(Inlinable.cbor)
     else None
 
+  // The opaque prelude `List`/`Set`/`Series` map to their underlying stdlib
+  // collection (used to summon a `Factory`, since the opaque companion exposes
+  // only a `Conversion`, not a direct instance).
+  private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[quotes.reflect.TypeRepr] =
+    import quotes.reflect.*
+    val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+
+    tpe.dealias match
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
+        Some(TypeRepr.of[scala.collection.immutable.List].appliedTo(element))
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == setSym =>
+        Some(TypeRepr.of[scala.collection.immutable.Set].appliedTo(element))
+      case AppliedType(constructor, List(element)) if constructor.typeSymbol == seriesSym =>
+        Some(TypeRepr.of[Vector].appliedTo(element))
+      case _ =>
+        None
+
   private def structuralFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
 
@@ -370,7 +395,22 @@ object stagedInternal:
     // not an array — it stays on the seam (the AST `mapDecodable`).
     val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
 
-    if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+    // The opaque prelude `List`/`Set`/`Series` don't conform to `Iterable`, so
+    // recognize their type constructors by symbol; each stages as an array
+    // exactly like a stdlib collection (the element becomes the recursion
+    // point, so `List[Tree]` inside `Tree` degrades `Tree`, not the whole list).
+    val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+
+    val isAliasCollection = tpe match
+      case AppliedType(constructor, _) =>
+        val sym = constructor.typeSymbol
+        sym == listSym || sym == setSym || sym == seriesSym
+      case _ =>
+        false
+
+    if !isMap && (tpe <:< TypeRepr.of[Iterable[Any]] || isAliasCollection) then tpe match
       case AppliedType(_, arguments) =>
         arguments.last.asType match
           case '[element] =>
@@ -507,13 +547,18 @@ object stagedInternal:
 
     TypeRepr.of[collection].dealias match
       case AppliedType(_, arguments) =>
-        arguments.last.asType match
-          case '[element] =>
+        // The opaque prelude collections have no direct `Factory`, so build at
+        // the underlying stdlib type and cast the result (a no-op at erasure).
+        val factoryType =
+          aliasCollectionUnderlying(TypeRepr.of[collection]).getOrElse(TypeRepr.of[collection])
+
+        (arguments.last.asType, factoryType.asType) match
+          case ('[element], '[stdlib]) =>
             val instance = element0.asInstanceOf[Inlinable { type Self = element }]
 
             '{
               def parseElement(): element = ${ instance.parse(reader) }
-              val factory = infer[scala.collection.Factory[element, collection]]
+              val factory = infer[scala.collection.Factory[element, stdlib]]
               val builder = factory.newBuilder
               val tactic = infer[Tactic[CborError]]
               val parser = $reader.rawParser.asInstanceOf[Cbor.Parser]
@@ -527,7 +572,7 @@ object stagedInternal:
                   remaining -= 1
                   if remaining == 0 then run = false
 
-              builder.result()
+              builder.result().asInstanceOf[collection]
             }
 
       case _ =>

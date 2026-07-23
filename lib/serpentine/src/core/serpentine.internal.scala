@@ -32,6 +32,7 @@
                                                                                                   */
 package serpentine
 
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -87,7 +88,7 @@ object internal:
           Right(done.reverse)
 
         case _ =>
-          if done.nil then Unset else Left(done.reverse)
+          if done.isEmpty then Unset else Left(done.reverse)
 
     Type.of[path] match
       case '[type topic <: Tuple; Path { type Topic = topic }] => decompose[topic]()
@@ -184,7 +185,7 @@ object internal:
     val right0 = right.drop(-difference).to(List)
 
     def recur(left: List[String], right: List[String], size: Int, count: Int): List[String] =
-      if left.nil then left0.drop(size - count)
+      if left.isEmpty then left0.drop(size - count)
       else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
       else recur(left.tail, right.tail, size + 1, 0)
 

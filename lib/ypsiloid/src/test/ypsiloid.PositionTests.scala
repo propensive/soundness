@@ -34,6 +34,8 @@ package ypsiloid
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 
 object PositionTests extends Suite(m"Ypsiloid position-index tests"):

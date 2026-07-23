@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import scala.math
+
 import java.nio.charset.StandardCharsets
 
 import scala.reflect.Selectable.reflectiveSelectable

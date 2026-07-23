@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import rudiments.*
+
 // The content-bearing layout tree built by the `file`/`rank`/`panel` DSL. A
 // `Leaf` pairs a `Sizing` with deferred content (run later, once its rectangle
 // is known, with its `Extent` in context); a `Branch` splits its space among
@@ -58,11 +60,11 @@ enum Pane:
     case Widget(sizing, _) => Frame.Cell(sizing)
 
     case Branch(sizing, axis, panes) =>
-      Frame.Split(sizing, axis, panes.contents.map(_.frame).to(List))
+      Frame.Split(sizing, axis, panes.contents.map(_.frame).transmute[List])
 
   // The leaves in frame order (left to right for files, top to bottom for ranks).
   def leaves: List[Pane] = this match
-    case Branch(_, _, panes) => panes.contents.to(List).flatMap(_.leaves)
+    case Branch(_, _, panes) => panes.contents.transmute[List].bind(_.leaves)
     case leaf                => List(leaf)
 
   // A copy of this pane re-weighted for use as a child of a split.

@@ -31,6 +31,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import java.lang as jl
 
 import anticipation.*
@@ -40,6 +42,7 @@ import gossamer.*
 import kaleidoscope.*
 import monotonous.*, alphabets.base64Standard
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -74,13 +77,13 @@ object Pem:
   // chains) is skipped. An input with no blocks yields the empty list.
   private def parseAll[cap^](cursor: Cursor[Text, cap]^)
     ( using Diagnostics, Tactic[PemError] )
-  :   LazyList[Pem] =
+  :   Progression[Pem] =
 
-    def recur(): LazyList[Pem] = nextLine(cursor).lay(LazyList()):
+    def recur(): Progression[Pem] = nextLine(cursor).lay(Progression()):
       case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" => block(cursor, label) #:: recur()
       case _                                                    => recur()
 
-    LazyList.defer(recur())
+    Progression.defer(recur())
 
   // The body of a block, after its `BEGIN` line: base64 lines accumulate
   // (verbatim, as the legacy parser joined them) until an `END` boundary.
@@ -128,7 +131,7 @@ object Pem:
         type Self = Pem
         type Operand = Text
 
-        def aggregate(stream: LazyList[Text]): Pem = parse(Cursor(stream.iterator))
+        def aggregate(stream: Progression[Text]): Pem = parse(Cursor(stream.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): Pem =
           // The non-consume `accept` crosses to the consuming factory as a
@@ -137,33 +140,33 @@ object Pem:
 
   // A certificate chain (or any multi-block document) as a lazy sequence of
   // its blocks.
-  given aggregableAll: (Diagnostics, Tactic[PemError]) => LazyList[Pem] is Aggregable by Text =
+  given aggregableAll: (Diagnostics, Tactic[PemError]) => Progression[Pem] is Aggregable by Text =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
-        type Self = LazyList[Pem]
+        type Self = Progression[Pem]
         type Operand = Text
 
-        def aggregate(stream: LazyList[Text]): LazyList[Pem] = parseAll(Cursor(stream.iterator))
+        def aggregate(stream: Progression[Text]): Progression[Pem] = parseAll(Cursor(stream.iterator))
 
-        override def accept(stream: (Stream[Text] over Credit)^): LazyList[Pem] =
+        override def accept(stream: (Stream[Text] over Credit)^): Progression[Pem] =
           // See `aggregable` above.
           parseAll(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
   // The armored form, one line at a time: the `serialize` counterpart for
   // streaming consumers (each line carries its terminator).
   given streamable: Pem is Streamable by Text over Credit = pem =>
-    def groups(index: Int): LazyList[Text] =
-      if index >= pem.data.length then LazyList(t"-----END ${pem.label}-----\n")
+    def groups(index: Int): Progression[Text] =
+      if index >= pem.data.length then Progression(t"-----END ${pem.label}-----\n")
       else t"${pem.data.slice(index, index + 48).serialize[Base64]}\n" #:: groups(index + 48)
 
-    Stream((t"-----BEGIN ${pem.label}-----\n" #:: LazyList.defer(groups(0))).iterator)
+    Stream((t"-----BEGIN ${pem.label}-----\n" #:: Progression.defer(groups(0))).iterator)
 
 case class Pem(label: PemLabel, data: Data):
   def serialize: Text =
-    Seq
-      ( Seq(t"-----BEGIN $label-----"),
-        data.grouped(48).to(Seq).map(_.serialize[Base64]),
-        Seq(t"-----END $label-----") )
+    scala.collection.immutable.List
+      ( scala.collection.immutable.List(t"-----BEGIN $label-----"),
+        data.batched(48).map(_.serialize[Base64]).stdlib,
+        scala.collection.immutable.List(t"-----END $label-----") )
 
     . flatten
     . join(t"\n")

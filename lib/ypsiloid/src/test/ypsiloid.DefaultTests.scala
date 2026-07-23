@@ -34,6 +34,8 @@ package ypsiloid
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import discriminables.yamlByTypeDiscriminable
@@ -57,7 +59,7 @@ object DefaultPersonScope:
     validate[Yaml.Focus](Issues2()):
       case error: YamlError =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
-    . protect(yaml.as[DContact]).items.map(_(0).s).to(Set)
+    . protect(yaml.as[DContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
 
 object DefaultShapeScope:
   given Default[DShape] = () => DShape.Circle(-1)
@@ -68,7 +70,7 @@ object DefaultShapeScope:
       case error: YamlError =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . protect(yaml.as[DShape])
-    (issues.items.map(_(0).s).to(Set), issues.items.length)
+    (issues.items.stdlib.map(_(0).s).pipe(Set.from(_)), issues.items.length)
 
 object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
 
@@ -96,7 +98,7 @@ object DefaultTests extends Suite(m"Ypsiloid Default-driven sentinel tests"):
         // Confirms the existing (no-Default) PR-3 accrual semantics
         // are unchanged for users who don't opt in.
         val yaml = t"company: Acme\n".read[Yaml]
-        validateYaml(yaml)(_.as[DContact]).items.map(_(0).s).to(Set)
+        validateYaml(yaml)(_.as[DContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
       . assert: paths =>
           paths == Set
            ( "#/person/name",

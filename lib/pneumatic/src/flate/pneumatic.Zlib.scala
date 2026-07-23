@@ -36,6 +36,7 @@ import java.io as ji
 
 import anticipation.*
 import denominative.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
@@ -54,12 +55,12 @@ object Zlib:
 
       Inflation(gzip = false, nowrap = false)
 
-    def compress(stream: LazyList[Data]): LazyList[Data] =
+    def compress(stream: Progression[Data]): Progression[Data] =
       val deflater = FlateBackend.deflater(-1, false)
       val buffer: Array[Byte] = new Array(4096)
       val out = new ji.ByteArrayOutputStream()
 
-      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+      def recur(stream: Progression[Data]): Progression[Data] = stream match
         case head #:: tail =>
           deflater.setInput(head.mutable(using Unsafe))
           var count = deflater.deflate(buffer, 0, buffer.length, Flate.ZSyncFlush)
@@ -83,15 +84,15 @@ object Zlib:
           val data = out.toByteArray.nn.immutable(using Unsafe)
           out.reset()
           deflater.end()
-          if !data.nil then LazyList(data) else LazyList.empty
+          if !data.nil then Progression(data) else Progression.empty
 
       recur(stream)
 
-    def decompress(stream: LazyList[Data]): LazyList[Data] =
+    def decompress(stream: Progression[Data]): Progression[Data] =
       val inflater = FlateBackend.inflater(false)
       val buffer: Array[Byte] = new Array(4096)
 
-      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+      def recur(stream: Progression[Data]): Progression[Data] = stream match
         case head #:: tail =>
           inflater.setInput(head.mutable(using Unsafe))
           val out = new ji.ByteArrayOutputStream()
@@ -107,7 +108,7 @@ object Zlib:
         case _ =>
           val finished = inflater.finished
           inflater.end()
-          LazyList.empty
+          Progression.empty
 
       recur(stream)
 

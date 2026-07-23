@@ -42,6 +42,7 @@ import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import nomenclature.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
@@ -83,21 +84,23 @@ object Tar:
       val mtimeU32: U32 =
         (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-      Entry.File(name, mode, user, group, mtimeU32, data.source[Data].toLazyList)
+      Entry.File(name, mode, user, group, mtimeU32, data.source[Data].toProgression)
 
     private[bitumen] val paxRef: TarRef =
       import strategies.throwUnsafely
       t"PaxHeaders/0".as[Relative on Tar]
 
-    private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): LazyList[Data] =
-      if segments.nil then LazyList()
+    private[bitumen] def sparseExtensionBlocks(segments: scala.collection.immutable.List[SparseSegment])
+    :   Progression[Data] =
+
+      if segments.isEmpty then Progression()
       else
         val (batch, rest) = segments.splitAt(21)
 
         val block: Data = Data.build(512): array =>
           var pos = 0
 
-          batch.foreach: seg =>
+          batch.each: seg =>
             array.place(formatLongOctal(seg.offset, 12), pos.z)
             pos = pos + 12
             array.place(formatLongOctal(seg.length, 12), pos.z)
@@ -119,7 +122,7 @@ object Tar:
         user:  UnixUser,
         group: UnixGroup,
         mtime: U32,
-        data:  LazyList[Data],
+        data:  Progression[Data],
         pax:   Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
@@ -195,30 +198,30 @@ object Tar:
         mtime:    U32,
         realSize: Long,
         segments: List[SparseSegment],
-        data:     LazyList[Data],
+        data:     Progression[Data],
         pax:      Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
 
     def size: U32 = this match
-      case file: File      => file.data.sumBy(_.length).bits.u32
+      case file: File      => file.data.stdlib.sumBy(_.length).bits.u32
       case pax: Pax        => pax.records.length.bits.u32
       case long: GnuLong   => (long.content.in[Data].length + 1).bits.u32
-      case sparse: Sparse  => sparse.segments.map(_.length).sum.toInt.bits.u32
+      case sparse: Sparse  => sparse.segments.stdlib.map(_.length).sum.toInt.bits.u32
       case _               => 0
 
-    def dataBlocks: LazyList[Data] = this match
+    def dataBlocks: Progression[Data] = this match
       case file: File      => file.data.chunked(512, zeroPadding = true)
-      case pax: Pax        => LazyList(pax.records).chunked(512, zeroPadding = true)
+      case pax: Pax        => Progression(pax.records).chunked(512, zeroPadding = true)
 
       case long: GnuLong =>
-        LazyList(long.content.in[Data] ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
+        Progression(long.content.in[Data] ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
 
       case sparse: Sparse =>
         sparse.data.chunked(512, zeroPadding = true)
 
       case _ =>
-        LazyList()
+        Progression()
 
     def typeFlag: TypeFlag = this match
       case _: File         => TypeFlag.File
@@ -290,24 +293,24 @@ object Tar:
 
       this.only:
         case sparse: Sparse =>
-          val inline = sparse.segments.take(4)
+          val inline = sparse.segments.stdlib.take(4)
           var pos = 386
 
-          inline.foreach: seg =>
+          inline.each: seg =>
             array.place(formatLong(seg.offset, 12), pos.z)
             pos = pos + 12
             array.place(formatLong(seg.length, 12), pos.z)
             pos = pos + 12
 
-          if sparse.segments.length > 4 then array(482) = 1.toByte
+          if sparse.segments.stdlib.length > 4 then array(482) = 1.toByte
           array.place(formatLong(sparse.realSize, 12), 483.z)
 
       val total = array.iterator.map(_.bits.u8.u32).reduce(_ + _)
       array.place(format(total, 8), 148.z)
 
-    def serialize: LazyList[Data] = this match
-      case sparse: Sparse if sparse.segments.length > 4 =>
-        header #:: Entry.sparseExtensionBlocks(sparse.segments.drop(4)) #::: dataBlocks
+    def serialize: Progression[Data] = this match
+      case sparse: Sparse if sparse.segments.stdlib.length > 4 =>
+        header #:: Entry.sparseExtensionBlocks(sparse.segments.stdlib.drop(4)) #::: dataBlocks
 
       case _ =>
         header #:: dataBlocks

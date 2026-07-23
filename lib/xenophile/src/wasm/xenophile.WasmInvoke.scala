@@ -32,6 +32,12 @@
                                                                                                   */
 package xenophile
 
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.collection.immutable as sci
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -71,23 +77,23 @@ object WasmInvoke:
       case Literal(StringConstant(string)) => string.tt
 
     def literal(term: Term): Text = strip(term).absolve match
-      case Apply(Ident("tt"), List(argument)) => stringOf(argument)
+      case Apply(Ident("tt"), sci.List(argument)) => stringOf(argument)
 
     def notCall: Nothing =
       halt(m"xenophile: `invoke` expects a foreign function invocation, `interface.function(args)`")
 
     val expression = strip(self.asTerm.underlyingArgument).absolve match
-      case Apply(Select(_, "make"), List(argument)) => strip(argument)
+      case Apply(Select(_, "make"), sci.List(argument)) => strip(argument)
       case _                                        => notCall
 
     // The elements of the `Expr.ofList`-built argument list of an `Expression.Apply`.
-    def argumentList(term: Term): List[Term] = strip(term) match
-      case Apply(_, List(varargs)) => strip(varargs) match
+    def argumentList(term: Term): sci.List[Term] = strip(term) match
+      case Apply(_, sci.List(varargs)) => strip(varargs) match
         case Repeated(elements, _) => elements.map(strip)
-        case _                     => Nil
+        case _                     => sci.Nil
 
       case _ =>
-        Nil
+        sci.Nil
 
     // The Scala value wrapped by the `Foreign.converter` `Conversion` in a navigation operand (a
     // converted argument, or a `WitHandle` receiver): the argument of the conversion's `apply`.
@@ -96,7 +102,7 @@ object WasmInvoke:
 
       val traverser = new TreeTraverser:
         override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
-          case Apply(Select(qualifier, "apply"), List(value))
+          case Apply(Select(qualifier, "apply"), sci.List(value))
           if qualifier.tpe <:< TypeRepr.of[Conversion[Nothing, Foreign]] =>
             if found.absent then found = value
 
@@ -114,14 +120,14 @@ object WasmInvoke:
     // preferred inside `inline` definitions, where re-inlining an empty-varargs application trips
     // path-dependent type avoidance.
     val (selectNode, argumentTerms) = expression match
-      case Apply(Select(_, "apply"), List(node, arguments)) =>
+      case Apply(Select(_, "apply"), sci.List(node, arguments)) =>
         (strip(node), argumentList(arguments))
 
       case _ =>
-        (expression, Nil)
+        (expression, sci.Nil)
 
     val (receiverNode, owner, function) = selectNode.absolve match
-      case Apply(Select(_, "apply"), List(receiver, member, owner)) =>
+      case Apply(Select(_, "apply"), sci.List(receiver, member, owner)) =>
         (strip(receiver), literal(owner), literal(member))
 
       case _ =>
@@ -143,7 +149,7 @@ object WasmInvoke:
     // other named types (variants, records), the referencing function's own module — WASI types
     // are used within the interface that declares them.
     def definingModule(name: Text): Optional[Text] =
-      allDefinitions.at(name).let(_.values.to(List).prim.let(_.module).or(Unset)).or(module)
+      allDefinitions.at(name).let(_.values.headOption.optional.let(_.module).or(Unset)).or(module)
 
     def facadeOf(name: Text): Symbol =
       facadeClass(definingModule(name).or(halt(m"xenophile: $name has no defining module")), name)
@@ -169,10 +175,10 @@ object WasmInvoke:
 
     // The payload type of an `option`, whichever way the dialect rendered it.
     def optionPayload(witType: Foreign.Type): Optional[Foreign.Type] = witType match
-      case Foreign.Type.Union(List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
         inner
 
-      case Foreign.Type.Applied(constructor, List(inner)) if constructor.s == "option" =>
+      case Foreign.Type.Applied(constructor, proscenium.List(inner)) if constructor.s == "option" =>
         inner
 
       case _ =>
@@ -202,13 +208,19 @@ object WasmInvoke:
     // The element WIT types of a `tuple<…>` parameter (a WIT record, whose ABI it shares, may be
     // declared as its structural tuple), or `Unset` for any other parameter shape.
     def parameterTuple(parameter: Foreign.Type): Optional[List[Foreign.Type]] = parameter match
-      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" => elements
+      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" => elements.stdlib
       case _                                                                       => Unset
 
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
+    // The opaque `proscenium.List` erases to `sci.List` and is representationally identical, but its
+    // type does not dealias to `sci.List` outside its defining module, so match its symbol too.
+    val opaqueListSymbol = TypeRepr.of[proscenium.List[Any]] match
+      case AppliedType(list, _) => list.typeSymbol
+      case tpe                  => tpe.typeSymbol
+
     def isList(scala: TypeRepr): Boolean = scala.dealias match
-      case AppliedType(list, List(_)) => list.typeSymbol == listClass
+      case AppliedType(list, List(_)) => list.typeSymbol == listClass || list.typeSymbol == opaqueListSymbol
       case _                          => false
 
     def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
@@ -319,7 +331,7 @@ object WasmInvoke:
 
         // A `list<T>` with a Scala `List[T]`: carried as an `Array` of `T`'s carrier, decoded
         // element-wise (reflectively, since the element carrier may not be nameable here).
-        case Foreign.Type.Applied(constructor, List(element))
+        case Foreign.Type.Applied(constructor, proscenium.List(element))
         if constructor.s == "list" && isList(scala) =>
           val elementType = scala.dealias.typeArgs.head
           val (elementCarrier, elementDecode) = decodeFor(element, elementType)
@@ -336,7 +348,11 @@ object WasmInvoke:
             val wrapped = '{_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray($elements)}
 
             val mapped = Select.overloaded(wrapped.asTerm, "map", List(elementType), List(mapper))
-            Select.unique(mapped, "toList").asExprOf[Any]
+
+            // `.toList` yields an `sci.List`; cast to the target type so an opaque `proscenium.List`
+            // result (representationally identical) is accepted by the checked `.asExprOf[result]`.
+            val listTerm = Select.unique(mapped, "toList")
+            TypeApply(Select.unique(listTerm, "asInstanceOf"), List(Inferred(scala))).asExprOf[Any]
 
           (arrayCarrier, decode)
 
@@ -424,7 +440,7 @@ object WasmInvoke:
       case Foreign.Type.Named(name) =>
         Apply(marker("witNamed"), List(Literal(ClassOfConstant(facadeOf(name).typeRef))))
 
-      case Foreign.Type.Union(List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+      case Foreign.Type.Union(proscenium.List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
         Apply(marker("witOption"), List(descriptor(inner)))
 
       case Foreign.Type.Applied(constructor, arguments) => constructor.s match
@@ -435,7 +451,7 @@ object WasmInvoke:
           Apply(marker("witOption"), List(descriptor(arguments.head)))
 
         case "tuple" =>
-          val elements = Repeated(arguments.map(descriptor), TypeTree.of[Any])
+          val elements = Repeated(arguments.stdlib.map(descriptor), TypeTree.of[Any])
           Apply(marker("witTuple"), List(Typed(elements, Inferred(repeatedAny))))
 
         case "result" =>
@@ -484,7 +500,7 @@ object WasmInvoke:
     // IR-level type the argument is lowered as, and the structured descriptor the exact WIT type
     // (which `classOf` alone erases, e.g. `option<string>`'s payload). An `Optional[T]` argument
     // (WIT `option<T>`) crosses as a `java.util.Optional` of `T`'s carrier.
-    val parameterTypes: List[Foreign.Type] = prototype.parameters.or(Nil)
+    val parameterTypes = prototype.parameters.let(_.stdlib).or(Nil)
 
     val arity = parameterTypes.length
 
@@ -767,7 +783,7 @@ object WasmInvoke:
     val origin = TypeRepr.of[Wit]
     val definitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
 
-    val module = definitions.at(topic).let(_.values.to(List).prim.let(_.module).or(Unset)).or:
+    val module = definitions.at(topic).let(_.values.headOption.optional.let(_.module).or(Unset)).or:
       halt(m"xenophile: the WIT resource $topic has no known module")
 
     val facade = facadeClass(module, topic)

@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import prepositional.*
@@ -45,7 +47,7 @@ given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
       type Self = Json.Ast
       type Operand = Data
 
-      def aggregate(source: LazyList[Data]): Json.Ast = Json.Ast.parse(source.iterator)
+      def aggregate(source: Progression[Data]): Json.Ast = Json.Ast.parse(source.stdlib.iterator)
       override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
         // See `readJson`: the non-consume `accept` signature crosses to the
         // consuming parser as a neutral reference.

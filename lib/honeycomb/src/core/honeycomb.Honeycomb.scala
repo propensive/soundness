@@ -32,8 +32,11 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.collection.immutable.Seq
 
+import scala.language.dynamics
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -42,6 +45,8 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gigantism.*
+import proscenium.compat.*
+
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -72,8 +77,8 @@ object Honeycomb:
       val html: Html =
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
-      val holes2 = holes.to(List).sortBy(_(0)).map(_(1))
-      val iterator = holes2.to(Iterator)
+      val holes2 = holes.toList.sort(_(0)).map(_(1))
+      val iterator = holes2.stdlib.iterator
       var index: Int = -1
 
       var types: List[TypeRepr] = Nil
@@ -178,7 +183,7 @@ object Honeycomb:
             iterator.next() match
               case Html.Hole.Node(label) =>
                 types ::= whatwg.elements(label).lay(TypeRepr.of[Node]): tag =>
-                  intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
+                  intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Node of children]
 
               case _ =>
@@ -209,7 +214,7 @@ object Honeycomb:
             iterator.next() match
               case Html.Hole.Element(label) =>
                 types ::= whatwg.elements(label).lay(TypeRepr.of[Element]): tag =>
-                  intersect(tag.admissible.map(_.s).to(List)).asType.absolve match
+                  intersect(tag.admissible.stdlib.map(_.s).to(List)).asType.absolve match
                     case '[type children <: Label; children] => TypeRepr.of[Element of children]
 
               case _ =>
@@ -276,7 +281,7 @@ object Honeycomb:
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val iterator: Iterator[Expr[Any]] =
-        holes.to(List).sortBy(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
+        holes.toList.sort(_(0)).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
               case Hole.Attribute(tag, attribute) =>
@@ -397,7 +402,7 @@ object Honeycomb:
           else List('{Doctype(${Expr(text)})})
 
         case Comment(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -413,7 +418,7 @@ object Honeycomb:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -425,12 +430,12 @@ object Honeycomb:
 
           List('{TextNode($content.tt)})
 
-      def resultType(html: Html): Set[String] = html match
-        case TextNode(_)           => Set("#text")
-        case Element(tag, _, _, _) => Set(tag.s)
-        case Fragment(values*)     => values.to(Set).flatMap(resultType(_))
-        case Comment(_)            => Set()
-        case Doctype(_)            => Set()
+      def resultType(html: Html): scala.collection.immutable.Set[String] = html match
+        case TextNode(_)           => scala.collection.immutable.Set("#text")
+        case Element(tag, _, _, _) => scala.collection.immutable.Set(tag.s)
+        case Fragment(values*)     => values.toSet.flatMap(resultType(_))
+        case Comment(_)            => scala.collection.immutable.Set()
+        case Doctype(_)            => scala.collection.immutable.Set()
 
       resultType(html)
       . map: label => ConstantType(StringConstant(label))
@@ -505,5 +510,5 @@ object Honeycomb:
 
                 . or(halt(m"unexpected type"))
 
-    val attrsExpr = '{Attributes.from($presets ++ ${Expr.ofList(attributes)}.compact.to(Map))}
+    val attrsExpr = '{Attributes.from(Map.of($presets.stdlib ++ Map.from(${Expr.ofList(attributes)}.compact).stdlib))}
     '{$tag.node($attrsExpr)}.asExprOf[result]

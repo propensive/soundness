@@ -32,7 +32,9 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import scala.annotation.*
 
@@ -46,14 +48,14 @@ import errorDiagnostics.stackTracesDiagnostics
 object Validation:
   def text(messages: List[(Pointer, Message)] = Nil): Message =
     val joined: Message =
-      messages.map:
+      messages.stdlib.map:
         case (Pointer.Self, message) => message
         case (pointer, message)      => m"$message at $pointer"
 
       . reverse
       . fuse(m"")(state+next)
 
-    messages.size match
+    messages.stdlib.size match
       case 0 => m"no messages"
       case 1 => m"one message: $joined"
       case 2 => m"two messages: $joined"
@@ -63,11 +65,13 @@ object Validation:
 
 case class Validation(messages: List[(Pointer, Message)] = Nil)
 extends Error(59, 0)(Validation.text(messages)):
-  private lazy val map: Map[Pointer, Message] = messages.to(Map)
+  private lazy val map: scala.collection.immutable.Map[Pointer, Message] =
+    messages.stdlib.to(scala.collection.immutable.Map)
 
   @targetName("add")
   infix def + (pointer: Pointer, message: Message): Validation =
     Validation((pointer, message) :: messages)
 
-  def apply(pointer: Pointer): Optional[Message] = map.at(pointer)
+  def apply(pointer: Pointer): Optional[Message] =
+    if map.contains(pointer) then map(pointer) else Unset
   def text: Message = Validation.text(messages)

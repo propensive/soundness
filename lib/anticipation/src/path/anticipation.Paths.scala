@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import scala.caps
+
 import prepositional.*
 
 object Paths:

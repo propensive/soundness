@@ -57,9 +57,10 @@ object Tests extends Suite(m"Coaxial tests"):
 
     // A `Data` (`IArray[Byte]`) compares by reference, so byte-level assertions
     // go through `List[Byte]`.
-    def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
+    def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
     def bytes(data: Data): List[Byte] = data.to(List)
-    def joined(stream: LazyList[Data]): List[Byte] = stream.to(List).flatMap(_.to(List))
+    def joined(stream: Progression[Data]): List[Byte] =
+      List.of(stream.flatMap { d => scala.collection.immutable.ArraySeq.unsafeWrapArray(d.mutable(using Unsafe)) }.stdlib.toList)
     def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to(List)
 
     suite(m"Duplex streaming endpoints"):
@@ -94,9 +95,9 @@ object Tests extends Suite(m"Coaxial tests"):
         drained(summon[Data is Transmissible].serialize(ascii(t"abc")))
       . assert(_ == bytes(ascii(t"abc")))
 
-      test(m"A LazyList[Data] is transmitted unchanged"):
-        val stream = LazyList(ascii(t"ab"), ascii(t"cd"))
-        drained(summon[LazyList[Data] is Transmissible].serialize(stream))
+      test(m"A Progression[Data] is transmitted unchanged"):
+        val stream = Progression(ascii(t"ab"), ascii(t"cd"))
+        drained(summon[Progression[Data] is Transmissible].serialize(stream))
       . assert(_ == bytes(ascii(t"abcd")))
 
       test(m"Text is transmitted via its character encoding"):
@@ -221,7 +222,7 @@ object Tests extends Suite(m"Coaxial tests"):
           port.listen[Data](handler):
 
             // The `transmit` extension is overloaded on `Serviceable` (returns
-            // `LazyList[Data]`) and `Routable` (returns `Unit`); since value-discarding
+            // `Progression[Data]`) and `Routable` (returns `Unit`); since value-discarding
             // makes any type conform to `Unit`, the `Routable` overload is not
             // reachable by ascription, so its given is exercised directly here.
             val routable = summon[UdpPort is Routable]
@@ -289,7 +290,7 @@ object Tests extends Suite(m"Coaxial tests"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption
         val server = jn.ServerSocket()
-        configure(server, summon[Every[SocketOption.Tcp]].values)
+        configure(server, List.of(summon[Every[SocketOption.Tcp]].values))
         server.getOption(java.net.StandardSocketOptions.SO_REUSEADDR).nn.booleanValue
           .also(server.close())
       . assert(_ == true)
@@ -297,7 +298,7 @@ object Tests extends Suite(m"Coaxial tests"):
       test(m"broadcast sets SO_BROADCAST on a configured UDP socket"):
         import socketOptions.broadcastSocketOption
         val socket = jn.DatagramSocket()
-        configure(socket, summon[Every[SocketOption.Udp]].values)
+        configure(socket, List.of(summon[Every[SocketOption.Udp]].values))
         socket.getOption(java.net.StandardSocketOptions.SO_BROADCAST).nn.booleanValue
           .also(socket.close())
       . assert(_ == true)
@@ -327,6 +328,6 @@ object Tests extends Suite(m"Coaxial tests"):
         // Skip on hosts where no interface exposes a hardware address.
         if nic == null then true else
           var value = 0L
-          nic.getHardwareAddress.nn.each: byte => value = (value << 8) | (byte & 0xFF)
+          scala.collection.immutable.ArraySeq.unsafeWrapArray(nic.getHardwareAddress.nn).each: byte => value = (value << 8) | (byte & 0xFF)
           interfaceFor(urticose.MacAddress(value)).let(_ => true).or(false)
       . assert(_ == true)

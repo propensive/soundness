@@ -34,6 +34,8 @@ package ypsiloid
 
 import soundness.*
 
+import proscenium.compat.*
+
 object ConformanceTests:
   // Adds the YAML 1.2 test-suite cases as `test(...)` entries inside the
   // calling Suite's `run()` body. Tests that the parser currently
@@ -48,7 +50,7 @@ object ConformanceTests:
         val cases = Conformance.loadTestCases()
         val results = cases.map(Conformance.runTestCase)
 
-        results.foreach: result =>
+        results.each: result =>
           val classifier = if result.testCase.inScope then t"in-scope" else t"out-of-scope"
           val firstLine = result.testCase.description.linesIterator.next().tt
           val id = result.testCase.id.tt

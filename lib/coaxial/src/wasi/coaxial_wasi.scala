@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import scala.annotation.nowarn
 
 import anticipation.*

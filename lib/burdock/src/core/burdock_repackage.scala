@@ -68,7 +68,7 @@ import filesystemBackends.virtualMachine
 // The repackager's command-line logic, launched by the `soundness.repackage` entry point.
 // It takes no arguments — it self-locates the application JAR it is running from and
 // rewrites it in place (see `Repackager.repackage`).
-def repackage(): Unit = application(Nil):
+def repackage(): Unit = application(scala.collection.immutable.Nil):
   recover:
     case error: Error =>
       Err.println(error.message)
@@ -115,7 +115,7 @@ def repackage(): Unit = application(Nil):
           Zipfile.read(cacheJar).entries.filter: entry =>
             !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
 
-          . to(List)
+          . stdlib.transmute[List]
 
       val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
 
@@ -154,7 +154,7 @@ def repackage(): Unit = application(Nil):
       Out.println(m"  input entries:          ${summary.inputEntries}")
       Out.println(m"  directory entries skipped: ${summary.directoriesSkipped}")
       Out.println(m"  application classes kept:  ${summary.ownKept}")
-      Out.println(m"  dependencies externalized: ${summary.externalized.length}")
+      Out.println(m"  dependencies externalized: ${summary.externalized.stdlib.length}")
 
       summary.externalized.each: requirement =>
         Out.println(m"    - ${requirement.text}")

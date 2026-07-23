@@ -32,7 +32,11 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.pureFunctions
+import scala.collection.immutable.Seq
+
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import java.util.regex.*
 
@@ -48,7 +52,8 @@ object internal:
   def glob(context: Expr[StringContext]): Macro[Any] =
     val parts = context.value.get.parts.map(Text(_)).map(Glob.parse(_).regex.s).to(List)
 
-    extractor(parts.head :: parts.tail.map("([^/\\\\]*)"+_))
+    val parts2 = parts.stdlib
+    extractor(List.of(parts2.head :: parts2.tail.map("([^/\\\\]*)"+_)))
 
   def regex(context: Expr[StringContext]): Macro[Any] =
     extractor(context.value.get.parts.to(List))
@@ -56,9 +61,9 @@ object internal:
   private def extractor(parts: List[String]): Macro[Any] =
     import quotes.reflect.*
 
-    val regex = abortive(Regex.parse(parts.map(Text(_))))
+    val regex = abortive(Regex.parse(List.of(parts.stdlib.map(Text(_)))))
 
-    val types: List[TypeRepr] = regex.captureGroups.map: group =>
+    val types = regex.captureGroups.stdlib.map: group =>
       group.quantifier match
         case Regex.Quantifier.Exactly(1) =>
           if group.charMatcher then TypeRepr.of[Char] else TypeRepr.of[Text]
@@ -81,7 +86,7 @@ object internal:
 
     if types.length == 0 then '{NoExtraction(${Expr(parts.head)})}
     else tupleType.asType.absolve match
-      case '[resultType] => '{RExtractor[Option[resultType]](${Expr(parts)})}
+      case '[resultType] => '{RExtractor[Option[resultType]](${Expr(parts.stdlib)})}
 
   class NoExtraction(pattern: String):
     inline def apply(): Regex = Regex(List(pattern))(using Unsafe)
@@ -104,8 +109,9 @@ object internal:
 
   class RExtractor[result](parts: Seq[String]):
     def unapply(scrutinee: Text)(using scanner: Scanner): result =
-      val result = Regex(parts)(using Unsafe).matchGroups(scrutinee)
+      val result = Regex(List.from(parts))(using Unsafe).matchGroups(scrutinee)
       val result2 = result.asInstanceOf[Option[IArray[List[Text | Char] | Optional[Text | Char]]]]
 
-      if parts.length == 2 then result2.map(_.head).asInstanceOf[result]
+      if parts.length == 2
+      then result2.map { (groups: IArray[List[Text | Char] | Optional[Text | Char]]) => groups.head }.asInstanceOf[result]
       else result2.map(Tuple.fromIArray(_)).asInstanceOf[result]

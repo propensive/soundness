@@ -32,8 +32,11 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.collection.immutable.Seq
 
+import scala.language.experimental.pureFunctions
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*

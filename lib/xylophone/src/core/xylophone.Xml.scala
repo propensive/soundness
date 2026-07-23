@@ -32,7 +32,15 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.collection.immutable.Seq
+import scala.collection.immutable.IndexedSeq
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import java.lang as jl
 import java.util as ju
@@ -262,6 +270,27 @@ object Xml extends Tag.Container
 
           builder.result()
 
+  // Alias counterparts of `collectionDecodable`: the opaque prelude collections
+  // do not conform to `Iterable`, so each gets its own instance built at the
+  // underlying stdlib type and cast (a no-op at erasure).
+  given listDecodable: [list <: List, element]
+  =>  ( element0: => (element is Decodable in Xml)^ )
+  =>  list[element] is Decodable in Xml =
+    collectionDecodable[scala.collection.immutable.List, element]
+    . asInstanceOf[list[element] is Decodable in Xml]
+
+  given setDecodable: [set <: Set, element]
+  =>  ( element0: => (element is Decodable in Xml)^ )
+  =>  set[element] is Decodable in Xml =
+    collectionDecodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[set[element] is Decodable in Xml]
+
+  given seriesDecodable: [series <: Series, element]
+  =>  ( element0: => (element is Decodable in Xml)^ )
+  =>  series[element] is Decodable in Xml =
+    collectionDecodable[Vector, element]
+    . asInstanceOf[series[element] is Decodable in Xml]
+
   // The mirror of `collectionDecodable`: a collection encodes to a `Fragment`
   // holding one node per element, which the product derivation (recognising
   // the `Repeatable` mixin) flattens into repeated same-named children.
@@ -290,6 +319,25 @@ object Xml extends Tag.Container
                 nodes += Element(t"", Attributes.empty, IArray.from(nested))
 
           Fragment(nodes.toSeq*)
+
+  // Alias counterparts of `collectionEncodable` (see `listDecodable`).
+  given listEncodable: [list <: List, element]
+  =>  ( encodable: => (element is Encodable in Xml)^ )
+  =>  list[element] is Encodable in Xml =
+    collectionEncodable[scala.collection.immutable.List, element]
+    . asInstanceOf[list[element] is Encodable in Xml]
+
+  given setEncodable: [set <: Set, element]
+  =>  ( encodable: => (element is Encodable in Xml)^ )
+  =>  set[element] is Encodable in Xml =
+    collectionEncodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[set[element] is Encodable in Xml]
+
+  given seriesEncodable: [series <: Series, element]
+  =>  ( encodable: => (element is Encodable in Xml)^ )
+  =>  series[element] is Encodable in Xml =
+    collectionEncodable[Vector, element]
+    . asInstanceOf[series[element] is Encodable in Xml]
 
   // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
   // decoder when one exists (so any `Decodable in Text` value works as a
@@ -421,7 +469,7 @@ object Xml extends Tag.Container
             val base = prior.let(_.path).or(XPath())
             Xml.Focus(base.prepend(wireName, 1))
           }):
-            if attributeFields.contains(fieldLabel) then
+            if attributeFields.defines(fieldLabel) then
               // `@attribute` field: decode from the matching attribute as a
               // `TextNode`; a missing attribute falls back to the declared
               // default, else the `Absent` sentinel (raise + continue).
@@ -479,8 +527,8 @@ object Xml extends Tag.Container
       // generic-equality lookups, per occurrence) — jacinta's map hoist.
       val labels: List[Text] = variantLabels
 
-      val variantNames: Map[Text, Text] =
-        variantRelabelling[derivation, Xml].map: (variant, wire) => wire -> variant
+      val variantNames: Map[Text, Text] = Map.from:
+        variantRelabelling[derivation, Xml].stdlib.map: (variant, wire) => wire -> variant
 
       xml =>
         provide[Foci[Xml.Focus]]:
@@ -490,8 +538,8 @@ object Xml extends Tag.Container
 
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
-                  val discriminant = variantNames.getOrElse(wire, wire)
-                  if labels.contains(discriminant) then discriminant else Unset
+                  val discriminant = variantNames.stdlib.getOrElse(wire, wire)
+                  if labels.has(discriminant) then discriminant else Unset
 
               resolved.let: discriminant =>
                 delegate(discriminant): [variant <: derivation] =>
@@ -585,7 +633,7 @@ object Xml extends Tag.Container
 
             // `@attribute` fields become attributes carrying the encoded leaf's
             // text; every other field becomes a child element via `wrap`.
-            if attributeFields.contains(fieldLabel)
+            if attributeFields.defines(fieldLabel)
             then attributes += wireName -> textOf(encoded).or(t"")
             else
               // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
@@ -625,7 +673,7 @@ object Xml extends Tag.Container
         variant(value): [variant <: derivation] =>
           value =>
             val label = wisteria.label[Text]
-            discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+            discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
 
   // ── Direct parsing ─────────────────────────────────────────────────────
   //
@@ -1036,7 +1084,7 @@ object Xml extends Tag.Container
                 // zero occurrences build the empty collection, exactly as
                 // the AST derivation decodes an empty synthetic fragment.
                 val elements: List[Any] = values(index) match
-                  case buffer: scm.ListBuffer[?] => buffer.toList
+                  case buffer: scm.ListBuffer[?] => List.of(buffer.toList)
                   case _                         => Nil
 
                 values(index) =
@@ -1238,6 +1286,27 @@ object Xml extends Tag.Container
   =>  collection[element] is Xml.Field =
     Xml.Field(Xml.Parsable.iterable[collection, element](field))
 
+  // Alias counterparts: the opaque prelude collections do not conform to
+  // `Iterable`, so each gets its own instance built at the underlying stdlib
+  // type and cast (a no-op at erasure).
+  given fieldList: [list <: List, element]
+  =>  ( field: => (element is Xml.Field)^ )
+  =>  list[element] is Xml.Field =
+    Xml.Field(Xml.Parsable.iterable[scala.collection.immutable.List, element](field))
+    . asInstanceOf[list[element] is Xml.Field]
+
+  given fieldSet: [set <: Set, element]
+  =>  ( field: => (element is Xml.Field)^ )
+  =>  set[element] is Xml.Field =
+    Xml.Field(Xml.Parsable.iterable[scala.collection.immutable.Set, element](field))
+    . asInstanceOf[set[element] is Xml.Field]
+
+  given fieldSeries: [series <: Series, element]
+  =>  ( field: => (element is Xml.Field)^ )
+  =>  series[element] is Xml.Field =
+    Xml.Field(Xml.Parsable.iterable[Vector, element](field))
+    . asInstanceOf[series[element] is Xml.Field]
+
   // The direct read of a field type carried by a plain text codec — the
   // direct counterpart of the `decodable` blanket's `Decodable in Text`
   // branch, including its absence behavior: a missing field raises and then
@@ -1302,7 +1371,7 @@ object Xml extends Tag.Container
                 ( renames.at(fieldLabel).or(fieldLabel).s,
                   context: Xml.Parsing,
                   default[Optional[field]]: Any,
-                  attributeFields.contains(fieldLabel) )
+                  attributeFields.defines(fieldLabel) )
           },
           fallback,
           values => Xml.Parsable.assemble(reflection, values))
@@ -1403,7 +1472,7 @@ object Xml extends Tag.Container
   given instantiable: (schema: XmlSchema) => (tactic: Tactic[ParseError])
   =>  ((Xml is Instantiable across HttpRequests from Text)^{tactic}) =
 
-    text => LazyList(text).read[Xml]
+    text => Progression(text).read[Xml]
 
   // Direct parsing: when the value knows how to consume elements itself, the
   // `Xml` tree is never materialized. Declared here (not in `Xml2`, where the
@@ -1502,7 +1571,7 @@ object Xml extends Tag.Container
     // The chunk iterator view of the pull endpoint (the audited bridge; the
     // DOM loader's parser is iterator-fed).
     val chunks =
-      zephyrine.toLazyList(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
+      zephyrine.toProgression(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
       . iterator
 
     val parser = tracking match
@@ -1523,7 +1592,7 @@ object Xml extends Tag.Container
 
     parsed match
       case Fragment((header: Header), rest*) =>
-        if rest.nil then abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
+        if rest.isEmpty then abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
         else if rest.length == 1 then Document(rest.head, withIndex(header))
         else Document(Fragment(rest*), withIndex(header))
 
@@ -1727,7 +1796,7 @@ object Xml extends Tag.Container
   private enum Level:
     case Ascend, Descend, Peer
 
-  trait Populable:
+  trait Vacuiscible:
     node: Element =>
       def apply(children: Optional[Xml of (? <: node.Transport)]*): Element of node.Topic =
         new Element(node.label, node.attributes, children.compact.nodes):

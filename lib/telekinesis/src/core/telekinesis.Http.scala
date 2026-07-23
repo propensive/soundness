@@ -32,7 +32,11 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*
@@ -148,7 +152,7 @@ object Http:
 
   object Status:
     private lazy val all: Map[Int, Status] =
-      values.immutable(using Unsafe).bi.map(_.code -> _).to(Map)
+      Map.from(values.immutable(using Unsafe).bi.map(_.code -> _))
 
     def unapply(code: Int): Option[Status] = all.get(code)
 
@@ -230,7 +234,7 @@ object Http:
         try request.body().memoize.utf8 catch case error: StreamError  => t"[-/-]"
 
       val headers: Text =
-        request.textHeaders.map: header =>
+        request.textHeaders.map: (header: Header) =>
           t"${header.key}: ${header.value}"
 
         . join(t"\n          ")
@@ -422,7 +426,7 @@ object Http:
 
       Head(method, version, host, target, headers)
 
-    def parse(stream: LazyList[Data])(using Tactic[HttpRequestError]): Request^ =
+    def parse(stream: Progression[Data])(using Tactic[HttpRequestError]): Request^ =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
       val head = parseHead(cursor)
 
@@ -437,7 +441,7 @@ object Http:
     // The endpoint form: the request parses straight off the connection's pull
     // endpoint. The body spring lends the cursor's remainder as a SINGLE-OWNER
     // stream: each mint resumes from wherever the previous reader stopped, and
-    // explicit `memoize` replaces the LazyList form's implicit caching.
+    // explicit `memoize` replaces the Progression form's implicit caching.
     def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[HttpRequestError])
     :   Request^ =
 
@@ -623,11 +627,9 @@ object Http:
 
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
-    lazy val textCookies: Map[Text, Text] =
-      headers.cookie.flatMap: cookie =>
-        cookie.bi.map(_.name -> _.value)
-
-      . to(Map)
+    lazy val textCookies: Map[Text, Text] = Map.from:
+      headers.cookie.stdlib.flatMap: (cookie: List[Cookie.Value]) =>
+        cookie.stdlib.map { value => value.name -> value.value }
 
 
   // The swappable transport that physically sends a single request and returns
@@ -660,9 +662,9 @@ object Http:
 
       ${telekinesis.internal.response('headers)}
 
-    case class Protoresponse(status0: Optional[Status], headers: Seq[Header]):
+    case class Protoresponse(status0: Optional[Status], headers: List[Header]):
       def apply(body: Body^ = Body.Empty): Response^{body} =
-        Response(1.1, status0.or(Ok), headers.to(List), body)
+        Response(1.1, status0.or(Ok), headers, body)
 
       def apply[servable: Servable](body: servable): Response =
         val response = servable.serve(body)
@@ -670,7 +672,7 @@ object Http:
         Response
           ( 1.1,
             status0.or(response.status),
-            headers.to(List) ++ response.textHeaders,
+            List.of(headers.stdlib ++ response.textHeaders.stdlib),
             // `serve` returns a pure `Response`, so its body is pure; the seal only
             // discharges the field's capture-polymorphic declared type.
             caps.unsafe.unsafeAssumePure(response.body) )
@@ -730,7 +732,7 @@ object Http:
             else (Nil, false)
 
       val headers: List[Header] =
-        if !upgrade then response.textHeaders ++ extraHeaders else
+        if !upgrade then List.of(response.textHeaders.stdlib ++ extraHeaders.stdlib) else
           response.textHeaders.filter: header =>
             val key = header.key.lower
             key != t"transfer-encoding" && key != t"content-length"
@@ -798,7 +800,7 @@ object Http:
       val chunks = bodyBytes
       Stream(Iterator(head.in[Data]) ++ chunks)
 
-    def parse(stream: LazyList[Data], bodiless: Boolean = false)
+    def parse(stream: Progression[Data], bodiless: Boolean = false)
     :   Response raises HttpResponseError =
 
       parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator), bodiless)

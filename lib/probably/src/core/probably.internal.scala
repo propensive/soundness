@@ -76,8 +76,8 @@ object internal:
             // side (the expected value) is a closed term safe to splice. A projection such as
             // `_.field == x` matches neither case and yields no contrast.
             expression match
-              case Apply(Select(Ident(`a`), "=="), List(term)) => Some(term.asExpr)
-              case Apply(Select(term, "=="), List(Ident(`a`))) => Some(term.asExpr)
+              case Apply(Select(Ident(`a`), "=="), scala.collection.immutable.List(term)) => Some(term.asExpr)
+              case Apply(Select(term, "=="), scala.collection.immutable.List(Ident(`a`))) => Some(term.asExpr)
               case other                                       => None
 
           case other =>

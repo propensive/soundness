@@ -53,7 +53,7 @@ object Hpack:
     val buf: ByteBuf^ = ByteBuf()
 
     // A while-loop rather than `each`: the closure may not capture the exclusive buffer.
-    var rest = headers
+    var rest = headers.stdlib
 
     while !rest.isEmpty do
       val header = rest.head
@@ -136,7 +136,7 @@ class Hpack(maxTableSize: Int = 4096):
   // ─── decode a complete header block ────────────────────────────────────────
 
   def decode(data: Data): List[HpackEntry] raises Http2Error =
-    val builder = List.newBuilder[HpackEntry]
+    val builder = scala.collection.immutable.List.newBuilder[HpackEntry]
     var pos = 0
 
     def nameValue(index: Int, after: Int): (HpackEntry, Int) =
@@ -176,7 +176,7 @@ class Hpack(maxTableSize: Int = 4096):
         builder += entry
         pos = next
 
-    builder.result()
+    List.of(builder.result())
 
   // ─── encode a header block ──────────────────────────────────────────────────
   //

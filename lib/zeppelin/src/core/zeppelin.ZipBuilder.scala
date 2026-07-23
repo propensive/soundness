@@ -32,6 +32,10 @@
                                                                                                   */
 package zeppelin
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.io as ji
 import java.nio.file as jnf
 
@@ -61,10 +65,10 @@ extends caps.ExclusiveCapability:
   private var remark: Optional[Text] = Unset
 
   def insert(entry: Zip.Entry): Unit =
-    if names.contains(entry.ref.encode)
+    if names.has(entry.ref.encode)
     then abort(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
 
-    names += entry.ref.encode
+    names = Set.of(names.stdlib + entry.ref.encode)
     stack ::= entry
 
   def insert[content: Streamable by Data over Credit](ref: Path on Zip, content: content)
@@ -75,7 +79,7 @@ extends caps.ExclusiveCapability:
 
   def comment(text: Text): Unit = remark = text
 
-  private[zeppelin] def zipfile: Zipfile = Zipfile(stack.reverse.to(LazyList), remark, Unset)
+  private[zeppelin] def zipfile: Zipfile = Zipfile(stack.stdlib.reverse.transmute[Progression], remark, Unset)
 
 class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
 
@@ -83,7 +87,7 @@ class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
   // per the JAR specification. Call it first if the manifest should lead the archive, as
   // convention prefers.
   def manifest(attributes: (Text, Text)*)(using Zip.Compression): Unit =
-    val lines = attributes.to(List).map { (key, value) => wrap(t"$key: $value") }
+    val lines = attributes.transmute[List].map { (key, value) => wrap(t"$key: $value") }
     val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
     insert(Zip.Entry(ZipBuilder.manifestRef, text))
 
@@ -143,11 +147,11 @@ object ZipBuilder:
 
     val target = jnf.Path.of(filename.s).nn
 
-    if !flags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+    if !flags.has(CreateFlag.Replace) && jnf.Files.exists(target)
     then abort(ZipError(ZipError.Reason.AlreadyExists))
 
     try
-      if flags.contains(CreateFlag.Parents) then
+      if flags.has(CreateFlag.Parents) then
         Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
 
       val parent = target.toAbsolutePath.nn.getParent

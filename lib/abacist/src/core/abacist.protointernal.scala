@@ -119,9 +119,9 @@ object protointernal extends anteprotointernal:
       case names: UnitsNames[quanta] =>
         count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)
-        val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
-        val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
-        units.weave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
+        val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).transmute[List]
+        val units = nonzeroUnits.stdlib.head :: nonzeroUnits.stdlib.tail.map(names.separator+_)
+        units.weave(names.units().stdlib.takeRight(nonzeroUnits.stdlib.length)).mkString.tt
 
       case _ =>
         count =>
@@ -138,7 +138,7 @@ object protointernal extends anteprotointernal:
     inline def distributiveQuanta[base <: AnyUnit, quanta <: Quanta[base]]
     :   quanta is Distributive by Long =
 
-      distributive[quanta](_.components.map(_(1)).to(List)): (value, parts) =>
+      distributive[quanta](_.components.map(_(1)).transmute[List]): (value, parts) =>
         parts.zip(value.components.map(_(0))).map: (number, units) =>
           t"$number $units"
 

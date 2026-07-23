@@ -40,6 +40,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import hypotenuse.*
 import kaleidoscope.*
+import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -53,17 +54,17 @@ object Pty:
   def apply(width: Int, height: Int): Pty =
     Pty(Screen(width, height), PtyState(scrollBottom = (height - 1).z), Relay())
 
-  def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
+  def stream(pty: Pty, in: Progression[Text]): Progression[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
       val pty2 = pty.consume(head)
       pty2 #:: stream(pty2, tail)
 
     case _ =>
-      LazyList()
+      Progression()
 
 case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
   // The legacy view of the reply relay (the audited bridge).
-  def stream: LazyList[Text] = LazyList.from(output.stream.records)
+  def stream: Progression[Text] = Progression.from(output.stream.records)
 
   def title: Text = state.title
   def cursor: Ordinal = state.cursor
@@ -449,11 +450,11 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
 
     def parseInts(text: Text): List[Int] =
       if text.nil then Nil
-      else text.cut(t";").to(List).map(parseInt(_, 0))
+      else text.cut(t";").map(parseInt(_, 0))
 
     def parsePair(text: Text, default: Int): (Int, Int) =
       if text.nil then (default, default) else
-        val parts = text.cut(t";").to(List)
+        val parts = text.cut(t";").stdlib
         val first = if parts.length >= 1 then parseInt(parts(0), default) else default
         val second = if parts.length >= 2 then parseInt(parts(1), default) else default
         (first, second)

@@ -47,7 +47,7 @@ enum HttpEvent:
   case Response(status: Http.Status) extends HttpEvent, Log.Network
   case Request(preview: Text) extends HttpEvent, Log.Network
 
-  case Send(method: Http.Method, url: into[HttpUrl], headers: Seq[Http.Header])
+  case Send(method: Http.Method, url: into[HttpUrl], headers: List[Http.Header])
   extends HttpEvent, Log.Network, Log.Protocol
 
   case Redirect(from: Text, to: Text) extends HttpEvent, Log.Network, Log.Protocol

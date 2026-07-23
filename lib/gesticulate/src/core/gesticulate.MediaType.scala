@@ -32,7 +32,9 @@
                                                                                                   */
 package gesticulate
 
-import language.dynamics
+import scala.caps
+
+import scala.language.dynamics
 
 import anticipation.*
 import contextual.*
@@ -48,7 +50,7 @@ object MediaType:
   given inspectable: MediaType is Inspectable = mt => t"""media"${mt}""""
 
   given showable: MediaType is Showable =
-    mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
+    mt => t"${mt.basic}${mt.parameters.map { (p: (Text, Text)) => t"; ${p(0)}=${p(1)}" }.join}"
 
   given encodable: MediaType is Encodable in Text = _.show
   // Laundered pure: the resolution-scoped tactic shares the instance's given-resolution
@@ -89,10 +91,10 @@ case class MediaType
     suffixes:   List[Media.Suffix] = Nil,
     parameters: List[(Text, Text)] = Nil )
 extends Dynamic:
-  private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
+  private def suffixString: Text = suffixes.map { (s: Media.Suffix) => t"+${s.name}" }.join
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
   def base: MediaType = MediaType(group, subtype, suffixes)
   def at(name: Text): Optional[Text] = parameters.seek(_(0) == name).let(_(1))
 
   def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
-    copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
+    copy(parameters = List.of(parameters.stdlib ::: kvs.toList.map(_.show -> _)))

@@ -32,6 +32,9 @@
                                                                                                   */
 package dendrology
 
+import scala.collection.immutable.Vector
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.reflect.*
 
 import acyclicity.*
@@ -42,8 +45,8 @@ import spectacular.*
 
 object DagDiagram:
   def apply[node](dag: Dag[node]): DagDiagram[node] raises DagError =
-    val nodes = dag.sorted.to(Series)
-    val indexes: Map[node, Int] = nodes.zipWithIndex.to(Map)
+    val nodes = dag.sorted.to(Vector)
+    val indexes: scala.collection.immutable.Map[node, Int] = nodes.zipWithIndex.toMap
 
     val layout: Array[Array[Int]] = Array.from:
       nodes.indices.map: i =>
@@ -71,7 +74,7 @@ case class DagDiagram[node](lines: List[(List[DagTile], node)]):
   val size: Int = lines.length
 
   def render[line](line: node => line)(using style: DagStyle[line]): List[line] =
-    lines.map: (tiles, node) => style.serialize(tiles, line(node))
+    lines.map: (tiles, node) => style.serialize(proscenium.List.of(tiles), line(node))
 
   def nodes: List[node] = lines.map(_(1))
   def tiles: List[List[DagTile]] = lines.map(_(0))

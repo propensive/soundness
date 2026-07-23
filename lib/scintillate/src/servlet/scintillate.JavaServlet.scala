@@ -70,8 +70,8 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
     val target = uri+query.let(t"?"+_).or(t"")
 
     val headers: List[Http.Header] =
-      request.getHeaderNames.nn.asScala.to(List).map: key =>
-        key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
+      request.getHeaderNames.nn.transmute[List].map: key =>
+        key.tt.lower -> request.getHeaders(key).nn.transmute[List].map(_.tt)
 
       . flatMap:
           case (key, values) => values.map(Http.Header(key, _))

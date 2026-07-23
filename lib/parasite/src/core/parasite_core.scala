@@ -32,8 +32,10 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
+
+import scala.caps
 
 import java.lang as jl
 
@@ -45,6 +47,7 @@ import fulminate.*
 import nomenclature.*
 import prepositional.*
 import symbolism.*
+import proscenium.compat.*
 import vacuous.*
 
 import abstractables.durationAbstractable
@@ -175,9 +178,9 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
 
-extension [result](stream: LazyList[result])
-  def concurrent(using Monitor^, Probate^): LazyList[result] raises AsyncError =
-    if async(stream.nil).await() then LazyList() else stream.head #:: stream.tail.concurrent
+extension [result](stream: Progression[result])
+  def concurrent(using Monitor^, Probate^): Progression[result] raises AsyncError =
+    if async(stream.nil).await() then Progression() else stream.head #:: stream.tail.concurrent
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)

@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import denominative.*
 import fulminate.*
 import prepositional.*

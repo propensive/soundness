@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import anticipation.*
 import gigantism.*
 import prepositional.*
@@ -49,7 +51,7 @@ object Connectable:
   =>  DomainSocket is Connectable:
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
     def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Duplex =
-      backend.duplexDomain(domainSocket, options.values)
+      backend.duplexDomain(domainSocket, List.of(options.values))
 
   // Honestly tracked: the instance is resolvable only with `Online` permission, so it is a
   // capability carrying that evidence in its capture set.
@@ -61,7 +63,7 @@ object Connectable:
       type Self = Endpoint[TcpPort]
 
       def connect(endpoint: Endpoint[TcpPort], interface: Optional[MacAddress]): Duplex =
-        backend.duplexTcp(endpoint, interface, options.values)
+        backend.duplexTcp(endpoint, interface, List.of(options.values))
 
 trait Connectable extends Typeclass:
   def connect(endpoint: Self, interface: Optional[MacAddress]): Duplex

@@ -65,11 +65,11 @@ object Email:
       case Body.HtmlOnly(_)        => media"text/html"
       case Body.Alternatives(_, _) => media"multipart/alternative"
 
-  case class Inline(cid: Text, contentType: MediaType, body: LazyList[Text])
+  case class Inline(cid: Text, contentType: MediaType, body: Progression[Text])
 
   case class Content(body: Body, inlines: Inline*):
     def contentType: MediaType =
-      if !inlines.nil then media"multipart/related" else body.contentType
+      if !inlines.isEmpty then media"multipart/related" else body.contentType
 
   case class Message(content: Content, attachments: List[Asset] = Nil):
     def contentType: MediaType =
@@ -81,8 +81,8 @@ case class Email(headers: Map[Text, Text], message: Email.Message) extends Docum
 
   def html: Optional[Text] = message.content.body.html
   def text: Optional[Text] = message.content.body.text
-  def inlines: List[Email.Inline] = message.content.inlines.to(List)
-  def attachments: List[Asset] = message.attachments.to(List)
+  def inlines: List[Email.Inline] = List.from(message.content.inlines)
+  def attachments: List[Asset] = message.attachments
 
   def attach[attachable: Attachable](attachment: attachable): Email =
-    copy(message = message.copy(attachments = attachments :+ attachable.attachment(attachment)))
+    copy(message = message.copy(attachments = List.of(attachments.stdlib :+ attachable.attachment(attachment))))

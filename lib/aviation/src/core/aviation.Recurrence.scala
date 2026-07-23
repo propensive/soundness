@@ -33,6 +33,8 @@
 package aviation
 
 import anticipation.*
+import proscenium.compat.*
+import rudiments.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
@@ -97,7 +99,7 @@ object Recurrence:
   =>  (Recurrence of point by (Timespan of topic)) is Decodable in Text =
 
     text =>
-      text.cut(t"/").to(List) match
+      text.cut(t"/") match
         case List(repeats, start, period) =>
           val repetitions =
             if repeats == t"R" then Unset else
@@ -121,7 +123,7 @@ object Recurrence:
   =>  ( (Recurrence of point by span) is Recurrent { type Topic = point } ) =
 
     series =>
-      val all = LazyList.iterate(series.start)(addable.add(_, series.period))
+      val all = Progression.iterate(series.start)(addable.add(_, series.period))
       series.repetitions.lay(all)(all.take(_))
 
 trait Recurrence extends Topical, Operable:

@@ -32,6 +32,10 @@
                                                                                                   */
 package bitumen
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -39,12 +43,13 @@ import prepositional.*
 import pneumatic.*
 import turbulence.*
 import zephyrine.*
+import rudiments.*
 
 // The scoped capability provided by opening an archive as `Tar`: `path.open[Tar]()`. TAR is a
 // sequential format, so `entries` streams lazily from the underlying source (memoized by the
-// `LazyList`, so revisiting an entry within the scope is free); payloads must be consumed
+// `Progression`, so revisiting an entry within the scope is free); payloads must be consumed
 // within the scope, while the source remains open.
-class TarHandle private[bitumen] (val entries: LazyList[Tar.Entry])
+class TarHandle private[bitumen] (val entries: Progression[Tar.Entry])
 extends caps.ExclusiveCapability
 
 class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Openable:
@@ -58,14 +63,14 @@ class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Opena
     ( block: ((TarHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
-    val entries = TarHandle.entries(LazyList(value), flags)
+    if mode.atoms.has(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
+    val entries = TarHandle.entries(Progression(value), flags)
     block(using new TarHandle(entries) with Granting[grants] {})
 
 object TarHandle:
   private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[TarFlag])
     ( using Tactic[TarError], Tactic[StreamError], Buffering )
-  :   LazyList[Tar.Entry] =
+  :   Progression[Tar.Entry] =
 
     flags.headOption match
       case Some(TarFlag.Gzip)    => Tarfile.read(stream.decompress[Gzip])
@@ -73,9 +78,9 @@ object TarHandle:
       case Some(TarFlag.Deflate) => Tarfile.read(stream.decompress[Deflate])
       case _                     => Tarfile.read(stream)
 
-  private[bitumen] def entries(stream: LazyList[Data], flags: List[TarFlag])
+  private[bitumen] def entries(stream: Progression[Data], flags: List[TarFlag])
     ( using Tactic[TarError], Tactic[StreamError] )
-  :   LazyList[Tar.Entry] =
+  :   Progression[Tar.Entry] =
 
     flags.headOption match
       case Some(TarFlag.Gzip)    => Tarfile.fromGzip(stream)

@@ -32,11 +32,14 @@
                                                                                                   */
 package rudiments
 
-import language.dynamics
+import scala.{caps, compiletime, math}
+
+import scala.language.dynamics
 
 import java.io as ji
 
 import scala.collection as sc
+import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.deriving.*
@@ -44,6 +47,7 @@ import scala.quoted.*
 
 import anticipation.*
 import denominative.*
+import murmuration.*
 import prepositional.*
 import symbolism.*
 import vacuous.*
@@ -90,9 +94,9 @@ extension [value](value: value)
 
   def give[result](block: value ?=> result): result = block(using value)
 
-extension [value: Countable](value: value)
-  // Not `inline`: see the note on `prim`/`sec`/`ter` below (same capture-checking issue).
-  def occupied: Optional[value] = if value.nil then Unset else value
+// A proof-carrying value compares as its unproven self: without this, strict equality rejects
+// comparing a `value & Populated` with a plain `value` (no `CanEqual` between them).
+given populatedEquality: [value] => CanEqual[value & Populated, value] = CanEqual.derived
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)
@@ -138,19 +142,13 @@ extension [value <: Matchable](iterable: Iterable[value])
   def weave(right: Iterable[value]): Iterable[value] =
     val left = iterable.iterator
     val rght = right.iterator
-    val builder = List.newBuilder[value]
+    val builder = scala.collection.immutable.List.newBuilder[value]
 
     while left.hasNext && rght.hasNext do
       builder += left.next()
       builder += rght.next()
 
     builder.result()
-
-// `collection.has(value)` (value membership) for any `collection` that is
-// `Inclusive`; the queried value type is fixed by the instance's `Operand`.
-// Whether a *key/index* is present is `Indexable`'s `defines` instead.
-extension [self](self: self)(using inclusive: self is Inclusive)
-  def has(value: inclusive.Operand): Boolean = inclusive.has(self, value)
 
 // Element-oriented queries over any `Traversable` value. `seek` returns the first
 // element satisfying a predicate; `where` returns the *index* (`Ordinal`) of the
@@ -169,17 +167,48 @@ extension [self](self: self)(using traversable: self is Traversable)
       case Some((_, index)) => index.z
       case None             => Unset
 
-  // `subsumes` tests whether `subsequence` occurs as a contiguous run of elements
-  // within `self` — a substring, for `Text`. The empty subsequence is always
-  // present. (Element membership, by contrast, is `has` via `Inclusive`.)
-  def subsumes(subsequence: self): Boolean =
-    val whole = Vector.from(traversable.traverse(self))
-    val part  = Vector.from(traversable.traverse(subsequence))
-    val last  = whole.length - part.length
+  transparent inline def each(lambda: Ordinal aka "ordinal" ?=> traversable.Operand => Unit)
+  :   Unit =
+    var ordinal: Ordinal = Prim
 
-    part.isEmpty || whole.indices.exists: start =>
-      start <= last && part.indices.forall: offset =>
-        whole(start + offset) == part(offset)
+    traversable.traverse(self).foreach: operand =>
+      lambda(using ordinal.aka["ordinal"])(operand)
+      ordinal = ordinal + 1
+
+  // Kept here (not moved to `murmuration`) so it stays overloaded with the `Iterable`/`Iterator`
+  // `all` below, avoiding a split-name clash across two modules at the `soundness` umbrella.
+  inline def all(predicate: traversable.Operand => Boolean): Boolean =
+    traversable.traverse(self).forall(predicate)
+
+// Operations that are partial on possibly-empty collections but *total* on receivers carrying a
+// `Populated` proof (obtained from `occupied`, whose bounds check is thereby discharged exactly
+// once). Stdlib members shadow these for stdlib receivers while the aliases remain transparent.
+extension [self <: Populated](value: self)(using traversable: self is Traversable)
+  def head: traversable.Operand = traversable.traverse(value).next()
+
+  def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)
+  :   traversable.Operand =
+
+    traversable.traverse(value).reduce(lambda)
+
+// Conversion to a requested shape, which may be a proper type or an unapplied constructor:
+// `chars.transmute[List]`, `text.transmute[Set]`, `pairs.transmute[Map]`. `transparent inline` so the
+// umbrella export forwards it by inlining: a plain def's path-dependent result fails at the
+// cross-package forwarder (#1411), and the result cannot be bound as a second type parameter here
+// because the explicit `form` argument precludes partial type application.
+//
+// `transmute` is the temporary name for this kind-polymorphic conversion during the
+// `.to(Companion)` -> `.transmute[Type]` migration: a distinct name coexists with the stdlib-style
+// `.to(Factory)` (which the old `to` would clash with) so call sites migrate incrementally; once
+// every `.to(Companion)` is gone and the `Factory` conversions removed, `transmute` is renamed back
+// to `to`. Unlike `to`, `transmute` CAN take a fully-generic receiver — no other extension owns the
+// name, so there is nothing (like quantitative's `quantity.to[Pounds]`) for it to shadow — which
+// makes it a true drop-in for `.to(Factory)` over any `Convertible` source (`Iterable`, varargs, …).
+extension [self](self: self)
+  transparent inline def transmute[form <: AnyKind](using convertible: self is Convertible in form)
+  :   convertible.Result =
+
+    convertible.convert(self)
 
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
@@ -332,10 +361,9 @@ extension [value](iterable: Iterable[value])
     iterable.map: value => (value, value, value)
 
   def indexBy[value2](lambda: value => value2): Map[value2, value] =
-    iterable.map: value =>
-      (lambda(value), value)
-
-    . to(Map)
+    Map.from:
+      iterable.map: value =>
+        (lambda(value), value)
 
   def longestTrain(predicate: value => Boolean): (Int, Int) =
     @tailrec
@@ -368,57 +396,79 @@ extension [element](array: Array[element])
 
 extension [key, value](map: sc.Map[key, value])
   inline def defines(key: key): Boolean = map.contains(key)
-  inline def bijection: Bijection[key, value] = Bijection(map.to(Map))
+  inline def bijection: Bijection[key, value] = Bijection(map.to(sc.immutable.Map))
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
-    map.updated(key, optional(if map.defines(key) then map(key) else Unset))
+    Map.of:
+      map.stdlib.updated(key, optional(if map.defines(key) then map.stdlib(key) else Unset))
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
-    right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
+    Map.of:
+      right.fold(map.stdlib): (state, next) =>
+        state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1))))
 
 extension [key, value](map: scm.Map[key, value])
   inline def establish(key: key)(evaluate: => value): value = map.getOrElseUpdate(key, evaluate)
 
 extension [key, value](map: Map[key, List[value]])
   def plus(key: key, value: value): Map[key, List[value]] =
-    map.updated(key, map.get(key).fold(List(value))(value :: _))
+    val values = List.of(value :: map.stdlib.get(key).fold(sci.List[value]())(_.stdlib))
+    Map.of(map.stdlib.updated(key, values))
 
 extension [value](list: List[value])
-  def unwind(tail: List[value]): List[value] = tail.reverse_:::(list)
+  def unwind(tail: List[value]): List[value] = List.of(tail.stdlib.reverse_:::(list.stdlib))
 
-extension [element](sequence: Seq[element])
+extension [element](sequence: List[element])
   def runs: List[List[element]] = runsBy(identity)
 
   // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers the
   // expanded body's type at each call site, where capture checking stamps a fresh `^` capture
   // variable on the union — which is spurious (and an error) when `element` is a pure type such as
   // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
-  def prim: Optional[element] = if sequence.nil then Unset else sequence.head
-  def sec: Optional[element] = if sequence.length < 2 then Unset else sequence(1)
-  def ter: Optional[element] = if sequence.length < 3 then Unset else sequence(2)
-  def unique: Optional[element] = if sequence.length == 1 then sequence.head else Unset
+  // Only `prim` gets this ungated `List` special case (O(1)); `sec`/`ter` go through the
+  // `LinearAccessComplexity`-gated `Indexable` route like every other positional access on `List`.
+  def prim: Optional[element] = if sequence.stdlib.isEmpty then Unset else sequence.stdlib.head
+
+  def unique: Optional[element] =
+    if sequence.stdlib.length == 1 then sequence.stdlib.head else Unset
 
   def runsBy(lambda: element => Any): List[List[element]] =
-    @tailrec
-    def recur(current: Any, todo: Seq[element], run: List[element], done: List[List[element]])
-    :   List[List[element]] =
+    val stdlib = sequence.stdlib
 
-      if todo.nil then (run.reverse :: done).reverse
+    @tailrec
+    def recur
+      ( current: Any,
+        todo:    sci.List[element],
+        run:     sci.List[element],
+        done:    sci.List[sci.List[element]] )
+    :   sci.List[sci.List[element]] =
+
+      if todo.isEmpty then (run.reverse :: done).reverse
       else
         val focus = lambda(todo.head)
 
         if current == focus then recur(current, todo.tail, todo.head :: run, done)
-        else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
+        else recur(focus, todo.tail, sci.List(todo.head), run.reverse :: done)
 
-    if sequence.nil then Nil
-    else recur(lambda(sequence.head), sequence.tail, List(sequence.head), Nil)
+    if stdlib.isEmpty then Nil
+    else List.of(recur(lambda(stdlib.head), stdlib.tail, sci.List(stdlib.head), sci.Nil).map(List.of(_)))
 
 extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
 
 extension [indexable: Indexable](value: indexable)
   inline def defines(index: indexable.Operand): Boolean = indexable.contains(value, index)
+
+  // Checks that `index` is defined for *this* value and, if so, returns it *confined* to it
+  // (`Operand in value.type`), which `at` recognizes statically: the subsequent access returns a
+  // bare `Result` with no second bounds check — `map.confine(key).let(map.at(_))`. It generalizes
+  // denominative's `within` (the `Ordinal` producer) to any index or key type. Sound for
+  // immutable receivers on stable paths, like `within` and `at`'s confined branch. Not `inline`:
+  // see the note on `prim`/`sec`/`ter` below (same capture-checking issue).
+  def confine(index: indexable.Operand): Optional[indexable.Operand in value.type] =
+    if indexable.contains(value, index) then index.asInstanceOf[indexable.Operand in value.type]
+    else Unset
 
   // A single `at` that dispatches at compile time on the index type: an index statically known to
   // be confined to *this* `value` (an `Operand in value.type`, hence in range) returns a bare
@@ -461,20 +511,9 @@ extension (bs: Long)
   def tib: Bytes = Bytes(bs*1024*1024*1024*1024)
 
 extension (data: Data)
-  def bytes: Bytes = Bytes(data.size)
+  def bytes: Bytes = Bytes(data.mutable(using Unsafe).length)
 
 
-extension [countable: Countable](inline value: countable)
-  inline def limit: Ordinal = countable.size(value).z
-
-  inline def ult: Optional[Ordinal] =
-    if countable.size(value) >= 1 then (countable.size(value) - 1).z else Unset
-
-  inline def pen: Optional[Ordinal] =
-    if countable.size(value) >= 1 then (countable.size(value) - 2).z else Unset
-
-  inline def ant: Optional[Ordinal] =
-    if countable.size(value) >= 1 then (countable.size(value) - 3).z else Unset
 
 extension [product <: Product: Mirror.ProductOf](value: product)
   def tuple: product.MirroredElemTypes = Tuple.fromProductTyped(value)

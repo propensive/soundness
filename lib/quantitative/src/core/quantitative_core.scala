@@ -32,7 +32,7 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.into
+import scala.language.experimental.into
 
 import anticipation.*
 import gossamer.*

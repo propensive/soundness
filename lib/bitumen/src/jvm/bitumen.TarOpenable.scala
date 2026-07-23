@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import java.io as ji
 
 import anticipation.*
@@ -41,6 +43,7 @@ import pneumatic.*
 import prepositional.*
 import turbulence.*
 import zephyrine.*
+import rudiments.*
 
 // A named class rather than an anonymous given instance, for the reasons documented on galilei's
 // `FileOpenable`. Archives open read-only: a `Write` mode is refused with
@@ -59,7 +62,7 @@ extends Openable:
     ( block: ((TarHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
 
     val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 

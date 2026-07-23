@@ -32,10 +32,12 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.util.regex.*
+
+import scala.collection.immutable as sci
 
 
 import anticipation.*
@@ -58,7 +60,7 @@ object Cuttable:
         . lay(text.segment(start till text.length.z) :: results):
             index => recur(index + dLength, text.segment(start till index) :: results)
 
-      recur(Prim, Nil).reverse
+      List.of(recur(Prim, Nil).stdlib.reverse)
 
   given textualRegex: [textual: {Textual, Countable}] => textual is Cuttable by Regex =
     (text, regex, limit) =>
@@ -71,7 +73,7 @@ object Cuttable:
         then recur(matcher.end.z, text.segment(matcher.start.z thru matcher.end.z) :: results)
         else results
 
-      recur(Prim, Nil).reverse
+      List.of(recur(Prim, Nil).stdlib.reverse)
 
   // A manual `indexOf` scan rather than `String.split(Pattern.quote(…))`: splitting on a literal
   // delimiter needs no regex, and the scala-wasm javalib's regex engine traps at runtime
@@ -83,7 +85,7 @@ object Cuttable:
     val dLength = delim.length
 
     if dLength == 0 || limit == 1 then List(text) else
-      val buffer = List.newBuilder[Text]
+      val buffer = sci.List.newBuilder[Text]
       var start = 0
       var count = 1
       var index = string.indexOf(delim, start)
@@ -95,7 +97,7 @@ object Cuttable:
         index = string.indexOf(delim, start)
 
       buffer += string.substring(start).nn.tt
-      buffer.result()
+      List.of(buffer.result())
 
   given textRegex: Text is Cuttable by Regex = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.iterator.map(_.nn.tt).to(List)

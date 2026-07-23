@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -50,7 +52,7 @@ object Pax:
     pairs.foldLeft(IArray.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
 
   def parse(data: Data): Map[Text, Text] raises TarError =
-    val builder = Map.newBuilder[Text, Text]
+    val builder = scala.collection.immutable.Map.newBuilder[Text, Text]
     var pos = 0
 
     while pos < data.length do
@@ -87,7 +89,7 @@ object Pax:
             builder += ((content.substring(0, eqIdx).nn.tt, content.substring(eqIdx + 1).nn.tt))
             pos = pos + length
 
-    builder.result()
+    Map.of(builder.result())
 
   private def computeLength(payloadLen: Int): Int =
     var n = 1

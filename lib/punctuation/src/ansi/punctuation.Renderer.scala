@@ -32,6 +32,8 @@
                                                                                                   */
 package punctuation
 
+import proscenium.compat.*
+
 import anticipation.*
 import denominative.*
 import escapade.*
@@ -63,8 +65,8 @@ object Renderer:
             palette: MarkdownPalette )
   :   Teletype =
 
-    val blocks = markdown.children.map(layoutLines(_, width)).filter(_.nonEmpty)
-    blocks.map(joinLines(_)).to(Seq).join(e"\n\n")
+    val blocks = markdown.children.stdlib.map(layoutLines(_, width)).filter(_.stdlib.nonEmpty)
+    List.of(blocks.map(joinLines(_))).join(e"\n\n")
 
   // -- inline ---------------------------------------------------------------
 
@@ -86,20 +88,20 @@ object Renderer:
       e"${Bg(palette.codeBg)}(${Fg(palette.code)}($code))"
 
     case Prose.Emphasis(children*) =>
-      val inner = children.map(inlineProse(_)).to(Seq).join
+      val inner = children.map(inlineProse(_)).transmute[List].join
       e"$Italic($inner)"
 
     case Prose.Strong(children*) =>
-      val inner = children.map(inlineProse(_)).to(Seq).join
+      val inner = children.map(inlineProse(_)).transmute[List].join
       e"$Bold($inner)"
 
     case Prose.Link(destination, _, children*) =>
-      val inner = children.map(inlineProse(_)).to(Seq).join
+      val inner = children.map(inlineProse(_)).transmute[List].join
       val link = Hyperlink(destination)
       e"$link(${Fg(palette.link)}($Underline($inner)))"
 
     case Prose.Image(destination, title, children*) =>
-      val alt = children.map(plainTextOf(_)).to(Seq).join
+      val alt = children.map(plainTextOf(_)).transmute[List].join
       val label = if alt.length == 0 then title.or(t"image") else alt
       val link = Hyperlink(destination)
       e"$link(${Fg(palette.subdued)}([$label]))"
@@ -116,12 +118,12 @@ object Renderer:
     case Prose.Softbreak                      => t" "
     case Prose.Linebreak                      => t" "
     case Prose.HtmlInline(_)                  => t""
-    case Prose.Emphasis(children*)            => children.map(plainTextOf(_)).to(Seq).join
-    case Prose.Strong(children*)              => children.map(plainTextOf(_)).to(Seq).join
-    case Prose.Link(_, _, children*)          => children.map(plainTextOf(_)).to(Seq).join
+    case Prose.Emphasis(children*)            => children.map(plainTextOf(_)).transmute[List].join
+    case Prose.Strong(children*)              => children.map(plainTextOf(_)).transmute[List].join
+    case Prose.Link(_, _, children*)          => children.map(plainTextOf(_)).transmute[List].join
 
     case Prose.Image(_, title, children*) =>
-      val inner = children.map(plainTextOf(_)).to(Seq).join
+      val inner = children.map(plainTextOf(_)).transmute[List].join
       if inner.length == 0 then title.or(t"") else inner
 
 
@@ -137,18 +139,18 @@ object Renderer:
   :   List[Teletype] = node match
 
     case Layout.Heading(_, level, children*) =>
-      val text = children.map(inlineProse(_)).to(Seq).join
+      val text = List.of(children.map(inlineProse(_)).toList).join
       val styled = e"$Bold(${Fg(palette.heading)}($text))"
       val wrapped = wrap(styled, width)
 
       level match
         case 1 =>
           val rule = e"${Fg(palette.heading)}(${t"━"*width})"
-          wrapped :+ rule
+          List.of(wrapped.stdlib :+ rule)
 
         case 2 =>
           val rule = e"${Fg(palette.heading)}(${t"─"*width})"
-          wrapped :+ rule
+          List.of(wrapped.stdlib :+ rule)
 
         case _ =>
           val prefix = e"${Fg(palette.subdued)}(${t"#"*level} )"
@@ -161,7 +163,7 @@ object Renderer:
               (prefix + head) :: tail.map(indent(_, t" "*(level + 1)))
 
     case Layout.Paragraph(_, children*) =>
-      val styled = children.map(inlineProse(_)).to(Seq).join
+      val styled = children.map(inlineProse(_)).transmute[List].join
       wrap(styled, width)
 
     case Layout.ThematicBreak(_) =>
@@ -171,18 +173,18 @@ object Renderer:
       val bar = e"${Fg(palette.quoteBar)}(▎)"
       val innerWidth = (width - 2).max(1)
       val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(_.nonEmpty)
-      val joined = interleaveBlanks(innerBlocks.to(List))
+      val joined = interleaveBlanks(innerBlocks.transmute[List])
 
       joined.map: line =>
         if line.plain.length == 0 then bar
         else bar + Space + line
 
     case Layout.BulletList(_, tight, items*) =>
-      renderList(items.to(List), tight, width, _ => bullet(palette))
+      renderList(items.transmute[List], tight, width, _ => bullet(palette))
 
     case Layout.OrderedList(_, start, tight, delimiter, items*) =>
       val delim = delimiter.or('.')
-      renderList(items.to(List), tight, width, n => e"${Fg(palette.subdued)}(${start + n}$delim)")
+      renderList(items.transmute[List], tight, width, n => e"${Fg(palette.subdued)}(${start + n}$delim)")
 
     case Layout.CodeBlock(_, info, code) =>
       val available = summon[Every[TeletypeFormattable]].values
@@ -198,7 +200,7 @@ object Renderer:
       val lines = if raw.lastOption.exists(_.plain.length == 0) then raw.dropRight(1) else raw
 
       lines.map: line =>
-        e"  $line"
+        e"  ${line: Teletype}"
 
     case Layout.HtmlBlock(_, html) =>
       val text: Teletype = e"${Fg(palette.subdued)}($html)"
@@ -241,8 +243,8 @@ object Renderer:
           case head :: tail =>
             (mk + Space + head) :: tail.map(indent(_, hang))
 
-      if tight then rendered.flatten
-      else interleaveBlanks(rendered)
+      if tight then List.of(rendered.stdlib.flatten)
+      else interleaveBlanks(List.of(rendered.stdlib.map(List.of(_))))
 
 
   // -- helpers --------------------------------------------------------------
@@ -268,7 +270,7 @@ object Renderer:
 
   // Join a list of lines into one Teletype with embedded newlines.
   private def joinLines(lines: List[Teletype]): Teletype =
-    lines.to(Seq).join(Newline)
+    lines.join(Newline)
 
 
   // Wrap an inline `Teletype` into width-bounded lines, applying soft
@@ -284,7 +286,7 @@ object Renderer:
     // Hard line-breaks (Linebreak) embedded as '\n' produce a forced break.
     // Split on them first, wrap each segment independently, then concatenate.
     val segments = content.cut(t"\n")
-    segments.flatMap(wrapSegment(_, width))
+    segments.bind(wrapSegment(_, width))
 
 
   private def wrapSegment
@@ -354,4 +356,4 @@ object Renderer:
 
     if col > 0 then flush()
 
-    if out.isEmpty then List(Teletype.empty) else out.to(List)
+    if out.isEmpty then List(Teletype.empty) else out.transmute[List]

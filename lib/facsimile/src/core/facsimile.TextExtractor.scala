@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import quantitative.*
@@ -47,7 +49,7 @@ private[facsimile] object TextExtractor:
   def extract(operators: List[PdfOperator], fonts: Map[Text, PdfFont], scale: Double)
   :   (List[TextRun], Text) =
 
-    val runs = List.newBuilder[TextRun]
+    val runs = scala.collection.immutable.List.newBuilder[TextRun]
     val text = StringBuilder()
 
     var ctm = PdfMatrix.Identity
@@ -169,4 +171,4 @@ private[facsimile] object TextExtractor:
       case _ =>
         ()
 
-    (runs.result(), text.toString.tt)
+    (List.of(runs.result()), text.toString.tt)

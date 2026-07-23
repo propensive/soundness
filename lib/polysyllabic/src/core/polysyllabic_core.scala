@@ -32,6 +32,8 @@
                                                                                                   */
 package polysyllabic
 
+import scala.collection.immutable.IndexedSeq
+
 import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*

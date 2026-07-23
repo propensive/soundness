@@ -100,11 +100,12 @@ case class WebDriver(port: Int):
       infix def / [element: Focusable](value: element): List[Element] logs HttpEvent =
         case class Data(`using`: Text, value: Text)
 
-        post(t"elements", Data(element.strategy, element.focus(value)).in[Json])
-        . value
-        . as[List[Json]]
-        . map(_(Wei).as[Text])
-        . map(Element(_))
+        List.of:
+          post(t"elements", Data(element.strategy, element.focus(value)).in[Json])
+          . value
+          . as[List[Json]]
+          . stdlib.map(_(Wei).as[Text])
+          . map(Element(_))
 
       def element[element: Focusable](value: element): Element logs HttpEvent =
         case class Data(`using`: Text, value: Text)
@@ -142,11 +143,12 @@ case class WebDriver(port: Int):
 
       case class Data(`using`: Text, value: Text)
 
-      post(t"elements", Data(element.strategy, element.focus(value)).in[Json])
-      . value
-      . as[List[Json]]
-      . map(_(Wei).as[Text])
-      . map(Element(_))
+      List.of:
+        post(t"elements", Data(element.strategy, element.focus(value)).in[Json])
+        . value
+        . as[List[Json]]
+        . stdlib.map(_(Wei).as[Text])
+        . map(Element(_))
 
     def element[element: Focusable](value: element): Element logs HttpEvent =
       case class Data(`using`: Text, value: Text)

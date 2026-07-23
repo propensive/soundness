@@ -32,6 +32,8 @@
                                                                                                   */
 package rudiments
 
+import scala.collection.immutable.IndexedSeq
+
 import anticipation.*
 import denominative.*
 import prepositional.*
@@ -41,13 +43,14 @@ object Segmentable:
     (sequence, interval) => sequence.slice(interval.start.n0, interval.limit.n0)
 
   given iarray: [element] => IArray[element] is Segmentable =
-    (iarray, interval) => iarray.slice(interval.start.n0, interval.limit.n0)
+    (iarray: IArray[element], interval: Interval) => iarray.slice(interval.start.n0, interval.limit.n0)
 
-  given seq: [element] => Seq[element] is Segmentable =
-    (seq, interval) => seq.slice(interval.start.n0, interval.limit.n0)
+  // Opaque `Series` is no longer an `IndexedSeq` subtype, so it needs its own instance.
+  given series: [element] => Series[element] is Segmentable =
+    (series, interval) => Series.of(series.stdlib.slice(interval.start.n0, interval.limit.n0))
 
   given list: [element] => List[element] is Segmentable =
-    (list, interval) => list.slice(interval.start.n0, interval.limit.n0)
+    (list, interval) => List.of(list.stdlib.slice(interval.start.n0, interval.limit.n0))
 
   given text: Text is Segmentable = (text, interval) =>
     val min = interval.start.n0.max(0)

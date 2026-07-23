@@ -36,6 +36,8 @@ import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
 
 import scala.collection.concurrent as scc
+import scala.math
+import scala.caps
 
 import anticipation.{Data as Bytes, *}
 import coaxial.*
@@ -108,7 +110,7 @@ object Http2ServerConnection:
           // Adopt the peer's advertised initial per-stream send window; applies
           // to streams opened after this point (existing streams are not
           // retroactively adjusted — a deliberate simplification).
-          settings.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
+          settings.stdlib.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
             conn.peerInitialWindow.set(setting.value.toInt)
 
           conn.send(Frame.Settings(Nil, ack = true))

@@ -32,6 +32,8 @@
                                                                                                   */
 package cordillera
 
+import scala.caps
+
 import anticipation.{Data as Bytes, *}
 import contingency.*
 import gossamer.*

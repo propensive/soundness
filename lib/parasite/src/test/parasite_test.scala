@@ -32,6 +32,8 @@
                                                                                                   */
 package parasite
 
+import scala.collection.immutable.Seq
+
 import java.lang as jl
 import java.util.concurrent as juc
 import juc.atomic as juca
@@ -242,7 +244,7 @@ object Tests extends Suite(m"Parasite tests"):
           started.await()
           Thread.sleep(20)
           promise.fulfill(11)
-          tasks.foreach(_.await())
+          tasks.each(_.await())
           results.get()
         . assert(_ == 55)
 
@@ -262,7 +264,7 @@ object Tests extends Suite(m"Parasite tests"):
           started.await()
           Thread.sleep(20)
           promise.cancel()
-          tasks.foreach(t => safely(t.await()))
+          tasks.each(t => safely(t.await()))
           cancelled.get()
         . assert(_ == 5)
 
@@ -600,11 +602,11 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Concurrent stream"):
         test(m"Concurrent on a complete stream returns same elements"):
-          LazyList(1, 2, 3, 4, 5).concurrent.to(List)
+          Progression(1, 2, 3, 4, 5).concurrent.stdlib.to(List)
         . assert(_ == List(1, 2, 3, 4, 5))
 
         test(m"Concurrent on empty stream is empty"):
-          LazyList[Int]().concurrent.to(List)
+          Progression[Int]().concurrent.stdlib.to(List)
         . assert(_ == List())
 
       suite(m"High contention"):
@@ -617,7 +619,7 @@ object Tests extends Suite(m"Parasite tests"):
               barrier.await()
               try { promise.fulfill(i); successes.incrementAndGet() }
               catch case _: AsyncError => ()
-          tasks.foreach(_.await())
+          tasks.each(_.await())
           successes.get()
         . assert(_ == 1)
 
@@ -628,7 +630,7 @@ object Tests extends Suite(m"Parasite tests"):
             async:
               barrier.await()
               promise.offer(i)
-          tasks.foreach(_.await())
+          tasks.each(_.await())
           promise.complete && promise().or(-1) > 0 && promise().or(-1) <= 50
         . assert(_ == true)
 
@@ -636,7 +638,7 @@ object Tests extends Suite(m"Parasite tests"):
           var fulfillSucceeded = 0
           var cancelSucceeded = 0
           val rounds = 100
-          (1 to rounds).foreach: _ =>
+          (1 to rounds).each: _ =>
             val promise = Promise[Int]()
             val start = juc.CountDownLatch(1)
             val a = async:
@@ -666,7 +668,7 @@ object Tests extends Suite(m"Parasite tests"):
               v
           started.await()
           promise.fulfill(7)
-          tasks.foreach(_.await())
+          tasks.each(_.await())
           mismatches.get()
         . assert(_ == 0)
 
@@ -675,7 +677,7 @@ object Tests extends Suite(m"Parasite tests"):
           val counter = juca.AtomicInteger(0)
           val tasks = (1 to n).map: _ =>
             async(counter.incrementAndGet())
-          tasks.foreach(_.await())
+          tasks.each(_.await())
           counter.get()
         . assert(_ == 200)
 
@@ -691,17 +693,17 @@ object Tests extends Suite(m"Parasite tests"):
           val total = juca.AtomicInteger(0)
           val started = juc.CountDownLatch(100)
 
-          val waiters = promises.zipWithIndex.flatMap: (promise, i) =>
+          val waiters = promises.zipWithIndex.bind: (promise, i) =>
             (1 to 10).map: _ =>
               async:
                 started.countDown()
                 total.addAndGet(promise.await())
 
           started.await()
-          promises.zipWithIndex.foreach: (p, i) =>
+          promises.zipWithIndex.each: (p, i) =>
             p.fulfill(i + 1)
 
-          waiters.foreach(_.await())
+          waiters.each(_.await())
           total.get()
         . assert(_ == 550)
 
@@ -716,8 +718,8 @@ object Tests extends Suite(m"Parasite tests"):
               try gate.await() catch case _: AsyncError => cancelled.incrementAndGet()
 
           started.await()
-          tasks.foreach(_.cancel())
-          tasks.foreach(t => safely(t.await()))
+          tasks.each(_.cancel())
+          tasks.each(t => safely(t.await()))
           gate.cancel()
           cancelled.get()
         . assert(_ <= 20)
@@ -728,7 +730,7 @@ object Tests extends Suite(m"Parasite tests"):
           val numChildren = 30
           val completed = juca.AtomicInteger(0)
           val task = async:
-            (1 to numChildren).foreach: _ =>
+            (1 to numChildren).each: _ =>
               async:
                 snooze(20.0*Milli(Second))
                 completed.incrementAndGet()
@@ -743,7 +745,7 @@ object Tests extends Suite(m"Parasite tests"):
           val gate = Promise[Unit]()
           val completed = juca.AtomicInteger(0)
           val task = async:
-            (1 to numChildren).foreach: _ =>
+            (1 to numChildren).each: _ =>
               async:
                 gate.await()
                 completed.incrementAndGet()
@@ -934,7 +936,7 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Multiple threads racing to fulfill: only one wins"):
           val rounds = 50
           var allOk = true
-          (1 to rounds).foreach: _ =>
+          (1 to rounds).each: _ =>
             val promise = Promise[Int]()
             val barrier = juc.CyclicBarrier(10)
             val winners = juca.AtomicInteger(0)
@@ -945,7 +947,7 @@ object Tests extends Suite(m"Parasite tests"):
                   promise.fulfill(i)
                   winners.incrementAndGet()
                 catch case _: AsyncError => ()
-            tasks.foreach(_.await())
+            tasks.each(_.await())
             if winners.get() != 1 then allOk = false
           allOk
         . assert(_ == true)
@@ -953,7 +955,7 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Mixed offer/cancel/fulfill leave promise in consistent state"):
           val rounds = 100
           var allOk = true
-          (1 to rounds).foreach: _ =>
+          (1 to rounds).each: _ =>
             val promise = Promise[Int]()
             val barrier = juc.CyclicBarrier(3)
             val a = async:
@@ -1021,7 +1023,7 @@ object Tests extends Suite(m"Parasite tests"):
           import probates.awaitProbate
           val sums = juca.AtomicInteger(0)
           val outer = async:
-            (1 to n).foreach: i =>
+            (1 to n).each: i =>
               async(sums.addAndGet(i))
           outer.await()
           sums.get()
@@ -1044,7 +1046,7 @@ object Tests extends Suite(m"Parasite tests"):
           val gate = Promise[Unit]()
           val finished = juca.AtomicInteger(0)
           val parent = async:
-            (1 to 10).foreach: _ =>
+            (1 to 10).each: _ =>
               daemon:
                 started.countDown()
                 gate.attend()
@@ -1183,7 +1185,7 @@ object Tests extends Suite(m"Parasite tests"):
           val t = Timeout(50.0*Milli(Second)):
             fired.set(true)
           // Nudge it a few times before timeout
-          (1 to 3).foreach: _ =>
+          (1 to 3).each: _ =>
             snooze(20.0*Milli(Second))
             t.nudge()
           fired.get()
@@ -1226,8 +1228,8 @@ object Tests extends Suite(m"Parasite tests"):
       suite(m"Concurrent stream details"):
         test(m"Concurrent stream preserves head element with delays"):
           val gate = Promise[Unit]()
-          val stream: LazyList[Int] = 1 #:: { gate.await(); 2 } #:: { 3 } #:: LazyList.empty
-          val task = async(stream.concurrent.head)
+          val stream: Progression[Int] = 1 #:: { gate.await(); 2 } #:: { 3 } #:: Progression.empty
+          val task = async(stream.concurrent.stdlib.head)
           gate.fulfill(())
           task.await()
         . assert(_ == 1)
@@ -1253,7 +1255,7 @@ object Tests extends Suite(m"Parasite tests"):
           val started = juc.CountDownLatch(5)
           val completed = juca.AtomicInteger(0)
           val task = async:
-            (1 to 5).foreach: _ =>
+            (1 to 5).each: _ =>
               async:
                 started.countDown()
                 gate.await()
@@ -1279,7 +1281,7 @@ object Tests extends Suite(m"Parasite tests"):
           val rounds = 100
           var fulfillFirst = 0
           var cancelFirst = 0
-          (1 to rounds).foreach: _ =>
+          (1 to rounds).each: _ =>
             val p = Promise[Int]()
             val a = async:
               p.offer(1)
@@ -1298,7 +1300,7 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"State is monotonic: never goes backwards"):
           val rounds = 50
           var allMonotonic = true
-          (1 to rounds).foreach: _ =>
+          (1 to rounds).each: _ =>
             val promise = Promise[Int]()
             val sawIncomplete = juca.AtomicBoolean(false)
             val sawComplete = juca.AtomicBoolean(false)
@@ -1307,7 +1309,7 @@ object Tests extends Suite(m"Parasite tests"):
 
             val checker = async:
               barrier.await()
-              (1 to 100).foreach: _ =>
+              (1 to 100).each: _ =>
                 if promise.complete then sawComplete.set(true)
                 if promise.cancelled then sawCancelled.set(true)
                 if !promise.ready then sawIncomplete.set(true)
@@ -1362,7 +1364,7 @@ object Tests extends Suite(m"Parasite tests"):
               catch case _: AsyncError =>
                 timedOut.incrementAndGet()
                 -1
-          tasks.foreach(_.await())
+          tasks.each(_.await())
           timedOut.get()
         . assert(_ == 10)
 
@@ -1403,7 +1405,7 @@ object Tests extends Suite(m"Parasite tests"):
                 cancelled.incrementAndGet()
           Thread.sleep(10)
           promise.cancel()
-          tasks.foreach(_.await())
+          tasks.each(_.await())
           (cancelled.get(), completed.get())
         . assert: (c, ok) =>
             c == 20 && ok == 0

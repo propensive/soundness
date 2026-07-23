@@ -146,7 +146,7 @@ object Assembler:
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     output.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
-      ( file.write(LazyList(patched)) )
+      ( file.write(Progression(patched)) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
@@ -157,7 +157,7 @@ object Assembler:
     // unify with it), and a direct append-mode open rather than `Eof` (whose two-evidence
     // dependent `Result` chain has the same root problem). The read is strict (`to(List)`)
     // so nothing reads the closed handle.
-    val chunks = jarFile.open[File]()(file.reader().to(List))
-    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(LazyList.from(chunks)))
+    val chunks = jarFile.open[File]()(List.from(file.reader().stdlib))
+    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Progression.from(chunks.stdlib)))
 
     if !isWindows then output.executable() = true

@@ -32,6 +32,8 @@
                                                                                                   */
 package distillate
 
+import scala.caps
+
 import scala.deriving.*
 import scala.reflect.*
 

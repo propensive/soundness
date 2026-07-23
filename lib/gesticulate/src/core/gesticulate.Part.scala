@@ -40,11 +40,11 @@ import vacuous.*
 
 object Part:
   given streamable: Part is Streamable by Data over Credit = part =>
-    zephyrine.Stream(part.body.iterator)
+    zephyrine.Stream(part.body.stdlib.iterator)
 
 case class Part
   ( disposition: Optional[Multipart.Disposition],
     headers:     Map[Text, Text],
     name:        Optional[Text],
     filename:    Optional[Text],
-    body:        LazyList[Data] )
+    body:        Progression[Data] )

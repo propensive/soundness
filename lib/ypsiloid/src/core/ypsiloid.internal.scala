@@ -32,6 +32,11 @@
                                                                                                   */
 package ypsiloid
 
+import scala.collection.immutable.Seq
+import scala.collection.immutable.IndexedSeq
+
+import proscenium.compat.*
+
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -173,7 +178,7 @@ object internal:
       case _               => Unset
 
     val perPart: IndexedSeq[((String, Int, Int), Int -> Int)] =
-      parts.zip(parts2).zip(partOrigins).map: pair =>
+      parts.stdlib.zip(parts2.stdlib).zip(partOrigins.stdlib).map: pair =>
         val ((origPart, parserPart), (srcStart, _)) = pair
         val srcSkip = origPart.length - parserPart.length
         val effectiveStart = srcStart + srcSkip
@@ -312,8 +317,8 @@ object internal:
       def serializeArray(elements: IArray[Any]): Expr[Yaml.Ast] =
         val n = elements.length
 
-        val pieces: List[Expr[Iterable[Yaml.Ast]]] = elements.zipWithIndex.toList.map:
-          (elem, idx) =>
+        val pieces: scala.collection.immutable.List[Expr[Iterable[Yaml.Ast]]] =
+          elements.zipWithIndex.toList.map: (elem, idx) =>
             elem.asMatchable match
               case s: String if s == MarkerString =>
                 if spreads.has(holeIndex) then
@@ -330,14 +335,14 @@ object internal:
                 '{Iterable($v)}
 
         ' {
-            val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[Yaml.Ast])(_ ++ _)
+            val all = ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[Yaml.Ast])(_ ++ _)
             Yaml.Ast.Sequence(IArray.from(all))
           }
 
       def serializeObject(node: IArray[Any]): Expr[Yaml.Ast] =
         val n = node.length/2
 
-        val pieces: List[Expr[Iterable[(String, Yaml.Ast)]]] =
+        val pieces: scala.collection.immutable.List[Expr[Iterable[(String, Yaml.Ast)]]] =
           (0 until n).toList.map: i =>
             val k = node(i*2).asInstanceOf[String]
             val v = node(i*2 + 1)
@@ -361,12 +366,12 @@ object internal:
 
         ' {
             val all =
-              ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
+              ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[(String, Yaml.Ast)])(_ ++ _)
 
             val arr = new Array[Any](all.length*2)
             var k = 0
 
-            all.foreach: pair =>
+            all.each: pair =>
               arr(k*2)     = Yaml.Ast.Str(pair(0).tt).asInstanceOf[Any]
               arr(k*2 + 1) = pair(1).asInstanceOf[Any]
               k += 1
@@ -609,7 +614,7 @@ object internal:
 
         val pairs = node.length/2
 
-        val literalKeys: List[String] =
+        val literalKeys: scala.collection.immutable.List[String] =
           (0 until pairs).toList.collect:
             case i if node(i*2).asInstanceOf[String] != MarkerString =>
               node(i*2).asInstanceOf[String]
@@ -630,7 +635,7 @@ object internal:
                       keysSet += $scrutinee.objectKey(k)
                       k += 1
 
-                    ${Expr(literalKeys)}.forall(keysSet.contains)
+                    ${Expr(literalKeys)}.forall(keysSet.has(_))
                   }
               }
           else
@@ -647,7 +652,7 @@ object internal:
                         keysSet += $scrutinee.objectKey(k)
                         k += 1
 
-                      ${Expr(literalKeys)}.forall(keysSet.contains)
+                      ${Expr(literalKeys)}.forall(keysSet.has(_))
                     }
                   }
               }
@@ -746,7 +751,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
-          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
+          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.stdlib.reverse)
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>

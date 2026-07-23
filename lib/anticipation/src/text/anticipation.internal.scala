@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import scala.caps
+
 import scala.compiletime.*
 import scala.quoted.*
 import scala.reflect.*
