@@ -343,6 +343,204 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == List[Byte](42))
 
 
+    suite(m"XZ tests"):
+      // Golden vectors: real `xz` command-line output, decoded here — validating the decoder against
+      // the reference implementation, not merely against our own encoder. All decode to "hello hello
+      // hello world".
+      val hello: List[Byte] = t"hello hello hello world".in[Data].to(List)
+
+      val crc64Xz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 4, -26, -42, -76, 70, 4, -64, 24, 23, 33,
+          1, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, -73, -61, 72, -32, 0, 22, 0, 16, 93, 0, 52, 25, 73,
+          -18, -115, -23, 80, -106, 8, 6, -10, -24, -112, -109, -71, 32, 0, -64, 44, -125, 101, 28,
+          18, -22, 117, 0, 1, 52, 23, 27, -61, 127, 24, 31, -74, -13, 125, 1, 0, 0, 0, 0, 4, 89, 90)
+
+      val crc32Xz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 1, 105, 34, -34, 54, 4, -64, 24, 23, 33, 1,
+          22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, -73, -61, 72, -32, 0, 22, 0, 16, 93, 0, 52, 25, 73,
+          -18, -115, -23, 80, -106, 8, 6, -10, -24, -112, -109, -71, 32, 0, 38, -26, 90, -127, 0, 1,
+          48, 23, 31, 6, 19, 124, -112, 66, -103, 13, 1, 0, 0, 0, 0, 1, 89, 90)
+
+      val noneXz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 0, -1, 18, -39, 65, 4, -64, 24, 23, 33, 1,
+          22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, -73, -61, 72, -32, 0, 22, 0, 16, 93, 0, 52, 25, 73,
+          -18, -115, -23, 80, -106, 8, 6, -10, -24, -112, -109, -71, 32, 0, 0, 1, 44, 23, 66, 91,
+          100, -102, 6, 114, -98, 122, 1, 0, 0, 0, 0, 0, 89, 90)
+
+      val emptyXz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 4, -26, -42, -76, 70, 0, 0, 0, 0, 28, -33,
+          68, 33, 31, -74, -13, 125, 1, 0, 0, 0, 0, 4, 89, 90)
+
+      val sha256Xz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 10, -31, -5, 12, -95, 4, -64, 24, 23, 33,
+          1, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, -73, -61, 72, -32, 0, 22, 0, 16, 93, 0, 52, 25, 73,
+          -18, -115, -23, 80, -106, 8, 6, -10, -24, -112, -109, -71, 32, 0, 51, -116, -17, 103,
+          -104, 86, 60, 79, -90, -31, 124, 97, 49, 108, -97, -109, -15, -37, 45, -122, -86, -120,
+          17, -127, 55, 5, 109, 9, -32, -123, 9, 62, 0, 1, 76, 23, -27, 48, -103, -1, 24, -101, 75,
+          -102, 1, 0, 0, 0, 0, 10, 89, 90)
+
+      test(m"Decode reference xz output (SHA-256 check, verified)"):
+        sha256Xz.decompress[Xz].to(List)
+      . assert(_ == hello)
+
+      test(m"A corrupted payload is detected by the integrity check"):
+        // Flip a byte inside the LZMA2 payload (after the 12-byte stream and 12-byte block headers)
+        // and confirm decoding rejects it — via either a decode error or a check mismatch.
+        val original = (t"the quick brown fox " * 40).in[Data]
+        val bytes = original.compress[Xz].mutable(using Unsafe)
+        bytes(36) = (bytes(36) ^ 0x55).toByte
+        val corrupted: Data = bytes.immutable(using Unsafe)
+        try corrupted.decompress[Xz].to(List) != original.to(List)
+        catch case _: Exception => true
+      . assert(_ == true)
+
+      test(m"Decode reference xz output (CRC-64 check)"):
+        crc64Xz.decompress[Xz].to(List)
+      . assert(_ == hello)
+
+      test(m"Decode reference xz output (CRC-32 check)"):
+        crc32Xz.decompress[Xz].to(List)
+      . assert(_ == hello)
+
+      test(m"Decode reference xz output (no check)"):
+        noneXz.decompress[Xz].to(List)
+      . assert(_ == hello)
+
+      test(m"Decode reference xz output (empty input)"):
+        emptyXz.decompress[Xz].to(List)
+      . assert(_ == Nil)
+
+      val xzWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val xzLong = LazyList.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val xzVaried: Data =
+        IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
+
+      test(m"Roundtrip a single block with Xz"):
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Xz].decompress[Xz]
+      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+
+      test(m"Roundtrip a long repetitive stream with Xz"):
+        xzLong.compress[Xz].decompress[Xz]
+      . assert(_.flatten == xzLong.flatten)
+
+      test(m"whole-value compress roundtrips through whole-value decompress (Xz)"):
+        xzWhole.compress[Xz].decompress[Xz].to(List)
+      . assert(_ == xzWhole.to(List))
+
+      test(m"whole-value compress feeds the stream decompressor (Xz)"):
+        xzWhole.compress[Xz].stream.decompress[Xz].memoize.to(List)
+      . assert(_ == xzWhole.to(List))
+
+      test(m"stream compress feeds the whole-value decompressor (Xz)"):
+        xzWhole.stream.compress[Xz].memoize.decompress[Xz].to(List)
+      . assert(_ == xzWhole.to(List))
+
+      test(m"Roundtrip varied data spanning many commands (Xz)"):
+        xzVaried.compress[Xz].decompress[Xz].to(List)
+      . assert(_ == xzVaried.to(List))
+
+      test(m"Xz actually compresses a repetitive payload"):
+        val payload = (t"the quick brown fox jumped " * 500).in[Data]
+        payload.compress[Xz].length < payload.length
+      . assert(_ == true)
+
+      test(m"Compress with an explicit fast preset and roundtrip (Xz)"):
+        Xz.compress(LazyList(xzVaried), 1).decompress[Xz].flatten.to(List)
+      . assert(_ == xzVaried.to(List))
+
+      test(m"Empty input roundtrips (Xz)"):
+        Data().compress[Xz].decompress[Xz].to(List)
+      . assert(_ == Nil)
+
+      test(m"Single byte roundtrips (Xz)"):
+        Data(42).compress[Xz].decompress[Xz].to(List)
+      . assert(_ == List[Byte](42))
+
+      test(m"Roundtrip a large multi-chunk payload (Xz)"):
+        val big =
+          IArray.from((0 until 3000000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
+        big.compress[Xz].decompress[Xz].to(List) == big.to(List)
+      . assert(_ == true)
+
+      test(m"Streaming encoder emits multiple blocks past the dictionary (preset 0)"):
+        // Preset 0 has a 256 KiB dictionary, so ~700 KiB spans several self-contained blocks; the
+        // multi-block stream must roundtrip and be accepted by the reference `xz` binary.
+        val payload: Data =
+          IArray.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
+        val encodedChunks = Xz.compress(LazyList(payload), 0)
+        val roundtrips = encodedChunks.decompress[Xz].flatten.to(List) == payload.to(List)
+        val encodedBytes: Array[Byte] = IArray.from(encodedChunks.flatten).mutable(using Unsafe)
+        val byXz =
+          try
+            val process = ProcessBuilder("xz", "-d", "-c").start().nn
+            process.getOutputStream.nn.write(encodedBytes)
+            process.getOutputStream.nn.close()
+            val decoded = process.getInputStream.nn.readAllBytes().nn
+            process.waitFor()
+            decoded.to(List) == payload.to(List)
+          catch case _: ji.IOException => true
+        roundtrips && byXz
+      . assert(_ == true)
+
+      // Cross-check: the real `xz` binary must decode what we produce.
+      def xzBinaryDecodes(data: Data): Boolean =
+        try
+          val encoded = data.compress[Xz].mutable(using Unsafe)
+          val process = ProcessBuilder("xz", "-d", "-c").start().nn
+          val stdin = process.getOutputStream.nn
+          stdin.write(encoded)
+          stdin.close()
+          val decoded = process.getInputStream.nn.readAllBytes().nn
+          process.waitFor()
+          process.exitValue() == 0 && decoded.to(List) == data.to(List)
+        catch case _: ji.IOException => true // xz binary unavailable; skip
+
+      test(m"The xz binary decodes our output (repetitive)"):
+        xzBinaryDecodes((t"the quick brown fox " * 400).in[Data])
+      . assert(_ == true)
+
+      test(m"The xz binary decodes our output (varied)"):
+        xzBinaryDecodes(xzVaried)
+      . assert(_ == true)
+
+    suite(m"LZMA2 tests"):
+      val lzma2Whole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val lzma2Long = LazyList.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val lzma2Varied: Data =
+        IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
+
+      test(m"Roundtrip a single block with raw LZMA2"):
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzma2].decompress[Lzma2]
+      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+
+      test(m"Roundtrip a long repetitive stream with raw LZMA2"):
+        lzma2Long.compress[Lzma2].decompress[Lzma2]
+      . assert(_.flatten == lzma2Long.flatten)
+
+      test(m"whole-value compress roundtrips through whole-value decompress (LZMA2)"):
+        lzma2Whole.compress[Lzma2].decompress[Lzma2].to(List)
+      . assert(_ == lzma2Whole.to(List))
+
+      test(m"whole-value compress feeds the stream decompressor (LZMA2)"):
+        lzma2Whole.compress[Lzma2].stream.decompress[Lzma2].memoize.to(List)
+      . assert(_ == lzma2Whole.to(List))
+
+      test(m"stream compress feeds the whole-value decompressor (LZMA2)"):
+        lzma2Whole.stream.compress[Lzma2].memoize.decompress[Lzma2].to(List)
+      . assert(_ == lzma2Whole.to(List))
+
+      test(m"Roundtrip varied data (LZMA2)"):
+        lzma2Varied.compress[Lzma2].decompress[Lzma2].to(List)
+      . assert(_ == lzma2Varied.to(List))
+
+      test(m"Empty input roundtrips (LZMA2)"):
+        Data().compress[Lzma2].decompress[Lzma2].to(List)
+      . assert(_ == Nil)
+
+      test(m"Single byte roundtrips (LZMA2)"):
+        Data(42).compress[Lzma2].decompress[Lzma2].to(List)
+      . assert(_ == List[Byte](42))
+
+      test(m"Explicit preset and dictionary size roundtrip (LZMA2)"):
+        Lzma2.decompress(Lzma2.compress(LazyList(lzma2Varied), 1),
+            Lzma2Options.preset(1).dictSize).flatten.to(List)
+      . assert(_ == lzma2Varied.to(List))
+
     suite(m"Compression duct tests"):
       val mixed: Data =
         Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).in[Data]
