@@ -1,0 +1,31 @@
+{
+  "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAZcAAAAHc3NoLXJzYQAAAAMBAAEAAAGBANKeZiOgGy2ygR1XnKHjPk\nGD1dnDP8rPMDkaTfybosrPoQPXc6dnx28ZedTB+gQmW1RbBeFO4xOUWdP6MbJZbmQHko3e\n+OQAnqn8RD3zmJ4HYqG+OF1n9dS89tEG0yrlJaoMfWSm5uMK/iGeBVIAHPPPejKY41X0AP\nU/4G5o7+3Yv2JKcK/nB5vd1A0XBOnGJCOQGzOxxFAIX1t3btuEPyL04540eAOAtm6OxuMX\ntpy057iBQr89StE3OoQxU9Nxd8Qd0+6G1bqVjjdhhy+BU5D8Md3jkEyQP6Uan+nmcxA+TD\nG1m0ZNkusZqWtojXjgxqTCZqSiNO87JyyKtOpWLEeRlm9+hA7Xa8HPu8hsR+e0JhotXpLe\nxJvCBVK60ZTdzfmhCujT8GrXiRjMDMF7rHPyBaLIbUl5EuoU1yJyfu4pZdJgpxe1zHQX5I\nGGy8MXuOsJ9J2IqX9izuZINS5AsycfFX+Y1YvInzALxhAhEKjrsvyi/u3Kte/4hcoLvrbF\nwQAAAAxzb3VuZG5lc3MtY2kAAAAAAAAABnNoYTUxMgAAAZQAAAAMcnNhLXNoYTItNTEyAA\nABgG0oTcdn8OzX8JupxjhgH2XYGXhMhCRd79htg2z3fRR6d/xLDg4X+cGXuonlk4AaC+KU\n/QPOMoMtR62Do9EMKhdhFQOgr5ErfqjvICTzmMcuTpiZiIqJfAwnd2vJGhXeehq1OCRLrH\n896yhLThNqSI7TCk/v4Ps/fqlXsy95Vw/ikgPDwJjSxB8Gfi6xJWZdoU4LU0dhnU4zDtDA\noN5I8zh2O+FIOY1Z/KEaov5GMkIfthxt7zAgt4DYUMUj1NHWIOJ/lrItVRAg8bIuWYAWRP\nI81HhMaNuvjqfrODBY5CS6JReCKIYQCgnDTos0bUyYHmmKk9qrtKPk/FLnJPnAtKU3we6t\nQxNx9bSd/KO1aubWXg2fZuq+hqXBygyUgxOuPN0kSSSWHJlAHGrT5tMyZxlYFu2TefIM1e\nKvt+kW/KvXA/v4EPngHXaFTSw8ZplRs0LdccOuMadswMnbNsoe4visiJ/TMwy50oOhBmiY\n75oj3aXu+uSTdUe3aEwqYCpzcA==\n-----END SSH SIGNATURE-----\n",
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "commands": [
+        "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
+        "./mill --no-daemon -j 6 --ticker false test.assembly",
+        "make ci",
+        "make wasm-e2e"
+      ],
+      "commit": "fc2c0b36b4b44cf1334bf56ec55a6f3d5db3dde6",
+      "ranAt": "2026-07-20T14:55:30Z",
+      "ranBy": "jon.pretty@propensive.com",
+      "result": "pass",
+      "tooling": {
+        "mill": "1.1.5"
+      }
+    },
+    "predicateType": "https://soundness.dev/local-ci/v1",
+    "subject": [
+      {
+        "digest": {
+          "sha256": "210471457e9ac26a7d74d0708fec38357a999570622eb5e1cbe9bfcc913fad1d"
+        },
+        "name": "soundness-ci-inputs"
+      }
+    ]
+  }
+}
