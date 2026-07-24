@@ -171,8 +171,8 @@ object Brotli:
 
       BrotliStage(BrotliDecoderEngine())
 
-    def compress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliEncoderEngine(), stream)
-    def decompress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliDecoderEngine(), stream)
+    override def compress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliEncoderEngine(), stream)
+    override def decompress(stream: LazyList[Data]): LazyList[Data] = drive(BrotliDecoderEngine(), stream)
 
   // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
   private def drive(engine: BrotliEngine, stream: LazyList[Data]): LazyList[Data] =

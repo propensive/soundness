@@ -74,8 +74,8 @@ object Lzw:
 
       LzwStage(LzwDecoder(true))
 
-    def compress(stream: LazyList[Data]): LazyList[Data] = Lzw.compress(stream)
-    def decompress(stream: LazyList[Data]): LazyList[Data] = Lzw.decompress(stream)
+    override def compress(stream: LazyList[Data]): LazyList[Data] = Lzw.compress(stream)
+    override def decompress(stream: LazyList[Data]): LazyList[Data] = Lzw.decompress(stream)
 
   // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
   private def drive(engine: LzwEngine, stream: LazyList[Data]): LazyList[Data] =
