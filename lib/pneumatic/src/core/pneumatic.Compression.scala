@@ -38,8 +38,15 @@ import zephyrine.*
 trait Compression:
   type Self <: Compressor
 
-  def compress(stream: LazyList[Data]): LazyList[Data]
-  def decompress(stream: LazyList[Data]): LazyList[Data]
+  // The `LazyList` forms, driven through the same ducts as the streaming
+  // stages: adapt the chunk list to a pull endpoint, run it through the
+  // format's duct, and materialize one output chunk per refill — no staging
+  // buffer, and byte-for-byte agreement with the stream and whole-value forms.
+  def compress(stream: LazyList[Data]): LazyList[Data] =
+    Stream(stream.iterator).via(compressor()).toLazyList
+
+  def decompress(stream: LazyList[Data]): LazyList[Data] =
+    Stream(stream.iterator).via(decompressor()).toLazyList
 
   // Streaming stages for the same transformations, applied with
   // `stream.compress[Gzip]`/`stream.decompress[Gzip]` on a pull endpoint.

@@ -46,8 +46,8 @@ object Tests extends Suite(m"Pneumatic tests"):
   def run(): Unit =
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].to(List).map(_.to(List))
-      . assert(_ == List(List(31, -117, 8, 0, 0, 0, 0, 0, 0, -1), List(99, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, -56, -16, -118, -53, 9, 0, 0, 0)))
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].flatten.to(List)
+      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Gzip].to(List))
 
       test(m"Roundtrip compress/decompress a single block with GZip"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
@@ -105,8 +105,8 @@ object Tests extends Suite(m"Pneumatic tests"):
         Lzw.decompress(Lzw.compress(variedData, earlyChange = false), earlyChange = false)
       . assert(_.flatten == variedData.flatten)
       test(m"Compress a single block with Zlib"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to(List))
-      . assert(_ == List(List(120, -100, 98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0, 0, -26, 0, 89)))
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].flatten.to(List)
+      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Zlib].to(List))
 
       test(m"Roundtrip compress/decompress a single block with Zlib"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
@@ -114,11 +114,11 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Zlib"):
         longData.compress[Zlib].decompress[Zlib]
-      . assert: stream => stream === longData
+      . assert(_.flatten == longData.flatten)
 
       test(m"Compress a single block with Deflate"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].to(List).map(_.to(List))
-      . assert(_ == List(List(98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0)))
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].flatten.to(List)
+      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Deflate].to(List))
 
       test(m"Roundtrip compress/decompress a single block with Deflate"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
@@ -126,7 +126,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Roundtrip a long repetitive Deflate stream"):
         longData.compress[Deflate].decompress[Deflate]
-      . assert: stream => stream === longData
+      . assert(_.flatten == longData.flatten)
 
     suite(m"Pure DEFLATE implementation tests"):
       // On the JVM the formats run over `java.util.zip`, so the pure-Scala port (used on

@@ -33,9 +33,19 @@
 package gastronomy
 
 import anticipation.*
+import rudiments.*
+import vacuous.*
 
 // An incremental hash computation: feed bytes with `append`, then read the result
 // with `digest`. Implementations are supplied by `Hashing` providers.
 trait Digestion:
   def append(bytes: Data): Unit
+
+  // The windowed form: hash `count` bytes of `array` from `start`, so a streaming
+  // consumer can feed a reusable window without snapshotting it — hashing consumes
+  // its input synchronously and never retains it. The default copies the window;
+  // providers that can consume a slice in place override it.
+  def append(array: Array[Byte], start: Int, count: Int): Unit =
+    append(array.slice(start, start + count).immutable(using Unsafe))
+
   def digest(): Data

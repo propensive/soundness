@@ -264,11 +264,12 @@ object Blake3:
       pushStack(cv)
 
     def update(data: IArray[Byte]): Unit =
+      update(data.mutable(using Unsafe), 0, data.length)
+
+    def update(input: Array[Byte], start: Int, end: Int): Unit =
       // SIMD: AVX2 / AVX-512 backends process 4 / 8 / 16 chunks at a time here using interleaved
       //       state; the scalar path below handles one chunk per iteration.
-      val input = data.mutable(using Unsafe)
-      var pos = 0
-      val end = input.length
+      var pos = start
 
       while pos < end do
         if chunkState.len == ChunkLen then
@@ -299,6 +300,10 @@ object Blake3:
   def digestion(): Digestion = new Digestion:
     private val hasher: Hasher = Hasher(Iv, 0)
     def append(bytes: Data): Unit = hasher.update(bytes)
+
+    override def append(array: Array[Byte], start: Int, count: Int): Unit =
+      hasher.update(array, start, start + count)
+
     def digest(): Data = hasher.complete(OutLen)
 
   def hashOf(input: IArray[Byte], length: Int = OutLen): IArray[Byte] =

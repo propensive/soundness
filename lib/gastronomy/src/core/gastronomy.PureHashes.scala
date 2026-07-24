@@ -271,11 +271,13 @@ private[gastronomy] object PureHashes:
   final class Crc32 extends Digestion:
     private var value: Int = 0
 
-    def append(bytes: Data): Unit =
-      val data = bytes.mutable(using Unsafe)
+    def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
+
+    override def append(data: Array[Byte], start: Int, count: Int): Unit =
+      val end = start + count
       var c = ~value
-      var i = 0
-      while i < data.length do { c = Crc32.table((c ^ data(i)) & 0xff) ^ (c >>> 8); i += 1 }
+      var i = start
+      while i < end do { c = Crc32.table((c ^ data(i)) & 0xff) ^ (c >>> 8); i += 1 }
       value = ~c
 
     def digest(): Data =
@@ -308,29 +310,30 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
   protected def bitLengthBytes: Int
   protected def writeLength(target: Array[Byte], offset: Int, bits: Long): Unit
 
-  def append(bytes: Data): Unit =
-    val data = bytes.mutable(using Unsafe)
-    var offset = 0
-    val length = data.length
-    totalBytes += length
+  def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
+
+  override def append(data: Array[Byte], start: Int, count: Int): Unit =
+    var offset = start
+    val end = start + count
+    totalBytes += count
 
     // Complete a partially-filled block first.
     if filled > 0 then
-      val take = Math.min(blockSize - filled, length)
-      System.arraycopy(data, 0, block, filled, take)
+      val take = Math.min(blockSize - filled, end - offset)
+      System.arraycopy(data, offset, block, filled, take)
       filled += take
       offset += take
       if filled == blockSize then { compress(block, 0); filled = 0 }
 
     // Process whole blocks straight from the input.
-    while length - offset >= blockSize do
+    while end - offset >= blockSize do
       compress(data, offset)
       offset += blockSize
 
     // Retain the remainder.
-    if offset < length then
-      System.arraycopy(data, offset, block, 0, length - offset)
-      filled = length - offset
+    if offset < end then
+      System.arraycopy(data, offset, block, 0, end - offset)
+      filled = end - offset
 
   def digest(): Data =
     val bits = totalBytes*8
