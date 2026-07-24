@@ -190,3 +190,68 @@ object Tests extends Suite(m"Gastronomy tests"):
         test(m"pure MD5 matches the JDK, size=$size"):
           pureHex(PureHashes.md5)
         . assert(_ == jdk(t"MD5"))
+
+    suite(m"Windowed digestion"):
+      val payload: Data = IArray.tabulate(200001)(i => ((i*31 + 7) & 0xff).toByte)
+
+      // Feed the windowed `append` deliberately misaligned slices of a buffer with a
+      // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
+      def windowed(digestion: Digestion): Text =
+        val array = new Array[Byte](payload.length + 13)
+        java.lang.System.arraycopy(payload.mutable(using Unsafe), 0, array, 13, payload.length)
+        var offset = 13
+        var step = 1
+
+        while offset < array.length do
+          val count = step.min(array.length - offset)
+          digestion.append(array, offset, count)
+          offset += count
+          step = step*3 + 1
+
+        digestion.digest().serialize[Hex]
+
+      def whole(digestion: Digestion): Text =
+        digestion.append(payload)
+        digestion.digest().serialize[Hex]
+
+      test(m"windowed pure SHA-256 matches whole-value append"):
+        windowed(PureHashes.sha2(256))
+      . assert(_ == whole(PureHashes.sha2(256)))
+
+      test(m"windowed pure SHA-512 matches whole-value append"):
+        windowed(PureHashes.sha2(512))
+      . assert(_ == whole(PureHashes.sha2(512)))
+
+      test(m"windowed pure SHA-1 matches whole-value append"):
+        windowed(PureHashes.sha1)
+      . assert(_ == whole(PureHashes.sha1))
+
+      test(m"windowed pure MD5 matches whole-value append"):
+        windowed(PureHashes.md5)
+      . assert(_ == whole(PureHashes.md5))
+
+      test(m"windowed pure CRC-32 matches whole-value append"):
+        windowed(PureHashes.crc32)
+      . assert(_ == whole(PureHashes.crc32))
+
+      test(m"windowed BLAKE3 matches whole-value append"):
+        windowed(Blake3.digestion())
+      . assert(_ == whole(Blake3.digestion()))
+
+      test(m"windowed JDK SHA-256 matches whole-value append"):
+        windowed(JavaStdlibHashing.sha2(256).digestion())
+      . assert(_ == whole(JavaStdlibHashing.sha2(256).digestion()))
+
+      test(m"windowed JDK CRC-32 matches whole-value append"):
+        windowed(JavaStdlibHashing.crc32.digestion())
+      . assert(_ == whole(JavaStdlibHashing.crc32.digestion()))
+
+      val chunked: LazyList[Data] = payload.grouped(7777).to(LazyList)
+
+      test(m"a chunked stream's checksum matches the whole-value digest"):
+        chunked.checksum[Sha2[256]].serialize[Hex]
+      . assert(_ == payload.digest[Sha2[256]].serialize[Hex])
+
+      test(m"a whole value's checksum matches its digest"):
+        payload.checksum[Sha2[256]].serialize[Hex]
+      . assert(_ == payload.digest[Sha2[256]].serialize[Hex])

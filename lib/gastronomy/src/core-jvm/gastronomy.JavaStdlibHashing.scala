@@ -54,6 +54,9 @@ object JavaStdlibHashing extends Hashing:
       private val state: juz.CRC32 = juz.CRC32()
       def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
 
+      override def append(array: Array[Byte], start: Int, count: Int): Unit =
+        state.update(array, start, count)
+
       def digest(): Data =
         val value = state.getValue()
         IArray[Byte]((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
@@ -62,4 +65,8 @@ object JavaStdlibHashing extends Hashing:
     def digestion(): Digestion = new Digestion:
       private val md: js.MessageDigest = js.MessageDigest.getInstance(name.s).nn
       def append(bytes: Data): Unit = md.update(bytes.mutable(using Unsafe))
+
+      override def append(array: Array[Byte], start: Int, count: Int): Unit =
+        md.update(array, start, count)
+
       def digest(): Data = md.digest.nn.immutable(using Unsafe)

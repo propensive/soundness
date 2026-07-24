@@ -152,9 +152,7 @@ extension [source: Streamable by Data over Credit](source: source)
 
     val digester = Digester: digestion =>
       source.source[Data].sweep: (storage, start, count) =>
-        digestion.append:
-          Data.build(count): array =>
-            System.arraycopy(storage.asInstanceOf[Array[Byte]], start, array, 0, count)
+        digestion.append(storage.asInstanceOf[Array[Byte]], start, count)
 
     digester.apply
 
