@@ -181,6 +181,13 @@ extension [self](self: self)(using traversable: self is Traversable)
       start <= last && part.indices.forall: offset =>
         whole(start + offset) == part(offset)
 
+// The `Text` fast path of the generic `subsumes` above (an overload sibling, so the
+// receiver selects it): substring containment through `String.indexOf`, with no
+// traversal and no interim collections — this sits on hot per-record validation
+// paths, such as checking every archive entry name against a plane's rules.
+extension (text: Text)
+  def subsumes(subsequence: Text): Boolean = text.s.contains(subsequence.s)
+
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim
