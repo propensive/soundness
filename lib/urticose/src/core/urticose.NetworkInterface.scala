@@ -53,7 +53,7 @@ object NetworkInterface:
     def recur(interfaces: ju.Enumeration[jn.NetworkInterface], acc: List[NetworkInterface])
     :   List[NetworkInterface] =
 
-      if !interfaces.hasMoreElements then List.of(acc.stdlib.reverse)
+      if !interfaces.hasMoreElements then acc.reverse
       else recur(interfaces, read(interfaces.nextElement.nn) :: acc)
 
     Optional(jn.NetworkInterface.getNetworkInterfaces).lay(Nil)(recur(_, Nil))

@@ -133,7 +133,7 @@ object CHeaderDialect extends Dialect:
           (List(word), more)
 
         case _ =>
-          (List.of(acc.stdlib.reverse), todo)
+          (acc.reverse, todo)
 
     def stars(todo: List[String], count: Int): (Int, List[String]) = todo match
       case "*" :: more => stars(more, count + 1)
@@ -287,10 +287,10 @@ object CHeaderDialect extends Dialect:
 
     tokens match
       case ")" :: rest =>
-        (List.of(acc.stdlib.reverse), rest)
+        (acc.reverse, rest)
 
       case "void" :: ")" :: rest =>
-        (List.of(acc.stdlib.reverse), rest)
+        (acc.reverse, rest)
 
       case _ =>
         val (kind, _, rest) = declarator(tokens)
@@ -298,7 +298,7 @@ object CHeaderDialect extends Dialect:
         rest match
           case "," :: more => parameters(more, kind :: acc)
           case ")" :: more => (List.of((kind :: acc).reverse), more)
-          case _           => (List.of(acc.stdlib.reverse), skipStatement(rest))
+          case _           => (acc.reverse, skipStatement(rest))
 
   // Resolves every `typedef` alias appearing in a type, transitively.
   private def resolve

@@ -33,6 +33,7 @@
 package octogenarian
 
 import anticipation.*
+import rudiments.*
 import dissonance.*
 import gossamer.*
 import kaleidoscope.*
@@ -81,7 +82,7 @@ object Patch:
 
       def closeHunk(): State =
         hunk.lay(this): h =>
-          copy(hunks = h.copy(edits = List.of(edits.stdlib.reverse)) :: hunks, hunk = Unset, edits = Nil)
+          copy(hunks = h.copy(edits = edits.reverse) :: hunks, hunk = Unset, edits = Nil)
 
       def push(edit: Edit[Text]): State = copy(edits = edit :: edits)
 
@@ -153,7 +154,7 @@ object Patch:
       ( finalState.oldPath,
         finalState.newPath,
         finalState.changeKind,
-        List.of(finalState.hunks.stdlib.reverse) )
+        finalState.hunks.reverse )
 
 
 case class Patch(files: List[FileDiff])

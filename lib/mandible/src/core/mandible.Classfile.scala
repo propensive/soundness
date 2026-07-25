@@ -109,7 +109,7 @@ class Classfile(data: Data):
       :   List[Bytecode.Instruction] =
 
         todo match
-          case Nil => List.of(done.stdlib.reverse)
+          case Nil => done.reverse
 
           case next :: todo =>
             next match

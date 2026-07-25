@@ -204,7 +204,7 @@ package columnar:
 
         recur(0, 0, 0, Nil)
 
-      lines.to(IndexedSeq).bind(format(_).stdlib.reverse)
+      lines.to(IndexedSeq).bind(format(_).reverse)
 
   object ParagraphOrBreak extends Columnar:
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)

@@ -129,7 +129,7 @@ object WitDialect extends Dialect:
 
     tokens match
       case ">" :: rest =>
-        (List.of(acc.stdlib.reverse), rest)
+        (acc.reverse, rest)
 
       case _ =>
         val (arg, rest) = typeOf(tokens)
@@ -137,7 +137,7 @@ object WitDialect extends Dialect:
         rest match
           case "," :: more => typeArguments(more, arg :: acc)
           case ">" :: more => (List.of((arg :: acc).reverse), more)
-          case _           => (List.of(acc.stdlib.reverse), skipTo(rest, t">"))
+          case _           => (acc.reverse, skipTo(rest, t">"))
 
   // Walks the top-level items, accumulating navigable types (records, and each interface's
   // functions) and `type` aliases.
@@ -342,7 +342,7 @@ object WitDialect extends Dialect:
 
     tokens match
       case ")" :: rest =>
-        (List.of(acc.stdlib.reverse), rest)
+        (acc.reverse, rest)
 
       case name :: ":" :: rest =>
         val (kind, after) = typeOf(rest)
@@ -350,13 +350,13 @@ object WitDialect extends Dialect:
         after match
           case "," :: more => params(more, kind :: acc)
           case ")" :: more => (List.of((kind :: acc).reverse), more)
-          case _           => (List.of(acc.stdlib.reverse), skipTo(after, t")"))
+          case _           => (acc.reverse, skipTo(after, t")"))
 
       case _ :: rest =>
         params(rest, acc)
 
       case Nil =>
-        (List.of(acc.stdlib.reverse), Nil)
+        (acc.reverse, Nil)
 
   // Resolves every `type` alias appearing in a type, transitively.
   private def resolve

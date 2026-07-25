@@ -82,7 +82,7 @@ object Coverage:
           recur(tail.dropWhile(!_.starts(t"\f")).tail, juncture :: junctures)
 
         case _ =>
-          List.of(junctures.stdlib.reverse)
+          junctures.reverse
 
     IArray.from(recur(lines.dropWhile(_.starts(t"#"))).stdlib)
 

@@ -36,6 +36,7 @@ import proscenium.compat.*
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // A minimal grammar for TypeScript declaration files: enough to read `interface` blocks of fields
@@ -96,7 +97,7 @@ object TypescriptDialect extends Dialect:
           union(rest, next :: acc)
 
         case _ =>
-          (List.of(acc.stdlib.reverse), todo)
+          (acc.reverse, todo)
 
     val (members, rest) = union(rest0, List(first))
     val result = if members.length == 1 then members.head else Foreign.Type.Union(members)
@@ -127,7 +128,7 @@ object TypescriptDialect extends Dialect:
 
     tokens match
       case ">" :: rest =>
-        (List.of(acc.stdlib.reverse), rest)
+        (acc.reverse, rest)
 
       case _ =>
         val (arg, rest) = typeOf(tokens)
@@ -179,7 +180,7 @@ object TypescriptDialect extends Dialect:
 
     tokens match
       case ")" :: rest =>
-        (List.of(acc.stdlib.reverse), rest)
+        (acc.reverse, rest)
 
       case name :: ":" :: rest =>
         val (kind, rest2) = typeOf(rest)
@@ -192,7 +193,7 @@ object TypescriptDialect extends Dialect:
         params(rest, acc)
 
       case Nil =>
-        (List.of(acc.stdlib.reverse), Nil)
+        (acc.reverse, Nil)
 
   private def semicolon(tokens: List[String]): List[String] = tokens match
     case ";" :: rest => rest

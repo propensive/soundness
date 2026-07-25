@@ -107,7 +107,7 @@ object Sse:
 
             case _ => raise(SseError(SseError.Reason.UnknownField))
 
-      Sse(event, List.of(data.stdlib.reverse), id, retry)
+      Sse(event, data.reverse, id, retry)
 
   given encodable: Sse is Encodable in Text =
     sse =>

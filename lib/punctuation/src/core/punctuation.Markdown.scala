@@ -166,7 +166,7 @@ object Markdown:
         nodes match
           case Nil =>
             if block then List.of(((TextNode("\n"): Html of Flow) :: done).reverse)
-            else List.of(done.stdlib.reverse)
+            else done.reverse
 
           case Layout.Paragraph(_, contents*) :: tail if tight =>
             val content = Fragment(contents.map(phrasing(_))*)
@@ -257,11 +257,11 @@ object Markdown:
 
         todo match
           case Nil =>
-            if current.nil then List.of(done.stdlib.reverse)
-            else recur(Nil, Nil, Markdown(Nil, current.stdlib.reverse*) :: done)
+            if current.nil then done.reverse
+            else recur(Nil, Nil, Markdown(Nil, current.reverse*) :: done)
 
           case Layout.ThematicBreak(_) :: more =>
-            recur(more, Nil, Markdown(Nil, current.stdlib.reverse*) :: done)
+            recur(more, Nil, Markdown(Nil, current.reverse*) :: done)
 
           case head :: more =>
             recur(more, head :: current, done)

@@ -132,7 +132,7 @@ object SvgParser:
     val ops = parsePathData(d)
     val id = elem.attributes.at(t"id").let(SvgId(_))
     val transforms = elem.attributes.at(t"transform").let(parseTransforms).or(Nil)
-    Outline(ops = List.of(ops.stdlib.reverse), id = id, transforms = transforms)
+    Outline(ops = ops.reverse, id = id, transforms = transforms)
 
 
   private def decodeSvgDef(elem: Element)

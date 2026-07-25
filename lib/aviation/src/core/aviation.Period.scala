@@ -54,7 +54,7 @@ object Period:
 
       @scala.annotation.tailrec
       def recur(current: point, acc: List[Period[point]]): List[Period[point]] =
-        if !order.gt(period.finish, current) then List.of(acc.stdlib.reverse) else
+        if !order.gt(period.finish, current) then acc.reverse else
           val next = current + length
 
           if !order.gt(next, current) || order.gt(next, period.finish)
