@@ -167,7 +167,7 @@ trait Cbor2:
             val wire: Text =
               discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
 
-            val discriminant: Text = variantNames.stdlib.getOrElse(wire, wire)
+            val discriminant: Text = variantNames.at(wire).or(wire)
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(cbor)
@@ -202,7 +202,7 @@ trait Cbor2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
+          discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
 
 object Cbor extends Cbor2, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an

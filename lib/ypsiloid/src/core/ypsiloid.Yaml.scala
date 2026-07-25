@@ -242,7 +242,7 @@ trait Yaml2:
 
             val resolved: Optional[Text] =
               discriminable.discriminate(yaml).let: wire =>
-                val discriminant = variantNames.stdlib.getOrElse(wire, wire)
+                val discriminant = variantNames.at(wire).or(wire)
                 if labels.has(discriminant) then discriminant else Unset
 
             resolved.let: discriminant =>
@@ -294,7 +294,7 @@ trait Yaml2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
+          discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-

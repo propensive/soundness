@@ -35,6 +35,8 @@ package monotonous
 import scala.caps
 
 import anticipation.*
+import rudiments.*
+import vacuous.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
@@ -315,4 +317,4 @@ case class Alphabet[encoding <: Serialization]
 
     caps.unsafe.unsafeAssumePure:
       IArray.tabulate(max + 1): index =>
-        inverse.stdlib.getOrElse(index.toChar, -1)
+        inverse.at(index.toChar).or(-1)

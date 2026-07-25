@@ -376,7 +376,7 @@ trait Json2 extends Json3:
               val wire: Text = discriminable.discriminate(json).or:
                 focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
 
-              val discriminant: Text = variantNames.stdlib.getOrElse(wire, wire)
+              val discriminant: Text = variantNames.at(wire).or(wire)
 
               // The variant decodes the whole value for the internal-field
               // shape (its tag is simply skipped as an unknown key — no need
@@ -443,7 +443,7 @@ trait Json2 extends Json3:
 
                     // The variant re-reads the whole object, skipping the
                     // tag as an unknown key.
-                    delegate(variantNames.stdlib.getOrElse(wire, wire)):
+                    delegate(variantNames.at(wire).or(wire)):
                       [variant <: derivation] => context => context.parse(reader)
 
           case wrapper: Json.DiscriminantWrapper[?] =>
@@ -458,7 +458,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.key().or(abort(JsonError(Reason.Absent)))
 
                     val result =
-                      delegate(variantNames.stdlib.getOrElse(wire, wire)):
+                      delegate(variantNames.at(wire).or(wire)):
                         [variant <: derivation] => context => context.parse(reader)
 
                     // A wrapper is a single-key object; anything more means
@@ -477,7 +477,7 @@ trait Json2 extends Json3:
                     val wire: Text = reader.discriminant(envelope.tagField).or:
                       abort(JsonError(Reason.Absent))
 
-                    val name = variantNames.stdlib.getOrElse(wire, wire)
+                    val name = variantNames.at(wire).or(wire)
                     reader.openObject()
                     var result: Optional[derivation] = Unset
                     var continue = true
@@ -552,7 +552,7 @@ trait Json2 extends Json3:
 
           variant(value): [variant <: derivation] =>
             value =>
-              discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
+              discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
 
 object Json extends Json2, Dynamic:
   // Controls how a `Json` value is serialized. `indent` is the whitespace unit per nesting level;

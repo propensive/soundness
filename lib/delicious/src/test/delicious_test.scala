@@ -262,17 +262,17 @@ object Tests extends Suite(m"Delicious Tests"):
       test(m"A styled rendering preserves the visible text"):
         val code = mark(t"code", Nil, t"List(1.5)")
         val typed = mark(t"type", List(t"tasty" -> stringPayload), t"printed")
-        SemanticMessage.parse(t"Tree: $code has type $typed").teletype(reifier).plain
+        delicious.teletype(SemanticMessage.parse(t"Tree: $code has type $typed"))(reifier).plain
       . assert(_ == t"Tree: List(1.5) has type java.lang.String")
 
       test(m"A code sample is syntax-highlighted, not plain"):
         val code = mark(t"code", Nil, t"val x = 42")
-        SemanticMessage.parse(t"code: $code").teletype(reifier)
+        delicious.teletype(SemanticMessage.parse(t"code: $code"))(reifier)
       . assert(_ != e"code: val x = 42")
 
       test(m"Compiler styling is stripped before highlighting"):
         val code = mark(t"code", Nil, t"${Esc}[33m1.5d${Esc}[0m")
-        SemanticMessage.parse(t"Tree: $code").teletype(reifier).plain
+        delicious.teletype(SemanticMessage.parse(t"Tree: $code"))(reifier).plain
       . assert(_ == t"Tree: 1.5d")
 
       // End-to-end through the embedded compiler. Feature-detecting: a compiler

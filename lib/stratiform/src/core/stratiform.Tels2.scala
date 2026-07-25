@@ -229,7 +229,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
         val array =
           contexts[derivation]():
             [field] => schematic =>
-              val keyword: Text = renames.stdlib.getOrElse(label, Tel.camelToKebab(label.s))
+              val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
 
               Tels.Field
                 ( schematic.polarity, schematic.repeatable, keyword, schematic.schema(), Unset )

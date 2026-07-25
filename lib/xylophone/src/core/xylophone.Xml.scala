@@ -538,7 +538,7 @@ object Xml extends Tag.Container
 
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
-                  val discriminant = variantNames.stdlib.getOrElse(wire, wire)
+                  val discriminant = variantNames.at(wire).or(wire)
                   if labels.has(discriminant) then discriminant else Unset
 
               resolved.let: discriminant =>
@@ -673,7 +673,7 @@ object Xml extends Tag.Container
         variant(value): [variant <: derivation] =>
           value =>
             val label = wisteria.label[Text]
-            discriminable.rewrite(variantNames.stdlib.getOrElse(label, label), contextual.encode(value))
+            discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
 
   // ── Direct parsing ─────────────────────────────────────────────────────
   //

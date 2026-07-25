@@ -231,7 +231,7 @@ trait Tel2 extends Tel3:
 
             contexts[derivation]():
               [field] => context =>
-                ( renames.stdlib.getOrElse(label, Tel.camelToKebab(label.s)).s,
+                ( renames.at(label).or(Tel.camelToKebab(label.s)).s,
                   context: Tel.Parsing,
                   default[Optional[field]]: Any )
           },
@@ -272,7 +272,7 @@ trait Tel2 extends Tel3:
 
               build[derivation]: [field] =>
                 ctx =>
-                  val keyword: Text = renames.stdlib.getOrElse(label, Tel.camelToKebab(label.s))
+                  val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
 
                   // Tag every error registered while decoding this field with its
                   // keyword path, so that under a `validate[Tel.Focus]` boundary the
@@ -322,7 +322,7 @@ trait Tel2 extends Tel3:
             provide[Tactic[TelError]]:
               provide[Tactic[VariantError]]:
                 val variant: Tel = Tel.make(telVal.childCompounds.head)
-                val variantKeyword: Text = labels.stdlib.getOrElse(variant.keyword, variant.keyword)
+                val variantKeyword: Text = labels.at(variant.keyword).or(variant.keyword)
 
                 delegate(variantKeyword): [variant <: derivation] =>
                   ctx => ctx.decoded(variant)
@@ -348,7 +348,7 @@ trait Tel2 extends Tel3:
           fields(value): [field] =>
             fieldValue =>
               val encoded = contextual.encode(fieldValue)
-              val keyword = renames.stdlib.getOrElse(label, Tel.camelToKebab(label.s))
+              val keyword = renames.at(label).or(Tel.camelToKebab(label.s))
 
               encoded.subtree match
                 case c: Tel.Compound =>

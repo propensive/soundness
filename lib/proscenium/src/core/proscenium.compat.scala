@@ -36,7 +36,7 @@ import scala.math
 
 import scala.collection.immutable as sci
 
-import proscenium.{List, Map, Set, Progression}
+import proscenium.{List, Map, Set, Progression, Series}
 
 // MIGRATION SHIMS — temporarily restore the stdlib surface of the opaque `Set` so call sites
 // compile unchanged, one `import proscenium.compat.*` per file. Each shim is an independently
@@ -278,3 +278,91 @@ extension [element](lazyList: Progression[element])
 
   inline def filterNot(predicate: element => Boolean): Progression[element] =
     Progression.of(lazyList.stdlib.filterNot(predicate))
+
+// MIGRATION SHIMS for the opaque `Series` (the blessed `Vector`), giving it the same
+// transitional surface as `List`, with the same deliberate omissions (`getOrElse`-style
+// by-name defaults, `++`/`contains`, `to(...)`); `:::` is the concatenation shim, matching
+// the `List` block, and `:+`/`+:` cover the ends a `Vector` amortizes.
+extension [element](series: Series[element])
+  inline def filterNot(predicate: element => Boolean): Series[element] =
+    Series.of(series.stdlib.filterNot(predicate))
+
+  inline def forall(predicate: element => Boolean): Boolean = series.stdlib.forall(predicate)
+  inline def count(predicate: element => Boolean): Int = series.stdlib.count(predicate)
+  inline def find(predicate: element => Boolean): Option[element] = series.stdlib.find(predicate)
+
+  inline def collect[element2](lambda: PartialFunction[element, element2]): Series[element2] =
+    Series.of(series.stdlib.collect(lambda))
+
+  inline def collectFirst[element2](lambda: PartialFunction[element, element2]): Option[element2] =
+    series.stdlib.collectFirst(lambda)
+
+  inline def foldLeft[state](initial: state)(lambda: (state, element) => state): state =
+    series.stdlib.foldLeft(initial)(lambda)
+
+  inline def foldRight[state](initial: state)(lambda: (element, state) => state): state =
+    series.stdlib.foldRight(initial)(lambda)
+
+  inline def zipWithIndex: Series[(element, Int)] = Series.of(series.stdlib.zipWithIndex)
+  inline def head: element = series.stdlib.head
+  inline def headOption: Option[element] = series.stdlib.headOption
+  inline def last: element = series.stdlib.last
+  inline def lastOption: Option[element] = series.stdlib.lastOption
+  inline def tail: Series[element] = Series.of(series.stdlib.tail)
+  inline def init: Series[element] = Series.of(series.stdlib.init)
+  inline def take(count: Int): Series[element] = Series.of(series.stdlib.take(count))
+  inline def drop(count: Int): Series[element] = Series.of(series.stdlib.drop(count))
+  inline def takeRight(count: Int): Series[element] = Series.of(series.stdlib.takeRight(count))
+  inline def dropRight(count: Int): Series[element] = Series.of(series.stdlib.dropRight(count))
+
+  inline def takeWhile(predicate: element => Boolean): Series[element] =
+    Series.of(series.stdlib.takeWhile(predicate))
+
+  inline def dropWhile(predicate: element => Boolean): Series[element] =
+    Series.of(series.stdlib.dropWhile(predicate))
+
+  inline def span(predicate: element => Boolean): (Series[element], Series[element]) =
+    val (left, right) = series.stdlib.span(predicate)
+    (Series.of(left), Series.of(right))
+
+  inline def splitAt(index: Int): (Series[element], Series[element]) =
+    val (left, right) = series.stdlib.splitAt(index)
+    (Series.of(left), Series.of(right))
+
+  inline def partition(predicate: element => Boolean): (Series[element], Series[element]) =
+    val (left, right) = series.stdlib.partition(predicate)
+    (Series.of(left), Series.of(right))
+
+  inline def isEmpty: Boolean = series.stdlib.isEmpty
+  inline def nonEmpty: Boolean = series.stdlib.nonEmpty
+  inline def length: Int = series.stdlib.length
+  inline def size: Int = series.stdlib.size
+  inline def mkString: String = series.stdlib.mkString
+  inline def mkString(separator: String): String = series.stdlib.mkString(separator)
+
+  inline def mkString(start: String, separator: String, end: String): String =
+    series.stdlib.mkString(start, separator, end)
+
+  inline def sorted(using math.Ordering[element]): Series[element] = Series.of(series.stdlib.sorted)
+  inline def toSet: Set[element] = Set.of(series.stdlib.toSet)
+  inline def toSeq: Seq[element] = series.stdlib
+  inline def toList: List[element] = List.of(series.stdlib.toList)
+  inline def iterator: Iterator[element] = series.stdlib.iterator
+  inline def indexOf(element: element): Int = series.stdlib.indexOf(element)
+  inline def indexWhere(predicate: element => Boolean): Int = series.stdlib.indexWhere(predicate)
+  inline def apply(index: Int): element = series.stdlib.apply(index)
+
+  inline def updated(index: Int, element2: element): Series[element] =
+    Series.of(series.stdlib.updated(index, element2))
+
+  inline def slice(from: Int, until: Int): Series[element] =
+    Series.of(series.stdlib.slice(from, until))
+
+  infix def ::: [element2 >: element](suffix: Series[element2]): Series[element2] =
+    Series.of(series.stdlib ++ suffix.stdlib)
+
+  inline infix def :+ [element2 >: element](element2Value: element2): Series[element2] =
+    Series.of(series.stdlib :+ element2Value)
+
+  inline infix def +: [element2 >: element](element2Value: element2): Series[element2] =
+    Series.of(element2Value +: series.stdlib)
