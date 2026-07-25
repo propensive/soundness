@@ -32,7 +32,10 @@
                                                                                                   */
 package anthology
 
+import proscenium.compat.*
+
 import anticipation.*
+import rudiments.*
 import gossamer.*
 import vacuous.*
 
@@ -64,11 +67,12 @@ object ApkManifest:
   :   Axml.Element =
 
     // Each requested runtime permission is a `<uses-permission android:name="…"/>` element.
-    val permissionElements = permissions.map: permission =>
-      Axml.Element
-        ( t"uses-permission",
-          List(android(t"name", nameAttr, Axml.Value.Str(permission))),
-          Nil )
+    val permissionElements: List[Axml.Element] = List.of:
+      permissions.stdlib.map: permission =>
+        Axml.Element
+          ( t"uses-permission",
+            List(android(t"name", nameAttr, Axml.Value.Str(permission))),
+            Nil )
 
     val launcher =
       Axml.Element
@@ -114,4 +118,4 @@ object ApkManifest:
           ( Axml.Attribute(Unset, t"package", Unset, Axml.Value.Str(packageName)),
             android(t"versionCode", ApkManifest.versionCode, Axml.Value.Num(versionCode)),
             android(t"versionName", ApkManifest.versionName, Axml.Value.Str(versionName)) ),
-        usesSdk :: permissionElements ++ List(application) )
+        usesSdk :: permissionElements ::: List(application) )

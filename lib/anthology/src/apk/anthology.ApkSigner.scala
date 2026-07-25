@@ -32,6 +32,10 @@
                                                                                                   */
 package anthology
 
+import scala.math
+
+import proscenium.compat.*
+
 import java.io as ji
 import java.security as js
 import java.security.cert as jsc
@@ -95,7 +99,7 @@ object ApkSigner:
   // Splits a byte range into 1 MiB chunks and returns each chunk's content digest, prefixed
   // per the v2 scheme (0xa5, then the chunk length).
   private def chunkDigests(data: Data, from: Int, until: Int): List[Data] =
-    val builder = List.newBuilder[Data]
+    val builder = scala.collection.immutable.List.newBuilder[Data]
     var offset = from
 
     while offset < until do
@@ -107,7 +111,7 @@ object ApkSigner:
       builder += sha256(prefixed)
       offset = end
 
-    builder.result()
+    List.of(builder.result())
 
   // Signs the finished, unsigned APK bytes with the RSA key and certificate loaded from the
   // keystore, returning the signed APK.
@@ -132,8 +136,8 @@ object ApkSigner:
     // end-of-central-directory record. The unsigned EOCD already points at `cdOffset` — which is
     // exactly where the signing block will begin — so it is digested as-is.
     val digests =
-      chunkDigests(unsigned, 0, cdOffset) ++
-        chunkDigests(unsigned, cdOffset, eocdOffset) ++
+      chunkDigests(unsigned, 0, cdOffset) :::
+        chunkDigests(unsigned, cdOffset, eocdOffset) :::
         chunkDigests(unsigned, eocdOffset, unsigned.length)
 
     val count = digests.length
