@@ -32,6 +32,8 @@
                                                                                                   */
 package mosquito
 
+import proscenium.compat.*
+
 import scala.math
 
 import scala.compiletime.*

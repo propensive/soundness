@@ -36,7 +36,7 @@ import scala.math
 
 import scala.collection.immutable as sci
 
-import proscenium.{List, Map, Set, Progression, Series}
+import proscenium.{List, Map, Set, Progression, Series, IArray}
 
 // MIGRATION SHIMS — temporarily restore the stdlib surface of the opaque `Set` so call sites
 // compile unchanged, one `import proscenium.compat.*` per file. Each shim is an independently
@@ -366,3 +366,73 @@ extension [element](series: Series[element])
 
   inline infix def +: [element2 >: element](element2Value: element2): Series[element2] =
     Series.of(element2Value +: series.stdlib)
+
+// MIGRATION SHIMS for the opaque `IArray`, following the same drain loop as the other
+// blessed types. Constructive operations take the `ClassTag` a JVM array's element type
+// demands; the stdlib's own `IArray` extensions supply the implementations through the
+// `stdlib` bridge.
+extension [element](iarray: IArray[element])
+  inline def apply(index: Int): element = iarray.stdlib(index)
+  inline def length: Int = iarray.stdlib.length
+  inline def size: Int = iarray.stdlib.size
+  inline def isEmpty: Boolean = iarray.stdlib.isEmpty
+  inline def nonEmpty: Boolean = iarray.stdlib.nonEmpty
+  inline def head: element = iarray.stdlib.head
+  inline def headOption: Option[element] = iarray.stdlib.headOption
+  inline def last: element = iarray.stdlib.last
+  inline def lastOption: Option[element] = iarray.stdlib.lastOption
+  inline def indices: Range = iarray.stdlib.indices
+  inline def iterator: Iterator[element] = iarray.stdlib.iterator
+  inline def count(predicate: element => Boolean): Int = iarray.stdlib.count(predicate)
+  inline def find(predicate: element => Boolean): Option[element] = iarray.stdlib.find(predicate)
+  inline def indexWhere(predicate: element => Boolean): Int = iarray.stdlib.indexWhere(predicate)
+
+  inline def foldLeft[state](initial: state)(lambda: (state, element) => state): state =
+    iarray.stdlib.foldLeft(initial)(lambda)
+
+  inline def mkString: String = iarray.stdlib.mkString
+  inline def mkString(separator: String): String = iarray.stdlib.mkString(separator)
+
+  inline def mkString(start: String, separator: String, end: String): String =
+    iarray.stdlib.mkString(start, separator, end)
+
+  inline def toSeq: Seq[element] = iarray.stdlib.toSeq
+  inline def toList: List[element] = List.of(iarray.stdlib.toList)
+  inline def toSet: Set[element] = Set.of(iarray.stdlib.toSet)
+
+  inline def map[element2: scala.reflect.ClassTag](lambda: element => element2)
+  :   IArray[element2] =
+    IArray.of(iarray.stdlib.map(lambda))
+
+  inline def flatMap[element2: scala.reflect.ClassTag](lambda: element => IterableOnce[element2])
+  :   IArray[element2] =
+    IArray.of(iarray.stdlib.flatMap(lambda))
+
+  inline def filter(predicate: element => Boolean)(using scala.reflect.ClassTag[element])
+  :   IArray[element] =
+    IArray.of(iarray.stdlib.filter(predicate))
+
+  inline def take(count: Int)(using scala.reflect.ClassTag[element]): IArray[element] =
+    IArray.of(iarray.stdlib.take(count))
+
+  inline def drop(count: Int)(using scala.reflect.ClassTag[element]): IArray[element] =
+    IArray.of(iarray.stdlib.drop(count))
+
+  inline def slice(from: Int, until: Int)(using scala.reflect.ClassTag[element])
+  :   IArray[element] =
+    IArray.of(iarray.stdlib.slice(from, until))
+
+  inline def reverse(using scala.reflect.ClassTag[element]): IArray[element] =
+    IArray.of(iarray.stdlib.reverse)
+
+  inline infix def ++ [element2 >: element: scala.reflect.ClassTag](suffix: IArray[element2])
+  :   IArray[element2] =
+    IArray.of(iarray.stdlib ++ suffix.stdlib)
+
+  inline def sameElements(that: IArray[element]): Boolean =
+    iarray.stdlib.sameElements(that.stdlib)
+
+  inline def sum(using math.Numeric[element]): element = iarray.stdlib.sum
+
+  inline def contains(element2: element): Boolean =
+    iarray.stdlib.toSeq.contains(element2)

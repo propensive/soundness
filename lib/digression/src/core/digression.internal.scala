@@ -58,4 +58,4 @@ object internal:
         "const", "float", "native", "super", "while" )
 
   def fqcn(context: Expr[StringContext]): Macro[Fqcn] =
-    abortive('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
+    abortive('{new Fqcn(IArray.of(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts.stdlib)}))})

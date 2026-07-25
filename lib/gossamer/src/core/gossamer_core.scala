@@ -32,6 +32,8 @@
                                                                                                   */
 package gossamer
 
+import proscenium.compat.*
+
 import scala.reflect
 
 import scala.compiletime

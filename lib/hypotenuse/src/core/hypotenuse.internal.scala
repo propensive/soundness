@@ -32,6 +32,8 @@
                                                                                                   */
 package hypotenuse
 
+import proscenium.compat.*
+
 import scala.{caps, math}
 
 import scala.language.experimental.genericNumberLiterals
@@ -504,21 +506,21 @@ object internal:
     inline def apply(inline byte: Byte): B64 = byte.toLong
 
     def apply(bytes: IArray[Byte], offset: Int = 0): B64 =
-      var b64: Long = (bytes(offset) & 0xFF).toLong
+      var b64: Long = (bytes.stdlib(offset) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(offset + 1) & 0xFF).toLong
+      b64 |= (bytes.stdlib(offset + 1) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(offset + 2) & 0xFF).toLong
+      b64 |= (bytes.stdlib(offset + 2) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(offset + 3) & 0xFF).toLong
+      b64 |= (bytes.stdlib(offset + 3) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(offset + 4) & 0xFF).toLong
+      b64 |= (bytes.stdlib(offset + 4) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(offset + 5) & 0xFF).toLong
+      b64 |= (bytes.stdlib(offset + 5) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(offset + 6) & 0xFF).toLong
+      b64 |= (bytes.stdlib(offset + 6) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(offset + 7) & 0xFF).toLong
+      b64 |= (bytes.stdlib(offset + 7) & 0xFF).toLong
 
       b64
 
@@ -533,13 +535,13 @@ object internal:
     inline def apply(inline byte: Byte): B32 = byte.toInt
 
     def apply(bytes: IArray[Byte], offset: Int = 0): B32 =
-      var b32: Int = (bytes(offset) & 0xFF)
+      var b32: Int = (bytes.stdlib(offset) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes(offset + 1) & 0xFF)
+      b32 |= (bytes.stdlib(offset + 1) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes(offset + 2) & 0xFF)
+      b32 |= (bytes.stdlib(offset + 2) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes(offset + 3) & 0xFF)
+      b32 |= (bytes.stdlib(offset + 3) & 0xFF)
 
       b32
 
@@ -556,9 +558,9 @@ object internal:
     inline def apply(inline byte: Byte): B16 = byte.toShort
 
     def apply(bytes: IArray[Byte], offset: Int = 0): B16 =
-      var b16: Int = (bytes(offset) & 0xFF)
+      var b16: Int = (bytes.stdlib(offset) & 0xFF)
       b16 <<= 8
-      b16 |= (bytes(offset + 1) & 0xFF)
+      b16 |= (bytes.stdlib(offset + 1) & 0xFF)
 
       b16.toShort
 

@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import proscenium.compat.*
+
 import scala.sys
 
 import scala.language.unsafeNulls

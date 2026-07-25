@@ -32,6 +32,8 @@
                                                                                                   */
 package gesticulate
 
+import proscenium.compat.*
+
 import scala.reflect.*
 
 import anticipation.*

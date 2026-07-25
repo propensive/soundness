@@ -429,7 +429,7 @@ extension (shortObject: Short.type)
   def apply(bits: B16): Short = bits.asInstanceOf[Short]
 
   @unexported
-  def apply(bytes: IArray[Byte]): Short = (((bytes(0) & 0xFF) << 8) | (bytes(1) & 0xff)).toShort
+  def apply(bytes: IArray[Byte]): Short = (((bytes.stdlib(0) & 0xFF) << 8) | (bytes.stdlib(1) & 0xff)).toShort
 
 extension (intObject: Int.type)
   @unexported
@@ -437,13 +437,13 @@ extension (intObject: Int.type)
 
   @unexported
   def apply(bytes: IArray[Byte]): Int =
-    var int: Int = (bytes(0) & 0xFF).toInt
+    var int: Int = (bytes.stdlib(0) & 0xFF).toInt
     int <<= 8
-    int |= (bytes(1) & 0xFF).toInt
+    int |= (bytes.stdlib(1) & 0xFF).toInt
     int <<= 8
-    int |= (bytes(2) & 0xFF).toInt
+    int |= (bytes.stdlib(2) & 0xFF).toInt
     int <<= 8
-    int |= (bytes(3) & 0xFF).toInt
+    int |= (bytes.stdlib(3) & 0xFF).toInt
 
     int
 
@@ -453,21 +453,21 @@ extension (longObject: Long.type)
 
   @unexported
   def apply(bytes: IArray[Byte]): Long =
-    var long: Long = (bytes(0) & 0xFF).toLong
+    var long: Long = (bytes.stdlib(0) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(1) & 0xFF).toLong
+    long |= (bytes.stdlib(1) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(2) & 0xFF).toLong
+    long |= (bytes.stdlib(2) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(3) & 0xFF).toLong
+    long |= (bytes.stdlib(3) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(4) & 0xFF).toLong
+    long |= (bytes.stdlib(4) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(5) & 0xFF).toLong
+    long |= (bytes.stdlib(5) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(6) & 0xFF).toLong
+    long |= (bytes.stdlib(6) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(7) & 0xFF).toLong
+    long |= (bytes.stdlib(7) & 0xFF).toLong
 
     long
 

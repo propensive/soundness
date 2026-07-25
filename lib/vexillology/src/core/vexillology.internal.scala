@@ -60,7 +60,7 @@ object internal:
 
       while (value != 0) do
         val position = jl.Long.numberOfTrailingZeros(value)
-        set += enumerable.values(position)
+        set += enumerable.values.stdlib(position)
         value &= value - 1
 
       set

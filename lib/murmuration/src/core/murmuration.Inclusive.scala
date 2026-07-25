@@ -58,7 +58,7 @@ object Inclusive extends Inclusive.Fallback:
       (collection, value) => collection.exists(_ == value)
 
   given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
-    (iarray, value) => iarray.exists(_ == value)
+    (iarray, value) => iarray.stdlib.exists(_ == value)
 
   // Opaque `Series` is no longer an `Iterable` subtype, so it needs its own instance.
   given series: [element] => Series[element] is Inclusive by element =

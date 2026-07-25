@@ -32,6 +32,8 @@
                                                                                                   */
 package gossamer
 
+import proscenium.compat.*
+
 import scala.collection.immutable.Seq
 
 import scala.collection.immutable.{List, Nil, ::}
@@ -171,27 +173,27 @@ object internal:
         def apply(text: Text): Ascii = text.sysData
         def single(operand: Byte): Ascii = IArray(operand)
         def fromChar(char: Char): Byte = char.toByte
-        def length(ascii: Ascii): Int = ascii.size
+        def length(ascii: Ascii): Int = ascii.stdlib.size
         def text(ascii: Ascii): Text = String(ascii.mutable(using Unsafe), "ASCII").nn.tt
-        def access(ascii: Ascii, index: Ordinal): Byte = ascii(index.n0)
+        def access(ascii: Ascii, index: Ordinal): Byte = ascii.stdlib(index.n0)
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
-        def size(ascii: Ascii): Int = ascii.length
+        def size(ascii: Ascii): Int = ascii.stdlib.length
 
-        def map(ascii: Ascii)(lambda: Byte => Byte): Ascii = ascii.map(lambda)
+        def map(ascii: Ascii)(lambda: Byte => Byte): Ascii = IArray.of(ascii.stdlib.map(lambda))
 
         def concat(left: Ascii, right: Ascii): Ascii =
-          IArray.build[Byte](left.length + right.length): array =>
+          IArray.build[Byte](left.stdlib.length + right.stdlib.length): array =>
             array.place(left, Prim)
-            array.place(right, left.length.z)
+            array.place(right, left.stdlib.length.z)
 
         def indexOf(ascii: Ascii, sub: Text, start: Ordinal): Optional[Ordinal] =
-          ascii.indexOfSlice(apply(sub)).puncture(-1).let(_.z)
+          ascii.stdlib.indexOfSlice(apply(sub).stdlib).puncture(-1).let(_.z)
 
         def show[value](value: value)(using show: Show[value]): Ascii =
           Ascii(show.text(value).sysData)
 
         def segment(ascii: Ascii, interval: Interval): Ascii =
-          ascii.slice(interval.start.n0, interval.limit.n0)
+          IArray.of(ascii.stdlib.slice(interval.start.n0, interval.limit.n0))
 
   def ascii(context: Expr[StringContext], parts: Expr[Seq[Ascii]]): Macro[Ascii] =
     val dynamicParts: List[Expr[Ascii]] = parts.absolve match
@@ -202,7 +204,7 @@ object internal:
         if char >= 128 then halt(824, m"$char is not a valid ASCII character")
         Expr[Byte](char.toByte)
 
-      '{Ascii(Data(${Varargs(bytes)}*))}
+      '{Ascii(Data(${Varargs(bytes.stdlib.toSeq)}*))}
 
     def recur(first: List[Expr[Ascii]], second: List[Expr[Ascii]], expr: Expr[Ascii]): Expr[Ascii] =
       first match

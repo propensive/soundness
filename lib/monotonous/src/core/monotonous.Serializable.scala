@@ -32,6 +32,8 @@
                                                                                                   */
 package monotonous
 
+import proscenium.compat.*
+
 import scala.caps
 
 import java.nio.charset.StandardCharsets

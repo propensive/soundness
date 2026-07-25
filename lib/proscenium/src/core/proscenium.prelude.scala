@@ -58,8 +58,8 @@ export scala.{Boolean, Byte, Char, Double, Float, Int, Long, Short}
 // terms alias the original objects directly and calls resolve against the originals.
 type Array[element] = scala.Array[element]
 val Array: scala.Array.type = scala.Array
-type IArray[+element] = scala.IArray[element]
-val IArray: scala.IArray.type = scala.IArray
+// `IArray` is the blessed opaque alias (proscenium.IArray); the raw stdlib form stays
+// reachable as `scala.IArray` for the boundary code that needs it.
 
 // Core data types and their extractors.
 export scala.{Either, Left, None, Option, Right, Some}

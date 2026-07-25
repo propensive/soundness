@@ -32,6 +32,8 @@
                                                                                                   */
 package mosquito
 
+import proscenium.compat.*
+
 import scala.annotation.targetName
 import scala.compiletime.*
 
@@ -47,7 +49,7 @@ import vacuous.*
 object internal:
   object Vector:
     def apply(tuple: Tuple): Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
-      new Vector(tuple.toIArray)
+      new Vector(IArray.of(tuple.toIArray))
 
     def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
       val array: Array[Any] = new Array(size)

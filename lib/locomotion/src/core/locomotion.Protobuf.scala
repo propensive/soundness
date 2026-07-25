@@ -587,7 +587,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      Map.from(pairs)
+      Map.from(pairs.stdlib.toSeq)
 
   object DecodableDerivation extends Derivable[Decodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -633,7 +633,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      Map.from(pairs)
+      Map.from(pairs.stdlib.toSeq)
 
 // A single Protocol Buffers wire value, tagged with its wire type — the `Form` of
 // `Encodable`/`Decodable in Protobuf`. `Repeated` carries every occurrence of a

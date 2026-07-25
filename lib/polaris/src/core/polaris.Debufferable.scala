@@ -32,6 +32,8 @@
                                                                                                   */
 package polaris
 
+import proscenium.compat.*
+
 import anticipation.*
 import hypotenuse.*
 import prepositional.*

@@ -104,7 +104,7 @@ object protointernal:
 
     val bytes = nibbles3.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List)
 
-    '{scala.IArray.from(${Expr(bytes.stdlib)})}
+    '{IArray.of(scala.IArray.from(${Expr(bytes.stdlib)}))}
 
   def parseU64(digits: Expr[String]): Macro[Long] = digits.value match
     case None         => '{JLong.parseUnsignedLong($digits)}

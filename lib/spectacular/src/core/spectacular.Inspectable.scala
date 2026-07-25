@@ -43,7 +43,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import denominative.*
 import prepositional.*
-import proscenium.compat.{mkString, head, tail}
+import proscenium.compat.{mkString, head, tail, isEmpty, nonEmpty, length}
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -205,7 +205,7 @@ object Inspectable extends Inspectable2:
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     iarray =>
-      iarray.zipWithIndex.map: (value, index) =>
+      iarray.stdlib.zipWithIndex.map: (value, index) =>
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         subscript+insp().text(value).s.tt
 

@@ -40,7 +40,7 @@ import anticipation.*
 import prepositional.*
 
 object Countable:
-  given iarray: [element] => IArray[element] is Countable = (iarray: IArray[element]) => iarray.length
+  given iarray: [element] => IArray[element] is Countable = (iarray: IArray[element]) => iarray.stdlib.length
   given int: Int is Countable = identity(_)
 
   given arrayBuffer: [element] => ArrayBuffer[element] is Countable:

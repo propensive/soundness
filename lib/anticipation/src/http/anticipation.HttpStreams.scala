@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import proscenium.compat.*
+
 object HttpStreams:
   // A minimal demand-aware pull protocol for HTTP message bodies: each call
   // to `next` produces at most `limit` bytes as one chunk, or `null` at the

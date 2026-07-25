@@ -32,6 +32,8 @@
                                                                                                   */
 package polysyllabic
 
+import proscenium.compat.*
+
 import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
@@ -69,7 +71,7 @@ object Hyphenation:
   // optional `\lefthyphenmin` / `\righthyphenmin` directives.
   def fromTex(content: Text): Hyphenation =
     val parsed = TexPatterns.parseFile(content)
-    apply(parsed.patterns, parsed.exceptions, parsed.leftMin, parsed.rightMin)
+    apply(parsed.patterns.stdlib.toSeq, parsed.exceptions.stdlib.toSeq, parsed.leftMin, parsed.rightMin)
 
   private[polysyllabic] def make
     ( patterns0:   Dictionary[IArray[Byte]],

@@ -42,8 +42,9 @@ object Segmentable:
   given indexedSeq: [element] => IndexedSeq[element] is Segmentable =
     (sequence, interval) => sequence.slice(interval.start.n0, interval.limit.n0)
 
-  given iarray: [element] => IArray[element] is Segmentable =
-    (iarray: IArray[element], interval: Interval) => iarray.slice(interval.start.n0, interval.limit.n0)
+  given iarray: [element: scala.reflect.ClassTag] => IArray[element] is Segmentable =
+    (iarray: IArray[element], interval: Interval) =>
+      IArray.of(iarray.stdlib.slice(interval.start.n0, interval.limit.n0))
 
   // Opaque `Series` is no longer an `IndexedSeq` subtype, so it needs its own instance.
   given series: [element] => Series[element] is Segmentable =

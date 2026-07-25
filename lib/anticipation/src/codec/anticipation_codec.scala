@@ -40,12 +40,12 @@ object Data:
   def build(count: Int)(lambda: Array[Byte] => Unit): Data =
     val array: Array[Byte] = new Array[Byte](count)
     lambda(array)
-    array.asInstanceOf[IArray[Byte]]
+    array.asInstanceOf[Data]
 
   def fill(count: Int)(lambda: Int => Byte): Data = build(count): array =>
     for index <- 0 until count do array(index) = lambda(index)
 
-type Data = scala.IArray[Byte]
+type Data = IArray[Byte]
 
 extension [encodable: Encodable in Data](value: encodable)
   def bytestream: Data = encodable.encode(value)

@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import anticipation.*

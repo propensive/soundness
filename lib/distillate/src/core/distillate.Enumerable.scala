@@ -32,6 +32,8 @@
                                                                                                   */
 package distillate
 
+import proscenium.compat.*
+
 import scala.reflect
 
 import scala.deriving.*
@@ -47,7 +49,7 @@ object Enumerable:
 
 trait Enumerable:
   type Self <: reflect.Enum
-  private lazy val valuesMap: Map[Text, Self] = values.indexBy(_.toString.tt)
+  private lazy val valuesMap: Map[Text, Self] = values.stdlib.toSeq.indexBy(_.toString.tt)
   val name: Text
   val values: IArray[Self]
 

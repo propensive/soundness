@@ -32,6 +32,8 @@
                                                                                                   */
 package xylophone
 
+import proscenium.compat.*
+
 import scala.language.dynamics
 
 import scala.annotation.*
@@ -76,7 +78,7 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
     while i < children.length do
       children(i) match
         case element: Element if !done && element.label == name.tt =>
-          buffer ++= replacement
+          buffer ++= replacement.stdlib.toSeq
           done = true
 
         case other =>
@@ -84,7 +86,7 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
 
       i += 1
 
-    if !done then buffer ++= replacement
+    if !done then buffer ++= replacement.stdlib.toSeq
     Element(label, attributes, IArray.from(buffer))
 
   case Fragment(node: Element) =>

@@ -32,6 +32,8 @@
                                                                                                   */
 package polysyllabic
 
+import proscenium.compat.*
+
 import scala.collection.immutable.IndexedSeq
 
 import scala.collection.mutable.ArrayBuffer

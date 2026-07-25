@@ -30,90 +30,50 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package turbulence
+package proscenium
 
-import proscenium.compat.*
+import scala.reflect.ClassTag
 
-import java.io as ji
+// The blessed immutable array: an opaque alias over the stdlib's `IArray`, so the runtime
+// representation stays a raw JVM array while the partial stdlib surface (`apply`, `head`,
+// `last`, …) is hidden behind the typeclass layer and the greppable `stdlib` bridge, exactly
+// like `List` and `Series`. Construction always needs a `ClassTag` (a JVM array is
+// element-typed), so every constructor takes one — including the `Convertible` instance that
+// serves `xs.to[IArray]`.
+//
+// Pattern support: `case IArray(a, b)` matches via `unapplySeq`.
+object IArray:
+  // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
+  // lambdas crashes the capture checker's boxer (boxDeeply assertion).
+  def of[element](iarray: scala.IArray[element]): IArray[element] =
+    iarray.asInstanceOf[IArray[element]]
 
-import scala.annotation.nowarn
+  def apply[element: ClassTag](elements: element*): IArray[element] =
+    of(scala.IArray(elements*))
 
-import anticipation.*
-import hellenism.*
-import hypotenuse.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
-import soundness.{invoke, dispose}
-import xenophile.*
+  def empty[element: ClassTag]: IArray[element] = of(scala.IArray.empty[element])
 
-// The WIT definitions the navigation below is typechecked against, and which the `invoke`
-// materializer consults (at its downstream expansion site) for module ids and resource methods.
-type WasiCliApi = Interface in Wit at "/turbulence/cli.wit"
-given wasiCliApi: WasiCliApi = Interface[Wit](cp"/turbulence/cli.wit")
+  def from[element: ClassTag](elements: IterableOnce[element]^): IArray[element] =
+    of(scala.IArray.from(elements))
 
-package stdios:
-  // A `Stdio` whose standard streams go through the WASI stream resources: each write obtains the
-  // stream handle (`get-stdout`/`get-stderr`), invokes its `blocking-write-and-flush` method, and
-  // disposes of the handle; reads do likewise with `get-stdin` and `blocking-read`. `inline`, so
-  // the `invoke`s expand at the downstream summoning site: the Wasm Component imports only
-  // materialize in code compiled for a Wasm target. Summoning it requires `wasiCliApi` (and this
-  // module's WIT resource) to be visible at that site.
-  //
-  // The per-site duplication the compiler warns about is the point: the instances must materialize
-  // at the downstream summoning site, and a WASI-linked application summons them once.
-  @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
-  inline given wasiStdio: (termcap0: Termcap) => Stdio =
-    def send(error: Boolean, data: Data): Unit =
-      val handle =
-        if error then Foreign["stderr", Wit].`get-stderr`.invoke[WitHandle of "output-stream"]
-        else Foreign["stdout", Wit].`get-stdout`.invoke[WitHandle of "output-stream"]
+  def fill[element: ClassTag](count: Int)(element: => element): IArray[element] =
+    of(scala.IArray.fill(count)(element))
 
-      val stream: Foreign of "output-stream" from Wit = handle
-      stream.`blocking-write-and-flush`(data).invoke[Unit]
-      handle.dispose()
+  def tabulate[element: ClassTag](count: Int)(lambda: Int => element): IArray[element] =
+    of(scala.IArray.tabulate(count)(lambda))
 
-    // Byte-level writes follow the same path. (The `PrintStream`s exist for `Stdio`'s API;
-    // `print`/`printErr` below bypass them, sending the text's UTF-8 bytes directly.)
-    def wasiStream(error: Boolean): ji.OutputStream = new ji.OutputStream:
-      def write(byte: Int): Unit = write(Array[Byte](byte.toByte), 0, 1)
+  def range(start: Int, end: Int): IArray[Int] = of(scala.IArray.range(start, end))
 
-      override def write(array: Array[Byte] | Null, offset: Int, length: Int): Unit =
-        if array != null && length > 0 then
-          val slice = java.util.Arrays.copyOfRange(array, offset, offset + length).nn
-          send(error, slice.immutable(using Unsafe))
+  def unapplySeq[element](iarray: IArray[element]): Option[Seq[element]] =
+    Some(iarray.stdlib.toSeq)
 
-    // Reads block until at least one byte is available; a closed stream (the `Err` arm of
-    // `blocking-read`'s result, raised by the decoder) is end-of-input.
-    def wasiInput(): ji.InputStream = new ji.InputStream:
-      def read(): Int =
-        val array = new Array[Byte](1)
-        if read(array, 0, 1) == -1 then -1 else array(0) & 0xff
+  extension [element](iarray: IArray[element])
+    inline def stdlib: scala.IArray[element] = iarray.asInstanceOf[scala.IArray[element]]
 
-      override def read(array: Array[Byte] | Null, offset: Int, length: Int): Int =
-        if array == null || length == 0 then 0 else
-          val handle = Foreign["stdin", Wit].`get-stdin`.invoke[WitHandle of "input-stream"]
-          val stream: Foreign of "input-stream" from Wit = handle
+  // The erasure of the opaque alias is the underlying JVM array, so the `ClassTag` is the
+  // element tag's array form; without this, summoning `ClassTag[IArray[element]]` outside
+  // `proscenium` fails (the alias is abstract there).
+  given classTag: [element] => (tag: ClassTag[element]) => ClassTag[IArray[element]] =
+    tag.wrap.asInstanceOf[ClassTag[IArray[element]]]
 
-          try
-            val data = stream.`blocking-read`(U64(length.toLong.bits)).invoke[Data]
-            var index = 0
-
-            while index < data.length do
-              array(offset + index) = data(index)
-              index += 1
-
-            if data.length == 0 then -1 else data.length
-          catch case error: WitError => -1
-          finally handle.dispose()
-
-    def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
-
-    new Stdio:
-      val termcap: Termcap = termcap0
-      val out: ji.PrintStream = ji.PrintStream(wasiStream(false), true)
-      val err: ji.PrintStream = ji.PrintStream(wasiStream(true), true)
-      val in: ji.InputStream = wasiInput()
-
-      override def print(text: Text): Unit = send(false, bytes(text))
-      override def printErr(text: Text): Unit = send(true, bytes(text))
+opaque type IArray[+element] = scala.IArray[element]

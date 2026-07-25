@@ -114,4 +114,4 @@ object internal:
 
       if parts.length == 2
       then result2.map { (groups: IArray[List[Text | Char] | Optional[Text | Char]]) => groups.head }.asInstanceOf[result]
-      else result2.map(Tuple.fromIArray(_)).asInstanceOf[result]
+      else result2.map(x => Tuple.fromIArray(x.stdlib)).asInstanceOf[result]

@@ -417,7 +417,7 @@ extension [element](array: Array[element])
     newArray.immutable(using Unsafe)
 
   inline def place(value: IArray[element], ordinal: Ordinal = Prim): Unit =
-    System.arraycopy(value.asInstanceOf[Array[element]], 0, array, ordinal.n0, value.length)
+    System.arraycopy(value.asInstanceOf[Array[element]], 0, array, ordinal.n0, value.stdlib.length)
 
 extension [key, value](map: sc.Map[key, value])
   inline def defines(key: key): Boolean = map.contains(key)

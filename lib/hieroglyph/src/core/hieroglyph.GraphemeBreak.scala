@@ -32,6 +32,8 @@
                                                                                                   */
 package hieroglyph
 
+import proscenium.compat.*
+
 
 import scala.caps
 

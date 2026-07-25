@@ -74,7 +74,7 @@ def evolve[element: ClassTag]
             val right = IArray.from(inserts.stdlib)
 
             val updates =
-              diff(Series.from(left), Series.from(right), _.value == _.value).edits.toList.map:
+              diff(Series.from(left.stdlib), Series.from(right.stdlib), _.value == _.value).edits.toList.map:
                 case Ins(_, value)    => value
                 case Del(index, _)    => left(index)
                 case Par(index, _, _) => left(index).add(iteration)

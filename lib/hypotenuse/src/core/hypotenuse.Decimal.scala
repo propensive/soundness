@@ -32,6 +32,8 @@
                                                                                                   */
 package hypotenuse
 
+import proscenium.compat.*
+
 import scala.util.FromDigits
 import scala.math
 

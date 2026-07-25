@@ -167,19 +167,19 @@ object internal:
 
           case head :: tail =>
             attributes(tail):
-              val boolean: Expr[Boolean] = pattern.attributes(head).s.absolve match
+              val boolean: Expr[Boolean] = Attributes.pick(pattern.attributes, head).s.absolve match
                 case "\u0000" =>
                   index += 1
                   types ::= TypeRepr.of[Text]
                   iterator.next()
-                  '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
+                  '{$array(${Expr(index)}) = Attributes.pick($scrutinee.attributes, ${Expr(head)}); true}
 
                 case text: Text =>
-                  '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
+                  '{Attributes.pick($scrutinee.attributes, ${Expr(head)}) == ${Expr(text)}}
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(pattern.attributes.toList.map(_(0)))('{true})
+        val attributesChecked = attributes(Attributes.toList(pattern.attributes).map(_(0)))('{true})
 
         val children = '{$scrutinee.children}
 
@@ -601,7 +601,7 @@ object internal:
         . iterator
 
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
-        case Fragment(children*) => children.flatMap(serialize(_))
+        case fragment: Fragment => fragment.nodes.flatMap(serialize(_))
 
         case Header(version, encoding, standalone, _) =>
           val encoding2: Expr[Optional[Text]] =
@@ -613,7 +613,7 @@ object internal:
           List('{Header(${Expr(version)}, $encoding2, $standalone2)})
 
         case Element(label, attributes, children) =>
-          val exprs = attributes.toList.map: (key, value) =>
+          val exprs = Attributes.toList(attributes).map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -629,7 +629,7 @@ object internal:
             val serialized = scala.collection.immutable.ArraySeq
             . unsafeWrapArray(children.asInstanceOf[Array[Node]]).flatMap(serialize(_)).toList
 
-            '{IArray(${Expr.ofList(serialized)}*)}
+            '{IArray.of(scala.IArray(${Expr.ofList(serialized)}*))}
 
           List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
 
@@ -773,7 +773,7 @@ object internal:
 
     '{$tag.node(Attributes.from(Map.from(${Expr.ofList(attributes)}.compact)))}.asExprOf[result]
 
-  opaque type Attributes <: IArray[String] = IArray[String]
+  opaque type Attributes = IArray[String]
 
   object Attributes:
     val empty: Attributes = IArray.empty[String]
@@ -825,6 +825,21 @@ object internal:
     // construction.
     private[xylophone] inline def storage(attrs: Attributes): Array[String] =
       attrs.asInstanceOf[Array[String]]
+
+    // The throwing lookup as a plain method: inside this file the opaque is transparent, so
+    // the `IArray` migration shims intercept the extension forms; internal call sites (and
+    // the quotes compiled here) go through this instead.
+    private[xylophone] def pick(attrs: Attributes, key: Text): Text =
+      val a = storage(attrs)
+      val keyStr: String = key.s
+      val n = a.length
+      var i = 0
+
+      while i < n do
+        if a(i) == keyStr then return a(i + 1).asInstanceOf[Text]
+        i += 2
+
+      throw new NoSuchElementException(s"key not found: $key")
 
     extension (attrs: Attributes)
       inline def size: Int = attrs.length/2

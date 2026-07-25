@@ -32,6 +32,8 @@
                                                                                                   */
 package capricious
 
+import proscenium.compat.*
+
 import scala.math
 
 import scala.language.experimental.genericNumberLiterals
@@ -69,7 +71,7 @@ package randomization:
     su.Random(ju.Random(seed.long))
 
   given secureSeededRandomization: (seed: Seed) => Randomization = () =>
-    su.Random(js.SecureRandom(seed.value.to(Array)))
+    su.Random(js.SecureRandom(seed.value.stdlib.toArray))
 
 def stochastic[result](using randomization: Randomization)(block: Random ?=> result): result =
   block(using new Random(randomization.initialize()))

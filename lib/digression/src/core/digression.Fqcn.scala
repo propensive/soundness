@@ -32,6 +32,8 @@
                                                                                                   */
 package digression
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import prepositional.*
@@ -44,7 +46,7 @@ object Fqcn:
       char == '_' || char == '$'
 
   def apply(name: Text): Fqcn raises FqcnError =
-    val parts = scala.IArray.from(name.s.split("\\.").nn.iterator.map(_.nn))
+    val parts = IArray.of(scala.IArray.from(name.s.split("\\.").nn.iterator.map(_.nn)))
 
     parts.each: part =>
       if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))

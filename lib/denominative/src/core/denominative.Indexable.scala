@@ -48,9 +48,9 @@ object Indexable:
     type Result = element
 
     def contains(array: IArray[element], index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < array.length
+      index.n0 >= 0 && index.n0 < array.stdlib.length
 
-    def access(array: IArray[element], index: Ordinal): Result = array(index.n0)
+    def access(array: IArray[element], index: Ordinal): Result = array.stdlib(index.n0)
 
   given sequence: [element] => IndexedSeq[element] is Indexable:
     type Self = IndexedSeq[element]

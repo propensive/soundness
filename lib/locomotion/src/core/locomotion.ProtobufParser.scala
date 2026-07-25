@@ -32,6 +32,8 @@
                                                                                                   */
 package locomotion
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -57,7 +59,7 @@ class ProtobufParser(data: Data):
     while continue do
       if pos >= data.length then abort(ProtobufError(Reason.Truncated(pos)))
       if shift >= 70 then abort(ProtobufError(Reason.MalformedVarint(start)))
-      val byte = data(pos) & 0xff
+      val byte = data.stdlib(pos) & 0xff
       pos += 1
       // The 10th byte (shift == 63) may only contribute bit 63; any higher bit set
       // means the value does not fit in 64 bits.
@@ -74,7 +76,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 4 do
-      result |= (data(pos + i) & 0xff) << (i*8)
+      result |= (data.stdlib(pos + i) & 0xff) << (i*8)
       i += 1
 
     pos += 4
@@ -86,7 +88,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 8 do
-      result |= (data(pos + i).toLong & 0xff) << (i*8)
+      result |= (data.stdlib(pos + i).toLong & 0xff) << (i*8)
       i += 1
 
     pos += 8
@@ -154,7 +156,7 @@ class ProtobufParser(data: Data):
     while continue do
       if pos >= boundary then abort(ProtobufError(Reason.Truncated(pos)))
       if shift >= 70 then abort(ProtobufError(Reason.MalformedVarint(start)))
-      val byte = data(pos) & 0xff
+      val byte = data.stdlib(pos) & 0xff
       pos += 1
 
       if shift == 63 && (byte & 0x7f) > 1 then abort(ProtobufError(Reason.Overflow(start)))
@@ -170,7 +172,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 4 do
-      result |= (data(pos + i) & 0xff) << (i*8)
+      result |= (data.stdlib(pos + i) & 0xff) << (i*8)
       i += 1
 
     pos += 4
@@ -182,7 +184,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 8 do
-      result |= (data(pos + i).toLong & 0xff) << (i*8)
+      result |= (data.stdlib(pos + i).toLong & 0xff) << (i*8)
       i += 1
 
     pos += 8

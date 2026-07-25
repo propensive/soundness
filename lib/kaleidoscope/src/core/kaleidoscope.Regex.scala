@@ -402,7 +402,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
         if !matcher.find(index) then None else
           scanner.nextStart = matcher.start + 1
           scanner.matchEnd = matcher.end
-          Some(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse))
+          Some(IArray.of(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))
 
       case _ =>
-        if !matcher.matches then None else Some(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse))
+        if !matcher.matches then None else Some(IArray.of(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))
