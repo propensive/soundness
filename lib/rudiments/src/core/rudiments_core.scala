@@ -167,6 +167,30 @@ extension [self](self: self)(using traversable: self is Traversable)
       case Some((_, index)) => index.z
       case None             => Unset
 
+  // Each element paired with its `Ordinal` position, in the source's own (stable) shape:
+  // the total counterpart of `zipWithIndex`.
+  def indexed[result]
+    ( using reshapable: self is murmuration.Reshapable.Stable
+                        by (traversable.Operand, Ordinal) to result )
+  :   result =
+
+    reshapable.reshape:
+      traversable.traverse(self).zipWithIndex.map { (element, index) => (element, index.z) }
+
+  // The smallest and greatest elements, `Unset` when empty: the total counterparts of
+  // `min`/`max` (and of `minOption`/`maxOption`, without the `Option` allocation).
+  def least(using ordering: math.Ordering[traversable.Operand])
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+    if iterator.isEmpty then Unset else iterator.min
+
+  def most(using ordering: math.Ordering[traversable.Operand])
+  :   Optional[traversable.Operand] =
+
+    val iterator = traversable.traverse(self)
+    if iterator.isEmpty then Unset else iterator.max
+
   transparent inline def each(lambda: Ordinal aka "ordinal" ?=> traversable.Operand => Unit)
   :   Unit =
     var ordinal: Ordinal = Prim

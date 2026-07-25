@@ -119,6 +119,32 @@ extension [self](self: self)(using traversable: self is Traversable)
   def fold[state](initial: state)(lambda: (state, traversable.Operand) => state): state =
     traversable.traverse(self).foldLeft(initial)(lambda)
 
+  // Flattens one level of nesting, rebuilding in the outer source's shape: the inner
+  // values may be any `Traversable`, so a `List[Set[element]]` flattens to `List[element]`.
+  def flat[element2, result]
+    ( using innerTraversable: traversable.Operand is Traversable by element2,
+            reshapable:       self is Reshapable by element2 to result )
+  :   result =
+
+    reshapable.reshape:
+      traversable.traverse(self).flatMap { element => innerTraversable.traverse(element) }
+
+  // The running accumulation (the stdlib's `scanLeft`): every intermediate state, initial
+  // state first, in the source's own (stable) shape.
+  def trace[state, result](initial: state)(lambda: (state, traversable.Operand) => state)
+    ( using reshapable: self is Reshapable.Stable by state to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).scanLeft(initial)(lambda))
+
+  // The contiguous run from `from` (inclusive) to `until` (exclusive), by position: the
+  // total counterpart of `slice`, empty when the bounds fall outside the source.
+  def window[result](from: Int, until: Int)
+    ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
+  :   result =
+
+    reshapable.reshape(traversable.traverse(self).slice(from, until))
+
   def zip[that, result](that: that)
     ( using thatTraversable: that is Traversable,
             reshapable:      self is Reshapable.Stable
