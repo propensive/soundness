@@ -98,7 +98,7 @@ object Lexis:
   // the previous non-blank line. A more deeply indented line continues its enclosing
   // expression, so it contributes no boundary.
   def lexemes(code: SourceCode): List[Lexeme] =
-    val builder = List.newBuilder[Lexeme]
+    val builder = scala.collection.immutable.List.newBuilder[Lexeme]
     builder += Lexeme.Start
 
     var previous: Optional[Int] = Unset
@@ -114,7 +114,7 @@ object Lexis:
         line.foreach: token =>
           lexeme(token).let(builder += _)
 
-    builder.result()
+    List.of(builder.result())
 
   // The completion prefix at `caret` — the identifier fragment touching it, `Unset` when the
   // caret does not follow an identifier character — and the reversed lexeme context that

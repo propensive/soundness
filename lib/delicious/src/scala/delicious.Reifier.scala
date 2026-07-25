@@ -60,7 +60,7 @@ object Reifier:
    *  so a sentinel can only appear as a complete type, never in constructor or
    *  prefix position. */
   def substitute(syntax: Syntax, placeholders: List[Placeholder]): Syntax =
-    val byId: Map[Int, Placeholder] = placeholders.map { placeholder => placeholder.id -> placeholder }.to(Map)
+    val byId: Map[Int, Placeholder] = Map.of(placeholders.stdlib.map { placeholder => placeholder.id -> placeholder }.toMap)
 
     def replace(text: Text): Optional[Syntax] =
       if text.s.length >= 2 && text.s.startsWith("\"") && text.s.endsWith("\"") then
@@ -123,7 +123,7 @@ class Reifier(classpath: LocalClasspath):
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
-    run.compileSources(List(SourceFile.virtual("<delicious>", "")))
+    run.compileSources(List(SourceFile.virtual("<delicious>", "")).stdlib)
 
     // Quote unpickling (which stenography's `TypeRepr.of` comparisons trigger)
     // expects the quote-cache context property that macro-expansion contexts
@@ -142,7 +142,7 @@ class Reifier(classpath: LocalClasspath):
         val unpickler =
           DottyUnpickler(NoAbstractFile, bytes, isBestEffortTasty = false, UnpickleMode.TypeTree)
 
-        unpickler.enter(Set.empty)
+        unpickler.enter(scala.collection.immutable.Set.empty)
         val tree = unpickler.tree
         tree.foreachSubTree { _ => () } // force trees and positions
 
