@@ -110,8 +110,9 @@ object SourceCode:
           val prefixLength = prefix.lay(0)(_.length)
           val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
 
-          val items = words.to(List).sortBy(_.s).map: word =>
-            Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
+          val items = List.of:
+            words.stdlib.toList.sortBy(_.s).map: word =>
+              Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
 
           val binding =
             found.expectation == prophesy.KeywordPattern.Expectation.TermBinding ||
@@ -506,7 +507,7 @@ object SourceCode:
           Completion
             ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
-      if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), items)
+      if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), List.of(items))
 
     catch case scala.util.control.NonFatal(_) => Unset
 
@@ -564,7 +565,7 @@ object SourceCode:
 
       val (run, _, _) =
         frontend(truncated, scalac, cp): context =>
-          context.setSetting(context.settings.YstopAfter, List("typer"))
+          context.setSetting(context.settings.YstopAfter, List("typer").stdlib)
 
       val unit = run.units.head
 

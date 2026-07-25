@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import fulminate.*
 import hypotenuse.*

@@ -32,6 +32,10 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
+import scala.caps
+
 import anticipation.*
 import prepositional.*
 import rudiments.*
@@ -61,7 +65,7 @@ object TarBody:
 // it retains: a body's memoized chunks are reclaimed with its entry.
 class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
   private val memo: scala.collection.mutable.ArrayBuffer[Data] =
-    scala.collection.mutable.ArrayBuffer.from(initial)
+    scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
 
   private var exhausted: Boolean = false
 

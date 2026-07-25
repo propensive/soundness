@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 

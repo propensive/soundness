@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import scala.collection.immutable as sci
+
 import scala.quoted.*
 
 import anticipation.*
@@ -90,7 +92,7 @@ object NativeInvoke:
       case Literal(StringConstant(string)) => string.tt
 
     def literal(term: Term): Text = strip(term).absolve match
-      case Apply(Ident("tt"), List(argument)) => stringOf(argument)
+      case Apply(Ident("tt"), sci.List(argument)) => stringOf(argument)
       case other                              => stringOf(other)
 
     def notCall: Nothing =
@@ -98,14 +100,14 @@ object NativeInvoke:
 
     // Peel to `Foreign.make(<AST>)`; take its argument — the navigation expression AST.
     val expression = strip(self.asTerm.underlyingArgument).absolve match
-      case Apply(Select(_, "make"), List(argument)) => strip(argument)
+      case Apply(Select(_, "make"), sci.List(argument)) => strip(argument)
       case _                                        => notCall
 
     // The argument operands the navigation applied (`Expression.Apply`'s argument list); an empty
     // list for the bare selection of a zero-parameter function (`Expression.Select`, preferred
     // inside `inline` definitions).
     def argumentList(term: Term): List[Term] = strip(term) match
-      case Apply(_, List(varargs)) => strip(varargs).absolve match
+      case Apply(_, sci.List(varargs)) => strip(varargs).absolve match
         case Repeated(elements, _) => elements.map(strip)
         case _                     => Nil
 
@@ -113,7 +115,7 @@ object NativeInvoke:
         Nil
 
     val (selectNode, argumentTerms) = expression match
-      case Apply(Select(_, "apply"), List(node, args)) => (strip(node), argumentList(args))
+      case Apply(Select(_, "apply"), sci.List(node, args)) => (strip(node), argumentList(args))
       case _                                           => (expression, Nil)
 
     val (owner, function) = selectNode.absolve match

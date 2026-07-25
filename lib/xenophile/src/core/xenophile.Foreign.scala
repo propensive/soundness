@@ -80,7 +80,7 @@ object Foreign extends prophesy.Completable:
 
     import quotes.reflect.*
 
-    val members = Xenophile.refinements(receiver)
+    val members = Map.of(Xenophile.refinements(receiver))
 
     members.at(t"Topic").lay(Nil): topicRepr =>
       members.at(t"Origin").lay(Nil): originRepr =>

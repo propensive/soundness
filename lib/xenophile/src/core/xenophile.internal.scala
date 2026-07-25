@@ -137,7 +137,7 @@ object Xenophile:
 
     import quotes.reflect.*
 
-    refinements(self.asTerm.tpe.widen).at(t"Locus")
+    Map.of(refinements(self.asTerm.tpe.widen)).at(t"Locus")
 
   // Summons the `Interface` given for a source language and reads its definitions path (`Locus`)
   // as the singleton path type, or `Unset` when no such `Interface` (or no path) is in scope.
@@ -153,7 +153,7 @@ object Xenophile:
         case None => Unset
 
         case Some(found) =>
-          val members = refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen)
+          val members = Map.of(refinements(found.asTerm.tpe) ++ refinements(found.asTerm.tpe.widen))
           members.at(t"Locus")
 
   // The definitions path carried by a `Locus` singleton type.

@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 // Flags for opening a TAR archive: the compression wrapping the archive, if any. TAR has no
 // self-identifying magic for its compression layer at the API level, so the caller states it:
 // `path.open[Tar](TarFlag.Gzip)`.

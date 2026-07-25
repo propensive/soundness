@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import galilei.*

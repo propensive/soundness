@@ -32,6 +32,12 @@
                                                                                                   */
 package bitumen
 
+import rudiments.*
+
+import proscenium.compat.*
+
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -74,7 +80,7 @@ object Tarfile:
     entryIterator(Cursor[Data](stream))
 
   def from(consume stream: (Stream[Data] over Credit)^): Tarfile raises TarError =
-    Tarfile(read(stream).to(List))
+    Tarfile(read(stream).to(List).asInstanceOf[List[Tar.Entry]])
 
   // Pulls an entry's `size` bytes off the shared cursor in bounded chunks,
   // consuming the trailing block padding after the final one. The closure is
@@ -170,10 +176,10 @@ object Tarfile:
 
               header.typeFlag.toInt & 0xff match
                 case 'x' =>
-                  paxOverlay = paxOverlay ++ Pax.parse(takeData(cursor, size))
+                  paxOverlay = Map.of(paxOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
 
                 case 'g' =>
-                  globalOverlay = globalOverlay ++ Pax.parse(takeData(cursor, size))
+                  globalOverlay = Map.of(globalOverlay.stdlib ++ Pax.parse(takeData(cursor, size)).stdlib)
 
                 case 'L' =>
                   longName = TarHeader.decodeNulText(takeData(cursor, size))
@@ -194,11 +200,11 @@ object Tarfile:
                   val extSegments = readSparseExtensions(cursor, isExtended)
                   val data = takeData(cursor, size)
 
-                  val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
+                  val allSegments = (inlineSegments ::: extSegments).filter(_.length > 0)
 
                   val extras: Map[Text, Text] =
-                    (globalOverlay ++ paxOverlay).filter: (k, _) =>
-                      !structuralPaxKeys.contains(k)
+                    Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                      !structuralPaxKeys.has(k)
 
                   lookahead =
                     Tar.Entry.Sparse
@@ -210,8 +216,8 @@ object Tarfile:
                   val path = decodePath(nameText)
 
                   val extras: Map[Text, Text] =
-                    (globalOverlay ++ paxOverlay).filter: (k, _) =>
-                      !structuralPaxKeys.contains(k)
+                    Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                      !structuralPaxKeys.has(k)
 
                   // The body pulls off the shared cursor; advancing to the
                   // next entry drains whatever of it remains unread.
@@ -227,8 +233,8 @@ object Tarfile:
                   val path = decodePath(nameText)
 
                   val extras: Map[Text, Text] =
-                    (globalOverlay ++ paxOverlay).filter: (k, _) =>
-                      !structuralPaxKeys.contains(k)
+                    Map.of(globalOverlay.stdlib ++ paxOverlay.stdlib).filter: (k, _) =>
+                      !structuralPaxKeys.has(k)
 
                   lookahead =
                     buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras,
@@ -304,7 +310,7 @@ object Tarfile:
     if allZero then 0L else TarHeader.decodeOctal(data, t"sparse.field").long
 
   private def readInlineSparseMap(headerBlock: Data): List[SparseSegment] raises TarError =
-    val builder = List.newBuilder[SparseSegment]
+    val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
     var pos = 386
     var i = 0
 
@@ -316,7 +322,7 @@ object Tarfile:
       pos = pos + 24
       i = i + 1
 
-    builder.result()
+    List.of(builder.result())
 
   private def readSparseExtensions(cursor: Cursor[Data, {}]^, hasMore: Boolean)
   :   List[SparseSegment] raises TarError =
@@ -329,7 +335,7 @@ object Tarfile:
         Nil
       else
         val head = block.vouch
-        val builder = List.newBuilder[SparseSegment]
+        val builder = scala.collection.immutable.List.newBuilder[SparseSegment]
         var pos = 0
         var i = 0
 
@@ -342,7 +348,7 @@ object Tarfile:
           i = i + 1
 
         val moreExtended = head(504) != 0.toByte
-        builder.result() ++ readSparseExtensions(cursor, moreExtended)
+        List.of(builder.result()) ::: readSparseExtensions(cursor, moreExtended)
 
   private def resolveName
     ( header:        TarHeader,
@@ -416,12 +422,12 @@ object Tarfile:
 
     val paxPart: Iterator[Data] =
       if records.nil then Iterator.empty
-      else Tar.Entry.Pax(Pax.records(records)).serialize
+      else Tar.Entry.Pax(Pax.records(records.stdlib)).serialize
 
     longNamePart ++ paxPart
 
   private def paxRecordsFor(entry: Tar.Entry): List[(Text, Text)] =
-    val builder = List.newBuilder[(Text, Text)]
+    val builder = scala.collection.immutable.List.newBuilder[(Text, Text)]
     if entry.entryName.in[Data].length > 100 then builder += ((t"path", entry.entryName))
 
     entry.link.let: link =>
@@ -436,9 +442,9 @@ object Tarfile:
       if name.in[Data].length > 32 then builder += ((t"gname", name))
 
     paxOf(entry).foreach: (k, v) =>
-      if !structuralPaxKeys.contains(k) then builder += ((k, v))
+      if !structuralPaxKeys.has(k) then builder += ((k, v))
 
-    builder.result()
+    List.of(builder.result())
 
   private def userAndGroup(entry: Tar.Entry): (UnixUser, UnixGroup) = entry match
     case f: Tar.Entry.File         => (f.user, f.group)

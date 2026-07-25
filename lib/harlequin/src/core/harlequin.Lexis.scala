@@ -32,6 +32,8 @@
                                                                                                   */
 package harlequin
 
+import proscenium.compat.*
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -104,14 +106,14 @@ object Lexis:
     var previous: Optional[Int] = Unset
 
     code.lines.foreach: line =>
-      if line.exists(_.accent != Accent.Unparsed) then
-        val indent = line.head.pipe: token =>
+      if line.stdlib.exists(_.accent != Accent.Unparsed) then
+        val indent = line.stdlib.head.pipe: token =>
           if token.accent == Accent.Unparsed then token.length else 0
 
         if previous.lay(false)(indent <= _) then builder += Lexeme.Break
         previous = indent
 
-        line.foreach: token =>
+        line.stdlib.foreach: token =>
           lexeme(token).let(builder += _)
 
     List.of(builder.result())
@@ -135,7 +137,7 @@ object Lexis:
     val truncated: Text = text.keep(start)
 
     val code = SourceCode(Scala, truncated, Unset)(using highlighting.tokenizedScala)
-    val reversed = lexemes(code).reverse
+    val reversed: List[Lexeme] = lexemes(code).reverse
 
     // If the caret's line holds nothing but whitespace before the prefix, `lexemes` saw no
     // significant line to attach a boundary to; emit the `Break` here when that line's indent
@@ -155,5 +157,5 @@ object Lexis:
         }
       }
 
-    val context = if breakAtCaret then Lexeme.Break :: reversed else reversed
+    val context: List[Lexeme] = if breakAtCaret then (Lexeme.Break: Lexeme) :: reversed else reversed
     (prefix, context.take(limit))

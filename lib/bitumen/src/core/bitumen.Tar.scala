@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -336,7 +338,7 @@ object Tar:
 
     def serialize: Iterator[Data] = this match
       case sparse: Sparse if sparse.segments.length > 4 =>
-        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.drop(4)) ++ dataBlocks
+        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.drop(4)).stdlib ++ dataBlocks
 
       case _ =>
         Iterator(header) ++ dataBlocks
