@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import java.io as ji
 import java.net as jn
 import java.nio.ByteBuffer

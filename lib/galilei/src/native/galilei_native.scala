@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
 import java.io as ji
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -139,12 +141,12 @@ package filesystemBackends:
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
         jnf.Files.exists(javaPath(path), dereferenceOptions(dereference)*)
 
-      def children(path: Path on Plane)(using Tactic[IoError]): LazyList[Text] =
+      def children(path: Path on Plane)(using Tactic[IoError]): Progression[Text] =
         protect(path, Operation.Read):
-          if !jnf.Files.isDirectory(javaPath(path)) then LazyList()
+          if !jnf.Files.isDirectory(javaPath(path)) then Progression()
           else
             // `Files.list` holds the directory's file descriptor until the stream is
-            // closed — exhausting its iterator does not release it, and a `LazyList` would
+            // closed — exhausting its iterator does not release it, and a `Progression` would
             // defer even that — so the names are materialized strictly and the stream
             // closed before returning. Left unclosed, each directory listed leaks a
             // descriptor until its stream is garbage-collected, which a low-allocation
@@ -153,10 +155,8 @@ package filesystemBackends:
             val stream = jnf.Files.list(javaPath(path)).nn
 
             try
-              stream.iterator().nn.asScala
-              . map(_.getFileName.nn.toString.tt)
-              . to(List)
-              . to(LazyList)
+              Progression.from:
+                stream.iterator().nn.asScala.map(_.getFileName.nn.toString.tt).toList
             finally stream.close()
 
       def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit =
@@ -203,7 +203,8 @@ package filesystemBackends:
 
         protect(source, Operation.Move):
           val atomically = if atomic then List(jnf.StandardCopyOption.ATOMIC_MOVE) else Nil
-          val options: List[jnf.CopyOption] = dereferenceOptions(dereference) ++ atomically
+          val options: scala.collection.immutable.List[jnf.CopyOption] =
+            dereferenceOptions(dereference).stdlib ++ atomically.stdlib
 
           jnf.Files.move(javaPath(source), javaPath(destination), options*)
 
@@ -251,7 +252,7 @@ package filesystemBackends:
         ( using Tactic[IoError] )
       :   result =
 
-        val options: List[jnf.OpenOption] = flags.map:
+        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
           case OpenFlag.Append    => jnf.StandardOpenOption.APPEND
@@ -280,8 +281,8 @@ package filesystemBackends:
           // returns — so the capture is asserted safe with `unsafeAssumePure`.
           lambda:
             Handle
-              ( () => unsafely(zephyrine.toLazyList(Streamable.channel.stream(channel))),
-                data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.iterator))) )
+              ( () => unsafely(zephyrine.toProgression(Streamable.channel.stream(channel))),
+                data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.stdlib.iterator))) )
               ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
                 () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
         finally channel.close()
