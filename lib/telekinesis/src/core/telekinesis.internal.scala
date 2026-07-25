@@ -44,6 +44,7 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import urticose.*
 import vacuous.*
@@ -100,7 +101,7 @@ object internal:
         unnamed[valueType](value, tail)
 
       case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-        val name: Text = List.of(key.value.get.tt.uncamel.stdlib.map(_.capitalize)).kebab
+        val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
 
         val Directive = Expr.summon[keyType is Directive of valueType].getOrElse:
           val typeName = Type.of[valueType].show

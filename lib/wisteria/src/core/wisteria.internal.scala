@@ -558,7 +558,7 @@ object internal:
 
                     if keys.has(childPath) then
                       ()
-                    else if keys.stdlib.exists(_.startsWith(childPath+".")) then
+                    else if keys.exists(_.startsWith(childPath+".")) then
                       visit(carrierType(fieldType, root, childPath), false)
                     else
                       visit(fieldType, false)
@@ -989,7 +989,7 @@ object internal:
           // type) — never re-splice its tree.
           val specific = given_.asExprOf[vicarious.Specific]
           '{$specific.instances(${Expr(childPath)}).asInstanceOf[typeclass[field]]}
-        else if keys.stdlib.exists(_.startsWith(childPath+".")) then
+        else if keys.exists(_.startsWith(childPath+".")) then
           carrierType(TypeRepr.of[field], root, childPath).asType.absolve match
             case '[carrier] =>
               '{wisteria.internal.field[typeclass, carrier].asInstanceOf[typeclass[field]]}

@@ -38,6 +38,7 @@ import anticipation.*
 import gossamer.*
 import honeycomb.Html
 import prepositional.*
+import rudiments.*
 import vacuous.*
 import xylophone.*
 
@@ -369,14 +370,14 @@ trait Mathml:
      (attributes.stdlib.map { case (key, value) => (key, value: Optional[Text]) })
 
   def xml: Xml =
-    val children: List[Xml] = text.lay(List.of(contents.stdlib.map(_.xml))): value =>
+    val children: List[Xml] = text.lay(contents.map(_.xml)): value =>
       List(TextNode(value))
 
     Element(label, Attributes(attributes*), children.stdlib.nodes)
 
   def html: Html of "#foreign" =
     val children: List[Html of "#foreign"] =
-      text.lay(List.of(contents.stdlib.map(_.html))): value =>
+      text.lay(contents.map(_.html)): value =>
         List(honeycomb.Html.string2(value.s))
 
     honeycomb.Element.foreign(label, honeycomb.Attributes(htmlAttributes*), children*)

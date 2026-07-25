@@ -35,6 +35,7 @@ package cataclysm
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import nomenclature.*
 import spectacular.*
 import vacuous.*
@@ -45,7 +46,7 @@ import vacuous.*
 // `Compound` (simple selectors with no whitespace between them, the tightest).
 
 object SelectorList:
-  given showable: SelectorList is Showable = selectorList => List.of(selectorList.selectors.stdlib.map(_.show)).join(t", ")
+  given showable: SelectorList is Showable = selectorList => selectorList.selectors.map(_.show).join(t", ")
 
   // A non-raising parse of already-validated selector text, used by the `css"…"`
   // interpolator to rebuild a rule's selector at runtime.
@@ -72,7 +73,7 @@ case class Selector(lead: Optional[Combinator], head: Compound, rest: List[(Comb
 derives CanEqual
 
 object Compound:
-  given showable: Compound is Showable = compound => List.of(compound.parts.stdlib.map(_.show)).join
+  given showable: Compound is Showable = compound => compound.parts.map(_.show).join
 
 // A compound selector: a run of simple selectors bound together with no
 // combinator (hence no whitespace) between them.

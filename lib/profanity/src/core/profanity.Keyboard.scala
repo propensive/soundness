@@ -72,7 +72,7 @@ object Keyboard:
   // keypress. The codepoint is a Unicode value, with the C0 codes 13/9/27/127 for
   // Enter/Tab/Escape/Backspace; the modifier field is `1 + bitmask`.
   def csiu(params: List[Char]): profanity.Keypress =
-    val fields: List[Text] = List.of(params.stdlib.map(_.show)).join.cut(t";")
+    val fields: List[Text] = params.map(_.show).join.cut(t";")
 
     def number(index: Int, default: Int): Int =
       safely(Integer.parseInt(fields.stdlib(index).cut(t":").stdlib.head.s)).or(default)

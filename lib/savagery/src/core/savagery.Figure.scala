@@ -38,6 +38,7 @@ import anticipation.*
 import cataclysm.Css
 import geodesy.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 import xylophone.*
@@ -61,7 +62,7 @@ extends Figure:
     attrs += t"height" -> height.show
 
     if transforms.stdlib.nonEmpty
-    then attrs += t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" ")
+    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     Element(t"rect", Attributes.from(Map.of(attrs.result())), IArray())
 
@@ -81,7 +82,7 @@ extends Figure:
     id.let: svgId => attrs += t"id" -> svgId.text
 
     if transforms.stdlib.nonEmpty
-    then attrs += t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" ")
+    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     style.let: css => attrs += t"style" -> css.text
     Element(t"path", Attributes.from(Map.of(attrs.result())), IArray())
@@ -138,6 +139,6 @@ extends Figure:
       attrs += t"ry" -> yRadius.show
 
     if transforms.stdlib.nonEmpty
-    then attrs += t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" ")
+    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     Element(if circle then t"circle" else t"ellipse", Attributes.from(Map.of(attrs.result())), IArray())

@@ -140,7 +140,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
     suite(m"onlineLauncher()"):
       val entries: proscenium.List[(Text, Text, Text)] =
-        proscenium.List.of(labels.stdlib.map(fileEntry(tempDir(), _, t"#!/bin/sh\n")))
+        labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
       val script: Data = Xeq.onlineLauncher(t"JAR".in[Data], entries)
 
       test(m"output starts with bash shebang"):

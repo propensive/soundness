@@ -357,7 +357,7 @@ class Html4Transitional() extends Dom:
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =
-      parent.admissible.has(child.label) || insertable(parent).stdlib.exists(recur(_))
+      parent.admissible.has(child.label) || insertable(parent).exists(recur(_))
 
     insertable(parent).stdlib.find(recur(_)).optional
 

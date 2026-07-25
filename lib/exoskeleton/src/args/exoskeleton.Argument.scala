@@ -105,5 +105,5 @@ case class Argument
     val mapping: Map[Text, operand] = Map.from:
       options.stdlib.map: option => (operand.suggest(option).text, option)
 
-    suggest(List.of(options.stdlib.map(operand.suggest(_))))
+    suggest(options.map(operand.suggest(_)))
     mapping.at(this())

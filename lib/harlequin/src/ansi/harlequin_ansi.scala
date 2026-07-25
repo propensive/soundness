@@ -37,6 +37,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
@@ -95,7 +96,7 @@ package syntaxHighlighting:
         else e"\n${t" "*(startColumn + indent + 3)}$foreground(${t"‾"*(endColumn - startColumn)})"
 
     (source.offset to source.lastLine).map: lineNo =>
-      val content = List.of(source(lineNo).stdlib.map(_.teletype)).join
+      val content = source(lineNo).map(_.teletype).join
 
       source.focus.mask: span =>
         val startLine = span.startLine.lay(0)(_.n0)
@@ -120,6 +121,6 @@ package syntaxHighlighting:
 
   given unnumberedTeletypeable: ScalaSyntaxPalette => SourceCode is Teletypeable = source =>
     (source.offset to source.lastLine).map: lineNo =>
-      List.of(source(lineNo).stdlib.map(_.teletype)).join
+      source(lineNo).map(_.teletype).join
 
     . join(e"\n")

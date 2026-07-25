@@ -106,7 +106,7 @@ object Lexis:
     var previous: Optional[Int] = Unset
 
     code.lines.foreach: line =>
-      if line.stdlib.exists(_.accent != Accent.Unparsed) then
+      if line.exists(_.accent != Accent.Unparsed) then
         val indent = line.stdlib.head.pipe: token =>
           if token.accent == Accent.Unparsed then token.length else 0
 

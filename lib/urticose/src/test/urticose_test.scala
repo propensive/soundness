@@ -733,7 +733,7 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_.nonEmpty)
 
       test(m"There is a loopback interface"):
-        NetworkInterface.all().stdlib.exists(_.loopback)
+        NetworkInterface.all().exists(_.loopback)
       . assert(_ == true)
 
       test(m"An interface can be looked up by its name"):

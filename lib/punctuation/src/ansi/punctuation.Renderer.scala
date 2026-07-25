@@ -243,8 +243,8 @@ object Renderer:
           case head :: tail =>
             (mk + Space + head) :: tail.map(indent(_, hang))
 
-      if tight then List.of(rendered.stdlib.flatten)
-      else interleaveBlanks(List.of(rendered.stdlib.map(List.of(_))))
+      if tight then rendered.flat
+      else interleaveBlanks(rendered.map(List.of(_)))
 
 
   // -- helpers --------------------------------------------------------------

@@ -40,6 +40,7 @@ import denominative.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
@@ -115,7 +116,7 @@ extends Documentary:
       if transforms.nil then figures.stdlib.map(_.xml)
       else
         val groupAttrs =
-          SeqMap(t"transform" -> List.of(transforms.stdlib.map(_.encode)).join(t" "))
+          SeqMap(t"transform" -> transforms.map(_.encode).join(t" "))
         scala.collection.immutable.List
           (Element(t"g", Attributes.from(Map.of(groupAttrs)), figures.stdlib.map(_.xml).nodes))
 

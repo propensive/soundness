@@ -103,15 +103,15 @@ object Rrule:
         part(rule.interval != 1, t"INTERVAL=${rule.interval}") ++
         part(rule.count.present, t"COUNT=${rule.count.vouch}") ++
         part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") ++
-        part(rule.byMonth.nonEmpty, t"BYMONTH=${List.of(rule.byMonth.stdlib.map(_.numerical.show)).join(t",")}") ++
-        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${List.of(rule.byWeekNo.stdlib.map(_.show)).join(t",")}") ++
-        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${List.of(rule.byYearDay.stdlib.map(_.show)).join(t",")}") ++
-        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${List.of(rule.byMonthDay.stdlib.map(_.show)).join(t",")}") ++
-        part(rule.byDay.nonEmpty, t"BYDAY=${List.of(rule.byDay.stdlib.map(renderDay)).join(t",")}") ++
-        part(rule.byHour.nonEmpty, t"BYHOUR=${List.of(rule.byHour.stdlib.map(_.show)).join(t",")}") ++
-        part(rule.byMinute.nonEmpty, t"BYMINUTE=${List.of(rule.byMinute.stdlib.map(_.show)).join(t",")}") ++
-        part(rule.bySecond.nonEmpty, t"BYSECOND=${List.of(rule.bySecond.stdlib.map(_.show)).join(t",")}") ++
-        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${List.of(rule.bySetPos.stdlib.map(_.show)).join(t",")}") ++
+        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") ++
+        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") ++
+        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") ++
+        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") ++
+        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") ++
+        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") ++
+        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") ++
+        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") ++
+        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") ++
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
     List.of(parts).join(t";")
