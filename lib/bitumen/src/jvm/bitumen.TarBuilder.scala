@@ -108,7 +108,7 @@ extends caps.ExclusiveCapability:
     sink.lay:
       val buffer = scm.ArrayBuffer[Data]()
       val outcome = block(using TarEntryWriter(buffer += _))
-      insert(Tar.Entry.File(name, mode, user, group, mtime, TarBody(buffer.to(Seq)*)))
+      insert(Tar.Entry.File(name, mode, user, group, mtime, TarBody(buffer.toSeq*)))
       outcome
 
     . apply: out =>
@@ -196,7 +196,7 @@ object TarBuilder:
           val outcome = block(using builder)
           val tarfile = builder.tarfile(format)
 
-          commit(value.generic, createFlags, tarFlag match
+          commit(value.generic, List.of(createFlags), tarFlag match
             case TarFlag.Gzip    => tarfile.gzip
             case TarFlag.Zlib    => tarfile.zlib
             case TarFlag.Deflate => tarfile.deflate)

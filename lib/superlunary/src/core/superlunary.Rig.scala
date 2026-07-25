@@ -32,6 +32,8 @@
                                                                                                   */
 package superlunary
 
+import proscenium.compat.*
+
 import java.nio.file as jnf
 import java.util.function as juf
 
@@ -128,7 +130,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                   }
             }
 
-        cache(key)
+        cache.stdlib(key)
 
       else
         val uuid = Uuid()

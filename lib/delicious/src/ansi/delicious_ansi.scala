@@ -32,6 +32,8 @@
                                                                                                   */
 package delicious
 
+import rudiments.*
+
 import anticipation.*
 import escapade.*
 import gossamer.*

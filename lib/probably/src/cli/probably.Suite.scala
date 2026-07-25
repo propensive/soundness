@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import proscenium.compat.*
+
 import java.lang as jl
 
 import ambience.*, environments.javaEnvironment
