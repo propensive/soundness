@@ -128,8 +128,8 @@ case class Image
     val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)
 
-    val blobEntries = blobs.map: (digest, content) =>
+    val blobEntries: List[bitumen.Tar.Entry] = blobs.map: (digest, content) =>
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tarfile(layoutEntry :: indexEntry :: blobEntries)
+    Tarfile(List.of(scala.collection.immutable.List(layoutEntry, indexEntry) ++ blobEntries.stdlib))

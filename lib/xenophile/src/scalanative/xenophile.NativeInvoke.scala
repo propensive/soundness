@@ -152,7 +152,7 @@ object NativeInvoke:
     val prototype = members.at(function).or:
       halt(m"xenophile: the foreign type $owner has no member $function")
 
-    val parameterTypes = prototype.parameters.or(Nil)
+    val parameterTypes = prototype.parameters.or(proscenium.Nil).stdlib
 
     if argumentTerms.length != parameterTypes.length then
       halt(m"xenophile: wrong number of arguments for $owner.$function")

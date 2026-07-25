@@ -80,7 +80,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
     LocalClasspath(entries*)
 
   lazy val settings2: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
+    staging.Compiler.Settings.make(None, scalac.commandLineArguments.stdlib.map(_.s))
 
   lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
@@ -143,7 +143,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            ( Some(out.encode.s), scalac.commandLineArguments.map(_.s) )
+            ( Some(out.encode.s), scalac.commandLineArguments.stdlib.map(_.s) )
 
         given compiler: staging.Compiler =
           staging.Compiler.make(classloader.java)(using settings)

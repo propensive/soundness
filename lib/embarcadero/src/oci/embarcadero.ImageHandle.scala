@@ -32,6 +32,8 @@
                                                                                                   */
 package embarcadero
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import bitumen.*
@@ -59,11 +61,11 @@ extends caps.ExclusiveCapability:
   // (for layers: compressed) chunks — undecoded and unverified.
   private def body(digest: Text)(using Tactic[OciError]): TarBody =
     if !digest.s.startsWith("sha256:")
-    then abort(OciError(OciError.Reason.UnsupportedDigest(digest.cut(t":").head)))
+    then abort(OciError(OciError.Reason.UnsupportedDigest(digest.cut(t":").stdlib.head)))
 
     val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
-    entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
+    entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
     . getOrElse(abort(OciError(OciError.Reason.MissingBlob(digest))))
 
   // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
@@ -94,7 +96,7 @@ extends caps.ExclusiveCapability:
   // digest-verified against its descriptor before decoding.
   def manifest: Oci.Manifest raises OciError =
     val descriptor =
-      index.manifests.headOption.getOrElse(abort(OciError(OciError.Reason.NoManifest)))
+      index.manifests.stdlib.headOption.getOrElse(abort(OciError(OciError.Reason.NoManifest)))
 
     manifest(descriptor)
 
@@ -124,7 +126,7 @@ extends caps.ExclusiveCapability:
   // A layer's content as the uncompressed tar byte stream, decompressing according to
   // the descriptor's media type; unrecognised types stream verbatim.
   def layer(descriptor: Descriptor)(using Tactic[OciError]): (Stream[Data] over Credit)^ =
-    if descriptor.mediaType.suffixes.contains(Media.Suffix.Gzip)
+    if descriptor.mediaType.suffixes.stdlib.contains(Media.Suffix.Gzip)
     then compressed(descriptor).decompress[Gzip]
     else compressed(descriptor)
 
@@ -147,7 +149,7 @@ extends caps.ExclusiveCapability:
 
   // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
   private def document(name: Text, reason: OciError.Reason): Data raises OciError =
-    entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
+    entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
     . getOrElse(abort(OciError(reason)))
     . memoize
 
@@ -178,5 +180,5 @@ extends Openable:
     ( block: ((ImageHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
-    block(using new ImageHandle(Tarfile.read(value.stream).to(List)) with Granting[grants] {})
+    if mode.atoms.stdlib.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
+    block(using new ImageHandle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})
