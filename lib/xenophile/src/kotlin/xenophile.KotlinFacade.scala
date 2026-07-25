@@ -1404,7 +1404,7 @@ object KotlinFacade:
         textual(element).asType.absolve match
           case '[e] =>
             ' {
-                List.from[e]:
+                proscenium.List.from[e]:
                   scala.jdk.javaapi.CollectionConverters
                   . asScala($unwrapped.asInstanceOf[java.util.List[e]])
               }
@@ -1413,7 +1413,7 @@ object KotlinFacade:
         textual(element).asType.absolve match
           case '[e] =>
             ' {
-                Set.from[e]:
+                proscenium.Set.from[e]:
                   scala.jdk.javaapi.CollectionConverters
                   . asScala($unwrapped.asInstanceOf[java.util.Set[e]])
               }
@@ -1423,7 +1423,7 @@ object KotlinFacade:
         (textual(key).asType, textual(value).asType).absolve match
           case ('[k], '[v]) =>
             ' {
-                Map.from[k, v]:
+                proscenium.Map.from[k, v]:
                   scala.jdk.javaapi.CollectionConverters
                   . asScala($unwrapped.asInstanceOf[java.util.Map[k, v]])
               }

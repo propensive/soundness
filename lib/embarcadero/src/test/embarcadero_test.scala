@@ -143,7 +143,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == (true, true))
 
       test(m"archive contains one blob per config, layer and manifest"):
-        names.count(_.s.startsWith("blobs/sha256/"))
+        names.stdlib.count(_.s.startsWith("blobs/sha256/"))
       . assert(_ == 3)
 
       test(m"the layer blob is stored under its digest path"):

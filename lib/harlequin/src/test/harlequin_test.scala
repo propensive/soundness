@@ -51,7 +51,7 @@ object Creature extends Completable:
 
     import quotes.reflect.*
 
-    List(t"habitat", t"diet").map: name =>
+    proscenium.List(t"habitat", t"diet").map: name =>
       prophesy.Completion(name, prophesy.Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
 
 trait Creature extends Dynamic:
@@ -125,7 +125,7 @@ object Tests extends Suite(m"Harlequin Tests"):
       import highlighting.typecheckedScala
 
       typeOf(List.of(Scala.highlight(snippet).lines.to(List).stdlib.flatMap(_.stdlib)), t"xs").or(t"")
-    .assert { rendered => rendered.has(t"List") && rendered.has(t"Int") }
+    .assert { rendered => rendered.subsumes(t"List") && rendered.subsumes(t"Int") }
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)

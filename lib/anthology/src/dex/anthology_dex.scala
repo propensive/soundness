@@ -103,7 +103,7 @@ object dexLinkages:
 
       val roots: List[jnf.Path] =
         jnf.Paths.get(compilation.out.encode.s).nn ::
-          compilation.classpath.entries.flatMap:
+          compilation.classpath.entries.stdlib.flatMap:
             case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
             case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
             case _                                   => Nil
@@ -115,7 +115,7 @@ object dexLinkages:
       val classfiles: List[jnf.Path] = directories.flatMap: directory =>
         val walk = jnf.Files.walk(directory).nn
 
-        try walk.iterator.nn.asScala.to(List).filter: path =>
+        try walk.iterator.nn.asScala.toList.filter: path =>
           path.toString.endsWith(".class") && !path.toString.endsWith("module-info.class")
         finally walk.close()
 
@@ -134,7 +134,7 @@ object dexLinkages:
         jnf.Files.createDirectories(outPath)
 
         val builder = D8Command.builder(handler).nn
-        builder.addProgramFiles((archives ++ classfiles).asJava)
+        builder.addProgramFiles((archives ++ classfiles.stdlib).asJava)
         builder.setMinApiLevel(form.minApi)
         builder.setMode(form.mode)
         builder.setOutput(outPath.resolve("main.dex.jar").nn, OutputMode.DexIndexed)
