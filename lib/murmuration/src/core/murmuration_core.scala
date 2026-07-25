@@ -35,6 +35,7 @@ package murmuration
 import scala.collection.immutable as sci
 import scala.math.Ordering
 
+import anticipation.*
 import prepositional.*
 
 // `collection.has(value)` (value membership) for any `collection` that is `Inclusive`; the queried
@@ -159,3 +160,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     List.of:
       traversable.traverse(self).grouped(size).map { chunk => reshapable.reshape(chunk.iterator) }
       . toList
+
+// The `Text` fast path of the generic `subsumes` above (an overload sibling, so the
+// receiver selects it): substring containment through `String.indexOf`, with no
+// traversal and no interim collections — this sits on hot per-record validation
+// paths, such as checking every archive entry name against a plane's rules.
+extension (text: Text)
+  def subsumes(subsequence: Text): Boolean = text.s.contains(subsequence.s)
