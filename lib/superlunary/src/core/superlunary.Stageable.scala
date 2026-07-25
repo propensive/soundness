@@ -59,7 +59,7 @@ object Stageable:
         // `Json.decodable` is named explicitly rather than left to `provide`'s deferred
         // search: this inline body expands inside staged programs, where the search is
         // sensitive to sibling expansions and can land on an inapplicable derivation.
-        Array.from(text.nn.as[Json](using Json.decodable).as[List[Json]])
+        Array.from(text.nn.as[Json](using Json.decodable).as[List[Json]].stdlib)
 
     inline def serialize(value: Array[Object]): Text =
       val roots = IArray.from(value.iterator.map { obj => Json.unseal(obj.asInstanceOf[Json]) })

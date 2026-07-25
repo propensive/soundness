@@ -117,7 +117,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
     val key: (Codepoint, Text) = (codepoint, fingerprint)
 
     val (target, function): (Target, juf.Function[Form, Form]) =
-      if cache.contains(key) then
+      if cache.stdlib.contains(key) then
         given staging.Compiler = compiler2
 
         // This is necessary to allocate references as a side effect
@@ -173,7 +173,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             }
 
         val target = stage(out)
-        cache = cache.updated(key, (target, function))
+        cache = Map.of(cache.stdlib.updated(key, (target, function)))
 
         (target, function)
 
