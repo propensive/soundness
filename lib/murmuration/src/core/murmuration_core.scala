@@ -139,7 +139,7 @@ extension [self](self: self)(using traversable: self is Traversable)
 
   // The contiguous run from `from` (inclusive) to `until` (exclusive), by position: the
   // total counterpart of `slice`, empty when the bounds fall outside the source.
-  def window[result](from: Int, until: Int)
+  def excerpt[result](from: Int, until: Int)
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   result =
 
