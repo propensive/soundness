@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -67,7 +69,7 @@ private[probably] object TerseRenderer:
       val aspires = t"${totals.aspirePassed} aspire-passed, ${totals.aspireFailed} aspire-failed"
       Out.println(t"$summary$aspires, ${totals.total} total")
 
-    document.groups.each(renderGroup(_, columns))
+    document.groups.stdlib.foreach(renderGroup(_, columns))
     renderFailures(document, columns)
     renderFatal(document)
 
@@ -105,7 +107,7 @@ private[probably] object TerseRenderer:
     Out.println(t"")
     val suiteName = group.suite.let(_.name.text).or(t"")
     if suiteName.length > 0 then Out.println(suiteName)
-    group.blocks.each(renderBlock(_, columns))
+    group.blocks.stdlib.foreach(renderBlock(_, columns))
 
   private def renderBlock(block: Block, columns: Int)(using Stdio): Unit = block match
     case Block.Table(title, tableColumns, rows) =>
@@ -114,22 +116,21 @@ private[probably] object TerseRenderer:
 
       val tableColumns2 = tableColumns.zipWithIndex.map: (column, index) =>
         val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
-        def cell(row: List[Datum]): Teletype = datum(row(index))
-        escritoire.Column[List[Datum], Teletype, Teletype](column.title.teletype, align)(cell)
+        escritoire.Column[List[Datum], Teletype, Teletype](column.title.teletype, align)(row => datum(row.stdlib(index)))
 
       Scaffold[List[Datum]](tableColumns2*)
       . tabulate(rows).grid(columns).render.each(Out.println(_))
 
     case Block.Sparkline(steps, series) =>
-      val labelWidth = series.map(_.label.length).max
-      val stepWidth = steps.map(_.show.length).max + 2
-      Out.println(t"  ${t"N".pad(labelWidth)}${steps.map(_.show.pad(stepWidth, Rtl)).join}")
+      val labelWidth = series.stdlib.map(_.label.length).max
+      val stepWidth = steps.stdlib.map(_.show.length).max + 2
+      Out.println(t"  ${t"N".pad(labelWidth)}${steps.stdlib.map(_.show.pad(stepWidth, Rtl)).join}")
 
-      series.each: spark =>
+      series.stdlib.foreach: spark =>
         val cells: Text =
-          spark.cells.map: cell =>
+          spark.cells.stdlib.map: cell =>
             cell.lay(t"·".pad(stepWidth, Rtl)): (level, _) =>
-              Format.sparkBlocks(level - 1).pad(stepWidth, Rtl)
+              Format.sparkBlocks.stdlib(level - 1).pad(stepWidth, Rtl)
 
           . join
 
@@ -144,16 +145,16 @@ private[probably] object TerseRenderer:
       title.let: id =>
         Out.println(t"${id.id}  ${id.name.text}")
 
-      val max = frames.map(_.samples).maxOption.getOrElse(0L)
+      val max = frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
 
       def name(frame: Hotspots.Frame): Text =
         val method = StackTrace.Method(frame.className, frame.method)
         val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
         t"${method.prefix}.$cls#${frame.method}"
 
-      val width = frames.map(name(_).length).maxOption.getOrElse(0)
+      val width = frames.stdlib.map(name(_).length).maxOption.getOrElse(0)
 
-      frames.each: frame =>
+      frames.stdlib.foreach: frame =>
         val percent = Format.percent(Format.basisPoints(frame.samples.toDouble, total.toDouble))
         val bar = Format.bar(frame.samples, max)
         Out.println(t"  ${name(frame).pad(width, Rtl)} ${percent.pad(6, Rtl)}% $bar")
@@ -185,26 +186,26 @@ private[probably] object TerseRenderer:
 
       Out.println(t"")
 
-      val details: Map[TestId, List[Verdict.Detail]] = document.failures.to(Map)
+      val details: Map[TestId, List[Verdict.Detail]] = document.failures.transmute[Map]
 
-      failures.each: row =>
+      failures.stdlib.foreach: row =>
         val location = t"${row.id.codepoint.source}:${row.id.codepoint.line}"
         Out.println(t"${row.id.id}  ${row.id.name.text} @ $location")
 
-        details.at(row.id).or(Nil).each: detail =>
+        details.at(row.id).or(Nil).stdlib.foreach: detail =>
           detail match
             case Verdict.Detail.Throws(err) =>
               Out.println:
                 t"  threw ${err.component}.${err.className}: ${Format.truncate(err.message.text)}"
 
-              err.crop(t"probably.Runner", t"run()").frames.take(3).each: frame =>
+              err.crop(t"probably.Runner", t"run()").frames.stdlib.take(3).foreach: frame =>
                 Out.println(formatFrame(frame))
 
             case Verdict.Detail.CheckThrows(err) =>
               val message = Format.truncate(err.message.text)
               Out.println(t"  check threw ${err.component}.${err.className}: $message")
 
-              err.crop(t"probably.Verdict#", t"apply()").frames.take(3).each: frame =>
+              err.crop(t"probably.Verdict#", t"apply()").frames.stdlib.take(3).foreach: frame =>
                 Out.println(formatFrame(frame))
 
             case Verdict.Detail.Compare(expected, observed, _) =>
@@ -215,18 +216,18 @@ private[probably] object TerseRenderer:
               Out.println(t"  ${Format.truncate(text)}")
 
             case Verdict.Detail.Captures(captures) =>
-              captures.each: (expr, value) =>
+              captures.stdlib.foreach: (expr, value) =>
                 Out.println(t"  $expr = ${Format.truncate(value)}")
 
         Out.println(t"")
 
   private def renderFatal(document: Document)(using Stdio): Unit =
     document.fatal.let: (error, active) =>
-      val activeNames = active.to(List).map(_.name.text).join(t", ")
+      val activeNames = active.transmute[List].map(_.name.text).join(t", ")
       val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
       val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
 
       if active.nil then Out.println(t"FATAL: $errorClass: $msg")
       else Out.println(t"FATAL in $activeNames: $errorClass: $msg")
 
-      StackTrace(error).frames.take(3).each: frame => Out.println(formatFrame(frame))
+      StackTrace(error).frames.stdlib.take(3).foreach: frame => Out.println(formatFrame(frame))

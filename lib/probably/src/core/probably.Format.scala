@@ -74,7 +74,7 @@ private[probably] object Format:
   def bar(samples: Long, max: Long): Text =
     val eighths = (if max == 0L then 0L else samples*320L/max).max(if samples > 0L then 1L else 0L)
     val partial = List(t"", t"▏", t"▎", t"▍", t"▌", t"▋", t"▊", t"▉")
-    t"█"*(eighths/8L).toInt + partial((eighths%8L).toInt)
+    t"█"*(eighths/8L).toInt + partial.stdlib((eighths%8L).toInt)
 
   val sparkBlocks: List[Text] = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
 

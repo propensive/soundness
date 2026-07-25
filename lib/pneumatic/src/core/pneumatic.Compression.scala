@@ -32,21 +32,23 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 import anticipation.*
 import zephyrine.*
 
 trait Compression:
   type Self <: Compressor
 
-  // The `LazyList` forms, driven through the same ducts as the streaming
+  // The `Progression` forms, driven through the same ducts as the streaming
   // stages: adapt the chunk list to a pull endpoint, run it through the
   // format's duct, and materialize one output chunk per refill — no staging
   // buffer, and byte-for-byte agreement with the stream and whole-value forms.
-  def compress(stream: LazyList[Data]): LazyList[Data] =
-    Stream(stream.iterator).via(compressor()).toLazyList
+  def compress(stream: Progression[Data]): Progression[Data] =
+    Stream(stream.iterator).via(compressor()).toProgression
 
-  def decompress(stream: LazyList[Data]): LazyList[Data] =
-    Stream(stream.iterator).via(decompressor()).toLazyList
+  def decompress(stream: Progression[Data]): Progression[Data] =
+    Stream(stream.iterator).via(decompressor()).toProgression
 
   // Streaming stages for the same transformations, applied with
   // `stream.compress[Gzip]`/`stream.decompress[Gzip]` on a pull endpoint.

@@ -34,6 +34,9 @@ package probably
 
 import scala.deriving.*
 
+import scala.math
+import scala.reflect
+
 import anticipation.*
 import digression.*
 import distillate.*
@@ -46,7 +49,8 @@ import vacuous.*
 
 object TestId:
   given ordering: Ordering[TestId] =
-    math.Ordering.Implicits.seqOrdering[List, Text].on(_.ids.reverse)
+    math.Ordering.Implicits.seqOrdering[scala.collection.immutable.List, Text]
+    . on(_.ids.stdlib.reverse)
 
 case class TestId
   ( name:      Message,

@@ -34,6 +34,8 @@ package probably
 
 import scala.deriving.*
 
+import proscenium.compat.*
+
 import chiaroscuro.*
 import distillate.*
 import vacuous.*
@@ -102,7 +104,7 @@ object Spread:
     var index = 0
 
     while index < values.length do
-      val value = values(index)
+      val value = values.stdlib(index)
 
       if probe.isDefinedAt(value) then
         val coordinates = List(axis.coordinate(value))
@@ -189,11 +191,11 @@ object Spread2:
     var leftIndex = 0
 
     while leftIndex < lefts.length do
-      val left = lefts(leftIndex)
+      val left = lefts.stdlib(leftIndex)
       var rightIndex = 0
 
       while rightIndex < rights.length do
-        val right = rights(rightIndex)
+        val right = rights.stdlib(rightIndex)
 
         if probe.isDefinedAt((left, right)) then
           val coordinates = List(first.coordinate(left), second.coordinate(right))

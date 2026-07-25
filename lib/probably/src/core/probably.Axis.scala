@@ -33,6 +33,9 @@
 package probably
 
 import scala.deriving.*
+import scala.reflect
+
+import proscenium.compat.*
 
 import anticipation.*
 import distillate.*
@@ -98,7 +101,7 @@ object Axis:
     val label = evidence.name.cut(t" ").head.cut(t".").last.lower
     new Axis(label, evidence.values.to(List))
 
-  def apply(label: Text)(range: Range): Axis[Int] = new Axis(label, range.to(List))
+  def apply(label: Text)(range: scala.Range): Axis[Int] = new Axis(label, range.to(List))
 
   def emergent[value: Axable](label: Text): Axis[value] = new Axis(label, Nil, emergent = true)
 

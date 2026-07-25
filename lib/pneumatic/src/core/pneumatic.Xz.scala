@@ -233,10 +233,10 @@ object Xz:
 
       XzStage(decoderEngine())
 
-    override def compress(stream: LazyList[Data]): LazyList[Data] =
+    override def compress(stream: Progression[Data]): Progression[Data] =
       drive(encoderEngine(DefaultPreset), stream)
 
-    override def decompress(stream: LazyList[Data]): LazyList[Data] =
+    override def decompress(stream: Progression[Data]): Progression[Data] =
       drive(decoderEngine(), stream)
 
   // Compress with an explicit preset level (0..9); presets 0..3 favour speed, 4..9 favour ratio.
@@ -246,14 +246,14 @@ object Xz:
 
     XzStage(encoderEngine(preset))
 
-  def compress(stream: LazyList[Data], preset: Int): LazyList[Data] =
+  def compress(stream: Progression[Data], preset: Int): Progression[Data] =
     drive(encoderEngine(preset), stream)
 
-  def decompress(stream: LazyList[Data]): LazyList[Data] = drive(decoderEngine(), stream)
+  def decompress(stream: Progression[Data]): Progression[Data] = drive(decoderEngine(), stream)
 
   // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
-  private[pneumatic] def drive(engine: XzEngine, stream: LazyList[Data]): LazyList[Data] =
-    def recur(stream: LazyList[Data]): LazyList[Data] = stream match
+  private[pneumatic] def drive(engine: XzEngine, stream: Progression[Data]): Progression[Data] =
+    def recur(stream: Progression[Data]): Progression[Data] = stream match
       case head #:: tail =>
         engine.accept(head.mutable(using Unsafe), 0, head.length)
         recur(tail)
@@ -261,8 +261,8 @@ object Xz:
       case _ =>
         engine.finish()
         val data = engine.gather()
-        if data.length > 0 then LazyList(data) else LazyList.empty
+        if data.length > 0 then Progression(data) else Progression.empty
 
-    LazyList.defer(recur(stream))
+    Progression.defer(recur(stream))
 
 sealed trait Xz extends Compressor

@@ -34,6 +34,8 @@ package probably
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+
 import anticipation.*
 import rudiments.*
 import vacuous.*
@@ -89,9 +91,9 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
   // registers each axis's values in first-appearance order.
   def cell(coordinates: List[(Axis.Spec, Value)]): Cell = mutex:
     coordinates.each: (axis, value) =>
-      if !axes0.contains(axis) then axes0 = axes0 :+ axis
+      if !axes0.has(axis) then axes0 = axes0 :+ axis
       val seen = ticks0.at(axis).or(Nil)
-      if !seen.contains(value) then ticks0 = ticks0.updated(axis, seen :+ value)
+      if !seen.has(value) then ticks0 = ticks0.updated(axis, seen :+ value)
 
     val address = coordinates.map(_(1))
     if !cells0.defines(address) then cells0 = cells0.updated(address, Cell())
@@ -104,4 +106,4 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
 
     axis.domain match
       case Axis.Domain.Discrete => seen
-      case _                    => seen.sortBy(_.numeric.or(0.0))
+      case _                    => List.of(seen.stdlib.sortBy(_.numeric.or(0.0)))

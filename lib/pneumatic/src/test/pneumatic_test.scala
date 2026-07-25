@@ -46,14 +46,14 @@ object Tests extends Suite(m"Pneumatic tests"):
   def run(): Unit =
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].flatten.to(List)
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].flatten.to(List)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Gzip].to(List))
 
       test(m"Roundtrip compress/decompress a single block with GZip"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
-      . assert: stream => stream === LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
+      . assert: stream => stream === Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
-      val longData = LazyList.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val longData = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
@@ -86,12 +86,12 @@ object Tests extends Suite(m"Pneumatic tests"):
         . assert(_ == wholeData.to(List))
 
       test(m"Roundtrip compress/decompress a single block with LZW"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
-      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
+      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
 
       // Varied enough to push the code table through its 9-, 10- and 11-bit widths.
       val variedData =
-        LazyList(IArray.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }))
+        Progression(IArray.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }))
 
       test(m"Roundtrip compress/decompress across LZW width growth"):
         variedData.compress[Lzw].decompress[Lzw]
@@ -105,24 +105,24 @@ object Tests extends Suite(m"Pneumatic tests"):
         Lzw.decompress(Lzw.compress(variedData, earlyChange = false), earlyChange = false)
       . assert(_.flatten == variedData.flatten)
       test(m"Compress a single block with Zlib"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].flatten.to(List)
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].flatten.to(List)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Zlib].to(List))
 
       test(m"Roundtrip compress/decompress a single block with Zlib"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
-      . assert: stream => stream === LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
+      . assert: stream => stream === Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Zlib"):
         longData.compress[Zlib].decompress[Zlib]
       . assert(_.flatten == longData.flatten)
 
       test(m"Compress a single block with Deflate"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].flatten.to(List)
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].flatten.to(List)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Deflate].to(List))
 
       test(m"Roundtrip compress/decompress a single block with Deflate"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
-      . assert: stream => stream === LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
+      . assert: stream => stream === Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
       test(m"Roundtrip a long repetitive Deflate stream"):
         longData.compress[Deflate].decompress[Deflate]
@@ -295,14 +295,14 @@ object Tests extends Suite(m"Pneumatic tests"):
         foxBrotli.decompress[Brotli].to(List)
       . assert(_ == foxPlain.in[Data].to(List))
 
-      val brotliLong = LazyList.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val brotliLong = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
       val brotliWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val brotliVaried: Data =
         IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip compress/decompress a single block with Brotli"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Brotli].decompress[Brotli]
-      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Brotli].decompress[Brotli]
+      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Brotli"):
         brotliLong.compress[Brotli].decompress[Brotli]
@@ -406,13 +406,13 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == Nil)
 
       val xzWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
-      val xzLong = LazyList.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val xzLong = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
       val xzVaried: Data =
         IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip a single block with Xz"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Xz].decompress[Xz]
-      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Xz].decompress[Xz]
+      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
 
       test(m"Roundtrip a long repetitive stream with Xz"):
         xzLong.compress[Xz].decompress[Xz]
@@ -440,7 +440,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == true)
 
       test(m"Compress with an explicit fast preset and roundtrip (Xz)"):
-        Xz.compress(LazyList(xzVaried), 1).decompress[Xz].flatten.to(List)
+        Xz.compress(Progression(xzVaried), 1).decompress[Xz].flatten.to(List)
       . assert(_ == xzVaried.to(List))
 
       test(m"Empty input roundtrips (Xz)"):
@@ -462,7 +462,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         // multi-block stream must roundtrip and be accepted by the reference `xz` binary.
         val payload: Data =
           IArray.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
-        val encodedChunks = Xz.compress(LazyList(payload), 0)
+        val encodedChunks = Xz.compress(Progression(payload), 0)
         val roundtrips = encodedChunks.decompress[Xz].flatten.to(List) == payload.to(List)
         val encodedBytes: Array[Byte] = IArray.from(encodedChunks.flatten).mutable(using Unsafe)
         val byXz =
@@ -500,13 +500,13 @@ object Tests extends Suite(m"Pneumatic tests"):
 
     suite(m"LZMA2 tests"):
       val lzma2Whole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
-      val lzma2Long = LazyList.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val lzma2Long = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
       val lzma2Varied: Data =
         IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip a single block with raw LZMA2"):
-        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzma2].decompress[Lzma2]
-      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzma2].decompress[Lzma2]
+      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
 
       test(m"Roundtrip a long repetitive stream with raw LZMA2"):
         lzma2Long.compress[Lzma2].decompress[Lzma2]
@@ -537,7 +537,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == List[Byte](42))
 
       test(m"Explicit preset and dictionary size roundtrip (LZMA2)"):
-        Lzma2.decompress(Lzma2.compress(LazyList(lzma2Varied), 1),
+        Lzma2.decompress(Lzma2.compress(Progression(lzma2Varied), 1),
             Lzma2Options.preset(1).dictSize).flatten.to(List)
       . assert(_ == lzma2Varied.to(List))
 
@@ -628,8 +628,8 @@ object Tests extends Suite(m"Pneumatic tests"):
         zipped.close()
         val gather = Gather2()
 
-        summon[LazyList[Data] is Streamable by Data over Credit]
-        . stream(out.toByteArray.nn.immutable(using Unsafe).grouped(7).to(LazyList))
+        summon[Progression[Data] is Streamable by Data over Credit]
+        . stream(out.toByteArray.nn.immutable(using Unsafe).grouped(7).to(Progression))
         . decompress[Gzip].pump(gather)
 
         gather.data.to(List)

@@ -34,6 +34,8 @@ package probably
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import digression.*
@@ -196,7 +198,7 @@ final class Report(using environment: Environment)(using palette: TestPalette):
   // Sets the comparison anchor of a test's entry: the axis value against which its other
   // cells are compared. A no-op if the test recorded no cells at all.
   def anchor(testId: TestId, anchor: Anchor): Report = this.also:
-    resolve(testId.suite).tests.list.find(_(0) == testId).map(_(1)).each:
+    resolve(testId.suite).tests.list.find(_(0) == testId).map(_(1)).foreach:
       case ReportLine.Item(entry) => entry.anchor = anchor
       case _: ReportLine.Suite    => ()
 

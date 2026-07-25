@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -69,7 +71,7 @@ object Selection:
   // unioned; `kind:` terms and axis constraints (`parser=jacinta`, `N<32`, `N=4..64`)
   // intersect with that union. Unrecognized terms are treated as name globs.
   def parse(arguments: List[Text]): Selection =
-    arguments.foldLeft(all): (selection, argument) =>
+    arguments.stdlib.foldLeft(all): (selection, argument) =>
       if argument == t"--list" then selection.copy(listOnly = true)
       else if argument.starts(t"kind:") then
         val kinds = argument.skip(5) match
@@ -108,7 +110,7 @@ object Selection:
             val most = number(value.skip(index + 2))
 
             least.let { least => most.let(Constraint.Interval(axis, least, _)) }
-          else Constraint.Membership(axis, value.cut(t",").to(Set))
+          else Constraint.Membership(axis, value.cut(t",").transmute[Set])
 
   private[probably] def globRegex(pattern: Text): Text =
     pattern.cut(t"*").map { part => java.util.regex.Pattern.quote(part.s).nn.tt }.join(t".*")
@@ -127,7 +129,7 @@ case class Selection
   def admits(id: TestId, kind: Entry.Kind, coordinates: List[(Axis.Spec, Value)]): Boolean =
     admitted(kind) && admitted(id) && admitted(coordinates)
 
-  private def admitted(kind: Entry.Kind): Boolean = kinds.isEmpty || kinds.contains(kind)
+  private def admitted(kind: Entry.Kind): Boolean = kinds.isEmpty || kinds.has(kind)
 
   private def ancestry(id: TestId): List[TestId] =
     id :: id.suite.let { suite => ancestry(suite.id) }.or(Nil)

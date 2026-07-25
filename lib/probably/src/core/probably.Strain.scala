@@ -32,7 +32,10 @@
                                                                                                   */
 package probably
 
+import proscenium.compat.*
+
 import anticipation.*
+import rudiments.*
 import gossamer.*
 import vacuous.*
 
@@ -45,14 +48,14 @@ object Strain:
         strain:      Strain )
     :   Report =
 
-      val latencies: List[(Metric, Double)] =
+      val latencies: List[(Metric, Double)] = List.of:
         List
           ( Metric.P50  -> strain.p50,
             Metric.P90  -> strain.p90,
             Metric.P99  -> strain.p99,
             Metric.P999 -> strain.p999 )
 
-        . flatMap: (key, value) =>
+        . stdlib.flatMap: (key, value) =>
             value.option.map(key -> _.toDouble)
 
       val slo: List[(Metric, Double)] =
@@ -66,7 +69,7 @@ object Strain:
             Metric.PeakHeap   -> strain.peakHeap.toDouble,
             Metric.Retained   -> strain.retained.toDouble,
             Metric.GcCount    -> strain.gcCount.toDouble,
-            Metric.GcTime     -> strain.gcTime.toDouble*1000000.0 ) ++ latencies ++ slo
+            Metric.GcTime     -> strain.gcTime.toDouble*1000000.0 ) ++ latencies.stdlib ++ slo.stdlib
 
       // Concurrency is a coordinate, not a metric: every strain lands on the emergent `N`
       // axis, so a sweep's steps accumulate as cells of one entry. If the producer already
