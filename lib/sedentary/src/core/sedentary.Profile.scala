@@ -34,6 +34,8 @@ package sedentary
 
 import java.lang as jl
 
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import ambience.*
@@ -48,6 +50,7 @@ import hellenism.*
 import inimitable.*
 import jacinta.*
 import prepositional.*
+import rudiments.*
 import probably.*
 import serpentine.*
 import superlunary.*
@@ -158,12 +161,13 @@ extends Rig:
 
           // The hottest frames, in descending order of sample count, capped.
           val sorted =
-            scala.jdk.CollectionConverters.MapHasAsScala(counts).asScala.to(List)
+            scala.jdk.CollectionConverters.MapHasAsScala(counts).asScala.toList
             . sortBy(-_(1))
             . take(${Expr(frames2)})
 
-          total.toString.tt :: sorted.map: (key, count) =>
-            (count.toString + "\t" + key).tt
+          List.of:
+            total.toString.tt :: sorted.map: (key, count) =>
+              (count.toString + "\t" + key).tt
         }
 
     if !runner.skip(testId, Entry.Kind.Profile, Nil) then
@@ -173,7 +177,7 @@ extends Rig:
         Hotspots
           ( results.head.s.toLong,
             results.tail.map: line =>
-              line.cut(t"\t").to(List) match
+              line.cut(t"\t") match
                 case count :: className :: method :: Nil =>
                   Hotspots.Frame
                     ( StackTrace.rewrite(className.s),

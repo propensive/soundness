@@ -34,6 +34,11 @@ package sedentary
 
 import java.lang as jl
 
+import scala.math
+import scala.reflect
+
+import proscenium.compat.*
+
 import galilei.*
 import scala.quoted.*
 
@@ -206,8 +211,8 @@ object Bench:
       operationSize: Optional[OperationSize] )
   :   Benchmark =
 
-    val sample: Long = results0(0)
-    val results = results0.drop(1)
+    val sample: Long = results0.stdlib(0)
+    val results = results0.stdlib.drop(1)
     val total = results.sum
     val count = sample*runs
     val sampleMean0 = results.map(_.toDouble/sample).mean
@@ -302,7 +307,7 @@ object Bench:
         index += 1
 
       anchor.let: anchorValue =>
-        values.find(_ == anchorValue).foreach: value =>
+        values.stdlib.find(_ == anchorValue).foreach: value =>
           anchors.include
             ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
 
