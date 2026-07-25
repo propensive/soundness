@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.*
 
@@ -145,7 +147,7 @@ object KotlinDialect extends Dialect:
 
               val declared = functions(typeName, kmClass.getFunctions.nn.asScala.to(List), false)
               val fields = properties(typeName, kmClass.getProperties.nn.asScala.to(List))
-              val entries = declared ++ fields ++ constructors(typeName, kmClass)
+              val entries = declared ::: fields ::: constructors(typeName, kmClass)
 
               val setters = propertySetters(typeName, kmClass.getProperties.nn.asScala.to(List))
 
@@ -235,7 +237,7 @@ object KotlinDialect extends Dialect:
                 constructor.isVarArgs ),
             Prototype(parameters.map(javaType), Foreign.Type.Named(typeName)) )
 
-      collate(entries ++ fieldEntries ++ constructorEntries, Map(), Nil, Unset, Nil)
+      collate(entries ::: fieldEntries ::: constructorEntries, Map(), Nil, Unset, Nil)
 
     catch case _: Throwable => Unset
 
@@ -254,7 +256,7 @@ object KotlinDialect extends Dialect:
       else s"L${cls.getName.nn.replace('.', '/')};"
 
     val parameters = listOf(method.getParameterTypes).map(encode)
-    t"(${parameters.mkString})${encode(method.getReturnType.nn)}"
+    t"(${parameters.stdlib.mkString})${encode(method.getReturnType.nn)}"
 
   // Java types read through the same Kotlin-named model, so the rest of the machinery (`Text`
   // for strings, primitives, facade wrapping) applies uniformly.
@@ -289,7 +291,7 @@ object KotlinDialect extends Dialect:
 
           val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
           val names = parameters.map(_.getName.nn.tt)
-          val vararg = parameters.lastOption.exists(_.getVarargElementType != null)
+          val vararg = parameters.stdlib.lastOption.exists(_.getVarargElementType != null)
 
           List:
             Entry
@@ -341,7 +343,7 @@ object KotlinDialect extends Dialect:
 
       . or(Nil)
 
-    . to(Map)
+    . transmute[Map]
 
   private def constructors(owner: Text, kmClass: KmClass): List[Entry] =
     kmClass.getConstructors.nn.asScala.to(List).flatMap: constructor =>
@@ -353,7 +355,7 @@ object KotlinDialect extends Dialect:
 
         val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
         val names = parameters.map(_.getName.nn.tt)
-        val vararg = parameters.lastOption.exists(_.getVarargElementType != null)
+        val vararg = parameters.stdlib.lastOption.exists(_.getVarargElementType != null)
 
         List:
           Entry
@@ -374,10 +376,10 @@ object KotlinDialect extends Dialect:
   :   Resolution =
 
     val prototypes: Map[Text, Prototype] =
-      entries.groupBy(_.name).view.mapValues(_.head.prototype).to(Map)
+      Map.of(entries.stdlib.groupBy(_.name).view.mapValues(_.head.prototype).toMap)
 
     val jvmMembers: Map[Text, List[JvmMember]] =
-      entries.groupBy(_.name).view.mapValues(_.map(_.member)).to(Map)
+      Map.of(entries.stdlib.groupBy(_.name).view.mapValues(x => List.of(x.map(_.member))).toMap)
 
     Resolution(prototypes, jvmMembers, setters, identifiers, companion, enumeration)
 

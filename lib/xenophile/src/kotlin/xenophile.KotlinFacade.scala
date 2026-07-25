@@ -32,6 +32,11 @@
                                                                                                   */
 package xenophile
 
+import proscenium.compat.*
+
+import scala.collection.immutable.Seq
+import scala.collection.immutable.{List, Nil, ::}
+
 import scala.quoted.*
 
 import anticipation.*
@@ -53,7 +58,7 @@ object KotlinFacade:
   private def transport(using quotes: Quotes)(self: Expr[Facade]): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    Xenophile.refinements(self.asTerm.tpe.widen).at(t"Transport").or:
+    Map.of(Xenophile.refinements(self.asTerm.tpe.widen)).at(t"Transport").or:
       halt(m"xenophile: the facade does not record its underlying type")
 
   private def classNameOf(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Text =
@@ -66,9 +71,9 @@ object KotlinFacade:
   // diagnostics that quote the API as its author declared it.
   private[xenophile] def kotlinType(tpe: Foreign.Type): Text = tpe match
     case Foreign.Type.Union(members) =>
-      members.filter(_ != Foreign.Type.Named(t"null")) match
-        case List(inner) if members.length == 2 => t"${kotlinType(inner)}?"
-        case _                                  => members.map(kotlinType).join(t" | ")
+      members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
+        case List(inner) if members.stdlib.length == 2 => t"${kotlinType(inner)}?"
+        case _ => members.stdlib.map(kotlinType).join(t" | ")
 
     case Foreign.Type.Named(name) =>
       simple(name)
@@ -87,7 +92,7 @@ object KotlinFacade:
   // Near misses among the type's members, rendered in Kotlin syntax, for `did you mean`.
   private def similar(className: Text, name: Text): List[Text] =
     KotlinDialect.resolve(className).lay(Nil): members =>
-      members.to(List).filter: (memberName, _) =>
+      members.stdlib.toList.filter: (memberName, _) =>
         val left = memberName.s.toLowerCase.nn
         val right = name.s.toLowerCase.nn
         left.startsWith(right.take(3)) || right.startsWith(left.take(3))
@@ -113,8 +118,8 @@ object KotlinFacade:
   // Whether the Kotlin-level result type is nullable, and its non-null form.
   private def denull(km: Foreign.Type): (Foreign.Type, Boolean) = km match
     case Foreign.Type.Union(members) =>
-      members.filter(_ != Foreign.Type.Named(t"null")) match
-        case List(inner) => (inner, members.contains(Foreign.Type.Named(t"null")))
+      members.stdlib.filter(_ != Foreign.Type.Named(t"null")) match
+        case List(inner) => (inner, members.stdlib.contains(Foreign.Type.Named(t"null")))
         case _           => (km, false)
 
     case _ =>
@@ -162,7 +167,7 @@ object KotlinFacade:
       name.s.startsWith("#") || Set(
           t"kotlin.Int", t"kotlin.Long", t"kotlin.Short", t"kotlin.Byte", t"kotlin.Boolean",
           t"kotlin.Double", t"kotlin.Float", t"kotlin.Char", t"kotlin.Unit", t"kotlin.Any",
-          t"kotlin.Nothing").contains(name)
+          t"kotlin.Nothing").stdlib.contains(name)
 
     val underlying = solid(call.tpe)
 
@@ -241,7 +246,7 @@ object KotlinFacade:
     val stringy = TypeRepr.of[String] <:< target || target =:= TypeRepr.of[CharSequence]
 
     val transported =
-      Xenophile.refinements(argument.tpe.widen).at(t"Transport").lay(false)(_ <:< target)
+      Map.of(Xenophile.refinements(argument.tpe.widen)).at(t"Transport").lay(false)(_ <:< target)
 
     val direct = argument.tpe.widen <:< target || (textual && stringy) || transported
 
@@ -261,11 +266,24 @@ object KotlinFacade:
 
     import quotes.reflect.*
 
-    val mapLike = target <:< TypeRepr.of[java.util.Map[?, ?]] && argument <:< TypeRepr.of[Map[?, ?]]
-    val setLike = target <:< TypeRepr.of[java.util.Set[?]] && argument <:< TypeRepr.of[Set[?]]
+    // The blessed aliases are opaque, so wildcard applications are unreducible and `<:<`
+    // cannot see through them; classify by the alias's type symbol instead.
+    def constructorOf(repr: TypeRepr): Symbol = repr match
+      case AppliedType(base, _) => base.typeSymbol
+      case other                => other.typeSymbol
+
+    val mapLike =
+      target <:< TypeRepr.of[java.util.Map[?, ?]]
+        && constructorOf(argument) == constructorOf(TypeRepr.of[Map[Any, Any]])
+
+    val setLike =
+      target <:< TypeRepr.of[java.util.Set[?]]
+        && constructorOf(argument) == constructorOf(TypeRepr.of[Set[Any]])
 
     val seqLike =
-      target <:< TypeRepr.of[java.util.Collection[?]] && argument <:< TypeRepr.of[Seq[?]]
+      target <:< TypeRepr.of[java.util.Collection[?]]
+        && (argument <:< TypeRepr.of[Seq[?]]
+             || constructorOf(argument) == constructorOf(TypeRepr.of[proscenium.List[Any]]))
 
     mapLike || setLike || seqLike
 
@@ -279,12 +297,18 @@ object KotlinFacade:
 
     if !collectionCompatible(tpe, solid(target)) then Unset else
       val view =
-        if tpe <:< TypeRepr.of[Map[?, ?]] then
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Map[?, ?]]})}
-        else if tpe <:< TypeRepr.of[Set[?]] then
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Set[?]]})}
+        def constructorOf(repr: TypeRepr): Symbol = repr match
+          case AppliedType(base, _) => base.typeSymbol
+          case other                => other.typeSymbol
+
+        val constructor = constructorOf(tpe)
+
+        if constructor == constructorOf(TypeRepr.of[Map[Any, Any]]) then
+          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Map[?, ?]])}
+        else if constructor == constructorOf(TypeRepr.of[Set[Any]]) then
+          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Set[?]])}
         else
-          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Seq[?]]})}
+          '{scala.jdk.javaapi.CollectionConverters.asJava(${argument.asExprOf[Any]}.asInstanceOf[scala.collection.immutable.Seq[?]])}
 
       TypeApply(Select.unique(view.asTerm, "asInstanceOf"), List(Inferred(solid(target))))
 
@@ -314,7 +338,7 @@ object KotlinFacade:
 
         val abstractMethods = symbol.methodMembers.filter: method =>
           val deferred = method.flags.is(Flags.Deferred) && !method.flags.is(Flags.Synthetic)
-          deferred && !objectMethods.contains(method.name)
+          deferred && !objectMethods.stdlib.contains(method.name)
 
         abstractMethods match
           case List(method) => (method, method.paramSymss.flatten.length)
@@ -492,7 +516,7 @@ object KotlinFacade:
       // typed with the interface's function, so a lambda *assigned* with `x = …` infers its
       // parameter types too (`button.onClickListener = view => …`), not only one passed to the
       // method. Runtime dispatch of the `_=` returns to `setX` in `applied`.
-      val propertyNames = candidates.map(_.name).to(Set)
+      val propertyNames = candidates.map(_.name).toSet
 
       val setters = classSymbol.methodMembers.filter: method =>
         val named = method.name.length > 3 && method.name.startsWith("set")
@@ -769,7 +793,7 @@ object KotlinFacade:
     val capital = capitalize(field)
 
     def getter(name: Text): Optional[Expr[Any]] =
-      val members = KotlinDialect.members(className, name).filter: member =>
+      val members = KotlinDialect.members(className, name).stdlib.filter: member =>
         !member.property && member.arity == 0
 
       (members, KotlinDialect.memberPrototype(className, name)).absolve match
@@ -795,7 +819,7 @@ object KotlinFacade:
     val className = classNameOf(repr)
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
 
-    KotlinDialect.members(className, field).filter(_.property) match
+    KotlinDialect.members(className, field).stdlib.filter(_.property) match
       case Nil =>
         beanGetter(self, repr, className, classSymbol, field).or(missing(className, field))
 
@@ -888,14 +912,14 @@ object KotlinFacade:
     // With no member of this arity, a member whose omitted trailing parameters all declare
     // defaults is called through its synthetic `$default` bridge instead.
     if candidates.isEmpty then
-      val defaulted = KotlinDialect.members(className, field).filter: member =>
+      val defaulted = KotlinDialect.members(className, field).stdlib.filter: member =>
         val trailing = member.defaults.drop(args.length).forall(identity)
         !member.property && member.arity > args.length && trailing
 
       defaulted match
         case member :: _ =>
-          val provided = args.zipWithIndex.map(_.swap).to(Map)
-          return bridgeCall(self, repr, className, member, provided, prototype)
+          val provided = args.zipWithIndex.map(_.swap).toMap
+          return bridgeCall(self, repr, className, member, Map.of(provided), prototype)
 
         case Nil =>
           // `facade.property(x)` arrives as one Dynamic application; when the member is a
@@ -979,7 +1003,7 @@ object KotlinFacade:
 
     // Each metadata candidate scans the same-named JVM methods, so a symbol satisfiable
     // through more than one candidate would repeat; overload identity is the symbol.
-    val distinct = resolved.distinctBy(_(0))
+    val distinct = resolved.stdlib.distinctBy(_(0))
 
     // Exact conformance outranks adaptation, so `Text` never makes two `String`-flavoured
     // overloads ambiguous when one matches the arguments as given.
@@ -1157,7 +1181,7 @@ object KotlinFacade:
       provided.at(index).let { argument => adapted(argument, parameter).asExpr }.or(zero(parameter))
 
     // Bit `i` set means parameter `i` takes its default.
-    val mask: Int = types.indices.filter(!provided.contains(_)).foldLeft(0): (acc, index) =>
+    val mask: Int = types.indices.filter(!provided.stdlib.contains(_)).foldLeft(0): (acc, index) =>
       acc | (1 << index)
 
     val ownerClass = Literal(ClassOfConstant(repr.dealias match
@@ -1278,14 +1302,14 @@ object KotlinFacade:
     val prototype = KotlinDialect.memberPrototype(className, field).or:
       missing(className, field)
 
-    val candidates = KotlinDialect.members(className, field).filter: member =>
-      !member.property && member.parameters.nonEmpty
+    val candidates = KotlinDialect.members(className, field).stdlib.filter: member =>
+      !member.property && member.parameters.stdlib.nonEmpty
 
     val member = candidates match
       case member :: _ => member
       case Nil         => halt(m"xenophile: $className.$field takes no named arguments")
 
-    val positions: Map[Text, Int] = member.parameters.zipWithIndex.to(Map)
+    val positions: Map[Text, Int] = Map.of(member.parameters.stdlib.zipWithIndex.toMap)
 
     val provided: Map[Int, Term] =
       def assign(pairs: List[(Text, Term)], next: Int, acc: Map[Int, Term]): Map[Int, Term] =
@@ -1294,7 +1318,7 @@ object KotlinFacade:
             acc
 
           case (t"", term) :: rest =>
-            val index = (0 until member.arity).find(!acc.contains(_)).getOrElse:
+            val index = (0 until member.arity).find(!acc.stdlib.contains(_)).getOrElse:
               halt(m"xenophile: too many arguments for $className.$field")
 
             assign(rest, next, acc.updated(index, term))
@@ -1308,17 +1332,17 @@ object KotlinFacade:
 
       assign(pairs, 0, Map())
 
-    val absent = (0 until member.arity).filter(!provided.contains(_)).to(List)
+    val absent = proscenium.List.of((0 until member.arity).filter(!provided.stdlib.contains(_)).toList)
 
     if absent.isEmpty then
       val ordered = (0 until member.arity).to(List).map(provided(_))
       invocation(self, repr, className, field, ordered, prototype)
     else
       val undefaulted = absent.filter: index =>
-        !member.defaults.lift(index).getOrElse(false)
+        !member.defaults.stdlib.lift(index).getOrElse(false)
 
       if undefaulted.nonEmpty then
-        val names = undefaulted.map { index => member.parameters(index) }.join(t", ")
+        val names = undefaulted.map { index => member.parameters.stdlib(index) }.join(t", ")
         halt(m"xenophile: $className.$field requires arguments for: $names")
 
       bridgeCall(self, repr, className, member, provided, prototype)
@@ -1333,7 +1357,7 @@ object KotlinFacade:
 
     val entries = KotlinDialect.enumEntries(className)
 
-    if entries.nonEmpty && !entries.contains(entryName) then
+    if entries.nonEmpty && !entries.stdlib.contains(entryName) then
       val listed = entries.join(t", ")
       halt(m"xenophile: $className has no entry $entryName; its entries are: $listed")
 
@@ -1412,7 +1436,7 @@ object KotlinFacade:
   def unwrapped(self: Expr[Facade])(using Quotes): Expr[Any] =
     import quotes.reflect.*
 
-    val transport = Xenophile.refinements(self.asTerm.tpe.widen).at(t"Transport")
+    val transport = Map.of(Xenophile.refinements(self.asTerm.tpe.widen)).at(t"Transport")
 
     if transport.absent then '{$self.raw} else
       transport.vouch.asType.absolve match

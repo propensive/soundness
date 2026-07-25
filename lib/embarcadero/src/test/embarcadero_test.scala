@@ -133,7 +133,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tarfile.read(image.archive.source[Data]).stdlib.to(List)
+      val entries    = Tarfile.read(image.archive.source[Data]).to(List).asInstanceOf[List[bitumen.Tar.Entry]]
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
         case file: Tar.Entry.File if file.entryName == t"oci-layout" => file.data.memoize

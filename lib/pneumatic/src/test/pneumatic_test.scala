@@ -42,22 +42,25 @@ import strategies.throwUnsafely
 import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics
 
+import proscenium.compat.*
+
 object Tests extends Suite(m"Pneumatic tests"):
   def run(): Unit =
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].flatten.to(List)
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].stdlib.flatten.to(proscenium.List)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Gzip].to(List))
 
       test(m"Roundtrip compress/decompress a single block with GZip"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
-      . assert: stream => stream === Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
+      . assert: stream => stream === proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
-      val longData = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val longData: Progression[Data] =
+        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
-      . assert(_.flatten == longData.flatten)
+      . assert(_.stdlib.flatten == longData.stdlib.flatten)
 
       // The whole-value forms (`Duct.feed` over the format ducts) must
       // interoperate with the stream forms in both directions, per format.
@@ -86,47 +89,47 @@ object Tests extends Suite(m"Pneumatic tests"):
         . assert(_ == wholeData.to(List))
 
       test(m"Roundtrip compress/decompress a single block with LZW"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
-      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
+      . assert(_.stdlib.flatten == proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).stdlib.flatten)
 
       // Varied enough to push the code table through its 9-, 10- and 11-bit widths.
-      val variedData =
-        Progression(IArray.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }))
+      val variedData: Progression[Data] =
+        proscenium.Progression(IArray.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }).asInstanceOf[Data])
 
       test(m"Roundtrip compress/decompress across LZW width growth"):
         variedData.compress[Lzw].decompress[Lzw]
-      . assert(_.flatten == variedData.flatten)
+      . assert(_.stdlib.flatten == variedData.stdlib.flatten)
 
       test(m"Roundtrip compress/decompress a long stream across LZW table clears"):
         longData.compress[Lzw].decompress[Lzw]
-      . assert(_.flatten == longData.flatten)
+      . assert(_.stdlib.flatten == longData.stdlib.flatten)
 
       test(m"LZW without early change also roundtrips"):
         Lzw.decompress(Lzw.compress(variedData, earlyChange = false), earlyChange = false)
-      . assert(_.flatten == variedData.flatten)
+      . assert(_.stdlib.flatten == variedData.stdlib.flatten)
       test(m"Compress a single block with Zlib"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].flatten.to(List)
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].stdlib.flatten.to(proscenium.List)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Zlib].to(List))
 
       test(m"Roundtrip compress/decompress a single block with Zlib"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
-      . assert: stream => stream === Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
+      . assert: stream => stream === proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Zlib"):
         longData.compress[Zlib].decompress[Zlib]
-      . assert(_.flatten == longData.flatten)
+      . assert(_.stdlib.flatten == longData.stdlib.flatten)
 
       test(m"Compress a single block with Deflate"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].flatten.to(List)
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].stdlib.flatten.to(proscenium.List)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Deflate].to(List))
 
       test(m"Roundtrip compress/decompress a single block with Deflate"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
-      . assert: stream => stream === Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
+      . assert: stream => stream === proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
       test(m"Roundtrip a long repetitive Deflate stream"):
         longData.compress[Deflate].decompress[Deflate]
-      . assert(_.flatten == longData.flatten)
+      . assert(_.stdlib.flatten == longData.stdlib.flatten)
 
     suite(m"Pure DEFLATE implementation tests"):
       // On the JVM the formats run over `java.util.zip`, so the pure-Scala port (used on
@@ -146,7 +149,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           out.write(buffer, 0, count)
 
         inflater.end()
-        out.toByteArray.nn.to(List)
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(out.toByteArray.nn).to(List)
 
       def jdkDeflate(data: Data, nowrap: Boolean): Data =
         val deflater = java.util.zip.Deflater(-1, nowrap)
@@ -193,7 +196,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
           position += length - inflater.getRemaining
 
-        out.toByteArray.nn.to(List)
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(out.toByteArray.nn).to(List)
 
       test(m"pure deflate output inflates with the JDK (raw)"):
         jdkInflate(pureDeflate(corpus, true), true)
@@ -295,18 +298,19 @@ object Tests extends Suite(m"Pneumatic tests"):
         foxBrotli.decompress[Brotli].to(List)
       . assert(_ == foxPlain.in[Data].to(List))
 
-      val brotliLong = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val brotliLong: Progression[Data] =
+        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
       val brotliWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val brotliVaried: Data =
         IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip compress/decompress a single block with Brotli"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Brotli].decompress[Brotli]
-      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Brotli].decompress[Brotli]
+      . assert(_.stdlib.flatten == proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).stdlib.flatten)
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Brotli"):
         brotliLong.compress[Brotli].decompress[Brotli]
-      . assert(_.flatten == brotliLong.flatten)
+      . assert(_.stdlib.flatten == brotliLong.stdlib.flatten)
 
       test(m"whole-value compress roundtrips through whole-value decompress (Brotli)"):
         brotliWhole.compress[Brotli].decompress[Brotli].to(List)
@@ -347,7 +351,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       // Golden vectors: real `xz` command-line output, decoded here — validating the decoder against
       // the reference implementation, not merely against our own encoder. All decode to "hello hello
       // hello world".
-      val hello: List[Byte] = t"hello hello hello world".in[Data].to(List)
+      val hello = t"hello hello hello world".in[Data].to(List)
 
       val crc64Xz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 4, -26, -42, -76, 70, 4, -64, 24, 23, 33,
           1, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, -73, -61, 72, -32, 0, 22, 0, 16, 93, 0, 52, 25, 73,
@@ -406,17 +410,18 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == Nil)
 
       val xzWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
-      val xzLong = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val xzLong: Progression[Data] =
+        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
       val xzVaried: Data =
         IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip a single block with Xz"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Xz].decompress[Xz]
-      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Xz].decompress[Xz]
+      . assert(_.stdlib.flatten == proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).stdlib.flatten)
 
       test(m"Roundtrip a long repetitive stream with Xz"):
         xzLong.compress[Xz].decompress[Xz]
-      . assert(_.flatten == xzLong.flatten)
+      . assert(_.stdlib.flatten == xzLong.stdlib.flatten)
 
       test(m"whole-value compress roundtrips through whole-value decompress (Xz)"):
         xzWhole.compress[Xz].decompress[Xz].to(List)
@@ -440,7 +445,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == true)
 
       test(m"Compress with an explicit fast preset and roundtrip (Xz)"):
-        Xz.compress(Progression(xzVaried), 1).decompress[Xz].flatten.to(List)
+        Xz.compress(proscenium.Progression(xzVaried), 1).decompress[Xz].stdlib.flatten.to(proscenium.List)
       . assert(_ == xzVaried.to(List))
 
       test(m"Empty input roundtrips (Xz)"):
@@ -463,8 +468,8 @@ object Tests extends Suite(m"Pneumatic tests"):
         val payload: Data =
           IArray.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
         val encodedChunks = Xz.compress(Progression(payload), 0)
-        val roundtrips = encodedChunks.decompress[Xz].flatten.to(List) == payload.to(List)
-        val encodedBytes: Array[Byte] = IArray.from(encodedChunks.flatten).mutable(using Unsafe)
+        val roundtrips = encodedChunks.decompress[Xz].stdlib.flatten.to(proscenium.List) == payload.to(proscenium.List)
+        val encodedBytes: Array[Byte] = IArray.from(encodedChunks.stdlib.flatten).mutable(using Unsafe)
         val byXz =
           try
             val process = ProcessBuilder("xz", "-d", "-c").start().nn
@@ -472,7 +477,7 @@ object Tests extends Suite(m"Pneumatic tests"):
             process.getOutputStream.nn.close()
             val decoded = process.getInputStream.nn.readAllBytes().nn
             process.waitFor()
-            decoded.to(List) == payload.to(List)
+            scala.collection.immutable.ArraySeq.unsafeWrapArray(decoded).to(proscenium.List) == payload.to(proscenium.List)
           catch case _: ji.IOException => true
         roundtrips && byXz
       . assert(_ == true)
@@ -487,7 +492,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           stdin.close()
           val decoded = process.getInputStream.nn.readAllBytes().nn
           process.waitFor()
-          process.exitValue() == 0 && decoded.to(List) == data.to(List)
+          process.exitValue() == 0 && scala.collection.immutable.ArraySeq.unsafeWrapArray(decoded).to(proscenium.List) == data.to(proscenium.List)
         catch case _: ji.IOException => true // xz binary unavailable; skip
 
       test(m"The xz binary decodes our output (repetitive)"):
@@ -500,17 +505,18 @@ object Tests extends Suite(m"Pneumatic tests"):
 
     suite(m"LZMA2 tests"):
       val lzma2Whole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
-      val lzma2Long = Progression.continually(IArray.from((0 to 255).map(_.toByte))).take(1000)
+      val lzma2Long: Progression[Data] =
+        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
       val lzma2Varied: Data =
         IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip a single block with raw LZMA2"):
-        Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzma2].decompress[Lzma2]
-      . assert(_.flatten == Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+        proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzma2].decompress[Lzma2]
+      . assert(_.stdlib.flatten == proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).stdlib.flatten)
 
       test(m"Roundtrip a long repetitive stream with raw LZMA2"):
         lzma2Long.compress[Lzma2].decompress[Lzma2]
-      . assert(_.flatten == lzma2Long.flatten)
+      . assert(_.stdlib.flatten == lzma2Long.stdlib.flatten)
 
       test(m"whole-value compress roundtrips through whole-value decompress (LZMA2)"):
         lzma2Whole.compress[Lzma2].decompress[Lzma2].to(List)
@@ -538,7 +544,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Explicit preset and dictionary size roundtrip (LZMA2)"):
         Lzma2.decompress(Lzma2.compress(Progression(lzma2Varied), 1),
-            Lzma2Options.preset(1).dictSize).flatten.to(List)
+            Lzma2Options.preset(1).dictSize).stdlib.flatten.to(proscenium.List)
       . assert(_ == lzma2Varied.to(List))
 
     suite(m"Compression duct tests"):
@@ -570,7 +576,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
         val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
-        stream.readAllBytes().nn.to(List)
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
       . assert(_ == mixed.to(List))
 
       // JDK-produced gzip, delivered one byte per chunk: the header state
@@ -594,7 +600,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val gather = Gather2()
         Stream(chunks).compress[Gzip].pump(gather)
         val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
-        stream.readAllBytes().nn.to(List)
+        scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
       . assert(_ == mixed.to(List))
 
       // Tiny demand: each refill grants a few bytes, so the inflater retains
@@ -603,7 +609,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       test(m"gzip duct decompresses correctly under three-byte demand"):
         val stream = summon[Data is Streamable by Data over Credit].stream(mixed)
                      . compress[Gzip].decompress[Gzip]
-        val builder = List.newBuilder[Byte]
+        val builder = scala.collection.immutable.List.newBuilder[Byte]
 
         def recur(): Unit = stream.refill(Credit(3)) match
           case count: Int =>
@@ -618,8 +624,8 @@ object Tests extends Suite(m"Pneumatic tests"):
           case _ => ()
 
         recur()
-        builder.result()
-      . assert(_ == mixed.to(List))
+        proscenium.List.of(builder.result())
+      . assert(_ == mixed.to(proscenium.List))
 
       test(m"gzip duct decompresses JDK-produced gzip"):
         val out = ji.ByteArrayOutputStream()

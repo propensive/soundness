@@ -246,7 +246,7 @@ object Tests extends Suite(m"Gastronomy tests"):
         windowed(JavaStdlibHashing.crc32.digestion())
       . assert(_ == whole(JavaStdlibHashing.crc32.digestion()))
 
-      val chunked: LazyList[Data] = payload.grouped(7777).to(LazyList)
+      val chunked: Progression[Data] = payload.grouped(7777).to(Progression)
 
       test(m"a chunked stream's checksum matches the whole-value digest"):
         chunked.checksum[Sha2[256]].serialize[Hex]

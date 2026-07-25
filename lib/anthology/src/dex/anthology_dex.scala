@@ -103,12 +103,12 @@ object dexLinkages:
 
       val roots: List[jnf.Path] =
         jnf.Paths.get(compilation.out.encode.s).nn ::
-          compilation.classpath.entries.to(List).flatMap:
+          compilation.classpath.entries.flatMap:
             case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
             case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
             case _                                   => Nil
 
-      val (archives, directories) = roots.partition(jnf.Files.isRegularFile(_))
+      val (archives, directories) = roots.stdlib.partition(jnf.Files.isRegularFile(_))
 
       // D8 accepts archives wholesale but not directories, whose classfiles are enumerated
       // individually; `module-info` classfiles are not program code and are excluded.

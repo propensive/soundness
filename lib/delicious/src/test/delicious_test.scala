@@ -187,7 +187,7 @@ object Tests extends Suite(m"Delicious Tests"):
 
     test(m"A semantic message finds nested type markers"):
       val typed = mark(t"type", List(t"tasty" -> t"QUJD"), t"List[Int]")
-      SemanticMessage.parse(t"Found: ${mark(t"name", Nil, t"value of $typed")}").types.length
+      SemanticMessage.parse(t"Found: ${mark(t"name", Nil, t"value of $typed")}").types.stdlib.length
     . assert(_ == 1)
 
     test(m"A message without markers is not marked"):
@@ -293,7 +293,7 @@ object Tests extends Suite(m"Delicious Tests"):
             (classpath)(Map(t"bad.scala" -> source), out)
 
         process.complete()
-        val notices = process.notices.to(List)
+        val notices = process.notices.stdlib.toList
 
         test(m"A failed compilation produces at least one error notice"):
           notices.count(_.importance == Importance.Error)
@@ -316,7 +316,7 @@ object Tests extends Suite(m"Delicious Tests"):
           . assert { rendered =>
               // `java.lang.String` (not the compiler-printed `String`) proves the type
               // came through stenography; `Bad.Local` proves placeholder substitution.
-              rendered.contains(t"java.lang.String") && rendered.contains(t"Bad.Local")
+              rendered.subsumes(t"java.lang.String") && rendered.subsumes(t"Bad.Local")
             }
 
   def proscalaLibrary(): Optional[java.nio.file.Path] =

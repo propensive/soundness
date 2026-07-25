@@ -32,6 +32,9 @@
                                                                                                   */
 package xenophile
 
+import scala.collection.immutable as sci
+import scala.collection.immutable.{List, Nil, ::}
+
 import scala.quoted.*
 
 import anticipation.*
@@ -136,7 +139,7 @@ object KotlinInvoke:
         case "C" => argument <:< TypeRepr.of[Char]
         case _   => !(argument <:< TypeRepr.of[AnyVal])
 
-    val members = KotlinDialect.members(owner, function).filter: member =>
+    val members = KotlinDialect.members(owner, function).stdlib.filter: member =>
       val shapes = argumentValues.map(_.tpe.widen).zip(descriptorParameters(member.descriptor))
       member.arity == argumentTerms.length && shapes.forall(satisfies)
 
