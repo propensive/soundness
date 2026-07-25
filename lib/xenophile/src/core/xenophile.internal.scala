@@ -33,6 +33,9 @@
 package xenophile
 
 import scala.quoted.*
+import scala.collection.immutable.Seq
+
+import proscenium.compat.*
 
 import anticipation.*
 import fulminate.*
@@ -89,7 +92,7 @@ object Xenophile:
 
   // Collects every `type X = …` member from a (possibly nested) refinement type into a map.
   private[xenophile] def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :   Map[Text, quotes.reflect.TypeRepr] =
+  :   scala.collection.immutable.Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -97,7 +100,7 @@ object Xenophile:
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
-      case _                                           => Map()
+      case _                                           => scala.collection.immutable.Map()
 
   // Reads the `Topic` (foreign type) and `Origin` (source language) from a `Foreign` receiver. The
   // topic is returned as a type, since it may be compound (a union, say) rather than a single name.
@@ -106,7 +109,7 @@ object Xenophile:
 
     import quotes.reflect.*
 
-    val members = refinements(self.asTerm.tpe.widen)
+    val members = Map.of(refinements(self.asTerm.tpe.widen))
 
     val topic = members.at(t"Topic").or:
       halt(m"xenophile: the receiver is not a foreign type (it has no `Topic`)")
@@ -236,7 +239,7 @@ object Xenophile:
     val paramTopic = reprOf(paramType)
     val argRepr = arg.asTerm.tpe.widen
 
-    val argTopic = refinements(argRepr).at(t"Topic").or:
+    val argTopic = Map.of(refinements(argRepr)).at(t"Topic").or:
       halt(m"xenophile: the foreign type of an argument to $method is not known")
 
     // The `ok` arm topic of a `result<ok, err>` parameter, if it is one — so a value of that arm's
@@ -326,7 +329,7 @@ object Xenophile:
     val element = topicRepr.dealias match
       case Refinement(parent, "Transport", TypeBounds(_, element)) => parent.dealias match
         case ConstantType(StringConstant(constructor))
-        if arrayConstructors.contains(constructor.tt) =>
+        if arrayConstructors.has(constructor.tt) =>
           element
 
         case _ =>
@@ -378,7 +381,7 @@ object Xenophile:
     val member = Expr(fieldName.s)
     val owner = Expr(topic.s)
     val target = '{Foreign.Expression.Select($self.expr, $member.tt, $owner.tt)}
-    val tree = '{Foreign.Expression.Apply($target, ${Expr.ofList(argTrees)})}
+    val tree = '{Foreign.Expression.Apply($target, ${Expr.ofList(argTrees.stdlib)})}
 
     foreignType(signature.result, originRepr, locusRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
@@ -407,7 +410,7 @@ object Xenophile:
   def interface[form: Type](resource: Expr[Locative]): Macro[Interface] =
     import quotes.reflect.*
 
-    val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
+    val members = Map.of(refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen))
 
     val locusRepr = members.at(t"Locus").or:
       halt(m"xenophile: the resource does not carry a singleton path type (it has no `Locus`)")

@@ -361,9 +361,9 @@ extension (stream: Progression[Data])
 
     recur(stream, 0, newArray(), 0)
 
-  def take(bytes: Bytes): LazyList[Data] =
-    def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] =
-      stream.flow(LazyList()):
+  def take(bytes: Bytes): Progression[Data] =
+    def recur(stream: Progression[Data], count: Bytes): Progression[Data] =
+      stream.flow(Progression()):
         if next.bytes < count then
           val head: Data = next
           head #:: recur(more, count - next.bytes)
