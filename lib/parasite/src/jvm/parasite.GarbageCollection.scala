@@ -97,7 +97,7 @@ object GarbageCollection:
 
     def register(value: Os.type, action: GarbageCollection => Unit): () => Unit =
       val listeners =
-        jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.transmute[List].bind:
+        jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.to[List].bind:
           case emitter: jm.NotificationEmitter =>
             val listener: jm.NotificationListener^ = (notification, handback) =>
               if
@@ -114,11 +114,11 @@ object GarbageCollection:
                     val postMemory = gcInfo.getMemoryUsageAfterGc().nn
 
                     val memory: Map[Text, (Bytes, Bytes)] =
-                      preMemory.keySet.nn.iterator.nn.transmute[List].map: key =>
+                      preMemory.keySet.nn.iterator.nn.to[List].map: key =>
                         key.tt ->
                           (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
 
-                      .transmute[Map]
+                      .to[Map]
 
                     action(GarbageCollection(gcInfo.getId.toInt.z, collector, cause, memory))
 

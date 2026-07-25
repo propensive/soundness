@@ -313,7 +313,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
     suite(m"sum-type schema derivation"):
       test(m"a sum derives a select with one variant per case"):
-        Tels.tels[Tests.Shape2](t"shape").selects.bind(_.variants).map(_.keyword).to(List)
+        Tels.tels[Tests.Shape2](t"shape").selects.bind(_.variants).map(_.keyword).to[List]
       . assert(_ == List(t"circle", t"rectangle", t"dot"))
 
       test(m"each variant's fields are derived into its struct"):
@@ -327,7 +327,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tels.tels[Tests.Shape2](t"shape").document.members.map:
           case ref: Tels.SelectRef => ref.reference
           case _                   => t""
-        . to(List)
+        . to[List]
       . assert(_ == List(t"Shape2"))
 
     suite(m"`in Tel` decoder shorthand"):
@@ -1720,7 +1720,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val schema = Tels.tels[Tests.Shape2](t"shape")
 
         def values(element: Tel.Element): List[Text] = element match
-          case Tel.Element.Node(_, _, children) => children.to(List).bind(values)
+          case Tel.Element.Node(_, _, children) => children.to[List].bind(values)
           case Tel.Element.Value(_, _, text)    => List(text)
 
         values(Bintel.decode(shape.bintel, schema))
@@ -2312,7 +2312,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"trailing bytes are rejected"):
         val good = Tests.Person(t"Alice", 30).bintel
-        val padded = IArray.from(good.to(List).stdlib :+ 0.toByte)
+        val padded = IArray.from(good.to[List].stdlib :+ 0.toByte)
         capture[BintelError](Bintel.parse[Tests.Person](padded)).reason
       . assert(_ == BintelError.Reason.TrailingBytes)
 

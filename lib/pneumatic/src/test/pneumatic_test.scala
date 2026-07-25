@@ -49,7 +49,7 @@ object Tests extends Suite(m"Pneumatic tests"):
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].stdlib.flatten.to(proscenium.List)
-      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Gzip].to(List))
+      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Gzip].to[List])
 
       test(m"Roundtrip compress/decompress a single block with GZip"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].decompress[Gzip]
@@ -69,24 +69,24 @@ object Tests extends Suite(m"Pneumatic tests"):
       for format <- List(t"Gzip", t"Zlib", t"Deflate") do
         test(m"whole-value compress roundtrips through whole-value decompress ($format)"):
           format.s match
-            case "Gzip"    => wholeData.compress[Gzip].decompress[Gzip].to(List)
-            case "Zlib"    => wholeData.compress[Zlib].decompress[Zlib].to(List)
-            case _         => wholeData.compress[Deflate].decompress[Deflate].to(List)
-        . assert(_ == wholeData.to(List))
+            case "Gzip"    => wholeData.compress[Gzip].decompress[Gzip].to[List]
+            case "Zlib"    => wholeData.compress[Zlib].decompress[Zlib].to[List]
+            case _         => wholeData.compress[Deflate].decompress[Deflate].to[List]
+        . assert(_ == wholeData.to[List])
 
         test(m"whole-value compress feeds the stream decompressor ($format)"):
           format.s match
-            case "Gzip"    => wholeData.compress[Gzip].stream.decompress[Gzip].memoize.to(List)
-            case "Zlib"    => wholeData.compress[Zlib].stream.decompress[Zlib].memoize.to(List)
-            case _ => wholeData.compress[Deflate].stream.decompress[Deflate].memoize.to(List)
-        . assert(_ == wholeData.to(List))
+            case "Gzip"    => wholeData.compress[Gzip].stream.decompress[Gzip].memoize.to[List]
+            case "Zlib"    => wholeData.compress[Zlib].stream.decompress[Zlib].memoize.to[List]
+            case _ => wholeData.compress[Deflate].stream.decompress[Deflate].memoize.to[List]
+        . assert(_ == wholeData.to[List])
 
         test(m"stream compress feeds the whole-value decompressor ($format)"):
           format.s match
-            case "Gzip"    => wholeData.stream.compress[Gzip].memoize.decompress[Gzip].to(List)
-            case "Zlib"    => wholeData.stream.compress[Zlib].memoize.decompress[Zlib].to(List)
-            case _ => wholeData.stream.compress[Deflate].memoize.decompress[Deflate].to(List)
-        . assert(_ == wholeData.to(List))
+            case "Gzip"    => wholeData.stream.compress[Gzip].memoize.decompress[Gzip].to[List]
+            case "Zlib"    => wholeData.stream.compress[Zlib].memoize.decompress[Zlib].to[List]
+            case _ => wholeData.stream.compress[Deflate].memoize.decompress[Deflate].to[List]
+        . assert(_ == wholeData.to[List])
 
       test(m"Roundtrip compress/decompress a single block with LZW"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
@@ -109,7 +109,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_.stdlib.flatten == variedData.stdlib.flatten)
       test(m"Compress a single block with Zlib"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].stdlib.flatten.to(proscenium.List)
-      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Zlib].to(List))
+      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Zlib].to[List])
 
       test(m"Roundtrip compress/decompress a single block with Zlib"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].decompress[Zlib]
@@ -121,7 +121,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Compress a single block with Deflate"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].stdlib.flatten.to(proscenium.List)
-      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Deflate].to(List))
+      . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Deflate].to[List])
 
       test(m"Roundtrip compress/decompress a single block with Deflate"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].decompress[Deflate]
@@ -200,39 +200,39 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"pure deflate output inflates with the JDK (raw)"):
         jdkInflate(pureDeflate(corpus, true), true)
-      . assert(_ == corpus.to(List))
+      . assert(_ == corpus.to[List])
 
       test(m"pure deflate output inflates with the JDK (zlib)"):
         jdkInflate(pureDeflate(corpus, false), false)
-      . assert(_ == corpus.to(List))
+      . assert(_ == corpus.to[List])
 
       test(m"JDK deflate output inflates with the pure implementation (raw)"):
         pureInflate(jdkDeflate(corpus, true), true, Int.MaxValue)
-      . assert(_ == corpus.to(List))
+      . assert(_ == corpus.to[List])
 
       test(m"JDK deflate output inflates with the pure implementation (zlib)"):
         pureInflate(jdkDeflate(corpus, false), false, Int.MaxValue)
-      . assert(_ == corpus.to(List))
+      . assert(_ == corpus.to[List])
 
       test(m"pure inflate succeeds fed seven bytes at a time"):
         pureInflate(jdkDeflate(corpus, false), false, 7)
-      . assert(_ == corpus.to(List))
+      . assert(_ == corpus.to[List])
 
       test(m"pure deflate output is byte-identical to the JDK's (raw)"):
-        pureDeflate(corpus, true).to(List)
-      . assert(_ == jdkDeflate(corpus, true).to(List))
+        pureDeflate(corpus, true).to[List]
+      . assert(_ == jdkDeflate(corpus, true).to[List])
 
       test(m"pure deflate output is byte-identical to the JDK's (zlib)"):
-        pureDeflate(corpus, false).to(List)
-      . assert(_ == jdkDeflate(corpus, false).to(List))
+        pureDeflate(corpus, false).to[List]
+      . assert(_ == jdkDeflate(corpus, false).to[List])
 
       test(m"pure roundtrip without the JDK"):
         pureInflate(pureDeflate(corpus, false), false, 4096)
-      . assert(_ == corpus.to(List))
+      . assert(_ == corpus.to[List])
 
       test(m"Whole-value gzip roundtrips through gunzip"):
-        corpus.gzip.gunzip.to(List)
-      . assert(_ == corpus.to(List))
+        corpus.gzip.gunzip.to[List]
+      . assert(_ == corpus.to[List])
 
       test(m"A gzip stream with optional header fields decodes"):
         // FLG = FEXTRA | FNAME | FCOMMENT exercises every optional-field state
@@ -262,8 +262,8 @@ object Tests extends Suite(m"Pneumatic tests"):
           out.write(((payload.length >>> (index*8)) & 0xff).toInt)
           index += 1
 
-        out.toByteArray.nn.immutable(using Unsafe).decompress[Gzip].to(List)
-      . assert(_ == t"optional header fields".in[Data].to(List))
+        out.toByteArray.nn.immutable(using Unsafe).decompress[Gzip].to[List]
+      . assert(_ == t"optional header fields".in[Data].to[List])
 
 
     suite(m"Brotli tests"):
@@ -283,20 +283,20 @@ object Tests extends Suite(m"Pneumatic tests"):
       val foxPlain: Text = t"The quick brown fox jumps over the lazy dog."
 
       test(m"Decode reference Brotli output (single byte)"):
-        xBrotli.decompress[Brotli].to(List)
-      . assert(_ == t"x".in[Data].to(List))
+        xBrotli.decompress[Brotli].to[List]
+      . assert(_ == t"x".in[Data].to[List])
 
       test(m"Decode reference Brotli output (run-length)"):
-        tenXtenYBrotli.decompress[Brotli].to(List)
-      . assert(_ == t"XXXXXXXXXXYYYYYYYYYY".in[Data].to(List))
+        tenXtenYBrotli.decompress[Brotli].to[List]
+      . assert(_ == t"XXXXXXXXXXYYYYYYYYYY".in[Data].to[List])
 
       test(m"Decode reference Brotli output (natural-language text)"):
-        ukkonooaBrotli.decompress[Brotli].to(List)
-      . assert(_ == ukkonooaPlain.in[Data].to(List))
+        ukkonooaBrotli.decompress[Brotli].to[List]
+      . assert(_ == ukkonooaPlain.in[Data].to[List])
 
       test(m"Decode reference Brotli output using the static dictionary"):
-        foxBrotli.decompress[Brotli].to(List)
-      . assert(_ == foxPlain.in[Data].to(List))
+        foxBrotli.decompress[Brotli].to[List]
+      . assert(_ == foxPlain.in[Data].to[List])
 
       val brotliLong: Progression[Data] =
         proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
@@ -313,20 +313,20 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_.stdlib.flatten == brotliLong.stdlib.flatten)
 
       test(m"whole-value compress roundtrips through whole-value decompress (Brotli)"):
-        brotliWhole.compress[Brotli].decompress[Brotli].to(List)
-      . assert(_ == brotliWhole.to(List))
+        brotliWhole.compress[Brotli].decompress[Brotli].to[List]
+      . assert(_ == brotliWhole.to[List])
 
       test(m"whole-value compress feeds the stream decompressor (Brotli)"):
-        brotliWhole.compress[Brotli].stream.decompress[Brotli].memoize.to(List)
-      . assert(_ == brotliWhole.to(List))
+        brotliWhole.compress[Brotli].stream.decompress[Brotli].memoize.to[List]
+      . assert(_ == brotliWhole.to[List])
 
       test(m"stream compress feeds the whole-value decompressor (Brotli)"):
-        brotliWhole.stream.compress[Brotli].memoize.decompress[Brotli].to(List)
-      . assert(_ == brotliWhole.to(List))
+        brotliWhole.stream.compress[Brotli].memoize.decompress[Brotli].to[List]
+      . assert(_ == brotliWhole.to[List])
 
       test(m"Roundtrip varied data spanning many commands (Brotli)"):
-        brotliVaried.compress[Brotli].decompress[Brotli].to(List)
-      . assert(_ == brotliVaried.to(List))
+        brotliVaried.compress[Brotli].decompress[Brotli].to[List]
+      . assert(_ == brotliVaried.to[List])
 
       test(m"Brotli actually compresses a repetitive payload"):
         val payload = (t"the quick brown fox jumped " * 500).in[Data]
@@ -335,15 +335,15 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Roundtrip a large multi-command payload (Brotli)"):
         val big = IArray.from((0 until 2000000).map { index => ((index*31 + (index >> 6)) & 0xff).toByte })
-        big.compress[Brotli].decompress[Brotli].to(List) == big.to(List)
+        big.compress[Brotli].decompress[Brotli].to[List] == big.to[List]
       . assert(_ == true)
 
       test(m"Empty input roundtrips (Brotli)"):
-        Data().compress[Brotli].decompress[Brotli].to(List)
+        Data().compress[Brotli].decompress[Brotli].to[List]
       . assert(_ == Nil)
 
       test(m"Single byte roundtrips (Brotli)"):
-        Data(42).compress[Brotli].decompress[Brotli].to(List)
+        Data(42).compress[Brotli].decompress[Brotli].to[List]
       . assert(_ == List[Byte](42))
 
 
@@ -351,7 +351,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       // Golden vectors: real `xz` command-line output, decoded here — validating the decoder against
       // the reference implementation, not merely against our own encoder. All decode to "hello hello
       // hello world".
-      val hello = t"hello hello hello world".in[Data].to(List)
+      val hello = t"hello hello hello world".in[Data].to[List]
 
       val crc64Xz: Data = Data(-3, 55, 122, 88, 90, 0, 0, 4, -26, -42, -76, 70, 4, -64, 24, 23, 33,
           1, 22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 52, -73, -61, 72, -32, 0, 22, 0, 16, 93, 0, 52, 25, 73,
@@ -379,7 +379,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           -102, 1, 0, 0, 0, 0, 10, 89, 90)
 
       test(m"Decode reference xz output (SHA-256 check, verified)"):
-        sha256Xz.decompress[Xz].to(List)
+        sha256Xz.decompress[Xz].to[List]
       . assert(_ == hello)
 
       test(m"A corrupted payload is detected by the integrity check"):
@@ -389,24 +389,24 @@ object Tests extends Suite(m"Pneumatic tests"):
         val bytes = original.compress[Xz].mutable(using Unsafe)
         bytes(36) = (bytes(36) ^ 0x55).toByte
         val corrupted: Data = bytes.immutable(using Unsafe)
-        try corrupted.decompress[Xz].to(List) != original.to(List)
+        try corrupted.decompress[Xz].to[List] != original.to[List]
         catch case _: Exception => true
       . assert(_ == true)
 
       test(m"Decode reference xz output (CRC-64 check)"):
-        crc64Xz.decompress[Xz].to(List)
+        crc64Xz.decompress[Xz].to[List]
       . assert(_ == hello)
 
       test(m"Decode reference xz output (CRC-32 check)"):
-        crc32Xz.decompress[Xz].to(List)
+        crc32Xz.decompress[Xz].to[List]
       . assert(_ == hello)
 
       test(m"Decode reference xz output (no check)"):
-        noneXz.decompress[Xz].to(List)
+        noneXz.decompress[Xz].to[List]
       . assert(_ == hello)
 
       test(m"Decode reference xz output (empty input)"):
-        emptyXz.decompress[Xz].to(List)
+        emptyXz.decompress[Xz].to[List]
       . assert(_ == Nil)
 
       val xzWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
@@ -424,20 +424,20 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_.stdlib.flatten == xzLong.stdlib.flatten)
 
       test(m"whole-value compress roundtrips through whole-value decompress (Xz)"):
-        xzWhole.compress[Xz].decompress[Xz].to(List)
-      . assert(_ == xzWhole.to(List))
+        xzWhole.compress[Xz].decompress[Xz].to[List]
+      . assert(_ == xzWhole.to[List])
 
       test(m"whole-value compress feeds the stream decompressor (Xz)"):
-        xzWhole.compress[Xz].stream.decompress[Xz].memoize.to(List)
-      . assert(_ == xzWhole.to(List))
+        xzWhole.compress[Xz].stream.decompress[Xz].memoize.to[List]
+      . assert(_ == xzWhole.to[List])
 
       test(m"stream compress feeds the whole-value decompressor (Xz)"):
-        xzWhole.stream.compress[Xz].memoize.decompress[Xz].to(List)
-      . assert(_ == xzWhole.to(List))
+        xzWhole.stream.compress[Xz].memoize.decompress[Xz].to[List]
+      . assert(_ == xzWhole.to[List])
 
       test(m"Roundtrip varied data spanning many commands (Xz)"):
-        xzVaried.compress[Xz].decompress[Xz].to(List)
-      . assert(_ == xzVaried.to(List))
+        xzVaried.compress[Xz].decompress[Xz].to[List]
+      . assert(_ == xzVaried.to[List])
 
       test(m"Xz actually compresses a repetitive payload"):
         val payload = (t"the quick brown fox jumped " * 500).in[Data]
@@ -446,20 +446,20 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Compress with an explicit fast preset and roundtrip (Xz)"):
         Xz.compress(proscenium.Progression(xzVaried), 1).decompress[Xz].stdlib.flatten.to(proscenium.List)
-      . assert(_ == xzVaried.to(List))
+      . assert(_ == xzVaried.to[List])
 
       test(m"Empty input roundtrips (Xz)"):
-        Data().compress[Xz].decompress[Xz].to(List)
+        Data().compress[Xz].decompress[Xz].to[List]
       . assert(_ == Nil)
 
       test(m"Single byte roundtrips (Xz)"):
-        Data(42).compress[Xz].decompress[Xz].to(List)
+        Data(42).compress[Xz].decompress[Xz].to[List]
       . assert(_ == List[Byte](42))
 
       test(m"Roundtrip a large multi-chunk payload (Xz)"):
         val big =
           IArray.from((0 until 3000000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
-        big.compress[Xz].decompress[Xz].to(List) == big.to(List)
+        big.compress[Xz].decompress[Xz].to[List] == big.to[List]
       . assert(_ == true)
 
       test(m"Streaming encoder emits multiple blocks past the dictionary (preset 0)"):
@@ -519,33 +519,33 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_.stdlib.flatten == lzma2Long.stdlib.flatten)
 
       test(m"whole-value compress roundtrips through whole-value decompress (LZMA2)"):
-        lzma2Whole.compress[Lzma2].decompress[Lzma2].to(List)
-      . assert(_ == lzma2Whole.to(List))
+        lzma2Whole.compress[Lzma2].decompress[Lzma2].to[List]
+      . assert(_ == lzma2Whole.to[List])
 
       test(m"whole-value compress feeds the stream decompressor (LZMA2)"):
-        lzma2Whole.compress[Lzma2].stream.decompress[Lzma2].memoize.to(List)
-      . assert(_ == lzma2Whole.to(List))
+        lzma2Whole.compress[Lzma2].stream.decompress[Lzma2].memoize.to[List]
+      . assert(_ == lzma2Whole.to[List])
 
       test(m"stream compress feeds the whole-value decompressor (LZMA2)"):
-        lzma2Whole.stream.compress[Lzma2].memoize.decompress[Lzma2].to(List)
-      . assert(_ == lzma2Whole.to(List))
+        lzma2Whole.stream.compress[Lzma2].memoize.decompress[Lzma2].to[List]
+      . assert(_ == lzma2Whole.to[List])
 
       test(m"Roundtrip varied data (LZMA2)"):
-        lzma2Varied.compress[Lzma2].decompress[Lzma2].to(List)
-      . assert(_ == lzma2Varied.to(List))
+        lzma2Varied.compress[Lzma2].decompress[Lzma2].to[List]
+      . assert(_ == lzma2Varied.to[List])
 
       test(m"Empty input roundtrips (LZMA2)"):
-        Data().compress[Lzma2].decompress[Lzma2].to(List)
+        Data().compress[Lzma2].decompress[Lzma2].to[List]
       . assert(_ == Nil)
 
       test(m"Single byte roundtrips (LZMA2)"):
-        Data(42).compress[Lzma2].decompress[Lzma2].to(List)
+        Data(42).compress[Lzma2].decompress[Lzma2].to[List]
       . assert(_ == List[Byte](42))
 
       test(m"Explicit preset and dictionary size roundtrip (LZMA2)"):
         Lzma2.decompress(Lzma2.compress(Progression(lzma2Varied), 1),
             Lzma2Options.preset(1).dictSize).stdlib.flatten.to(proscenium.List)
-      . assert(_ == lzma2Varied.to(List))
+      . assert(_ == lzma2Varied.to[List])
 
     suite(m"Compression duct tests"):
       val mixed: Data =
@@ -555,29 +555,29 @@ object Tests extends Suite(m"Pneumatic tests"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Gzip].decompress[Gzip].pump(gather)
-        gather.data.to(List)
-      . assert(_ == mixed.to(List))
+        gather.data.to[List]
+      . assert(_ == mixed.to[List])
 
       test(m"deflate duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Deflate].decompress[Deflate].pump(gather)
-        gather.data.to(List)
-      . assert(_ == mixed.to(List))
+        gather.data.to[List]
+      . assert(_ == mixed.to[List])
 
       test(m"zlib duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Zlib].decompress[Zlib].pump(gather)
-        gather.data.to(List)
-      . assert(_ == mixed.to(List))
+        gather.data.to[List]
+      . assert(_ == mixed.to[List])
 
       test(m"gzip duct output is genuine gzip"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
         val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
-      . assert(_ == mixed.to(List))
+      . assert(_ == mixed.to[List])
 
       // JDK-produced gzip, delivered one byte per chunk: the header state
       // machine, the inflater's window re-feed and the trailer all span many
@@ -590,18 +590,18 @@ object Tests extends Suite(m"Pneumatic tests"):
         val chunks = buffer.toByteArray.nn.iterator.map { byte => Data(byte) }
         val gather = Gather2()
         Stream(chunks).decompress[Gzip].pump(gather)
-        gather.data.to(List)
-      . assert(_ == mixed.to(List))
+        gather.data.to[List]
+      . assert(_ == mixed.to[List])
 
       // The mirror image: compress fed one byte per chunk, so the CRC and size
       // accumulate over single-byte consumptions, validated by the JDK.
       test(m"gzip duct compresses correctly when fed one byte at a time"):
-        val chunks = mixed.to(List).iterator.map { byte => Data(byte) }
+        val chunks = mixed.to[List].iterator.map { byte => Data(byte) }
         val gather = Gather2()
         Stream(chunks).compress[Gzip].pump(gather)
         val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
-      . assert(_ == mixed.to(List))
+      . assert(_ == mixed.to[List])
 
       // Tiny demand: each refill grants a few bytes, so the inflater retains
       // pending output and unconsumed input across many output-bound steps,
@@ -638,8 +638,8 @@ object Tests extends Suite(m"Pneumatic tests"):
         . stream(out.toByteArray.nn.immutable(using Unsafe).grouped(7).to(Progression))
         . decompress[Gzip].pump(gather)
 
-        gather.data.to(List)
-      . assert(_ == mixed.to(List))
+        gather.data.to[List]
+      . assert(_ == mixed.to[List])
 
 class Gather2() extends Intake[Data]:
   type Transport = Credit

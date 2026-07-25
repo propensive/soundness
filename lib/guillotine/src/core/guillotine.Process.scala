@@ -43,7 +43,7 @@ import rudiments.*
 import vacuous.*
 
 object Process:
-  private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.transmute[List]
+  private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.to[List]
 
   def apply(pid: Pid)(using pidError: Tactic[PidError]^): Process =
     val handle = ProcessHandle.of(pid.value).nn
@@ -80,7 +80,7 @@ class Process private (java: ProcessHandle) extends ProcessRef, caps.ExclusiveCa
     if parent.isPresent then new Process(parent.get.nn) else Unset
 
   def children: List[Process] =
-    Process.processes(java.children.nn.iterator.nn.transmute[List])
+    Process.processes(java.children.nn.iterator.nn.to[List])
 
   def startTime[instantiable: Instantiable across Instants from Long]: Optional[instantiable] =
     val instant = java.info.nn.startInstant.nn

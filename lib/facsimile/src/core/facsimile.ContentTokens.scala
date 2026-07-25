@@ -74,7 +74,7 @@ private[facsimile] object ContentTokens:
         case List(Cos.Name(key), value) => List(key -> value)
         case _                            => List()
 
-      . transmute[Map]
+      . to[Map]
 
     . or(abort(PdfError(PdfError.Reason.MalformedOperator(t"BI"))))
 

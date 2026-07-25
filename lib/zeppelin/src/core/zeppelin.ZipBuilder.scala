@@ -87,7 +87,7 @@ class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
   // per the JAR specification. Call it first if the manifest should lead the archive, as
   // convention prefers.
   def manifest(attributes: (Text, Text)*)(using Zip.Compression): Unit =
-    val lines = attributes.transmute[List].map { (key, value) => wrap(t"$key: $value") }
+    val lines = attributes.to(List).map { (key, value) => wrap(t"$key: $value") }
     val text = lines.join(t"", t"\r\n", t"\r\n\r\n")
     insert(Zip.Entry(ZipBuilder.manifestRef, text))
 

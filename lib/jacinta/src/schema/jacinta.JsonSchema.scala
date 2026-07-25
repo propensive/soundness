@@ -364,7 +364,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
             descriptions.at(label).lay(schema.schema()): memo =>
               schema.schema().description = memo.stdlib.map(_.description).join(t"\n")
 
-        . to(List)
+        . to[List]
 
       JsonSchema.Object(oneOf = schemas, required = List("kind"))
 

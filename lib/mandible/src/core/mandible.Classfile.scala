@@ -59,7 +59,7 @@ object Classfile:
 
 class Classfile(data: Data):
   val sourceFile: Optional[Text] =
-    model.attributes.nn.transmute[List].stdlib.collect:
+    model.attributes.nn.to[List].stdlib.collect:
       case attribute: jlca.SourceFileAttribute =>
         attribute.sourceFile().nn.stringValue.nn.tt
 
@@ -73,7 +73,7 @@ class Classfile(data: Data):
         case attr: jlca.CodeAttribute => attr
         case _                        => panic(m"code attribute not present")
 
-      val elements = code.elementList.nn.transmute[List]
+      val elements = code.elementList.nn.to[List]
 
       val labels: scala.collection.immutable.Map[jlc.Label, Int] =
         val builder = scala.collection.immutable.Map.newBuilder[jlc.Label, Int]
@@ -92,13 +92,13 @@ class Classfile(data: Data):
             case smt: jlca.StackMapTableAttribute => smt
 
         attr.fold(scala.collection.immutable.Map.empty): smt =>
-          smt.entries.nn.transmute[List].map: entry =>
+          smt.entries.nn.to[List].map: entry =>
             val frames =
-              List.of(entry.stack.nn.transmute[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse)
+              List.of(entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse)
 
             entry.target.nn -> frames
 
-          . transmute[Map].stdlib
+          . to[Map].stdlib
 
       def recur
         ( todo:  List[jlc.CodeElement],
@@ -145,4 +145,4 @@ class Classfile(data: Data):
       Bytecode(sourceFile, instructions, code.maxStack, code.maxLocals)
 
   private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
-  lazy val methods: List[Method] = model.methods.nn.transmute[List].map(Method(_))
+  lazy val methods: List[Method] = model.methods.nn.to[List].map(Method(_))

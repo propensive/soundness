@@ -88,14 +88,14 @@ object Property:
   //       => (system: System, property: Tactic[PropertyError])
   //       =>  Property["java.library.path", List[path]] =
 
-  //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+  //   _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
 
 
   // given javaClassPath: [path: Instantiable across Paths from Text]
   //       => (system: System, property: Tactic[PropertyError])
   //       =>  Property["java.class.path", List[path]] =
 
-  //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+  //   _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
 
 
   given javaVersion: ("java.version" is Property of Text) = Property(identity)
@@ -119,7 +119,7 @@ object Property:
   // =>  ( system: System, property: Tactic[PropertyError] )
   // =>  Property["java.ext.dirs", List[path]] =
 
-  //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
+  //   _.cut(system(t"path.separator").or(t":")).to[List].map(path(_))
 
 
   given fileSeparator: ("file.separator" is Property of Char) = Property(_.as[Char])

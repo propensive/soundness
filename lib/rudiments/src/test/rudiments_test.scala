@@ -240,12 +240,12 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"hex tests"):
       test(m"Specify some bytes"):
-        hex"bacdf1e9".to(List)
-      . assert(_ == Data(-70, -51, -15, -23).to(List))
+        hex"bacdf1e9".to[List]
+      . assert(_ == Data(-70, -51, -15, -23).to[List])
 
       test(m"Specify some bytes in uppercase with a space"):
-        hex"BACD F1E9".to(List)
-      . assert(_ == Data(-70, -51, -15, -23).to(List))
+        hex"BACD F1E9".to[List]
+      . assert(_ == Data(-70, -51, -15, -23).to[List])
 
       test(m"Non-even number of bytes"):
         demilitarize:
@@ -319,7 +319,7 @@ object Tests extends Suite(m"Rudiments Tests"):
         array(1) = 17
         val snapshot: IArray[Int] = array.snapshot
         array(1) = 42
-        snapshot.to(List)
+        snapshot.to[List]
       . assert(_ == List(1, 17, 3, 4, 5))
 
       test(m"Take Map#upsert as an insertion"):
@@ -520,23 +520,23 @@ object Tests extends Suite(m"Rudiments Tests"):
     // receiver these tests exercise; collection receivers activate as the aliases become opaque.
     suite(m"Convertible tests"):
       test(m"Text to List of chars"):
-        "abc".tt.transmute[List]
+        "abc".tt.to[List]
       . assert(_ == List('a', 'b', 'c'))
 
       test(m"Text to Set of chars deduplicates"):
-        "aba".tt.transmute[Set]
+        "aba".tt.to[Set]
       . assert(_ == Set('a', 'b'))
 
       test(m"Text to Series of chars"):
-        "abc".tt.transmute[Series]
+        "abc".tt.to[Series]
       . assert(_ == Series('a', 'b', 'c'))
 
       test(m"Text to Text is the identity"):
-        "abc".tt.transmute[Text]
+        "abc".tt.to[Text]
       . assert(_ == "abc".tt)
 
       test(m"Result type of to[List] is inferred fully applied"):
-        val list: List[Char] = "xy".tt.transmute[List]
+        val list: List[Char] = "xy".tt.to[List]
         list.length
       . assert(_ == 2)
 

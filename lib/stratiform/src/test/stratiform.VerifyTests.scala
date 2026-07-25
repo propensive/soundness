@@ -69,7 +69,7 @@ object Tint:
 
 object VerifyTests extends Suite(m"Stratiform verify tests"):
   def keywords(struct: Tels.Struct): List[Text] = List.of:
-    struct.members.to(List).stdlib.collect:
+    struct.members.to[List].stdlib.collect:
       case field: Tels.Field => field.keyword
 
   def run(): Unit =
@@ -121,19 +121,19 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
 
       test(m"A required field has Tight polarity"):
         List.of:
-          Tels.tels[Worker](t"worker").document.members.to(List).stdlib.collect:
+          Tels.tels[Worker](t"worker").document.members.to[List].stdlib.collect:
             case field: Tels.Field if field.keyword == t"name" => field.required
       . assert(_ == List(Tels.Polarity.Tight))
 
       test(m"An Optional field loosens to Loose polarity"):
         List.of:
-          Tels.tels[Nicked](t"nicked").document.members.to(List).stdlib.collect:
+          Tels.tels[Nicked](t"nicked").document.members.to[List].stdlib.collect:
             case field: Tels.Field if field.keyword == t"nick" => field.required
       . assert(_ == List(Tels.Polarity.Loose))
 
       test(m"A collection field is repeatable, typed as the element struct"):
         List.of:
-          Tels.tels[Crew](t"crew").document.members.to(List).stdlib.collect:
+          Tels.tels[Crew](t"crew").document.members.to[List].stdlib.collect:
             case field: Tels.Field if field.keyword == t"members" =>
               field.repeatable -> field.fieldType
           . collect:
@@ -142,10 +142,10 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
 
       test(m"A map field's type is a Struct of repeatable `entries` of key/value"):
         List.of:
-          Tels.tels[Config](t"config").document.members.to(List).stdlib.collect:
+          Tels.tels[Config](t"config").document.members.to[List].stdlib.collect:
             case field: Tels.Field if field.keyword == t"prefs" => field.fieldType
           . collect:
-              case struct: Tels.Struct => struct.members.to(List).stdlib.collect:
+              case struct: Tels.Struct => struct.members.to[List].stdlib.collect:
                 case field: Tels.Field if field.keyword == t"entries" => field.fieldType
           . flatten.collect:
               case struct: Tels.Struct => keywords(struct)

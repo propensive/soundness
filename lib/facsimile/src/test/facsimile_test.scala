@@ -61,7 +61,7 @@ object Tests extends Suite(m"Facsimile tests"):
         String(bytes.mutable(using Unsafe), "UTF-8").tt
       . or(t"")
 
-    def bytesOf(cos: Cos): scala.collection.immutable.List[Int] = cos.chars.let(v => v.to(List).toList.map(_.toInt & 0xff)).or(scala.collection.immutable.List())
+    def bytesOf(cos: Cos): scala.collection.immutable.List[Int] = cos.chars.let(v => (v.to[List]: List[Byte]).stdlib.map(_.toInt & 0xff)).or(scala.collection.immutable.List())
 
     def data(values: Int*): Data = values.map(_.toByte).to(Array).immutable(using Unsafe)
 
@@ -312,39 +312,39 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Stream filters"):
       test(m"FlateDecode round-trips deflated data"):
         val expected = t"The quick brown fox jumps over the lazy dog".in[Data]
-        Filter.decode(deflate(expected), List((Filter.Id.Flate, noParms))).to(List)
-      . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to(List))
+        Filter.decode(deflate(expected), List((Filter.Id.Flate, noParms))).to[List]
+      . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
       test(m"ASCIIHexDecode"):
-        Filter.decode(t"48656c6C6F>".in[Data], List((Filter.Id.AsciiHex, noParms))).to(List)
-      . assert(_ == t"Hello".in[Data].to(List))
+        Filter.decode(t"48656c6C6F>".in[Data], List((Filter.Id.AsciiHex, noParms))).to[List]
+      . assert(_ == t"Hello".in[Data].to[List])
 
       test(m"RunLengthDecode literal and repeated runs"):
         Filter.decode(data(2, 'a', 'b', 'c', 254, 'x', 128), List((Filter.Id.RunLength, noParms)))
-        . to(List).map(_.toInt)
+        . to[List].map(_.toInt)
       . assert(_ == List[Int]('a', 'b', 'c', 'x', 'x', 'x'))
 
       test(m"a PNG Up predictor"):
-        Predictor(data(2, 1, 2, 3, 2, 3, 3, 3), 12, 1, 8, 3).to(List).map(_.toInt)
+        Predictor(data(2, 1, 2, 3, 2, 3, 3, 3), 12, 1, 8, 3).to[List].map(_.toInt)
       . assert(_ == List(1, 2, 3, 4, 5, 6))
 
       test(m"a PNG Sub predictor"):
-        Predictor(data(1, 5, 1, 1), 11, 1, 8, 3).to(List).map(_.toInt)
+        Predictor(data(1, 5, 1, 1), 11, 1, 8, 3).to[List].map(_.toInt)
       . assert(_ == List(5, 6, 7))
 
       test(m"a PNG Paeth predictor"):
-        Predictor(data(4, 9, 1, 1, 4, 1, 1, 1), 15, 1, 8, 3).to(List).map(_.toInt)
+        Predictor(data(4, 9, 1, 1, 4, 1, 1, 1), 15, 1, 8, 3).to[List].map(_.toInt)
       . assert(_ == List(9, 10, 11, 10, 11, 12))
 
       test(m"a TIFF predictor"):
-        Predictor(data(10, 5, 5, 3, 1, 1), 2, 1, 8, 3).to(List).map(_.toInt)
+        Predictor(data(10, 5, 5, 3, 1, 1), 2, 1, 8, 3).to[List].map(_.toInt)
       . assert(_ == List(10, 15, 20, 3, 4, 5))
 
       test(m"a predictor after FlateDecode"):
         val parms: Map[Text, Cos] = Map(t"Predictor" -> Cos.Integral(12), t"Columns" -> Cos.Integral(3))
 
         Filter.decode(deflate(data(2, 1, 2, 3, 2, 3, 3, 3)), List((Filter.Id.Flate, parms)))
-        . to(List).map(_.toInt)
+        . to[List].map(_.toInt)
       . assert(_ == List(1, 2, 3, 4, 5, 6))
 
       test(m"an unknown filter name is an error"):
@@ -487,8 +487,8 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
 
-        fileBytes(path).slice(0, editable.length).to(List)
-      . assert(_ == editable.to(List))
+        fileBytes(path).slice(0, editable.length).to[List]
+      . assert(_ == editable.to[List])
 
       test(m"the incremental update chains /Prev to the original cross-reference"):
         val path = tempPdf(editable)
@@ -739,8 +739,8 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.addResource(doc.pages(0), t"Font", t"F1", font)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).fonts(t"F1").embedded.let(_.data.to(List))
-      . assert(_ == fontProgram.to(List))
+          pdf.pages(0).fonts(t"F1").embedded.let(_.data.to[List])
+      . assert(_ == fontProgram.to[List])
 
       test(m"content using an embedded font extracts as text"):
         val path = tempPdf(blankPage)
@@ -849,8 +849,8 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == (false, false, true))
 
       test(m"winAnsi encodes accented characters to their code page byte"):
-        winAnsi(t"café").to(List).map(_.toInt & 0xff)
-      . assert(_ == List('c', 'a', 'f', 0xe9))
+        (winAnsi(t"café").to[List]: List[Byte]).map(_.toInt & 0xff)
+      . assert(_ == List('c'.toInt, 'a'.toInt, 'f'.toInt, 0xe9))
 
     suite(m"Creation from scratch"):
       def freshPath: Text =
@@ -1476,7 +1476,7 @@ object Tests extends Suite(m"Facsimile tests"):
                 ++ streamCipher.immutable(using Unsafe) ++ t"\nendstream".in[Data]) )
 
       test(m"RC4 matches its known-answer vector"):
-        Rc4(t"Key".in[Data], t"Plaintext".in[Data]).to(List).map(b => f"${b & 0xff}%02X").mkString.tt
+        Rc4(t"Key".in[Data], t"Plaintext".in[Data]).to[List].map(b => f"${b & 0xff}%02X").mkString.tt
       . assert(_ == t"BBF316E8D940AF0AD3")
 
       test(m"an encrypted document reports it"):
@@ -1805,7 +1805,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == t"Man")
 
       test(m"the z shorthand is four zero bytes"):
-        Filter.decode(t"z~>".in[Data], List((Filter.Id.Ascii85, noParms))).to(List).map(_.toInt)
+        Filter.decode(t"z~>".in[Data], List((Filter.Id.Ascii85, noParms))).to[List].map(_.toInt)
       . assert(_ == List(0, 0, 0, 0))
 
       test(m"LZWDecode decodes the specification's example"):

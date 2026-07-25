@@ -83,7 +83,7 @@ object Traversable extends Traversable2:
       scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[Array[element]])
       . iterator
 
-  // Java collections traverse through `.asScala`, so `javaCollection.transmute[List]` (and `[Set]`,
+  // Java collections traverse through `.asScala`, so `javaCollection.to[List]` (and `[Set]`,
   // `[Map]`, …) work with no explicit conversion — the builder is the standard-library converter.
   // `java.lang.Iterable` covers `java.util.List`/`Set`/`Collection`/…; `java.util.Iterator` and
   // `java.util.Map` (traversed as its pairs) are neither, so they get their own instances.

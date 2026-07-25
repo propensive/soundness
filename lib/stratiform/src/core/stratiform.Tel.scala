@@ -491,7 +491,7 @@ object Tel extends Tel2:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            fields.map { (key, parser, _) => (Text(key), parser.shape()) }.transmute[List]
+            fields.map { (key, parser, _) => (Text(key), parser.shape()) }.to[List]
 
           Morphology.Obj
             ( entries, entries.collect { case (key, shape) if !shape.optional => key } )
@@ -2750,7 +2750,7 @@ object Tel extends Tel2:
         if terminatedBySeparator || !documentIsEmpty(doc) then buffer += doc
         if !terminatedBySeparator then continue = false
 
-      buffer.transmute[List]
+      buffer.to(List)
 
     // Lazy streaming parse: documents are parsed on demand as the returned
     // `Progression` is forced. Mirrors turbulence's deferred `Streamable` readers,

@@ -360,7 +360,7 @@ private[probably] object AnsiRenderer:
           . distinct.zipWithIndex.map: (prefix, index) =>
               prefix -> accent(index)
 
-          . transmute[Map]
+          . to[Map]
 
         // The method column is leftmost and right-aligned against the bars, so the names
         // read into their histogram rows; the plain width is measured before styling.
@@ -410,7 +410,7 @@ private[probably] object AnsiRenderer:
       t"Test failed"
 
   private def annotations(document: Document)(using Stdio): Unit =
-    val details: Map[TestId, List[Verdict.Detail]] = document.failures.transmute[Map]
+    val details: Map[TestId, List[Verdict.Detail]] = document.failures.to[Map]
 
     document.results.each: row =>
       row.status match
@@ -436,7 +436,7 @@ private[probably] object AnsiRenderer:
       Out.println(t"─"*74)
 
       Out.println:
-        StackTrace.legend.transmute[List].map: (symbol, description) =>
+        StackTrace.legend.to[List].map: (symbol, description) =>
           e"$Bold(${Fg(palette.foreground)}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
 
         . batched(3).map(_.join).join(e"${t"\n"}")
@@ -484,7 +484,7 @@ private[probably] object AnsiRenderer:
               ( escritoire.Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
                 escritoire.Column(e"Value")(_(1)) )
 
-            . tabulate(map.transmute[List]).grid(140).render.each(Out.println(_))
+            . tabulate(map.to[List]).grid(140).render.each(Out.println(_))
 
           case Verdict.Detail.Message(text) =>
             Out.println(text)
@@ -499,20 +499,20 @@ private[probably] object AnsiRenderer:
     val palette = summon[TestPalette]
 
     document.fatal.let: (error, active) =>
-      val explanation = active.transmute[List] match
+      val explanation = active.to[List] match
         case Nil => e"No tests were active when a fatal error occurred."
 
         case _ =>
           val were = if active.size == 1 then e"was" else e"were"
 
           val tests =
-            active.transmute[List].map: test => e"$Bold(${test.name})"
+            active.to[List].map: test => e"$Bold(${test.name})"
             . join(e"", e", ", e" and ", e"")
 
           e"A fatal error occurred while $tests $were running."
 
       if githubActions then
-        val activeNames = active.transmute[List].map(_.name.text).join(t", ")
+        val activeNames = active.to[List].map(_.name.text).join(t", ")
         val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
 

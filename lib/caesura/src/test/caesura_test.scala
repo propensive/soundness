@@ -137,42 +137,42 @@ object Tests extends Suite(m"Caesura tests"):
       . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote, Prim, Sec, 8))
 
       test(m"misplaced quote reports row and offset on a later row"):
-        capture[DsvError](t"""a,b\nc,d\nef,g"h""".read[Sheet].rows.to(List))
+        capture[DsvError](t"""a,b\nc,d\nef,g"h""".read[Sheet].rows.to[List])
       . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote, Prim.next.next, Sec, 12))
 
       test(m"multi-line CSV without trailing newline"):
-        t"""foo,bar\nbaz,quux""".read[Sheet].rows.to(List)
+        t"""foo,bar\nbaz,quux""".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with trailing newline"):
-        t"""foo,bar\nbaz,quux\n""".read[Sheet].rows.to(List)
+        t"""foo,bar\nbaz,quux\n""".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with CR and LF"):
-        t"""foo,bar\r\nbaz,quux\r\n""".read[Sheet].rows.to(List)
+        t"""foo,bar\r\nbaz,quux\r\n""".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with quoted newlines"):
-        t""""foo","bar"\n"baz","quux"\n""".read[Sheet].rows.to(List)
+        t""""foo","bar"\n"baz","quux"\n""".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with newlines and quotes in cells"):
-        t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""".read[Sheet].rows.to(List)
+        t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\n2\n3\n")))
 
       test(m"multi-line CSV with quoted quotes adjacent to newlines"):
-        t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows.to(List)
+        t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
 
       test(m"CSV with quoted quotes adjacent to delimiters"):
-        t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows.to(List)
+        t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
 
 
     suite(m"Alternative formats"):
       test(m"Parse TSV data without header"):
         import dsvFormats.tsvFormat
-        t"Hello\tWorld\n".read[Sheet].rows.to(List)
+        t"Hello\tWorld\n".read[Sheet].rows.to[List]
       . assert(_ == List(Dsv(t"Hello", t"World")))
 
       test(m"Parse TSV data with header"):
@@ -309,16 +309,16 @@ object Tests extends Suite(m"Caesura tests"):
       . assert(_ == t"Carol")
 
       test(m"row optic updates a cell in the n-th row"):
-        sheet.lens(_(Sec).name = t"Carol").rows.to(List).map(_.data.head)
+        sheet.lens(_(Sec).name = t"Carol").rows.to[List].map(_.data.head)
       . assert(_ == List(t"Alice", t"Carol"))
 
       test(m"each-row optic updates every row"):
-        sheet.lens(_(Each).name = t"X").rows.to(List).map(_.data.head)
+        sheet.lens(_(Each).name = t"X").rows.to[List].map(_.data.head)
       . assert(_ == List(t"X", t"X"))
 
       test(m"filter-row optic updates only matching rows"):
         sheet.lens(_(Filter[Dsv](_.data.head == t"Bob")).name = t"X")
-         .rows.to(List).map(_.data.head)
+         .rows.to[List].map(_.data.head)
       . assert(_ == List(t"Alice", t"X"))
 
     suite(m"Roundtrip"):
@@ -339,7 +339,7 @@ object Tests extends Suite(m"Caesura tests"):
 
     suite(m"Optional fields"):
       test(m"an Optional field spans one column"):
-        Spannable.derived[Greeting].spans().to(List)
+        Spannable.derived[Greeting].spans().to[List]
       . assert(_ == List(1, 1))
 
       test(m"decode a present trailing Optional positionally"):
@@ -364,11 +364,11 @@ object Tests extends Suite(m"Caesura tests"):
 
     suite(m"Cell spanning"):
       test(m"a flat product spans one column per field"):
-        Spannable.derived[Foo].spans().to(List)
+        Spannable.derived[Foo].spans().to[List]
       . assert(_ == List(1, 1))
 
       test(m"a nested product sums each field's child spans"):
-        Spannable.derived[Bar].spans().to(List)
+        Spannable.derived[Bar].spans().to[List]
       . assert(_ == List(1, 2, 1, 2))
 
       test(m"the total column count is the sum of all spans"):

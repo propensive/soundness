@@ -110,7 +110,7 @@ object Selection:
             val most = number(value.skip(index + 2))
 
             least.let { least => most.let(Constraint.Interval(axis, least, _)) }
-          else Constraint.Membership(axis, value.cut(t",").transmute[Set])
+          else Constraint.Membership(axis, value.cut(t",").to[Set])
 
   private[probably] def globRegex(pattern: Text): Text =
     pattern.cut(t"*").map { part => java.util.regex.Pattern.quote(part.s).nn.tt }.join(t".*")

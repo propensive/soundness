@@ -299,8 +299,8 @@ object Tests extends Suite(m"Phoenicia Tests"):
       . assert(_ == 4)
 
       test(m"Retained glyphs keep their outlines byte-for-byte"):
-        ttf.subset(Set('A')).glyf(1).bytes.to(List)
-      . assert(_ == glyph1.to(List))
+        ttf.subset(Set('A')).glyf(1).bytes.to[List]
+      . assert(_ == glyph1.to[List])
 
       test(m"Unused glyphs lose their outlines"):
         (ttf.subset(Set('A')).glyf(2).empty, ttf.subset(Set('A')).glyf(3).empty)

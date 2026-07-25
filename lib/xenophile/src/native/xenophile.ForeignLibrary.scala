@@ -125,7 +125,7 @@ object ForeignLibrary:
       case Nil =>
         throw IllegalArgumentException("no native library could be loaded from "+paths)
 
-    registered.add(attempt(paths.transmute[List]))
+    registered.add(attempt(paths.to(List)))
 
   def downcall(symbol: Text, descriptor: FunctionDescriptor): MethodHandle =
     handles.computeIfAbsent(symbol, _ => bind(symbol, descriptor)).nn
@@ -141,7 +141,7 @@ object ForeignLibrary:
 
     val lookups: List[SymbolLookup] =
       import scala.jdk.CollectionConverters.ListHasAsScala
-      linker.defaultLookup.nn :: registered.transmute[List]
+      linker.defaultLookup.nn :: registered.to[List]
 
     linker.downcallHandle(search(lookups), descriptor).nn
 

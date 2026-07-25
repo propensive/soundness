@@ -228,32 +228,32 @@ object Tests extends Suite(m"Dissonance tests"):
     suite(m"Evolution tests"):
       test(m"Sample words"):
         val evolution =
-          evolve(List.of(List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map { w => List.of(w.chars.to(List)) }))
+          evolve(List.of(scala.collection.immutable.List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map { w => w.chars.to[List] }))
         List(Prim, Sec, Ter, Quat, Quin, Sen).map(evolution(_).stdlib.mkString)
       . assert(_ == List("slain", "stain", "strange", "star", "rain", "train"))
 
       test(m"dog/cat"):
-        val evolution = evolve(List.of(List(t"dog", t"cat", t"dog").map { w => List.of(w.chars.to(List)) }))
+        val evolution = evolve(List.of(scala.collection.immutable.List(t"dog", t"cat", t"dog").map { w => w.chars.to[List] }))
         List(Prim, Sec, Ter).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "cat", "dog"))
 
       test(m"dog/cat 2"):
-        val evolution = evolve(List.of(List(t"dog", t"cat", t"dog", t"dog2").map { w => List.of(w.chars.to(List)) }))
+        val evolution = evolve(List.of(scala.collection.immutable.List(t"dog", t"cat", t"dog", t"dog2").map { w => w.chars.to[List] }))
         List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "cat", "dog", "dog2"))
 
       test(m"dog/cat 3"):
-        val evolution = evolve(List.of(List(t"dog", t"cat", t"dog", t"do").map { w => List.of(w.chars.to(List)) }))
+        val evolution = evolve(List.of(scala.collection.immutable.List(t"dog", t"cat", t"dog", t"do").map { w => w.chars.to[List] }))
         List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "cat", "dog", "do"))
 
       test(m"Dogs and cats"):
-        val evolution = evolve(List.of(List(t"dog", t"dog and cat", t"cat", t"cat and dog").map { w => List.of(w.chars.to(List)) }))
+        val evolution = evolve(List.of(scala.collection.immutable.List(t"dog", t"dog and cat", t"cat", t"cat and dog").map { w => w.chars.to[List] }))
         List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "dog and cat", "cat", "cat and dog"))
 
       test(m"Jack and Jill"):
-        val evolution = evolve(List.of(List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map { w => List.of(w.chars.to(List)) }))
+        val evolution = evolve(List.of(scala.collection.immutable.List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map { w => w.chars.to[List] }))
         List(Prim, Sec, Ter).map(evolution(_).stdlib.mkString)
       . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
 
@@ -342,22 +342,22 @@ object Tests extends Suite(m"Dissonance tests"):
     // suite(m"Casual diff tests"):
     //   test(m"Parse a simple casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(Progression))
+    //     CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to[Progression])
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")))))
 
     //   test(m"Parse a slightly longer casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(Progression))
+    //     CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to[Progression])
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")), Replace(Nil, List(t"removal"), Nil))))
 
     //   test(m"Parse a longer casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(Progression))
+    //     CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to[Progression])
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(Nil, List(t"removal"), Nil))))
 
     //   test(m"Fail to parse a problematic casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(Progression)))
+    //     capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to[Progression]))
     //   .assert(_ == CasualDiffError(CasualDiffError.Reason.BadLineStart(t" insert 1"), 3))
 
     // suite(m"Invariance tests"):

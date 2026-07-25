@@ -200,8 +200,8 @@ object Tests extends Suite(m"Gastronomy tests"):
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to(List)
-    . assert(_ == t"Hello world".in[Data].to(List))
+        t"Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to[List]
+    . assert(_ == t"Hello world".in[Data].to[List])
 
     test(m"one-byte-chunk streams roundtrip through stream encrypt and decrypt"):
       import blockCipherMode.cbc, blockCipherPadding.pkcs7
@@ -210,16 +210,16 @@ object Tests extends Suite(m"Gastronomy tests"):
       key.uncloak:
         val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
         val encrypted = plain.grouped(1).iterator.stream.encrypt(InitializationVector.random)
-        encrypted.memoize.grouped(1).iterator.stream.decrypt.memoize.to(List)
-    . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to(List))
+        encrypted.memoize.grouped(1).iterator.stream.decrypt.memoize.to[List]
+    . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
     test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
       key.uncloak:
         t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
-        . stream.decrypt.memoize.to(List)
-    . assert(_ == t"Hello world".in[Data].to(List))
+        . stream.decrypt.memoize.to[List]
+    . assert(_ == t"Hello world".in[Data].to[List])
 
     test(m"legacy Progression encryption survives one-byte chunks"):
       import blockCipherMode.cbc, blockCipherPadding.pkcs7

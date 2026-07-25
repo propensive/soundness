@@ -186,7 +186,7 @@ private[probably] object TerseRenderer:
 
       Out.println(t"")
 
-      val details: Map[TestId, List[Verdict.Detail]] = document.failures.transmute[Map]
+      val details: Map[TestId, List[Verdict.Detail]] = document.failures.to[Map]
 
       failures.stdlib.foreach: row =>
         val location = t"${row.id.codepoint.source}:${row.id.codepoint.line}"
@@ -223,7 +223,7 @@ private[probably] object TerseRenderer:
 
   private def renderFatal(document: Document)(using Stdio): Unit =
     document.fatal.let: (error, active) =>
-      val activeNames = active.transmute[List].map(_.name.text).join(t", ")
+      val activeNames = active.to[List].map(_.name.text).join(t", ")
       val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
       val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
 

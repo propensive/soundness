@@ -174,7 +174,7 @@ private[facsimile] object Guard:
   private def validate(fileKey: Data, user: Data, id: Data, revision: Int, keyBytes: Int)
   :   Boolean =
 
-    if revision == 2 then Rc4(fileKey, padding.immutable(using Unsafe)).to(List) == user.to(List)
+    if revision == 2 then Rc4(fileKey, padding.immutable(using Unsafe)).to[List] == user.to[List]
     else
       var value: Data = md5(padding.immutable(using Unsafe) ++ id)
 
@@ -188,7 +188,7 @@ private[facsimile] object Guard:
         i += 1
 
       // Only the first 16 bytes are meaningful; the rest of `/U` is arbitrary padding.
-      value.take(16).to(List) == user.take(16).to(List)
+      value.take(16).to[List] == user.take(16).to[List]
 
   // Algorithms 2.A/8 (revision 6): validate the user password against `/U`, then unwrap the
   // file key from `/UE` with the intermediate key, using AES-256-CBC with a zero IV and no
@@ -200,7 +200,7 @@ private[facsimile] object Guard:
       val keySalt = user.slice(40, 48)
 
       try
-        if hash6(passwordBytes, salt, IArray.empty[Byte]).transmute[List] != user.take(32).transmute[List]
+        if hash6(passwordBytes, salt, IArray.empty[Byte]).to[List] != user.take(32).to[List]
         then Unset
         else
           val intermediate = hash6(passwordBytes, keySalt, IArray.empty[Byte])

@@ -83,7 +83,7 @@ object NetworkInterface:
       val hardware = Optional(nic.getHardwareAddress).let: bytes =>
         MacAddress(bytes(0), bytes(1), bytes(2), bytes(3), bytes(4), bytes(5))
 
-      val addresses = nic.getInterfaceAddresses.nn.transmute[List].map: entry =>
+      val addresses = nic.getInterfaceAddresses.nn.to[List].map: entry =>
         val broadcast = Optional(entry.getBroadcast).let(ipv4(_))
         InterfaceAddress(inet(entry.getAddress.nn), entry.getNetworkPrefixLength.toInt, broadcast)
 

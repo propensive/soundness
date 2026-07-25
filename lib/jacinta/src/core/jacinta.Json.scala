@@ -297,7 +297,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to(List)
+          . to[List]
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
@@ -342,7 +342,7 @@ trait Json2 extends Json3:
               JsonPointer
                 ( base.url,
                   Path[JsonPointer, JsonPointer.type, Tuple]
-                    ( base.path.root, (base.path.descent :+ key).transmute[List] ) )
+                    ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
             Json.Focus(newPointer)
           }):
@@ -503,7 +503,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to(List)
+          . to[List]
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
@@ -526,7 +526,7 @@ trait Json2 extends Json3:
                     JsonPointer
                       ( base.url,
                         Path[JsonPointer, JsonPointer.type, Tuple]
-                          ( base.path.root, (base.path.descent :+ key).transmute[List] ) )
+                          ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
                   Json.Focus(newPointer)
                 }):
@@ -843,7 +843,7 @@ object Json extends Json2, Dynamic:
         JsonPointer
           ( base.url,
             Path[JsonPointer, JsonPointer.type, Tuple]
-              ( base.path.root, (base.path.descent :+ key).transmute[List] ) )
+              ( base.path.root, (base.path.descent :+ key).to(List) ) )
 
       Json.Focus(pointer)
 
@@ -918,7 +918,7 @@ object Json extends Json2, Dynamic:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            fields.map { (key, parser, _) => (key.tt, parser.shape()) }.transmute[List]
+            fields.map { (key, parser, _) => (key.tt, parser.shape()) }.to[List]
 
           Morphology.Obj
             ( entries, entries.collect { case (key, shape) if !shape.optional => key } )
@@ -2338,7 +2338,7 @@ object Json extends Json2, Dynamic:
               JsonPointer
                 ( base.url,
                   Path[JsonPointer, JsonPointer.type, Tuple]
-                    ( base.path.root, (base.path.descent :+ ordinal.n0.toString.tt).transmute[List] ) )
+                    ( base.path.root, (base.path.descent :+ ordinal.n0.toString.tt).to(List) ) )
 
             Json.Focus(newPointer)
           }):
@@ -2415,7 +2415,7 @@ object Json extends Json2, Dynamic:
 
 
     Json.Encodable(shape): map =>
-      val keys: List[key] = map.keys.transmute[List]
+      val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.stdlib.map(map(_).encode.root))
       val keysArr = IArray.from(keys.stdlib.map(_.encode.s))
       Json.ast(Json.Ast.obj(keysArr.asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))

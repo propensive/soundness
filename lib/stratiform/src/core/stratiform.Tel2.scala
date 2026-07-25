@@ -259,7 +259,7 @@ trait Tel2 extends Tel3:
       Tel.Decodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to(List)
+          . to[List]
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
@@ -334,7 +334,7 @@ trait Tel2 extends Tel3:
       Tel.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to(List)
+          . to[List]
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):

@@ -223,7 +223,7 @@ case class GitRepo(gitDir: Path on Linux):
         case r" $line(.*)" => buffer += line
         case _             => ()
 
-      buffer.transmute[List]
+      buffer.to(List)
 
     while lines.hasNext do lines.next() match
       case t""                 => ()
@@ -242,7 +242,7 @@ case class GitRepo(gitDir: Path on Linux):
       case other                                      => ()
 
     flush()
-    commits.transmute[List]
+    commits.to(List)
 
 
   def diff(refA: Refspec, refB: Refspec)

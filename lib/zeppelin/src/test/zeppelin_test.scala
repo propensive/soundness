@@ -174,13 +174,13 @@ object Tests extends Suite(m"Zeppelin tests"):
         given Zip.Compression = Zip.Compression.Stored
         val stored = Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).aligned(4)
         val path = writeZip(t"aligned2.zip", stored)
-        jdkContent(path, t"hello.txt").to(List)
-      . assert(_ == t"Hello world".in[Data].to(List))
+        jdkContent(path, t"hello.txt").to[List]
+      . assert(_ == t"Hello world".in[Data].to[List])
 
     suite(m"Writing ZIP archives"):
       test(m"single-entry archive begins with the ZIP local-header magic"):
         bytesOf(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
-          .slice(0, 4).to(List).map(_.toInt & 0xff)
+          .slice(0, 4).to[List].map(_.toInt & 0xff)
       . assert(_ == List(0x50, 0x4b, 0x03, 0x04))
 
       test(m"single entry is visible to the JDK ZIP reader"):
@@ -189,8 +189,8 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"the JDK reader sees the original content"):
         val path = writeZip(t"content.zip", entry(t"hello.txt", t"Hello world"))
-        jdkContent(path, t"hello.txt").to(List)
-      . assert(_ == t"Hello world".in[Data].to(List))
+        jdkContent(path, t"hello.txt").to[List]
+      . assert(_ == t"Hello world".in[Data].to[List])
 
       test(m"multiple entries preserve insertion order"):
         jdkNames(writeZip(t"many.zip", entry(t"a.txt", t"A"), entry(t"b.txt", t"B"),
@@ -253,8 +253,8 @@ object Tests extends Suite(m"Zeppelin tests"):
         val payload: Data = IArray.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         Zipfile.write(path)(List(Zip.Entry(zipRef(t"blob"), payload)))
-        readEntries(path).head.read[Data].to(List)
-      . assert(_ == IArray.tabulate(512)(i => (i%256).toByte).to(List))
+        readEntries(path).head.read[Data].to[List]
+      . assert(_ == IArray.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
         readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).head.read[Text]
@@ -446,8 +446,8 @@ object Tests extends Suite(m"Zeppelin tests"):
       test(m"a binary prefix round-trips"):
         val path = workDir/t"prefixed.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")))
-        Zipfile.read(path).prefix.lay(Nil)(_.to(List))
-      . assert(_ == prefix.to(List))
+        Zipfile.read(path).prefix.lay(Nil)(_.to[List])
+      . assert(_ == prefix.to[List])
 
       test(m"entries in a prefixed archive remain readable"):
         val path = workDir/t"prefixed2.zip"
@@ -458,14 +458,14 @@ object Tests extends Suite(m"Zeppelin tests"):
       test(m"the prefix precedes the first local header"):
         val path = workDir/t"prefixed3.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
-        bytesOf(path).slice(0, 64).to(List)
-      . assert(_ == prefix.to(List))
+        bytesOf(path).slice(0, 64).to[List]
+      . assert(_ == prefix.to[List])
 
       test(m"the JDK reader reads a prefixed archive"):
         val path = workDir/t"prefixed4.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
-        jdkContent(path, t"a.txt").to(List)
-      . assert(_ == t"alpha".in[Data].to(List))
+        jdkContent(path, t"a.txt").to[List]
+      . assert(_ == t"alpha".in[Data].to[List])
 
       test(m"an archive with no prefix reports no prefix"):
         Zipfile.read(writeZip(t"noprefix.zip", entry(t"a.txt", t"x"))).prefix
@@ -483,4 +483,4 @@ object Tests extends Suite(m"Zeppelin tests"):
         out.close()
         val zip = Zipfile.read(sfx)
         (zip.prefix.lay(Nil)(_.to(List)), zip.entries.map(_.read[Text]).stdlib.to(List))
-      . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to(List), List(t"data", t"data")))
+      . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))

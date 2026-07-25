@@ -64,7 +64,7 @@ object List:
 
   def range(start: Int, end: Int): List[Int] = of(sci.List.range(start, end))
 
-  // `.to(List)` support: the stdlib's `Iterable.to` takes a `Factory`, and passing the
+  // `.to[List]` support: the stdlib's `Iterable.to` takes a `Factory`, and passing the
   // companion object adapts through this conversion — on `List.type` only, so it cannot
   // expose members of `List` values.
   given factory: [element] => Conversion[List.type, scala.collection.Factory[element, List[element]]] =

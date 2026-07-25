@@ -192,23 +192,24 @@ extension [self <: Populated](value: self)(using traversable: self is Traversabl
     traversable.traverse(value).reduce(lambda)
 
 // Conversion to a requested shape, which may be a proper type or an unapplied constructor:
-// `chars.transmute[List]`, `text.transmute[Set]`, `pairs.transmute[Map]`. `transparent inline` so the
+// `chars.to[List]`, `text.to[Set]`, `pairs.to[Map]`. `transparent inline` so the
 // umbrella export forwards it by inlining: a plain def's path-dependent result fails at the
 // cross-package forwarder (#1411), and the result cannot be bound as a second type parameter here
 // because the explicit `form` argument precludes partial type application.
 //
-// `transmute` is the temporary name for this kind-polymorphic conversion during the
-// `.to(Companion)` -> `.transmute[Type]` migration: a distinct name coexists with the stdlib-style
-// `.to(Factory)` (which the old `to` would clash with) so call sites migrate incrementally; once
-// every `.to(Companion)` is gone and the `Factory` conversions removed, `transmute` is renamed back
-// to `to`. Unlike `to`, `transmute` CAN take a fully-generic receiver — no other extension owns the
-// name, so there is nothing (like quantitative's `quantity.to[Pounds]`) for it to shadow — which
-// makes it a true drop-in for `.to(Factory)` over any `Convertible` source (`Iterable`, varargs, …).
+// The generic receiver coexists with the receiver-specific `to`s (quantitative's
+// `quantity.convert[Pounds]`, the tuple `to[Product]` below) because extension resolution falls
+// through when no `Convertible` instance is found. The bracket form `xs.to[List]` replaces
+// the parens Factory form `xs.to(List)`, which survives only for stdlib receivers with no
+// `Convertible` instance.
 extension [self](self: self)
-  transparent inline def transmute[form <: AnyKind](using convertible: self is Convertible in form)
+  transparent inline def to[form <: AnyKind](using convertible: self is Convertible in form)
   :   convertible.Result =
 
     convertible.convert(self)
+
+extension [tuple <: Tuple](tuple: tuple)
+  def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
@@ -517,9 +518,6 @@ extension (data: Data)
 
 extension [product <: Product: Mirror.ProductOf](value: product)
   def tuple: product.MirroredElemTypes = Tuple.fromProductTyped(value)
-
-extension [tuple <: Tuple](tuple: tuple)
-  def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
 extension (erased tuple: Tuple)
   @unexported

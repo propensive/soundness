@@ -343,7 +343,7 @@ object KotlinDialect extends Dialect:
 
       . or(Nil)
 
-    . transmute[Map]
+    . to[Map]
 
   private def constructors(owner: Text, kmClass: KmClass): List[Entry] =
     kmClass.getConstructors.nn.asScala.to(List).flatMap: constructor =>

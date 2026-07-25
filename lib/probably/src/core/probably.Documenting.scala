@@ -269,7 +269,7 @@ private[probably] object Documenting:
   // more, as a flat listing of coordinates and headlines.
   private def axialBench(entry: Entry, sized: Boolean): List[Block] = entry.axes match
     case axis :: Nil =>
-      val cells = entry.cells.transmute[Map]
+      val cells = entry.cells.to[Map]
 
       val anchored: Optional[(Anchor, Run)] =
         entry.anchor.let: anchor =>
@@ -308,7 +308,7 @@ private[probably] object Documenting:
   // axes render as a grid of statuses with gaps at undefined combinations.
   private def axialCheck(entry: Entry): Block = entry.axes match
     case axis :: Nil =>
-      val cells = entry.cells.transmute[Map]
+      val cells = entry.cells.to[Map]
 
       val rows = List.of:
         entry.values(axis).stdlib.flatMap: value =>
@@ -338,7 +338,7 @@ private[probably] object Documenting:
   // The biaxial grid: the first axis's values are rows, the second's are columns, and each
   // cell holds only the headline datum; absent combinations render as gaps.
   private def crosstab(entry: Entry, first: Axis.Spec, second: Axis.Spec): Block =
-    val cells = entry.cells.transmute[Map]
+    val cells = entry.cells.to[Map]
     val columnValues = entry.values(second)
 
     val rows = entry.values(first).map: row =>
@@ -357,7 +357,7 @@ private[probably] object Documenting:
   :   Optional[Block] =
 
     entry.anchor.let: anchor =>
-      val cells = entry.cells.transmute[Map]
+      val cells = entry.cells.to[Map]
       val onFirst = anchor.axis == first
       if !onFirst && anchor.axis != second then Unset else
         val columnValues = entry.values(second)
@@ -386,7 +386,7 @@ private[probably] object Documenting:
         run(cell).option.flatMap: run0 =>
           if index < 0 then None else address(index).numeric.option.map(_.toLong -> run0)
 
-      entry -> points.transmute[Map]
+      entry -> Map.of(points.toMap)
 
     val steps: List[Long] =
       val all = curves.stdlib.flatMap(_(1).stdlib.keys)

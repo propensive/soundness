@@ -78,7 +78,7 @@ object Tests extends Suite(m"Obligatory Tests"):
         . iterator
         . frames[LengthPrefix]
         . to(List)
-        . map(_.to(List))
+        . map(_.to[List])
       . assert(_ == List(List(50, 100, -100), List(-128), List(5, 4, 3, 2, 1)))
 
       test(m"Content-Length-prefixed chunks"):
@@ -123,23 +123,23 @@ object Tests extends Suite(m"Obligatory Tests"):
       def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
 
       test(m"encode prefixes a flag byte and 4-byte length"):
-        GrpcFraming.encode(ascii(t"hi")).to(List)
-      . assert(_ == (Data(0, 0, 0, 0, 2) ++ ascii(t"hi")).to(List))
+        GrpcFraming.encode(ascii(t"hi")).to[List]
+      . assert(_ == (Data(0, 0, 0, 0, 2) ++ ascii(t"hi")).to[List])
 
       test(m"round-trip a single message"):
         val framed = GrpcFraming.encode(ascii(t"hello"))
         Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
-      . assert(_ == List(ascii(t"hello").to(List)))
+      . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
         val framed = GrpcFraming.encode(ascii(t"one")) ++ GrpcFraming.encode(ascii(t"two"))
         Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
-      . assert(_ == List(ascii(t"one").to(List), ascii(t"two").to(List)))
+      . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
         val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
         Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
-      . assert(_ == List(ascii(t"compress me please").to(List)))
+      . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):
         Grpc.Status.of(5)

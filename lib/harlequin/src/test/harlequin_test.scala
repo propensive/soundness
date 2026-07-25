@@ -67,11 +67,11 @@ object Tests extends Suite(m"Harlequin Tests"):
         case _                          => Unset
 
     test(m"tokenized highlighting attaches no type metadata"):
-      Scala.highlight(snippet).lines.to(List).stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
+      Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
     .assert(_ == Nil)
 
     test(m"each token carries its line and column position"):
-      val tokens = Scala.highlight(t"val n =\n  List").lines.to(List).stdlib.flatMap(_.stdlib)
+      val tokens = Scala.highlight(t"val n =\n  List").lines.to[List].stdlib.flatMap(_.stdlib)
 
       tokens.map: token =>
         (token.text, token.span.startLine.lay(-1)(_.n0), token.span.startColumn.lay(-1)(_.n0))
@@ -81,7 +81,7 @@ object Tests extends Suite(m"Harlequin Tests"):
     // exercised by the tokenized (no-typer) path. `tagOf` reads the accent and role (as
     // their rendered names) of the first token whose text matches.
     def tagOf(source: Text, word: Text): (Text, Text) =
-      Scala.highlight(source).lines.to(List).stdlib.flatMap(_.stdlib).find(_.text == word) match
+      Scala.highlight(source).lines.to[List].stdlib.flatMap(_.stdlib).find(_.text == word) match
         case Some(token) => (token.accent.show, token.role.lay(t"")(_.show))
         case None        => (t"", t"")
 
@@ -124,7 +124,7 @@ object Tests extends Suite(m"Harlequin Tests"):
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
-      typeOf(List.of(Scala.highlight(snippet).lines.to(List).stdlib.flatMap(_.stdlib)), t"xs").or(t"")
+      typeOf(List.of(Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib)), t"xs").or(t"")
     .assert { rendered => rendered.subsumes(t"List") && rendered.subsumes(t"Int") }
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):

@@ -476,7 +476,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
       test(m"a byte-string field reads in place"):
-        encoded(Blob(hex("01020304"))).read[Blob in Cbor].data.to(List)
+        encoded(Blob(hex("01020304"))).read[Blob in Cbor].data.to[List]
       . assert(_ == List[Byte](1, 2, 3, 4))
 
       test(m"an indefinite-length map parses to the same record"):

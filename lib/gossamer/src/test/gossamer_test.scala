@@ -326,7 +326,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List(3, 4))
 
       test(m"upto slices an IArray by ordinal"):
-        IArray(0, 1, 2, 3, 4).upto(Ter).to(List)
+        IArray(0, 1, 2, 3, 4).upto(Ter).to[List]
       . assert(_ == List(0, 1, 2))
 
       test(m"before slices an IndexedSeq by ordinal"):
@@ -360,7 +360,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == t"o world")
 
       test(m"Get characters from a Text"):
-        t"Hello world".chars.to(List)
+        t"Hello world".chars.to[List]
 
       . assert(_ == List('H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'))
 

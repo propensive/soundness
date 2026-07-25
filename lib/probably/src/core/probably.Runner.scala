@@ -148,7 +148,7 @@ extends Findable:
       redraw(size)
 
   def terminate(error: Throwable): Unit = mutex:
-    reporter.fail(report, error, active.transmute[Set])
+    reporter.fail(report, error, active.to[Set])
     reporter.complete(report)
 
   def complete(): Unit =

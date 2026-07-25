@@ -72,7 +72,7 @@ object Progression:
 
   def unapplySeq[element](lazyList: Progression[element]): Option[Seq[element]] = Some(lazyList.stdlib)
 
-  // `.to(Progression)` support (see `List`): the conversion is on `Progression.type` only, so it cannot
+  // `.to[Progression]` support (see `List`): the conversion is on `Progression.type` only, so it cannot
   // expose members of `Progression` values.
   given factory: [element]
         => Conversion[Progression.type, scala.collection.Factory[element, Progression[element]]] =

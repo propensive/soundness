@@ -234,19 +234,19 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Explicit conversion tests"):
       test(m"Convert feet to metres"):
-        (3*Foot).to[Metres]
+        (3*Foot).convert[Metres]
       . assert(_ == 0.9144000000000001*Metre)
 
       test(m"Convert metres to feet"):
-        (3*Metre).to[Feet]
+        (3*Metre).convert[Feet]
       . assert(_ == 9.842519685039369*Foot)
 
       test(m"Convert m² to ft²"):
-        (π*Metre*Metre).to[Feet]
+        (π*Metre*Metre).convert[Feet]
       . assert(_ === 33.815821889033906*Foot*Foot +/- 0.000000001*Foot*Foot)
 
       test(m"Conversion to seconds does nothing"):
-        (3*Metre).to[Seconds]
+        (3*Metre).convert[Seconds]
       . assert(_ == 3*Metre)
 
     suite(m"Inequalities"):
@@ -370,11 +370,11 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == t"273.15")
 
       test(m"Convert Fahrenheit value to Kelvin"):
-        (Fahrenheit(0) - zero[Temperature]).to[Kelvins].show
+        (Fahrenheit(0) - zero[Temperature]).convert[Kelvins].show
       . assert(_ == t"255 K")
 
       test(m"Convert Fahrenheit value to Rankine"):
-        (Fahrenheit(100) - zero[Temperature]).to[Rankines].show
+        (Fahrenheit(100) - zero[Temperature]).convert[Rankines].show
       . assert(_ == t"560 °R")
 
       test(m"Convert Fahrenheit directly to Celsius"):
@@ -384,13 +384,13 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       test(m"Add a Rankine quantity to a Temperature"):
         import temperatureScales.kelvinScale
-        // (9*Kelvin).to[Rankines] is 16.2 R, equivalent to 9 K
-        (zero[Temperature] + (9.0*Kelvin).to[Rankines]).show
+        // (9*Kelvin).convert[Rankines] is 16.2 R, equivalent to 9 K
+        (zero[Temperature] + (9.0*Kelvin).convert[Rankines]).show
       . assert(_ == t"9.00 K")
 
       test(m"Subtract a Rankine quantity from a Temperature"):
         import temperatureScales.kelvinScale
-        ((zero[Temperature] + 20.0*Kelvin) - (9.0*Kelvin).to[Rankines]).show
+        ((zero[Temperature] + 20.0*Kelvin) - (9.0*Kelvin).convert[Rankines]).show
       . assert(_ == t"11.0 K")
 
     suite(m"Aggregation tests"):

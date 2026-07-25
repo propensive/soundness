@@ -143,8 +143,8 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == qbf)
 
       test(m"Bridge Data source to Progression"):
-        qbf.source[Data].toProgression.stdlib.reduce(_ ++ _).to(List)
-      . assert(_ == qbfData.to(List))
+        qbf.source[Data].toProgression.stdlib.reduce(_ ++ _).to[List]
+      . assert(_ == qbfData.to[List])
 
       test(m"Read Text as Text"):
         qbf.read[Text].s
@@ -155,24 +155,24 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == t"abcdef".s)
 
       test(m"Read type as Data with Text and Byte Source"):
-        Ref().read[Data].to(List)
-      . assert(_ == t"abcdef".in[Data].to(List))
+        Ref().read[Data].to[List]
+      . assert(_ == t"abcdef".in[Data].to[List])
 
       test(m"Read some type as Text with only Text Source instance"):
         Ref2().read[Text].s
       . assert(_ == t"abcdef".s)
 
       test(m"Read some type as Data with only Text Source instance"):
-        Ref2().read[Data].to(List)
-      . assert(_ == t"abcdef".in[Data].to(List))
+        Ref2().read[Data].to[List]
+      . assert(_ == t"abcdef".in[Data].to[List])
 
       test(m"Read some type as Text with only Data Source instance"):
         Ref3().read[Text].s
       . assert(_ == t"abcdef".s)
 
       test(m"Read some type as Data with only Data Streamable instance"):
-        Ref3().read[Data].to(List)
-      . assert(_ == t"abcdef".in[Data].to(List))
+        Ref3().read[Data].to[List]
+      . assert(_ == t"abcdef".in[Data].to[List])
 
       test(m"Read Text as Progression[Text]"):
         qbf.read[Progression[Text]].join
@@ -180,11 +180,11 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Text as Data"):
         qbf.read[Data]
-      . assert(_.to(List) == qbfData.to(List))
+      . assert(_.to[List] == qbfData.to[List])
 
       test(m"Read Text as Progression[Data]"):
         qbf.read[Progression[Data]]
-      . assert(_.stdlib.reduce(_ ++ _).to(List) == qbfData.to(List))
+      . assert(_.stdlib.reduce(_ ++ _).to[List] == qbfData.to[List])
 
       test(m"Read Data as Text"):
         qbfData.read[Text].s
@@ -196,11 +196,11 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Data as Data"):
         qbfData.read[Data]
-      . assert(_.to(List) == qbfData.to(List))
+      . assert(_.to[List] == qbfData.to[List])
 
       test(m"Read Data as Progression[Data]"):
         qbfData.read[Progression[Data]]
-      . assert(_.stdlib.reduce(_ ++ _).to(List) == qbfData.to(List))
+      . assert(_.stdlib.reduce(_ ++ _).to[List] == qbfData.to[List])
 
       // test(m"Read Text as Lines"):
       //   qbf.read[Progression[Line]]
@@ -490,7 +490,7 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"whole-value Data delineate agrees with the stream form"):
         import lineSeparation.adaptiveLinefeedLineSeparation
         val bytes: Data = t"one\ntwo\r\nthree".in[Data]
-        bytes.delineate.to(List)
+        bytes.delineate.to[List]
       . assert(_ == List(t"one", t"two", t"three"))
 
       // Split whole, or fragmented into `chunk`-char pieces — the fragmented
@@ -499,7 +499,7 @@ object Tests extends Suite(m"Turbulence tests"):
       // `Duct.feed` driver), which must agree with the streaming form on
       // every case.
       def splitLines(input: Text, chunk: Int)(using LineSeparation): List[Text] =
-        if chunk == -1 then input.delineate.to(List)
+        if chunk == -1 then input.delineate.to[List]
         else if chunk == 0 then input.stream.delineate.records.to(List)
         else input.s.grouped(chunk).map(_.tt).stream.delineate.records.to(List)
 
@@ -637,8 +637,8 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"memoize view drains a stream as one value"):
         val stream = summon[Data is Streamable by Data over Credit].stream(payload)
-        stream.memoize.to(List)
-      . assert(_ == payload.to(List))
+        stream.memoize.to[List]
+      . assert(_ == payload.to[List])
 
       test(m"a Progression is a Source through its native instance"):
         val output = ji.ByteArrayOutputStream()
@@ -700,10 +700,10 @@ object Tests extends Suite(m"Turbulence tests"):
               async:
                 val gather = Gather2()
                 stream.pump(gather)
-                gather.data.to(List)
+                gather.data.to[List]
 
           results.map { task => task.await() }.to(List)
-      . assert(_ == List.fill(3)(payload.to(List)))
+      . assert(_ == List.fill(3)(payload.to[List]))
 
       val mixed: Data =
         Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).in[Data]
@@ -725,10 +725,10 @@ object Tests extends Suite(m"Turbulence tests"):
               async:
                 val gather = Gather2()
                 stream.pump(gather)
-                gather.data.to(List)
+                gather.data.to[List]
 
           results.map { task => task.await() }.to(List)
-      . assert(_ == List.fill(3)(mixed.to(List)))
+      . assert(_ == List.fill(3)(mixed.to[List]))
 
       test(m"confluence snapshots transient sources into the merge"):
         supervise:

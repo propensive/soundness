@@ -58,10 +58,10 @@ object Tests extends Suite(m"Coaxial tests"):
     // A `Data` (`IArray[Byte]`) compares by reference, so byte-level assertions
     // go through `List[Byte]`.
     def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
-    def bytes(data: Data): List[Byte] = data.to(List)
+    def bytes(data: Data): List[Byte] = data.to[List]
     def joined(stream: Progression[Data]): List[Byte] =
       List.of(stream.flatMap { d => scala.collection.immutable.ArraySeq.unsafeWrapArray(d.mutable(using Unsafe)) }.stdlib.toList)
-    def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to(List)
+    def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to[List]
 
     suite(m"Duplex streaming endpoints"):
       supervise:
@@ -87,8 +87,8 @@ object Tests extends Suite(m"Coaxial tests"):
           val result = received.await()
           server.close()
           client.close()
-          result.to(List)
-        . assert(_ == payload.to(List))
+          result.to[List]
+        . assert(_ == payload.to[List])
 
     suite(m"Transmissible serialization"):
       test(m"Data is transmitted as a single chunk"):

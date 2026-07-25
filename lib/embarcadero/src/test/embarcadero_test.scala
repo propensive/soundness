@@ -152,8 +152,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == true)
 
       test(m"oci-layout declares image layout version 1.0.0"):
-        layoutData.map(bytes => bytes.to(List))
-      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".in[Data].to(List)))
+        layoutData.map(bytes => bytes.to[List])
+      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".in[Data].to[List]))
 
     suite(m"Opening an image archive"):
       val archiveData = image.archive.source[Data].memoize
@@ -185,16 +185,16 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.imageConfig)
 
       test(m"a layer's stored blob streams verbatim"):
-        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to(List) }
-      . assert(_ == layer.blob.to(List))
+        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to[List] }
+      . assert(_ == layer.blob.to[List])
 
       test(m"a layer decompresses to the original tar bytes"):
-        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.head).memoize.to(List) }
-      . assert(_ == layer.raw.to(List))
+        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.head).memoize.to[List] }
+      . assert(_ == layer.raw.to[List])
 
       test(m"verified gathers a blob and confirms its digest and size"):
-        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head).to(List) }
-      . assert(_ == layer.blob.to(List))
+        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head).to[List] }
+      . assert(_ == layer.blob.to[List])
 
       test(m"index JSON round-trips through jacinta"):
         image.index.in[Json].as[Index]
@@ -407,8 +407,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val created = Containerd(endpoint, t"example").createContainer(container)
-          (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to(List))
-      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to(List)))
+          (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to[List])
+      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to[List]))
 
       test(m"createTask sends rootfs mounts and returns the task pid"):
         supervise:
@@ -560,7 +560,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given containerd: (Containerd^) = Containerd(endpoint, t"example")
           val spec = Container(t"web", image = t"img:1")
 
-          val (pid, exit) = spec.open[Workload](Read & Run & Signal): workload ?=>
+          val (pid, exit) = spec.open[Workload](Read & embarcadero.Run & Signal): workload ?=>
             (workload.pid, workload.await().exitStatus)
 
           (pid, exit, calls.synchronized(calls.to(List)))
@@ -584,7 +584,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val outcome =
             try
-              spec.open[Workload](Read & Run) { workload ?=> throw java.lang.IllegalStateException() }
+              spec.open[Workload](Read & embarcadero.Run) { workload ?=> throw java.lang.IllegalStateException() }
               t"returned"
             catch case _: java.lang.IllegalStateException => t"escaped"
 

@@ -336,7 +336,7 @@ object Bytecode:
         case tswitch: jlci.TableSwitchInstruction =>
           val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
 
-          val targets = tswitch.cases.nn.transmute[List].map: c =>
+          val targets = tswitch.cases.nn.to[List].map: c =>
             labels.getOrElse(c.nn.target.nn, 0)
 
           Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
@@ -344,7 +344,7 @@ object Bytecode:
         case lswitch: jlci.LookupSwitchInstruction =>
           val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
 
-          val cases = lswitch.cases.nn.transmute[List].map: c =>
+          val cases = lswitch.cases.nn.to[List].map: c =>
             (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
 
           Lookupswitch(default, cases)

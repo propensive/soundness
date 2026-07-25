@@ -208,23 +208,23 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
     suite(m"Grapheme cluster boundaries"):
       test(m"empty string yields single sentinel"):
-        GraphemeBreak.boundaries(t"").to(List)
+        GraphemeBreak.boundaries(t"").to[List]
       . assert(_ == List(0))
 
       test(m"ASCII string boundaries"):
-        GraphemeBreak.boundaries(t"abc").to(List)
+        GraphemeBreak.boundaries(t"abc").to[List]
       . assert(_ == List(0, 1, 2, 3))
 
       test(m"CR LF stays one cluster"):
-        GraphemeBreak.boundaries(t"a\r\nb").to(List)
+        GraphemeBreak.boundaries(t"a\r\nb").to[List]
       . assert(_ == List(0, 1, 3, 4))
 
       test(m"combining diaeresis joins with space"):
-        GraphemeBreak.boundaries(Text(" ̈ ")).to(List)
+        GraphemeBreak.boundaries(Text(" ̈ ")).to[List]
       . assert(_ == List(0, 2, 3))
 
       test(m"two regional indicators form one flag"):
-        GraphemeBreak.boundaries(Text("🇬🇧🇫🇷")).to(List).size
+        GraphemeBreak.boundaries(Text("🇬🇧🇫🇷")).to[List].size
       . assert(_ == 3)
 
       // UAX #29 conformance against the official GraphemeBreakTest.txt fixture.
@@ -254,7 +254,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
               case hex => sb.appendCodePoint(Integer.parseInt(hex, 16))
 
             val input = sb.toString.nn.tt
-            val actual = GraphemeBreak.boundaries(input).to(List)
+            val actual = GraphemeBreak.boundaries(input).to[List]
 
             if actual != expected.to(List) then failures = (idx + 1, rawLine) :: failures
 

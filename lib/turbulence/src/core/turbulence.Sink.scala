@@ -199,7 +199,7 @@ object Sink:
 
       update def finish(): Unit =
         drain()
-        write(target, chunks.reverse.transmute[Progression])
+        write(target, chunks.reverse.to(Progression))
 
       private update def drain(): Unit =
         if mark0 > 0 then

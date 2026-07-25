@@ -204,7 +204,7 @@ object SourceCode:
 
         val content: Progression[Token] =
           if start == end then Progression() else
-            text.segment(start.z thru end.u).cut(t"\n").stdlib.transmute[Progression].flatMap: line =>
+            text.segment(start.z thru end.u).cut(t"\n").stdlib.to(Progression).flatMap: line =>
               Progression(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
             . init
@@ -462,7 +462,7 @@ object SourceCode:
     val run = Scalac.compiler().newRun
     run.compileSources(scala.collection.immutable.List(source))
 
-    (run, context, collected.transmute[List])
+    (run, context, collected.to(List))
 
   private def syntaxOf(using quotes: scala.quoted.Quotes)(tpe: Types.Type): Syntax =
     Syntax(tpe.asInstanceOf[quotes.reflect.TypeRepr])

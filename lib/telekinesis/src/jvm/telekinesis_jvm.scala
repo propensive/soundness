@@ -136,8 +136,8 @@ private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tact
   val status: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
     abort(ConnectError(ConnectError.Reason.Unknown))
 
-  val headers: List[Http.Header] = response.headers.nn.map().nn.transmute[List].bind:
-    (key, values) => values.transmute[List].map: value => Http.Header(key.tt, value.tt)
+  val headers: List[Http.Header] = response.headers.nn.map().nn.to[List].bind:
+    (key, values) => values.to[List].map: value => Http.Header(key.tt, value.tt)
 
   val body = Http.Body.Flowing: () =>
     unsafely:

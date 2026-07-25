@@ -132,8 +132,8 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
     suite(m"Layout solver"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
-      def file(children: Frame*): Frame = Frame.Split(Sizing(), Axis.File, children.to(List))
-      def rank(children: Frame*): Frame = Frame.Split(Sizing(), Axis.Rank, children.to(List))
+      def file(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.File, children.to(List))
+      def rank(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.Rank, children.to(List))
 
       test(m"fractions divide the axis proportionally"):
         val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
@@ -162,7 +162,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a container's minimum is forced up to the sum of its children's"):
         val frame = file(cell(Sizing(1.0, minWidth = 5)), cell(Sizing(1.0, minWidth = 5)))
-        frame.measure(Axis.File)
+        frame.measure(ultimatum.Axis.File)
       . assert(_ == Limits(10, Unset))
 
       test(m"file children fill the cross axis (full height)"):
@@ -872,7 +872,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.append(b)
-        panes.contents.transmute[List] == List(a, b)
+        panes.contents.to[List] == List(a, b)
       . assert(_ == true)
 
       test(m"prepend adds a pane at the start"):
@@ -880,7 +880,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.prepend(b)
-        panes.contents.transmute[List] == List(b, a)
+        panes.contents.to[List] == List(b, a)
       . assert(_ == true)
 
       test(m"insertBefore places a pane immediately before the reference"):
@@ -889,7 +889,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertBefore(b, c)
-        panes.contents.transmute[List] == List(a, c, b)
+        panes.contents.to[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"insertAfter places a pane immediately after the reference"):
@@ -898,7 +898,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertAfter(a, c)
-        panes.contents.transmute[List] == List(a, c, b)
+        panes.contents.to[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"remove deletes a pane by identity"):
@@ -906,7 +906,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a, b)
         panes.remove(a)
-        panes.contents.transmute[List] == List(b)
+        panes.contents.to[List] == List(b)
       . assert(_ == true)
 
       // Drive a running form, append a pane mid-loop (the synthetic iterator
@@ -1002,7 +1002,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a full border adds one cell on every side to the minimum size"):
         val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
-        (bordered.measure(Axis.File).min, bordered.measure(Axis.Rank).min)
+        (bordered.measure(ultimatum.Axis.File).min, bordered.measure(ultimatum.Axis.Rank).min)
       . assert(_ == (5, 4))
 
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
