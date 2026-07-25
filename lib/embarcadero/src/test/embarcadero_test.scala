@@ -148,7 +148,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"the layer blob is stored under its digest path"):
         val hex = layer.digest.s.stripPrefix("sha256:")
-        names.map(_.s).contains("blobs/sha256/"+hex)
+        names.stdlib.map(_.s).contains("blobs/sha256/"+hex)
       . assert(_ == true)
 
       test(m"oci-layout declares image layout version 1.0.0"):
