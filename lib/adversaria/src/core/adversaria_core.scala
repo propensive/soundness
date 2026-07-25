@@ -34,6 +34,8 @@ package adversaria
 
 import proscenium.compat.*
 
+import rudiments.*
+
 import scala.compiletime.summonInline
 
 import anticipation.*
@@ -62,10 +64,10 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 // derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
 inline def relabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    Map.from(fieldAnnotations[self, name[Any]].stdlib.map { (field, set) => field -> set.head.name })
+    fieldAnnotations[self, name[Any]].remap { (field, set) => field -> set.head.name }
 
   val specific: Map[Text, Text] =
-    Map.from(fieldAnnotations[self, name[format]].stdlib.map { (field, set) => field -> set.head.name })
+    fieldAnnotations[self, name[format]].remap { (field, set) => field -> set.head.name }
 
   Map.of(general.stdlib ++ specific.stdlib)
 
@@ -84,9 +86,9 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 // renamed variant's name to its serialized discriminator.
 inline def variantRelabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    Map.from(subtypeAnnotations[self, name[Any]].stdlib.map { (variant, set) => variant -> set.head.name })
+    subtypeAnnotations[self, name[Any]].remap { (variant, set) => variant -> set.head.name }
 
   val specific: Map[Text, Text] =
-    Map.from(subtypeAnnotations[self, name[format]].stdlib.map { (variant, set) => variant -> set.head.name })
+    subtypeAnnotations[self, name[format]].remap { (variant, set) => variant -> set.head.name }
 
   Map.of(general.stdlib ++ specific.stdlib)

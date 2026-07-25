@@ -38,6 +38,7 @@ import distillate.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import jacinta.*
 import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase
 import spectacular.*
@@ -68,8 +69,8 @@ object DepsDev:
     val result: QueryResult = mute[HttpEvent](query.fetch().receive[Json]).as[QueryResult]
 
     val key: VersionKey =
-      result.results.stdlib.map(_.version.versionKey).find(_.system == t"MAVEN")
-      . getOrElse(abort(Unresolved()))
+      result.results.map(_.version.versionKey).seek(_.system == t"MAVEN")
+      . or(abort(Unresolved()))
 
     // `name` is `group:artifact`; the Maven Central path uses `/` for the group.
     val parts: List[Text] = key.name.cut(t":")

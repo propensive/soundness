@@ -261,7 +261,7 @@ object Tests extends Suite(m"Ziggurat tests"):
         jar.open[File](Write) { h ?=> h.write(Progression(t"JARBYTES".in[Data])) }
 
         val out: Path on Linux = dir/t"hello"
-        val hashes: Map[Text, Text] = Map.from(labels.stdlib.map(_ -> t"0"*64))
+        val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to[Map]
 
         val packaging: Packaging =
           Packaging

@@ -81,8 +81,8 @@ package temporaryDirectories:
     () => jl.System.getProperty("java.io.tmpdir").nn.tt
 
   given environmentTemporaryDirectory: Environment => TemporaryDirectory = () =>
-    List("TMPDIR", "TMP", "TEMP").stdlib.map(jl.System.getenv(_)).find(_ != null)
-    . optional.let(_.nn.tt)
+    List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).seek(_ != null)
+    . let(_.nn.tt)
     . or(panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set"))
 
 

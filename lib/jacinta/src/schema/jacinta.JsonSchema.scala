@@ -116,7 +116,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
     case Morphology.Obj(fields, required) =>
       JsonSchema.Object
-        ( properties = Map.from(fields.stdlib.map { (label, shape) => (label, reify(shape)) }),
+        ( properties = fields.map { (label, shape) => (label, reify(shape)) }.to[Map],
           required   = required )
 
   // Marks a schema as optional (used both by the schema-only `Schematic` and by

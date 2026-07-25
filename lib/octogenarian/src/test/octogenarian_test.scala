@@ -630,7 +630,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.makeBranch(GitBranch(t"feature"))
-        worktree.branches().stdlib.map(_.show).pipe(Set.from(_))
+        worktree.branches().map(_.show).to[Set]
       .assert(_ == Set(t"main", t"feature"))
 
       test(m"branch() returns the currently checked-out branch"):
@@ -673,7 +673,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         commitFile(worktree, t"a", t"a\n", t"first")
         worktree.makeBranch(GitBranch(t"oldname"))
         worktree.repo.renameBranch(GitBranch(t"oldname"), GitBranch(t"newname"))
-        val names = worktree.branches().stdlib.map(_.show).pipe(Set.from(_))
+        val names = worktree.branches().map(_.show).to[Set]
         names.has(t"newname") && !names.has(t"oldname")
       .assert(_ == true)
 
@@ -976,7 +976,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val worktree = freshWorktree()
         worktree.repo.addRemote(t"origin", t"git@a.example:foo.git")
         worktree.repo.addRemote(t"upstream", t"git@b.example:bar.git")
-        worktree.repo.remotes().stdlib.map(_.name).pipe(Set.from(_))
+        worktree.repo.remotes().map(_.name).to[Set]
       .assert(_ == Set(t"origin", t"upstream"))
 
     // ----- clone (integration) --------------------------------------------
@@ -1130,7 +1130,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
         val second = commitFile(worktree, t"b", t"b\n", t"second")
         worktree.repo.notes.add(first, t"note one")
         worktree.repo.notes.add(second, t"note two")
-        worktree.repo.notes.list().stdlib.map(_._2).pipe(Set.from(_)) == Set(first, second)
+        worktree.repo.notes.list().map(_._2).to[Set] == Set(first, second)
       .assert(_ == true)
 
       test(m"copy duplicates a note onto another commit"):

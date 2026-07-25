@@ -63,7 +63,7 @@ object DefaultPersonScope:
     val xml = x"<root><company>Acme</company></root>"
     validate[Xml.Focus](XmlIssues()):
       case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
-    . protect(xml.as[DContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+    . protect(xml.as[DContact]).items.map(_(0).s).to[Set]
 
 case class DDrawing(shape: DShape, label: Text) derives CanEqual
 
@@ -82,7 +82,7 @@ object DefaultShapeScope:
       case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
     . protect(xml.as[DShape])
 
-    (accrued.items.stdlib.map(_(0).s).pipe(Set.from(_)), accrued.items.length)
+    (accrued.items.map(_(0).s).to[Set], accrued.items.length)
 
 
 object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
@@ -141,7 +141,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
       test(m"Pointer identifies the missing field"):
         val xml = x"<root><name>Alice</name><age>30</age></root>"
-        validateXml(xml)(_.as[DPerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+        validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/email[1]"))
 
       test(m"Two missing primitive fields accrue two errors"):
@@ -151,7 +151,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
       test(m"Pointers identify both missing primitive fields"):
         val xml = x"<root><name>Alice</name></root>"
-        validateXml(xml)(_.as[DPerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+        validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/age[1]", "/email[1]"))
 
       test(m"Wrong-type primitive field accrues an error"):
@@ -161,12 +161,12 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
 
       test(m"Wrong-type primitive field reports the field's path"):
         val xml = x"<root><name>Alice</name><age>oldish</age><email>a@b.c</email></root>"
-        validateXml(xml)(_.as[DPerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+        validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/age[1]"))
 
       test(m"Wrong-type and missing-field errors mix"):
         val xml = x"<root><name>Alice</name><age>oldish</age></root>"
-        validateXml(xml)(_.as[DPerson]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+        validateXml(xml)(_.as[DPerson]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/age[1]", "/email[1]"))
 
       test(m"Nested missing primitive field reports both segments"):
@@ -174,7 +174,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
                        <person><name>Dave</name><age>22</age></person>
                        <company>Acme</company>
                      </root>"""
-        validateXml(xml)(_.as[DContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+        validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert(_ == Set("/person[1]/email[1]"))
 
       test(m"Missing nested case-class field expands per sub-field"):
@@ -183,7 +183,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         // missing-field raise at `/person[1]/<field>[1]` — the same
         // accrual rule that handles same-level missing fields.
         val xml = x"<root><company>Acme</company></root>"
-        validateXml(xml)(_.as[DContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+        validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
             ( "/person[1]",
@@ -218,7 +218,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
         // Confirms the existing (no-Default) accrual semantics from the
         // previous PR are unchanged for users who don't opt in.
         val xml = x"<root><company>Acme</company></root>"
-        validateXml(xml)(_.as[DContact]).items.stdlib.map(_(0).s).pipe(Set.from(_))
+        validateXml(xml)(_.as[DContact]).items.map(_(0).s).to[Set]
       . assert: paths =>
           paths == Set
             ( "/person[1]",

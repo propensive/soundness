@@ -358,7 +358,7 @@ object Rrule:
       (rule.byDay.isEmpty || rule.byDay.map(_.weekday).has(date.weekday))
 
   private def monthAllowed(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
-    rule.byMonth.isEmpty || rule.byMonth.stdlib.map(_.numerical).contains(monthOf(date))
+    rule.byMonth.isEmpty || rule.byMonth.map(_.numerical).has(monthOf(date))
 
   // ── calendar helpers ─────────────────────────────────────────────────────────────────────────
 
