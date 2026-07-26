@@ -152,7 +152,7 @@ object Http:
 
   object Status:
     private lazy val all: Map[Int, Status] =
-      Map.from(values.immutable(using Unsafe).bi.map(_.code -> _))
+      Map.from(values.immutable(using Unsafe).stdlib.bi.map(_.code -> _))
 
     def unapply(code: Int): Option[Status] = all.get(code)
 

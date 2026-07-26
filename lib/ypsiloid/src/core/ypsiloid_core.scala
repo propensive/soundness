@@ -33,6 +33,7 @@
 package ypsiloid
 
 import scala.compiletime.asMatchable
+import proscenium.compat.*
 
 import anticipation.*
 import contextual.*

@@ -81,7 +81,7 @@ object Postable:
 
   given text: (encoder: CharEncoder) => Text is Postable =
     // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
-    Postable(media"text/plain", value => Stream(caps.unsafe.unsafeAssumePure(IArray.from(value.in[Data]))))
+    Postable(media"text/plain", value => Stream(caps.unsafe.unsafeAssumePure(value.in[Data])))
 
   given textStream: (encoder: CharEncoder) => Progression[Text] is Postable =
     Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.in[Data]).stdlib.iterator))

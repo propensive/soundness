@@ -38,6 +38,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import xylophone.*
+import proscenium.compat.*
 
 import Mathml.*
 
@@ -64,13 +65,13 @@ object MathmlParser:
       abort(MathmlError(MathmlError.Reason.NotMathml(labelOf(other))))
 
   private def childElements(elem: Element): List[Element] =
-    List.of(elem.children.toList.collect { case element: Element => element })
+    List.of(elem.children.stdlib.toList.collect { case element: Element => element })
 
   private def attributesOf(elem: Element): List[(Text, Text)] =
     List.of(elem.attributes.keys.map { key => (key, elem.attributes.at(key).or(t"")) }.toList)
 
   private def textOf(elem: Element): Text =
-    List.of(elem.children.toList.collect { case TextNode(text) => text }).join
+    List.of(elem.children.stdlib.toList.collect { case TextNode(text) => text }).join
 
   private def children(elem: Element)(using Tactic[MathmlError]): List[Mathml] =
     childElements(elem).map(decodeNode)

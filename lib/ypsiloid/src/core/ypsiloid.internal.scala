@@ -318,7 +318,7 @@ object internal:
         val n = elements.length
 
         val pieces: scala.collection.immutable.List[Expr[Iterable[Yaml.Ast]]] =
-          elements.zipWithIndex.toList.map: (elem, idx) =>
+          elements.stdlib.zipWithIndex.toList.map: (elem, idx) =>
             elem.asMatchable match
               case s: String if s == MarkerString =>
                 if spreads.has(holeIndex) then

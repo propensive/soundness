@@ -33,6 +33,7 @@
 package embarcadero
 
 import scala.caps
+import proscenium.compat.*
 
 import anticipation.*
 import aperture.*

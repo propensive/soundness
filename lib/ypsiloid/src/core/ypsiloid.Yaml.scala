@@ -34,6 +34,7 @@ package ypsiloid
 
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Vector
+import proscenium.compat.*
 
 import scala.caps
 

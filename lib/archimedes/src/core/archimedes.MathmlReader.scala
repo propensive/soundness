@@ -37,6 +37,7 @@ import contingency.*
 import gossamer.*
 import vacuous.*
 import xylophone.*
+import proscenium.compat.*
 
 import honeycomb.Html
 
