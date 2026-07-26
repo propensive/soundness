@@ -39,6 +39,7 @@ import gossamer.*
 import polyvinyl.*
 import prepositional.*
 import vacuous.*
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 

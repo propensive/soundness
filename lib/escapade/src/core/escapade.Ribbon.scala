@@ -35,6 +35,7 @@ package escapade
 import anticipation.*
 import denominative.*
 import gossamer.*
+import proscenium.compat.*
 
 object Ribbon:
   def apply[color: Chromatic](colors: color*): Ribbon = Ribbon(colors.map(Bg(_))*)

@@ -33,6 +33,7 @@
 package escapade
 
 import scala.collection.immutable.Seq
+import proscenium.compat.*
 
 import scala.language.experimental.pureFunctions
 

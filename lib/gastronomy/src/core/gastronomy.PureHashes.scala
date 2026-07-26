@@ -35,6 +35,7 @@ package gastronomy
 import anticipation.*
 import rudiments.*
 import vacuous.*
+import proscenium.compat.*
 
 // Pure-Scala implementations of the MD5, SHA-1 and SHA-2 hash families and the CRC-32 checksum,
 // so that hashing works on every platform (Scala.js and WASI, where `java.security.MessageDigest`

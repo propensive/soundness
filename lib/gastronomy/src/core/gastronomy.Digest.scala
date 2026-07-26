@@ -33,6 +33,7 @@
 package gastronomy
 
 import java.util as ju
+import proscenium.compat.*
 
 import scala.compiletime.*
 

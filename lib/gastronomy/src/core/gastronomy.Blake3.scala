@@ -33,6 +33,7 @@
 package gastronomy
 
 import scala.math
+import proscenium.compat.*
 
 import java.nio.charset.StandardCharsets
 

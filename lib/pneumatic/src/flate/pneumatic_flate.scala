@@ -35,6 +35,7 @@ package pneumatic
 import anticipation.*
 import rudiments.*
 import vacuous.*
+import proscenium.compat.*
 
 // One-shot gzip/gunzip for a whole `Data` block, over the pure-Scala DEFLATE implementation, and
 // therefore available on every platform.
