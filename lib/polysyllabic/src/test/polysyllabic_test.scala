@@ -74,19 +74,19 @@ object Tests extends Suite(m"Polysyllabic tests"):
     suite(m"Exception parser"):
       test(m"as-so-ciate decomposes to (associate, [2, 4])"):
         val (word, offsets) = TexPatterns.parseException(t"as-so-ciate")
-        (word, offsets.to(Seq))
+        (word, offsets.stdlib.to(Seq))
 
       . assert(_ == ((t"associate", Seq(2, 4))))
 
       test(m"single break: ta-ble decomposes to (table, [2])"):
         val (word, offsets) = TexPatterns.parseException(t"ta-ble")
-        (word, offsets.to(Seq))
+        (word, offsets.stdlib.to(Seq))
 
       . assert(_ == ((t"table", Seq(2))))
 
       test(m"no breaks: present decomposes to (present, [])"):
         val (word, offsets) = TexPatterns.parseException(t"present")
-        (word, offsets.to(Seq))
+        (word, offsets.stdlib.to(Seq))
 
       . assert(_ == ((t"present", Seq())))
 
