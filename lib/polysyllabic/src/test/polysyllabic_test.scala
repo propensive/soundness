@@ -43,31 +43,31 @@ object Tests extends Suite(m"Polysyllabic tests"):
     suite(m"Pattern parser"):
       test(m"plain pattern: hy3ph decomposes to (hyph, [0,0,3,0,0])"):
         val (key, scores) = TexPatterns.parsePattern(t"hy3ph")
-        (key, scores.to(Seq))
+        (key, scores.stdlib.to(Seq))
 
       . assert(_ == ((t"hyph", Seq[Byte](0, 0, 3, 0, 0))))
 
       test(m"leading boundary pattern: .ach4 decomposes to (.ach, [0,0,0,0,4])"):
         val (key, scores) = TexPatterns.parsePattern(t".ach4")
-        (key, scores.to(Seq))
+        (key, scores.stdlib.to(Seq))
 
       . assert(_ == ((t".ach", Seq[Byte](0, 0, 0, 0, 4))))
 
       test(m"trailing boundary pattern: ion5. decomposes to (ion., [0,0,0,5,0])"):
         val (key, scores) = TexPatterns.parsePattern(t"ion5.")
-        (key, scores.to(Seq))
+        (key, scores.stdlib.to(Seq))
 
       . assert(_ == ((t"ion.", Seq[Byte](0, 0, 0, 5, 0))))
 
       test(m"interleaved digits: a1b2c3 decomposes to (abc, [0,1,2,3])"):
         val (key, scores) = TexPatterns.parsePattern(t"a1b2c3")
-        (key, scores.to(Seq))
+        (key, scores.stdlib.to(Seq))
 
       . assert(_ == ((t"abc", Seq[Byte](0, 1, 2, 3))))
 
       test(m"pure-letter pattern: abc decomposes to (abc, [0,0,0,0])"):
         val (key, scores) = TexPatterns.parsePattern(t"abc")
-        (key, scores.to(Seq))
+        (key, scores.stdlib.to(Seq))
 
       . assert(_ == ((t"abc", Seq[Byte](0, 0, 0, 0))))
 
