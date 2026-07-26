@@ -38,6 +38,7 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 import symbolism.*
+import proscenium.compat.*
 
 object Month extends MonthRadix:
   val all: IArray[Month] = IArray(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)

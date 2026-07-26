@@ -42,7 +42,7 @@ object Discoverable:
   def noSuggestions[operand]: operand is Discoverable = _ => scala.collection.immutable.Nil
 
   given enumerable: [value: {Enumerable, Identifiable}] => value is Discoverable = _ =>
-    value.values.to(List).stdlib
+    value.values.stdlib.toList
     . map: element => value.encode(value.name(element))
     . map(Suggestion(_))
 

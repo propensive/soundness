@@ -33,6 +33,7 @@
 package telekinesis
 
 import scala.annotation.nowarn
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

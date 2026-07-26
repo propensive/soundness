@@ -42,6 +42,7 @@ import prepositional.*
 import punctuation.*
 import spectacular.*
 import vacuous.*
+import proscenium.compat.*
 
 import doms.html.whatwg, whatwg.*
 

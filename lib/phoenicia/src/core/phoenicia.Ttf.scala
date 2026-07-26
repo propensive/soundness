@@ -82,7 +82,7 @@ case class Ttf(data: Data):
   def advanceWidth(char: Char): Int raises FontError = hmtx.advanceWidth(glyph(char).id)
 
   def width(text: Text): Quantity[Ems[1]] raises FontError =
-    text.chars.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
+    text.chars.stdlib.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises FontError =
     hmtx.leftSideBearing(glyph(char).id)
@@ -220,7 +220,7 @@ case class Ttf(data: Data):
 
     Ttf(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 
-  def subset(text: Text): Ttf raises FontError = subset(Set.from(text.chars))
+  def subset(text: Text): Ttf raises FontError = subset(Set.from(text.chars.stdlib))
 
   // The transitive closure of a set of glyphs under composite-glyph components: every glyph
   // needed to render the given ones.
@@ -421,7 +421,7 @@ case class Ttf(data: Data):
         case (1, 0)  => 4
         case _       => 5
 
-      if candidates.isEmpty then Unset else candidates.minBy(rank).decode
+      if candidates.isEmpty then Unset else candidates.stdlib.minBy(rank).decode
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):

@@ -37,6 +37,7 @@ import java.nio.charset as jnc
 import java.util as ju
 import javax.crypto as jc
 import javax.crypto.spec as jcs
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

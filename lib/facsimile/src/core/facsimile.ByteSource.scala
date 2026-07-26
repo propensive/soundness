@@ -33,6 +33,7 @@
 package facsimile
 
 import anticipation.*
+import proscenium.compat.*
 
 // A random-access view of the bytes backing a PDF file, as zephyrine's shared `Expanse`. A
 // read past the end of the source yields fewer bytes than requested, never padding.

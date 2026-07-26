@@ -36,6 +36,7 @@ import anticipation.*
 import hieroglyph.*
 import rudiments.*
 import vacuous.*
+import proscenium.compat.*
 
 object Cos:
   // The code points at which PDFDocEncoding (ISO 32000-2 Annex D.7) differs from Latin-1:
@@ -73,21 +74,21 @@ object Cos:
   // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
-    if bytes.length >= 2 && (bytes(0) & 0xff) == 0xfe && (bytes(1) & 0xff) == 0xff
+    if bytes.length >= 2 && (bytes.stdlib(0) & 0xff) == 0xfe && (bytes.stdlib(1) & 0xff) == 0xff
     then charDecoders.utf16BeDecoder.decoded(bytes.drop(2))
     else if bytes.length >= 3
-            && (bytes(0) & 0xff) == 0xef && (bytes(1) & 0xff) == 0xbb && (bytes(2) & 0xff) == 0xbf
+            && (bytes.stdlib(0) & 0xff) == 0xef && (bytes.stdlib(1) & 0xff) == 0xbb && (bytes.stdlib(2) & 0xff) == 0xbf
     then charDecoders.utf8Decoder.decoded(bytes.drop(3))
     else
       val chars = new Array[Char](bytes.length)
       var i = 0
 
       while i < bytes.length do
-        val byte = bytes(i) & 0xff
+        val byte = bytes.stdlib(i) & 0xff
 
         chars(i) =
-          if byte >= 0x18 && byte <= 0x1f then docEncodingLow(byte - 0x18)
-          else if byte >= 0x80 && byte <= 0x9f then docEncodingHigh(byte - 0x80)
+          if byte >= 0x18 && byte <= 0x1f then docEncodingLow.stdlib(byte - 0x18)
+          else if byte >= 0x80 && byte <= 0x9f then docEncodingHigh.stdlib(byte - 0x80)
           else if byte == 0xa0 then '€'
           else byte.toChar
 

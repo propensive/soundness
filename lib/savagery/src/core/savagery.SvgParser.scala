@@ -152,7 +152,7 @@ object SvgParser:
 
     val stops: List[Stop[Color in Srgb]] =
       List.of:
-        elem.children.toList.collect:
+        elem.children.stdlib.toList.collect:
           case e: Element if e.label == t"stop" => decodeStop(e)
 
     LinearGradient(id, stops*)

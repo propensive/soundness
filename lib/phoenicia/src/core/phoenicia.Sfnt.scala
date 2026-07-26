@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import proscenium.compat.*
 
 // Serialises a table set as an sfnt font file: the header, a directory sorted by tag, and the
 // tables themselves, four-byte aligned and zero-padded, with per-table checksums computed and

@@ -33,6 +33,7 @@
 package aviation
 
 import java.time as jt
+import proscenium.compat.*
 
 import abacist.*
 import anticipation.*

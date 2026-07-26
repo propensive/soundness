@@ -40,6 +40,7 @@ import hypotenuse.*
 import phoenicia.*
 import rudiments.*
 import vacuous.*
+import proscenium.compat.*
 
 import gastronomy.crypto.permitDisallowedCrypto
 import gastronomy.providers.javaStdlibProvider

@@ -33,6 +33,7 @@
 package cordillera
 
 import scala.caps
+import proscenium.compat.*
 
 import java.util.concurrent.atomic as juca
 

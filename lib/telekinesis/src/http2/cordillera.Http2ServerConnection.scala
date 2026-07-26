@@ -34,6 +34,7 @@ package cordillera
 
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
+import proscenium.compat.*
 
 import scala.collection.concurrent as scc
 import scala.math
