@@ -184,7 +184,7 @@ object Tests extends Suite(m"Polysyllabic tests"):
     suite(m"Fallback / Unhyphenated"):
       test(m"with no language given, words have no break points"):
         import polysyllabic.Hyphenation.fallback
-        t"hyphenation".breakPoints.length
+        t"hyphenation".breakPoints.stdlib.length
 
       . assert(_ == 0)
 
@@ -193,6 +193,6 @@ object Tests extends Suite(m"Polysyllabic tests"):
         val tiny = Hyphenation(patterns = Seq(t"hy3ph", t"he2n", t"hena4", t"hen5at"))
 
         given Hyphenation = tiny
-        t"hyphenation".breakPoints.to(Seq)
+        t"hyphenation".breakPoints.stdlib.to(Seq)
 
       . assert(breaks => breaks.nonEmpty)

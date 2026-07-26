@@ -68,15 +68,15 @@ object Tests extends Suite(m"Geodesy tests"):
 
     suite(m"Compass.points8"):
       test(m"contains eight points"):
-        Compass.points8.length
+        Compass.points8.stdlib.length
       . assert(_ == 8)
 
       test(m"index 7 is Northwest"):
-        Compass.points8(7)
+        Compass.points8.stdlib(7)
       . assert(_ == Northwest)
 
       test(m"contains no duplicates"):
-        Compass.points8.toSet.size
+        Compass.points8.stdlib.toSet.size
       . assert(_ == 8)
 
       test(m"315 degrees maps to Northwest"):

@@ -75,7 +75,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skipSanitizer
-          charDecoders.utf8Decoder.decoded(japaneseData.grouped(chunk).to(Progression)).join
+          charDecoders.utf8Decoder.decoded(japaneseData.stdlib.grouped(chunk).map(IArray.of(_)).to(Progression)).join
         . assert(_ == japanese)
 
       val badUtf8 = Data(45, -62, 49, 48)
@@ -98,7 +98,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       test(m"Ensure that decoding is finished"):
         import textSanitizers.strictSanitizer
         given CharEncoder = enc"UTF-8".encoder
-        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(t"café".in[Data].dropRight(1)))
+        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(IArray.of(t"café".in[Data].stdlib.dropRight(1))))
       . assert(_ == CharDecodeError(4, enc"UTF-8"))
 
     suite(m"Accruing decode errors"):
