@@ -83,7 +83,7 @@ object Assembler:
       publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
   :   Data raises AssemblyError =
 
-    val bytes: Array[Byte] = IArray.genericWrapArray(runner).toArray
+    val bytes: Array[Byte] = runner.stdlib.toArray
 
     val magicOffset: Int =
       var found: Int = -1

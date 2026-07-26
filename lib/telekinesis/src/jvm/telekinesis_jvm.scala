@@ -37,6 +37,7 @@ import java.net as jn
 import java.net.http as jnh
 import java.util.concurrent as juc
 import javax.net.ssl as jns
+import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*

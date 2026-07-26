@@ -340,14 +340,14 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
             (label, schema2)
 
-        .pipe(Map.from(_))
+        .pipe(iarr => Map.from(iarr.stdlib))
 
       val required: List[Text] =
         contexts[derivation]():
           [field] => schema => label.unless(_ => schema.schema().optional)
 
-        . compact
-        . to(List)
+        . stdlib.compact
+        . to(proscenium.List)
 
       Object(properties = map, required = required)
 
