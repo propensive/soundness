@@ -122,6 +122,14 @@ class LarcenyTransformer() extends PluginPhase:
     // such as stashing a local capability in an outer mutable variable).
     val ccNew = ctx.settings.YccNew.value
 
+    // The prelude is part of the language environment too: without the parent's
+    // `-Yimports`/`-Yno-predef`, helper code outside any `demilitarize` region can
+    // fail to resolve in the sub-compilation, and those global errors suppress
+    // inlining -- so the regions' own `compiletime.error`s never fire and every
+    // capture comes back empty.
+    val yimports = ctx.settings.Yimports.value
+    val noPredef = ctx.settings.YnoPredef.value
+
     object collector extends UntypedTreeMap:
       val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
 
@@ -147,7 +155,7 @@ class LarcenyTransformer() extends PluginPhase:
       ctx.settings.plugin.value.filterNot(LarcenyTransformer.isLarceny)
 
     val errors: List[CompileError] =
-      Subcompiler.compile(language, classpath, source, regions, plugins, ccNew)
+      Subcompiler.compile(language, classpath, source, regions, plugins, ccNew, yimports, noPredef)
 
     object transformer extends UntypedTreeMap:
       override def transform(tree: Tree)(using Context): Tree = tree match

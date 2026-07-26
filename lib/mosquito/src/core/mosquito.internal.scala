@@ -215,7 +215,8 @@ object internal:
 
     def apply(index: Int): left = left.data.stdlib(index).asInstanceOf[left]
     def list: List[left] = left.data.toList.asInstanceOf[List[left]]
-    def iarray: IArray[left] = left.data.asInstanceOf[IArray[left]]
+    def iarray(using scala.reflect.ClassTag[left]): IArray[left] =
+      IArray.of(left.data.stdlib.map(_.asInstanceOf[left]))
     def size(using ValueOf[size]): Int = valueOf[size]
 
 
