@@ -33,6 +33,7 @@
 package stratiform
 
 import scala.collection.immutable.Seq
+import proscenium.compat.*
 
 import scala.{annotation, caps}
 
@@ -162,15 +163,15 @@ object internal:
           '{Tel.Atom.Literal($delimExpr.tt, $textExpr)}
 
       def emitAtomsArray(atoms: IArray[Tel.Atom]): Expr[IArray[Tel.Atom]] =
-        val list = atoms.toList.map(emitAtom)
+        val list = atoms.stdlib.toList.map(emitAtom)
         '{IArray.from(${Expr.ofList(list)})}
 
       def emitComment(c: Tel.Comment): Expr[Tel.Comment] =
         '{Tel.Comment(${Expr(c.text.s)}.tt)}
 
       def emitTabulation(t: Tel.Tabulation): Expr[Tel.Tabulation] =
-        val markers = Expr(t.markerOffsets.toList)
-        val headings = Expr(t.headings.toList.map(_.s))
+        val markers = Expr(t.markerOffsets.stdlib.toList)
+        val headings = Expr(t.headings.stdlib.toList.map(_.s))
         '{Tel.Tabulation(IArray.from(${markers}), IArray.from(${headings}.map(_.tt)))}
 
       def emitCompound(c: Tel.Compound): Expr[Tel.Compound] =
@@ -185,20 +186,20 @@ object internal:
         '{Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr)}
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
-        val comments = '{IArray.from(${Expr.ofList(b.comments.toList.map(emitComment))})}
+        val comments = '{IArray.from(${Expr.ofList(b.comments.stdlib.toList.map(emitComment))})}
 
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
           case t: Tel.Tabulation => '{${emitTabulation(t)}: Optional[Tel.Tabulation]}
           case _                 => '{Unset}
 
         val compounds =
-          '{IArray.from(${Expr.ofList(b.compounds.toList.map(emitCompound))})}
+          '{IArray.from(${Expr.ofList(b.compounds.stdlib.toList.map(emitCompound))})}
 
         val tbl = Expr(b.trailingBlankLines)
         '{Tel.Block($comments, $tab, $compounds, $tbl)}
 
       def emitBlocks(blocks: IArray[Tel.Block]): Expr[IArray[Tel.Block]] =
-        '{IArray.from(${Expr.ofList(blocks.toList.map(emitBlock))})}
+        '{IArray.from(${Expr.ofList(blocks.stdlib.toList.map(emitBlock))})}
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
         case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}

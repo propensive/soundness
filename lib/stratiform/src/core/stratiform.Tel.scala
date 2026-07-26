@@ -855,7 +855,7 @@ object Tel extends Tel2:
                 val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
                   abort(TelError(Reason.UnresolvedReference))
 
-                selectDef.variants.zipWithIndex.find(_._1.keyword == atomText) match
+                selectDef.variants.stdlib.zipWithIndex.find(_._1.keyword == atomText) match
                   case Some((_, variantOffset)) =>
                     results += Tel.Element.Node(flatPos + variantOffset, Flag, IArray.empty)
 
@@ -909,8 +909,8 @@ object Tel extends Tel2:
     :   IArray[Tel.Element] raises TelError tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
-      results ++= atomElements
-      results ++= childElements
+      results ++= atomElements.stdlib
+      results ++= childElements.stdlib
 
       def flatWidth(member: Member): Int = member match
         case _: Tels.Field => 1
@@ -1356,7 +1356,7 @@ object Tel extends Tel2:
 
       buffer
 
-    IArray.unsafeFromArray(build(document, 1, 1, 0))
+    IArray.of(scala.IArray.unsafeFromArray(build(document, 1, 1, 0)))
 
   // Resolves a `TelPath` to the source `Position` recorded in a tracked `Tel`'s
   // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`
@@ -1805,7 +1805,7 @@ object Tel extends Tel2:
 
     var b = 0
     var found = false
-    val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
+    val out = scala.collection.mutable.ArrayBuffer.from(blocks.stdlib)
 
     while b < out.length && !found do
       val cs = out(b).compounds
@@ -1835,16 +1835,17 @@ object Tel extends Tel2:
 
     var offset = 0
 
-    blocks.map: block =>
-      val compounds = block.compounds
-      val base = offset
-      offset += compounds.length
+    IArray.of:
+      blocks.stdlib.map: block =>
+        val compounds = block.compounds
+        val base = offset
+        offset += compounds.length
 
-      if index >= base && index < base + compounds.length
-      then
-        block.copy(compounds = compounds.updated(index - base, transform(compounds(index - base))))
-      else
-        block
+        if index >= base && index < base + compounds.length
+        then
+          block.copy(compounds = compounds.updated(index - base, transform(compounds(index - base))))
+        else
+          block
 
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
@@ -4988,7 +4989,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // Flat list of inline atom texts attached to this node. For the document
   // root this is always empty since the root has no atoms.
   def atomTexts: IArray[Text] = subtree match
-    case c: Tel.Compound => c.atoms.collect { case Tel.Atom.Inline(text, _) => text }
+    case c: Tel.Compound => IArray.of(c.atoms.stdlib.collect { case Tel.Atom.Inline(text, _) => text })
     case _: Tel.Document => IArray.empty
 
   // First inline atom text or empty string if none. Used by primitive

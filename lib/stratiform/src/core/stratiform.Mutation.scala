@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+import murmuration.*
 import proscenium.compat.*
 
 import scala.math
@@ -366,7 +367,7 @@ object Mutation:
       newGroup.insert(newIndex, movedCompound)
 
       // Write the reordered group back into the original slots.
-      val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(blocks.stdlib)
       var j = 0
 
       while j < positions.length do

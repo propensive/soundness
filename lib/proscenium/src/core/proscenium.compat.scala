@@ -404,14 +404,6 @@ extension [element](iarray: IArray[element])
   :   IArray[element2] =
     IArray.of(iarray.stdlib.map(lambda))
 
-  inline def flatMap[element2: scala.reflect.ClassTag](lambda: element => IterableOnce[element2])
-  :   IArray[element2] =
-    IArray.of(iarray.stdlib.flatMap(lambda))
-
-  inline def filter(predicate: element => Boolean)(using scala.reflect.ClassTag[element])
-  :   IArray[element] =
-    IArray.of(iarray.stdlib.filter(predicate))
-
   inline def take(count: Int)(using scala.reflect.ClassTag[element]): IArray[element] =
     IArray.of(iarray.stdlib.take(count))
 
@@ -421,6 +413,15 @@ extension [element](iarray: IArray[element])
   inline def slice(from: Int, until: Int)(using scala.reflect.ClassTag[element])
   :   IArray[element] =
     IArray.of(iarray.stdlib.slice(from, until))
+
+  inline def updated[element2 >: element](index: Int, element2: element2)
+     (using scala.reflect.ClassTag[element2])
+  :   IArray[element2] =
+    IArray.of(iarray.stdlib.updated(index, element2))
+
+  inline def filterNot(predicate: element => Boolean)(using scala.reflect.ClassTag[element])
+  :   IArray[element] =
+    IArray.of(iarray.stdlib.filterNot(predicate))
 
   inline def reverse(using scala.reflect.ClassTag[element]): IArray[element] =
     IArray.of(iarray.stdlib.reverse)
@@ -436,3 +437,24 @@ extension [element](iarray: IArray[element])
 
   inline def contains(element2: element): Boolean =
     iarray.stdlib.toSeq.contains(element2)
+
+  inline def zipWithIndex: IArray[(element, Int)] =
+    IArray.of(iarray.stdlib.zipWithIndex)
+
+  inline def collect[element2: scala.reflect.ClassTag]
+     (lambda: PartialFunction[element, element2])
+  :   IArray[element2] =
+    IArray.of(iarray.stdlib.collect(lambda))
+  inline def forall(predicate: element => Boolean): Boolean = iarray.stdlib.forall(predicate)
+  inline def lastIndexWhere(predicate: element => Boolean): Int =
+    iarray.stdlib.lastIndexWhere(predicate)
+
+  inline infix def :+ [element2 >: element: scala.reflect.ClassTag](element3: element2)
+  :   IArray[element2] =
+    IArray.of(iarray.stdlib :+ element3)
+
+  inline infix def +: [element2 >: element: scala.reflect.ClassTag](element3: element2)
+  :   IArray[element2] =
+    IArray.of(element3 +: iarray.stdlib)
+
+

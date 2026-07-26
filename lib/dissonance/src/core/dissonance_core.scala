@@ -76,8 +76,8 @@ def evolve[element: ClassTag]
             val updates =
               diff(Series.from(left.stdlib), Series.from(right.stdlib), _.value == _.value).edits.toList.map:
                 case Ins(_, value)    => value
-                case Del(index, _)    => left(index)
-                case Par(index, _, _) => left(index).add(iteration)
+                case Del(index, _)    => left.stdlib(index)
+                case Par(index, _, _) => left.stdlib(index).add(iteration)
 
             List.of(updates ::: done.stdlib)
 

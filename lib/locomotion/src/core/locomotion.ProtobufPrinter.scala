@@ -33,6 +33,7 @@
 package locomotion
 
 import scala.caps
+import proscenium.compat.*
 
 import anticipation.*
 import zephyrine.*

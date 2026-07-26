@@ -33,6 +33,7 @@
 package stratiform
 
 import anticipation.*
+import proscenium.compat.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -334,8 +335,8 @@ object Tels extends Tels2:
         var composed = schema.copy(layers = IArray.empty)
         var i = 0
 
-        while i < schema.layers.length do
-          val layer = schema.layers(i)
+        while i < schema.layers.stdlib.length do
+          val layer = schema.layers.stdlib(i)
           if !seenLayerNames.add(layer.name) then abort(TelError(Reason.DuplicateLayerName))
           composed = applyLayer(composed, layer)
           i += 1
@@ -370,7 +371,7 @@ object Tels extends Tels2:
       case Required, Repeatable
 
     private def mergeStruct(base: Struct, layer: Struct): Struct raises TelError =
-      val members = scala.collection.mutable.ArrayBuffer.from(base.members.toList)
+      val members = scala.collection.mutable.ArrayBuffer.from(base.members.stdlib)
 
       val keywordToIndex = scala.collection.mutable.HashMap.from(
         members.zipWithIndex.collect:
@@ -379,8 +380,8 @@ object Tels extends Tels2:
 
       var i = 0
 
-      while i < layer.members.length do
-        layer.members(i) match
+      while i < layer.members.stdlib.length do
+        layer.members.stdlib(i) match
           case f: Field =>
             keywordToIndex.get(f.keyword) match
               case Some(idx) =>
@@ -428,8 +429,8 @@ object Tels extends Tels2:
 
         i += 1
 
-      val mergedValidators = (base.validators ++ layer.validators).distinct
-      Struct(IArray.from(members), IArray.from(mergedValidators))
+      val mergedValidators = IArray.of((base.validators.stdlib ++ layer.validators.stdlib).distinct)
+      Struct(IArray.from(members), mergedValidators)
 
     private def mergeRecordList
       ( base:     IArray[RecordDefinition],
@@ -438,11 +439,11 @@ object Tels extends Tels2:
        selects:  IArray[SelectDefinition] )
     :   IArray[RecordDefinition] raises TelError =
 
-      val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.stdlib)
       var i = 0
 
-      while i < layer.length do
-        val newDef = layer(i)
+      while i < layer.stdlib.length do
+        val newDef = layer.stdlib(i)
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
@@ -474,17 +475,17 @@ object Tels extends Tels2:
        selects: IArray[SelectDefinition] )
     :   IArray[ScalarDefinition] raises TelError =
 
-      val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.stdlib)
       var i = 0
 
-      while i < layer.length do
-        val newDef = layer(i)
+      while i < layer.stdlib.length do
+        val newDef = layer.stdlib(i)
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
-          val mergedValidators = (out(existing).validators ++ newDef.validators).distinct
+          val mergedValidators = IArray.of((out(existing).validators.stdlib ++ newDef.validators.stdlib).distinct)
 
-          out(existing) = ScalarDefinition(newDef.name, IArray.from(mergedValidators),
+          out(existing) = ScalarDefinition(newDef.name, mergedValidators,
               newDef.description.or(out(existing).description))
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
@@ -503,11 +504,11 @@ object Tels extends Tels2:
        scalars: IArray[ScalarDefinition] )
     :   IArray[SelectDefinition] raises TelError =
 
-      val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(base.stdlib)
       var i = 0
 
-      while i < layer.length do
-        val newDef = layer(i)
+      while i < layer.stdlib.length do
+        val newDef = layer.stdlib(i)
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
@@ -525,18 +526,18 @@ object Tels extends Tels2:
     private def mergeSelect(base: SelectDefinition, layer: SelectDefinition)
     :   SelectDefinition raises TelError =
 
-      val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.toList)
+      val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.stdlib)
       var i = 0
 
-      while i < layer.variants.length do
-        val v = layer.variants(i)
+      while i < layer.variants.stdlib.length do
+        val v = layer.variants.stdlib(i)
         val existingIdx = variants.indexWhere(_.keyword == v.keyword)
         if existingIdx < 0 then abort(TelError(Reason.LayerVariantAddition))
         i += 1
 
-      val mergedValidators = (base.validators ++ layer.validators).distinct
+      val mergedValidators = IArray.of((base.validators.stdlib ++ layer.validators.stdlib).distinct)
 
-      SelectDefinition(base.name, IArray.from(variants), IArray.from(mergedValidators),
+      SelectDefinition(base.name, IArray.from(variants), mergedValidators,
           layer.description.or(base.description))
 
   // Inverse of the §20.5 schema-of-schemas: given a Tel.Document whose
@@ -704,7 +705,7 @@ object Tels extends Tels2:
 
       children.each: cc =>
         cc.keyword.s match
-          case "validate"    => validators ++= atomTexts(cc)
+          case "validate"    => validators ++= atomTexts(cc).stdlib
           case "exclude"     => ()
           case "description" => ()
 
@@ -755,7 +756,7 @@ object Tels extends Tels2:
         cc.keyword.s match
           case "field"    => members += parseField(cc)
           case "select"   => members += parseSelectRef(cc)
-          case "validate" => validators ++= atomTexts(cc)
+          case "validate" => validators ++= atomTexts(cc).stdlib
 
           case "exclude" =>
             val ats = atomTexts(cc)
