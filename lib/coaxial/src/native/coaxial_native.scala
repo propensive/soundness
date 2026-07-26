@@ -33,6 +33,7 @@
 package coaxial
 
 import scala.caps
+import proscenium.compat.*
 
 import java.io as ji
 import java.net as jn
@@ -219,13 +220,13 @@ package socketBackends:
             var index = 0
 
             while index < 8 do
-              bytes(index) = high(index)
+              bytes(index) = high.stdlib(index)
               index += 1
 
             val low = ip.lowBits.bits.bytes
 
             while index < 16 do
-              bytes(index) = low(index - 8)
+              bytes(index) = low.stdlib(index - 8)
               index += 1
 
             bytes
