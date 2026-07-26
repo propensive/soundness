@@ -38,6 +38,7 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 import xenophile.*
+import proscenium.compat.*
 
 // A `Crypto` provider backed by OpenSSL's `libcrypto`, called through xenophile's typed C
 // navigation: the prototypes in `/enigmatic/openssl.h` are parsed by `CHeaderDialect` at compile

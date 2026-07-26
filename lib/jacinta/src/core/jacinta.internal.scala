@@ -891,7 +891,7 @@ object internal:
                 '{Iterable($v)}
 
         ' {
-            val all = ${Expr.ofList(pieces)}
+            val all = ${Expr.ofList(pieces.stdlib)}
             . foldLeft(scala.collection.immutable.List.empty[Json.Ast])(_ ++ _)
             Json.Ast.arr(IArray.from(all).asInstanceOf[IArray[Any]])
           }

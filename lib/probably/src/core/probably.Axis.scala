@@ -99,7 +99,7 @@ object Axis:
   :   Axis[enumeration] =
 
     val label = evidence.name.cut(t" ").head.cut(t".").last.lower
-    new Axis(label, evidence.values.to(List))
+    new Axis(label, evidence.values.toList)
 
   def apply(label: Text)(range: scala.Range): Axis[Int] = new Axis(label, range.to(List))
 

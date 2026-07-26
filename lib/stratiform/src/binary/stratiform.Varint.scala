@@ -33,6 +33,7 @@
 package stratiform
 
 import scala.language.unsafeNulls
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

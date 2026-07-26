@@ -543,7 +543,7 @@ private[probably] object AnsiRenderer:
         if oldHits == 0 then main
         else e"${palette.detail}(${oldHits.show.subscripts}) $main"
 
-    val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
+    val data = coverage.spec.stdlib.groupBy(_.path).toList.map: (path, branches) =>
       val hitCount: Int =
         branches.map(_.id).count(coverage.hits.has)
 
@@ -552,7 +552,7 @@ private[probably] object AnsiRenderer:
 
       CoverageData(path, branches.size, hitCount, oldHitCount)
 
-    val maxHits = data.stdlib.map(_.branches).maxOption
+    val maxHits = data.map(_.branches).maxOption
 
     import treeStyles.defaultTreeStyle
 
@@ -619,6 +619,6 @@ private[probably] object AnsiRenderer:
 
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
 
-    . tabulate(data).grid(columns).render.each(Out.println(_))
+    . tabulate(List.of(data)).grid(columns).render.each(Out.println(_))
 
     Out.println(e"")

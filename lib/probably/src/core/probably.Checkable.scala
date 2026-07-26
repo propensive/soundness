@@ -35,6 +35,7 @@ package probably
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import proscenium.compat.*
 
 object Checkable:
   given iarray: [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)

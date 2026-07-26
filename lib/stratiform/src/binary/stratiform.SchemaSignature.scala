@@ -34,6 +34,7 @@ package stratiform
 
 import scala.language.unsafeNulls
 import murmuration.*
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -129,7 +130,7 @@ object SchemaSignature:
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
 
-        (List.of(hashes): List[Data])
+        (hashes: List[Data])
 
       .or(Nil)
 

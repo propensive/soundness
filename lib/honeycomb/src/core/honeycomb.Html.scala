@@ -33,6 +33,7 @@
 package honeycomb
 
 import scala.{caps, compiletime}
+import proscenium.compat.*
 
 import scala.language.dynamics
 
@@ -1892,7 +1893,7 @@ extends Node, Topical, Transportive, Dynamic:
             foreign )
 
       case node: Node =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(node +: children), foreign)
+        Element(label, attributes, caps.unsafe.unsafeAssumePure(IArray.of(node +: children.stdlib)), foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1901,7 +1902,7 @@ extends Node, Topical, Transportive, Dynamic:
   def +^ (html: Html of Transport): Element of Topic over Transport in Form =
     (html: Html).match
       case fragment: Fragment =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(children ++ fragment.nodes), foreign)
+        Element(label, attributes, caps.unsafe.unsafeAssumePure(IArray.of(children.stdlib ++ fragment.nodes)), foreign)
 
       case node: Node =>
         Element(label, attributes, caps.unsafe.unsafeAssumePure(children :+ node), foreign)

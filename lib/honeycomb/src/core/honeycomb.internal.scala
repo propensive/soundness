@@ -156,16 +156,16 @@ object internal:
         val children = '{$scrutinee.children}
 
         def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-          if index == pattern.children.length then expr else
+          if index == pattern.children.stdlib.length then expr else
             val expr2 =
-              descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
+              descend(array, pattern.children.stdlib(index), '{$children.stdlib(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 
         val elementsChecked = elements(0):
           ' {
               ${Expr(pattern.label)} == $scrutinee.label &&
-                $scrutinee.children.length == ${Expr(pattern.children.length)}
+                $scrutinee.children.stdlib.length == ${Expr(pattern.children.stdlib.length)}
             }
 
         '{$attributesChecked && $elementsChecked}
@@ -502,7 +502,7 @@ object internal:
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
           val elements =
-            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].to(List))}*)}
+            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].stdlib.toList)}*)}
 
           List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
@@ -674,10 +674,10 @@ object internal:
       attrs.asInstanceOf[Array[String | Null]]
 
     extension (attrs: Attributes)
-      inline def size: Int = attrs.length/2
-      inline def isEmpty: Boolean = attrs.length == 0
-      inline def nonEmpty: Boolean = attrs.length > 0
-      inline def nil: Boolean = attrs.length == 0
+      inline def size: Int = attrs.stdlib.length/2
+      inline def isEmpty: Boolean = attrs.stdlib.length == 0
+      inline def nonEmpty: Boolean = attrs.stdlib.length > 0
+      inline def nil: Boolean = attrs.stdlib.length == 0
 
       def apply(key: Text): Optional[Text] =
         val a = storage(attrs)

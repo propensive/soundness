@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
+import proscenium.compat.*
 
 import CborError.{Primitive, Reason}
 
@@ -94,12 +95,12 @@ extension (cbor: Cbor.Ast)
   inline def entries: Int = Cbor.Ast.size(cbor)
 
   @unexported
-  def element(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index)
+  def element(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]].stdlib(index)
 
   @unexported
-  inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index*2)
+  inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]].stdlib(index*2)
   @unexported
-  inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index*2 + 1)
+  inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]].stdlib(index*2 + 1)
 
   @unexported
   def index(key: String): Int =
@@ -148,7 +149,7 @@ extension (cbor: Cbor.Ast)
       val full = cbor.asInstanceOf[IArray[Cbor.Ast]]
       val count = elements
 
-      if count == full.length then full else IArray.tabulate(count)(full(_))
+      if count == full.length then full else IArray.tabulate(count)(full.stdlib(_))
     else
       expected(Primitive.Array)
       IArray.empty[Cbor.Ast]

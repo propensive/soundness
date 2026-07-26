@@ -392,7 +392,7 @@ object Honeycomb:
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
           val elements =
-            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].to(List))}*)}
+            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].stdlib.toList)}*)}
 
           List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
