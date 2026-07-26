@@ -33,6 +33,7 @@
 package perihelion
 
 import scala.{caps, compiletime}
+import proscenium.compat.*
 
 import java.security.SecureRandom
 

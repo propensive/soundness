@@ -33,6 +33,7 @@
 package exegesis
 
 import scala.collection.mutable as scm
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

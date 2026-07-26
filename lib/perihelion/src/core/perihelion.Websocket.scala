@@ -33,6 +33,7 @@
 package perihelion
 
 import scala.caps
+import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*

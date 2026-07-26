@@ -34,6 +34,7 @@ package scintillate
 
 import java.io as ji
 import jakarta.servlet as js, js.http as jsh
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

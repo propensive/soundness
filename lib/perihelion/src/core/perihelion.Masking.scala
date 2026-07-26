@@ -33,6 +33,7 @@
 package perihelion
 
 import java.security.SecureRandom
+import proscenium.compat.*
 
 import anticipation.*
 import rudiments.*

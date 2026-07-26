@@ -106,7 +106,7 @@ object Assembler:
       found
 
     val configOffset: Int = magicOffset + MagicMarker.length
-    val keyBytes: Array[Byte] = IArray.genericWrapArray(publicKey).toArray
+    val keyBytes: Array[Byte] = publicKey.stdlib.toArray
 
     // Write the 24-byte metadata region.
     val metaBuf = jnio.ByteBuffer.wrap(bytes, configOffset, 24).nn
