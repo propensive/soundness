@@ -91,10 +91,10 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
         widths.sum + style.cost(widths.length)
 
       val ascenders =
-        above.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+        above.let(_.stdlib.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
 
       val descenders =
-        below.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+        below.let(_.stdlib.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
 
       val horizontal =
         if above.absent then style.topLine

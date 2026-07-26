@@ -33,4 +33,4 @@
 package escritoire
 
 case class TableRow[text](cells: IArray[TableCell[text]], title: Boolean, height: Int):
-  def apply(column: Int): TableCell[text] = cells(column)
+  def apply(column: Int): TableCell[text] = cells.stdlib(column)

@@ -32,6 +32,8 @@
                                                                                                   */
 package escritoire
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import rudiments.*

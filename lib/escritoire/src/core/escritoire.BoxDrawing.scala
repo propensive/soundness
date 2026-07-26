@@ -33,6 +33,7 @@
 package escritoire
 
 import anticipation.*
+import proscenium.compat.*
 import gossamer.*
 
 object BoxDrawing:

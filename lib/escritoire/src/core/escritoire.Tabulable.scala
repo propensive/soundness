@@ -32,6 +32,8 @@
                                                                                                   */
 package escritoire
 
+import proscenium.compat.*
+
 import scala.compiletime
 
 import anticipation.*
@@ -52,16 +54,16 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
       case labels: TableRelabelling[derivation] => labels.relabelling()
       case _                                    => Map()
 
-    val columns: IArray[Column[derivation, Text]] =
+    val columns0: scala.IArray[Column[derivation, Text]] =
       contexts[derivation]():
         [field] => tabulable =>
           tabulable.table().columns.map: element =>
             element.contramap(dereference).retitle:
               labels.stdlib.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
 
-      . flatten
+      . stdlib.map(_.stdlib).flatten
 
-    new JoinTabulable[derivation](columns)
+    new JoinTabulable[derivation](IArray.of(columns0))
 
   given int: Int is Tabulable[Text] = () =>
     Scaffold[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))

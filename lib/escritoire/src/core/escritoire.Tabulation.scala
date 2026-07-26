@@ -32,6 +32,8 @@
                                                                                                   */
 package escritoire
 
+import proscenium.compat.*
+
 import scala.collection.immutable.IndexedSeq
 
 import scala.language.experimental.pureFunctions
@@ -69,12 +71,12 @@ abstract class Tabulation[text: ClassTag]():
   :   Grid[text] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
-      lazy val include: sci.BitSet = indices.to(sci.BitSet)
+      lazy val include: sci.BitSet = indices.stdlib.to(sci.BitSet)
 
       lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
-        indices.indices.map: index =>
-          val columnIndex = indices(index)
-          (columnIndex, columns(columnIndex), widths(index))
+        indices.stdlib.indices.map: index =>
+          val columnIndex = indices.stdlib(index)
+          (columnIndex, columns.stdlib(columnIndex), widths.stdlib(index))
 
     def bisect(include: Int => Boolean): (Layout, Layout) =
       def shrink(slack: Double): Layout =
@@ -124,7 +126,7 @@ abstract class Tabulation[text: ClassTag]():
           val lines = column.sizing.fit(cells(index), width, column.textAlign)
           TableCell(width, 1, lines, lines.length, column.textAlign)
 
-        val height = tableCells.maxBy(_.minHeight).minHeight
+        val height = tableCells.stdlib.maxBy(_.minHeight).minHeight
 
         TableRow(tableCells, false, height)
 

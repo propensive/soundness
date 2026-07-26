@@ -90,7 +90,7 @@ object internal:
 
           while i < length do
             array(i) =
-              addable.add(left.data(i).asInstanceOf[value], right.data(i).asInstanceOf[value2])
+              addable.add(left.data.stdlib(i).asInstanceOf[value], right.data.stdlib(i).asInstanceOf[value2])
 
             i += 1
 
@@ -129,7 +129,7 @@ object internal:
           while i < length do
             array(i) =
               subtractable.subtract
-                ( left.data(i).asInstanceOf[value], right.data(i).asInstanceOf[value2] )
+                ( left.data.stdlib(i).asInstanceOf[value], right.data.stdlib(i).asInstanceOf[value2] )
 
             i += 1
 
@@ -211,9 +211,9 @@ object internal:
 
 
   extension [size <: Int, left](left: Vector[left, size])
-    def element(index: Int): left = left.data(index).asInstanceOf[left]
+    def element(index: Int): left = left.data.stdlib(index).asInstanceOf[left]
 
-    def apply(index: Int): left = left.data(index).asInstanceOf[left]
+    def apply(index: Int): left = left.data.stdlib(index).asInstanceOf[left]
     def list: List[left] = left.data.toList.asInstanceOf[List[left]]
     def iarray: IArray[left] = left.data.asInstanceOf[IArray[left]]
     def size(using ValueOf[size]): Int = valueOf[size]
@@ -241,7 +241,7 @@ object internal:
         var i = 0
 
         while i < length do
-          array(i) = fn(left.data(i).asInstanceOf[left])
+          array(i) = fn(left.data.stdlib(i).asInstanceOf[left])
           i += 1
 
       new Vector[left2, size](arr)
@@ -261,7 +261,7 @@ object internal:
         var i = 0
 
         while i < length do
-          array(i) = left.data(i).asInstanceOf[left]/magnitude
+          array(i) = left.data.stdlib(i).asInstanceOf[left]/magnitude
           i += 1
 
       new Vector[Double, size](arr)

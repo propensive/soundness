@@ -97,7 +97,7 @@ object Coverage:
 
 case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
   lazy val structure: Map[Text, List[Surface]] =
-    val index: Int = spec.lastIndexWhere(_.id == 0)
+    val index: Int = spec.stdlib.lastIndexWhere(_.id == 0)
 
     Map.from:
       scala.collection.immutable.ArraySeq.unsafeWrapArray(spec.mutable(using Unsafe))

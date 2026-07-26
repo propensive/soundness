@@ -107,13 +107,13 @@ package columnar:
 
       while i < n do
         if plain.charAt(i) == ' ' then
-          val wordWidth = widths(i) - widths(lastStart)
+          val wordWidth = widths.stdlib(i) - widths.stdlib(lastStart)
           if wordWidth > max then max = wordWidth
           lastStart = i + 1
 
         i += 1
 
-      val tailWidth = widths(n) - widths(lastStart)
+      val tailWidth = widths.stdlib(n) - widths.stdlib(lastStart)
       if tailWidth > max then max = tailWidth
       max
 
@@ -124,8 +124,8 @@ package columnar:
       // `Text is Measurable` (general derivation) is implied by `Char is Measurable`
       // in scope; longestWord needs the per-char measurer.
       given Char is Measurable = _.toString.tt.metrics
-      val longestLine = lines.map(displayWidth(_)).max
-      lines.map(longestWord(_)).max.max((slack*maxWidth).toInt).min(longestLine)
+      val longestLine = lines.stdlib.map(displayWidth(_)).max
+      lines.stdlib.map(longestWord(_)).max.max((slack*maxWidth).toInt).min(longestLine)
 
 
     def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
@@ -162,9 +162,9 @@ package columnar:
           var best = -1
           var index = 0
 
-          while index < breaks.length do
-            val candidate = wordStart + breaks(index)
-            val w = widths(candidate) - widths(lineStart) + hyphenWidth
+          while index < breaks.stdlib.length do
+            val candidate = wordStart + breaks.stdlib(index)
+            val w = widths.stdlib(candidate) - widths.stdlib(lineStart) + hyphenWidth
             if w <= width then best = candidate
             index += 1
 
@@ -184,7 +184,7 @@ package columnar:
 
             if current == ' ' then recur(position + 1, lineStart, position, acc)
             else
-              val widthSoFar = widths(position + 1) - widths(lineStart)
+              val widthSoFar = widths.stdlib(position + 1) - widths.stdlib(lineStart)
 
               if widthSoFar > width then
                 val wordStart = if lastSpace > lineStart then lastSpace + 1 else lineStart
@@ -204,7 +204,7 @@ package columnar:
 
         recur(0, 0, 0, Nil)
 
-      lines.to(IndexedSeq).bind(format(_).reverse)
+      lines.stdlib.to(IndexedSeq).bind(format(_).reverse)
 
   object ParagraphOrBreak extends Columnar:
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
@@ -220,7 +220,7 @@ package columnar:
 
       given Char is Measurable = _.toString.tt.metrics
 
-      if lines.map(Paragraph.longestWord(_)).max < width
+      if lines.stdlib.map(Paragraph.longestWord(_)).max < width
       then Paragraph.fit(lines, width, textAlign)
       else
         var result: List[textual] = Nil
@@ -245,7 +245,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
-      lines.to(IndexedSeq).map: line =>
+      lines.stdlib.to(IndexedSeq).map: line =>
         if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
         else line
 
@@ -254,7 +254,7 @@ package columnar:
       ( using Text is Measurable )
     :   Optional[Int] =
 
-      val naturalWidth = lines.map(_.plain.metrics).max
+      val naturalWidth = lines.stdlib.map(_.plain.metrics).max
       (maxWidth*slack).toInt.min(naturalWidth)
 
 
@@ -262,7 +262,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
-      lines.to(IndexedSeq).map: line =>
+      lines.stdlib.to(IndexedSeq).map: line =>
         if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
         else line
 
@@ -271,11 +271,11 @@ package columnar:
       ( using Text is Measurable )
     :   Optional[Int] =
 
-      if slack > threshold then lines.map(_.plain.metrics).max else Unset
+      if slack > threshold then lines.stdlib.map(_.plain.metrics).max else Unset
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
     :   IndexedSeq[text] =
 
-      lines.to(IndexedSeq)
+      lines.stdlib.to(IndexedSeq)
