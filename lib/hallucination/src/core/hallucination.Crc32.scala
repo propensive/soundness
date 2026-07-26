@@ -33,6 +33,7 @@
 package hallucination
 
 import anticipation.*
+import proscenium.compat.*
 
 // The standard CRC-32 (as used by PNG chunks), implemented locally: pneumatic's `Crc32` is
 // private to that module, and this one is only a table and a loop.

@@ -33,6 +33,7 @@
 package caesura
 
 import scala.caps
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

@@ -33,6 +33,7 @@
 package hallucination
 
 import anticipation.*
+import proscenium.compat.*
 
 // The VP8 boolean entropy decoder (RFC 6386 §7). This is the canonical bit-exact algorithm; the
 // reference (image-rs/image-webp `src/lossy/arithmetic_decoder.rs`) uses a faster but equivalent
@@ -45,7 +46,7 @@ private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
 
   locally { position = start + 2 }
 
-  private inline def byte(index: Int): Int = if index < end then data(index) & 0xff else 0
+  private inline def byte(index: Int): Int = if index < end then data.stdlib(index) & 0xff else 0
 
   def bool(probability: Int): Boolean =
     val split = 1 + (((range - 1)*probability) >> 8)

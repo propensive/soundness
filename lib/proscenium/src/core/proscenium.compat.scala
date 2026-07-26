@@ -449,6 +449,8 @@ extension [element](iarray: IArray[element])
   inline def lastIndexWhere(predicate: element => Boolean): Int =
     iarray.stdlib.lastIndexWhere(predicate)
 
+  inline def indexOf(element2: element): Int = iarray.stdlib.indexOf(element2)
+
   inline infix def :+ [element2 >: element: scala.reflect.ClassTag](element3: element2)
   :   IArray[element2] =
     IArray.of(iarray.stdlib :+ element3)

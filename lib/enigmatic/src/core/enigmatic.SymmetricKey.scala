@@ -33,6 +33,7 @@
 package enigmatic
 
 import scala.annotation.targetName
+import proscenium.compat.*
 
 import anticipation.*
 import gastronomy.ProcessingPermit
@@ -55,7 +56,7 @@ object SymmetricKey:
   // `apply` suppresses the synthetic constructor proxy, so these are the sole
   // `SymmetricKey(bytes)` constructors.
   def apply[cipher <: Cipher](bytes: Data)(using cloak: Cloak^): SymmetricKey[cipher]^{cloak} =
-    new SymmetricKey(cloak.cloak(bytes.to(Array)))
+    new SymmetricKey(cloak.cloak(bytes.stdlib.to(Array)))
 
   // Adopt externally-supplied key material from a mutable array, which is zeroed as it is
   // cloaked, leaving the cloaked copy as the only key material. (The `@targetName`

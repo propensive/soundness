@@ -33,6 +33,7 @@
 package ulysses
 
 import scala.collection.immutable.IndexedSeq
+import proscenium.compat.*
 
 import anticipation.*
 import denominative.*

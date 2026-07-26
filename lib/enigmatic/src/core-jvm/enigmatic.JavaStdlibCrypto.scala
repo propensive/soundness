@@ -34,6 +34,7 @@ package enigmatic
 
 import java.security as js, js.spec as jss, js.interfaces as jsi
 import javax.crypto as jc, javax.crypto.spec.*
+import proscenium.compat.*
 
 import anticipation.*
 import fulminate.*
@@ -61,8 +62,8 @@ object JavaStdlibCrypto extends Crypto:
   def hmac(algorithm: Text): Crypto.Mac = new Crypto.Mac:
     def mac(key: Data, data: Data): Data =
       val mac = jc.Mac.getInstance(algorithm.s).nn
-      mac.init(SecretKeySpec(key.to(Array), algorithm.s))
-      mac.doFinal(data.to(Array)).nn.immutable(using Unsafe)
+      mac.init(SecretKeySpec(key.stdlib.to(Array), algorithm.s))
+      mac.doFinal(data.stdlib.to(Array)).nn.immutable(using Unsafe)
 
   def rsa: Crypto.PublicKeyCipher = new Crypto.PublicKeyCipher:
     private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
@@ -105,15 +106,15 @@ object JavaStdlibCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = signature()
-      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.to(Array))))
-      sig.update(data.to(Array))
+      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(Array))))
+      sig.update(data.stdlib.to(Array))
       sig.sign().nn.immutable(using Unsafe)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = signature()
-      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.to(Array))))
-      sig.update(data.to(Array))
-      sig.verify(signature0.to(Array))
+      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.stdlib.to(Array))))
+      sig.update(data.stdlib.to(Array))
+      sig.verify(signature0.stdlib.to(Array))
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("DSA").nn
@@ -121,7 +122,7 @@ object JavaStdlibCrypto extends Crypto:
       generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
     def privateToPublic(privateKey: Data): Data =
-      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.to(Array))).nn match
+      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(Array))).nn match
         case key: jsi.DSAPrivateKey => key
         case key: js.PrivateKey     => panic(m"unexpected private key type")
 

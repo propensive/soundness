@@ -33,6 +33,7 @@
 package hallucination
 
 import java.io as ji
+import proscenium.compat.*
 
 import scala.collection.mutable as scm
 import scala.math

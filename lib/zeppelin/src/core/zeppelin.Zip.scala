@@ -34,6 +34,7 @@ package zeppelin
 
 import java.io as ji
 import java.util.zip as juz
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

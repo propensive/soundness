@@ -33,6 +33,7 @@
 package hallucination
 
 import anticipation.*
+import proscenium.compat.*
 
 // A forward byte cursor over the fully-buffered image `data`. JPEG is parsed from a `Read` stream
 // in the reference (image-rs/jpeg-decoder); since Hallucination decodes from a materialised

@@ -33,6 +33,7 @@
 package chiaroscuro
 
 import scala.caps
+import proscenium.compat.*
 
 import scala.compiletime.*
 import scala.reflect.*
@@ -136,7 +137,7 @@ trait Decomposable2 extends Decomposable3:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          Map.from(fields(value) { [field] => field => label -> contextual.decomposition(field) })
+          Map.from((fields(value) { [field] => field => label -> contextual.decomposition(field) }).stdlib)
 
         Decomposition.Product(typeName, map, value)
 

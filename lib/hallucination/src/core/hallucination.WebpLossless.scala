@@ -34,6 +34,7 @@ package hallucination
 
 import contingency.*
 import vacuous.*
+import proscenium.compat.*
 
 import RasterError.Reason
 

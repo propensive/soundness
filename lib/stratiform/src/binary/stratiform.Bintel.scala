@@ -33,6 +33,7 @@
 package stratiform
 
 import java.io.ByteArrayOutputStream
+import proscenium.compat.*
 
 import scala.language.unsafeNulls
 

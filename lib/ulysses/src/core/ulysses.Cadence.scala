@@ -34,6 +34,7 @@ package ulysses
 
 import fulminate.*
 import vacuous.*
+import proscenium.compat.*
 
 object Cadence:
   // §2.1 hash-size table — `s` indexes byte lengths.

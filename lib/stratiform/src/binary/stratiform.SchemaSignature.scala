@@ -33,6 +33,7 @@
 package stratiform
 
 import scala.language.unsafeNulls
+import murmuration.*
 
 import anticipation.*
 import contingency.*

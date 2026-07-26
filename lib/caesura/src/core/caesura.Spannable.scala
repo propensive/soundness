@@ -37,6 +37,7 @@ import distillate.*
 import prepositional.*
 import vacuous.*
 import wisteria.*
+import proscenium.compat.*
 
 object Spannable extends ProductDerivable[Spannable]:
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Spannable =

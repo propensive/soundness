@@ -34,6 +34,7 @@ package hallucination
 
 import scala.compiletime.*
 import scala.annotation.targetName
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*

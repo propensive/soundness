@@ -33,6 +33,7 @@
 package hallucination
 
 import scala.collection.mutable as scm
+import proscenium.compat.*
 
 // Median-cut colour quantization for GIF encoding: recursively splits the box with the largest
 // channel range at its weighted median until the palette fits, then represents each box by its

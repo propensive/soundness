@@ -33,6 +33,7 @@
 package hallucination
 
 import scala.math
+import proscenium.compat.*
 
 // The four VP8L reverse transforms, ported from image-rs/image-webp
 // (`src/lossless/decoder/reverse_transform.rs`, MIT/Apache-2.0). The reference uses chunked,
