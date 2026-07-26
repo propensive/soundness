@@ -56,7 +56,7 @@ object Tests extends Suite(m"Wisteria tests"):
         val prefix = inline if tuple[derivation] then t"" else typeName[derivation]
         fields(value):
           [field] => field => s"$index:$label=${contextual.present(field)}".tt
-        .mkString((prefix.s+"("), ", ", ")").tt
+        .stdlib.mkString((prefix.s+"("), ", ", ")").tt
 
     inline def disjunction[derivation: SumReflection]: Presentation[derivation] = value =>
       variant(value):
@@ -141,7 +141,7 @@ object Tests extends Suite(m"Wisteria tests"):
           [in, out] => _.flatMap,
           [monadic] => Some(_),
           [field] => context =>
-            if index < inputArr.length then context.parse(inputArr(index))
+            if index < inputArr.stdlib.length then context.parse(inputArr.stdlib(index))
             else None
         )
 
@@ -267,7 +267,7 @@ object Tests extends Suite(m"Wisteria tests"):
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display = value =>
       fields(value):
         [field] => field => contextual.display(field)
-      .mkString(",").tt
+      .stdlib.mkString(",").tt
 
     inline def disjunction[derivation: SumReflection]: derivation is Display = value =>
       variant(value):

@@ -219,7 +219,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
       test(m"A 16-bit length frame parses fully"):
         parseFrame(frame(0x1, scala.Array.fill(200)(0x61.toByte))) match
-          case Frame.Text(_, data) => data.length
+          case Frame.Text(_, data) => data.stdlib.length
           case _                   => 0
       . assert(_ == 200)
 

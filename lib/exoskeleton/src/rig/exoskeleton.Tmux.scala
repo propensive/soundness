@@ -105,7 +105,7 @@ object Tmux:
         attend(enter('\r'))
         var count = 0
 
-        while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 333 do
+        while Tmux.screenshot().screen.filter(_ == t">").stdlib.length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
         screenshot().screen.to[List].stdlib
@@ -125,7 +125,7 @@ object Tmux:
         enter(' ')
         enter(text)
         attend(enter(Ht))
-        screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
+        screenshot().screen.filter(!_.starts(t"> ")).stdlib.toSeq.join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
@@ -188,7 +188,7 @@ case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height
 extends Findable, caps.ExclusiveCapability
 
 case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):
-  def apply(): Text = screen.join("\n")
+  def apply(): Text = screen.stdlib.toSeq.join(t"\n")
 
   def currentLine(decorate: Char => Text): Text =
     val line0 = screen.at(cursor(1)).or(t"")

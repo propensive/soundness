@@ -160,7 +160,7 @@ extension (shell: Shell)
 
             while !zshReady && zshAttempts < 666 do
               delay(0.03*Second)
-              zshReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
+              zshReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").stdlib.length > 0
               zshAttempts += 1
 
             Tmux.attend:
@@ -204,7 +204,7 @@ extension (shell: Shell)
 
             while !bashReady && bashAttempts < 666 do
               delay(0.03*Second)
-              bashReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
+              bashReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").stdlib.length > 0
               bashAttempts += 1
 
             Tmux.attend:
@@ -247,7 +247,7 @@ extension (shell: Shell)
 
             while !fishReady && fishAttempts < 666 do
               delay(0.03*Second)
-              fishReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").length > 0
+              fishReady = Tmux.screenshot().screen.filter(_.trim == t"READY-${tmux.id}").stdlib.length > 0
               fishAttempts += 1
 
             Tmux.attend:
@@ -259,7 +259,7 @@ extension (shell: Shell)
 
             while !psReady && psAttempts < 666 do
               delay(0.03*Second)
-              psReady = Tmux.screenshot().screen.filter(_.starts(t">")).length > 0
+              psReady = Tmux.screenshot().screen.filter(_.starts(t">")).stdlib.length > 0
               psAttempts += 1
 
         val result = action

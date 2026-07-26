@@ -113,7 +113,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
       test(m"a multi-byte UTF-8 body is framed by byte length, not character count"):
         val body = t"""{"k":"café"}"""
-        val message = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
+        val message = t"Content-Length: ${body.in[Data].stdlib.length}\r\n\r\n"+body
         Iterator(message.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"k":"café"}"""))
 

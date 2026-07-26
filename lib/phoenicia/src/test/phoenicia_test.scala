@@ -36,6 +36,8 @@ import scala.collection.immutable.Seq
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Phoenicia Tests"):

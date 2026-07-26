@@ -533,7 +533,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"trailing bytes are rejected as on the AST path"):
         val bytes = encoded(Point(3, 4))
-        val padded = IArray.from(bytes.to(List) :+ 0.toByte)
+        val padded = IArray.from(bytes.stdlib.to(List) :+ 0.toByte)
         capture[CborError](padded.read[Point in Cbor]).reason match
           case CborError.Reason.Trailing(offset) => offset
           case _                                 => -1L

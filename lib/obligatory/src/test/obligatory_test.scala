@@ -90,7 +90,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"Content-Length counts bytes, not characters"):
         val body = t"""{"text":"café"}"""
-        val input = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
+        val input = t"Content-Length: ${body.in[Data].stdlib.length}\r\n\r\n"+body
 
         Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"text":"café"}"""))
@@ -124,21 +124,21 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"encode prefixes a flag byte and 4-byte length"):
         GrpcFraming.encode(ascii(t"hi")).to[List]
-      . assert(_ == (Data(0, 0, 0, 0, 2) ++ ascii(t"hi")).to[List])
+      . assert(_ == IArray.of(Data(0, 0, 0, 0, 2).stdlib ++ ascii(t"hi").stdlib).to[List])
 
       test(m"round-trip a single message"):
         val framed = GrpcFraming.encode(ascii(t"hello"))
-        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.stdlib.to(List))
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
-        val framed = GrpcFraming.encode(ascii(t"one")) ++ GrpcFraming.encode(ascii(t"two"))
-        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        val framed = IArray.of(GrpcFraming.encode(ascii(t"one")).stdlib ++ GrpcFraming.encode(ascii(t"two")).stdlib)
+        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.stdlib.to(List))
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
         val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
-        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.stdlib.to(List))
       . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):
@@ -243,9 +243,10 @@ object Tests extends Suite(m"Obligatory Tests"):
           val (clientSide, serverSide) = pair()
 
           val body =
-            GrpcFraming.encode(Pong(t"a").in[Protobuf].encode)
-            ++ GrpcFraming.encode(Pong(t"b").in[Protobuf].encode)
-            ++ GrpcFraming.encode(Pong(t"c").in[Protobuf].encode)
+            IArray.of
+             ( GrpcFraming.encode(Pong(t"a").in[Protobuf].encode).stdlib
+               ++ GrpcFraming.encode(Pong(t"b").in[Protobuf].encode).stdlib
+               ++ GrpcFraming.encode(Pong(t"c").in[Protobuf].encode).stdlib )
 
           runServer(serverSide, (hpack, id) =>
             List

@@ -72,7 +72,7 @@ object Tests extends Suite(m"Ulysses tests"):
 
     . assert { b => b.hits(t"hello") && b.hits(t"world") }
 
-    val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map(_.digest[Blake3].data.slice(0, 12))
+    val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map { n => IArray.of(n.digest[Blake3].data.stdlib.slice(0, 12)) }
     val numbers2 = (1 to 20).map(_.toString.tt.digest[Blake3].data)
 
     test(m"Encode a Palimpsest under the default Cadence"):

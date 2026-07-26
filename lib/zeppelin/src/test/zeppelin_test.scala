@@ -482,5 +482,5 @@ object Tests extends Suite(m"Zeppelin tests"):
         out.write(inner.mutable(using Unsafe))
         out.close()
         val zip = Zipfile.read(sfx)
-        (zip.prefix.lay(Nil)(_.to(List)), zip.entries.map(_.read[Text]).stdlib.to(List))
+        (zip.prefix.lay(List())(_.stdlib.to(List)), zip.entries.map(_.read[Text]).stdlib.to(List))
       . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))

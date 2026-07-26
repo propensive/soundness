@@ -60,11 +60,11 @@ object Tests extends Suite(m"Turbulence tests"):
 
       shredded.each: stream =>
         test(m"correct length after shredding"):
-          stream.map(_.length).stdlib.total
+          stream.map(_.stdlib.length).stdlib.total
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
-          stream.stdlib.reduce(_ ++ _)
+          IArray.of(stream.stdlib.map(_.stdlib).reduce(_ ++ _))
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
@@ -85,13 +85,13 @@ object Tests extends Suite(m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.in[Data].grouped(bs).to(proscenium.Progression)
+          val stream = string.in[Data].stdlib.grouped(bs).map(IArray.of(_)).to(proscenium.Progression)
           val result = stream.read[Text]
-          result.in[Data].length
-        . assert(_ == string.in[Data].length)
+          result.in[Data].stdlib.length
+        . assert(_ == string.in[Data].stdlib.length)
 
         test(m"roundtrip tests"):
-          val stream = string.in[Data].grouped(bs).to(proscenium.Progression)
+          val stream = string.in[Data].stdlib.grouped(bs).map(IArray.of(_)).to(proscenium.Progression)
           val result = stream.read[Text]
 
           result.s
@@ -103,8 +103,8 @@ object Tests extends Suite(m"Turbulence tests"):
         val low = gothic.s.charAt(1).toString.tt
 
         summon[CharEncoder].encoded(Progression(t"a", high, low, t"b"))
-        . stdlib.to(List).reduce(_ ++ _).to(List)
-      . assert(_ == t"a𐍈b".in[Data].to(List))
+        . stdlib.to(List).map(_.stdlib).reduce(_ ++ _).to(List)
+      . assert(_ == t"a𐍈b".in[Data].stdlib.to(List))
 
       test(m"per-char-chunk streams roundtrip through encode and decode"):
         val string = "aë€𐍈z"
@@ -143,7 +143,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == qbf)
 
       test(m"Bridge Data source to Progression"):
-        qbf.source[Data].toProgression.stdlib.reduce(_ ++ _).to[List]
+        IArray.of(qbf.source[Data].toProgression.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List]
       . assert(_ == qbfData.to[List])
 
       test(m"Read Text as Text"):
@@ -184,7 +184,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Text as Progression[Data]"):
         qbf.read[Progression[Data]]
-      . assert(_.stdlib.reduce(_ ++ _).to[List] == qbfData.to[List])
+      . assert(stream => IArray.of(stream.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List] == qbfData.to[List])
 
       test(m"Read Data as Text"):
         qbfData.read[Text].s
@@ -200,7 +200,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Data as Progression[Data]"):
         qbfData.read[Progression[Data]]
-      . assert(_.stdlib.reduce(_ ++ _).to[List] == qbfData.to[List])
+      . assert(stream => IArray.of(stream.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List] == qbfData.to[List])
 
       // test(m"Read Text as Lines"):
       //   qbf.read[Progression[Line]]
@@ -605,14 +605,14 @@ object Tests extends Suite(m"Turbulence tests"):
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         source.stream(input).pump(sink.intake(output))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(output.toByteArray.nn).to(List)
-      . assert(_ == payload.to(List))
+      . assert(_ == payload.stdlib.to(List))
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(output.toByteArray.nn).to(List)
-      . assert(_ == payload.to(List))
+      . assert(_ == payload.stdlib.to(List))
 
       val original = t"The quick brown fox jumps over the lazy dog"*100
 
@@ -646,7 +646,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val source = summon[Progression[Data] is Streamable by Data over Credit]
         source.stream(Progression(payload, payload)).pump(sink.intake(output))
         output.toByteArray.nn.length
-      . assert(_ == payload.length*2)
+      . assert(_ == payload.stdlib.length*2)
 
       test(m"a sink write failure raises StreamError"):
         import unsafeExceptions.canThrowAny
@@ -685,7 +685,7 @@ object Tests extends Suite(m"Turbulence tests"):
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gather = Gather2()
           merged.pump(gather)
-          gather.data.to(List).sorted
+          gather.data.stdlib.to(List).sorted
       . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
 
       test(m"manifold delivers the whole stream to every subscriber"):
@@ -706,7 +706,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == List.fill(3)(payload.to[List]))
 
       val mixed: Data =
-        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).in[Data]
+        IArray.of(Data.fill(50000) { index => (index%251).toByte }.stdlib ++ (t"repetition "*500).in[Data].stdlib)
 
       // A duct-chain source has a transient window (its buffer is reused between
       // refills), so the fan-out must snapshot each chunk rather than share it.
@@ -743,8 +743,8 @@ object Tests extends Suite(m"Turbulence tests"):
           val merged = Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gather = Gather2()
           merged.pump(gather)
-          gather.data.length
-      . assert(_ == mixed.length*3)
+          gather.data.stdlib.length
+      . assert(_ == mixed.stdlib.length*3)
 
       test(m"cancelling a detached flow blocked on an empty conduit releases it"):
         supervise:

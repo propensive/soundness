@@ -337,7 +337,7 @@ object Tests extends Suite(m"Galilei tests"):
           target.create[Ram](RamFlag.Size(16L)): ram ?=>
             ram(0L) = t"ABCD".in[Data]
 
-          (target.read[Data].length, target.read[Data].slice(0, 4).utf8)
+          (target.read[Data].stdlib.length, IArray.of(target.read[Data].stdlib.slice(0, 4)).utf8)
       . assert(_ == (16, t"ABCD"))
 
       test(m"Creating a mapping without Size is refused"):

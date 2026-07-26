@@ -172,10 +172,10 @@ object internal:
                   index += 1
                   types ::= TypeRepr.of[Text]
                   iterator.next()
-                  '{$array(${Expr(index)}) = Attributes.pick($scrutinee.attributes, ${Expr(head)}); true}
+                  '{$array(${Expr(index)}) = Attributes.pick($scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)}); true}
 
                 case text: Text =>
-                  '{Attributes.pick($scrutinee.attributes, ${Expr(head)}) == ${Expr(text)}}
+                  '{Attributes.pick($scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)}) == ${Expr(text)}}
 
               '{$expr && $boolean}
 
@@ -1307,7 +1307,7 @@ object internal:
         Symbol.newVal(owner, "attributes", TypeRepr.of[Attributes], Flags.EmptyFlags,
           Symbol.noSymbol)
 
-      val attributesDef = ValDef(attributesSymbol, Some('{ $reader.attributes() }.asTerm))
+      val attributesDef = ValDef(attributesSymbol, Some('{ $reader.attributes().asInstanceOf[Attributes] }.asTerm))
       val attributes = Ref(attributesSymbol).asExprOf[Attributes]
 
       val attributeSteps: List[Term] = List.range(0, arity).flatMap: index =>
