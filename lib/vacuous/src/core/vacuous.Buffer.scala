@@ -38,23 +38,26 @@ import scala.reflect.ClassTag
 // A `Buffer` is a fixed-size mutable array whose access rights are tracked by separation
 // checking: any reference can read, but only an exclusive (`^`) reference can write, aliased
 // writers are rejected, and `freeze` consumes the buffer to yield an immutable `IArray`
-// without copying -- sound because `consume` statically retires every writer.
+// without copying -- sound because `consume` statically retires every writer. An opaque
+// alias rather than a wrapper class: the mutalias compiler patch classifies the alias as
+// mutable wherever it appears, so hiding `Array` costs nothing at runtime.
 object Buffer:
-  def apply[element: ClassTag](size: Int): Buffer[element]^ = new Buffer(size)
+  def apply[element: ClassTag](size: Int): Buffer[element]^ = new Array[element](size)
 
   def freeze[element](consume buffer: Buffer[element]^): IArray[element] =
-    buffer.array.asInstanceOf[IArray[element]]
+    buffer.asInstanceOf[IArray[element]]
 
-class Buffer[element: ClassTag](initialSize: Int) extends caps.Mutable:
-  private[vacuous] val array: Array[element]^ = new Array[element](initialSize)
+  extension [element, C^](buffer: Buffer[element]^{C})
+    def length: Int = buffer.length
 
-  def length: Int = array.length
+    def at(index: Int): Optional[element] =
+      if index >= 0 && index < buffer.length then buffer(index) else Unset
 
-  def at(index: Int): Optional[element] =
-    if index >= 0 && index < array.length then array(index) else Unset
+  extension [element](buffer: Buffer[element]^)
+    def update(index: Int, value: element): Unit = buffer(index) = value
 
-  update def update(index: Int, value: element): Unit = array(index) = value
+    def copyFrom(source: IArray[element], sourceStart: Int, targetStart: Int, count: Int)
+    :   Unit =
+      java.lang.System.arraycopy(source, sourceStart, buffer, targetStart, count)
 
-  update def copyFrom(source: IArray[element], sourceStart: Int, targetStart: Int, count: Int)
-  :   Unit =
-    java.lang.System.arraycopy(source, sourceStart, array, targetStart, count)
+opaque type Buffer[element] = Array[element]
