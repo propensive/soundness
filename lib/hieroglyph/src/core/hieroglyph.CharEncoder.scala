@@ -84,9 +84,9 @@ extends Encodable, Findable:
       if todo.nil && !status.isOverflow then encoder.flush(out)
 
       out.flip()
-      val array = new Array[Byte](out.remaining)
-      out.get(array)
-      val data: Data = array.immutable(using Unsafe)
+      val array = Buffer[Byte](out.remaining)
+      out.get(array.raw)
+      val data: Data = Buffer.freeze(array)
       out.clear()
       in.compact()
 
