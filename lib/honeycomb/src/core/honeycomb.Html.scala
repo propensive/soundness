@@ -1438,10 +1438,10 @@ object Html extends Tag.Container
           nodes(index - 1)
 
       def array(count: Int): IArray[Node] =
-        val result = new Array[Node](count)
-        System.arraycopy(nodes, 0.max(index - count), result, 0, count)
+        val result = Buffer[Node](count)
+        System.arraycopy(nodes, 0.max(index - count), result.raw, 0, count)
         index -= count
-        result.immutable(using Unsafe)
+        Buffer.freeze(result)
 
       def descend(parent: Tag, admissible: Set[Text], attrs: Attributes): Node =
         val admissible2 = if parent.transparent then admissible else parent.admissible
