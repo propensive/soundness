@@ -34,6 +34,8 @@ package hallucination
 
 import contingency.*
 
+import scala.caps
+
 import RasterError.Reason
 
 // A canonical-Huffman decoder for JPEG entropy-coded data, ported from image-rs/jpeg-decoder
@@ -160,22 +162,18 @@ private[hallucination] final class JpegHuffmanTable
   // `acValue` and `acRunSize` are empty for DC tables.
   def hasAcLut: Boolean = acRunSize.length > 0
 
-private[hallucination] final class JpegHuffmanDecoder:
-  @scala.caps.unsafe.untrackedCaptures
+private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
   private var bits: Long = 0L
-  @scala.caps.unsafe.untrackedCaptures
   private var numBits: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var marker: Int = -1
 
   // Results of the most recent `decodeFastAc`, valid when it returns true.
-  @scala.caps.unsafe.untrackedCaptures
   var fastAcValue: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   var fastAcRun: Int = 0
 
   // Section F.2.2.3, Figure F.16.
-  def decode(reader: JpegReader, table: JpegHuffmanTable): Int raises RasterError =
+  update def decode(reader: JpegReader^, table: JpegHuffmanTable)(using Tactic[RasterError])
+  :   Int =
     if numBits < 16 then readBits(reader)
 
     val lookup = peekBits(JpegHuffman.LutBits)
@@ -202,7 +200,9 @@ private[hallucination] final class JpegHuffmanDecoder:
 
   // Decodes a small AC coefficient in one step, if the combined table has an entry; returns true
   // and sets `fastAcValue`/`fastAcRun` when it does.
-  def decodeFastAc(reader: JpegReader, table: JpegHuffmanTable): Boolean raises RasterError =
+  update def decodeFastAc(reader: JpegReader^, table: JpegHuffmanTable)
+    ( using Tactic[RasterError] )
+  :   Boolean =
     if !table.hasAcLut then false else
       if numBits < JpegHuffman.LutBits then readBits(reader)
       val lookup = peekBits(JpegHuffman.LutBits)
@@ -214,21 +214,21 @@ private[hallucination] final class JpegHuffmanDecoder:
         consumeBits(runSize & 0x0f)
         true
 
-  def getBits(reader: JpegReader, count: Int): Int raises RasterError =
+  update def getBits(reader: JpegReader^, count: Int)(using Tactic[RasterError]): Int =
     if count == 0 then 0 else
       if numBits < count then readBits(reader)
       val value = peekBits(count)
       consumeBits(count)
       value
 
-  def receiveExtend(reader: JpegReader, count: Int): Int raises RasterError =
+  update def receiveExtend(reader: JpegReader^, count: Int)(using Tactic[RasterError]): Int =
     JpegHuffman.extend(getBits(reader, count), count)
 
-  def reset(): Unit =
+  update def reset(): Unit =
     bits = 0L
     numBits = 0
 
-  def takeMarker(reader: JpegReader): Int raises RasterError =
+  update def takeMarker(reader: JpegReader^)(using Tactic[RasterError]): Int =
     readBits(reader)
     val result = marker
     marker = -1
@@ -237,11 +237,11 @@ private[hallucination] final class JpegHuffmanDecoder:
   private def peekBits(count: Int): Int =
     if count == 0 then 0 else ((bits >>> (64 - count)) & ((1L << count) - 1)).toInt
 
-  private def consumeBits(count: Int): Unit =
+  private update def consumeBits(count: Int): Unit =
     bits <<= count
     numBits -= count
 
-  private def readBits(reader: JpegReader): Unit raises RasterError =
+  private update def readBits(reader: JpegReader^)(using Tactic[RasterError]): Unit =
     while numBits <= 56 do
       val byte = if marker != -1 then 0 else reader.u8()
 

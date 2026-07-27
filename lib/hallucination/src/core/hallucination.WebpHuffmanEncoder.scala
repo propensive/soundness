@@ -39,11 +39,11 @@ import scala.collection.mutable as scm
 // are filled in for each symbol; the tree is written in the format the decoder expects.
 private[hallucination] object WebpHuffmanEncoder:
   // The order in which the 19 code-length codes are written.
-  @scala.caps.unsafe.untrackedCaptures
-  private val CodeLengthCodeOrder: Array[Int] =
+  private val CodeLengthCodeOrder: IArray[Int] =
     Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+    . asInstanceOf[IArray[Int]]
 
-  def writeSingleEntry(writer: WebpBitWriter, symbol: Int): Unit =
+  def writeSingleEntry(writer: WebpBitWriter^, symbol: Int): Unit =
     writer.writeBits(1, 2)
 
     if symbol <= 1 then
@@ -56,7 +56,7 @@ private[hallucination] object WebpHuffmanEncoder:
   // Builds codes for `frequencies` and writes the tree; falls back to a single-entry tree when
   // fewer than two symbols occur.
   def writeTree
-    ( writer: WebpBitWriter, frequencies: Array[Int], lengths: Array[Int], codes: Array[Int] )
+    ( writer: WebpBitWriter^, frequencies: Array[Int], lengths: Array[Int], codes: Array[Int] )
   :   Unit =
 
     if !build(frequencies, lengths, codes, 15) then
@@ -79,7 +79,7 @@ private[hallucination] object WebpHuffmanEncoder:
       writer.writeBits(0, 1)
       writer.writeBits(19 - 4, 4)
 
-      for j <- CodeLengthCodeOrder do
+      for j <- CodeLengthCodeOrder.asInstanceOf[Array[Int]] do
         if j > 15 || codeLengthFrequencies(j) == 0 then writer.writeBits(0, 3)
         else if singleCodeLength then writer.writeBits(1, 3)
         else writer.writeBits(codeLengthLengths(j).toLong, 3)

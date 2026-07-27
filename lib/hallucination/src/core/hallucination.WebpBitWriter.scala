@@ -39,17 +39,17 @@ import anticipation.*
 import rudiments.*
 import vacuous.*
 
+import scala.caps
+
 // A little-endian bit writer for the VP8L lossless bitstream, ported from image-rs/image-webp
 // (`src/lossless/encoder/mod.rs`, MIT/Apache-2.0). Bits accumulate least-significant first into a
 // 64-bit buffer, flushed eight bytes at a time.
-private[hallucination] final class WebpBitWriter:
+private[hallucination] final class WebpBitWriter extends caps.Mutable:
   private val out = ji.ByteArrayOutputStream()
-  @scala.caps.unsafe.untrackedCaptures
   private var buffer: Long = 0L
-  @scala.caps.unsafe.untrackedCaptures
   private var count: Int = 0
 
-  def writeBits(bits: Long, nbits: Int): Unit =
+  update def writeBits(bits: Long, nbits: Int): Unit =
     val previous = count
     buffer |= bits << previous
     count = previous + nbits
@@ -68,7 +68,7 @@ private[hallucination] final class WebpBitWriter:
       i += 1
 
   // Pads to a byte boundary and returns the accumulated bytes.
-  def bytes: Data =
+  update def bytes: Data =
     if count%8 != 0 then writeBits(0, 8 - count%8)
 
     var i = 0

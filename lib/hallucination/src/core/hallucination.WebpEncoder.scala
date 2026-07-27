@@ -225,7 +225,7 @@ private[hallucination] object WebpEncoder:
     if run <= 4 then writable(freq1)(256 + run - 1) += 1
     else writable(freq1)(256 + lengthToSymbol(run)(0)) += 1
 
-  private def writeRun(writer: WebpBitWriter, run: Int, codes1: Array[Int], lengths1: Array[Int])
+  private def writeRun(writer: WebpBitWriter^, run: Int, codes1: Array[Int], lengths1: Array[Int])
   :   Unit =
 
     if run <= 4 then

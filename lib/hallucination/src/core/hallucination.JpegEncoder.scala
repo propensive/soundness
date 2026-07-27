@@ -299,7 +299,7 @@ private[hallucination] object JpegEncoder:
     writer.flushBits()
 
   private def writeBlock
-    ( writer: JpegBitWriter, block: Array[Int], prevDc: Int, dc: JpegEncodeTable,
+    ( writer: JpegBitWriter^, block: Array[Int], prevDc: Int, dc: JpegEncodeTable,
       ac: JpegEncodeTable )
   :   Unit =
 

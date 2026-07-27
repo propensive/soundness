@@ -36,6 +36,8 @@ import anticipation.*
 import contingency.*
 import proscenium.compat.*
 
+import scala.caps
+
 import RasterError.Reason
 import Vp8Tables.*
 
@@ -49,142 +51,88 @@ private[hallucination] object Vp8Decoder:
   def decode(data: Data, start: Int, end: Int): Vp8Frame raises RasterError =
     Decoder(data, start, end).run()
 
-  private final class Segment:
-    @scala.caps.unsafe.untrackedCaptures
-    @scala.caps.unsafe.untrackedCaptures
-    @scala.caps.unsafe.untrackedCaptures
+  private final class Segment extends caps.Mutable:
     var ydc = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var yac = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var y2dc = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var y2ac = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var uvdc = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var uvac = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var quantizer = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var loopfilter = 0
-
-    @scala.caps.unsafe.untrackedCaptures
     var deltaValues = false
 
   // The bottom/right edge state carried from already-decoded neighbours: per-subblock non-zero
   // "complexity" (laid out y2, 4×y, 2×u, 2×v) and the four B_PRED modes.
-  private final class Edge:
-    @scala.caps.unsafe.untrackedCaptures
-    val complexity: Array[Int] = new Array[Int](9)
-    @scala.caps.unsafe.untrackedCaptures
-    val bpred: Array[Int] = new Array[Int](4)
+  private final class Edge extends caps.Mutable:
+    val complexity: Array[Int]^ = new Array[Int](9)
+    val bpred: Array[Int]^ = new Array[Int](4)
 
-  private final class Macroblock:
-    @scala.caps.unsafe.untrackedCaptures
-    val bpred: Array[Int] = new Array[Int](16)
-    @scala.caps.unsafe.untrackedCaptures
+  private final class Macroblock extends caps.Mutable:
+    val bpred: Array[Int]^ = new Array[Int](16)
     var lumaMode = DcPred
-    @scala.caps.unsafe.untrackedCaptures
     var chromaMode = DcPred
-    @scala.caps.unsafe.untrackedCaptures
     var segmentId = 0
-    @scala.caps.unsafe.untrackedCaptures
     var coeffsSkipped = false
-    @scala.caps.unsafe.untrackedCaptures
     var nonZeroDct = false
 
-  private final class Decoder(data: Data, start: Int, end: Int):
-    @scala.caps.unsafe.untrackedCaptures
+  private final class Decoder(data: Data, start: Int, end: Int) extends caps.Mutable:
     private var position = start
-    @scala.caps.unsafe.untrackedCaptures
     private var mbWidth = 0
-    @scala.caps.unsafe.untrackedCaptures
     private var mbHeight = 0
 
-    @scala.caps.unsafe.untrackedCaptures
     private var width = 0
-    @scala.caps.unsafe.untrackedCaptures
     private var height = 0
-    @scala.caps.unsafe.untrackedCaptures
     private var bufferWidth = 0
 
-    @scala.caps.unsafe.untrackedCaptures
-    private var ybuf: Array[Int] = new Array(0)
-    @scala.caps.unsafe.untrackedCaptures
-    private var ubuf: Array[Int] = new Array(0)
-    @scala.caps.unsafe.untrackedCaptures
-    private var vbuf: Array[Int] = new Array(0)
+    private var ybuf: Array[Int]^ = new Array(0)
+    private var ubuf: Array[Int]^ = new Array(0)
+    private var vbuf: Array[Int]^ = new Array(0)
 
-    @scala.caps.unsafe.untrackedCaptures
     private var filterType = false // true: simple filter; false: normal filter
-    @scala.caps.unsafe.untrackedCaptures
     private var filterLevel = 0
-    @scala.caps.unsafe.untrackedCaptures
     private var sharpnessLevel = 0
 
-    @scala.caps.unsafe.untrackedCaptures
     private var segmentsEnabled = false
-    @scala.caps.unsafe.untrackedCaptures
     private var segmentsUpdateMap = false
-    @scala.caps.unsafe.untrackedCaptures
-    private val segments: Array[Segment] = Array.fill(4)(Segment())
+    private var segments: Array[Segment^]^ = Array.fill(4)(Segment())
+    // Passed to `bool.tree` while `bool` (itself held by `this`) is the exclusive receiver: a
+    // genuine aliasing pattern separation checking rejects, so this one var stays untracked.
     @scala.caps.unsafe.untrackedCaptures
     private val segmentProbs: Array[Int] = Array(255, 255, 255)
 
-    @scala.caps.unsafe.untrackedCaptures
     private var loopFilterAdjustments = false
-    @scala.caps.unsafe.untrackedCaptures
-    private val refDelta: Array[Int] = new Array[Int](4)
-    @scala.caps.unsafe.untrackedCaptures
-    private val modeDelta: Array[Int] = new Array[Int](4)
+    private var refDelta: Array[Int]^ = new Array[Int](4)
+    private var modeDelta: Array[Int]^ = new Array[Int](4)
 
-    @scala.caps.unsafe.untrackedCaptures
     private var numPartitions = 1
-    @scala.caps.unsafe.untrackedCaptures
-    private val partitions: Array[Vp8Bool] = new Array[Vp8Bool](8)
-    @scala.caps.unsafe.untrackedCaptures
-    private var bool: Vp8Bool = Vp8Bool(data, start, start)
+    private var partitions: Array[Vp8Bool^]^ = new Array[Vp8Bool^](8)
+    private var bool: Vp8Bool^ = Vp8Bool(data, start, start)
 
+    // Untracked for the same reason as `segmentProbs`: read by `bool.tree`/`partitions(p).tree`
+    // while the reader is the exclusive receiver.
     @scala.caps.unsafe.untrackedCaptures
     private val tokenProbs: Array[Int] = coeffProbs.asInstanceOf[Array[Int]].clone()
-    @scala.caps.unsafe.untrackedCaptures
     private var probSkipFalse = -1 // −1 means no skip probability
 
-    @scala.caps.unsafe.untrackedCaptures
-    private var top: Array[Edge] = Array()
-    @scala.caps.unsafe.untrackedCaptures
-    private var left = Edge()
+    private var top: Array[Edge^]^ = Array()
+    private var left: Edge^ = Edge()
 
-    @scala.caps.unsafe.untrackedCaptures
-    private var topBorderY: Array[Int] = Array()
-    @scala.caps.unsafe.untrackedCaptures
-    private var leftBorderY: Array[Int] = Array()
-    @scala.caps.unsafe.untrackedCaptures
-    private var topBorderU: Array[Int] = Array()
-    @scala.caps.unsafe.untrackedCaptures
-    private var leftBorderU: Array[Int] = Array()
-    @scala.caps.unsafe.untrackedCaptures
-    private var topBorderV: Array[Int] = Array()
-    @scala.caps.unsafe.untrackedCaptures
-    private var leftBorderV: Array[Int] = Array()
+    private var topBorderY: Array[Int]^ = Array()
+    private var leftBorderY: Array[Int]^ = Array()
+    private var topBorderU: Array[Int]^ = Array()
+    private var leftBorderU: Array[Int]^ = Array()
+    private var topBorderV: Array[Int]^ = Array()
+    private var leftBorderV: Array[Int]^ = Array()
 
-    @scala.caps.unsafe.untrackedCaptures
-    private var macroblocks: Array[Macroblock] = Array()
+    private var macroblocks: Array[Macroblock^]^ = Array()
 
     private inline def u8(index: Int): Int = data.stdlib(index) & 0xff
 
     private def u16le(index: Int): Int = u8(index) | (u8(index + 1) << 8)
     private def u24le(index: Int): Int = u16le(index) | (u8(index + 2) << 16)
 
-    def run(): Vp8Frame raises RasterError =
+    update def run()(using Tactic[RasterError]): Vp8Frame =
       readFrameHeader()
       var mby = 0
 
@@ -195,25 +143,24 @@ private[hallucination] object Vp8Decoder:
 
         while mbx < mbWidth do
           val mb = readMacroblockHeader(mbx)
-          @scala.caps.unsafe.untrackedCaptures
-          val blocks: Array[Int] = new Array[Int](384)
+          val blocks: Array[Int]^ = new Array[Int](384)
 
           if !mb.coeffsSkipped then readResidualData(mb, mbx, p, blocks)
           else
             if mb.lumaMode != BPred then
-              writable(left.complexity)(0) = 0
-              writable(top(mbx).complexity)(0) = 0
+              (left.complexity)(0) = 0
+              (top(mbx).complexity)(0) = 0
 
             var i = 1
 
             while i < 9 do
-              writable(left.complexity)(i) = 0
-              writable(top(mbx).complexity)(i) = 0
+              (left.complexity)(i) = 0
+              (top(mbx).complexity)(i) = 0
               i += 1
 
           intraPredictLuma(mbx, mby, mb, blocks)
           intraPredictChroma(mbx, mby, mb, blocks)
-          writable(macroblocks)(mby*mbWidth + mbx) = mb
+          (macroblocks)(mby*mbWidth + mbx) = mb
           mbx += 1
 
         leftBorderY = Array.fill(1 + 16)(129)
@@ -235,7 +182,7 @@ private[hallucination] object Vp8Decoder:
       // The frame privately owns the decoder's plane buffers after decode completes.
       scala.caps.unsafe.unsafeAssumePure(Vp8Frame(width, height, bufferWidth, ybuf, ubuf, vbuf))
 
-    private def readFrameHeader(): Unit raises RasterError =
+    private update def readFrameHeader()(using Tactic[RasterError]): Unit =
       val tag = u24le(position)
       position += 3
 
@@ -301,7 +248,7 @@ private[hallucination] object Vp8Decoder:
 
       probSkipFalse = if bool.literal(1) == 1 then bool.literal(8) else -1
 
-    private def initPartitions(): Unit =
+    private update def initPartitions(): Unit =
       if numPartitions > 1 then
         val sizesStart = position
         position += 3*(numPartitions - 1)
@@ -311,15 +258,15 @@ private[hallucination] object Vp8Decoder:
 
         while i < numPartitions - 1 do
           val size = u24le(sizesStart + i*3)
-          writable(partitions)(i) = Vp8Bool(data, partitionStart, partitionStart + size)
+          (partitions)(i) = Vp8Bool(data, partitionStart, partitionStart + size)
           partitionStart += size
           i += 1
 
-        writable(partitions)(numPartitions - 1) = Vp8Bool(data, partitionStart, end)
+        (partitions)(numPartitions - 1) = Vp8Bool(data, partitionStart, end)
       else
-        writable(partitions)(0) = Vp8Bool(data, position, end)
+        (partitions)(0) = Vp8Bool(data, position, end)
 
-    private def readSegmentUpdates(): Unit =
+    private update def readSegmentUpdates(): Unit =
       segmentsUpdateMap = bool.flag
       val updateData = bool.flag
 
@@ -350,21 +297,21 @@ private[hallucination] object Vp8Decoder:
           writable(segmentProbs)(i) = if bool.flag then bool.literal(8) else 255
           i += 1
 
-    private def readLoopFilterAdjustments(): Unit =
+    private update def readLoopFilterAdjustments(): Unit =
       if bool.flag then
         var i = 0
 
         while i < 4 do
-          writable(refDelta)(i) = bool.optionalSigned(6)
+          (refDelta)(i) = bool.optionalSigned(6)
           i += 1
 
         i = 0
 
         while i < 4 do
-          writable(modeDelta)(i) = bool.optionalSigned(6)
+          (modeDelta)(i) = bool.optionalSigned(6)
           i += 1
 
-    private def readQuantizationIndices(): Unit =
+    private update def readQuantizationIndices(): Unit =
       def dcQuant(index: Int): Int = Vp8Tables.dcQuant(index.max(0).min(127))
       def acQuant(index: Int): Int = Vp8Tables.acQuant(index.max(0).min(127))
 
@@ -397,7 +344,7 @@ private[hallucination] object Vp8Decoder:
         if segments(i).uvdc > 132 then segments(i).uvdc = 132
         i += 1
 
-    private def updateTokenProbabilities(): Unit =
+    private update def updateTokenProbabilities(): Unit =
       var i = 0
 
       while i < 4 do
@@ -422,7 +369,7 @@ private[hallucination] object Vp8Decoder:
         i += 1
 
 
-    private def readMacroblockHeader(mbx: Int): Macroblock =
+    private update def readMacroblockHeader(mbx: Int): Macroblock^ =
       val mb = Macroblock()
 
       if segmentsEnabled && segmentsUpdateMap then
@@ -444,9 +391,9 @@ private[hallucination] object Vp8Decoder:
             val intra = bool.tree(keyframeBpredModeTree.asInstanceOf[Array[Int]], keyframeBpredModeProbs.asInstanceOf[Array[Int]],
                 (topMode*10 + leftMode)*9)
 
-            writable(mb.bpred)(x + y*4) = intra
-            writable(top(mbx).bpred)(x) = intra
-            writable(left.bpred)(y) = intra
+            (mb.bpred)(x + y*4) = intra
+            (top(mbx).bpred)(x) = intra
+            (left.bpred)(y) = intra
             x += 1
 
           y += 1
@@ -455,15 +402,15 @@ private[hallucination] object Vp8Decoder:
         var i = 0
 
         while i < 4 do
-          writable(mb.bpred)(12 + i) = mode
-          writable(left.bpred)(i) = mode
+          (mb.bpred)(12 + i) = mode
+          (left.bpred)(i) = mode
           i += 1
 
       mb.chromaMode = bool.tree(keyframeUvModeTree.asInstanceOf[Array[Int]], keyframeUvModeProbs.asInstanceOf[Array[Int]], 0)
       var i = 0
 
       while i < 4 do
-        writable(top(mbx).bpred)(i) = mb.bpred(12 + i)
+        (top(mbx).bpred)(i) = mb.bpred(12 + i)
         i += 1
 
       mb
@@ -477,8 +424,8 @@ private[hallucination] object Vp8Decoder:
 
     // Reads one 4×4 block's dequantized coefficients into `block(offset..)`; returns whether
     // it has any non-zero coefficient. For the Y-after-Y2 plane the DC (index 0) is untouched.
-    private def readCoefficients
-      ( block: Array[Int], offset: Int, p: Int, plane: Int, complexity: Int, dcq: Int, acq: Int )
+    private update def readCoefficients
+      ( block: Array[Int]^, offset: Int, p: Int, plane: Int, complexity: Int, dcq: Int, acq: Int )
     :   Boolean =
 
       val decoder = partitions(p)
@@ -520,7 +467,7 @@ private[hallucination] object Vp8Decoder:
           if decoder.flag then absValue = -absValue
 
           val zig = zigzagTable(i)
-          writable(block)(offset + zig) = absValue*(if zig > 0 then acq else dcq)
+          (block)(offset + zig) = absValue*(if zig > 0 then acq else dcq)
           hasCoefficients = true
           i += 1
 
@@ -528,25 +475,25 @@ private[hallucination] object Vp8Decoder:
 
     private def zigzagTable(i: Int): Int = zigzag.asInstanceOf[Array[Int]](i)
 
-    private def readResidualData(mb: Macroblock, mbx: Int, p: Int, blocks: Array[Int]): Unit =
+    private update def readResidualData(mb: Macroblock^, mbx: Int, p: Int, blocks: Array[Int]^)
+    :   Unit =
       val sindex = mb.segmentId
       var plane = if mb.lumaMode == BPred then 3 else 1 // YCoeff0 or Y2
 
       if plane == 1 then
         val complexity = top(mbx).complexity(0) + left.complexity(0)
-        @scala.caps.unsafe.untrackedCaptures
-        val block: Array[Int] = new Array[Int](16)
+        val block: Array[Int]^ = new Array[Int](16)
 
         val n = readCoefficients(block, 0, p, 1, complexity, segments(sindex).y2dc,
             segments(sindex).y2ac)
 
-        writable(left.complexity)(0) = if n then 1 else 0
-        writable(top(mbx).complexity)(0) = if n then 1 else 0
+        (left.complexity)(0) = if n then 1 else 0
+        (top(mbx).complexity)(0) = if n then 1 else 0
         Vp8Transform.iwht4x4(block)
         var k = 0
 
         while k < 16 do
-          writable(blocks)(16*k) = block(k)
+          (blocks)(16*k) = block(k)
           k += 1
 
         plane = 0 // YCoeff1
@@ -569,10 +516,10 @@ private[hallucination] object Vp8Decoder:
             Vp8Transform.idct4x4(blocks, i*16)
 
           leftComplexity = if n then 1 else 0
-          writable(top(mbx).complexity)(x + 1) = if n then 1 else 0
+          (top(mbx).complexity)(x + 1) = if n then 1 else 0
           x += 1
 
-        writable(left.complexity)(y + 1) = leftComplexity
+        (left.complexity)(y + 1) = leftComplexity
         y += 1
 
       for j <- List(5, 7).stdlib do
@@ -594,13 +541,14 @@ private[hallucination] object Vp8Decoder:
               Vp8Transform.idct4x4(blocks, i*16)
 
             leftComplexity = if n then 1 else 0
-            writable(top(mbx).complexity)(x + j) = if n then 1 else 0
+            (top(mbx).complexity)(x + j) = if n then 1 else 0
             x += 1
 
-          writable(left.complexity)(yy + j) = leftComplexity
+          (left.complexity)(yy + j) = leftComplexity
           yy += 1
 
-    private def intraPredictLuma(mbx: Int, mby: Int, mb: Macroblock, resdata: Array[Int]): Unit =
+    private update def intraPredictLuma(mbx: Int, mby: Int, mb: Macroblock^, resdata: Array[Int]^)
+    :   Unit =
       val stride = Vp8Predict.LumaStride
       val ws = Vp8Predict.createBorderLuma(mbx, mby, mbWidth, topBorderY, leftBorderY)
 
@@ -623,17 +571,17 @@ private[hallucination] object Vp8Decoder:
 
           y += 1
 
-      writable(leftBorderY)(0) = ws(16)
+      (leftBorderY)(0) = ws(16)
       var i = 0
 
       while i < 16 do
-        writable(leftBorderY)(1 + i) = ws((i + 1)*stride + 16)
+        (leftBorderY)(1 + i) = ws((i + 1)*stride + 16)
         i += 1
 
       i = 0
 
       while i < 16 do
-        writable(topBorderY)(mbx*16 + i) = ws(16*stride + 1 + i)
+        (topBorderY)(mbx*16 + i) = ws(16*stride + 1 + i)
         i += 1
 
       var y = 0
@@ -642,12 +590,13 @@ private[hallucination] object Vp8Decoder:
         var x = 0
 
         while x < 16 do
-          writable(ybuf)((mby*16 + y)*bufferWidth + mbx*16 + x) = ws((1 + y)*stride + 1 + x)
+          (ybuf)((mby*16 + y)*bufferWidth + mbx*16 + x) = ws((1 + y)*stride + 1 + x)
           x += 1
 
         y += 1
 
-    private def intraPredictChroma(mbx: Int, mby: Int, mb: Macroblock, resdata: Array[Int]): Unit =
+    private update def intraPredictChroma(mbx: Int, mby: Int, mb: Macroblock^, resdata: Array[Int]^)
+    :   Unit =
       val stride = Vp8Predict.ChromaStride
       val chromaWidth = bufferWidth/2
       val uws = Vp8Predict.createBorderChroma(mbx, mby, topBorderU, leftBorderU)
@@ -683,8 +632,8 @@ private[hallucination] object Vp8Decoder:
 
         y += 1
 
-      setChromaBorder(leftBorderU, topBorderU, uws, mbx)
-      setChromaBorder(leftBorderV, topBorderV, vws, mbx)
+      setChromaBorder(u = true, uws, mbx)
+      setChromaBorder(u = false, vws, mbx)
 
       y = 0
 
@@ -693,31 +642,32 @@ private[hallucination] object Vp8Decoder:
 
         while x < 8 do
           val index = (mby*8 + y)*chromaWidth + mbx*8 + x
-          writable(ubuf)(index) = uws((1 + y)*stride + 1 + x)
-          writable(vbuf)(index) = vws((1 + y)*stride + 1 + x)
+          (ubuf)(index) = uws((1 + y)*stride + 1 + x)
+          (vbuf)(index) = vws((1 + y)*stride + 1 + x)
           x += 1
 
         y += 1
 
-    private def setChromaBorder
-      ( leftBorder: Array[Int], topBorder: Array[Int], block: Array[Int], mbx: Int )
-    :   Unit =
-
+    // Selects the U or V border fields itself: passing two `this`-derived arrays as exclusive
+    // arguments to an update method on `this` is a separation failure.
+    private update def setChromaBorder(u: Boolean, block: Array[Int], mbx: Int): Unit =
       val stride = Vp8Predict.ChromaStride
-      writable(leftBorder)(0) = block(8)
+      val leftBorder = if u then leftBorderU else leftBorderV
+      val topBorder = if u then topBorderU else topBorderV
+      leftBorder(0) = block(8)
       var i = 0
 
       while i < 8 do
-        writable(leftBorder)(1 + i) = block((i + 1)*stride + 8)
+        leftBorder(1 + i) = block((i + 1)*stride + 8)
         i += 1
 
       i = 0
 
       while i < 8 do
-        writable(topBorder)(mbx*8 + i) = block(8*stride + 1 + i)
+        topBorder(mbx*8 + i) = block(8*stride + 1 + i)
         i += 1
 
-    private def loopFilter(mbx: Int, mby: Int, mb: Macroblock): Unit =
+    private update def loopFilter(mbx: Int, mby: Int, mb: Macroblock^): Unit =
       val lumaW = bufferWidth
       val chromaW = bufferWidth/2
       val (level, interior, hev) = calculateFilterParameters(mb)
@@ -848,7 +798,7 @@ private[hallucination] object Vp8Decoder:
               x += 1
 
     // Returns (filter level, interior limit, high-edge-variance threshold) for a macroblock.
-    private def calculateFilterParameters(mb: Macroblock): (Int, Int, Int) =
+    private update def calculateFilterParameters(mb: Macroblock^): (Int, Int, Int) =
       val segment = segments(mb.segmentId)
       var level = filterLevel
 

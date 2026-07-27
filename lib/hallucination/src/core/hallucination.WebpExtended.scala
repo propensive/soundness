@@ -37,6 +37,8 @@ import contingency.*
 import vacuous.*
 import proscenium.compat.*
 
+import scala.caps
+
 import Binary.*
 import RasterError.Reason
 
@@ -45,10 +47,11 @@ import RasterError.Reason
 // optionally lossless-compressed) and, for animations, decodes and composites the first frame.
 private[hallucination] object WebpExtended:
   private final class Chunks
-    ( @scala.caps.unsafe.untrackedCaptures var alph: Optional[(Int, Int)],
-      @scala.caps.unsafe.untrackedCaptures var vp8:  Optional[(Int, Int)],
-      @scala.caps.unsafe.untrackedCaptures var vp8l: Optional[(Int, Int)],
-      @scala.caps.unsafe.untrackedCaptures var anmf: Optional[(Int, Int)] )
+    ( var alph: Optional[(Int, Int)],
+      var vp8:  Optional[(Int, Int)],
+      var vp8l: Optional[(Int, Int)],
+      var anmf: Optional[(Int, Int)] )
+  extends caps.Mutable
 
   def decode(data: Data, start: Int, end: Int, riffEnd: Int): Raster raises RasterError =
     val flags = u8(data, start)
@@ -74,7 +77,7 @@ private[hallucination] object WebpExtended:
         rasterRgba(width, height, rgba)
 
   // Scans chunk headers in [position, end), recording the first ALPH/VP8/VP8L/ANMF ranges.
-  private def scan(data: Data, position0: Int, end: Int, chunks: Chunks): Unit =
+  private def scan(data: Data, position0: Int, end: Int, chunks: Chunks^): Unit =
     var position = position0
 
     while position + 8 <= end do
@@ -92,8 +95,9 @@ private[hallucination] object WebpExtended:
       position += 8 + size + (size & 1)
 
   // Decodes a lossy VP8 image, applying the ALPH alpha channel if present.
-  private def decodeLossy(data: Data, chunks: Chunks, hasAlpha: Boolean)
-  :   Raster raises RasterError =
+  private def decodeLossy(data: Data, chunks: Chunks^, hasAlpha: Boolean)
+    ( using Tactic[RasterError] )
+  :   Raster =
 
     val (vp8Start, vp8End) = chunks.vp8.or(abort(RasterError(Webp(), Reason.UnsupportedVariant)))
     val frame = Vp8Decoder.decode(data, vp8Start, vp8End)

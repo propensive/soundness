@@ -122,7 +122,7 @@ private[hallucination] object JpegParser:
   private def unsupported(): Nothing raises RasterError =
     abort(RasterError(Jpeg(), Reason.UnsupportedVariant))
 
-  private def readLength(reader: JpegReader): Int raises RasterError =
+  private def readLength(reader: JpegReader^)(using Tactic[RasterError]): Int =
     val length = reader.u16()
     if length < 2 then bad() else length - 2
 
@@ -130,7 +130,7 @@ private[hallucination] object JpegParser:
     if x <= 0 || y <= 0 then bad() else 1 + (x - 1)/y
 
   // Section B.2.2: the Start Of Frame header.
-  def parseSof(reader: JpegReader, code: Int): JpegFrame raises RasterError =
+  def parseSof(reader: JpegReader^, code: Int)(using Tactic[RasterError]): JpegFrame =
     val length = readLength(reader)
     if length <= 6 then bad()
 
@@ -216,7 +216,7 @@ private[hallucination] object JpegParser:
       index += 1
 
   // Section B.2.3: the Start Of Scan header.
-  def parseSos(reader: JpegReader, frame: JpegFrame): JpegScan raises RasterError =
+  def parseSos(reader: JpegReader^, frame: JpegFrame)(using Tactic[RasterError]): JpegScan =
     val length = readLength(reader)
     if length == 0 then bad()
 
@@ -285,7 +285,7 @@ private[hallucination] object JpegParser:
 
   // Section B.2.4.1: quantization tables, each returned in the file's zigzag order (unzigzagged by
   // the decoder). The four slots are indexed by the table's destination identifier.
-  def parseDqt(reader: JpegReader): Array[Optional[Array[Int]]] raises RasterError =
+  def parseDqt(reader: JpegReader^)(using Tactic[RasterError]): Array[Optional[Array[Int]]] =
     var length = readLength(reader)
     val tables: Array[Optional[Array[Int]]] = Array(Unset, Unset, Unset, Unset)
 
@@ -311,8 +311,8 @@ private[hallucination] object JpegParser:
     tables
 
   // Section B.2.4.2: Huffman tables. Returns the DC tables then the AC tables, four slots each.
-  def parseDht(reader: JpegReader, isBaseline: Boolean)
-  :   (Array[Optional[JpegHuffmanTable]], Array[Optional[JpegHuffmanTable]]) raises RasterError =
+  def parseDht(reader: JpegReader^, isBaseline: Boolean)(using Tactic[RasterError])
+  :   (Array[Optional[JpegHuffmanTable]], Array[Optional[JpegHuffmanTable]]) =
 
     var length = readLength(reader)
     val dcTables: Array[Optional[JpegHuffmanTable]]^ = Array(Unset, Unset, Unset, Unset)
@@ -357,18 +357,18 @@ private[hallucination] object JpegParser:
     scala.caps.unsafe.unsafeAssumePure((dcTables, acTables))
 
   // Skips a length-prefixed segment whose contents are not needed (e.g. a comment).
-  def skipSegment(reader: JpegReader): Unit raises RasterError =
+  def skipSegment(reader: JpegReader^)(using Tactic[RasterError]): Unit =
     reader.skip(readLength(reader))
 
   // Section B.2.4.4: the restart interval.
-  def parseDri(reader: JpegReader): Int raises RasterError =
+  def parseDri(reader: JpegReader^)(using Tactic[RasterError]): Int =
     val length = readLength(reader)
     if length != 2 then bad()
     reader.u16()
 
   // Section B.2.4.6: application data. Only the JFIF, AVI1 and Adobe segments, which influence
   // colour interpretation, are recognised; the rest are skipped.
-  def parseApp(reader: JpegReader, code: Int): JpegApp raises RasterError =
+  def parseApp(reader: JpegReader^, code: Int)(using Tactic[RasterError]): JpegApp =
     val length = readLength(reader)
     val buffer = new Array[Byte](length)
     reader.readExact(buffer)
