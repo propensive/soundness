@@ -71,14 +71,14 @@ object ApkSigner:
 
   private def concat(parts: Data*): Data =
     val total = parts.map(_.length).sum
-    val array = new Array[Byte](total)
+    val buffer = Buffer[Byte](total)
     var offset = 0
 
     parts.foreach: part =>
-      System.arraycopy(part.mutable(using Unsafe), 0, array, offset, part.length)
+      buffer.copyFrom(part, 0, offset, part.length)
       offset += part.length
 
-    array.immutable(using Unsafe)
+    Buffer.freeze(buffer)
 
   private def sha256(data: Data): Data = data.digest[Sha2[256]].data
 
@@ -186,6 +186,6 @@ object ApkSigner:
 
   private def slice(data: Data, from: Int, until: Int): Data =
     val length = until - from
-    val array = new Array[Byte](length)
-    System.arraycopy(data.mutable(using Unsafe), from, array, 0, length)
-    array.immutable(using Unsafe)
+    val buffer = Buffer[Byte](length)
+    buffer.copyFrom(data, from, 0, length)
+    Buffer.freeze(buffer)

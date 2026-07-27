@@ -146,7 +146,7 @@ private[hallucination] object BmpCodec:
   def encode(raster: Raster): Data =
     val rowSize = (raster.width*3 + 3)& -4
     val imageSize = rowSize*raster.height
-    val buffer = new Array[Byte](54 + imageSize)
+    val buffer = Buffer[Byte](54 + imageSize)
 
     def put16(offset: Int, value: Int): Unit =
       buffer(offset) = value.toByte
@@ -184,7 +184,7 @@ private[hallucination] object BmpCodec:
 
       y += 1
 
-    buffer.immutable(using Unsafe)
+    Buffer.freeze(buffer)
 
   private def pack(red: Int, green: Int, blue: Int): Long =
     red.toLong << 16 | green << 8 | blue

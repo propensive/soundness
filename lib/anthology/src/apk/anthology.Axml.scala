@@ -144,7 +144,7 @@ object Axml:
 
     collectStrings(root)
 
-    val out = Buffer()
+    val out = new Buffer()
 
     // The XML chunk header; its total-size field is patched once the file is complete.
     out.u16(0x0003)
@@ -238,7 +238,7 @@ object Axml:
 
     // The string data, assembled separately so each entry's offset (from the data start) is
     // known before the offset table is written.
-    val data = Buffer()
+    val data = new Buffer()
 
     val offsets = entries.stdlib.map: entry =>
       val offset = data.position
