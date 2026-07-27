@@ -114,7 +114,7 @@ object Hyphenation:
   :   IArray[Int] =
 
     val paddedLength = length + 2
-    val padded = new Array[Char](paddedLength)
+    val padded = Buffer[Char](paddedLength)
     padded(0) = '.'
     padded(paddedLength - 1) = '.'
     var i = 0
@@ -124,11 +124,11 @@ object Hyphenation:
       padded(i + 1) = if c >= 'A' && c <= 'Z' then (c + 32).toChar else c
       i += 1
 
-    val exception = hyphenation.exceptions(padded, 1, length)
+    val exception = hyphenation.exceptions(padded.raw, 1, length)
 
     if !exception.absent then
       val offsets: IArray[Int] = exception.vouch
-      val filtered: Array[Int]^ = new Array[Int](offsets.length)
+      val filtered = Buffer[Int](offsets.length)
       var count = 0
       var k = 0
 
@@ -143,9 +143,9 @@ object Hyphenation:
 
       exactCopy(filtered, count)
     else
-      val scores = new Array[Byte](paddedLength + 1)
-      walkCompact(padded, paddedLength, hyphenation.patterns, scores)
-      val breaks: Array[Int]^ = new Array[Int](length)
+      val scores = Buffer[Byte](paddedLength + 1)
+      walkCompact(padded.raw, paddedLength, hyphenation.patterns, scores.raw)
+      val breaks = Buffer[Int](length)
       var count = 0
       var p = if leftMin > 1 then leftMin else 1
       val lastBreak = length - (if rightMin > 1 then rightMin else 1)
@@ -165,10 +165,10 @@ object Hyphenation:
   // and dictionary-suffix-link traversal at each step. The outer loop visits
   // each padded character exactly once instead of `paddedLength` times.
   // The first `count` elements of `source`, as an immutable array.
-  private def exactCopy(source: Array[Int], count: Int): IArray[Int] =
-    val result: Array[Int]^ = new Array[Int](count)
-    System.arraycopy(source, 0, result, 0, count)
-    result.immutable(using Unsafe)
+  private def exactCopy(source: Buffer[Int]^, count: Int): IArray[Int] =
+    val result = Buffer[Int](count)
+    result.copyFromBuffer(source, 0, 0, count)
+    Buffer.freeze(result)
 
   private def walkCompact
     ( padded:       Array[Char],
