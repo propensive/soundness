@@ -1034,9 +1034,9 @@ object Json extends Json2, Dynamic:
 
     def apply(keys: IArray[String]): KeyTable =
       val count = keys.length
-      val lows = new Array[Long](count)
-      val highs = new Array[Long](count)
-      val packable = new Array[Boolean](count)
+      val lows = Buffer[Long](count)
+      val highs = Buffer[Long](count)
+      val packable = Buffer[Boolean](count)
       var index = 0
 
       while index < count do
@@ -1067,6 +1067,10 @@ object Json extends Json2, Dynamic:
 
         index += 1
 
+      val lowsFrozen = Buffer.freeze(lows)
+      val highsFrozen = Buffer.freeze(highs)
+      val packableFrozen = Buffer.freeze(packable)
+
       // Direct-mapped hash over the packed forms: capacity is the smallest
       // power of two holding all keys at load factor <= 1/2, retried at
       // double the size when two keys collide. Lookups are then one
@@ -1083,8 +1087,8 @@ object Json extends Json2, Dynamic:
         index = 0
 
         while index < count && !clash do
-          if packable(index) then
-            val slot = (((lows(index)*KeyTable.Scramble) ^ highs(index)).toInt
+          if packableFrozen(index) then
+            val slot = (((lowsFrozen(index)*KeyTable.Scramble) ^ highsFrozen(index)).toInt
               & (capacity - 1)).abs
 
             if attempt(slot) == 0 then attempt(slot) = index + 1 else clash = true
@@ -1097,9 +1101,9 @@ object Json extends Json2, Dynamic:
 
       new KeyTable
         ( keys,
-          lows.immutable(using Unsafe),
-          highs.immutable(using Unsafe),
-          packable.immutable(using Unsafe),
+          lowsFrozen,
+          highsFrozen,
+          packableFrozen,
           (if slots == null then new Array[Int](0) else slots.nn).immutable(using Unsafe),
           capacity )
 
