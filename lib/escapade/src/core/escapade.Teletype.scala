@@ -102,15 +102,20 @@ object Teletype:
 
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val plain = text.plain.s
-      val array: Array[Char]^ = new Array[Char](plain.length)
-      plain.getChars(0, plain.length, array, 0)
+      val array = Buffer[Char](plain.length)
+      plain.getChars(0, plain.length, array.raw, 0)
       var index = 0
 
-      while index < array.length do
+      while index < plain.length do
         array(index) = lambda(array(index))
         index += 1
 
-      Teletype(new String(array).tt, text.styles, text.hyperlinks, text.insertions, text.boundaries)
+      Teletype
+        ( new String(array.raw).tt,
+          text.styles,
+          text.hyperlinks,
+          text.insertions,
+          text.boundaries )
 
     def segment(text: Teletype, interval: Interval): Teletype =
       text.dropChars(interval.start.n0).takeChars(interval.size)
@@ -189,8 +194,8 @@ object Teletype:
         (denseStyles, IArray.empty[Int])
       else
         // Convert to sparse
-        val newStyles = new Array[Long](runs + 1)
-        val newBoundaries = new Array[Int](runs)
+        val newStyles = Buffer[Long](runs + 1)
+        val newBoundaries = Buffer[Int](runs)
         newBoundaries(0) = 0
         newStyles(0) = denseStyles(0)
         var src = 1
@@ -205,7 +210,7 @@ object Teletype:
           src += 1
 
         newStyles(runs) = denseStyles(n)  // trailing
-        (IArray.unsafeFromArray(newStyles), IArray.unsafeFromArray(newBoundaries))
+        (Buffer.freeze(newStyles), Buffer.freeze(newBoundaries))
 
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
@@ -258,8 +263,8 @@ case class Teletype
         if styles(i) != styles(i - 1) then runs += 1
         i += 1
 
-      val newStyles = new Array[Long](runs + 1)
-      val newBoundaries = new Array[Int](runs)
+      val newStyles = Buffer[Long](runs + 1)
+      val newBoundaries = Buffer[Int](runs)
       newBoundaries(0) = 0
       newStyles(0) = styles(0)
       var src = 1
@@ -274,7 +279,7 @@ case class Teletype
         src += 1
 
       newStyles(runs) = styles(n)
-      (IArray.unsafeFromArray(newStyles), IArray.unsafeFromArray(newBoundaries))
+      (Buffer.freeze(newStyles), Buffer.freeze(newBoundaries))
 
   def explicit: Text = Text:
     render(termcapDefinitions.xtermTrueColorTermcap).s.flatMap: char =>
@@ -288,7 +293,7 @@ case class Teletype
       if isDense then
         // Stay dense: extend styles array with the trailing style
         val newLength = plain.length + text.length + 1
-        val arr = new Array[Long](newLength)
+        val arr = Buffer[Long](newLength)
         var i = 0
 
         while i < plain.length do
@@ -299,8 +304,7 @@ case class Teletype
           arr(i) = tail
           i += 1
 
-        Teletype
-          ( combinedPlain, IArray.unsafeFromArray(arr), hyperlinks, insertions, IArray.empty[Int] )
+        Teletype(combinedPlain, Buffer.freeze(arr), hyperlinks, insertions, IArray.empty[Int])
       else
         // Stay sparse: the new chars become part of the last run (since trailing style = last run
         // style) unless the last run's style differs from the trailing style — but that can't
@@ -314,20 +318,20 @@ case class Teletype
           Teletype(combinedPlain, styles, hyperlinks, insertions, boundaries)
         else
           // Add a new run starting at plain.length, with style = tail
-          val newBoundaries = new Array[Int](k + 1)
-          val newStyles = new Array[Long](k + 2)
-          System.arraycopy(boundaries.asInstanceOf[Array[Int]], 0, newBoundaries, 0, k)
+          val newBoundaries = Buffer[Int](k + 1)
+          val newStyles = Buffer[Long](k + 2)
+          newBoundaries.copyFrom(boundaries, 0, 0, k)
           newBoundaries(k) = plain.length
-          System.arraycopy(styles.asInstanceOf[Array[Long]], 0, newStyles, 0, k)
+          newStyles.copyFrom(styles, 0, 0, k)
           newStyles(k) = tail
           newStyles(k + 1) = tail
 
           Teletype
             ( combinedPlain,
-              IArray.unsafeFromArray(newStyles),
+              Buffer.freeze(newStyles),
               hyperlinks,
               insertions,
-              IArray.unsafeFromArray(newBoundaries) )
+              Buffer.freeze(newBoundaries) )
 
   @targetName("add2")
   def append(that: Teletype): Teletype =
@@ -345,15 +349,13 @@ case class Teletype
       if isDense && that.isDense then
         // Both dense — direct array copy
         val newLength = aN + that.plain.length + 1
-        val arr = new Array[Long](newLength)
-        System.arraycopy(styles.asInstanceOf[Array[Long]], 0, arr, 0, aN)
-
-        System.arraycopy
-          ( that.styles.asInstanceOf[Array[Long]], 0, arr, aN, that.styles.length )
+        val arr = Buffer[Long](newLength)
+        arr.copyFrom(styles, 0, 0, aN)
+        arr.copyFrom(that.styles, 0, aN, that.styles.length)
 
         Teletype
           ( combinedPlain,
-            IArray.unsafeFromArray(arr),
+            Buffer.freeze(arr),
             shiftedLinks,
             shiftedInsertions,
             IArray.empty[Int] )
@@ -367,11 +369,11 @@ case class Teletype
         val bFirstStyle = bStyles(0)
         val merge = aLastStyle == bFirstStyle
         val newK = aK + bK - (if merge then 1 else 0)
-        val newBoundariesArr = new Array[Int](newK)
-        val newStylesArr = new Array[Long](newK + 1)
+        val newBoundariesArr = Buffer[Int](newK)
+        val newStylesArr = Buffer[Long](newK + 1)
         // Copy A's runs
-        System.arraycopy(aBoundaries.asInstanceOf[Array[Int]], 0, newBoundariesArr, 0, aK)
-        System.arraycopy(aStyles.asInstanceOf[Array[Long]], 0, newStylesArr, 0, aK)
+        newBoundariesArr.copyFrom(aBoundaries, 0, 0, aK)
+        newStylesArr.copyFrom(aStyles, 0, 0, aK)
         // Copy B's runs (shifted by aN), optionally skipping the first if merging
         var bi = if merge then 1 else 0
         var ni = aK
@@ -386,10 +388,10 @@ case class Teletype
 
         Teletype
           ( combinedPlain,
-            IArray.unsafeFromArray(newStylesArr),
+            Buffer.freeze(newStylesArr),
             shiftedLinks,
             shiftedInsertions,
-            IArray.unsafeFromArray(newBoundariesArr) )
+            Buffer.freeze(newBoundariesArr) )
 
   def dropChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => takeChars(plain.length - n)
@@ -406,7 +408,7 @@ case class Teletype
           insertions.collect { case (k, v) if k >= n => (k - n) -> v }.to(TreeMap)
 
         if isDense then
-          val arr = new Array[Long](keepLength + 1)
+          val arr = Buffer[Long](keepLength + 1)
           var i = 0
 
           while i <= keepLength do
@@ -415,7 +417,7 @@ case class Teletype
 
           Teletype
             ( plain.skip(n),
-              IArray.unsafeFromArray(arr),
+              Buffer.freeze(arr),
               newHyperlinks,
               newInsertions,
               IArray.empty[Int] )
@@ -433,8 +435,8 @@ case class Teletype
 
           val firstRun = lo
           val newK = k - firstRun
-          val newBoundariesArr = new Array[Int](newK)
-          val newStylesArr = new Array[Long](newK + 1)
+          val newBoundariesArr = Buffer[Int](newK)
+          val newStylesArr = Buffer[Long](newK + 1)
           newBoundariesArr(0) = 0
           newStylesArr(0) = styles(firstRun)
           var i = 1
@@ -448,10 +450,10 @@ case class Teletype
 
           Teletype
             ( plain.skip(n),
-              IArray.unsafeFromArray(newStylesArr),
+              Buffer.freeze(newStylesArr),
               newHyperlinks,
               newInsertions,
-              IArray.unsafeFromArray(newBoundariesArr) )
+              Buffer.freeze(newBoundariesArr) )
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => dropChars(plain.length - n)
@@ -464,7 +466,7 @@ case class Teletype
         val newInsertions = insertions.rangeUntil(n)
 
         if isDense then
-          val arr = new Array[Long](n + 1)
+          val arr = Buffer[Long](n + 1)
           var i = 0
 
           while i < n do
@@ -475,7 +477,7 @@ case class Teletype
 
           Teletype
             ( plain.keep(n),
-              IArray.unsafeFromArray(arr),
+              Buffer.freeze(arr),
               newHyperlinks,
               newInsertions,
               IArray.empty[Int] )
@@ -492,8 +494,8 @@ case class Teletype
 
           val lastRun = lo
           val newK = lastRun + 1
-          val newBoundariesArr = new Array[Int](newK)
-          val newStylesArr = new Array[Long](newK + 1)
+          val newBoundariesArr = Buffer[Int](newK)
+          val newStylesArr = Buffer[Long](newK + 1)
           var i = 0
 
           while i < newK do
@@ -505,10 +507,10 @@ case class Teletype
 
           Teletype
             ( plain.keep(n),
-              IArray.unsafeFromArray(newStylesArr),
+              Buffer.freeze(newStylesArr),
               newHyperlinks,
               newInsertions,
-              IArray.unsafeFromArray(newBoundariesArr) )
+              Buffer.freeze(newBoundariesArr) )
 
   def render(termcap: Termcap): Text =
     if !termcap.ansi then plain else
