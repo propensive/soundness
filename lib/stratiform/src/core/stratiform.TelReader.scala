@@ -53,6 +53,12 @@ object TelReader:
   private[stratiform] def apply(parser: Tel.Parser^, tactic: Tactic[TelError]): TelReader^ =
     new TelReader(parser.asInstanceOf[AnyRef], tactic.asInstanceOf[AnyRef])
 
+  // The rim cast as a static helper: inlined forwarders on a capture-erased
+  // reader (macro splices) would otherwise bind the accessor's fresh `^` to
+  // the erased receiver, whose capture set is read-only. Public because the
+  // forwarders inline into staged parsers generated in user modules.
+  def reveal(parser0: AnyRef): Tel.Parser^ = parser0.asInstanceOf[Tel.Parser^]
+
 // The public, restricted rim of the TEL parser, handed to `Tel.Parsable`
 // instances so they can consume compound entries straight off the input
 // without an intermediate document AST. An entry is a keyword line plus its
@@ -68,7 +74,7 @@ object TelReader:
 // call, and nothing of it may be retained afterwards.
 final class TelReader private (parser0: AnyRef, tactic0: AnyRef)
 extends caps.ExclusiveCapability, caps.Stateful:
-  private inline def parser: Tel.Parser^ = parser0.asInstanceOf[Tel.Parser^]
+  private inline def parser: Tel.Parser^ = TelReader.reveal(parser0)
 
   private[stratiform] inline def errorTactic: Tactic[TelError] =
     tactic0.asInstanceOf[Tactic[TelError]]
@@ -82,7 +88,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // non-inline — the spliced reader there is capture-erased, and an inline
   // update method requires an exclusive receiver.
   inline update def keyword(indent: Int): Optional[Text] =
-    parser.directKeyword(indent)(using errorTactic) match
+    Tel.Parser.erasedDirectKeyword(parser0, indent)(using errorTactic) match
       case null       => Unset
       case next: Text => next
 
@@ -104,7 +110,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // atom or a child compound — the AST `optionalDecodable`'s emptiness test,
   // for optional wrappers that map a bare keyword to an absent value.
   inline update def hasSubstance: Boolean =
-    parser.directEntrySubstance()(using errorTactic)
+    Tel.Parser.erasedDirectEntrySubstance(parser0)(using errorTactic)
 
   // ── Entry consumers: each takes the whole entry (line remainder,
   // source/literal continuation and child subtree), so the reader is left
@@ -144,10 +150,11 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // ── The fallback seam: materialize one entry (or the whole remaining
   // document) as a `Tel`, for field types that only have a
   // `Tel.Decodable`. ──
-  inline update def value(indent: Int): Tel = parser.directValue(indent)(using errorTactic)
+  inline update def value(indent: Int): Tel =
+    Tel.Parser.erasedDirectValue(parser0, indent)(using errorTactic)
 
   private[stratiform] inline update def document(): Tel =
-    parser.directDocument()(using errorTactic)
+    Tel.Parser.erasedDirectDocument(parser0)(using errorTactic)
 
   // Raise through the reader's tactic — for leaf instances that reject a
   // well-formed entry's content, continuing with a sentinel under an

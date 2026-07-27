@@ -1860,6 +1860,28 @@ object Tel extends Tel2:
   private[stratiform] object Parser:
     import scala.language.unsafeNulls
 
+    // The rim cast as a static helper (`TelReader.reveal`'s counterpart): a
+    // fresh exclusive view of a parser reached through an erased reference,
+    // sound by the pool's one-parser-per-thread construction guarantee.
+    def reveal(parser: AnyRef): Parser^ = parser.asInstanceOf[Parser^]
+
+    // Checker-opaque rim variants of the four entry points that macro-staged
+    // parsers reach through a capture-erased `TelReader`: hosted on the
+    // companion (not the parser) so no exclusive `Parser.this` is in scope,
+    // each re-asserts the pool's per-thread exclusivity via `reveal`. Public
+    // because staged parsers are generated into user modules.
+    def erasedDirectKeyword(parser: AnyRef, indent: Int)(using Tactic[TelError]): Text | Null =
+      reveal(parser).directKeyword(indent)
+
+    def erasedDirectValue(parser: AnyRef, indent: Int)(using Tactic[TelError]): Tel =
+      reveal(parser).directValue(indent)
+
+    def erasedDirectDocument(parser: AnyRef)(using Tactic[TelError]): Tel =
+      reveal(parser).directDocument()
+
+    def erasedDirectEntrySubstance(parser: AnyRef)(using Tactic[TelError]): Boolean =
+      reveal(parser).directEntrySubstance()
+
     // Per-thread cached parser. The parser's mutable state (scratch buffers,
     // keyword cache, StringBuilder, ArrayBuffer of ancestors, etc.) is
     // expensive to allocate fresh on every call; reusing the same parser
@@ -2026,29 +2048,23 @@ object Tel extends Tel2:
     // be used to compute a line number later. Line numbers are bumped
     // incrementally at every LF-consumption point (consumeLineEnding plus
     // the two raw LF advances in parseLiteralAtom).
-    private final class LineHead:
-      @scala.caps.unsafe.untrackedCaptures
+    private[stratiform] final class LineHead extends caps.Mutable:
       var leadingSpaces: Int = 0
-      @scala.caps.unsafe.untrackedCaptures
       var indentLevels:  Int = 0      // (leadingSpaces - margin) / 2 or -1
-      @scala.caps.unsafe.untrackedCaptures
       var blank:         Boolean = false
-      @scala.caps.unsafe.untrackedCaptures
       var eof:           Boolean = false
-      @scala.caps.unsafe.untrackedCaptures
       var startLine:     Int = 1      // 1-indexed source line of this line
       // §5/§6.1: this line is a document separator — exactly two resolved-sigil
       // characters at column zero and nothing else. It ends the current document
       // (like EOF) and the next document begins on the following line. Recognised
       // only at the structural level, so it is computed only for non-blank,
       // non-EOF, zero-indent lines.
-      @scala.caps.unsafe.untrackedCaptures
       var separator:     Boolean = false
 
 
   // Holds an exclusive cursor in a field, so the parser is itself a capability
   // (fresh per instance; one per thread via the pool).
-  private[stratiform] final class Parser() extends caps.ExclusiveCapability:
+  private[stratiform] final class Parser() extends caps.ExclusiveCapability, caps.Mutable:
     import java.lang as jl
     import java.nio.charset.StandardCharsets
     import scala.language.unsafeNulls
@@ -2069,23 +2085,20 @@ object Tel extends Tel2:
     // re-binds both before each `parse()` invocation.
 
     @scala.caps.unsafe.untrackedCaptures
-    private var cursor0: AnyRef = null
+    var cursor0: AnyRef = null
 
     // An exclusive view of the bound cursor: the untracked field reads as
     // read-only, and a per-use fresh capability keeps it apart from `this`.
     private inline def cursor: Cursor[Data, {}]^ = cursor0.asInstanceOf[Cursor[Data, {}]^]
+    var schema: Optional[Tels] = Unset
     @scala.caps.unsafe.untrackedCaptures
-    private var schema: Optional[Tels] = Unset
-    @scala.caps.unsafe.untrackedCaptures
-    private var bytes0: AnyRef = null
+    var bytes0: AnyRef = null
 
     // An exclusive view of the buffer snapshot: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
     private inline def bytes: Array[Byte]^ = bytes0.asInstanceOf[Array[Byte]^]
-    @scala.caps.unsafe.untrackedCaptures
-    private var pos:    Int = 0
-    @scala.caps.unsafe.untrackedCaptures
-    private var bufEnd: Int = 0
+    var pos:    Int = 0
+    var bufEnd: Int = 0
 
     // Incrementally tracked 1-indexed source line number of the current
     // cursor position. Bumped at every LF-consumption point — `consumeLineEnding`
@@ -2097,24 +2110,18 @@ object Tel extends Tel2:
     // current buffer (always inside a hold containing the line's bytes) by
     // `columnForCurrentBytePos`, which doesn't depend on the cursor's
     // `columnNo`.
-    @scala.caps.unsafe.untrackedCaptures
-    private var lineNo: Int = 1
+    var lineNo: Int = 1
 
     // ── Parser state ──────────────────────────────────────────────────────────
 
-    @scala.caps.unsafe.untrackedCaptures
-    private var margin: Int = 0
-    @scala.caps.unsafe.untrackedCaptures
-    private var sigil:  Byte = '#'.toByte
-    @scala.caps.unsafe.untrackedCaptures
-    private var crlfMode: Boolean = false
-    @scala.caps.unsafe.untrackedCaptures
-    private var lineEndingsDetected: Boolean = false
-    @scala.caps.unsafe.untrackedCaptures
-    private var lineEndings: Tel.LineEndings = Tel.LineEndings.Lf
+    var margin: Int = 0
+    var sigil:  Byte = '#'.toByte
+    var crlfMode: Boolean = false
+    var lineEndingsDetected: Boolean = false
+    var lineEndings: Tel.LineEndings = Tel.LineEndings.Lf
 
     // Look-ahead record describing the next unconsumed line.
-    private val head: LineHead = new LineHead
+    var head: LineHead^ = new LineHead
 
     // Tracks state for the §9 CommentNotPreceded check.
     // `prevLineWasBoundary` is true iff the immediately-previous consumed line
@@ -2123,17 +2130,14 @@ object Tel extends Tel2:
     // comment. `prevContentLeadingSpaces` records the leadingSpaces of the
     // most-recent content line (compound or tabulation), used to compare
     // against the indent at which a new comment appears.
-    @scala.caps.unsafe.untrackedCaptures
-    private var prevLineWasBoundary: Boolean = true
-    @scala.caps.unsafe.untrackedCaptures
-    private var prevContentLeadingSpaces: Int = -1
+    var prevLineWasBoundary: Boolean = true
+    var prevContentLeadingSpaces: Int = -1
 
     // E102 detection: a "tel" / "tel …" line at column 0 that isn't the first
     // non-blank line is a misplaced pragma. We set this flag whenever a
     // non-blank line (directive, pragma, comment, compound, tabulation) has
     // been consumed.
-    @scala.caps.unsafe.untrackedCaptures
-    private var hasConsumedNonBlankLine: Boolean = false
+    var hasConsumedNonBlankLine: Boolean = false
 
     // Parser surfaces an empty sentinel line when the input ends with LF
     // (so a file "code\n" parses as two lines: "code" and ""). The streaming
@@ -2141,8 +2145,7 @@ object Tel extends Tel2:
     // the innermost block needs to claim one extra blank. Set when the LF we
     // just consumed is the final byte of the document; consumed exactly once
     // by the first consumeTrailingBlanksFor that reaches EOF.
-    @scala.caps.unsafe.untrackedCaptures
-    private var documentEndsWithLf: Boolean = false
+    var documentEndsWithLf: Boolean = false
 
     // ── Position tracking (set by `Parser.parseTracked`) ──────────────────────
     // When `tracking` is on, the parser appends one (line, column, length)
@@ -2150,7 +2153,6 @@ object Tel extends Tel2:
     // `positionTriples`, from which `Tel.buildIndex` folds the navigable
     // `PositionIndex`. Off by default, so the throughput-optimised parse path is
     // untouched (no triple is recorded and no per-compound work is added).
-    @scala.caps.unsafe.untrackedCaptures
     private[stratiform] var tracking: Boolean = false
     private[stratiform] val positionTriples = scala.collection.mutable.ArrayBuffer.empty[Int]
 
@@ -2161,11 +2163,11 @@ object Tel extends Tel2:
     // `Unset` entries mark compounds whose schema position couldn't be
     // resolved (e.g. an unknown keyword) — both shallower and deeper
     // recovery treat that ancestor as schema-blind.
-    private val ancestors =
+    val ancestors =
       scala.collection.mutable.ArrayBuffer.empty[Optional[Tels.Struct]]
 
     // Reusable string builder for source-atom / literal-atom payloads.
-    private val sb: jl.StringBuilder = new jl.StringBuilder(256)
+    val sb: jl.StringBuilder = new jl.StringBuilder(256)
 
     // Atom-bytes arena: one growing byte buffer per parser instance into which
     // every inline atom's UTF-8 bytes are written. Each `Tel.Atom.Inline`
@@ -2183,16 +2185,13 @@ object Tel extends Tel2:
     // new array at offset 0 so the atom remains contiguous; the old array
     // (which still holds completed atoms) stays alive via their Inline
     // references.
-    @scala.caps.unsafe.untrackedCaptures
-    private var atomArena0:    AnyRef = (new Array[Byte](256)).asInstanceOf[AnyRef]
+    var atomArena0:    AnyRef = (new Array[Byte](256)).asInstanceOf[AnyRef]
 
     // An exclusive view of the arena: the untracked `AnyRef` field keeps the
     // mutable array's capture out of the parser's fields.
     private inline def atomArena: Array[Byte]^ = atomArena0.asInstanceOf[Array[Byte]^]
-    @scala.caps.unsafe.untrackedCaptures
-    private var arenaPos:      Int = 0
-    @scala.caps.unsafe.untrackedCaptures
-    private var inFlightStart: Int = -1
+    var arenaPos:      Int = 0
+    var inFlightStart: Int = -1
 
     // Direct-primary-atom capture: when `directPrimaryOnly` is set (by the
     // primitive readers), `commit()` consumes the first inline atom's bytes
@@ -2206,20 +2205,13 @@ object Tel extends Tel2:
     private inline val PrimaryBoolean = 2
     private inline val PrimaryInt = 3
 
-    @scala.caps.unsafe.untrackedCaptures
-    private var directPrimaryOnly:    Boolean       = false
-    @scala.caps.unsafe.untrackedCaptures
-    private var directPrimaryMode:    Int           = PrimaryText
-    @scala.caps.unsafe.untrackedCaptures
+    var directPrimaryOnly:    Boolean       = false
+    var directPrimaryMode:    Int           = PrimaryText
     private[stratiform] var directPrimaryPresent: Boolean       = false
-    @scala.caps.unsafe.untrackedCaptures
-    private var directPrimaryOk:      Boolean       = false
-    @scala.caps.unsafe.untrackedCaptures
+    var directPrimaryOk:      Boolean       = false
     private[stratiform] var directPrimaryText:    String | Null = null
-    @scala.caps.unsafe.untrackedCaptures
-    private var directPrimaryLongVal: Long          = 0L
-    @scala.caps.unsafe.untrackedCaptures
-    private var directPrimaryBoolVal: Boolean       = false
+    var directPrimaryLongVal: Long          = 0L
+    var directPrimaryBoolVal: Boolean       = false
 
     // Parse `atomArena[off until off+len]` as a base-10 integer with exactly
     // `java.lang.Long.parseLong`'s acceptance (optional single leading `+`/`-`,
@@ -2227,7 +2219,7 @@ object Tel extends Tel2:
     // `Long.MinValue` is representable. Sets `directPrimaryLongVal` and returns
     // whether the slice parsed; on `false` the caller reproduces the AST path's
     // `NumberFormatException => Unset`, so semantics match byte-for-byte.
-    private def parseArenaLong(off: Int, len: Int): Boolean =
+    private update def parseArenaLong(off: Int, len: Int): Boolean =
       if len == 0 then false else
         var i = 0
         var negative = false
@@ -2254,16 +2246,16 @@ object Tel extends Tel2:
           if ok then directPrimaryLongVal = if negative then result else -result
           ok
 
-    private inline def beginInFlightAtom(): Unit = inFlightStart = arenaPos
+    private update def beginInFlightAtom(): Unit = inFlightStart = arenaPos
 
-    private inline def endInFlightAtom(): Int =
+    private update def endInFlightAtom(): Int =
       val len = arenaPos - inFlightStart
       inFlightStart = -1
       len
 
     private inline def arenaInFlightOffset: Int = inFlightStart
 
-    private inline def ensureArenaSpace(n: Int): Unit =
+    private update def ensureArenaSpace(n: Int): Unit =
       if arenaPos + n > atomArena.length then growArena(n)
 
     // Non-inline: keep the slow path out of the inline budget. Allocates a
@@ -2271,7 +2263,7 @@ object Tel extends Tel2:
     // in-flight atom's bytes (if any) into it starting at offset 0, and
     // resets `arenaPos` accordingly. Already-committed atoms continue to
     // reference the previous array.
-    private def growArena(n: Int): Unit =
+    update def growArena(n: Int): Unit =
       val inFlightLen = if inFlightStart >= 0 then arenaPos - inFlightStart else 0
       val needed = inFlightLen + n
       var newCap = (atomArena.length * 2).max(256)
@@ -2289,12 +2281,12 @@ object Tel extends Tel2:
     // An exclusive view for writes: the untracked field reads as read-only.
     private inline def arenaTarget: Array[Byte]^ = atomArena.asInstanceOf[Array[Byte]^]
 
-    private inline def appendToArena(b: Byte): Unit =
+    private update def appendToArena(b: Byte): Unit =
       ensureArenaSpace(1)
       arenaTarget(arenaPos) = b
       arenaPos += 1
 
-    private inline def appendToArenaRange(src: Array[Byte], off: Int, len: Int): Unit =
+    private update def appendToArenaRange(src: Array[Byte], off: Int, len: Int): Unit =
       ensureArenaSpace(len)
       System.arraycopy(src, off, atomArena, arenaPos, len)
       arenaPos += len
@@ -2315,64 +2307,60 @@ object Tel extends Tel2:
     // it eliminates several thousand allocations per parse.
 
     @scala.caps.unsafe.untrackedCaptures
-    private var scratchAtoms0: AnyRef = (new Array[Tel.Atom](16)).asInstanceOf[AnyRef]
+    var scratchAtoms0: AnyRef = (new Array[Tel.Atom](16)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
     private inline def scratchAtoms: Array[Tel.Atom]^ =
       scratchAtoms0.asInstanceOf[Array[Tel.Atom]^]
-    @scala.caps.unsafe.untrackedCaptures
-    private var atomScratchIx:    Int = 0
+    var atomScratchIx:    Int = 0
 
     @scala.caps.unsafe.untrackedCaptures
-    private var scratchComments0: AnyRef = (new Array[Tel.Comment](8)).asInstanceOf[AnyRef]
+    var scratchComments0: AnyRef = (new Array[Tel.Comment](8)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
     private inline def scratchComments: Array[Tel.Comment]^ =
       scratchComments0.asInstanceOf[Array[Tel.Comment]^]
-    @scala.caps.unsafe.untrackedCaptures
-    private var commentScratchIx: Int = 0
+    var commentScratchIx: Int = 0
 
     @scala.caps.unsafe.untrackedCaptures
-    private var scratchCompounds0: AnyRef = (new Array[Tel.Compound](8)).asInstanceOf[AnyRef]
+    var scratchCompounds0: AnyRef = (new Array[Tel.Compound](8)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
     private inline def scratchCompounds: Array[Tel.Compound]^ =
       scratchCompounds0.asInstanceOf[Array[Tel.Compound]^]
-    @scala.caps.unsafe.untrackedCaptures
-    private var compoundScratchIx: Int = 0
+    var compoundScratchIx: Int = 0
 
     @scala.caps.unsafe.untrackedCaptures
-    private var scratchBlocks0: AnyRef = (new Array[Tel.Block](16)).asInstanceOf[AnyRef]
+    var scratchBlocks0: AnyRef = (new Array[Tel.Block](16)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
     private inline def scratchBlocks: Array[Tel.Block]^ =
       scratchBlocks0.asInstanceOf[Array[Tel.Block]^]
-    @scala.caps.unsafe.untrackedCaptures
-    private var blockScratchIx:   Int = 0
+    var blockScratchIx:   Int = 0
 
-    private inline def reserveAtom(): Unit =
+    private update def reserveAtom(): Unit =
       if atomScratchIx >= scratchAtoms.length then
         val grown = new Array[Tel.Atom](scratchAtoms.length*2)
         System.arraycopy(scratchAtoms, 0, grown, 0, atomScratchIx)
         scratchAtoms0 = grown.asInstanceOf[AnyRef]
 
-    private inline def reserveComment(): Unit =
+    private update def reserveComment(): Unit =
       if commentScratchIx >= scratchComments.length then
         val grown = new Array[Tel.Comment](scratchComments.length*2)
         System.arraycopy(scratchComments, 0, grown, 0, commentScratchIx)
         scratchComments0 = grown.asInstanceOf[AnyRef]
 
-    private inline def reserveCompound(): Unit =
+    private update def reserveCompound(): Unit =
       if compoundScratchIx >= scratchCompounds.length then
         val grown = new Array[Tel.Compound](scratchCompounds.length*2)
         System.arraycopy(scratchCompounds, 0, grown, 0, compoundScratchIx)
         scratchCompounds0 = grown.asInstanceOf[AnyRef]
 
-    private inline def reserveBlock(): Unit =
+    private update def reserveBlock(): Unit =
       if blockScratchIx >= scratchBlocks.length then
         val grown = new Array[Tel.Block](scratchBlocks.length*2)
         System.arraycopy(scratchBlocks, 0, grown, 0, blockScratchIx)
@@ -2391,22 +2379,22 @@ object Tel extends Tel2:
     private inline def blocksTarget: Array[Tel.Block]^ =
       scratchBlocks.asInstanceOf[Array[Tel.Block]^]
 
-    private inline def pushAtom(atom: Tel.Atom): Unit =
+    private update def pushAtom(atom: Tel.Atom): Unit =
       reserveAtom()
       atomsTarget(atomScratchIx) = atom
       atomScratchIx += 1
 
-    private inline def pushComment(c: Tel.Comment): Unit =
+    private update def pushComment(c: Tel.Comment): Unit =
       reserveComment()
       commentsTarget(commentScratchIx) = c
       commentScratchIx += 1
 
-    private inline def pushCompound(c: Tel.Compound): Unit =
+    private update def pushCompound(c: Tel.Compound): Unit =
       reserveCompound()
       compoundsTarget(compoundScratchIx) = c
       compoundScratchIx += 1
 
-    private inline def pushBlock(b: Tel.Block): Unit =
+    private update def pushBlock(b: Tel.Block): Unit =
       reserveBlock()
       blocksTarget(blockScratchIx) = b
       blockScratchIx += 1
@@ -2414,7 +2402,7 @@ object Tel extends Tel2:
     // Extract `count` items ending at the current index, rewind, and return
     // them as an IArray. Empty scopes return the shared empty IArray with
     // zero allocation.
-    private inline def takeAtoms(count: Int): IArray[Tel.Atom] =
+    private update def takeAtoms(count: Int): IArray[Tel.Atom] =
       if count == 0 then IArray.empty[Tel.Atom]
       else
         val result = new Array[Tel.Atom](count)
@@ -2422,7 +2410,7 @@ object Tel extends Tel2:
         atomScratchIx -= count
         result.asInstanceOf[IArray[Tel.Atom]]
 
-    private inline def takeComments(count: Int): IArray[Tel.Comment] =
+    private update def takeComments(count: Int): IArray[Tel.Comment] =
       if count == 0 then IArray.empty[Tel.Comment]
       else
         val result = new Array[Tel.Comment](count)
@@ -2430,7 +2418,7 @@ object Tel extends Tel2:
         commentScratchIx -= count
         result.asInstanceOf[IArray[Tel.Comment]]
 
-    private inline def takeCompounds(count: Int): IArray[Tel.Compound] =
+    private update def takeCompounds(count: Int): IArray[Tel.Compound] =
       if count == 0 then IArray.empty[Tel.Compound]
       else
         val result = new Array[Tel.Compound](count)
@@ -2438,7 +2426,7 @@ object Tel extends Tel2:
         compoundScratchIx -= count
         result.asInstanceOf[IArray[Tel.Compound]]
 
-    private inline def takeBlocks(count: Int): IArray[Tel.Block] =
+    private update def takeBlocks(count: Int): IArray[Tel.Block] =
       if count == 0 then EmptyBlocks
       else
         val result = new Array[Tel.Block](count)
@@ -2454,10 +2442,8 @@ object Tel extends Tel2:
     // This eliminates the prior `parsed.copy(atoms = finalAtoms, children = ...)`
     // double-allocation: Tel.Compound is built exactly once with its final
     // atoms and children set.
-    @scala.caps.unsafe.untrackedCaptures
-    private var compoundLineKeyword: Text = t""
-    @scala.caps.unsafe.untrackedCaptures
-    private var compoundLineRemark:  Optional[Text] = Unset
+    var compoundLineKeyword: Text = t""
+    var compoundLineRemark:  Optional[Text] = Unset
 
     // ── Keyword interning cache ───────────────────────────────────────────────
     // 64-slot two-Long fingerprint cache. The byte-level variant: the first
@@ -2465,11 +2451,11 @@ object Tel extends Tel2:
     // fingerprint injectively; multibyte UTF-8 keywords fingerprint by raw
     // bytes (still injective for ≤8 bytes).
     @scala.caps.unsafe.untrackedCaptures
-    private val keyCache:     Array[String] = new Array[String](64)
+    val keyCache:     Array[String] = new Array[String](64)
     @scala.caps.unsafe.untrackedCaptures
-    private val keyCacheLow:  Array[Long]   = new Array[Long](64)
+    val keyCacheLow:  Array[Long]   = new Array[Long](64)
     @scala.caps.unsafe.untrackedCaptures
-    private val keyCacheHigh: Array[Long]   = new Array[Long](64)
+    val keyCacheHigh: Array[Long]   = new Array[Long](64)
 
     // Exclusive views for writes: the untracked fields read as read-only.
     private inline def keyCacheTarget: Array[String]^ = keyCache.asInstanceOf[Array[String]^]
@@ -2482,18 +2468,18 @@ object Tel extends Tel2:
 
     // ── Substrate ─────────────────────────────────────────────────────────────
 
-    private inline def syncTo(): Unit =
+    update def syncTo(): Unit =
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-    private inline def syncFrom(): Unit =
+    update def syncFrom(): Unit =
       // The cast erases the buffer view's capture: it is confined to this parser.
       bytes0 = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
 
-    private inline def more: Boolean = pos < bufEnd || moreSlow()
+    private update inline def more: Boolean = pos < bufEnd || moreSlow()
 
-    private def moreSlow(): Boolean =
+    update def moreSlow(): Boolean =
       syncTo()
 
       if cursor.more then { syncFrom(); true }
@@ -2501,7 +2487,7 @@ object Tel extends Tel2:
 
     private inline def peek: Byte = bytes(pos)
 
-    private inline def advance(): Unit = pos += 1
+    private update inline def advance(): Unit = pos += 1
 
     // Ensure that at least `n` bytes are available from the current position
     // (or that we are at EOF). Pulls chunks from the cursor as needed. After
@@ -2513,7 +2499,7 @@ object Tel extends Tel2:
     // then cue back. Inside the outer `hold` block, the mark prevents the
     // buffer from compacting past our current position, so the bytes we
     // need stay resident.
-    private def ensureLookahead(n: Int): Unit =
+    update def ensureLookahead(n: Int): Unit =
       if pos + n <= bufEnd then ()
       else
         syncTo()
@@ -2529,7 +2515,7 @@ object Tel extends Tel2:
 
     // Peek the byte one past the current position, refilling if necessary.
     // Returns -1 if there is no byte one past the current position.
-    private def peekNext(): Int =
+    private update def peekNext(): Int =
       ensureLookahead(2)
       if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
 
@@ -2540,7 +2526,7 @@ object Tel extends Tel2:
     // they need to scan across chunk boundaries.
 
     // Advance pos until bytes(pos) == target1, or pos == bufEnd.
-    private def scanUntil1(target1: Byte, repl1: Long): Unit =
+    private update def scanUntil1(target1: Byte, repl1: Long): Unit =
       while pos + 8 <= bufEnd do
         val v = Parser.longView(bytes, pos)
         val mask = Parser.matchByte(v, repl1)
@@ -2554,7 +2540,7 @@ object Tel extends Tel2:
       while pos < bufEnd && bytes(pos) != target1 do pos += 1
 
     // Advance pos until bytes(pos) ∈ {target1, target2}, or pos == bufEnd.
-    private def scanUntil2(target1: Byte, target2: Byte, repl1: Long, repl2: Long): Unit =
+    private update def scanUntil2(target1: Byte, target2: Byte, repl1: Long, repl2: Long): Unit =
       while pos + 8 <= bufEnd do
         val v = Parser.longView(bytes, pos)
         val combined = Parser.matchByte(v, repl1) | Parser.matchByte(v, repl2)
@@ -2568,7 +2554,7 @@ object Tel extends Tel2:
       while pos < bufEnd && bytes(pos) != target1 && bytes(pos) != target2 do pos += 1
 
     // Advance pos until bytes(pos) ∈ {a, b, c}, or pos == bufEnd.
-    private def scanUntil3
+    private update def scanUntil3
       ( a: Byte, b: Byte, c: Byte,
         rA: Long, rB: Long, rC: Long )
     :   Unit =
@@ -2590,7 +2576,7 @@ object Tel extends Tel2:
       while pos < bufEnd && bytes(pos) != a && bytes(pos) != b && bytes(pos) != c do pos += 1
 
     // Advance pos until bytes(pos) ∈ {a, b, c, d}, or pos == bufEnd.
-    private def scanUntil4
+    private update def scanUntil4
       ( a: Byte, b: Byte, c: Byte, d: Byte,
         rA: Long, rB: Long, rC: Long, rD: Long )
     :   Unit =
@@ -2620,7 +2606,7 @@ object Tel extends Tel2:
     // looking for the most-recent LF. Because errors are always raised while a
     // hold is active around the line being parsed, the line's starting LF (or
     // start-of-stream) is always inside the resident region of the buffer.
-    private def columnForCurrentBytePos(): Int =
+    private update def columnForCurrentBytePos(): Int =
       var i = pos - 1
       var col = 1
 
@@ -2630,13 +2616,13 @@ object Tel extends Tel2:
 
       col
 
-    private def errorHere(reason: Reason): (Tactic[TelError]^) ?->{this} Nothing =
+    private update def errorHere(reason: Reason): (Tactic[TelError]^) ?->{this} Nothing =
       val column = columnForCurrentBytePos()
       abort(TelError(reason, TelError.Position(lineNo, column)))
 
     // Direct line-number variant: callers pass the 1-indexed source line of
     // the offending location and its column.
-    private def errorAt(reason: Reason, line: Int, column: Int)
+    private update def errorAt(reason: Reason, line: Int, column: Int)
     :   (Tactic[TelError]^) ?->{this} Nothing =
 
       abort(TelError(reason, TelError.Position(line, column)))
@@ -2649,14 +2635,14 @@ object Tel extends Tel2:
     // continues, so a document with several recoverable defects reports them all.
     // The continuation MUST advance the cursor past the offending input (or the
     // surrounding flow must), otherwise an enclosing scan loop would not progress.
-    private inline def recoverHere[T](reason: Reason)(continuation: => T)
+    private update inline def recoverHere[T](reason: Reason)(continuation: => T)
       ( using Tactic[TelError]^ )
     :   T =
 
       raise(TelError(reason, TelError.Position(lineNo, columnForCurrentBytePos())))
       continuation
 
-    private inline def recoverAt[T](reason: Reason, line: Int, column: Int)
+    private update inline def recoverAt[T](reason: Reason, line: Int, column: Int)
       ( continuation: => T )
       ( using Tactic[TelError]^ )
     :   T =
@@ -2683,7 +2669,7 @@ object Tel extends Tel2:
     // compile-time `using Cursor.Held` requirement at every mark call site
     // is the static guarantee that the code path is reachable only from
     // inside a hold.
-    private inline def inHold[T](inline body: => T): T =
+    private update inline def inHold[T](inline body: => T): T =
       syncTo()
 
       cursor.hold:
@@ -2692,7 +2678,7 @@ object Tel extends Tel2:
           body
         finally syncTo()
 
-    private inline def beginMark(): Cursor.Mark =
+    private update def beginMark(): Cursor.Mark =
       syncTo()
       cursor.mark(using Cursor.shared)
 
@@ -2700,7 +2686,7 @@ object Tel extends Tel2:
     // a UTF-8 `String`. The only allocation point in the keyword / atom path.
     // Non-inline: the cursor.slice lambda's path-dependent `addressable.Storage`
     // resolves once here against `this.cursor`.
-    private def sliceText(start: Cursor.Mark): String =
+    private update def sliceText(start: Cursor.Mark): String =
       syncTo()
       val endMk = cursor.mark(using Cursor.shared)
 
@@ -2710,7 +2696,7 @@ object Tel extends Tel2:
 
     // Rewind to a held mark — the bail of a speculative fast scan (the
     // `directEntrySubstance` idiom).
-    private def rewindTo(mark: Cursor.Mark): Unit =
+    private update def rewindTo(mark: Cursor.Mark): Unit =
       syncTo()
       cursor.cue(mark)
       syncFrom()
@@ -2725,7 +2711,7 @@ object Tel extends Tel2:
     // because previously-parsed Inlines reference the old one — we cannot
     // overwrite their bytes. The keyword-fingerprint cache is preserved
     // across resets so frequent keywords stay interned.
-    private[stratiform] def reset(c: Cursor[Data, {}]^, s: Optional[Tels]): Unit =
+    private[stratiform] update def reset(c: Cursor[Data, {}]^, s: Optional[Tels]): Unit =
       cursor0 = c.asInstanceOf[AnyRef]
       schema = s
       bytes0 = null
@@ -2778,7 +2764,7 @@ object Tel extends Tel2:
     // significant only at the true start of the source, so it is not re-checked.
     // A fresh `atomArena` is allocated per document because each parsed
     // document's `Inline` atoms keep their own arena alive.
-    private[stratiform] def resetForNextDocument(): Unit =
+    private[stratiform] update def resetForNextDocument(): Unit =
       margin = 0
       sigil  = '#'.toByte
       head.leadingSpaces = 0
@@ -2812,7 +2798,7 @@ object Tel extends Tel2:
     // Single-document parse (§6.1): reads exactly one document and stops at the
     // first document separator. Any content after the separator is left
     // unconsumed and need not be valid TEL.
-    def parse(): (Tactic[TelError]^) ?->{this} Tel.Document =
+    update def parse(): (Tactic[TelError]^) ?->{this} Tel.Document =
       syncFrom()
       checkBom()
       parseOneDocument()
@@ -2821,7 +2807,7 @@ object Tel extends Tel2:
     // document separator or at end of input. The caller has already synced from
     // the cursor and (for the first document only) checked the BOM. On return,
     // `head` is parked either on a separator (`head.separator`) or at EOF.
-    private def parseOneDocument(): (Tactic[TelError]^) ?->{this} Tel.Document =
+    private update def parseOneDocument(): (Tactic[TelError]^) ?->{this} Tel.Document =
       val directive = parseInterpreterDirective()
       val pragma = parsePragma()
       fillHead()  // park head at the next line
@@ -2844,7 +2830,7 @@ object Tel extends Tel2:
     // before returning. A separator followed only by blank lines or nothing
     // yields no trailing empty document; two consecutive separators yield one
     // empty document between them.
-    def parseAllDocuments(): (Tactic[TelError]^) ?->{this} List[Tel.Document] =
+    update def parseAllDocuments(): (Tactic[TelError]^) ?->{this} List[Tel.Document] =
       syncFrom()
       checkBom()
       val buffer = scala.collection.mutable.ListBuffer.empty[Tel.Document]
@@ -2872,7 +2858,7 @@ object Tel extends Tel2:
     // must drive the stream within the `raises TelError` handler's scope. Uses a
     // dedicated parser instance (never the shared per-thread cache) so the
     // parser state survives across element demands.
-    private def documentStream(first: Boolean)
+    private update def documentStream(first: Boolean)
     :   (Tactic[TelError]^) ?->{this} Progression[Tel.Document] =
 
       if first then
@@ -2894,14 +2880,14 @@ object Tel extends Tel2:
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a
     // stream.
-    private def documentIsEmpty(doc: Tel.Document): Boolean =
+    private update def documentIsEmpty(doc: Tel.Document): Boolean =
       doc.children.nil && doc.interpreterDirective.absent && doc.pragma.absent
 
     // `head` is parked on a separator (the cursor sits on its first sigil).
     // Consume both sigil bytes and the terminating line-ending so the next
     // document begins on the following line. At true EOF the separator has no
     // line-ending and `consumeLineEnding` is a no-op.
-    private def consumeSeparatorLine(): (Tactic[TelError]^) ?->{this} Unit = inHold:
+    private update def consumeSeparatorLine(): (Tactic[TelError]^) ?->{this} Unit = inHold:
       ensureLookahead(2)
       advance()  // first sigil
       advance()  // second sigil
@@ -2910,7 +2896,7 @@ object Tel extends Tel2:
 
     // ── BOM ──────────────────────────────────────────────────────────────────
 
-    private def checkBom(): (Tactic[TelError]^) ?->{this} Unit =
+    private update def checkBom(): (Tactic[TelError]^) ?->{this} Unit =
       if more && peek == BOM0 then
         // §19.5 SkipBom: drop the byte-order mark and parse from the next byte.
         recoverHere(Reason.BomPresent):
@@ -2925,7 +2911,7 @@ object Tel extends Tel2:
     // mode: in LF mode a CR is E121; in CRLF mode a lone LF (not preceded by
     // CR) is E121. The detection is `lazy` — driven by `consumeLfFromHere`,
     // which is the only place we consume an LF.
-    private inline def detectLineEndingMode(crBefore: Boolean): Unit =
+    private update def detectLineEndingMode(crBefore: Boolean): Unit =
       if !lineEndingsDetected then
         lineEndingsDetected = true
         crlfMode = crBefore
@@ -2935,7 +2921,7 @@ object Tel extends Tel2:
 
     // Reads "#!..." line if present. The directive payload excludes the
     // "#!" prefix and the terminating LF.
-    private def parseInterpreterDirective(): (Tactic[TelError]^) ?->{this} Optional[Text] = inHold:
+    private update def parseInterpreterDirective(): (Tactic[TelError]^) ?->{this} Optional[Text] = inHold:
       // We can peek the first two bytes without consuming.
       if !more then Unset
       else if peek != '#'.toByte then Unset
@@ -2962,7 +2948,7 @@ object Tel extends Tel2:
     // the original position and the caller can run determineMargin from
     // scratch. The mark must survive the blank-line scan, so the entire
     // body runs inside one hold.
-    private def parsePragma(): (Tactic[TelError]^) ?->{this} Optional[Tel.Pragma] = inHold:
+    private update def parsePragma(): (Tactic[TelError]^) ?->{this} Optional[Tel.Pragma] = inHold:
       // `pragmaStartAbs` is the absolute byte position of the start of the
       // first non-blank line, used to check the 4096-byte pragma cap (§3.5)
       // against absolute stream position rather than the (possibly compacted)
@@ -3022,7 +3008,7 @@ object Tel extends Tel2:
     // Count leading spaces at the current position (does not consume the LF /
     // content byte). Stops at LF, CR, EOF, or any non-space byte. Does NOT
     // advance lineation across LF — caller must handle that.
-    private inline def countLeadingSpaces(): Int =
+    private update def countLeadingSpaces(): Int =
       var count = 0
 
       // A word at a time while the window allows: indent runs are short, so
@@ -3054,7 +3040,7 @@ object Tel extends Tel2:
     // the document — used by consumeTrailingBlanksFor to count the virtual
     // empty trailing line that Parser surfaces when its lines array ends
     // with a sentinel empty entry.
-    private def consumeLineEnding()(using Tactic[TelError]): Unit =
+    private update def consumeLineEnding()(using Tactic[TelError]): Unit =
       if !more then ()
       else if peek == LF then
         // §19.5 CollapseLineEndings: accept the inconsistent ending and carry on.
@@ -3085,7 +3071,7 @@ object Tel extends Tel2:
     // True iff the cursor is at the start of a pragma line (already past any
     // leading spaces, on the first content byte). A pragma is "tel" followed
     // by EOL or " ". Requires four bytes of look-ahead, or three bytes at EOF.
-    private def startsWithPragma(): Boolean =
+    private update def startsWithPragma(): Boolean =
       ensureLookahead(4)
       if pos + 2 < bufEnd &&
         bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte &&
@@ -3097,7 +3083,7 @@ object Tel extends Tel2:
       else
         false
 
-    private def parsePragmaContent(content: String, line: Int)
+    private update def parsePragmaContent(content: String, line: Int)
     :   (Tactic[TelError]^) ?->{this} Tel.Pragma =
 
       val parts = splitPragmaPhrases(content)
@@ -3147,7 +3133,7 @@ object Tel extends Tel2:
 
       Tel.Pragma(version, schemaText, pragmaSigil)
 
-    private def parseVersion(s: String, line: Int)
+    private update def parseVersion(s: String, line: Int)
     :   (Tactic[TelError]^) ?->{this} (Int, Int) =
 
       // §19.5 IgnoreVersion: a malformed version falls back to (0, 0) so the rest
@@ -3165,7 +3151,7 @@ object Tel extends Tel2:
 
         catch case _: NumberFormatException => recoverAt(Reason.BadVersion, line, 1)((0, 0))
 
-    private def splitPragmaPhrases(content: String): List[String] =
+    private update def splitPragmaPhrases(content: String): List[String] =
       val parts = scala.collection.mutable.ListBuffer.empty[String]
       val builder = new StringBuilder()
       var i = 0
@@ -3198,7 +3184,7 @@ object Tel extends Tel2:
     // Sets `margin` to the leadingSpaces of the first non-blank content line.
     // The caller's outer fillHead has already parked head at the first line;
     // we walk through blanks if needed.
-    private def determineMargin(): (Tactic[TelError]^) ?->{this} Unit =
+    private update def determineMargin(): (Tactic[TelError]^) ?->{this} Unit =
       while head.blank && !head.eof do fillHead()
 
       if !head.eof then
@@ -3210,7 +3196,7 @@ object Tel extends Tel2:
     // Peek the keyword of the line that head is currently parked at (i.e. read
     // it without advancing past the line). Uses mark + cue to restore the
     // cursor's byte position, lineation, and the parser's local snapshot.
-    private def peekKeyword(): (Tactic[TelError]^) ?->{this} Text =
+    private update def peekKeyword(): (Tactic[TelError]^) ?->{this} Text =
       val outerMark = beginMark()
       val kw = readKeyword()
       syncTo()
@@ -3220,7 +3206,7 @@ object Tel extends Tel2:
 
     // Resolve `t` to a Struct, optionally following one Reference indirection.
     // Returns Unset for Scalars, Flag, Select etc.
-    private def resolveTypeToStruct(t: Tels.Type, s: Tels): Optional[Tels.Struct] =
+    private update def resolveTypeToStruct(t: Tels.Type, s: Tels): Optional[Tels.Struct] =
       t match
         case struct: Tels.Struct => struct
 
@@ -3234,7 +3220,7 @@ object Tel extends Tel2:
     // Resolve `keyword` against `parent`'s direct Field / SelectRef members.
     // Returns the Struct type if the keyword names a child whose resolved
     // type is a Struct, or Unset otherwise.
-    private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, s: Tels)
+    private update def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, s: Tels)
     :   (Tactic[TelError]^) ?->{this} Optional[Tels.Struct] =
 
       var found: Optional[Tels.Type] = Unset
@@ -3257,7 +3243,7 @@ object Tel extends Tel2:
       found.let(resolveTypeToStruct(_, s))
 
     // Does `parent` admit `keyword` in its direct Field / SelectRef set?
-    private def keywordAdmissible(parent: Tels.Struct, keyword: Text, s: Tels): Boolean =
+    private update def keywordAdmissible(parent: Tels.Struct, keyword: Text, s: Tels): Boolean =
       var i = 0
       var hit = false
 
@@ -3278,7 +3264,7 @@ object Tel extends Tel2:
 
     // Push a child compound's resolved struct onto the ancestor stack. No-op
     // (records Unset for depth bookkeeping) without a schema.
-    private def pushAncestor(keyword: Text): (Tactic[TelError]^) ?->{this} Unit =
+    private update def pushAncestor(keyword: Text): (Tactic[TelError]^) ?->{this} Unit =
       schema.let: s =>
         val parent: Optional[Tels.Struct] =
           if ancestors.nil then s.document else ancestors(ancestors.length - 1)
@@ -3291,14 +3277,14 @@ object Tel extends Tel2:
       .or:
         ancestors += Unset
 
-    private def popAncestor(): Unit =
+    private update def popAncestor(): Unit =
       if ancestors.nonEmpty then ancestors.remove(ancestors.length - 1)
 
     // §19.5 odd-indent recovery. Without a schema, raise E107. With a schema,
     // compute admissibility at both candidate depths via the current ancestor
     // stack and pick deeper if and only if shallower is invalid AND deeper is
     // valid; tie-break favours shallower.
-    private def recoverOddIndent(spaces: Int, line: Int): (Tactic[TelError]^) ?->{this} Int =
+    private update def recoverOddIndent(spaces: Int, line: Int): (Tactic[TelError]^) ?->{this} Int =
       val rel = spaces - margin
 
       schema.let: s =>
@@ -3336,7 +3322,7 @@ object Tel extends Tel2:
     // intermediate `consumeLineEnding` (which calls `peekNext` → `ensureLookahead`,
     // a mark-using lookahead) and `recoverOddIndent` (which calls `peekKeyword`,
     // also mark-using) execute inside an active `cursor.hold` scope.
-    private def fillHead()(using Tactic[TelError]): Unit = inHold:
+    private update def fillHead()(using Tactic[TelError]): Unit = inHold:
       head.startLine = lineNo
       head.separator = false
 
@@ -3376,7 +3362,7 @@ object Tel extends Tel2:
     // exactly two `sigil` bytes followed immediately by a line-ending or EOF —
     // no third character and (given the zero-indent precondition) no leading or
     // trailing spaces. Does not consume.
-    private def headLineIsSeparator(): Boolean =
+    private update def headLineIsSeparator(): Boolean =
       ensureLookahead(3)
       pos + 1 < bufEnd &&
         bytes(pos) == sigil && bytes(pos + 1) == sigil &&
@@ -3384,7 +3370,7 @@ object Tel extends Tel2:
 
     // ── parseChildren ────────────────────────────────────────────────────────
 
-    private def parseChildren(parentIndent: Int): (Tactic[TelError]^) ?->{this} IArray[Tel.Block] =
+    private update def parseChildren(parentIndent: Int): (Tactic[TelError]^) ?->{this} IArray[Tel.Block] =
       val expected = parentIndent + 1
 
       if head.eof || head.separator || head.indentLevels < expected
@@ -3427,7 +3413,7 @@ object Tel extends Tel2:
     // semantically belong to this block). Pushes the resulting Tel.Block
     // onto the parser's `scratchBlocks` stack; the caller (parseChildren)
     // takes a contiguous range when its loop completes.
-    private def parseBlock(indent: Int): (Tactic[TelError]^) ?->{this} Unit =
+    private update def parseBlock(indent: Int): (Tactic[TelError]^) ?->{this} Unit =
       val commentStart  = commentScratchIx
       val compoundStart = compoundScratchIx
 
@@ -3542,7 +3528,7 @@ object Tel extends Tel2:
     // is a content (not comment) line at the same `indent`. Otherwise leave
     // the blanks for the enclosing block. Uses mark+cue. The hold spans the
     // entire probe so the mark survives every nested fillHead.
-    private def skipInteriorBlanksIfFollowedByContentAtIndent(indent: Int)
+    private update def skipInteriorBlanksIfFollowedByContentAtIndent(indent: Int)
     :   (Tactic[TelError]^) ?->{this} Unit =
 
       inHold:
@@ -3580,7 +3566,7 @@ object Tel extends Tel2:
     // Consume blank lines that "belong" to the current block at `indent`. A
     // blank line belongs if the next non-blank line (if any) matches `indent`
     // or EOF.
-    private def consumeTrailingBlanksFor(indent: Int): (Tactic[TelError]^) ?->{this} Int =
+    private update def consumeTrailingBlanksFor(indent: Int): (Tactic[TelError]^) ?->{this} Int =
       if head.eof then
         // The first parseBlock to reach EOF after a document that ended with
         // LF claims the virtual sentinel trailing line that Parser emits.
@@ -3636,7 +3622,7 @@ object Tel extends Tel2:
     // True iff the parked head's first content byte is the sigil and the
     // line is a comment (sigil-only or sigil + soft space + text), as opposed
     // to a tabulation line or `#foo`-style keyword.
-    private def isCommentBody(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
+    private update def isCommentBody(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
       if !more || peek != sigil then false
       else
         // Peek the rest of the line to decide between comment and tabulation.
@@ -3656,7 +3642,7 @@ object Tel extends Tel2:
     // Returns true iff the parked head's line, when read forward from current
     // position, contains a 2-space-or-more run followed by sigil somewhere
     // before the next LF. Uses mark+cue.
-    private def lineHasTabulationMarker(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
+    private update def lineHasTabulationMarker(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
       val mk = beginMark()
       var found = false
       var done = false
@@ -3684,14 +3670,14 @@ object Tel extends Tel2:
       syncFrom()
       found
 
-    private def isTabulationBody(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
+    private update def isTabulationBody(): (Tactic[TelError]^) ?->{this} Boolean = inHold:
       if !more || peek != sigil then false
       else lineHasTabulationMarker()
 
     // ── Comment parsing ──────────────────────────────────────────────────────
 
     // Cursor is at the sigil. Returns the comment text, advancing past LF.
-    private def parseCommentLine(): (Tactic[TelError]^) ?->{this} Text = inHold:
+    private update def parseCommentLine(): (Tactic[TelError]^) ?->{this} Text = inHold:
       // Consume the sigil.
       advance()
 
@@ -3719,7 +3705,7 @@ object Tel extends Tel2:
 
     // Cursor is at the sigil. Reads marker offsets + headings, advances past
     // LF.
-    private def parseTabulationLine(): (Tactic[TelError]^) ?->{this} Tel.Tabulation = inHold:
+    private update def parseTabulationLine(): (Tactic[TelError]^) ?->{this} Tel.Tabulation = inHold:
       val lineStartCol = head.leadingSpaces  // first marker offset (column 0 = sigil)
       val markers = scala.collection.mutable.ArrayBuffer.empty[Int]
       val headings = scala.collection.mutable.ArrayBuffer.empty[Text]
@@ -3818,7 +3804,7 @@ object Tel extends Tel2:
     // column value exceeds its declared width (E119). Uses mark + cue so the
     // cursor is restored to the same position for the subsequent
     // parseCompoundLine call.
-    private def validateTabulatedRowInline
+    private update def validateTabulatedRowInline
       ( rowLeadingSpaces: Int, tabulation: Tel.Tabulation, lineNumber: Int )
     :   (Tactic[TelError]^) ?->{this} Unit =
 
@@ -3886,7 +3872,7 @@ object Tel extends Tel2:
 
     // ── Source / literal atom dispatch ───────────────────────────────────────
 
-    private def parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces: Int)
+    private update def parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces: Int)
     :   (Tactic[TelError]^) ?->{this} Optional[Tel.Atom] =
 
       if head.eof || head.blank then Unset
@@ -3922,7 +3908,7 @@ object Tel extends Tel2:
     // followed by more source). Captured lines (first sourceIndent spaces
     // stripped, trailing spaces removed) are joined with LF as a separator
     // with no trailing LF; trailing blank lines are discarded (§14).
-    private def parseSourceAtom(sourceIndent: Int): (Tactic[TelError]^) ?->{this} Tel.Atom.Source =
+    private update def parseSourceAtom(sourceIndent: Int): (Tactic[TelError]^) ?->{this} Tel.Atom.Source =
       sb.setLength(0)
 
       // §14 "Convention A": the captured lines are joined with LF as a
@@ -4042,7 +4028,7 @@ object Tel extends Tel2:
     // text). The delimiter is the rest of the opening line. The payload is
     // everything between the next LF and the first line whose content is
     // byte-identical to the opening delimiter line (indentation included).
-    private def parseLiteralAtom(literalIndent: Int)
+    private update def parseLiteralAtom(literalIndent: Int)
     :   (Tactic[TelError]^) ?->{this} Tel.Atom.Literal =
 
       val openingLine = head.startLine
@@ -4128,7 +4114,7 @@ object Tel extends Tel2:
     // pushed onto the `scratchAtoms` stack; the caller (parseBlock) is
     // responsible for taking them — typically together with an optional
     // source/literal extra atom — and constructing the final Tel.Compound.
-    private def parseCompoundLine(lineNumber: Int): (Tactic[TelError]^) ?->{this} Unit = inHold:
+    private update def parseCompoundLine(lineNumber: Int): (Tactic[TelError]^) ?->{this} Unit = inHold:
       val isAtColumnZero = head.leadingSpaces == 0
       val mayBeMisplacedPragma = isAtColumnZero && hasConsumedNonBlankLine
 
@@ -4153,7 +4139,7 @@ object Tel extends Tel2:
     // the line ending. Factored out of `parseCompoundLine` so the direct
     // parsing rim, which reads the keyword itself (`directKeyword`), can
     // consume the rest of the line through the same scan.
-    private def parseCompoundLineRest(lineNumber: Int)(using Tactic[TelError]): Unit = inHold:
+    private update def parseCompoundLineRest(lineNumber: Int)(using Tactic[TelError]): Unit = inHold:
       var remark: Optional[Text] = Unset
       // Read atom bytes directly into the parser's atom-bytes arena. With
       // narrow holds, parseCompoundLine's hold has holdStart > 0, so refills
@@ -4316,7 +4302,7 @@ object Tel extends Tel2:
     // runs has `holdStart > 0`, so a refill inside the loop can compact the
     // buffer and shift live content toward index 0 — the absolute-position
     // mark survives that, a buffer-offset would not.
-    private def readKeyword()(using Tactic[TelError]): Text =
+    private update def readKeyword()(using Tactic[TelError]): Text =
       val startMark = beginMark()
       var low:  Long = 0L
       var high: Long = 0L
@@ -4377,7 +4363,7 @@ object Tel extends Tel2:
     // outside printable ASCII, whose packed form could alias a shorter
     // keyword's or a sentinel — is sliced eagerly, exactly as `readKeyword`
     // would, and reported `KeywordOpaque`.
-    private def readKeywordFast()(using Tactic[TelError]): Unit =
+    private update def readKeywordFast()(using Tactic[TelError]): Unit =
       // Fused scan-and-pack: the word loaded to find the keyword's end *is*
       // its packed form, so a packable keyword costs one load. A keyword at
       // the window's edge, longer than eight bytes or carrying unpackable
@@ -4417,7 +4403,7 @@ object Tel extends Tel2:
 
       if slow then readKeywordSlow()
 
-    private def readKeywordSlow()(using Tactic[TelError]): Unit =
+    private update def readKeywordSlow()(using Tactic[TelError]): Unit =
       val startMark = beginMark()
       var low:  Long = 0L
       var high: Long = 0L
@@ -4455,7 +4441,7 @@ object Tel extends Tel2:
     // The lazily-materialized text of a fast-stepped keyword: rebuilt from
     // the fingerprint (byte-exact — the packed bytes are printable ASCII)
     // through the intern cache, so repeated requests share one `String`.
-    private def internFingerprint(): Text =
+    private update def internFingerprint(): Text =
       val low = directKeywordLow
       val high = directKeywordHigh
       val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
@@ -4481,7 +4467,7 @@ object Tel extends Tel2:
       if result == null then result = fingerprintString()
       Text(result)
 
-    private def fingerprintString(): String =
+    private update def fingerprintString(): String =
       val len = directKeywordLen
       val chars = new Array[Char](len)
       var index = 0
@@ -4513,51 +4499,40 @@ object Tel extends Tel2:
     // spaces, indent level, source line and keyword. Consulted by the
     // per-entry consumers, which always run immediately after the
     // `directKeyword` that parked on the entry.
-    @scala.caps.unsafe.untrackedCaptures
-    private var directEntrySpaces:  Int = 0
-    @scala.caps.unsafe.untrackedCaptures
-    private var directEntryIndent:  Int = 0
-    @scala.caps.unsafe.untrackedCaptures
-    private var directEntryLine:    Int = 1
-    @scala.caps.unsafe.untrackedCaptures
-    private var directEntryKeyword: Text = t""
+    var directEntrySpaces:  Int = 0
+    var directEntryIndent:  Int = 0
+    var directEntryLine:    Int = 1
+    var directEntryKeyword: Text = t""
 
     // Fingerprint of the keyword most recently read by `readKeyword` — the
     // packed words it computes anyway for the intern cache (low = bytes 0–3,
     // high = bytes 4–7, LSB-first), and the keyword's byte length.
-    @scala.caps.unsafe.untrackedCaptures
-    private var directKeywordLow:  Long = 0L
-    @scala.caps.unsafe.untrackedCaptures
-    private var directKeywordHigh: Long = 0L
-    @scala.caps.unsafe.untrackedCaptures
-    private var directKeywordLen:  Int = 0
+    var directKeywordLow:  Long = 0L
+    var directKeywordHigh: Long = 0L
+    var directKeywordLen:  Int = 0
 
     // The fast step's result — the keyword's packed bytes, or
     // `TelReader.KeywordOpaque` — and whether `directEntryKeyword` is stale,
     // its text pending lazy materialization from the fingerprint.
-    @scala.caps.unsafe.untrackedCaptures
-    private var directKeywordPacked:    Long = 0L
-    @scala.caps.unsafe.untrackedCaptures
-    private var directEntryKeywordLazy: Boolean = false
+    var directKeywordPacked:    Long = 0L
+    var directEntryKeywordLazy: Boolean = false
 
     // The tabulation header governing subsequent rows at the same indent, and
     // the classification of the most recent group of consumed lines — the
     // direct-path stand-in for `parseChildren`'s "last block", from which the
     // over-indentation `Reason` is chosen exactly as the AST path chooses it.
-    @scala.caps.unsafe.untrackedCaptures
-    private var directTabulation: Optional[Tel.Tabulation] = Unset
+    var directTabulation: Optional[Tel.Tabulation] = Unset
     private final val DirectFresh = 0
     private final val DirectComments = 1
     private final val DirectTabulationHeader = 2
     private final val DirectTabulationRows = 3
     private final val DirectCompound = 4
-    @scala.caps.unsafe.untrackedCaptures
-    private var directGroup: Int = 0
+    var directGroup: Int = 0
 
     // Mirrors `parseChildren`'s reason selection for an over-indented line:
     // the shape of the preceding block determines whether the line is a
     // misplaced row, a child of a non-compound, or plain over-indentation.
-    private def directOverIndentReason: Reason = directGroup match
+    private update def directOverIndentReason: Reason = directGroup match
       case DirectComments         => Reason.ChildOfNonCompound
       case DirectTabulationHeader => Reason.RowWrongIndent
       case DirectTabulationRows   => Reason.ChildOfNonCompound
@@ -4567,7 +4542,7 @@ object Tel extends Tel2:
     // directive, pragma, and margin determination, leaving `head` parked on
     // the first content line (or EOF). The direct driver runs this before
     // handing the reader to a `Tel.Parsable`.
-    private[stratiform] def directProlog()(using Tactic[TelError]): Unit =
+    private[stratiform] update def directProlog()(using Tactic[TelError]): Unit =
       syncFrom()
       checkBom()
       val directive = parseInterpreterDirective()
@@ -4592,7 +4567,7 @@ object Tel extends Tel2:
     // record. On a compound line, consumes the keyword (leaving the parser
     // mid-line, right after it) and records the entry state for the
     // per-entry consumers.
-    private[stratiform] def directKeyword(indent: Int)(using Tactic[TelError]): Text | Null =
+    private[stratiform] update def directKeyword(indent: Int)(using Tactic[TelError]): Text | Null =
       if directKeywordAdvance(indent, textual = true) then directEntryKeyword else null
 
     // The step's shared line-classification loop. With `textual = true` the
@@ -4600,7 +4575,7 @@ object Tel extends Tel2:
     // pack-only fast scan (`readKeywordFast`), whose text materializes only
     // on demand. Returns whether an entry was found (false once the entry
     // region ends).
-    private def directKeywordAdvance(indent: Int, textual: Boolean)(using Tactic[TelError])
+    private update def directKeywordAdvance(indent: Int, textual: Boolean)(using Tactic[TelError])
     :   Boolean =
       var result = false
       var done = false
@@ -4691,7 +4666,7 @@ object Tel extends Tel2:
     // `TelReader.keywordText`, for staged parsers whose packed step reported
     // the keyword opaque (and for errors and the AST bridge). A fast-stepped
     // keyword materializes here, lazily, from its fingerprint.
-    private[stratiform] def directKeywordText: Text =
+    private[stratiform] update def directKeywordText: Text =
       if directEntryKeywordLazy then
         directEntryKeyword = internFingerprint()
         directEntryKeywordLazy = false
@@ -4706,7 +4681,7 @@ object Tel extends Tel2:
     // ASCII, whose packed form could alias a shorter keyword's or a
     // sentinel). An opaque keyword is still consumed: `directKeywordText`
     // identifies it for the caller's general dispatch.
-    private[stratiform] def directKeywordWord(indent: Int)(using Tactic[TelError]): Long =
+    private[stratiform] update def directKeywordWord(indent: Int)(using Tactic[TelError]): Long =
       if !directKeywordAdvance(indent, textual = false) then TelReader.KeywordEnd
       else directKeywordPacked
 
@@ -4714,7 +4689,7 @@ object Tel extends Tel2:
     // continuation, and children — materializing it as the single compound
     // the AST path would have built. The direct seam for every consumer that
     // needs AST-identical semantics.
-    private def directCompound(indent: Int)(using Tactic[TelError]): Tel.Compound =
+    private update def directCompound(indent: Int)(using Tactic[TelError]): Tel.Compound =
       val spaces = directEntrySpaces
       val keyword = directKeywordText
       val tabulated = directTabulation.present
@@ -4753,7 +4728,7 @@ object Tel extends Tel2:
     // (`takeAtoms`) and no `Tel.Atom.Inline`: the first inline atom is consumed
     // straight into the slot, and the source/literal continuation and child
     // subtree are consumed (discarded) so the reader lands on the next sibling.
-    private inline def consumeDirectEntry(inline mode: Int)(using Tactic[TelError]): Unit =
+    private update def consumeDirectEntry(mode: Int)(using Tactic[TelError]): Unit =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
@@ -4794,7 +4769,7 @@ object Tel extends Tel2:
     // Inline with an inline `mode`, so each primitive reader expands its own
     // mode-specialized copy — the dead mode arms fold away and the hot
     // methods stay small enough to inline predictably.
-    private inline def directLeafLine(inline mode: Int)(using Tactic[TelError]): Boolean = inHold:
+    private update def directLeafLine(mode: Int)(using Tactic[TelError]): Boolean = inHold:
       val entry = beginMark()
 
       if !more then false
@@ -4932,7 +4907,7 @@ object Tel extends Tel2:
     // The entry's primary atom as text — the first inline atom's, or Unset when
     // the line carries none (a source/literal atom never supplies it), mirroring
     // `Tel#primaryAtom`. Backs the `Text`/text-codec primitive readers.
-    private[stratiform] def directAtomText()(using Tactic[TelError]): Optional[Text] =
+    private[stratiform] update def directAtomText()(using Tactic[TelError]): Optional[Text] =
       consumeDirectEntry(PrimaryText)
       val captured = directPrimaryText
       if captured == null then Unset else Optional(Text(captured))
@@ -4940,25 +4915,25 @@ object Tel extends Tel2:
     // The entry's primary atom parsed straight from its bytes as an integer, or
     // Unset for a missing / non-integer atom — the `Int`/`Long` readers, saving
     // the value `String` the `Text` path would materialize only to re-scan.
-    private[stratiform] def directAtomLong()(using Tactic[TelError]): Optional[Long] =
+    private[stratiform] update def directAtomLong()(using Tactic[TelError]): Optional[Long] =
       consumeDirectEntry(PrimaryLong)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal) else Unset
 
     // As `directAtomLong`, additionally requiring the value to fit `Int`.
-    private[stratiform] def directAtomInt()(using Tactic[TelError]): Optional[Int] =
+    private[stratiform] update def directAtomInt()(using Tactic[TelError]): Optional[Int] =
       consumeDirectEntry(PrimaryInt)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal.toInt) else Unset
 
     // The entry's primary atom parsed straight from its bytes as a boolean, or
     // Unset for a missing atom or anything but `true` / `false`.
-    private[stratiform] def directAtomBoolean()(using Tactic[TelError]): Optional[Boolean] =
+    private[stratiform] update def directAtomBoolean()(using Tactic[TelError]): Optional[Boolean] =
       consumeDirectEntry(PrimaryBoolean)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryBoolVal) else Unset
 
     // Consume the rest of the entry's own line (atoms, remark) and any
     // source/literal continuation, but not its child lines — the step before
     // a nested record parses those children one level deeper.
-    private[stratiform] def directFinishLine()(using Tactic[TelError]): Unit =
+    private[stratiform] update def directFinishLine()(using Tactic[TelError]): Unit =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
@@ -4992,17 +4967,17 @@ object Tel extends Tel2:
     // Skip the whole entry — line remainder, continuation and subtree —
     // discarding it. Used for unknown keywords and duplicate non-repeatable
     // fields (where the AST's `field()` keeps the first match).
-    private[stratiform] def directSkipEntry(indent: Int)(using Tactic[TelError]): Unit =
+    private[stratiform] update def directSkipEntry(indent: Int)(using Tactic[TelError]): Unit =
       directCompound(indent)
 
     // Materialize this one entry as a `Tel` — the AST bridge for field types
     // that only carry a `Tel.Decodable`.
-    private[stratiform] def directValue(indent: Int)(using Tactic[TelError]): Tel =
+    private[stratiform] update def directValue(indent: Int)(using Tactic[TelError]): Tel =
       Tel.make(directCompound(indent))
 
     // Materialize everything that remains as a document-rooted `Tel` — the
     // AST bridge for a whole-input read of a `Decodable`-only type.
-    private[stratiform] def directDocument()(using Tactic[TelError]): Tel =
+    private[stratiform] update def directDocument()(using Tactic[TelError]): Tel =
       Tel.make(Tel.Document(Unset, Unset, lineEndings, parseChildren(-1)))
 
     // Peek whether the current entry has substance — an inline atom on its
@@ -5011,7 +4986,7 @@ object Tel extends Tel2:
     // atom and contributes none). The entry is parsed in full under a mark
     // and then rewound, restoring every piece of parser state the parse
     // touched, so the caller can still consume the entry either way.
-    private[stratiform] def directEntrySubstance()(using Tactic[TelError]): Boolean = inHold:
+    private[stratiform] update def directEntrySubstance()(using Tactic[TelError]): Boolean = inHold:
       val mk = beginMark()
 
       val savedHead = (head.leadingSpaces, head.indentLevels, head.blank, head.eof,
