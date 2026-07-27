@@ -134,9 +134,9 @@ object GraphemeBreak:
   private def buildTables(entries: sci.List[Entry]): Tables =
     val sorted = entries.sortBy(_.start).toArray
     val count = sorted.length
-    val starts = new Array[Int](count)
-    val ends = new Array[Int](count)
-    val props = new Array[Byte](count)
+    val starts = Buffer[Int](count)
+    val ends = Buffer[Int](count)
+    val props = Buffer[Byte](count)
 
     var index = 0
 
@@ -146,10 +146,7 @@ object GraphemeBreak:
       props(index) = sorted(index).prop.toByte
       index += 1
 
-    Tables
-      ( starts.immutable(using Unsafe),
-        ends.immutable(using Unsafe),
-        props.immutable(using Unsafe) )
+    Tables(Buffer.freeze(starts), Buffer.freeze(ends), Buffer.freeze(props))
 
   private lazy val gbpTables: Tables =
     val in = loadResource(
@@ -200,17 +197,15 @@ object GraphemeBreak:
     val s = text.s
     val n = s.length
 
-    // A pre-sized exclusive array rather than an `ArrayBuilder`: boundary count
+    // A pre-sized exclusive buffer rather than an `ArrayBuilder`: boundary count
     // is bounded by `n + 2`, and the stdlib builder's internal reads count as
     // uses the enclosing object would have to declare under separation checking.
-    val breaks: Array[Int]^ = new Array[Int](n + 2)
+    val breaks = Buffer[Int](n + 2)
     var size = 0
     breaks(size) = 0
     size += 1
 
-    if n == 0 then
-      val result: Array[Int]^ = new Array[Int](1)
-      caps.freeze(result).immutable(using Unsafe)
+    if n == 0 then Buffer.freeze(Buffer[Int](1))
     else
       var index = 0
       val firstCodepoint = Character.codePointAt(s, 0)
@@ -288,6 +283,7 @@ object GraphemeBreak:
 
       // Trimmed to the exact count, then frozen: the checked build-then-share
       // conversion.
-      val result: Array[Int]^ = new Array[Int](size)
-      System.arraycopy(breaks, 0, result, 0, size)
-      caps.freeze(result).immutable(using Unsafe)
+      val frozen = Buffer.freeze(breaks)
+      val result = Buffer[Int](size)
+      result.copyFrom(frozen, 0, 0, size)
+      Buffer.freeze(result)
