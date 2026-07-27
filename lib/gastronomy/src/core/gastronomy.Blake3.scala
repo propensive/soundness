@@ -60,15 +60,17 @@ object Blake3:
   private final val DeriveKeyContext  = 32
   private final val DeriveKeyMaterial = 64
 
-  private final val Iv: Array[Int] =
+  private final val Iv: IArray[Int] =
     Array
       ( 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
         0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 )
 
-  private final val MsgPermutation: Array[Int] =
-    Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8)
+    . asInstanceOf[IArray[Int]]
 
-  private def mix(state: Array[Int], a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
+  private final val MsgPermutation: IArray[Int] =
+    Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[IArray[Int]]
+
+  private def mix(state: Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
     state(a) = state(a) + state(b) + mx
     state(d) = Integer.rotateRight(state(d) ^ state(a), 16)
     state(c) = state(c) + state(d)
@@ -78,7 +80,7 @@ object Blake3:
     state(c) = state(c) + state(d)
     state(b) = Integer.rotateRight(state(b) ^ state(c), 7)
 
-  private def round(state: Array[Int], m: Array[Int]): Unit =
+  private def round(state: Array[Int]^, m: Array[Int]): Unit =
     // SIMD: these four column mixes operate on disjoint quadruples of state and would be
     //       issued as a single 4-lane vector instruction by an SSE/NEON backend.
     mix(state, 0, 4,  8, 12, m(0), m(1))
@@ -91,8 +93,8 @@ object Blake3:
     mix(state, 2, 7,  8, 13, m(12), m(13))
     mix(state, 3, 4,  9, 14, m(14), m(15))
 
-  private def permute(m: Array[Int]): Unit =
-    val out = new Array[Int](16)
+  private def permute(m: Array[Int]^): Unit =
+    val out: Array[Int]^ = new Array[Int](16)
     var i = 0
 
     while i < 16 do
@@ -107,9 +109,9 @@ object Blake3:
       counter:       Long,
       blockLen:      Int,
       flags:         Int )
-  :   Array[Int] =
+  :   Array[Int]^ =
 
-    val state = new Array[Int](16)
+    val state: Array[Int]^ = new Array[Int](16)
     System.arraycopy(chainingValue, 0, state, 0, 8)
     state(8)  = Iv(0); state(9)  = Iv(1); state(10) = Iv(2); state(11) = Iv(3)
     state(12) = counter.toInt
@@ -117,7 +119,7 @@ object Blake3:
     state(14) = blockLen
     state(15) = flags
 
-    val block = blockWords.clone()
+    val block: Array[Int]^ = blockWords.clone()
 
     round(state, block); permute(block)
     round(state, block); permute(block)
@@ -136,7 +138,7 @@ object Blake3:
 
     state
 
-  private def wordsFromBytes(bytes: Array[Byte], offset: Int, words: Array[Int]): Unit =
+  private def wordsFromBytes(bytes: Array[Byte], offset: Int, words: Array[Int]^): Unit =
     var i = 0
 
     while i < words.length do
@@ -191,7 +193,9 @@ object Blake3:
     val blockWords = new Array[Int](16)
     System.arraycopy(leftCv, 0, blockWords, 0, 8)
     System.arraycopy(rightCv, 0, blockWords, 8, 8)
-    Output(keyWords.clone(), blockWords, 0L, BlockLen, ParentFlag | flags)
+    // The freshly-constructed Output only holds fresh or private arrays.
+    scala.caps.unsafe.unsafeAssumePure
+      ( Output(keyWords.clone(), blockWords, 0L, BlockLen, ParentFlag | flags) )
 
   private def parentCv
     ( leftCv: Array[Int], rightCv: Array[Int], keyWords: Array[Int], flags: Int )
@@ -199,10 +203,18 @@ object Blake3:
 
     parentOutput(leftCv, rightCv, keyWords, flags).chainingValue()
 
-  private final class ChunkState(keyWordsInit: Array[Int], var chunkCounter: Long, val flags: Int):
+  private final class ChunkState
+    ( keyWordsInit: Array[Int],
+      @scala.caps.unsafe.untrackedCaptures
+      var chunkCounter: Long,
+      val flags: Int ):
     val chainingValue:    Array[Int]  = keyWordsInit.clone()
     val block:            Array[Byte] = new Array[Byte](BlockLen)
+
+    @scala.caps.unsafe.untrackedCaptures
     var blockLen:         Int         = 0
+
+    @scala.caps.unsafe.untrackedCaptures
     var blocksCompressed: Int         = 0
 
     def len: Int = BlockLen*blocksCompressed + blockLen
@@ -235,18 +247,27 @@ object Blake3:
       val blockWords = new Array[Int](16)
       wordsFromBytes(block, 0, blockWords)
 
-      Output
-        ( chainingValue.clone(),
-          blockWords,
-          chunkCounter,
-          blockLen,
-          flags | startFlag | ChunkEnd )
+      // The freshly-constructed Output only holds fresh or private arrays.
+      scala.caps.unsafe.unsafeAssumePure
+        ( Output
+            ( chainingValue.clone(),
+              blockWords,
+              chunkCounter,
+              blockLen,
+              flags | startFlag | ChunkEnd ) )
 
   private final class Hasher(keyWordsInit: Array[Int], val flags: Int):
-    private val keyWords:   Array[Int]        = keyWordsInit.clone()
-    private var chunkState: ChunkState        = ChunkState(keyWords, 0L, flags)
-    private val cvStack:    Array[Array[Int]] = new Array[Array[Int]](54)
-    private var cvStackLen: Int               = 0
+    private val keyWords: Array[Int] = keyWordsInit.clone()
+
+    @scala.caps.unsafe.untrackedCaptures
+    // The freshly-constructed ChunkState only holds fresh or private arrays.
+    private var chunkState: ChunkState =
+      scala.caps.unsafe.unsafeAssumePure(ChunkState(keyWords, 0L, flags))
+
+    private val cvStack: Array[Array[Int]]^ = new Array[Array[Int]](54)
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var cvStackLen: Int = 0
 
     private def pushStack(cv: Array[Int]): Unit =
       cvStack(cvStackLen) = cv
@@ -279,7 +300,9 @@ object Blake3:
           val chunkCv = chunkState.output().chainingValue()
           val totalChunks = chunkState.chunkCounter + 1L
           addChunkCv(chunkCv, totalChunks)
-          chunkState = ChunkState(keyWords, totalChunks, flags)
+          // The freshly-constructed ChunkState only holds fresh or private arrays.
+          chunkState =
+            scala.caps.unsafe.unsafeAssumePure(ChunkState(keyWords, totalChunks, flags))
 
         val want = ChunkLen - chunkState.len
         val take = math.min(want, end - pos)
@@ -301,7 +324,9 @@ object Blake3:
 
   // The pure-Scala BLAKE3 `Digestion`, used by the Soundness hashing provider.
   def digestion(): Digestion = new Digestion:
-    private val hasher: Hasher = Hasher(Iv, 0)
+    // The freshly-constructed Hasher only holds fresh or private arrays.
+    private val hasher: Hasher =
+      scala.caps.unsafe.unsafeAssumePure(Hasher(Iv.mutable(using Unsafe), 0))
     def append(bytes: Data): Unit = hasher.update(bytes)
 
     override def append(array: Array[Byte], start: Int, count: Int): Unit =
@@ -310,7 +335,8 @@ object Blake3:
     def digest(): Data = hasher.complete(OutLen)
 
   def hashOf(input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
-    val hasher = Hasher(Iv, 0)
+    // The freshly-constructed Hasher only holds fresh or private arrays.
+    val hasher = scala.caps.unsafe.unsafeAssumePure(Hasher(Iv.mutable(using Unsafe), 0))
     hasher.update(input)
     hasher.complete(length)
 
@@ -322,20 +348,24 @@ object Blake3:
     val keyWords = new Array[Int](8)
     wordsFromBytes(keyBytes, 0, keyWords)
 
-    val hasher = Hasher(keyWords, KeyedHashFlag)
+    // The freshly-constructed Hasher only holds fresh or private arrays.
+    val hasher = scala.caps.unsafe.unsafeAssumePure(Hasher(keyWords, KeyedHashFlag))
     hasher.update(input)
     hasher.complete(length)
 
   def deriveKey(context: Text, material: IArray[Byte], length: Int = OutLen): IArray[Byte] =
     val ctxBytes: Array[Byte] = context.s.getBytes(StandardCharsets.UTF_8).nn
-    val ctxHasher = Hasher(Iv, DeriveKeyContext)
+    // The freshly-constructed Hasher only holds fresh or private arrays.
+    val ctxHasher =
+      scala.caps.unsafe.unsafeAssumePure(Hasher(Iv.mutable(using Unsafe), DeriveKeyContext))
     ctxHasher.update(ctxBytes.immutable(using Unsafe))
 
     val ctxKey = ctxHasher.complete(KeyLen).mutable(using Unsafe)
     val ctxKeyWords = new Array[Int](8)
     wordsFromBytes(ctxKey, 0, ctxKeyWords)
 
-    val matHasher = Hasher(ctxKeyWords, DeriveKeyMaterial)
+    // The freshly-constructed Hasher only holds fresh or private arrays.
+    val matHasher = scala.caps.unsafe.unsafeAssumePure(Hasher(ctxKeyWords, DeriveKeyMaterial))
     matHasher.update(material)
     matHasher.complete(length)
 

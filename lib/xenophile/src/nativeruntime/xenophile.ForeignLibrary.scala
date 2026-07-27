@@ -52,6 +52,7 @@ object ForeignLibrary:
   // Handles opened by `register`, newest first; searched before the process-default lookup.
   // Registration happens in a provider's object initializer (before any worker thread that would
   // call `resolve`), so a plain `var` needs no synchronisation.
+  @scala.caps.unsafe.untrackedCaptures
   private var handles: List[CVoidPtr] = Nil
 
   // The default lookup (`dlopen(null)`): the main image and everything statically linked or already

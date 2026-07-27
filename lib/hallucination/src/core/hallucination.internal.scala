@@ -27,96 +27,31 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package pneumatic
+package hallucination
 
-// The decoder's sliding-window dictionary: a flat buffer holding recently-decoded bytes, from which
-// LZMA match copies read. `start..pos` is the not-yet-flushed run; `full` tracks the history
-// available for distance references. `setLimit` bounds how far a single decode pass may advance
-// `pos` before the caller flushes, which keeps match copies inside the buffer.
-private[pneumatic] final class LzDecoder(dictSize: Int):
-  @scala.caps.unsafe.untrackedCaptures
-  private var buffer: Array[Byte] = new Array[Byte](dictSize)
-  @scala.caps.unsafe.untrackedCaptures
-  private var start: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  private var position: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  private var full: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  private var limit: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  private var pendingLength: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  private var pendingDist: Int = 0
+// An exclusive, writable view of an array reached through a read-only path (an untracked
+// field, or a closure capture): update sites route through this rebind, as in pneumatic's
+// `writable`. Sound because each codec reaches its scratch buffers only through `this` or
+// its own confined locals.
+private[hallucination] def writable[element](array: Array[element]): Array[element]^ =
+  array.asInstanceOf[Array[element]]
 
-  reset()
+// The row colour-conversion callback: a SAM trait rather than a function type, because a
+// nested-array parameter of a function type is elaborated with fresh element capabilities
+// that leak on every read.
+private[hallucination] trait JpegColorConverter:
+  // `buffers0` is the untyped view of an `Array[Array[Byte]]`: a nested-array parameter
+  // type is elaborated with fresh element capabilities that nothing can satisfy.
+  def convert(buffers0: AnyRef, output: Array[Byte]): Unit
 
-  def reset(): Unit =
-    start = 0
-    position = 0
-    full = 0
-    limit = 0
-    writable(buffer)(dictSize - 1) = 0 // so the very first back-reference reads a defined zero
+// A freshly-allocated array with a PURE type: routing the allocation through the Java
+// `Arrays.copyOf` lets its fluid result adapt to the pure declared result type, where a
+// Scala-side `new Array` is charged a fresh read capability.
+private[hallucination] def pureBytes(size: Int): Array[Byte] =
+  java.util.Arrays.copyOf(new Array[Byte](0), size).nn
 
-  // After a dictionary reset LZMA2 may keep decoding into the same window; only the model resets.
-  def resetDictionary(): Unit = reset()
-
-  def setLimit(outMax: Int): Unit =
-    limit = if dictSize - position <= outMax then dictSize else position + outMax
-
-  def hasSpace: Boolean = position < limit
-  def hasPending: Boolean = pendingLength > 0
-  def pos: Int = position
-
-  def getByte(dist: Int): Int =
-    var offset = position - dist - 1
-    if dist >= position then offset += dictSize
-    buffer(offset) & 0xff
-
-  def putByte(byte: Byte): Unit =
-    writable(buffer)(position) = byte
-    position += 1
-    if full < position then full = position
-
-  def repeat(dist: Int, len: Int): Unit =
-    if dist < 0 || dist >= full then
-      throw IllegalStateException("the LZMA data is corrupt: invalid match distance")
-
-    var left = if limit - position < len then limit - position else len
-    pendingLength = len - left
-    pendingDist = dist
-
-    var back = position - dist - 1
-    if dist >= position then back += dictSize
-
-    while left > 0 do
-      writable(buffer)(position) = buffer(back)
-      position += 1
-      back += 1
-      if back == dictSize then back = 0
-      left -= 1
-
-    if full < position then full = position
-
-  def repeatPending(): Unit =
-    if pendingLength > 0 then repeat(pendingDist, pendingLength)
-
-  // Copy `len` literal bytes straight from a source array (an LZMA2 uncompressed chunk).
-  def copyUncompressed(source: Array[Byte], sourceOffset: Int, len: Int): Unit =
-    val copySize = if dictSize - position < len then dictSize - position else len
-    System.arraycopy(source, sourceOffset, buffer, position, copySize)
-    position += copySize
-    if full < position then full = position
-
-  // Emit everything decoded since the last flush, wrapping `pos` when it reaches the buffer end.
-  def flush(out: Array[Byte], outOffset: Int): Int =
-    val copySize = position - start
-    if position == dictSize then position = 0
-    System.arraycopy(buffer, start, out, outOffset, copySize)
-    start = position
-    copySize
-
-  def flushSize: Int = position - start
+// As `pureBytes`: a pure-typed copy of an int-array range via the Java API.
+private[hallucination] def pureCopyRange(source: Array[Int], from: Int, until: Int): Array[Int] =
+  java.util.Arrays.copyOfRange(source, from, until).nn

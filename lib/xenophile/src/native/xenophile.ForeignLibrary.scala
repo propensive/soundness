@@ -66,11 +66,15 @@ object ForeignLibrary:
     case _                             => ValueLayout.ADDRESS.nn
 
   def descriptor(signature: Prototype): FunctionDescriptor =
-    val parameters = signature.parameters.or(Nil).map(layout)
+    // One `appendArgumentLayouts` per parameter, rather than a single varargs splice: the
+    // capture checker rejects any array value at a Java varargs formal (which it types as a
+    // pure array), while per-element calls let the compiler build the tiny array itself.
+    val base = signature.result match
+      case Foreign.Type.Named(t"void") => FunctionDescriptor.ofVoid().nn
+      case result                      => FunctionDescriptor.of(layout(result)).nn
 
-    signature.result match
-      case Foreign.Type.Named(t"void") => FunctionDescriptor.ofVoid(parameters*).nn
-      case result                      => FunctionDescriptor.of(layout(result), parameters*).nn
+    signature.parameters.or(Nil).stdlib.foldLeft(base): (acc, parameter) =>
+      acc.appendArgumentLayouts(layout(parameter)).nn
 
   // Loads the first of `paths` that resolves as a symbol lookup bound to `arena`,
   // pairing it with the function signatures parsed from `header`.

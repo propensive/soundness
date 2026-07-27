@@ -128,7 +128,10 @@ object Classpath extends Root(t""):
   private[hellenism] def delegatingClassloader(urls: Array[jn.URL | Null], parent: ClassLoader)
   :   jn.URLClassLoader =
 
-    new jn.URLClassLoader(urls, parent):
+    // The anonymous classloader's only capture is the read view of the freshly-built URL
+    // array, laundered here.
+    scala.caps.unsafe.unsafeAssumePure:
+     new jn.URLClassLoader(urls, parent):
       override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
         try findClass(name) catch case error: ClassNotFoundException =>
           super.loadClass(name, resolve)

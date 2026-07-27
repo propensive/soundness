@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 // The integrity checks an XZ stream may carry over each block's uncompressed data. The stream flags
 // name one type for the whole stream: 0x00 none, 0x01 CRC-32, 0x04 CRC-64, 0x0A SHA-256. We compute
 // and verify none/CRC-32/CRC-64; SHA-256-checked streams still decode, but the check is skipped
@@ -61,8 +63,8 @@ private[pneumatic] object XzCheck:
   def encoder(checkType: Int): XzChecker = checker(checkType)
 
 private[pneumatic] object Crc64:
-  val table: Array[Long] =
-    val result = new Array[Long](256)
+  val table: IArray[Long] =
+    val result: Array[Long]^ = new Array[Long](256)
     val poly = 0xc96c5795d7870f42L
     var n = 0
 
@@ -73,7 +75,8 @@ private[pneumatic] object Crc64:
       result(n) = c
       n += 1
 
-    result
+    // The table is fresh and never written after construction.
+    IArray.unsafeFromArray(result)
 
 // A check that accumulates over the uncompressed bytes and yields its little-endian trailer bytes.
 private[pneumatic] trait XzChecker:
@@ -98,12 +101,13 @@ private[pneumatic] final class Crc32Checker extends XzChecker:
 
   def bytes: Array[Byte] =
     val value = crc.value
-    val out = new Array[Byte](4)
+    val out: Array[Byte]^ = new Array[Byte](4)
     var i = 0
     while i < 4 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }
     out
 
 private[pneumatic] final class Crc64Checker extends XzChecker:
+  @scala.caps.unsafe.untrackedCaptures
   private var v: Long = -1L
   def size: Int = 8
   def reset(): Unit = v = -1L
@@ -118,7 +122,7 @@ private[pneumatic] final class Crc64Checker extends XzChecker:
 
   def bytes: Array[Byte] =
     val value = v ^ -1L
-    val out = new Array[Byte](8)
+    val out: Array[Byte]^ = new Array[Byte](8)
     var i = 0
     while i < 8 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }
     out
@@ -127,32 +131,39 @@ private[pneumatic] final class Crc64Checker extends XzChecker:
 // first 64 primes; the initial hash words are the fractional parts of the square roots of the first
 // eight. Big-endian digest, written to the block trailer in order.
 private[pneumatic] object Sha256:
-  val roundConstants: Array[Int] = Array(
-      0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
-      0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-      0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
-      0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-      0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
-      0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-      0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
-      0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-      0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
-      0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-      0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
+  val roundConstants: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(
+        0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
+        0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+        0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
+        0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+        0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+        0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+        0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85, 0xa2bfe8a1, 0xa81a664b,
+        0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+        0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a,
+        0x5b9cca4f, 0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+        0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
 
 private[pneumatic] final class Sha256Checker extends XzChecker:
-  private val h = new Array[Int](8)
-  private val block = new Array[Byte](64)
-  private val w = new Array[Int](64)
+  @scala.caps.unsafe.untrackedCaptures
+  private var h = new Array[Int](8)
+  @scala.caps.unsafe.untrackedCaptures
+  private var block = new Array[Byte](64)
+  @scala.caps.unsafe.untrackedCaptures
+  private var w = new Array[Int](64)
+  @scala.caps.unsafe.untrackedCaptures
   private var blockLength = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var totalLength = 0L
 
   reset()
   def size: Int = 32
 
   def reset(): Unit =
-    h(0) = 0x6a09e667; h(1) = 0xbb67ae85; h(2) = 0x3c6ef372; h(3) = 0xa54ff53a
-    h(4) = 0x510e527f; h(5) = 0x9b05688c; h(6) = 0x1f83d9ab; h(7) = 0x5be0cd19
+    writable(h)(0) = 0x6a09e667; writable(h)(1) = 0xbb67ae85; writable(h)(2) = 0x3c6ef372; writable(h)(3) = 0xa54ff53a
+    writable(h)(4) = 0x510e527f; writable(h)(5) = 0x9b05688c; writable(h)(6) = 0x1f83d9ab; writable(h)(7) = 0x5be0cd19
     blockLength = 0
     totalLength = 0
 
@@ -162,7 +173,7 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
     var i = 0
 
     while i < 16 do
-      w(i) = ((block(i*4) & 0xff) << 24) | ((block(i*4 + 1) & 0xff) << 16) |
+      writable(w)(i) = ((block(i*4) & 0xff) << 24) | ((block(i*4 + 1) & 0xff) << 16) |
         ((block(i*4 + 2) & 0xff) << 8) | (block(i*4 + 3) & 0xff)
 
       i += 1
@@ -170,7 +181,7 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
     while i < 64 do
       val s0 = rotr(w(i - 15), 7) ^ rotr(w(i - 15), 18) ^ (w(i - 15) >>> 3)
       val s1 = rotr(w(i - 2), 17) ^ rotr(w(i - 2), 19) ^ (w(i - 2) >>> 10)
-      w(i) = w(i - 16) + s0 + w(i - 7) + s1
+      writable(w)(i) = w(i - 16) + s0 + w(i - 7) + s1
       i += 1
 
     var a = h(0); var b = h(1); var c = h(2); var d = h(3)
@@ -187,8 +198,8 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
       hh = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2
       i += 1
 
-    h(0) += a; h(1) += b; h(2) += c; h(3) += d
-    h(4) += e; h(5) += f; h(6) += g; h(7) += hh
+    writable(h)(0) += a; writable(h)(1) += b; writable(h)(2) += c; writable(h)(3) += d
+    writable(h)(4) += e; writable(h)(5) += f; writable(h)(6) += g; writable(h)(7) += hh
 
   def update(buffer: Array[Byte], offset: Int, length: Int): Unit =
     var i = offset
@@ -196,28 +207,28 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
     totalLength += length
 
     while i < end do
-      block(blockLength) = buffer(i)
+      writable(block)(blockLength) = buffer(i)
       blockLength += 1
       if blockLength == 64 then { processBlock(); blockLength = 0 }
       i += 1
 
   def bytes: Array[Byte] =
     val bitLength = totalLength*8
-    block(blockLength) = 0x80.toByte
+    writable(block)(blockLength) = 0x80.toByte
     blockLength += 1
 
     if blockLength > 56 then
-      while blockLength < 64 do { block(blockLength) = 0; blockLength += 1 }
+      while blockLength < 64 do { writable(block)(blockLength) = 0; blockLength += 1 }
       processBlock()
       blockLength = 0
 
-    while blockLength < 56 do { block(blockLength) = 0; blockLength += 1 }
+    while blockLength < 56 do { writable(block)(blockLength) = 0; blockLength += 1 }
 
     var i = 0
-    while i < 8 do { block(56 + i) = ((bitLength >>> (56 - i*8)) & 0xff).toByte; i += 1 }
+    while i < 8 do { writable(block)(56 + i) = ((bitLength >>> (56 - i*8)) & 0xff).toByte; i += 1 }
     processBlock()
 
-    val out = new Array[Byte](32)
+    val out: Array[Byte]^ = new Array[Byte](32)
     var j = 0
 
     while j < 8 do

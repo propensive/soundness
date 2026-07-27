@@ -101,7 +101,8 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Round-trips"):
       test(m"single int field"):
-        proscenium.Progression(Sample(150).in[Protobuf].encode).read[Sample in Protobuf]
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          proscenium.Progression(Sample(150).in[Protobuf].encode).read[Sample in Protobuf]
       . assert(_ == Sample(150))
 
       test(m"two int fields, one at its default"):
@@ -222,7 +223,8 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Parse errors carry a byte offset"):
       def decode(bytes: Byte*): Sample raises ProtobufError =
-        proscenium.Progression(IArray.from(bytes)).read[Sample in Protobuf]
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          proscenium.Progression(IArray.from(bytes)).read[Sample in Protobuf]
 
       test(m"a truncated length-delimited payload reports the offset where data ran out"):
         // field 1, wire type Len, length 5, but only one payload byte present.
@@ -236,7 +238,8 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
       test(m"a varint longer than ten bytes is malformed"):
         capture[ProtobufError]:
-          proscenium.Progression(IArray.fill(11)(0x80.toByte)).read[Sample in Protobuf]
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            proscenium.Progression(IArray.fill(11)(0x80.toByte)).read[Sample in Protobuf]
       . assert(_ == ProtobufError(ProtobufError.Reason.MalformedVarint(0)))
 
       test(m"a varint whose value overflows 64 bits is rejected"):

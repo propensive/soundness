@@ -223,10 +223,12 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
     accepted.stop()
 
   private val (writer, reader) =
-    contain:
+    // As `Http2Connection`: no aliased writer between containment and body.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+     contain:
       case _ => tearDown(); Remedy.Accept
 
-    . protect:
+     . protect:
         // Everything the fibers touch is bound to locals (or neutral carriers)
         // before they spawn: a daemon body may not capture the instance under
         // construction, and its context function must stay pure.

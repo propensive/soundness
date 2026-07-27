@@ -60,7 +60,8 @@ import filesystemBackends.virtualMachine
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
   ( using classloader: Classloader )
-:   Bytecode raises BytecodeError =
+  ( using Tactic[BytecodeError] )
+:   Bytecode =
 
   val uuid = Uuid()
   val out: Path on Linux = unsafely(temporaryDirectory/uuid)

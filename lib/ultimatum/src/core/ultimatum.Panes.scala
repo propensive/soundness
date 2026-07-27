@@ -48,12 +48,14 @@ import scala.caps
 class Panes(initial: Pane*):
   // Internally a raw `Vector`: this is imperative container state, and the mutation operations
   // (`patch`, `indexWhere`, `:+`) belong to the stdlib surface. The public API exposes `Series`.
+  @scala.caps.unsafe.untrackedCaptures
   private var vector: Vector[Pane] = initial.to(Vector)
 
   // Installed by the running form so a mutation requests a repaint; a no-op until the container is
   // bound. Typed as a *pure* function so a pane tree (and `Panes`) captures nothing and can be freely
   // collected and traversed; the installed callback genuinely captures the running form's event loop,
   // reconciled in `bindWake`.
+  @scala.caps.unsafe.untrackedCaptures
   private var onChange: () -> Unit = () => ()
 
   // Install the running form's repaint trigger. The callback captures the form's event loop, which

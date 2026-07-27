@@ -117,11 +117,13 @@ case class Outlet(private[cacophony] val mixerInfo: jss.Mixer.Info):
     line.start()
 
     new Playback:
+      @scala.caps.unsafe.untrackedCaptures
       private var stopped = false
-      private val data    = audio.data
+      @scala.caps.unsafe.untrackedCaptures
+      private val data: Array[Byte] = audio.data
 
       private val worker: Thread =
-        val task: Runnable = () =>
+        val task: Runnable^{this} = () =>
           try
             var offset = 0
 

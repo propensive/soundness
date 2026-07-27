@@ -77,7 +77,9 @@ final class Promise[value]():
 
   // The promise's completion, reified as a `Task`: the monadic form of `await`, composable with
   // `bind`/`map` without suspending the calling strand.
-  def task(using Monitor^, Probate^, Codepoint): (Task[value] emits AsyncError)^ = async(await())
+  def task(using monitor: Monitor^, probate: Probate^, codepoint: Codepoint)
+  :   (Task[value] emits AsyncError)^{monitor, probate} =
+    async(await())
 
   // The transition is pure — `getAndUpdate` may re-run it under contention — so the waiters are
   // unparked exactly once afterwards, from the returned previous state. No wakeup can be lost:
@@ -87,7 +89,7 @@ final class Promise[value]():
       case Incomplete(_) => Complete(supplied)
       case current       => current
 
-  def fulfill(supplied: => value): Unit raises AsyncError =
+  def fulfill(supplied: => value): (Tactic[AsyncError]^) ?->{supplied} Unit =
     state.getAndUpdate(completeIncomplete(supplied)).nn match
       case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
       case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
@@ -104,7 +106,7 @@ final class Promise[value]():
       case Complete(value)     => Complete(value)
       case _                   => Cancelled
 
-  def await()(using monitor: Monitor^): value raises AsyncError =
+  def await()(using monitor: Monitor^): (Tactic[AsyncError]^) ?->{monitor} value =
     if monitor.supervisor.interrupted() then throw new InterruptedException()
 
     // A settled promise needs no CAS and no waiter-set allocation — the common case when joining
@@ -160,7 +162,7 @@ final class Promise[value]():
 
   def await[generic: Abstractable across Durations to Long](duration: generic)
     ( using monitor: Monitor^ )
-  :   value raises AsyncError =
+  :   (Tactic[AsyncError]^) ?->{monitor} value =
 
     if monitor.supervisor.interrupted() then throw new InterruptedException()
 

@@ -45,6 +45,7 @@ object HttpStreams:
 
     // A whole-value body, delivered in `limit`-bounded slices.
     def apply(data: IArray[Byte]): Body = new Body:
+      @scala.caps.unsafe.untrackedCaptures
       private var position: Int = 0
 
       def next(limit: Int): IArray[Byte] | Null =

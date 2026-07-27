@@ -430,6 +430,7 @@ case class Ttf(data: Data):
       val formatId: Int = B16(data, offset).u16.int
 
       private val mutex: Mutex = Mutex()
+      @scala.caps.unsafe.untrackedCaptures
       private var formatMemo: Optional[Format] = Unset
 
       def format: Format raises FontError = mutex:

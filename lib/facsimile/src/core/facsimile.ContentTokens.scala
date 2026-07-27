@@ -48,7 +48,7 @@ import vacuous.*
 private[facsimile] object ContentTokens:
   case class Instruction(operands: List[Cos], operator: Text)
 
-  def read(data: Data): List[Instruction] raises PdfError =
+  def read(data: Data)(using Tactic[PdfError]): List[Instruction] =
     val lexer = CosLexer(Scan(data))
     val parser = CosParser(lexer, references = false)
     val instructions = scala.collection.immutable.List.newBuilder[Instruction]
@@ -66,7 +66,7 @@ private[facsimile] object ContentTokens:
 
   // `BI <key value ...> ID <bytes> EI`: the keys parse as ordinary tokens up to the `ID`
   // operator, the payload is consumed at the byte level, and the closing `EI` is checked.
-  private def inlineImage(lexer: CosLexer, parser: CosParser): Instruction raises PdfError =
+  private def inlineImage(lexer: CosLexer, parser: CosParser)(using Tactic[PdfError]): Instruction =
     val entries = parser.instruction().let: (operands, operator) =>
       if operator.s != "ID" then abort(PdfError(PdfError.Reason.MalformedOperator(t"BI")))
 

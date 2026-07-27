@@ -38,7 +38,9 @@ import java.io as ji
 // flushing whole bytes, with the mandatory `0xFF -> 0xFF 0x00` byte stuffing. Simpler than
 // jpeg-encoder's word-at-a-time writer but produces equivalent output.
 private[hallucination] final class JpegBitWriter(out: ji.ByteArrayOutputStream):
+  @scala.caps.unsafe.untrackedCaptures
   private var accumulator: Long = 0L
+  @scala.caps.unsafe.untrackedCaptures
   private var count: Int = 0
 
   def writeBits(value: Int, size: Int): Unit =

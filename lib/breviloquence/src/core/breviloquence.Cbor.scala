@@ -79,7 +79,7 @@ trait Cbor2:
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( tactic: Tactic[CborError] )
   =>  ( decodable: => (inner is Decodable in Cbor)^ )
-  =>  ((value is Decodable in Cbor)^{tactic, caps.any}) =
+  =>  ((value is Decodable in Cbor)^{tactic, decodable}) =
     // An honest capability: the instance retains the resolution-scoped tactic and
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
@@ -476,9 +476,11 @@ object Cbor extends Cbor2, Dynamic:
   // immutably. Mirrors jacinta's `Json` optics.
   given lens: [name <: Label: ValueOf] => (erased dynamicCborEnabler: DynamicCborEnabler) => (tactic: Tactic[CborError])
   =>  ((name is Lens from Cbor onto Cbor)^{tactic}) =
-    Lens
-     ( cbor => cbor.selectDynamic(valueOf[name]),
-       (cbor, value) => cbor.modify(valueOf[name], value) )
+    // Both lambdas only read through the same resolution-scoped tactic; no aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      Lens[name, Cbor, Cbor]
+       ( (cbor: Cbor) => cbor.selectDynamic(valueOf[name]),
+         (cbor: Cbor, value: Cbor) => cbor.modify(valueOf[name], value) )
 
   given ordinalOptical: [element] => Ordinal is Optical from Cbor onto Cbor = ordinal =>
     Optic: (origin, lambda) =>
@@ -734,26 +736,26 @@ object Cbor extends Cbor2, Dynamic:
   // capability; Jon, 2026-07-12). See rep/DECISIONS.md.
   given listEncodable: [list <: List, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
-  =>  ((list[element] is Encodable in Cbor)^) =
+  =>  ((list[element] is Encodable in Cbor)^{encodable}) =
     values => ast(Ast.array(IArray.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
-  =>  ((set[element] is Encodable in Cbor)^) =
+  =>  ((set[element] is Encodable in Cbor)^{encodable}) =
     values => ast(Ast.array(IArray.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
   given seriesEncodable: [series <: Series, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
-  =>  ((series[element] is Encodable in Cbor)^) =
+  =>  ((series[element] is Encodable in Cbor)^{encodable}) =
     values => ast(Ast.array(IArray.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[CborError] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
-  =>  ((collection[element] is Decodable in Cbor)^{tactic, caps.any}) =
+  =>  ((collection[element] is Decodable in Cbor)^{tactic, decodable}) =
 
     // An honest capability, as `optional` above.
     value =>
@@ -771,7 +773,7 @@ object Cbor extends Cbor2, Dynamic:
   given listDecodable: [list <: List, element]
   =>  ( tactic: Tactic[CborError] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
-  =>  ((list[element] is Decodable in Cbor)^{tactic, caps.any}) =
+  =>  ((list[element] is Decodable in Cbor)^{tactic, decodable}) =
     value =>
       val builder = scala.collection.immutable.List.newBuilder[element]
       value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
@@ -780,7 +782,7 @@ object Cbor extends Cbor2, Dynamic:
   given setDecodable: [set <: Set, element]
   =>  ( tactic: Tactic[CborError] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
-  =>  ((set[element] is Decodable in Cbor)^{tactic, caps.any}) =
+  =>  ((set[element] is Decodable in Cbor)^{tactic, decodable}) =
     value =>
       val builder = scala.collection.immutable.Set.newBuilder[element]
       value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
@@ -789,7 +791,7 @@ object Cbor extends Cbor2, Dynamic:
   given seriesDecodable: [series <: Series, element]
   =>  ( tactic: Tactic[CborError] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
-  =>  ((series[element] is Decodable in Cbor)^{tactic, caps.any}) =
+  =>  ((series[element] is Decodable in Cbor)^{tactic, decodable}) =
     value =>
       val builder = Vector.newBuilder[element]
       value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
@@ -798,7 +800,7 @@ object Cbor extends Cbor2, Dynamic:
   given mapDecodable: [key: Decodable in Text, element]
   =>  ( decodable: => (element is Decodable in Cbor)^ )
   =>  ( tactic: Tactic[CborError] )
-  =>  ((Map[key, element] is Decodable in Cbor)^{tactic, caps.any}) =
+  =>  ((Map[key, element] is Decodable in Cbor)^{tactic, decodable}) =
 
     // An honest capability, as `optional` above.
     value =>
@@ -845,7 +847,9 @@ object Cbor extends Cbor2, Dynamic:
     import dynamicCborAccess.enabled
 
     def rewrite(kind: Text, cbor: Cbor): Cbor = unsafely(cbor.updateDynamic(key.s)(kind))
-    def discriminate(cbor: Cbor): Optional[Text] = safely(cbor.selectDynamic(key.s).as[Text])
+    def discriminate(cbor: Cbor): Optional[Text] =
+      // The optional tactic is created and consumed here; no aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate(safely(cbor.selectDynamic(key.s).as[Text]))
     def variant(cbor: Cbor): Cbor = unsafely(cbor.updateDynamic(key.s)(Unset))
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Cbor =
@@ -864,6 +868,7 @@ object Cbor extends Cbor2, Dynamic:
     // lookup is two-to-three times cheaper than allocation in steady state.
     private inline val LongCacheSize = 65536
 
+    @scala.caps.unsafe.untrackedCaptures
     private val longCache: Array[AnyRef] =
       val out = new Array[AnyRef](LongCacheSize)
       var index = 0
@@ -896,11 +901,13 @@ object Cbor extends Cbor2, Dynamic:
     // Cache the underlying primitive array so reads compile to BALOAD rather
     // than going through `IArray$.apply`. `data.length` is constant-folded by
     // the JIT and cheaper than going through a separate `length` accessor.
+    @scala.caps.unsafe.untrackedCaptures
     private[breviloquence] val data: Array[Byte] = input.asInstanceOf[Array[Byte]]
 
     // `offset` is exposed only to the package-private parse() entry point so it
     // can detect trailing bytes after a successful parse. All hot-path reads
     // mutate it directly through the JVM PUTFIELD/GETFIELD.
+    @scala.caps.unsafe.untrackedCaptures
     var offset: Int = 0
 
     private inline def expect(count: Int): Unit raises CborError =
@@ -1236,7 +1243,11 @@ object Cbor extends Cbor2, Dynamic:
             case 25 => Cbor.Ast(halfToDouble(readUInt16()))
             case 26 => Cbor.Ast(java.lang.Float.intBitsToFloat(readUInt32().toInt).toDouble)
             case 27 => Cbor.Ast(java.lang.Double.longBitsToDouble(readUInt64()))
-            case 24 => abort(CborError(Reason.BadSimpleValue(headOffset, readUInt8())))
+            case 24 =>
+              // The error message reads this parser only to render its diagnostic detail.
+              val value = readUInt8()
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                abort(CborError(Reason.BadSimpleValue(headOffset, value)))
             case 31 => abort(CborError(Reason.UnexpectedBreak(headOffset)))
             case _  => abort(CborError(Reason.BadSimpleValue(headOffset, info)))
 
@@ -1418,6 +1429,7 @@ object Cbor extends Cbor2, Dynamic:
     // 7-bit-clean text key (its high word left in `directKeyHigh`), or
     // `CborReader.KeyOpaque` without consuming anything — the caller then
     // takes the `directKeyName` step, which consumes the key generally.
+    @scala.caps.unsafe.untrackedCaptures
     var directKeyHigh: Long = 0L
 
     def directKeyWord(): Long =
@@ -1558,7 +1570,11 @@ object Cbor extends Cbor2, Dynamic:
               expect(8)
               offset += 8
 
-            case 24 => abort(CborError(Reason.BadSimpleValue(pos.toLong, readUInt8())))
+            case 24 =>
+              // As above.
+              val value = readUInt8()
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                abort(CborError(Reason.BadSimpleValue(pos.toLong, value)))
             case 31 => abort(CborError(Reason.UnexpectedBreak(pos.toLong)))
             case _  => abort(CborError(Reason.BadSimpleValue(pos.toLong, info)))
 
@@ -1737,5 +1753,6 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
     else
       false
 
-  def as[value](using decodable: (value is Decodable in Cbor)^): value raises CborError =
+  def as[value](using decodable: (value is Decodable in Cbor)^)
+  :   (Tactic[CborError]^) ?->{decodable} value =
     decodable.decoded(this)

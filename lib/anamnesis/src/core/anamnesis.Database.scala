@@ -50,6 +50,7 @@ object Database:
 class Database(size: Int) extends Findable:
   import Database.Relation
 
+  @scala.caps.unsafe.untrackedCaptures
   private var nextId: Int = 1
 
   def allocate[ref](): Ref of ref in this.type =
@@ -61,10 +62,14 @@ class Database(size: Int) extends Findable:
   type Has[relation <: Relation[?, ?]] = relation <:< AllRelations
 
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var references: Map[Any, Ref] = Map()
+  @scala.caps.unsafe.untrackedCaptures
   private var dereferences: Map[Ref, Any] = Map()
 
+  @scala.caps.unsafe.untrackedCaptures
   private val relations: Array[Map[Ref, Set[Ref]]] = Array.fill(size)(Map())
+  @scala.caps.unsafe.untrackedCaptures
   private val corelations: Array[Map[Ref, Ref]] = Array.fill(size)(Map())
 
   def dereference[ref](ref: Ref of ref): ref = dereferences(ref).asInstanceOf[ref]

@@ -91,7 +91,8 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == false)
 
       test(m"Array element membership"):
-        Array(1, 2, 3).has(2)
+        Inclusive.array[Int]
+          . has(java.util.Arrays.copyOf(Array(1, 2, 3), 3).nn.asInstanceOf[Array[Int]], 2)
       . assert(_ == true)
 
       test(m"Map key membership"):

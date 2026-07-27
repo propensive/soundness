@@ -47,15 +47,16 @@ import vacuous.*
 // `PdfOperator.read`: each instruction is its operands followed by its operator, one per
 // line. Numbers are written as plain decimals; show-text operands are re-escaped literal
 // strings; names re-escape through the same rules as the object writer.
+// The `uses` clause licenses the ArrayBuilder reads inside `write`.
 private[facsimile] object ContentWriter:
   import PdfOperator.*
 
   def write(operators: List[PdfOperator]): Data =
-    val builder = Array.newBuilder[Byte]
+    val builder = DataBuilder()
     operators.each { operator => line(builder, operator) }
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
-  private def line(builder: scala.collection.mutable.ArrayBuilder[Byte], operator: PdfOperator)
+  private def line(builder: DataBuilder, operator: PdfOperator)
   :   Unit =
 
     def out(text: Text): Unit =
@@ -192,3 +193,42 @@ private[facsimile] object ContentWriter:
           out(t" ")
 
         out(t"$operator\n")
+
+// A minimal growable byte accumulator replacing `DataBuilder()`, whose `result()`
+// is charged a read of the universal capability under uses checking (the `cordillera.ByteBuf`
+// pattern: untracked storage, exclusive view for writes, Java-side copies for growth/freeze).
+private[facsimile] final class DataBuilder:
+  @scala.caps.unsafe.untrackedCaptures
+  private var storage: Array[Byte] = new Array[Byte](64)
+
+  @scala.caps.unsafe.untrackedCaptures
+  private var size0: Int = 0
+
+  private inline def target: Array[Byte]^ = storage.asInstanceOf[Array[Byte]^]
+
+  def += (byte: Byte): Unit =
+    if size0 >= storage.length
+    then storage = java.util.Arrays.copyOf(storage, storage.length*2).nn.asInstanceOf[Array[Byte]]
+
+    target(size0) = byte
+    size0 += 1
+
+  def addAll(bytes: Array[Byte]): Unit =
+    var index = 0
+
+    while index < bytes.length do
+      this += bytes(index)
+      index += 1
+
+  def result(): Data = java.util.Arrays.copyOf(storage, size0).nn.asInstanceOf[Data]
+
+// An exclusive, writable view of an array reached through a read-only path (an untracked
+// field, or a closure capture): update sites route through this rebind, as in pneumatic's
+// `writable`.
+private[facsimile] def writable[element](array: Array[element]): Array[element]^ =
+  array.asInstanceOf[Array[element]]
+
+// A freshly-allocated array with a PURE type (the Java `copyOf` result adapts), as
+// hallucination's `pureBytes`: writes route through `writable`.
+private[facsimile] def pureByteArray(size: Int): Array[Byte] =
+  java.util.Arrays.copyOf(new Array[Byte](0), size).nn

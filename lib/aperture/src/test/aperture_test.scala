@@ -51,6 +51,7 @@ enum TestFlag:
   case Fast, Careful
 
 class DocHandle(val name: Text, val flags: List[TestFlag]) extends caps.ExclusiveCapability:
+  @scala.caps.unsafe.untrackedCaptures
   private var appended: List[Text] = Nil
   def titleOf: Text = t"doc:$name"
   def appendedText: Text = appended.stdlib.reverse.join
@@ -110,12 +111,17 @@ given soleOpenable: SoleOpenable = SoleOpenable()
 // A creatable counterpart: an in-memory "vault" of documents, committed on scope close so
 // that rollback semantics are observable.
 class Vault:
+  @scala.caps.unsafe.untrackedCaptures
   var committed: Optional[List[Text]] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   var made: Boolean = false
 
 case class VaultRef(vault: Vault)
 
-class VaultScribe private[aperture] (var lines: List[Text])
+@scala.caps.unsafe.untrackedCaptures
+@scala.caps.unsafe.untrackedCaptures
+@scala.caps.unsafe.untrackedCaptures
+class VaultScribe private[aperture] (@scala.caps.unsafe.untrackedCaptures var lines: List[Text])
 extends caps.ExclusiveCapability:
   def append(line: Text): Unit = lines = line :: lines
 

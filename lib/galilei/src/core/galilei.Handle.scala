@@ -58,7 +58,10 @@ object Handle:
     . pump(handle.intake().asInstanceOf[AnyRef].asInstanceOf[(Intake[Data] over Credit)^])
 
   given sink: [handle <: (Handle & Granting[Grant.Write])^]
-  =>  handle is Sink by Data over Credit = _.intake()
+  =>  handle is Sink by Data over Credit =
+    // The intake crosses through an `AnyRef` rim, as `pump` above: it belongs to the
+    // single-owner handle it is minted from.
+    handle => handle.intake().asInstanceOf[AnyRef].asInstanceOf[(Intake[Data] over Credit)^]
 
   // The `read`/`write` operations are direct extensions as well as `Streamable`/`Writable`
   // typeclass givens, because summoning a typeclass on a *scoped* capability's refined type

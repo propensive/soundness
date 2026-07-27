@@ -40,6 +40,7 @@ import proscenium.compat.*
 // `Data`, a position cursor serves the same role. Reads past the end throw
 // `IndexOutOfBoundsException`, caught by `JpegCodec` and reported as a truncated image.
 private[hallucination] final class JpegReader(data: Data, start: Int):
+  @scala.caps.unsafe.untrackedCaptures
   private var pos: Int = start
 
   def position: Int = pos
@@ -56,7 +57,7 @@ private[hallucination] final class JpegReader(data: Data, start: Int):
     var index = 0
 
     while index < buffer.length do
-      buffer(index) = data(pos)
+      writable(buffer)(index) = data(pos)
       pos += 1
       index += 1
 

@@ -63,7 +63,7 @@ private[hallucination] object WebpTransform:
 
     // The top-left pixel is inverse-predicted against opaque black (only its alpha changes); the
     // rest of the first row uses the left predictor, and the first column of every row the top.
-    data(3) = (u(data(3)) + 255).toByte
+    writable(data)(3) = (u(data(3)) + 255).toByte
     left(data, 4, stride)
 
     var y = 1
@@ -72,7 +72,7 @@ private[hallucination] object WebpTransform:
       var i = 0
 
       while i < 4 do
-        data(y*stride + i) = (u(data(y*stride + i)) + u(data((y - 1)*stride + i))).toByte
+        writable(data)(y*stride + i) = (u(data(y*stride + i)) + u(data((y - 1)*stride + i))).toByte
         i += 1
 
       y += 1
@@ -114,35 +114,35 @@ private[hallucination] object WebpTransform:
     var i = start + 3
 
     while i < end do
-      data(i) = (u(data(i)) + 0xff).toByte
+      writable(data)(i) = (u(data(i)) + 0xff).toByte
       i += 4
 
   private def left(data: Array[Byte], start: Int, end: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + u(data(i - 4))).toByte
+      writable(data)(i) = (u(data(i)) + u(data(i - 4))).toByte
       i += 1
 
   private def top(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + u(data(i - stride))).toByte
+      writable(data)(i) = (u(data(i)) + u(data(i - stride))).toByte
       i += 1
 
   private def topRight(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + u(data(i - stride + 4))).toByte
+      writable(data)(i) = (u(data(i)) + u(data(i - stride + 4))).toByte
       i += 1
 
   private def topLeft(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + u(data(i - stride - 4))).toByte
+      writable(data)(i) = (u(data(i)) + u(data(i - stride - 4))).toByte
       i += 1
 
   private def select5(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
@@ -150,35 +150,35 @@ private[hallucination] object WebpTransform:
 
     while i < end do
       val a = average2(data(i - 4).toByte, data(i - stride + 4).toByte)
-      data(i) = (u(data(i)) + ((a + u(data(i - stride))) >> 1)).toByte
+      writable(data)(i) = (u(data(i)) + ((a + u(data(i - stride))) >> 1)).toByte
       i += 1
 
   private def select6(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + average2(data(i - 4), data(i - stride - 4))).toByte
+      writable(data)(i) = (u(data(i)) + average2(data(i - 4), data(i - stride - 4))).toByte
       i += 1
 
   private def select7(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + average2(data(i - 4), data(i - stride))).toByte
+      writable(data)(i) = (u(data(i)) + average2(data(i - 4), data(i - stride))).toByte
       i += 1
 
   private def select8(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + average2(data(i - stride - 4), data(i - stride))).toByte
+      writable(data)(i) = (u(data(i)) + average2(data(i - stride - 4), data(i - stride))).toByte
       i += 1
 
   private def select9(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
-      data(i) = (u(data(i)) + average2(data(i - stride), data(i - stride + 4))).toByte
+      writable(data)(i) = (u(data(i)) + average2(data(i - stride), data(i - stride + 4))).toByte
       i += 1
 
   private def select10(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
@@ -187,7 +187,7 @@ private[hallucination] object WebpTransform:
     while i < end do
       val left = average2(data(i - 4), data(i - stride - 4))
       val topRight = average2(data(i - stride), data(i - stride + 4))
-      data(i) = (u(data(i)) + ((left + topRight) >> 1)).toByte
+      writable(data)(i) = (u(data(i)) + ((left + topRight) >> 1)).toByte
       i += 1
 
   // The select predictor: per pixel, choose the left or top neighbour by which is nearer to the
@@ -213,7 +213,7 @@ private[hallucination] object WebpTransform:
       c = 0
 
       while c < 4 do
-        data(i + c) = (u(data(i + c)) + u(data(neighbour + c))).toByte
+        writable(data)(i + c) = (u(data(i + c)) + u(data(neighbour + c))).toByte
         c += 1
 
       i += 4
@@ -223,7 +223,7 @@ private[hallucination] object WebpTransform:
 
     while i < end do
       val a = clampAddSubtractFull(u(data(i - 4)), u(data(i - stride)), u(data(i - stride - 4)))
-      data(i) = (u(data(i)) + a).toByte
+      writable(data)(i) = (u(data(i)) + a).toByte
       i += 1
 
   private def select13(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
@@ -233,7 +233,7 @@ private[hallucination] object WebpTransform:
       val a =
         clampAddSubtractHalf((u(data(i - 4)) + u(data(i - stride)))/2, u(data(i - stride - 4)))
 
-      data(i) = (u(data(i)) + a).toByte
+      writable(data)(i) = (u(data(i)) + a).toByte
       i += 1
 
   def color(data: Array[Byte], width: Int, sizeBits: Int, transformData: Array[Byte]): Unit =
@@ -259,8 +259,8 @@ private[hallucination] object WebpTransform:
           ( u(data(pixel + 2)) + colorDelta(greenToBlue, green) +
             colorDelta(redToBlue, red.toByte) ) & 0xff
 
-        data(pixel) = red.toByte
-        data(pixel + 2) = blue.toByte
+        writable(data)(pixel) = red.toByte
+        writable(data)(pixel + 2) = blue.toByte
         x += 1
 
       y += 1
@@ -269,8 +269,8 @@ private[hallucination] object WebpTransform:
     var i = 0
 
     while i < data.length do
-      data(i) = (u(data(i)) + u(data(i + 1))).toByte
-      data(i + 2) = (u(data(i + 2)) + u(data(i + 1))).toByte
+      writable(data)(i) = (u(data(i)) + u(data(i + 1))).toByte
+      writable(data)(i + 2) = (u(data(i + 2)) + u(data(i + 1))).toByte
       i += 4
 
   // Expands packed palette indices (stored in the green channel) back to full colours, in place.
@@ -283,7 +283,8 @@ private[hallucination] object WebpTransform:
     inline def lookup(index: Int, pixel: Int): Unit =
       if index < tableSize then System.arraycopy(table, index*4, data, pixel, 4)
       else
-        data(pixel) = 0; data(pixel + 1) = 0; data(pixel + 2) = 0; data(pixel + 3) = 0
+        writable(data)(pixel) = 0; writable(data)(pixel + 1) = 0
+        writable(data)(pixel + 2) = 0; writable(data)(pixel + 3) = 0
 
     if tableSize > 16 then
       var i = width*height - 1

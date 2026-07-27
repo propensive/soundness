@@ -81,9 +81,13 @@ private[hallucination] final class JpegComponent
 
   // The full-resolution IDCT is always used (no thumbnail scaling), so the DCT scale is fixed at 8.
   val dctScale: Int = 8
+  @scala.caps.unsafe.untrackedCaptures
   var sizeWidth: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var sizeHeight: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var blockWidth: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var blockHeight: Int = 0
 
 private[hallucination] final class JpegFrame
@@ -92,14 +96,14 @@ private[hallucination] final class JpegFrame
     val precision:     Int,
     val imageWidth:    Int,
     val imageHeight:   Int,
-    var mcuWidth:      Int,
-    var mcuHeight:     Int,
-    val components:    Array[JpegComponent] )
+    @scala.caps.unsafe.untrackedCaptures var mcuWidth:  Int,
+    @scala.caps.unsafe.untrackedCaptures var mcuHeight: Int,
+    @scala.caps.unsafe.untrackedCaptures val components: Array[JpegComponent] )
 
 private[hallucination] final class JpegScan
-  ( val componentIndices:  Array[Int],
-    val dcTableIndices:    Array[Int],
-    val acTableIndices:    Array[Int],
+  ( @scala.caps.unsafe.untrackedCaptures val componentIndices: Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val dcTableIndices:   Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val acTableIndices:   Array[Int],
     val spectralStart:     Int,
     val spectralEnd:       Int, // exclusive
     val successiveHigh:    Int,
@@ -176,7 +180,9 @@ private[hallucination] object JpegParser:
       components(index) = JpegComponent(identifier, horizontal, vertical, quantizationIndex)
       index += 1
 
-    val frame =
+    // The frame privately owns its freshly-built components array; laundered to the pure
+    // result type.
+    val frame = scala.caps.unsafe.unsafeAssumePure:
       JpegFrame(isBaseline, coding, precision, width, height, 0, 0, components)
 
     updateComponentSizes(frame)
@@ -271,9 +277,11 @@ private[hallucination] object JpegParser:
       if spectralStart != 0 || spectralEnd != 63 then bad()
       if successiveHigh != 0 || successiveLow != 0 then bad()
 
-    JpegScan
-      ( componentIndices, dcTableIndices, acTableIndices, spectralStart, spectralEnd + 1,
-        successiveHigh, successiveLow )
+    // As `parseSof`: the scan privately owns its freshly-built index arrays.
+    scala.caps.unsafe.unsafeAssumePure:
+      JpegScan
+        ( componentIndices, dcTableIndices, acTableIndices, spectralStart, spectralEnd + 1,
+          successiveHigh, successiveLow )
 
   // Section B.2.4.1: quantization tables, each returned in the file's zigzag order (unzigzagged by
   // the decoder). The four slots are indexed by the table's destination identifier.
@@ -297,7 +305,7 @@ private[hallucination] object JpegParser:
         if table(item) == 0 then bad()
         item += 1
 
-      tables(index) = table
+      writable(tables)(index) = table
       length -= 65 + 64*precision
 
     tables
@@ -307,8 +315,8 @@ private[hallucination] object JpegParser:
   :   (Array[Optional[JpegHuffmanTable]], Array[Optional[JpegHuffmanTable]]) raises RasterError =
 
     var length = readLength(reader)
-    val dcTables: Array[Optional[JpegHuffmanTable]] = Array(Unset, Unset, Unset, Unset)
-    val acTables: Array[Optional[JpegHuffmanTable]] = Array(Unset, Unset, Unset, Unset)
+    val dcTables: Array[Optional[JpegHuffmanTable]]^ = Array(Unset, Unset, Unset, Unset)
+    val acTables: Array[Optional[JpegHuffmanTable]]^ = Array(Unset, Unset, Unset, Unset)
 
     while length > 17 do
       val byte = reader.u8()
@@ -339,12 +347,14 @@ private[hallucination] object JpegParser:
         value += 1
 
       val table = JpegHuffmanTable(counts, values, tableClass == 1)
-      if tableClass == 0 then dcTables(index) = table else acTables(index) = table
+      if tableClass == 0 then dcTables(index) = table
+      else acTables(index) = table
 
       length -= 17 + size
 
     if length != 0 then bad()
-    (dcTables, acTables)
+    // The tables privately own their freshly-built arrays; laundered to the pure result.
+    scala.caps.unsafe.unsafeAssumePure((dcTables, acTables))
 
   // Skips a length-prefixed segment whose contents are not needed (e.g. a comment).
   def skipSegment(reader: JpegReader): Unit raises RasterError =

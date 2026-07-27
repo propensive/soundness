@@ -52,8 +52,10 @@ object Resource:
     caps.unsafe.unsafeAssumePure:
       given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
-      Streamable.inputStream.contramap: resource =>
-        classloader.inputStream(resource.path.encode)
+      // The lambda and the codec share only the unscoped throwing tactic; no aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+        Streamable.inputStream.contramap: (resource: resource) =>
+          classloader.inputStream(resource.path.encode)
 
   given source: [resource <: Resource]
   =>  ( classloader: Classloader, buffering: Buffering )
@@ -62,8 +64,10 @@ object Resource:
     caps.unsafe.unsafeAssumePure:
       given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
-      Streamable.inputStream.contramap: resource =>
-        classloader.inputStream(resource.path.encode)
+      // As `streamable` above.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+        Streamable.inputStream.contramap: (resource: resource) =>
+          classloader.inputStream(resource.path.encode)
 
   given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.to(List).prim.or(t"/")
 

@@ -45,9 +45,14 @@ import vacuous.*
 // (`src/lossy/arithmetic_encoder.rs`, MIT/Apache-2.0) — the inverse of `Vp8Bool`.
 private[hallucination] final class Vp8BoolEncoder:
   private val out = ji.ByteArrayOutputStream()
-  private val buffer = scala.collection.mutable.ArrayBuffer[Int]()
+  @scala.caps.unsafe.untrackedCaptures
+  private val buffer: scala.collection.mutable.ArrayBuffer[Int] =
+    scala.collection.mutable.ArrayBuffer[Int]()
+  @scala.caps.unsafe.untrackedCaptures
   private var bottom = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var range = 255
+  @scala.caps.unsafe.untrackedCaptures
   private var bitCount = 24
 
   // A carry propagates by incrementing the most recent sub-255 output byte.

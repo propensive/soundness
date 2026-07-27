@@ -52,7 +52,9 @@ private[hallucination] object Quantization:
 
       (palette, assignment)
     else
-      val boxes = scm.ArrayBuffer[Array[Int]](counts.keys.toArray)
+      // `IArray` elements: box contents are only read, and the pure element type avoids
+      // the fresh read capability a mutable-array element type carries.
+      val boxes = scm.ArrayBuffer[IArray[Int]](counts.keys.toArray.asInstanceOf[IArray[Int]])
 
       def channel(color: Int, shift: Int): Int = (color >> shift)&0xff
 
@@ -82,16 +84,16 @@ private[hallucination] object Quantization:
         var shift = 16
 
         for index <- boxes.indices do
-          val (spread, spreadShift) = range(boxes(index))
+          val (spread, spreadShift) = range(boxes(index).asInstanceOf[Array[Int]])
 
           if spread > widest then
             widest = spread
             shift = spreadShift
             candidate = index
 
-        if candidate == -1 then boxes += Array()
+        if candidate == -1 then boxes += IArray[Int]()
         else
-          val sorted = boxes(candidate).sortBy(channel(_, shift))
+          val sorted = boxes(candidate).asInstanceOf[Array[Int]].sortBy(channel(_, shift))
 
           var total = 0L
 
@@ -105,11 +107,13 @@ private[hallucination] object Quantization:
             cumulative += counts(sorted(split))
             split += 1
 
-          boxes(candidate) = sorted.take(split.max(1))
-          boxes += sorted.drop(split.max(1))
+          // Pure-typed copies (see `pureCopyRange`); `take`/`drop` results carry a fresh
+          // read capability the buffer's element type rejects.
+          boxes(candidate) = pureCopyRange(sorted, 0, split.max(1)).asInstanceOf[IArray[Int]]
+          boxes += pureCopyRange(sorted, split.max(1), sorted.length).asInstanceOf[IArray[Int]]
 
       val palette = IArray.tabulate(boxes.length): index =>
-        val colors = boxes(index)
+        val colors = boxes(index).asInstanceOf[Array[Int]]
 
         if colors.isEmpty then 0 else
           var red = 0L

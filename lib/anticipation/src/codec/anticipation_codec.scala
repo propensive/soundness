@@ -37,13 +37,17 @@ import prepositional.*
 object Data:
   def apply(xs: Byte*): Data = IArray(xs*)
 
-  def build(count: Int)(lambda: Array[Byte] => Unit): Data =
-    val array: Array[Byte] = new Array[Byte](count)
+  def build(count: Int)(lambda: Array[Byte]^ => Unit): Data =
+    val array: Array[Byte]^ = new Array[Byte](count)
     lambda(array)
     array.asInstanceOf[Data]
 
   def fill(count: Int)(lambda: Int => Byte): Data = build(count): array =>
-    for index <- 0 until count do array(index) = lambda(index)
+    var index = 0
+
+    while index < count do
+      array(index) = lambda(index)
+      index += 1
 
 type Data = IArray[Byte]
 

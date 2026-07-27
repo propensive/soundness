@@ -54,7 +54,7 @@ object Pdf:
   // A fresh, empty document: a catalog and an empty page tree, over which a creation scope's
   // edits accumulate before a full write. Built in memory so the write extensions — which
   // resolve through a `Pdf` — work identically to editing an existing file.
-  private[facsimile] def blank(): Pdf raises PdfError =
+  private[facsimile] def blank()(using Tactic[PdfError]): Pdf =
     val catalog = t"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
     val pages = t"2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
     val body = t"%PDF-1.7\n$catalog$pages"
@@ -78,17 +78,17 @@ object Pdf:
   // Anchored here — the form's companion — so `path.open[Pdf]()` and `data.open[Pdf]()`
   // resolve with no import.
   given pathOpenable: [path: Abstractable across Paths to Text]
-  =>  Tactic[PdfError]
-  =>  ( PdfFile.PdfPathOpenable[path]^ ) =
+  =>  (tactic: Tactic[PdfError])
+  =>  ( PdfFile.PdfPathOpenable[path]^{tactic} ) =
     PdfFile.PdfPathOpenable[path]
 
-  given dataOpenable: Tactic[PdfError] => ( PdfFile.PdfDataOpenable^ ) =
+  given dataOpenable: (tactic: Tactic[PdfError]) => ( PdfFile.PdfDataOpenable^{tactic} ) =
     PdfFile.PdfDataOpenable()
 
   // Anchored here so `path.create[Pdf](): doc ?=> …` resolves the `Pdf` form with no import.
   given creatable: [path: Abstractable across Paths to Text]
-  =>  Tactic[PdfError]
-  =>  ( PdfFile.PdfCreatable[path]^ ) =
+  =>  (tactic: Tactic[PdfError])
+  =>  ( PdfFile.PdfCreatable[path]^{tactic} ) =
     PdfFile.PdfCreatable[path]
 
   case class Version(major: Int, minor: Int)
@@ -104,7 +104,7 @@ object Pdf:
       val mediaType:   Optional[Text],
       body:            Optional[Cos.Body] ):
 
-    def data: Data raises PdfError =
+    def data(using Tactic[PdfError]): Data =
       body.let(pdf.payload(_)).or(abort(PdfError(PdfError.Reason.MissingEntry(t"EF"))))
 
   // Builds the security handler, if the file is encrypted, and installs it on the document.
@@ -112,7 +112,7 @@ object Pdf:
   // so are never themselves decrypted — and a wrong password fails here, at open, rather
   // than at first string or stream access. The password's cleartext is read only within
   // `uncloak`, so it is confined to this call; the empty password covers unprotected files.
-  private[facsimile] def unlock(pdf: Pdf^, password: Optional[Password]): Unit raises PdfError =
+  private[facsimile] def unlock(pdf: Pdf^, password: Optional[Password])(using Tactic[PdfError]): Unit =
     pdf.trailer.at(t"Encrypt").let: encryptRef =>
       val encrypt = pdf.resolved(encryptRef).dictionary
         . or(abort(PdfError(PdfError.Reason.UnsupportedEncryption(0))))
@@ -126,7 +126,7 @@ object Pdf:
 
   // The header comment is nominally at offset 0, but tolerated anywhere in the first 1KiB,
   // matching widespread reader behaviour for files with prepended junk.
-  private[facsimile] def readVersion(source: ByteSource): Version raises PdfError =
+  private[facsimile] def readVersion(source: ByteSource)(using Tactic[PdfError]): Version =
     val window = source.read(0L, source.size.min(1024L).toInt)
     val marker = t"%PDF-"
 
@@ -173,6 +173,7 @@ extends caps.ExclusiveCapability:
 
   // The security handler, installed by `Pdf.unlock` after the document exists (it must read
   // the unencrypted `/Encrypt` dictionary through this same document first).
+  @scala.caps.unsafe.untrackedCaptures
   private[facsimile] var guard: Optional[Guard] = Unset
 
   // The write overlay: an in-memory incremental update layered over the immutable read model.
@@ -187,6 +188,7 @@ extends caps.ExclusiveCapability:
     scala.collection.mutable.HashSet()
 
   // The next free object number, one past the largest the original file used.
+  @scala.caps.unsafe.untrackedCaptures
   private[facsimile] var nextNumber: Int =
     (xref.entries.keys.maxOption.getOrElse(0).max(trailer.at(t"Size").let(_.long).or(0L).toInt - 1)) + 1
 
@@ -196,6 +198,7 @@ extends caps.ExclusiveCapability:
   private[facsimile] val newStreams: scala.collection.mutable.HashMap[Long, Data] =
     scala.collection.mutable.HashMap()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var nextStreamId: Long = -1L
 
   // Trailer entries set or overridden during the write scope — e.g. a newly-created `/Info`
@@ -234,20 +237,22 @@ extends caps.ExclusiveCapability:
   // Rewrites an object's dictionary in place, reading its current value (overlay-aware) so
   // successive edits within a scope compose.
   private[facsimile] def editDictionary(number: Int)(transform: Map[Text, Cos] => Map[Text, Cos])
-  :   Unit raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Unit =
 
     put(number, Cos.Dictionary(transform(apply(number).dictionary.or(Map[Text, Cos]()))))
 
   // Rewrites the catalog (the `/Root` object) in place.
   private[facsimile] def editCatalog(transform: Map[Text, Cos] => Map[Text, Cos])
-  :   Unit raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Unit =
 
     trailer.at(t"Root") match
       case ref: Cos.Ref => editDictionary(ref.number)(transform)
       case _            => ()
 
   // A reference to the page at a position in the flattened page sequence, for destinations.
-  private[facsimile] def pageReference(ordinal: Ordinal): Optional[Cos.Ref] raises PdfError =
+  private[facsimile] def pageReference(ordinal: Ordinal)(using Tactic[PdfError]): Optional[Cos.Ref] =
     val entries = pageEntries
     if ordinal.n0 < 0 || ordinal.n0 >= entries.length then Unset
     else entries(ordinal.n0)(0).let(Cos.Ref(_, 0))
@@ -256,7 +261,7 @@ extends caps.ExclusiveCapability:
 
   def encrypted: Boolean = trailer.defines(t"Encrypt")
 
-  def catalog: Map[Text, Cos] raises PdfError =
+  def catalog(using Tactic[PdfError]): Map[Text, Cos] =
     resolved(trailer.at(t"Root").or(Cos.Nil)).dictionary
     . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Root"))))
 
@@ -264,7 +269,8 @@ extends caps.ExclusiveCapability:
   // along each path; the object number of each leaf is kept so that destinations can refer
   // back to a page by reference.
   private[facsimile] def pageEntries
-  :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
     var visited = scala.collection.immutable.Set[Int]()
 
@@ -294,13 +300,13 @@ extends caps.ExclusiveCapability:
 
     recur(catalog.at(t"Pages").or(Cos.Nil), Unset, Page.Inherited())
 
-  def pages: Vector[Page^{this}] raises PdfError =
+  def pages(using Tactic[PdfError]): Vector[Page^{this}] =
     pageEntries.zipWithIndex.map: (entry, index) =>
       Page(this, index.z, entry(0), entry(1), entry(2))
 
   // Leaf object numbers mapped to positions in the flattened page sequence, for resolving
   // destinations that refer to pages by reference.
-  private[facsimile] def pageNumbers: Map[Int, Ordinal] raises PdfError =
+  private[facsimile] def pageNumbers(using Tactic[PdfError]): Map[Int, Ordinal] =
     pageEntries.zipWithIndex.flatMap: (entry, index) =>
       entry(0).lay(scala.collection.immutable.List()): number =>
         scala.collection.immutable.List(number -> index.z)
@@ -309,7 +315,7 @@ extends caps.ExclusiveCapability:
 
   // Named destinations from both homes: the old-style `/Dests` dictionary and the
   // `/Names /Dests` name tree, still as raw COS values.
-  private[facsimile] def rawDestinations: Map[Text, Cos] raises PdfError =
+  private[facsimile] def rawDestinations(using Tactic[PdfError]): Map[Text, Cos] =
     val old = resolved(catalog.at(t"Dests").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
 
     val tree = resolved(catalog.at(t"Names").or(Cos.Nil))(t"Dests")
@@ -317,7 +323,7 @@ extends caps.ExclusiveCapability:
 
     Map.of(old.stdlib ++ (tree: Map[Text, Cos]).stdlib)
 
-  def destinations: Map[Text, Destination] raises PdfError =
+  def destinations(using Tactic[PdfError]): Map[Text, Destination] =
     val pages = pageNumbers
     val raw = rawDestinations
 
@@ -328,19 +334,19 @@ extends caps.ExclusiveCapability:
 
     . pipe(Map.from(_))
 
-  def bookmarks: List[Bookmark] raises PdfError =
+  def bookmarks(using Tactic[PdfError]): List[Bookmark] =
     val pages = pageNumbers
     val raw = rawDestinations
     var visited = scala.collection.immutable.Set[Int]()
 
     // `/Dest` directly, or the `/D` of a `/GoTo` action.
-    def target(entries: Map[Text, Cos]): Optional[Cos] raises PdfError =
+    def target(entries: Map[Text, Cos])(using Tactic[PdfError]): Optional[Cos] =
       entries.at(t"Dest").or:
         val action = resolved(entries.at(t"A").or(Cos.Nil))
 
         if action(t"S").let(_.name).or(t"") == t"GoTo" then action(t"D") else Unset
 
-    def item(value: Cos): List[Bookmark] raises PdfError = value match
+    def item(value: Cos)(using Tactic[PdfError]): List[Bookmark] = value match
       case Cos.Ref(number, _) =>
         if visited.has(number) then List() else
           visited += number
@@ -358,12 +364,12 @@ extends caps.ExclusiveCapability:
       case _ =>
         List()
 
-    def chain(first: Optional[Cos]): List[Bookmark] raises PdfError =
+    def chain(first: Optional[Cos])(using Tactic[PdfError]): List[Bookmark] =
       first.lay(List())(item(_))
 
     chain(resolved(catalog.at(t"Outlines").or(Cos.Nil))(t"First"))
 
-  def attachments: List[Pdf.Attachment^{this}] raises PdfError =
+  def attachments(using Tactic[PdfError]): List[Pdf.Attachment^{this}] =
     resolved(catalog.at(t"Names").or(Cos.Nil))(t"EmbeddedFiles").lay(List()): tree =>
       Trees.names(tree)(using this).map: (name, value) =>
         val spec = resolved(value).dictionary.or(Map[Text, Cos]())
@@ -381,7 +387,7 @@ extends caps.ExclusiveCapability:
 
   // The label a viewer displays for a page (ISO 32000-2 §12.4.2): styled and prefixed by
   // the `/PageLabels` number tree, or the plain one-based page number when absent.
-  def pageLabel(index: Ordinal): Text raises PdfError =
+  def pageLabel(index: Ordinal)(using Tactic[PdfError]): Text =
     catalog.at(t"PageLabels").lay(index.n1.toString.tt): tree =>
       val ranges = Trees.numbers(tree)(using this).filter(_(0) <= index.n0)
 
@@ -426,12 +432,12 @@ extends caps.ExclusiveCapability:
       letter.repeat((((number - 1)/26) + 1).toInt).nn.tt
 
   // The document-level XMP packet, undecoded: XML parsing belongs downstream.
-  def xmp: Optional[Data] raises PdfError =
+  def xmp(using Tactic[PdfError]): Optional[Data] =
     resolved(catalog.at(t"Metadata").or(Cos.Nil)) match
       case body: Cos.Body => payload(body)
       case _              => Unset
 
-  def info: PdfInfo raises PdfError =
+  def info(using Tactic[PdfError]): PdfInfo =
     val entries = resolved(trailer.at(t"Info").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
     def field(key: Text): Optional[Text] = entries.at(key).let(resolved(_).text)
 
@@ -441,16 +447,16 @@ extends caps.ExclusiveCapability:
         field(t"CreationDate").let(PdfInfo.parseDate(_)),
         field(t"ModDate").let(PdfInfo.parseDate(_)) )
 
-  def apply(ref: Cos.Ref): Cos raises PdfError = apply(ref.number, ref.generation)
+  def apply(ref: Cos.Ref)(using Tactic[PdfError]): Cos = apply(ref.number, ref.generation)
 
   // Resolves an object by number and generation: from the write overlay, the cache, its
   // recorded file offset, or a containing object stream. A freed, missing or invalid entry,
   // or a generation mismatch, is `null` per ISO 32000-2 §7.3.10.
-  def apply(number: Int, generation: Int = 0): Cos raises PdfError =
+  def apply(number: Int, generation: Int = 0)(using Tactic[PdfError]): Cos =
     if freed.contains(number) then Cos.Nil
     else overlay.at(number).or(cache.at(number).or(load(number, generation)))
 
-  private def load(number: Int, generation: Int): Cos raises PdfError =
+  private def load(number: Int, generation: Int)(using Tactic[PdfError]): Cos =
     if !loading.add(number) then abort(PdfError(PdfError.Reason.CircularReference(number)))
 
     try
@@ -487,7 +493,7 @@ extends caps.ExclusiveCapability:
   // Parses the object at an offset, returning its content only if the header matches the
   // number and generation asked for; a mismatch (a lie in the cross-reference table) is
   // `Unset`, so the caller can try a recovered offset instead.
-  private def atOffset(number: Int, generation: Int, offset: Long): Optional[Cos] raises PdfError =
+  private def atOffset(number: Int, generation: Int, offset: Long)(using Tactic[PdfError]): Optional[Cos] =
     if offset < 0 || offset >= source.size then Unset else
       safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (found, gen, content) =>
         if found == number && gen == generation then content else Unset
@@ -500,7 +506,7 @@ extends caps.ExclusiveCapability:
     case Xref.Entry.Direct(offset, _) => offset
     case _                            => Unset
 
-  def resolved(value: Cos): Cos raises PdfError = value match
+  def resolved(value: Cos)(using Tactic[PdfError]): Cos = value match
     case ref: Cos.Ref => apply(ref)
     case other        => other
 
@@ -528,7 +534,7 @@ extends caps.ExclusiveCapability:
   // The decoded content of a stream, decrypted (in a later milestone) and passed through its
   // filter chain, which stops at terminal image codecs. `/Length` may be indirect; filters in
   // a general stream may be too, so the chain inputs are resolved through this document.
-  def payload(body: Cos.Body): Data raises PdfError =
+  def payload(body: Cos.Body)(using Tactic[PdfError]): Data =
     val chain =
       Filter.chain
         ( body.entries.at(t"Filter").let(deepResolved(_)),
@@ -556,8 +562,10 @@ extends caps.ExclusiveCapability:
 
     new Spring[Data]:
       def apply(): (Stream[Data] over Credit)^ =
-        decrypted.lay(pipeline(steps, Stream(ranges(start, end)))): data =>
-          pipeline(steps, Stream(List(data).iterator))
+        // Both branches build the pipeline over this document's own single-owner data.
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          decrypted.lay(pipeline(steps, Stream(ranges(start, end)))): data =>
+            pipeline(steps, Stream(List(data).iterator))
 
   // Interprets a streaming plan, minting each duct at its `via` call site.
   private def pipeline(steps: List[Filter.Step^], consume stream: (Stream[Data] over Credit)^)
@@ -578,6 +586,7 @@ extends caps.ExclusiveCapability:
 
   // Chunked positional reads over a raw range: the pull side of `spring`.
   private def ranges(start: Long, end: Long): Iterator[Data]^{this} = new Iterator[Data]:
+    @scala.caps.unsafe.untrackedCaptures
     private var position: Long = start
 
     def hasNext: Boolean = position < end
@@ -590,7 +599,7 @@ extends caps.ExclusiveCapability:
 
   // The raw payload, decrypted if the document is encrypted and this stream is not exempt. A
   // stream created in this scope (negative sentinel start) yields its inline bytes directly.
-  private[facsimile] def raw(body: Cos.Body): Data raises PdfError =
+  private[facsimile] def raw(body: Cos.Body)(using Tactic[PdfError]): Data =
     if body.start < 0 then newStreams.at(body.start).or(IArray.empty[Byte]) else
       val bytes = source.read(body.start, (payloadEnd(body) - body.start).toInt)
 
@@ -602,7 +611,7 @@ extends caps.ExclusiveCapability:
   // Whether a stream's raw bytes need decrypting: the document is encrypted and the stream is
   // not exempt — cross-reference streams (never encrypted), metadata under `/EncryptMetadata
   // false`, and streams marked with the `Identity` crypt filter.
-  private def encryptedStream(body: Cos.Body): Boolean raises PdfError = guard.lay(false): guard =>
+  private def encryptedStream(body: Cos.Body)(using Tactic[PdfError]): Boolean = guard.lay(false): guard =>
     val kind = body.entries.at(t"Type").let(_.name).or(t"")
 
     val exempt =
@@ -614,7 +623,7 @@ extends caps.ExclusiveCapability:
 
   // A `/Crypt` filter in the stream's filter chain selects a crypt method by name; `Identity`
   // (the default) means the stream is stored in the clear.
-  private def cryptMethod(body: Cos.Body): Optional[Guard.Method] raises PdfError =
+  private def cryptMethod(body: Cos.Body)(using Tactic[PdfError]): Optional[Guard.Method] =
     val filters = deepResolved(body.entries.at(t"Filter").or(Cos.Nil))
 
     val hasCrypt = filters match
@@ -637,7 +646,7 @@ extends caps.ExclusiveCapability:
   // The exclusive end of the payload: `/Length` bytes when the declared length checks out —
   // the `endstream` keyword must follow it — and otherwise, since wrong lengths abound in
   // real files, the nearest `endstream`, less the end-of-line before it.
-  private def payloadEnd(body: Cos.Body): Long raises PdfError =
+  private def payloadEnd(body: Cos.Body)(using Tactic[PdfError]): Long =
     resolved(body.entries.at(t"Length").or(Cos.Nil)).long.let: length =>
       val end = body.start + length
       if length >= 0 && end <= source.size && endstreamFollows(end) then end else Unset
@@ -686,12 +695,12 @@ extends caps.ExclusiveCapability:
 
   // Resolves a value and, one level down, the elements of an array or the values of a
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.
-  private def deepResolved(value: Cos): Cos raises PdfError = resolved(value) match
+  private def deepResolved(value: Cos)(using Tactic[PdfError]): Cos = resolved(value) match
     case Cos.Sequence(elements)  => Cos.Sequence(elements.map(resolved(_)))
     case Cos.Dictionary(entries) => Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(resolved(_)).toMap))
     case other                   => other
 
-  private def containerStream(container: Int): ObjectStream raises PdfError =
+  private def containerStream(container: Int)(using Tactic[PdfError]): ObjectStream =
     containers.at(container).or:
       val stream = apply(container) match
         case body @ Cos.Body(entries, _) =>

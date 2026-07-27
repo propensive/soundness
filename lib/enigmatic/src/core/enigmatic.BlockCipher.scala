@@ -97,7 +97,7 @@ extends Cipher, Encryption, Symmetric:
   // is the stage's first output, and the `NoPadding` alignment check runs at
   // end-of-stream, exactly as in the whole-value and `Progression` forms.
   def encrypt
-    ( stream: (Stream[Data] over Credit)^, key: Data, vector: InitializationVector )
+    ( consume stream: (Stream[Data] over Credit)^, key: Data, vector: InitializationVector )
     ( using Buffering )
   :   (Stream[Data] over Credit)^ =
 
@@ -114,16 +114,25 @@ extends Cipher, Encryption, Symmetric:
   // end-of-stream — the provider buffers the whole message internally — so
   // streaming decryption of AEAD input bounds no memory; it is offered for
   // API uniformity only.
-  def decrypt(stream: (Stream[Data] over Credit)^, key: Data)
+  def decrypt(consume stream: (Stream[Data] over Credit)^, key: Data)
     (using buffering: Buffering, tactic: Tactic[CryptoError])
   :   (Stream[Data] over Credit)^ =
 
     val ivSize = if mode.usesIv then cipher.blockSize(transformation) else 0
 
-    val start: Data => CipherSession = iv =>
-      cipher.decryptStream(transformation, key, if mode.usesIv then iv else Unset)
+    // Locals rather than field accesses inside the lambda: a `start` that captured `this`
+    // would poison the consumed `DecipherDuct` argument below.
+    val cipher0 = cipher
+    val transformation0 = transformation
+    val usesIv = mode.usesIv
 
-    stream.via(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
+    val start: Data => CipherSession = iv =>
+      cipher0.decryptStream(transformation0, key, if usesIv then iv else Unset)
+
+    // The duct retains the ambient tactic, which the `consume` formal cannot see is not an
+    // aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      stream.via(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
 
   def decrypt(bytes: Data, key: Data): Data =
     val ivSize: Optional[Int] = if mode.usesIv then cipher.blockSize(transformation) else Unset
@@ -263,10 +272,14 @@ extends Duct[Data, Data]:
           // referenced from this platform-neutral file. (`canThrowAny` only relicenses the
           // rethrow of the exceptions this handler does not match.)
           import unsafeExceptions.canThrowAny
+          // The aborts are assumed separate: the error message closes over this duct only to
+          // render the detail text; there is no aliased writer.
           if securityException(error, "javax.crypto.BadPaddingException")
-          then tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+          then scala.caps.unsafe.unsafeAssumeSeparate:
+            tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
           else if securityException(error, "javax.crypto.IllegalBlockSizeException")
-          then tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+          then scala.caps.unsafe.unsafeAssumeSeparate:
+            tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
           else throw error
 
       case null =>

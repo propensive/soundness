@@ -106,17 +106,19 @@ case class Palimpsest(data: Data, length: Int):
 
         cadence.hashCount(bodyLen).let: n =>
           if n != length then Unset else
-            val body: Array[Byte] = new Array[Byte](bodyLen)
-            System.arraycopy(data.asInstanceOf[Array[Byte]], 0, body, 0, bodyLen)
+            // The scratch array is threaded through the nested defs as an exclusive (`^`)
+            // parameter: a captured array would be read-only inside them.
+            val body0: Array[Byte]^ = new Array[Byte](bodyLen)
+            System.arraycopy(data.asInstanceOf[Array[Byte]], 0, body0, 0, bodyLen)
 
-            def xor_(hash: Data, offset: Int): Unit =
+            def xor_(body: Array[Byte]^, hash: Data, offset: Int): Unit =
               var j = 0
 
               while j < cadence.hashSize do
                 body(offset + j) = (body(offset + j) ^ hash(j)).toByte
                 j += 1
 
-            def recur(item: Int, matched: List[Data]): Optional[List[Data]] =
+            def recur(body: Array[Byte]^, item: Int, matched: List[Data]): Optional[List[Data]] =
               if item == n then
                 var allZero = true
                 var k       = 0
@@ -139,12 +141,12 @@ case class Palimpsest(data: Data, length: Int):
 
                 while found.absent && candidates.hasNext do
                   val hash = candidates.next()
-                  xor_(hash, o)
-                  val sub = recur(item + 1, hash :: matched)
+                  xor_(body, hash, o)
+                  val sub = recur(body, item + 1, hash :: matched)
 
-                  if sub.absent then xor_(hash, o)
+                  if sub.absent then xor_(body, hash, o)
                   else found = sub
 
                 found
 
-            recur(0, Nil)
+            recur(body0, 0, Nil)

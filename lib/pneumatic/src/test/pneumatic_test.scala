@@ -387,7 +387,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         // and confirm decoding rejects it — via either a decode error or a check mismatch.
         val original = (t"the quick brown fox " * 40).in[Data]
         val bytes = original.compress[Xz].mutable(using Unsafe)
-        bytes(36) = (bytes(36) ^ 0x55).toByte
+        bytes.asInstanceOf[Array[Byte]^](36) = (bytes(36) ^ 0x55).toByte
         val corrupted: Data = bytes.immutable(using Unsafe)
         try corrupted.decompress[Xz].to[List] != original.to[List]
         catch case _: Exception => true
@@ -555,27 +555,28 @@ object Tests extends Suite(m"Pneumatic tests"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Gzip].decompress[Gzip].pump(gather)
-        gather.data.to[List]
+        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
       . assert(_ == mixed.to[List])
 
       test(m"deflate duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Deflate].decompress[Deflate].pump(gather)
-        gather.data.to[List]
+        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
       . assert(_ == mixed.to[List])
 
       test(m"zlib duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed)
         . compress[Zlib].decompress[Zlib].pump(gather)
-        gather.data.to[List]
+        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
       . assert(_ == mixed.to[List])
 
       test(m"gzip duct output is genuine gzip"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
-        val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
+        val stream = scala.caps.unsafe.unsafeAssumeSeparate:
+          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
       . assert(_ == mixed.to[List])
 
@@ -590,7 +591,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val chunks = buffer.toByteArray.nn.iterator.map { byte => Data(byte) }
         val gather = Gather2()
         Stream(chunks).decompress[Gzip].pump(gather)
-        gather.data.to[List]
+        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
       . assert(_ == mixed.to[List])
 
       // The mirror image: compress fed one byte per chunk, so the CRC and size
@@ -599,7 +600,8 @@ object Tests extends Suite(m"Pneumatic tests"):
         val chunks = mixed.to[List].iterator.map { byte => Data(byte) }
         val gather = Gather2()
         Stream(chunks).compress[Gzip].pump(gather)
-        val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
+        val stream = scala.caps.unsafe.unsafeAssumeSeparate:
+          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
       . assert(_ == mixed.to[List])
 
@@ -611,7 +613,8 @@ object Tests extends Suite(m"Pneumatic tests"):
                      . compress[Gzip].decompress[Gzip]
         val builder = scala.collection.immutable.List.newBuilder[Byte]
 
-        def recur(): Unit = stream.refill(Credit(3)) match
+        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
+         stream.refill(Credit(3)) match
           case count: Int =>
             val window = unsafely(stream.window).asInstanceOf[Array[Byte]]
             var index = 0
@@ -623,7 +626,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
           case _ => ()
 
-        recur()
+        scala.caps.unsafe.unsafeAssumeSeparate(recur())
         proscenium.List.of(builder.result())
       . assert(_ == mixed.stdlib.to(proscenium.List))
 
@@ -638,7 +641,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         . stream(out.toByteArray.nn.immutable(using Unsafe).stdlib.grouped(7).map(IArray.of(_)).to(Progression))
         . decompress[Gzip].pump(gather)
 
-        gather.data.to[List]
+        scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])
       . assert(_ == mixed.to[List])
 
 class Gather2() extends Intake[Data]:

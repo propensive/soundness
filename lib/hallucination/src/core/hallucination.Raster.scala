@@ -46,8 +46,11 @@ import zephyrine.*
 
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster by Rgb =
-    Raster[Rgb](width, height): (x, y) =>
-      iridescence.pixel(pixel(x, y))
+    // Routed through `build` (whose writes are already exclusive) rather than the inline
+    // layout `apply`, whose expanded closure write the separation checker rejects here.
+    build(width, height, Descriptor.of[Rgb]): index =>
+      Pixel.value(iridescence.pixel(pixel(index%width, index/width)))
+    . asInstanceOf[Raster by Rgb]
 
   @targetName("applyLayout")
   inline def apply[layout <: Tuple](width: Int, height: Int)
@@ -56,38 +59,11 @@ object Raster:
 
     val descriptor = Descriptor.of[layout]
 
-    inline erasedValue[Channel.Storage[layout]] match
-      case _: Byte =>
-        val buffer = new Array[Byte](width*height)
-
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y)).toByte
-
-        make[layout](width, height, buffer, descriptor)
-
-      case _: Short =>
-        val buffer = new Array[Short](width*height)
-
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y)).toShort
-
-        make[layout](width, height, buffer, descriptor)
-
-      case _: Int =>
-        val buffer = new Array[Int](width*height)
-
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y)).toInt
-
-        make[layout](width, height, buffer, descriptor)
-
-      case _: Long =>
-        val buffer = new Array[Long](width*height)
-
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y))
-
-        make[layout](width, height, buffer, descriptor)
+    // Routed through `build` (which selects the storage primitive from the descriptor at
+    // runtime) rather than closure writes into a per-storage array: an expanded closure
+    // write is rejected by the separation checker at each inline site.
+    build(width, height, descriptor) { index => Pixel.value(pixel(index%width, index/width)) }
+    . asInstanceOf[Raster by layout]
 
   def apply[streamable: Streamable by Data over zephyrine.Credit](input: streamable)
   :   Raster raises RasterError =
@@ -124,22 +100,34 @@ object Raster:
     val buffer: Array[?] = descriptor.storageBits match
       case 8 =>
         val buffer = new Array[Byte](length)
-        for index <- 0 until length do buffer(index) = pixel(index).toByte
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index).toByte
+          index += 1
         buffer
 
       case 16 =>
         val buffer = new Array[Short](length)
-        for index <- 0 until length do buffer(index) = pixel(index).toShort
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index).toShort
+          index += 1
         buffer
 
       case 32 =>
         val buffer = new Array[Int](length)
-        for index <- 0 until length do buffer(index) = pixel(index).toInt
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index).toInt
+          index += 1
         buffer
 
       case _ =>
         val buffer = new Array[Long](length)
-        for index <- 0 until length do buffer(index) = pixel(index)
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index)
+          index += 1
         buffer
 
     new Raster(width, height, buffer, descriptor)
@@ -184,7 +172,7 @@ object Raster:
 class Raster private[hallucination]
   ( val width:  Int,
     val height: Int,
-    private[hallucination] val buffer: Array[?],
+    @scala.caps.unsafe.untrackedCaptures private[hallucination] val buffer: Array[?],
     val descriptor: Descriptor )
 extends Formal, Operable:
   type Operand <: Tuple

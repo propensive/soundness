@@ -49,8 +49,10 @@ private[hallucination] object JpegHuffman:
     if value < threshold then value + (-1 << count) + 1 else value
 
 private[hallucination] object JpegHuffmanTable:
-  def apply(counts: Array[Int], values: Array[Int], ac: Boolean)
-  :   JpegHuffmanTable raises RasterError =
+  // A real `using` clause rather than the `raises` sugar: a context-function result would
+  // hide the array parameters, which the separation checker rejects.
+  def apply(counts: Array[Int], values: Array[Int], ac: Boolean)(using Tactic[RasterError])
+  :   JpegHuffmanTable =
 
     val lutBits = JpegHuffman.LutBits
 
@@ -140,27 +142,36 @@ private[hallucination] object JpegHuffmanTable:
 
         index += 1
 
-    new JpegHuffmanTable(values, delta, maxcode, lutValue, lutSize, acValue, acRunSize)
+    // The table privately owns its freshly-built arrays; laundered to the pure result type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new JpegHuffmanTable(values, delta, maxcode, lutValue, lutSize, acValue, acRunSize)
 
+// The array fields are untracked so the class type elaborates without per-field capture
+// variables (the table privately owns its arrays and never mutates them after construction).
 private[hallucination] final class JpegHuffmanTable
-  ( val values:    Array[Int],
-    val delta:     Array[Int],
-    val maxcode:   Array[Int],
-    val lutValue:  Array[Int],
-    val lutSize:   Array[Int],
-    val acValue:   Array[Int],
-    val acRunSize: Array[Int] ):
+  ( @scala.caps.unsafe.untrackedCaptures val values:    Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val delta:     Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val maxcode:   Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val lutValue:  Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val lutSize:   Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val acValue:   Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val acRunSize: Array[Int] ):
 
   // `acValue` and `acRunSize` are empty for DC tables.
   def hasAcLut: Boolean = acRunSize.length > 0
 
 private[hallucination] final class JpegHuffmanDecoder:
+  @scala.caps.unsafe.untrackedCaptures
   private var bits: Long = 0L
+  @scala.caps.unsafe.untrackedCaptures
   private var numBits: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var marker: Int = -1
 
   // Results of the most recent `decodeFastAc`, valid when it returns true.
+  @scala.caps.unsafe.untrackedCaptures
   var fastAcValue: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var fastAcRun: Int = 0
 
   // Section F.2.2.3, Figure F.16.

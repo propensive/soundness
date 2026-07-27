@@ -39,9 +39,13 @@ import proscenium.compat.*
 // reference (image-rs/image-webp `src/lossy/arithmetic_decoder.rs`) uses a faster but equivalent
 // chunked implementation. Reads past the end of the partition yield zero bytes, as libwebp allows.
 private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
+  @scala.caps.unsafe.untrackedCaptures
   private var position = start
+  @scala.caps.unsafe.untrackedCaptures
   private var value = ((byte(start) << 8) | byte(start + 1))
+  @scala.caps.unsafe.untrackedCaptures
   private var range = 255
+  @scala.caps.unsafe.untrackedCaptures
   private var bitCount = 0
 
   locally { position = start + 2 }

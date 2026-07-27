@@ -82,7 +82,8 @@ import filesystemBackends.virtualMachine
 
 given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 
-def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
+def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus]^{service} =
+  service
 
 def cli[bus <: Matchable](using executive: Executive)
   ( block: (DaemonService[bus], executive.Interface, Environment, Monitor) ?=> executive.Return )
@@ -175,8 +176,11 @@ def cli[bus <: Matchable](using executive: Executive)
             val cacheRunner: Path on Linux = cacheDir/runnerName
 
             val runnerBytes: Data =
-              if localRunner.exists() then localRunner.open[File]()(file.read[Data])
-              else if cacheRunner.exists() then cacheRunner.open[File]()(file.read[Data])
+              // Each branch opens and fully reads its own file handle.
+              if localRunner.exists() then
+                scala.caps.unsafe.unsafeAssumeSeparate(localRunner.open[File]()(file.read[Data]))
+              else if cacheRunner.exists() then
+                scala.caps.unsafe.unsafeAssumeSeparate(cacheRunner.open[File]()(file.read[Data]))
               else
                 mitigate:
                   case RunnerError(detail) =>
@@ -216,7 +220,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     val work: Path on Linux = workingDirectory
                     work + keyPath.as[Relative on Linux]
 
-                  val raw: Data = resolved.open[File]()(file.read[Data])
+                  val raw: Data = scala.caps.unsafe.unsafeAssumeSeparate(resolved.open[File]()(file.read[Data]))
 
                   if raw.length != Assembler.PublicKeyLength then
                     Out.println(e"Public key at $keyPath is the wrong size (expected 1312 bytes)")
@@ -240,11 +244,13 @@ def cli[bus <: Matchable](using executive: Executive)
 
     . protect(System.properties.ethereal.name[Text]())
 
-  val userId: Optional[Int] = safely(System.properties.ethereal.user.id[Int]())
+  val userId: Optional[Int] = scala.caps.unsafe.unsafeAssumeSeparate:
+    safely(System.properties.ethereal.user.id[Int]())
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())
 
   val startTime: Long =
-    safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      safely(System.properties.ethereal.startTime[Long]()).or(jl.System.currentTimeMillis())
 
   // Use `Directories.*` rather than `Xdg.*` so Windows resolves to a native
   // location (`%LOCALAPPDATA%\Temp`) instead of `%USERPROFILE%\.local\state`,
@@ -289,7 +295,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
 
   def makeClient(connection: Connection)(using Monitor, Stdio, Probate)
-  :   Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
+    ( using Tactic[StreamError], Tactic[CharDecodeError], Tactic[NumberError],
+            (DaemonLogEvent is Loggable)^ )
+  :   Unit =
 
     val rawIn: ji.InputStream = connection.reader
     val rawOut: ji.OutputStream = connection.writer
@@ -466,40 +474,48 @@ def cli[bus <: Matchable](using executive: Executive)
         // Generated lazily and memoized: re-runs the application's pure portion in
         // tab-completion mode to discover its subcommand/flag tree. Only the completions
         // executive can produce a tree; others yield `Unset` and `service.help()` falls back.
+        // The help view, the service handle and each client invocation all share the same
+        // single-owner daemon state; none is an aliased writer.
         lazy val helpValue: Optional[Help] =
-          executive.help(name, environment, () => directory, stdio, login):
-            (interface: executive.Interface) ?=> block(using service, interface, environment, summon[Monitor])
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           executive.help(name, environment, () => directory, stdio, login):
+             (interface: executive.Interface) ?=> block(using service, interface, environment, summon[Monitor])
 
         lazy val service: DaemonService[bus] =
-          DaemonService[bus]
-            ( pid,
-              () => shutdown(pid),
-              shellInput,
-              script.as[Path on Local],
-              deliver(pid, _),
-              clientState.bus.lazyList,
-              name,
-              startTime,
-              () => helpValue,
-              setMode )
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           DaemonService[bus]
+             ( pid,
+               () => shutdown(pid),
+               shellInput,
+               script.as[Path on Local],
+               deliver(pid, _),
+               clientState.bus.lazyList,
+               name,
+               startTime,
+               () => helpValue,
+               setMode )
 
         Log.fine(DaemonLogEvent.NewCli)
 
         try
           val cli: executive.Interface =
-            executive.invocation
-              ( textArguments.stdlib,
-                environment,
-                () => directory,
-                stdio,
-                service,
-                login )
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             executive.invocation
+               ( textArguments.stdlib,
+                 environment,
+                 () => directory,
+                 stdio,
+                 service,
+                 login )
 
           clientState.invocation.offer(cli.asInstanceOf[AnyRef])
 
           if cli.proceed then
-            val result = block(using service, cli, environment, summon[Monitor])
-            val exitStatus: Exit = executive.process(cli)(result)
+            val result = scala.caps.unsafe.unsafeAssumeSeparate:
+              block(using service, cli, environment, summon[Monitor])
+
+            val exitStatus: Exit =
+              scala.caps.unsafe.unsafeAssumeSeparate(executive.process(cli)(result))
 
             clientState.exitPromise.fulfill(exitStatus)
           else
@@ -532,7 +548,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
       val domainSocket: DomainSocket = DomainSocket(socketFile.encode)
 
-      val inactivityTimer: Timeout = Timeout(idleTimeout):
+      // The timer's callback logs through the same single-owner syslog.
+      val inactivityTimer: Timeout^ = scala.caps.unsafe.unsafeAssumeSeparate:
+       Timeout(idleTimeout):
         Log.warn(DaemonLogEvent.IdleTimeout)
         termination
 
@@ -546,10 +564,13 @@ def cli[bus <: Matchable](using executive: Executive)
       // ever leaves it via `termination`'s `System.exit`.
       val acceptor = (connection: Connection) =>
         inactivityTimer.nudge()
-        safely(makeClient(connection))
+        scala.caps.unsafe.unsafeAssumeSeparate(safely(makeClient(connection)))
         ()
 
-      safely:
+      // Everything under the accept loop shares the daemon's single-owner state (the
+      // syslog, timer and monitor); nothing is an aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       safely:
         domainSocket.listenConnections(acceptor):
           val buildId = safely(System.properties.build.id[Int]()).or:
             safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)

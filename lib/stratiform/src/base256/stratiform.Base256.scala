@@ -71,7 +71,7 @@ object Base256:
 
     arr.asInstanceOf[IArray[Char]]
 
-  private val membership: Array[Boolean] =
+  private val membership: IArray[Boolean] =
     val table = new Array[Boolean](Char.MaxValue.toInt + 1)
     var i = 0
 
@@ -79,7 +79,7 @@ object Base256:
       table(alphabet(i).toInt) = true
       i += 1
 
-    table
+    table.asInstanceOf[IArray[Boolean]]
 
   // Self-check the alphabet's defining property — every implementation
   // MUST verify it per §4. We do it at module load so a transcription

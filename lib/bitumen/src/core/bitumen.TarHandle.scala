@@ -77,8 +77,8 @@ class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Opena
 
 object TarHandle:
   private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[TarFlag])
-    ( using Tactic[TarError], Tactic[StreamError], Buffering )
-  :   Iterator[Tar.Entry]^ =
+    ( using tarTactic: Tactic[TarError], streamTactic: Tactic[StreamError], buffering: Buffering )
+  :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
 
     Tarfile.read:
       flags.headOption match

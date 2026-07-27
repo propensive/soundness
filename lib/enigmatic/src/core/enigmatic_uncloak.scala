@@ -71,7 +71,7 @@ extension (stream: Progression[Data])
 
     algorithm.encryptStream(stream, encryptor.bytes, iv)
 
-extension (stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
+extension (consume stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
   // Kernel-native streaming encryption: the pipeline-stage counterpart of the
   // `Progression` form above, with the same IV-prefix framing.
   def encrypt[cipher <: BlockCipher](iv: InitializationVector)

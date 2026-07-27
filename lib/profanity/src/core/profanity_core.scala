@@ -50,9 +50,12 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
           probate:     Probate,
           environment: Environment )
   ( using features: Every[TerminalFeature] )
-:   result raises TerminalError =
+  ( using Tactic[TerminalError] )
+:   result =
 
-  given terminal: Terminal = Terminal()
+  // The session terminal retains the ambient monitor; the checker cannot see that the
+  // teardown accesses below are not aliased writers.
+  given terminal: Terminal = scala.caps.unsafe.unsafeAssumeSeparate(Terminal())
 
   // The core session: raw mode, the caller's block, then input/event teardown.
   def session: result =
@@ -83,7 +86,9 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
   // turns off (in its own try/finally) in the reverse of the order it turned on.
   def applyFeatures(remaining: List[TerminalFeature]): result = remaining match
     case Nil             => session
-    case feature :: rest => feature(applyFeatures(rest))
+    case feature :: rest =>
+      // Each feature wraps the session around the same single-owner terminal.
+      scala.caps.unsafe.unsafeAssumeSeparate(feature(applyFeatures(rest)))
 
   applyFeatures(List.of(features.values))
 

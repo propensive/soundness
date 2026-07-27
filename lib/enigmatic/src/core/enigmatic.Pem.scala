@@ -59,8 +59,10 @@ object Pem:
   // The first PEM block of the input: leading whitespace is skipped (the
   // legacy parser trimmed the whole document), then the first line must be a
   // `BEGIN` boundary.
-  private def parse[cap^](cursor: Cursor[Text, cap]^)(using Diagnostics)
-  :   Pem raises PemError =
+  // A real `using` clause rather than the `raises` sugar: a context-function result would
+  // hide the `cursor` parameter, which the separation checker rejects.
+  private def parse[cap^](cursor: Cursor[Text, cap]^)(using Diagnostics, Tactic[PemError]^)
+  :   Pem =
 
     while !cursor.finished
           && (cursor.peek == ' ' || cursor.peek == '\t'
@@ -90,8 +92,9 @@ object Pem:
   // (verbatim, as the legacy parser joined them) until an `END` boundary.
   // Like the legacy parser, the `END` label is not required to match the
   // `BEGIN` label, though the line is trimmed before matching (a relaxation).
-  private def block[cap^](cursor: Cursor[Text, cap]^, label: PemLabel)(using Diagnostics)
-  :   Pem raises PemError =
+  private def block[cap^](cursor: Cursor[Text, cap]^, label: PemLabel)
+    ( using Diagnostics, Tactic[PemError]^ )
+  :   Pem =
 
     val body = jl.StringBuilder()
     var data: Optional[Data] = Unset

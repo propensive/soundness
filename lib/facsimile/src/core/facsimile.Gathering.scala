@@ -87,7 +87,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
     var i = 0
 
     while i < count do
-      out(targetOffset + i) = data(delivered + i)
+      writable(out)(targetOffset + i) = data(delivered + i)
       i += 1
 
     delivered += count

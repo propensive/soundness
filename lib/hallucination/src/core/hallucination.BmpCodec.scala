@@ -146,28 +146,33 @@ private[hallucination] object BmpCodec:
   def encode(raster: Raster): Data =
     val rowSize = (raster.width*3 + 3)& -4
     val imageSize = rowSize*raster.height
-    val buffer = Buffer[Byte](54 + imageSize)
+    // A raw exclusive array rather than a `Buffer`: the buffer-typed local's definition
+    // hides its own fresh capability, poisoning the helper calls below.
+    val buffer: Array[Byte]^ = new Array[Byte](54 + imageSize)
 
-    def put16(offset: Int, value: Int): Unit =
+    // The buffer is threaded as an exclusive parameter: a captured buffer would be
+    // read-only inside these helpers.
+    def put16(buffer: Array[Byte]^, offset: Int, value: Int): Unit =
       buffer(offset) = value.toByte
       buffer(offset + 1) = (value >> 8).toByte
 
-    def put32(offset: Int, value: Int): Unit =
-      put16(offset, value&0xffff)
-      put16(offset + 2, value >>> 16)
+    def put32(buffer: Array[Byte]^, offset: Int, value: Int): Unit =
+      put16(buffer, offset, value&0xffff)
+      put16(buffer, offset + 2, value >>> 16)
 
     buffer(0) = 'B'
     buffer(1) = 'M'
-    put32(2, buffer.length)
-    put32(10, 54)
-    put32(14, 40)
-    put32(18, raster.width)
-    put32(22, raster.height)
-    put16(26, 1)
-    put16(28, 24)
-    put32(34, imageSize)
-    put32(38, 2835)
-    put32(42, 2835)
+    val total = buffer.length
+    put32(buffer, 2, total)
+    put32(buffer, 10, 54)
+    put32(buffer, 14, 40)
+    put32(buffer, 18, raster.width)
+    put32(buffer, 22, raster.height)
+    put16(buffer, 26, 1)
+    put16(buffer, 28, 24)
+    put32(buffer, 34, imageSize)
+    put32(buffer, 38, 2835)
+    put32(buffer, 42, 2835)
 
     var y = 0
 
@@ -184,7 +189,7 @@ private[hallucination] object BmpCodec:
 
       y += 1
 
-    Buffer.freeze(buffer)
+    buffer.immutable(using Unsafe)
 
   private def pack(red: Int, green: Int, blue: Int): Long =
     red.toLong << 16 | green << 8 | blue

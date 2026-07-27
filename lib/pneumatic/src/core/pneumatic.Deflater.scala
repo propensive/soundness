@@ -32,6 +32,10 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+import vacuous.*
+import rudiments.*
+
 import Flate.*
 import FlateTables.*
 
@@ -87,14 +91,23 @@ private[pneumatic] object Deflater:
 
   // Per-level parameters: reduce lazy search above goodLength; do not perform lazy search above
   // maxLazy; quit search above niceLength; never search chains longer than maxChain.
-  val configGoodLength: Array[Int] = Array(0, 4, 4, 4, 4, 8, 8, 8, 32, 32)
-  val configMaxLazy: Array[Int] = Array(0, 4, 5, 6, 4, 16, 16, 32, 128, 258)
-  val configNiceLength: Array[Int] = Array(0, 8, 16, 32, 16, 32, 128, 128, 258, 258)
-  val configMaxChain: Array[Int] = Array(0, 4, 8, 32, 16, 32, 128, 256, 1024, 4096)
+  val configGoodLength: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(0, 4, 4, 4, 4, 8, 8, 8, 32, 32)
+  val configMaxLazy: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(0, 4, 5, 6, 4, 16, 16, 32, 128, 258)
+  val configNiceLength: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(0, 8, 16, 32, 16, 32, 128, 128, 258, 258)
+  val configMaxChain: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(0, 4, 8, 32, 16, 32, 128, 256, 1024, 4096)
 
-  val configFunc: Array[Int] =
-    Array(StoredFunc, FastFunc, FastFunc, FastFunc, SlowFunc, SlowFunc, SlowFunc, SlowFunc,
-        SlowFunc, SlowFunc)
+  val configFunc: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(StoredFunc, FastFunc, FastFunc, FastFunc, SlowFunc, SlowFunc, SlowFunc, SlowFunc,
+          SlowFunc, SlowFunc)
 
   // Mapping from a distance to a distance code, where dist is the distance - 1.
   def dCode(dist: Int): Int =
@@ -122,7 +135,7 @@ private[pneumatic] object Deflater:
     res >>> 1
 
   // Generate the codes for a given tree and bit counts (which need not be optimal).
-  def genCodes(tree: Array[Short], maxCode: Int, blCount: Array[Short], nextCode: Array[Short])
+  def genCodes(tree: Array[Short]^, maxCode: Int, blCount: Array[Short], nextCode: Array[Short]^)
   :   Unit =
 
     var code: Int = 0
@@ -155,14 +168,18 @@ private[pneumatic] object TreeConfig:
 // The static configuration of one of the three Huffman trees: its static counterpart (empty for
 // the bit-length tree), extra-bit tables and size limits (JZlib's `StaticTree`).
 private[pneumatic] final class TreeConfig
-  ( val staticTree: Array[Short], val extraBits: Array[Int], val extraBase: Int, val elems: Int,
+  ( val staticTree: IArray[Short], val extraBits: IArray[Int], val extraBase: Int, val elems: Int,
     val maxLength: Int )
 
 // One dynamic Huffman tree under construction (JZlib's `Tree`): frequency and code arrays
 // interleaved in `dynTree`, built against a `TreeConfig`.
-private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc: TreeConfig):
+private[pneumatic] final class FlateTree(dynTree0: Array[Short], val statDesc: TreeConfig):
   import Deflater.*
 
+  @scala.caps.unsafe.untrackedCaptures
+  private var dynTree: Array[Short] = dynTree0
+
+  @scala.caps.unsafe.untrackedCaptures
   var maxCode: Int = 0 // largest code with non-zero frequency
 
   // Compute the optimal bit lengths for a tree and update the total bit length for the current
@@ -182,11 +199,11 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
     var overflow = 0 // number of elements with bit length too large
 
     bits = 0
-    while bits <= MaxBits do { s.blCount(bits) = 0; bits += 1 }
+    while bits <= MaxBits do { writable(s.blCount)(bits) = 0; bits += 1 }
 
     // In a first pass, compute the optimal bit lengths (which may overflow in the case of the
     // bit length tree).
-    tree(s.heap(s.heapMax)*2 + 1) = 0 // root of the heap
+    writable(tree)(s.heap(s.heapMax)*2 + 1) = 0 // root of the heap
 
     h = s.heapMax + 1
 
@@ -198,10 +215,10 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
         bits = maxLength
         overflow += 1
 
-      tree(n*2 + 1) = bits.toShort // we overwrite tree(n*2 + 1) which is no longer needed
+      writable(tree)(n*2 + 1) = bits.toShort // we overwrite tree(n*2 + 1) which is no longer needed
 
       if n <= maxCode then // a leaf node
-        s.blCount(bits) = (s.blCount(bits) + 1).toShort
+        writable(s.blCount)(bits) = (s.blCount(bits) + 1).toShort
         xbits = 0
         if n >= base then xbits = extra(n - base)
         f = tree(n*2)
@@ -216,9 +233,10 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
       while overflow > 0 do
         bits = maxLength - 1
         while s.blCount(bits) == 0 do bits -= 1
-        s.blCount(bits) = (s.blCount(bits) - 1).toShort    // move one leaf down the tree
-        s.blCount(bits + 1) = (s.blCount(bits + 1) + 2).toShort // an overflow item's brother
-        s.blCount(maxLength) = (s.blCount(maxLength) - 1).toShort
+        writable(s.blCount)(bits) = (s.blCount(bits) - 1).toShort    // move one leaf down the tree
+        writable(s.blCount)(bits + 1) =
+          (s.blCount(bits + 1) + 2).toShort // an overflow item's brother
+        writable(s.blCount)(maxLength) = (s.blCount(maxLength) - 1).toShort
         overflow -= 2
 
       bits = maxLength
@@ -233,7 +251,7 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
           if m <= maxCode then
             if tree(m*2 + 1) != bits then
               s.optLen += (bits - tree(m*2 + 1))*tree(m*2)
-              tree(m*2 + 1) = bits.toShort
+              writable(tree)(m*2 + 1) = bits.toShort
 
             n -= 1
 
@@ -260,11 +278,11 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
     while n < elems do
       if tree(n*2) != 0 then
         s.heapLen += 1
-        s.heap(s.heapLen) = n
+        writable(s.heap)(s.heapLen) = n
         max = n
-        s.depth(n) = 0
+        writable(s.depth)(n) = 0
       else
-        tree(n*2 + 1) = 0
+        writable(tree)(n*2 + 1) = 0
 
       n += 1
 
@@ -274,9 +292,9 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
     while s.heapLen < 2 do
       s.heapLen += 1
       node = if max < 2 then { max += 1; max } else 0
-      s.heap(s.heapLen) = node
-      tree(node*2) = 1
-      s.depth(node) = 0
+      writable(s.heap)(s.heapLen) = node
+      writable(tree)(node*2) = 1
+      writable(s.depth)(node) = 0
       s.optLen -= 1
       if stree.length != 0 then s.staticLen -= stree(node*2 + 1)
       // node is 0 or 1 so it does not have extra bits
@@ -296,24 +314,24 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
 
     while
       n = s.heap(1)
-      s.heap(1) = s.heap(s.heapLen)
+      writable(s.heap)(1) = s.heap(s.heapLen)
       s.heapLen -= 1
       s.pqdownheap(tree, 1)
       m = s.heap(1) // m = node of next least frequency
 
       s.heapMax -= 1
-      s.heap(s.heapMax) = n // keep the nodes sorted by frequency
+      writable(s.heap)(s.heapMax) = n // keep the nodes sorted by frequency
       s.heapMax -= 1
-      s.heap(s.heapMax) = m
+      writable(s.heap)(s.heapMax) = m
 
       // Create a new node father of n and m
-      tree(node*2) = (tree(n*2) + tree(m*2)).toShort
-      s.depth(node) = (Math.max(s.depth(n), s.depth(m)) + 1).toByte
-      tree(n*2 + 1) = node.toShort
-      tree(m*2 + 1) = node.toShort
+      writable(tree)(node*2) = (tree(n*2) + tree(m*2)).toShort
+      writable(s.depth)(node) = (Math.max(s.depth(n), s.depth(m)) + 1).toByte
+      writable(tree)(n*2 + 1) = node.toShort
+      writable(tree)(m*2 + 1) = node.toShort
 
       // and insert the new node in the heap
-      s.heap(1) = node
+      writable(s.heap)(1) = node
       node += 1
       s.pqdownheap(tree, 1)
 
@@ -321,11 +339,11 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
     do ()
 
     s.heapMax -= 1
-    s.heap(s.heapMax) = s.heap(1)
+    writable(s.heap)(s.heapMax) = s.heap(1)
 
     // At this point, the fields freq and dad are set; generate the bit lengths, then the codes.
     genBitlen(s)
-    Deflater.genCodes(tree, max, s.blCount, s.nextCode)
+    Deflater.genCodes(writable(tree), max, writable(s.blCount), writable(s.nextCode))
 
 // A streaming deflater with the same call pattern as `java.util.zip.Deflater`: feed input with
 // `setInput`, drain with `deflate` (which consumes input into the sliding window and returns the
@@ -333,33 +351,49 @@ private[pneumatic] final class FlateTree(val dynTree: Array[Short], val statDesc
 private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends DeflateEngine:
   import Deflater.*
 
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextIn: Array[Byte] = empty
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextInIndex: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var availIn: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var totalIn: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextOut: Array[Byte] = empty
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextOutIndex: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var availOut: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var totalOut: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var msg: String = ""
   private[pneumatic] val adler: FlateChecksum = Adler32()
 
   private val level: Int = if level0 == -1 then 6 else level0
   private val strategy: Int = 0 // Z_DEFAULT_STRATEGY
+  @scala.caps.unsafe.untrackedCaptures
   private var wrap: Int = if nowrap then 0 else 1
 
+  @scala.caps.unsafe.untrackedCaptures
   private var status: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var dataType: Int = ZUnknown
+  @scala.caps.unsafe.untrackedCaptures
   private var lastFlush: Int = ZNoFlush
 
   private val wBits: Int = MaxWbits
   private val wSize: Int = 1 << wBits
   private val wMask: Int = wSize - 1
 
-  private val window: Array[Byte] = new Array[Byte](wSize*2)
+  @scala.caps.unsafe.untrackedCaptures
+  private var window: Array[Byte] = new Array[Byte](wSize*2)
   private val windowSize: Int = 2*wSize
-  private val prev: Array[Short] = new Array[Short](wSize)
-  private val head: Array[Short] = new Array[Short](1 << (DefMemLevel + 7))
+  @scala.caps.unsafe.untrackedCaptures
+  private var prev: Array[Short] = new Array[Short](wSize)
+  @scala.caps.unsafe.untrackedCaptures
+  private var head: Array[Short] = new Array[Short](1 << (DefMemLevel + 7))
 
   private val hashBits: Int = DefMemLevel + 7
   private val hashSize: Int = 1 << hashBits
@@ -367,61 +401,101 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   private val hashShift: Int = (hashBits + MinMatch - 1)/MinMatch
 
   private val litBufsize: Int = 1 << (DefMemLevel + 6)
-  private val pendingBuf: Array[Byte] = new Array[Byte](litBufsize*3)
+  @scala.caps.unsafe.untrackedCaptures
+  private var pendingBuf: Array[Byte] = new Array[Byte](litBufsize*3)
   private val pendingBufSize: Int = litBufsize*3
   private val dBuf: Int = litBufsize
-  private val lBuf: Array[Byte] = new Array[Byte](litBufsize)
+  @scala.caps.unsafe.untrackedCaptures
+  private var lBuf: Array[Byte] = new Array[Byte](litBufsize)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var pending: Int = 0    // number of bytes in the pending buffer
+  @scala.caps.unsafe.untrackedCaptures
   private var pendingOut: Int = 0 // next pending byte to output to the stream
 
+  @scala.caps.unsafe.untrackedCaptures
   private var insH: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var blockStart: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var matchLength: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var prevMatch: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var matchAvailable: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var strstart: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var matchStart: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var lookahead: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var prevLength: Int = 0
 
+  @scala.caps.unsafe.untrackedCaptures
   private var maxChainLength: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var maxLazyMatch: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var goodMatch: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var niceMatch: Int = 0
 
-  private val dynLtree: Array[Short] = new Array[Short](HeapSize*2)
-  private val dynDtree: Array[Short] = new Array[Short]((2*DCodes + 1)*2)
-  private val blTree: Array[Short] = new Array[Short]((2*BlCodes + 1)*2)
+  @scala.caps.unsafe.untrackedCaptures
+  private var dynLtree: Array[Short] = new Array[Short](HeapSize*2)
+  @scala.caps.unsafe.untrackedCaptures
+  private var dynDtree: Array[Short] = new Array[Short]((2*DCodes + 1)*2)
+  @scala.caps.unsafe.untrackedCaptures
+  private var blTree: Array[Short] = new Array[Short]((2*BlCodes + 1)*2)
 
-  private val lDesc: FlateTree = FlateTree(dynLtree, TreeConfig.staticL)
-  private val dDesc: FlateTree = FlateTree(dynDtree, TreeConfig.staticD)
-  private val blDesc: FlateTree = FlateTree(blTree, TreeConfig.staticBl)
+  // FlateTree is stateless apart from its untracked buffers; the capture is erased.
+  private val lDesc: FlateTree =
+    scala.caps.unsafe.unsafeAssumePure(FlateTree(dynLtree, TreeConfig.staticL))
+  // FlateTree is stateless apart from its untracked buffers; the capture is erased.
+  private val dDesc: FlateTree =
+    scala.caps.unsafe.unsafeAssumePure(FlateTree(dynDtree, TreeConfig.staticD))
+  private val blDesc: FlateTree =
+    scala.caps.unsafe.unsafeAssumePure(FlateTree(blTree, TreeConfig.staticBl))
 
-  private[pneumatic] val blCount: Array[Short] = new Array[Short](MaxBits + 1)
-  private[pneumatic] val nextCode: Array[Short] = new Array[Short](MaxBits + 1)
-  private[pneumatic] val heap: Array[Int] = new Array[Int](2*LCodes + 1)
+  @scala.caps.unsafe.untrackedCaptures
+  private[pneumatic] var blCount: Array[Short] = new Array[Short](MaxBits + 1)
+  @scala.caps.unsafe.untrackedCaptures
+  private[pneumatic] var nextCode: Array[Short] = new Array[Short](MaxBits + 1)
+  @scala.caps.unsafe.untrackedCaptures
+  private[pneumatic] var heap: Array[Int] = new Array[Int](2*LCodes + 1)
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var heapLen: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var heapMax: Int = 0
-  private[pneumatic] val depth: Array[Byte] = new Array[Byte](2*LCodes + 1)
+  @scala.caps.unsafe.untrackedCaptures
+  private[pneumatic] var depth: Array[Byte] = new Array[Byte](2*LCodes + 1)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var lastLit: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var optLen: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var staticLen: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var matches: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var lastEobLen: Int = 0
 
+  @scala.caps.unsafe.untrackedCaptures
   private var biBuf: Int = 0   // output bit buffer (low 16 bits)
+  @scala.caps.unsafe.untrackedCaptures
   private var biValid: Int = 0 // number of valid bits in biBuf
 
+  @scala.caps.unsafe.untrackedCaptures
   private var finishing: Boolean = false
+  @scala.caps.unsafe.untrackedCaptures
   private var streamEnded: Boolean = false
 
   deflateReset()
 
   private def lmInit(): Unit =
     var i = 0
-    while i < hashSize do { head(i) = 0; i += 1 }
+    while i < hashSize do { writable(head)(i) = 0; i += 1 }
 
     maxLazyMatch = configMaxLazy(level)
     goodMatch = configGoodLength(level)
@@ -445,13 +519,13 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   private def initBlock(): Unit =
     var i = 0
-    while i < LCodes do { dynLtree(i*2) = 0; i += 1 }
+    while i < LCodes do { writable(dynLtree)(i*2) = 0; i += 1 }
     i = 0
-    while i < DCodes do { dynDtree(i*2) = 0; i += 1 }
+    while i < DCodes do { writable(dynDtree)(i*2) = 0; i += 1 }
     i = 0
-    while i < BlCodes do { blTree(i*2) = 0; i += 1 }
+    while i < BlCodes do { writable(blTree)(i*2) = 0; i += 1 }
 
-    dynLtree(EndBlock*2) = 1
+    writable(dynLtree)(EndBlock*2) = 1
     optLen = 0
     staticLen = 0
     lastLit = 0
@@ -472,15 +546,15 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       if smaller(tree, v, heap(j), depth) then go = false
       else
         // Exchange v with the smallest son
-        heap(k) = heap(j)
+        writable(heap)(k) = heap(j)
         k = j
         j <<= 1
 
-    heap(k) = v
+    writable(heap)(k) = v
 
   // Scan a literal or distance tree to determine the frequencies of the codes in the bit length
   // tree.
-  private def scanTree(tree: Array[Short], maxCode: Int): Unit =
+  private def scanTree(tree: Array[Short]^, maxCode: Int): Unit =
     var prevlen = -1              // last emitted length
     var curlen = 0                // length of current code
     var nextlen = tree(1).toInt   // length of next code
@@ -503,14 +577,14 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
       if count < maxCount && curlen == nextlen then () // keep counting
       else
-        if count < minCount then blTree(curlen*2) = (blTree(curlen*2) + count).toShort
+        if count < minCount then writable(blTree)(curlen*2) = (blTree(curlen*2) + count).toShort
         else if curlen != 0 then
-          if curlen != prevlen then blTree(curlen*2) = (blTree(curlen*2) + 1).toShort
-          blTree(Rep36*2) = (blTree(Rep36*2) + 1).toShort
+          if curlen != prevlen then writable(blTree)(curlen*2) = (blTree(curlen*2) + 1).toShort
+          writable(blTree)(Rep36*2) = (blTree(Rep36*2) + 1).toShort
         else if count <= 10 then
-          blTree(Repz310*2) = (blTree(Repz310*2) + 1).toShort
+          writable(blTree)(Repz310*2) = (blTree(Repz310*2) + 1).toShort
         else
-          blTree(Repz11138*2) = (blTree(Repz11138*2) + 1).toShort
+          writable(blTree)(Repz11138*2) = (blTree(Repz11138*2) + 1).toShort
 
         count = 0
         prevlen = curlen
@@ -531,8 +605,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   // bit length code to send.
   private def buildBlTree(): Int =
     // Determine the bit length frequencies for literal and distance trees
-    scanTree(dynLtree, lDesc.maxCode)
-    scanTree(dynDtree, dDesc.maxCode)
+    scanTree(writable(dynLtree), lDesc.maxCode)
+    scanTree(writable(dynDtree), dDesc.maxCode)
 
     // Build the bit length tree:
     blDesc.buildTree(this)
@@ -624,7 +698,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     pending += len
 
   private def putByte(c: Byte): Unit =
-    pendingBuf(pending) = c
+    writable(pendingBuf)(pending) = c
     pending += 1
 
   private def putShort(w: Int): Unit =
@@ -652,13 +726,13 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   // Send one empty static block to give enough lookahead for inflate.
   private def trAlign(): Unit =
     sendBits(StaticTrees << 1, 3)
-    sendCode(EndBlock, staticLtree)
+    sendCode(EndBlock, staticLtree.mutable(using Unsafe))
     biFlush()
 
     // Of the 10 bits for the empty block, we have already sent (10 - biValid) bits.
     if 1 + lastEobLen + 10 - biValid < 9 then
       sendBits(StaticTrees << 1, 3)
-      sendCode(EndBlock, staticLtree)
+      sendCode(EndBlock, staticLtree.mutable(using Unsafe))
       biFlush()
 
     lastEobLen = 7
@@ -667,23 +741,23 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   // flushed.
   private def trTally(dist0: Int, lc: Int): Boolean =
     var dist = dist0
-    pendingBuf(dBuf + lastLit*2) = (dist >>> 8).toByte
-    pendingBuf(dBuf + lastLit*2 + 1) = dist.toByte
-    lBuf(lastLit) = lc.toByte
+    writable(pendingBuf)(dBuf + lastLit*2) = (dist >>> 8).toByte
+    writable(pendingBuf)(dBuf + lastLit*2 + 1) = dist.toByte
+    writable(lBuf)(lastLit) = lc.toByte
     lastLit += 1
 
     if dist == 0 then
       // lc is the unmatched char
-      dynLtree(lc*2) = (dynLtree(lc*2) + 1).toShort
+      writable(dynLtree)(lc*2) = (dynLtree(lc*2) + 1).toShort
     else
       matches += 1
       // Here, lc is the match length - MinMatch
       dist -= 1 // dist = match distance - 1
 
-      dynLtree((lengthCode(lc) + Literals + 1)*2) =
+      writable(dynLtree)((lengthCode(lc) + Literals + 1)*2) =
         (dynLtree((lengthCode(lc) + Literals + 1)*2) + 1).toShort
 
-      dynDtree(dCode(dist)*2) = (dynDtree(dCode(dist)*2) + 1).toShort
+      writable(dynDtree)(dCode(dist)*2) = (dynDtree(dCode(dist)*2) + 1).toShort
 
     if (lastLit & 0x1fff) == 0 && level > 2 then
       // Compute an upper bound for the compressed length
@@ -873,7 +947,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       trStoredBlock(buf, storedLen, eof)
     else if staticLenb == optLenb then
       sendBits((StaticTrees << 1) + (if eof then 1 else 0), 3)
-      compressBlock(staticLtree, staticDtree)
+      compressBlock(staticLtree.mutable(using Unsafe), staticDtree.mutable(using Unsafe))
     else
       sendBits((DynTrees << 1) + (if eof then 1 else 0), 3)
       sendAllTrees(lDesc.maxCode + 1, dDesc.maxCode + 1, maxBlindex + 1)
@@ -925,7 +999,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
         while
           p -= 1
           m = head(p) & 0xffff
-          head(p) = if m >= wSize then (m - wSize).toShort else 0
+          writable(head)(p) = if m >= wSize then (m - wSize).toShort else 0
           n -= 1
           n != 0
         do ()
@@ -936,7 +1010,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
         while
           p -= 1
           m = prev(p) & 0xffff
-          prev(p) = if m >= wSize then (m - wSize).toShort else 0
+          writable(prev)(p) = if m >= wSize then (m - wSize).toShort else 0
           n -= 1
           n != 0
         do ()
@@ -985,8 +1059,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
         if lookahead >= MinMatch then
           insH = ((insH << hashShift) ^ (window(strstart + MinMatch - 1) & 0xff)) & hashMask
           hashHead = head(insH) & 0xffff
-          prev(strstart & wMask) = head(insH)
-          head(insH) = strstart.toShort
+          writable(prev)(strstart & wMask) = head(insH)
+          writable(head)(insH) = strstart.toShort
 
         // Find the longest match, discarding those <= prevLength. At this point we have always
         // matchLength < MinMatch
@@ -1007,8 +1081,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
               strstart += 1
               insH = ((insH << hashShift) ^ (window(strstart + MinMatch - 1) & 0xff)) & hashMask
               hashHead = head(insH) & 0xffff
-              prev(strstart & wMask) = head(insH)
-              head(insH) = strstart.toShort
+              writable(prev)(strstart & wMask) = head(insH)
+              writable(head)(insH) = strstart.toShort
               // strstart never exceeds wSize-MaxMatch, so there are always MinMatch bytes ahead.
               matchLength -= 1
               matchLength != 0
@@ -1067,8 +1141,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
         if lookahead >= MinMatch then
           insH = ((insH << hashShift) ^ (window(strstart + MinMatch - 1) & 0xff)) & hashMask
           hashHead = head(insH) & 0xffff
-          prev(strstart & wMask) = head(insH)
-          head(insH) = strstart.toShort
+          writable(prev)(strstart & wMask) = head(insH)
+          writable(head)(insH) = strstart.toShort
 
         // Find the longest match, discarding those <= prevLength.
         prevLength = matchLength
@@ -1107,8 +1181,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
             if strstart <= maxInsert then
               insH = ((insH << hashShift) ^ (window(strstart + MinMatch - 1) & 0xff)) & hashMask
               hashHead = head(insH) & 0xffff
-              prev(strstart & wMask) = head(insH)
-              head(insH) = strstart.toShort
+              writable(prev)(strstart & wMask) = head(insH)
+              writable(head)(insH) = strstart.toShort
 
             prevLength -= 1
             prevLength != 0
@@ -1312,7 +1386,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
           // inflate_sync().
           if flush == ZFullFlush then
             var i = 0
-            while i < hashSize do { head(i) = 0; i += 1 } // forget history
+            while i < hashSize do { writable(head)(i) = 0; i += 1 } // forget history
 
         flushPending()
 
@@ -1337,7 +1411,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   def setInput(buffer: Array[Byte]): Unit = setInput(buffer, 0, buffer.length)
 
   def setInput(buffer: Array[Byte], offset: Int, length: Int): Unit =
-    nextIn = buffer
+    nextIn = writable(buffer)
     nextInIndex = offset
     availIn = length
 
@@ -1351,7 +1425,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     deflate(target, offset, space, if finishing then ZFinish else ZNoFlush)
 
   def deflate(target: Array[Byte], offset: Int, space: Int, flush: Int): Int =
-    nextOut = target
+    nextOut = writable(target)
     nextOutIndex = offset
     availOut = space
     val result = deflateInternal(flush)

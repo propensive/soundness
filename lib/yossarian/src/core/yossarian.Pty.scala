@@ -85,6 +85,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
     var lastGrapheme: Grapheme = Grapheme(" ")
 
     object cursor:
+      @scala.caps.unsafe.untrackedCaptures
       private var index: Ordinal = state.cursor
 
       def apply(): Ordinal = index

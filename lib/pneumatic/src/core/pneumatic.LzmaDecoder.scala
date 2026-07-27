@@ -38,11 +38,12 @@ import Lzma.*
 // bit-tree; low/mid are indexed by position-state.
 private[pneumatic] final class LengthDecoder extends LengthCoder:
   def decode(rc: RangeDecoder, posState: Int): Int =
-    if rc.decodeBit(choice, 0) == 0 then rc.decodeBitTree(low(posState)) + MatchLenMin
-    else if rc.decodeBit(choice, 1) == 0 then
-      rc.decodeBitTree(mid(posState)) + MatchLenMin + LenLowSymbols
+    if rc.decodeBit(writable(choice), 0) == 0
+    then rc.decodeBitTree(writable(low(posState))) + MatchLenMin
+    else if rc.decodeBit(writable(choice), 1) == 0 then
+      rc.decodeBitTree(writable(mid(posState))) + MatchLenMin + LenLowSymbols
     else
-      rc.decodeBitTree(high) + MatchLenMin + LenLowSymbols + LenMidSymbols
+      rc.decodeBitTree(writable(high)) + MatchLenMin + LenLowSymbols + LenMidSymbols
 
 // The LZMA symbol decoder: reads literals and matches from the range decoder, writing bytes (and
 // match copies) into the sliding window. Driven a window's-worth at a time by the LZMA2 layer,
@@ -71,10 +72,10 @@ extends LzmaCoder(lc, lp, pb):
     while lz.hasSpace do
       val posState = lz.pos & posMask
 
-      if rc.decodeBit(isMatch(state.get), posState) == 0 then decodeLiteral()
+      if rc.decodeBit(writable(isMatch(state.get)), posState) == 0 then decodeLiteral()
       else
         val len =
-          if rc.decodeBit(isRep, state.get) == 0 then decodeMatch(posState)
+          if rc.decodeBit(writable(isRep), state.get) == 0 then decodeMatch(posState)
           else decodeRepMatch(posState)
 
         lz.repeat(reps(0), len)
@@ -85,7 +86,8 @@ extends LzmaCoder(lc, lp, pb):
     var symbol = 1
 
     if state.isLiteral then
-      while symbol < 0x100 do symbol = (symbol << 1) | rc.decodeBit(literalProbs, base + symbol)
+      while symbol < 0x100 do
+        symbol = (symbol << 1) | rc.decodeBit(writable(literalProbs), base + symbol)
     else
       var matchByte = lz.getByte(reps(0)) << 1
       var continue = true
@@ -93,57 +95,59 @@ extends LzmaCoder(lc, lp, pb):
       while continue && symbol < 0x100 do
         val matchBit = (matchByte >> 8) & 1
         matchByte <<= 1
-        val bit = rc.decodeBit(literalProbs, base + ((1 + matchBit) << 8) + symbol)
+        val bit = rc.decodeBit(writable(literalProbs), base + ((1 + matchBit) << 8) + symbol)
         symbol = (symbol << 1) | bit
         if matchBit != bit then continue = false
 
-      while symbol < 0x100 do symbol = (symbol << 1) | rc.decodeBit(literalProbs, base + symbol)
+      while symbol < 0x100 do
+        symbol = (symbol << 1) | rc.decodeBit(writable(literalProbs), base + symbol)
 
     lz.putByte(symbol.toByte)
     state.updateLiteral()
 
   private def decodeMatch(posState: Int): Int =
     state.updateMatch()
-    reps(3) = reps(2)
-    reps(2) = reps(1)
-    reps(1) = reps(0)
+    writable(reps)(3) = reps(2)
+    writable(reps)(2) = reps(1)
+    writable(reps)(1) = reps(0)
 
     val len = matchLengthDecoder.decode(rc, posState)
-    val distSlot = rc.decodeBitTree(distSlots(distState(len)))
+    val distSlot = rc.decodeBitTree(writable(distSlots(distState(len))))
 
-    if distSlot < DistModelStart then reps(0) = distSlot
+    if distSlot < DistModelStart then writable(reps)(0) = distSlot
     else
       val footerBits = (distSlot >> 1) - 1
-      reps(0) = (2 | (distSlot & 1)) << footerBits
+      writable(reps)(0) = (2 | (distSlot & 1)) << footerBits
 
       if distSlot < DistModelEnd then
-        reps(0) += rc.decodeBitTreeReverse(distSpecial(distSlot - DistModelStart))
+        writable(reps)(0) +=
+          rc.decodeBitTreeReverse(writable(distSpecial(distSlot - DistModelStart)))
       else
-        reps(0) += rc.decodeDirectBits(footerBits - AlignBits) << AlignBits
-        reps(0) += rc.decodeBitTreeReverse(distAlign)
+        writable(reps)(0) += rc.decodeDirectBits(footerBits - AlignBits) << AlignBits
+        writable(reps)(0) += rc.decodeBitTreeReverse(writable(distAlign))
 
     len
 
   private def decodeRepMatch(posState: Int): Int =
-    if rc.decodeBit(isRep0, state.get) == 0 then
-      if rc.decodeBit(isRep0Long(state.get), posState) == 0 then
+    if rc.decodeBit(writable(isRep0), state.get) == 0 then
+      if rc.decodeBit(writable(isRep0Long(state.get)), posState) == 0 then
         state.updateShortRep()
         return 1
     else
       val distance =
-        if rc.decodeBit(isRep1, state.get) == 0 then reps(1)
-        else if rc.decodeBit(isRep2, state.get) == 0 then
+        if rc.decodeBit(writable(isRep1), state.get) == 0 then reps(1)
+        else if rc.decodeBit(writable(isRep2), state.get) == 0 then
           val d = reps(2)
-          reps(2) = reps(1)
+          writable(reps)(2) = reps(1)
           d
         else
           val d = reps(3)
-          reps(3) = reps(2)
-          reps(2) = reps(1)
+          writable(reps)(3) = reps(2)
+          writable(reps)(2) = reps(1)
           d
 
-      reps(1) = reps(0)
-      reps(0) = distance
+      writable(reps)(1) = reps(0)
+      writable(reps)(0) = distance
 
     state.updateRep()
     repLengthDecoder.decode(rc, posState)

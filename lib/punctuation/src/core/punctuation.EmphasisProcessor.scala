@@ -73,17 +73,25 @@ final class BracketData(val isImage: Boolean) extends InlineData
 // algorithm consumes characters from the run.
 final class DelimData
   ( val char: Char,
+    @scala.caps.unsafe.untrackedCaptures
     var length: Int,
     val canOpen: Boolean,
     val canClose: Boolean )
 extends InlineData
 
-final class InlineNode(var data: InlineData):
+@scala.caps.unsafe.untrackedCaptures
+@scala.caps.unsafe.untrackedCaptures
+@scala.caps.unsafe.untrackedCaptures
+final class InlineNode(@scala.caps.unsafe.untrackedCaptures var data: InlineData):
+  @scala.caps.unsafe.untrackedCaptures
   var prev: InlineNode | Null = null
+  @scala.caps.unsafe.untrackedCaptures
   var next: InlineNode | Null = null
 
 final class InlineList:
+  @scala.caps.unsafe.untrackedCaptures
   var first: InlineNode | Null = null
+  @scala.caps.unsafe.untrackedCaptures
   var last:  InlineNode | Null = null
 
   def append(data: InlineData): InlineNode =
@@ -108,6 +116,7 @@ final class InlineList:
     node.next = null
 
   def iterator: Iterator[InlineNode] = new Iterator[InlineNode]:
+    @scala.caps.unsafe.untrackedCaptures
     var cur: InlineNode | Null = first
     def hasNext: Boolean = cur != null
 

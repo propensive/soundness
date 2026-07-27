@@ -342,9 +342,10 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendData(stream.id, response.body.stream.memoize, true)
 
           val client = Http2Connection(clientSide)
-          val serverStarted = async(server.start())
+          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
-          serverStarted.await()
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            serverStarted.await()
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/hello", Nil,
               () => Http.emptyBody())
@@ -380,9 +381,10 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendTrailers(stream.id, List(HpackEntry(t"grpc-status", t"0")))
 
           val client = Http2Connection(clientSide)
-          val serverStarted = async(server.start())
+          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
-          serverStarted.await()
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            serverStarted.await()
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/call", Nil,
               () => Stream(ascii(t"ping")))
@@ -438,9 +440,10 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendData(stream.id, body, endStream = true)
 
           val client = Http2Connection(clientSide)
-          val serverStarted = async(server.start())
+          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
-          serverStarted.await()
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            serverStarted.await()
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/big", Nil,
               () => Http.emptyBody())

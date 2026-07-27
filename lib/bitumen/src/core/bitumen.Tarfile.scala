@@ -74,23 +74,31 @@ object Tarfile:
   // eager reader always did.
   // An explicit `Tactic` rather than `raises` sugar: a fresh capability in a
   // context-function result cannot flow to a forwarding caller.
-  def read(consume stream: (Stream[Data] over Credit)^)(using Tactic[TarError])
-  :   Iterator[Tar.Entry]^ =
+  def read(consume stream: (Stream[Data] over Credit)^)(using tactic: Tactic[TarError])
+  :   Iterator[Tar.Entry]^{tactic} =
 
-    entryIterator(Cursor[Data](stream))
+    // The stream's single ownership passes to the cursor inside the iterator, whose fresh
+    // capability is laundered (nothing else can reach it).
+    scala.caps.unsafe.unsafeAssumePure:
+      scala.caps.unsafe.unsafeAssumeSeparate(entryIterator(Cursor[Data](stream)))
 
-  def from(consume stream: (Stream[Data] over Credit)^): Tarfile raises TarError =
-    Tarfile(read(stream).to(List).asInstanceOf[List[Tar.Entry]])
+  def from(consume stream: (Stream[Data] over Credit)^)(using Tactic[TarError]): Tarfile =
+    // The stream's single ownership passes with this call; the checker cannot see through
+    // the consumed parameter's re-use in the nested call.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      Tarfile(read(stream).to(List).asInstanceOf[List[Tar.Entry]])
 
   // Pulls an entry's `size` bytes off the shared cursor in bounded chunks,
   // consuming the trailing block padding after the final one. The closure is
   // handed to `TarBody.deferred`, whose memoization guarantees the region is
   // read exactly once, in order.
   private def bodyPull(cursor: Cursor[Data, {}]^, size: Int, padded: Int)
-    ( using Tactic[TarError] )
-  :   () => Optional[Data] =
+    ( using tactic: Tactic[TarError] )
+  :   () ->{cursor, tactic} Optional[Data] =
 
+    @caps.unsafe.untrackedCaptures
     var consumed: Int = 0
+
     val chunkSize: Int = 65536
 
     () =>
@@ -109,8 +117,8 @@ object Tarfile:
         consumed += n
         data
 
-  private def entryIterator(cursor: Cursor[Data, {}]^)(using Tactic[TarError])
-  :   Iterator[Tar.Entry]^ =
+  private def entryIterator(cursor: Cursor[Data, {}]^)(using tactic: Tactic[TarError])
+  :   Iterator[Tar.Entry]^{cursor, tactic} =
 
     new Iterator[Tar.Entry]:
       // A stdlib class cannot extend `Stateful`, so its state is untracked
@@ -285,13 +293,13 @@ object Tarfile:
 
   // The next 512-byte block, or `Unset` at clean end-of-archive; a partial
   // block raises. One allocation per header block.
-  private def takeBlock(cursor: Cursor[Data, {}]^): Optional[Data] raises TarError =
+  private def takeBlock(cursor: Cursor[Data, {}]^)(using Tactic[TarError]): Optional[Data] =
     if cursor.finished then Unset
     else cursor.take(abort(TarError(TarError.Reason.TruncatedStream(512, cursor.available))))(512)
 
   // An entry's `size` bytes of data plus its padding, in a single allocation
   // (the block-list fold this replaces reallocated per block).
-  private def takeData(cursor: Cursor[Data, {}]^, size: Int): Data raises TarError =
+  private def takeData(cursor: Cursor[Data, {}]^, size: Int)(using Tactic[TarError]): Data =
     val padded = ((size + 511)/512)*512
 
     val data = cursor.take(abort(TarError(TarError.Reason.TruncatedStream(padded,
@@ -325,7 +333,8 @@ object Tarfile:
     List.of(builder.result())
 
   private def readSparseExtensions(cursor: Cursor[Data, {}]^, hasMore: Boolean)
-  :   List[SparseSegment] raises TarError =
+    ( using Tactic[TarError] )
+  :   List[SparseSegment] =
 
     if !hasMore then Nil else
       val block = takeBlock(cursor)

@@ -67,6 +67,7 @@ class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
   private val memo: scala.collection.mutable.ArrayBuffer[Data] =
     scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var exhausted: Boolean = false
 
   // Extend the memo by one chunk, or record exhaustion.
@@ -93,6 +94,7 @@ class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
   // The body's chunks, replayed from the start; unread chunks pull from the
   // producer as the iterator advances.
   def chunks: Iterator[Data] = new Iterator[Data]:
+    @scala.caps.unsafe.untrackedCaptures
     private var index: Int = 0
 
     def hasNext: Boolean = index < memo.length || fetch()

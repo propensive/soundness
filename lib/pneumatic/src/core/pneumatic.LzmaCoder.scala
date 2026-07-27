@@ -32,7 +32,7 @@
                                                                                                   */
 package pneumatic
 
-import RangeCoder.{ProbInit, probabilities, resetProbabilities}
+import RangeCoder.{ProbInit, probabilities, probabilityMatrix, resetProbabilities}
 
 // Shared LZMA model constants and the coder base holding every adaptive probability array. The
 // encoder and decoder derive from this so their models have identical shapes; only the direction of
@@ -67,6 +67,7 @@ import Lzma.*
 // The 12-state LZMA context tracking the recent history of literal/match/rep decisions; its value
 // selects which `isMatch`/`isRep*` probabilities apply.
 private[pneumatic] final class State:
+  @scala.caps.unsafe.untrackedCaptures
   private var value: Int = 0
 
   def get: Int = value
@@ -84,17 +85,26 @@ private[pneumatic] final class State:
 // The length model: a two-bit `choice` selecting one of three symbol ranges (8 low, 8 mid, 256
 // high), the low/mid trees indexed by position-state. Subclassed for decoding and encoding.
 private[pneumatic] abstract class LengthCoder:
-  val choice: Array[Short] = new Array[Short](2)
-  val low: Array[Array[Short]] = Array.tabulate(PosStatesMax)(_ => probabilities(LenLowSymbols))
-  val mid: Array[Array[Short]] = Array.tabulate(PosStatesMax)(_ => probabilities(LenMidSymbols))
-  val high: Array[Short] = probabilities(LenHighSymbols)
+  @scala.caps.unsafe.untrackedCaptures
+  var choice: Array[Short] = new Array[Short](2)
+  @scala.caps.unsafe.untrackedCaptures
+  var low =
+    probabilityMatrix(PosStatesMax, LenLowSymbols).asInstanceOf[Array[Array[Short]]]
+  @scala.caps.unsafe.untrackedCaptures
+  var mid =
+    probabilityMatrix(PosStatesMax, LenMidSymbols).asInstanceOf[Array[Array[Short]]]
+  @scala.caps.unsafe.untrackedCaptures
+  var high: Array[Short] = probabilities(LenHighSymbols)
 
   def reset(): Unit =
-    choice(0) = ProbInit
-    choice(1) = ProbInit
+    writable(choice)(0) = ProbInit
+    writable(choice)(1) = ProbInit
     var i = 0
-    while i < PosStatesMax do { resetProbabilities(low(i)); resetProbabilities(mid(i)); i += 1 }
-    resetProbabilities(high)
+    while i < PosStatesMax do
+      resetProbabilities(writable(low(i)))
+      resetProbabilities(writable(mid(i)))
+      i += 1
+    resetProbabilities(writable(high))
 
 // The coder base: every probability array LZMA needs, plus the reps, state and literal-context
 // arithmetic. `pb`/`lp`/`lc` fix the position and literal-context masks.
@@ -103,29 +113,44 @@ private[pneumatic] abstract class LzmaCoder(lc: Int, lp: Int, pb: Int):
   private val literalPosMask: Int = (1 << lp) - 1
   private val literalContextBits: Int = lc
 
-  val reps: Array[Int] = new Array[Int](Reps)
+  @scala.caps.unsafe.untrackedCaptures
+  var reps: Array[Int] = new Array[Int](Reps)
   val state: State = State()
 
-  val isMatch: Array[Array[Short]] = Array.tabulate(States)(_ => probabilities(PosStatesMax))
-  val isRep: Array[Short] = probabilities(States)
-  val isRep0: Array[Short] = probabilities(States)
-  val isRep1: Array[Short] = probabilities(States)
-  val isRep2: Array[Short] = probabilities(States)
-  val isRep0Long: Array[Array[Short]] = Array.tabulate(States)(_ => probabilities(PosStatesMax))
-  val distSlots: Array[Array[Short]] = Array.tabulate(DistStates)(_ => probabilities(DistSlots))
+  @scala.caps.unsafe.untrackedCaptures
+  var isMatch =
+    probabilityMatrix(States, PosStatesMax).asInstanceOf[Array[Array[Short]]]
+  @scala.caps.unsafe.untrackedCaptures
+  var isRep: Array[Short] = probabilities(States)
+  @scala.caps.unsafe.untrackedCaptures
+  var isRep0: Array[Short] = probabilities(States)
+  @scala.caps.unsafe.untrackedCaptures
+  var isRep1: Array[Short] = probabilities(States)
+  @scala.caps.unsafe.untrackedCaptures
+  var isRep2: Array[Short] = probabilities(States)
+  @scala.caps.unsafe.untrackedCaptures
+  var isRep0Long =
+    probabilityMatrix(States, PosStatesMax).asInstanceOf[Array[Array[Short]]]
+  @scala.caps.unsafe.untrackedCaptures
+  var distSlots =
+    probabilityMatrix(DistStates, DistSlots).asInstanceOf[Array[Array[Short]]]
 
   // One reverse-tree per distance slot from `DistModelStart` up to `DistModelEnd`; sizes double
   // every two slots (2,2,4,4,8,8,16,16,32,32), indexed by `distSlot - DistModelStart`.
-  val distSpecial: Array[Array[Short]] = Array(
-      probabilities(2), probabilities(2), probabilities(4), probabilities(4),
-      probabilities(8), probabilities(8), probabilities(16), probabilities(16),
-      probabilities(32), probabilities(32))
+  @scala.caps.unsafe.untrackedCaptures
+  var distSpecial =
+    val matrix: Array[Array[Short]]^ = new Array[Array[Short]](10)
+    var i = 0
+    while i < 10 do { matrix(i) = probabilities(2 << (i/2)); i += 1 }
+    matrix.asInstanceOf[Array[Array[Short]]]
 
-  val distAlign: Array[Short] = probabilities(AlignSize)
+  @scala.caps.unsafe.untrackedCaptures
+  var distAlign: Array[Short] = probabilities(AlignSize)
 
   // The literal model: 0x300 probabilities per (high bits of the previous byte, low bits of the
   // position) context. Stored flat; `literalIndex` yields the base offset of a context's block.
-  val literalProbs: Array[Short] = probabilities(0x300 << (lc + lp))
+  @scala.caps.unsafe.untrackedCaptures
+  var literalProbs: Array[Short] = probabilities(0x300 << (lc + lp))
 
   def literalIndex(prevByte: Int, position: Int): Int =
     val contextLow = prevByte >>> (8 - literalContextBits)
@@ -134,22 +159,22 @@ private[pneumatic] abstract class LzmaCoder(lc: Int, lp: Int, pb: Int):
 
   def reset(): Unit =
     var i = 0
-    while i < Reps do { reps(i) = 0; i += 1 }
+    while i < Reps do { writable(reps)(i) = 0; i += 1 }
     state.reset()
     i = 0
 
     while i < States do
-      resetProbabilities(isMatch(i))
-      resetProbabilities(isRep0Long(i))
+      resetProbabilities(writable(isMatch(i)))
+      resetProbabilities(writable(isRep0Long(i)))
       i += 1
 
-    resetProbabilities(isRep)
-    resetProbabilities(isRep0)
-    resetProbabilities(isRep1)
-    resetProbabilities(isRep2)
+    resetProbabilities(writable(isRep))
+    resetProbabilities(writable(isRep0))
+    resetProbabilities(writable(isRep1))
+    resetProbabilities(writable(isRep2))
     i = 0
-    while i < DistStates do { resetProbabilities(distSlots(i)); i += 1 }
+    while i < DistStates do { resetProbabilities(writable(distSlots(i))); i += 1 }
     i = 0
-    while i < distSpecial.length do { resetProbabilities(distSpecial(i)); i += 1 }
-    resetProbabilities(distAlign)
-    resetProbabilities(literalProbs)
+    while i < distSpecial.length do { resetProbabilities(writable(distSpecial(i))); i += 1 }
+    resetProbabilities(writable(distAlign))
+    resetProbabilities(writable(literalProbs))

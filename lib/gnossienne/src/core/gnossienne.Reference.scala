@@ -62,5 +62,6 @@ trait Reference(private val rawKey: Any):
   def key(using resolvable: Result is Resolvable): resolvable.Operand =
     rawKey.asInstanceOf[resolvable.Operand]
 
-  def apply()(using resolvable: Result is Resolvable): Result raises ReferenceError =
+  def apply()(using resolvable: Result is Resolvable)
+  :   (Tactic[ReferenceError]^) ?->{this} Result =
     resolvable.resolve(key.asInstanceOf[resolvable.Operand])

@@ -45,8 +45,10 @@ import RasterError.Reason
 // optionally lossless-compressed) and, for animations, decodes and composites the first frame.
 private[hallucination] object WebpExtended:
   private final class Chunks
-    ( var alph: Optional[(Int, Int)], var vp8: Optional[(Int, Int)],
-      var vp8l: Optional[(Int, Int)], var anmf: Optional[(Int, Int)] )
+    ( @scala.caps.unsafe.untrackedCaptures var alph: Optional[(Int, Int)],
+      @scala.caps.unsafe.untrackedCaptures var vp8:  Optional[(Int, Int)],
+      @scala.caps.unsafe.untrackedCaptures var vp8l: Optional[(Int, Int)],
+      @scala.caps.unsafe.untrackedCaptures var anmf: Optional[(Int, Int)] )
 
   def decode(data: Data, start: Int, end: Int, riffEnd: Int): Raster raises RasterError =
     val flags = u8(data, start)

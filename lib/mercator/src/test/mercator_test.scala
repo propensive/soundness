@@ -86,7 +86,7 @@ object Tests extends Suite(m"Mercator tests"):
     . assert(_ == scala.collection.immutable.Set(2, 4, 6))
 
     test(m"Functor for Vector"):
-      val functor = summon[Functor[Vector]]
+      val functor = summon[Functor[Vector]].asInstanceOf[Functor[Vector]]
       functor.map(Vector(1, 2, 3))(_ + 1)
     . assert(_ == Vector(2, 3, 4))
 
@@ -117,7 +117,7 @@ object Tests extends Suite(m"Mercator tests"):
     . assert(_ == scala.collection.immutable.Set(2, 4, 6))
 
     test(m"Monad for Vector"):
-      val monad = summon[Monad[Vector]]
+      val monad = summon[Monad[Vector]].asInstanceOf[Monad[Vector]]
       monad.bind(Vector(1, 2, 3)) { v => Vector(v + 1, v + 1) }
     . assert(_ == Vector(2, 2, 3, 3, 4, 4))
 

@@ -288,6 +288,15 @@ object internal:
       case _                  => false
 
     override def hashCode: Int =
-      scala.util.hashing.MurmurHash3.arrayHash(data.mutable(using Unsafe))
+      // Inlined `MurmurHash3.arrayHash`: `arrayHash` demands a pure `Array`, which the
+      // capture-checked `IArray` view cannot supply without an unsafe cast.
+      var hash = scala.util.hashing.MurmurHash3.arraySeed
+      var index = 0
+
+      while index < data.length do
+        hash = scala.util.hashing.MurmurHash3.mix(hash, data.stdlib(index).##)
+        index += 1
+
+      scala.util.hashing.MurmurHash3.finalizeHash(hash, data.length)
 
     override def toString: String = data.mkString("Vector(", ", ", ")")

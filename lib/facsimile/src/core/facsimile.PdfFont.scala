@@ -65,7 +65,7 @@ object PdfFont:
 
   // Builds a font from its dictionary; anything unrecognizable is `Unset` rather than an
   // error, since fonts are consulted opportunistically during extraction.
-  private[facsimile] def read(value: Cos)(using pdf: Pdf): Optional[PdfFont] raises PdfError =
+  private[facsimile] def read(value: Cos)(using pdf: Pdf)(using Tactic[PdfError]): Optional[PdfFont] =
     value.dictionary.let: entries =>
       val subtype = entries.at(t"Subtype").let(pdf.resolved(_).name).or(t"")
       val baseFont = entries.at(t"BaseFont").let(pdf.resolved(_).name).or(t"")
@@ -185,7 +185,8 @@ object PdfFont:
   // `/W` (ISO 32000-2 §9.7.4.3): `start [w w ...]` lists consecutive widths; `start end w`
   // spans a range.
   private def cidWidthArray(value: Optional[Cos])(using pdf: Pdf)
-  :   Map[Int, Double] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Map[Int, Double] =
 
     pdf.resolved(value.or(Cos.Nil)).elements.lay(Map[Int, Double]()): elements =>
       val builder = scala.collection.immutable.Map.newBuilder[Int, Double]

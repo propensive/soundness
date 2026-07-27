@@ -55,8 +55,11 @@ object Runner:
 class Runner[report](selection: Selection = Selection.all)(using reporter: Reporter[report])
 extends Findable:
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var active: List[TestId] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   private var listed0: List[(TestId, Entry.Kind)] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   private var admitted0: Int = 0
   private val silent: Boolean = Ci.claudeCode || Ci()
 

@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -113,30 +115,47 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int):
   private val flushCap =
     if dictSize >= (1 << 16) then 1 << 16 else if dictSize > 0 then dictSize else 1
 
-  private val flushBuffer = new Array[Byte](flushCap)
+  @scala.caps.unsafe.untrackedCaptures
+  private var flushBuffer = new Array[Byte](flushCap)
+  @scala.caps.unsafe.untrackedCaptures
   private var lzma: LzmaDecoder | Null = null
+  @scala.caps.unsafe.untrackedCaptures
   private var haveProperties = false
+  @scala.caps.unsafe.untrackedCaptures
   private var propsLc = -1
+  @scala.caps.unsafe.untrackedCaptures
   private var propsLp = -1
+  @scala.caps.unsafe.untrackedCaptures
   private var propsPb = -1
 
+  @scala.caps.unsafe.untrackedCaptures
   private var state = Lzma2State.Control
 
   // Buffered, not-yet-consumed compressed input, with a read cursor.
+  @scala.caps.unsafe.untrackedCaptures
   private var input: Array[Byte] = new Array[Byte](1 << 16)
+  @scala.caps.unsafe.untrackedCaptures
   private var readPos = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var writePos = 0
 
   // Per-chunk header fields.
+  @scala.caps.unsafe.untrackedCaptures
   private var control = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var chunkReset = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var chunkUncompressed = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var chunkCompressed = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var uncompressedRemaining = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var dictResetPending = true
 
   val output: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var consumedTotal = 0
 
   def ended: Boolean = state == Lzma2State.Ended
@@ -160,7 +179,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int):
       if writePos + extra > input.length then
         var size = input.length*2
         while writePos + extra > size do size *= 2
-        val grown = new Array[Byte](size)
+        val grown: Array[Byte]^ = new Array[Byte](size)
         System.arraycopy(input, 0, grown, 0, writePos)
         input = grown
 
@@ -301,10 +320,16 @@ private[pneumatic] final class Lzma2Compressor(data: Array[Byte], options: Lzma2
     if options.dictSize < data.length then options.dictSize else data.length
 
   private val depth = if options.depthLimit > 0 then options.depthLimit else 32
-  private val finder = HashChain(data, if effectiveDict > 0 then effectiveDict else 1, depth)
+  // The match finder privately owns its buffers; the construction capture is erased.
+  private val finder: HashChain =
+    scala.caps.unsafe.unsafeAssumePure
+      (HashChain(data, if effectiveDict > 0 then effectiveDict else 1, depth))
 
-  private val lzma = LzmaEncoder(data, rc, options.lc, options.lp, options.pb, finder,
-      options.niceLen, options.mode == Lzma2Options.ModeNormal)
+  // Likewise: the encoder's state is reached only through this compressor.
+  private val lzma: LzmaEncoder =
+    scala.caps.unsafe.unsafeAssumePure
+      (LzmaEncoder(data, rc, options.lc, options.lp, options.pb, finder,
+          options.niceLen, options.mode == Lzma2Options.ModeNormal))
 
   def compress(): Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()

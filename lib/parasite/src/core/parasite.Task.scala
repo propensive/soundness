@@ -49,16 +49,19 @@ import vacuous.*
 object Task:
   def apply[result, error <: Hazard](evaluate: Worker => result, name: Optional[Name[Async]])
     ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate^ )
-  :   (Task[result] { type Error = error })^ =
+  :   (Task[result] { type Error = error })^{monitor, probate, evaluate} =
 
     // The handle is a fresh (`^`) capability — a `Task` IS a `Worker` — so both the handle
     // and its body closure are honestly tracked (D6 ruling, 2026-07-16). Composition over
     // collections of tasks goes through the sealed pure façade (`Task.monad` and the
     // `sequence` extensions below).
-    val evaluate0: Worker => result = evaluate
+    val evaluate0: Worker^ ->{evaluate} result = evaluate
     inline def name0: Optional[Name[Async]] = name
 
-    locally:
+    // The handle retains the monitor, probate and body — the declared result type says so —
+    // but the fresh capability the new `Worker` instance itself constitutes cannot flow into
+    // that set, so it is laundered away here, once, at the construction site.
+    scala.caps.unsafe.unsafeAssumePure:
       new Worker(codepoint, monitor, probate) with Task[result]:
         type Result = result
         type Error = error
@@ -66,11 +69,14 @@ object Task:
         def daemon: Boolean = false
         def evaluate(worker: Worker): Result = evaluate0(worker)
 
-        def await()(using Monitor^): result raises (error | AsyncError) = deliver[error]()
+        def await()(using monitor: Monitor^)
+        :   (Tactic[error | AsyncError]^) ?->{this, monitor} result =
+
+          deliver[error]()
 
         def await[duration: Abstractable across Durations to Long](duration: duration)
-          ( using Monitor^ )
-        :   result raises (error | AsyncError) =
+          ( using monitor: Monitor^ )
+        :   (Tactic[error | AsyncError]^) ?->{this, monitor} result =
 
           deliver[error, duration](duration)
 
@@ -94,8 +100,8 @@ object Task:
   // The monadic form of `snooze`: a task which completes after the duration, for composition
   // with `bind`/`map` without suspending the calling strand.
   def sleep[duration: Abstractable across Durations to Long](duration: duration)
-    ( using Monitor^, Probate^, Codepoint )
-  :   (Task[Unit] emits AsyncError)^ =
+    ( using monitor: Monitor^, probate: Probate^, codepoint: Codepoint )
+  :   (Task[Unit] emits AsyncError)^{monitor, probate} =
 
     async(snooze(duration))
 
@@ -106,7 +112,8 @@ object Task:
       caps.unsafe.unsafeAssumePure(async(List.of(tasks.stdlib.map(_.join()))))
 
   extension [result](tasks: Iterable[Task[result]])
-    def race()(using Monitor^, Probate^): result raises AsyncError =
+    def race()(using monitor: Monitor^, probate: Probate^)
+    :   (Tactic[AsyncError]^) ?->{monitor, probate} result =
       val promise: Promise[result] = Promise()
 
       tasks.foreach: task =>
@@ -126,20 +133,22 @@ trait Task[+result]:
   def attend()(using Monitor^): Unit
   def cancel(): Unit
 
-  def await()(using Monitor^): result raises (Error | AsyncError)
+  def await()(using monitor: Monitor^): (Tactic[Error | AsyncError]^) ?->{this, monitor} result
 
-  def await[duration: Abstractable across Durations to Long](duration: duration)(using Monitor^)
-  :   result raises (Error | AsyncError)
+  def await[duration: Abstractable across Durations to Long](duration: duration)
+    ( using monitor: Monitor^ )
+  :   (Tactic[Error | AsyncError]^) ?->{this, monitor} result
 
   // The raw join, for parasite-internal combinators that do not track the error type.
-  protected[parasite] def join()(using Monitor^): result raises AsyncError
+  protected[parasite] def join()(using monitor: Monitor^)
+  :   (Tactic[AsyncError]^) ?->{this, monitor} result
 
   protected[parasite] def join[duration: Abstractable across Durations to Long](duration: duration)
-    ( using Monitor^ )
-  :   result raises AsyncError
+    ( using monitor: Monitor^ )
+  :   (Tactic[AsyncError]^) ?->{this, monitor} result
 
-  def bind[result2](lambda: result => Task[result2])(using Monitor^, Probate^)
-  :   (Task[result2] emits AsyncError)^
+  def bind[result2](lambda: result => Task[result2])(using monitor: Monitor^, probate: Probate^)
+  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate}
 
-  def map[result2](lambda: result => result2)(using Monitor^, Probate^)
-  :   (Task[result2] emits AsyncError)^
+  def map[result2](lambda: result => result2)(using monitor: Monitor^, probate: Probate^)
+  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate}

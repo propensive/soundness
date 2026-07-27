@@ -126,7 +126,8 @@ object Juxtaposition:
 
               e"$line1\n$line2\n"
 
-            . to(Iterable)
+            // The mapped lines only read the two summary buffers; laundered pure.
+            . to(Iterable).asInstanceOf[Iterable[Teletype]]
             . join(topRule, midRule, penultimateRule, bottomRule)
 
           else

@@ -160,7 +160,8 @@ object HttpConnection:
                 catch case _: ji.IOException => abort(StreamError(count.b))
 
                 stream.skip(size)
-                recur()
+                // Tail re-entry over the same single-owner stream.
+                scala.caps.unsafe.unsafeAssumeSeparate(recur())
 
               case _ => ()
 

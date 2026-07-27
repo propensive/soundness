@@ -114,10 +114,19 @@ object Ansi extends Ansi2:
     val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
     val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap.empty
     val insertions: scm.TreeMap[Int, Text] = scm.TreeMap.empty
+    @scala.caps.unsafe.untrackedCaptures
     var last: Optional[Pending] = Unset
+
+    @scala.caps.unsafe.untrackedCaptures
     var stack: List[Frame] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
     var styleStack: List[TextStyle] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
     var currentStyle: TextStyle = TextStyle()
+
+    @scala.caps.unsafe.untrackedCaptures
     var linkArmed: Boolean = false
 
     def appendChar(char: Char): Unit =

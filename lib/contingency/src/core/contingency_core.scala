@@ -55,7 +55,7 @@ package strategies:
   =>  (tactic: Tactic[error]^)
   =>  ( Tactic[error2]^ ) =
 
-    tactic.contramap(error2.mitigate(_))
+    scala.caps.unsafe.unsafeAssumeSeparate(tactic.contramap(error2.mitigate(_)))
 
 
   // Like `ThrowTactic`, these ambient strategies are `caps.Unscoped`: they capture no scoped

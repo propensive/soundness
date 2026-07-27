@@ -82,17 +82,23 @@ object Audio:
     val pcmBytes: Array[Byte] = pcm.readAllBytes.nn
     val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
     pcm.close()
-    new Audio(pcmFormat, pcmBytes)
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(pcmFormat, pcmBytes)
 
   def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]): Audio in form =
-    new Audio(format, data):
-      type Form = form
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(format, data):
+        type Form = form
 
   private[cacophony] def of[layout](format: jss.AudioFormat, data: Array[Byte])
   :   Audio across layout =
 
-    new Audio(format, data):
-      type Domain = layout
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(format, data):
+        type Domain = layout
 
   private def writeAudio(audio: Audio, formatName: Text): Progression[Data] =
     val ais = jss.AudioInputStream(ji.ByteArrayInputStream(audio.data), audio.format, audio.frames)
@@ -132,7 +138,8 @@ object Audio:
   =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)
 
 case class Audio
-  ( private[cacophony] val format: jss.AudioFormat, private[cacophony] val data: Array[Byte] )
+  ( private[cacophony] val format: jss.AudioFormat,
+    @scala.caps.unsafe.untrackedCaptures private[cacophony] val data: Array[Byte] )
 extends Formal, Domainal:
   audio =>
 
@@ -172,6 +179,8 @@ extends Formal, Domainal:
       value
 
   def to[form: Audible as audible]: Audio in form across audio.Domain =
-    new Audio(format, data):
-      type Form   = form
-      type Domain = audio.Domain
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(format, data):
+        type Form   = form
+        type Domain = audio.Domain

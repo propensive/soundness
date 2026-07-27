@@ -86,7 +86,7 @@ trait Yaml2:
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( tactic: Tactic[YamlError] )
   =>  ( decodable: => (inner is Decodable in Yaml)^ )
-  =>  ((value is Decodable in Yaml)^{tactic, caps.any}) =
+  =>  ((value is Decodable in Yaml)^{tactic, decodable}) =
     // An honest capability: the instance retains the resolution-scoped tactic and
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
@@ -1302,7 +1302,7 @@ object Yaml extends Yaml2, Dynamic:
         tactic:    Tactic[YamlError],
         foci:      Foci[Yaml.Focus] )
   =>  ( decodable: => (element is Decodable in Yaml)^ )
-  =>  ((collection[element] is Decodable in Yaml)^{tactic, caps.any}) =
+  =>  ((collection[element] is Decodable in Yaml)^{tactic, decodable}) =
     // An honest capability, as `optional` above.
     yaml =>
       yaml.root.asMatchable match
@@ -1425,7 +1425,7 @@ object Yaml extends Yaml2, Dynamic:
 
   given iterableEncodable: [collection <: Iterable, element]
   =>  ( encodable: => (element is Encodable in Yaml)^ )
-  =>  ((collection[element] is Encodable in Yaml)^) =
+  =>  ((collection[element] is Encodable in Yaml)^{encodable}) =
     // An honest capability: the instance retains the by-name element codec (every
     // given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
@@ -1590,7 +1590,7 @@ object Yaml extends Yaml2, Dynamic:
   // Parse a byte pull-endpoint under the ambient tracking mode: the parser's
   // cursor refills straight from the stream, so the input is never
   // concatenated or copied through `getBytes`.
-  private def fromStream(stream: (Stream[Data] over Credit)^)
+  private def fromStream(consume stream: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], Yaml.Tracking, Buffering )
   :   Yaml =
 
@@ -1602,7 +1602,7 @@ object Yaml extends Yaml2, Dynamic:
       case Yaml.Tracking.Off =>
         Yaml(Yaml.Parser.parse(stream))
 
-  private def fromStreamAll(stream: (Stream[Data] over Credit)^)
+  private def fromStreamAll(consume stream: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], Yaml.Tracking, Buffering )
   :   List[Yaml] =
 
@@ -1616,7 +1616,7 @@ object Yaml extends Yaml2, Dynamic:
 
   // The parser is UTF-8-byte-based, so a character stream transcodes through
   // the UTF-8 encoder duct — windowed, not whole-document.
-  private def utf8Stream(stream: (Stream[Text] over Credit)^)(using Buffering)
+  private def utf8Stream(consume stream: (Stream[Text] over Credit)^)(using Buffering)
   :   (Stream[Data] over Credit)^ =
     stream.via(hieroglyph.charEncoders.utf8Encoder).asInstanceOf[(Stream[Data] over Credit)^]
 
@@ -1767,13 +1767,14 @@ object Yaml extends Yaml2, Dynamic:
     // concatenated into a single `Text` or copied through `getBytes`. (The
     // whole-parse `holding:` still accumulates the document once in the
     // cursor's own buffer; narrowing the holds is a separate campaign.)
-    def parse(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering): Yaml.Ast =
+    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    :   Yaml.Ast =
       val parser = borrow()
       parser.tracking = false
       parser.resetStream(input)
       parser.parse()
 
-    def parseAll(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    def parseAll(consume input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
     :   List[Yaml.Ast] =
 
       val parser = borrow()
@@ -1781,7 +1782,8 @@ object Yaml extends Yaml2, Dynamic:
       parser.resetStream(input)
       parser.parseAll()
 
-    def parseTracked(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    def parseTracked(consume input: (Stream[Data] over Credit)^)
+      ( using Tactic[ParseError], Buffering )
     :   (Yaml.Ast, IArray[Int]) =
 
       val parser = borrow()
@@ -1790,10 +1792,13 @@ object Yaml extends Yaml2, Dynamic:
       try
         parser.resetStream(input)
         val ast = parser.parse()
-        (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+        // The index array is finished and never written again; assumed separate for the
+        // wrap into the pure `IArray` view.
+        (ast, parser.rootIndex.asInstanceOf[IArray[Int]])
       finally parser.tracking = false
 
-    def parseAllTracked(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    def parseAllTracked(consume input: (Stream[Data] over Credit)^)
+      ( using Tactic[ParseError], Buffering )
     :   List[(Yaml.Ast, IArray[Int])] =
 
       val parser = borrow()
@@ -1814,7 +1819,9 @@ object Yaml extends Yaml2, Dynamic:
       try
         parser.resetText(input)
         val ast = parser.parse()
-        (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+        // The index array is finished and never written again; assumed separate for the
+        // wrap into the pure `IArray` view.
+        (ast, parser.rootIndex.asInstanceOf[IArray[Int]])
       finally parser.tracking = false
 
     def parseTracked(input: Data)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
@@ -1824,7 +1831,9 @@ object Yaml extends Yaml2, Dynamic:
       try
         parser.resetData(input)
         val ast = parser.parse()
-        (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+        // The index array is finished and never written again; assumed separate for the
+        // wrap into the pure `IArray` view.
+        (ast, parser.rootIndex.asInstanceOf[IArray[Int]])
       finally parser.tracking = false
 
     def parseAllTracked(input: Text)(using Tactic[ParseError])
@@ -1861,10 +1870,22 @@ object Yaml extends Yaml2, Dynamic:
     // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
     // hold them in registers across hot byte loops. Sync to the cursor
     // before mark/slice/refill operations and refresh after.
-    private var cursor:    Cursor[Data, {}]^    = null.asInstanceOf[Cursor[Data, {}]^]
+    // Held as an `AnyRef` field with an exclusive-view accessor (the `TelReader.parser0`
+    // pattern): a typed capability field poisons every later access to this parser.
+    @scala.caps.unsafe.untrackedCaptures
+    private var cursor1: AnyRef = null.asInstanceOf[AnyRef]
+
+    private inline def cursor: Cursor[Data, {}]^ = cursor1.asInstanceOf[Cursor[Data, {}]^]
+    @scala.caps.unsafe.untrackedCaptures
     private var heldToken: Cursor.Held | Null = null
-    private var bytes:     Array[Byte]       = null.asInstanceOf[Array[Byte]]
+    // `AnyRef` field + accessor, as `cursor1` above.
+    @scala.caps.unsafe.untrackedCaptures
+    private var bytes1: AnyRef = null.asInstanceOf[AnyRef]
+
+    private inline def bytes: Array[Byte]^ = bytes1.asInstanceOf[Array[Byte]^]
+    @scala.caps.unsafe.untrackedCaptures
     private var pos:       Int               = 0
+    @scala.caps.unsafe.untrackedCaptures
     private var bufEnd:    Int               = 0
 
     // When true, the cursor is built with a line-feed-tracking `Lineation`
@@ -1872,10 +1893,12 @@ object Yaml extends Yaml2, Dynamic:
     // and the parser emits a parallel `PositionIndex` alongside the AST.
     // Set by the companion `Parser.parse(input, tracking = …)` entry
     // points before `resetText` / `resetData` build the cursor.
+    @scala.caps.unsafe.untrackedCaptures
     protected[ypsiloid] var tracking: Boolean = false
 
     // Finalised root-level position index produced by the previous `parse()`
     // call when `tracking` was on. Reset to `null` at the start of every parse.
+    @scala.caps.unsafe.untrackedCaptures
     protected[ypsiloid] var rootIndex: Array[Int] | Null = null
 
     // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
@@ -1884,6 +1907,7 @@ object Yaml extends Yaml2, Dynamic:
     // keeps track of how far ahead `cursor.pos` has been pushed and
     // catches lineation up here only at tracking-mode capture points and
     // before any refill discards consumed bytes.
+    @scala.caps.unsafe.untrackedCaptures
     private var lineationPos: Int = 0
 
     // Pool of `IArray[Int]` buffers shared between sibling composite
@@ -1891,10 +1915,13 @@ object Yaml extends Yaml2, Dynamic:
     // but with `Int` payload — used by `parseBlockSequenceTracked`,
     // `parseBlockMappingFromFirstKeyTracked`, `parseFlowSequenceTracked`,
     // `parseFlowMappingTracked`.
+    @scala.caps.unsafe.untrackedCaptures
     private var indexBufferId: Int = -1
     private val indexBufferPool: ArrayBuffer[ArrayBuffer[Int]] = ArrayBuffer.empty
 
-    private inline def acquireIndexBuffer(): ArrayBuffer[Int] =
+    // Not `inline`: inline expansion propagates a refinement whose fresh reach capabilities
+    // differ per call site, which the capture checker rejects.
+    private def acquireIndexBuffer(): ArrayBuffer[Int] =
       indexBufferId += 1
 
       if indexBufferPool.length <= indexBufferId then
@@ -1920,21 +1947,33 @@ object Yaml extends Yaml2, Dynamic:
     // Resizable char buffer shared across string-building calls (for
     // quoted-string unescape and UTF-8 decoded plain scalars). Mirrors
     // Jacinta's `chars`/`stringCursor` to avoid per-string allocation.
+    @scala.caps.unsafe.untrackedCaptures
     private var arraySize: Int        = 64
-    private var chars:     Array[Char] = new Array(arraySize)
+    // `AnyRef` field + accessor, as `cursor1` above.
+    @scala.caps.unsafe.untrackedCaptures
+    private var chars1: AnyRef = (new Array[Char](64)).asInstanceOf[AnyRef]
+
+    private inline def chars: Array[Char]^ = chars1.asInstanceOf[Array[Char]^]
+    private inline def charsTarget: Array[Char]^ = chars1.asInstanceOf[Array[Char]^]
+    @scala.caps.unsafe.untrackedCaptures
     private var stringCursor: Int     = 0
 
     // Pool of buffer instances for nested sequences/mappings so we can
     // collect items without allocating an `ArrayBuffer` per recursion.
+    @scala.caps.unsafe.untrackedCaptures
     private var bufferId: Int = -1
     private val bufferPool: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
 
     // Out-parameters for `consumeNodePrefixes` and `readPlainScalarText` —
     // overwritten on each call and consumed immediately by the caller, so
     // no Tuple2/Tuple3 allocation per node.
+    @scala.caps.unsafe.untrackedCaptures
     private var prefixAnchor:   Text    = t""
+    @scala.caps.unsafe.untrackedCaptures
     private var prefixTag:      Text    = t""
+    @scala.caps.unsafe.untrackedCaptures
     private var prefixHeadByte: Int     = -1
+    @scala.caps.unsafe.untrackedCaptures
     private var sawMappingColon: Boolean = false
 
     // Indent of the innermost enclosing block collection (block sequence
@@ -1943,26 +1982,27 @@ object Yaml extends Yaml2, Dynamic:
     // 8.1.1.1, the indicator is added to the parent node's indent. Set
     // and restored on entry/exit of parseBlockSequence and
     // parseBlockMappingFromFirstKey. -1 means the parent is the document.
+    @scala.caps.unsafe.untrackedCaptures
     private var blockParentIndent: Int = -1
 
     def resetText(input: Text): Unit =
       val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
       val cursor0 = makeCursor(data)
-      cursor = cursor0
+      cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()
 
     def resetData(input: Data): Unit =
       val cursor0 = makeCursor(input)
-      cursor = cursor0
+      cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()
 
     // As `resetData`, over a pull endpoint: the cursor refills from the
     // stream (single-copy, credit-bounded) instead of borrowing a preset
     // block. The stream is adopted by the cursor — single ownership passes
     // with the call, by the `accept` convention.
-    def resetStream(input: (Stream[Data] over Credit)^)(using Buffering): Unit =
+    def resetStream(consume input: (Stream[Data] over Credit)^)(using Buffering): Unit =
       val cursor0 = makeStreamCursor(input)
-      cursor = cursor0
+      cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()
 
     // Build a `Cursor[Data, {}]` with the appropriate `Lineation`. The two
@@ -1976,10 +2016,13 @@ object Yaml extends Yaml2, Dynamic:
 
     // As `makeCursor`, over a pull endpoint (see the mutually-exclusive
     // `Lineation` note above).
-    private def makeStreamCursor(input: (Stream[Data] over Credit)^)(using Buffering)
+    private def makeStreamCursor(consume input: (Stream[Data] over Credit)^)(using Buffering)
     :   Cursor[Data, {}]^ =
-      if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
-      else Lineation.untrackedData.give(Cursor[Data](input))
+      // The stream's single ownership passes with this call (the `accept` convention); the
+      // `give` closure is the only remaining reference.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+        if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
+        else Lineation.untrackedData.give(Cursor[Data](input))
 
     private def resetParserState(): Unit =
       syncFrom()
@@ -2019,7 +2062,7 @@ object Yaml extends Yaml2, Dynamic:
     // a refill may have compacted the buffer (bytes 0..old-pos are
     // discarded; subsequent walks would read different data).
     private inline def syncFrom(): Unit =
-      bytes  = cursor.buffer(using Unsafe)
+      bytes1 = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
       lineationPos = pos
@@ -2032,27 +2075,29 @@ object Yaml extends Yaml2, Dynamic:
     // captured `cursor.line` / `cursor.column` would stay at their initial
     // values and every descriptor would read `(1, 1)`.
     private def reconcileLineation(): Unit =
-      val end = cursor.unsafePos(using Unsafe)
+      // Bookkeeping over this parser's own cursor; there is no aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       val end = cursor.unsafePos(using Unsafe)
 
-      if lineationPos < end then
-        var i = lineationPos
-        var newlines = 0
-        var lastNewlineAt = -1
+       if lineationPos < end then
+         var i = lineationPos
+         var newlines = 0
+         var lastNewlineAt = -1
 
-        while i < end do
-          if bytes(i) == Newline then
-            newlines += 1
-            lastNewlineAt = i
+         while i < end do
+           if bytes(i) == Newline then
+             newlines += 1
+             lastNewlineAt = i
 
-          i += 1
+           i += 1
 
-        if newlines > 0 then
-          cursor.unsafeBumpLine(newlines)(using Unsafe)
-          cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
-        else
-          cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
+         if newlines > 0 then
+           cursor.unsafeBumpLine(newlines)(using Unsafe)
+           cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
+         else
+           cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
 
-        lineationPos = end
+         lineationPos = end
 
     private inline def more: Boolean = pos < bufEnd || moreSlow()
 
@@ -2157,9 +2202,9 @@ object Yaml extends Yaml2, Dynamic:
         arraySize *= 2
         val newArr = new Array[Char](arraySize)
         System.arraycopy(chars, 0, newArr, 0, stringCursor)
-        chars = newArr
+        chars1 = newArr.asInstanceOf[AnyRef]
 
-      chars(stringCursor) = char
+      charsTarget(stringCursor) = char
       stringCursor += 1
 
     // Multi-char append (used for variable-length escapes / surrogate pairs).
@@ -2169,13 +2214,14 @@ object Yaml extends Yaml2, Dynamic:
       if chars.length < arraySize then
         val newArr = new Array[Char](arraySize)
         System.arraycopy(chars, 0, newArr, 0, stringCursor)
-        chars = newArr
+        chars1 = newArr.asInstanceOf[AnyRef]
 
     private inline def getStringText(): Text = String(chars, 0, stringCursor).tt
 
     // ── Buffer pool for sequences/mappings ──────────────────────────────────
 
-    private inline def acquireBuffer(): ArrayBuffer[Any] =
+    // Not `inline`, as `acquireIndexBuffer` above.
+    private def acquireBuffer(): ArrayBuffer[Any] =
       bufferId += 1
 
       if bufferPool.length <= bufferId then
@@ -2887,11 +2933,13 @@ object Yaml extends Yaml2, Dynamic:
     // mapping where the prefix actually belongs to the first key, not
     // the whole mapping). parseNodeHere skips re-applying anchor/tag in
     // that case.
+    @scala.caps.unsafe.untrackedCaptures
     private var prefixesConsumed: Boolean = false
 
     // Set true when the most recently parsed scalar (plain or quoted)
     // spanned more than one source line — used to reject multi-line
     // implicit keys, which the spec disallows.
+    @scala.caps.unsafe.untrackedCaptures
     private var lastScalarSpannedLines: Boolean = false
 
     // Set when parseMappingValue is invoking parseNodeHere inline
@@ -2899,18 +2947,21 @@ object Yaml extends Yaml2, Dynamic:
     // recurse into a second mapping via `'k': v` chaining — the spec
     // requires block-style mapping keys to start at the beginning of
     // their line.
+    @scala.caps.unsafe.untrackedCaptures
     private var inInlineMappingValue: Boolean = false
 
     // Set true by parseNodeHere when it has applied an anchor to its
     // result. Used to detect the "two anchors on a single node" error,
     // where an outer prefix-on-newline branch parses an inner node that
     // also carries its own anchor.
+    @scala.caps.unsafe.untrackedCaptures
     private var lastNodeHadAnchor: Boolean = false
 
     // Indent of the line that opened the innermost flow collection.
     // Content lines inside the flow that are not the closing bracket
     // must be more indented than this. -1 means we're not currently
     // inside a flow collection.
+    @scala.caps.unsafe.untrackedCaptures
     private var flowParentIndent: Int = -1
 
     // Position of the newline terminating a same-line `---` marker, or
@@ -2920,6 +2971,7 @@ object Yaml extends Yaml2, Dynamic:
     // cannot also be the first key of an implicit mapping). Once the
     // parser advances past the newline, `pos > docStartLineEnd` and the
     // restriction lifts naturally.
+    @scala.caps.unsafe.untrackedCaptures
     private var docStartLineEnd: Int = -1
 
     private inline def onDocStartLine: Boolean =
@@ -3018,7 +3070,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3405,7 +3457,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3520,7 +3572,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3905,7 +3957,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -4602,7 +4654,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen

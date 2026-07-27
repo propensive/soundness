@@ -67,13 +67,13 @@ object Watch:
     new Watch(spool, watcher.watch(directories, spool))
 
   given openable: [path: Abstractable across Paths to Text]
-  =>  ( Watcher, Tactic[WatchError] )
-  =>  ( WatchOpenable[path]^ ) =
+  =>  ( watcher: Watcher, tactic: Tactic[WatchError] )
+  =>  ( WatchOpenable[path]^{tactic} ) =
     WatchOpenable[path]
 
   given allOpenable: [path: Abstractable across Paths to Text, collection <: Iterable[path]]
-  =>  ( Watcher, Tactic[WatchError] )
-  =>  ( WatchAllOpenable[collection, path]^ ) =
+  =>  ( watcher: Watcher, tactic: Tactic[WatchError] )
+  =>  ( WatchAllOpenable[collection, path]^{tactic} ) =
     WatchAllOpenable[collection, path]
 
 // A `Watch` is the user-facing handle returned by registering one or more paths. Its `stream`

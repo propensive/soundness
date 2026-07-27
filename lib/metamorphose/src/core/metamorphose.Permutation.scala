@@ -48,10 +48,11 @@ object Permutation:
 
   def apply(series: Series[Int]): Permutation raises PermutationError =
     val sequence = series.stdlib
-    val array: Array[Int] = new Array(sequence.length)
+    val array: Array[Int]^ = new Array(sequence.length)
     val seen: BitSet = BitSet()
+    var index = 0
 
-    for index <- sequence.indices do
+    while index < sequence.length do
       val element = sequence(index)
       array(index) = element - seen.count(_ < element)
 
@@ -64,6 +65,7 @@ object Permutation:
       then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
 
       seen(element) = true
+      index += 1
 
     Permutation(Factoradic(array.iterator.to(List)))
 
@@ -105,14 +107,16 @@ case class Permutation(factoradic: Factoradic):
 
   def inverse: Permutation = if lehmer.nil then this else
     val length = lehmer.length
-    val array: Array[Int] = new Array(lehmer.length)
+    val array: Array[Int]^ = new Array(lehmer.length)
+    var index = 0
+    var sequence: List[Int] = expansion
 
-    def recur(index: Int, sequence: List[Int]): Permutation = sequence match
-      case head :: tail =>
-        array(head) = index
-        recur(index + 1, tail)
+    while sequence match
+        case head :: tail => array(head) = index
+                             index += 1
+                             sequence = tail
+                             true
+        case Nil          => false
+    do ()
 
-      case Nil =>
-        unsafely(Permutation(Series.from(array.iterator)))
-
-    recur(0, expansion)
+    unsafely(Permutation(Series.from(array.iterator)))

@@ -58,4 +58,8 @@ object internal:
         "const", "float", "native", "super", "while" )
 
   def fqcn(context: Expr[StringContext]): Macro[Fqcn] =
-    abortive('{new Fqcn(IArray.of(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts.stdlib)}))})
+    // The name is validated at expansion time; the runtime re-parse of the checked, canonical
+    // form cannot fail. (Splicing the parts as an array trips capture-checked `ToExpr` synthesis.)
+    abortive:
+      val checked = Fqcn(context.valueOrAbort.parts.head.tt)
+      '{unsafely(Fqcn(${Expr(checked.text.s)}.tt))}

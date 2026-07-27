@@ -38,4 +38,5 @@ import contingency.*
 import serpentine.*
 
 trait OverwritePreexisting extends Planar, Findable:
-  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType raises IoError
+  def apply[ResultType](path: Path on Plane)(operation: => ResultType)
+  :   (Tactic[IoError]^) ?->{operation} ResultType

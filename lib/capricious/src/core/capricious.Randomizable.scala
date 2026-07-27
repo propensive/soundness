@@ -56,7 +56,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
     caps.unsafe.unsafeAssumePure:
       random =>
-        given random0: Random = random
+        given random0: (Random^{random}) = random
         List.fill(size.generate(random))(randomizable.randomize(random))
 
 
@@ -67,7 +67,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
     caps.unsafe.unsafeAssumePure:
       random =>
-        given random0: Random = random
+        given random0: (Random^{random}) = random
         Set.from(List.fill(size.generate(random))(randomizable.randomize(random)).stdlib)
 
 
@@ -78,7 +78,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     // Laundered pure, as for `list` above.
     caps.unsafe.unsafeAssumePure:
       random =>
-        given random0: Random = random
+        given random0: (Random^{random}) = random
         IArray.fill(size.generate(random))(randomizable.randomize(random))
 
 

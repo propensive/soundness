@@ -87,7 +87,9 @@ object Pathname:
       else
         val absolute = argument().starts(t"/")
         val directory = argument().ends(t"/")
-        val prototype = workingDirectory.resolve(argument())
+        // Resolution runs under its own optional tactic; no aliased writer.
+        val prototype = scala.caps.unsafe.unsafeAssumeSeparate:
+          workingDirectory.resolve(argument())
         val showAll = argument.tab.or(Prim) > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
         val children0 = base.lay(scala.collection.immutable.Nil)(_.children.stdlib.toList)
@@ -108,4 +110,5 @@ object Pathname:
             suggest:
               if absolute then path.encode+slash else workingDirectory.toward(path).encode+slash
 
-    safely(workingDirectory.resolve(argument())).option
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      safely(workingDirectory.resolve(argument())).option

@@ -171,7 +171,9 @@ class GrpcChannel
     val messages = stream.body.stream.records.frames[GrpcFraming]
 
     def recur(): Progression[response] =
-      if messages.hasNext then decodeMessage[response](messages.next()) #:: recur()
+      if messages.hasNext then
+        // Successive pulls from the same single-owner message iterator.
+        scala.caps.unsafe.unsafeAssumeSeparate(decodeMessage[response](messages.next()) #:: recur())
       else
         expectStatus(stream)
         Progression()

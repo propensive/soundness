@@ -42,6 +42,7 @@ import scala.collection.concurrent.TrieMap
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import denominative.*
 import rudiments.*
 import vacuous.*
@@ -116,7 +117,8 @@ object Regex:
 
 
   def apply(parts: List[String])(using erased unsafe: Unsafe): Regex =
-    strategies.throwUnsafely.give(parse(parts.map(_.tt)))
+    given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
+    parse(parts.map(_.tt))
 
   def apply(text: Text): Regex raises RegexError = parse(List(text))
 

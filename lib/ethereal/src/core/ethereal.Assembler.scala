@@ -64,6 +64,7 @@ case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detai
 // a runner downloaded from a URL rather than read from the classpath.
 object Assembler:
   // v2 ETHRCFG layout — keep in sync with lib/ethereal/src/runner/src/config.rs.
+  @scala.caps.unsafe.untrackedCaptures
   val MagicMarker: Array[Byte] =
     Array[Byte]('E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
                 'C'.toByte, 'F'.toByte, 'G'.toByte, 2.toByte)
@@ -81,7 +82,8 @@ object Assembler:
       javaPreferred: Int,
       jdk:           Boolean,
       publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
-  :   Data raises AssemblyError =
+    ( using Tactic[AssemblyError] )
+  :   Data =
 
     val bytes: Array[Byte] = runner.stdlib.toArray
 

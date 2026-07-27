@@ -1545,7 +1545,9 @@ object Xml extends Tag.Container
             foci:      Foci[Xml.Focus] )
   :   value =
 
-    parser.directSession:
+    // The session body and its prefix share the same single-owner parser; no aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+     parser.directSession:
       parser.directRoot() match
         case 0 =>
           val result = parsable.parse(XmlReader(parser, tactic, xmlTactic, foci))
@@ -2103,8 +2105,9 @@ object Xml extends Tag.Container
     // Exact powers of ten for the Clinger double fast path: every entry is
     // exactly representable, so `mantissa.toDouble / TenPow(scale)` is
     // correctly rounded whenever the mantissa fits in 53 bits.
-    private[xylophone] val TenPow: Array[Double] =
+    private[xylophone] val TenPow: IArray[Double] =
       Array(1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15)
+      . asInstanceOf[IArray[Double]]
 
     // `true` and `false` packed LSB-first, for the boolean content fast path.
     private[xylophone] val TrueWord: Long =
@@ -2150,6 +2153,7 @@ object Xml extends Tag.Container
   extends caps.ExclusiveCapability:
     type Region = Cursor.Mark
 
+    @scala.caps.unsafe.untrackedCaptures
     private var heldToken: Cursor.Held | Null = null
 
     // Parser-shared scratch buffer for attribute accumulation (lifetime of
@@ -2157,7 +2161,11 @@ object Xml extends Tag.Container
     // `[k0, v0, k1, v1, ...]`. `readAttributes()` writes here and snapshots
     // the populated prefix into a freshly-sized `IArray[String]` to wrap
     // as the opaque `Attributes`. Geometric growth.
+    @scala.caps.unsafe.untrackedCaptures
     private var attrBuf: Array[String] = new Array[String](16)
+
+    // An exclusive view for writes: the untracked field reads as read-only.
+    private inline def attrBufTarget: Array[String]^ = attrBuf.asInstanceOf[Array[String]^]
 
     // Pool of `ArrayBuffer[Node]` instances re-used across recursive
     // `readChildren` calls. Each nesting level borrows one, fills it, copies
@@ -2165,6 +2173,7 @@ object Xml extends Tag.Container
     // demand to the deepest nesting depth seen. Avoids one
     // `ArrayBuffer[Node]` allocation per element (plus its backing array)
     // for repetitive record-shaped XML.
+    @scala.caps.unsafe.untrackedCaptures
     private var nodeBufferId: Int = -1
 
     private val nodeBuffers: scala.collection.mutable.ArrayBuffer
@@ -2183,18 +2192,35 @@ object Xml extends Tag.Container
     // the cache and allocate normally.
     private inline val TagCacheSize = 64
     private inline val TagCacheMaxChars = 16
+    @scala.caps.unsafe.untrackedCaptures
     private val tagCache:     Array[Text | Null] = new Array(TagCacheSize)
+
+    @scala.caps.unsafe.untrackedCaptures
     private val tagCacheLow:  Array[Long]        = new Array(TagCacheSize)
+
+    @scala.caps.unsafe.untrackedCaptures
     private val tagCacheHigh: Array[Long]        = new Array(TagCacheSize)
+
+    // Exclusive views for writes: the untracked fields read as read-only.
+    private inline def tagCacheTarget: Array[Text | Null]^ =
+      tagCache.asInstanceOf[Array[Text | Null]^]
+
+    private inline def tagCacheLowTarget: Array[Long]^ = tagCacheLow.asInstanceOf[Array[Long]^]
+    private inline def tagCacheHighTarget: Array[Long]^ = tagCacheHigh.asInstanceOf[Array[Long]^]
 
     // Fingerprint of the name most recently read by `readName` — the packed
     // words it computes anyway for the tag cache, and whether they identify
     // the name losslessly (ASCII, at most `TagCacheMaxChars` chars).
+    @scala.caps.unsafe.untrackedCaptures
     private var nameLow:      Long = 0L
+    @scala.caps.unsafe.untrackedCaptures
     private var nameHigh:     Long = 0L
+    @scala.caps.unsafe.untrackedCaptures
     private var namePackable: Boolean = false
 
-    private inline def getNodeBuffer(): scala.collection.mutable.ArrayBuffer[Node] =
+    // Not `inline`: inline expansion propagates a refinement whose fresh reach capabilities
+    // differ per call site, which the capture checker rejects.
+    private def getNodeBuffer(): scala.collection.mutable.ArrayBuffer[Node] =
       nodeBufferId += 1
 
       if nodeBuffers.length <= nodeBufferId then
@@ -2216,13 +2242,15 @@ object Xml extends Tag.Container
     // element descriptors back-to-back, and one for child end positions
     // within the scratch. The buffer pool grows to the deepest nesting
     // depth seen and is reused across parses on the same `XmlParser`.
+    @scala.caps.unsafe.untrackedCaptures
     private var indexBufferId: Int = -1
 
     private val indexBuffers: scala.collection.mutable.ArrayBuffer
       [ scala.collection.mutable.ArrayBuffer[Int] ] =
       scala.collection.mutable.ArrayBuffer.empty
 
-    private inline def getIndexBuffer(): scala.collection.mutable.ArrayBuffer[Int] =
+    // Not `inline`, as `getNodeBuffer` above.
+    private def getIndexBuffer(): scala.collection.mutable.ArrayBuffer[Int] =
       indexBufferId += 1
 
       if indexBuffers.length <= indexBufferId then
@@ -2239,6 +2267,7 @@ object Xml extends Tag.Container
     // Finalised root-level position index produced by the previous
     // tracking-mode parse. Reset on every parse entry. Read by the
     // `XmlParser.fromText/Iterator(Tracked)` callers.
+    @scala.caps.unsafe.untrackedCaptures
     protected[xylophone] var rootIndex: IArray[Int] | Null = null
 
     // Local-buffer offset up to which `cursor.line` / `cursor.column` have
@@ -2246,6 +2275,7 @@ object Xml extends Tag.Container
     // cursor's lineation tracking via `unsafeAdvanceBy`, so the parser
     // catches lineation up at tracking-mode capture points and before
     // any refill that would discard consumed bytes.
+    @scala.caps.unsafe.untrackedCaptures
     private var lineationPos: Int = cursor.unsafePos(using Unsafe)
 
     private def reconcileLineation(): Unit =
@@ -2341,15 +2371,23 @@ object Xml extends Tag.Container
     // backtracking via `cue`) the parser pushes `pos` to the cursor first,
     // then refreshes its snapshot from the cursor afterwards — refill may
     // compact the buffer, reallocate it, or reset `pos`.
-    private var bytes:  Array[Char] = cursor.buffer(using Unsafe)
+    // Held as an `AnyRef` field with an exclusive-view accessor (the `TelReader.parser0`
+    // pattern): a typed array field's snapshot of the cursor's buffer trips both the
+    // classifier and the consume checks.
+    @scala.caps.unsafe.untrackedCaptures
+    private var bytes0: AnyRef = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
+
+    private inline def bytes: Array[Char]^ = bytes0.asInstanceOf[Array[Char]^]
+    @scala.caps.unsafe.untrackedCaptures
     private var pos:    Int = cursor.unsafePos(using Unsafe)
+    @scala.caps.unsafe.untrackedCaptures
     private var bufEnd: Int = cursor.unsafeWriteEnd(using Unsafe)
 
     private inline def syncTo(): Unit =
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
     private inline def syncFrom(): Unit =
-      bytes  = cursor.buffer(using Unsafe)
+      bytes0 = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
       lineationPos = pos
@@ -2506,9 +2544,9 @@ object Xml extends Tag.Container
         then cached.nn
         else
           val fresh = slice(start)
-          tagCache(idx)     = fresh
-          tagCacheLow(idx)  = packedLow
-          tagCacheHigh(idx) = packedHigh
+          tagCacheTarget(idx)     = fresh
+          tagCacheLowTarget(idx)  = packedLow
+          tagCacheHighTarget(idx) = packedHigh
           fresh
 
     // Parse an entity reference. Position must be just after the '&'.
@@ -2640,9 +2678,11 @@ object Xml extends Tag.Container
 
       inline def ensureCapacity(): Unit =
         if 2*n >= attrBuf.length then
-          val nu = new Array[String](attrBuf.length*2)
-          jl.System.arraycopy(attrBuf, 0, nu, 0, 2*n)
-          attrBuf = nu
+          // `Arrays.copyOf` (a Java method) yields an array that adapts to the pure field
+          // type; a Scala-side fresh array could not be assigned inside the parse loop.
+          attrBuf = java.util.Arrays
+          . copyOf(attrBuf.asInstanceOf[Array[AnyRef | Null]], attrBuf.length*2)
+          . nn.asInstanceOf[Array[String]]
 
       while !done do
         skipWs()
@@ -2655,8 +2695,8 @@ object Xml extends Tag.Container
           advance()
           skipWs()
           ensureCapacity()
-          attrBuf(2*n) = "\u0000"
-          attrBuf(2*n + 1) = ""
+          attrBufTarget(2*n) = "\u0000"
+          attrBufTarget(2*n + 1) = ""
           n += 1
         else
           val keyStart = begin()
@@ -2691,8 +2731,8 @@ object Xml extends Tag.Container
               fail(Issue.UnquotedAttribute, keyStart)
 
           ensureCapacity()
-          attrBuf(2*n) = keyStr
-          attrBuf(2*n + 1) = value.s
+          attrBufTarget(2*n) = keyStr
+          attrBufTarget(2*n + 1) = value.s
           n += 1
 
       if n == 0 then Attributes.empty
@@ -3025,6 +3065,7 @@ object Xml extends Tag.Container
         advance()
         i += 1
 
+    @scala.caps.unsafe.untrackedCaptures
     private var headers: Boolean = false
 
     def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
@@ -3181,9 +3222,11 @@ object Xml extends Tag.Container
 
       inline def ensureCapacity(): Unit =
         if 2*n >= attrBuf.length then
-          val nu = new Array[String](attrBuf.length*2)
-          jl.System.arraycopy(attrBuf, 0, nu, 0, 2*n)
-          attrBuf = nu
+          // `Arrays.copyOf` (a Java method) yields an array that adapts to the pure field
+          // type; a Scala-side fresh array could not be assigned inside the parse loop.
+          attrBuf = java.util.Arrays
+          . copyOf(attrBuf.asInstanceOf[Array[AnyRef | Null]], attrBuf.length*2)
+          . nn.asInstanceOf[Array[String]]
 
       while !done do
         skipWs()
@@ -3196,8 +3239,8 @@ object Xml extends Tag.Container
           advance()
           skipWs()
           ensureCapacity()
-          attrBuf(2*n) = " "
-          attrBuf(2*n + 1) = ""
+          attrBufTarget(2*n) = " "
+          attrBufTarget(2*n + 1) = ""
           n += 1
         else
           // Capture attribute start position before reading the name.
@@ -3239,8 +3282,8 @@ object Xml extends Tag.Container
               fail(Issue.UnquotedAttribute, keyStart)
 
           ensureCapacity()
-          attrBuf(2*n) = keyStr
-          attrBuf(2*n + 1) = value.s
+          attrBufTarget(2*n) = keyStr
+          attrBufTarget(2*n + 1) = value.s
           n += 1
 
           // Emit attribute descriptor [size=4, line, column, length].
@@ -3432,15 +3475,21 @@ object Xml extends Tag.Container
     private val directNames: scala.collection.mutable.ArrayBuffer[Text] =
       scala.collection.mutable.ArrayBuffer.empty
 
+    @scala.caps.unsafe.untrackedCaptures
     private var directAttributes1: Attributes = Attributes.empty
+    @scala.caps.unsafe.untrackedCaptures
     private var directEmpty: Boolean = false
 
     // The most recently opened child's name fingerprint (snapshotted in
     // `directOpen` before `readAttributes` clobbers `readName`'s), and the
     // child's interned name for the `NameOpaque` general dispatch.
+    @scala.caps.unsafe.untrackedCaptures
     private var directChildLow:      Long = 0L
+    @scala.caps.unsafe.untrackedCaptures
     private var directChildHigh:     Long = 0L
+    @scala.caps.unsafe.untrackedCaptures
     private var directChildPackable: Boolean = false
+    @scala.caps.unsafe.untrackedCaptures
     private var directChildName:     Text = t""
 
     private inline def directPop(): Text = directNames.remove(directNames.length - 1)
@@ -3891,7 +3940,7 @@ object Xml extends Tag.Container
       callback: (Ordinal, Hole) => Unit                = (_, _) => (),
       headers0: Boolean                           = false )
     ( using schema: XmlSchema )
-  :   Xml raises ParseError =
+  :   (Tactic[ParseError]^) ?->{callback} Xml =
 
     new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
 

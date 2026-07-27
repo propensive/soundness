@@ -59,14 +59,22 @@ private[hallucination] final class JpegUpsampler
   import JpegUpsampler.*
 
   private val count = components.length
-  private val kinds = new Array[Int](count)
-  private val widths = new Array[Int](count)
-  private val heights = new Array[Int](count)
-  private val rowStrides = new Array[Int](count)
-  private val hScales = new Array[Int](count)
-  private val vScales = new Array[Int](count)
+  @scala.caps.unsafe.untrackedCaptures
+  private val kinds: Array[Int] = new Array[Int](count)
+  @scala.caps.unsafe.untrackedCaptures
+  private val widths: Array[Int] = new Array[Int](count)
+  @scala.caps.unsafe.untrackedCaptures
+  private val heights: Array[Int] = new Array[Int](count)
+  @scala.caps.unsafe.untrackedCaptures
+  private val rowStrides: Array[Int] = new Array[Int](count)
+  @scala.caps.unsafe.untrackedCaptures
+  private val hScales: Array[Int] = new Array[Int](count)
+  @scala.caps.unsafe.untrackedCaptures
+  private val vScales: Array[Int] = new Array[Int](count)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var hMax = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var vMax = 0
 
   locally:
@@ -89,7 +97,7 @@ private[hallucination] final class JpegUpsampler
       val h2 = h*2 == hMax
       val v2 = v*2 == vMax
 
-      kinds(index) =
+      writable(kinds)(index) =
         if h1 && v1 then H1V1
         else if h2 && v1 then H2V1
         else if h1 && v2 then H1V2
@@ -99,11 +107,11 @@ private[hallucination] final class JpegUpsampler
         else
           Generic
 
-      hScales(index) = if h == 0 then 1 else hMax/h
-      vScales(index) = if v == 0 then 1 else vMax/v
-      widths(index) = component.sizeWidth
-      heights(index) = component.sizeHeight
-      rowStrides(index) = component.blockWidth*component.dctScale
+      writable(hScales)(index) = if h == 0 then 1 else hMax/h
+      writable(vScales)(index) = if v == 0 then 1 else vMax/v
+      writable(widths)(index) = component.sizeWidth
+      writable(heights)(index) = component.sizeHeight
+      writable(rowStrides)(index) = component.blockWidth*component.dctScale
       index += 1
 
   private val lineBufferSize =
@@ -112,14 +120,31 @@ private[hallucination] final class JpegUpsampler
     while index < count do { maximum = maximum.max(widths(index)); index += 1 }
     maximum*hMax
 
-  private val lineBuffers = Array.fill(count)(new Array[Byte](lineBufferSize))
+  // An `AnyRef` field + pure-view accessor: a nested-array field type is elaborated with
+  // fresh element capabilities nothing can satisfy.
+  @scala.caps.unsafe.untrackedCaptures
+  private val lineBuffers0: AnyRef =
+    val buffers = new Array[Array[Byte]](count)
+    var index = 0
+
+    while index < count do
+      buffers(index) = new Array[Byte](lineBufferSize)
+      index += 1
+
+    buffers.asInstanceOf[AnyRef]
+
+  private inline def lineBuffers: Array[Array[Byte]] =
+    lineBuffers0.asInstanceOf[Array[Array[Byte]]]
+
+  private inline def lineBuffer(index: Int): Array[Byte] =
+    lineBuffers0.asInstanceOf[Array[Array[Byte]]](index)
 
   // Upsamples row `row` of every component to full width and interleaves via `colorConvert`.
   def upsampleAndInterleaveRow
     ( componentData: Array[Array[Byte]],
       row:           Int,
       output:        Array[Byte],
-      colorConvert:  (Array[Array[Byte]], Array[Byte]) => Unit )
+      colorConvert:  JpegColorConverter )
   :   Unit =
 
     var index = 0
@@ -127,11 +152,11 @@ private[hallucination] final class JpegUpsampler
     while index < count do
       upsampleRow
         ( kinds(index), componentData(index), widths(index), heights(index), rowStrides(index),
-          hScales(index), vScales(index), row, lineBuffers(index) )
+          writable(hScales)(index), vScales(index), row, lineBuffer(index) )
 
       index += 1
 
-    colorConvert(lineBuffers, output)
+    colorConvert.convert(lineBuffers0, output)
 
   private def upsampleRow
     ( kind:      Int,
@@ -151,28 +176,28 @@ private[hallucination] final class JpegUpsampler
       case H1V1 =>
         val base = row*rowStride
         var i = 0
-        while i < outputWidth do { output(i) = input(base + i); i += 1 }
+        while i < outputWidth do { writable(output)(i) = input(base + i); i += 1 }
 
       case H2V1 =>
         val base = row*rowStride
 
         if width == 1 then
-          output(0) = input(base); output(1) = input(base)
+          writable(output)(0) = input(base); writable(output)(1) = input(base)
         else
-          output(0) = input(base)
-          output(1) = ((sample(base)*3 + sample(base + 1) + 2) >> 2).toByte
+          writable(output)(0) = input(base)
+          writable(output)(1) = ((sample(base)*3 + sample(base + 1) + 2) >> 2).toByte
           var i = 1
 
           while i < width - 1 do
             val s = 3*sample(base + i) + 2
-            output(i*2) = ((s + sample(base + i - 1)) >> 2).toByte
-            output(i*2 + 1) = ((s + sample(base + i + 1)) >> 2).toByte
+            writable(output)(i*2) = ((s + sample(base + i - 1)) >> 2).toByte
+            writable(output)(i*2 + 1) = ((s + sample(base + i + 1)) >> 2).toByte
             i += 1
 
-          output((width - 1)*2) =
+          writable(output)((width - 1)*2) =
             ((sample(base + width - 1)*3 + sample(base + width - 2) + 2) >> 2).toByte
 
-          output((width - 1)*2 + 1) = input(base + width - 1)
+          writable(output)((width - 1)*2 + 1) = input(base + width - 1)
 
       case H1V2 =>
         val rowNear = row/2.0
@@ -183,7 +208,7 @@ private[hallucination] final class JpegUpsampler
         var i = 0
 
         while i < outputWidth do
-          output(i) = ((3*sample(near + i) + sample(far + i) + 2) >> 2).toByte
+          writable(output)(i) = ((3*sample(near + i) + sample(far + i) + 2) >> 2).toByte
           i += 1
 
       case H2V2 =>
@@ -195,20 +220,20 @@ private[hallucination] final class JpegUpsampler
 
         if width == 1 then
           val value = ((3*sample(near) + sample(far) + 2) >> 2).toByte
-          output(0) = value; output(1) = value
+          writable(output)(0) = value; writable(output)(1) = value
         else
           var t1 = 3*sample(near) + sample(far)
-          output(0) = ((t1 + 2) >> 2).toByte
+          writable(output)(0) = ((t1 + 2) >> 2).toByte
           var i = 1
 
           while i < width do
             val t0 = t1
             t1 = 3*sample(near + i) + sample(far + i)
-            output(i*2 - 1) = ((3*t0 + t1 + 8) >> 4).toByte
-            output(i*2) = ((3*t1 + t0 + 8) >> 4).toByte
+            writable(output)(i*2 - 1) = ((3*t0 + t1 + 8) >> 4).toByte
+            writable(output)(i*2) = ((3*t1 + t0 + 8) >> 4).toByte
             i += 1
 
-          output(width*2 - 1) = ((t1 + 2) >> 2).toByte
+          writable(output)(width*2 - 1) = ((t1 + 2) >> 2).toByte
 
       case _ =>
         val start = (row/vScale)*rowStride
@@ -219,7 +244,7 @@ private[hallucination] final class JpegUpsampler
           var repeat = 0
 
           while repeat < hScale do
-            output(index) = input(start + i)
+            writable(output)(index) = input(start + i)
             index += 1
             repeat += 1
 

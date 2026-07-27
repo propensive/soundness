@@ -54,7 +54,8 @@ import gastronomy.providers.javaStdlibProvider
 // standard fallback metrics.
 private[facsimile] object FontEmbedder:
   def embed(pdf: Pdf, ttf: Ttf, name: Optional[Text], subset: Optional[Text])
-  :   Cos.Ref raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Cos.Ref =
 
     val program = subset.lay(ttf): chars =>
       safely(ttf.subset(chars)).or(ttf)

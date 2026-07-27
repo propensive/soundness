@@ -46,6 +46,7 @@ import ProtobufError.Reason
 // fields — the structure the message decoder looks fields up in by number.
 @unexported
 class ProtobufParser(data: Data):
+  @scala.caps.unsafe.untrackedCaptures
   private var pos: Int = 0
 
   def atEnd: Boolean = pos >= data.length
@@ -135,6 +136,7 @@ class ProtobufParser(data: Data):
   // window's end; `directEnterField`/`directLeaveField` bracket one field's
   // wire value per its tag's wire code, exactly as `fields()` slices it.
 
+  @scala.caps.unsafe.untrackedCaptures
   private var boundary: Int = data.length
 
   def directAtLimit: Boolean = pos >= boundary

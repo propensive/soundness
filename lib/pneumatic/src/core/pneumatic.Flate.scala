@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 // Shared definitions for the pure-Scala DEFLATE implementation, ported faithfully from JZlib
 // (com.jcraft.jzlib, BSD 3-clause, Copyright (c) 2000-2011 ymnk, JCraft, Inc.), itself a port of
 // zlib by Jean-loup Gailly and Mark Adler. Because this port is pure Scala, the `Deflate`, `Gzip`
@@ -56,15 +58,17 @@ private[pneumatic] object Flate:
   final val PresetDict = 0x20
 
   // And-ing with inflateMask(n) masks the lower n bits.
-  val inflateMask: Array[Int] = Array(
-    0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000f,
-    0x0000001f, 0x0000003f, 0x0000007f, 0x000000ff, 0x000001ff,
-    0x000003ff, 0x000007ff, 0x00000fff, 0x00001fff, 0x00003fff,
-    0x00007fff, 0x0000ffff)
+  val inflateMask: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(
+      0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000f,
+      0x0000001f, 0x0000003f, 0x0000007f, 0x000000ff, 0x000001ff,
+      0x000003ff, 0x000007ff, 0x00000fff, 0x00001fff, 0x00003fff,
+      0x00007fff, 0x0000ffff)
 
-  val empty: Array[Byte] = new Array[Byte](0)
-  val emptyInts: Array[Int] = new Array[Int](0)
-  val emptyShorts: Array[Short] = new Array[Short](0)
+  def empty: Array[Byte]^ = new Array[Byte](0)
+  def emptyInts: Array[Int]^ = new Array[Int](0)
+  val emptyShorts: IArray[Short] = IArray.unsafeFromArray(new Array[Short](0))
 
   def corrupt(message: String): Nothing =
     throw IllegalStateException("the compressed data is corrupt: "+message)
@@ -103,7 +107,9 @@ private[pneumatic] final class Adler32 extends FlateChecksum:
   private final val Base = 65521 // largest prime smaller than 65536
   private final val NMax = 5552  // largest n with 255n(n+1)/2 + (n+1)(Base-1) <= 2^32-1
 
+  @scala.caps.unsafe.untrackedCaptures
   private var s1: Long = 1L
+  @scala.caps.unsafe.untrackedCaptures
   private var s2: Long = 0L
 
   def reset(): Unit =
@@ -149,8 +155,8 @@ private[pneumatic] final class Adler32 extends FlateChecksum:
       s2 %= Base
 
 private[pneumatic] object Crc32:
-  val table: Array[Int] =
-    val result = new Array[Int](256)
+  val table: IArray[Int] =
+    val result: Array[Int]^ = new Array[Int](256)
     var n = 0
 
     while n < 256 do
@@ -164,9 +170,11 @@ private[pneumatic] object Crc32:
       result(n) = c
       n += 1
 
-    result
+    // The table is fresh and never written after construction.
+    IArray.unsafeFromArray(result)
 
 private[pneumatic] final class Crc32 extends FlateChecksum:
+  @scala.caps.unsafe.untrackedCaptures
   private var v: Int = 0
 
   def update(buffer: Array[Byte], index0: Int, length0: Int): Unit =

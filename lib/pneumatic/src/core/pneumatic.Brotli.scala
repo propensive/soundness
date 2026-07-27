@@ -50,12 +50,13 @@ private[pneumatic] trait BrotliEngine:
   protected val pending: scala.collection.mutable.ArrayBuffer[Byte] =
     scala.collection.mutable.ArrayBuffer()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var delivered: Int = 0
 
   def accept(bytes: Array[Byte], offset: Int, length: Int): Unit
   def finish(): Unit
 
-  def deliver(target: Array[Byte], offset: Int, space: Int): Int =
+  def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -87,6 +88,7 @@ private[pneumatic] class BrotliDecoderEngine extends BrotliEngine:
   private val input: scala.collection.mutable.ArrayBuffer[Byte] =
     scala.collection.mutable.ArrayBuffer()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
   def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
@@ -96,7 +98,7 @@ private[pneumatic] class BrotliDecoderEngine extends BrotliEngine:
   def finish(): Unit =
     if !finished then
       finished = true
-      val array = new Array[Byte](input.length)
+      val array: Array[Byte]^ = new Array[Byte](input.length)
       var k = 0
       while k < input.length do { array(k) = input(k); k += 1 }
       val decoded = BrotliDecoder.decode(array, array.length)
@@ -108,6 +110,7 @@ private[pneumatic] class BrotliEncoderEngine extends BrotliEngine:
   private val input: scala.collection.mutable.ArrayBuffer[Byte] =
     scala.collection.mutable.ArrayBuffer()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
   def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
@@ -117,7 +120,7 @@ private[pneumatic] class BrotliEncoderEngine extends BrotliEngine:
   def finish(): Unit =
     if !finished then
       finished = true
-      val array = new Array[Byte](input.length)
+      val array: Array[Byte]^ = new Array[Byte](input.length)
       var k = 0
       while k < input.length do { array(k) = input(k); k += 1 }
       val encoded = BrotliEncoder.encode(array, array.length)
@@ -131,6 +134,7 @@ private[pneumatic] class BrotliStage(engine: BrotliEngine) extends Duct[Data, Da
   type Transport = Credit
   type Upstream = Credit
 
+  @scala.caps.unsafe.untrackedCaptures
   private var finishing = false
 
   def regulation: Credit is Regulation = summon[Credit is Regulation]

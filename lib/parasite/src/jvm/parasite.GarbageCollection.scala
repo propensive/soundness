@@ -99,7 +99,7 @@ object GarbageCollection:
       val listeners =
         jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.to[List].bind:
           case emitter: jm.NotificationEmitter =>
-            val listener: jm.NotificationListener^ = (notification, handback) =>
+            val listener: jm.NotificationListener^{action} = (notification, handback) =>
               if
                 notification.nn.getType() ==
                   csm.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION

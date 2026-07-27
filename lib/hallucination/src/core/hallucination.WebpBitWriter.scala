@@ -44,7 +44,9 @@ import vacuous.*
 // 64-bit buffer, flushed eight bytes at a time.
 private[hallucination] final class WebpBitWriter:
   private val out = ji.ByteArrayOutputStream()
+  @scala.caps.unsafe.untrackedCaptures
   private var buffer: Long = 0L
+  @scala.caps.unsafe.untrackedCaptures
   private var count: Int = 0
 
   def writeBits(bits: Long, nbits: Int): Unit =

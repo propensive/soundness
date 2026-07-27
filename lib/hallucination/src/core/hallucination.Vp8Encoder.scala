@@ -66,9 +66,12 @@ private[hallucination] object Vp8Encoder:
     private val lumaWidth = mbWidth*16
     private val chromaWidth = mbWidth*8
 
-    private val ybuf = new Array[Int](lumaWidth*mbHeight*16)
-    private val ubuf = new Array[Int](chromaWidth*mbHeight*8)
-    private val vbuf = new Array[Int](chromaWidth*mbHeight*8)
+    @scala.caps.unsafe.untrackedCaptures
+    private val ybuf: Array[Int] = new Array[Int](lumaWidth*mbHeight*16)
+    @scala.caps.unsafe.untrackedCaptures
+    private val ubuf: Array[Int] = new Array[Int](chromaWidth*mbHeight*8)
+    @scala.caps.unsafe.untrackedCaptures
+    private val vbuf: Array[Int] = new Array[Int](chromaWidth*mbHeight*8)
 
     private val quantIndex = 127 - quality.max(0).min(100)*127/100
     private val ydc = dcQuant(quantIndex)
@@ -83,15 +86,31 @@ private[hallucination] object Vp8Encoder:
     private val header = Vp8BoolEncoder()
     private val partition = Vp8BoolEncoder()
 
+    @scala.caps.unsafe.untrackedCaptures
     private var leftBorderY = Array.fill(17)(129)
+    @scala.caps.unsafe.untrackedCaptures
     private var leftBorderU = Array.fill(9)(129)
+    @scala.caps.unsafe.untrackedCaptures
     private var leftBorderV = Array.fill(9)(129)
-    private val topBorderY = Array.fill(lumaWidth + 4)(127)
-    private val topBorderU = Array.fill(chromaWidth)(127)
-    private val topBorderV = Array.fill(chromaWidth)(127)
+    @scala.caps.unsafe.untrackedCaptures
+    private val topBorderY: Array[Int] = Array.fill(lumaWidth + 4)(127)
+    @scala.caps.unsafe.untrackedCaptures
+    private val topBorderU: Array[Int] = Array.fill(chromaWidth)(127)
+    @scala.caps.unsafe.untrackedCaptures
+    private val topBorderV: Array[Int] = Array.fill(chromaWidth)(127)
 
     // Per-column and per-row non-zero "complexity" carried between macroblocks: y2, 4×y, 2×u, 2×v.
-    private val topComplexity = Array.fill(mbWidth)(new Array[Int](9))
+    // Built with a loop: nested `Array.fill` trips ClassTag synthesis under cc.
+    @scala.caps.unsafe.untrackedCaptures
+    private val topComplexity: AnyRef =
+      val rows = new Array[Array[Int]](mbWidth)
+      var i = 0
+      while i < rows.length do { rows(i) = new Array[Int](9); i += 1 }
+      rows.asInstanceOf[AnyRef]
+    
+    private inline def topComplexityRows(index: Int): Array[Int] =
+      topComplexity.asInstanceOf[Array[Array[Int]]](index)
+    @scala.caps.unsafe.untrackedCaptures
     private var leftComplexity = new Array[Int](9)
 
     def run(): Data =
@@ -109,8 +128,8 @@ private[hallucination] object Vp8Encoder:
 
         while mbx < mbWidth do
           // Macroblock header: DC luma mode, DC chroma mode (no segment or skip flag).
-          header.writeTree(keyframeYmodeTree, keyframeYmodeProbs, 0, DcPred)
-          header.writeTree(keyframeUvModeTree, keyframeUvModeProbs, 0, DcPred)
+          header.writeTree(keyframeYmodeTree.asInstanceOf[Array[Int]], keyframeYmodeProbs.asInstanceOf[Array[Int]], 0, DcPred)
+          header.writeTree(keyframeUvModeTree.asInstanceOf[Array[Int]], keyframeUvModeProbs.asInstanceOf[Array[Int]], 0, DcPred)
 
           val yBlocks = transformLuma(mbx, mby)
           val (uBlocks, vBlocks) = transformChroma(mbx, mby)
@@ -169,19 +188,20 @@ private[hallucination] object Vp8Encoder:
     :   Unit =
 
       // Y2: the DC coefficient of each of the 16 luma subblocks, Walsh-Hadamard transformed.
-      val coeffs0 = new Array[Int](16)
+      @scala.caps.unsafe.untrackedCaptures
+      val coeffs0: Array[Int] = new Array[Int](16)
       var k = 0
 
       while k < 16 do
-        coeffs0(k) = yBlocks(16*k)
+        writable(coeffs0)(k) = yBlocks(16*k)
         k += 1
 
       Vp8Transform.wht4x4(coeffs0)
 
-      val y2Complexity = leftComplexity(0) + topComplexity(mbx)(0)
+      val y2Complexity = leftComplexity(0) + topComplexityRows(mbx)(0)
       val y2n = encodeCoefficients(coeffs0, 0, 1, y2Complexity, y2dc, y2ac) // plane Y2
       leftComplexity(0) = if y2n then 1 else 0
-      topComplexity(mbx)(0) = if y2n then 1 else 0
+      writable(topComplexityRows(mbx))(0) = if y2n then 1 else 0
 
       var y = 0
 
@@ -191,9 +211,9 @@ private[hallucination] object Vp8Encoder:
 
         while x < 4 do
           val i = x + y*4
-          val n = encodeCoefficients(yBlocks, i*16, 0, left + topComplexity(mbx)(x + 1), ydc, yac)
+          val n = encodeCoefficients(yBlocks, i*16, 0, left + topComplexityRows(mbx)(x + 1), ydc, yac)
           left = if n then 1 else 0
-          topComplexity(mbx)(x + 1) = if n then 1 else 0
+          writable(topComplexityRows(mbx))(x + 1) = if n then 1 else 0
           x += 1
 
         leftComplexity(y + 1) = left
@@ -213,10 +233,10 @@ private[hallucination] object Vp8Encoder:
           val i = x + y*2
 
           val n =
-            encodeCoefficients(blocks, i*16, 2, left + topComplexity(mbx)(x + base), uvdc, uvac)
+            encodeCoefficients(blocks, i*16, 2, left + topComplexityRows(mbx)(x + base), uvdc, uvac)
 
           left = if n then 1 else 0
-          topComplexity(mbx)(x + base) = if n then 1 else 0
+          writable(topComplexityRows(mbx))(x + base) = if n then 1 else 0
           x += 1
 
         leftComplexity(y + base) = left
@@ -231,12 +251,13 @@ private[hallucination] object Vp8Encoder:
       var complexity = complexity0
 
       // Quantize into zigzag order.
-      val zigzagBlock = new Array[Int](16)
+      @scala.caps.unsafe.untrackedCaptures
+      val zigzagBlock: Array[Int] = new Array[Int](16)
       var i = firstCoeff
 
       while i < 16 do
         val zi = zigzag(i)
-        zigzagBlock(i) = block(offset + zi)/(if zi > 0 then acq else dcq)
+        writable(zigzagBlock)(i) = block(offset + zi)/(if zi > 0 then acq else dcq)
         i += 1
 
       // The end-of-block index: one past the last non-zero coefficient.
@@ -257,11 +278,11 @@ private[hallucination] object Vp8Encoder:
 
         val token =
           if absValue == 0 then
-            partition.writeTree(dctTokenTree, tokenProbs, probOffset, Dct0, startIndex)
+            partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], probOffset, Dct0, startIndex)
             skipEob = true
             Dct0
           else if absValue <= 4 then
-            partition.writeTree(dctTokenTree, tokenProbs, probOffset, absValue, startIndex)
+            partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], probOffset, absValue, startIndex)
             skipEob = false
             absValue
           else
@@ -270,7 +291,7 @@ private[hallucination] object Vp8Encoder:
               else if absValue <= 18 then DctCat3 else if absValue <= 34 then DctCat4
               else if absValue <= 66 then DctCat5 else DctCat6
 
-            partition.writeTree(dctTokenTree, tokenProbs, probOffset, category, startIndex)
+            partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], probOffset, category, startIndex)
             val extra = absValue - dctCatBase(category - DctCat1)
             var mask = if category == DctCat6 then 1 << 10 else 1 << (category - DctCat1)
             var c = (category - DctCat1)*12
@@ -290,7 +311,7 @@ private[hallucination] object Vp8Encoder:
       if endOfBlock < 16 then
         val band = coeffBands(firstCoeff.max(endOfBlock))
 
-        partition.writeTree(dctTokenTree, tokenProbs, coeffIndex(plane, band, complexity, 0),
+        partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], coeffIndex(plane, band, complexity, 0),
             DctEob)
 
       endOfBlock > 0
@@ -310,7 +331,7 @@ private[hallucination] object Vp8Encoder:
 
         while x < lumaWidth do
           val c = rgb(x, y)
-          ybuf(y*lumaWidth + x) = rgbToY(c.red, c.green, c.blue)
+          writable(ybuf)(y*lumaWidth + x) = rgbToY(c.red, c.green, c.blue)
           x += 1
 
         y += 1
@@ -323,8 +344,8 @@ private[hallucination] object Vp8Encoder:
         while cx < chromaWidth do
           val a = rgb(cx*2, cy*2); val b = rgb(cx*2 + 1, cy*2)
           val d = rgb(cx*2, cy*2 + 1); val e = rgb(cx*2 + 1, cy*2 + 1)
-          ubuf(cy*chromaWidth + cx) = chromaAvg(a, b, d, e, uCoeffs)
-          vbuf(cy*chromaWidth + cx) = chromaAvg(a, b, d, e, vCoeffs)
+          writable(ubuf)(cy*chromaWidth + cx) = chromaAvg(a, b, d, e, uCoeffs)
+          writable(vbuf)(cy*chromaWidth + cx) = chromaAvg(a, b, d, e, vCoeffs)
           cx += 1
 
         cy += 1
@@ -350,7 +371,8 @@ private[hallucination] object Vp8Encoder:
       val predicted = Vp8Predict.createBorderLuma(mbx, mby, mbWidth, topBorderY, leftBorderY)
       Vp8Predict.predictDcpred(predicted, 16, LumaStride, mby != 0, mbx != 0)
 
-      val blocks = new Array[Int](256)
+      @scala.caps.unsafe.untrackedCaptures
+      val blocks: Array[Int] = new Array[Int](256)
       var by = 0
 
       while by < 4 do
@@ -369,11 +391,12 @@ private[hallucination] object Vp8Encoder:
 
     private def reconstructLuma(predicted: Array[Int], blocks: Array[Int], mbx: Int): Unit =
       val recon = blocks.clone()
-      val c0 = new Array[Int](16)
+      @scala.caps.unsafe.untrackedCaptures
+      val c0: Array[Int] = new Array[Int](16)
       var k = 0
 
       while k < 16 do
-        c0(k) = recon(16*k)
+        writable(c0)(k) = recon(16*k)
         k += 1
 
       Vp8Transform.wht4x4(c0)
@@ -381,7 +404,7 @@ private[hallucination] object Vp8Encoder:
       k = 0
 
       while k < 16 do
-        c0(k) = c0(k)/(if k > 0 then y2ac else y2dc)
+        writable(c0)(k) = c0(k)/(if k > 0 then y2ac else y2dc)
         k += 1
 
       k = 0
@@ -399,7 +422,7 @@ private[hallucination] object Vp8Encoder:
       k = 0
 
       while k < 16 do
-        c0(k) = c0(k)*(if k > 0 then y2ac else y2dc)
+        writable(c0)(k) = c0(k)*(if k > 0 then y2ac else y2dc)
         k += 1
 
       Vp8Transform.iwht4x4(c0)
@@ -437,7 +460,7 @@ private[hallucination] object Vp8Encoder:
       k = 0
 
       while k < 16 do
-        topBorderY(mbx*16 + k) = predicted(16*LumaStride + k + 1)
+        writable(topBorderY)(mbx*16 + k) = predicted(16*LumaStride + k + 1)
         k += 1
 
     private def transformChroma(mbx: Int, mby: Int): (Array[Int], Array[Int]) =
@@ -451,7 +474,8 @@ private[hallucination] object Vp8Encoder:
       val predicted = Vp8Predict.createBorderChroma(mbx, mby, topBorder, leftBorder)
       Vp8Predict.predictDcpred(predicted, 8, ChromaStride, mby != 0, mbx != 0)
 
-      val blocks = new Array[Int](64)
+      @scala.caps.unsafe.untrackedCaptures
+      val blocks: Array[Int] = new Array[Int](64)
       var by = 0
 
       while by < 2 do
@@ -497,13 +521,13 @@ private[hallucination] object Vp8Encoder:
       k = 0
 
       while k < 9 do
-        leftBorder(k) = predicted(k*ChromaStride + 8)
+        writable(leftBorder)(k) = predicted(k*ChromaStride + 8)
         k += 1
 
       k = 0
 
       while k < 8 do
-        topBorder(mbx*8 + k) = predicted(8*ChromaStride + k + 1)
+        writable(topBorder)(mbx*8 + k) = predicted(8*ChromaStride + k + 1)
         k += 1
 
       blocks
@@ -522,7 +546,7 @@ private[hallucination] object Vp8Encoder:
         while x < 4 do
           val predictedValue = predicted((1 + by*4 + y)*stride + 1 + bx*4 + x)
           val actual = plane((py + by*4 + y)*planeWidth + px + bx*4 + x)
-          out(outOffset + y*4 + x) = actual - predictedValue
+          writable(out)(outOffset + y*4 + x) = actual - predictedValue
           x += 1
 
         y += 1

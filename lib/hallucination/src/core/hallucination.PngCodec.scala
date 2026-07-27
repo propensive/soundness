@@ -128,10 +128,14 @@ private[hallucination] object PngCodec:
 
         position += length + 12
 
-      val inflated: Array[Byte] =
+      val inflated: IArray[Byte] =
         val deflated = idat.result().immutable(using Unsafe)
 
-        try concatenate(Zlib.compression.decompress(Progression(deflated)))
+        // The pure `IArray` view keeps the `try` result free of the fresh read capability
+        // a raw array result would carry.
+        try
+          concatenate(Zlib.compression.decompress(Progression(deflated)))
+          . asInstanceOf[IArray[Byte]]
         catch case _: IllegalStateException => abort(RasterError(Png(), Reason.Truncated))
 
       val channels = colorType match
@@ -159,8 +163,9 @@ private[hallucination] object PngCodec:
         if passWidth == 0 || passHeight == 0 then offset else
           val rowBytes = (passWidth*channels*depth + 7)/8
           val unit = ((channels*depth + 7)/8).max(1)
-          var previous = new Array[Byte](rowBytes)
-          var current = new Array[Byte](rowBytes)
+          // Pure-typed rows (see `pureBytes`): writes route through `writable`.
+          var previous: Array[Byte] = pureBytes(rowBytes)
+          var current: Array[Byte] = pureBytes(rowBytes)
           var position = offset
 
           def sample(x: Int, channel: Int): Int =
@@ -203,7 +208,7 @@ private[hallucination] object PngCodec:
 
                 case _ => abort(RasterError(Png(), Reason.UnsupportedVariant))
 
-              current(index) = defiltered.toByte
+              writable(current)(index) = defiltered.toByte
 
             position += rowBytes
 

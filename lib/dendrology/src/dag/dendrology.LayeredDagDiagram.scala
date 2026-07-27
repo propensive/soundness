@@ -61,11 +61,22 @@ object LayeredDagDiagram:
       prevNodeCol: Map[node, Int] )
 
   private final class Cell:
+    @scala.caps.unsafe.untrackedCaptures
     var top: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var down: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var left: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var right: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var verticalPassThrough: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var horizontalPassThrough: Boolean = false
 
     def tile: DagTile =

@@ -78,8 +78,11 @@ object Terminal:
   // then close over this holder instead of `Terminal.this` — which matters because the
   // daemon body must be a pure context function and `Termcap`/`Stdio` values must stay pure.
   private[profanity] class Metrics:
+    @scala.caps.unsafe.untrackedCaptures
     var mode: Optional[Brightness] = Unset
+    @scala.caps.unsafe.untrackedCaptures
     var rows: Optional[Int] = Unset
+    @scala.caps.unsafe.untrackedCaptures
     var columns: Optional[Int] = Unset
 
     // Outstanding cursor-position-report expectations: appended by the resize trap

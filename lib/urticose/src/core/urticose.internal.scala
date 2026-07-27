@@ -249,7 +249,7 @@ object internal:
       def int: Int = ip
 
   def subnetPrefix(text: Text, max: Int)(outOfRange: Int => Reason)
-  :   Int raises IpAddressError =
+  :   (Tactic[IpAddressError]^) ?->{outOfRange} Int =
 
     val prefix =
       mitigate:

@@ -184,10 +184,13 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // isolated to this connection — it neither escalates nor leaves a request awaiter
   // hanging — rather than being swallowed or escaping the daemon.
   private val (writer, reader): (Daemon, Daemon) =
-    contain:
+    // The containment and its protected body share only this connection's own state; no
+    // aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+     contain:
       case _ => tearDown(); Remedy.Accept
 
-    . protect:
+     . protect:
         // Everything the fibers touch is bound to locals (or neutral carriers)
         // before they spawn: a daemon body may not capture the instance under
         // construction, and its context function must stay pure.

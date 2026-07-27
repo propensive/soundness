@@ -64,7 +64,8 @@ object Destination:
       named: Text => Optional[Cos],
       following: Boolean = false )
     ( using pdf: Pdf )
-  :   Optional[Destination] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Optional[Destination] =
 
     pdf.resolved(value) match
       case Cos.Sequence(target :: Cos.Name(kind) :: rest) =>

@@ -32,6 +32,10 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+import vacuous.*
+import rudiments.*
+
 import Flate.*
 import FlateTables.*
 
@@ -49,32 +53,38 @@ private[pneumatic] final class InfTree:
   private final val Many = 1440
   private final val Bmax = 15
 
-  private val hn = new Array[Int](1)   // hufts used in space
+  @scala.caps.unsafe.untrackedCaptures
+  private var hn = new Array[Int](1)   // hufts used in space
+  @scala.caps.unsafe.untrackedCaptures
   private var v = new Array[Int](288)  // work area for huftBuild
-  private val c = new Array[Int](Bmax + 1) // bit length count table
-  private val r = new Array[Int](3)    // table entry for structure assignment
-  private val u = new Array[Int](Bmax) // table stack
-  private val x = new Array[Int](Bmax + 1) // bit offsets, then code stack
+  @scala.caps.unsafe.untrackedCaptures
+  private var c = new Array[Int](Bmax + 1) // bit length count table
+  @scala.caps.unsafe.untrackedCaptures
+  private var r = new Array[Int](3)    // table entry for structure assignment
+  @scala.caps.unsafe.untrackedCaptures
+  private var u = new Array[Int](Bmax) // table stack
+  @scala.caps.unsafe.untrackedCaptures
+  private var x = new Array[Int](Bmax + 1) // bit offsets, then code stack
 
   private def initWorkArea(vsize: Int): Unit =
     if v.length < vsize then v = new Array[Int](vsize)
     var i = 0
-    while i < vsize do { v(i) = 0; i += 1 }
+    while i < vsize do { writable(v)(i) = 0; i += 1 }
     i = 0
-    while i < Bmax + 1 do { c(i) = 0; i += 1 }
+    while i < Bmax + 1 do { writable(c)(i) = 0; i += 1 }
     i = 0
-    while i < 3 do { r(i) = 0; i += 1 }
+    while i < 3 do { writable(r)(i) = 0; i += 1 }
     i = 0
-    while i < Bmax do { u(i) = 0; i += 1 }
+    while i < Bmax do { writable(u)(i) = 0; i += 1 }
     i = 0
-    while i < Bmax + 1 do { x(i) = 0; i += 1 }
+    while i < Bmax + 1 do { writable(x)(i) = 0; i += 1 }
 
   // Given a list of code lengths and a maximum table size, make a set of tables to decode that
   // set of codes. Returns `ZOk` on success, `ZBufError` if the given code set is incomplete (the
   // tables are still built in this case), or `ZDataError` if the input is invalid.
   private def huftBuild
     ( b: Array[Int], bindex: Int, n0: Int, s: Int, d: Array[Int], e: Array[Int],
-      t: Array[Int], m: Array[Int], hp: Array[Int] )
+      t: Array[Int]^, m: Array[Int]^, hp: Array[Int] )
   :   Int =
 
     var n = n0
@@ -97,7 +107,7 @@ private[pneumatic] final class InfTree:
     // Generate counts for each bit length
     p = 0
     i = n
-    while { c(b(bindex + p)) += 1; p += 1; i -= 1; i != 0 } do ()
+    while { writable(c)(b(bindex + p)) += 1; p += 1; i -= 1; i != 0 } do ()
 
     if c(0) == n then // null input: all zero-length codes
       t(0) = -1
@@ -130,18 +140,18 @@ private[pneumatic] final class InfTree:
 
       if !bad then
         y -= c(i)
-        if y < 0 then bad = true else c(i) += y
+        if y < 0 then bad = true else writable(c)(i) += y
 
       if bad then ZDataError else
         // Generate starting offsets into the value table for each length
-        x(1) = 0
+        writable(x)(1) = 0
         j = 0
         p = 1
         xp = 2
 
         while { i -= 1; i != 0 } do // note that i == g from above
           j += c(p)
-          x(xp) = j
+          writable(x)(xp) = j
           xp += 1
           p += 1
 
@@ -151,7 +161,7 @@ private[pneumatic] final class InfTree:
 
         while
           j = b(bindex + p)
-          if j != 0 then { v(x(j)) = i; x(j) += 1 }
+          if j != 0 then { writable(v)(x(j)) = i; writable(x)(j) += 1 }
           p += 1
           i += 1
           i < n
@@ -160,12 +170,12 @@ private[pneumatic] final class InfTree:
         n = x(g) // set n to length of v
 
         // Generate the Huffman codes and for each, make the table entries
-        x(0) = 0
+        writable(x)(0) = 0
         i = 0     // first Huffman code is zero
         p = 0     // grab values in bit order
         h = -1    // no tables yet — level -1
         w = -l    // bits decoded == (l*h)
-        u(0) = 0
+        writable(u)(0) = 0
         q = 0
         z = 0
 
@@ -209,32 +219,32 @@ private[pneumatic] final class InfTree:
               if hn(0) + z > Many then overflow = true // overflow of Many
               else
                 q = hn(0)
-                u(h) = q
-                hn(0) += z
+                writable(u)(h) = q
+                writable(hn)(0) += z
 
                 // connect to last table, if there is one
                 if h != 0 then
-                  x(h) = i // save pattern for backing up
-                  r(0) = j
-                  r(1) = l
+                  writable(x)(h) = i // save pattern for backing up
+                  writable(r)(0) = j
+                  writable(r)(1) = l
                   j = i >>> (w - l)
-                  r(2) = q - u(h - 1) - j
+                  writable(r)(2) = q - u(h - 1) - j
                   System.arraycopy(r, 0, hp, (u(h - 1) + j)*3, 3) // connect to last table
                 else
                   t(0) = q // first table is returned result
 
             if !overflow then
               // set up table entry in r
-              r(1) = k - w
+              writable(r)(1) = k - w
 
-              if p >= n then r(0) = 128 + 64 // out of values — invalid code
+              if p >= n then writable(r)(0) = 128 + 64 // out of values — invalid code
               else if v(p) < s then
-                r(0) = if v(p) < 256 then 0 else 32 + 64 // 256 is end-of-block
-                r(2) = v(p) // simple code is just the value
+                writable(r)(0) = if v(p) < 256 then 0 else 32 + 64 // 256 is end-of-block
+                writable(r)(2) = v(p) // simple code is just the value
                 p += 1
               else
-                r(0) = e(v(p) - s) + 16 + 64 // non-simple: look up in lists
-                r(2) = d(v(p) - s)
+                writable(r)(0) = e(v(p) - s) + 16 + 64 // non-simple: look up in lists
+                writable(r)(2) = d(v(p) - s)
                 p += 1
 
               // fill code-like entries with r
@@ -268,11 +278,11 @@ private[pneumatic] final class InfTree:
         else if y != 0 && g != 1 then ZBufError // incomplete table
         else ZOk
 
-  def inflateTreesBits(c0: Array[Int], bb: Array[Int], tb: Array[Int], hp: Array[Int], z: Inflater)
+  def inflateTreesBits(c0: Array[Int], bb: Array[Int]^, tb: Array[Int]^, hp: Array[Int], z: Inflater)
   :   Int =
 
     initWorkArea(19)
-    hn(0) = 0
+    writable(hn)(0) = 0
     var result = huftBuild(c0, 0, 19, 19, emptyInts, emptyInts, tb, bb, hp)
 
     if result == ZDataError then z.msg = "oversubscribed dynamic bit lengths tree"
@@ -283,14 +293,14 @@ private[pneumatic] final class InfTree:
     result
 
   def inflateTreesDynamic
-    ( nl: Int, nd: Int, c0: Array[Int], bl: Array[Int], bd: Array[Int], tl: Array[Int],
-      td: Array[Int], hp: Array[Int], z: Inflater )
+    ( nl: Int, nd: Int, c0: Array[Int], bl: Array[Int]^, bd: Array[Int]^, tl: Array[Int]^,
+      td: Array[Int]^, hp: Array[Int], z: Inflater )
   :   Int =
 
     // build literal/length tree
     initWorkArea(288)
-    hn(0) = 0
-    var result = huftBuild(c0, 0, nl, 257, cplens, cplext, tl, bl, hp)
+    writable(hn)(0) = 0
+    var result = huftBuild(c0, 0, nl, 257, cplens.mutable(using Unsafe), cplext.mutable(using Unsafe), tl, bl, hp)
 
     if result != ZOk || bl(0) == 0 then
       if result == ZDataError then z.msg = "oversubscribed literal/length tree"
@@ -302,7 +312,7 @@ private[pneumatic] final class InfTree:
     else
       // build distance tree
       initWorkArea(288)
-      result = huftBuild(c0, nl, nd, 0, cpdist, cpdext, td, bd, hp)
+      result = huftBuild(c0, nl, nd, 0, cpdist.mutable(using Unsafe), cpdext.mutable(using Unsafe), td, bd, hp)
 
       if result != ZOk || (bd(0) == 0 && nl > 257) then
         if result == ZDataError then z.msg = "oversubscribed distance tree"
@@ -333,30 +343,44 @@ private[pneumatic] object InfCodes:
 private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
   import InfCodes.*
 
+  @scala.caps.unsafe.untrackedCaptures
   var mode: Int = 0 // current inflate_codes mode
 
+  @scala.caps.unsafe.untrackedCaptures
   var len: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var tree: Array[Int] = emptyInts // pointer into tree
+  @scala.caps.unsafe.untrackedCaptures
   var treeIndex: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var need: Int = 0 // bits needed
+  @scala.caps.unsafe.untrackedCaptures
   var lit: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var get: Int = 0  // bits to get for extra
+  @scala.caps.unsafe.untrackedCaptures
   var dist: Int = 0 // distance back to copy from
 
+  @scala.caps.unsafe.untrackedCaptures
   var lbits: Int = 0 // ltree bits decoded per branch
+  @scala.caps.unsafe.untrackedCaptures
   var dbits: Int = 0 // dtree bits decoded per branch
+  @scala.caps.unsafe.untrackedCaptures
   var ltree: Array[Int] = emptyInts
+  @scala.caps.unsafe.untrackedCaptures
   var ltreeIndex: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   var dtree: Array[Int] = emptyInts
+  @scala.caps.unsafe.untrackedCaptures
   var dtreeIndex: Int = 0
 
   def init(bl: Int, bd: Int, tl: Array[Int], tlIndex: Int, td: Array[Int], tdIndex: Int): Unit =
     mode = Start
     lbits = bl
     dbits = bd
-    ltree = tl
+    ltree = writable(tl)
     ltreeIndex = tlIndex
-    dtree = td
+    dtree = writable(td)
     dtreeIndex = tdIndex
     tree = emptyInts
 
@@ -529,7 +553,7 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
                 if m == 0 then bail = true
 
             if !bail then
-              win(q) = win(f)
+              writable(win)(q) = win(f)
               q += 1
               f += 1
               m -= 1
@@ -558,7 +582,7 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
               if m == 0 then return leave(r, b, k, p, n, q)
 
           r = ZOk
-          win(q) = lit.toByte
+          writable(win)(q) = lit.toByte
           q += 1
           m -= 1
           mode = Start
@@ -654,7 +678,7 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
       if e == 0 then
         b >>= tp(tpIndexT3 + 1)
         k -= tp(tpIndexT3 + 1)
-        win(q) = tp(tpIndexT3 + 2).toByte
+        writable(win)(q) = tp(tpIndexT3 + 2).toByte
         q += 1
         m -= 1
       else
@@ -710,8 +734,8 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
                   r = q - d
 
                   if q - r > 0 && 2 > (q - r) then
-                    win(q) = win(r); q += 1; r += 1 // minimum count is three,
-                    win(q) = win(r); q += 1; r += 1 // so unroll loop a little
+                    writable(win)(q) = win(r); q += 1; r += 1 // minimum count is three,
+                    writable(win)(q) = win(r); q += 1; r += 1 // so unroll loop a little
                     c -= 2
                   else
                     System.arraycopy(win, r, win, q, 2)
@@ -729,7 +753,7 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
                     c -= e
 
                     if q - r > 0 && e > (q - r) then
-                      while { win(q) = win(r); q += 1; r += 1; e -= 1; e != 0 } do ()
+                      while { writable(win)(q) = win(r); q += 1; r += 1; e -= 1; e != 0 } do ()
                     else
                       System.arraycopy(win, r, win, q, e)
                       q += e
@@ -740,7 +764,7 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
 
                 // copy all or what's left
                 if q - r > 0 && c > (q - r) then
-                  while { win(q) = win(r); q += 1; r += 1; c -= 1; c != 0 } do ()
+                  while { writable(win)(q) = win(r); q += 1; r += 1; c -= 1; c != 0 } do ()
                 else
                   System.arraycopy(win, r, win, q, c)
                   q += c
@@ -767,7 +791,7 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
             if e == 0 then
               b >>= tp(tpIndexT3 + 1)
               k -= tp(tpIndexT3 + 1)
-              win(q) = tp(tpIndexT3 + 2).toByte
+              writable(win)(q) = tp(tpIndexT3 + 2).toByte
               q += 1
               m -= 1
               innerDone = true
@@ -800,31 +824,49 @@ private[pneumatic] object InfBlocks:
 private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
   import InfBlocks.*
 
+  @scala.caps.unsafe.untrackedCaptures
   var mode: Int = Type // current inflate_block mode
+  @scala.caps.unsafe.untrackedCaptures
   var left: Int = 0    // if Stored, bytes left to copy
+  @scala.caps.unsafe.untrackedCaptures
   var table: Int = 0   // table lengths (14 bits)
+  @scala.caps.unsafe.untrackedCaptures
   var index: Int = 0   // index into blens (or border)
+  @scala.caps.unsafe.untrackedCaptures
   var blens: Array[Int] = emptyInts // bit lengths of codes
-  val bb: Array[Int] = new Array[Int](1) // bit length tree depth
-  val tb: Array[Int] = new Array[Int](1) // bit length decoding tree
+  @scala.caps.unsafe.untrackedCaptures
+  var bb: Array[Int] = new Array[Int](1) // bit length tree depth
+  @scala.caps.unsafe.untrackedCaptures
+  var tb: Array[Int] = new Array[Int](1) // bit length decoding tree
 
-  private val bl = new Array[Int](1)
-  private val bd = new Array[Int](1)
-  private val tli = new Array[Int](1) // tl index
-  private val tdi = new Array[Int](1) // td index
+  @scala.caps.unsafe.untrackedCaptures
+  private var bl = new Array[Int](1)
+  @scala.caps.unsafe.untrackedCaptures
+  private var bd = new Array[Int](1)
+  @scala.caps.unsafe.untrackedCaptures
+  private var tli = new Array[Int](1) // tl index
+  @scala.caps.unsafe.untrackedCaptures
+  private var tdi = new Array[Int](1) // td index
 
   private val codes: InfCodes = InfCodes(z, this)
   private val inftree: InfTree = InfTree()
 
+  @scala.caps.unsafe.untrackedCaptures
   var last: Int = 0 // true if this block is the last block
 
   // mode independent information
+  @scala.caps.unsafe.untrackedCaptures
   var bitk: Int = 0 // bits in bit buffer
+  @scala.caps.unsafe.untrackedCaptures
   var bitb: Int = 0 // bit buffer
-  val hufts: Array[Int] = new Array[Int](Many*3) // single allocation for tree space
-  val window: Array[Byte] = new Array[Byte](w)   // sliding window
+  @scala.caps.unsafe.untrackedCaptures
+  var hufts: Array[Int] = new Array[Int](Many*3) // single allocation for tree space
+  @scala.caps.unsafe.untrackedCaptures
+  var window: Array[Byte] = new Array[Byte](w)   // sliding window
   val end: Int = w    // one byte after sliding window
+  @scala.caps.unsafe.untrackedCaptures
   var read: Int = 0   // window read pointer
+  @scala.caps.unsafe.untrackedCaptures
   var write: Int = 0  // window write pointer
 
   reset()
@@ -882,7 +924,7 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
               mode = Lens // get length of stored block
 
             case 1 => // fixed
-              codes.init(fixedBl, fixedBd, fixedTl, 0, fixedTd, 0)
+              codes.init(fixedBl, fixedBd, fixedTl.mutable(using Unsafe), 0, fixedTd.mutable(using Unsafe), 0)
               b >>>= 3
               k -= 3
               mode = Codes
@@ -977,7 +1019,7 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           if blens.length < t then blens = new Array[Int](t)
           else
             var i = 0
-            while i < t do { blens(i) = 0; i += 1 }
+            while i < t do { writable(blens)(i) = 0; i += 1 }
 
           b >>>= 14
           k -= 14
@@ -998,7 +1040,7 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
                 k += 8
 
             if !bail then
-              blens(border(index)) = b & 7
+              writable(blens)(border(index)) = b & 7
               index += 1
               b >>>= 3
               k -= 3
@@ -1006,11 +1048,11 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           if bail then return leave(r, b, k, p, n, q)
 
           while index < 19 do
-            blens(border(index)) = 0
+            writable(blens)(border(index)) = 0
             index += 1
 
-          bb(0) = 7
-          t = inftree.inflateTreesBits(blens, bb, tb, hufts, z)
+          writable(bb)(0) = 7
+          t = inftree.inflateTreesBits(blens, writable(bb), writable(tb), hufts, z)
 
           if t != ZOk then
             r = t
@@ -1047,7 +1089,7 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
                 if c < 16 then
                   b >>>= t
                   k -= t
-                  blens(index) = c
+                  writable(blens)(index) = c
                   index += 1
                 else // c == 16..18
                   var i = if c == 18 then 7 else c - 14
@@ -1080,15 +1122,15 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
 
                     val cv = if c == 16 then blens(i - 1) else 0
 
-                    while { blens(i) = cv; i += 1; j -= 1; j != 0 } do ()
+                    while { writable(blens)(i) = cv; i += 1; j -= 1; j != 0 } do ()
 
                     index = i
 
           if bail then return leave(r, b, k, p, n, q)
 
-          tb(0) = -1
-          bl(0) = 9 // must be <= 9 for lookahead assumptions
-          bd(0) = 6 // must be <= 9 for lookahead assumptions
+          writable(tb)(0) = -1
+          writable(bl)(0) = 9 // must be <= 9 for lookahead assumptions
+          writable(bd)(0) = 6 // must be <= 9 for lookahead assumptions
           t = table
 
           t = inftree.inflateTreesDynamic(257 + (t & 0x1f), 1 + ((t >> 5) & 0x1f), blens, bl, bd,
@@ -1099,7 +1141,7 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
             r = t
             return leave(r, b, k, p, n, q)
 
-          codes.init(bl(0), bd(0), hufts, tli(0), hufts, tdi(0))
+          codes.init(bl(0), bd(0), writable(hufts), tli(0), writable(hufts), tdi(0))
           mode = Codes
 
         case Codes =>
@@ -1215,23 +1257,38 @@ private[pneumatic] object Inflater:
 private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   import Inflater.*
 
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextIn: Array[Byte] = empty
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextInIndex: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var availIn: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var totalIn: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextOut: Array[Byte] = empty
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var nextOutIndex: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var availOut: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var totalOut: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var msg: String = ""
+  @scala.caps.unsafe.untrackedCaptures
   private[pneumatic] var adler: FlateChecksum = Adler32()
 
   private val wrap: Int = if nowrap then 0 else 1
   private val wbits: Int = MaxWbits
+  @scala.caps.unsafe.untrackedCaptures
   private var mode: Int = Head
+  @scala.caps.unsafe.untrackedCaptures
   private var method: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var was: Long = -1 // computed check value
+  @scala.caps.unsafe.untrackedCaptures
   private var need: Long = 0 // stream check value
+  @scala.caps.unsafe.untrackedCaptures
   private var needBytes: Int = -1
 
   private val blocks: InfBlocks = InfBlocks(this, wrap != 0, 1 << wbits)
@@ -1352,7 +1409,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   def setInput(buffer: Array[Byte]): Unit = setInput(buffer, 0, buffer.length)
 
   def setInput(buffer: Array[Byte], offset: Int, length: Int): Unit =
-    nextIn = buffer
+    nextIn = writable(buffer)
     nextInIndex = offset
     availIn = length
 
@@ -1363,7 +1420,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   def inflate(target: Array[Byte]): Int = inflate(target, 0, target.length)
 
   def inflate(target: Array[Byte], offset: Int, space: Int): Int =
-    nextOut = target
+    nextOut = writable(target)
     nextOutIndex = offset
     availOut = space
     val result = run(ZNoFlush)

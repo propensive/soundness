@@ -54,13 +54,19 @@ private[punctuation] object InlineParser:
   // Must stay in sync with the `c match` cases in `parse` below: any character
   // handled there must also be flagged here, otherwise it'll be silently
   // batched as plain text.
-  private val Specials: Array[Boolean] =
-    val arr = new Array[Boolean](128)
-    "\\&`<\n*_[!]".foreach: c => arr(c.toInt) = true
-    arr
+  private val Specials: IArray[Boolean] =
+    val arr: Array[Boolean]^ = new Array[Boolean](128)
+    val special = "\\&`<\n*_[!]"
+    var i = 0
+
+    while i < special.length do
+      arr(special.charAt(i).toInt) = true
+      i += 1
+
+    arr.asInstanceOf[IArray[Boolean]]
 
   private inline def isSpecial(inline c: Char): Boolean =
-    c < 128 && Specials(c.toInt)
+    c < 128 && Specials.stdlib(c.toInt)
 
   // Bracket stack entry. `node` is the BracketData node in the inline list
   // marking the `[` or `![`. `sourceStart` is the source position
@@ -71,6 +77,7 @@ private[punctuation] object InlineParser:
     ( val node:        InlineNode,
       val isImage:     Boolean,
       val sourceStart: Int,
+      @scala.caps.unsafe.untrackedCaptures
       var active:      Boolean = true )
 
   def parse(text: Text, refs: LinkRefs): List[Prose] =

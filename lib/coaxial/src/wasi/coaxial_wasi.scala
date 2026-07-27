@@ -253,7 +253,7 @@ package socketBackends:
     def dialDomain(address: DomainSocket, options: List[SocketOption]): WasiExchange =
       unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
 
-    def request(exchange: WasiExchange, input: (Stream[Data] over Credit)^): Unit =
+    def request(exchange: WasiExchange, consume input: (Stream[Data] over Credit)^): Unit =
       drain(exchange.output, input)
       exchange.output.dispose()
 
@@ -284,4 +284,4 @@ package socketBackends:
     def routeUdpPort(port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
       ()
 
-    def dispatch(courier: Unit, input: (Stream[Data] over Credit)^): Unit = ()
+    def dispatch(courier: Unit, consume input: (Stream[Data] over Credit)^): Unit = ()

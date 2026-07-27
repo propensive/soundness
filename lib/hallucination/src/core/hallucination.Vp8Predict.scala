@@ -151,7 +151,7 @@ private[hallucination] object Vp8Predict:
 
       while col < 4 do
         val value = rblock(rOffset + row*4 + col) + pblock(pos + col)
-        pblock(pos + col) = if value < 0 then 0 else if value > 255 then 255 else value
+        writable(pblock)(pos + col) = if value < 0 then 0 else if value > 255 then 255 else value
         col += 1
 
       pos += stride
@@ -164,7 +164,7 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < size do
-        a((y0 + y)*stride + x0 + x) = a((y0 - 1)*stride + x0 + x)
+        writable(a)((y0 + y)*stride + x0 + x) = a((y0 - 1)*stride + x0 + x)
         x += 1
 
       y += 1
@@ -177,7 +177,7 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < size do
-        a((y0 + y)*stride + x0 + x) = left
+        writable(a)((y0 + y)*stride + x0 + x) = left
         x += 1
 
       y += 1
@@ -211,7 +211,7 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < size do
-        a(1 + stride*(y + 1) + x) = dc
+        writable(a)(1 + stride*(y + 1) + x) = dc
         x += 1
 
       y += 1
@@ -227,7 +227,7 @@ private[hallucination] object Vp8Predict:
 
       while x < size do
         val value = leftMinusP + a((y0 - 1)*stride + x0 + x)
-        a((y0 + y)*stride + x0 + x) = if value < 0 then 0 else if value > 255 then 255 else value
+        writable(a)((y0 + y)*stride + x0 + x) = if value < 0 then 0 else if value > 255 then 255 else value
         x += 1
 
       y += 1
@@ -298,7 +298,7 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < 4 do
-        a((y0 + y)*stride + x0 + x) = v
+        writable(a)((y0 + y)*stride + x0 + x) = v
         x += 1
 
       y += 1
@@ -317,7 +317,7 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < 4 do
-        a((y0 + y)*stride + x0 + x) = avg(x)
+        writable(a)((y0 + y)*stride + x0 + x) = avg(x)
         x += 1
 
       y += 1
@@ -334,7 +334,7 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < 4 do
-        a((y0 + y)*stride + x0 + x) = avg(y)
+        writable(a)((y0 + y)*stride + x0 + x) = avg(y)
         x += 1
 
       y += 1
@@ -352,7 +352,7 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < 4 do
-        a((y0 + y)*stride + x0 + x) = avg(y + x)
+        writable(a)((y0 + y)*stride + x0 + x) = avg(y + x)
         x += 1
 
       y += 1
@@ -370,14 +370,14 @@ private[hallucination] object Vp8Predict:
       var x = 0
 
       while x < 4 do
-        a((y0 + y)*stride + x0 + x) = avg(3 - y + x)
+        writable(a)((y0 + y)*stride + x0 + x) = avg(3 - y + x)
         x += 1
 
       y += 1
 
   private def bvrpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     val e = Array.tabulate(9)(edge(a, x0, y0, stride, _))
-    inline def set(dy: Int, dx: Int, v: Int): Unit = a((y0 + dy)*stride + x0 + dx) = v
+    inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v
 
     set(3, 0, avg3(e(1), e(2), e(3)))
     set(2, 0, avg3(e(2), e(3), e(4)))
@@ -392,7 +392,7 @@ private[hallucination] object Vp8Predict:
 
   private def bvlpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     val t = Array.tabulate(8)(top(a, x0, y0, stride, _))
-    inline def set(dy: Int, dx: Int, v: Int): Unit = a((y0 + dy)*stride + x0 + dx) = v
+    inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v
 
     set(0, 0, avg2(t(0), t(1)))
     set(1, 0, avg3(t(0), t(1), t(2)))
@@ -407,7 +407,7 @@ private[hallucination] object Vp8Predict:
 
   private def bhdpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     val e = Array.tabulate(9)(edge(a, x0, y0, stride, _))
-    inline def set(dy: Int, dx: Int, v: Int): Unit = a((y0 + dy)*stride + x0 + dx) = v
+    inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v
 
     set(3, 0, avg2(e(0), e(1)))
     set(3, 1, avg3(e(0), e(1), e(2)))
@@ -423,7 +423,7 @@ private[hallucination] object Vp8Predict:
   private def bhupred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     val l0 = leftPixel(a, x0, y0, stride, 0); val l1 = leftPixel(a, x0, y0, stride, 1)
     val l2 = leftPixel(a, x0, y0, stride, 2); val l3 = leftPixel(a, x0, y0, stride, 3)
-    inline def set(dy: Int, dx: Int, v: Int): Unit = a((y0 + dy)*stride + x0 + dx) = v
+    inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v
 
     set(0, 0, avg2(l0, l1))
     set(0, 1, avg3(l0, l1, l2))

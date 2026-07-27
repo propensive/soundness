@@ -45,8 +45,11 @@ import RasterError.Reason
 // overlap and are re-OR'd identically on the next refill — which is why it reads eight and consumes
 // seven.
 private[hallucination] final class WebpBitReader(data: Data, start: Int, end: Int):
+  @scala.caps.unsafe.untrackedCaptures
   private var position: Int = start
+  @scala.caps.unsafe.untrackedCaptures
   private var buffer: Long = 0L
+  @scala.caps.unsafe.untrackedCaptures
   private var available: Int = 0
 
   def nbits: Int = available

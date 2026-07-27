@@ -70,7 +70,8 @@ object NativeWatcher extends Watcher:
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()
-  @volatile private var serviceValue: Optional[WatchService] = Unset
+  @volatile @scala.caps.unsafe.untrackedCaptures
+  private var serviceValue: Optional[WatchService] = Unset
 
   private def service: WatchService = serviceValue.or:
     serviceMutex:

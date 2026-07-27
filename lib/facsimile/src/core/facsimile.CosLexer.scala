@@ -71,7 +71,7 @@ private[facsimile] class CosLexer(scan: Scan):
 
   def offset: Long = scan.offset
 
-  def next(): CosToken raises PdfError =
+  def next()(using Tactic[PdfError]): CosToken =
     skipInterstice()
     val start = scan.offset
 
@@ -115,11 +115,11 @@ private[facsimile] class CosLexer(scan: Scan):
   // The binary payload of an inline image, between `ID` and `EI` (ISO 32000-2 §8.9.7): a
   // known length (`/L`) is read exactly; otherwise the data runs to the next standalone
   // `EI`, found by byte-level scanning — the one lexical construct tokens cannot express.
-  def imageData(length: Optional[Int]): Data raises PdfError =
+  def imageData(length: Optional[Int])(using Tactic[PdfError]): Data =
     if whitespace(scan.peek) then scan.take() // a single whitespace byte follows `ID`
 
     length.let(scan.read(_)).or:
-      val bytes = Array.newBuilder[Byte]
+      val bytes = DataBuilder()
 
       def boundary: Boolean =
         val standalone = !regular(scan.peek(3))
@@ -128,7 +128,7 @@ private[facsimile] class CosLexer(scan: Scan):
       while scan.peek != -1 && !boundary do bytes += scan.take().toByte
       if scan.peek == -1 then abort(PdfError(PdfError.Reason.Truncated))
       scan.take() // the whitespace before `EI`, which is not payload
-      bytes.result().immutable(using Unsafe)
+      bytes.result()
 
   // Comments run to the end of the line and are whitespace (ISO 32000-2 §7.2.4).
   private def skipInterstice(): Unit =
@@ -143,7 +143,7 @@ private[facsimile] class CosLexer(scan: Scan):
         false
     do ()
 
-  private def number(first: Int, start: Long): CosToken raises PdfError =
+  private def number(first: Int, start: Long)(using Tactic[PdfError]): CosToken =
     val text = StringBuilder()
     text.append(first.toChar)
 
@@ -167,7 +167,7 @@ private[facsimile] class CosLexer(scan: Scan):
       . or(abort(PdfError(PdfError.Reason.Unparseable(start, t"a numeric object"))))
 
   private def name(): CosToken =
-    val bytes = Array.newBuilder[Byte]
+    val bytes = DataBuilder()
 
     while regular(scan.peek) do
       val byte = scan.take()
@@ -176,16 +176,16 @@ private[facsimile] class CosLexer(scan: Scan):
       then bytes += ((hexadecimal(scan.take()) << 4) + hexadecimal(scan.take())).toByte
       else bytes += byte.toByte
 
-    CosToken.Name(decode(bytes.result().immutable(using Unsafe)))
+    CosToken.Name(decode(bytes.result()))
 
   private def keyword(first: Int): CosToken =
-    val bytes = Array.newBuilder[Byte]
+    val bytes = DataBuilder()
     bytes += first.toByte
     while regular(scan.peek) do bytes += scan.take().toByte
-    CosToken.Keyword(decode(bytes.result().immutable(using Unsafe)))
+    CosToken.Keyword(decode(bytes.result()))
 
-  private def literal(start: Long): CosToken raises PdfError =
-    val bytes = Array.newBuilder[Byte]
+  private def literal(start: Long)(using Tactic[PdfError]): CosToken =
+    val bytes = DataBuilder()
     var depth = 1
 
     while depth > 0 do scan.take() match
@@ -235,10 +235,10 @@ private[facsimile] class CosLexer(scan: Scan):
       case byte =>
         bytes += byte.toByte
 
-    CosToken.Chars(bytes.result().immutable(using Unsafe))
+    CosToken.Chars(bytes.result())
 
-  private def hexadecimalChars(start: Long): CosToken raises PdfError =
-    val bytes = Array.newBuilder[Byte]
+  private def hexadecimalChars(start: Long)(using Tactic[PdfError]): CosToken =
+    val bytes = DataBuilder()
     var high: Int = -1
 
     while scan.peek != '>' do
@@ -257,6 +257,6 @@ private[facsimile] class CosLexer(scan: Scan):
 
     scan.take()
     if high >= 0 then bytes += (high << 4).toByte // an odd final digit implies a trailing zero
-    CosToken.Chars(bytes.result().immutable(using Unsafe))
+    CosToken.Chars(bytes.result())
 
   private def decode(bytes: Data): Text = charDecoders.utf8Decoder.decoded(bytes)

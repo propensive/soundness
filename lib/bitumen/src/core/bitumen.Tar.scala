@@ -69,7 +69,8 @@ object Tar:
 
   // Anchored here so `data.open[Tar](...)` resolves with no import. Opening a filesystem
   // *path* as TAR (`path.open[Tar]`) lives in `bitumen.jvm`, alongside the disk backend.
-  given dataOpenable: (Tactic[TarError], Tactic[StreamError]) => (TarDataOpenable^) =
+  given dataOpenable: (tarTactic: Tactic[TarError], streamTactic: Tactic[StreamError])
+  =>  (TarDataOpenable^{tarTactic, streamTactic}) =
     TarDataOpenable()
 
   object Entry:
@@ -118,7 +119,9 @@ object Tar:
     // zero-padded, without regard to the incoming chunk boundaries.
     private[bitumen] def blocks512(chunks: Iterator[Data]): Iterator[Data] =
       new Iterator[Data]:
+        @scala.caps.unsafe.untrackedCaptures
         private var chunk: Data = IArray.empty[Byte]
+        @scala.caps.unsafe.untrackedCaptures
         private var offset: Int = 0
 
         // Establish a nonempty current chunk, or report exhaustion.

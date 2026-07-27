@@ -194,9 +194,9 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
 
   def resolve(text: Text)
-    ( using ((Path on Plane) is Decodable in Text)^,
-            ((Relative on Plane) is Decodable in Text)^ )
-  :   Path on Plane raises PathError =
+    ( using pathDecodable:     ((Path on Plane) is Decodable in Text)^,
+            relativeDecodable: ((Relative on Plane) is Decodable in Text)^ )
+  :   (Tactic[PathError]^) ?->{this, pathDecodable, relativeDecodable} (Path on Plane) =
 
     safely(text.as[Path on Plane]).or(safely(this + text.as[Relative on Plane])).or:
       abort(PathError(_.InvalidRoot))

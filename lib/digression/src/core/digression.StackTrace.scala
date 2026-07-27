@@ -314,7 +314,7 @@ object StackTrace:
       rewritten
 
   def apply(exception: Throwable): StackTrace =
-    val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
+    val frames = List.from(exception.getStackTrace.nn.iterator.map(_.nn)).map: frame =>
       StackTrace.Frame(
         StackTrace.Method(
           rewrite(frame.getClassName.nn),
@@ -327,7 +327,8 @@ object StackTrace:
 
     val cause = Option(exception.getCause)
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
-    val fullClass: List[Text] = List(fullClassName.s.split("\\.").nn.map(_.nn).map(Text(_))*)
+    val fullClass: List[Text] =
+      List.from(fullClassName.s.split("\\.").nn.iterator.map { part => Text(part.nn) })
     val className: Text = fullClass.last
 
     val component: Text =

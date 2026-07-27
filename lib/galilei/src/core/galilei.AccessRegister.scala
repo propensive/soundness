@@ -51,6 +51,7 @@ import rudiments.*
 object AccessRegister:
   private case class Registration(real: Text, atoms: Set[Mode])
 
+  @scala.caps.unsafe.untrackedCaptures
   private var registrations: List[Registration] = Nil
 
   // The filesystem root would defeat the `+ "/"` prefix test, so it is normalized to empty.

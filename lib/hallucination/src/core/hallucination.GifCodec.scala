@@ -132,20 +132,28 @@ private[hallucination] object GifCodec:
               GifLzw.decode(minimum, compressed.result().immutable(using Unsafe), pixels)
 
             // Interlaced frames deliver their rows in four passes.
-            val rows: Array[Int] = new Array[Int](frameHeight)
+            val rows: Array[Int]^ = new Array[Int](frameHeight)
 
             if interlaced then
               var row = 0
+              var passes = List((0, 8), (4, 8), (2, 4), (1, 2)).stdlib
 
-              for (start, step) <- List((0, 8), (4, 8), (2, 4), (1, 2)) do
+              while passes.nonEmpty do
+                val (start, step) = passes.head
                 var y = start
 
                 while y < frameHeight do
                   rows(row) = y
                   row += 1
                   y += step
+
+                passes = passes.tail
             else
-              for y <- 0 until frameHeight do rows(y) = y
+              var y = 0
+
+              while y < frameHeight do
+                rows(y) = y
+                y += 1
 
             for row <- 0 until frameHeight do
               val y = top + rows(row)

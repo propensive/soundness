@@ -108,9 +108,11 @@ object Cose:
 
   // Parse a tagged COSE envelope. The variant is determined from the CBOR
   // tag; the returned phantom types are the most-general bounds.
+  // A real `using` clause rather than the `raises` sugar: a context-function result would
+  // hide the `cborTactic` parameter, which the separation checker rejects.
   def parse(bytes: Data)
-    ( using cborTactic: Tactic[CborError] )
-  :   Cose raises CoseError =
+    ( using cborTactic: Tactic[CborError], coseTactic: Tactic[CoseError] )
+  :   Cose =
 
     val ast = Cbor.Ast.parse(bytes)
 

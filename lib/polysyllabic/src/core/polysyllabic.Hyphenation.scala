@@ -128,38 +128,53 @@ object Hyphenation:
 
     if !exception.absent then
       val offsets: IArray[Int] = exception.vouch
-      val filtered = ArrayBuilder.make[Int]
+      val filtered: Array[Int]^ = new Array[Int](offsets.length)
+      var count = 0
       var k = 0
 
       while k < offsets.length do
         val p = offsets(k)
-        if p >= leftMin && p <= length - rightMin then filtered += p
+
+        if p >= leftMin && p <= length - rightMin then
+          filtered(count) = p
+          count += 1
+
         k += 1
 
-      filtered.result().immutable(using Unsafe)
+      exactCopy(filtered, count)
     else
       val scores = new Array[Byte](paddedLength + 1)
       walkCompact(padded, paddedLength, hyphenation.patterns, scores)
-      val breaks = ArrayBuilder.make[Int]
+      val breaks: Array[Int]^ = new Array[Int](length)
+      var count = 0
       var p = if leftMin > 1 then leftMin else 1
       val lastBreak = length - (if rightMin > 1 then rightMin else 1)
 
       while p <= lastBreak do
-        if (scores(p + 1) & 1) == 1 then breaks += p
+        if (scores(p + 1) & 1) == 1 then
+          breaks(count) = p
+          count += 1
+
         p += 1
 
-      breaks.result().immutable(using Unsafe)
+      exactCopy(breaks, count)
 
   // Walk the compact pattern trie from every starting position in `padded`,
   // merging each matched pattern's score array into `scores` via `max`. Uses
   // Aho-Corasick: a single forward pass through `padded` with failure-link
   // and dictionary-suffix-link traversal at each step. The outer loop visits
   // each padded character exactly once instead of `paddedLength` times.
+  // The first `count` elements of `source`, as an immutable array.
+  private def exactCopy(source: Array[Int], count: Int): IArray[Int] =
+    val result: Array[Int]^ = new Array[Int](count)
+    System.arraycopy(source, 0, result, 0, count)
+    result.immutable(using Unsafe)
+
   private def walkCompact
     ( padded:       Array[Char],
       paddedLength: Int,
       trie:         Dictionary[IArray[Byte]],
-      scores:       Array[Byte] )
+      scores:       Array[Byte]^ )
   :   Unit =
 
     val children = trie.children
@@ -224,9 +239,9 @@ object Hyphenation:
       hyphenation:  Hyphenation,
       leftMin:      Int,
       rightMin:     Int,
-      padded:       Array[Char],
-      scores:       Array[Byte],
-      breaks:       Array[Int] )
+      padded:       Array[Char]^,
+      scores:       Array[Byte]^,
+      breaks:       Array[Int]^ )
   :   Int =
 
     // Fill `padded` with `.` sentinels + lowercased word chars.
@@ -264,7 +279,7 @@ object Hyphenation:
       trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
 
   private inline def mergePattern
-    ( scores: Array[Byte], base: Int, pattern: IArray[Byte] )
+    ( scores: Array[Byte]^, base: Int, pattern: IArray[Byte] )
   :   Unit =
 
     var k = 0
@@ -282,8 +297,8 @@ object Hyphenation:
       hyphenation:  Hyphenation,
       leftMin:      Int,
       rightMin:     Int,
-      scores:       Array[Byte],
-      breaks:       Array[Int] )
+      scores:       Array[Byte]^,
+      breaks:       Array[Int]^ )
   :   Int =
 
     // `scores(g)` is the running maximum for the gap immediately before

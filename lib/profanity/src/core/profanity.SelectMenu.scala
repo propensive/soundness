@@ -60,7 +60,8 @@ extends Question[item]:
             interaction:   Interaction[item, SelectMenu[item]] )
     [ result ]
     ( lambda: Interactivity[TerminalEvent] ?=> item => result )
-  :   result raises DismissError =
+    ( using Tactic[DismissError] )
+  :   result =
 
     val events = interactivity.eventIterator()
 

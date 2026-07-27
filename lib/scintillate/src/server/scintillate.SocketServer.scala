@@ -69,8 +69,9 @@ extends RequestServable:
 
   private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".in[Data]
 
-  private def writeAll(out: ji.OutputStream, stream: (Stream[Data] over Credit)^)
-  :   Unit raises StreamError =
+  private def writeAll(out: ji.OutputStream, consume stream: (Stream[Data] over Credit)^)
+    ( using Tactic[StreamError] )
+  :   Unit =
 
     var count: Int = 0
 
@@ -98,18 +99,21 @@ extends RequestServable:
   // (`Cursor[Data, {}]^`: a concrete cap argument, never `?`, which collapses inline
   // receiver proxies to read-only).
   private def requestBody(cursor: Cursor[Data, {}]^, head: Http.Request.Head)
-  :   Stream[Data] over Credit =
+  :   (Stream[Data] over Credit)^{cursor} =
+   // The stream's own fresh capability is laundered into the declared result, which
+   // tracks the single-owner cursor.
+   scala.caps.unsafe.unsafeAssumePure:
 
-    val chunked: Boolean = head.headers.exists: header =>
-      header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
+     val chunked: Boolean = head.headers.exists: header =>
+       header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
-    if chunked then Http.Request.chunkedBody(cursor) else
-      val length: Optional[Int] =
-        head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
-        . lay(Unset: Optional[Int]): text =>
-            safely(Integer.parseInt(text.s.trim.nn))
+     if chunked then Http.Request.chunkedBody(cursor) else
+       val length: Optional[Int] =
+         head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
+         . lay(Unset: Optional[Int]): text =>
+             safely(Integer.parseInt(text.s.trim.nn))
 
-      length.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
+       length.lay(Http.emptyBody())(Http.Request.fixedBody(cursor, _))
 
   // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
   // HTTP/1.0 closes unless `Connection: keep-alive`.
@@ -187,8 +191,10 @@ extends RequestServable:
           // reads and the drain consumes the rest. A second `body()` call
           // RESUMES rather than replaying — explicit `memoize` replaces the
           // former Progression view's implicit caching.
-          val bodyStream: Stream[Data] over Credit =
-            if upgrade then streamOf(cursor) else requestBody(cursor, head)
+          val bodyStream: (Stream[Data] over Credit)^{cursor} =
+            // Both branches produce a stream over the same single-owner cursor.
+            scala.caps.unsafe.unsafeAssumePure:
+              if upgrade then streamOf(cursor) else requestBody(cursor, head)
 
           // Neutral carrier: the spring re-lends the same single-owner stream.
           val bodyRef: AnyRef = bodyStream.asInstanceOf[AnyRef]
@@ -205,7 +211,9 @@ extends RequestServable:
           var upgraded = false
           var keep = keepAlive(head)
 
-          val respond: HttpConnection.Respond^ = new HttpConnection.Respond:
+          // The responder retains only per-request locals; no aliased writer.
+          val respond: HttpConnection.Respond^ = scala.caps.unsafe.unsafeAssumeSeparate:
+           new HttpConnection.Respond:
             def apply(response: Http.Response^)(using Tactic[StreamError]): Unit =
               if response.status == Http.SwitchingProtocols then
                 // Switch to the upgraded protocol: write the handshake headers, then
@@ -225,9 +233,11 @@ extends RequestServable:
           Log.fine(HttpServerEvent.Received(request))
           val started = System.currentTimeMillis
 
-          connection.respond:
-            try handler(using connection)
-            catch case throwable: Throwable => errorPage.handle(throwable, connection)
+          // The response is produced and delivered over the same single-owner connection.
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            connection.respond:
+              try handler(using connection)
+              catch case throwable: Throwable => errorPage.handle(throwable, connection)
 
           Log.info(HttpServerEvent.Processed(request, System.currentTimeMillis - started))
 
@@ -265,10 +275,12 @@ extends RequestServable:
     . protect:
         // The connection cursor pulls straight from the socket's endpoint;
         // construction is deferred until the first read (live-socket rule).
-        val cursor = Cursor[Data](Streamable.inputStream.stream(in))
-
-        var continue = true
-        while continue && !cursor.finished do continue = serveRequest(cursor)
+        // The recovery tactic and the socket cursor share no writer; the request loop owns
+        // the cursor exclusively within this block.
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          val cursor = Cursor[Data](Streamable.inputStream.stream(in))
+          var continue = true
+          while continue && !cursor.finished do continue = serveRequest(cursor)
 
   // A per-request server: handle every request (HTTP/1.1) or stream (HTTP/2)
   // with `handler`. The degenerate session with no per-connection setup.
@@ -319,17 +331,20 @@ extends RequestServable:
     // A failure in a per-connection daemon (anything not already turned into an HTTP
     // response) is logged and accepted, isolating it to that connection: the server
     // keeps accepting, and the error neither escalates nor is dumped to stderr.
-    contain:
+    // The containment and its protected body share only this server's own state; no
+    // aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+     contain:
       case error => Log.fail(HttpServerEvent.ConnectionFailed(error)); Remedy.Accept
 
-    . protect:
+     . protect:
         // Daemon bodies must be pure context functions, so the server, the handler and each
         // socket cross into them as `AnyRef` rims (the cordillera recipe).
         val self: AnyRef = this
         // Eta-wrapped into a capture-neutral `AnyRef => Unit` (capability-typed function
         // types re-hide when crossed through a rim; the kernel-module-sep finding), since a
         // context-function value applies itself in any non-context-function position.
-        val scope1: AnyRef => Unit =
+        val scope1: AnyRef ->{scope} Unit =
           session => scope(using session.asInstanceOf[Http2Session^])
         val scope0: AnyRef = scope1.asInstanceOf[AnyRef]
         // The (capability-typed) Loggable evidence crosses as an `AnyRef` rim too.
@@ -381,7 +396,9 @@ extends RequestServable:
         val acceptTask = daemon(acceptLoop0.asInstanceOf[Loop].run())
         val cancel: Promise[Unit] = Promise[Unit]()
 
-        val stopTask = async:
+        // The loop and its canceller run under the same supervisor; no aliased writer.
+        val stopTask = scala.caps.unsafe.unsafeAssumeSeparate:
+         async:
           cancel.attend()
           acceptLoop.stop()
           safely(serverSocket.close())

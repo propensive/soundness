@@ -65,7 +65,7 @@ object Iso10126:
 sealed trait Iso10126
 
 object NoPadding:
-  given padding: Tactic[CryptoError] => ((NoPadding is BlockCipherPadding)^) =
+  given padding: (tactic: Tactic[CryptoError]) => ((NoPadding is BlockCipherPadding)^{tactic}) =
     new BlockCipherPadding:
       type Self = NoPadding
       val name: Text = t"NoPadding"

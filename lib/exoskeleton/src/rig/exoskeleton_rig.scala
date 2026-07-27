@@ -40,9 +40,12 @@ import interfaces.paths.pathOnLinux
 import filesystemBackends.virtualMachine
 
 extension (shell: Shell)
+  // Explicit `using` evidence instead of `raises`/`logs` sugar: a context-function result
+  // would hide the parameters, which the separation checker rejects.
   def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
     ( using WorkingDirectory, Enclave.Tool, Monitor, TemporaryDirectory )
-  :   result raises TmuxError logs ExecEvent =
+    ( using Tactic[TmuxError], (ExecEvent is Loggable)^ )
+  :   result =
 
     mitigate:
       case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.ExecFailed)

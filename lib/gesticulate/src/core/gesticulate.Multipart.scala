@@ -94,7 +94,8 @@ object Multipart:
 
         cursor.next()
         cursor.expect('\n')(expected('\n'))
-        headers((key, value) :: list)
+        // A tail-recursive re-entry over the same single-owner cursor; no aliased writer.
+        scala.caps.unsafe.unsafeAssumeSeparate(headers((key, value) :: list))
 
     inline def skipBytes(count: Int): Unit =
       var i = 0
@@ -178,7 +179,8 @@ object Multipart:
         cursor.next()
         cursor.expect('\n')(expected('\n'))
 
-        part #:: { part.body.strict; parts() }
+        // Lazy continuation over the same single-owner cursor; no aliased writer.
+        scala.caps.unsafe.unsafeAssumeSeparate(part #:: { part.body.strict; parts() })
 
       else if cursor.peek == '-' then
         cursor.next()

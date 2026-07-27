@@ -238,6 +238,7 @@ object Tests extends Suite(m"Turbulence tests"):
               store.arrayBuffer.append(byte)
 
       class TextStore():
+        @scala.caps.unsafe.untrackedCaptures
         var text: Text = t""
         def apply(): Text = text
 
@@ -473,7 +474,7 @@ object Tests extends Suite(m"Turbulence tests"):
           val reader = async(Set.from(relay.stream.records))
           producers.each(_.await())
           relay.stop()
-          unsafely(reader.await())
+          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(reader.await()))
       . assert(_ == Set.from(for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}"))
 
       test(m"per-producer order is preserved through the relay"):
@@ -483,7 +484,7 @@ object Tests extends Suite(m"Turbulence tests"):
             for value <- 1 to 100 do relay.put(t"$value")
             relay.stop()
 
-          unsafely(async(relay.stream.records.to(List)).await())
+          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(async(relay.stream.records.to(List)).await()))
       . assert(_ == (1 to 100).to(List).map { value => t"$value" })
 
     suite(m"Line splitting"):
@@ -622,16 +623,17 @@ object Tests extends Suite(m"Turbulence tests"):
         val stream = source.stream(reader)
         val builder = StringBuilder()
 
-        def recur(): Unit = stream.refill(Credit(64)) match
+        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
+         stream.refill(Credit(64)) match
           case count: Int =>
             val window = unsafely(stream.window).asInstanceOf[Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            recur()
+            scala.caps.unsafe.unsafeAssumeSeparate(recur())
 
           case _ => ()
 
-        recur()
+        scala.caps.unsafe.unsafeAssumeSeparate(recur())
         builder.toString.tt
       . assert(_ == original)
 
@@ -664,11 +666,12 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"cancelling a blocked conduit writer releases it"):
         supervise:
-          val (intake, stream) = Conduit[Data]()
-          val big = Data.fill(100000)(_.toByte)
-          val writer = async(intake.put(big))
-          writer.cancel()
-          true
+          Conduit[Data]() match
+           case (intake, stream) =>
+            val big = Data.fill(100000)(_.toByte)
+            val writer = async(intake.put(big))
+            writer.cancel()
+            true
       . assert(identity)
 
       test(m"confluence merges all sources completely"):
@@ -685,7 +688,7 @@ object Tests extends Suite(m"Turbulence tests"):
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gather = Gather2()
           merged.pump(gather)
-          gather.data.stdlib.to(List).sorted
+          scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stdlib.to(List).sorted
       . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
 
       test(m"manifold delivers the whole stream to every subscriber"):
@@ -699,8 +702,8 @@ object Tests extends Suite(m"Turbulence tests"):
             caps.unsafe.unsafeAssumePure:
               async:
                 val gather = Gather2()
-                stream.pump(gather)
-                gather.data.to[List]
+                scala.caps.unsafe.unsafeAssumeSeparate(stream.pump(gather))
+                scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(payload.to[List]))
@@ -724,8 +727,8 @@ object Tests extends Suite(m"Turbulence tests"):
             caps.unsafe.unsafeAssumePure:
               async:
                 val gather = Gather2()
-                stream.pump(gather)
-                gather.data.to[List]
+                scala.caps.unsafe.unsafeAssumeSeparate(stream.pump(gather))
+                scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(mixed.to[List]))
@@ -743,16 +746,17 @@ object Tests extends Suite(m"Turbulence tests"):
           val merged = Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gather = Gather2()
           merged.pump(gather)
-          gather.data.stdlib.length
+          scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stdlib.length
       . assert(_ == mixed.stdlib.length*3)
 
       test(m"cancelling a detached flow blocked on an empty conduit releases it"):
         supervise:
-          val (intake, stream) = Conduit[Data]()
-          val gather = Gather2()
-          val pump = stream.flow(gather)
-          pump.cancel()
-          true
+          Conduit[Data]() match
+           case (intake, stream) =>
+            val gather = Gather2()
+            val pump = stream.flow(gather)
+            pump.cancel()
+            true
       . assert(identity)
 
 // A byte intake that gathers everything written to it, for exercising the

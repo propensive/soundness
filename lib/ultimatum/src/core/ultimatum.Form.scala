@@ -59,24 +59,36 @@ class Form
     throttle:     Long         = 0,
     debounce:     Long         = 0,
     scheduleWake: Long => Unit = _ => () ):
+  @scala.caps.unsafe.untrackedCaptures
   private var leaves: IndexedSeq[Pane] = IndexedSeq()
+  @scala.caps.unsafe.untrackedCaptures
   private var focuses: IndexedSeq[Focus] = IndexedSeq()
+  @scala.caps.unsafe.untrackedCaptures
   private var focusLeaf: IndexedSeq[Int] = IndexedSeq()
+  @scala.caps.unsafe.untrackedCaptures
   private var focused: Optional[Focus] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   private var rects: IndexedSeq[Rect] = IndexedSeq()
+  @scala.caps.unsafe.untrackedCaptures
   private var lastRedraw: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var lastWinch: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var deferred: Optional[scala.collection.immutable.Set[Int]] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   private var wakePending: Boolean = false
+  @scala.caps.unsafe.untrackedCaptures
   private var resizePending: Boolean = false
 
   // The anchor reply (the parked cursor's position after the resize's reflow),
   // stashed when it decodes and handed to the inline root at the resize repaint;
   // dropped on every new WINCH so it can only describe the latest reflow.
+  @scala.caps.unsafe.untrackedCaptures
   private var anchor: Optional[(Int, Int)] = Unset
 
   // Whether the resize repaint has already been deferred once to await a late
   // anchor reply; a single grace keeps a reply-less terminal from stalling.
+  @scala.caps.unsafe.untrackedCaptures
   private var resizeGrace: Boolean = false
 
   // Bind every container to the wake function so a mutation requests a repaint.

@@ -54,7 +54,7 @@ trait Specification extends Original:
 
 
   def build(value: Expr[Origin])(using Type[Origin], Type[Form])(using thisType: Type[this.type])
-  :   Macro[Record] =
+  :   Quotes ?->{this} Expr[Record] =
 
     import quotes.reflect.*
 

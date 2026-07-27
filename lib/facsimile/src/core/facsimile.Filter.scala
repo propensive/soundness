@@ -74,7 +74,8 @@ private[facsimile] object Filter:
   // `/DecodeParms` (a dictionary, an array with nulls, or absent) into a decoding plan. Both
   // values must already be resolved: indirect references are the caller's concern.
   def chain(filter: Optional[Cos], parms: Optional[Cos])
-  :   List[(Id, Map[Text, Cos])] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   List[(Id, Map[Text, Cos])] =
 
     val names: List[Text] = filter.lay(List()):
       case Cos.Name(name) =>
@@ -145,7 +146,7 @@ private[facsimile] object Filter:
             scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
-  def decode(data: Data, chain: List[(Id, Map[Text, Cos])]): Data raises PdfError =
+  def decode(data: Data, chain: List[(Id, Map[Text, Cos])])(using Tactic[PdfError]): Data =
     chain match
       case (id, parms) :: rest =>
         if id.terminal then data else decode(stage(data, id, parms), rest)
@@ -153,7 +154,7 @@ private[facsimile] object Filter:
       case _ =>
         data
 
-  private def stage(data: Data, id: Id, parms: Map[Text, Cos]): Data raises PdfError = id match
+  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[PdfError]): Data = id match
     case Id.Flate     => predict(flate(data), parms)
     case Id.Lzw       => predict(lzw(data, parms), parms)
     case Id.Ascii85   => Ascii85.decode(data)
@@ -162,7 +163,7 @@ private[facsimile] object Filter:
     case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
     case _            => data
 
-  private def lzw(data: Data, parms: Map[Text, Cos]): Data raises PdfError =
+  private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
     try Lzw.decompress(Progression(data), earlyChange(parms)).foldLeft(IArray.empty[Byte])(_ ++ _)
     catch case _: IllegalStateException =>
       abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
@@ -170,7 +171,7 @@ private[facsimile] object Filter:
   private def earlyChange(parms: Map[Text, Cos]): Boolean =
     parms.at(t"EarlyChange").let(_.long).or(1L) == 1L
 
-  private def predict(data: Data, parms: Map[Text, Cos]): Data raises PdfError =
+  private def predict(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
     val predictor = parms.at(t"Predictor").let(_.long).or(1L).toInt
 
     if predictor <= 1 then data else
@@ -181,12 +182,12 @@ private[facsimile] object Filter:
 
   // FlateDecode is zlib-framed deflate, but raw streams occur in the wild: on a zlib failure,
   // retry nowrap before giving up.
-  private def flate(data: Data): Data raises PdfError =
+  private def flate(data: Data)(using Tactic[PdfError]): Data =
     inflate(data, nowrap = false).or(inflate(data, nowrap = true))
     . or(abort(PdfError(PdfError.Reason.CorruptStream(t"FlateDecode"))))
 
   private def inflate(data: Data, nowrap: Boolean): Optional[Data] =
-    val builder = Array.newBuilder[Byte]
+    val builder = DataBuilder()
 
     try
       val chunks =
@@ -200,10 +201,10 @@ private[facsimile] object Filter:
     catch case _: IllegalStateException => ()
 
     val result = builder.result()
-    if result.length == 0 && data.length > 0 then Unset else result.immutable(using Unsafe)
+    if result.length == 0 && data.length > 0 then Unset else result
 
-  private def asciiHex(data: Data): Data raises PdfError =
-    val bytes = Array.newBuilder[Byte]
+  private def asciiHex(data: Data)(using Tactic[PdfError]): Data =
+    val bytes = DataBuilder()
     var high = -1
     var done = false
     var i = 0
@@ -223,10 +224,10 @@ private[facsimile] object Filter:
           high = -1
 
     if high >= 0 then bytes += (high << 4).toByte
-    bytes.result().immutable(using Unsafe)
+    bytes.result()
 
-  private def runLength(data: Data): Data raises PdfError =
-    val bytes = Array.newBuilder[Byte]
+  private def runLength(data: Data)(using Tactic[PdfError]): Data =
+    val bytes = DataBuilder()
     var done = false
     var i = 0
 
@@ -258,4 +259,4 @@ private[facsimile] object Filter:
 
         i += 1
 
-    bytes.result().immutable(using Unsafe)
+    bytes.result()

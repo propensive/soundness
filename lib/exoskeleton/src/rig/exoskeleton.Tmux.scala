@@ -85,8 +85,11 @@ object Tmux:
 
         Screenshot(content, (tmux.width, tmux.height), (x, y))
 
-  def attend(using tmux: Tmux)[result](block: => result)(using Monitor, WorkingDirectory)
-  :   result raises TmuxError =
+  // Explicit `using` evidence instead of `raises` sugar: a context-function result would
+  // hide the parameters, which the separation checker rejects.
+  def attend(using tmux: Tmux)[result](block: => result)
+    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+  :   result =
 
     val init = screenshot().screen
 
@@ -96,13 +99,14 @@ object Tmux:
       while init === screenshot().screen && count < 60 do delay(0.01*Second) yet (count += 1)
 
 
-  def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)
-  :   Text raises TmuxError =
+  def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)
+    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+  :   Text =
 
     tmux.shell match
       case Shell.Powershell =>
         enter(t"""_completions "$text"""")
-        attend(enter('\r'))
+        scala.caps.unsafe.unsafeAssumeSeparate(attend(enter('\r')))
         var count = 0
 
         while Tmux.screenshot().screen.filter(_ == t">").stdlib.length == 0 && count < 333 do
@@ -124,14 +128,14 @@ object Tmux:
         enter(tool.command)
         enter(' ')
         enter(text)
-        attend(enter(Ht))
+        scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
         screenshot().screen.filter(!_.starts(t"> ")).stdlib.toSeq.join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
     ( using tool: Enclave.Tool, tmux: Tmux )
-    ( using Monitor, WorkingDirectory )
-  :   Text raises TmuxError =
+    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+  :   Text =
 
     enter(tool.command)
     enter(' ')
@@ -162,7 +166,7 @@ object Tmux:
             count += 1
 
       case _ =>
-        attend(enter(Ht))
+        scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
 
     screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
 

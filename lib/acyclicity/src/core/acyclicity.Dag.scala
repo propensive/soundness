@@ -97,7 +97,8 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
   def has(key: node): Boolean = edgeMap.contains(key)
 
-  def traversal[node2](lambda: (Set[node2], node) => node2): Map[node, node2] raises DagError =
+  def traversal[node2](lambda: (Set[node2], node) => node2)
+  :   (Tactic[DagError]^) ?->{lambda} Map[node, node2] =
 
     sorted.fuse(Map[node, node2]()):
       state.updated(next, lambda(apply(next).map(state), next))

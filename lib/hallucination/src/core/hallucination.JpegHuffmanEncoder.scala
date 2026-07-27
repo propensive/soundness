@@ -37,11 +37,14 @@ package hallucination
 // retained for writing the DHT segment. Both the standard Annex K tables and per-image optimized
 // tables (Annex K.2) are supported.
 private[hallucination] final class JpegEncodeTable
-  ( val lengths: Array[Int],
-    val values:  Array[Int] ):
+  ( @scala.caps.unsafe.untrackedCaptures val lengths: Array[Int],
+    @scala.caps.unsafe.untrackedCaptures val values:  Array[Int] ):
 
   // The per-symbol (size, code) lookup, from the canonical code assignment (Figures C.1–C.3).
+  @scala.caps.unsafe.untrackedCaptures
   val sizeOf: Array[Int] = new Array[Int](256)
+
+  @scala.caps.unsafe.untrackedCaptures
   val codeOf: Array[Int] = new Array[Int](256)
 
   locally:
@@ -76,19 +79,19 @@ private[hallucination] final class JpegEncodeTable
     i = 0
 
     while i < values.length do
-      sizeOf(values(i)) = sizes(i)
-      codeOf(values(i)) = codes(i)
+      writable(sizeOf)(values(i)) = sizes(i)
+      writable(codeOf)(values(i)) = codes(i)
       i += 1
 
 private[hallucination] object JpegHuffmanEncoder:
-  private val LumaDcLengths = Array(0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0)
-  private val LumaDcValues = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
-  private val ChromaDcLengths = Array(0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
-  private val ChromaDcValues = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+  private val LumaDcLengths: IArray[Int] = IArray(0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0)
+  private val LumaDcValues: IArray[Int] = IArray(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+  private val ChromaDcLengths: IArray[Int] = IArray(0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
+  private val ChromaDcValues: IArray[Int] = IArray(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
-  private val LumaAcLengths = Array(0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 0x7d)
+  private val LumaAcLengths: IArray[Int] = IArray(0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 0x7d)
 
-  private val LumaAcValues = Array(
+  private val LumaAcValues: IArray[Int] = IArray(
     0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12, 0x21, 0x31, 0x41, 0x06, 0x13, 0x51, 0x61, 0x07,
     0x22, 0x71, 0x14, 0x32, 0x81, 0x91, 0xa1, 0x08, 0x23, 0x42, 0xb1, 0xc1, 0x15, 0x52, 0xd1, 0xf0,
     0x24, 0x33, 0x62, 0x72, 0x82, 0x09, 0x0a, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x25, 0x26, 0x27, 0x28,
@@ -101,9 +104,9 @@ private[hallucination] object JpegHuffmanEncoder:
     0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8,
     0xf9, 0xfa)
 
-  private val ChromaAcLengths = Array(0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 0x77)
+  private val ChromaAcLengths: IArray[Int] = IArray(0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 0x77)
 
-  private val ChromaAcValues = Array(
+  private val ChromaAcValues: IArray[Int] = IArray(
     0x00, 0x01, 0x02, 0x03, 0x11, 0x04, 0x05, 0x21, 0x31, 0x06, 0x12, 0x41, 0x51, 0x07, 0x61, 0x71,
     0x13, 0x22, 0x32, 0x81, 0x08, 0x14, 0x42, 0x91, 0xa1, 0xb1, 0xc1, 0x09, 0x23, 0x33, 0x52, 0xf0,
     0x15, 0x62, 0x72, 0xd1, 0x0a, 0x16, 0x24, 0x34, 0xe1, 0x25, 0xf1, 0x17, 0x18, 0x19, 0x1a, 0x26,
@@ -116,10 +119,18 @@ private[hallucination] object JpegHuffmanEncoder:
     0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8,
     0xf9, 0xfa)
 
-  def defaultLumaDc: JpegEncodeTable = JpegEncodeTable(LumaDcLengths, LumaDcValues)
-  def defaultLumaAc: JpegEncodeTable = JpegEncodeTable(LumaAcLengths, LumaAcValues)
-  def defaultChromaDc: JpegEncodeTable = JpegEncodeTable(ChromaDcLengths, ChromaDcValues)
-  def defaultChromaAc: JpegEncodeTable = JpegEncodeTable(ChromaAcLengths, ChromaAcValues)
+  def defaultLumaDc: JpegEncodeTable =
+    scala.caps.unsafe.unsafeAssumePure:
+      JpegEncodeTable(LumaDcLengths.asInstanceOf[Array[Int]], LumaDcValues.asInstanceOf[Array[Int]])
+  def defaultLumaAc: JpegEncodeTable =
+    scala.caps.unsafe.unsafeAssumePure:
+      JpegEncodeTable(LumaAcLengths.asInstanceOf[Array[Int]], LumaAcValues.asInstanceOf[Array[Int]])
+  def defaultChromaDc: JpegEncodeTable =
+    scala.caps.unsafe.unsafeAssumePure:
+      JpegEncodeTable(ChromaDcLengths.asInstanceOf[Array[Int]], ChromaDcValues.asInstanceOf[Array[Int]])
+  def defaultChromaAc: JpegEncodeTable =
+    scala.caps.unsafe.unsafeAssumePure:
+      JpegEncodeTable(ChromaAcLengths.asInstanceOf[Array[Int]], ChromaAcValues.asInstanceOf[Array[Int]])
 
   // The magnitude category and coefficient bits of a value, as used for DC differences and AC
   // coefficients (Section F.1.2).
@@ -222,4 +233,5 @@ private[hallucination] object JpegHuffmanEncoder:
     i = 0
     while i < 16 do { lengths(i) = bits(i + 1); i += 1 }
 
-    JpegEncodeTable(lengths, huffval.slice(0, k))
+    // As the defaults above: the table privately owns its arrays.
+    scala.caps.unsafe.unsafeAssumePure(JpegEncodeTable(lengths, huffval.slice(0, k)))

@@ -383,7 +383,8 @@ object Tests extends Suite(m"Urticose tests"):
       . assert(_ == Authority(example.com, t"username:1234", 8080))
 
       test(m"Authority with invalid port fails"):
-        capture(t"username@example.com:no".as[Authority])
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          capture(t"username@example.com:no".as[Authority])
       .matches:
         case UrlError(_, position, UrlError.Reason.Expected(UrlError.Expectation.Number)) if position == 21.z =>
 

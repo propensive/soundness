@@ -55,7 +55,9 @@ object Isolation extends Rig:
   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    stage.remote: input =>
+    // The bridge crosses through an `AnyRef` rim (the kernel-module-sep idiom): a directly
+    // typed lambda mints fresh read capabilities that cannot match the stage's own.
+    val bridge: AnyRef = ((input: Array[Pojo]) =>
       val classloader: Classloader = stage.target
       val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
       val instance = cls.getDeclaredConstructor().nn.newInstance().nn
@@ -64,4 +66,12 @@ object Isolation extends Rig:
       val cls2 = function.getClass
       val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
       method2.setAccessible(true)
-      method2.invoke(function, input).asInstanceOf[Array[Pojo]]
+      val result =
+        method2.invoke(function, input.asInstanceOf[Array[AnyRef | Null]])
+        . asInstanceOf[Array[AnyRef | Null]]
+
+      // A pure-typed copy via the Java API, so the bridge's result carries no capability.
+      java.util.Arrays.copyOf(result, result.length).nn.asInstanceOf[Array[Pojo]]
+    ).asInstanceOf[AnyRef]
+
+    stage.remote.asInstanceOf[AnyRef => AnyRef](bridge).asInstanceOf[output]

@@ -108,7 +108,9 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
         ' {
             (array: Array[Object]) =>
               $ {
-                  probe() = 'array
+                  // As with `incoming` below: launder the reach `.rd` capability off
+                  // the quoted array reference.
+                  probe() = ('array).asInstanceOf[Expr[Array[Object]]]
                   body(using probe)
                 }
           }
@@ -125,7 +127,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
           ' {
               (array: Array[Object]) =>
                 $ {
-                    references() = 'array
+                    // As with `incoming` below.
+                    references() = ('array).asInstanceOf[Expr[Array[Object]]]
                     body(using references)
                   }
             }
@@ -165,7 +168,11 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                   array(0) =
                     stageable.embed[output]:
                       $ {
-                          references() = 'incoming
+                          // A quoted reference to the `incoming` val is charged that val's
+                          // reach `.rd` capability at inline expansion sites, which the pure
+                          // `Expr[Array[Object]]` slot cannot hold; the staged program never
+                          // mutates the array through this alias.
+                          references() = ('incoming).asInstanceOf[Expr[Array[Object]]]
                           body(using references)
                         }
 

@@ -49,10 +49,10 @@ private[hallucination] object Vp8Transform:
       val c = (block(i*4 + 1).toLong - block(i*4 + 2))*8
       val d = (block(i*4).toLong - block(i*4 + 3))*8
 
-      block(i*4) = (a + b).toInt
-      block(i*4 + 2) = (a - b).toInt
-      block(i*4 + 1) = ((c*2217 + d*5352 + 14500) >> 12).toInt
-      block(i*4 + 3) = ((d*2217 - c*5352 + 7500) >> 12).toInt
+      writable(block)(i*4) = (a + b).toInt
+      writable(block)(i*4 + 2) = (a - b).toInt
+      writable(block)(i*4 + 1) = ((c*2217 + d*5352 + 14500) >> 12).toInt
+      writable(block)(i*4 + 3) = ((d*2217 - c*5352 + 7500) >> 12).toInt
       i += 1
 
     i = 0
@@ -63,10 +63,10 @@ private[hallucination] object Vp8Transform:
       val c = block(i + 4).toLong - block(i + 8)
       val d = block(i).toLong - block(i + 12)
 
-      block(i) = ((a + b + 7) >> 4).toInt
-      block(i + 8) = ((a - b + 7) >> 4).toInt
-      block(i + 4) = (((c*2217 + d*5352 + 12000) >> 16) + (if d != 0 then 1 else 0)).toInt
-      block(i + 12) = ((d*2217 - c*5352 + 51000) >> 16).toInt
+      writable(block)(i) = ((a + b + 7) >> 4).toInt
+      writable(block)(i + 8) = ((a - b + 7) >> 4).toInt
+      writable(block)(i + 4) = (((c*2217 + d*5352 + 12000) >> 16) + (if d != 0 then 1 else 0)).toInt
+      writable(block)(i + 12) = ((d*2217 - c*5352 + 51000) >> 16).toInt
       i += 1
 
   // Forward DCT on a 16-element subblock at `offset` within a larger array.
@@ -86,10 +86,10 @@ private[hallucination] object Vp8Transform:
       val c = block(i*4 + 1).toLong - block(i*4 + 2)
       val d = block(i*4).toLong - block(i*4 + 3)
 
-      block(i*4) = (a + b).toInt
-      block(i*4 + 1) = (c + d).toInt
-      block(i*4 + 2) = (a - b).toInt
-      block(i*4 + 3) = (d - c).toInt
+      writable(block)(i*4) = (a + b).toInt
+      writable(block)(i*4 + 1) = (c + d).toInt
+      writable(block)(i*4 + 2) = (a - b).toInt
+      writable(block)(i*4 + 3) = (d - c).toInt
       i += 1
 
     i = 0
@@ -104,16 +104,16 @@ private[hallucination] object Vp8Transform:
       val c2 = a1 - b1
       val d2 = d1 - c1
 
-      block(i) = ((a2 + (if a2 > 0 then 1 else 0))/2).toInt
-      block(i + 4) = ((b2 + (if b2 > 0 then 1 else 0))/2).toInt
-      block(i + 8) = ((c2 + (if c2 > 0 then 1 else 0))/2).toInt
-      block(i + 12) = ((d2 + (if d2 > 0 then 1 else 0))/2).toInt
+      writable(block)(i) = ((a2 + (if a2 > 0 then 1 else 0))/2).toInt
+      writable(block)(i + 4) = ((b2 + (if b2 > 0 then 1 else 0))/2).toInt
+      writable(block)(i + 8) = ((c2 + (if c2 > 0 then 1 else 0))/2).toInt
+      writable(block)(i + 12) = ((d2 + (if d2 > 0 then 1 else 0))/2).toInt
       i += 1
 
   // Inverse discrete cosine transform.
   def idct4x4(block: Array[Int], offset: Int = 0): Unit =
     inline def b(i: Int): Int = block(offset + i)
-    inline def set(i: Int, v: Int): Unit = block(offset + i) = v
+    inline def set(i: Int, v: Int): Unit = writable(block)(offset + i) = v
     var i = 0
 
     while i < 4 do
@@ -153,7 +153,7 @@ private[hallucination] object Vp8Transform:
   // Inverse Walsh-Hadamard transform, used for the Y2 (DC-of-DC) block.
   def iwht4x4(block: Array[Int], offset: Int = 0): Unit =
     inline def b(i: Int): Int = block(offset + i)
-    inline def set(i: Int, v: Int): Unit = block(offset + i) = v
+    inline def set(i: Int, v: Int): Unit = writable(block)(offset + i) = v
     var i = 0
 
     while i < 4 do

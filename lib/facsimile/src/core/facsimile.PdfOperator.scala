@@ -58,7 +58,8 @@ object PdfOperator:
   // `Unrecognized` — required inside `BX`/`EX` compatibility sections, and kind to the
   // future — while known operators with malformed operands are errors.
   private[facsimile] def read(instruction: ContentTokens.Instruction)
-  :   PdfOperator raises PdfError =
+  ( using Tactic[PdfError] )
+  :   PdfOperator =
 
     val operands = instruction.operands
     val operator = instruction.operator

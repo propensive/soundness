@@ -59,7 +59,7 @@ extension [value](value: value)
 // enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
 // `ignoreAttenuation` then captures no capability (unlike a member of an `ExclusiveCapability` object).
 package columnAttenuation:
-  given failAttenuation: Tactic[TableError] => (Attenuation^) =
+  given failAttenuation: (tactic: Tactic[TableError]) => (Attenuation^{tactic}) =
     (minimum, available) => raise(TableError(minimum, available))
 
   given ignoreAttenuation: Attenuation = (minimum, available) => ()

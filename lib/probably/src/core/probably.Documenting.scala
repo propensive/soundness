@@ -66,8 +66,9 @@ private[probably] object Documenting:
       . flatMap(suiteGroups(report.lines, _))
 
     val failures = List.of:
-      report.details.toList.sortBy(_(0).timestamp).map: (id, buffer) =>
-        (id, buffer.to(List))
+      report.details.toList.sortBy(_(0).timestamp).map:
+        (pair: (TestId, scala.collection.mutable.ArrayBuffer[Verdict.Detail])) =>
+          (pair(0), pair(1).to(List))
 
     Document
       ( results,

@@ -55,12 +55,13 @@ import zephyrine.*
 // handing them out in whatever space each `deliver` offers.
 private[pneumatic] trait XzEngine:
   protected val pending: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+  @scala.caps.unsafe.untrackedCaptures
   private var delivered: Int = 0
 
   def accept(bytes: Array[Byte], offset: Int, length: Int): Unit
   def finish(): Unit
 
-  def deliver(target: Array[Byte], offset: Int, space: Int): Int =
+  def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -92,6 +93,7 @@ private[pneumatic] trait XzEngine:
 // capture, per this module's capture-checked discipline.
 private[pneumatic] abstract class BufferedEngine extends XzEngine:
   private val input: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
   protected def transform(bytes: Array[Byte]): Array[Byte]
@@ -117,7 +119,9 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
   private val segmentSize = options.dictSize
   private val segment: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val records: scm.ArrayBuffer[(Long, Long)] = scm.ArrayBuffer()
+  @scala.caps.unsafe.untrackedCaptures
   private var headerEmitted = false
+  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
   private def emit(bytes: Array[Byte]): Unit =
@@ -189,6 +193,7 @@ private[pneumatic] class XzStage(engine: XzEngine) extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
+  @scala.caps.unsafe.untrackedCaptures
   private var finishing = false
 
   def regulation: Credit is Regulation = summon[Credit is Regulation]

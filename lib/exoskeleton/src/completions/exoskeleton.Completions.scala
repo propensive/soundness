@@ -107,7 +107,8 @@ object Completions:
 
 
   def ensure(force: Boolean = false)(using Entrypoint^, WorkingDirectory, Diagnostics)
-  :   List[Text] logs CliEvent =
+  ( using (CliEvent is Loggable)^ )
+  :   List[Text] =
 
     if force then safely(effectful(install(force))).let(_.paths).or(Nil)
     else
@@ -124,7 +125,9 @@ object Completions:
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
     ( using WorkingDirectory, Diagnostics )
-  :   Installation raises InstallError logs CliEvent =
+  ( using (CliEvent is Loggable)^ )
+  ( using Tactic[InstallError] )
+  :   Installation =
 
     mitigate:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
@@ -133,7 +136,8 @@ object Completions:
 
     . protect:
         val scriptPath: Optional[Path on Local] =
-          safely(sh"sh -c 'command -v ${entrypoint.script}'".exec[Path on Local]())
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            safely(sh"sh -c 'command -v ${entrypoint.script}'".exec[Path on Local]())
 
         val command: Text = entrypoint.script
 
@@ -183,7 +187,8 @@ object Completions:
             if sh"sh -c 'command -v pwsh'".exec[Exit]() != Exit.Ok
             then Installation.InstallResult.ShellNotInstalled(Shell.Powershell)
             else safely:
-              val profile = sh"pwsh -NoProfile -Command 'echo $$PROFILE'".exec[Path on Linux]()
+              val profile = scala.caps.unsafe.unsafeAssumeSeparate:
+                sh"pwsh -NoProfile -Command 'echo $$PROFILE'".exec[Path on Linux]()
               val marker = t"# $command tab-completions"
 
               if profile.exists() && profile.read[Text].contains(marker)
@@ -200,7 +205,9 @@ object Completions:
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  :   Installation.InstallResult raises InstallError logs CliEvent =
+  ( using (CliEvent is Loggable)^ )
+  ( using Tactic[InstallError] )
+  :   Installation.InstallResult =
 
     mitigate:
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)

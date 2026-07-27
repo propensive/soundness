@@ -189,7 +189,8 @@ extends Question[Text]:
             interaction:   Interaction[Text, LineEditor] )
     [ result ]
     ( lambda: Interactivity[TerminalEvent] ?=> Text => result )
-  :   result raises DismissError =
+    ( using Tactic[DismissError] )
+  :   result =
 
     val events = interactivity.eventIterator()
 

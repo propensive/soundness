@@ -69,7 +69,9 @@ extends Cli:
   val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
 
+  @scala.caps.unsafe.untrackedCaptures
   var explanation: Optional[Text] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   var cursorSuggestions: List[Suggestion] = Nil
 
   def proceed: Boolean = true
@@ -78,7 +80,8 @@ extends Cli:
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand] =
 
-    given cli: Cli = this
+    // An alias of `this` with its precise capture, not a fresh capability.
+    given cli: (Cli^{this}) = this
     interpreter.read(parameters, flag)
 
 

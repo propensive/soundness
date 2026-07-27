@@ -67,11 +67,11 @@ private[facsimile] object Guard:
     case Identity
 
   // The 32-byte padding string prepended to short passwords (algorithm 2).
-  private val padding: Array[Byte] = Array
+  private val padding: Data = Array
     ( 0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56, 0xff, 0xfa,
       0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80, 0x2f, 0x0c, 0xa9, 0xfe,
       0x64, 0x53, 0x69, 0x7a )
-    . map(_.toByte)
+    . map(_.toByte).asInstanceOf[Data]
 
   // MD5 (weak, hence the permit) and SHA-2 digests through gastronomy's cross-platform
   // hashing. The PDF security algorithms hash the concatenation of their parts, which is
@@ -86,7 +86,8 @@ private[facsimile] object Guard:
   // The password arrives as a mutable char array — as lent by `Password.uncloak` — never as
   // an immutable string, so the transient encodings derived from it here can all be zeroed.
   def apply(encrypt: Map[Text, Cos], id: Data, password: Array[Char])(using pdf: Pdf)
-  :   Guard raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Guard =
 
     val filter = encrypt.at(t"Filter").let(pdf.resolved(_).name).or(t"")
     if filter != t"Standard" then abort(PdfError(PdfError.Reason.UnsupportedEncryption(0)))
@@ -175,9 +176,9 @@ private[facsimile] object Guard:
   private def validate(fileKey: Data, user: Data, id: Data, revision: Int, keyBytes: Int)
   :   Boolean =
 
-    if revision == 2 then Rc4(fileKey, padding.immutable(using Unsafe)).to[List] == user.to[List]
+    if revision == 2 then Rc4(fileKey, padding).to[List] == user.to[List]
     else
-      var value: Data = md5(padding.immutable(using Unsafe) ++ id)
+      var value: Data = md5(padding ++ id)
 
       value = Rc4(fileKey, value)
 
@@ -231,7 +232,7 @@ private[facsimile] object Guard:
     var done = false
 
     while !done do
-      val block = Array.newBuilder[Byte]
+      val block = DataBuilder()
       var i = 0
 
       while i < 64 do
@@ -248,7 +249,7 @@ private[facsimile] object Guard:
       // capture-checking reason as `unwrap6`.
       val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
       cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(key, "AES"), jcs.IvParameterSpec(iv))
-      val e = cipher.doFinal(input).nn
+      val e = cipher.doFinal(input.mutable(using Unsafe)).nn
 
       var sum = 0
       i = 0
@@ -282,7 +283,7 @@ private[facsimile] object Guard:
     val out = new Array[Byte](32)
     val count = 32.min(bytes.length)
     System.arraycopy(bytes, 0, out, 0, count)
-    System.arraycopy(padding, 0, out, count, 32 - count)
+    System.arraycopy(padding.mutable(using Unsafe), 0, out, count, 32 - count)
     ju.Arrays.fill(bytes, 0.toByte)
     out
 

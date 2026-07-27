@@ -297,6 +297,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = ResizableRoot(10, 4)
 
         val resize = new Iterator[TerminalEvent]:
+          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
 
@@ -581,6 +582,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a shrink with an anchor clears from the recovered row and re-docks"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
@@ -598,6 +600,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"the anchor column selects the reflow model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
@@ -616,6 +619,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"the anchor column selects the truncate model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
@@ -634,6 +638,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"an unmatchable anchor column falls back to the full clear"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
@@ -666,6 +671,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a second resize without a fresh anchor falls back"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
@@ -731,10 +737,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a resize with an anchor reply recovers the block position"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
 
         val events = new Iterator[TerminalEvent]:
+          @scala.caps.unsafe.untrackedCaptures
           private var remaining: scala.collection.immutable.List[() => TerminalEvent] =
             scala.collection.immutable.List(
               () => Signal.Winch,
@@ -846,10 +854,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a WindowSize event re-tiles and fully redraws"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var liveRows: Int = 4
         val root = new ScreenRoot(() => 10, () => liveRows)
 
         val resize = new Iterator[TerminalEvent]:
+          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
 
@@ -917,6 +927,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val panes = Panes(panel()(Out.print(t"A")))
 
         val events = new Iterator[TerminalEvent]:
+          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
 
@@ -1010,6 +1021,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 // the composed screen read back.
 class ResizableRoot(maxWidth: Int, maxHeight: Int)(using Stdio) extends Canvas:
   private val flow = FlowExtent(TerminalCanvas(maxWidth, maxHeight), Rect(0, 0, maxWidth, maxHeight))
+  @scala.caps.unsafe.untrackedCaptures
   private var size: (Int, Int) = (maxWidth, maxHeight)
 
   def resize(width: Int, height: Int): Unit = size = (width, height)

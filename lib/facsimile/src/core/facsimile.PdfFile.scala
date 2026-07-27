@@ -83,7 +83,8 @@ object PdfFile:
       case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be written"))
 
     . protect:
-        val target: Path on Local = workingDirectory[Path on Local].resolve(filename)
+        val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+          workingDirectory[Path on Local].resolve(filename)
 
         if !flags.has(CreateFlag.Replace) && target.exists()
         then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
@@ -153,7 +154,7 @@ object PdfFile:
 
   // Anchored here so `pdfFile.open(...)` resolves — and, `PdfFile` having a unique instance,
   // infers the `Pdf` form — with no import.
-  given openable: Tactic[PdfError] => ( PdfOpenable^ ) = PdfOpenable()
+  given openable: (tactic: Tactic[PdfError]) => ( PdfOpenable^{tactic} ) = PdfOpenable()
 
   // Authoring a new document: `path.create[Pdf](): doc ?=> doc.appendPage(...)`. The block
   // edits a fresh, empty document — the same write surface as editing an existing one — and
@@ -193,7 +194,8 @@ class PdfFile private (origin: PdfFile.Origin):
   private[facsimile] def openAs[grants <: Grant, result]
     ( password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  :   result raises PdfError =
+  ( using Tactic[PdfError] )
+  :   result =
 
     origin match
       case Origin.InMemory(data) =>
@@ -208,7 +210,8 @@ class PdfFile private (origin: PdfFile.Origin):
           case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be opened"))
 
         . protect:
-            val path: Path on Local = workingDirectory[Path on Local].resolve(filename)
+            val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+              workingDirectory[Path on Local].resolve(filename)
 
             if writable then
               path.open[Ram](Read & Write): ram ?=>
@@ -236,7 +239,8 @@ class PdfFile private (origin: PdfFile.Origin):
   private def read[grants <: Grant, result]
     ( source: ByteSource, password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  :   (result, Optional[Data]) raises PdfError =
+  ( using Tactic[PdfError] )
+  :   (result, Optional[Data]) =
 
     val version = Pdf.readVersion(source) // check the header before anything else is trusted
     val pdf = Pdf(source, Xref.load(source), version)

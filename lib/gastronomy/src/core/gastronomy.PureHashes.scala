@@ -46,17 +46,23 @@ private[gastronomy] object PureHashes:
   import HashConstants.*
 
   // SHA-256 and SHA-224 (a truncation of SHA-256 with a different initial state).
-  final class Sha256(initial: Array[Int], outputBytes: Int) extends BlockDigestion(64):
-    private val h: Array[Int] = initial.clone
+  final class Sha256(initial: IArray[Int], outputBytes: Int) extends BlockDigestion(64):
+    @scala.caps.unsafe.untrackedCaptures
+    private val h: Array[Int] = initial.mutable(using Unsafe).clone
+
+    @scala.caps.unsafe.untrackedCaptures
     private val w: Array[Int] = new Array[Int](64)
 
     protected def bitLengthBytes: Int = 8
 
-    protected def writeLength(target: Array[Byte], offset: Int, bits: Long): Unit =
+    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = (bits >>> ((7 - i)*8)).toByte; i += 1 }
 
     protected def compress(data: Array[Byte], start: Int): Unit =
+      // Exclusive views for writes: the untracked fields read as read-only.
+      val w: Array[Int]^ = this.w.asInstanceOf[Array[Int]^]
+      val h: Array[Int]^ = this.h.asInstanceOf[Array[Int]^]
       var i = 0
 
       while i < 16 do
@@ -88,8 +94,8 @@ private[gastronomy] object PureHashes:
       h(0) += a; h(1) += b; h(2) += c; h(3) += d
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
-    protected def result(): Array[Byte] =
-      val out = new Array[Byte](outputBytes)
+    protected def result(): Array[Byte]^ =
+      val out: Array[Byte]^ = new Array[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
@@ -97,20 +103,26 @@ private[gastronomy] object PureHashes:
       out
 
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
-  final class Sha512(initial: Array[Long], outputBytes: Int) extends BlockDigestion(128):
-    private val h: Array[Long] = initial.clone
+  final class Sha512(initial: IArray[Long], outputBytes: Int) extends BlockDigestion(128):
+    @scala.caps.unsafe.untrackedCaptures
+    private val h: Array[Long] = initial.mutable(using Unsafe).clone
+
+    @scala.caps.unsafe.untrackedCaptures
     private val w: Array[Long] = new Array[Long](80)
 
     // The message length is a 128-bit big-endian count of bits; inputs never approach 2^64 bytes,
     // so the high 64 bits are always zero.
     protected def bitLengthBytes: Int = 16
 
-    protected def writeLength(target: Array[Byte], offset: Int, bits: Long): Unit =
+    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = 0; i += 1 }
       while i < 16 do { target(offset + i) = (bits >>> ((15 - i)*8)).toByte; i += 1 }
 
     protected def compress(data: Array[Byte], start: Int): Unit =
+      // Exclusive views for writes: the untracked fields read as read-only.
+      val w: Array[Long]^ = this.w.asInstanceOf[Array[Long]^]
+      val h: Array[Long]^ = this.h.asInstanceOf[Array[Long]^]
       var i = 0
 
       while i < 16 do
@@ -143,8 +155,8 @@ private[gastronomy] object PureHashes:
       h(0) += a; h(1) += b; h(2) += c; h(3) += d
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
-    protected def result(): Array[Byte] =
-      val out = new Array[Byte](outputBytes)
+    protected def result(): Array[Byte]^ =
+      val out: Array[Byte]^ = new Array[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/8) >>> ((7 - i%8)*8)).toByte; i += 1 }
@@ -153,17 +165,33 @@ private[gastronomy] object PureHashes:
 
   // SHA-1 (RFC 3174).
   final class Sha1 extends BlockDigestion(64):
-    private var h0 = 0x67452301; private var h1 = 0xefcdab89; private var h2 = 0x98badcfe
-    private var h3 = 0x10325476; private var h4 = 0xc3d2e1f0
+    @scala.caps.unsafe.untrackedCaptures
+    private var h0 = 0x67452301
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var h1 = 0xefcdab89
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var h2 = 0x98badcfe
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var h3 = 0x10325476
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var h4 = 0xc3d2e1f0
+
+    @scala.caps.unsafe.untrackedCaptures
     private val w: Array[Int] = new Array[Int](80)
 
     protected def bitLengthBytes: Int = 8
 
-    protected def writeLength(target: Array[Byte], offset: Int, bits: Long): Unit =
+    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = (bits >>> ((7 - i)*8)).toByte; i += 1 }
 
     protected def compress(data: Array[Byte], start: Int): Unit =
+      // An exclusive view for writes: the untracked field reads as read-only.
+      val w: Array[Int]^ = this.w.asInstanceOf[Array[Int]^]
       var i = 0
 
       while i < 16 do
@@ -190,9 +218,9 @@ private[gastronomy] object PureHashes:
 
       h0 += a; h1 += b; h2 += c; h3 += d; h4 += e
 
-    protected def result(): Array[Byte] =
+    protected def result(): Array[Byte]^ =
       val h = Array(h0, h1, h2, h3, h4)
-      val out = new Array[Byte](20)
+      val out: Array[Byte]^ = new Array[Byte](20)
       var i = 0
 
       while i < 20 do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
@@ -201,24 +229,38 @@ private[gastronomy] object PureHashes:
 
   // MD5 (RFC 1321). Little-endian throughout, unlike the SHA family.
   final class Md5 extends BlockDigestion(64):
-    private var a0 = 0x67452301; private var b0 = 0xefcdab89
-    private var c0 = 0x98badcfe; private var d0 = 0x10325476
+    @scala.caps.unsafe.untrackedCaptures
+    private var a0 = 0x67452301
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var b0 = 0xefcdab89
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var c0 = 0x98badcfe
+
+    @scala.caps.unsafe.untrackedCaptures
+    private var d0 = 0x10325476
+
+    @scala.caps.unsafe.untrackedCaptures
     private val m: Array[Int] = new Array[Int](16)
 
-    private val shifts: Array[Int] = Array(
+    private val shifts: IArray[Int] = Array(
       7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
       5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
       4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
       6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21)
+    . asInstanceOf[IArray[Int]]
 
     protected def bitLengthBytes: Int = 8
 
     // The bit-length trailer is little-endian for MD5.
-    protected def writeLength(target: Array[Byte], offset: Int, bits: Long): Unit =
+    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = (bits >>> (i*8)).toByte; i += 1 }
 
     protected def compress(data: Array[Byte], start: Int): Unit =
+      // An exclusive view for writes: the untracked field reads as read-only.
+      val m: Array[Int]^ = this.m.asInstanceOf[Array[Int]^]
       var i = 0
 
       while i < 16 do
@@ -245,9 +287,9 @@ private[gastronomy] object PureHashes:
 
       a0 += a; b0 += b; c0 += c; d0 += d
 
-    protected def result(): Array[Byte] =
+    protected def result(): Array[Byte]^ =
       val h = Array(a0, b0, c0, d0)
-      val out = new Array[Byte](16)
+      val out: Array[Byte]^ = new Array[Byte](16)
       var i = 0
 
       while i < 16 do { out(i) = (h(i/4) >>> ((i%4)*8)).toByte; i += 1 }
@@ -255,8 +297,8 @@ private[gastronomy] object PureHashes:
       out
 
   object Crc32:
-    val table: Array[Int] =
-      val result = new Array[Int](256)
+    val table: IArray[Int] =
+      val result: Array[Int]^ = new Array[Int](256)
       var n = 0
 
       while n < 256 do
@@ -266,10 +308,11 @@ private[gastronomy] object PureHashes:
         result(n) = c
         n += 1
 
-      result
+      result.asInstanceOf[IArray[Int]]
 
   // CRC-32 (RFC 1952), the checksum used by gzip and zip.
   final class Crc32 extends Digestion:
+    @scala.caps.unsafe.untrackedCaptures
     private var value: Int = 0
 
     def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
@@ -302,14 +345,19 @@ private[gastronomy] object PureHashes:
 // `compress` on each, and applies the standard Merkle–Damgård padding (a `0x80` byte, zero
 // padding, then the message bit-length) on `digest`.
 private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digestion:
+  @scala.caps.unsafe.untrackedCaptures
   private val block: Array[Byte] = new Array[Byte](blockSize)
+
+  @scala.caps.unsafe.untrackedCaptures
   private var filled: Int = 0
+
+  @scala.caps.unsafe.untrackedCaptures
   private var totalBytes: Long = 0
 
   protected def compress(data: Array[Byte], start: Int): Unit
-  protected def result(): Array[Byte]
+  protected def result(): Array[Byte]^
   protected def bitLengthBytes: Int
-  protected def writeLength(target: Array[Byte], offset: Int, bits: Long): Unit
+  protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit
 
   def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
 
@@ -344,14 +392,16 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
     // bytes stay zero (a freshly-allocated array).
     val twoBlocks = filled + 1 + bitLengthBytes > blockSize
     val padded = if twoBlocks then blockSize*2 else blockSize
-    val pad = new Array[Byte](padded)
+    val pad: Array[Byte]^ = new Array[Byte](padded)
     var i = 0
 
     while i < filled do { pad(i) = block(i); i += 1 }
     pad(filled) = 0x80.toByte
     writeLength(pad, padded - bitLengthBytes, bits)
 
-    compress(pad, 0)
-    if twoBlocks then compress(pad, blockSize)
+    // The padding is complete and never written again; `compress` only reads its argument.
+    val filledPad: Array[Byte] = scala.caps.unsafe.unsafeAssumePure(pad)
+    compress(filledPad, 0)
+    if twoBlocks then compress(filledPad, blockSize)
 
     result().immutable(using Unsafe)

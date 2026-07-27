@@ -45,6 +45,7 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
   private val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap()
   private val insertions: scm.TreeMap[Int, Text] = scm.TreeMap()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var offset: Int = 0
 
   def length: Int = builder.length

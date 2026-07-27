@@ -32,6 +32,9 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+import rudiments.*
+
 // Word transforms and static-dictionary geometry for Brotli, ported faithfully from Google's
 // reference decoder (org.brotli.dec, MIT-licensed, Copyright 2015 Google Inc.).
 // `transformDictionaryWord` writes a transformed dictionary word into `dst` and returns its length.
@@ -51,154 +54,160 @@ private[pneumatic] object BrotliDictionary:
   final val maxWordLength = 24
   final val maxTransformedWordLength = 5 + maxWordLength + 8
 
-  val offsetsByLength: Array[Int] = Array(
-    0, 0, 0, 0, 0, 4096, 9216, 21504, 35840, 44032, 53248, 63488, 74752, 87040, 93696, 100864,
-    104704, 106752, 108928, 113536, 115968, 118528, 119872, 121280, 122016)
+  val offsetsByLength: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(
+      0, 0, 0, 0, 0, 4096, 9216, 21504, 35840, 44032, 53248, 63488, 74752, 87040, 93696, 100864,
+      104704, 106752, 108928, 113536, 115968, 118528, 119872, 121280, 122016)
 
-  val sizeBitsByLength: Array[Int] = Array(
-    0, 0, 0, 0, 10, 10, 11, 11, 10, 10, 10, 10, 10, 9, 9, 8, 7, 7, 8, 7, 7, 6, 6, 5, 5)
+  val sizeBitsByLength: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(
+      0, 0, 0, 0, 10, 10, 11, 11, 10, 10, 10, 10, 10, 9, 9, 8, 7, 7, 8, 7, 7, 6, 6, 5, 5)
 
-  def data: Array[Byte] = BrotliDictionaryData.data
+  def data: IArray[Byte] = BrotliDictionaryData.data
 
-  private def uni(s: String): Array[Byte] =
-    val out = new Array[Byte](s.length)
+  private def uni(s: String): IArray[Byte] =
+    val out: Array[Byte]^ = new Array[Byte](s.length)
     var i = 0
     while i < s.length do { out(i) = s.charAt(i).toByte; i += 1 }
-    out
+    IArray.unsafeFromArray(out)
 
   final class Transform(prefixString: String, val kind: Int, suffixString: String):
-    val prefix: Array[Byte] = uni(prefixString)
-    val suffix: Array[Byte] = uni(suffixString)
+    val prefix: IArray[Byte] = uni(prefixString)
+    val suffix: IArray[Byte] = uni(suffixString)
 
   private def omitFirst(kind: Int): Int = if kind >= OmitFirst1 then kind - OmitFirst1 + 1 else 0
   private def omitLast(kind: Int): Int = if kind <= OmitLast9 then kind - OmitLast1 + 1 else 0
 
-  val transforms: Array[Transform] = Array(
-    Transform("", Identity, ""),
-    Transform("", Identity, " "),
-    Transform(" ", Identity, " "),
-    Transform("", OmitFirst1, ""),
-    Transform("", UppercaseFirst, " "),
-    Transform("", Identity, " the "),
-    Transform(" ", Identity, ""),
-    Transform("s ", Identity, " "),
-    Transform("", Identity, " of "),
-    Transform("", UppercaseFirst, ""),
-    Transform("", Identity, " and "),
-    Transform("", OmitFirst2, ""),
-    Transform("", OmitLast1, ""),
-    Transform(", ", Identity, " "),
-    Transform("", Identity, ", "),
-    Transform(" ", UppercaseFirst, " "),
-    Transform("", Identity, " in "),
-    Transform("", Identity, " to "),
-    Transform("e ", Identity, " "),
-    Transform("", Identity, "\""),
-    Transform("", Identity, "."),
-    Transform("", Identity, "\">"),
-    Transform("", Identity, "\n"),
-    Transform("", OmitLast3, ""),
-    Transform("", Identity, "]"),
-    Transform("", Identity, " for "),
-    Transform("", OmitFirst3, ""),
-    Transform("", OmitLast2, ""),
-    Transform("", Identity, " a "),
-    Transform("", Identity, " that "),
-    Transform(" ", UppercaseFirst, ""),
-    Transform("", Identity, ". "),
-    Transform(".", Identity, ""),
-    Transform(" ", Identity, ", "),
-    Transform("", OmitFirst4, ""),
-    Transform("", Identity, " with "),
-    Transform("", Identity, "'"),
-    Transform("", Identity, " from "),
-    Transform("", Identity, " by "),
-    Transform("", OmitFirst5, ""),
-    Transform("", OmitFirst6, ""),
-    Transform(" the ", Identity, ""),
-    Transform("", OmitLast4, ""),
-    Transform("", Identity, ". The "),
-    Transform("", UppercaseAll, ""),
-    Transform("", Identity, " on "),
-    Transform("", Identity, " as "),
-    Transform("", Identity, " is "),
-    Transform("", OmitLast7, ""),
-    Transform("", OmitLast1, "ing "),
-    Transform("", Identity, "\n\t"),
-    Transform("", Identity, ":"),
-    Transform(" ", Identity, ". "),
-    Transform("", Identity, "ed "),
-    Transform("", OmitFirst9, ""),
-    Transform("", OmitFirst7, ""),
-    Transform("", OmitLast6, ""),
-    Transform("", Identity, "("),
-    Transform("", UppercaseFirst, ", "),
-    Transform("", OmitLast8, ""),
-    Transform("", Identity, " at "),
-    Transform("", Identity, "ly "),
-    Transform(" the ", Identity, " of "),
-    Transform("", OmitLast5, ""),
-    Transform("", OmitLast9, ""),
-    Transform(" ", UppercaseFirst, ", "),
-    Transform("", UppercaseFirst, "\""),
-    Transform(".", Identity, "("),
-    Transform("", UppercaseAll, " "),
-    Transform("", UppercaseFirst, "\">"),
-    Transform("", Identity, "=\""),
-    Transform(" ", Identity, "."),
-    Transform(".com/", Identity, ""),
-    Transform(" the ", Identity, " of the "),
-    Transform("", UppercaseFirst, "'"),
-    Transform("", Identity, ". This "),
-    Transform("", Identity, ","),
-    Transform(".", Identity, " "),
-    Transform("", UppercaseFirst, "("),
-    Transform("", UppercaseFirst, "."),
-    Transform("", Identity, " not "),
-    Transform(" ", Identity, "=\""),
-    Transform("", Identity, "er "),
-    Transform(" ", UppercaseAll, " "),
-    Transform("", Identity, "al "),
-    Transform(" ", UppercaseAll, ""),
-    Transform("", Identity, "='"),
-    Transform("", UppercaseAll, "\""),
-    Transform("", UppercaseFirst, ". "),
-    Transform(" ", Identity, "("),
-    Transform("", Identity, "ful "),
-    Transform(" ", UppercaseFirst, ". "),
-    Transform("", Identity, "ive "),
-    Transform("", Identity, "less "),
-    Transform("", UppercaseAll, "'"),
-    Transform("", Identity, "est "),
-    Transform(" ", UppercaseFirst, "."),
-    Transform("", UppercaseAll, "\">"),
-    Transform(" ", Identity, "='"),
-    Transform("", UppercaseFirst, ","),
-    Transform("", Identity, "ize "),
-    Transform("", UppercaseAll, "."),
-    Transform("\u00c2\u00a0", Identity, ""),
-    Transform(" ", Identity, ","),
-    Transform("", UppercaseFirst, "=\""),
-    Transform("", UppercaseAll, "=\""),
-    Transform("", Identity, "ous "),
-    Transform("", UppercaseAll, ", "),
-    Transform("", UppercaseFirst, "='"),
-    Transform(" ", UppercaseFirst, ","),
-    Transform(" ", UppercaseAll, "=\""),
-    Transform(" ", UppercaseAll, ", "),
-    Transform("", UppercaseAll, ","),
-    Transform("", UppercaseAll, "("),
-    Transform("", UppercaseAll, ". "),
-    Transform(" ", UppercaseAll, "."),
-    Transform("", UppercaseAll, "='"),
-    Transform(" ", UppercaseAll, ". "),
-    Transform(" ", UppercaseFirst, "=\""),
-    Transform(" ", UppercaseAll, "='"),
-    Transform(" ", UppercaseFirst, "='")
+  val transforms: IArray[Transform] =
+    IArray.unsafeFromArray:
+      Array(
+      Transform("", Identity, ""),
+      Transform("", Identity, " "),
+      Transform(" ", Identity, " "),
+      Transform("", OmitFirst1, ""),
+      Transform("", UppercaseFirst, " "),
+      Transform("", Identity, " the "),
+      Transform(" ", Identity, ""),
+      Transform("s ", Identity, " "),
+      Transform("", Identity, " of "),
+      Transform("", UppercaseFirst, ""),
+      Transform("", Identity, " and "),
+      Transform("", OmitFirst2, ""),
+      Transform("", OmitLast1, ""),
+      Transform(", ", Identity, " "),
+      Transform("", Identity, ", "),
+      Transform(" ", UppercaseFirst, " "),
+      Transform("", Identity, " in "),
+      Transform("", Identity, " to "),
+      Transform("e ", Identity, " "),
+      Transform("", Identity, "\""),
+      Transform("", Identity, "."),
+      Transform("", Identity, "\">"),
+      Transform("", Identity, "\n"),
+      Transform("", OmitLast3, ""),
+      Transform("", Identity, "]"),
+      Transform("", Identity, " for "),
+      Transform("", OmitFirst3, ""),
+      Transform("", OmitLast2, ""),
+      Transform("", Identity, " a "),
+      Transform("", Identity, " that "),
+      Transform(" ", UppercaseFirst, ""),
+      Transform("", Identity, ". "),
+      Transform(".", Identity, ""),
+      Transform(" ", Identity, ", "),
+      Transform("", OmitFirst4, ""),
+      Transform("", Identity, " with "),
+      Transform("", Identity, "'"),
+      Transform("", Identity, " from "),
+      Transform("", Identity, " by "),
+      Transform("", OmitFirst5, ""),
+      Transform("", OmitFirst6, ""),
+      Transform(" the ", Identity, ""),
+      Transform("", OmitLast4, ""),
+      Transform("", Identity, ". The "),
+      Transform("", UppercaseAll, ""),
+      Transform("", Identity, " on "),
+      Transform("", Identity, " as "),
+      Transform("", Identity, " is "),
+      Transform("", OmitLast7, ""),
+      Transform("", OmitLast1, "ing "),
+      Transform("", Identity, "\n\t"),
+      Transform("", Identity, ":"),
+      Transform(" ", Identity, ". "),
+      Transform("", Identity, "ed "),
+      Transform("", OmitFirst9, ""),
+      Transform("", OmitFirst7, ""),
+      Transform("", OmitLast6, ""),
+      Transform("", Identity, "("),
+      Transform("", UppercaseFirst, ", "),
+      Transform("", OmitLast8, ""),
+      Transform("", Identity, " at "),
+      Transform("", Identity, "ly "),
+      Transform(" the ", Identity, " of "),
+      Transform("", OmitLast5, ""),
+      Transform("", OmitLast9, ""),
+      Transform(" ", UppercaseFirst, ", "),
+      Transform("", UppercaseFirst, "\""),
+      Transform(".", Identity, "("),
+      Transform("", UppercaseAll, " "),
+      Transform("", UppercaseFirst, "\">"),
+      Transform("", Identity, "=\""),
+      Transform(" ", Identity, "."),
+      Transform(".com/", Identity, ""),
+      Transform(" the ", Identity, " of the "),
+      Transform("", UppercaseFirst, "'"),
+      Transform("", Identity, ". This "),
+      Transform("", Identity, ","),
+      Transform(".", Identity, " "),
+      Transform("", UppercaseFirst, "("),
+      Transform("", UppercaseFirst, "."),
+      Transform("", Identity, " not "),
+      Transform(" ", Identity, "=\""),
+      Transform("", Identity, "er "),
+      Transform(" ", UppercaseAll, " "),
+      Transform("", Identity, "al "),
+      Transform(" ", UppercaseAll, ""),
+      Transform("", Identity, "='"),
+      Transform("", UppercaseAll, "\""),
+      Transform("", UppercaseFirst, ". "),
+      Transform(" ", Identity, "("),
+      Transform("", Identity, "ful "),
+      Transform(" ", UppercaseFirst, ". "),
+      Transform("", Identity, "ive "),
+      Transform("", Identity, "less "),
+      Transform("", UppercaseAll, "'"),
+      Transform("", Identity, "est "),
+      Transform(" ", UppercaseFirst, "."),
+      Transform("", UppercaseAll, "\">"),
+      Transform(" ", Identity, "='"),
+      Transform("", UppercaseFirst, ","),
+      Transform("", Identity, "ize "),
+      Transform("", UppercaseAll, "."),
+      Transform("\u00c2\u00a0", Identity, ""),
+      Transform(" ", Identity, ","),
+      Transform("", UppercaseFirst, "=\""),
+      Transform("", UppercaseAll, "=\""),
+      Transform("", Identity, "ous "),
+      Transform("", UppercaseAll, ", "),
+      Transform("", UppercaseFirst, "='"),
+      Transform(" ", UppercaseFirst, ","),
+      Transform(" ", UppercaseAll, "=\""),
+      Transform(" ", UppercaseAll, ", "),
+      Transform("", UppercaseAll, ","),
+      Transform("", UppercaseAll, "("),
+      Transform("", UppercaseAll, ". "),
+      Transform(" ", UppercaseAll, "."),
+      Transform("", UppercaseAll, "='"),
+      Transform(" ", UppercaseAll, ". "),
+      Transform(" ", UppercaseFirst, "=\""),
+      Transform(" ", UppercaseAll, "='"),
+      Transform(" ", UppercaseFirst, "='")
   )
 
   def transformDictionaryWord
-    ( dst: Array[Byte], dstOffset: Int, word: Array[Byte], wordOffset0: Int, len0: Int,
+    ( dst: Array[Byte]^, dstOffset: Int, word: IArray[Byte], wordOffset0: Int, len0: Int,
       transform: Transform )
   :   Int =
 

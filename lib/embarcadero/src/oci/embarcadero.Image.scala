@@ -51,8 +51,10 @@ import wisteria.*
 object Image:
   // Anchored here so `data.open[Image]()` resolves with no import. Opening a filesystem
   // *path* as an image (`path.open[Image]`) lives in the JVM-only source set.
-  given dataOpenable: (Tactic[OciError], Tactic[TarError], Tactic[StreamError])
-  =>  ( ImageDataOpenable^ ) =
+  given dataOpenable
+  :   ( ociTactic: Tactic[OciError], tarTactic: Tactic[TarError],
+        streamTactic: Tactic[StreamError] )
+  =>  ( ImageDataOpenable^{ociTactic, tarTactic, streamTactic} ) =
     ImageDataOpenable()
 
   // Assembles an image from its layers and optional runtime configuration,

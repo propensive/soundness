@@ -269,7 +269,8 @@ package socketBackends:
     def dialDomain(address: DomainSocket, options: List[SocketOption]): ClientExchange =
       throw UnsupportedOperationException("Unix-domain sockets are unsupported on Scala Native")
 
-    def request(exchange: ClientExchange, input: (Stream[Data] over Credit)^): Unit = exchange match
+    def request(exchange: ClientExchange, consume input: (Stream[Data] over Credit)^): Unit =
+      exchange match
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
@@ -338,7 +339,7 @@ package socketBackends:
 
       UdpCourier(jn.InetAddress.getLocalHost.nn, port.number, socket)
 
-    def dispatch(courier: UdpCourier, input: (Stream[Data] over Credit)^): Unit =
+    def dispatch(courier: UdpCourier, consume input: (Stream[Data] over Credit)^): Unit =
       val bytes = caps.unsafe.unsafeAssumePure(input).memoize
 
       val packet =

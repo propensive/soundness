@@ -179,7 +179,7 @@ object PlatformSupervisor extends ThreadSupervisor:
   def name: Name[Async] = n"platform"
 
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    val runnable: Runnable^ = () => block
+    val runnable: Runnable^{block} = () => block
 
     Strand.Threaded:
       new Thread(runnable).tap: thread =>
@@ -191,6 +191,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   private val state: juca.AtomicReference[Fulfillment[Result]] =
     juca.AtomicReference(Fulfillment.Initializing)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var relents: Int = 1
 
   private val startTime: Long = jl.System.currentTimeMillis
@@ -234,14 +235,14 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     if supervisor.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using Monitor^, Probate^)
-  :   (Task[result2] emits AsyncError)^ =
+  def map[result2](lambda: Result => result2)(using monitor: Monitor^, probate: Probate^)
+  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using Monitor^, Probate^)
-  :   (Task[result2] emits AsyncError)^ =
+  def bind[result2](lambda: Result => Task[result2])(using monitor: Monitor^, probate: Probate^)
+  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())
 
@@ -292,15 +293,15 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // guarantees everything a join would. (A trailing unbounded `strand.join()` would also defeat
   // the timed variants' deadline.)
   def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
-    ( using Monitor^ )
-  :   Result raises AsyncError =
+    ( using monitor: Monitor^ )
+  :   (Tactic[AsyncError]^) ?->{this, monitor} Result =
 
     promise.attend(duration)
     if !promise.ready then abort(AsyncError(Reason.Timeout))
     result()
 
 
-  def join()(using Monitor^): Result raises AsyncError =
+  def join()(using monitor: Monitor^): (Tactic[AsyncError]^) ?->{this, monitor} Result =
     promise.attend()
     result()
 

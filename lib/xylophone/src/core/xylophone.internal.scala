@@ -887,38 +887,42 @@ object internal:
         false
 
       def keys: Iterator[Text] =
-        val a = storage(attrs)
+        // The immutable view keeps the iterator pure (the raw array read is read-only).
+        val a = storage(attrs).asInstanceOf[IArray[AnyRef | Null]]
 
         new Iterator[Text]:
+          @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val k = a(i).asInstanceOf[Text]
+            val k = a.stdlib(i).asInstanceOf[Text]
             i += 2
             k
 
       def values: Iterator[Text] =
-        val a = storage(attrs)
+        val a = storage(attrs).asInstanceOf[IArray[AnyRef | Null]]
 
         new Iterator[Text]:
+          @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 1
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val v = a(i).asInstanceOf[Text]
+            val v = a.stdlib(i).asInstanceOf[Text]
             i += 2
             v
 
       def iterator: Iterator[(Text, Text)] =
-        val a = storage(attrs)
+        val a = storage(attrs).asInstanceOf[IArray[AnyRef | Null]]
 
         new Iterator[(Text, Text)]:
+          @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
           def hasNext: Boolean = i < a.length
 
           def next(): (Text, Text) =
-            val pair = (a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text])
+            val pair = (a.stdlib(i).asInstanceOf[Text], a.stdlib(i + 1).asInstanceOf[Text])
             i += 2
             pair
 

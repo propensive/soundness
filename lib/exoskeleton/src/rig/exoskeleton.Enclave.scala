@@ -79,8 +79,11 @@ object Enclave:
       safely(promise.await())
 
   case class Launcher(path: Path on Linux):
+    // Explicit `using` evidence instead of `raises` sugar: a context-function result would
+    // hide the `block` parameter, which the separation checker rejects.
     def sandbox[result](block: (tool: Tool) ?=> result)
-    :   result raises ExecError raises NumberError raises PathError =
+      ( using Tactic[ExecError], Tactic[NumberError], Tactic[PathError] )
+    :   result =
 
       val completionScripts = sh"$path '{admin}' install".exec[Text]()
       val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.as[Int])

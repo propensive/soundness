@@ -80,7 +80,8 @@ object Tests extends Suite(m"Eucalyptus tests"):
   def run(): Unit = supervise:
     test(m"A Warn-threshold logger drops Fine and Info but keeps Warn and Fail"):
       val capture = Capture()
-      given Logger[Any, Message] = Logger(capture, level = Level.Warn)
+      // The test logger is this test's single owner; no aliased writer.
+      given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, level = Level.Warn))
       Log.fine(m"alpha")
       Log.info(m"beta")
       Log.warn(m"gamma")
@@ -92,8 +93,10 @@ object Tests extends Suite(m"Eucalyptus tests"):
     test(m"Two loggers in scope both receive the message"):
       val first = Capture()
       val second = Capture()
-      given firstLog: Logger[Any, Message] = Logger(first)
-      given secondLog: Logger[Any, Message] = Logger(second)
+      // The test logger is this test's single owner; no aliased writer.
+      given firstLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(first))
+      // The test logger is this test's single owner; no aliased writer.
+      given secondLog: Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(second))
       Log.info(m"hello")
       List(first.queue.take(), second.queue.take())
 
@@ -105,7 +108,8 @@ object Tests extends Suite(m"Eucalyptus tests"):
       handle:
         case StreamError(_) => errors.put(t"cut")
       . protect:
-          given Logger[Any, Message] = Logger(Failing())
+          // The test logger is this test's single owner; no aliased writer.
+          given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(Failing()))
           Log.info(m"trigger")
           errors.take()
 
@@ -113,7 +117,8 @@ object Tests extends Suite(m"Eucalyptus tests"):
 
     test(m"A category-filtered logger records only events in its categories"):
       val capture = Capture()
-      given Logger[Any, Message] = Logger(capture, categories = Set(Log.Network))
+      // The test logger is this test's single owner; no aliased writer.
+      given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture, categories = Set(Log.Network)))
       Log.info(Signal.Net(t"a"))
       Log.info(Signal.Fs(t"b"))
       capture.queue.take()
@@ -122,7 +127,8 @@ object Tests extends Suite(m"Eucalyptus tests"):
 
     test(m"A logger with no categories records events of every category"):
       val capture = Capture()
-      given Logger[Any, Message] = Logger(capture)
+      // The test logger is this test's single owner; no aliased writer.
+      given Logger[Any, Message] = scala.caps.unsafe.unsafeAssumePure(Logger(capture))
       Log.info(Signal.Net(t"a"))
       Log.info(Signal.Fs(t"b"))
       List(capture.queue.take(), capture.queue.take())

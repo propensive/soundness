@@ -56,7 +56,9 @@ object internal:
         java.lang.Double )
     :   Pojo =
 
-      pojo
+      // The union's array member drags a read capability through the opaque alias;
+      // laundered (the cast is a no-op at erasure).
+      pojo.asInstanceOf[Pojo]
 
 
     given text: Text is Encodable:
@@ -107,7 +109,8 @@ object internal:
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
-      iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
+      iterable =>
+        Array.from[Object](iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
 
     // Alias counterparts of `list`/`collection`: the opaque prelude collections
     // do not conform to `Iterable`, so each gets its own instance built at the

@@ -108,7 +108,8 @@ object Installer:
     ( using service: DaemonService[?], environment: Environment )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  :   Result logs DaemonLogEvent raises InstallError =
+    ( using Tactic[InstallError], (DaemonLogEvent is Loggable)^ )
+  :   Result =
 
     import workingDirectories.javaWorkingDirectory
     import systems.javaSystem

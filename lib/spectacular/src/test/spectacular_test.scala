@@ -201,11 +201,14 @@ object Tests extends Suite(m"Spectacular Tests"):
       . assert(_ == t"""{t"one", t"two", t"three"}""")
 
       test(m"serialize Array of strings"):
-        Array(t"one", t"two", t"three").inspect
+        Inspectable.array[Text].text:
+          java.util.Arrays
+          . copyOf(Array(t"one", t"two", t"three").asInstanceOf[Array[AnyRef | Null]], 3)
+          . nn.asInstanceOf[Array[Text]]
       . assert(_ == t"""⦋🅻₀t"one"∣₁t"two"∣₂t"three"⦌""")
 
       test(m"serialize Array of ints"):
-        Array(1, 2, 3).inspect
+        Inspectable.array[Int].text(java.util.Arrays.copyOf(Array(1, 2, 3), 3).nn.asInstanceOf[Array[Int]])
       . assert(_ == t"""⦋🅸₀1∣₁2∣₂3⦌""")
 
       test(m"serialize Series of shorts"):
@@ -213,7 +216,7 @@ object Tests extends Suite(m"Spectacular Tests"):
       . assert(_ == t"""⟨ 1.toShort 2.toShort 3.toShort ⟩""")
 
       test(m"serialize Array of Longs"):
-        Array(1L, 2L, 3L).inspect
+        Inspectable.array[Long].text(java.util.Arrays.copyOf(Array(1L, 2L, 3L), 3).nn.asInstanceOf[Array[Long]])
       . assert(_ == t"""⦋🅹₀1L∣₁2L∣₂3L⦌""")
 
       test(m"serialize IArray of booleans"):

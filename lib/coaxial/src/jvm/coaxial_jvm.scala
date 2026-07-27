@@ -283,7 +283,8 @@ package socketBackends:
       channel.configureBlocking(false)
       ClientExchange.Domain(channel)
 
-    def request(exchange: ClientExchange, input: (Stream[Data] over Credit)^): Unit = exchange match
+    def request(exchange: ClientExchange, consume input: (Stream[Data] over Credit)^): Unit =
+      exchange match
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
@@ -297,8 +298,8 @@ package socketBackends:
 
         channel.shutdownOutput()
 
-    def response(exchange: ClientExchange)(using Buffering, Tactic[StreamError])
-    :   (Stream[Data] over Credit)^{caps.any} =
+    def response(exchange: ClientExchange)(using buffering: Buffering, tactic: Tactic[StreamError])
+    :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
       exchange match
         case ClientExchange.Tcp(socket) =>
@@ -363,7 +364,7 @@ package socketBackends:
 
       UdpCourier(jn.InetAddress.getLocalHost.nn, port.number, socket)
 
-    def dispatch(courier: UdpCourier, input: (Stream[Data] over Credit)^): Unit =
+    def dispatch(courier: UdpCourier, consume input: (Stream[Data] over Credit)^): Unit =
       val bytes = input.memoize
 
       val packet =

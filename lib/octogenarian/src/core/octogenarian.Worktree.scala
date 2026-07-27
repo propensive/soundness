@@ -71,7 +71,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   @targetName("checkoutTag")
   def checkout(tag: GitTag)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions checkout $tag".exec[Exit]() match
       case Exit.Ok => ()
@@ -81,7 +82,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   @targetName("checkoutBranch")
   def checkout(branch: GitBranch)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions checkout $branch".exec[Exit]() match
       case Exit.Ok => ()
@@ -91,7 +93,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   @targetName("checkoutGitHash")
   def checkout(commit: GitHash)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions checkout $commit".exec[Exit]() match
       case Exit.Ok => ()
@@ -100,7 +103,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def switch(branch: GitBranch)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions switch $branch".exec[Exit]() match
       case Exit.Ok => ()
@@ -109,7 +113,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def pull()(using GitCommand, Internet, WorkingDirectory)
     ( using gitError: Tactic[GitError], exec: Tactic[ExecError] )
-  :   GitProcess[Unit] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   GitProcess[Unit] =
 
     val process = sh"$git $repoOptions pull --progress".fork[Exit]()
 
@@ -120,7 +125,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
 
   def commit(message: Text)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions commit -m $message".exec[Exit]() match
       case Exit.Ok => ()
@@ -128,7 +134,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
 
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :   List[GitBranch] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   List[GitBranch] =
 
     sh"$git $repoOptions branch"
     . exec[Iterator[Text]]()
@@ -138,13 +145,16 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
-  def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError]): GitBranch logs GitEvent =
+  def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError])
+    ( using (GitEvent is Loggable)^ )
+  :   GitBranch =
     GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt.trim)
 
 
   def makeBranch(branch: GitBranch)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
       case Exit.Ok => ()
@@ -154,7 +164,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   def add[path: Abstractable across Paths to Text](file: path)
     ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
             Tactic[GitError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val relativePath =
       safely(this.path.toward(file.generic.as[Path on Linux])).or:
@@ -169,7 +180,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def reset(mode: ResetMode = ResetMode.Mixed, ref: Refspec = Refspec.head())
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions reset $mode $ref".exec[Exit]() match
       case Exit.Ok => ()
@@ -179,7 +191,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   def unstage[path: Abstractable across Paths to Text](file: path)
     ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
             Tactic[GitError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val relativePath =
       safely(this.path.toward(file.generic.as[Path on Linux])).or:
@@ -196,7 +209,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
     ( from: fromPath, to: toPath )
     ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
             Tactic[GitError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val fromRel = safely(this.path.toward(from.generic.as[Path on Linux])).or:
       abort(GitError(MvFailed))
@@ -213,7 +227,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   // diff(ref): full tree-vs-ref diff (working tree relative to ref).
   def diff(staged: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   List[FileDiff] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   List[FileDiff] =
 
     val stagedOpt = if staged then sh"--staged" else sh""
     Patch.parse(sh"$git $repoOptions diff --no-color $stagedOpt".exec[Iterator[Text]]())
@@ -221,7 +236,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def diff(ref: Refspec)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   List[FileDiff] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   List[FileDiff] =
 
     Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Iterator[Text]]())
 
@@ -229,7 +245,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   def merge
     ( ref: Refspec, ff: FastForward = FastForward.Auto, message: Optional[Text] = Unset )
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val ffOpt = ff match
       case FastForward.Auto  => sh""
@@ -245,7 +262,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def cherryPick(commit: GitHash)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions cherry-pick $commit".exec[Exit]() match
       case Exit.Ok => ()
@@ -254,7 +272,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def revert(commit: GitHash, noCommit: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val noCommitOpt = if noCommit then sh"-n" else sh""
 
@@ -265,7 +284,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def lock(reason: Optional[Text] = Unset)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val reasonOpt = reason.lay(sh""): reason => sh"--reason=$reason"
 
@@ -275,7 +295,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
 
   def unlock()(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions worktree unlock $path".exec[Exit]() match
       case Exit.Ok => ()
@@ -288,7 +309,8 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
             Tactic[GitError],
             Tactic[ExecError],
             ((Path on Linux) is Decodable in Text)^ )
-  :   Worktree raises NameError raises PathError logs GitEvent =
+  ( using Tactic[NameError], Tactic[PathError], (GitEvent is Loggable)^ )
+  :   Worktree =
 
     val target: Path on Linux =
       try newPath.generic.as[Path on Linux]
@@ -301,13 +323,15 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
   def remove(force: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     repo.removeWorktree(this, force)
 
 
   def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :   List[GitPathStatus] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   List[GitPathStatus] =
 
     val ignoredParam = if ignored then sh"--ignored" else sh""
 

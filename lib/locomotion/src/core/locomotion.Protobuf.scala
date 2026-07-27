@@ -136,7 +136,7 @@ trait Protobuf2:
   // single erasing cast at the derivation boundary. See rep/DECISIONS.md.
   given listEncodable: [collection <: Iterable, element]
   =>  ( encodable: => (element is Encodable in Protobuf)^ )
-  =>  ((collection[element] is Encodable in Protobuf)^) =
+  =>  ((collection[element] is Encodable in Protobuf)^{encodable}) =
     // An honest capability: the instance retains the by-name element codec, itself a
     // capability (every given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
@@ -146,7 +146,7 @@ trait Protobuf2:
   given listDecodable: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]] )
   =>  ( decodable: => (element is Decodable in Protobuf)^ )
-  =>  ((collection[element] is Decodable in Protobuf)^) =
+  =>  ((collection[element] is Decodable in Protobuf)^{decodable}) =
     // An honest capability, as `listEncodable` above.
     protobuf =>
       val builder = factory.newBuilder
@@ -433,7 +433,7 @@ object Protobuf extends Protobuf2:
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( decodable: => (inner is Decodable in Protobuf)^ )
-  =>  ((value is Decodable in Protobuf)^) =
+  =>  ((value is Decodable in Protobuf)^{decodable}) =
     // An honest capability, as `listEncodable` above.
     protobuf => if protobuf.isAbsent then Unset else decodable.decoded(protobuf)
 
@@ -443,7 +443,7 @@ object Protobuf extends Protobuf2:
 
   given packedEncodable: [collection <: Iterable, element]
   =>  ( encodable: => (element is Encodable in Protobuf)^, packable: element is Packable )
-  =>  ((collection[element] is Encodable in Protobuf)^) =
+  =>  ((collection[element] is Encodable in Protobuf)^{encodable}) =
     // An honest capability, as `listEncodable` above.
     values =>
       val list = values.to(List)
@@ -463,7 +463,7 @@ object Protobuf extends Protobuf2:
         decodable: => (element is Decodable in Protobuf)^,
         packable:  element is Packable )
   =>  ( tactic: Tactic[ProtobufError] )
-  =>  ((collection[element] is Decodable in Protobuf)^{tactic, caps.any}) =
+  =>  ((collection[element] is Decodable in Protobuf)^{tactic, decodable}) =
     // An honest capability, as `listEncodable` above.
     protobuf =>
       val builder = factory.newBuilder
@@ -545,7 +545,7 @@ object Protobuf extends Protobuf2:
   =>  ( keyDecodable:   => (key is Decodable in Protobuf)^,
         valueDecodable: => (value is Decodable in Protobuf)^ )
   =>  ( tactic: Tactic[ProtobufError] )
-  =>  ((Map[key, value] is Decodable in Protobuf)^{tactic, caps.any}) =
+  =>  ((Map[key, value] is Decodable in Protobuf)^{tactic, keyDecodable, valueDecodable}) =
     // An honest capability, as `listEncodable` above.
     protobuf =>
       val entries = protobuf.occurrences.map: entry =>

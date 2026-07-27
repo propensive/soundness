@@ -58,13 +58,18 @@ sealed trait Executable:
   :   Job[Exec, result]^
 
 
+  // Real `using` clauses rather than the `raises`/`logs` sugar: a context-function result
+  // would hide the `computable` parameter, which the separation checker rejects.
   def exec[result]()(using computable: (result is Computable)^, working: WorkingDirectory)
-  :   result raises ExecError logs ExecEvent =
+    ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
+  :   result =
 
     fork[result]().await()
 
 
-  def apply()
+  // Inline, so the context-function sugar never becomes a checked result type (which would
+  // hide the `computable` parameter); the body is checked at each expansion site instead.
+  inline def apply()
     ( using erased intelligible: Exec is Intelligible,
             working:             WorkingDirectory,
             computable:          (intelligible.Result is Computable)^ )
@@ -111,7 +116,11 @@ case class Command(arguments: Text*) extends Executable:
     ( using Tactic[ExecError], (ExecEvent is Loggable)^ )
   :   Job[Exec, result]^ =
 
-    val processBuilder = ProcessBuilder(arguments.ss*)
+    // The `java.util.List` overload, not the varargs one: a Java varargs splice of an array
+    // value is rejected under separation checking.
+    val javaArguments = java.util.ArrayList[String]()
+    arguments.ss.foreach(javaArguments.add(_))
+    val processBuilder = ProcessBuilder(javaArguments)
     processBuilder.directory(ji.File(working.directory().s))
 
     Log.info(ExecEvent.ProcessStart(this))
@@ -141,7 +150,10 @@ case class Pipeline(commands: Command*) extends Executable:
   :   Job[Exec, result]^ =
 
     val processBuilders = commands.map: command =>
-      val processBuilder = ProcessBuilder(command.arguments.ss*)
+      // As above: the `java.util.List` overload, not the varargs one.
+      val javaArguments = java.util.ArrayList[String]()
+      command.arguments.ss.foreach(javaArguments.add(_))
+      val processBuilder = ProcessBuilder(javaArguments)
 
       processBuilder.directory(ji.File(working.directory().s))
 

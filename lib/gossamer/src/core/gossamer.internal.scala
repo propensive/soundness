@@ -97,11 +97,19 @@ object internal:
       i += 1
 
     if normalize then
+      // A manual join, not `String.join(_, array*)`: a Java varargs splice of an array value
+      // is rejected under separation checking (the formal is a pure array).
       ' {
-          val array =
-            $concatExpr.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+          val parts = $concatExpr.split("\\n\\s*\\n").nn
+          val builder = new java.lang.StringBuilder()
+          var index = 0
 
-          anticipation.Text(String.join("\n", array*).nn)
+          while index < parts.length do
+            if index > 0 then builder.append('\n')
+            builder.append(parts(index).nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+            index += 1
+
+          anticipation.Text(builder.toString)
         }
     else
       '{anticipation.Text($concatExpr)}

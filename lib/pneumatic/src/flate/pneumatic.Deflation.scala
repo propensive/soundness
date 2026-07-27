@@ -65,12 +65,13 @@ extends Duct[Data, Data]:
   // The gzip header (10 bytes) must fit in one step's output space.
   override def quantum: Int = if gzip then 10 else 1
 
-  private update def header(target: Array[Byte], offset: Int): Unit =
+  private update def header(target: Array[Byte]^, offset: Int): Unit =
     target(offset) = 0x1f
     target(offset + 1) = 0x8b.toByte
     target(offset + 2) = 8
 
-    for index <- 3 to 8 do target(offset + index) = 0
+    var index = 3
+    while index <= 8 do { target(offset + index) = 0; index += 1 }
 
     target(offset + 9) = -1
 
@@ -84,7 +85,7 @@ extends Duct[Data, Data]:
   :   Duct.Progress =
 
     val bytes = source.asInstanceOf[Array[Byte]]
-    val out = target.asInstanceOf[Array[Byte]]
+    val out: Array[Byte]^ = target.asInstanceOf[Array[Byte]]
     var consumed: Int = 0
     var produced: Int = 0
 
@@ -119,7 +120,7 @@ extends Duct[Data, Data]:
     Duct.Progress(consumed, produced)
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val out = target.asInstanceOf[Array[Byte]]
+    val out: Array[Byte]^ = target.asInstanceOf[Array[Byte]]
     var produced: Int = 0
 
     if !headerDone && targetSpace >= 10 then
@@ -236,7 +237,7 @@ extends Duct[Data, Data]:
   :   Duct.Progress =
 
     val bytes = source.asInstanceOf[Array[Byte]]
-    val out = target.asInstanceOf[Array[Byte]]
+    val out: Array[Byte]^ = target.asInstanceOf[Array[Byte]]
     var consumed: Int = 0
     var produced: Int = 0
 
@@ -278,7 +279,7 @@ extends Duct[Data, Data]:
   // The inflater may hold far more pending output than one step's space, so
   // it must keep draining after the upstream ends.
   override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val out = target.asInstanceOf[Array[Byte]]
+    val out: Array[Byte]^ = target.asInstanceOf[Array[Byte]]
     var produced: Int = 0
     var run: Int = 1
 

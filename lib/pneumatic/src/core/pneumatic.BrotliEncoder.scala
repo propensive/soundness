@@ -32,20 +32,26 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 // A little-endian (LSB-first) bit-stream writer, the mirror of the decoder's `BitReader`. Bits
 // accumulate into a 64-bit register and are flushed a byte at a time; `align` pads the current byte
 // with zero bits, after which `writeBytes` may append raw byte-aligned data.
 private[pneumatic] final class BrotliBitWriter:
+  @scala.caps.unsafe.untrackedCaptures
   private var out: Array[Byte] = new Array[Byte](256)
+  @scala.caps.unsafe.untrackedCaptures
   private var size: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var accumulator: Long = 0L
+  @scala.caps.unsafe.untrackedCaptures
   private var bitCount: Int = 0
 
   private def ensure(extra: Int): Unit =
     if size + extra > out.length then
       var grown = out.length
       while size + extra > grown do grown <<= 1
-      val fresh = new Array[Byte](grown)
+      val fresh: Array[Byte]^ = new Array[Byte](grown)
       System.arraycopy(out, 0, fresh, 0, size)
       out = fresh
 
@@ -55,7 +61,7 @@ private[pneumatic] final class BrotliBitWriter:
 
     while bitCount >= 8 do
       ensure(1)
-      out(size) = (accumulator & 0xff).toByte
+      writable(out)(size) = (accumulator & 0xff).toByte
       size += 1
       accumulator >>>= 8
       bitCount -= 8
@@ -63,7 +69,7 @@ private[pneumatic] final class BrotliBitWriter:
   def align(): Unit =
     if bitCount > 0 then
       ensure(1)
-      out(size) = (accumulator & 0xff).toByte
+      writable(out)(size) = (accumulator & 0xff).toByte
       size += 1
       accumulator = 0L
       bitCount = 0
@@ -74,7 +80,7 @@ private[pneumatic] final class BrotliBitWriter:
     size += length
 
   def result(): Array[Byte] =
-    val array = new Array[Byte](size)
+    val array: Array[Byte]^ = new Array[Byte](size)
     System.arraycopy(out, 0, array, 0, size)
     array
 
@@ -173,9 +179,9 @@ private[pneumatic] object BrotliEncoder:
     while i < nBits do { retval = (retval << 1) | (v & 1); v >>= 1; i += 1 }
     retval
 
-  private def convertBitDepthsToSymbols(depth: Array[Byte], len: Int, bits: Array[Int]): Unit =
-    val blCount = new Array[Int](16)
-    val nextCode = new Array[Int](16)
+  private def convertBitDepthsToSymbols(depth: Array[Byte], len: Int, bits: Array[Int]^): Unit =
+    val blCount: Array[Int]^ = new Array[Int](16)
+    val nextCode: Array[Int]^ = new Array[Int](16)
     var i = 0
     while i < len do { blCount(depth(i) & 0xff) += 1; i += 1 }
     blCount(0) = 0
@@ -191,11 +197,11 @@ private[pneumatic] object BrotliEncoder:
       i += 1
 
   private def setDepth
-    ( p0: Int, total: Array[Int], left: Array[Int], right: Array[Int], depth: Array[Byte],
+    ( p0: Int, total: Array[Int], left: Array[Int], right: Array[Int], depth: Array[Byte]^,
       maxDepth: Int )
   :   Boolean =
 
-    val stack = new Array[Int](16)
+    val stack: Array[Int]^ = new Array[Int](16)
     var level = 0
     var p = p0
     stack(0) = -1
@@ -217,7 +223,7 @@ private[pneumatic] object BrotliEncoder:
     result == 1
 
   // Sort leaf nodes [0, n) least popular first, ties broken by larger value (reference comparator).
-  private def sortLeaves(total: Array[Int], right: Array[Int], n: Int): Unit =
+  private def sortLeaves(total: Array[Int]^, right: Array[Int]^, n: Int): Unit =
     var i = 1
 
     while i < n do
@@ -235,12 +241,12 @@ private[pneumatic] object BrotliEncoder:
       i += 1
 
   private def createHuffmanTree
-    ( data: Array[Int], length: Int, treeLimit: Int, depth: Array[Byte] )
+    ( data: Array[Int], length: Int, treeLimit: Int, depth: Array[Byte]^ )
   :   Unit =
 
-    val total = new Array[Int](2*length + 1)
-    val left = new Array[Int](2*length + 1)
-    val right = new Array[Int](2*length + 1)
+    val total: Array[Int]^ = new Array[Int](2*length + 1)
+    val left: Array[Int]^ = new Array[Int](2*length + 1)
+    val right: Array[Int]^ = new Array[Int](2*length + 1)
     var i = 0
     while i < length do { depth(i) = 0; i += 1 }
 
@@ -291,8 +297,9 @@ private[pneumatic] object BrotliEncoder:
         else countLimit <<= 1
 
   // --- Huffman-tree serialization (inverse of the decoder's readHuffmanCode) ---------------------
-  private val codeLengthCodeOrder: Array[Int] =
-    Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+  private val codeLengthCodeOrder: IArray[Int] =
+    IArray.unsafeFromArray:
+      Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
   private def writeCodeLengthCodeLength(writer: BrotliBitWriter, v: Int): Unit = v match
     case 0 => writer.writeBits(0, 2)
@@ -313,7 +320,7 @@ private[pneumatic] object BrotliEncoder:
   // writing the code-length symbol stream without run-length compression (valid, and negligible
   // overhead for large blocks).
   private def storeHuffmanTree
-    ( writer: BrotliBitWriter, depth: Array[Byte], codes: Array[Int], alphabetSize: Int )
+    ( writer: BrotliBitWriter, depth: Array[Byte]^, codes: Array[Int], alphabetSize: Int )
   :   Unit =
 
     var used = 0
@@ -334,12 +341,12 @@ private[pneumatic] object BrotliEncoder:
       depth(onlySymbol) = 0
     else
       val streamLen = lastNonZero + 1
-      val histogram = new Array[Int](18)
+      val histogram: Array[Int]^ = new Array[Int](18)
       i = 0
       while i < streamLen do { histogram(depth(i) & 0xff) += 1; i += 1 }
-      val clcDepth = new Array[Byte](18)
+      val clcDepth: Array[Byte]^ = new Array[Byte](18)
       createHuffmanTree(histogram, 18, 5, clcDepth)
-      val clcCodes = new Array[Int](18)
+      val clcCodes: Array[Int]^ = new Array[Int](18)
       convertBitDepthsToSymbols(clcDepth, 18, clcCodes)
 
       // When a single code-length value dominates, its code-length-code has one symbol and the
@@ -369,7 +376,7 @@ private[pneumatic] object BrotliEncoder:
 
   // --- Length/distance prefix codes --------------------------------------------------------------
   // Scanning upward exits immediately for the common short lengths.
-  private def lengthCode(offsets: Array[Int], nbits: Array[Int], length: Int): Int =
+  private def lengthCode(offsets: IArray[Int], nbits: IArray[Int], length: Int): Int =
     var i = 0
     while i + 1 < offsets.length && offsets(i + 1) <= length do i += 1
     i
@@ -395,12 +402,12 @@ private[pneumatic] object BrotliEncoder:
     // live in a ring of positions (like zlib's `prev` array), bounded by `RingSize`; entries that
     // alias across the ring appear as non-decreasing positions and terminate the walk. Commands
     // accumulate in growable parallel `Int` arrays (unboxed, unlike an `ArrayBuffer[Int]`).
-    val head = new Array[Int](HashSize)
+    val head: Array[Int]^ = new Array[Int](HashSize)
     var h = 0
     while h < HashSize do { head(h) = -1; h += 1 }
 
     val ringMask = RingSize - 1
-    val chain = new Array[Int](Math.min(length, RingSize))
+    val chain: Array[Int]^ = new Array[Int](Math.min(length, RingSize))
 
     var capacity = 1024
     var cmdInsert = new Array[Int](capacity)
@@ -412,11 +419,13 @@ private[pneumatic] object BrotliEncoder:
     def push(insert: Int, litPos: Int, copy: Int, dist: Int): Unit =
       if commands == capacity then
         capacity <<= 1
-        val ni = new Array[Int](capacity); System.arraycopy(cmdInsert, 0, ni, 0, commands)
-        val nl = new Array[Int](capacity); System.arraycopy(cmdLitPos, 0, nl, 0, commands)
-        val nc = new Array[Int](capacity); System.arraycopy(cmdCopy, 0, nc, 0, commands)
-        val nd = new Array[Int](capacity); System.arraycopy(cmdDist, 0, nd, 0, commands)
-        cmdInsert = ni; cmdLitPos = nl; cmdCopy = nc; cmdDist = nd
+        // The four scratch arrays are pairwise-distinct fresh allocations.
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          val ni = new Array[Int](capacity); System.arraycopy(cmdInsert, 0, ni, 0, commands)
+          val nl = new Array[Int](capacity); System.arraycopy(cmdLitPos, 0, nl, 0, commands)
+          val nc = new Array[Int](capacity); System.arraycopy(cmdCopy, 0, nc, 0, commands)
+          val nd = new Array[Int](capacity); System.arraycopy(cmdDist, 0, nd, 0, commands)
+          cmdInsert = ni; cmdLitPos = nl; cmdCopy = nc; cmdDist = nd
 
       cmdInsert(commands) = insert
       cmdLitPos(commands) = litPos
@@ -487,9 +496,9 @@ private[pneumatic] object BrotliEncoder:
     if literalStart < length then push(length - literalStart, literalStart, 0, 0)
 
     // Histograms.
-    val litHist = new Array[Int](256)
-    val cmdHist = new Array[Int](704)
-    val distHist = new Array[Int](64)
+    val litHist: Array[Int]^ = new Array[Int](256)
+    val cmdHist: Array[Int]^ = new Array[Int](704)
+    val distHist: Array[Int]^ = new Array[Int](64)
     var c = 0
 
     while c < commands do
@@ -511,9 +520,9 @@ private[pneumatic] object BrotliEncoder:
     if isAllZero(litHist) then litHist(0) = 1
     if isAllZero(distHist) then distHist(0) = 1
 
-    val litDepth = new Array[Byte](256); val litCodes = new Array[Int](256)
-    val cmdDepth = new Array[Byte](704); val cmdCodes = new Array[Int](704)
-    val distDepth = new Array[Byte](64); val distCodes = new Array[Int](64)
+    val litDepth: Array[Byte]^ = new Array[Byte](256); val litCodes = new Array[Int](256)
+    val cmdDepth: Array[Byte]^ = new Array[Byte](704); val cmdCodes = new Array[Int](704)
+    val distDepth: Array[Byte]^ = new Array[Byte](64); val distCodes = new Array[Int](64)
     createHuffmanTree(litHist, 256, 15, litDepth)
     convertBitDepthsToSymbols(litDepth, 256, litCodes)
     createHuffmanTree(cmdHist, 704, 15, cmdDepth)
@@ -584,7 +593,8 @@ private[pneumatic] object BrotliEncoder:
     true
 
   // Insert group and copy group determine the range index; see the decoder's command decoding.
-  private val rangeIndex: Array[Int] =
+  @scala.caps.unsafe.untrackedCaptures
+  private var rangeIndex: Array[Int] =
     // indexed by insGroup*3 + copGroup, giving the base range index (0..8)
     Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
 

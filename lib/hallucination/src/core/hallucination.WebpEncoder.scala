@@ -119,8 +119,8 @@ private[hallucination] object WebpEncoder:
     var i = 0
 
     while i < pixels.length do
-      pixels(i) = (pixels(i) - pixels(i + 1)).toByte
-      pixels(i + 2) = (pixels(i + 2) - pixels(i + 1)).toByte
+      writable(pixels)(i) = (pixels(i) - pixels(i + 1)).toByte
+      writable(pixels)(i + 2) = (pixels(i + 2) - pixels(i + 1)).toByte
       i += 4
 
     // Forward predictor: subtract the pixel above (rows ≥ 1), the pixel to the left (row 0), and
@@ -132,7 +132,7 @@ private[hallucination] object WebpEncoder:
       var j = 0
 
       while j < stride do
-        pixels(y*stride + j) = (pixels(y*stride + j) - pixels((y - 1)*stride + j)).toByte
+        writable(pixels)(y*stride + j) = (pixels(y*stride + j) - pixels((y - 1)*stride + j)).toByte
         j += 1
 
       y -= 1
@@ -140,10 +140,10 @@ private[hallucination] object WebpEncoder:
     var k = stride - 1
 
     while k >= 4 do
-      pixels(k) = (pixels(k) - pixels(k - 4)).toByte
+      writable(pixels)(k) = (pixels(k) - pixels(k - 4)).toByte
       k -= 1
 
-    pixels(3) = (pixels(3) - 255.toByte).toByte
+    writable(pixels)(3) = (pixels(3) - 255.toByte).toByte
 
     // Count symbol frequencies (with run-length compression of repeated pixels), then build and
     // write the codes.
@@ -222,8 +222,8 @@ private[hallucination] object WebpEncoder:
     run
 
   private def countRun(run: Int, freq1: Array[Int]): Unit =
-    if run <= 4 then freq1(256 + run - 1) += 1
-    else freq1(256 + lengthToSymbol(run)(0)) += 1
+    if run <= 4 then writable(freq1)(256 + run - 1) += 1
+    else writable(freq1)(256 + lengthToSymbol(run)(0)) += 1
 
   private def writeRun(writer: WebpBitWriter, run: Int, codes1: Array[Int], lengths1: Array[Int])
   :   Unit =

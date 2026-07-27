@@ -80,14 +80,16 @@ object internal:
   extension (isin: Isin)
     private[internal] def payload: Text =
 
-      val chars: Array[Char] = new Array(9)
+      val chars: Array[Char]^ = new Array(9)
 
       var numeric = 0L
+      var index = 2
 
-      for index <- 2 until 11 do
+      while index < 11 do
         val char = (isin >>> (60 - index*6)) & 0b111111
         numeric = numeric*10 + char
         chars(index - 2) = (char + '0').toChar
+        index += 1
 
       String(chars).tt
 

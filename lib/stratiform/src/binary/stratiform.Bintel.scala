@@ -496,7 +496,7 @@ object Bintel:
 
     case other => other
 
-  private final class Cursor(val data: Data, var offset: Int)
+  private final class Cursor(val data: Data, @scala.caps.unsafe.untrackedCaptures var offset: Int)
 
   private def encodeRoot(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels): Unit =
     element match

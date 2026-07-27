@@ -63,6 +63,7 @@ object Scalac:
   case class Option[-version <: Versions](flags: Text*)
 
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var Scala3: dtd.Compiler = new dtd.Compiler()
 
   def refresh(): Unit = mutex { Scala3 = new dtd.Compiler() }
@@ -96,7 +97,8 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
     ( using System, Monitor, Probate, Universe.Emission[universe] )
-  :   CompileProcess logs CompileEvent raises CompilerError =
+    ( using Tactic[CompilerError], (CompileEvent is Loggable)^ )
+  :   CompileProcess =
 
     val scalacProcess: CompileProcess = CompileProcess()
 
@@ -108,6 +110,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
     val callbackApi = new dtdi.CompilerCallback {}
 
     object ProgressApi extends dtdsi.ProgressCallback:
+      @scala.caps.unsafe.untrackedCaptures
       private var last: Int = -1
 
 
@@ -148,7 +151,12 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
             List(t"")
 
         Log.info(CompileEvent.Running(arguments))
-        setup(arguments.stdlib.map(_.s).toArray, context).map(_(1)).get
+        // The argument array crosses into the compiler through a Java-side copy: `toArray`'s
+        // result carries a read capability the pure formal rejects.
+        val args = java.util.ArrayList[String]()
+        arguments.each { argument => args.add(argument.s); () }
+        setup(args.toArray(new Array[String | Null](0)).nn.asInstanceOf[Array[String]], context)
+        . map(_(1)).get
 
       def run(): CompileProcess =
         given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
@@ -162,7 +170,10 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
             dtdu.SourceFile.virtual(name.s, content.s)
 
         scalacProcess.put:
-          task(n"scalac"):
+          // The run compiles under this process's own compiler and reporter; no aliased
+          // writer.
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           task(n"scalac"):
             try
               Scalac.compiler().newRun.tap: run =>
                 run.compileSources(sourceFiles)

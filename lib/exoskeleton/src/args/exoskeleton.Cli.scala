@@ -49,7 +49,9 @@ import symbolism.*
 import vacuous.*
 
 object Cli:
+  @scala.caps.unsafe.untrackedCaptures
   private var messages: List[Text] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   private var trigger: Promise[Unit] = Promise()
 
   def prepare(): Unit =

@@ -449,10 +449,16 @@ object SourceCode:
 
         // The trailing empty argument stops the driver from treating an argument
         // list with no source files as a request to print usage and bail out.
-        val arguments =
-          (t"-classpath" :: cp :: scalac.commandLineArguments ::: List(t"")).map(_.s).toArray
+        // The argument array crosses in through a Java-side copy: `toArray`'s result
+        // carries a read capability the pure formal rejects.
+        val args = java.util.ArrayList[String]()
 
-        setup(arguments, base).map(_(1)).get
+        (t"-classpath" :: cp :: scalac.commandLineArguments ::: List(t"")).each: argument =>
+          args.add(argument.s)
+          ()
+
+        setup(args.toArray(new Array[String | Null](0)).nn.asInstanceOf[Array[String]], base)
+        . map(_(1)).get
 
     val base: Contexts.FreshContext = driver.context.fresh
     base.setReporter(reporter)

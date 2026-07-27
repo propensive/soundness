@@ -119,7 +119,11 @@ class Reifier(classpath: LocalClasspath):
       def context: Contexts.Context =
         // The trailing empty argument stops the driver from treating an
         // argument list with no source files as a request to print usage.
-        setup(Array("-classpath", entries.s, ""), initCtx.fresh).map(_(1)).get
+        // As in `Scalac`: the argument array crosses in through a Java-side copy.
+        val args = java.util.ArrayList[String]()
+        args.add("-classpath"); args.add(entries.s); args.add("")
+        setup(args.toArray(new Array[String | Null](0)).nn.asInstanceOf[Array[String]], initCtx.fresh)
+        . map(_(1)).get
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
     val run = dtd.Compiler().newRun(using base)
@@ -137,10 +141,13 @@ class Reifier(classpath: LocalClasspath):
     typed.tasty.let: tasty =>
       try
         given Contexts.Context = runContext
-        val bytes = ju.Base64.getDecoder.nn.decode(tasty.s).nn
-
+        // The decode is inlined at the argument: the Java decoder's fluid result adapts to
+        // the unpickler's pure formal, where a named array value would charge its read
+        // capability.
         val unpickler =
-          DottyUnpickler(NoAbstractFile, bytes, isBestEffortTasty = false, UnpickleMode.TypeTree)
+          DottyUnpickler
+            ( NoAbstractFile, ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[Array[Byte]],
+              isBestEffortTasty = false, UnpickleMode.TypeTree )
 
         unpickler.enter(scala.collection.immutable.Set.empty)
         val tree = unpickler.tree

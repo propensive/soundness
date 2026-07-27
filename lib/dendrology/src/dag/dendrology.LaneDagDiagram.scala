@@ -53,14 +53,24 @@ object LaneDagDiagram:
   private case class Lane[node](source: node, target: node, col: Int)
 
   private final class Cell:
+    @scala.caps.unsafe.untrackedCaptures
     var top: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var down: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var left: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var right: Boolean = false
 
     // Distinguish pure crossings (where a horizontal lane passes over a continuing
     // vertical lane without sharing a node) from real junctions where lanes meet.
+    @scala.caps.unsafe.untrackedCaptures
     var verticalPassThrough: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var horizontalPassThrough: Boolean = false
 
     def tile: DagTile =
@@ -88,12 +98,16 @@ object LaneDagDiagram:
       val rowOf: Map[node, Int] = nodes.zipWithIndex.to(Map)
       val forward: Map[node, Set[node]] = dag.invert.edgeMap
 
-      val nodeCol: Array[Int] = new Array[Int](total)
-      val laneState: Array[Map[Int, Lane[node]]] = Array.fill(total + 1)(Map.empty[Int, Lane[node]])
-      val started: Array[Vector[Lane[node]]] = Array.fill(total)(Vector.empty[Lane[node]])
-      val directOut: Array[Boolean] = new Array[Boolean](total)
+      val nodeCol: Array[Int]^ = new Array[Int](total)
 
-      for r <- 0 until total do
+      val laneState: Array[Map[Int, Lane[node]]]^ =
+        Array.fill(total + 1)(Map.empty[Int, Lane[node]])
+
+      val started: Array[Vector[Lane[node]]]^ = Array.fill(total)(Vector.empty[Lane[node]])
+      val directOut: Array[Boolean]^ = new Array[Boolean](total)
+      var r = 0
+
+      while r < total do
         val current = nodes(r)
         val state = laneState(r)
         val terminating = state.filter: (_, lane) => lane.target == current
@@ -127,6 +141,7 @@ object LaneDagDiagram:
 
         started(r) = newLanes
         laneState(r + 1) = continuing ++ newLanes.map: lane => lane.col -> lane
+        r += 1
 
       val width: Int =
         val colsUsed = laneState.flatMap(_.keys) ++ nodeCol

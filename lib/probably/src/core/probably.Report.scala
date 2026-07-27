@@ -124,6 +124,7 @@ object Report:
 // The insertion-ordered, mutex-guarded map of report lines within one suite node.
 class TestsMap():
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var tests: ListMap[TestId, ReportLine] = ListMap()
 
   def list: List[(TestId, ReportLine)] = mutex(tests.to(List))
@@ -146,7 +147,9 @@ enum ReportLine:
 // `final` so the capture checker infers a precise self-type rather than the universal capture an
 // extensible class would get.
 final class Report(using environment: Environment)(using palette: TestPalette):
+  @scala.caps.unsafe.untrackedCaptures
   private var failure0: Optional[(Throwable, Set[TestId])] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   private var pass: Boolean = false
 
   private[probably] val lines: ReportLine.Suite = ReportLine.Suite(Unset)

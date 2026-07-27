@@ -64,7 +64,9 @@ private[enigmatic] object HeapCloak extends Cloak:
     val copy = bytes.clone
     ju.Arrays.fill(bytes, 0.toByte)
 
-    new Secret:
-      def uncloak[result](block: Array[Byte] => result): result =
-        val cleartext = copy.clone
-        try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
+    // The secret's only capture is its own private copy of the bytes, laundered here.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Secret:
+        def uncloak[result](block: Array[Byte] => result): result =
+          val cleartext = copy.clone
+          try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)

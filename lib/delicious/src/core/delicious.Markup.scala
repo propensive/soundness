@@ -154,10 +154,13 @@ object Markup:
 
     // splice the children of any unterminated markers into their parents
     while stack.tail.nonEmpty do
-      val top :: (parent :: _) = stack: @unchecked
-      top.flush()
-      parent.children ++= top.children
-      stack = stack.tail
+      stack match
+        case top :: (parent :: _) =>
+          top.flush()
+          parent.children ++= top.children
+          stack = stack.tail
+
+        case _ => ()
 
     root.flush()
     root.children.to(List)

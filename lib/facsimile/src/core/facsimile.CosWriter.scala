@@ -48,22 +48,22 @@ import vacuous.*
 // since it owns the payload bytes and the recomputed `/Length`.
 private[facsimile] object CosWriter:
   def write(cos: Cos): Data =
-    val builder = Array.newBuilder[Byte]
+    val builder = DataBuilder()
     append(builder, cos)
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
   def dictionaryBytes(entries: Map[Text, Cos]): Data =
-    val builder = Array.newBuilder[Byte]
+    val builder = DataBuilder()
     dictionary(builder, entries)
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
-  private def bytes(builder: scala.collection.mutable.ArrayBuilder[Byte], text: String): Unit =
+  private def bytes(builder: DataBuilder, text: String): Unit =
     var i = 0
     while i < text.length do
       builder += text.charAt(i).toByte
       i += 1
 
-  private def append(builder: scala.collection.mutable.ArrayBuilder[Byte], cos: Cos): Unit =
+  private def append(builder: DataBuilder, cos: Cos): Unit =
     cos match
       case Cos.Nil          => bytes(builder, "null")
       case Cos.Truth(value) => bytes(builder, if value then "true" else "false")
@@ -89,7 +89,7 @@ private[facsimile] object CosWriter:
         dictionary(builder, entries)
 
   private[facsimile] def dictionary
-    ( builder: scala.collection.mutable.ArrayBuilder[Byte], entries: Map[Text, Cos] )
+    ( builder: DataBuilder, entries: Map[Text, Cos] )
   :   Unit =
 
     bytes(builder, "<<")
@@ -109,7 +109,7 @@ private[facsimile] object CosWriter:
     if value == value.toLong.toDouble then value.toLong.toString
     else safely(Decimal(value).text.s).or("0")
 
-  private def name(builder: scala.collection.mutable.ArrayBuilder[Byte], text: Text): Unit =
+  private def name(builder: DataBuilder, text: Text): Unit =
     builder += '/'.toByte
     val raw = charEncoders.utf8Encoder.encoded(text)
     var i = 0
@@ -127,7 +127,7 @@ private[facsimile] object CosWriter:
 
   // A literal string with the mandatory escapes, and non-printable bytes as octal, so any
   // byte sequence round-trips.
-  private def literal(builder: scala.collection.mutable.ArrayBuilder[Byte], data: Data): Unit =
+  private def literal(builder: DataBuilder, data: Data): Unit =
     builder += '('.toByte
     var i = 0
 

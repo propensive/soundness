@@ -45,14 +45,15 @@ import vacuous.*
 // so this sits on the critical path of opening a file.
 private[facsimile] object Predictor:
   def apply(data: Data, predictor: Int, colors: Int, bits: Int, columns: Int)
-  :   Data raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Data =
 
     if predictor <= 1 then data
     else if predictor == 2 then tiff(data, colors, bits, columns)
     else if predictor >= 10 && predictor <= 15 then png(data, colors, bits, columns)
     else abort(PdfError(PdfError.Reason.CorruptStream(t"Predictor")))
 
-  private def tiff(data: Data, colors: Int, bits: Int, columns: Int): Data raises PdfError =
+  private def tiff(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[PdfError]): Data =
     if bits != 8 then abort(PdfError(PdfError.Reason.CorruptStream(t"Predictor"))) else
       val rowLength = colors*columns
       val out = data.mutable(using Unsafe).clone.nn
@@ -63,29 +64,29 @@ private[facsimile] object Predictor:
         val end = ((row + 1)*rowLength).min(out.length)
 
         while i < end do
-          out(i) = (out(i) + out(i - colors)).toByte
+          writable(out)(i) = (out(i) + out(i - colors)).toByte
           i += 1
 
         row += 1
 
       out.immutable(using Unsafe)
 
-  private def png(data: Data, colors: Int, bits: Int, columns: Int): Data raises PdfError =
+  private def png(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[PdfError]): Data =
     val bytesPerPixel = ((colors*bits + 7)/8).max(1)
     val rowLength = (columns*colors*bits + 7)/8
-    val out = Array.newBuilder[Byte]
-    var previous = new Array[Byte](rowLength)
+    val out = DataBuilder()
+    var previous: Array[Byte] = pureByteArray(rowLength)
     var in = 0
 
     while in < data.length do
       val filter = data(in) & 0xff
       in += 1
       val available = rowLength.min(data.length - in)
-      val row = new Array[Byte](rowLength)
+      val row: Array[Byte] = pureByteArray(rowLength)
       var i = 0
 
       while i < available do
-        row(i) = data(in + i)
+        writable(row)(i) = data(in + i)
         i += 1
 
       in += available
@@ -102,21 +103,21 @@ private[facsimile] object Predictor:
           i = 0
 
           while i < rowLength do
-            row(i) = (row(i) + left(i)).toByte
+            writable(row)(i) = (row(i) + left(i)).toByte
             i += 1
 
         case 2 =>
           i = 0
 
           while i < rowLength do
-            row(i) = (row(i) + up(i)).toByte
+            writable(row)(i) = (row(i) + up(i)).toByte
             i += 1
 
         case 3 =>
           i = 0
 
           while i < rowLength do
-            row(i) = (row(i) + (left(i) + up(i))/2).toByte
+            writable(row)(i) = (row(i) + (left(i) + up(i))/2).toByte
             i += 1
 
         case 4 =>
@@ -133,7 +134,7 @@ private[facsimile] object Predictor:
               val pc = (p - c).abs
               if pa <= pb && pa <= pc then a else if pb <= pc then b else c
 
-            row(i) = (row(i) + prediction).toByte
+            writable(row)(i) = (row(i) + prediction).toByte
             i += 1
 
         case _ =>
@@ -148,4 +149,4 @@ private[facsimile] object Predictor:
 
       previous = row
 
-    out.result().immutable(using Unsafe)
+    out.result()

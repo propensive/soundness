@@ -139,17 +139,20 @@ object Tests extends Suite(m"Profanity Tests"):
         ( using Enclave.Tool, Monitor, WorkingDirectory, TemporaryDirectory )
       :   Text =
 
-        Bash.tmux():
-          val tool = summon[Enclave.Tool].command
-          Tmux.enter(tool, ' ', arg)
-          Tmux.enter('\r')
-          if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-          input
-          // Wait only for the marker this fixture actually prints. The `echo`
-          // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
-          // probe always burnt the full timeout before falling back to `GOT:`.
-          waitFor(marker)
-          Tmux.screenshot().screen.stdlib.toSeq.join(t"\n")
+        // Overlap false positive: the action closure mentions the enclosing
+        // tool capability alongside the fresh tmux session.
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          Bash.tmux():
+            val tool = summon[Enclave.Tool].command
+            Tmux.enter(tool, ' ', arg)
+            Tmux.enter('\r')
+            if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+            input
+            // Wait only for the marker this fixture actually prints. The `echo`
+            // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
+            // probe always burnt the full timeout before falling back to `GOT:`.
+            waitFor(marker)
+            Tmux.screenshot().screen.stdlib.toSeq.join(t"\n")
 
       launcher.sandbox:
         // Warmup run to spawn the daemon and avoid timing flake on the first real test
@@ -193,33 +196,39 @@ object Tests extends Suite(m"Profanity Tests"):
           // across the wrap boundary must clear the wrapped row and reposition the cursor.
 
           test(m"submits correct text after wrap and backspace"):
-            Bash.tmux(width = 20, height = 10):
-              val tool = summon[Enclave.Tool].command
-              Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
-              Tmux.enter('\r')
-              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-              Tmux.enter(t"X"*25)
-              Tmux.enter('', '', '', '', '')
-              Tmux.enter('\r')
-              waitFor(t"RESULT:")
-              Tmux.screenshot().screen.toList.join
+            // Overlap false positive: the action closure mentions the enclosing
+            // tool capability alongside the fresh tmux session.
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Bash.tmux(width = 20, height = 10):
+                val tool = summon[Enclave.Tool].command
+                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
+                Tmux.enter('\r')
+                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+                Tmux.enter(t"X"*25)
+                Tmux.enter('', '', '', '', '')
+                Tmux.enter('\r')
+                waitFor(t"RESULT:")
+                Tmux.screenshot().screen.toList.join
           . assert(_.contains(t"RESULT:${t"X"*20}"))
 
           test(m"backspace clears characters wrapped onto the next visual line"):
-            Bash.tmux(width = 20, height = 10):
-              val tool = summon[Enclave.Tool].command
-              Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
-              Tmux.enter('\r')
-              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-              Tmux.attend(Tmux.enter(t"X"*25))
-              delay(0.1*Second)
-              Tmux.attend:
-                Tmux.enter('', '', '', '', '')
-              delay(0.2*Second)
-              val mid = Tmux.screenshot()
-              Tmux.enter('\r')
-              waitFor(t"RESULT:")
-              mid.screen.toList.map(_.count(_ == 'X')).sum
+            // Overlap false positive: the action closure mentions the enclosing
+            // tool capability alongside the fresh tmux session.
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Bash.tmux(width = 20, height = 10):
+                val tool = summon[Enclave.Tool].command
+                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
+                Tmux.enter('\r')
+                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+                scala.caps.unsafe.unsafeAssumeSeparate(Tmux.attend(Tmux.enter(t"X"*25)))
+                delay(0.1*Second)
+                Tmux.attend:
+                  Tmux.enter('', '', '', '', '')
+                delay(0.2*Second)
+                val mid = Tmux.screenshot()
+                Tmux.enter('\r')
+                waitFor(t"RESULT:")
+                mid.screen.toList.map(_.count(_ == 'X')).sum
           . assert(_ == 20)
 
           // SelectMenu wrap-aware redraw: an option longer than the terminal width must
@@ -228,19 +237,22 @@ object Tests extends Suite(m"Profanity Tests"):
           // which is flaky under daemon-mode ESC timing) and confirm the wrapped option's
           // tail appears exactly once on screen.
           test(m"select-menu draws a wrapping option without ghost rows"):
-            Bash.tmux(width = 20, height = 12):
-              val tool = summon[Enclave.Tool].command
-              Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
-              Tmux.enter('\r')
-              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-              delay(0.3*Second)
-              val mid = Tmux.screenshot()
-              Tmux.enter('\r')
-              waitFor(t"RESULT:")
-              // The third option ("third") must appear exactly once. If the renderer
-              // miscounts visual rows for the wrapped second option, the menu drifts
-              // on subsequent re-renders and stale copies of "third" pile up.
-              mid.screen.stdlib.toList.count(_.contains(t"third"))
+            // Overlap false positive: the action closure mentions the enclosing
+            // tool capability alongside the fresh tmux session.
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Bash.tmux(width = 20, height = 12):
+                val tool = summon[Enclave.Tool].command
+                Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
+                Tmux.enter('\r')
+                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+                delay(0.3*Second)
+                val mid = Tmux.screenshot()
+                Tmux.enter('\r')
+                waitFor(t"RESULT:")
+                // The third option ("third") must appear exactly once. If the renderer
+                // miscounts visual rows for the wrapped second option, the menu drifts
+                // on subsequent re-renders and stale copies of "third" pile up.
+                mid.screen.stdlib.toList.count(_.contains(t"third"))
           . assert(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the

@@ -34,6 +34,10 @@ package pneumatic
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+import rudiments.*
+import vacuous.*
+
 // The `.xz` stream container: a 12-byte header (6-byte magic, 2-byte flags naming the check type, a
 // CRC-32 of the flags), then one or more blocks, then an index and a footer. Each block has a
 // self-describing header (its filter chain — here always the single LZMA2 filter, whose one
@@ -43,7 +47,9 @@ import scala.collection.mutable as scm
 // Decoding buffers the whole compressed stream, then walks the blocks. Only the single-LZMA2-filter
 // chain is understood; delta/BCJ filters and multi-filter chains are rejected.
 private[pneumatic] object XzContainer:
-  val magic: Array[Byte] = Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
+  val magic: IArray[Byte] =
+    IArray.unsafeFromArray:
+      Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
   inline val Lzma2FilterId = 0x21
   inline val IndexIndicator = 0x00
 
@@ -136,7 +142,7 @@ private[pneumatic] object XzContainer:
       // Verify the block's integrity check over its uncompressed output.
       if checkSize > 0 then
         val checker = XzCheck.checker(checkType)
-        val decoded = new Array[Byte](sink.length - blockOutputStart)
+        val decoded: Array[Byte]^ = new Array[Byte](sink.length - blockOutputStart)
         var d = 0
         while d < decoded.length do { decoded(d) = sink(blockOutputStart + d); d += 1 }
         checker.update(decoded, 0, decoded.length)
@@ -161,7 +167,7 @@ private[pneumatic] object XzContainer:
     val crc = Crc32()
     crc.update(bytes, offset, length)
     val value = crc.value
-    val out = new Array[Byte](4)
+    val out: Array[Byte]^ = new Array[Byte](4)
     var i = 0
     while i < 4 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }
     out
@@ -178,7 +184,7 @@ private[pneumatic] object XzContainer:
   private def blockHeader(dictSizeByte: Int): Array[Byte] =
     // A 12-byte header: size byte, flags (one filter, no explicit sizes), the LZMA2 filter with its
     // one dictionary-size property byte, zero padding, then a CRC-32 over the first eight bytes.
-    val header = new Array[Byte](12)
+    val header: Array[Byte]^ = new Array[Byte](12)
     header(0) = 0x02 // (12 / 4) - 1
     header(1) = 0x00 // one filter, no compressed/uncompressed size fields
     header(2) = XzContainer.Lzma2FilterId.toByte
@@ -191,7 +197,7 @@ private[pneumatic] object XzContainer:
   // The 12-byte stream header (magic, flags naming the check type, a CRC-32 of the flags).
   def streamHeader(checkType: Int): Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()
-    appendBytes(out, magic)
+    appendBytes(out, magic.mutable(using Unsafe))
     val flags = Array[Byte](0x00, checkType.toByte)
     appendBytes(out, flags)
     appendBytes(out, crc32Bytes(flags, 0, 2))
@@ -236,7 +242,7 @@ private[pneumatic] object XzContainer:
     appendBytes(out, crc32Bytes(indexBody, 0, indexBody.length))
 
     val indexSize = indexBody.length + 4
-    val footer = new Array[Byte](12)
+    val footer: Array[Byte]^ = new Array[Byte](12)
     val backward = indexSize/4 - 1
     footer(4) = (backward & 0xff).toByte
     footer(5) = ((backward >>> 8) & 0xff).toByte

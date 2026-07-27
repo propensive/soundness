@@ -125,8 +125,8 @@ extends Openable:
         // or error. SIGKILL, because scope end is unconditional; a started task is then
         // reaped before deletion, since containerd refuses to delete an unreaped task.
         if started then
-          safely(containerd.killTask(created.id, 9, all = true))
-          safely(containerd.waitTask(created.id))
+          scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.killTask(created.id, 9, all = true)))
+          scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.waitTask(created.id)))
 
-        safely(containerd.deleteTask(created.id))
-    finally safely(containerd.deleteContainer(created.id))
+        scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.deleteTask(created.id)))
+    finally scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.deleteContainer(created.id)))

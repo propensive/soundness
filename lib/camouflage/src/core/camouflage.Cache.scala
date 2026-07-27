@@ -51,7 +51,10 @@ object Cache:
 
 class Cache[value](lifetime: Optional[Long]):
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var expiry: Long = Long.MaxValue
+
+  @scala.caps.unsafe.untrackedCaptures
   private var value: Promise[value] = Promise()
 
   def establish(block: => value): value = mutex:

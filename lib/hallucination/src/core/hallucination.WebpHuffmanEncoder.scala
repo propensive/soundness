@@ -39,6 +39,7 @@ import scala.collection.mutable as scm
 // are filled in for each symbol; the tree is written in the format the decoder expects.
 private[hallucination] object WebpHuffmanEncoder:
   // The order in which the 19 code-length codes are written.
+  @scala.caps.unsafe.untrackedCaptures
   private val CodeLengthCodeOrder: Array[Int] =
     Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
@@ -139,7 +140,7 @@ private[hallucination] object WebpHuffmanEncoder:
       while stack.nonEmpty do
         val (node, depth) = stack.pop()
 
-        if node < frequencies.length then lengths(node) = depth
+        if node < frequencies.length then writable(lengths)(node) = depth
         else
           val (left, right) = internal(node - frequencies.length)
           stack.push((left, depth + 1))
@@ -192,7 +193,7 @@ private[hallucination] object WebpHuffmanEncoder:
 
         if frequencies(index) > 0 then
           while counts(current) == 0 do current -= 1
-          lengths(index) = current
+          writable(lengths)(index) = current
           counts(current) -= 1
 
         k += 1
@@ -207,7 +208,7 @@ private[hallucination] object WebpHuffmanEncoder:
 
       while i < lengths.length do
         if lengths(i) == len then
-          codes(i) = (Integer.reverse(code) >>> 16) >>> (16 - len)
+          writable(codes)(i) = (Integer.reverse(code) >>> 16) >>> (16 - len)
           code += 1
 
         i += 1

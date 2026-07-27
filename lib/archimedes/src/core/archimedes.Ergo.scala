@@ -236,7 +236,7 @@ object Ergo:
       val kept = accentless(accentless(attributes, under, t"accentunder"), over, t"accent")
       finish(t"${operand(base)}↓${operand(under)}↑${operand(over)}", kept, asOperand, false)
 
-    case other => abort(ErgoError(ErgoError.Reason.Unsupported(other.label)))
+    case other => scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unsupported(other.label))))
 
   // A `↑`/`↓` script that is a single `<mo>` re-acquires its accent on parsing, so
   // the corresponding accent attribute is implied and not emitted.
@@ -280,8 +280,11 @@ object Ergo:
     matched.optional
 
   private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[ErgoError]):
+    @scala.caps.unsafe.untrackedCaptures
     private var pos = 0
+    @scala.caps.unsafe.untrackedCaptures
     private var open = '('
+    @scala.caps.unsafe.untrackedCaptures
     private var close = ')'
 
     private def peek: Char = if pos < s.length then s.charAt(pos) else ' '
@@ -300,11 +303,11 @@ object Ergo:
     private def digit(c: Char): Boolean = Character.isDigit(c)
 
     def parseTop(): Math =
-      if s.isEmpty then abort(ErgoError(ErgoError.Reason.Empty))
+      if s.isEmpty then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Empty)))
       open = s.charAt(0)
 
       if !pairs.contains(open)
-      then abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt)))
+      then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt))))
 
       close = pairs(open)
 
@@ -317,7 +320,7 @@ object Ergo:
       advance()
       val inner = parseSequence()
       skipSpaces()
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance()
       inner
 
@@ -404,7 +407,7 @@ object Ergo:
         if depth > 0 then pos += 1
 
       val raw = s.substring(start, pos).nn.tt
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance() // close
       raw
 
@@ -468,7 +471,7 @@ object Ergo:
 
         rooted(Mn(s.substring(start, pos).nn.tt))
       else if c == ' ' then
-        abort(ErgoError(ErgoError.Reason.UnexpectedEnd))
+        scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.UnexpectedEnd)))
       else
         // a content glyph, or an operator glyph degraded for want of an operand
         advance()
@@ -483,13 +486,13 @@ object Ergo:
     // introducer, returning the parsed child groups. A body with no nested
     // groups is treated as a single element (so `⋯(a)` is a one-cell vector).
     private def parseBody(introducer: Char): List[Mathml] =
-      if peek != open then abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt)))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt))))
       advance() // body open
       val items = ListBuffer[Mathml]()
       while peek == open do items += parseGroup()
       if items.isEmpty && peek != close then items += parseSequence()
       skipSpaces()
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance() // body close
       items.to(List)
 
@@ -500,7 +503,7 @@ object Ergo:
 
     private def parseMatrix(): Mathml =
       val introducer = advance()
-      if peek != open then abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt)))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt))))
       advance() // body open
       val rows = ListBuffer[Mathml]()
 
@@ -512,11 +515,11 @@ object Ergo:
         // A row group with no nested cell-groups is a single-cell row.
         if cells.isEmpty && peek != close then cells += parseSequence()
         skipSpaces()
-        if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+        if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
         advance() // row-group close
         rows += Mtr(cells.toList.map { cell => Mtd(cell) }*)
 
       skipSpaces()
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance() // body close
       Mtable(rows.to(List)*)

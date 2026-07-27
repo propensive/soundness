@@ -77,6 +77,7 @@ object Interaction:
   =>  (Interaction[Text, LineEditor]^{surface}) = new Interaction[Text, LineEditor]:
     // The last row the editor's content reached, so `after` can drop the cursor
     // onto a fresh line below it.
+    @scala.caps.unsafe.untrackedCaptures
     private var endRow: Int = 0
 
     override def after(): Unit =

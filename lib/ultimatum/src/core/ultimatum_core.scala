@@ -167,11 +167,14 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 
   mode match
     case Mode.Fullscreen =>
-      profanity.terminalFeatures.alternateScreenFeature:
+      // The feature body and its terminal argument are the same single-owner session.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       profanity.terminalFeatures.alternateScreenFeature:
         // A buffered root: panels composite into its in-memory grid and each present
         // diffs against what is already on screen, so unchanged cells are never
         // re-emitted (no flicker). `cursor(false)` is recorded now and applied by the
         // first present; `finish` re-shows the cursor on the way out.
+        // The root only reads the same single-owner terminal; no aliased writer.
         val root = ScreenRoot(terminal)
         root.cursor(false)
 

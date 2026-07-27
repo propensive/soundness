@@ -565,7 +565,7 @@ object Tests extends Suite(m"Facsimile tests"):
               PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"Written".in[Data]),
               PdfOperator.EndText )
 
-          doc.setContents(doc.pages(0), operators)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.pages(0), operators))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).text
@@ -575,7 +575,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(onePage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.setRotation(doc.pages(0), Page.Rotation.Quarter)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setRotation(doc.pages(0), Page.Rotation.Quarter))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).rotation
@@ -588,7 +588,7 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](200.0), Quantity[Points[1]](400.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.setBox(doc.pages(0), t"CropBox", target)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setBox(doc.pages(0), t"CropBox", target))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).cropBox.width
@@ -640,7 +640,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(twoPages)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.removePage(doc.pages(0))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.removePage(doc.pages(0)))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages.length
@@ -712,7 +712,7 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](50.0), Quantity[Points[1]](20.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
-          doc.addLink(doc.pages(0), rect, uri = t"https://soundness.dev/")
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.pages(0), rect, uri = t"https://soundness.dev/"))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).annotations.head match
@@ -736,7 +736,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
-          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).fonts(t"F1").embedded.let(_.data.to[List])
@@ -747,14 +747,14 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
-          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
 
           val operators = List
             ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
               PdfOperator.Offset(72, 720), PdfOperator.ShowText(winAnsi(t"Embedded text")),
               PdfOperator.EndText )
 
-          doc.setContents(doc.pages(0), operators)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.pages(0), operators))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).text
@@ -765,7 +765,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
-          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).fonts(t"F1") match
@@ -778,7 +778,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont))
-          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).fonts(t"F1").baseFont
@@ -818,7 +818,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont), subset = t"AB")
-          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).fonts(t"F1").baseFont
@@ -829,7 +829,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont), subset = t"A")
-          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).fonts(t"F1").embedded.let: ttf =>
@@ -841,7 +841,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont), subset = t"C")
-          doc.addResource(doc.pages(0), t"Font", t"F1", font)
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
           pdf.pages(0).fonts(t"F1").embedded.let: ttf =>
@@ -914,7 +914,10 @@ object Tests extends Suite(m"Facsimile tests"):
         path.create[Pdf](): doc ?=>
           doc.appendPage(a4)
 
-        capture[PdfError](path.create[Pdf]() { doc ?=> doc.appendPage(a4) }).reason
+        capture[PdfError]:
+          // Overlap false positive: `doc` is chained through `create`'s own result.
+          scala.caps.unsafe.unsafeAssumeSeparate(path.create[Pdf]() { doc ?=> doc.appendPage(a4) })
+        . reason
       . assert(_ == PdfError.Reason.Io(t"the file already exists"))
 
     suite(m"Damaged-file recovery"):
@@ -1215,7 +1218,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
     suite(m"Streaming payloads"):
       def drain(stream: (Stream[Data] over Credit)^): Data =
-        val builder = Array.newBuilder[Byte]
+        val builder = DataBuilder()
 
         def recur(): Unit = stream.refill(Credit(4096)) match
           case count: Int =>
@@ -1233,19 +1236,21 @@ object Tests extends Suite(m"Facsimile tests"):
             ()
 
         recur()
-        builder.result().immutable(using Unsafe)
+        builder.result()
 
       def streamed(body: Data): Text =
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body =>
-              String(drain(pdf.spring(body)()).mutable(using Unsafe), "UTF-8").tt
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                String(drain(pdf.spring(body)()).mutable(using Unsafe), "UTF-8").tt
 
             case _ =>
               t""
 
       test(m"a raw payload streams in chunks"):
-        streamed(t"<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          streamed(t"<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
       . assert(_ == t"Hello world")
 
       test(m"a Flate payload streams through the zlib duct"):
@@ -1254,12 +1259,13 @@ object Tests extends Suite(m"Facsimile tests"):
         val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
           ++ payload ++ t"\nendstream".in[Data]
 
-        streamed(body)
+        scala.caps.unsafe.unsafeAssumeSeparate(streamed(body))
       . assert(_ == t"streamed and inflated")
 
       test(m"a gathered filter delivers through flush"):
-        streamed(t"<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
-          . in[Data])
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          streamed(t"<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
+            . in[Data])
       . assert(_ == t"Hello")
 
       test(m"a spring re-materializes the same content"):
@@ -1271,10 +1277,11 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body =>
-              val spring = pdf.spring(body)
-              val first = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
-              val second = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
-              (first, second)
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                val spring = pdf.spring(body)
+                val first = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
+                val second = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
+                (first, second)
 
             case _ =>
               (t"", t"")
@@ -1303,9 +1310,11 @@ object Tests extends Suite(m"Facsimile tests"):
           i += 1
         out
 
-      def md5(chunks: Array[Byte]*): Array[Byte] =
+      // `Data` (immutable, PURE) chunks rather than arrays: array varargs elements carry
+      // the sequence's reach capability, which leaks out of the method's capture scope.
+      def md5(chunks: Data*): Array[Byte] =
         val digest = js.MessageDigest.getInstance("MD5").nn
-        chunks.each(digest.update(_))
+        chunks.foreach { chunk => digest.update(chunk.mutable(using Unsafe)) }
         digest.digest().nn
 
       // A test-side implementation of the standard security handler's *encryption* — the
@@ -1314,13 +1323,15 @@ object Tests extends Suite(m"Facsimile tests"):
       def rc4(key: Array[Byte], data: Array[Byte]): Array[Byte] =
         Rc4(key.immutable(using Unsafe), data.immutable(using Unsafe)).mutable(using Unsafe)
 
+      // A PURE array type (the Java `copyOf` fluid result adapts): reads of a suite-level
+      // `rd`-charged array would otherwise be rejected inside the test closures.
       val id: Array[Byte] =
         val bytes = new Array[Byte](16)
         var i = 0
         while i < 16 do
           bytes(i) = i.toByte
           i += 1
-        bytes
+        java.util.Arrays.copyOf(bytes, 16).nn
 
       // Builds an RC4-encrypted document (revision 2 = 40-bit, revision 3 = 128-bit) of the
       // catalog plus one string-bearing object and one stream object.
@@ -1328,35 +1339,50 @@ object Tests extends Suite(m"Facsimile tests"):
         val keyBytes = if revision == 2 then 5 else 16
         val permissions = -44
 
+        // Recursive rather than a `var`-and-loop: each `md5`/`rc4` result is charged a
+        // fresh `rd` capability which may not be reassigned into an existing variable, but
+        // flows freely into a fresh parameter.
         val ownerKey =
-          var hash = md5(padding)
-          if revision >= 3 then for _ <- 0 until 50 do hash = md5(hash.take(keyBytes))
-          hash.take(keyBytes)
+          def stir(hash: Array[Byte], count: Int): Array[Byte] =
+            if count >= 50 then hash
+            else stir(md5(hash.take(keyBytes).immutable(using Unsafe)), count + 1)
+          val hash = md5(padding.immutable(using Unsafe))
+          (if revision >= 3 then stir(hash, 0) else hash).take(keyBytes)
 
-        val ownerEntry =
-          var value = rc4(ownerKey, padding)
-          if revision >= 3 then for i <- 1 to 19 do value = rc4(xor(ownerKey, i), value)
-          value
+        // The block reads `ownerKey`, whose Unscoped root is conflated with the fresh
+        // results minted inside: a false positive, since `ownerKey` is never mutated.
+        val ownerEntry = scala.caps.unsafe.unsafeAssumeSeparate:
+          def stir(value: Array[Byte], i: Int): Array[Byte] =
+            if i > 19 then value else stir(rc4(xor(ownerKey, i), value), i + 1)
+          val value = rc4(ownerKey, padding)
+          if revision >= 3 then stir(value, 1) else value
 
         val permBytes = Array((permissions & 0xff).toByte, ((permissions >> 8) & 0xff).toByte,
             ((permissions >> 16) & 0xff).toByte, ((permissions >> 24) & 0xff).toByte)
 
         val fileKey =
-          var hash = md5(padding, ownerEntry, permBytes, id)
-          if revision >= 3 then for _ <- 0 until 50 do hash = md5(hash.take(keyBytes))
-          hash.take(keyBytes)
+          def stir(hash: Array[Byte], count: Int): Array[Byte] =
+            if count >= 50 then hash
+            else stir(md5(hash.take(keyBytes).immutable(using Unsafe)), count + 1)
+          val hash = md5(padding.immutable(using Unsafe), ownerEntry.immutable(using Unsafe),
+              permBytes.immutable(using Unsafe), id.immutable(using Unsafe))
+          (if revision >= 3 then stir(hash, 0) else hash).take(keyBytes)
 
-        val userEntry =
+        // As `ownerEntry`: `fileKey` is read, never mutated.
+        val userEntry = scala.caps.unsafe.unsafeAssumeSeparate:
           if revision == 2 then rc4(fileKey, padding)
           else
-            var value = rc4(fileKey, md5(padding, id))
-            for i <- 1 to 19 do value = rc4(xor(fileKey, i), value)
-            value ++ new Array[Byte](16)
+            def stir(value: Array[Byte], i: Int): Array[Byte] =
+              if i > 19 then value else stir(rc4(xor(fileKey, i), value), i + 1)
+            stir(rc4(fileKey, md5(padding.immutable(using Unsafe), id.immutable(using Unsafe))), 1)
+            ++ new Array[Byte](16)
 
         def objectKey(number: Int, generation: Int): Array[Byte] =
-          md5(fileKey, Array((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
-              ((number >> 16) & 0xff).toByte, (generation & 0xff).toByte,
-              ((generation >> 8) & 0xff).toByte)).take((keyBytes + 5).min(16))
+          md5(fileKey.immutable(using Unsafe), Array((number & 0xff).toByte,
+              ((number >> 8) & 0xff).toByte, ((number >> 16) & 0xff).toByte,
+              (generation & 0xff).toByte,
+              ((generation >> 8) & 0xff).toByte).immutable(using Unsafe))
+          . take((keyBytes + 5).min(16))
 
         def hex(bytes: Array[Byte]): Text = hexOf(bytes)
 
@@ -1400,7 +1426,8 @@ object Tests extends Suite(m"Facsimile tests"):
       // An AES-256 (revision 6) fixture, whose key derivation the reader must mirror exactly.
       def aes256Document(password: Text): Data =
         def hash6(pw: Array[Byte], salt: Array[Byte]): Array[Byte] =
-          var k: Array[Byte] = md5(pw, salt) // placeholder, replaced below
+          var k: Array[Byte] = // placeholder, replaced below
+            md5(pw.immutable(using Unsafe), salt.immutable(using Unsafe))
           val sha256 = js.MessageDigest.getInstance("SHA-256").nn
           sha256.update(pw)
           sha256.update(salt)
@@ -1409,12 +1436,14 @@ object Tests extends Suite(m"Facsimile tests"):
           var done = false
 
           while !done do
-            val block = Array.newBuilder[Byte]
-            for _ <- 0 until 64 do
+            val block = DataBuilder()
+            var repeat = 0
+            while repeat < 64 do
               block.addAll(pw)
               block.addAll(k)
+              repeat += 1
 
-            val input = block.result()
+            val input = block.result().mutable(using Unsafe)
             val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
             cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(k.take(16), "AES"),
                 jcs.IvParameterSpec(k.slice(16, 32)))
@@ -1429,7 +1458,9 @@ object Tests extends Suite(m"Facsimile tests"):
             round += 1
             if round >= 64 && (e(e.length - 1) & 0xff) <= round - 32 then done = true
 
-          k.take(32)
+          // A PURE result (the Java `copyOf` fluid result adapts to the declared type), so
+          // calls do not charge the enclosing test closure a fresh `rd` capability.
+          java.util.Arrays.copyOf(k, 32).nn
 
         val pw = password.s.getBytes("UTF-8").nn
         val random = js.SecureRandom()
@@ -1618,7 +1649,10 @@ object Tests extends Suite(m"Facsimile tests"):
           ( t"<< /Type /Catalog /Pages 2 0 R >>".in[Data],
             t"<< /Type /Pages /Kids [2 0 R] /Count 1 >>".in[Data] )
 
-        capture[PdfError](PdfFile(doc).open()(pdf.pages.length)).reason
+        capture[PdfError]:
+          // Overlap false positive: the opened document is chained through `open`'s result.
+          scala.caps.unsafe.unsafeAssumeSeparate(PdfFile(doc).open()(pdf.pages.length))
+        . reason
       . assert(_ == PdfError.Reason.CircularPageTree)
 
     suite(m"Document information"):

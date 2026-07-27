@@ -42,11 +42,14 @@ private[pneumatic] final class HashChain(data: Array[Byte], dictSize: Int, depth
   private val length = data.length
   private val hashBits = 17
   private val hashSize = 1 << hashBits
-  private val head = new Array[Int](hashSize)
-  private val chain = new Array[Int](if length > 0 then length else 1)
+  @scala.caps.unsafe.untrackedCaptures
+  private var head = new Array[Int](hashSize)
+  @scala.caps.unsafe.untrackedCaptures
+  private var chain = new Array[Int](if length > 0 then length else 1)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var i = 0
-  while i < hashSize do { head(i) = -1; i += 1 }
+  while i < hashSize do { writable(head)(i) = -1; i += 1 }
 
   private def hash(pos: Int): Int =
     val value = (data(pos) & 0xff) | ((data(pos + 1) & 0xff) << 8) |
@@ -57,8 +60,8 @@ private[pneumatic] final class HashChain(data: Array[Byte], dictSize: Int, depth
   def insert(pos: Int): Unit =
     if pos + 4 <= length then
       val h = hash(pos)
-      chain(pos) = head(h)
-      head(h) = pos
+      writable(chain)(pos) = head(h)
+      writable(head)(h) = pos
 
   // The longest match at `pos`, as (length, distanceValue) where the LZMA distance is one less than
   // the byte offset. Returns length 0 if nothing usable is found.
@@ -86,7 +89,7 @@ private[pneumatic] final class HashChain(data: Array[Byte], dictSize: Int, depth
   // The full candidate set at `pos`: for each length reachable (strictly increasing), the nearest
   // distance achieving it, so the caller can weigh the length/distance trade-off by price. Results
   // fill `outLen`/`outDist`; the return value is the count. Read-only (does not insert `pos`).
-  def findAll(pos: Int, lenLimit: Int, outLen: Array[Int], outDist: Array[Int]): Int =
+  def findAll(pos: Int, lenLimit: Int, outLen: Array[Int]^, outDist: Array[Int]^): Int =
     if pos + 4 > length || lenLimit < MatchLenMin then 0 else
       var count = 0
       var maxLen = MatchLenMin - 1
@@ -116,18 +119,18 @@ private[pneumatic] final class LengthEncoder extends LengthCoder:
     val value = len - MatchLenMin
 
     if value < LenLowSymbols then
-      rc.encodeBit(choice, 0, 0)
-      rc.encodeBitTree(low(posState), value)
+      rc.encodeBit(writable(choice), 0, 0)
+      rc.encodeBitTree(writable(low(posState)), value)
     else
-      rc.encodeBit(choice, 0, 1)
+      rc.encodeBit(writable(choice), 0, 1)
       val mid0 = value - LenLowSymbols
 
       if mid0 < LenMidSymbols then
-        rc.encodeBit(choice, 1, 0)
-        rc.encodeBitTree(mid(posState), mid0)
+        rc.encodeBit(writable(choice), 1, 0)
+        rc.encodeBitTree(writable(mid(posState)), mid0)
       else
-        rc.encodeBit(choice, 1, 1)
-        rc.encodeBitTree(high, mid0 - LenMidSymbols)
+        rc.encodeBit(writable(choice), 1, 1)
+        rc.encodeBitTree(writable(high), mid0 - LenMidSymbols)
 
 // The LZMA symbol encoder. It walks the input once, at each step choosing between a literal, an
 // ordinary match, and — in normal mode — a repeat-match reusing one of the four recent distances
@@ -148,11 +151,14 @@ extends LzmaCoder(lc, lp, pb):
   private val length = data.length
   private val matchLengthEncoder = LengthEncoder()
   private val repLengthEncoder = LengthEncoder()
+  @scala.caps.unsafe.untrackedCaptures
   private var readPos = 0
 
   // Reusable candidate buffers for the price-based normal parser.
-  private val candidateLen = new Array[Int](MatchLenMax + 1)
-  private val candidateDist = new Array[Int](MatchLenMax + 1)
+  @scala.caps.unsafe.untrackedCaptures
+  private var candidateLen: Array[Int] = new Array[Int](MatchLenMax + 1)
+  @scala.caps.unsafe.untrackedCaptures
+  private var candidateDist: Array[Int] = new Array[Int](MatchLenMax + 1)
 
   reset()
 
@@ -213,19 +219,19 @@ extends LzmaCoder(lc, lp, pb):
       encodeFast(posState, (found >>> 32).toInt, (found & 0xffffffffL).toInt)
 
   private def emitMatch(dist: Int, len: Int, posState: Int): Int =
-    rc.encodeBit(isMatch(state.get), posState, 1)
+    rc.encodeBit(writable(isMatch(state.get)), posState, 1)
     rc.encodeBit(isRep, state.get, 0)
     encodeMatch(dist, len, posState)
     advance(len)
 
   private def emitRep(index: Int, len: Int, posState: Int): Int =
-    rc.encodeBit(isMatch(state.get), posState, 1)
+    rc.encodeBit(writable(isMatch(state.get)), posState, 1)
     rc.encodeBit(isRep, state.get, 1)
     encodeRepMatch(index, len, posState)
     advance(len)
 
   private def emitLiteral(posState: Int): Int =
-    rc.encodeBit(isMatch(state.get), posState, 0)
+    rc.encodeBit(writable(isMatch(state.get)), posState, 0)
     encodeLiteral()
     readPos += 1
     1
@@ -428,14 +434,14 @@ extends LzmaCoder(lc, lp, pb):
     matchLengthEncoder.encode(rc, len, posState)
 
     val slot = distSlot(dist)
-    rc.encodeBitTree(distSlots(distState(len)), slot)
+    rc.encodeBitTree(writable(distSlots(distState(len))), slot)
 
     if slot >= DistModelStart then
       val footerBits = (slot >> 1) - 1
       val base = (2 | (slot & 1)) << footerBits
 
       if slot < DistModelEnd then
-        rc.encodeBitTreeReverse(distSpecial(slot - DistModelStart), dist - base)
+        rc.encodeBitTreeReverse(writable(distSpecial(slot - DistModelStart)), dist - base)
       else
         rc.encodeDirectBits((dist - base) >>> AlignBits, footerBits - AlignBits)
         rc.encodeBitTreeReverse(distAlign, (dist - base) & AlignMask)
@@ -446,7 +452,7 @@ extends LzmaCoder(lc, lp, pb):
   private def encodeRepMatch(index: Int, len: Int, posState: Int): Unit =
     if index == 0 then
       rc.encodeBit(isRep0, state.get, 0)
-      rc.encodeBit(isRep0Long(state.get), posState, 1)
+      rc.encodeBit(writable(isRep0Long(state.get)), posState, 1)
     else
       rc.encodeBit(isRep0, state.get, 1)
 

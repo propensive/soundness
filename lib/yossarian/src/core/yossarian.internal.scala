@@ -68,9 +68,17 @@ object internal:
   class Screen[styling]
     ( val width:      Int,
       blank:          styling,
-      styleBuffer:    Array[styling],
-      graphemeBuffer: Array[Grapheme],
-      linkBuffer:     Array[Text] ):
+      @scala.caps.unsafe.untrackedCaptures styleBuffer:    Array[styling],
+      @scala.caps.unsafe.untrackedCaptures graphemeBuffer: Array[Grapheme],
+      @scala.caps.unsafe.untrackedCaptures linkBuffer:     Array[Text] ):
+
+    // Exclusive views for writes: the untracked fields read as read-only.
+    private inline def styleTarget: Array[styling]^ = styleBuffer.asInstanceOf[Array[styling]^]
+
+    private inline def graphemeTarget: Array[Grapheme]^ =
+      graphemeBuffer.asInstanceOf[Array[Grapheme]^]
+
+    private inline def linkTarget: Array[Text]^ = linkBuffer.asInstanceOf[Array[Text]^]
 
     def capacity: Int = graphemeBuffer.length
     def height: Int = capacity/width
@@ -141,20 +149,23 @@ object internal:
 
       val fillStart = if n < 0 then regionStart else regionStart + length
 
-      for i <- 0 until offset do
-        styleBuffer(fillStart + i) = blank
-        graphemeBuffer(fillStart + i) = Grapheme(" ")
-        linkBuffer(fillStart + i) = t""
+      var i = 0
+
+      while i < offset do
+        styleTarget(fillStart + i) = blank
+        graphemeTarget(fillStart + i) = Grapheme(" ")
+        linkTarget(fillStart + i) = t""
+        i += 1
 
     def set(x: Ordinal, y: Ordinal, grapheme: Grapheme, style: styling, link: Text): Unit =
-      styleBuffer(offset(x, y)) = style
-      graphemeBuffer(offset(x, y)) = grapheme
-      linkBuffer(offset(x, y)) = link
+      styleTarget(offset(x, y)) = style
+      graphemeTarget(offset(x, y)) = grapheme
+      linkTarget(offset(x, y)) = link
 
     def set(cursor: Ordinal, grapheme: Grapheme, style: styling, link: Text): Unit =
-      styleBuffer(cursor.n0) = style
-      graphemeBuffer(cursor.n0) = grapheme
-      linkBuffer(cursor.n0) = link
+      styleTarget(cursor.n0) = style
+      graphemeTarget(cursor.n0) = grapheme
+      linkTarget(cursor.n0) = link
 
     def copy(): Screen[styling] =
       new Screen(width, blank, styleBuffer.clone(), graphemeBuffer.clone(), linkBuffer.clone())

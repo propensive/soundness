@@ -134,6 +134,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
 
     new Recording:
       type Domain = layout
+      @scala.caps.unsafe.untrackedCaptures
       private var stopped = false
 
       def active: Boolean = !stopped

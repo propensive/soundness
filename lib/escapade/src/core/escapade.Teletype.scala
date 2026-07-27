@@ -101,10 +101,14 @@ object Teletype:
     def fromChar(char: Char): Char = char
 
     def map(text: Teletype)(lambda: Char => Char): Teletype =
-      val array = text.plain.s.toCharArray.nn
+      val plain = text.plain.s
+      val array: Array[Char]^ = new Array[Char](plain.length)
+      plain.getChars(0, plain.length, array, 0)
+      var index = 0
 
-      array.indices.each: index =>
+      while index < array.length do
         array(index) = lambda(array(index))
+        index += 1
 
       Teletype(new String(array).tt, text.styles, text.hyperlinks, text.insertions, text.boundaries)
 

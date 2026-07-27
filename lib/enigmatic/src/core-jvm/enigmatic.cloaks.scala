@@ -92,10 +92,12 @@ private[enigmatic] class OffHeapCloak extends Cloak, caps.SharedCapability:
     val length = bytes.length
     val segment = offload(bytes, arena)
 
-    val secret: Secret^{this} = new Secret:
-      def uncloak[result](block: Array[Byte] => result): result =
-        val cleartext = reload(segment, length)
-        try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
+    // As in `VeiledHeapCloak.cloak`: the secret's private array captures are laundered.
+    val secret: Secret^{this} = scala.caps.unsafe.unsafeAssumePure:
+      new Secret:
+        def uncloak[result](block: Array[Byte] => result): result =
+          val cleartext = reload(segment, length)
+          try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
 
     cleanable(secret, arena, segment)
     secret
@@ -139,40 +141,54 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
     random.nextBytes(nonce)
 
     val ciphertext = withKey: keyBytes =>
-      aes(keyBytes, jc.Cipher.ENCRYPT_MODE, nonce)(_.doFinal(bytes).nn)
+      aes[Array[Byte]](keyBytes, jc.Cipher.ENCRYPT_MODE, nonce)(_.doFinal(bytes).nn)
 
     ju.Arrays.fill(bytes, 0.toByte)
 
-    new Secret:
-      def uncloak[result](block: Array[Byte] => result): result =
-        val cleartext = withKey: keyBytes =>
-          aes(keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(ciphertext).nn)
+    // The secret retains only this cloak and its own private nonce/ciphertext arrays, which
+    // nothing else can reach; the local arrays' read capabilities are laundered here.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Secret:
+        def uncloak[result](block: Array[Byte] => result): result =
+          val cleartext = withKey: keyBytes =>
+            aes[Array[Byte]](keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(ciphertext).nn)
 
-        try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
+          try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
 
 private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability:
   private val random = js.SecureRandom()
-  private val keyBytes = freshKey()
+  // Stored as the pure `IArray` view: a bare `Array` field would carry a fresh read
+  // capability, which this shared-capability class's classifier forbids.
+  private val keyBytes: IArray[Byte] = freshKey().asInstanceOf[IArray[Byte]]
 
   def cloak(bytes: Array[Byte]): Secret^{this} =
     val nonce = new Array[Byte](12)
     random.nextBytes(nonce)
-    val ciphertext = aes(keyBytes, jc.Cipher.ENCRYPT_MODE, nonce)(_.doFinal(bytes).nn)
+    val ciphertext =
+      aes[Array[Byte]](keyBytes.asInstanceOf[Array[Byte]], jc.Cipher.ENCRYPT_MODE, nonce):
+        _.doFinal(bytes).nn
     ju.Arrays.fill(bytes, 0.toByte)
 
     val arena = jlf.Arena.ofShared().nn
     val length = ciphertext.length
     val segment = offload(ciphertext, arena)
 
-    val secret: Secret^{this} = new Secret:
-      def uncloak[result](block: Array[Byte] => result): result =
-        val recovered = reload(segment, length)
+    // As in `VeiledHeapCloak.cloak`: the secret's private array captures are laundered.
+    val secret: Secret^{this} = scala.caps.unsafe.unsafeAssumePure:
+      new Secret:
+        def uncloak[result](block: Array[Byte] => result): result =
+          val recovered = reload(segment, length)
 
-        val cleartext =
-          try aes(keyBytes, jc.Cipher.DECRYPT_MODE, nonce)(_.doFinal(recovered).nn)
-          finally ju.Arrays.fill(recovered, 0.toByte)
+          // The `IArray` view keeps the `try` result pure: a raw `Array` result would carry
+          // a fresh read capability, which a `try` result may not.
+          val cleartext: IArray[Byte] =
+            try
+              aes[IArray[Byte]](keyBytes.asInstanceOf[Array[Byte]], jc.Cipher.DECRYPT_MODE, nonce):
+                _.doFinal(recovered).nn.asInstanceOf[IArray[Byte]]
+            finally ju.Arrays.fill(recovered, 0.toByte)
 
-        try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
+          val cleartext0 = cleartext.asInstanceOf[Array[Byte]]
+          try block(cleartext0) finally ju.Arrays.fill(cleartext0, 0.toByte)
 
     cleanable(secret, arena, segment)
     secret

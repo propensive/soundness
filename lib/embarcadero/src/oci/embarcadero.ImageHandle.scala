@@ -77,7 +77,7 @@ extends caps.ExclusiveCapability:
     body(digest).stream
 
   // The decoded top-level index, after validating the `oci-layout` marker.
-  def index: Index raises OciError =
+  def index(using Tactic[OciError]): Index =
     val layoutBytes = document(t"oci-layout", OciError.Reason.MissingLayout)
 
     val layout = decode(t"oci-layout"):
@@ -95,13 +95,13 @@ extends caps.ExclusiveCapability:
 
   // The index's first manifest, or the one a descriptor selects; the manifest blob is
   // digest-verified against its descriptor before decoding.
-  def manifest: Oci.Manifest raises OciError =
+  def manifest(using Tactic[OciError]): Oci.Manifest =
     val descriptor =
       index.manifests.stdlib.headOption.getOrElse(abort(OciError(OciError.Reason.NoManifest)))
 
     manifest(descriptor)
 
-  def manifest(descriptor: Descriptor): Oci.Manifest raises OciError =
+  def manifest(descriptor: Descriptor)(using Tactic[OciError]): Oci.Manifest =
     val bytes = verified(descriptor)
 
     decode(descriptor.digest):
@@ -109,9 +109,9 @@ extends caps.ExclusiveCapability:
       bytes.read[Json].as[Oci.Manifest]
 
   // The decoded image config for a manifest (by default, the first).
-  def imageConfig: ImageConfig raises OciError = imageConfig(manifest)
+  def imageConfig(using Tactic[OciError]): ImageConfig = imageConfig(manifest)
 
-  def imageConfig(manifest: Oci.Manifest): ImageConfig raises OciError =
+  def imageConfig(manifest: Oci.Manifest)(using Tactic[OciError]): ImageConfig =
     val bytes = verified(manifest.config)
 
     decode(manifest.config.digest):
@@ -133,7 +133,7 @@ extends caps.ExclusiveCapability:
 
   // A blob gathered eagerly and checked against its descriptor's digest and size — the
   // opt-in verified path, since checking a stream would force draining it.
-  def verified(descriptor: Descriptor): Data raises OciError =
+  def verified(descriptor: Descriptor)(using Tactic[OciError]): Data =
     val bytes = body(descriptor.digest).memoize
     val digest = sha256(bytes)
 
@@ -149,7 +149,7 @@ extends caps.ExclusiveCapability:
     bytes
 
   // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
-  private def document(name: Text, reason: OciError.Reason): Data raises OciError =
+  private def document(name: Text, reason: OciError.Reason)(using Tactic[OciError]): Data =
     entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
     . getOrElse(abort(OciError(reason)))
     . memoize
@@ -158,7 +158,7 @@ extends caps.ExclusiveCapability:
   // thrown under the call site's `throwUnsafely` — to an `InvalidBlob` on the given
   // label. The decoder is derived under a throwing strategy because the derivation's
   // codec thunks cannot capture a scoped tactic capability.
-  private def decode[doc](label: Text)(body: => doc): doc raises OciError =
+  private def decode[doc](label: Text)(body: => doc)(using Tactic[OciError]): doc =
     try body catch case error: Error =>
       abort(OciError(OciError.Reason.InvalidBlob(label, error.message.text)))
 

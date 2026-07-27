@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 // The LZMA binary range coder, the entropy stage beneath LZMA/LZMA2. It codes single bits against
 // adaptive 11-bit probabilities (`Array[Short]` in [0, 2048]), plus "direct" equiprobable bits and
 // MSB-/LSB-first probability trees. This is a clean-room implementation of the well-documented LZMA
@@ -53,19 +55,28 @@ private[pneumatic] object RangeCoder:
 
   // A fresh probability array, every entry initialised to the neutral 0.5 estimate.
   def probabilities(size: Int): Array[Short] =
-    val array = new Array[Short](size)
+    val array: Array[Short]^ = new Array[Short](size)
     var i = 0
     while i < size do { array(i) = ProbInit; i += 1 }
-    array
+    // The array is fresh; purity is assumed so it can seed untracked probability fields.
+    scala.caps.unsafe.unsafeAssumePure(array)
 
-  def resetProbabilities(array: Array[Short]): Unit =
+  // A fresh matrix of probability arrays. Built with a loop rather than `Array.tabulate`
+  // because the synthesized `ClassTag` for a capture-typed element does not conform.
+  def probabilityMatrix(rows: Int, symbols: Int): Array[Array[Short]] =
+    val matrix: Array[Array[Short]]^ = new Array[Array[Short]](rows)
+    var i = 0
+    while i < rows do { matrix(i) = probabilities(symbols); i += 1 }
+    scala.caps.unsafe.unsafeAssumePure(matrix)
+
+  def resetProbabilities(array: Array[Short]^): Unit =
     var i = 0
     while i < array.length do { array(i) = ProbInit; i += 1 }
 
   // Fixed-point bit prices (in 1/16-bit units): the cost of coding a bit whose probability index is
   // `prob >>> MoveReducingBits`. Built once, then read by the encoder's cost estimator.
-  val prices: Array[Short] =
-    val table = new Array[Short](BitModelTotal >>> MoveReducingBits)
+  val prices: IArray[Short] =
+    val table: Array[Short]^ = new Array[Short](BitModelTotal >>> MoveReducingBits)
     var i = 1 << (MoveReducingBits - 1)
 
     while i < BitModelTotal do
@@ -84,7 +95,8 @@ private[pneumatic] object RangeCoder:
 
       i += 1 << MoveReducingBits
 
-    table
+    // The table is fresh and never written after construction.
+    IArray.unsafeFromArray(table)
 
   def bitPrice(prob: Int, bit: Int): Int =
     prices((prob ^ ((-bit) & (BitModelTotal - 1))) >>> MoveReducingBits).toInt
@@ -124,14 +136,19 @@ import RangeCoder.*
 // LZMA2 signals each chunk's uncompressed length out of band, the caller decodes an exact symbol
 // count and never relies on an end-of-stream marker.
 private[pneumatic] final class RangeDecoder:
+  @scala.caps.unsafe.untrackedCaptures
   private var buffer: Array[Byte] = new Array[Byte](0)
+  @scala.caps.unsafe.untrackedCaptures
   private var position: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var limit: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var range: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var code: Int = 0
 
   def prepare(input: Array[Byte], offset: Int, length: Int): Unit =
-    buffer = input
+    buffer = writable(input)
     position = offset + 1 // the leading byte is always zero
     limit = offset + length
     range = 0xffffffff
@@ -151,7 +168,7 @@ private[pneumatic] final class RangeDecoder:
     position += 1
     byte
 
-  def decodeBit(probs: Array[Short], index: Int): Int =
+  def decodeBit(probs: Array[Short]^, index: Int): Int =
     normalize()
     val prob = probs(index).toInt
     val bound = (range >>> BitModelTotalBits) * prob
@@ -166,7 +183,7 @@ private[pneumatic] final class RangeDecoder:
       probs(index) = (prob - (prob >>> MoveBits)).toShort
       1
 
-  def decodeBitTree(probs: Array[Short]): Int =
+  def decodeBitTree(probs: Array[Short]^): Int =
     var symbol = 1
 
     while
@@ -176,7 +193,7 @@ private[pneumatic] final class RangeDecoder:
 
     symbol - probs.length
 
-  def decodeBitTreeReverse(probs: Array[Short]): Int =
+  def decodeBitTreeReverse(probs: Array[Short]^): Int =
     var symbol = 1
     var result = 0
     var i = 0
@@ -209,11 +226,17 @@ private[pneumatic] final class RangeDecoder:
 // carry accumulator; `shiftLow` propagates carries into already-buffered bytes through the one-byte
 // `cache` plus a run of `cacheSize` deferred `0xff`s.
 private[pneumatic] final class RangeEncoder:
+  @scala.caps.unsafe.untrackedCaptures
   private var buffer: Array[Byte] = new Array[Byte](1 << 16)
+  @scala.caps.unsafe.untrackedCaptures
   private var count: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var low: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var range: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var cache: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var cacheSize: Long = 0
 
   reset()
@@ -232,11 +255,11 @@ private[pneumatic] final class RangeEncoder:
 
   private def writeByte(byte: Int): Unit =
     if count == buffer.length then
-      val grown = new Array[Byte](buffer.length*2)
+      val grown: Array[Byte]^ = new Array[Byte](buffer.length*2)
       System.arraycopy(buffer, 0, grown, 0, count)
       buffer = grown
 
-    buffer(count) = byte.toByte
+    writable(buffer)(count) = byte.toByte
     count += 1
 
   private def shiftLow(): Unit =
@@ -257,7 +280,7 @@ private[pneumatic] final class RangeEncoder:
     cacheSize += 1
     low = (low & 0x00ffffff) << 8
 
-  def encodeBit(probs: Array[Short], index: Int, bit: Int): Unit =
+  def encodeBit(probs: Array[Short]^, index: Int, bit: Int): Unit =
     val prob = probs(index).toInt
     val bound = (range >>> BitModelTotalBits) * prob
 
@@ -273,7 +296,7 @@ private[pneumatic] final class RangeEncoder:
       range <<= 8
       shiftLow()
 
-  def encodeBitTree(probs: Array[Short], symbol: Int): Unit =
+  def encodeBitTree(probs: Array[Short]^, symbol: Int): Unit =
     var index = 1
     var mask = probs.length
     var continue = true
@@ -286,7 +309,7 @@ private[pneumatic] final class RangeEncoder:
       if bit != 0 then index |= 1
       continue = mask != 1
 
-  def encodeBitTreeReverse(probs: Array[Short], symbol0: Int): Unit =
+  def encodeBitTreeReverse(probs: Array[Short]^, symbol0: Int): Unit =
     var index = 1
     var symbol = symbol0
     var continue = true
@@ -322,6 +345,6 @@ private[pneumatic] final class RangeEncoder:
     System.arraycopy(buffer, 0, target, offset, count)
 
   def bytes: Array[Byte] =
-    val result = new Array[Byte](count)
+    val result: Array[Byte]^ = new Array[Byte](count)
     System.arraycopy(buffer, 0, result, 0, count)
     result

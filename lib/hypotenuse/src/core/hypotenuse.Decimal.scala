@@ -177,8 +177,11 @@ object decimalInternal:
 
     // Builds the canonical form: high zero limbs dropped, factors of ten moved into the
     // scale (as `stripTrailingZeros`), and the unique zero when the magnitude vanishes. The
-    // input array is clobbered, so callers always pass a fresh one.
-    private[hypotenuse] def compose(signum: Int, magnitude: Array[Int], count0: Int, scale0: Int): Decimal =
+    // input is copied into a fresh working array, which the strip loops then clobber.
+    private[hypotenuse] def compose(signum: Int, magnitude0: Array[Int], count0: Int, scale0: Int)
+    :   Decimal =
+      val magnitude: Array[Int]^ = new Array[Int](count0)
+      System.arraycopy(magnitude0, 0, magnitude, 0, count0)
       var count = count0
       while count > 0 && magnitude(count - 1) == 0 do count -= 1
 
@@ -204,7 +207,7 @@ object decimalInternal:
         result.immutable(using Unsafe)
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
-    private def divideSmall(magnitude: Array[Int], count: Int, divisor: Int): Int =
+    private def divideSmall(magnitude: Array[Int]^, count: Int, divisor: Int): Int =
       var remainder = 0L
       var i = count - 1
 

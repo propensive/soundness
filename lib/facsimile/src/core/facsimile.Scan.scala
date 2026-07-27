@@ -46,8 +46,11 @@ private[facsimile] object Scan:
 // input abstraction for the lexer. Refills its window on demand, so lexemes spanning chunk
 // boundaries need no special handling; `-1` signals the end of the source.
 private[facsimile] class Scan(source: ByteSource, start: Long):
+  @scala.caps.unsafe.untrackedCaptures
   private var base: Long = start
+  @scala.caps.unsafe.untrackedCaptures
   private var chunk: Data = IArray.empty[Byte]
+  @scala.caps.unsafe.untrackedCaptures
   private var cursor: Int = 0
 
   def offset: Long = base + cursor

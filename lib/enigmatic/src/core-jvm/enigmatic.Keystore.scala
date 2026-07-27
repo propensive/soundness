@@ -115,6 +115,6 @@ object Keystore:
       catch case error: Exception => abort(KeystoreError(KeystoreError.Reason.Unreadable))
 
   given openable: [path: Abstractable across Paths to Text]
-  =>  Tactic[KeystoreError]
-  =>  ( KeystoreOpenable[path]^ ) =
+  =>  (tactic: Tactic[KeystoreError])
+  =>  ( KeystoreOpenable[path]^{tactic} ) =
     KeystoreOpenable[path]

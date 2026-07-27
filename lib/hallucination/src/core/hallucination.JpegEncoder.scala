@@ -46,7 +46,7 @@ import vacuous.*
 // (4:2:0) below quality 90 and kept full-resolution (4:4:4) at 90 and above.
 private[hallucination] object JpegEncoder:
   // The zig-zag order: `ZigZag(k)` is the natural block index of the k-th coefficient written.
-  private val ZigZag: Array[Int] = Array(
+  private val ZigZag: IArray[Int] = Array(
     0, 1, 8, 16, 9, 2, 3, 10,
     17, 24, 32, 25, 18, 11, 4, 5,
     12, 19, 26, 33, 40, 48, 41, 34,
@@ -54,10 +54,10 @@ private[hallucination] object JpegEncoder:
     35, 42, 49, 56, 57, 50, 43, 36,
     29, 22, 15, 23, 30, 37, 44, 51,
     58, 59, 52, 45, 38, 31, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63)
+    53, 60, 61, 54, 47, 55, 62, 63).asInstanceOf[IArray[Int]]
 
   // Annex K luminance and chrominance base quantization tables (natural order).
-  private val LumaQuant: Array[Int] = Array(
+  private val LumaQuant: IArray[Int] = Array(
     16, 11, 10, 16, 24, 40, 51, 61,
     12, 12, 14, 19, 26, 58, 60, 55,
     14, 13, 16, 24, 40, 57, 69, 56,
@@ -65,9 +65,9 @@ private[hallucination] object JpegEncoder:
     18, 22, 37, 56, 68, 109, 103, 77,
     24, 35, 55, 64, 81, 104, 113, 92,
     49, 64, 78, 87, 103, 121, 120, 101,
-    72, 92, 95, 98, 112, 100, 103, 99)
+    72, 92, 95, 98, 112, 100, 103, 99).asInstanceOf[IArray[Int]]
 
-  private val ChromaQuant: Array[Int] = Array(
+  private val ChromaQuant: IArray[Int] = Array(
     17, 18, 24, 47, 99, 99, 99, 99,
     18, 21, 26, 66, 99, 99, 99, 99,
     24, 26, 56, 99, 99, 99, 99, 99,
@@ -75,7 +75,7 @@ private[hallucination] object JpegEncoder:
     99, 99, 99, 99, 99, 99, 99, 99,
     99, 99, 99, 99, 99, 99, 99, 99,
     99, 99, 99, 99, 99, 99, 99, 99,
-    99, 99, 99, 99, 99, 99, 99, 99)
+    99, 99, 99, 99, 99, 99, 99, 99).asInstanceOf[IArray[Int]]
 
   private def clamp(value: Int, low: Int, high: Int): Int = value.max(low).min(high)
 
@@ -168,30 +168,32 @@ private[hallucination] object JpegEncoder:
 
       y += 1
 
-    val lumaQuant = scaledTable(LumaQuant, quality)
-    val chromaQuant = scaledTable(ChromaQuant, quality)
+    val lumaQuant = scaledTable(LumaQuant.mutable(using Unsafe), quality)
+    val chromaQuant = scaledTable(ChromaQuant.mutable(using Unsafe), quality)
     val colsBlocks = ceilDiv(width, 8)
     val rowsBlocks = ceilDiv(height, 8)
 
+    // A `List` result rather than a nested array: nested-array types are elaborated with
+    // fresh element capabilities that nothing downstream can satisfy.
     def blocksFor(plane: Array[Byte], hScale: Int, vScale: Int, quant: Array[Int])
-    :   Array[Array[Int]] =
+    :   List[Array[Int]] =
 
       val cols = ceilDiv(colsBlocks, hScale)
       val rows = ceilDiv(rowsBlocks, vScale)
-      val result = new Array[Array[Int]](cols*rows)
-      var blockY = 0
+      var result: List[Array[Int]] = Nil
+      var blockY = rows - 1
 
-      while blockY < rows do
-        var blockX = 0
+      while blockY >= 0 do
+        var blockX = cols - 1
 
-        while blockX < cols do
+        while blockX >= 0 do
           val samples =
             block(plane, blockX*8*hScale, blockY*8*vScale, hScale, vScale, bufWidth)
 
-          result(blockY*cols + blockX) = transform(samples, quant)
-          blockX += 1
+          result = transform(samples, quant) :: result
+          blockX -= 1
 
-        blockY += 1
+        blockY -= 1
 
       result
 
@@ -199,8 +201,8 @@ private[hallucination] object JpegEncoder:
     val cbBlocks = blocksFor(planeCb, hMax, vMax, chromaQuant)
     val crBlocks = blocksFor(planeCr, hMax, vMax, chromaQuant)
 
-    val (lumaDc, lumaAc) = optimizeTables(Array(yBlocks))
-    val (chromaDc, chromaAc) = optimizeTables(Array(cbBlocks, crBlocks))
+    val (lumaDc, lumaAc) = optimizeTables(List(yBlocks))
+    val (chromaDc, chromaAc) = optimizeTables(List(cbBlocks, crBlocks))
 
     val out = ji.ByteArrayOutputStream()
 
@@ -274,7 +276,7 @@ private[hallucination] object JpegEncoder:
 
   private def writeScan
     ( out: ji.ByteArrayOutputStream, u8: Int => Unit, u16: Int => Unit, marker: Int => Unit,
-      id: Int, dcTable: Int, acTable: Int, blocks: Array[Array[Int]], dc: JpegEncodeTable,
+      id: Int, dcTable: Int, acTable: Int, blocks: List[Array[Int]], dc: JpegEncodeTable,
       ac: JpegEncodeTable )
   :   Unit =
 
@@ -287,12 +289,12 @@ private[hallucination] object JpegEncoder:
 
     val writer = JpegBitWriter(out)
     var prevDc = 0
-    var index = 0
+    var rest = blocks.stdlib
 
-    while index < blocks.length do
-      writeBlock(writer, blocks(index), prevDc, dc, ac)
-      prevDc = blocks(index)(0)
-      index += 1
+    while rest.nonEmpty do
+      writeBlock(writer, rest.head, prevDc, dc, ac)
+      prevDc = rest.head(0)
+      rest = rest.tail
 
     writer.flushBits()
 
@@ -324,7 +326,9 @@ private[hallucination] object JpegEncoder:
 
   // Gathers DC and AC symbol frequencies across the components sharing a table, then builds
   // optimized Huffman tables. The DC predictor resets at the start of each component.
-  private def optimizeTables(components: Array[Array[Array[Int]]])
+  // A `List` parameter rather than a nested-array one: nested-array types at parameter and
+  // vararg positions are elaborated with fresh element capabilities nothing can satisfy.
+  private def optimizeTables(components: List[List[Array[Int]]])
   :   (JpegEncodeTable, JpegEncodeTable) =
 
     val dcFreq = new Array[Int](257)
@@ -332,13 +336,15 @@ private[hallucination] object JpegEncoder:
     dcFreq(256) = 1
     acFreq(256) = 1
 
-    components.foreach: blocks =>
-      var prevDc = 0
-      var index = 0
+    var rest = components.stdlib
 
-      while index < blocks.length do
-        val block = blocks(index)
-        dcFreq(JpegHuffmanEncoder.numBits(block(0) - prevDc)) += 1
+    while rest.nonEmpty do
+      var blocks = rest.head.stdlib
+      var prevDc = 0
+
+      while blocks.nonEmpty do
+        val block = blocks.head
+        writable(dcFreq)(JpegHuffmanEncoder.numBits(block(0) - prevDc)) += 1
         prevDc = block(0)
 
         var zeroRun = 0
@@ -348,15 +354,17 @@ private[hallucination] object JpegEncoder:
           if block(i) == 0 then zeroRun += 1
           else
             while zeroRun > 15 do
-              acFreq(0xf0) += 1
+              writable(acFreq)(0xf0) += 1
               zeroRun -= 16
 
-            acFreq((zeroRun << 4) | JpegHuffmanEncoder.numBits(block(i))) += 1
+            writable(acFreq)((zeroRun << 4) | JpegHuffmanEncoder.numBits(block(i))) += 1
             zeroRun = 0
 
           i += 1
 
-        if zeroRun > 0 then acFreq(0) += 1
-        index += 1
+        if zeroRun > 0 then writable(acFreq)(0) += 1
+        blocks = blocks.tail
+
+      rest = rest.tail
 
     (JpegHuffmanEncoder.newOptimized(dcFreq), JpegHuffmanEncoder.newOptimized(acFreq))

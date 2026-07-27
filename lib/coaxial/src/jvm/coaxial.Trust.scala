@@ -91,7 +91,18 @@ object Trust:
     val retained = current.split(",").nn.map(_.nn.trim.nn).filter: entry =>
       !versions.exists(_.id.s == entry)
 
-    js.Security.setProperty("jdk.tls.disabledAlgorithms", String.join(", ", retained*))
+    // A manual join: a Java varargs splice of an array value is rejected under separation
+    // checking (the formal is a pure array).
+    val joined = StringBuilder()
+
+    var index = 0
+
+    while index < retained.length do
+      if joined.nonEmpty then joined.append(", ")
+      joined.append(retained(index))
+      index += 1
+
+    js.Security.setProperty("jdk.tls.disabledAlgorithms", joined.toString)
 
 // Which certificate chains to trust beyond an intact, current chain to a
 // platform anchor.

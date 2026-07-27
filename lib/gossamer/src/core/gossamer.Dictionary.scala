@@ -64,26 +64,33 @@ object Dictionary:
     // each char is its position in the string. Unsupported chars return
     // `-1`. Restricted to ASCII (char codes 0..127); higher code points
     // return `-1`.
-    def of(chars: String): Alphabet = new Alphabet:
-      private val table = Array.fill[Int](128)(-1)
-      private val charTable: Array[Char] = chars.toCharArray.nn
-      private val n = chars.length
+    // The table arrays are written only during construction; the finished alphabet is
+    // observationally pure.
+    def of(chars: String): Alphabet =
+      val table0 = Array.fill[Int](128)(-1)
 
       locally:
         var i = 0
 
-        while i < n do
+        while i < chars.length do
           val c = chars.charAt(i).toInt
-          if c < 128 then table(c) = i
+          if c < 128 then table0(c) = i
           i += 1
 
-      def size = n
+      scala.caps.unsafe.unsafeAssumePure:
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          new Alphabet:
+            private val table: Array[Int] = scala.caps.unsafe.unsafeAssumePure(table0)
+            private val charTable: Array[Char] = chars.toCharArray.nn
+            private val n = chars.length
 
-      def slot(char: Char): Int =
-        val c = char.toInt
-        if c < 128 then table(c) else -1
+            def size = n
 
-      def char(slot: Int): Char = charTable(slot)
+            def slot(char: Char): Int =
+              val c = char.toInt
+              if c < 128 then table(c) else -1
+
+            def char(slot: Int): Char = charTable(slot)
 
     // An empty alphabet — no chars are recognised. Used by the empty
     // dictionary.
@@ -112,8 +119,9 @@ object Dictionary:
     val emptyValues: Array[AnyRef | Null] =
       new Array[AnyRef](0).asInstanceOf[Array[AnyRef | Null]]
 
-    new Dictionary[value]
-      ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
+    scala.caps.unsafe.unsafeAssumePure:
+      new Dictionary[value]
+        ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
 
   // Build a Dictionary from `(key -> value)` pairs. The alphabet is
   // auto-derived from the distinct characters appearing in the keys, in
@@ -171,6 +179,8 @@ object Dictionary:
     // mutable cell carry either reference or primitive values.
     final class NodeBuilder:
       val children = MutMap[Char, NodeBuilder]()
+
+      @scala.caps.unsafe.untrackedCaptures
       var value: AnyRef | Null = null
 
     val root = new NodeBuilder
@@ -216,9 +226,9 @@ object Dictionary:
       ids(nodeList(i)) = i
       i += 1
 
-    val childrenArr = Array.fill[Int](nodeCount*alpha)(-1)
+    val childrenArr: Array[Int]^ = Array.fill[Int](nodeCount*alpha)(-1)
 
-    val valuesArr: Array[AnyRef | Null] =
+    val valuesArr: Array[AnyRef | Null]^ =
       new Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
 
     i = 0
@@ -241,13 +251,17 @@ object Dictionary:
     if !ahoCorasick then
       val emptyInts = new Array[Int](0)
 
-      new Dictionary[value]
-        ( childrenArr, valuesArr, emptyInts, emptyInts, emptyInts, alphabet, summon )
-    else
+      // The arrays are never written after construction; the dictionary is observationally pure.
+      scala.caps.unsafe.unsafeAssumePure:
+        new Dictionary[value]
+          ( childrenArr, valuesArr, emptyInts, emptyInts, emptyInts, alphabet, summon )
+    else scala.caps.unsafe.unsafeAssumeSeparate:
       // Aho-Corasick failure / dictionary-suffix links via BFS. Depth-1
       // nodes get fail = 0; deeper nodes get the longest proper suffix
       // of their path that is itself a path from root. `dictLink` skips
-      // fail-chain ancestors that have no value.
+      // fail-chain ancestors that have no value. The four freshly-allocated arrays are
+      // pairwise distinct, but the checker conflates their Unscoped allocation roots, so
+      // the whole build block is (safely) assumed separate.
       val depthArr    = new Array[Int](nodeCount)
       val failArr     = new Array[Int](nodeCount)
       val dictLinkArr = new Array[Int](nodeCount)
@@ -291,8 +305,10 @@ object Dictionary:
 
           sl += 1
 
-      new Dictionary[value]
-        ( childrenArr, valuesArr, depthArr, failArr, dictLinkArr, alphabet, summon )
+      // As above: no writes after construction.
+      scala.caps.unsafe.unsafeAssumePure:
+        new Dictionary[value]
+          ( childrenArr, valuesArr, depthArr, failArr, dictLinkArr, alphabet, summon )
 
 final class Dictionary[+value]
   ( val children: Array[Int],

@@ -229,7 +229,8 @@ object Tests extends Suite(m"Scintillate tests"):
           // boundary seals the monitor the async producer captures (its return
           // type is an unadorned `Http.Response`); this is what lets a real
           // honeycomb page compile through `.handle`.
-          val server = SocketServer(port).handle:
+          val server = scala.caps.unsafe.unsafeAssumeSeparate:
+           SocketServer(port).handle:
             caps.unsafe.unsafeAssumePure:
               Http.Response(Http.Ok):
                 Http.Body.Flowing: () =>

@@ -46,7 +46,10 @@ object TerminalCanvas:
   // its `Stdio`. The size thunks retain the terminal, so the canvas honestly
   // captures it.
   def apply(terminal: Terminal): TerminalCanvas^{terminal} =
-    new TerminalCanvas(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
+    // Both thunks only read the same terminal's dimensions; no aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      new TerminalCanvas(() => terminal.knownColumns, () => terminal.knownRows)
+        (using terminal.stdio)
 
 // A `Canvas` over a real terminal: every positioning operation maps to an
 // escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no

@@ -93,6 +93,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???
 
+  @scala.caps.unsafe.untrackedCaptures
   var runner0: Runner[Report] = makeRunner(Selection.all)
 
   // An alias given is memoized on first use, which is safe here only because `main`

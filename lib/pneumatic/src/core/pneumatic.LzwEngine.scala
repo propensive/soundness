@@ -50,12 +50,13 @@ private[pneumatic] trait LzwEngine:
   protected val pending: scala.collection.mutable.ArrayBuffer[Byte] =
     scala.collection.mutable.ArrayBuffer()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var delivered: Int = 0
 
   def accept(bytes: Array[Byte], offset: Int, length: Int): Unit
   def finish(): Unit
 
-  def deliver(target: Array[Byte], offset: Int, space: Int): Int =
+  def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -89,12 +90,19 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
   private val codes: scala.collection.mutable.HashMap[(Int, Byte), Int] =
     scala.collection.mutable.HashMap()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var nextCode = 258
+  @scala.caps.unsafe.untrackedCaptures
   private var width = 9
+  @scala.caps.unsafe.untrackedCaptures
   private var prefix = -1
+  @scala.caps.unsafe.untrackedCaptures
   private var bits = 0L
+  @scala.caps.unsafe.untrackedCaptures
   private var bitCount = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var begun = false
+  @scala.caps.unsafe.untrackedCaptures
   private var ended = false
 
   private val early: Int = if earlyChange then 1 else 0
@@ -158,11 +166,16 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
   private val table: scala.collection.mutable.ArrayBuffer[Array[Byte]] =
     scala.collection.mutable.ArrayBuffer()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var width = 9
+  @scala.caps.unsafe.untrackedCaptures
   private var bits = 0L
+  @scala.caps.unsafe.untrackedCaptures
   private var bitCount = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
+  @scala.caps.unsafe.untrackedCaptures
   private var previous: Array[Byte] = new Array[Byte](0)
 
   private val early: Int = if earlyChange then 1 else 0
@@ -230,6 +243,7 @@ private[pneumatic] class LzwStage(engine: LzwEngine) extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
+  @scala.caps.unsafe.untrackedCaptures
   private var finishing = false
 
   def regulation: Credit is Regulation = summon[Credit is Regulation]

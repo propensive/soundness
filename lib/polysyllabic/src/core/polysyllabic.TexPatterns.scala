@@ -84,15 +84,23 @@ private[polysyllabic] object TexPatterns:
     val s = raw.s
     val n = s.length
     val letters = new java.lang.StringBuilder(n)
-    val breaks = ArrayBuilder.make[Int]
+    val breaks: Array[Int]^ = new Array[Int](n)
+    var count = 0
     var i = 0
 
     while i < n do
       val c = s.charAt(i)
-      if c == '-' then breaks += letters.length else letters.append(c)
+
+      if c == '-' then
+        breaks(count) = letters.length
+        count += 1
+      else letters.append(c)
+
       i += 1
 
-    (letters.toString.tt, breaks.result().immutable(using Unsafe))
+    val exact: Array[Int]^ = new Array[Int](count)
+    System.arraycopy(breaks, 0, exact, 0, count)
+    (letters.toString.tt, exact.immutable(using Unsafe))
 
   // Strip `%`-to-end-of-line comments from a TeX file. Backslash-escaped
   // percents are not used in hyphenation pattern files, so a naive scan

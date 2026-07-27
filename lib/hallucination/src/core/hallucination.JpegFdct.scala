@@ -123,12 +123,12 @@ private[hallucination] object JpegFdct:
       val tmp11 = tmp1 + tmp2
       val tmp12 = tmp1 - tmp2
 
-      data(x) = descale(tmp10 + tmp11, Pass1Bits)
-      data(32 + x) = descale(tmp10 - tmp11, Pass1Bits)
+      writable(data)(x) = descale(tmp10 + tmp11, Pass1Bits)
+      writable(data)(32 + x) = descale(tmp10 - tmp11, Pass1Bits)
 
       val z1e = (tmp12 + tmp13)*Fix0_541196100
-      data(16 + x) = descale(z1e + tmp13*Fix0_765366865, ConstBits + Pass1Bits)
-      data(48 + x) = descale(z1e + tmp12*(-Fix1_847759065), ConstBits + Pass1Bits)
+      writable(data)(16 + x) = descale(z1e + tmp13*Fix0_765366865, ConstBits + Pass1Bits)
+      writable(data)(48 + x) = descale(z1e + tmp12*(-Fix1_847759065), ConstBits + Pass1Bits)
 
       val a1 = tmp4 + tmp7
       val a2 = tmp5 + tmp6
@@ -145,8 +145,8 @@ private[hallucination] object JpegFdct:
       val b3 = a3*(-Fix1_961570560) + a5
       val b4 = a4*(-Fix0_390180644) + a5
 
-      data(56 + x) = descale(o4 + b1 + b3, ConstBits + Pass1Bits)
-      data(40 + x) = descale(o5 + b2 + b4, ConstBits + Pass1Bits)
-      data(24 + x) = descale(o6 + b2 + b3, ConstBits + Pass1Bits)
-      data(8 + x) = descale(o7 + b1 + b4, ConstBits + Pass1Bits)
+      writable(data)(56 + x) = descale(o4 + b1 + b3, ConstBits + Pass1Bits)
+      writable(data)(40 + x) = descale(o5 + b2 + b4, ConstBits + Pass1Bits)
+      writable(data)(24 + x) = descale(o6 + b2 + b3, ConstBits + Pass1Bits)
+      writable(data)(8 + x) = descale(o7 + b1 + b4, ConstBits + Pass1Bits)
       x += 1

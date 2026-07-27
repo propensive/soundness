@@ -49,8 +49,8 @@ private[facsimile] object PdfWriter:
   // A complete PDF file for a freshly-authored document: a header, every live object, one
   // cross-reference table and a trailer with no `/Prev`. Used by `create`, where there is no
   // original file to append to.
-  def full(pdf: Pdf): Data raises PdfError =
-    val builder = Array.newBuilder[Byte]
+  def full(pdf: Pdf)(using Tactic[PdfError]): Data =
+    val builder = DataBuilder()
     var length = 0L
 
     def raw(data: Data): Unit =
@@ -71,7 +71,8 @@ private[facsimile] object PdfWriter:
       if value != Cos.Nil && !pdf.freed.contains(number) then
         offsets(number) = length
         ascii(t"$number 0 obj\n")
-        appendObject(pdf, raw, ascii, value)
+        // The writer thunks share only this append pass's own accumulators.
+        scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
         ascii(t"\nendobj\n")
 
     val xrefOffset = length
@@ -87,16 +88,17 @@ private[facsimile] object PdfWriter:
     List(t"Root", t"Info", t"ID").each: (key: Text) =>
       pdf.trailerOverrides.at(key).or(pdf.trailer.at(key)).let: value =>
         ascii(t" /$key ")
-        appendObject(pdf, raw, ascii, value)
+        // The writer thunks share only this append pass's own accumulators.
+        scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
     ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
 
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
   // The bytes to append after `baseOffset` (the original file's length) to record the
   // overlay. Object offsets in the new section are absolute, so they include `baseOffset`.
-  def increment(pdf: Pdf, baseOffset: Long): Data raises PdfError =
-    val builder = Array.newBuilder[Byte]
+  def increment(pdf: Pdf, baseOffset: Long)(using Tactic[PdfError]): Data =
+    val builder = DataBuilder()
     var length = 0L
 
     def raw(data: Data): Unit =
@@ -125,7 +127,8 @@ private[facsimile] object PdfWriter:
       val value = pdf.guard.lay(pdf.overlay(number)):
         guard => encryptStrings(pdf.overlay(number), guard, number, generation)
 
-      appendObject(pdf, raw, ascii, value, encryption)
+      // The writer thunks share only this append pass's own accumulators.
+      scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value, encryption))
       ascii(t"\nendobj\n")
 
     val xrefOffset = baseOffset + length
@@ -170,19 +173,21 @@ private[facsimile] object PdfWriter:
 
     entries.each: (key, value) =>
       ascii(t" /$key ")
-      appendObject(pdf, raw, ascii, value)
+      // The writer thunks share only this append pass's own accumulators.
+      scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
     pdf.xref.startxref.let: previous =>
       ascii(t" /Prev $previous")
 
     ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
 
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
   private def appendObject
     ( pdf: Pdf, raw: Data => Unit, ascii: Text => Unit, cos: Cos,
       encryption: Optional[(Guard, Int, Int)] = Unset )
-  :   Unit raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Unit =
 
     cos match
       case body: Cos.Body =>

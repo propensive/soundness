@@ -69,7 +69,12 @@ object NetworkInterface:
       val inet = jn.InetAddress.getByAddress(bytes(address)).nn
       Optional(jn.NetworkInterface.getByInetAddress(inet)).let(read(_))
 
-  private def enumerated[result](block: => result): result raises NetworkInterfaceError =
+  // Inline, so the thunk never crosses a checked function boundary: a context-function
+  // result would hide the caller's thunk, which the separation checker rejects.
+  private inline def enumerated[result](inline block: result)
+    ( using Tactic[NetworkInterfaceError]^ )
+  :   result =
+
     try block catch case error: jn.SocketException =>
       abort(NetworkInterfaceError(Enumeration(message(error))))
 

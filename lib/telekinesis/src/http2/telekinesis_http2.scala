@@ -102,7 +102,10 @@ extends Sessionable:
             // The connection's reader/writer daemons live under a session-scoped
             // supervisor: nothing outlives the lambda.
             try
-              unsafely:
+              // The session's tactic and the lambda share only the session-scoped
+              // connection; no aliased writer.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+               unsafely:
                 supervise:
                   val connection = Http2Connection(duplex)
 

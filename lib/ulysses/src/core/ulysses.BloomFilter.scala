@@ -63,7 +63,22 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
     def recur(count: Int = 0, data: List[Array[Byte]] = Nil): BigInt =
       if data.stdlib.map(_.length).sum*8 < requiredEntropyBits
       then recur(count + 1, (count, value).digest[algorithm].data.mutable(using Unsafe) :: data)
-      else BigInt(data.stdlib.iterator.flatMap(_.iterator).toArray).abs
+      else
+        // A manual concatenation into a fresh exclusive array: `toArray` yields a read-only
+        // array, which `BigInt`'s pure formal rejects.
+        val whole: Array[Byte]^ = new Array[Byte](data.stdlib.map(_.length).sum)
+        var offset = 0
+        var rest = data.stdlib
+
+        while rest.nonEmpty do
+          val chunk = rest.head
+          System.arraycopy(chunk, 0, whole, offset, chunk.length)
+          offset += chunk.length
+          rest = rest.tail
+
+        // Via `java.math.BigInteger`: the Java constructor accepts the array where
+        // `BigInt.apply`'s pure Scala formal does not.
+        BigInt(java.math.BigInteger(whole)).abs
 
     recur()
 

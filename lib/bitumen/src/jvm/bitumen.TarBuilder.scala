@@ -79,6 +79,7 @@ class TarBuilder private[bitumen]
   ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
   ( using Tactic[TarError] )
 extends caps.ExclusiveCapability:
+  @scala.caps.unsafe.untrackedCaptures
   private var stack: List[Tar.Entry] = Nil
 
   def insert(entry: Tar.Entry): Unit = sink.lay(stack ::= entry)(writeEntry(_, entry))

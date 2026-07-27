@@ -1477,7 +1477,9 @@ case class Bytecode
     def expand(bc: Bytecode, depth: Int, source: Text): Unit =
       val callsite = bc.effectivelyStaticCalls
 
-      bc.instructions.iterator.takeWhile(_ => budget > 0).each: instr =>
+      // The budget counter is this walk's own local; no aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       bc.instructions.iterator.takeWhile(_ => budget > 0).each: instr =>
         budget -= 1
 
         val target: Optional[(Text, Text, Text)] = instr.opcode match

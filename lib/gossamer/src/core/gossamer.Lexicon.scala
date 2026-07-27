@@ -45,6 +45,7 @@ import vacuous.*
 
 object Lexicon:
   def apply[element]()(using Proximity by Int): Lexicon[element] = new Lexicon[element]:
+    @scala.caps.unsafe.untrackedCaptures
     private var lexicon: Optional[Lexicon[element]] = Unset
 
     def update(key: Text, value: element): Unit =

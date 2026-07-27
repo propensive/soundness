@@ -48,24 +48,31 @@ object DagDiagram:
     val nodes = dag.sorted.to(Vector)
     val indexes: scala.collection.immutable.Map[node, Int] = nodes.zipWithIndex.toMap
 
-    val layout: Array[Array[Int]] = Array.from:
-      nodes.indices.map: i =>
-        Array.range(0, i).map(_ => 0)
+    // A flat exclusive scratch array rather than a nested `Array[Array[Int]]`: writing
+    // through an element read of a nested array is rejected by separation checking.
+    val n = nodes.length
+    val layout: Array[Int]^ = new Array[Int](n*n)
+    var rest = dag.edges.to(List)
 
-    dag.edges.map: (source, destination) =>
+    while rest.nonEmpty do
+      val (source, destination) = rest.head
       val si = indexes(source)
       val di = indexes(destination)
 
-      layout(si)(di) |= 1
+      layout(si*n + di) |= 1
+      var i = di + 1
 
-      for i <- (di + 1) until si do
-        layout(i)(di) |= 2
-        layout(si)(i) |= 4
+      while i < si do
+        layout(i*n + di) |= 2
+        layout(si*n + i) |= 4
+        i += 1
+
+      rest = rest.tail
 
     DagDiagram:
-      layout.iterator.to(List).map: row =>
-        val tiles = row.iterator.to(List).map(DagTile.fromOrdinal)
-        (tiles, nodes(row.length))
+      List.tabulate(n): row =>
+        val tiles = List.tabulate(row) { col => DagTile.fromOrdinal(layout(row*n + col)) }
+        (tiles, nodes(row))
 
   given printable: [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =
     (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")

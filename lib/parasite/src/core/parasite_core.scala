@@ -61,14 +61,15 @@ package threading:
 package probates:
   // Cleanup runs on the completing worker's own strand, with no ambient `Monitor`: the dying
   // worker itself licenses the suspension (a `Worker` IS a `Monitor`).
-  given awaitProbate: Probate = worker => worker.delegate(_.attend()(using worker))
+  given awaitProbate: Probate = worker =>
+    scala.caps.unsafe.unsafeAssumeSeparate(worker.delegate(_.attend()(using worker)))
   given cancelProbate: Probate = _.delegate(_.cancel())
 
   given panicProbate: Probate = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
   // The only capturing probate: its instance closes over the ambient `Tactic`, so it is `Probate^`.
-  given failProbate: Tactic[AsyncError] => (Probate^) = _.delegate: child =>
+  given failProbate: (tactic: Tactic[AsyncError]) => (Probate^{tactic}) = _.delegate: child =>
     if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
 package supervisors:
@@ -116,7 +117,8 @@ def daemon[error <: Hazard](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^): Containment^ =
+def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^)
+:   Containment^{handler, outer} =
   Containment(handler, outer)
 
 
@@ -140,18 +142,21 @@ infix type emits[left, error <: Hazard] = left match
 def async[result, error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
-:   (Task[result] emits (error | AsyncError))^ =
+:   (Task[result] emits (error | AsyncError))^{evaluate, monitor, probate} =
 
-  val tactic = AsyncTactic[error]()
+  // The tactic is per-task bookkeeping owned by the worker; laundered so the handle's
+  // capture set need not name a local.
+  val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
 
 
 def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
-:   (Task[result] emits (error | AsyncError))^ =
+:   (Task[result] emits (error | AsyncError))^{evaluate, monitor, probate} =
 
-  val tactic = AsyncTactic[error]()
+  // As in `async` above.
+  val tactic = caps.unsafe.unsafeAssumePure(AsyncTactic[error]())
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)
 
 
@@ -179,19 +184,22 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
 
 
 extension [result](stream: Progression[result])
-  def concurrent(using Monitor^, Probate^): Progression[result] raises AsyncError =
-    if async(stream.nil).await() then Progression() else stream.head #:: stream.tail.concurrent
+  def concurrent(using monitor: Monitor^, probate: Probate^)
+  :   (Tactic[AsyncError]^) ?->{monitor, probate} Progression[result] =
+    // The task is created and awaited under the same monitor; there is no aliased writer.
+    if scala.caps.unsafe.unsafeAssumeSeparate(async(stream.nil).await())
+    then Progression() else stream.head #:: stream.tail.concurrent
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
-:   result raises AsyncError =
+:   (Tactic[AsyncError]^) ?->{block} result =
 
   block(using Root(threading.supervisor()))
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
-  ( using Tenacity, Monitor )
-:   value raises RetryError =
+  ( using tenacity: Tenacity, monitor: Monitor )
+:   (Tactic[RetryError]^) ?->{evaluate, monitor} value =
 
   @tailrec
   def recur(attempt: Ordinal): value =

@@ -143,23 +143,23 @@ def diff[element]
     else position
 
   @tailrec
-  def trace(deletes: Int, inserts: Int, focus: sci.List[Int], rows: sci.List[Array[Int]])
+  def trace(deletes: Int, inserts: Int, focus: sci.List[Int], rows: sci.List[IArray[Int]])
   :   Diff[element] =
 
-    val delPos = if deletes == 0 then 0 else count(rows.head(deletes - 1) + 1, inserts - deletes)
-    val insPos = if inserts == 0 then 0 else count(rows.head(deletes), inserts - deletes)
+    val delPos = if deletes == 0 then 0 else count(rows.head.stdlib(deletes - 1) + 1, inserts - deletes)
+    val insPos = if inserts == 0 then 0 else count(rows.head.stdlib(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
     then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, sci.Nil, ((best :: focus).reverse).to(Array) :: rows)
+    else trace(0, deletes + 1, sci.Nil, IArray.from((best :: focus).reverse) :: rows)
 
   @tailrec
-  def backtrack(position: Int, deletes: Int, rows: sci.List[Array[Int]], edits: Edits): Edits =
+  def backtrack(position: Int, deletes: Int, rows: sci.List[IArray[Int]], edits: Edits): Edits =
     val rightPosition = position + rows.length - deletes*2
-    lazy val ins = rows.head(deletes) - 1
-    lazy val del = rows.head(deletes - 1)
+    lazy val ins = rows.head.stdlib(deletes) - 1
+    lazy val del = rows.head.stdlib(deletes - 1)
 
     if position == -1 && rightPosition == -1 then edits else if rows.isEmpty
     then

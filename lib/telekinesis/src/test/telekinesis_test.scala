@@ -401,29 +401,35 @@ object Tests extends Suite(m"Telekinesis tests"):
       for blockSize <- blockSizes do
         test(m"fixedBody reads exactly N bytes at block size $blockSize"):
           val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
-          Http.Request.fixedBody(cursor, 5).memoize.utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.fixedBody(cursor, 5).memoize.utf8
 
         . assert(_ == t"hello")
 
         test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
           val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
-          Http.Request.fixedBody(cursor, 5).memoize
-          cursor.remainder.read[Data].utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.fixedBody(cursor, 5).memoize
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            cursor.remainder.read[Data].utf8
 
         . assert(_ == t" world")
 
         test(m"chunkedBody decodes chunks at block size $blockSize"):
           val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
           val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
-          Http.Request.chunkedBody(cursor).memoize.utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.chunkedBody(cursor).memoize.utf8
 
         . assert(_ == t"hello world")
 
         test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
           val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
           val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
-          Http.Request.chunkedBody(cursor).memoize
-          cursor.remainder.read[Data].utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.chunkedBody(cursor).memoize
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            cursor.remainder.read[Data].utf8
 
         . assert(_ == t"NEXT")
 

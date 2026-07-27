@@ -145,26 +145,31 @@ object Http2Serve:
   // scope. `serve` (per-request) is the degenerate session that immediately
   // handles with no per-connection setup; `serveSession` lends the caller an
   // `Http2Session` so it can set up per-connection state first.
-  private def open(in: ji.InputStream, out: ji.OutputStream)(using Monitor)
-  :   (Http2ServerConnection^, Probate) =
+  private def open(in: ji.InputStream, out: ji.OutputStream)(using monitor: Monitor)
+  :   Http2ServerConnection^{monitor} =
+   // The connection is created and used under the same monitor; its fresh capability is
+   // laundered into the declared result.
+   scala.caps.unsafe.unsafeAssumePure:
 
-    // A local (pure) Probate rather than one captured from the accept daemon:
-    // capturing the caller's `Probate` capability would make this call — and so
-    // the accept-daemon body — impure.
-    import probates.cancelProbate
-    given Tactic[AsyncError] = strategies.throwUnsafely
-    given Tactic[StreamError] = strategies.throwUnsafely
-    val connection = Http2ServerConnection(StreamDuplex(in, out))
-    connection.start()
-    (connection, cancelProbate)
+     // A local (pure) Probate rather than one captured from the accept daemon:
+     // capturing the caller's `Probate` capability would make this call — and so
+     // the accept-daemon body — impure.
+     import probates.cancelProbate
+     given Tactic[AsyncError] = strategies.throwUnsafely
+     given Tactic[StreamError] = strategies.throwUnsafely
+     val connection = Http2ServerConnection(StreamDuplex(in, out))
+     connection.start()
+     connection
 
   def serve
     ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
     ( using Monitor, (HttpServerEvent is Loggable)^ )
   :   Unit =
 
-    val (connection, probate) = open(in, out)
-    runStreams(connection, handler.asInstanceOf[AnyRef], port)(using summon, probate)
+    val connection = open(in, out)
+    val probate: Probate = probates.cancelProbate
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      runStreams(connection, handler.asInstanceOf[AnyRef], port)(using summon, probate)
 
   // Serve one HTTP/2 connection as a session: `scope0` — the (rimmed) session
   // scope — runs once when the connection is established and may set up
@@ -178,16 +183,20 @@ object Http2Serve:
     ( using Monitor, (HttpServerEvent is Loggable)^ )
   :   Unit =
 
-    val (connection, probate) = open(in, out)
+    val connection = open(in, out)
+    val probate: Probate = probates.cancelProbate
 
-    val session: Http2Session^ = new Http2Session:
+    // The session retains only the per-connection state; no aliased writer.
+    val session: Http2Session^ = scala.caps.unsafe.unsafeAssumeSeparate:
+     new Http2Session:
       def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection}): Unit =
         // Rim the context-function handler to a neutral `AnyRef => AnyRef`, as
         // the accept loop does for the per-request path.
         val handler0: AnyRef =
           ((ref: AnyRef) => handler(using ref.asInstanceOf[HttpConnection])).asInstanceOf[AnyRef]
 
-        runStreams(connection, handler0, port)(using summon, probate)
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          runStreams(connection, handler0, port)(using summon, probate)
 
     scope0.asInstanceOf[AnyRef => Unit](session.asInstanceOf[AnyRef])
 

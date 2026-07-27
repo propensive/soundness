@@ -96,7 +96,8 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"An opened directory can write and read back an entry"):
         unsafely:
-          root.open[Directory](Read & Write): dir ?=>
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           root.open[Directory](Read & Write): dir ?=>
             val target = dir / "greeting.txt"
             target.overwrite(t"Hello directory")
             target.contents[Text]
@@ -110,13 +111,15 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"The entries of the directory root are listed"):
         unsafely:
-          root.open[Directory](): dir ?=>
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           root.open[Directory](): dir ?=>
             dir.base.entries.stdlib.to(List).map(_.name)
       . assert(_ == List(t"greeting.txt"))
 
       test(m"A removed entry is no longer extant"):
         unsafely:
-          root.open[Directory](Read & Write): dir ?=>
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           root.open[Directory](Read & Write): dir ?=>
             val doomed = dir / "doomed.txt"
             doomed.overwrite(t"temporary")
             doomed.remove()
@@ -133,6 +136,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A write operation without the Write grant does not compile"):
         demilitarize:
+          import strategies.throwUnsafely
           root.open[Directory](): dir ?=>
             (dir / "nope.txt").overwrite(t"nope")
         . map(_.message)
@@ -140,6 +144,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A dot-dot path element does not compile"):
         demilitarize:
+          import strategies.throwUnsafely
           root.open[Directory](): dir ?=>
             dir / ".."
         . map(_.message)
@@ -147,6 +152,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A path from one directory cannot be written under another"):
         demilitarize:
+          import strategies.throwUnsafely
           root.open[Directory](): first ?=>
             root.open[Directory](Read & Write): second ?=>
               (first / "stolen.txt").overwrite(t"nope")
@@ -192,7 +198,8 @@ object Tests extends Suite(m"Galilei tests"):
         unsafely:
           val target: Path on Linux = base / "authored"
 
-          target.create[Directory](): dir ?=>
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           target.create[Directory](): dir ?=>
             (dir / "inner.txt").overwrite(t"hello")
 
           val inner: Path on Linux = target / "inner.txt"
@@ -204,7 +211,8 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "doomed-dir"
 
           capture[IoError]:
-            target.create[Directory](): dir ?=>
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             target.create[Directory](): dir ?=>
               (dir / "x.txt").overwrite(t"data")
               abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
 
@@ -226,7 +234,8 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "doomed.txt"
 
           capture[IoError]:
-            target.create[File](): handle ?=>
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             target.create[File](): handle ?=>
               handle.write(Progression(t"data".in[Data]))
               abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
 
@@ -244,11 +253,12 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A scratch directory works within its scope and vanishes afterwards"):
         unsafely:
-          val (written, stem) = base.open[Scratch](Read & Write): scratch ?=>
-            (scratch / "file.txt").overwrite(t"data")
-            ((scratch / "file.txt").extant(), scratch.stem)
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            val (written, stem) = base.open[Scratch](Read & Write): scratch ?=>
+              (scratch / "file.txt").overwrite(t"data")
+              ((scratch / "file.txt").extant(), scratch.stem)
 
-          (written, stem.exists())
+            (written, stem.exists())
       . assert(_ == (true, false))
 
       test(m"A scratch directory is removed even when the scope fails"):
@@ -257,7 +267,8 @@ object Tests extends Suite(m"Galilei tests"):
           var stem: Optional[Path on Linux] = Unset
 
           capture[IoError]:
-            base.open[Scratch](Read & Write): scratch ?=>
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             base.open[Scratch](Read & Write): scratch ?=>
               stem = scratch.stem
               abort(IoError(base, IoError.Operation.Write, IoError.Reason.Unsupported))
 
@@ -292,6 +303,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"A positional write without the Write grant does not compile"):
         demilitarize:
+          import strategies.throwUnsafely
           ramFile.open[Ram](): ram ?=>
             ram(0L) = t"no".in[Data]
         . map(_.message)
@@ -318,6 +330,7 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"Growing without the Write grant does not compile"):
         demilitarize:
+          import strategies.throwUnsafely
           ramFile.open[Ram](): ram ?=>
             ram.grow(20L)
         . map(_.message)
@@ -361,7 +374,8 @@ object Tests extends Suite(m"Galilei tests"):
 
       test(m"Overlapping Read opens coexist"):
         unsafely:
-          outer.open[Directory](): a ?=>
+          scala.caps.unsafe.unsafeAssumeSeparate:
+           outer.open[Directory](): a ?=>
             inner.open[Directory](): b ?=>
               true
       . assert(_ == true)
@@ -370,7 +384,8 @@ object Tests extends Suite(m"Galilei tests"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
           capture[IoError]:
-            outer.open[Directory](): a ?=>
+            scala.caps.unsafe.unsafeAssumeSeparate:
+             outer.open[Directory](): a ?=>
               inner.open[Directory](Read & Exclusive) { () }
           . reason
       . assert(_ == IoError.Reason.Busy)
@@ -379,16 +394,18 @@ object Tests extends Suite(m"Galilei tests"):
         import errorDiagnostics.emptyDiagnostics
         unsafely:
           capture[IoError]:
-            outer.open[Directory](Read & Exclusive): a ?=>
-              inner.open[Directory]() { () }
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              outer.open[Directory](Read & Exclusive): a ?=>
+                inner.open[Directory]() { () }
           . reason
       . assert(_ == IoError.Reason.Busy)
 
       test(m"An Exclusive open of a sibling does not conflict"):
         unsafely:
-          outer.open[Directory](Read & Exclusive): a ?=>
-            sibling.open[Directory](Read & Exclusive): b ?=>
-              true
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            outer.open[Directory](Read & Exclusive): a ?=>
+              sibling.open[Directory](Read & Exclusive): b ?=>
+                true
       . assert(_ == true)
 
       test(m"An Exclusive scope is released when it ends"):

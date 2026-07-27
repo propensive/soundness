@@ -70,8 +70,8 @@ object Process:
 // process.
 class Process private (java: ProcessHandle) extends ProcessRef, caps.ExclusiveCapability:
   def pid: Pid = Pid(java.pid)
-  def kill(): Unit logs ExecEvent = java.destroy()
-  def abort(): Unit logs ExecEvent = java.destroyForcibly()
+  def kill()(using (ExecEvent is Loggable)^): Unit = java.destroy()
+  def abort()(using (ExecEvent is Loggable)^): Unit = java.destroyForcibly()
   def alive: Boolean = java.isAlive
   def attend(): Unit = java.onExit.nn.get()
 

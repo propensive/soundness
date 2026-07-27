@@ -57,8 +57,8 @@ private[hallucination] object Vp8Filter:
     val b = clamp(a0 + 3) >> 3
     val a = clamp(a0 + 4) >> 3
 
-    p(q0i) = unsigned(q0 - a)
-    p(p0i) = unsigned(p0 + b)
+    writable(p)(q0i) = unsigned(q0 - a)
+    writable(p)(p0i) = unsigned(p0 + b)
     a
 
   private inline def simpleThreshold(limit: Int, p0: Int, q0: Int, p1: Int, q1: Int): Boolean =
@@ -85,8 +85,8 @@ private[hallucination] object Vp8Filter:
       val a = (commonAdjust(hv, p, base + 2, base + 3, base + 4, base + 5) + 1) >> 1
 
       if !hv then
-        p(base + 5) = unsigned(signed(p(base + 5)) - a)
-        p(base + 2) = unsigned(signed(p(base + 2)) + a)
+        writable(p)(base + 5) = unsigned(signed(p(base + 5)) - a)
+        writable(p)(base + 2) = unsigned(signed(p(base + 2)) + a)
 
   def macroblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: Array[Int], base: Int)
   :   Unit =
@@ -97,11 +97,11 @@ private[hallucination] object Vp8Filter:
         val q0 = signed(p(base + 4)); val q1 = signed(p(base + 5)); val q2 = signed(p(base + 6))
         val w = clamp(clamp(p1 - q1) + 3*(q0 - p0))
         val a1 = clamp((27*w + 63) >> 7)
-        p(base + 4) = unsigned(q0 - a1); p(base + 3) = unsigned(p0 + a1)
+        writable(p)(base + 4) = unsigned(q0 - a1); writable(p)(base + 3) = unsigned(p0 + a1)
         val a2 = clamp((18*w + 63) >> 7)
-        p(base + 5) = unsigned(q1 - a2); p(base + 2) = unsigned(p1 + a2)
+        writable(p)(base + 5) = unsigned(q1 - a2); writable(p)(base + 2) = unsigned(p1 + a2)
         val a3 = clamp((9*w + 63) >> 7)
-        p(base + 6) = unsigned(q2 - a3); p(base + 1) = unsigned(p2 + a3)
+        writable(p)(base + 6) = unsigned(q2 - a3); writable(p)(base + 1) = unsigned(p2 + a3)
       else
         commonAdjust(true, p, base + 2, base + 3, base + 4, base + 5)
 
@@ -123,8 +123,8 @@ private[hallucination] object Vp8Filter:
         (commonAdjust(hv, p, point - 2*stride, point - stride, point, point + stride) + 1) >> 1
 
       if !hv then
-        p(point + stride) = unsigned(signed(p(point + stride)) - a)
-        p(point - 2*stride) = unsigned(signed(p(point - 2*stride)) + a)
+        writable(p)(point + stride) = unsigned(signed(p(point + stride)) - a)
+        writable(p)(point - 2*stride) = unsigned(signed(p(point - 2*stride)) + a)
 
   def macroblockFilterVertical
     ( hev: Int, interior: Int, edge: Int, p: Array[Int], point: Int, stride: Int )
@@ -140,10 +140,10 @@ private[hallucination] object Vp8Filter:
         val q1 = signed(p(point + stride)); val q2 = signed(p(point + 2*stride))
         val w = clamp(clamp(p1 - q1) + 3*(q0 - p0))
         val a1 = clamp((27*w + 63) >> 7)
-        p(point) = unsigned(q0 - a1); p(point - stride) = unsigned(p0 + a1)
+        writable(p)(point) = unsigned(q0 - a1); writable(p)(point - stride) = unsigned(p0 + a1)
         val a2 = clamp((18*w + 63) >> 7)
-        p(point + stride) = unsigned(q1 - a2); p(point - 2*stride) = unsigned(p1 + a2)
+        writable(p)(point + stride) = unsigned(q1 - a2); writable(p)(point - 2*stride) = unsigned(p1 + a2)
         val a3 = clamp((9*w + 63) >> 7)
-        p(point + 2*stride) = unsigned(q2 - a3); p(point - 3*stride) = unsigned(p2 + a3)
+        writable(p)(point + 2*stride) = unsigned(q2 - a3); writable(p)(point - 3*stride) = unsigned(p2 + a3)
       else
         commonAdjust(true, p, point - 2*stride, point - stride, point, point + stride)
