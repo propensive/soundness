@@ -53,4 +53,8 @@ class Buffer[element: ClassTag](initialSize: Int) extends caps.Mutable:
   def at(index: Int): Optional[element] =
     if index >= 0 && index < array.length then array(index) else Unset
 
-  update def place(index: Int, value: element): Unit = array(index) = value
+  update def update(index: Int, value: element): Unit = array(index) = value
+
+  update def copyFrom(source: IArray[element], sourceStart: Int, targetStart: Int, count: Int)
+  :   Unit =
+    java.lang.System.arraycopy(source, sourceStart, array, targetStart, count)

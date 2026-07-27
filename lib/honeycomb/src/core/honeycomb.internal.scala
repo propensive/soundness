@@ -637,29 +637,29 @@ object internal:
     def apply(pairs: (Text, Optional[Text])*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length
-        val arr = new Array[String | Null](n*2)
+        val buffer = Buffer[String | Null](n*2)
         var i = 0
 
         pairs.foreach: pair =>
-          arr(i*2) = pair._1.s
-          arr(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
+          buffer(i*2) = pair._1.s
+          buffer(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
           i += 1
 
-        arr.immutable(using Unsafe)
+        Buffer.freeze(buffer)
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
       val entries = map.stdlib
       if entries.isEmpty then empty else
         val n = entries.size
-        val arr = new Array[String | Null](n*2)
+        val buffer = Buffer[String | Null](n*2)
         var i = 0
 
         entries.foreach: (k, v) =>
-          arr(i*2) = k.s
-          arr(i*2 + 1) = v.lay(null: String | Null)(_.s)
+          buffer(i*2) = k.s
+          buffer(i*2 + 1) = v.lay(null: String | Null)(_.s)
           i += 1
 
-        arr.immutable(using Unsafe)
+        Buffer.freeze(buffer)
 
     // Construct an `Attributes` directly from an interleaved `IArray`. The
     // caller guarantees the array's length is even and that every key slot
