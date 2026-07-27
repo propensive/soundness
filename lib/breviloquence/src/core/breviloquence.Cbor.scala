@@ -242,7 +242,7 @@ object Cbor extends Cbor2, Dynamic:
 
     def map(keys: IArray[Any], values: IArray[Any]): Ast =
       val count = keys.length
-      val array = new Array[Any](count*2)
+      val array = Buffer[Any](count*2)
       var index = 0
 
       while index < count do
@@ -250,16 +250,16 @@ object Cbor extends Cbor2, Dynamic:
         array(index*2 + 1) = values(index)
         index += 1
 
-      array.asInstanceOf[IArray[Any]]
+      Buffer.freeze(array)
 
     def array(elements: IArray[Any]): Ast =
       val count = elements.length
 
       if (count&1) == 1 then elements else
-        val padded = new Array[Any](count + 1)
-        System.arraycopy(elements.asInstanceOf[Array[Any]], 0, padded, 0, count)
+        val padded = Buffer[Any](count + 1)
+        padded.copyFrom(elements, 0, 0, count)
         padded(count) = Sentinel
-        padded.asInstanceOf[IArray[Any]]
+        Buffer.freeze(padded)
 
     def length(cbor: Ast): Int =
       val array = cbor.asInstanceOf[Array[AnyRef]]
@@ -488,7 +488,7 @@ object Cbor extends Cbor2, Dynamic:
         val n = origin.root.elements
 
         if n <= ordinal.n0 then origin else Cbor.ast:
-          val updated = new Array[Any](n)
+          val updated = Buffer[Any](n)
           var i = 0
 
           while i < n do
@@ -498,7 +498,7 @@ object Cbor extends Cbor2, Dynamic:
 
             i += 1
 
-          Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
+          Cbor.Ast.array(Buffer.freeze(updated))
       else
         origin
 
@@ -508,14 +508,14 @@ object Cbor extends Cbor2, Dynamic:
         val n = origin.root.elements
 
         Cbor.ast:
-          val updated = new Array[Any](n)
+          val updated = Buffer[Any](n)
           var i = 0
 
           while i < n do
             updated(i) = lambda(Cbor.ast(origin.root.element(i))).root
             i += 1
 
-          Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
+          Cbor.Ast.array(Buffer.freeze(updated))
       else
         origin
 
@@ -530,7 +530,7 @@ object Cbor extends Cbor2, Dynamic:
         val n = origin.root.elements
 
         Cbor.ast:
-          val updated = new Array[Any](n)
+          val updated = Buffer[Any](n)
           var i = 0
 
           while i < n do
@@ -538,7 +538,7 @@ object Cbor extends Cbor2, Dynamic:
             updated(i) = (if predicate(element) then lambda(element) else element).root
             i += 1
 
-          Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
+          Cbor.Ast.array(Buffer.freeze(updated))
       else
         origin
 
@@ -972,11 +972,11 @@ object Cbor extends Cbor2, Dynamic:
         case 31 => -1L
         case _  => abort(CborError(Reason.Reserved(headOffset, info)))
 
-    private inline def readBytes(length: Int): IArray[Byte] =
-      val result = new Array[Byte](length)
-      System.arraycopy(data, offset, result, 0, length)
+    private def readBytes(length: Int): IArray[Byte] =
+      val result = Buffer[Byte](length)
+      System.arraycopy(data, offset, result.raw, 0, length)
       offset += length
-      result.asInstanceOf[IArray[Byte]]
+      Buffer.freeze(result)
 
     private inline def boundedLength(length: Long, headOffset: Long): Int raises CborError =
       if length < 0 || length > Int.MaxValue then abort(CborError(Reason.Overflow(headOffset)))
@@ -1103,10 +1103,10 @@ object Cbor extends Cbor2, Dynamic:
         val length = head & 0x1F
         val end = pos + 1 + length
         if end > data.length then abort(CborError(Reason.Truncated(pos.toLong)))
-        val out = new Array[Byte](length)
-        System.arraycopy(data, pos + 1, out, 0, length)
+        val out = Buffer[Byte](length)
+        System.arraycopy(data, pos + 1, out.raw, 0, length)
         offset = end
-        return Cbor.Ast(out.asInstanceOf[IArray[Byte]])
+        return Cbor.Ast(Buffer.freeze(out))
 
       val headOffset = pos.toLong
       val major = head >>> 5
@@ -1157,7 +1157,7 @@ object Cbor extends Cbor2, Dynamic:
 
             val count = items.length
             val padded = (count&1) == 0
-            val out = new Array[Any](if padded then count + 1 else count)
+            val out = Buffer[Any](if padded then count + 1 else count)
             var index = 0
 
             while index < count do
@@ -1165,7 +1165,7 @@ object Cbor extends Cbor2, Dynamic:
               index += 1
 
             if padded then out(count) = Cbor.Ast.Sentinel
-            Cbor.Ast(out.asInstanceOf[IArray[Any]])
+            Cbor.Ast(Buffer.freeze(out))
           else
             val length = readLength(info, headOffset)
 
@@ -1176,7 +1176,7 @@ object Cbor extends Cbor2, Dynamic:
             // (odd length, with sentinel pad if logical count is even). One allocation
             // instead of two; no separate IArray.from copy.
             val padded = (count&1) == 0
-            val items = new Array[Any](if padded then count + 1 else count)
+            val items = Buffer[Any](if padded then count + 1 else count)
             var index = 0
 
             while index < count do
@@ -1184,7 +1184,7 @@ object Cbor extends Cbor2, Dynamic:
               index += 1
 
             if padded then items(count) = Cbor.Ast.Sentinel
-            Cbor.Ast(items.asInstanceOf[IArray[Any]])
+            Cbor.Ast(Buffer.freeze(items))
 
         case 5 =>
           if info == 31 then
@@ -1206,10 +1206,10 @@ object Cbor extends Cbor2, Dynamic:
                 items += value()
                 items += value()
 
-            val out = new Array[Any](items.length)
+            val out = Buffer[Any](items.length)
             var index = 0
             while index < items.length do { out(index) = items(index); index += 1 }
-            Cbor.Ast(out.asInstanceOf[IArray[Any]])
+            Cbor.Ast(Buffer.freeze(out))
 
           else
             val length = readLength(info, headOffset)
@@ -1218,7 +1218,7 @@ object Cbor extends Cbor2, Dynamic:
             then abort(CborError(Reason.Overflow(headOffset)))
 
             val count = length.toInt
-            val items = new Array[Any](count*2)
+            val items = Buffer[Any](count*2)
             var index = 0
 
             while index < count do
@@ -1226,7 +1226,7 @@ object Cbor extends Cbor2, Dynamic:
               items(index*2 + 1) = value()
               index += 1
 
-            Cbor.Ast(items.asInstanceOf[IArray[Any]])
+            Cbor.Ast(Buffer.freeze(items))
 
         case 6 =>
           val tag = readLength(info, headOffset)
@@ -1351,10 +1351,10 @@ object Cbor extends Cbor2, Dynamic:
         val length = head & 0x1F
         val end = pos + 1 + length
         if end > data.length then abort(CborError(Reason.Truncated(pos.toLong)))
-        val out = new Array[Byte](length)
-        System.arraycopy(data, pos + 1, out, 0, length)
+        val out = Buffer[Byte](length)
+        System.arraycopy(data, pos + 1, out.raw, 0, length)
         offset = end
-        out.asInstanceOf[IArray[Byte]]
+        Buffer.freeze(out)
       else if (head >>> 5) == 2 then
         offset = pos + 1
 
@@ -1655,17 +1655,17 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
 
     root.index(field) match
       case -1 =>
-        val out = new Array[Any](length + 2)
-        System.arraycopy(array.asInstanceOf[Array[Any]], 0, out, 0, length)
+        val out = Buffer[Any](length + 2)
+        out.copyFrom(array, 0, 0, length)
         out(length) = field
         out(length + 1) = value.root
-        Cbor.ast(Cbor.Ast(out.asInstanceOf[IArray[Any]]))
+        Cbor.ast(Cbor.Ast(Buffer.freeze(out)))
 
       case index =>
-        val out = new Array[Any](length)
-        System.arraycopy(array.asInstanceOf[Array[Any]], 0, out, 0, length)
+        val out = Buffer[Any](length)
+        out.copyFrom(array, 0, 0, length)
         out(index*2 + 1) = value.root
-        Cbor.ast(Cbor.Ast(out.asInstanceOf[IArray[Any]]))
+        Cbor.ast(Cbor.Ast(Buffer.freeze(out)))
 
   private[breviloquence] def delete(field: String): Cbor raises CborError =
     if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
@@ -1676,11 +1676,11 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
       case -1 => Cbor.ast(root)
 
       case index =>
-        val out = new Array[Any](length - 2)
-        System.arraycopy(array, 0, out, 0, index*2)
+        val out = Buffer[Any](length - 2)
+        System.arraycopy(array, 0, out.raw, 0, index*2)
 
-        System.arraycopy(array, index*2 + 2, out, index*2, length - index*2 - 2)
-        Cbor.ast(Cbor.Ast(out.asInstanceOf[IArray[Any]]))
+        System.arraycopy(array, index*2 + 2, out.raw, index*2, length - index*2 - 2)
+        Cbor.ast(Cbor.Ast(Buffer.freeze(out)))
 
   def apply(field: Text): Cbor raises CborError =
     if root.unset then Cbor.ast(Cbor.Ast(Unset))
