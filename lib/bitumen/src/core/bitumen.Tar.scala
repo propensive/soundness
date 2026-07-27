@@ -132,16 +132,16 @@ object Tar:
         def hasNext: Boolean = replenish()
 
         def next(): Data =
-          val block = new Array[Byte](512)
+          val block = Buffer[Byte](512)
           var position = 0
 
           while position < 512 && replenish() do
             val count = (chunk.length - offset).min(512 - position)
-            System.arraycopy(chunk.mutable(using Unsafe), offset, block, position, count)
+            block.copyFrom(chunk, offset, position, count)
             offset += count
             position += count
 
-          block.immutable(using Unsafe)
+          Buffer.freeze(block)
 
   enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File
