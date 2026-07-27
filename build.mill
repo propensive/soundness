@@ -2466,7 +2466,7 @@ object umbrageous extends Library:
 object vacuous extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core)
 
 object vexillology extends Library:

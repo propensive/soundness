@@ -30,11 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package vacuous
 
-export
-  vacuous
-  . { absent, assume, Buffer, compact, Concrete, Default, default, Distinct, Extractor,
-      invite, javaOptional, lay, layGiven, let, letGiven, Mandatable, mask, only, optimizable,
-      option, Optional, optional, Optionality, or, per, present, presume, puncture,
-      unless, Unsafe, Unset, UnsetError, vouch }
+import scala.caps
+import scala.reflect.ClassTag
+
+// A `Buffer` is a fixed-size mutable array whose access rights are tracked by separation
+// checking: any reference can read, but only an exclusive (`^`) reference can write, aliased
+// writers are rejected, and `freeze` consumes the buffer to yield an immutable `IArray`
+// without copying -- sound because `consume` statically retires every writer.
+object Buffer:
+  def apply[element: ClassTag](size: Int): Buffer[element]^ = new Buffer(size)
+
+  def freeze[element](consume buffer: Buffer[element]^): IArray[element] =
+    buffer.array.asInstanceOf[IArray[element]]
+
+class Buffer[element: ClassTag](initialSize: Int) extends caps.Mutable:
+  private[vacuous] val array: Array[element]^ = new Array[element](initialSize)
+
+  def length: Int = array.length
+
+  def at(index: Int): Optional[element] =
+    if index >= 0 && index < array.length then array(index) else Unset
+
+  update def place(index: Int, value: element): Unit = array(index) = value
