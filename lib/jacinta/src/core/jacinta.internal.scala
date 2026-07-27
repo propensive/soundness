@@ -277,7 +277,7 @@ object internal:
       case _ =>
         plain
 
-  opaque type Bcd = Array[Double]
+  opaque type Bcd = IArray[Double]
 
   object Bcd:
     // Header masks for the raw-bits layout. Data words use all 64 bits.
@@ -303,7 +303,7 @@ object internal:
       fromRawBits(sign | (count.toLong & MantissaMask))
 
     // Internal: wrap a freshly-built header+data array as a `Bcd`.
-    private[jacinta] inline def wrap(arr: Array[Double]): Bcd = arr
+    private[jacinta] inline def wrap(arr: Array[Double]): Bcd = IArray.unsafeFromArray(arr)
 
     // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
     // a `Json.Ast` array variant. One number per Long:
@@ -450,7 +450,7 @@ object internal:
       val arr = new Array[Double](2)
       arr(0) = packHeaderDouble(negative, 15)
       arr(1) = packDataDouble(content)
-      arr
+      IArray.unsafeFromArray(arr)
 
     // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
     // matches the in-AST representation a parser would produce for the same
@@ -554,7 +554,7 @@ object internal:
         arr(0) = packHeaderDouble(negative, nibbles)
         System.arraycopy(data, 0, arr, 1, wordIdx)
         if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
-        arr
+        IArray.unsafeFromArray(arr)
 
       private update def ensureCapacity(needed: Int): Unit =
         if needed > data.length then
