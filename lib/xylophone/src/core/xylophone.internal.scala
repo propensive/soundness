@@ -790,29 +790,29 @@ object internal:
     def apply(pairs: (Text, Text)*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length
-        val arr = new Array[String](n*2)
+        val buffer = Buffer[String](n*2)
         var i = 0
 
         pairs.foreach: pair =>
-          arr(i*2) = pair._1.s
-          arr(i*2 + 1) = pair._2.s
+          buffer(i*2) = pair._1.s
+          buffer(i*2 + 1) = pair._2.s
           i += 1
 
-        arr.immutable(using Unsafe)
+        Buffer.freeze(buffer)
 
     def from(map: Map[Text, Text]): Attributes =
       val entries = map.stdlib
       if entries.isEmpty then empty else
         val n = entries.size
-        val arr = new Array[String](n*2)
+        val buffer = Buffer[String](n*2)
         var i = 0
 
         entries.foreach: (k, v) =>
-          arr(i*2) = k.s
-          arr(i*2 + 1) = v.s
+          buffer(i*2) = k.s
+          buffer(i*2 + 1) = v.s
           i += 1
 
-        arr.immutable(using Unsafe)
+        Buffer.freeze(buffer)
 
     // Construct an `Attributes` directly from an interleaved `IArray`. The
     // caller guarantees the array's length is even and that every key slot
@@ -981,10 +981,10 @@ object internal:
           i += 2
 
         if idx < 0 then attrs else
-          val nu = new Array[String](n - 2)
-          if idx > 0 then jl.System.arraycopy(a, 0, nu, 0, idx)
-          if idx < n - 2 then jl.System.arraycopy(a, idx + 2, nu, idx, n - 2 - idx)
-          nu.immutable(using Unsafe)
+          val nu = Buffer[String](n - 2)
+          if idx > 0 then nu.copyFrom(attrs, 0, 0, idx)
+          if idx < n - 2 then nu.copyFrom(attrs, idx + 2, idx, n - 2 - idx)
+          Buffer.freeze(nu)
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -1006,16 +1006,16 @@ object internal:
           i += 2
 
         if idx >= 0 then
-          val nu = new Array[String](n)
-          jl.System.arraycopy(a, 0, nu, 0, n)
+          val nu = Buffer[String](n)
+          nu.copyFrom(attrs, 0, 0, n)
           nu(idx + 1) = value.s
-          nu.immutable(using Unsafe)
+          Buffer.freeze(nu)
         else
-          val nu = new Array[String](n + 2)
-          jl.System.arraycopy(a, 0, nu, 0, n)
+          val nu = Buffer[String](n + 2)
+          nu.copyFrom(attrs, 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.s
-          nu.immutable(using Unsafe)
+          Buffer.freeze(nu)
 
       def `++`(other: Attributes): Attributes =
         val a = storage(attrs)
@@ -1025,7 +1025,7 @@ object internal:
         else if a.length == 0 then other
         else
           val total = a.length + b.length
-          val nu = new Array[String](total)
+          val nu = Buffer[String](total)
           var written = 0
           var i = 0
 
@@ -1061,11 +1061,12 @@ object internal:
 
             j += 2
 
-          if written == total then nu.immutable(using Unsafe)
-          else
-            val tu = new Array[String](written)
-            jl.System.arraycopy(nu, 0, tu, 0, written)
-            tu.immutable(using Unsafe)
+          val frozen = Buffer.freeze(nu)
+
+          if written == total then frozen else
+            val tu = Buffer[String](written)
+            tu.copyFrom(frozen, 0, 0, written)
+            Buffer.freeze(tu)
 
       def `++`(other: Map[Text, Text]): Attributes =
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
