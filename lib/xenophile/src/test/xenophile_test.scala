@@ -230,7 +230,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an unknown enum entry lists the real ones"):
         demilitarize:
-          entry[kotlin.text.RegexOption]("IGNORE_CAES")
+          xenophile.entry[kotlin.text.RegexOption]("IGNORE_CAES")
         . map(_.message)
       . assert(_.exists(_.contains("IGNORE_CASE")))
 
