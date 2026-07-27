@@ -34,6 +34,8 @@ package pneumatic
 
 import proscenium.compat.*
 
+import vacuous.*
+
 // The integrity checks an XZ stream may carry over each block's uncompressed data. The stream flags
 // name one type for the whole stream: 0x00 none, 0x01 CRC-32, 0x04 CRC-64, 0x0A SHA-256. We compute
 // and verify none/CRC-32/CRC-64; SHA-256-checked streams still decode, but the check is skipped
@@ -64,7 +66,7 @@ private[pneumatic] object XzCheck:
 
 private[pneumatic] object Crc64:
   val table: IArray[Long] =
-    val result: Array[Long]^ = new Array[Long](256)
+    val result = Buffer[Long](256)
     val poly = 0xc96c5795d7870f42L
     var n = 0
 
@@ -75,8 +77,7 @@ private[pneumatic] object Crc64:
       result(n) = c
       n += 1
 
-    // The table is fresh and never written after construction.
-    IArray.unsafeFromArray(result)
+    Buffer.freeze(result)
 
 // A check that accumulates over the uncompressed bytes and yields its little-endian trailer bytes.
 private[pneumatic] trait XzChecker:

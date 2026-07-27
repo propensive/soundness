@@ -34,6 +34,8 @@ package pneumatic
 
 import proscenium.compat.*
 
+import vacuous.*
+
 // Shared definitions for the pure-Scala DEFLATE implementation, ported faithfully from JZlib
 // (com.jcraft.jzlib, BSD 3-clause, Copyright (c) 2000-2011 ymnk, JCraft, Inc.), itself a port of
 // zlib by Jean-loup Gailly and Mark Adler. Because this port is pure Scala, the `Deflate`, `Gzip`
@@ -156,7 +158,7 @@ private[pneumatic] final class Adler32 extends FlateChecksum:
 
 private[pneumatic] object Crc32:
   val table: IArray[Int] =
-    val result: Array[Int]^ = new Array[Int](256)
+    val result = Buffer[Int](256)
     var n = 0
 
     while n < 256 do
@@ -170,8 +172,7 @@ private[pneumatic] object Crc32:
       result(n) = c
       n += 1
 
-    // The table is fresh and never written after construction.
-    IArray.unsafeFromArray(result)
+    Buffer.freeze(result)
 
 private[pneumatic] final class Crc32 extends FlateChecksum:
   @scala.caps.unsafe.untrackedCaptures
