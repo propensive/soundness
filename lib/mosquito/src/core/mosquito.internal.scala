@@ -52,7 +52,7 @@ object internal:
       new Vector(IArray.of(tuple.toIArray))
 
     def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
-      val array: Array[Any] = new Array(size)
+      val buffer = Buffer[Any](size)
       var i = 0
       var rest = list
 
@@ -62,11 +62,11 @@ object internal:
             return Unset
 
           case head :: tail =>
-            array(i) = head
+            buffer(i) = head
             rest = tail
             i += 1
 
-      new Vector[element, size.type](array.immutable(using Unsafe))
+      new Vector[element, size.type](Buffer.freeze(buffer))
 
 
     given addable

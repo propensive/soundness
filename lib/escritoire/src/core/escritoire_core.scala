@@ -83,14 +83,17 @@ package columnar:
 
     val plain = text.plain.s
     val n = plain.length
-    val arr = new Array[Int](n + 1)
+    val buffer = Buffer[Int](n + 1)
+    var total = 0
     var i = 0
+    buffer(0) = 0
 
     while i < n do
-      arr(i + 1) = arr(i) + summon[Char is Measurable].width(plain.charAt(i))
+      total += summon[Char is Measurable].width(plain.charAt(i))
+      buffer(i + 1) = total
       i += 1
 
-    arr.immutable(using Unsafe)
+    Buffer.freeze(buffer)
 
   // Sum of char widths over `text.plain`.
   private def displayWidth[textual: Textual](text: textual)(using Text is Measurable): Int =
