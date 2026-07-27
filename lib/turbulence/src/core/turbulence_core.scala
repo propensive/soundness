@@ -355,9 +355,9 @@ extension (stream: Progression[Data])
           if destPos == 0 then Progression()
           else
             // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
-            val out = new Array[Byte](destPos)
-            jl.System.arraycopy(dest, 0, out, 0, destPos)
-            Progression(out.immutable(using Unsafe).asInstanceOf[Data])
+            val out = Buffer[Byte](destPos)
+            jl.System.arraycopy(dest, 0, out.raw, 0, destPos)
+            Progression(Buffer.freeze(out).asInstanceOf[Data])
 
     recur(stream, 0, newArray(), 0)
 
