@@ -54,10 +54,31 @@ object Buffer:
       if index >= 0 && index < buffer.length then buffer(index) else Unset
 
   extension [element](buffer: Buffer[element]^)
+    // An exclusive reference has sole ownership, so it may also read without the
+    // `Optional` guard: nobody else can have resized or replaced the content.
+    def apply(index: Int): element = buffer(index)
+
     def update(index: Int, value: element): Unit = buffer(index) = value
+
+    def fill(value: element): Unit =
+      var index = 0
+
+      while index < buffer.length do
+        buffer(index) = value
+        index += 1
 
     def copyFrom(source: IArray[element], sourceStart: Int, targetStart: Int, count: Int)
     :   Unit =
       java.lang.System.arraycopy(source, sourceStart, buffer, targetStart, count)
+
+    def copyFromBuffer
+      ( source: Buffer[element]^{caps.any.rd}, sourceStart: Int, targetStart: Int, count: Int )
+    :   Unit =
+      java.lang.System.arraycopy(source, sourceStart, buffer, targetStart, count)
+
+    // The underlying array, exclusively: the escape for JDK interop (`random.nextBytes`,
+    // `stream.read`, `System.arraycopy` from external sources). The result aliases the
+    // buffer, so it shares the buffer's exclusivity rather than escaping it.
+    def raw: Array[element]^ = buffer
 
 opaque type Buffer[element] = Array[element]
