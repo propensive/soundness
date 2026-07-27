@@ -94,14 +94,14 @@ object Blake3:
     mix(state, 3, 4,  9, 14, m(14), m(15))
 
   private def permute(m: Array[Int]^): Unit =
-    val out: Array[Int]^ = new Array[Int](16)
+    val out = Buffer[Int](16)
     var i = 0
 
     while i < 16 do
       out(i) = m(MsgPermutation(i))
       i += 1
 
-    System.arraycopy(out, 0, m, 0, 16)
+    System.arraycopy(out.raw, 0, m, 0, 16)
 
   private def compress
     ( chainingValue: Array[Int],
@@ -165,8 +165,8 @@ object Blake3:
       System.arraycopy(out, 0, cv, 0, 8)
       cv
 
-    def rootOutputBytes(outLen: Int): Array[Byte] =
-      val result = new Array[Byte](outLen)
+    def rootOutputBytes(outLen: Int): IArray[Byte] =
+      val result = Buffer[Byte](outLen)
       var blockCounter = 0L
       var pos = 0
 
@@ -184,7 +184,7 @@ object Blake3:
         pos += take
         blockCounter += 1
 
-      result
+      Buffer.freeze(result)
 
   private def parentOutput
     ( leftCv: Array[Int], rightCv: Array[Int], keyWords: Array[Int], flags: Int )
@@ -317,7 +317,7 @@ object Blake3:
         i -= 1
         current = parentOutput(cvStack(i), current.chainingValue(), keyWords, flags)
 
-      current.rootOutputBytes(outLen).immutable(using Unsafe)
+      current.rootOutputBytes(outLen)
 
   given hash: (hashing: Hashing { def blake3: Hashing.Function }) => Hash in Blake3 =
     Hash(t"BLAKE3", t"HMAC-BLAKE3", hashing.blake3)

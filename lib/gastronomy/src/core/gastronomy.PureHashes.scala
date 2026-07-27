@@ -94,13 +94,13 @@ private[gastronomy] object PureHashes:
       h(0) += a; h(1) += b; h(2) += c; h(3) += d
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
-    protected def result(): Array[Byte]^ =
-      val out: Array[Byte]^ = new Array[Byte](outputBytes)
+    protected def result(): Data =
+      val out = Buffer[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
 
-      out
+      Buffer.freeze(out)
 
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
   final class Sha512(initial: IArray[Long], outputBytes: Int) extends BlockDigestion(128):
@@ -155,13 +155,13 @@ private[gastronomy] object PureHashes:
       h(0) += a; h(1) += b; h(2) += c; h(3) += d
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
-    protected def result(): Array[Byte]^ =
-      val out: Array[Byte]^ = new Array[Byte](outputBytes)
+    protected def result(): Data =
+      val out = Buffer[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/8) >>> ((7 - i%8)*8)).toByte; i += 1 }
 
-      out
+      Buffer.freeze(out)
 
   // SHA-1 (RFC 3174).
   final class Sha1 extends BlockDigestion(64):
@@ -218,14 +218,14 @@ private[gastronomy] object PureHashes:
 
       h0 += a; h1 += b; h2 += c; h3 += d; h4 += e
 
-    protected def result(): Array[Byte]^ =
+    protected def result(): Data =
       val h = Array(h0, h1, h2, h3, h4)
-      val out: Array[Byte]^ = new Array[Byte](20)
+      val out = Buffer[Byte](20)
       var i = 0
 
       while i < 20 do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
 
-      out
+      Buffer.freeze(out)
 
   // MD5 (RFC 1321). Little-endian throughout, unlike the SHA family.
   final class Md5 extends BlockDigestion(64):
@@ -287,18 +287,18 @@ private[gastronomy] object PureHashes:
 
       a0 += a; b0 += b; c0 += c; d0 += d
 
-    protected def result(): Array[Byte]^ =
+    protected def result(): Data =
       val h = Array(a0, b0, c0, d0)
-      val out: Array[Byte]^ = new Array[Byte](16)
+      val out = Buffer[Byte](16)
       var i = 0
 
       while i < 16 do { out(i) = (h(i/4) >>> ((i%4)*8)).toByte; i += 1 }
 
-      out
+      Buffer.freeze(out)
 
   object Crc32:
     val table: IArray[Int] =
-      val result: Array[Int]^ = new Array[Int](256)
+      val result = Buffer[Int](256)
       var n = 0
 
       while n < 256 do
@@ -308,7 +308,7 @@ private[gastronomy] object PureHashes:
         result(n) = c
         n += 1
 
-      result.asInstanceOf[IArray[Int]]
+      Buffer.freeze(result)
 
   // CRC-32 (RFC 1952), the checksum used by gzip and zip.
   final class Crc32 extends Digestion:
@@ -355,7 +355,7 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
   private var totalBytes: Long = 0
 
   protected def compress(data: Array[Byte], start: Int): Unit
-  protected def result(): Array[Byte]^
+  protected def result(): Data
   protected def bitLengthBytes: Int
   protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit
 
@@ -404,4 +404,4 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
     compress(filledPad, 0)
     if twoBlocks then compress(filledPad, blockSize)
 
-    result().immutable(using Unsafe)
+    result()
