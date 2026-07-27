@@ -60,16 +60,16 @@ object Bufferable extends ProductDerivable[Bufferable]:
   // given long: Long is Bufferable = Bufferable(8)(B64(_, _).i64.long)
 
   class Join[derivation <: Product: ProductReflection]
-    ( val width: Int, buffer0: (Buffer, derivation) -> Unit )
+    ( val width: Int, buffer0: (Sextant, derivation) -> Unit )
   extends Bufferable:
     type Self = derivation
-    def buffer(buffer: Buffer, value: derivation): Unit = buffer0(buffer, value)
+    def sextant(sextant: Sextant, value: derivation): Unit = buffer0(sextant, value)
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Bufferable =
     Join[derivation]
       ( contexts[derivation]() { [field] => _.width }.sum,
-        (buffer, value) => fields(value) { [field] => field => contextual.buffer(buffer, field) } )
+        (sextant, value) => fields(value) { [field] => field => contextual.sextant(sextant, field) } )
 
 trait Bufferable extends Typeclass:
   def width: Int
-  def buffer(buffer: Buffer, value: Self): Unit
+  def sextant(sextant: Sextant, value: Self): Unit

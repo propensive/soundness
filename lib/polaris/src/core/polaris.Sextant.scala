@@ -37,10 +37,10 @@ import scala.caps
 import anticipation.*
 import beneficence.*
 
-// A `Buffer` is a *capability*: it carries a mutable read position, so unpacking is an effect
-// and the buffer's lifetime is the `buffer { ... }` block that introduces it. `Exclusive`
+// A `Sextant` is a *capability*: it carries a mutable read position, so unpacking is an effect
+// and the sextant's lifetime is the `sextant { ... }` block that introduces it. `Exclusive`
 // because two readers sharing a position would corrupt each other's decoding.
-class Buffer(private[polaris] val bytes: Data, initialPosition: Int = 0)
+class Sextant(private[polaris] val bytes: Data, initialPosition: Int = 0)
 extends Findable, caps.ExclusiveCapability:
   private[polaris] var position: Int = initialPosition
 
