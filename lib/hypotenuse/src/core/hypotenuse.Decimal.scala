@@ -528,15 +528,10 @@ object decimalInternal:
 
     def negation(value: Decimal): Decimal =
       if value(0) == 0 then value else
-        val result = new Array[Int](value.length)
-        var i = 0
-
-        while i < value.length do
-          result(i) = value(i)
-          i += 1
-
-        result(0) = -result(0)
-        result.immutable(using Unsafe)
+        val result = Buffer[Int](value.length)
+        result.copyFrom(value, 0, 0, value.length)
+        result(0) = -value(0)
+        Buffer.freeze(result)
 
     def sum(left: Decimal, right: Decimal): Decimal =
       if left(0) == 0 then right else if right(0) == 0 then left else
