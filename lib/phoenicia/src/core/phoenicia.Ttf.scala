@@ -187,15 +187,15 @@ case class Ttf(data: Data):
 
     offsets(count) = position
 
-    val newGlyf = new Array[Byte](position)
+    val newGlyf = Buffer[Byte](position)
     var written = 0
 
     parts.result().each: part =>
-      System.arraycopy(part.mutable(using Unsafe), 0, newGlyf, written, part.length)
+      newGlyf.copyFrom(part, 0, written, part.length)
       written += part.length
 
     // The rebuilt loca always uses the long format, so head's format field must agree.
-    val newLoca = new Array[Byte]((count + 1)*4)
+    val newLoca = Buffer[Byte]((count + 1)*4)
 
     (0 to count).each: id =>
       newLoca(id*4) = (offsets(id) >> 24).toByte
@@ -204,7 +204,9 @@ case class Ttf(data: Data):
       newLoca(id*4 + 3) = offsets(id).toByte
 
     val headRef = tables.at(TtfTag.Head).lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
-    val newHead = data.slice(headRef.offset, headRef.offset + headRef.length).mutable(using Unsafe)
+    val headData = data.slice(headRef.offset, headRef.offset + headRef.length)
+    val newHead = Buffer[Byte](headData.length)
+    newHead.copyFrom(headData, 0, 0, headData.length)
     (8 to 11).each { index => newHead(index) = 0 } // adjustment is recomputed on assembly
     newHead(50) = 0
     newHead(51) = 1
@@ -214,9 +216,9 @@ case class Ttf(data: Data):
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
     val entries =
-      (t"glyf", newGlyf.immutable(using Unsafe)) ::
-        (t"loca", newLoca.immutable(using Unsafe)) ::
-        (t"head", newHead.immutable(using Unsafe)) :: (carried: List[(Text, Data)])
+      (t"glyf", Buffer.freeze(newGlyf)) ::
+        (t"loca", Buffer.freeze(newLoca)) ::
+        (t"head", Buffer.freeze(newHead)) :: (carried: List[(Text, Data)])
 
     Ttf(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 
