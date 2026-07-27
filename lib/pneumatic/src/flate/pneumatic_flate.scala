@@ -50,11 +50,11 @@ private def concatenate(stream: Progression[Data]): Data =
   chunks.each: chunk =>
     total += chunk.length
 
-  val result = new Array[Byte](total)
+  val result = Buffer[Byte](total)
   var offset = 0
 
   chunks.each: chunk =>
-    System.arraycopy(chunk.mutable(using Unsafe), 0, result, offset, chunk.length)
+    result.copyFrom(chunk, 0, offset, chunk.length)
     offset += chunk.length
 
-  result.immutable(using Unsafe)
+  Buffer.freeze(result)

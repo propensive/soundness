@@ -73,7 +73,7 @@ private[pneumatic] trait LzwEngine:
   // counterpart of `deliver`, and — being a method of an untracked engine with a pure
   // result — safe to call from within a lazy stream's thunks.
   def gather(): Data =
-    val result = new Array[Byte](pending.length - delivered)
+    val result = Buffer[Byte](pending.length - delivered)
     var i = 0
 
     while delivered < pending.length do
@@ -83,7 +83,7 @@ private[pneumatic] trait LzwEngine:
 
     pending.clear()
     delivered = 0
-    result.immutable(using Unsafe)
+    Buffer.freeze(result)
 
 private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
   private val codes: scala.collection.mutable.HashMap[(Int, Byte), Int] =

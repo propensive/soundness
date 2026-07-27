@@ -75,7 +75,7 @@ private[pneumatic] trait XzEngine:
     produced
 
   def gather(): Data =
-    val result = new Array[Byte](pending.length - delivered)
+    val result = Buffer[Byte](pending.length - delivered)
     var i = 0
 
     while delivered < pending.length do
@@ -85,7 +85,7 @@ private[pneumatic] trait XzEngine:
 
     pending.clear()
     delivered = 0
-    result.immutable(using Unsafe)
+    Buffer.freeze(result)
 
 // Accumulates the whole input, then applies a one-shot byte transform (encode or container-decode).
 // The transform is a method (not a stored function value) so the engine carries no capability

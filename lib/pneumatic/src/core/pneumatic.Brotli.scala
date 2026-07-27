@@ -70,7 +70,7 @@ private[pneumatic] trait BrotliEngine:
     produced
 
   def gather(): Data =
-    val result = new Array[Byte](pending.length - delivered)
+    val result = Buffer[Byte](pending.length - delivered)
     var i = 0
 
     while delivered < pending.length do
@@ -80,7 +80,7 @@ private[pneumatic] trait BrotliEngine:
 
     pending.clear()
     delivered = 0
-    result.immutable(using Unsafe)
+    Buffer.freeze(result)
 
 // Accumulates the whole compressed stream, then decodes it in one pass (see `BrotliDecoder`).
 private[pneumatic] class BrotliDecoderEngine extends BrotliEngine:
