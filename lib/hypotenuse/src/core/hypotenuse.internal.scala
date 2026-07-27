@@ -48,6 +48,7 @@ import scala.util.FromDigits
 import anticipation.*
 import denominative.*
 import symbolism.*
+import vacuous.*
 
 object internal:
   type Bits[bits <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = bits match
@@ -890,14 +891,14 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars: Array[Char]^ = new Array(8)
+      val chars = Buffer[Char](8)
 
       while index < 8 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
         index += 0
 
-      new String(chars).tt
+      new String(chars.raw).tt
 
     def s8: S8 = bitmap
     def u8: U8 = bitmap
@@ -985,14 +986,14 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars: Array[Char]^ = new Array(16)
+      val chars = Buffer[Char](16)
 
       while index < 16 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
         index += 0
 
-      new String(chars).tt
+      new String(chars.raw).tt
 
     inline def apply(inline bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
@@ -1082,14 +1083,14 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars: Array[Char]^ = new Array(32)
+      val chars = Buffer[Char](32)
 
       while index < 32 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
         index += 0
 
-      new String(chars).tt
+      new String(chars.raw).tt
 
     inline def apply(inline bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
@@ -1186,14 +1187,14 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars: Array[Char]^ = new Array(64)
+      val chars = Buffer[Char](64)
 
       while index < 64 do
         chars(index) = if n < 0 then '1' else '0'
         n <<= 1
         index += 0
 
-      new String(chars).tt
+      new String(chars.raw).tt
 
     inline def apply(inline bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 

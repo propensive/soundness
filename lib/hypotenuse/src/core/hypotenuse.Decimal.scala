@@ -81,7 +81,7 @@ object decimalInternal:
       if unscaled == 0L then Zero else
         val signum = if unscaled < 0 then -1 else 1
         var rest: Long = math.abs(unscaled)
-        val magnitude = new Array[Int](3)
+        val magnitude = Buffer[Int](3)
         var count = 0
 
         while rest != 0L do
@@ -89,7 +89,7 @@ object decimalInternal:
           rest /= Base
           count += 1
 
-        compose(signum, magnitude, count, scale)
+        compose(signum, magnitude.raw, count, scale)
 
     // A finite `Double` converts through its shortest round-tripping decimal representation
     // (`Double.toString`), so `Decimal(0.1)` is exactly `0.1` — not the 55-digit binary
@@ -156,7 +156,7 @@ object decimalInternal:
           if digits.length - start == 1 && digits.charAt(start) == '0' then Zero else
             val significant = digits.length - start
             val count = (significant + BaseDigits - 1)/BaseDigits
-            val magnitude = new Array[Int](count)
+            val magnitude = Buffer[Int](count)
             var limb = 0
             var position = digits.length
 
@@ -173,15 +173,15 @@ object decimalInternal:
               limb += 1
               position = from
 
-            compose(signum, magnitude, count, fraction - exponent.toInt)
+            compose(signum, magnitude.raw, count, fraction - exponent.toInt)
 
     // Builds the canonical form: high zero limbs dropped, factors of ten moved into the
     // scale (as `stripTrailingZeros`), and the unique zero when the magnitude vanishes. The
     // input is copied into a fresh working array, which the strip loops then clobber.
     private[hypotenuse] def compose(signum: Int, magnitude0: Array[Int], count0: Int, scale0: Int)
     :   Decimal =
-      val magnitude: Array[Int]^ = new Array[Int](count0)
-      System.arraycopy(magnitude0, 0, magnitude, 0, count0)
+      val magnitude = Buffer[Int](count0)
+      System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
       var count = count0
       while count > 0 && magnitude(count - 1) == 0 do count -= 1
 
@@ -191,20 +191,25 @@ object decimalInternal:
         // A base-10⁹ number is divisible by ten exactly when its lowest limb is; whole zero
         // limbs strip nine digits at a time.
         while count > 1 && magnitude(0) == 0 do
-          System.arraycopy(magnitude, 1, magnitude, 0, count - 1)
+          var i = 0
+
+          while i < count - 1 do
+            magnitude(i) = magnitude(i + 1)
+            i += 1
+
           count -= 1
           scale -= BaseDigits
 
         while magnitude(0)%10 == 0 && magnitude(0) != 0 || count > 1 && magnitude(0) == 0 do
-          divideSmall(magnitude, count, 10)
+          divideSmall(magnitude.raw, count, 10)
           if count > 1 && magnitude(count - 1) == 0 then count -= 1
           scale -= 1
 
-        val result = new Array[Int](count + 2)
+        val result = Buffer[Int](count + 2)
         result(0) = signum
         result(1) = scale
-        System.arraycopy(magnitude, 0, result, 2, count)
-        result.immutable(using Unsafe)
+        result.copyFromBuffer(magnitude, 0, 2, count)
+        Buffer.freeze(result)
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
     private def divideSmall(magnitude: Array[Int]^, count: Int, divisor: Int): Int =
