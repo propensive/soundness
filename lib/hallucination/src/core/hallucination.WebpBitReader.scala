@@ -36,6 +36,8 @@ import anticipation.*
 import contingency.*
 import proscenium.compat.*
 
+import scala.caps
+
 import RasterError.Reason
 
 // A little-endian bit reader for the VP8L lossless bitstream, ported from image-rs/image-webp
@@ -44,12 +46,10 @@ import RasterError.Reason
 // bound: the fast refill path reads eight bytes but only commits seven, so the eighth's bits
 // overlap and are re-OR'd identically on the next refill — which is why it reads eight and consumes
 // seven.
-private[hallucination] final class WebpBitReader(data: Data, start: Int, end: Int):
-  @scala.caps.unsafe.untrackedCaptures
+private[hallucination] final class WebpBitReader(data: Data, start: Int, end: Int)
+extends caps.Mutable:
   private var position: Int = start
-  @scala.caps.unsafe.untrackedCaptures
   private var buffer: Long = 0L
-  @scala.caps.unsafe.untrackedCaptures
   private var available: Int = 0
 
   def nbits: Int = available
@@ -57,7 +57,7 @@ private[hallucination] final class WebpBitReader(data: Data, start: Int, end: In
   private inline def byte(index: Int): Long = (data(index)&0xff).toLong
 
   // Fills the buffer so it holds 64 bits or the input is exhausted.
-  def fill(): Unit =
+  update def fill(): Unit =
     if end - position >= 8 then
       var lookahead = 0L
       var i = 0
@@ -81,13 +81,13 @@ private[hallucination] final class WebpBitReader(data: Data, start: Int, end: In
   // The whole buffer without consuming.
   def peekFull: Long = buffer
 
-  def consume(num: Int): Unit raises RasterError =
+  update def consume(num: Int)(using Tactic[RasterError]): Unit =
     if available < num then abort(RasterError(Webp(), Reason.Truncated))
     buffer >>>= num
     available -= num
 
   // Reads `num` bits (at most 32), refilling if necessary.
-  def readBits(num: Int): Int raises RasterError =
+  update def readBits(num: Int)(using Tactic[RasterError]): Int =
     if available < num then fill()
     val value = peek(num)
     consume(num)

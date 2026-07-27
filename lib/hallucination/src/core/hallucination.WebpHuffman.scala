@@ -200,7 +200,7 @@ private[hallucination] final class WebpHuffman
 
   def isSingleNode: Boolean = single >= 0
 
-  def readSymbol(reader: WebpBitReader)(using Tactic[RasterError]): Int =
+  def readSymbol(reader: WebpBitReader^)(using Tactic[RasterError]): Int =
     if single >= 0 then single else
       val value = reader.peekFull.toInt & 0xffff
       val entry = primaryTable(value & tableMask)
@@ -217,7 +217,7 @@ private[hallucination] final class WebpHuffman
         secondaryEntry >>> 4
 
   // Peeks the next symbol if it needs only a primary-table lookup, returning (codeLength, symbol).
-  def peekSymbol(reader: WebpBitReader): Optional[(Int, Int)] =
+  def peekSymbol(reader: WebpBitReader^): Optional[(Int, Int)] =
     if single >= 0 then (0, single) else
       val value = reader.peekFull.toInt & 0xffff
       val entry = primaryTable(value & tableMask)

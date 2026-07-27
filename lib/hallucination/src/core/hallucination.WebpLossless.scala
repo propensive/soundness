@@ -94,7 +94,7 @@ private[hallucination] object WebpLossless:
 
   // Reads a full VP8L frame — its 5-byte header then the transformed image — returning the
   // dimensions and the un-transformed RGBA buffer.
-  def decode(reader: WebpBitReader)(using Tactic[RasterError]): (Int, Int, Array[Byte]) =
+  def decode(reader: WebpBitReader^)(using Tactic[RasterError]): (Int, Int, Array[Byte]) =
     val signature = reader.readBits(8)
 
     if signature != 0x2f then abort(RasterError(Webp(), Reason.BadSignature))
@@ -108,10 +108,10 @@ private[hallucination] object WebpLossless:
 
   // Decodes a VP8L stream whose dimensions are given externally (no 5-byte header), as used for
   // the lossless-compressed alpha plane of a lossy image. Returns the RGBA buffer.
-  def decodeRaw(reader: WebpBitReader, width: Int, height: Int)(using Tactic[RasterError]): Array[Byte] =
+  def decodeRaw(reader: WebpBitReader^, width: Int, height: Int)(using Tactic[RasterError]): Array[Byte] =
     Decoder(reader, width, height).run()
 
-  private final class Decoder(reader: WebpBitReader, width: Int, height: Int):
+  private final class Decoder(reader: WebpBitReader^, width: Int, height: Int):
     // One optional transform slot per transform type; `order` is reverse-read order, which is the
     // order transforms must be un-applied in.
     @scala.caps.unsafe.untrackedCaptures
