@@ -826,10 +826,10 @@ object internal:
           i += 2
 
         if idx < 0 then attrs else
-          val nu = new Array[String | Null](n - 2)
-          if idx > 0 then jl.System.arraycopy(a, 0, nu, 0, idx)
-          if idx < n - 2 then jl.System.arraycopy(a, idx + 2, nu, idx, n - 2 - idx)
-          nu.immutable(using Unsafe)
+          val nu = Buffer[String | Null](n - 2)
+          if idx > 0 then nu.copyFrom(attrs, 0, 0, idx)
+          if idx < n - 2 then nu.copyFrom(attrs, idx + 2, idx, n - 2 - idx)
+          Buffer.freeze(nu)
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -856,16 +856,16 @@ object internal:
           i += 2
 
         if idx >= 0 then
-          val nu = new Array[String | Null](n)
-          jl.System.arraycopy(a, 0, nu, 0, n)
+          val nu = Buffer[String | Null](n)
+          nu.copyFrom(attrs, 0, 0, n)
           nu(idx + 1) = value.lay(null: String | Null)(_.s)
-          nu.immutable(using Unsafe)
+          Buffer.freeze(nu)
         else
-          val nu = new Array[String | Null](n + 2)
-          jl.System.arraycopy(a, 0, nu, 0, n)
+          val nu = Buffer[String | Null](n + 2)
+          nu.copyFrom(attrs, 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.lay(null: String | Null)(_.s)
-          nu.immutable(using Unsafe)
+          Buffer.freeze(nu)
 
       // Combines two `Attributes`, with the right-hand side overriding duplicate
       // keys (matching `Map ++` semantics). Order: left's keys first (preserving
@@ -878,7 +878,7 @@ object internal:
         else if a.length == 0 then other
         else
           val total = a.length + b.length
-          val nu = new Array[String | Null](total)
+          val nu = Buffer[String | Null](total)
           var written = 0
           var i = 0
 
@@ -914,11 +914,12 @@ object internal:
 
             j += 2
 
-          if written == total then nu.immutable(using Unsafe)
-          else
-            val tu = new Array[String | Null](written)
-            jl.System.arraycopy(nu, 0, tu, 0, written)
-            tu.immutable(using Unsafe)
+          val frozen = Buffer.freeze(nu)
+
+          if written == total then frozen else
+            val tu = Buffer[String | Null](written)
+            tu.copyFrom(frozen, 0, 0, written)
+            Buffer.freeze(tu)
 
       def `++`(other: Map[Text, Optional[Text]]): Attributes =
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)

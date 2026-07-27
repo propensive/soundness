@@ -104,20 +104,20 @@ object Html extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val array = new Array[Node](count)
+      val buffer = Buffer[Node](count)
 
       var index = 0
 
       for item <- html do item match
         case Fragment(nodes*) => for node <- nodes do
-          writable(array)(index) = node
+          buffer(index) = node
           index += 1
 
         case node: Node =>
-          writable(array)(index) = node
+          buffer(index) = node
           index += 1
 
-      array.immutable(using Unsafe)
+      Buffer.freeze(buffer)
 
   inline given interpolator: Html is Interpolable:
     type Result = Html
