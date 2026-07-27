@@ -222,7 +222,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an enum entry is reachable by name, and usable as an argument"):
         val relaxed = make[kotlin.text.Regex]
-          ( t"[a-z]+", entry[kotlin.text.RegexOption]("IGNORE_CASE") )
+          ( t"[a-z]+", xenophile.entry[kotlin.text.RegexOption]("IGNORE_CASE") )
 
         val matches: Boolean = relaxed.matches(t"ABC")
         matches
