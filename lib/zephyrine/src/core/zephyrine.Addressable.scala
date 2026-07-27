@@ -181,9 +181,9 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[element] =
-      val array = new Array[element](len)
-      System.arraycopy(storage, off, array, 0, len)
-      array.immutable(using Unsafe)
+      val array = Buffer[element](len)
+      System.arraycopy(storage, off, array.raw, 0, len)
+      Buffer.freeze(array)
 
     def cloneStorage
       (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[element])
@@ -217,14 +217,14 @@ object Addressable:
     def blank(size: Int): scm.ArrayBuffer[Text] = scm.ArrayBuffer[Text]()
 
     def build(target: scm.ArrayBuffer[Text]): IArray[Text] =
-      val array = new Array[String](target.length)
+      val array = Buffer[String](target.length)
       var index = 0
 
       while index < target.length do
         array(index) = target(index).s
         index += 1
 
-      array.asInstanceOf[IArray[Text]]
+      Buffer.freeze(array).asInstanceOf[IArray[Text]]
 
     def length(block: IArray[Text]): Int = block.length
     def address(block: IArray[Text], index: Ordinal): Text = block(index.n0)
@@ -272,9 +272,9 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[Text] =
-      val array = new Array[String](len)
-      System.arraycopy(storage, off, array, 0, len)
-      array.asInstanceOf[IArray[Text]]
+      val array = Buffer[String](len)
+      System.arraycopy(storage, off, array.raw, 0, len)
+      Buffer.freeze(array).asInstanceOf[IArray[Text]]
 
     def cloneStorage
       (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Text])
