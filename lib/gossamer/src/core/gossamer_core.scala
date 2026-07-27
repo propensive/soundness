@@ -100,10 +100,14 @@ extension (module: Text.type)
   def ascii(bytes: Data): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
 
   def fill(length: Int)(lambda: Int => Char): Text =
-    val array = new Array[Char](length)
-    (0 until length).each: index => array(index) = lambda(index)
+    val buffer = Buffer[Char](length)
+    var index = 0
 
-    String(array).tt
+    while index < length do
+      buffer(index) = lambda(index)
+      index += 1
+
+    String(buffer.raw).tt
 
 extension (inline context: StringContext)
   transparent inline def txt(inline parts: Any*): Text =
@@ -474,21 +478,29 @@ package proximities:
     (left, right) =>
       val m = left.s.length
       val n = right.length
-      val old = new Array[Int](n + 1)
-      val dist = new Array[Int](n + 1)
+      val old = Buffer[Int](n + 1)
+      val dist = Buffer[Int](n + 1)
+      var j = 1
 
-      for j <- 1 to n do old(j) = old(j - 1) + 1
+      while j <= n do
+        old(j) = old(j - 1) + 1
+        j += 1
 
-      for i <- 1 to m do
+      var i = 1
+
+      while i <= m do
         dist(0) = old(0) + 1
+        j = 1
 
-        for j <- 1 to n do
+        while j <= n do
           val c =
             if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
           dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
+          j += 1
 
-        for j <- 0 to n do old(j) = dist(j)
+        old.copyFromBuffer(dist, 0, 0, n + 1)
+        i += 1
 
       if m == 0 then n else dist(n)
 

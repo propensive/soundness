@@ -255,17 +255,16 @@ object Dictionary:
       scala.caps.unsafe.unsafeAssumePure:
         new Dictionary[value]
           ( childrenArr, valuesArr, emptyInts, emptyInts, emptyInts, alphabet, summon )
-    else scala.caps.unsafe.unsafeAssumeSeparate:
+    else
       // Aho-Corasick failure / dictionary-suffix links via BFS. Depth-1
       // nodes get fail = 0; deeper nodes get the longest proper suffix
       // of their path that is itself a path from root. `dictLink` skips
-      // fail-chain ancestors that have no value. The four freshly-allocated arrays are
-      // pairwise distinct, but the checker conflates their Unscoped allocation roots, so
-      // the whole build block is (safely) assumed separate.
-      val depthArr    = new Array[Int](nodeCount)
-      val failArr     = new Array[Int](nodeCount)
-      val dictLinkArr = new Array[Int](nodeCount)
-      val queue       = new Array[Int](nodeCount)
+      // fail-chain ancestors that have no value. The four scratch buffers are
+      // fresh `Buffer`s, so the checker tracks their separation directly.
+      val depthArr    = Buffer[Int](nodeCount)
+      val failArr     = Buffer[Int](nodeCount)
+      val dictLinkArr = Buffer[Int](nodeCount)
+      val queue       = Buffer[Int](nodeCount)
       var qHead = 0
       var qTail = 0
       var c = 0
@@ -308,7 +307,8 @@ object Dictionary:
       // As above: no writes after construction.
       scala.caps.unsafe.unsafeAssumePure:
         new Dictionary[value]
-          ( childrenArr, valuesArr, depthArr, failArr, dictLinkArr, alphabet, summon )
+          ( childrenArr, valuesArr, depthArr.raw, failArr.raw, dictLinkArr.raw, alphabet,
+            summon )
 
 final class Dictionary[+value]
   ( val children: Array[Int],
