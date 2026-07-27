@@ -61,7 +61,7 @@ private[polysyllabic] object TexPatterns:
       if !Character.isDigit(s.charAt(i)) then letterCount += 1
       i += 1
 
-    val scores = new Array[Byte](letterCount + 1)
+    val scores = Buffer[Byte](letterCount + 1)
     val letters = new java.lang.StringBuilder(letterCount)
     var letterIndex = 0
     i = 0
@@ -76,7 +76,7 @@ private[polysyllabic] object TexPatterns:
 
       i += 1
 
-    (letters.toString.tt, scores.immutable(using Unsafe))
+    (letters.toString.tt, Buffer.freeze(scores))
 
   // Decode one TeX exception entry. `as-so-ciate` ↦ (`associate`, [2, 4]).
   // The break offsets count letter positions in the dehyphenated word.
