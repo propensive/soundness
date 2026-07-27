@@ -1527,7 +1527,7 @@ object Json extends Json2, Dynamic:
     // at even indices and values at odd indices.
     def obj(keys: IArray[String], values: IArray[Any]): Ast =
       val n = keys.length
-      val arr = new Array[Any](n*2)
+      val arr = Buffer[Any](n*2)
       var i = 0
 
       while i < n do
@@ -1535,7 +1535,7 @@ object Json extends Json2, Dynamic:
         arr(i*2 + 1) = values(i)
         i += 1
 
-      arr.asInstanceOf[IArray[Any]]
+      Buffer.freeze(arr)
 
     // Build a heterogeneous array node. If the element count is even, a
     // single sentinel `arrayPad` is appended so the stored `IArray[Any]` has
@@ -1545,10 +1545,10 @@ object Json extends Json2, Dynamic:
 
       if (n & 1) == 1 then elements
       else
-        val padded = new Array[Any](n + 1)
-        System.arraycopy(elements.asInstanceOf[Array[Any]], 0, padded, 0, n)
+        val padded = Buffer[Any](n + 1)
+        padded.copyFrom(elements, 0, 0, n)
         padded(n) = arrayPad
-        padded.asInstanceOf[IArray[Any]]
+        Buffer.freeze(padded)
 
     // Build a number-only array node using the single-Long BCD encoding
     // (see `Bcd.packBcdLong`). Each `Long` element carries one number's
@@ -1673,16 +1673,18 @@ object Json extends Json2, Dynamic:
         // Freshly built, frozen on return; the seal strips the tactic-capture decoration
         // that `arrayElement`'s raising result leaves on the elements.
         case bcds: IArray[Long] @unchecked =>
-          val out = new Array[Json.Ast](bcds.length)
+          val count = bcds.length
+          val out = Buffer[Json.Ast](count)
           var i = 0
-          while i < out.length do { out(i) = json.arrayElement(i); i += 1 }
-          out.immutable(using Unsafe).asInstanceOf[IArray[Json.Ast]]
+          while i < count do { out(i) = json.arrayElement(i); i += 1 }
+          Buffer.freeze(out).asInstanceOf[IArray[Json.Ast]]
 
         case smalls: IArray[Int] @unchecked =>
-          val out = new Array[Json.Ast](smalls.length)
+          val count = smalls.length
+          val out = Buffer[Json.Ast](count)
           var i = 0
-          while i < out.length do { out(i) = json.arrayElement(i); i += 1 }
-          out.immutable(using Unsafe).asInstanceOf[IArray[Json.Ast]]
+          while i < count do { out(i) = json.arrayElement(i); i += 1 }
+          Buffer.freeze(out).asInstanceOf[IArray[Json.Ast]]
 
         case _ =>
           if isArray then
@@ -1750,8 +1752,8 @@ object Json extends Json2, Dynamic:
         else
           val arr = json.asInstanceOf[IArray[Any]]
           val n = arr.length/2
-          val keys = new Array[String](n)
-          val values = new Array[Json.Ast](n)
+          val keys = Buffer[String](n)
+          val values = Buffer[Json.Ast](n)
           var i = 0
 
           while i < n do
@@ -1759,7 +1761,8 @@ object Json extends Json2, Dynamic:
             values(i) = arr(i*2 + 1).asInstanceOf[Json.Ast]
             i += 1
 
-          (keys.asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Json.Ast]])
+          (Buffer.freeze(keys).asInstanceOf[IArray[String]],
+           Buffer.freeze(values).asInstanceOf[IArray[Json.Ast]])
 
       def number: Long | Double | Bcd raises JsonError =
         if isLong then long
@@ -2024,7 +2027,7 @@ object Json extends Json2, Dynamic:
           val n = origin.root.arrayLength
 
           if n <= ordinal.n0 then origin else Json.ast:
-            val updated = new Array[Any](n)
+            val updated = Buffer[Any](n)
             var i = 0
 
             while i < n do
@@ -2035,7 +2038,7 @@ object Json extends Json2, Dynamic:
 
               i += 1
 
-            Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
+            Json.Ast.arr(Buffer.freeze(updated))
         else
           origin
 
@@ -2047,14 +2050,14 @@ object Json extends Json2, Dynamic:
         val n = origin.root.arrayLength
 
         Json.ast:
-          val updated = new Array[Any](n)
+          val updated = Buffer[Any](n)
           var i = 0
 
           while i < n do
             updated(i) = lambda(Json.ast(origin.root.arrayElement(i))).root
             i += 1
 
-          Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
+          Json.Ast.arr(Buffer.freeze(updated))
       else
         origin
 
@@ -2069,7 +2072,7 @@ object Json extends Json2, Dynamic:
         val n = origin.root.arrayLength
 
         Json.ast:
-          val updated = new Array[Any](n)
+          val updated = Buffer[Any](n)
           var i = 0
 
           while i < n do
@@ -2077,7 +2080,7 @@ object Json extends Json2, Dynamic:
             updated(i) = (if predicate(element) then lambda(element) else element).root
             i += 1
 
-          Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
+          Json.Ast.arr(Buffer.freeze(updated))
       else
         origin
 
@@ -2621,7 +2624,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
     if !root.isArray then raise(JsonError(Reason.NotType(root.primitive, JsonPrimitive.Array)))
     val n = root.arrayLength
-    val updated = new Array[Any](n)
+    val updated = Buffer[Any](n)
     var i = 0
 
     while i < n do
@@ -2631,7 +2634,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
       i += 1
 
-    Json.ast(Json.Ast.arr(updated.asInstanceOf[IArray[Any]]))
+    Json.ast(Json.Ast.arr(Buffer.freeze(updated)))
 
 
   def updateDynamic(field: String)[value: anticipation.Encodable in Json](value: value)
@@ -2654,17 +2657,17 @@ extends Dynamic, Topical, Original derives CanEqual:
 
     root.objectIndexOf(field) match
       case -1 =>
-        val out = new Array[Any](len + 2)
-        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+        val out = Buffer[Any](len + 2)
+        out.copyFrom(arr, 0, 0, len)
         out(len) = field
         out(len + 1) = value.root
-        Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
+        Json.ast(Json.Ast(Buffer.freeze(out)))
 
       case index =>
-        val out = new Array[Any](len)
-        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+        val out = Buffer[Any](len)
+        out.copyFrom(arr, 0, 0, len)
         out(index*2 + 1) = value.root
-        Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
+        Json.ast(Json.Ast(Buffer.freeze(out)))
 
   private[jacinta] def delete(field: String): Json raises JsonError =
     val arr = root.asInstanceOf[IArray[Any]]
@@ -2675,17 +2678,10 @@ extends Dynamic, Topical, Original derives CanEqual:
         Json.ast(root)
 
       case index =>
-        val out = new Array[Any](len - 2)
-        System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
-
-        System.arraycopy
-          ( arr.asInstanceOf[Array[Any]],
-            index*2 + 2,
-            out,
-            index*2,
-            len - index*2 - 2 )
-
-        Json.ast(Json.Ast(out.asInstanceOf[IArray[Any]]))
+        val out = Buffer[Any](len - 2)
+        out.copyFrom(arr, 0, 0, index*2)
+        out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
+        Json.ast(Json.Ast(Buffer.freeze(out)))
 
   def apply(field: Text): Json raises JsonError =
     if root.isAbsent then Json.ast(Json.Ast(Unset))
