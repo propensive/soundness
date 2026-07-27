@@ -47,6 +47,15 @@ object Buffer:
   def freeze[element](consume buffer: Buffer[element]^): IArray[element] =
     buffer.asInstanceOf[IArray[element]]
 
+  // Linear growth for accumulating builders: consumes the old buffer, so the idiom is
+  // recursion threading the buffer through `consume` parameters -- a `var` cannot hold an
+  // exclusive buffer.
+  def grow[element: ClassTag](consume buffer: Buffer[element]^, size: Int): Buffer[element]^ =
+    val count = buffer.length.min(size)
+    val bigger: Array[element]^ = new Array[element](size)
+    java.lang.System.arraycopy(buffer, 0, bigger, 0, count)
+    bigger
+
   extension [element, C^](buffer: Buffer[element]^{C})
     def length: Int = buffer.length
 
