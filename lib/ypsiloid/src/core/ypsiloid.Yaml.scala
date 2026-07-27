@@ -696,16 +696,16 @@ object Yaml extends Yaml2, Dynamic:
 
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
-        val padded = new Array[Any](n + 1)
-        System.arraycopy(items.asInstanceOf[Array[Any]], 0, padded, 0, n)
+        val padded = Buffer[Any](n + 1)
+        padded.copyFrom(items.asInstanceOf[IArray[Any]], 0, 0, n)
         padded(n) = arrayPad
-        padded.asInstanceOf[Yaml.Ast]
+        Buffer.freeze(padded).asInstanceOf[Yaml.Ast]
 
     // Wrap parallel keys/values as a mapping node, flattened to alternating
     // `[k0, v0, k1, v1, ...]`. The result has even length.
     def Mapping(entries: IArray[(Yaml.Ast, Yaml.Ast)]): Yaml.Ast =
       val n = entries.length
-      val arr = new Array[Any](n*2)
+      val arr = Buffer[Any](n*2)
       var i = 0
 
       while i < n do
@@ -714,7 +714,7 @@ object Yaml extends Yaml2, Dynamic:
         arr(i*2 + 1) = v.asInstanceOf[Any]
         i += 1
 
-      arr.asInstanceOf[Yaml.Ast]
+      Buffer.freeze(arr).asInstanceOf[Yaml.Ast]
 
     // Build a sequence directly from a raw `Array[Any]` of items (no
     // copy if the length is already odd; pad once otherwise). The parser
@@ -724,10 +724,10 @@ object Yaml extends Yaml2, Dynamic:
 
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
-        val padded = new Array[Any](n + 1)
-        System.arraycopy(items, 0, padded, 0, n)
+        val padded = Buffer[Any](n + 1)
+        System.arraycopy(items, 0, padded.raw, 0, n)
         padded(n) = arrayPad
-        padded.asInstanceOf[Yaml.Ast]
+        Buffer.freeze(padded).asInstanceOf[Yaml.Ast]
 
     // Build a mapping directly from a flat `Array[Any]` of alternating
     // key/value entries. Length must be even.
@@ -804,9 +804,9 @@ object Yaml extends Yaml2, Dynamic:
           val n = xs.length
 
           if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq arrayPad) then
-            val out = new Array[Any](n - 1)
-            System.arraycopy(xs.asInstanceOf[Array[Any]], 0, out, 0, n - 1)
-            Some(out.asInstanceOf[IArray[Yaml.Ast]])
+            val out = Buffer[Any](n - 1)
+            out.copyFrom(xs.asInstanceOf[IArray[Any]], 0, 0, n - 1)
+            Some(Buffer.freeze(out).asInstanceOf[IArray[Yaml.Ast]])
           else
             Some(xs.asInstanceOf[IArray[Yaml.Ast]])
 
@@ -3800,22 +3800,22 @@ object Yaml extends Yaml2, Dynamic:
       val n = buf.length
 
       if (n & 1) == 1 then
-        val arr = new Array[Any](n)
-        buf.copyToArray(arr)
-        arr.asInstanceOf[Yaml.Ast]
+        val arr = Buffer[Any](n)
+        buf.copyToArray(arr.raw)
+        Buffer.freeze(arr).asInstanceOf[Yaml.Ast]
       else
-        val arr = new Array[Any](n + 1)
-        buf.copyToArray(arr)
+        val arr = Buffer[Any](n + 1)
+        buf.copyToArray(arr.raw)
         arr(n) = Yaml.Ast.arrayPad
-        arr.asInstanceOf[Yaml.Ast]
+        Buffer.freeze(arr).asInstanceOf[Yaml.Ast]
 
     // The buffer was filled with alternating key/value items, so the count
     // is already even; copy directly into a flat `Array[Any]`.
     private def sealMapping(buf: ArrayBuffer[Any]): Yaml.Ast =
       val n = buf.length
-      val arr = new Array[Any](n)
-      buf.copyToArray(arr)
-      arr.asInstanceOf[Yaml.Ast]
+      val arr = Buffer[Any](n)
+      buf.copyToArray(arr.raw)
+      Buffer.freeze(arr).asInstanceOf[Yaml.Ast]
 
     // Within a flow context, whitespace and newlines are insignificant
     // separators; comments still apply but require leading whitespace
