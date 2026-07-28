@@ -868,16 +868,15 @@ object Cbor extends Cbor2, Dynamic:
     // lookup is two-to-three times cheaper than allocation in steady state.
     private inline val LongCacheSize = 65536
 
-    @scala.caps.unsafe.untrackedCaptures
-    private val longCache: Array[AnyRef] =
-      val out = new Array[AnyRef](LongCacheSize)
+    private val longCache: IArray[AnyRef] =
+      val out = Buffer[AnyRef](LongCacheSize)
       var index = 0
 
       while index < LongCacheSize do
         out(index) = java.lang.Long.valueOf(index.toLong).nn
         index += 1
 
-      out
+      Buffer.freeze(out)
 
     private inline def boxLong(value: Long): AnyRef =
       if value >= 0L && value < LongCacheSize then longCache(value.toInt)
