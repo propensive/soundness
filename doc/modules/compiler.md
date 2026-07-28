@@ -115,6 +115,8 @@ import dexLinkages.given
 
 ### Other languages
 
-`Javac` compiles Java sources through the same shape of API, and `Kotlinc` does the same for
-Kotlin — so a tool that orchestrates compilation does not change idiom per language, and a mixed
-Scala/Kotlin/Java application links into one artifact.
+`Javac` compiles Java sources through the same shape of API, so a tool that orchestrates
+compilation does not change idiom per language, and a mixed Scala and Java application links into
+one artifact. Calling *into* a compiled Kotlin library needs no compilation at all: its
+declarations are read from its classfiles, as [foreign interoperability](foreign-interop.md)
+describes.
