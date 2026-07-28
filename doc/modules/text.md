@@ -138,7 +138,7 @@ Text encodes to bytes through the character encoding in scope, and bytes decode 
 ```scala
 import charEncoders.utf8Encoder
 
-val bytes = t"Adélaïde".data   // the UTF-8 bytes
+val bytes = t"Adélaïde".in[Data]   // the UTF-8 bytes
 bytes.utf8                     // t"Adélaïde"
 ```
 

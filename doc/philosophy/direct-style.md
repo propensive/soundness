@@ -13,7 +13,7 @@ sit inside an argument list, inside an interpolated string, inside a condition â
 anywhere an expression can go â€”
 
 ```scala
-val greeting = t"Hello, ${name.decode[EmailAddress].localPart}!"
+val greeting = t"Hello, ${name.as[EmailAddress].localPart}!"
 ```
 
 whereas monadic values compose only through their combinators. The same line, with

@@ -58,8 +58,8 @@ value in any of them is a `Color`.
 The `in` method converts a color to another model:
 
 ```scala
-val lab = red.in[Cielab]
-val back = lab.in[Srgb]      // the original red, within rounding
+val lab = red.to[Cielab]
+val back = lab.to[Srgb]      // the original red, within rounding
 ```
 
 Conversions compose, so a color reaches any model from any other, passing through the
@@ -85,7 +85,7 @@ Two colors mix into one, by default halfway between them, or in any ratio:
 
 ```scala
 Srgb(0.2, 0.4, 0.6).mix(Srgb(0.8, 0.6, 0.4))        // Srgb(0.5, 0.5, 0.5)
-WebColors.Ivory.in[Cielab].mix(WebColors.DeepPink.in[Cielab])
+WebColors.Ivory.to[Cielab].mix(WebColors.DeepPink.to[Cielab])
 ```
 
 Mixing in sRGB blends the screen values; mixing in CIELAB blends what the eye perceives,
@@ -97,11 +97,11 @@ Hue, saturation and lightness are what a person reaches for to adjust a color, s
 operations live on `Hsl` and `Hsv`. Convert into one, adjust, and convert back:
 
 ```scala
-val tomato = WebColors.Tomato.in[Hsl]
+val tomato = WebColors.Tomato.to[Hsl]
 
-tomato.rotate(180).in[Srgb]     // the complementary color
-tomato.lighten(0.2).in[Srgb]    // a fifth of the way toward white
-tomato.desaturate.in[Srgb]      // the same lightness, no color
+tomato.rotate(180).to[Srgb]     // the complementary color
+tomato.lighten(0.2).to[Srgb]    // a fifth of the way toward white
+tomato.desaturate.to[Srgb]      // the same lightness, no color
 ```
 
 `rotate` turns the hue by a number of degrees, `complement` turns it halfway round,
@@ -115,7 +115,7 @@ CIELAB exists so that the distance between two colors matches how different they
 `delta` gives that distance:
 
 ```scala
-WebColors.DeepPink.in[Cielab].delta(WebColors.Tomato.in[Cielab])
+WebColors.DeepPink.to[Cielab].delta(WebColors.Tomato.to[Cielab])
 ```
 
 A small delta means two colors are hard to tell apart; a large one means they contrast.
@@ -146,5 +146,5 @@ conversion within its scope uses it, and none has to name it:
 ```scala
 given Colorimetry = colorimetry.incandescentTungsten
 
-WebColors.Ivory.in[Cielab]   // computed for tungsten light
+WebColors.Ivory.to[Cielab]   // computed for tungsten light
 ```

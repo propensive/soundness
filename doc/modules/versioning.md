@@ -31,7 +31,7 @@ type, raising a `SemverError` for a malformed version:
 
 ```scala
 val version = v"1.4.2"
-t"2.0.0-rc.1".decode[Semver]
+t"2.0.0-rc.1".as[Semver]
 
 v"1.2"   // does not compile: not a semantic version
 ```

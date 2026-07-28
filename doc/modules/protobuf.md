@@ -36,7 +36,7 @@ case class Person(@field(1) name: Text, @field(2) age: Int)
 Encoding produces the message value and then its bytes; decoding reads bytes back to the type:
 
 ```scala
-val bytes = Person(t"Alice", 30).protobuf.encode   // the wire bytes
+val bytes = Person(t"Alice", 30).in[Protobuf].encode   // the wire bytes
 
 Stream(bytes).read[Person in Protobuf]             // Person(t"Alice", 30)
 ```
@@ -69,7 +69,7 @@ protobuf documentation encodes to its documented bytes:
 ```scala
 case class Sample(@field(1) value: Int)
 
-Sample(150).protobuf.encode   // the bytes 08 96 01
+Sample(150).in[Protobuf].encode   // the bytes 08 96 01
 ```
 
 Decoding accepts both packed and unpacked repeated fields, as the proto3 specification requires of

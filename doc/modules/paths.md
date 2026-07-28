@@ -87,12 +87,12 @@ a.conjunction(b)   // % / "home" / "work"
 
 ### Text and paths
 
-A path renders to text with `encode`, and text parses to a path with `decode`, naming the platform
+A path renders to text with `encode`, and text parses to a path with `as`, naming the platform
 whose rules should apply. A path that breaks those rules fails to decode:
 
 ```scala
 (Drive('D') / "Foo").encode          // t"D:\\Foo"
-t"/home/work".decode[Path on Linux]  // % / "home" / "work"
+t"/home/work".as[Path on Linux]  // % / "home" / "work"
 ```
 
 ### Deconstructing

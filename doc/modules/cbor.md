@@ -27,13 +27,13 @@ import strategies.throwUnsafely
 
 ### Encoding and decoding
 
-A value encodes with `cbor`, and CBOR data decodes to a type with `as` — or in one step, reading
+A value encodes with `in[Cbor]`, and CBOR data decodes to a type with `as` — or in one step, reading
 bytes straight to the type:
 
 ```scala
 case class Person(name: Text, age: Int)
 
-val encoded = Person(t"Ada", 36).cbor       // a Cbor value
+val encoded = Person(t"Ada", 36).in[Cbor]       // a Cbor value
 encoded.as[Person]                          // Person(t"Ada", 36)
 
 stream.read[Person in Cbor]                 // bytes to Person directly
@@ -54,7 +54,7 @@ including removal, by assigning `Unset` — produce new values:
 ```scala
 import dynamicCborAccess.enabled
 
-val person = Person(t"Ada", 36).cbor
+val person = Person(t"Ada", 36).in[Cbor]
 person.name.as[Text]                 // t"Ada"
 (person.age = 40).as[Person]         // Person(t"Ada", 40)
 ```
@@ -67,7 +67,7 @@ as for the textual formats.
 A CBOR map is assembled from named arguments where no case class fits:
 
 ```scala
-Cbor.make(name = t"Anna".cbor, age = 30.cbor)
+Cbor.make(name = t"Anna".in[Cbor], age = 30.in[Cbor])
 ```
 
 ### Errors

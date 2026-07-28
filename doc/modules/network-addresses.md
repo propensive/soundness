@@ -37,7 +37,7 @@ as typed members:
 ```scala
 url"https://example.com:8080/path?query=1#top"
 
-t"https://example.com/".decode[HttpUrl]
+t"https://example.com/".as[HttpUrl]
 ```
 
 A hole in the interpolator substitutes a value in the right place — a number becomes the port, a text
@@ -65,12 +65,12 @@ ip"192.168.0.0.0.1"   // does not compile: too many groups
 
 ### Email addresses
 
-An email address is written with `email"…"` and parsed from text with `decode`, validated against the
+An email address is written with `email"…"` and parsed from text with `as`, validated against the
 rules for a well-formed address:
 
 ```scala
 email"test@example.com"
-t"simple@example.com".decode[EmailAddress]
+t"simple@example.com".as[EmailAddress]
 ```
 
 ### Ports
@@ -96,7 +96,7 @@ mac"01-23-45-ab-cd-ef"
 
 ### Parsing at runtime
 
-Every identifier that has a literal form also decodes from text with `decode`, naming the target type.
+Every identifier that has a literal form also decodes from text with `as`, naming the target type.
 A value that does not conform raises a typed error — an `HostnameError`, an `IpAddressError`, an
 `EmailAddressError` — that names precisely what was wrong, so a program validating user input can
 report the fault rather than merely rejecting the value.

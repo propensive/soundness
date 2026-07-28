@@ -40,7 +40,7 @@ import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
 import textSanitizers.strictSanitizer
 
-val bytes = t"café".data   // UTF-8 bytes
+val bytes = t"café".in[Data]   // UTF-8 bytes
 bytes.utf8                 // t"café"
 ```
 

@@ -59,7 +59,7 @@ reads back the same way regardless of the order of the children:
 ```scala
 case class Worker(name: Text, age: Int)
 
-Worker(t"Alice", 30).xml
+Worker(t"Alice", 30).in[Xml]
 // x"<Worker><name>Alice</name><age>30</age></Worker>"
 
 t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
@@ -117,5 +117,5 @@ adds newlines and indentation for reading:
 ```scala
 import formatting.indentedXmlFormatting
 
-Worker(t"Alice", 30).xml.show   // indented across several lines
+Worker(t"Alice", 30).in[Xml].show   // indented across several lines
 ```

@@ -34,7 +34,7 @@ in scope:
 ```scala
 import alphabets.base64Standard
 
-val bytes = t"Hello".data
+val bytes = t"Hello".in[Data]
 bytes.serialize[Base64]   // t"SGVsbG8="
 ```
 

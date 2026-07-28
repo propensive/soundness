@@ -84,5 +84,5 @@ typed error naming the fault when the URI is malformed — and encodes back:
 ```scala
 import strategies.throwUnsafely
 
-t"geo:51.5,0.1".decode[Geolocation].location
+t"geo:51.5,0.1".as[Geolocation].location
 ```

@@ -27,7 +27,7 @@ import soundness.*
 
 ### Encoding and decoding
 
-A value encodes with `pojo`, and decodes back with `decode` — fallibly, since the receiving side
+A value encodes with `pojo`, and decodes back with `as` — fallibly, since the receiving side
 must state the type it expects, and the data may not match:
 
 ```scala
@@ -37,7 +37,7 @@ case class Group(persons: List[Person], size: Int)
 val group = Group(List(Person(t"John", 30), Person(t"Jane", 25)), 2)
 
 val transportable = group.pojo         // arrays, strings and boxes only
-safely(transportable.decode[Group])    // the original Group, on the other side
+safely(transportable.as[Group])    // the original Group, on the other side
 ```
 
 Nested case classes, collections and enumerations all derive their conversions, so any data-shaped

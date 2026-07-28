@@ -22,7 +22,7 @@ response. And in both, the error is often reduced to a string, which loses the s
 would let a program inspect or react to it.
 
 Soundness keeps the failure in the type and the detail in the value. An error is a value
-carrying a typed [message](expressive-errors.md); a method advertises the errors it can raise
+carrying a typed [message](../philosophy/expressive-errors.md); a method advertises the errors it can raise
 in its return type; and the decision of what to do belongs to the caller, expressed as a
 contextual strategy. Because the strategy is an ordinary given, one body of fallible code
 serves every response. The names come from the `soundness` package, with a diagnostics choice

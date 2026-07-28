@@ -106,12 +106,12 @@ width*depth         // 1.8288 square metres
 
 ### Converting
 
-A quantity converts explicitly to another compatible unit with `in`, naming the
+A quantity converts explicitly to another compatible unit with `to`, naming the
 target unit family:
 
 ```scala
-(3*Foot).in[Metres]   // 0.9144 metres
-(3*Metre).in[Feet]    // 9.8425… feet
+(3*Foot).to[Metres]   // 0.9144 metres
+(3*Metre).to[Feet]    // 9.8425… feet
 ```
 
 `normalize` does the same, written with the fully-powered unit type:
@@ -282,7 +282,7 @@ like any other:
 import temperatureScales.celsiusScale
 (zero[Temperature] + 300*Kelvin).show   // t"26.9 °C"
 
-(Fahrenheit(100) - zero[Temperature]).in[Rankines].show   // t"560 °R"
+(Fahrenheit(100) - zero[Temperature]).to[Rankines].show   // t"560 °R"
 ```
 
 Reading the same temperature on a different scale is a matter of importing a
