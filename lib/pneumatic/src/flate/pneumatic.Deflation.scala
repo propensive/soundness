@@ -50,7 +50,7 @@ extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
-  private val deflater: DeflateEngine = FlateBackend.deflater(-1, nowrap || gzip)
+  private val deflater: DeflateEngine^ = FlateBackend.deflater(-1, nowrap || gzip)
 
   private val crc: FlateChecksum = FlateBackend.crc32()
   private val empty: Array[Byte] = new Array[Byte](0)
@@ -169,7 +169,7 @@ extends Duct[Data, Data]:
     case Checksum(remaining: Int)
     case Done
 
-  private val inflater: InflateEngine = FlateBackend.inflater(nowrap || gzip)
+  private val inflater: InflateEngine^ = FlateBackend.inflater(nowrap || gzip)
   private val empty: Array[Byte] = new Array[Byte](0)
   private var header: Header = if gzip then Header.Fixed(10) else Header.Done
   private var flags: Int = 0
@@ -278,7 +278,7 @@ extends Duct[Data, Data]:
 
   // The inflater may hold far more pending output than one step's space, so
   // it must keep draining after the upstream ends.
-  override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
     val out: Array[Byte]^ = target.asInstanceOf[Array[Byte]]
     var produced: Int = 0
     var run: Int = 1
