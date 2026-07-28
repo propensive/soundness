@@ -36,6 +36,7 @@ import java.lang as jl
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import kaleidoscope.*
@@ -51,11 +52,43 @@ object Pem:
   // always given explicitly: it is a fact about the value, not a mode of the encoding.
   def apply(label: PemLabel, der: Der): Pem = Pem(label, der.data)
 
+  // The DER payload of a PEM block, so that `pem.as[Der]` reaches the armored bytes as a document
+  // rather than as anonymous `Data`. The label is not checked against the content: every PEM label
+  // this module knows armors DER.
+  given derDecodable: Der is Decodable in Pem = pem => Der(pem.data)
+
+  // `text.read[Asn1 in Pem]` — and, through distillate's identity decodable, `text.read[Der in
+  // Pem]` — reading the armor and decoding its DER payload in one step. Sealed per the codec-thunk
+  // pattern (see rep/DECISIONS.md), like the `Pem` aggregables below.
+  given aggregableIn: [value]
+  =>  ( decodable: (value is Decodable in Der)^ )
+  =>  ( Diagnostics, Tactic[PemError] )
+  =>  ( (value in Pem) is Aggregable by Text ) =
+
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = value in Pem
+        type Operand = Text
+
+        def aggregate(stream: LazyList[Text]): value in Pem =
+          decode(parse(Cursor(stream.iterator)))
+
+        override def accept(stream: (Stream[Text] over Credit)^): value in Pem =
+          // See `aggregable` below.
+          val neutral: AnyRef = stream.asInstanceOf[AnyRef]
+          decode(parse(Cursor(neutral.asInstanceOf[(Stream[Text] over Credit)^])))
+
+        private def decode(pem: Pem): value in Pem =
+          decodable.decoded(Der(pem.data)).asInstanceOf[value in Pem]
+
   // Streaming, cursor-based parsing: the input is consumed line by line, and
   // the base64 body accumulates in a single builder — nothing else of the
   // input is retained, so a PEM document parses from any source in bounded
   // memory (modulo its payload).
-  def parse(text: Text)(using Diagnostics): Pem raises PemError = parse(Cursor(text))
+  //
+  // Not public: `text.read[Pem]` (through `aggregable`, below) is the entry point.
+  private[enigmatic] def parse(text: Text)(using Diagnostics): Pem raises PemError =
+    parse(Cursor(text))
 
   // The first PEM block of the input: leading whitespace is skipped (the
   // legacy parser trimmed the whole document), then the first line must be a
@@ -164,11 +197,6 @@ object Pem:
     Stream((t"-----BEGIN ${pem.label}-----\n" #:: LazyList.defer(groups(0))).iterator)
 
 case class Pem(label: PemLabel, data: Data):
-  // The armored payload read as a DER document, so that `pem.der.as[Asn1]` parses a certificate,
-  // key or request without an intermediate `Data` step. Labels are not checked against content:
-  // every PEM label this module knows armors DER.
-  def der: Der = Der(data)
-
   def serialize: Text =
     Seq
       ( Seq(t"-----BEGIN $label-----"),

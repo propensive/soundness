@@ -129,16 +129,16 @@ object Tests extends Suite(m"Gastronomy tests"):
         |-----END EXAMPLE-----
         """.s.stripMargin.show
 
-      Pem.parse(example).label
+      example.read[Pem].label
     . assert(_ == PemLabel.Proprietary(t"EXAMPLE"))
 
     test(m"Decode PEM certificate"):
       import alphabets.base64Standard
-      Pem.parse(request).data.digest[Md5].serialize[Base64]
+      request.read[Pem].data.digest[Md5].serialize[Base64]
     . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
     test(m"PEM roundtrip"):
-      Pem.parse(request).serialize
+      request.read[Pem].serialize
     . assert(_ == request.trim)
 
     test(m"PEM parses from a stream through accept"):
@@ -164,7 +164,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(_ == List())
 
     test(m"PEM streams its armored form"):
-      Pem.parse(request).read[Text].trim
+      request.read[Pem].read[Text].trim
     . assert(_ == request.trim)
 
     test(m"RSA roundtrip"):
@@ -777,18 +777,18 @@ object Tests extends Suite(m"Gastronomy tests"):
       . assert(_ == Asn1Error.Reason.ReservedTag(0))
 
       test(m"A real X.509 certificate round-trips byte-exactly"):
-        val pem = Pem.parse(certificate)
-        pem.der.as[Asn1].in[Der] == pem.der
+        val value: Asn1 = certificate.read[Asn1 in Pem]
+        value.in[Der] == certificate.read[Der in Pem]
       . assert(identity)
 
       test(m"A real PKCS#10 request round-trips byte-exactly"):
-        val pem = Pem.parse(request)
-        pem.der.as[Asn1].in[Der] == pem.der
+        val pem = request.read[Pem]
+        pem.as[Der].as[Asn1].in[Der] == pem.as[Der]
       . assert(identity)
 
       test(m"A DER document re-armors as PEM"):
-        val pem = Pem.parse(certificate)
-        Pem(PemLabel.Certificate, pem.der.as[Asn1].in[Der]).serialize
+        val value: Asn1 = certificate.read[Asn1 in Pem]
+        Pem(PemLabel.Certificate, value.in[Der]).serialize
       . assert(_ == certificate.trim)
 
     CaptureTests()

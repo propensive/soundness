@@ -17,10 +17,18 @@ valid DER:
 ```scala
 val value: Asn1 = bytes.read[Der].as[Asn1]
 ```
-DER content usually arrives armored as PEM, and `Pem` converts in both directions:
+DER content usually arrives armored as PEM. Reading a `Pem` and decoding its payload can be
+done in one step, from any source a `Text` can be read from:
 ```scala
-val certificate: Asn1 = Pem.parse(text).der.as[Asn1]
+val certificate: Asn1 = text.read[Asn1 in Pem]
+val payload: Der = text.read[Der in Pem]
+
 val armored: Pem = Pem(PemLabel.Certificate, certificate.in[Der])
+```
+or in stages, if the label matters:
+```scala
+val pem: Pem = text.read[Pem]
+val certificate: Asn1 = pem.as[Der].as[Asn1]
 ```
 
 #### Canonicity
@@ -36,8 +44,8 @@ The point of that strictness is that decoding and re-encoding reproduces the ori
 exactly — the property that verifying a signature over a certificate's `TBSCertificate`
 depends on:
 ```scala
-val pem = Pem.parse(certificate)
-pem.der.as[Asn1].in[Der] == pem.der   // true
+val pem = text.read[Pem]
+pem.as[Der].as[Asn1].in[Der] == pem.as[Der]   // true
 ```
 
 #### Tagged and unknown values
