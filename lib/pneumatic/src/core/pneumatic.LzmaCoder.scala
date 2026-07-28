@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import proscenium.compat.*
+
 import RangeCoder.{ProbInit, probabilities, probabilityMatrix, resetProbabilities}
 
 // Shared LZMA model constants and the coder base holding every adaptive probability array. The
@@ -58,6 +60,15 @@ private[pneumatic] object Lzma:
 
   inline val Reps = 4
   inline val States = 12
+
+  // The `distSpecial` reverse-trees, one per distance slot in `DistModelStart..<DistModelEnd`,
+  // flattened into a single probability array: tree `i` (`distSlot - DistModelStart`) has size
+  // `2 << (i/2)` and starts at `DistSpecialOffsets(i)`.
+  inline val DistSpecialTotal = 124
+  val distSpecialOffsets: IArray[Int] =
+    IArray.unsafeFromArray(Array(0, 2, 4, 8, 12, 20, 28, 44, 60, 92))
+
+  def distSpecialSize(index: Int): Int = 2 << (index/2)
 
   def distState(len: Int): Int =
     if len < DistStates + MatchLenMin then len - MatchLenMin else DistStates - 1

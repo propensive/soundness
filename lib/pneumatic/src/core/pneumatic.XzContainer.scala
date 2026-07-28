@@ -126,7 +126,7 @@ private[pneumatic] object XzContainer:
       val blockDataStart = pos + headerSize
       val dictSize = Lzma2Options.byteToDictSize(dictSizeByte)
 
-      val decompressor = Lzma2Decompressor(dictSize)
+      val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
       decompressor.accept(buffer, blockDataStart, buffer.length - blockDataStart)
       decompressor.finish()
 

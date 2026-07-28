@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import scala.caps
+
 import proscenium.compat.*
 
 import scala.collection.mutable as scm
@@ -53,15 +55,14 @@ import zephyrine.*
 
 // The output-draining half of an engine: mirrors `BrotliEngine`, staging bytes in `pending` and
 // handing them out in whatever space each `deliver` offers.
-private[pneumatic] trait XzEngine:
+private[pneumatic] trait XzEngine extends caps.Mutable:
   protected val pending: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-  @scala.caps.unsafe.untrackedCaptures
   private var delivered: Int = 0
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit
-  def finish(): Unit
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def finish(): Unit
 
-  def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
+  update def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -75,7 +76,7 @@ private[pneumatic] trait XzEngine:
 
     produced
 
-  def gather(): Data =
+  update def gather(): Data =
     val result = Buffer[Byte](pending.length - delivered)
     var i = 0
 
@@ -93,16 +94,15 @@ private[pneumatic] trait XzEngine:
 // capture, per this module's capture-checked discipline.
 private[pneumatic] abstract class BufferedEngine extends XzEngine:
   private val input: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
   protected def transform(bytes: Array[Byte]): Array[Byte]
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = 0
     while i < length do { input += bytes(offset + i); i += 1 }
 
-  def finish(): Unit =
+  update def finish(): Unit =
     if !finished then
       finished = true
       val output = transform(input.toArray)
@@ -119,16 +119,14 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
   private val segmentSize = options.dictSize
   private val segment: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val records: scm.ArrayBuffer[(Long, Long)] = scm.ArrayBuffer()
-  @scala.caps.unsafe.untrackedCaptures
   private var headerEmitted = false
-  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
   private def emit(bytes: Array[Byte]): Unit =
     var i = 0
     while i < bytes.length do { pending += bytes(i); i += 1 }
 
-  private def ensureHeader(): Unit =
+  private update def ensureHeader(): Unit =
     if !headerEmitted then
       emit(XzContainer.streamHeader(checkType))
       headerEmitted = true
@@ -141,7 +139,7 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
       emit(blockBytes)
       records += ((unpadded, data.length.toLong))
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensureHeader()
     var i = 0
 
@@ -150,7 +148,7 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
       i += 1
       if segment.length >= segmentSize then emitSegment()
 
-  def finish(): Unit =
+  update def finish(): Unit =
     if !finished then
       finished = true
       ensureHeader()
@@ -172,13 +170,13 @@ private[pneumatic] final class Lzma2CompressorEngine(preset: Int) extends Buffer
 // Streams LZMA2 decompression: feeds input into the chunk decoder as it arrives and drains the
 // decoder's freshly-produced bytes into `pending`, keeping the buffered compressed data bounded.
 private[pneumatic] final class Lzma2DecompressorEngine(dictSize: Int) extends XzEngine:
-  private val decompressor = Lzma2Decompressor(dictSize)
+  private val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     decompressor.accept(bytes, offset, length)
     drain()
 
-  def finish(): Unit =
+  update def finish(): Unit =
     decompressor.finish()
     drain()
 
@@ -188,12 +186,13 @@ private[pneumatic] final class Lzma2DecompressorEngine(dictSize: Int) extends Xz
     while i < output.length do { pending += output(i); i += 1 }
     output.clear()
 
-// The `Duct` stage wrapping an engine, identical in shape to `BrotliStage`.
-private[pneumatic] class XzStage(engine: XzEngine) extends Duct[Data, Data]:
+// The `Duct` stage wrapping an engine, identical in shape to `BrotliStage`. The engine is
+// created by the by-name argument inside the stage, so the stage owns it exclusively.
+private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
-  @scala.caps.unsafe.untrackedCaptures
+  private val engine: XzEngine^ = engine0
   private var finishing = false
 
   def regulation: Credit is Regulation = summon[Credit is Regulation]
@@ -224,19 +223,19 @@ private[pneumatic] class XzStage(engine: XzEngine) extends Duct[Data, Data]:
 object Xz:
   inline val DefaultPreset = 6
 
-  private def encoderEngine(preset: Int): XzEngine = XzCompressorEngine(preset, XzCheck.Crc64Type)
-  private def decoderEngine(): XzEngine = XzDecompressorEngine()
+  private def encoderEngine(preset: Int): XzEngine^ = XzCompressorEngine(preset, XzCheck.Crc64Type)
+  private def decoderEngine(): XzEngine^ = XzDecompressorEngine()
 
   given compression: Xz is Compression:
-    def compressor()(using Buffering): Duct[Data, Data] {
+    def compressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       XzStage(encoderEngine(DefaultPreset))
 
-    def decompressor()(using Buffering): Duct[Data, Data] {
+    def decompressor()(using Buffering): (Duct[Data, Data] {
       type Transport = Credit
-      type Upstream = Credit } =
+      type Upstream = Credit })^ =
 
       XzStage(decoderEngine())
 
@@ -247,9 +246,9 @@ object Xz:
       drive(decoderEngine(), stream)
 
   // Compress with an explicit preset level (0..9); presets 0..3 favour speed, 4..9 favour ratio.
-  def compressor(preset: Int)(using Buffering): Duct[Data, Data] {
+  def compressor(preset: Int)(using Buffering): (Duct[Data, Data] {
     type Transport = Credit
-    type Upstream = Credit } =
+    type Upstream = Credit })^ =
 
     XzStage(encoderEngine(preset))
 
@@ -258,18 +257,22 @@ object Xz:
 
   def decompress(stream: Progression[Data]): Progression[Data] = drive(decoderEngine(), stream)
 
-  // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail.
-  private[pneumatic] def drive(engine: XzEngine, stream: Progression[Data]): Progression[Data] =
-    def recur(stream: Progression[Data]): Progression[Data] = stream match
+  // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail. The
+  // engine argument is by-name, so the (exclusive, mutable) engine is minted inside the deferred
+  // block and never escapes it.
+  private[pneumatic] def drive(engine0: => XzEngine^, stream: Progression[Data])
+  :   Progression[Data] =
+
+    def recur(engine: XzEngine^, stream: Progression[Data]): Progression[Data] = stream match
       case head #:: tail =>
         engine.accept(head.mutable(using Unsafe), 0, head.length)
-        recur(tail)
+        recur(engine, tail)
 
       case _ =>
         engine.finish()
         val data = engine.gather()
         if data.length > 0 then Progression(data) else Progression.empty
 
-    Progression.defer(recur(stream))
+    Progression.defer(recur(engine0, stream))
 
 sealed trait Xz extends Compressor
