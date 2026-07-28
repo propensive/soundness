@@ -1077,35 +1077,35 @@ object Json extends Json2, Dynamic:
       // multiply-shift and one slot probe. `slots(slot)` holds the key's
       // index + 1 (0 = empty). Degenerates to `capacity = 0` (linear scan)
       // only if collisions persist at 4x — practically never for the small,
-      // distinct key sets of a case class.
-      var capacity = Integer.highestOneBit(count.max(1))*4
-      var slots: Array[Int] | Null = null
+      // distinct key sets of a case class. Each attempt's buffer is local to
+      // its `probe` frame (a `var` cannot hold an exclusive buffer), frozen
+      // on success; recursion depth is the number of retries.
+      def probe(capacity: Int): Optional[(IArray[Int], Int)] =
+        if capacity > count*16 then Unset else
+          val attempt = Buffer[Int](capacity)
+          var clash = false
+          var probeIndex = 0
 
-      while slots == null && capacity <= count*16 do
-        val attempt = new Array[Int](capacity)
-        var clash = false
-        index = 0
+          while probeIndex < count && !clash do
+            if packableFrozen(probeIndex) then
+              val slot = (((lowsFrozen(probeIndex)*KeyTable.Scramble) ^ highsFrozen(probeIndex))
+                .toInt & (capacity - 1)).abs
 
-        while index < count && !clash do
-          if packableFrozen(index) then
-            val slot = (((lowsFrozen(index)*KeyTable.Scramble) ^ highsFrozen(index)).toInt
-              & (capacity - 1)).abs
+              if attempt(slot) == 0 then attempt(slot) = probeIndex + 1 else clash = true
 
-            if attempt(slot) == 0 then attempt(slot) = index + 1 else clash = true
+            probeIndex += 1
 
-          index += 1
+          if clash then probe(capacity*2) else (Buffer.freeze(attempt), capacity)
 
-        if clash then capacity *= 2 else slots = attempt
-
-      if slots == null then capacity = 0
+      val table = probe(Integer.highestOneBit(count.max(1))*4)
 
       new KeyTable
         ( keys,
           lowsFrozen,
           highsFrozen,
           packableFrozen,
-          (if slots == null then new Array[Int](0) else slots.nn).immutable(using Unsafe),
-          capacity )
+          table.lay(Buffer.freeze(Buffer[Int](0)))(_(0)),
+          table.lay(0)(_(1)) )
 
   // Precomputed packed-byte forms of a fixed key set (a derived product's
   // wire keys): matching a wire key against the table needs no `String`
