@@ -67,48 +67,63 @@ extension (text: Text)
     val out = new java.lang.StringBuilder(length + (length >> 3))
 
     // Reusable scratch buffers, grown lazily by doubling. Many words share
-    // the same allocation across the entire `text.hyphenate` call.
-    var padded = new Array[Char](32)
-    var scores = new Array[Byte](33)
-    var breaks = new Array[Int](32)
-    var i = 0
+    // the same allocation across the entire `text.hyphenate` call. A `var`
+    // cannot hold an exclusive buffer, so growth recurses instead: each
+    // `walk` frame scans until a word outgrows the scratch, then consumes
+    // the buffers into `Buffer.grow` and continues from the same position —
+    // recursion depth is the number of growths, not the number of words.
+    def walk
+      ( from:           Int,
+        consume padded: Buffer[Char]^,
+        consume scores: Buffer[Byte]^,
+        consume breaks: Buffer[Int]^ )
+    :   Unit =
 
-    while i < length do
-      val c = source.charAt(i)
+      var i = from
+      var needed = 0
 
-      if Character.isLetter(c) then
-        var end = i
-        while end < length && Character.isLetter(source.charAt(end)) do end += 1
-        val wordOffset = i
-        val wordLength = end - i
+      while i < length && needed == 0 do
+        val c = source.charAt(i)
 
-        if wordLength + 2 > padded.length then
-          var newSize = padded.length
-          while newSize < wordLength + 2 do newSize *= 2
-          padded = new Array[Char](newSize)
-          scores = new Array[Byte](newSize + 1)
-          breaks = new Array[Int](newSize)
+        if Character.isLetter(c) then
+          var end = i
+          while end < length && Character.isLetter(source.charAt(end)) do end += 1
+          val wordOffset = i
+          val wordLength = end - i
 
-        val nBreaks =
-          Hyphenation.breakPointsInto
-            ( source, wordOffset, wordLength, hyphenation, effectiveLeft,
-              effectiveRight, padded, scores, breaks )
+          if wordLength + 2 > padded.length then needed = wordLength + 2
+          else
+            val nBreaks =
+              Hyphenation.breakPointsInto
+                ( source, wordOffset, wordLength, hyphenation, effectiveLeft,
+                  effectiveRight, padded.raw, scores.raw, breaks.raw )
 
-        var prev = 0
-        var k = 0
+            var prev = 0
+            var k = 0
 
-        while k < nBreaks do
-          out.append(source, wordOffset + prev, wordOffset + breaks(k))
-          out.append(hyphen)
-          prev = breaks(k)
-          k += 1
+            while k < nBreaks do
+              out.append(source, wordOffset + prev, wordOffset + breaks(k))
+              out.append(hyphen)
+              prev = breaks(k)
+              k += 1
 
-        out.append(source, wordOffset + prev, end)
-        i = end
-      else
-        out.append(c)
-        i += 1
+            out.append(source, wordOffset + prev, end)
+            i = end
+        else
+          out.append(c)
+          i += 1
 
+      if needed > 0 then
+        var newSize = padded.length
+        while newSize < needed do newSize *= 2
+
+        walk
+          ( i,
+            Buffer.grow(padded, newSize),
+            Buffer.grow(scores, newSize + 1),
+            Buffer.grow(breaks, newSize) )
+
+    walk(0, Buffer[Char](32), Buffer[Byte](33), Buffer[Int](32))
     out.toString.tt
 
   // Split a single word at every admissible break point. For multi-word
