@@ -376,7 +376,7 @@ object internal:
               arr(k*2 + 1) = pair(1).asInstanceOf[Any]
               k += 1
 
-            Yaml.Ast.mapFromAnyArray(arr)
+            Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[IArray[Any]])
           }
 
       def serialize(node: Any): Expr[Yaml.Ast] = node.asMatchable match
@@ -545,7 +545,8 @@ object internal:
                     tail(k) = $scrutinee.arrayElement(${Expr(prefixLen)} + k).asInstanceOf[Any]
                     k += 1
 
-                  $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.seqFromAnyArray(tail))
+                  $array(${Expr(idx)}) =
+                    Yaml.ast(Yaml.Ast.seqFromAnyArray(tail.asInstanceOf[IArray[Any]]))
                   true
                 }
               }
@@ -696,7 +697,8 @@ object internal:
                       arr(m*2 + 1) = valsBuf(m)
                       m += 1
 
-                    $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
+                    $array(${Expr(idx)}) =
+                      Yaml.ast(Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[IArray[Any]]))
                     true
                   }
                 }
