@@ -141,12 +141,12 @@ private[pneumatic] object XzContainer:
 
       // Verify the block's integrity check over its uncompressed output.
       if checkSize > 0 then
-        val checker = XzCheck.checker(checkType)
+        val checker: XzChecker^ = XzCheck.checker(checkType)
         val decoded: Array[Byte]^ = new Array[Byte](sink.length - blockOutputStart)
         var d = 0
         while d < decoded.length do { decoded(d) = sink(blockOutputStart + d); d += 1 }
-        checker.update(decoded, 0, decoded.length)
-        val expected = checker.bytes
+        checker.absorb(decoded, 0, decoded.length)
+        val expected: Array[Byte]^ = checker.bytes
         var c = 0
 
         while c < checkSize do
@@ -216,9 +216,9 @@ private[pneumatic] object XzContainer:
     var padding = (-payload.length) & 3
     while padding > 0 do { out += 0.toByte; padding -= 1 }
 
-    val checker = XzCheck.encoder(checkType)
-    checker.update(data, 0, data.length)
-    val checkBytes = checker.bytes
+    val checker: XzChecker^ = XzCheck.encoder(checkType)
+    checker.absorb(data, 0, data.length)
+    val checkBytes: Array[Byte]^ = checker.bytes
     appendBytes(out, checkBytes)
 
     (out.toArray, (header.length + payload.length + checkBytes.length).toLong)

@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import scala.caps
+
 import proscenium.compat.*
 
 import vacuous.*
@@ -55,14 +57,14 @@ private[pneumatic] object XzCheck:
 
   // A fresh running check for the given type, used by both the encoder (to emit the trailer) and
   // the decoder (to verify it). Every standard check type is supported.
-  def checker(checkType: Int): XzChecker = checkType match
-    case None       => NoChecker
+  def checker(checkType: Int): XzChecker^ = checkType match
+    case None       => NoChecker()
     case Crc32Type  => Crc32Checker()
     case Crc64Type  => Crc64Checker()
     case Sha256Type => Sha256Checker()
     case _          => throw IllegalStateException("the XZ data uses an unknown check type")
 
-  def encoder(checkType: Int): XzChecker = checker(checkType)
+  def encoder(checkType: Int): XzChecker^ = checker(checkType)
 
 private[pneumatic] object Crc64:
   val table: IArray[Long] =
@@ -79,28 +81,27 @@ private[pneumatic] object Crc64:
 
     Buffer.freeze(result)
 
-// A check that accumulates over the uncompressed bytes and yields its little-endian trailer bytes.
-private[pneumatic] trait XzChecker:
+// A check that accumulates over the uncompressed bytes and yields its little-endian trailer
+// bytes. Checkers are mutable running state, so each use instantiates a fresh one (including
+// `NoChecker`, whose instances are trivially cheap).
+private[pneumatic] trait XzChecker extends caps.Mutable:
   def size: Int
-  def reset(): Unit
-  def update(buffer: Array[Byte], offset: Int, length: Int): Unit
-  def bytes: Array[Byte]
+  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def bytes: Array[Byte]^
 
-private[pneumatic] object NoChecker extends XzChecker:
+private[pneumatic] final class NoChecker extends XzChecker:
   def size: Int = 0
-  def reset(): Unit = ()
-  def update(buffer: Array[Byte], offset: Int, length: Int): Unit = ()
-  def bytes: Array[Byte] = new Array[Byte](0)
+  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit = ()
+  update def bytes: Array[Byte]^ = new Array[Byte](0)
 
 private[pneumatic] final class Crc32Checker extends XzChecker:
   private val crc = Crc32()
   def size: Int = 4
-  def reset(): Unit = crc.reset()
 
-  def update(buffer: Array[Byte], offset: Int, length: Int): Unit =
+  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     crc.update(buffer, offset, length)
 
-  def bytes: Array[Byte] =
+  update def bytes: Array[Byte]^ =
     val value = crc.value
     val out: Array[Byte]^ = new Array[Byte](4)
     var i = 0
@@ -108,12 +109,10 @@ private[pneumatic] final class Crc32Checker extends XzChecker:
     out
 
 private[pneumatic] final class Crc64Checker extends XzChecker:
-  @scala.caps.unsafe.untrackedCaptures
   private var v: Long = -1L
   def size: Int = 8
-  def reset(): Unit = v = -1L
 
-  def update(buffer: Array[Byte], offset: Int, length: Int): Unit =
+  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = offset
     val end = offset + length
 
@@ -121,7 +120,7 @@ private[pneumatic] final class Crc64Checker extends XzChecker:
       v = Crc64.table(((v ^ buffer(i)) & 0xff).toInt) ^ (v >>> 8)
       i += 1
 
-  def bytes: Array[Byte] =
+  update def bytes: Array[Byte]^ =
     val value = v ^ -1L
     val out: Array[Byte]^ = new Array[Byte](8)
     var i = 0
@@ -148,33 +147,29 @@ private[pneumatic] object Sha256:
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
 
 private[pneumatic] final class Sha256Checker extends XzChecker:
-  @scala.caps.unsafe.untrackedCaptures
-  private var h = new Array[Int](8)
-  @scala.caps.unsafe.untrackedCaptures
-  private var block = new Array[Byte](64)
-  @scala.caps.unsafe.untrackedCaptures
-  private var w = new Array[Int](64)
-  @scala.caps.unsafe.untrackedCaptures
+  private val h: Array[Int]^ = new Array[Int](8)
+  private val block: Array[Byte]^ = new Array[Byte](64)
+  private val w: Array[Int]^ = new Array[Int](64)
   private var blockLength = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var totalLength = 0L
 
-  reset()
   def size: Int = 32
 
-  def reset(): Unit =
-    writable(h)(0) = 0x6a09e667; writable(h)(1) = 0xbb67ae85; writable(h)(2) = 0x3c6ef372; writable(h)(3) = 0xa54ff53a
-    writable(h)(4) = 0x510e527f; writable(h)(5) = 0x9b05688c; writable(h)(6) = 0x1f83d9ab; writable(h)(7) = 0x5be0cd19
+  private update def reset(): Unit =
+    h(0) = 0x6a09e667; h(1) = 0xbb67ae85; h(2) = 0x3c6ef372; h(3) = 0xa54ff53a
+    h(4) = 0x510e527f; h(5) = 0x9b05688c; h(6) = 0x1f83d9ab; h(7) = 0x5be0cd19
     blockLength = 0
     totalLength = 0
 
+  reset()
+
   private inline def rotr(x: Int, n: Int): Int = (x >>> n) | (x << (32 - n))
 
-  private def processBlock(): Unit =
+  private update def processBlock(): Unit =
     var i = 0
 
     while i < 16 do
-      writable(w)(i) = ((block(i*4) & 0xff) << 24) | ((block(i*4 + 1) & 0xff) << 16) |
+      w(i) = ((block(i*4) & 0xff) << 24) | ((block(i*4 + 1) & 0xff) << 16) |
         ((block(i*4 + 2) & 0xff) << 8) | (block(i*4 + 3) & 0xff)
 
       i += 1
@@ -182,7 +177,7 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
     while i < 64 do
       val s0 = rotr(w(i - 15), 7) ^ rotr(w(i - 15), 18) ^ (w(i - 15) >>> 3)
       val s1 = rotr(w(i - 2), 17) ^ rotr(w(i - 2), 19) ^ (w(i - 2) >>> 10)
-      writable(w)(i) = w(i - 16) + s0 + w(i - 7) + s1
+      w(i) = w(i - 16) + s0 + w(i - 7) + s1
       i += 1
 
     var a = h(0); var b = h(1); var c = h(2); var d = h(3)
@@ -199,34 +194,34 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
       hh = g; g = f; f = e; e = d + t1; d = c; c = b; b = a; a = t1 + t2
       i += 1
 
-    writable(h)(0) += a; writable(h)(1) += b; writable(h)(2) += c; writable(h)(3) += d
-    writable(h)(4) += e; writable(h)(5) += f; writable(h)(6) += g; writable(h)(7) += hh
+    h(0) += a; h(1) += b; h(2) += c; h(3) += d
+    h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
-  def update(buffer: Array[Byte], offset: Int, length: Int): Unit =
+  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = offset
     val end = offset + length
     totalLength += length
 
     while i < end do
-      writable(block)(blockLength) = buffer(i)
+      block(blockLength) = buffer(i)
       blockLength += 1
       if blockLength == 64 then { processBlock(); blockLength = 0 }
       i += 1
 
-  def bytes: Array[Byte] =
+  update def bytes: Array[Byte]^ =
     val bitLength = totalLength*8
-    writable(block)(blockLength) = 0x80.toByte
+    block(blockLength) = 0x80.toByte
     blockLength += 1
 
     if blockLength > 56 then
-      while blockLength < 64 do { writable(block)(blockLength) = 0; blockLength += 1 }
+      while blockLength < 64 do { block(blockLength) = 0; blockLength += 1 }
       processBlock()
       blockLength = 0
 
-    while blockLength < 56 do { writable(block)(blockLength) = 0; blockLength += 1 }
+    while blockLength < 56 do { block(blockLength) = 0; blockLength += 1 }
 
     var i = 0
-    while i < 8 do { writable(block)(56 + i) = ((bitLength >>> (56 - i*8)) & 0xff).toByte; i += 1 }
+    while i < 8 do { block(56 + i) = ((bitLength >>> (56 - i*8)) & 0xff).toByte; i += 1 }
     processBlock()
 
     val out: Array[Byte]^ = new Array[Byte](32)
