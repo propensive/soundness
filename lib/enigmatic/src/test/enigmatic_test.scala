@@ -62,6 +62,34 @@ object Tests extends Suite(m"Gastronomy tests"):
     |-----END CERTIFICATE REQUEST-----
     """.s.stripMargin.show
 
+  // A self-signed certificate, produced by `openssl req -x509 -newkey rsa:2048`. It is here for its
+  // shape rather than its content: v3 extensions behind a `[3] EXPLICIT` tag, a `[0] EXPLICIT`
+  // version, RDNs in `SET`s, object identifiers, `UTCTime`s and a `BIT STRING` signature.
+  val certificate: Text = t"""
+    |-----BEGIN CERTIFICATE-----
+    |MIIDtTCCAp2gAwIBAgIUfOcoc0ZbdhisC8NxLHW9Nj+CvPEwDQYJKoZIhvcNAQEL
+    |BQAwajELMAkGA1UEBhMCR0IxFzAVBgNVBAgMDkNhbWJyaWRnZXNoaXJlMRIwEAYD
+    |VQQHDAlDYW1icmlkZ2UxEzARBgNVBAoMClByb3BlbnNpdmUxGTAXBgNVBAMMEGFz
+    |bjEuZXhhbXBsZS5jb20wHhcNMjYwNzI4MTEwNzIyWhcNMzYwNzI1MTEwNzIyWjBq
+    |MQswCQYDVQQGEwJHQjEXMBUGA1UECAwOQ2FtYnJpZGdlc2hpcmUxEjAQBgNVBAcM
+    |CUNhbWJyaWRnZTETMBEGA1UECgwKUHJvcGVuc2l2ZTEZMBcGA1UEAwwQYXNuMS5l
+    |eGFtcGxlLmNvbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAN6Yqkcv
+    |lMJP+20lvvwabQXqHLM6eqAOcH1eeP74qe8lkGL4MFooAfUU2hifXdPPXvrE21dK
+    |kifgk9tOd8SkX+EDY4fGn6MEN5hm5l4nOXsZnqhm1lu1EbWgcDdw22Rd+6kPFC35
+    |7JeLL76/6L8XMi1MLNiyuIgozisiGf9TGLPF1tuexPvJZaf/4XrAA7fDdBfz7F5M
+    |PjOAJyT468qcSS1kMZ4weL0yH3kQ8mlwgNmyz5ibPF2KNUVpt194Y8GsXOeqQU+C
+    |joR/LZ/wMh5Iaq8mWjx/TcL/Yac7hhuIttEO71SMZ5+N0g8BGI+ZagVkkJ4FUziW
+    |sluLqCKEiRMrhvECAwEAAaNTMFEwHQYDVR0OBBYEFLMi3Mw9tUXd2rkjBuA96mQk
+    |Dk+TMB8GA1UdIwQYMBaAFLMi3Mw9tUXd2rkjBuA96mQkDk+TMA8GA1UdEwEB/wQF
+    |MAMBAf8wDQYJKoZIhvcNAQELBQADggEBAJspyiAbb9RMGDAKruzVj7nnbmVSv7Kj
+    |shPGW6PWd2uYJvVcpTcGNTepZ61PoEt8zjUUgGXNRSc9SoeY/17I/K9pq79aHkl4
+    |TeBwly0NdkyP788FmpOTbICmBADyM3slCr48GCnH0P5fgBQXv8cXm/fYYWUB4c9p
+    |h+wOiEQOTAJ1m/9kW7/kF7AkFahywqRXOkRUOAAvWDxVrn+FZFHyH1e0PXQssbq9
+    |eeoVq8kR6euQcL4Vyrg9XpOolSlBpJSOnG/S8CP4/JOQxfoXIr1ERuJrLTF+Kniw
+    |VWAjJOn3se6f9d+2rhKmV9Z7W21pdb87yuXgWXl/F6c/wVmOallb/Fw=
+    |-----END CERTIFICATE-----
+    """.s.stripMargin.show
+
   val pangram: Text = t"The quick brown fox jumps over the lazy dog"
 
   def run(): Unit =
@@ -592,5 +620,175 @@ object Tests extends Suite(m"Gastronomy tests"):
         val second = key.data(Divulgence)
         first.serialize[Hex] == second.serialize[Hex]
       . assert(_ == true)
+
+    suite(m"ASN.1 and DER"):
+      // DER is canonical, so `encode` is the equality of record: the byte-carrying cases of `Asn1`
+      // are case classes over `IArray[Byte]`, whose synthesized `equals` compares arrays by
+      // identity. Every assertion below therefore compares hexadecimal encodings.
+      def der(value: Asn1): Text = value.in[Der].data.serialize[Hex]
+      def decode(hex: Text): Asn1 = Der(hex.deserialize[Hex]).as[Asn1]
+      def roundtrip(hex: Text): Text = hex.deserialize[Hex].read[Der].as[Asn1].in[Der].data.serialize[Hex]
+      def reason(hex: Text): Asn1Error.Reason = capture[Asn1Error](decode(hex)).reason
+
+      // Every vector below was generated with `openssl asn1parse -genstr`/`-genconf`, except the
+      // `BIT STRING`, which is X.690 §8.6.4.2's worked example.
+      val vectors: List[Text] =
+        List
+         (t"0500", t"0101FF", t"010100", t"020100", t"02017F", t"02020080", t"0201FF", t"020180",
+          t"0202FF7F", t"02020100", t"04050102030405", t"0304066E5DC0", t"030100",
+          t"06092A864886F70D01010B", t"0603550403", t"06022A03", t"0603813403",
+          t"0C0668C3A96C6C6F", t"130454657374", t"16076140622E636F6D",
+          t"170D3730303130313030303030305A", t"180F31393730303130313030303030305A",
+          t"30050201010500", t"3000", t"3106040101040102", t"310702010102020100", t"A003020102",
+          t"8001AB", t"BF1F020500", t"A30405000500")
+
+      test(m"Null, booleans and empty sequences encode as their tag and length"):
+        List(der(Asn1.Null), der(Asn1.Boolean(true)), der(Asn1.Boolean(false)),
+            der(Asn1.Sequence(Nil)))
+      . assert(_ == List(t"0500", t"0101FF", t"010100", t"3000"))
+
+      test(m"Integers encode minimally, with sign extension"):
+        List(0, 127, 128, -1, -128, -129, 256).map(value => der(Asn1.Integer(BigInt(value))))
+      . assert(_ == List(t"020100", t"02017F", t"02020080", t"0201FF", t"020180", t"0202FF7F",
+          t"02020100"))
+
+      test(m"Octet strings and bit strings encode their content"):
+        List(der(Asn1.OctetString(IArray[Byte](1, 2, 3, 4, 5))),
+            der(Asn1.BitString(IArray[Byte](0x6e, 0x5d, 0xc0.toByte), 6)),
+            der(Asn1.BitString(IArray[Byte](), 0)))
+      . assert(_ == List(t"04050102030405", t"0304066E5DC0", t"030100"))
+
+      test(m"Object identifiers combine their first two arcs"):
+        List(List(1, 2, 840, 113549, 1, 1, 11), List(2, 5, 4, 3), List(1, 2, 3), List(2, 100, 3))
+        . map(arcs => der(Asn1.ObjectId(arcs)))
+      . assert(_ == List(t"06092A864886F70D01010B", t"0603550403", t"06022A03", t"0603813403"))
+
+      test(m"Strings encode as UTF-8"):
+        List(der(Asn1.Utf8String(t"héllo")), der(Asn1.PrintableString(t"Test")),
+            der(Asn1.Ia5String(t"a@b.com")))
+      . assert(_ == List(t"0C0668C3A96C6C6F", t"130454657374", t"16076140622E636F6D"))
+
+      test(m"Times encode in DER's single permitted form"):
+        List(der(Asn1.UtcTime(0)), der(Asn1.GeneralizedTime(0)))
+      . assert(_ == List(t"170D3730303130313030303030305A",
+          t"180F31393730303130313030303030305A"))
+
+      test(m"A set's members are sorted by their encodings"):
+        val two = Asn1.OctetString(IArray[Byte](2.toByte))
+        val one = Asn1.OctetString(IArray[Byte](1.toByte))
+
+        List(der(Asn1.Set(List(two, one))),
+            der(Asn1.Set(List(Asn1.Integer(BigInt(256)), Asn1.Integer(BigInt(1))))))
+      . assert(_ == List(t"3106040101040102", t"310702010102020100"))
+
+      test(m"Context tags encode explicitly, implicitly and in high-tag form"):
+        List(der(Asn1.Tagged(0, true, Asn1.Integer(BigInt(2)))),
+            der(Asn1.Tagged(0, false, Asn1.OctetString(IArray[Byte](0xab.toByte)))),
+            der(Asn1.Tagged(31, true, Asn1.Null)))
+      . assert(_ == List(t"A003020102", t"8001AB", t"BF1F020500"))
+
+      test(m"A long-form length uses the fewest possible bytes"):
+        val short = der(Asn1.OctetString(Data.fill(200)(_ => 0)))
+        val long = der(Asn1.OctetString(Data.fill(300)(_ => 0)))
+        List(short.s.take(6).tt, long.s.take(8).tt)
+      . assert(_ == List(t"0481C8", t"0482012C"))
+
+      test(m"Every known-answer vector round-trips byte-exactly"):
+        vectors.map(roundtrip(_))
+      . assert(_ == vectors)
+
+      test(m"A value reads directly from bytes tagged with its form"):
+        t"A003020102".deserialize[Hex].read[Asn1 in Der]
+      . assert(_ == Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))))
+
+      test(m"A constructed context tag holding one value is an explicit tag"):
+        decode(t"A003020102")
+      . assert(_ == Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))))
+
+      test(m"A constructed context tag holding two values is opaque"):
+        decode(t"A30405000500") match
+          case Asn1.Unknown(2, 3, true, _) => true
+          case _                           => false
+      . assert(identity)
+
+      test(m"A primitive context tag is opaque"):
+        decode(t"8001AB") match
+          case Asn1.Unknown(2, 0, false, _) => true
+          case _                            => false
+      . assert(identity)
+
+      test(m"An unmodelled universal tag is preserved verbatim"):
+        roundtrip(t"1E0400480049")
+      . assert(_ == t"1E0400480049")
+
+      test(m"Indefinite lengths are rejected"):
+        reason(t"0480")
+      . assert(_ == Asn1Error.Reason.IndefiniteLength(1))
+
+      test(m"Overlong lengths and tags are rejected"):
+        List(reason(t"018101FF"), reason(t"1F1E00"))
+      . assert(_ == List(Asn1Error.Reason.NonMinimalLength(1), Asn1Error.Reason.NonMinimalTag(1)))
+
+      test(m"A length needing more than four bytes is rejected"):
+        reason(t"048501010101010101")
+      . assert(_ == Asn1Error.Reason.Overflow(1))
+
+      test(m"Non-minimal and empty integers are rejected"):
+        List(reason(t"02020001"), reason(t"0200"))
+      . assert(_ == List(Asn1Error.Reason.NonMinimalInteger(0),
+          Asn1Error.Reason.EmptyInteger(0)))
+
+      test(m"A boolean other than 0x00 or 0xFF is rejected"):
+        reason(t"010101")
+      . assert(_ == Asn1Error.Reason.BadBoolean(0, 1))
+
+      test(m"A null with content is rejected"):
+        reason(t"050100")
+      . assert(_ == Asn1Error.Reason.BadLength(0, 5, 1))
+
+      test(m"Invalid bit-string padding is rejected"):
+        List(reason(t"03020801"), reason(t"03020103"))
+      . assert(_ == List(Asn1Error.Reason.BadUnusedBits(0, 8),
+          Asn1Error.Reason.BadUnusedBits(0, 1)))
+
+      test(m"Constructed strings and primitive sequences are rejected"):
+        List(reason(t"240404020102"), reason(t"1003020101"))
+      . assert(_ == List(Asn1Error.Reason.NotPrimitive(0, 4),
+          Asn1Error.Reason.NotConstructed(0, 16)))
+
+      test(m"Malformed object identifiers are rejected"):
+        List(reason(t"06022A80"), reason(t"06062A8FFFFFFF7F"))
+      . assert(_ == List(Asn1Error.Reason.BadOid(3), Asn1Error.Reason.OidArcOverflow(3)))
+
+      test(m"An unsorted set is rejected"):
+        reason(t"3106040102040101")
+      . assert(_ == Asn1Error.Reason.UnsortedSet(5))
+
+      test(m"An impossible date is rejected"):
+        reason(t"170D3730303233303030303030305A")
+      . assert(_ == Asn1Error.Reason.BadTime(0))
+
+      test(m"Truncated input and trailing bytes are rejected"):
+        List(reason(t"0101"), reason(t"05000500"))
+      . assert(_ == List(Asn1Error.Reason.Truncated(2), Asn1Error.Reason.Trailing(2)))
+
+      test(m"The reserved tag number zero is rejected"):
+        reason(t"0000")
+      . assert(_ == Asn1Error.Reason.ReservedTag(0))
+
+      test(m"A real X.509 certificate round-trips byte-exactly"):
+        val pem = Pem.parse(certificate)
+        pem.der.as[Asn1].in[Der] == pem.der
+      . assert(identity)
+
+      test(m"A real PKCS#10 request round-trips byte-exactly"):
+        val pem = Pem.parse(request)
+        pem.der.as[Asn1].in[Der] == pem.der
+      . assert(identity)
+
+      test(m"A DER document re-armors as PEM"):
+        val pem = Pem.parse(certificate)
+        Pem(PemLabel.Certificate, pem.der.as[Asn1].in[Der]).serialize
+      . assert(_ == certificate.trim)
 
     CaptureTests()

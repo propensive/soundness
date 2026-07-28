@@ -47,6 +47,10 @@ import vacuous.*
 import zephyrine.*
 
 object Pem:
+  // Armor a DER document, e.g. `Pem(PemLabel.Certificate, certificate.in[Der])`. The label is
+  // always given explicitly: it is a fact about the value, not a mode of the encoding.
+  def apply(label: PemLabel, der: Der): Pem = Pem(label, der.data)
+
   // Streaming, cursor-based parsing: the input is consumed line by line, and
   // the base64 body accumulates in a single builder — nothing else of the
   // input is retained, so a PEM document parses from any source in bounded
@@ -160,6 +164,11 @@ object Pem:
     Stream((t"-----BEGIN ${pem.label}-----\n" #:: LazyList.defer(groups(0))).iterator)
 
 case class Pem(label: PemLabel, data: Data):
+  // The armored payload read as a DER document, so that `pem.der.as[Asn1]` parses a certificate,
+  // key or request without an intermediate `Data` step. Labels are not checked against content:
+  // every PEM label this module knows armors DER.
+  def der: Der = Der(data)
+
   def serialize: Text =
     Seq
       ( Seq(t"-----BEGIN $label-----"),

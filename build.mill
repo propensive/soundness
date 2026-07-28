@@ -563,8 +563,8 @@ object soundness extends Toolchain:
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core)
 
-  object data extends Bundle(caesura.core, dissonance.core, enigmatic.core, facsimile.core,
-    gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
+  object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
+    facsimile.core, gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
@@ -1273,11 +1273,18 @@ object embarcadero extends Library:
       settings.cc(settings.maxInlines(super.scalacOptions(), "64"))
 
 object enigmatic extends Library:
+  // The ASN.1 value model and canonical DER codec: pure byte manipulation with no crypto provider
+  // and no platform APIs, so — unlike every other component here — it cross-compiles to Scala.js
+  // and Scala Native as well as the JVM. `core` depends on it so `Pem` can bridge to `Der`.
+  object asn1 extends Component(distillate.core, gossamer.core, monotonous.core, turbulence.core,
+    zephyrine.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The platform split mirrors gastronomy's: the cipher/key/PEM model is platform-neutral, while
   // the `JavaStdlibCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
   // `java.security` on the JVM (`core-jvm`) and against panicking stubs on native (`core-native`,
   // where the OpenSSL provider is the real implementation).
-  object core extends Component(aperture.core, gastronomy.core):
+  object core extends Component(aperture.core, gastronomy.core, asn1):
     override def scalaJs = false // `javax.crypto` has no JS analogue (and no OpenSSL either)
     override def scalaNative = true // but native has the OpenSSL provider
     // `core-jvm` also holds the off-heap/encrypting cloaks (`java.lang.foreign`).
