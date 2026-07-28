@@ -118,14 +118,14 @@ present themselves as stages.
 A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
 
 ```scala
-stream.memoize                       // drain into one immutable value
+stream.memoize                          // drain into one immutable value
 stream.sweep((storage, start, n) => …)  // drain, seeing each raw window
-stream.fold(0L)((total, storage, start, n) => …)  // window-level fold
 ```
 
-`sweep` and `fold` expose the raw window rather than boxed elements, so a byte-level reduction
-runs over the array with no per-element cost. `take` and `drop` bound a stream without draining
-it, releasing the remainder of the upstream unread.
+`sweep` — and `fold`, its accumulating counterpart — expose the raw window rather than boxed
+elements, so a byte-level reduction runs over the array with no per-element cost. `take` and
+`drop` bound a stream without draining it, releasing the remainder of the upstream unread. These
+three are reached through `import zephyrine.{take, drop, fold}`.
 
 Where a pipeline ends in a *push* chain rather than a value, `pump` is the single point at which
 data crosses from the pull side to the push side:
