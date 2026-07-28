@@ -82,12 +82,12 @@ brings it into scope explicitly:
 import calendars.gregorianCalendar
 ```
 
-A date read from text uses `decode`. The `ts` interpolator does the same for a
+A date read from text uses `as`. The `ts` interpolator does the same for a
 literal known at compiletime, where it validates the digits just as the
 hyphenated form does:
 
 ```scala
-val parsed = t"2011-12-13".decode[Date]   // 2011-Dec-13
+val parsed = t"2011-12-13".as[Date]   // 2011-Dec-13
 val literal = ts"2024-12-31"              // 2024-Dec-31
 ```
 
@@ -152,7 +152,7 @@ literal:
 
 ```scala
 val built = Timestamp(2023-May-28, Clockface(14, 30, 59))
-val parsed = t"2024-01-15T14:30:59".decode[Timestamp]
+val parsed = t"2024-01-15T14:30:59".as[Timestamp]
 val literal = ts"2023-05-28T14:30:59"
 ```
 
@@ -192,7 +192,7 @@ each other, and parse from text:
 ```scala
 Year(2024) + 5           // Year(2029)
 Year(1999) < Year(2000)  // true
-t"2024".decode[Year]     // Year(2024)
+t"2024".as[Year]     // Year(2024)
 ```
 
 A year and a month together form a `Monthstamp`, written with `-`. Subtracting a
@@ -258,7 +258,7 @@ val span = Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
     seconds = Quantity(6.0))
 
 span.encode                        // P1Y2M3DT4H5M6S
-t"P1Y2M3DT4H5M6S".decode[Timespan] // the same span
+t"P1Y2M3DT4H5M6S".as[Timespan] // the same span
 dur"P1Y2M3DT4H5M6S"                // checked at compiletime
 ```
 
@@ -321,11 +321,11 @@ given Holidays = Holidays(List
 
 An instant is a moment in physical time, with no reference to any calendar or
 clock. An `Instant` is measured along a timeline, and the timeline is part of its
-type. The POSIX timeline counts milliseconds from the
+type. The `Unix` timeline — POSIX time — counts milliseconds from the
 [Unix epoch](https://en.wikipedia.org/wiki/Unix_time):
 
 ```scala
-import chronometries.posix
+import chronometries.unix
 
 val epoch = Instant(0L)   // 1970-01-01T00:00:00Z
 ```
@@ -400,7 +400,7 @@ in London in summer than in winter, because British Summer Time is in force:
 ```scala
 import instantDecodables.iso8601InstantDecodable
 
-val summer = t"2024-07-15T12:00:00Z".decode[Instant over Posix]
+val summer = t"2024-07-15T12:00:00Z".as[Instant over Unix]
 summer.in(tz"Europe/London").time.hour   // 13
 ```
 
@@ -711,12 +711,12 @@ import yearFormats.fullYears
 Civil time and physical time disagree by a whole number of seconds, and the number
 grows. Since 1972, [leap seconds](https://en.wikipedia.org/wiki/Leap_second) have
 been inserted into [UTC](https://en.wikipedia.org/wiki/Coordinated_Universal_Time)
-to keep clocks aligned with the Earth's slowing rotation. A POSIX instant ignores
-them, so the elapsed seconds between two POSIX instants can be short by the leap
+to keep clocks aligned with the Earth's slowing rotation. A `Unix` instant ignores
+them, so the elapsed seconds between two `Unix` instants can be short by the leap
 seconds that fell between them.
 
 [International Atomic Time](https://en.wikipedia.org/wiki/International_Atomic_Time)
-(TAI) has no such discontinuities. Converting a POSIX instant to the TAI timeline
+(TAI) has no such discontinuities. Converting a `Unix` instant to the TAI timeline
 adds the leap seconds that have accumulated by that instant — thirty-seven of them
 by 2017 — and the conversion round-trips exactly:
 
@@ -724,9 +724,9 @@ by 2017 — and the conversion round-trips exactly:
 import calendars.gregorianCalendar
 import instantDecodables.iso8601InstantDecodable
 
-val instant = t"2017-06-15T00:00:00Z".decode[Instant over Posix]
+val instant = t"2017-06-15T00:00:00Z".as[Instant over Unix]
 instant.over[Tai].long - instant.long    // 37000
-instant.over[Tai].over[Posix] == instant // true
+instant.over[Tai].over[Unix] == instant // true
 ```
 
 Because the timelines are distinct types, subtracting an instant on one from an

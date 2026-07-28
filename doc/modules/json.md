@@ -75,14 +75,16 @@ and decoder from the fields, so a value converts to an object and back:
 ```scala
 case class Person(name: Text, age: Int)
 
-Person(t"Alice", 30).json.show   // t"""{"name":"Alice","age":30}"""
+Person(t"Alice", 30).in[Json].show   // t"""{"name":"Alice","age":30}"""
 
 t"""{"name": "Bob", "age": 40}""".read[Json].as[Person]
 // Person(t"Bob", 40)
 ```
 
-The `json` method encodes any value for which an encoder is derived, and `show`
-renders the result. Nested case classes and collections of them derive in turn, so a
+The `in[Json]` method encodes any value for which an encoder is derived, and `show`
+renders the result. (`in` is the general codec vocabulary: `value.in[Format]` encodes
+and `value.as[Type]` decodes, whatever the format.) Nested case classes and
+collections of them derive in turn, so a
 whole structure converts in one step. Decoding straight from text to a type combines
 the two:
 
@@ -94,6 +96,19 @@ t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
 // Crew(List(Person(t"Bob", 40)), Person(t"Carol", 25), None)
 ```
 
+This is not a shorthand for parsing and then decoding. A type with a `Json.Parsable` instance is
+read *directly* from the source: the parser is composed for that type as the code compiles, and
+fields are taken from the token stream as they arrive, so no `Json` tree is ever built. What is
+saved is the whole intermediate structure — allocation, boxing, and a second traversal:
+
+```scala
+object Person:
+  given parsable: Person is Json.Parsable = Json.Parsable.derived
+```
+
+The tree route remains for documents whose shape is not known in advance, or where the tree is
+itself the point.
+
 ### Optional fields and defaults
 
 A field typed as `Optional` (or `Option`) is omitted from the output when it is
@@ -102,7 +117,7 @@ absent, and supplied as `Unset` (or `None`) when missing on the way in:
 ```scala
 case class Profile(name: Text, age: Optional[Int])
 
-Profile(t"Eve", Unset).json.show   // t"""{"name":"Eve"}"""
+Profile(t"Eve", Unset).in[Json].show   // t"""{"name":"Eve"}"""
 ```
 
 A field with a default takes that default when the document omits it:
@@ -122,7 +137,7 @@ want a different one:
 ```scala
 case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
 
-Record(t"Ann", 1984).json.show   // t"""{"first_name":"Ann","yob":1984}"""
+Record(t"Ann", 1984).in[Json].show   // t"""{"first_name":"Ann","yob":1984}"""
 ```
 
 ### Tagged unions
@@ -138,7 +153,7 @@ enum Shape:
   case Circle(radius: Double)
   case Square(side: Double)
 
-(Shape.Circle(1.0): Shape).json.show
+(Shape.Circle(1.0): Shape).in[Json].show
 // t"""{"radius":1.0,"kind":"Circle"}"""
 ```
 
@@ -158,7 +173,7 @@ Beyond encoding a typed value, a `Json` value can be assembled directly. `Json.m
 builds an object from named arguments, each itself a `Json`:
 
 ```scala
-Json.make(a = 1.json, b = t"two".json, c = true.json).show
+Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show
 // t"""{"a":1,"b":"two","c":true}"""
 ```
 
@@ -173,7 +188,7 @@ j"""{"a": $x}"""        // an object with a from a value
 val xs = List(2, 3, 4)
 j"""[1, $xs*]"""        // [1, 2, 3, 4]
 
-val rest: Map[Text, Json] = Map(t"b" -> 2.json, t"c" -> 3.json)
+val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
 j"""{"a": 1, $rest}"""  // {"a": 1, "b": 2, "c": 3}
 ```
 
@@ -259,8 +274,8 @@ case class Role(name: Text)
 case class Entity(name: Text, age: Int, roles: List[Role])
 case class Org(name: Text, leader: Entity)
 
-val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).json
-org.lens(_.leader.age = 41.json).as[Org]
+val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).in[Json]
+org.lens(_.leader.age = 41.in[Json]).as[Org]
 // the leader's age updated to 41
 ```
 
@@ -271,7 +286,7 @@ indented formatting adds newlines and indentation for reading:
 
 ```scala
 import formatting.indentedJsonFormatting
-List(1, 2, 3).json.show   // pretty-printed across several lines
+List(1, 2, 3).in[Json].show   // pretty-printed across several lines
 ```
 
 ### Errors
@@ -325,13 +340,18 @@ import numberModes.fullNumberMode
 ### NDJSON
 
 [Newline-delimited JSON](https://en.wikipedia.org/wiki/JSON_streaming) — a stream of
-independent documents, one per line — is represented by `Ndjson`, which wraps a stream
-of `Json` values:
+independent documents, one per line — needs no type of its own. A source is split into
+records at its line boundaries with `delineate`, and each record is read as `Json`:
 
 ```scala
-val stream = Stream(t"1".read[Json], t"2".read[Json], t"3".read[Json])
-Ndjson(stream).stream.map(_.as[Int]).to(List)   // List(1, 2, 3)
+import lineSeparation.adaptiveLinefeedLineSeparation
+
+t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to(List)
+// List(1, 2, 3)
 ```
+
+Because each line is read independently, the values need not share a shape; a
+heterogeneous log reads just as well as a uniform one.
 
 ### JSON Pointers
 
@@ -370,7 +390,7 @@ shape of a document. Soundness derives a schema from a Scala type, and a schema 
 renders to a standard JSON Schema document:
 
 ```scala
-(JsonSchema.Integer(): JsonSchema).json.show   // contains "type":"integer"
+(JsonSchema.Integer(): JsonSchema).in[Json].show   // contains "type":"integer"
 ```
 
 A field can carry a description for the generated schema with the `@memo` annotation,
@@ -441,9 +461,9 @@ types of its date-and-time library. An `Instant` and a `Duration` travel as a wh
 number of milliseconds:
 
 ```scala
-import chronometries.posix
+import chronometries.unix
 
-Instant(1700000000000L).json.show                       // t"1700000000000"
+Instant(1700000000000L).in[Json].show                       // t"1700000000000"
 t"5000".read[Json].as[Duration].value                   // 5.0
 ```
 

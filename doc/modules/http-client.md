@@ -75,6 +75,42 @@ url"https://example.com/submit".submit(Http.Post, accept = media"application/jso
 a stream, or a value parsed from the body. The status is a value to inspect or to receive in its own
 right, so a program decides what a given status means rather than having it decided for it.
 
+### Sessions
+
+A single request opens a connection and closes it. Where several requests go to the same origin,
+a *session* opens one connection and lends it to a scope, so the requests within share it:
+
+```scala
+url"https://example.com".session: session ?=>
+  session.fetch(request)
+  session.fetch(request)
+```
+
+The protocol is fixed for the session's lifetime. For `https`, ALPN chooses it during the TLS
+handshake: a *multiplexed* HTTP/2 session, on which fetches interleave over one connection, or a
+*sequential* HTTP/1.1 one. Plaintext `http` is always sequential, with keep-alive pinning one
+connection across the scope's fetches.
+
+The scope is enforced, not merely conventional. The result type is quantified outside the block,
+so a value still borrowing the live connection — a response body streaming from it — cannot
+escape; a value that has been memoized may. Leaving a response unconsumed does not derail the
+session: the next fetch drains what remains of the previous body to reach the response boundary.
+
+### Choosing a transport
+
+The transport is a given. `httpBackends.virtualMachine` uses the JVM's own `java.net.http`;
+`httpBackends.native` speaks Soundness's wire codecs directly over a socket, with no
+`java.net.http` involved:
+
+```scala
+import httpBackends.native
+```
+
+The native backend pools kept-alive HTTP/1.1 connections per origin, and negotiates by ALPN over
+TLS, driving the exchange with the HTTP/2 or HTTP/1.1 driver the peer selected on the same
+socket. A pooled socket the server has since closed is discovered on use and replaced by a single
+retry on a fresh connection. Other platforms supply their own backends the same way.
+
 ### Redirects
 
 Redirects are followed by default, up to a limit. Importing a stricter policy stops them, after

@@ -47,15 +47,20 @@ A multi-document stream — documents separated by `---` — reads as a list:
 t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])   // List(1, 2, 3)
 ```
 
+A source need not be text held in memory. The parser reads straight from a byte or character
+[stream](streams.md), refilling as it goes, rather than concatenating the input first — so a
+large document parses without ever being materialized, and a `---` marker split across two chunks
+is still a document boundary.
+
 ### Encoding
 
-A value encodes to YAML with `yaml`, and renders as block-style text with `show`, given a
+A value encodes to YAML with `in[Yaml]`, and renders as block-style text with `show`, given a
 formatting in scope:
 
 ```scala
 import formatting.blockYamlFormatting
 
-Person(t"Alice", 30).yaml.show
+Person(t"Alice", 30).in[Yaml].show
 // name: Alice
 // age: 30
 ```
@@ -89,7 +94,7 @@ import dynamicYamlAccess.enabled
 val doc = t"{name: Alice, age: 30}".read[Yaml]
 doc.name.as[Text]      // t"Alice"
 (doc.age = 31)         // a new document
-doc.lens(_.age = 31.yaml)
+doc.lens(_.age = 31.in[Yaml])
 ```
 
 ### Positions and accumulated errors

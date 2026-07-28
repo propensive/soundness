@@ -57,4 +57,39 @@ font.leftSideBearing('H')
 ```
 
 The font's header exposes the scaling factor — units per em — that relates design units to em
-measurements, along with the ascender and descender heights that vertical layout needs.
+measurements, along with the glyph bounding box and the ascender and descender heights that
+vertical layout needs.
+
+Character-to-glyph mapping covers the `cmap` subtable formats fonts actually use, and the best
+subtable is chosen by Unicode preference rather than by taking the first one present. A character
+the font does not map yields the missing glyph, rather than an error or a wrong glyph.
+
+### Names and metadata
+
+A font describes itself in its `name`, `post` and `OS/2` tables, and those descriptions are read
+directly rather than guessed at:
+
+```scala
+font.fontName      // the PostScript name
+font.familyName    // the family name
+font.post.italicAngle
+font.os2.capHeight
+```
+
+Records are decoded from both UTF-16BE and Macintosh encodings, preferring Windows-English where
+several are present. Weight, typographic metrics, x-height and embedding rights come from `OS/2`,
+which is exactly what building a [PDF](pdf.md) font descriptor needs.
+
+### Subsetting
+
+Embedding a whole font to render a page of text is wasteful, and often not permitted. `subset`
+builds a new font containing only the glyphs a given set of characters needs:
+
+```scala
+val reduced = font.subset(t"Hello world")
+```
+
+Subsetting is not simply a matter of keeping the glyphs a text maps to. A composite glyph is
+assembled from others, so the retained set is the transitive closure under composition — computed
+from the glyph outlines themselves, so an accented character keeps the components it is drawn
+from.

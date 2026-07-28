@@ -101,3 +101,16 @@ to spawn in great numbers, while `platformThreading` uses platform threads. A se
 *probate*, decides what a scope does with a child that has not finished when the scope ends —
 `cancelProbate` cancels it, `awaitProbate` waits for it — so the policy for tidying up concurrent work
 is explicit rather than assumed.
+
+### Suspension as an effect
+
+Waiting is not free, and it is not invisible. Awaiting a task or a promise, sleeping, and yielding
+all *suspend* the running strand, and each demands a `Monitor` capability in scope. A method that
+can block therefore says so in its signature, exactly as a method that can fail says so with
+`raises`.
+
+Underneath, the unit of execution is a `Strand` rather than a thread: an abstraction with the four
+operations suspension needs — interrupt, join, park and unpark. A supervisor supplies strands, and
+a supervisor is a value, so a scheduler that is not built on threads at all — an event loop over
+WebAssembly's waitable sets, for instance — plugs in as a supervisor without any change to the
+code that spawns and awaits.

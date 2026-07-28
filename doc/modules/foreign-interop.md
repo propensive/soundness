@@ -60,6 +60,40 @@ Scala values pass as arguments where an `Interoperable` instance maps them onto 
 type — text to a string, the sized numbers to their foreign widths — so the boundary is typed in
 both directions.
 
+### Kotlin and Java facades
+
+A JVM library written in Kotlin sits on the same classpath, so its declarations need no separate
+file: they are in the classfiles, in the `@Metadata` a Kotlin compiler writes. Those declarations
+are read at compiletime, and a *facade* wraps a live value so that its members are reached as
+though they were Scala's — each access materializing as a direct, statically-typed JVM call, with
+no reflection and no wrapper object:
+
+```scala
+val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
+val first: Text = pair.first
+
+val regex = make[kotlin.text.Regex](t"[0-9]+")
+regex.matches(t"123")                          // true
+```
+
+`make` constructs a value, `companion` reaches a companion object's members, and `singleton`
+reaches an object's. Types substitute through, so `pair.first` is a `Text` and not an `Any`, and
+`Text` passes wherever a `CharSequence` is expected. Kotlin's nullability is honoured: a nullable
+result is an `Optional`, absent where Kotlin would return null.
+
+Properties read as members and `var` properties accept assignment, through the getters and
+setters Kotlin generated; assigning to a `val` does not compile. A Kotlin function-type parameter
+takes an ordinary Scala lambda, whose own parameter is a facade over the Kotlin type, so the
+value inside it navigates too:
+
+```scala
+regex.replace(t"a1b2", (m: Facade over kotlin.text.MatchResult) => t"<${m.value}>")
+// t"a<1>b<2>"
+```
+
+A member the class does not declare, or an argument of the wrong type, is a compile error — and
+where the name is close to a real one, the error suggests it, spelled as Kotlin spells it.
+
 ### Expressions, not effects
 
 Navigation builds an *expression* — a typed AST of references, selections and applications — and

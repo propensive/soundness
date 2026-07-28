@@ -66,6 +66,24 @@ execute:
 The daemon retires itself after six idle hours, when its state files are removed, or on demand —
 the built-in `'{admin}'` subcommand reports the daemon's pid and kills it.
 
+### Asking for a cooked terminal
+
+The launcher puts the terminal into raw mode before it connects, so that keypresses can be
+forwarded to an interactive session. That is wrong for a command that just wants a line of input:
+without the terminal driver's help there is no echo, and Backspace arrives as a literal byte
+inside the line. `cooked` asks the launcher for canonical mode for the duration of a block, and
+raw mode is restored afterwards:
+
+```scala
+execute:
+  service.cooked:
+    Out.println(t"Name?")
+    In.read[Text]
+```
+
+Echo and line editing then come from the terminal driver itself. A launcher with no such channel
+— a pipe, or an older stub — leaves the request to expire harmlessly.
+
 ### The service bus
 
 Concurrent invocations of one daemon share a typed *bus*: an invocation broadcasts a message and

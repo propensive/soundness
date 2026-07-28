@@ -74,6 +74,40 @@ socket.duplex: duplex =>
   duplex.stream.head
 ```
 
+### Sessions
+
+A *session* is the same idea stated as a scope: `session` opens a connection to the target, lends
+it to the block, and closes it when the block ends. The result type is quantified outside the
+block, so a value still borrowing the live connection cannot escape it, while a memoized value
+can:
+
+```scala
+endpoint.session: connection ?=>
+  converse(connection)
+```
+
+This is what an [HTTP session](http-client.md) is built on, and how concurrent requests multiplex
+on one HTTP/2 connection without a parked daemon: the loan and the scope coincide.
+
+### TLS
+
+A TLS connection is made through a secure endpoint, with the trust policy a contextual value. The
+handshake may offer [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation)
+protocols, in preference order, and the protocol the peer selected is reported back on the
+connection — the seam an HTTP client uses to choose between an HTTP/2 and an HTTP/1.1 driver over
+one socket. Offering nothing preserves the plain-TLS handshake that `wss` peers expect.
+
+### Choosing a backend
+
+Nothing above names a platform API. The primitive operations each role needs — bind and accept,
+connect and converse, receive and reply, dispatch a datagram — are gathered into a
+`SocketBackend`, and the loops that compose them stay platform-neutral. The
+`java.nio.channels` implementation is `socketBackends.virtualMachine`, and backends over
+`wasi:sockets` and over Scala Native's sockets supply the same operations, so the same protocol
+code runs on the JVM, inside a WebAssembly component, and in a native binary. An operation a
+backend cannot support — Unix-domain sockets or TLS on WASI — raises the appropriate error rather
+than approximating it.
+
 ### Socket options
 
 The socket options of the underlying platform — `SO_REUSEADDR`, keep-alive, buffer sizes, timeouts —

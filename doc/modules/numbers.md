@@ -106,6 +106,41 @@ once, and `min`, `max` and the collection reductions `minimum` and `maximum` rea
 List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)   // List(1.3)
 ```
 
+### Arbitrary precision
+
+Where a value must be exact and no fixed width will do — a monetary total, a coordinate in a
+document, a figure read from a file that promised nothing about its size — a `Decimal` holds a
+sign, an arbitrary magnitude and a decimal scale:
+
+```scala
+Decimal(1234567890123L)
+Decimal(-1234567, 4)      // -123.4567
+Decimal(0.1)              // raises a DecimalError if the double is not exact
+Decimal.parse(t"-12.34e+2")
+```
+
+A decimal literal written in source becomes a `Decimal` directly where one is expected, and
+`text` renders it back, so the round trip is exact:
+
+```scala
+Decimal(-1234567, 4).text   // t"-123.4567"
+```
+
+Values are canonical: trailing zeros are absorbed into the scale as a value is constructed, and
+zero has one representation, so two numerically equal decimals are the same value. There is no
+counterpart of `BigDecimal`'s trap where `equals` and `compareTo` disagree.
+
+Division cannot always be exact, so it says what it wants: a scale and a rounding mode, given
+rather than assumed.
+
+```scala
+left.divide(right, scale = 10, Decimal.Rounding.HalfEven)
+```
+
+The implementation is pure Scala rather than a wrapper over the JVM's `BigDecimal`, so decimals
+work on every platform — and nothing in it depends on 64-bit-native arithmetic, which matters
+where `Long` is emulated.
+
 ### Bounded numbers
 
 A number can carry its permitted range in its type, written with `~`. A literal outside the

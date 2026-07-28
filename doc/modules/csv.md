@@ -42,6 +42,15 @@ to the format:
 t"hello,world".read[Sheet].rows.head   // Dsv(t"hello", t"world")
 ```
 
+A `Sheet` is materialized: its rows are an array, replayable, indexable and cheap to compare. A
+file too large to hold needs no sheet at all — `rows` on a character [stream](streams.md) yields
+the rows one at a time, parsed by the same reader, so a quoted cell spanning chunk and line
+boundaries is handled exactly as it is in a materialized sheet:
+
+```scala
+source.rows.map(_[Text](t"name").or(t"?")).to(List)
+```
+
 ### Decoding to a case class
 
 A row decodes into a case class with `as`, taking the cells in order; a nested case class simply
@@ -96,6 +105,26 @@ Seq(Name(t"Ada", t"Lovelace")).dsv.show   // t"Ada\tLovelace"
 A cell is quoted only when it contains the delimiter, a quote, or a line break, and a quote
 within a cell is doubled — the conventions the format prescribes, applied on the way out and
 understood on the way in.
+
+### Parsing directly to a type
+
+Building a `Dsv` for every row, only to decode it and throw it away, is wasted work. A type that
+opts in with a `Dsv.Parsable` instance is parsed straight from the source, its cells addressed in
+place in the parser's row buffer, with no row value built at all:
+
+```scala
+case class Stat(name: Text, count: Int, note: Optional[Text])
+
+object Stat:
+  given parsable: Stat is Dsv.Parsable = Dsv.Parsable.derived
+
+t"z,9,note".read[Stat in Dsv]           // Stat(t"z", 9, t"note")
+t"a,1\nb,2".read[List[Stat] in Dsv]     // both records
+source.rowsOf[Stat].map(_.count).to(List)
+```
+
+Fields are matched by header name where the format has a header and positionally where it does
+not, and an `Optional` field that the row does not reach is `Unset` rather than an error.
 
 ### Addressing cells by name
 

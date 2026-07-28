@@ -45,6 +45,11 @@ t"Hello world".digest[Sha2[256]].serialize[Hex]
 The provider in scope supplies the algorithms — `javaStdlibProvider` for the SHA and MD5 family and
 CRC-32, and `soundnessProvider` for the pure-Scala BLAKE3.
 
+`javaStdlibProvider` names the JDK's `MessageDigest` where there is one. Off the JVM there is
+not, so the same import selects pure-Scala implementations of MD5, SHA-1, SHA-2 and CRC-32,
+validated byte for byte against the JDK's. Code that hashes therefore reads the same, and
+produces the same digests, on the JVM, in a browser and inside a WebAssembly component.
+
 ### Hashing your own types
 
 Any value that can be reduced to bytes is digestible, and a case class derives that automatically
