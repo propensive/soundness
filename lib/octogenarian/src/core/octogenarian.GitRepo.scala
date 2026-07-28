@@ -46,6 +46,7 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import turbulence.*
 import urticose.*
 import vacuous.*
 
@@ -182,7 +183,7 @@ case class GitRepo(gitDir: Path on Linux):
       case failure => abort(GitError(RemoteFailed))
 
 
-  private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
+  private def parsePem(text: Text): Optional[Pem] = safely(text.read[Pem])
 
   def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Commit] logs GitEvent =
     val lines =
