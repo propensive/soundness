@@ -568,6 +568,7 @@ object soundness extends Toolchain:
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
+    enigmatic.x509,
     stratiform.binary, stratiform.records, bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256)
 
@@ -1292,6 +1293,13 @@ object enigmatic extends Library:
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // X.509 certificates: ASN.1 assembly over `core`'s ciphers, plus aviation for validity periods,
+  // whose transitive dependencies nothing that only wants ciphers and PEM should have to carry.
+  object x509 extends Component(core, aviation.core):
+    override def scalaJs = false // transitively JVM-only, through `core`
+    override def scalaNative = true
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object cose extends Component(core, breviloquence.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
@@ -1305,7 +1313,7 @@ object enigmatic extends Library:
     override def nativeModuleDeps = super.nativeModuleDeps :+ xenophile.scalanative.native
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core, cose, openssl):
+  object test extends Tests(core, cose, openssl, x509):
     // Not `settings.cc`: the suite's `NoPadding` tests trip the tactic-capturing
     // padding given (pure `using cipher` params can't accept capturing evidence
     // yet); `CaptureTests` opts into capture checking per-file instead. `-Ycc-new`
