@@ -1169,9 +1169,9 @@ object Html extends Tag.Container
 
         if n == 0 then Attributes.empty
         else
-          val arr = new Array[String | Null](2*n)
-          jl.System.arraycopy(attrInterleaved, 0, arr, 0, 2*n)
-          Attributes.fromInterleaved(arr.immutable(using Unsafe))
+          val arr = Buffer[String | Null](2*n)
+          jl.System.arraycopy(attrInterleaved, 0, arr.raw, 0, 2*n)
+          Attributes.fromInterleaved(Buffer.freeze(arr))
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
