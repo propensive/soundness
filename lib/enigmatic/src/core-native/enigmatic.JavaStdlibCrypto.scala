@@ -46,6 +46,7 @@ object JavaStdlibCrypto extends Crypto:
   def random: Crypto.Random = unavailable
   def aes: Crypto.SymmetricCipher = unavailable
   def rsa: Crypto.PublicKeyCipher = unavailable
+  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
   def hmac(algorithm: Text): Crypto.Mac = unavailable
 
   def des: Crypto.SymmetricCipher = unavailable

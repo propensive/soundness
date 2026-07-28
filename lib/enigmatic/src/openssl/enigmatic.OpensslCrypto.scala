@@ -103,6 +103,11 @@ object OpensslCrypto extends Crypto:
   // is a panicking stub, `rsa` is simply unavailable).
   def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
 
+  def rsaSignature(digest: Text): Crypto.SignatureScheme =
+    JavaStdlibCrypto.rsaSignature(digest)
+
+  def ecdsa(digest: Text): Crypto.SignatureScheme = JavaStdlibCrypto.ecdsa(digest)
+
   private def digest(algorithm: Text): Pointer = algorithm match
     case t"HmacSHA256" => Foreign["library", Native].EVP_sha256().invoke[Pointer]
     case t"HmacSHA384" => Foreign["library", Native].EVP_sha384().invoke[Pointer]

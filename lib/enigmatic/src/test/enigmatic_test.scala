@@ -299,6 +299,9 @@ object Tests extends Suite(m"Enigmatic tests"):
         def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
         def hmac(algorithm: Text): Crypto.Mac = JavaStdlibCrypto.hmac(algorithm)
 
+        def rsaSignature(digest: Text): Crypto.SignatureScheme =
+          JavaStdlibCrypto.rsaSignature(digest)
+
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val first = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
@@ -620,6 +623,91 @@ object Tests extends Suite(m"Enigmatic tests"):
         val second = key.data(Divulgence)
         first.serialize[Hex] == second.serialize[Hex]
       . assert(_ == true)
+
+    suite(m"Asymmetric signatures"):
+      test(m"An RSA signature verifies against the matching public key"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An RSA signature fails against a different key"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val other = PrivateKey.generate[Rsa[2048]]()
+        other.public.verify(pangram, key.sign(pangram))
+      . assert(!_)
+
+      test(m"An RSA signature fails over different content"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        key.public.verify(t"a different message", key.sign(pangram))
+      . assert(!_)
+
+      test(m"The signature digest is selectable"):
+        import signatureDigests.sha512Signature
+        val key = PrivateKey.generate[Rsa[2048]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A signature made under one digest fails to verify under another"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val signature = key.sign(pangram)
+        import signatureDigests.sha512Signature
+        key.public.verify(pangram, signature)
+      . assert(!_)
+
+      test(m"RSA still encrypts and decrypts"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val message: Data = key.public.uncloak(t"Hello world".encrypt(InitializationVector.random))
+        key.uncloak(message.decrypt.as[Text])
+      . assert(_ == t"Hello world")
+
+      test(m"An ECDSA signature verifies against the matching public key"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"ECDSA works over each NIST prime curve"):
+        val p256 = PrivateKey.generate[Ecdsa[256]]()
+        val p384 = PrivateKey.generate[Ecdsa[384]]()
+        val p521 = PrivateKey.generate[Ecdsa[521]]()
+
+        List
+         (p256.public.verify(pangram, p256.sign(pangram)),
+          p384.public.verify(pangram, p384.sign(pangram)),
+          p521.public.verify(pangram, p521.sign(pangram)))
+      . assert(_ == List(true, true, true))
+
+      test(m"An ECDSA signature fails against a different key"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val other = PrivateKey.generate[Ecdsa[256]]()
+        other.public.verify(pangram, key.sign(pangram))
+      . assert(!_)
+
+      // The JDK does not write RFC 5915's optional public-key field, so enigmatic adds it at
+      // generation; this checks the re-encoded key is still a well-formed `PrivateKeyInfo` that
+      // the JDK reads back, and that the public key recovered from it is the right one.
+      test(m"An ECDSA private key carries its public key in RFC 5915 form"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+
+        val info = key.pem(Divulgence).as[Der].as[Asn1]
+
+        val inner = info match
+          case Asn1.Sequence(List(_, _, Asn1.OctetString(octets))) => Der(octets).as[Asn1]
+          case _                                                  => Asn1.Null
+
+        inner match
+          case Asn1.Sequence(elements) => elements.collect:
+            case tagged: Asn1.Tagged => tagged.tag
+
+          case _ => Nil
+      . assert(_ == List(1))
+
+      test(m"An ECDSA public key is a well-formed SubjectPublicKeyInfo"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+
+        Der(key.public.bytes).as[Asn1] match
+          case Asn1.Sequence(List(Asn1.Sequence(_), _: Asn1.BitString)) => true
+          case _                                                       => false
+      . assert(identity)
 
     suite(m"ASN.1 and DER"):
       // DER is canonical, so `encode` is the equality of record: the byte-carrying cases of `Asn1`

@@ -39,12 +39,15 @@ export
   . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
       CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
       Des, Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption,
+      Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
       Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
       NoPadding, Ofb, Pem, PemError,
       PemLabel, Password,
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+      SignatureDigest, Symmetric, SymmetricKey, TripleDes, uncloak }
+
+package signatureDigests:
+  export enigmatic.signatureDigests.{sha256Signature, sha384Signature, sha512Signature}
 
 package blockCipherMode:
   export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
