@@ -71,8 +71,8 @@ framing, standing to `Xz` as `Deflate` stands to `Gzip`. Both default to preset 
 3 favour speed and 4 to 9 favour ratio, and an explicit preset is selected with
 `Xz.compress(stream, preset)` or `Xz.compressor(preset)`.
 
-`Lzw` is the compression of TIFF and PDF streams. The JDK offers no implementation, so this one
-is native and available everywhere. Its `earlyChange` parameter — both sides widening their
+`Lzw` is the compression of TIFF and PDF streams. The JDK offers no implementation of it at all,
+so this one is written from the specification. Its `earlyChange` parameter — both sides widening their
 codes one table entry sooner — is on by default, which is what TIFF, PDF and every known encoder
 produce; the parameterized `Lzw.compressor` and `Lzw.decompressor` serve formats that state it
 explicitly.
