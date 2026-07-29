@@ -32,22 +32,20 @@
                                                                                                   */
 package pneumatic
 
+import scala.caps
+
 import proscenium.compat.*
 
 // A little-endian (LSB-first) bit-stream writer, the mirror of the decoder's `BitReader`. Bits
 // accumulate into a 64-bit register and are flushed a byte at a time; `align` pads the current byte
 // with zero bits, after which `writeBytes` may append raw byte-aligned data.
-private[pneumatic] final class BrotliBitWriter:
-  @scala.caps.unsafe.untrackedCaptures
-  private var out: Array[Byte] = new Array[Byte](256)
-  @scala.caps.unsafe.untrackedCaptures
+private[pneumatic] final class BrotliBitWriter extends caps.Mutable:
+  private var out: Array[Byte]^ = new Array[Byte](256)
   private var size: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var accumulator: Long = 0L
-  @scala.caps.unsafe.untrackedCaptures
   private var bitCount: Int = 0
 
-  private def ensure(extra: Int): Unit =
+  private update def ensure(extra: Int): Unit =
     if size + extra > out.length then
       var grown = out.length
       while size + extra > grown do grown <<= 1
@@ -55,26 +53,26 @@ private[pneumatic] final class BrotliBitWriter:
       System.arraycopy(out, 0, fresh, 0, size)
       out = fresh
 
-  def writeBits(value: Int, n: Int): Unit =
+  update def writeBits(value: Int, n: Int): Unit =
     accumulator |= (value.toLong & ((1L << n) - 1)) << bitCount
     bitCount += n
 
     while bitCount >= 8 do
       ensure(1)
-      writable(out)(size) = (accumulator & 0xff).toByte
+      out(size) = (accumulator & 0xff).toByte
       size += 1
       accumulator >>>= 8
       bitCount -= 8
 
-  def align(): Unit =
+  update def align(): Unit =
     if bitCount > 0 then
       ensure(1)
-      writable(out)(size) = (accumulator & 0xff).toByte
+      out(size) = (accumulator & 0xff).toByte
       size += 1
       accumulator = 0L
       bitCount = 0
 
-  def writeBytes(bytes: Array[Byte], offset: Int, length: Int): Unit =
+  update def writeBytes(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensure(length)
     System.arraycopy(bytes, offset, out, size, length)
     size += length
@@ -106,18 +104,18 @@ private[pneumatic] object BrotliEncoder:
 
   def encode(input: Array[Byte], length: Int): Array[Byte] =
     if length == 0 then
-      val writer = BrotliBitWriter()
+      val writer: BrotliBitWriter^ = BrotliBitWriter()
       writer.writeBits(0, 1) // WBITS = 16
       writer.writeBits(1, 1) // ISLAST = 1
       writer.writeBits(1, 1) // ISLASTEMPTY = 1
       writer.align()
       writer.result()
     else if length > MaxMetaBlock then
-      val storedWriter = BrotliBitWriter()
+      val storedWriter: BrotliBitWriter^ = BrotliBitWriter()
       storeAll(storedWriter, input, length)
       storedWriter.result()
     else
-      val writer = BrotliBitWriter()
+      val writer: BrotliBitWriter^ = BrotliBitWriter()
       compressBlock(writer, input, length)
       val compressed = writer.result()
 
@@ -126,7 +124,7 @@ private[pneumatic] object BrotliEncoder:
       // analytically, so the stored form is only materialized when it wins.
       if compressed.length < storedSize(length) then compressed
       else
-        val storedWriter = BrotliBitWriter()
+        val storedWriter: BrotliBitWriter^ = BrotliBitWriter()
         storeAll(storedWriter, input, length)
         storedWriter.result()
 
@@ -150,7 +148,7 @@ private[pneumatic] object BrotliEncoder:
     bits >>> 3
 
   // Fallback: frame the payload as uncompressed meta-blocks (see the class comment on RFC framing).
-  private def storeAll(writer: BrotliBitWriter, input: Array[Byte], length: Int): Unit =
+  private def storeAll(writer: BrotliBitWriter^, input: Array[Byte], length: Int): Unit =
     writer.writeBits(0, 1) // WBITS = 16
     var pos = 0
 
@@ -301,7 +299,7 @@ private[pneumatic] object BrotliEncoder:
     IArray.unsafeFromArray:
       Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
-  private def writeCodeLengthCodeLength(writer: BrotliBitWriter, v: Int): Unit = v match
+  private def writeCodeLengthCodeLength(writer: BrotliBitWriter^, v: Int): Unit = v match
     case 0 => writer.writeBits(0, 2)
     case 1 => writer.writeBits(7, 4)
     case 2 => writer.writeBits(3, 3)
@@ -320,7 +318,7 @@ private[pneumatic] object BrotliEncoder:
   // writing the code-length symbol stream without run-length compression (valid, and negligible
   // overhead for large blocks).
   private def storeHuffmanTree
-    ( writer: BrotliBitWriter, depth: Array[Byte]^, codes: Array[Int], alphabetSize: Int )
+    ( writer: BrotliBitWriter^, depth: Array[Byte]^, codes: Array[Int], alphabetSize: Int )
   :   Unit =
 
     var used = 0
@@ -394,7 +392,7 @@ private[pneumatic] object BrotliEncoder:
     ((16 + j).toLong << 40) | (n.toLong << 32) | (extra.toLong & 0xffffffffL)
 
   // --- Compressed meta-block ---------------------------------------------------------------------
-  private def compressBlock(writer: BrotliBitWriter, input: Array[Byte], length: Int): Unit =
+  private def compressBlock(writer: BrotliBitWriter^, input: Array[Byte], length: Int): Unit =
     val windowBits = if length <= (1 << 22) then 22 else 24
     val maxDistance = (1 << windowBits) - 16
 
@@ -593,10 +591,10 @@ private[pneumatic] object BrotliEncoder:
     true
 
   // Insert group and copy group determine the range index; see the decoder's command decoding.
-  @scala.caps.unsafe.untrackedCaptures
-  private var rangeIndex: Array[Int] =
+  private val rangeIndex: IArray[Int] =
     // indexed by insGroup*3 + copGroup, giving the base range index (0..8)
-    Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
+    IArray.unsafeFromArray:
+      Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
 
   private def commandCode(insertCode: Int, copyCode: Int): Int =
     val insGroup = insertCode / 8
@@ -604,7 +602,7 @@ private[pneumatic] object BrotliEncoder:
     val base = rangeIndex(insGroup*3 + copGroup)
     ((base + 2) << 6) | ((insertCode & 7) << 3) | (copyCode & 7)
 
-  private def writeWindowBits(writer: BrotliBitWriter, windowBits: Int): Unit =
+  private def writeWindowBits(writer: BrotliBitWriter^, windowBits: Int): Unit =
     if windowBits == 16 then writer.writeBits(0, 1)
     else if windowBits == 17 then
       writer.writeBits(1, 1); writer.writeBits(0, 3); writer.writeBits(0, 3)
