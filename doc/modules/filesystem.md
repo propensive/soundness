@@ -78,6 +78,14 @@ file.open[File](Write, OpenFlag.Create): handle ?=>
 val text = file.open[File]()(file.stream.read[Data]).utf8
 ```
 
+Where a whole small file is wanted, and the ceremony of a scope buys nothing, `read` and `write`
+act directly on the path:
+
+```scala
+path.write(t"Hello world")
+path.read[Text]
+```
+
 The mode is not merely a runtime flag: it is carried in the handle's type as a set of *grants*.
 Opening with the default `Read` mode yields a handle that grants only reading, and a write
 through it does not compile; `Read & Write` grants both. A whole class of mistakes — writing
@@ -93,6 +101,25 @@ directory.open[Directory](Read & Write): dir ?=>
   (dir/"greeting.txt").overwrite(t"Hello directory")
   dir.base.entries.to(List).map(_.name)
 ```
+
+### Exclusive access
+
+`Exclusive` is a third grant, alongside `Read` and `Write`, and it means what it says: no other
+scope in the program may hold an overlapping path open while it lasts. Overlap is by containment,
+not by equality — a directory and something beneath it overlap; two siblings do not:
+
+```scala
+directory.open[Directory](Read & Exclusive): dir ?=>
+  // nothing else in this program may open `directory` or anything under it
+```
+
+Two ordinary reads may coexist. An exclusive open conflicts with an overlapping open in either
+direction — whether the exclusive scope is the outer or the inner one — and the conflict is an
+`IoError` whose reason is `Busy`, raised at the point of the second open rather than discovered
+as corruption later. The claim is released when the scope ends, however it ends.
+
+For a *file* rather than a directory, `Exclusive` additionally takes an operating-system lock, so
+exclusivity holds against other processes and not merely within this one.
 
 ### Creating as a scope
 
