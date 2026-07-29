@@ -1,7 +1,10 @@
 # Method Naming Conventions
 
 This document defines the canonical meanings of named factory and initialisation
-methods used consistently across the codebase.
+methods used consistently across the codebase. For *why* names are chosen as they
+are — phrase-forming methods, word-length type parameters, and uniqueness across the
+whole namespace — see [naming](../philosophy/naming.md) and
+[elegant prose](../philosophy/elegant-prose.md).
 
 ## Standard names
 

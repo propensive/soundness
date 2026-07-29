@@ -7,12 +7,15 @@ type, with the `logs` infix type, and emits a value of a typed event rather than
 string: instead of returning `Int` we would return `Int logs SomeEvent`. A logger placed in the caller's scope receives those events and writes them
 somewhere — a terminal, a file, the system log. With no logger in scope, logging is
 silent and costs nothing, so declaring that a method logs imposes no obligation on the
-code that calls it.
+code that calls it. A `logs` clause is an
+[honest signature](../philosophy/honest-signatures.md) at work: it states what the method
+actually emits, so a caller knows what there is to route.
 
 Because a logger is an ordinary contextual value, several can be in scope at once, and
 every event fans out to each of them. Each logger determines its own severity threshold, its
 own rendering and its own destination. The decision of where logs go, and at what detail, belongs to the
-application, not to the libraries it uses.
+application, not to the libraries it uses. Choosing that by what is in scope is
+[declarative context](../philosophy/declarative-context.md).
 
 ### On logging
 

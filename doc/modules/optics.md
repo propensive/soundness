@@ -7,7 +7,8 @@ it by hand — nested `copy` calls that grow with the depth of the data. A
 [lens](https://en.wikipedia.org/wiki/Bidirectional_transformation) does the rebuilding instead:
 the `lens` method takes an update written as a plain path assignment, `_.ceo.name = t"Bill"`, and
 returns the new structure. Optics such as `Each` and `Filter` extend a path through the elements
-of a collection, so one assignment can update many values at once.
+of a collection, so one assignment can update many values at once. Lenses are what make
+[immutability](../philosophy/immutability.md) practical rather than merely principled.
 
 The same mechanism serves the dynamic data formats — [JSON](json.md), [XML](xml.md),
 [YAML](yaml.md), [CBOR](cbor.md) — so a deep update looks identical whether the structure is a

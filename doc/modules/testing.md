@@ -8,7 +8,8 @@ equality assertion fails, the report is not two `toString`s but a structural *co
 the expected and observed values, aligned field by field and element by element, with the actual
 differences highlighted. And because Soundness moves so many checks to compiletime, tests can
 assert that code *does not compile*: a block that should be rejected is captured, and its compile
-errors become values to inspect.
+errors become values to inspect. Testing that something is impossible is what a
+library built on [correctness](../philosophy/correctness.md) most needs to verify.
 
 ### On testing
 

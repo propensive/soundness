@@ -6,7 +6,8 @@ Soundness represents physical quantities — a distance, a mass, a speed — as 
 that carry their [units](https://en.wikipedia.org/wiki/Units_of_measurement) in
 their type. Adding a distance to a time is a compile error; multiplying a distance
 by a force gives a quantity whose units are worked out for you; and a quantity
-costs nothing at runtime beyond the `Double` it wraps.
+costs nothing at runtime beyond the `Double` it wraps. That last property is a
+design constraint rather than an optimization; see [zero cost](../philosophy/zero-cost.md).
 
 ### On quantities
 

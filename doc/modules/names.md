@@ -7,7 +7,8 @@ in a namespace with its own rules about what a valid name looks like, and Soundn
 such a name as a `Name` whose rules are part of its type. A `Name[DomId]` is known to satisfy the
 rules for DOM ids; a literal that breaks them is a compile error; and text arriving at runtime
 becomes a `Name` only by passing the same validation, with a typed error naming the exact rule it
-broke.
+broke. Possessing a `Name` is therefore proof that it is valid — an instance of
+[safety by construction](../philosophy/safety-by-construction.md).
 
 The rules themselves are types — `MustNotContain["/"]`, `MustNotEqual[".."]`, `MustMatch[…]` —
 composed by intersection, so a namespace's constraints are written once, read directly from the

@@ -6,7 +6,8 @@ Concurrency in Soundness is structured. A task is spawned inside a supervised sc
 the scope does not complete until its tasks have. A task runs a computation on a thread and yields a
 result that is awaited; a failure in a task propagates to the scope rather than vanishing; and
 cancelling a scope cancels everything beneath it. Whether tasks run on the JVM's platform threads or
-its lightweight virtual threads is a choice made in scope.
+its lightweight virtual threads is a choice made in scope. The reasoning behind this shape
+is set out under [structured concurrency](../philosophy/structured-concurrency.md).
 
 ### On concurrency
 

@@ -45,18 +45,23 @@ inhabitants and no agreed meaning, and it arises whenever a lookup that may fail
 a value that may itself be absent. Code that meets one usually flattens it and hopes the
 two absences meant the same thing.
 
-`Optional` cannot nest, because absence has exactly one representation. The compiler
-enforces that rather than trusting to discipline: a type that could not be made optional
-unambiguously is rejected where it is written, so the ambiguous type never arises to be
-flattened away.
+`Optional` cannot stack, and not by a rule that forbids it. `Optional[value]` is the union
+`Unset | value`, and a union absorbs a repeated member, so `Optional[Optional[Int]]`
+*is* `Optional[Int]` — the same type, arrived at by ordinary type equality rather than by
+a check that rejects it.
+
+The ambiguous type therefore never arises to be flattened away. There is no `Some(None)`
+to disambiguate because there is nothing for it to be.
 
 ## What it costs
 
 Two things, and they are worth stating plainly.
 
-The first is that a *generic* method taking an `Optional[value]` needs evidence that
-`value` is a definite type, since an abstract one might later be instantiated to
-something already optional. That evidence appears in the signature:
+The first is the price of that absorption. It works because the compiler can see both
+members of the union — and for an *abstract* type it cannot: a `value` later instantiated
+to something already optional would merge two absences that were meant to be distinct. So
+a generic method taking an `Optional[value]` needs evidence that `value` is a definite
+type, and the evidence appears in the signature:
 
 ```scala
 def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
