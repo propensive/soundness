@@ -160,3 +160,18 @@ work is pending right now.
 Read `/Users/propensive/.claude/projects/-Users-propensive-work-soundness/memory/iarray-flip.md`
 (the master record for this whole arc — Buffer design, tranches 1-3, pneumatic flatten, all
 hazards) and `mutable-codec-conversion.md`. Index at MEMORY.md.
+
+## FLIP LANDED (2026-07-30)
+
+The endgame is complete on `collections/iarray-flip` (attested at `c832d6a153`):
+`proscenium.Array` IS the separation-checked opaque (ex-`vacuous.Buffer`); the prelude's
+scala.Array aliases are deleted; the name Buffer is retired. `scala.Array` survives
+qualified-only at JDK/erasure borders; `Array.scratch[T](n)` is the blessed interior
+allocation; vacuous supplies the total `at` over proscenium's `readUnchecked`.
+Commit trail: `a8c657f373` (relocation), `bda571d774` (spelling qualification
+checkpoint), `c832d6a153` (flip). Hazards encountered are recorded in the iarray-flip
+memory (export-forwarder capture degradation; grep binary-detection misses; multiline
+and factory-position spellings; foreign Buffer/Array names).
+
+Remaining (unchanged): task #14 bounds safety (PARKED); 5 hallucination + 3 pneumatic
+documented annotations; PR #1658 merge strategy.
