@@ -67,9 +67,14 @@ object Checker:
       unexported:       Set[String] )
   :   LazyList[Violation] =
 
+    val ctx =
+      Context
+        ( file, expectedModule, rawText, untpdTree, source, siblingTypes, siblingExtensions,
+          unexported )
+
     val out   = mutable.ListBuffer[Violation]()
     val state = State(file, expectedModule)
-    val lines = Tokenizer.tokenize(rawText)
+    val lines = ctx.tokenRows
     val imports = Imports.extract(untpdTree, source)
     state.packageInfo        = Packages.extract(untpdTree, source)
     state.importLineSet      = imports.iterator.flatMap{ i => i.startLine to i.endLine }.toSet
@@ -105,9 +110,9 @@ object Checker:
     checkSoundnessExtensionExports(file, siblingExtensions, soundnessExports, unexported, out)
     var idx = 0
 
-    while idx < lines.length do
+    while idx < ctx.lines.length do
       val lineNum = idx + 1
-      checkLine(state, lineNum, lines(idx), out)
+      checkLine(state, lineNum, ctx.lines(idx), out)
       idx += 1
 
     if state.prevWasAnnotation then
@@ -249,16 +254,16 @@ object Checker:
   private def checkLine
     ( s:       State,
       lineNum: Int,
-      line:    IndexedSeq[Lexeme],
+      line:    Line,
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val leadingWs   = line.takeWhile{ t => t.kind == Sort.Space }
-    val rest        = line.drop(leadingWs.length)
-    val visibleLen  = line.iterator.map(_.text.length).sum
-    val firstReal   = rest.headOption
-    val isBlank     = firstReal.isEmpty
-    val leadingCols = leadingWs.iterator.map(_.text.length).sum
+    val leadingWs   = line.leadingWs
+    val rest        = line.rest
+    val visibleLen  = line.visibleLen
+    val firstReal   = line.firstReal
+    val isBlank     = line.isBlank
+    val leadingCols = line.leadingCols
 
     inline def emit(col: Int, rule: String, message: String): Unit =
       out += Violation(s.file, lineNum, col, rule, message)
@@ -278,7 +283,7 @@ object Checker:
     // number of leading spaces (e.g. under `inline commensurable` at col 18).
     if !isStringContent && s.openParens == 0 then
       checkR3IndentWidth(isBlank, leadingCols, emit)
-    if !isStringContinuation then checkR4TrailingWs(line, emit)
+    if !isStringContinuation then checkR4TrailingWs(line.lexemes, emit)
     checkR45BodyScopeIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
     checkR31ContinuationIndent(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
@@ -292,7 +297,7 @@ object Checker:
       s.consecutiveBlanks = 0
 
     s.phase match
-      case Phase.License      => checkLicense(s, lineNum, line, emit)
+      case Phase.License      => checkLicense(s, lineNum, line.lexemes, emit)
       case Phase.Package      => checkPackage(s)
       case Phase.AfterPackage => checkAfterPackage(s, isBlank, emit)
       case Phase.Imports      => checkImports(s, isBlank, lineNum, emit)
@@ -369,19 +374,9 @@ object Checker:
       // track quote/splice brace columns for the closing-`}`-alignment check.
       s.prevLineOpensQuoteSplice = lineEndsWithQuoteSpliceBrace(sem)
       s.prevLineOpensChain       = lineIsChainOpener(sem)
-      s.prevLineIsTight          = isTightExpression(line)
-      trackQuoteSpliceBraces(s, line, leadingCols, lineNum, out)
-
-      val inlineArr = line.toArray
-      val inlineCols = scala.Array.ofDim[Int](inlineArr.length + 1)
-      inlineCols(0) = 1
-      var qi = 0
-
-      while qi < inlineArr.length do
-        inlineCols(qi + 1) = inlineCols(qi) + inlineArr(qi).text.length
-        qi += 1
-
-      checkInlineQuoteSplice(s.file, inlineArr, inlineCols, lineNum, out)
+      s.prevLineIsTight          = isTightExpression(line.lexemes)
+      trackQuoteSpliceBraces(s, line, lineNum, out)
+      checkInlineQuoteSplice(s.file, line.arr, line.cols, lineNum, out)
 
       // R32 anchor: a line that begins a `given` declaration (after any
       // modifiers) records its leading-cols as the anchor for arrow
@@ -549,19 +544,14 @@ object Checker:
   // source line aren't multi-line and aren't subject to these rules.
   private def trackQuoteSpliceBraces
     ( s:       State,
-      line:    IndexedSeq[Lexeme],
-      ignored: Int,
+      line:    Line,
       lineNum: Int,
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val arr  = line.toArray
-    val cols = scala.Array.ofDim[Int](arr.length + 1)
-    cols(0) = 1
+    val arr  = line.arr
+    val cols = line.cols
     var i = 0
-    while i < arr.length do
-      cols(i + 1) = cols(i) + arr(i).text.length
-      i += 1
     val firstSemantic = arr.indexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
     val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
     val stack = s.quoteSpliceBraces
@@ -1238,18 +1228,13 @@ object Checker:
   private def checkTokens
     ( s:       State,
       lineNum: Int,
-      line:    IndexedSeq[Lexeme],
+      line:    Line,
       prevTok: String,
       emit:    (Int, String, String) => Unit )
   :   Unit =
 
-    val arr  = line.toArray
-    val cols = scala.Array.ofDim[Int](arr.length + 1)
-    cols(0) = 1
-    var i = 0
-    while i < arr.length do
-      cols(i + 1) = cols(i) + arr(i).text.length
-      i += 1
+    val arr  = line.arr
+    val cols = line.cols
 
     // Comma checks need state for alignment-run detection.
     // We pass them through directly via the State held in the closure.
@@ -1262,18 +1247,13 @@ object Checker:
   private def checkCommas
     ( s:       State,
       lineNum: Int,
-      line:    IndexedSeq[Lexeme],
+      line:    Line,
       isBlank: Boolean,
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val arr  = line.toArray
-    val cols = scala.Array.ofDim[Int](arr.length + 1)
-    cols(0) = 1
-    var k = 0
-    while k < arr.length do
-      cols(k + 1) = cols(k) + arr(k).text.length
-      k += 1
+    val arr  = line.arr
+    val cols = line.cols
 
     val deferred       = mutable.ListBuffer[Violation]()
     val alignmentCols  = mutable.Set[Int]()
