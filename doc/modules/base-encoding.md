@@ -77,3 +77,18 @@ import alphabets.hexLowerCase
 
 bytes.serialize[Hex]   // t"48656c6c6f"
 ```
+
+### Encoding a stream
+
+An alphabet is also a [stream](streams.md) stage, so bytes are encoded as they flow rather than
+gathered first — which is what a base-encoded body written to a socket, or a large file armoured
+for transport, requires:
+
+```scala
+payload.stream.via(summon[Alphabet[Hex]])
+```
+
+The streaming and whole-value forms agree byte for byte, including at the boundaries where a
+base-64 group of three bytes or a base-32 group of five straddles two chunks. Decoding runs the
+same way, so a stream may be encoded on one side and decoded on the other with neither side
+holding the whole of it.

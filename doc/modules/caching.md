@@ -39,6 +39,18 @@ cache(1)(expensiveLookup(1))   // returns the stored value; no computation
 Using an entry — reading or writing — marks it as recent, so the entries that survive are the ones
 the program keeps coming back to.
 
+`contains` asks whether a key is held without computing anything and without marking it recent,
+and `remove` drops an entry — which is what an invalidation needs when the underlying data has
+changed and the cached value is known to be stale:
+
+```scala
+cache.contains(1)   // is it cached?
+cache.remove(1)     // forget it
+```
+
+The computation is passed by name, so nothing is evaluated on a hit. That is the whole point of
+the shape: a cache whose value must be computed before it can be offered saves nothing.
+
 ### An expiring value
 
 A `Cache` memoizes one value, with a lifetime after which it is recomputed. `establish` returns the
