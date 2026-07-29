@@ -600,24 +600,24 @@ object Html extends Tag.Container
     // writes here, then snapshots the populated prefix into a freshly-sized
     // `IArray[String | Null]` and wraps it as an opaque `Attributes`. Grows
     // geometrically when filled.
-    var attrInterleaved: Array[String | Null]^ = new Array[String | Null](16)
+    var attrInterleaved: Array[String | Null]^ = new scala.Array[String | Null](16)
     // Pending formatting tags awaiting reconstruction (see WHATWG "active
     // formatting elements"). Stored as parallel arrays of label/Attributes
     // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
     // O(N) (and allocates a `Tuple2` per append), and even though valid
     // HTML rarely populates this list, malformed-input handling can append
     // multiple entries at once. Capacity grows geometrically when filled.
-    var pendingFormattingLabels: Array[Text]^ = new Array[Text](4)
-    var pendingFormattingAttrs:  Array[Attributes]^ = new Array[Attributes](4)
+    var pendingFormattingLabels: Array[Text]^ = new scala.Array[Text](4)
+    var pendingFormattingAttrs:  Array[Attributes]^ = new scala.Array[Attributes](4)
     var pendingFormattingSize: Int = 0
     // Foster-parented children awaiting placement around the next `<table>`
     // close. Stored as a pair of `Array[Node]` buffers (with size counters)
     // rather than `List[Node]`s appended via `:+`: list `:+` is `O(N)`
     // and the per-append cons cell + traversal-on-flush is wasted on a
     // structure we always drain in arrival order.
-    var fosteredBefore: Array[Node]^ = new Array[Node](4)
+    var fosteredBefore: Array[Node]^ = new scala.Array[Node](4)
     var fosteredBeforeSize: Int = 0
-    var fosteredAfter: Array[Node]^ = new Array[Node](4)
+    var fosteredAfter: Array[Node]^ = new scala.Array[Node](4)
     var fosteredAfterSize: Int = 0
 
     def findAncestorIndex(label: Text): Int =
@@ -633,7 +633,7 @@ object Html extends Tag.Container
 
     update def append(node: Node): Unit =
       if index >= nodes.length then
-        val nodes2 = new Array[Node](nodes.length*2)
+        val nodes2 = new scala.Array[Node](nodes.length*2)
         System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
         nodes = nodes2
 
@@ -642,7 +642,7 @@ object Html extends Tag.Container
 
     update def push(tag: Tag): Unit =
       if depth >= stack.length then
-        val stack2 = new Array[Tag](stack.length*2)
+        val stack2 = new scala.Array[Tag](stack.length*2)
         System.arraycopy(stack, 0, stack2, 0, stack.length)
         stack = stack2
 
@@ -661,7 +661,7 @@ object Html extends Tag.Container
     // Grow-and-write one interleaved attribute pair at slot `n` (the caller counts).
     update def attrAppend(n: Int, key: String | Null, value: String | Null): Unit =
       if 2*n >= attrInterleaved.length then
-        val nu = new Array[String | Null](attrInterleaved.length*2)
+        val nu = new scala.Array[String | Null](attrInterleaved.length*2)
         jl.System.arraycopy(attrInterleaved, 0, nu, 0, 2*n)
         attrInterleaved = nu
 
@@ -671,8 +671,8 @@ object Html extends Tag.Container
     update def pushPendingFormatting(label: Text, attrs: Attributes): Unit =
       if pendingFormattingSize >= pendingFormattingLabels.length then
         val newCap = pendingFormattingLabels.length*2
-        val nl = new Array[Text](newCap)
-        val na = new Array[Attributes](newCap)
+        val nl = new scala.Array[Text](newCap)
+        val na = new scala.Array[Attributes](newCap)
         val sz = pendingFormattingSize
         jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, sz)
         jl.System.arraycopy(pendingFormattingAttrs, 0, na, 0, sz)
@@ -690,7 +690,7 @@ object Html extends Tag.Container
     update def foster(node: Node, inTable: Boolean): Unit =
       if inTable then
         if fosteredAfterSize >= fosteredAfter.length then
-          val nu = new Array[Node](fosteredAfter.length*2)
+          val nu = new scala.Array[Node](fosteredAfter.length*2)
           jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
           fosteredAfter = nu
 
@@ -698,7 +698,7 @@ object Html extends Tag.Container
         fosteredAfterSize += 1
       else
         if fosteredBeforeSize >= fosteredBefore.length then
-          val nu = new Array[Node](fosteredBefore.length*2)
+          val nu = new scala.Array[Node](fosteredBefore.length*2)
           jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
           fosteredBefore = nu
 
@@ -791,7 +791,7 @@ object Html extends Tag.Container
     // not derive from a constructor parameter under the provenance rule — and
     // populated by `syncFrom()` at the top of `parseHtml`.
     @caps.unsafe.untrackedCaptures
-    private var bytes:  Array[Char] = new Array[Char](0)
+    private var bytes:  Array[Char] = new scala.Array[Char](0)
     private var pos:    Int = 0
     private var bufEnd: Int = 0
 

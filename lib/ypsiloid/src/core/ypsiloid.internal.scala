@@ -368,7 +368,7 @@ object internal:
             val all =
               ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[(String, Yaml.Ast)])(_ ++ _)
 
-            val arr = new Array[Any](all.length*2)
+            val arr = new scala.Array[Any](all.length*2)
             var k = 0
 
             all.each: pair =>
@@ -538,7 +538,7 @@ object internal:
                 $combined && {
                   val total = $scrutinee.arrayLength
                   val tailLen = total - ${Expr(prefixLen)}
-                  val tail = new Array[Any](tailLen)
+                  val tail = new scala.Array[Any](tailLen)
                   var k = 0
 
                   while k < tailLen do
@@ -689,7 +689,7 @@ object internal:
 
                       j += 1
 
-                    val arr = new Array[Any](keysBuf.length*2)
+                    val arr = new scala.Array[Any](keysBuf.length*2)
                     var m = 0
 
                     while m < keysBuf.length do
@@ -729,7 +729,7 @@ object internal:
 
       val result: Expr[Extrapolation[Yaml]] =
         ' {
-            val extracts = new Array[Any](${Expr(numberOfHoles)})
+            val extracts = new scala.Array[Any](${Expr(numberOfHoles)})
 
             val matches: Boolean =
               ${descend('extracts, ast, '{Yaml.unseal($scrutinee)}, '{true})}

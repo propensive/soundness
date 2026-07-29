@@ -50,7 +50,7 @@ import vacuous.*
 // materialising the trie into a dense form up-front.
 //
 // `value` is expected to be a reference type at runtime; the internal
-// storage allocates `new Array[value](n)` via `ClassTag` and re-views it
+// storage allocates `new scala.Array[value](n)` via `ClassTag` and re-views it
 // as `Array[value | Null]` so callers can null-check at access sites.
 // Storing a primitive `value` (e.g. `Int`) would box at runtime — fine
 // for occasional access, wasteful in hot loops.
@@ -114,10 +114,10 @@ object Dictionary:
   // An empty Dictionary with no entries and an empty alphabet. Adds via
   // `+`/`++` rebuild the trie with an alphabet derived from the keys.
   def empty[value: ClassTag]: Dictionary[value] =
-    val emptyInts = new Array[Int](0)
+    val emptyInts = new scala.Array[Int](0)
 
     val emptyValues: Array[AnyRef | Null] =
-      new Array[AnyRef](0).asInstanceOf[Array[AnyRef | Null]]
+      new scala.Array[AnyRef](0).asInstanceOf[Array[AnyRef | Null]]
 
     scala.caps.unsafe.unsafeAssumePure:
       new Dictionary[value]
@@ -229,7 +229,7 @@ object Dictionary:
     val childrenArr: Array[Int]^ = Array.fill[Int](nodeCount*alpha)(-1)
 
     val valuesArr: Array[AnyRef | Null]^ =
-      new Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
+      new scala.Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
 
     i = 0
 
@@ -249,7 +249,7 @@ object Dictionary:
       i += 1
 
     if !ahoCorasick then
-      val emptyInts = new Array[Int](0)
+      val emptyInts = new scala.Array[Int](0)
 
       // The arrays are never written after construction; the dictionary is observationally pure.
       scala.caps.unsafe.unsafeAssumePure:

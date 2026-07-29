@@ -1943,7 +1943,7 @@ object Yaml extends Yaml2, Dynamic:
     var arraySize: Int        = 64
     // `AnyRef` field + accessor, as `cursor1` above.
     @scala.caps.unsafe.untrackedCaptures
-    private var chars1: AnyRef = (new Array[Char](64)).asInstanceOf[AnyRef]
+    private var chars1: AnyRef = (new scala.Array[Char](64)).asInstanceOf[AnyRef]
 
     private inline def chars: Array[Char]^ = chars1.asInstanceOf[Array[Char]^]
     private inline def charsTarget: Array[Char]^ = chars1.asInstanceOf[Array[Char]^]
@@ -2185,7 +2185,7 @@ object Yaml extends Yaml2, Dynamic:
     private update inline def appendChar(char: Char): Unit =
       if stringCursor == arraySize then
         arraySize *= 2
-        val newArr = new Array[Char](arraySize)
+        val newArr = new scala.Array[Char](arraySize)
         System.arraycopy(chars, 0, newArr, 0, stringCursor)
         chars1 = newArr.asInstanceOf[AnyRef]
 
@@ -2197,7 +2197,7 @@ object Yaml extends Yaml2, Dynamic:
       while stringCursor + n > arraySize do arraySize *= 2
 
       if chars.length < arraySize then
-        val newArr = new Array[Char](arraySize)
+        val newArr = new scala.Array[Char](arraySize)
         System.arraycopy(chars, 0, newArr, 0, stringCursor)
         chars1 = newArr.asInstanceOf[AnyRef]
 

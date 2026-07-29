@@ -87,9 +87,9 @@ inline def builder[value](using value: value aka "builder"): value = value()
 
 extension (module: IArray.type)
   def build[element: ClassTag](size: Int)(lambda: Array[element]^ => Unit): IArray[element] =
-    val array: Array[element]^ = new Array[element](size)
-    lambda(array)
-    array.immutable(using Unsafe)
+    val array = Buffer[element](size)
+    lambda(array.raw)
+    Buffer.freeze(array)
 
 extension (module: Text.type)
   def build(block: TextBuilder aka "builder" ?=> Unit): Text =

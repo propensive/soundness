@@ -396,8 +396,8 @@ extends caps.Mutable:
   // `ArrayDeque[Mark]`/`ArrayDeque[Offset]` avoids two `java.lang.Long` boxes
   // per `mark()` call — a meaningful saving on parser hot paths that mark
   // every token boundary.
-  private var marks:     Array[Long]^ = new Array[Long](16)
-  private var offsets:   Array[Long]^ = new Array[Long](16)
+  private var marks:     Array[Long]^ = new scala.Array[Long](16)
+  private var offsets:   Array[Long]^ = new scala.Array[Long](16)
   private var marksSize: Int = 0
 
   private var lineNo:   Ordinal = Prim
@@ -670,8 +670,8 @@ extends caps.Mutable:
 
     if marksSize >= cap then
       val newCap = cap*2
-      val nm = new Array[Long](newCap)
-      val no = new Array[Long](newCap)
+      val nm = new scala.Array[Long](newCap)
+      val no = new scala.Array[Long](newCap)
       System.arraycopy(marks, 0, nm, 0, marksSize)
       System.arraycopy(offsets, 0, no, 0, marksSize)
       marks   = nm

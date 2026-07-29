@@ -316,7 +316,7 @@ object internal:
 
       val result: Expr[Extrapolation[Xml]] =
         ' {
-            val extracts = new Array[Any](${Expr(holeCount)})
+            val extracts = new scala.Array[Any](${Expr(holeCount)})
             val matches: Boolean = ${descend('extracts, xml, scrutinee, '{true})}
 
             $ {

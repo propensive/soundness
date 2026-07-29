@@ -438,7 +438,7 @@ private def recordIterator[record]
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the `inputStream` adapter's precedent).
       @caps.unsafe.untrackedCaptures
-      private var storage: Array[AnyRef] = new Array[AnyRef](0)
+      private var storage: Array[AnyRef] = new scala.Array[AnyRef](0)
       @caps.unsafe.untrackedCaptures
       private var index: Int = 0
       @caps.unsafe.untrackedCaptures

@@ -72,7 +72,7 @@ object Addressable:
 
       target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 + 1)
 
-    inline def allocate(size: Int): Array[Byte] = new Array[Byte](size)
+    inline def allocate(size: Int): Array[Byte] = new scala.Array[Byte](size)
     inline def storageSize(storage: Array[Byte]): Int = storage.length
     inline def storageAddress(storage: Array[Byte], index: Int): Byte = storage(index)
 
@@ -151,7 +151,7 @@ object Addressable:
         target += source(index)
         index += 1
 
-    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
+    def allocate(size: Int): Array[AnyRef] = new scala.Array[AnyRef](size)
     def storageSize(storage: Array[AnyRef]): Int = storage.length
 
     def storageAddress(storage: Array[AnyRef], index: Int): element =
@@ -242,7 +242,7 @@ object Addressable:
         target += source(index)
         index += 1
 
-    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
+    def allocate(size: Int): Array[AnyRef] = new scala.Array[AnyRef](size)
     def storageSize(storage: Array[AnyRef]): Int = storage.length
 
     def storageAddress(storage: Array[AnyRef], index: Int): Text =
@@ -327,7 +327,7 @@ object Addressable:
         target += source(index)
         index += 1
 
-    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
+    def allocate(size: Int): Array[AnyRef] = new scala.Array[AnyRef](size)
     def storageSize(storage: Array[AnyRef]): Int = storage.length
 
     def storageAddress(storage: Array[AnyRef], index: Int): Data =
@@ -394,7 +394,7 @@ object Addressable:
 
       target.append(source.s, start.n0, end.n1)
 
-    inline def allocate(size: Int): Array[Char] = new Array[Char](size)
+    inline def allocate(size: Int): Array[Char] = new scala.Array[Char](size)
     inline def storageSize(storage: Array[Char]): Int = storage.length
     inline def storageAddress(storage: Array[Char], index: Int): Char = storage(index)
 

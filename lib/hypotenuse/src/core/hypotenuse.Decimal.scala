@@ -229,7 +229,7 @@ object decimalInternal:
     private[hypotenuse] def scaleUp(magnitude: Array[Int], count: Int, power: Int): (Array[Int], Int) =
       val shift = power/BaseDigits
       val residue = power%BaseDigits
-      val result = new Array[Int](count + shift + 1)
+      val result = new scala.Array[Int](count + shift + 1)
       System.arraycopy(magnitude, 0, result, shift, count)
       var length = count + shift
 
@@ -267,7 +267,7 @@ object decimalInternal:
     :   (Array[Int], Int) =
 
       val count = math.max(leftCount, rightCount)
-      val result = new Array[Int](count + 1)
+      val result = new scala.Array[Int](count + 1)
       var carry = 0
       var i = 0
 
@@ -294,7 +294,7 @@ object decimalInternal:
         (left: Array[Int], leftCount: Int, right: Array[Int], rightCount: Int)
     :   (Array[Int], Int) =
 
-      val result = new Array[Int](leftCount)
+      val result = new scala.Array[Int](leftCount)
       var borrow = 0
       var i = 0
 
@@ -318,7 +318,7 @@ object decimalInternal:
         (left: Array[Int], leftCount: Int, right: Array[Int], rightCount: Int)
     :   (Array[Int], Int) =
 
-      val result = new Array[Int](leftCount + rightCount)
+      val result = new scala.Array[Int](leftCount + rightCount)
       var i = 0
 
       while i < leftCount do
@@ -352,21 +352,21 @@ object decimalInternal:
     :   (Array[Int], Int, Array[Int], Int) =
 
       if divisorCount == 1 then
-        val quotient = new Array[Int](dividendCount)
+        val quotient = new scala.Array[Int](dividendCount)
         System.arraycopy(dividend, 0, quotient, 0, dividendCount)
         val remainder = divideSmall(quotient, dividendCount, divisor(0))
         var count = dividendCount
         while count > 1 && quotient(count - 1) == 0 do count -= 1
         (quotient, count, Array(remainder), 1)
       else if compareMagnitude(dividend, dividendCount, divisor, divisorCount) < 0 then
-        val remainder = new Array[Int](dividendCount)
+        val remainder = new scala.Array[Int](dividendCount)
         System.arraycopy(dividend, 0, remainder, 0, dividendCount)
         (Array(0), 1, remainder, dividendCount)
       else
         // Normalize so the divisor's top limb is at least half the base.
         val shift = Base/(divisor(divisorCount - 1) + 1)
-        val u = new Array[Int](dividendCount + 1)
-        val v = new Array[Int](divisorCount)
+        val u = new scala.Array[Int](dividendCount + 1)
+        val v = new scala.Array[Int](divisorCount)
 
         var carry = 0L
         var i = 0
@@ -388,7 +388,7 @@ object decimalInternal:
           i += 1
 
         val quotientCount = dividendCount - divisorCount + 1
-        val quotient = new Array[Int](quotientCount)
+        val quotient = new scala.Array[Int](quotientCount)
         val top = v(divisorCount - 1).toLong
         val second = v(divisorCount - 2).toLong
         var j = quotientCount - 1
@@ -450,7 +450,7 @@ object decimalInternal:
         (quotient, count, u, remainderCount)
 
     private[hypotenuse] def magnitudeOf(decimal: Decimal): Array[Int] =
-      val array = new Array[Int](decimal.length - 2)
+      val array = new scala.Array[Int](decimal.length - 2)
       var i = 0
 
       while i < array.length do

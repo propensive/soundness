@@ -246,7 +246,7 @@ object internal:
 
       val result: Expr[Extrapolation[Html]] =
         ' {
-            val extracts = new Array[Any](${Expr(holes.size)})
+            val extracts = new scala.Array[Any](${Expr(holes.size)})
             val matches: Boolean = ${descend('extracts, html, scrutinee, '{true})}
 
             $ {
