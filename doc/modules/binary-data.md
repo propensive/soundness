@@ -60,6 +60,36 @@ data.buffer:
 
 `Debufferable` is the reading side — the sixteen sized numeric types have instances, and a case
 class derives its own from its fields — and `Bufferable` is the writing side, with the same
-derivation. A format whose fields need more than fixed-width reads — a length-prefixed string, say —
-defines its own instance, stating its width and its interpretation, and composes into derived
-records like any primitive.
+derivation. `Unpackable` sits above both, and is what `unpack` resolves: it covers a single
+`Debufferable` value and, separately, an `IArray` of them, which is how a count-prefixed section
+reads as one call rather than a loop.
+
+An instance states two things: `width`, the number of bytes the value occupies, and how to read
+those bytes from — or write them to — a `Buffer`. Both are visible to derivation, so a record's
+total width is the sum of its fields' and every offset within it is computed at compiletime.
+
+```scala
+trait Debufferable:
+  def width: Int
+  def debuffer(buffer: Buffer): Self
+```
+
+A format whose fields need more than fixed-width reads — a length-prefixed string, say — defines
+its own instance, and composes into derived records like any primitive. The sized types also fix
+the *interpretation*, not merely the width: `B32` is four raw bytes, `U32` reads them as an
+unsigned integer, `S32` as a signed one, and the plain Scala `Int`, `Short`, `Long` and `Byte`
+have instances too, for layouts that are easier to state in them.
+
+`Bufferable` is the symmetric writing-side typeclass, deriving over products in the same way, so a
+layout is declared once and serves both directions.
+
+### The buffer is a capability
+
+A `Buffer` carries a mutable read position, which makes unpacking an effect rather than a pure
+read, and the position is what makes successive `unpack` calls advance. It is therefore introduced
+by the `buffer { … }` block that scopes it, and is an *exclusive* capability: two readers sharing
+one position would each consume bytes the other expected, so the compiler prevents a buffer from
+being aliased or from escaping its block.
+
+`offset` reports the current position, for a format that must state where a section begins, and
+`advance` skips past padding or a field this reader does not need.

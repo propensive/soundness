@@ -182,7 +182,56 @@ t"North" match
 Some types accept an empty input and some do not, and a form or a configuration
 often needs to know which before it asks for a value. A `Requirable` instance
 answers that: a type is _required_ when an empty input cannot produce one. The
-judgement follows from the type's decoder, so no separate declaration is needed.
+judgement follows from the type's decoder, so no separate declaration is needed —
+the decoder is simply run against the empty text, and whether it succeeds is the
+answer:
+
+```scala
+summon[Int is Requirable].required     // true: "" is not a number
+```
+
+This is what lets a [form](forms.md) mark its mandatory fields without a second
+declaration that could disagree with the decoder.
+
+### Enumerations by name and position
+
+An enumeration's cases are known to the compiler, so an `Enumerable` instance is
+derived from the type rather than written. It gives the enumeration's name, its
+cases in declaration order, and lookup in both directions — by name and by
+ordinal — each returning `Optional` rather than raising, since neither a name nor
+an index is guaranteed to correspond to a case:
+
+```scala
+enum Direction:
+  case North, South, East, West
+
+val enumerable = summon[Direction is Enumerable]
+
+enumerable.values             // every case, in order
+enumerable.value(t"North")    // Direction.North
+enumerable.value(Prim)        // Direction.North, by position
+enumerable.name(Direction.South)   // t"South"
+enumerable.index(Direction.East)   // 2
+```
+
+This is the machinery beneath `As[Direction]` and beneath the enumeration
+handling of every format's derived codecs, so all of them agree about what a
+case is called.
+
+### Round-tripping an identifier
+
+Some conversions are not to a Scala type at all, but from one textual form to
+another: a database column named `first_name` and a field named `firstName`, or a
+header written `Content-Type` and read `contentType`. An `Identifiable` states
+both directions of such a mapping as a pair of text functions:
+
+```scala
+val snakeCase = Identifiable[Column](encoder, decoder)
+```
+
+Because it is a `Typeclass.Pure`, the compiler knows the conversion captures
+nothing, so it may be shared freely and applied wherever the naming convention
+is needed rather than being threaded through as an argument.
 
 ### Defining your own
 
