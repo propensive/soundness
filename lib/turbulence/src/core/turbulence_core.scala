@@ -357,7 +357,7 @@ extension (stream: Progression[Data])
             // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
             val out = Array[Byte](destPos)
             jl.System.arraycopy(dest, 0, out.raw, 0, destPos)
-            Progression(Array.freeze(out).asInstanceOf[Data])
+            Progression(IArray.freeze(out).asInstanceOf[Data])
 
     recur(stream, 0, newArray(), 0)
 

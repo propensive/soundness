@@ -52,6 +52,18 @@ object Indexable:
 
     def access(array: IArray[element], index: Ordinal): Result = array.stdlib(index.n0)
 
+  // The frozen array, `Array[element]^{}`, likewise: the bounds-partial `readUnchecked` is
+  // safe behind `contains`.
+  given frozenArray: [element] => (Array[element]^{}) is Indexable:
+    type Self = Array[element]^{}
+    type Operand = Ordinal
+    type Result = element
+
+    def contains(array: Array[element]^{}, index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < array.length
+
+    def access(array: Array[element]^{}, index: Ordinal): Result = array.readUnchecked(index.n0)
+
   given sequence: [element] => IndexedSeq[element] is Indexable:
     type Self = IndexedSeq[element]
     type Operand = Ordinal

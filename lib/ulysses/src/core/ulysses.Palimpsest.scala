@@ -76,10 +76,10 @@ object Palimpsest:
       k += 1
 
     val out = Array[Byte](bodyLen + 1)
-    out.copyFromArray(body, 0, 0, bodyLen)
+    out.copyFrom(body, 0, 0, bodyLen)
     out(bodyLen) = (xor ^ (cadence.byte & 0xff)).toByte
 
-    Palimpsest(Array.freeze(out), n)
+    Palimpsest(IArray.freeze(out), n)
 
 case class Palimpsest(data: Data, length: Int):
   // §4 decoding. Recover the cadence byte from the XOR-fold, derive `n`
@@ -135,7 +135,7 @@ case class Palimpsest(data: Data, length: Int):
                 System.arraycopy(body, o, prefix.raw, 0, prefixLen)
 
                 val candidates =
-                  bibliography.lookup(Array.freeze(prefix)).iterator
+                  bibliography.lookup(IArray.freeze(prefix)).iterator
 
                 var found: Optional[List[Data]] = Unset
 

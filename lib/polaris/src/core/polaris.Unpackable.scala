@@ -56,7 +56,7 @@ object Unpackable:
           buffer(index) = pack.debuffer(local)
           index += 1
 
-        Array.freeze(buffer)
+        IArray.freeze(buffer)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type

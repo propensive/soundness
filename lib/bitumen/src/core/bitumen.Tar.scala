@@ -144,7 +144,7 @@ object Tar:
             offset += count
             position += count
 
-          Array.freeze(block)
+          IArray.freeze(block)
 
   enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File

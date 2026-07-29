@@ -62,14 +62,14 @@ object Cos:
         bytes(i) = text.s.charAt(i).toByte
         i += 1
 
-      Array.freeze(bytes)
+      IArray.freeze(bytes)
     else
       val body = charEncoders.utf16BeEncoder.encoded(text)
       val bytes = Array[Byte](body.length + 2)
       bytes(0) = 0xfe.toByte
       bytes(1) = 0xff.toByte
       bytes.copyFrom(body, 0, 2, body.length)
-      Array.freeze(bytes)
+      IArray.freeze(bytes)
 
   // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise
   // PDFDocEncoding.

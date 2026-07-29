@@ -645,7 +645,7 @@ object internal:
           buffer(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
           i += 1
 
-        Array.freeze(buffer)
+        IArray.freeze(buffer)
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
       val entries = map.stdlib
@@ -659,7 +659,7 @@ object internal:
           buffer(i*2 + 1) = v.lay(null: String | Null)(_.s)
           i += 1
 
-        Array.freeze(buffer)
+        IArray.freeze(buffer)
 
     // Construct an `Attributes` directly from an interleaved `IArray`. The
     // caller guarantees the array's length is even and that every key slot
@@ -829,7 +829,7 @@ object internal:
           val nu = Array[String | Null](n - 2)
           if idx > 0 then nu.copyFrom(attrs, 0, 0, idx)
           if idx < n - 2 then nu.copyFrom(attrs, idx + 2, idx, n - 2 - idx)
-          Array.freeze(nu)
+          IArray.freeze(nu)
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -859,13 +859,13 @@ object internal:
           val nu = Array[String | Null](n)
           nu.copyFrom(attrs, 0, 0, n)
           nu(idx + 1) = value.lay(null: String | Null)(_.s)
-          Array.freeze(nu)
+          IArray.freeze(nu)
         else
           val nu = Array[String | Null](n + 2)
           nu.copyFrom(attrs, 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.lay(null: String | Null)(_.s)
-          Array.freeze(nu)
+          IArray.freeze(nu)
 
       // Combines two `Attributes`, with the right-hand side overriding duplicate
       // keys (matching `Map ++` semantics). Order: left's keys first (preserving
@@ -914,12 +914,12 @@ object internal:
 
             j += 2
 
-          val frozen = Array.freeze(nu)
+          val frozen = IArray.freeze(nu)
 
           if written == total then frozen else
             val tu = Array[String | Null](written)
             tu.copyFrom(frozen, 0, 0, written)
-            Array.freeze(tu)
+            IArray.freeze(tu)
 
       def `++`(other: Map[Text, Optional[Text]]): Attributes =
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)

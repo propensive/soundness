@@ -57,4 +57,4 @@ private def concatenate(stream: Progression[Data]): Data =
     result.copyFrom(chunk, 0, offset, chunk.length)
     offset += chunk.length
 
-  Array.freeze(result)
+  IArray.freeze(result)

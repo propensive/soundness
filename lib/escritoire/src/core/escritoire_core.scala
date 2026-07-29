@@ -93,7 +93,7 @@ package columnar:
       buffer(i + 1) = total
       i += 1
 
-    Array.freeze(buffer)
+    IArray.freeze(buffer)
 
   // Sum of char widths over `text.plain`.
   private def displayWidth[textual: Textual](text: textual)(using Text is Measurable): Int =

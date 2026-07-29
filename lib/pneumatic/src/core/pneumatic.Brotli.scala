@@ -82,7 +82,7 @@ private[pneumatic] trait BrotliEngine extends caps.Mutable:
 
     pending.clear()
     delivered = 0
-    Array.freeze(result)
+    IArray.freeze(result)
 
 // Accumulates the whole compressed stream, then decodes it in one pass (see `BrotliDecoder`).
 private[pneumatic] class BrotliDecoderEngine extends BrotliEngine:

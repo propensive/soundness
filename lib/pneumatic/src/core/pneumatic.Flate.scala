@@ -174,7 +174,7 @@ private[pneumatic] object Crc32:
       result(n) = c
       n += 1
 
-    Array.freeze(result)
+    IArray.freeze(result)
 
 private[pneumatic] final class Crc32 extends FlateChecksum:
   @scala.caps.unsafe.untrackedCaptures

@@ -84,7 +84,7 @@ private[pneumatic] trait LzwEngine extends caps.Mutable:
 
     pending.clear()
     delivered = 0
-    Array.freeze(result)
+    IArray.freeze(result)
 
 private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
   private val codes: scala.collection.mutable.HashMap[(Int, Byte), Int] =

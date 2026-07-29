@@ -56,6 +56,13 @@ object IArray:
   def unsafeFromArray[element](array: scala.Array[element]): IArray[element] =
     array.asInstanceOf[IArray[element]]
 
+  // The transitional home of the `IArray`-producing freeze: the frozen form of an array is
+  // now `Array[element]^{}` (see `Array.freeze`), so this exists only to keep call sites
+  // compiling until they drain, and is retired with `IArray` itself. The soundness
+  // argument is `consume`, exactly as for `Array.freeze`.
+  def freeze[element](consume array: Array[element]^): IArray[element] =
+    array.asInstanceOf[IArray[element]]
+
   def from[element: ClassTag](elements: IterableOnce[element]^): IArray[element] =
     of(scala.IArray.from(elements))
 

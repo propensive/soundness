@@ -86,7 +86,7 @@ extends Encodable, Findable:
       out.flip()
       val array = Array[Byte](out.remaining)
       out.get(array.raw)
-      val data: Data = Array.freeze(array)
+      val data: Data = IArray.freeze(array)
       out.clear()
       in.compact()
 

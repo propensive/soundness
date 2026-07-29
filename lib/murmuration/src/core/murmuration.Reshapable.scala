@@ -78,6 +78,12 @@ object Reshapable extends Reshapable.Fallback:
   =>  IArray[element] is Reshapable.Stable by element2 to IArray[element2] =
     IArray.from(_)
 
+  // The frozen array reshapes to a frozen array: the rebuilt array is fresh, so freezing
+  // it is discharged by construction.
+  given frozenArray: [element, element2: ClassTag]
+  =>  (Array[element]^{}) is Reshapable.Stable by element2 to (Array[element2]^{}) =
+    elements => Array.unsafeFrozen(elements.toArray)
+
   // A `Map` rebuilt from pairs remains a `Map`…
   given map: [key, value, key2, value2]
   =>  Map[key, value] is Reshapable by (key2, value2) to Map[key2, value2] =

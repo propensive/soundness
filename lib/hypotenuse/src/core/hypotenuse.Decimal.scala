@@ -208,8 +208,8 @@ object decimalInternal:
         val result = Array[Int](count + 2)
         result(0) = signum
         result(1) = scale
-        result.copyFromArray(magnitude, 0, 2, count)
-        Array.freeze(result)
+        result.copyFrom(magnitude, 0, 2, count)
+        IArray.freeze(result)
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
     private def divideSmall(magnitude: scala.Array[Int]^, count: Int, divisor: Int): Int =
@@ -539,7 +539,7 @@ object decimalInternal:
         val result = Array[Int](value.length)
         result.copyFrom(value, 0, 0, value.length)
         result(0) = -value(0)
-        Array.freeze(result)
+        IArray.freeze(result)
 
     def sum(left: Decimal, right: Decimal): Decimal =
       if left(0) == 0 then right else if right(0) == 0 then left else

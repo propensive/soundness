@@ -216,9 +216,9 @@ case class Ttf(data: Data):
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
     val entries =
-      (t"glyf", Array.freeze(newGlyf)) ::
-        (t"loca", Array.freeze(newLoca)) ::
-        (t"head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
+      (t"glyf", IArray.freeze(newGlyf)) ::
+        (t"loca", IArray.freeze(newLoca)) ::
+        (t"head", IArray.freeze(newHead)) :: (carried: List[(Text, Data)])
 
     Ttf(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 

@@ -210,7 +210,7 @@ object Teletype:
           src += 1
 
         newStyles(runs) = denseStyles(n)  // trailing
-        (Array.freeze(newStyles), Array.freeze(newBoundaries))
+        (IArray.freeze(newStyles), IArray.freeze(newBoundaries))
 
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
@@ -279,7 +279,7 @@ case class Teletype
         src += 1
 
       newStyles(runs) = styles(n)
-      (Array.freeze(newStyles), Array.freeze(newBoundaries))
+      (IArray.freeze(newStyles), IArray.freeze(newBoundaries))
 
   def explicit: Text = Text:
     render(termcapDefinitions.xtermTrueColorTermcap).s.flatMap: char =>
@@ -304,7 +304,7 @@ case class Teletype
           arr(i) = tail
           i += 1
 
-        Teletype(combinedPlain, Array.freeze(arr), hyperlinks, insertions, IArray.empty[Int])
+        Teletype(combinedPlain, IArray.freeze(arr), hyperlinks, insertions, IArray.empty[Int])
       else
         // Stay sparse: the new chars become part of the last run (since trailing style = last run
         // style) unless the last run's style differs from the trailing style — but that can't
@@ -328,10 +328,10 @@ case class Teletype
 
           Teletype
             ( combinedPlain,
-              Array.freeze(newStyles),
+              IArray.freeze(newStyles),
               hyperlinks,
               insertions,
-              Array.freeze(newBoundaries) )
+              IArray.freeze(newBoundaries) )
 
   @targetName("add2")
   def append(that: Teletype): Teletype =
@@ -355,7 +355,7 @@ case class Teletype
 
         Teletype
           ( combinedPlain,
-            Array.freeze(arr),
+            IArray.freeze(arr),
             shiftedLinks,
             shiftedInsertions,
             IArray.empty[Int] )
@@ -388,10 +388,10 @@ case class Teletype
 
         Teletype
           ( combinedPlain,
-            Array.freeze(newStylesArr),
+            IArray.freeze(newStylesArr),
             shiftedLinks,
             shiftedInsertions,
-            Array.freeze(newBoundariesArr) )
+            IArray.freeze(newBoundariesArr) )
 
   def dropChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => takeChars(plain.length - n)
@@ -417,7 +417,7 @@ case class Teletype
 
           Teletype
             ( plain.skip(n),
-              Array.freeze(arr),
+              IArray.freeze(arr),
               newHyperlinks,
               newInsertions,
               IArray.empty[Int] )
@@ -450,10 +450,10 @@ case class Teletype
 
           Teletype
             ( plain.skip(n),
-              Array.freeze(newStylesArr),
+              IArray.freeze(newStylesArr),
               newHyperlinks,
               newInsertions,
-              Array.freeze(newBoundariesArr) )
+              IArray.freeze(newBoundariesArr) )
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => dropChars(plain.length - n)
@@ -477,7 +477,7 @@ case class Teletype
 
           Teletype
             ( plain.keep(n),
-              Array.freeze(arr),
+              IArray.freeze(arr),
               newHyperlinks,
               newInsertions,
               IArray.empty[Int] )
@@ -507,10 +507,10 @@ case class Teletype
 
           Teletype
             ( plain.keep(n),
-              Array.freeze(newStylesArr),
+              IArray.freeze(newStylesArr),
               newHyperlinks,
               newInsertions,
-              Array.freeze(newBoundariesArr) )
+              IArray.freeze(newBoundariesArr) )
 
   def render(termcap: Termcap): Text =
     if !termcap.ansi then plain else

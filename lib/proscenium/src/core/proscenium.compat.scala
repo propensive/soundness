@@ -32,11 +32,13 @@
                                                                                                   */
 package proscenium.compat
 
+import scala.annotation.targetName
+import scala.caps
 import scala.math
 
 import scala.collection.immutable as sci
 
-import proscenium.{List, Map, Set, Progression, Series, IArray}
+import proscenium.{Array, List, Map, Set, Progression, Series, IArray}
 
 // MIGRATION SHIMS — temporarily restore the stdlib surface of the opaque `Set` so call sites
 // compile unchanged, one `import proscenium.compat.*` per file. Each shim is an independently
@@ -458,5 +460,145 @@ extension [element](iarray: IArray[element])
   inline infix def +: [element2 >: element: scala.reflect.ClassTag](element3: element2)
   :   IArray[element2] =
     IArray.of(element3 +: iarray.stdlib)
+
+// PARALLEL SHIMS for the frozen array, `Array[element]^{}` -- the successor of `IArray` --
+// anchored at `^{caps.any.rd}` receivers so frozen, shared and exclusive references all
+// subsume. Same names and semantics as the `IArray` block above; the receiver types are
+// distinct, so resolution never ambiguates, but both opaque aliases erase to `Object`, so
+// each shim carries a `@targetName` to keep the two blocks' binary names apart. Reads
+// delegate through the read-only `readable` view, and constructive results come back
+// frozen via `Array.frozen`. `length` is deliberately absent: the core companion already
+// serves it for every reference.
+extension [element](array: Array[element]^{caps.any.rd})
+  @targetName("frozenApply")
+  inline def apply(index: Int): element = array.readable(index)
+  @targetName("frozenSize")
+  inline def size: Int = array.readable.size
+  @targetName("frozenIsEmpty")
+  inline def isEmpty: Boolean = array.readable.isEmpty
+  @targetName("frozenNonEmpty")
+  inline def nonEmpty: Boolean = array.readable.nonEmpty
+  @targetName("frozenHead")
+  inline def head: element = array.readable.head
+  @targetName("frozenHeadOption")
+  inline def headOption: Option[element] = array.readable.headOption
+  @targetName("frozenLast")
+  inline def last: element = array.readable.last
+  @targetName("frozenLastOption")
+  inline def lastOption: Option[element] = array.readable.lastOption
+  @targetName("frozenIndices")
+  inline def indices: Range = array.readable.indices
+  @targetName("frozenIterator")
+  inline def iterator: Iterator[element] = array.readable.iterator
+  @targetName("frozenCount")
+  inline def count(predicate: element => Boolean): Int = array.readable.count(predicate)
+
+  @targetName("frozenFind")
+  inline def find(predicate: element => Boolean): Option[element] =
+    array.readable.find(predicate)
+
+  @targetName("frozenIndexWhere")
+  inline def indexWhere(predicate: element => Boolean): Int =
+    array.readable.indexWhere(predicate)
+
+  @targetName("frozenFoldLeft")
+  inline def foldLeft[state](initial: state)(lambda: (state, element) => state): state =
+    array.readable.foldLeft(initial)(lambda)
+
+  @targetName("frozenMkString")
+  inline def mkString: String = array.readable.mkString
+  @targetName("frozenMkString1")
+  inline def mkString(separator: String): String = array.readable.mkString(separator)
+
+  @targetName("frozenMkString2")
+  inline def mkString(start: String, separator: String, end: String): String =
+    array.readable.mkString(start, separator, end)
+
+  @targetName("frozenToSeq")
+  inline def toSeq: Seq[element] = array.readable.toSeq
+  @targetName("frozenToList")
+  inline def toList: List[element] = List.of(array.readable.toList)
+  @targetName("frozenToSet")
+  inline def toSet: Set[element] = Set.of(array.readable.toSet)
+
+  @targetName("frozenMap")
+  inline def map[element2: scala.reflect.ClassTag](lambda: element => element2)
+  :   Array[element2]^{} =
+    Array.frozen(array.readable.map(lambda))
+
+  @targetName("frozenTake")
+  inline def take(count: Int)(using scala.reflect.ClassTag[element]): Array[element]^{} =
+    Array.frozen(array.readable.take(count))
+
+  @targetName("frozenDrop")
+  inline def drop(count: Int)(using scala.reflect.ClassTag[element]): Array[element]^{} =
+    Array.frozen(array.readable.drop(count))
+
+  @targetName("frozenSlice")
+  inline def slice(from: Int, until: Int)(using scala.reflect.ClassTag[element])
+  :   Array[element]^{} =
+    Array.frozen(array.readable.slice(from, until))
+
+  @targetName("frozenUpdated")
+  inline def updated[element2 >: element](index: Int, element2: element2)
+     (using scala.reflect.ClassTag[element2])
+  :   Array[element2]^{} =
+    Array.frozen(array.readable.updated(index, element2))
+
+  @targetName("frozenFilterNot")
+  inline def filterNot(predicate: element => Boolean)(using scala.reflect.ClassTag[element])
+  :   Array[element]^{} =
+    Array.frozen(array.readable.filterNot(predicate))
+
+  @targetName("frozenReverse")
+  inline def reverse(using scala.reflect.ClassTag[element]): Array[element]^{} =
+    Array.frozen(array.readable.reverse)
+
+  @targetName("frozenConcat")
+  inline infix def ++ [element2 >: element: scala.reflect.ClassTag]
+     (suffix: Array[element2]^{caps.any.rd})
+  :   Array[element2]^{} =
+    Array.frozen(array.readable ++ suffix.readable)
+
+  @targetName("frozenSameElements")
+  inline def sameElements(that: Array[element]^{caps.any.rd}): Boolean =
+    array.readable.sameElements(that.readable)
+
+  @targetName("frozenSum")
+  inline def sum(using math.Numeric[element]): element = array.readable.sum
+
+  @targetName("frozenContains")
+  inline def contains(element2: element): Boolean =
+    array.readable.toSeq.contains(element2)
+
+  @targetName("frozenZipWithIndex")
+  inline def zipWithIndex: Array[(element, Int)]^{} =
+    Array.frozen(array.readable.zipWithIndex)
+
+  @targetName("frozenCollect")
+  inline def collect[element2: scala.reflect.ClassTag]
+     (lambda: PartialFunction[element, element2])
+  :   Array[element2]^{} =
+    Array.frozen(array.readable.collect(lambda))
+
+  @targetName("frozenForall")
+  inline def forall(predicate: element => Boolean): Boolean = array.readable.forall(predicate)
+
+  @targetName("frozenLastIndexWhere")
+  inline def lastIndexWhere(predicate: element => Boolean): Int =
+    array.readable.lastIndexWhere(predicate)
+
+  @targetName("frozenIndexOf")
+  inline def indexOf(element2: element): Int = array.readable.indexOf(element2)
+
+  @targetName("frozenAppend")
+  inline infix def :+ [element2 >: element: scala.reflect.ClassTag](element3: element2)
+  :   Array[element2]^{} =
+    Array.frozen(array.readable :+ element3)
+
+  @targetName("frozenPrepend")
+  inline infix def +: [element2 >: element: scala.reflect.ClassTag](element3: element2)
+  :   Array[element2]^{} =
+    Array.frozen(element3 +: array.readable)
 
 

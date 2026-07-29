@@ -994,7 +994,7 @@ object Json extends Json2, Dynamic:
 
             index += 1
 
-          make(Array.freeze(values))
+          make(IArray.freeze(values))
 
   // The direct-parsing counterpart of `Json.Decodable`: consumes JSON tokens
   // from a `JsonReader` instead of walking a materialized `Json`, so
@@ -1067,9 +1067,9 @@ object Json extends Json2, Dynamic:
 
         index += 1
 
-      val lowsFrozen = Array.freeze(lows)
-      val highsFrozen = Array.freeze(highs)
-      val packableFrozen = Array.freeze(packable)
+      val lowsFrozen = IArray.freeze(lows)
+      val highsFrozen = IArray.freeze(highs)
+      val packableFrozen = IArray.freeze(packable)
 
       // Direct-mapped hash over the packed forms: capacity is the smallest
       // power of two holding all keys at load factor <= 1/2, retried at
@@ -1095,7 +1095,7 @@ object Json extends Json2, Dynamic:
 
             probeIndex += 1
 
-          if clash then probe(capacity*2) else (Array.freeze(attempt), capacity)
+          if clash then probe(capacity*2) else (IArray.freeze(attempt), capacity)
 
       val table = probe(Integer.highestOneBit(count.max(1))*4)
 
@@ -1104,7 +1104,7 @@ object Json extends Json2, Dynamic:
           lowsFrozen,
           highsFrozen,
           packableFrozen,
-          table.lay(Array.freeze(Array[Int](0)))(_(0)),
+          table.lay(IArray.freeze(Array[Int](0)))(_(0)),
           table.lay(0)(_(1)) )
 
   // Precomputed packed-byte forms of a fixed key set (a derived product's
@@ -1535,7 +1535,7 @@ object Json extends Json2, Dynamic:
         arr(i*2 + 1) = values(i)
         i += 1
 
-      Array.freeze(arr)
+      IArray.freeze(arr)
 
     // Build a heterogeneous array node. If the element count is even, a
     // single sentinel `arrayPad` is appended so the stored `IArray[Any]` has
@@ -1548,7 +1548,7 @@ object Json extends Json2, Dynamic:
         val padded = Array[Any](n + 1)
         padded.copyFrom(elements, 0, 0, n)
         padded(n) = arrayPad
-        Array.freeze(padded)
+        IArray.freeze(padded)
 
     // Build a number-only array node using the single-Long BCD encoding
     // (see `Bcd.packBcdLong`). Each `Long` element carries one number's
@@ -1677,14 +1677,14 @@ object Json extends Json2, Dynamic:
           val out = Array[Json.Ast](count)
           var i = 0
           while i < count do { out(i) = json.arrayElement(i); i += 1 }
-          Array.freeze(out).asInstanceOf[IArray[Json.Ast]]
+          IArray.freeze(out).asInstanceOf[IArray[Json.Ast]]
 
         case smalls: IArray[Int] @unchecked =>
           val count = smalls.length
           val out = Array[Json.Ast](count)
           var i = 0
           while i < count do { out(i) = json.arrayElement(i); i += 1 }
-          Array.freeze(out).asInstanceOf[IArray[Json.Ast]]
+          IArray.freeze(out).asInstanceOf[IArray[Json.Ast]]
 
         case _ =>
           if isArray then
@@ -1761,8 +1761,8 @@ object Json extends Json2, Dynamic:
             values(i) = arr(i*2 + 1).asInstanceOf[Json.Ast]
             i += 1
 
-          (Array.freeze(keys).asInstanceOf[IArray[String]],
-           Array.freeze(values).asInstanceOf[IArray[Json.Ast]])
+          (IArray.freeze(keys).asInstanceOf[IArray[String]],
+           IArray.freeze(values).asInstanceOf[IArray[Json.Ast]])
 
       def number: Long | Double | Bcd raises JsonError =
         if isLong then long
@@ -2038,7 +2038,7 @@ object Json extends Json2, Dynamic:
 
               i += 1
 
-            Json.Ast.arr(Array.freeze(updated))
+            Json.Ast.arr(IArray.freeze(updated))
         else
           origin
 
@@ -2057,7 +2057,7 @@ object Json extends Json2, Dynamic:
             updated(i) = lambda(Json.ast(origin.root.arrayElement(i))).root
             i += 1
 
-          Json.Ast.arr(Array.freeze(updated))
+          Json.Ast.arr(IArray.freeze(updated))
       else
         origin
 
@@ -2080,7 +2080,7 @@ object Json extends Json2, Dynamic:
             updated(i) = (if predicate(element) then lambda(element) else element).root
             i += 1
 
-          Json.Ast.arr(Array.freeze(updated))
+          Json.Ast.arr(IArray.freeze(updated))
       else
         origin
 
@@ -2634,7 +2634,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
       i += 1
 
-    Json.ast(Json.Ast.arr(Array.freeze(updated)))
+    Json.ast(Json.Ast.arr(IArray.freeze(updated)))
 
 
   def updateDynamic(field: String)[value: anticipation.Encodable in Json](value: value)
@@ -2661,13 +2661,13 @@ extends Dynamic, Topical, Original derives CanEqual:
         out.copyFrom(arr, 0, 0, len)
         out(len) = field
         out(len + 1) = value.root
-        Json.ast(Json.Ast(Array.freeze(out)))
+        Json.ast(Json.Ast(IArray.freeze(out)))
 
       case index =>
         val out = Array[Any](len)
         out.copyFrom(arr, 0, 0, len)
         out(index*2 + 1) = value.root
-        Json.ast(Json.Ast(Array.freeze(out)))
+        Json.ast(Json.Ast(IArray.freeze(out)))
 
   private[jacinta] def delete(field: String): Json raises JsonError =
     val arr = root.asInstanceOf[IArray[Any]]
@@ -2681,7 +2681,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         val out = Array[Any](len - 2)
         out.copyFrom(arr, 0, 0, index*2)
         out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
-        Json.ast(Json.Ast(Array.freeze(out)))
+        Json.ast(Json.Ast(IArray.freeze(out)))
 
   def apply(field: Text): Json raises JsonError =
     if root.isAbsent then Json.ast(Json.Ast(Unset))

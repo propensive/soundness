@@ -68,7 +68,7 @@ object CanonicalCbor:
         values(write) = sorted(write)._3
         write += 1
 
-      Cbor.Ast.map(Array.freeze(keys), Array.freeze(values))
+      Cbor.Ast.map(IArray.freeze(keys), IArray.freeze(values))
     else if ast.isArray then
       val n = ast.elements
       val out = Array[Any](n)
@@ -78,7 +78,7 @@ object CanonicalCbor:
         out(index) = canonicalise(ast.element(index))
         index += 1
 
-      Cbor.Ast.array(Array.freeze(out))
+      Cbor.Ast.array(IArray.freeze(out))
     else if ast.isTag then
       val tag = ast.asInstanceOf[Cbor.Tag]
       Cbor.Ast(Cbor.Tag(tag.tag, canonicalise(tag.value.asInstanceOf[Cbor.Ast])))

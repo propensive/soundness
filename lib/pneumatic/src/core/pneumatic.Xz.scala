@@ -87,7 +87,7 @@ private[pneumatic] trait XzEngine extends caps.Mutable:
 
     pending.clear()
     delivered = 0
-    Array.freeze(result)
+    IArray.freeze(result)
 
 // Accumulates the whole input, then applies a one-shot byte transform (encode or container-decode).
 // The transform is a method (not a stored function value) so the engine carries no capability

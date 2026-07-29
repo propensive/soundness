@@ -146,7 +146,7 @@ object GraphemeBreak:
       props(index) = sorted(index).prop.toByte
       index += 1
 
-    Tables(Array.freeze(starts), Array.freeze(ends), Array.freeze(props))
+    Tables(IArray.freeze(starts), IArray.freeze(ends), IArray.freeze(props))
 
   private lazy val gbpTables: Tables =
     val in = loadResource(
@@ -205,7 +205,7 @@ object GraphemeBreak:
     breaks(size) = 0
     size += 1
 
-    if n == 0 then Array.freeze(Array[Int](1))
+    if n == 0 then IArray.freeze(Array[Int](1))
     else
       var index = 0
       val firstCodepoint = Character.codePointAt(s, 0)
@@ -283,7 +283,7 @@ object GraphemeBreak:
 
       // Trimmed to the exact count, then frozen: the checked build-then-share
       // conversion.
-      val frozen = Array.freeze(breaks)
+      val frozen = IArray.freeze(breaks)
       val result = Array[Int](size)
       result.copyFrom(frozen, 0, 0, size)
-      Array.freeze(result)
+      IArray.freeze(result)

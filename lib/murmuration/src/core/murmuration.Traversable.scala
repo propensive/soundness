@@ -83,6 +83,13 @@ object Traversable extends Traversable2:
       scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[scala.Array[element]])
       . iterator
 
+  // The frozen array, `Array[element]^{}`, likewise: `Self` is the nominal alias with an
+  // explicitly empty capture set, so only references statically known frozen match.
+  given frozenArray: [element] => (Array[element]^{}) is Traversable by element =
+    array =>
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
+      . iterator
+
   // Java collections traverse through `.asScala`, so `javaCollection.to[List]` (and `[Set]`,
   // `[Map]`, …) work with no explicit conversion — the builder is the standard-library converter.
   // `java.lang.Iterable` covers `java.util.List`/`Set`/`Collection`/…; `java.util.Iterator` and

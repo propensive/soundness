@@ -51,7 +51,7 @@ object JavaStdlibCrypto extends Crypto:
     def bytes(size: Int): Data =
       val output = Array[Byte](size)
       js.SecureRandom().nextBytes(output.raw)
-      Array.freeze(output)
+      IArray.freeze(output)
 
   def aes:       Crypto.SymmetricCipher = symmetric(t"AES")
   def des:       Crypto.SymmetricCipher = symmetric(t"DES")

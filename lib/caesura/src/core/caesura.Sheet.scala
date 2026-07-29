@@ -259,7 +259,7 @@ object Sheet:
       val n = cellsBuf.length
       val arr = Array[Text](n)
       cellsBuf.copyToArray(arr.raw)
-      Dsv(Array.freeze(arr), headings)
+      Dsv(IArray.freeze(arr), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
     // bulk-appending the run of regular characters in one operation, then

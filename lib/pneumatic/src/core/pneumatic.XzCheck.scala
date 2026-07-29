@@ -79,7 +79,7 @@ private[pneumatic] object Crc64:
       result(n) = c
       n += 1
 
-    Array.freeze(result)
+    IArray.freeze(result)
 
 // A check that accumulates over the uncompressed bytes and yields its little-endian trailer
 // bytes. Checkers are mutable running state, so each use instantiates a fresh one (including

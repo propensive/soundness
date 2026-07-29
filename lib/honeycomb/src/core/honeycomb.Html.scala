@@ -117,7 +117,7 @@ object Html extends Tag.Container
           buffer(index) = node
           index += 1
 
-      Array.freeze(buffer)
+      IArray.freeze(buffer)
 
   inline given interpolator: Html is Interpolable:
     type Result = Html
@@ -656,7 +656,7 @@ object Html extends Tag.Container
       val result = Array[Node](count)
       System.arraycopy(nodes, 0.max(index - count), result.raw, 0, count)
       index -= count
-      Array.freeze(result)
+      IArray.freeze(result)
 
     // Grow-and-write one interleaved attribute pair at slot `n` (the caller counts).
     update def attrAppend(n: Int, key: String | Null, value: String | Null): Unit =
@@ -1242,7 +1242,7 @@ object Html extends Tag.Container
         else
           val arr = Array[String | Null](2*n)
           jl.System.arraycopy(state.attrInterleaved, 0, arr.raw, 0, 2*n)
-          Attributes.fromInterleaved(Array.freeze(arr))
+          Attributes.fromInterleaved(IArray.freeze(arr))
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):

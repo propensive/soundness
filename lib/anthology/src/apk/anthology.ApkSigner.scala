@@ -78,7 +78,7 @@ object ApkSigner:
       buffer.copyFrom(part, 0, offset, part.length)
       offset += part.length
 
-    Array.freeze(buffer)
+    IArray.freeze(buffer)
 
   private def sha256(data: Data): Data = data.digest[Sha2[256]].data
 
@@ -107,7 +107,7 @@ object ApkSigner:
       val length = end - offset
       val chunk = Array[Byte](length)
       chunk.copyFrom(data, offset, 0, length)
-      val prefixed = concat(IArray(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
+      val prefixed = concat(IArray(0xa5.toByte), u32(length.toLong), IArray.freeze(chunk))
       builder += sha256(prefixed)
       offset = end
 
@@ -188,4 +188,4 @@ object ApkSigner:
     val length = until - from
     val buffer = Array[Byte](length)
     buffer.copyFrom(data, from, 0, length)
-    Array.freeze(buffer)
+    IArray.freeze(buffer)

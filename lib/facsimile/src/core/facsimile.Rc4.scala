@@ -77,4 +77,4 @@ private[facsimile] object Rc4:
       out(k) = (data(k) ^ state((state(a) + state(b)) & 0xff)).toByte
       k += 1
 
-    Array.freeze(out)
+    IArray.freeze(out)

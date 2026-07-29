@@ -167,8 +167,8 @@ object Hyphenation:
   // The first `count` elements of `source`, as an immutable array.
   private def exactCopy(source: Array[Int]^, count: Int): IArray[Int] =
     val result = Array[Int](count)
-    result.copyFromArray(source, 0, 0, count)
-    Array.freeze(result)
+    result.copyFrom(source, 0, 0, count)
+    IArray.freeze(result)
 
   private def walkCompact
     ( padded:       scala.Array[Char],

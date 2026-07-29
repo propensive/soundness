@@ -75,6 +75,14 @@ object Convertible:
   =>  self is Convertible in IArray to IArray[traversable.Operand] =
     self => IArray.from(traversable.traverse(self))(using tag)
 
+  // `xs.to[Array]` yields the frozen form, `Array[element]^{}`: the built array is fresh,
+  // so no writer survives its construction.
+  given frozenArray: [self]
+  =>  (traversable: self is Traversable)
+  =>  (tag: ClassTag[traversable.Operand])
+  =>  self is Convertible in Array to (Array[traversable.Operand]^{}) =
+    self => Array.unsafeFrozen(traversable.traverse(self).toArray(using tag))
+
   given text: [self] => (traversable: self is Traversable by Char)
   =>  self is Convertible in Text to Text =
     self => Text(traversable.traverse(self).mkString)

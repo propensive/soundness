@@ -73,7 +73,7 @@ class ForeignBuffer(private[xenophile] val memory: Ptr[Byte], val size: Int):
       array(index) = memory(index)
       index += 1
 
-    Array.freeze(array)
+    IArray.freeze(array)
 
   def int: Int = !memory.asInstanceOf[Ptr[Int]]
   def free(): Unit = stdlib.free(memory)

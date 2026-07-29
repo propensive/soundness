@@ -66,7 +66,7 @@ object internal:
             rest = tail
             i += 1
 
-      new Vector[element, size.type](Array.freeze(buffer))
+      new Vector[element, size.type](IArray.freeze(buffer))
 
 
     given addable

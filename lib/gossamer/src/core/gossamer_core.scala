@@ -89,7 +89,7 @@ extension (module: IArray.type)
   def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): IArray[element] =
     val array = Array[element](size)
     lambda(array.raw)
-    Array.freeze(array)
+    IArray.freeze(array)
 
 extension (module: Text.type)
   def build(block: TextBuilder aka "builder" ?=> Unit): Text =
@@ -499,7 +499,7 @@ package proximities:
           dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
           j += 1
 
-        old.copyFromArray(dist, 0, 0, n + 1)
+        old.copyFrom(dist, 0, 0, n + 1)
         i += 1
 
       if m == 0 then n else dist(n)

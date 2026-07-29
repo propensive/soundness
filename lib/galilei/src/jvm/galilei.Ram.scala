@@ -81,7 +81,7 @@ object Ram:
     def readFrom(offset: Long, length: Int): Data =
       val array = Array[Byte](length)
       buffer.get(offset.toInt, array.raw)
-      Array.freeze(array)
+      IArray.freeze(array)
 
     def writeTo(offset: Long, data: Data): Unit =
       buffer.put(offset.toInt, data.mutable(using Unsafe), 0, data.length)

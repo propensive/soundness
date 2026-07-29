@@ -60,6 +60,11 @@ object Inclusive extends Inclusive.Fallback:
   given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
     (iarray, value) => iarray.stdlib.exists(_ == value)
 
+  // The frozen array, `Array[element]^{}`, likewise; distinct from the bare `scala.Array`
+  // instance below.
+  given frozenArray: [element <: Matchable] => (Array[element]^{}) is Inclusive by element =
+    (array, value) => array.readable.exists(_ == value)
+
   // Opaque `Series` is no longer an `Iterable` subtype, so it needs its own instance.
   given series: [element] => Series[element] is Inclusive by element =
     (series, value) => series.stdlib.exists(_ == value)

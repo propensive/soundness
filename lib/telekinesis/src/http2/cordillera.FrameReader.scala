@@ -98,7 +98,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     val out = Array[Byte](n)
     System.arraycopy(buffer, pos, out.raw, 0, n)
     pos += n
-    Array.freeze(out)
+    IArray.freeze(out)
 
   // Consume and validate the given connection preface (RFC 7540 §3.5) ahead of
   // the first frame — the server role's first read on a new connection. A

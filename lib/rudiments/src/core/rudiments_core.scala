@@ -414,7 +414,7 @@ extension [element](array: scala.Array[element])
   def snapshot(using ClassTag[element]): IArray[element] =
     val newArray = Array[element](array.length)
     System.arraycopy(array, 0, newArray.raw, 0, array.length)
-    Array.freeze(newArray)
+    IArray.freeze(newArray)
 
   inline def place(value: IArray[element], ordinal: Ordinal = Prim): Unit =
     System.arraycopy(value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.stdlib.length)

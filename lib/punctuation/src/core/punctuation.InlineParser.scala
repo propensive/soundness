@@ -63,7 +63,7 @@ private[punctuation] object InlineParser:
       arr(special.charAt(i).toInt) = true
       i += 1
 
-    Array.freeze(arr)
+    IArray.freeze(arr)
 
   private inline def isSpecial(inline c: Char): Boolean =
     c < 128 && Specials.stdlib(c.toInt)

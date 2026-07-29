@@ -183,7 +183,7 @@ object Blake3:
         pos += take
         blockCounter += 1
 
-      Array.freeze(result)
+      IArray.freeze(result)
 
   private def parentOutput
     ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
