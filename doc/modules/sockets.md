@@ -117,7 +117,45 @@ TCP-only option cannot be applied to a UDP socket:
 ```scala
 import socketOptions.reuseAddressSocketOption
 import socketOptions.keepAliveSocketOption
+import socketOptions.broadcastSocketOption
 ```
+
+Options are collected from scope as a set rather than passed at each call, so a program's socket
+policy is stated once. `SO_REUSEADDR` for a server that must restart without waiting out
+`TIME_WAIT`, `SO_BROADCAST` for a UDP socket that sends to a broadcast address, `TCP_NODELAY` for
+a protocol that must not wait for Nagle's algorithm, buffer sizes and timeouts — each is typed by
+the transports that accept it, and a backend silently skips an option its platform does not
+support rather than failing.
+
+### Messages and their conversions
+
+What a socket sends and receives is not bytes but values. `Transmissible` says how a value becomes
+bytes on the way out, and `Ingressive` how bytes become a value on the way in, so a protocol is
+written in its own vocabulary:
+
+```scala
+Ingressive.bytes         // received as raw Data
+Ingressive.text          // decoded through the character encoding in scope
+Ingressive.decoder[Port] // decoded to any type with a Decodable instance
+```
+
+A `Port` received over the wire is therefore a `Port`, validated on arrival, rather than text to
+be checked later.
+
+### Conversations as state machines
+
+`exchange` drives a client-side protocol as a state machine: each received message yields a
+`Control` saying what happens next. `Continue` carries the new state — or none, leaving it
+unchanged — and `Terminate` ends the conversation:
+
+```scala
+socket.exchange(initial):
+  case (state, message) =>
+    if done(message) then Terminate else Continue(next(state, message))
+```
+
+Writing a protocol this way keeps its states explicit, rather than implied by where control
+happens to be in a sequence of interleaved reads and writes.
 
 ### Errors
 
