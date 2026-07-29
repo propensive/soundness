@@ -32,22 +32,18 @@
                                                                                                   */
 package hallucination
 
+import proscenium.compat.*
+
 // Huffman encoding tables, ported from jpeg-encoder's `huffman.rs` (Apache-2.0/MIT). A table maps
 // each byte symbol to a (bit-length, code) pair; the code-length list and value list are also
 // retained for writing the DHT segment. Both the standard Annex K tables and per-image optimized
 // tables (Annex K.2) are supported.
 private[hallucination] final class JpegEncodeTable
-  ( @scala.caps.unsafe.untrackedCaptures val lengths: Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val values:  Array[Int] ):
+  ( val lengths: IArray[Int], val values: IArray[Int] ):
 
-  // The per-symbol (size, code) lookup, from the canonical code assignment (Figures C.1–C.3).
-  @scala.caps.unsafe.untrackedCaptures
-  val sizeOf: Array[Int] = new Array[Int](256)
-
-  @scala.caps.unsafe.untrackedCaptures
-  val codeOf: Array[Int] = new Array[Int](256)
-
-  locally:
+  // The per-symbol (size, code) lookup, from the canonical code assignment (Figures C.1–C.3),
+  // built into fresh arrays and frozen zero-copy.
+  val (sizeOf, codeOf) =
     val sizes = new Array[Int](256)
     var k = 0
     var i = 0
@@ -76,12 +72,16 @@ private[hallucination] final class JpegEncodeTable
       code += 1
       index += 1
 
+    val sizeOf0 = new Array[Int](256)
+    val codeOf0 = new Array[Int](256)
     i = 0
 
     while i < values.length do
-      writable(sizeOf)(values(i)) = sizes(i)
-      writable(codeOf)(values(i)) = codes(i)
+      sizeOf0(values(i)) = sizes(i)
+      codeOf0(values(i)) = codes(i)
       i += 1
+
+    (sizeOf0.asInstanceOf[IArray[Int]], codeOf0.asInstanceOf[IArray[Int]])
 
 private[hallucination] object JpegHuffmanEncoder:
   private val LumaDcLengths: IArray[Int] = IArray(0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0)
@@ -119,18 +119,10 @@ private[hallucination] object JpegHuffmanEncoder:
     0xe2, 0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8,
     0xf9, 0xfa)
 
-  def defaultLumaDc: JpegEncodeTable =
-    scala.caps.unsafe.unsafeAssumePure:
-      JpegEncodeTable(LumaDcLengths.asInstanceOf[Array[Int]], LumaDcValues.asInstanceOf[Array[Int]])
-  def defaultLumaAc: JpegEncodeTable =
-    scala.caps.unsafe.unsafeAssumePure:
-      JpegEncodeTable(LumaAcLengths.asInstanceOf[Array[Int]], LumaAcValues.asInstanceOf[Array[Int]])
-  def defaultChromaDc: JpegEncodeTable =
-    scala.caps.unsafe.unsafeAssumePure:
-      JpegEncodeTable(ChromaDcLengths.asInstanceOf[Array[Int]], ChromaDcValues.asInstanceOf[Array[Int]])
-  def defaultChromaAc: JpegEncodeTable =
-    scala.caps.unsafe.unsafeAssumePure:
-      JpegEncodeTable(ChromaAcLengths.asInstanceOf[Array[Int]], ChromaAcValues.asInstanceOf[Array[Int]])
+  def defaultLumaDc: JpegEncodeTable = JpegEncodeTable(LumaDcLengths, LumaDcValues)
+  def defaultLumaAc: JpegEncodeTable = JpegEncodeTable(LumaAcLengths, LumaAcValues)
+  def defaultChromaDc: JpegEncodeTable = JpegEncodeTable(ChromaDcLengths, ChromaDcValues)
+  def defaultChromaAc: JpegEncodeTable = JpegEncodeTable(ChromaAcLengths, ChromaAcValues)
 
   // The magnitude category and coefficient bits of a value, as used for DC differences and AC
   // coefficients (Section F.1.2).
@@ -233,5 +225,6 @@ private[hallucination] object JpegHuffmanEncoder:
     i = 0
     while i < 16 do { lengths(i) = bits(i + 1); i += 1 }
 
-    // As the defaults above: the table privately owns its arrays.
-    scala.caps.unsafe.unsafeAssumePure(JpegEncodeTable(lengths, huffval.slice(0, k)))
+    // The freshly-built length and value arrays are frozen zero-copy.
+    JpegEncodeTable
+      ( lengths.asInstanceOf[IArray[Int]], huffval.slice(0, k).asInstanceOf[IArray[Int]] )

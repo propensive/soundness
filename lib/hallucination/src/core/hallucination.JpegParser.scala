@@ -33,6 +33,7 @@
 package hallucination
 
 import contingency.*
+import proscenium.compat.*
 import vacuous.*
 
 import RasterError.Reason
@@ -72,23 +73,19 @@ private[hallucination] final case class JpegDimensions(width: Int, height: Int)
 
 // One colour component (plane) of the frame. Sampling factors and the quantization-table index
 // come from the frame header; the pixel and block dimensions are derived once all components are
-// known.
+// known, so `parseSof` builds every component fully-initialized.
 private[hallucination] final class JpegComponent
   ( val identifier:               Int,
     val horizontalSamplingFactor: Int,
     val verticalSamplingFactor:   Int,
-    val quantizationTableIndex:   Int ):
+    val quantizationTableIndex:   Int,
+    val sizeWidth:                Int,
+    val sizeHeight:               Int,
+    val blockWidth:               Int,
+    val blockHeight:              Int ):
 
   // The full-resolution IDCT is always used (no thumbnail scaling), so the DCT scale is fixed at 8.
   val dctScale: Int = 8
-  @scala.caps.unsafe.untrackedCaptures
-  var sizeWidth: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  var sizeHeight: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  var blockWidth: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
-  var blockHeight: Int = 0
 
 private[hallucination] final class JpegFrame
   ( val isBaseline:    Boolean,
@@ -96,14 +93,14 @@ private[hallucination] final class JpegFrame
     val precision:     Int,
     val imageWidth:    Int,
     val imageHeight:   Int,
-    @scala.caps.unsafe.untrackedCaptures var mcuWidth:  Int,
-    @scala.caps.unsafe.untrackedCaptures var mcuHeight: Int,
-    @scala.caps.unsafe.untrackedCaptures val components: Array[JpegComponent] )
+    val mcuWidth:      Int,
+    val mcuHeight:     Int,
+    val components:    IArray[JpegComponent] )
 
 private[hallucination] final class JpegScan
-  ( @scala.caps.unsafe.untrackedCaptures val componentIndices: Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val dcTableIndices:   Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val acTableIndices:   Array[Int],
+  ( val componentIndices: IArray[Int],
+    val dcTableIndices:   IArray[Int],
+    val acTableIndices:   IArray[Int],
     val spectralStart:     Int,
     val spectralEnd:       Int, // exclusive
     val successiveHigh:    Int,
@@ -156,7 +153,12 @@ private[hallucination] object JpegParser:
     if length != 6 + 3*componentCount then bad()
     if componentCount != 1 && componentCount != 3 && componentCount != 4 then unsupported()
 
-    val components = new Array[JpegComponent](componentCount)
+    // First read the raw per-component parameters; the pixel and block dimensions can only be
+    // derived once the maximum sampling factors across all components are known.
+    val identifiers = new Array[Int](componentCount)
+    val horizontals = new Array[Int](componentCount)
+    val verticals = new Array[Int](componentCount)
+    val quantizationIndices = new Array[Int](componentCount)
     var index = 0
 
     while index < componentCount do
@@ -165,7 +167,7 @@ private[hallucination] object JpegParser:
       var duplicate = 0
 
       while duplicate < index do
-        if components(duplicate).identifier == identifier then bad()
+        if identifiers(duplicate) == identifier then bad()
         duplicate += 1
 
       val sampling = reader.u8()
@@ -177,43 +179,43 @@ private[hallucination] object JpegParser:
       val quantizationIndex = reader.u8()
       if quantizationIndex > 3 then bad()
 
-      components(index) = JpegComponent(identifier, horizontal, vertical, quantizationIndex)
+      identifiers(index) = identifier
+      horizontals(index) = horizontal
+      verticals(index) = vertical
+      quantizationIndices(index) = quantizationIndex
       index += 1
 
-    // The frame privately owns its freshly-built components array; laundered to the pure
-    // result type.
-    val frame = scala.caps.unsafe.unsafeAssumePure:
-      JpegFrame(isBaseline, coding, precision, width, height, 0, 0, components)
-
-    updateComponentSizes(frame)
-    frame
-
-  private def updateComponentSizes(frame: JpegFrame): Unit raises RasterError =
     var hMax = 0
     var vMax = 0
-    var index = 0
-
-    while index < frame.components.length do
-      hMax = hMax.max(frame.components(index).horizontalSamplingFactor)
-      vMax = vMax.max(frame.components(index).verticalSamplingFactor)
-      index += 1
-
-    frame.mcuWidth = ceilDiv(frame.imageWidth, hMax*8)
-    frame.mcuHeight = ceilDiv(frame.imageHeight, vMax*8)
     index = 0
 
-    while index < frame.components.length do
-      val component = frame.components(index)
-
-      component.sizeWidth =
-        ceilDiv(frame.imageWidth*component.horizontalSamplingFactor*component.dctScale, hMax*8)
-
-      component.sizeHeight =
-        ceilDiv(frame.imageHeight*component.verticalSamplingFactor*component.dctScale, vMax*8)
-
-      component.blockWidth = frame.mcuWidth*component.horizontalSamplingFactor
-      component.blockHeight = frame.mcuHeight*component.verticalSamplingFactor
+    while index < componentCount do
+      hMax = hMax.max(horizontals(index))
+      vMax = vMax.max(verticals(index))
       index += 1
+
+    val mcuWidth = ceilDiv(width, hMax*8)
+    val mcuHeight = ceilDiv(height, vMax*8)
+
+    val components = new Array[JpegComponent](componentCount)
+    index = 0
+
+    while index < componentCount do
+      // The DCT scale is fixed at 8 (`JpegComponent.dctScale`).
+      components(index) =
+        JpegComponent
+          ( identifiers(index), horizontals(index), verticals(index), quantizationIndices(index),
+            sizeWidth   = ceilDiv(width*horizontals(index)*8, hMax*8),
+            sizeHeight  = ceilDiv(height*verticals(index)*8, vMax*8),
+            blockWidth  = mcuWidth*horizontals(index),
+            blockHeight = mcuHeight*verticals(index) )
+
+      index += 1
+
+    // The freshly-built components array is frozen zero-copy.
+    JpegFrame
+      ( isBaseline, coding, precision, width, height, mcuWidth, mcuHeight,
+        components.asInstanceOf[IArray[JpegComponent]] )
 
   // Section B.2.3: the Start Of Scan header.
   def parseSos(reader: JpegReader^, frame: JpegFrame)(using Tactic[RasterError]): JpegScan =
@@ -277,11 +279,11 @@ private[hallucination] object JpegParser:
       if spectralStart != 0 || spectralEnd != 63 then bad()
       if successiveHigh != 0 || successiveLow != 0 then bad()
 
-    // As `parseSof`: the scan privately owns its freshly-built index arrays.
-    scala.caps.unsafe.unsafeAssumePure:
-      JpegScan
-        ( componentIndices, dcTableIndices, acTableIndices, spectralStart, spectralEnd + 1,
-          successiveHigh, successiveLow )
+    // As `parseSof`: the freshly-built index arrays are frozen zero-copy.
+    JpegScan
+      ( componentIndices.asInstanceOf[IArray[Int]], dcTableIndices.asInstanceOf[IArray[Int]],
+        acTableIndices.asInstanceOf[IArray[Int]], spectralStart, spectralEnd + 1,
+        successiveHigh, successiveLow )
 
   // Section B.2.4.1: quantization tables, each returned in the file's zigzag order (unzigzagged by
   // the decoder). The four slots are indexed by the table's destination identifier.

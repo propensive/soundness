@@ -36,6 +36,8 @@ import java.io as ji
 
 import scala.caps
 
+import proscenium.compat.*
+
 // An MSB-first bit writer for JPEG entropy-coded data, accumulating into a 64-bit register and
 // flushing whole bytes, with the mandatory `0xFF -> 0xFF 0x00` byte stuffing. Simpler than
 // jpeg-encoder's word-at-a-time writer but produces equivalent output.

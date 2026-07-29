@@ -70,12 +70,15 @@ private[hallucination] object WebpLossless:
     7, 5, -7, 5, 8, 4, 6, 7, -6, 7, 7, 6, -7, 6, 8, 5, 7, 7,
     -7, 7, 8, 6, 8, 7).asInstanceOf[IArray[Int]]
 
-  private final class Group(@scala.caps.unsafe.untrackedCaptures val trees: Array[WebpHuffman]):
+  private final class Group(val trees: IArray[WebpHuffman]):
     def allSingle: Boolean =
       trees(0).isSingleNode && trees(1).isSingleNode && trees(2).isSingleNode &&
         trees(3).isSingleNode
 
   private final class ColorCache(val bits: Int):
+    // Inserted into after construction, through the immutable `HuffmanInfo` holder, while the
+    // reader is the exclusive receiver: the same aliasing pattern as `Vp8Decoder`'s probability
+    // tables, so the entries stay untracked.
     @scala.caps.unsafe.untrackedCaptures
     private val entries: Array[Int] = new Array[Int](1 << bits)
     def insert(argb: Int): Unit = writable(entries)((0x1e35a7bd*argb) >>> (32 - bits)) = argb
@@ -83,14 +86,14 @@ private[hallucination] object WebpLossless:
 
   private final class HuffmanInfo
     ( val xsize: Int, val cache: Optional[ColorCache],
-      @scala.caps.unsafe.untrackedCaptures val image: Array[Int], val bits: Int,
-      val mask: Int, @scala.caps.unsafe.untrackedCaptures val groups: Array[Group] ):
+      val image: IArray[Int], val bits: Int,
+      val mask: Int, val groups: IArray[Group] ):
 
     def huffIndex(x: Int, y: Int): Int =
       if bits == 0 then 0 else image((y >> bits)*xsize + (x >> bits))
 
   private final class Transform(val kind: Int, val sizeBits: Int,
-      @scala.caps.unsafe.untrackedCaptures val data: Array[Byte], val tableSize: Int)
+      val data: IArray[Byte], val tableSize: Int)
 
   // Reads a full VP8L frame — its 5-byte header then the transformed image — returning the
   // dimensions and the un-transformed RGBA buffer.
@@ -167,10 +170,10 @@ private[hallucination] object WebpLossless:
             val blockHeight = WebpTransform.subsampleSize(height, sizeBits)
             val data = new Array[Byte](blockWidth*blockHeight*4)
             decodeImageStream(blockWidth, blockHeight, false, data, 0)
-            Transform(kind, sizeBits, data, 0)
+            Transform(kind, sizeBits, data.asInstanceOf[IArray[Byte]], 0)
 
           case 2 =>
-            Transform(2, 0, new Array[Byte](0), 0)
+            Transform(2, 0, new Array[Byte](0).asInstanceOf[IArray[Byte]], 0)
 
           case _ =>
             val tableSize = reader.readBits(8) + 1
@@ -191,7 +194,7 @@ private[hallucination] object WebpLossless:
               else 0
 
             xsize = WebpTransform.subsampleSize(xsize, bits)
-            Transform(3, 0, colorMap, tableSize)
+            Transform(3, 0, colorMap.asInstanceOf[IArray[Byte]], tableSize)
 
       xsize
 
@@ -252,11 +255,14 @@ private[hallucination] object WebpLossless:
           trees(j) = readHuffmanCode(alphabet)
           j += 1
 
-        groups(g) = Group(trees)
+        groups(g) = Group(trees.asInstanceOf[IArray[WebpHuffman]])
         g += 1
 
       val mask = if huffmanBits == 0 then -1 else (1 << huffmanBits) - 1
-      HuffmanInfo(huffmanXsize, cache, entropy, huffmanBits, mask, groups)
+
+      HuffmanInfo
+        ( huffmanXsize, cache, entropy.asInstanceOf[IArray[Int]], huffmanBits, mask,
+          groups.asInstanceOf[IArray[Group]] )
 
     private update def readHuffmanCode(alphabetSize: Int)(using Tactic[RasterError]): WebpHuffman =
       if reader.readBits(1) == 1 then

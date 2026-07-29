@@ -50,34 +50,15 @@ private[hallucination] object JpegUpsampler:
   inline val H2V2 = 3
   inline val Generic = 4
 
-private[hallucination] final class JpegUpsampler
-  ( components:   Array[JpegComponent],
-    outputWidth:  Int,
-    outputHeight: Int )
-  ( using Tactic[RasterError] ):
+  // Derives the per-component upsampling parameters into fresh arrays, frozen zero-copy into
+  // the fully-initialized upsampler.
+  def apply(components: IArray[JpegComponent], outputWidth: Int, outputHeight: Int)
+    ( using Tactic[RasterError] )
+  :   JpegUpsampler =
 
-  import JpegUpsampler.*
-
-  private val count = components.length
-  @scala.caps.unsafe.untrackedCaptures
-  private val kinds: Array[Int] = new Array[Int](count)
-  @scala.caps.unsafe.untrackedCaptures
-  private val widths: Array[Int] = new Array[Int](count)
-  @scala.caps.unsafe.untrackedCaptures
-  private val heights: Array[Int] = new Array[Int](count)
-  @scala.caps.unsafe.untrackedCaptures
-  private val rowStrides: Array[Int] = new Array[Int](count)
-  @scala.caps.unsafe.untrackedCaptures
-  private val hScales: Array[Int] = new Array[Int](count)
-  @scala.caps.unsafe.untrackedCaptures
-  private val vScales: Array[Int] = new Array[Int](count)
-
-  @scala.caps.unsafe.untrackedCaptures
-  private var hMax = 0
-  @scala.caps.unsafe.untrackedCaptures
-  private var vMax = 0
-
-  locally:
+    val count = components.length
+    var hMax = 0
+    var vMax = 0
     var index = 0
 
     while index < count do
@@ -85,8 +66,13 @@ private[hallucination] final class JpegUpsampler
       vMax = vMax.max(components(index).verticalSamplingFactor)
       index += 1
 
-  locally:
-    var index = 0
+    val kinds = new Array[Int](count)
+    val widths = new Array[Int](count)
+    val heights = new Array[Int](count)
+    val rowStrides = new Array[Int](count)
+    val hScales = new Array[Int](count)
+    val vScales = new Array[Int](count)
+    index = 0
 
     while index < count do
       val component = components(index)
@@ -97,7 +83,7 @@ private[hallucination] final class JpegUpsampler
       val h2 = h*2 == hMax
       val v2 = v*2 == vMax
 
-      writable(kinds)(index) =
+      kinds(index) =
         if h1 && v1 then H1V1
         else if h2 && v1 then H2V1
         else if h1 && v2 then H1V2
@@ -107,12 +93,31 @@ private[hallucination] final class JpegUpsampler
         else
           Generic
 
-      writable(hScales)(index) = if h == 0 then 1 else hMax/h
-      writable(vScales)(index) = if v == 0 then 1 else vMax/v
-      writable(widths)(index) = component.sizeWidth
-      writable(heights)(index) = component.sizeHeight
-      writable(rowStrides)(index) = component.blockWidth*component.dctScale
+      hScales(index) = if h == 0 then 1 else hMax/h
+      vScales(index) = if v == 0 then 1 else vMax/v
+      widths(index) = component.sizeWidth
+      heights(index) = component.sizeHeight
+      rowStrides(index) = component.blockWidth*component.dctScale
       index += 1
+
+    new JpegUpsampler
+      ( count, outputWidth, hMax,
+        kinds.asInstanceOf[IArray[Int]], widths.asInstanceOf[IArray[Int]],
+        heights.asInstanceOf[IArray[Int]], rowStrides.asInstanceOf[IArray[Int]],
+        hScales.asInstanceOf[IArray[Int]], vScales.asInstanceOf[IArray[Int]] )
+
+private[hallucination] final class JpegUpsampler private
+  ( count:       Int,
+    outputWidth: Int,
+    hMax:        Int,
+    kinds:       IArray[Int],
+    widths:      IArray[Int],
+    heights:     IArray[Int],
+    rowStrides:  IArray[Int],
+    hScales:     IArray[Int],
+    vScales:     IArray[Int] ):
+
+  import JpegUpsampler.*
 
   private val lineBufferSize =
     var maximum = 0
@@ -152,7 +157,7 @@ private[hallucination] final class JpegUpsampler
     while index < count do
       upsampleRow
         ( kinds(index), componentData(index), widths(index), heights(index), rowStrides(index),
-          writable(hScales)(index), vScales(index), row, lineBuffer(index) )
+          hScales(index), vScales(index), row, lineBuffer(index) )
 
       index += 1
 

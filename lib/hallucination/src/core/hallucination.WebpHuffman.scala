@@ -33,6 +33,7 @@
 package hallucination
 
 import contingency.*
+import proscenium.compat.*
 import vacuous.*
 
 import RasterError.Reason
@@ -134,7 +135,7 @@ private[hallucination] object WebpHuffman:
       // Populate the secondary table for codes longer than the primary table.
       // Pure-typed (see `pureBytes`): the grow/extend reassignments in the loop below
       // could not consume an exclusively-typed array.
-      var secondaryTable: Array[Int] = pureCopyRange(empty, 0, 0)
+      var secondaryTable: Array[Int] = pureCopyRange(empty.asInstanceOf[Array[Int]], 0, 0)
 
       if maxLength > primaryTableBits then
         var subtableStart = 0
@@ -165,15 +166,17 @@ private[hallucination] object WebpHuffman:
 
           slen += 1
 
-      WebpHuffman(single = -1, (tableSize - 1), primaryTable, secondaryTable)
+      // Both tables are freshly built (or fresh pure-typed copies), so freezing is zero-copy.
+      WebpHuffman
+        ( single = -1, (tableSize - 1), primaryTable.asInstanceOf[IArray[Int]],
+          secondaryTable.asInstanceOf[IArray[Int]] )
 
-  @scala.caps.unsafe.untrackedCaptures
-  private val empty: Array[Int] = new Array[Int](0)
+  private val empty: IArray[Int] = new Array[Int](0).asInstanceOf[IArray[Int]]
 
   def single(symbol: Int): WebpHuffman = WebpHuffman(symbol, 0, empty, empty)
 
   def twoNode(zero: Int, one: Int): WebpHuffman =
-    WebpHuffman(-1, 0x1, Array((1 << 12) | zero, (1 << 12) | one), new Array[Int](0))
+    WebpHuffman(-1, 0x1, Array((1 << 12) | zero, (1 << 12) | one).asInstanceOf[IArray[Int]], empty)
 
   private def numberOfTrailingZeros(value: Int): Int =
     java.lang.Integer.numberOfTrailingZeros(value)
@@ -191,12 +194,11 @@ private[hallucination] object WebpHuffman:
     grown
 
 // A `single` symbol >= 0 marks a one-symbol tree; otherwise the primary/secondary tables decode.
-// The table fields are untracked so the class type elaborates without capture variables
-// (the tables are privately owned and never mutated after construction).
+// Immutable after construction: the factories above freeze the freshly-built tables.
 private[hallucination] final class WebpHuffman
   ( val single: Int, tableMask: Int,
-    @scala.caps.unsafe.untrackedCaptures primaryTable:   Array[Int],
-    @scala.caps.unsafe.untrackedCaptures secondaryTable: Array[Int] ):
+    primaryTable:   IArray[Int],
+    secondaryTable: IArray[Int] ):
 
   def isSingleNode: Boolean = single >= 0
 

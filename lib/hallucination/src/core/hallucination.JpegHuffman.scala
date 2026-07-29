@@ -33,6 +33,7 @@
 package hallucination
 
 import contingency.*
+import proscenium.compat.*
 
 import scala.caps
 
@@ -144,20 +145,23 @@ private[hallucination] object JpegHuffmanTable:
 
         index += 1
 
-    // The table privately owns its freshly-built arrays; laundered to the pure result type.
-    scala.caps.unsafe.unsafeAssumePure:
-      new JpegHuffmanTable(values, delta, maxcode, lutValue, lutSize, acValue, acRunSize)
+    // The freshly-built arrays are frozen zero-copy; `values` is likewise freshly built by
+    // `parseDht` and never written after this call.
+    new JpegHuffmanTable
+      ( values.asInstanceOf[IArray[Int]], delta.asInstanceOf[IArray[Int]],
+        maxcode.asInstanceOf[IArray[Int]], lutValue.asInstanceOf[IArray[Int]],
+        lutSize.asInstanceOf[IArray[Int]], acValue.asInstanceOf[IArray[Int]],
+        acRunSize.asInstanceOf[IArray[Int]] )
 
-// The array fields are untracked so the class type elaborates without per-field capture
-// variables (the table privately owns its arrays and never mutates them after construction).
+// Immutable after construction: the factory above freezes the freshly-built tables.
 private[hallucination] final class JpegHuffmanTable
-  ( @scala.caps.unsafe.untrackedCaptures val values:    Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val delta:     Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val maxcode:   Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val lutValue:  Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val lutSize:   Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val acValue:   Array[Int],
-    @scala.caps.unsafe.untrackedCaptures val acRunSize: Array[Int] ):
+  ( val values:    IArray[Int],
+    val delta:     IArray[Int],
+    val maxcode:   IArray[Int],
+    val lutValue:  IArray[Int],
+    val lutSize:   IArray[Int],
+    val acValue:   IArray[Int],
+    val acRunSize: IArray[Int] ):
 
   // `acValue` and `acRunSize` are empty for DC tables.
   def hasAcLut: Boolean = acRunSize.length > 0
