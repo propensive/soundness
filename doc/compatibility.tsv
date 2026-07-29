@@ -79,7 +79,7 @@ harlequin	yes	no	no	no	syntax highlighting via `anthology.scala` (the compiler)
 hellenism	yes	core	no	core	backends: core+jvm; JVM-only submodule(s): jvm
 hieroglyph	yes	yes	yes	js	backends: core-jvm+core-native
 honeycomb	yes	yes	no	js	
-hyperbole	yes	no	no	no	depends on JVM-only `harlequin.ansi`
+hyperbole	yes	no	no	no	depends on JVM-only `harlequin.ansi`; JVM-only submodule(s): stacks
 hypotenuse	yes	yes	yes	js	
 imperial	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
 inimitable	yes	yes	yes	js	
