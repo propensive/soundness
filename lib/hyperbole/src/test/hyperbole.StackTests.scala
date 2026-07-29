@@ -59,10 +59,40 @@ object StackTests extends Suite(m"Stack-trace resolution tests"):
         panic(m"the fixture did not throw")
       catch case error: Throwable => error.stackTrace.resolved
 
+    // Captures a trace with no resolver in scope at all, which is what every caller gets by
+    // default, and what every platform without a classpath gets always.
+    def capture0(block: => Unit): StackTrace =
+      try
+        block
+        panic(m"the fixture did not throw")
+      catch case error: Throwable => error.stackTrace
+
+    // Captures a trace which resolves as it is built, rather than afterwards, by importing the
+    // resolver into scope; and does so through the `soundness` re-export, since a given whose
+    // type is a context function is delicate to re-export.
+    def captured(block: => Unit): StackTrace =
+      import stackResolutions.tastyStackResolution
+
+      try
+        block
+        panic(m"the fixture did not throw")
+      catch case error: Throwable => error.stackTrace
+
     // The frames below the fixture belong to the test framework and the JDK, so every test looks
     // at the topmost frame in the fixture's own file.
     def frame(stackTrace: StackTrace): StackTrace.Frame =
       stackTrace.frames.find(_.jvmClass.starts(t"hyperbole.")).optional.vouch
+
+    suite(m"Resolving as a trace is captured"):
+      test(m"An imported resolver resolves frames at capture time"):
+        frame(captured(StackFixture.lambda())).source.let(_.definition)
+
+      . assert(_ == t"hyperbole.StackFixture.lambda.λ")
+
+      test(m"Without an imported resolver, frames are left alone"):
+        frame(capture0(StackFixture.lambda())).source
+
+      . assert(_ == Unset)
 
     suite(m"Locating the TASTy for a class"):
       test(m"A module class resolves through its top-level class"):

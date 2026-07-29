@@ -33,3 +33,6 @@
 package soundness
 
 export hyperbole.{resolved, StackResolver, TastyDefinition, TastyFile}
+
+package stackResolutions:
+  export hyperbole.stackResolutions.tastyStackResolution

@@ -66,8 +66,8 @@ object Teletypeable:
 
   given showable: [value: Showable] => value is Teletypeable = value => Teletype(value.show)
 
-  given exception: (Text is Measurable) => Exception is Teletypeable = exception =>
-    summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
+  given exception: (Text is Measurable, StackTrace.Resolver) => Exception is Teletypeable =
+    exception => summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
 
   given error: Error is Teletypeable = _.message.teletype
 
