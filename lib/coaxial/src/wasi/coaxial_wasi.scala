@@ -141,7 +141,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private var chunk: Array[Byte] = new Array[Byte](0)
+        private var chunk: Array[Byte] = new scala.Array[Byte](0)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false

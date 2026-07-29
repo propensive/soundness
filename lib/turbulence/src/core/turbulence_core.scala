@@ -331,7 +331,7 @@ extension (stream: Progression[Data])
   def shred(mean: Double, variance: Double)(using Random): Progression[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
-    def newArray(): Array[Byte]^ = new Array[Byte](arbitrary[Double]().toInt.max(1))
+    def newArray(): Array[Byte]^ = new scala.Array[Byte](arbitrary[Double]().toInt.max(1))
 
     def recur(stream: Progression[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
     :   Progression[Data] =

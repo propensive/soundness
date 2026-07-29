@@ -63,7 +63,7 @@ object Sink:
         type Transport = Credit
 
         private val block: Int = summon[Buffering].capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](block)
+        private val storage: Array[Byte] = new scala.Array[Byte](block)
         private var mark0: Int = 0
         private var total: Long = 0
         private var broken: Boolean = false
@@ -118,7 +118,7 @@ object Sink:
         type Transport = Credit
 
         private val block: Int = summon[Buffering].capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](block)
+        private val storage: Array[Byte] = new scala.Array[Byte](block)
         private var mark0: Int = 0
         private var total: Long = 0
         private var broken: Boolean = false

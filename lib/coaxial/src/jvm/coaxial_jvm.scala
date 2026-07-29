@@ -90,7 +90,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](capacity)
+        private val storage: Array[Byte] = new scala.Array[Byte](capacity)
         private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
         private var start0: Int = 0
         private var limit0: Int = 0
@@ -187,7 +187,7 @@ package socketBackends:
       socket
 
     def receive(socket: jn.DatagramSocket): Packet raises ConnectionError =
-      val array = new Array[Byte](1472)
+      val array = new scala.Array[Byte](1472)
       val packet = jn.DatagramPacket(array, 1472)
 
       try socket.receive(packet)
@@ -225,7 +225,7 @@ package socketBackends:
         case ip: Ipv6 =>
           val array: Array[Byte]^ =
             val high = ip.highBits.bits.bytes
-            val bytes = new Array[Byte](16)
+            val bytes = new scala.Array[Byte](16)
             var index = 0
 
             while index < 8 do
@@ -486,7 +486,7 @@ private[coaxial] def streamsDuplex
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](capacity)
+        private val storage: Array[Byte] = new scala.Array[Byte](capacity)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -541,7 +541,7 @@ private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = n
       type Transport = Credit
 
       private val capacity: Int = buffering.capacity(Substrate.Bytes)
-      private val storage: Array[Byte] = new Array[Byte](capacity)
+      private val storage: Array[Byte] = new scala.Array[Byte](capacity)
       private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
       private var start0: Int = 0
       private var limit0: Int = 0

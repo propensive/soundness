@@ -80,7 +80,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
       case count: Int =>
         if count > 0 then
           val remaining = buffer.length - pos
-          val grown = new Array[Byte](remaining + count)
+          val grown = new scala.Array[Byte](remaining + count)
           System.arraycopy(buffer, pos, grown, 0, remaining)
           System.arraycopy(input.window(using Unsafe), input.start, grown, remaining, count)
           input.skip(count)
@@ -95,10 +95,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
     buffer.length - pos >= n
 
   private update def slice(n: Int): Bytes =
-    val out = new Array[Byte](n)
-    System.arraycopy(buffer, pos, out, 0, n)
+    val out = Buffer[Byte](n)
+    System.arraycopy(buffer, pos, out.raw, 0, n)
     pos += n
-    out.immutable(using Unsafe)
+    Buffer.freeze(out)
 
   // Consume and validate the given connection preface (RFC 7540 §3.5) ahead of
   // the first frame — the server role's first read on a new connection. A

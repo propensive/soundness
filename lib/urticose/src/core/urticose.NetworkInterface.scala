@@ -124,7 +124,7 @@ object NetworkInterface:
 
   private def bytes(address: Ipv4 | Ipv6): Array[Byte] = address match
     case ipv6: Ipv6 =>
-      val array = new Array[Byte](16)
+      val array = new scala.Array[Byte](16)
       for index <- 0 until 8 do array(index) = (ipv6.highBits >>> (56 - index*8)).toByte
       for index <- 0 until 8 do array(index + 8) = (ipv6.lowBits >>> (56 - index*8)).toByte
       array

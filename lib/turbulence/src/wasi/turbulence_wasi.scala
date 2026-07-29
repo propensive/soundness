@@ -87,7 +87,7 @@ package stdios:
     // `blocking-read`'s result, raised by the decoder) is end-of-input.
     def wasiInput(): ji.InputStream = new ji.InputStream:
       def read(): Int =
-        val array = new Array[Byte](1)
+        val array = new scala.Array[Byte](1)
         if read(array, 0, 1) == -1 then -1 else array(0) & 0xff
 
       override def read(array: Array[Byte] | Null, offset: Int, length: Int): Int =

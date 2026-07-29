@@ -48,7 +48,7 @@ private[cordillera] class ByteBuf(initial: Int = 32)
 extends caps.ExclusiveCapability, caps.Stateful:
   // Untracked: reached only through this (exclusive) buffer, and `data` copies out.
   @caps.unsafe.untrackedCaptures
-  private var storage: Array[Byte] = new Array[Byte](initial.max(8))
+  private var storage: Array[Byte] = new scala.Array[Byte](initial.max(8))
   private var size0: Int = 0
 
   // An exclusive view for writes: the untracked field reads as read-only.
@@ -60,7 +60,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
     if size0 + extra > storage.length then
       var capacity = storage.length*2
       while size0 + extra > capacity do capacity *= 2
-      val grown = new Array[Byte](capacity)
+      val grown = new scala.Array[Byte](capacity)
       System.arraycopy(storage, 0, grown, 0, size0)
       // The cast erases the fresh array's capture: it is confined to this buffer.
       storage = grown.asInstanceOf[Array[Byte]]
@@ -76,7 +76,6 @@ extends caps.ExclusiveCapability, caps.Stateful:
     size0 += bytes.length
 
   def data: Bytes =
-    val out = new Array[Byte](size0)
-    System.arraycopy(storage, 0, out, 0, size0)
-    // Sealed: a fresh copy no alias can reach is immutable.
-    caps.unsafe.unsafeAssumePure(out.immutable(using Unsafe))
+    val out = Buffer[Byte](size0)
+    System.arraycopy(storage, 0, out.raw, 0, size0)
+    Buffer.freeze(out)

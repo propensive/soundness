@@ -93,7 +93,7 @@ class Relay[record]():
       // the window storage is written directly.
       @caps.unsafe.untrackedCaptures
       private val storage: Array[AnyRef] =
-        new Array[AnyRef](capacity).asInstanceOf[Array[AnyRef]]
+        new scala.Array[AnyRef](capacity).asInstanceOf[Array[AnyRef]]
 
       private var start0: Int = 0
       private var limit0: Int = 0

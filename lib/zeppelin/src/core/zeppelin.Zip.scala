@@ -268,7 +268,7 @@ object Zip:
     val deflater = juz.Deflater(level, true)
     deflater.setInput(data.mutable(using Unsafe))
     deflater.finish()
-    val buffer = new Array[Byte](8192)
+    val buffer = new scala.Array[Byte](8192)
     val out = ji.ByteArrayOutputStream()
     while !deflater.finished() do out.write(buffer, 0, deflater.deflate(buffer))
     deflater.end()
