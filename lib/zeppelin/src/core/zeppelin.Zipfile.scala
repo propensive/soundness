@@ -73,7 +73,7 @@ object Zipfile:
     val out = ji.FileOutputStream(ji.File(path.generic.s))
 
     try Zipfile(entries.to(List), Unset, prefix).serialize.sweep: (window, start, count) =>
-      out.write(window.asInstanceOf[Array[Byte]], start, count)
+      out.write(window.asInstanceOf[scala.Array[Byte]], start, count)
     finally out.close()
 
     Log.info(ZipEvent.Wrote(path.generic, entries.size))

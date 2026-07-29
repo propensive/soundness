@@ -126,7 +126,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
             while draining do stream.refill(Credit(Long.MaxValue)) match
               case count: Int =>
-                out.write(stream.window(using Unsafe).asInstanceOf[Array[Byte]], stream.start, count)
+                out.write(stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]], stream.start, count)
                 out.flush()
                 stream.skip(count)
 

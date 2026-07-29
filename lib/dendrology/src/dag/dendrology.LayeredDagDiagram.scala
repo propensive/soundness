@@ -188,7 +188,7 @@ object LayeredDagDiagram:
       LayeredDagDiagram(rows.to(List))
 
   private def connectorRow[node](layout: Layout[node], width: Int): List[DagTile] =
-    val cells = Array.fill(width)(LayeredDagDiagram.Cell())
+    val cells = scala.Array.fill(width)(LayeredDagDiagram.Cell())
 
     def drawBend(topEntry: Int, bottomExit: Int, continuing: Boolean): Unit =
       if topEntry == bottomExit then
@@ -255,7 +255,7 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
 
   def render[line](glyph: node => line)(using style: LaneDagStyle[line]): List[line] =
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
-    val widths = Array.fill(maxCol)(2)
+    val widths = scala.Array.fill(maxCol)(2)
 
     rows.foreach: (_, nodesAt) =>
       nodesAt.foreach: (col, n) =>

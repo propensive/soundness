@@ -63,15 +63,15 @@ private[pneumatic] object Flate:
   // And-ing with inflateMask(n) masks the lower n bits.
   val inflateMask: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000f,
       0x0000001f, 0x0000003f, 0x0000007f, 0x000000ff, 0x000001ff,
       0x000003ff, 0x000007ff, 0x00000fff, 0x00001fff, 0x00003fff,
       0x00007fff, 0x0000ffff)
 
-  def empty: Array[Byte]^ = new Array[Byte](0)
-  def emptyInts: Array[Int]^ = new Array[Int](0)
-  val emptyShorts: IArray[Short] = IArray.unsafeFromArray(new Array[Short](0))
+  def empty: scala.Array[Byte]^ = new scala.Array[Byte](0)
+  def emptyInts: scala.Array[Int]^ = new scala.Array[Int](0)
+  val emptyShorts: IArray[Short] = IArray.unsafeFromArray(new scala.Array[Short](0))
 
   def corrupt(message: String): Nothing =
     throw IllegalStateException("the compressed data is corrupt: "+message)
@@ -81,20 +81,20 @@ private[pneumatic] object Flate:
 // and the pure-Scala port below it everywhere else. The pure implementations are compiled on
 // every platform, so the JVM test suite exercises them too.
 private[pneumatic] trait DeflateEngine extends caps.Mutable:
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}): Unit
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
-  update def deflate(target: Array[Byte]^, offset: Int, space: Int): Int
-  update def deflate(target: Array[Byte]^, offset: Int, space: Int, flush: Int): Int
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def deflate(target: scala.Array[Byte]^, offset: Int, space: Int): Int
+  update def deflate(target: scala.Array[Byte]^, offset: Int, space: Int, flush: Int): Int
   update def finish(): Unit
   def finished: Boolean
   def getBytesRead: Long
   def end(): Unit
 
 private[pneumatic] trait InflateEngine extends caps.Mutable:
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}): Unit
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
-  update def inflate(target: Array[Byte]^): Int
-  update def inflate(target: Array[Byte]^, offset: Int, space: Int): Int
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def inflate(target: scala.Array[Byte]^): Int
+  update def inflate(target: scala.Array[Byte]^, offset: Int, space: Int): Int
   def getRemaining: Int
   def finished: Boolean
   def end(): Unit
@@ -102,7 +102,7 @@ private[pneumatic] trait InflateEngine extends caps.Mutable:
 // The running checksums of the two zlib framings: Adler-32 for the zlib wrapper and CRC-32 for
 // gzip, ported from JZlib's `Adler32` and `CRC32`.
 private[pneumatic] trait FlateChecksum:
-  def update(buffer: Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit
+  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit
   def reset(): Unit
   def value: Long
 
@@ -122,7 +122,7 @@ private[pneumatic] final class Adler32 extends FlateChecksum:
 
   def value: Long = (s2 << 16) | s1
 
-  def update(buffer: Array[Byte]^{caps.any.rd}, index0: Int, length: Int): Unit =
+  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length: Int): Unit =
     var index = index0
 
     if length == 1 then
@@ -180,7 +180,7 @@ private[pneumatic] final class Crc32 extends FlateChecksum:
   @scala.caps.unsafe.untrackedCaptures
   private var v: Int = 0
 
-  def update(buffer: Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
+  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index0: Int, length0: Int): Unit =
     var index = index0
     var length = length0
     var c = ~v

@@ -48,7 +48,7 @@ import vacuous.*
 object Audio:
   def apply[streamable: Streamable by Data over Credit](input: streamable)
   :   Audio raises AudioError =
-    val rawBytes: Array[Byte] = input.read[Data].mutable(using Unsafe)
+    val rawBytes: scala.Array[Byte] = input.read[Data].mutable(using Unsafe)
 
     val raw: jss.AudioInputStream =
       try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
@@ -79,20 +79,20 @@ object Audio:
         try jss.AudioSystem.getAudioInputStream(target, raw).nn
         catch case _: IllegalArgumentException => abort(AudioError(Unset))
 
-    val pcmBytes: Array[Byte] = pcm.readAllBytes.nn
+    val pcmBytes: scala.Array[Byte] = pcm.readAllBytes.nn
     val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
     pcm.close()
     // The audio privately owns its sample array; laundered to the pure class type.
     scala.caps.unsafe.unsafeAssumePure:
       new Audio(pcmFormat, pcmBytes)
 
-  def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]): Audio in form =
+  def apply[form: Audible as audible](format: jss.AudioFormat, data: scala.Array[Byte]): Audio in form =
     // The audio privately owns its sample array; laundered to the pure class type.
     scala.caps.unsafe.unsafeAssumePure:
       new Audio(format, data):
         type Form = form
 
-  private[cacophony] def of[layout](format: jss.AudioFormat, data: Array[Byte])
+  private[cacophony] def of[layout](format: jss.AudioFormat, data: scala.Array[Byte])
   :   Audio across layout =
 
     // The audio privately owns its sample array; laundered to the pure class type.
@@ -139,7 +139,7 @@ object Audio:
 
 case class Audio
   ( private[cacophony] val format: jss.AudioFormat,
-    @scala.caps.unsafe.untrackedCaptures private[cacophony] val data: Array[Byte] )
+    @scala.caps.unsafe.untrackedCaptures private[cacophony] val data: scala.Array[Byte] )
 extends Formal, Domainal:
   audio =>
 

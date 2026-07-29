@@ -46,7 +46,7 @@ import vacuous.*
 // (4:2:0) below quality 90 and kept full-resolution (4:4:4) at 90 and above.
 private[hallucination] object JpegEncoder:
   // The zig-zag order: `ZigZag(k)` is the natural block index of the k-th coefficient written.
-  private val ZigZag: IArray[Int] = Array(
+  private val ZigZag: IArray[Int] = scala.Array(
     0, 1, 8, 16, 9, 2, 3, 10,
     17, 24, 32, 25, 18, 11, 4, 5,
     12, 19, 26, 33, 40, 48, 41, 34,
@@ -57,7 +57,7 @@ private[hallucination] object JpegEncoder:
     53, 60, 61, 54, 47, 55, 62, 63).asInstanceOf[IArray[Int]]
 
   // Annex K luminance and chrominance base quantization tables (natural order).
-  private val LumaQuant: IArray[Int] = Array(
+  private val LumaQuant: IArray[Int] = scala.Array(
     16, 11, 10, 16, 24, 40, 51, 61,
     12, 12, 14, 19, 26, 58, 60, 55,
     14, 13, 16, 24, 40, 57, 69, 56,
@@ -67,7 +67,7 @@ private[hallucination] object JpegEncoder:
     49, 64, 78, 87, 103, 121, 120, 101,
     72, 92, 95, 98, 112, 100, 103, 99).asInstanceOf[IArray[Int]]
 
-  private val ChromaQuant: IArray[Int] = Array(
+  private val ChromaQuant: IArray[Int] = scala.Array(
     17, 18, 24, 47, 99, 99, 99, 99,
     18, 21, 26, 66, 99, 99, 99, 99,
     24, 26, 56, 99, 99, 99, 99, 99,
@@ -82,7 +82,7 @@ private[hallucination] object JpegEncoder:
   private def ceilDiv(x: Int, y: Int): Int = (x + y - 1)/y
 
   // The quantization divisors for a quality factor: the base table scaled and clamped to 1..255.
-  private def scaledTable(base: Array[Int], quality: Int): Array[Int] =
+  private def scaledTable(base: scala.Array[Int], quality: Int): scala.Array[Int] =
     val q = clamp(quality, 1, 100)
     val scale = if q < 50 then 5000/q else 200 - q*2
 
@@ -104,10 +104,10 @@ private[hallucination] object JpegEncoder:
 
   // Extracts one 8x8 block from a plane at the given stride, level-shifting samples by -128.
   private def block
-    ( plane: Array[Byte], startX: Int, startY: Int, colStride: Int, rowStride: Int, width: Int )
-  :   Array[Int] =
+    ( plane: scala.Array[Byte], startX: Int, startY: Int, colStride: Int, rowStride: Int, width: Int )
+  :   scala.Array[Int] =
 
-    val result = new Array[Int](64)
+    val result = new scala.Array[Int](64)
     var y = 0
 
     while y < 8 do
@@ -124,9 +124,9 @@ private[hallucination] object JpegEncoder:
     result
 
   // Forward-transforms and quantizes a block, returning coefficients in zig-zag order.
-  private def transform(samples: Array[Int], quant: Array[Int]): Array[Int] =
+  private def transform(samples: scala.Array[Int], quant: scala.Array[Int]): scala.Array[Int] =
     JpegFdct.fdct(samples)
-    val result = new Array[Int](64)
+    val result = new scala.Array[Int](64)
     var i = 0
 
     while i < 64 do
@@ -147,9 +147,9 @@ private[hallucination] object JpegEncoder:
     // Full-resolution YCbCr planes, padded to whole MCUs and edge-extended.
     val bufWidth = ceilDiv(width, 8*hMax)*hMax*8
     val bufHeight = ceilDiv(height, 8*vMax)*vMax*8
-    val planeY = new Array[Byte](bufWidth*bufHeight)
-    val planeCb = new Array[Byte](bufWidth*bufHeight)
-    val planeCr = new Array[Byte](bufWidth*bufHeight)
+    val planeY = new scala.Array[Byte](bufWidth*bufHeight)
+    val planeCb = new scala.Array[Byte](bufWidth*bufHeight)
+    val planeCr = new scala.Array[Byte](bufWidth*bufHeight)
 
     var y = 0
 
@@ -175,12 +175,12 @@ private[hallucination] object JpegEncoder:
 
     // A `List` result rather than a nested array: nested-array types are elaborated with
     // fresh element capabilities that nothing downstream can satisfy.
-    def blocksFor(plane: Array[Byte], hScale: Int, vScale: Int, quant: Array[Int])
-    :   List[Array[Int]] =
+    def blocksFor(plane: scala.Array[Byte], hScale: Int, vScale: Int, quant: scala.Array[Int])
+    :   List[scala.Array[Int]] =
 
       val cols = ceilDiv(colsBlocks, hScale)
       val rows = ceilDiv(rowsBlocks, vScale)
-      var result: List[Array[Int]] = Nil
+      var result: List[scala.Array[Int]] = Nil
       var blockY = rows - 1
 
       while blockY >= 0 do
@@ -251,7 +251,7 @@ private[hallucination] object JpegEncoder:
     out.toByteArray.nn.immutable(using Unsafe)
 
   private def writeQuantization
-    ( u8: Int => Unit, u16: Int => Unit, marker: Int => Unit, dest: Int, quant: Array[Int] )
+    ( u8: Int => Unit, u16: Int => Unit, marker: Int => Unit, dest: Int, quant: scala.Array[Int] )
   :   Unit =
 
     marker(JpegMarker.Dqt)
@@ -276,7 +276,7 @@ private[hallucination] object JpegEncoder:
 
   private def writeScan
     ( out: ji.ByteArrayOutputStream, u8: Int => Unit, u16: Int => Unit, marker: Int => Unit,
-      id: Int, dcTable: Int, acTable: Int, blocks: List[Array[Int]], dc: JpegEncodeTable,
+      id: Int, dcTable: Int, acTable: Int, blocks: List[scala.Array[Int]], dc: JpegEncodeTable,
       ac: JpegEncodeTable )
   :   Unit =
 
@@ -299,7 +299,7 @@ private[hallucination] object JpegEncoder:
     writer.flushBits()
 
   private def writeBlock
-    ( writer: JpegBitWriter^, block: Array[Int], prevDc: Int, dc: JpegEncodeTable,
+    ( writer: JpegBitWriter^, block: scala.Array[Int], prevDc: Int, dc: JpegEncodeTable,
       ac: JpegEncodeTable )
   :   Unit =
 
@@ -328,11 +328,11 @@ private[hallucination] object JpegEncoder:
   // optimized Huffman tables. The DC predictor resets at the start of each component.
   // A `List` parameter rather than a nested-array one: nested-array types at parameter and
   // vararg positions are elaborated with fresh element capabilities nothing can satisfy.
-  private def optimizeTables(components: List[List[Array[Int]]])
+  private def optimizeTables(components: List[List[scala.Array[Int]]])
   :   (JpegEncodeTable, JpegEncodeTable) =
 
-    val dcFreq = new Array[Int](257)
-    val acFreq = new Array[Int](257)
+    val dcFreq = new scala.Array[Int](257)
+    val acFreq = new scala.Array[Int](257)
     dcFreq(256) = 1
     acFreq(256) = 1
 

@@ -86,7 +86,7 @@ inline def appendln[textual: Textual, value](using builder: Builder[textual] aka
 inline def builder[value](using value: value aka "builder"): value = value()
 
 extension (module: IArray.type)
-  def build[element: ClassTag](size: Int)(lambda: Array[element]^ => Unit): IArray[element] =
+  def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): IArray[element] =
     val array = Buffer[element](size)
     lambda(array.raw)
     Buffer.freeze(array)

@@ -318,8 +318,8 @@ object Matrix:
 
       val size = matrix.rows
       val zero = zeroic.zero
-      val a: Array[element]^ = matrix.elements.mutable(using Unsafe).clone()
-      val b: Array[element]^ = new scala.Array[element](size)
+      val a: scala.Array[element]^ = matrix.elements.mutable(using Unsafe).clone()
+      val b: scala.Array[element]^ = new scala.Array[element](size)
       var copyIndex = 0
 
       while copyIndex < size do
@@ -370,7 +370,7 @@ object Matrix:
 
       if singular then Unset
       else
-        val x: Array[element]^ = new scala.Array[element](size)
+        val x: scala.Array[element]^ = new scala.Array[element](size)
         var i = size - 1
 
         while i >= 0 do
@@ -503,8 +503,8 @@ object Matrix:
 
       if !symmetric then Unset
       else
-        val mat: Array[Double]^ = matrix.elements.mutable(using Unsafe).clone()
-        val vec: Array[Double]^ = new scala.Array[Double](dimension*dimension)
+        val mat: scala.Array[Double]^ = matrix.elements.mutable(using Unsafe).clone()
+        val vec: scala.Array[Double]^ = new scala.Array[Double](dimension*dimension)
         var diagIndex = 0
 
         while diagIndex < dimension do
@@ -709,7 +709,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     val r = rows
     val c = columns
     val zero = zeroic.zero
-    val a: Array[element]^ = elements.mutable(using Unsafe).clone()
+    val a: scala.Array[element]^ = elements.mutable(using Unsafe).clone()
 
     var rankCount = 0
     var col = 0

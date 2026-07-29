@@ -72,7 +72,7 @@ object Inclusive extends Inclusive.Fallback:
   given list: [element] => List[element] is Inclusive by element =
     (list, value) => list.stdlib.contains(value)
 
-  given array: [element <: Matchable] => Array[element] is Inclusive by element =
+  given array: [element <: Matchable] => scala.Array[element] is Inclusive by element =
     (array, value) => array.exists(_ == value)
 
   // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own

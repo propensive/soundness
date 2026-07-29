@@ -54,7 +54,7 @@ private[hallucination] object JpegHuffman:
 private[hallucination] object JpegHuffmanTable:
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the array parameters, which the separation checker rejects.
-  def apply(counts: Array[Int], values: Array[Int], ac: Boolean)(using Tactic[RasterError])
+  def apply(counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean)(using Tactic[RasterError])
   :   JpegHuffmanTable =
 
     val lutBits = JpegHuffman.LutBits
@@ -64,7 +64,7 @@ private[hallucination] object JpegHuffmanTable:
     var index = 0
     while index < 16 do { totalSize += counts(index); index += 1 }
 
-    val huffsize = new Array[Int](totalSize)
+    val huffsize = new scala.Array[Int](totalSize)
     var position = 0
     index = 0
 
@@ -78,7 +78,7 @@ private[hallucination] object JpegHuffmanTable:
 
       index += 1
 
-    val huffcode = new Array[Int](totalSize)
+    val huffcode = new scala.Array[Int](totalSize)
     var code = 0
     var codeSize = if totalSize > 0 then huffsize(0) else 0
     index = 0
@@ -91,8 +91,8 @@ private[hallucination] object JpegHuffmanTable:
       index += 1
 
     // Section F.2.2.3, Figure F.15: delta[i] = VALPTR(i) - MINCODE(i); maxcode[i] = MAXCODE(i).
-    val delta = new Array[Int](16)
-    val maxcode = Array.fill(16)(-1)
+    val delta = new scala.Array[Int](16)
+    val maxcode = scala.Array.fill(16)(-1)
     var j = 0
     index = 0
 
@@ -105,8 +105,8 @@ private[hallucination] object JpegHuffmanTable:
       index += 1
 
     // The primary lookup table: every code no longer than `lutBits` maps its prefix to a value.
-    val lutValue = new Array[Int](1 << lutBits)
-    val lutSize = new Array[Int](1 << lutBits)
+    val lutValue = new scala.Array[Int](1 << lutBits)
+    val lutSize = new scala.Array[Int](1 << lutBits)
     index = 0
 
     while index < totalSize do
@@ -126,8 +126,8 @@ private[hallucination] object JpegHuffmanTable:
 
     // For AC tables, a secondary table decoding both the value and its magnitude extension for
     // small coefficients (Section F.2.2.2).
-    val acValue = if ac then new Array[Int](1 << lutBits) else new Array[Int](0)
-    val acRunSize = if ac then new Array[Int](1 << lutBits) else new Array[Int](0)
+    val acValue = if ac then new scala.Array[Int](1 << lutBits) else new scala.Array[Int](0)
+    val acRunSize = if ac then new scala.Array[Int](1 << lutBits) else new scala.Array[Int](0)
 
     if ac then
       index = 0

@@ -90,7 +90,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new scala.Array[Byte](capacity)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
         private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
         private var start0: Int = 0
         private var limit0: Int = 0
@@ -197,11 +197,11 @@ package socketBackends:
 
       val ip = address.getAddress.nn.absolve match
         case ip: jn.Inet4Address =>
-          val bytes: Array[Byte] = ip.getAddress.nn
+          val bytes: scala.Array[Byte] = ip.getAddress.nn
           Ipv4(bytes(0), bytes(1), bytes(2), bytes(3))
 
         case ip: jn.Inet6Address =>
-          val bytes: Array[Byte] = ip.getAddress.nn
+          val bytes: scala.Array[Byte] = ip.getAddress.nn
 
           Ipv6
             ( Long(bytes.take(8).immutable(using Unsafe)),
@@ -218,12 +218,12 @@ package socketBackends:
       val ip: jn.InetAddress = sender.absolve match
         case ip: (Ipv4 @unchecked) =>
           val array =
-            Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
+            scala.Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
 
           jn.InetAddress.getByAddress(array).nn
 
         case ip: Ipv6 =>
-          val array: Array[Byte]^ =
+          val array: scala.Array[Byte]^ =
             val high = ip.highBits.bits.bytes
             val bytes = new scala.Array[Byte](16)
             var index = 0
@@ -289,12 +289,12 @@ package socketBackends:
         val out = socket.getOutputStream.nn
 
         input.sweep: (storage, start, count) =>
-          out.write(storage.asInstanceOf[Array[Byte]], start, count)
+          out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
           out.flush()
 
       case ClientExchange.Domain(channel) =>
         input.sweep: (storage, start, count) =>
-          channel.write(ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count))
+          channel.write(ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count))
 
         channel.shutdownOutput()
 
@@ -441,8 +441,8 @@ private[coaxial] def configure(socket: jn.DatagramSocket, options: List[SocketOp
 
 // Resolves a `MacAddress` to the local network interface whose hardware address matches, if any.
 private[coaxial] def interfaceFor(mac: MacAddress): Optional[jn.NetworkInterface] =
-  val target: Array[Byte] =
-    Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
+  val target: scala.Array[Byte] =
+    scala.Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
 
   def recur(interfaces: ju.Enumeration[jn.NetworkInterface]): Optional[jn.NetworkInterface] =
     if !interfaces.hasMoreElements then Unset else
@@ -486,7 +486,7 @@ private[coaxial] def streamsDuplex
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new scala.Array[Byte](capacity)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -520,7 +520,7 @@ private[coaxial] def streamsDuplex
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
       data.sweep: (storage, start, count) =>
-        out.write(storage.asInstanceOf[Array[Byte]], start, count)
+        out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
         out.flush()
 
     def close(): Unit = shutdown()
@@ -530,7 +530,7 @@ private[coaxial] def streamsDuplex
 private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
   def send(consume data: (Stream[Data] over Credit)^): Unit =
     data.sweep: (storage, start, count) =>
-      val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
+      val out = ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count).nn
       while out.hasRemaining do socketChannel.write(out)
 
   def close(): Unit = socketChannel.close()
@@ -541,7 +541,7 @@ private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = n
       type Transport = Credit
 
       private val capacity: Int = buffering.capacity(Substrate.Bytes)
-      private val storage: Array[Byte] = new scala.Array[Byte](capacity)
+      private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
       private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
       private var start0: Int = 0
       private var limit0: Int = 0

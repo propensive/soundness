@@ -54,7 +54,7 @@ private[hallucination] final class JpegReader(data: Data, start: Int) extends ca
   // A big-endian 16-bit value, as used by all JPEG segment length and dimension fields.
   update def u16(): Int = (u8() << 8) | u8()
 
-  update def readExact(buffer: Array[Byte]): Unit =
+  update def readExact(buffer: scala.Array[Byte]): Unit =
     var index = 0
 
     while index < buffer.length do

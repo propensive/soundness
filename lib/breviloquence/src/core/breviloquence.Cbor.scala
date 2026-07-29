@@ -262,7 +262,7 @@ object Cbor extends Cbor2, Dynamic:
         Buffer.freeze(padded)
 
     def length(cbor: Ast): Int =
-      val array = cbor.asInstanceOf[Array[AnyRef]]
+      val array = cbor.asInstanceOf[scala.Array[AnyRef]]
       val count = array.length
       if count > 0 && (array(count - 1).asInstanceOf[AnyRef] eq Sentinel) then count - 1 else count
 
@@ -332,7 +332,7 @@ object Cbor extends Cbor2, Dynamic:
           out.put(bytes.immutable(using Unsafe))
 
         else if cbor.isByteString then
-          val bytes = cbor.asInstanceOf[Array[Byte]]
+          val bytes = cbor.asInstanceOf[scala.Array[Byte]]
           head(out, 2, bytes.length.toLong)
           out.put(bytes.immutable(using Unsafe))
 
@@ -406,7 +406,7 @@ object Cbor extends Cbor2, Dynamic:
           builder.append('"')
 
         else if cbor.isByteString then
-          val bytes = cbor.asInstanceOf[Array[Byte]]
+          val bytes = cbor.asInstanceOf[scala.Array[Byte]]
           builder.append("h'")
           var index = 0
 
@@ -901,7 +901,7 @@ object Cbor extends Cbor2, Dynamic:
     // than going through `IArray$.apply`. `data.length` is constant-folded by
     // the JIT and cheaper than going through a separate `length` accessor.
     @scala.caps.unsafe.untrackedCaptures
-    private[breviloquence] val data: Array[Byte] = input.asInstanceOf[Array[Byte]]
+    private[breviloquence] val data: scala.Array[Byte] = input.asInstanceOf[scala.Array[Byte]]
 
     // `offset` is exposed only to the package-private parse() entry point so it
     // can detect trailing bytes after a successful parse. All hot-path reads
@@ -1035,7 +1035,7 @@ object Cbor extends Cbor2, Dynamic:
       decodeUtf8(bytes, 0, bytes.length, 0L)
 
     private inline def decodeUtf8
-      ( bytes: Array[Byte], start: Int, length: Int, errorOffset: Long )
+      ( bytes: scala.Array[Byte], start: Int, length: Int, errorOffset: Long )
     :   String raises CborError =
 
       try new String(bytes, start, length, java.nio.charset.StandardCharsets.UTF_8)
@@ -1668,7 +1668,7 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
 
   private[breviloquence] def delete(field: String): Cbor raises CborError =
     if !root.isMap then abort(CborError(Reason.NotType(root.primitive, Primitive.Map)))
-    val array = root.asInstanceOf[Array[Any]]
+    val array = root.asInstanceOf[scala.Array[Any]]
     val length = array.length
 
     root.index(field) match
@@ -1703,7 +1703,7 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
     else if left.isBoolean && right.isBoolean
     then left.asInstanceOf[Boolean] == right.asInstanceOf[Boolean]
     else if left.isByteString && right.isByteString
-    then java.util.Arrays.equals(left.asInstanceOf[Array[Byte]], right.asInstanceOf[Array[Byte]])
+    then java.util.Arrays.equals(left.asInstanceOf[scala.Array[Byte]], right.asInstanceOf[scala.Array[Byte]])
     else if left.nullary && right.nullary then true
     else if left.unset && right.unset then true
     else if left.isTag && right.isTag

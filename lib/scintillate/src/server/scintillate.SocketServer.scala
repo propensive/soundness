@@ -84,7 +84,7 @@ extends RequestServable:
     stream.sweep: (storage, start, size) =>
       if !failed then
         try
-          out.write(storage.asInstanceOf[Array[Byte]], start, size)
+          out.write(storage.asInstanceOf[scala.Array[Byte]], start, size)
           out.flush()
           count += size
         catch case error: ji.IOException => failed = true
@@ -317,7 +317,7 @@ extends RequestServable:
           socket match
             case ssl: jns.SSLServerSocket =>
               val params = ssl.getSSLParameters.nn
-              params.setApplicationProtocols(Array[String | Null]("h2", "http/1.1"))
+              params.setApplicationProtocols(scala.Array[String | Null]("h2", "http/1.1"))
               ssl.setSSLParameters(params)
 
             case _ =>

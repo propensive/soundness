@@ -80,7 +80,7 @@ object internal:
     val cacheDir: jnf.Path = jnf.Paths.get(home, ".cache", "burdock").nn
     jnf.Files.createDirectories(cacheDir)
 
-    val entries: Array[String | Null] = classpath.split(java.io.File.pathSeparator).nn
+    val entries: scala.Array[String | Null] = classpath.split(java.io.File.pathSeparator).nn
     val hashes = scala.collection.immutable.List.newBuilder[String]
     var i = 0
 
@@ -90,8 +90,8 @@ object internal:
       val path: jnf.Path = jnf.Paths.get(entry).nn
 
       if entry.endsWith(".jar") && jnf.Files.isRegularFile(path) then
-        val bytes: Array[Byte] = jnf.Files.readAllBytes(path).nn
-        val digest: Array[Byte] = js.MessageDigest.getInstance("SHA-256").nn.digest(bytes).nn
+        val bytes: scala.Array[Byte] = jnf.Files.readAllBytes(path).nn
+        val digest: scala.Array[Byte] = js.MessageDigest.getInstance("SHA-256").nn.digest(bytes).nn
         val hex: String = ju.HexFormat.of().nn.formatHex(digest).nn
         val target: jnf.Path = cacheDir.resolve(hex+".jar").nn
 

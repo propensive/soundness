@@ -155,7 +155,7 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
         // result carries a read capability the pure formal rejects.
         val args = java.util.ArrayList[String]()
         arguments.each { argument => args.add(argument.s); () }
-        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[Array[String]], context)
+        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]], context)
         . map(_(1)).get
 
       def run(): CompileProcess =

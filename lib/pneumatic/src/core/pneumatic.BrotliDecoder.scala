@@ -66,20 +66,20 @@ private[pneumatic] object BrotliDecoder:
 
   private[pneumatic] val codeLengthCodeOrder: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+      scala.Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
   private[pneumatic] val distanceShortCodeIndexOffset: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(3, 2, 1, 0, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2)
+      scala.Array(3, 2, 1, 0, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2)
 
   private[pneumatic] val distanceShortCodeValueOffset: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(0, 0, 0, 0, -1, 1, -2, 2, -3, 3, -1, 1, -2, 2, -3, 3)
+      scala.Array(0, 0, 0, 0, -1, 1, -2, 2, -3, 3, -1, 1, -2, 2, -3, 3)
 
   // Static Huffman code for the code-length code lengths.
   private[pneumatic] val fixedTable: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040001,
+      scala.Array(0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040001,
           0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040005)
 
   private[pneumatic] def corrupt(message: String): Nothing =
@@ -87,13 +87,13 @@ private[pneumatic] object BrotliDecoder:
 
   // Builds a Huffman lookup table assuming code lengths are in symbol order (reference `Huffman`).
   private[pneumatic] def buildHuffmanTable
-    ( rootTable: Array[Int]^, tableOffset: Int, rootBits: Int, codeLengths: Array[Int],
+    ( rootTable: scala.Array[Int]^, tableOffset: Int, rootBits: Int, codeLengths: scala.Array[Int],
       codeLengthsSize: Int )
   :   Unit =
 
-    val sorted: Array[Int]^ = new Array[Int](codeLengthsSize)
-    val count: Array[Int]^ = new Array[Int](MaxLength + 1)
-    val offset: Array[Int]^ = new Array[Int](MaxLength + 1)
+    val sorted: scala.Array[Int]^ = new scala.Array[Int](codeLengthsSize)
+    val count: scala.Array[Int]^ = new scala.Array[Int](MaxLength + 1)
+    val offset: scala.Array[Int]^ = new scala.Array[Int](MaxLength + 1)
 
     var symbol = 0
     while symbol < codeLengthsSize do { count(codeLengths(symbol)) += 1; symbol += 1 }
@@ -167,7 +167,7 @@ private[pneumatic] object BrotliDecoder:
     while (key0 & step) != 0 do step >>= 1
     (key0 & (step - 1)) + step
 
-  private def replicateValue(table: Array[Int]^, offset: Int, step: Int, end0: Int, item: Int)
+  private def replicateValue(table: scala.Array[Int]^, offset: Int, step: Int, end0: Int, item: Int)
   :   Unit =
 
     var end = end0
@@ -178,7 +178,7 @@ private[pneumatic] object BrotliDecoder:
       end > 0
     do ()
 
-  private def nextTableBitSize(count: Array[Int], len0: Int, rootBits: Int): Int =
+  private def nextTableBitSize(count: scala.Array[Int], len0: Int, rootBits: Int): Int =
     var len = len0
     var left = 1 << (len - rootBits)
     var settled = false
@@ -189,14 +189,14 @@ private[pneumatic] object BrotliDecoder:
 
     len - rootBits
 
-  private[pneumatic] def moveToFront(v: Array[Int]^, index0: Int): Unit =
+  private[pneumatic] def moveToFront(v: scala.Array[Int]^, index0: Int): Unit =
     var index = index0
     val value = v(index)
     while index > 0 do { v(index) = v(index - 1); index -= 1 }
     v(0) = value
 
-  private[pneumatic] def inverseMoveToFrontTransform(v: Array[Byte]^, vLen: Int): Unit =
-    val mtf: Array[Int]^ = new Array[Int](256)
+  private[pneumatic] def inverseMoveToFrontTransform(v: scala.Array[Byte]^, vLen: Int): Unit =
+    val mtf: scala.Array[Int]^ = new scala.Array[Int](256)
     var i = 0
     while i < 256 do { mtf(i) = i; i += 1 }
     i = 0
@@ -207,19 +207,19 @@ private[pneumatic] object BrotliDecoder:
       if index != 0 then moveToFront(mtf, index)
       i += 1
 
-  def decode(input: Array[Byte], inputLength: Int): Array[Byte] =
+  def decode(input: scala.Array[Byte], inputLength: Int): scala.Array[Byte] =
     BrotliDecode(input, inputLength).run()
 
 // A single-shot decoder instance holding all mutable decoding state. Not reusable; create one per
 // decode. `run()` returns exactly the decoded bytes.
-private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: Int)
+private[pneumatic] final class BrotliDecode(source: scala.Array[Byte], sourceLength: Int)
 extends caps.Mutable:
   import BrotliDecoder.*
   import BrotliTables.*
 
   // --- Bit reader (LSB-first, over a zero-padded copy of the whole input) ------------------------
-  private var data: Array[Byte]^ =
-    val buffer: Array[Byte]^ = new Array[Byte](sourceLength + 16)
+  private var data: scala.Array[Byte]^ =
+    val buffer: scala.Array[Byte]^ = new scala.Array[Byte](sourceLength + 16)
     System.arraycopy(source, 0, buffer, 0, sourceLength)
     buffer
 
@@ -257,15 +257,15 @@ extends caps.Mutable:
     fillBitWindow()
 
   // Copy `length` raw (byte-aligned) bytes into `dst`; valid only right after a byte boundary.
-  private update def copyRawBytes(dst: Array[Byte]^{this}, offset: Int, length: Int): Unit =
+  private update def copyRawBytes(dst: scala.Array[Byte]^{this}, offset: Int, length: Int): Unit =
     val streamPos = bytePos - ((64 - bitOffset) >> 3)
     System.arraycopy(data, streamPos, dst, offset, length)
     bytePos = streamPos + length
     prime()
 
   // --- Output (one growable array; `pos` is the count of decoded bytes) --------------------------
-  private var output: Array[Byte]^ =
-    new Array[Byte](if sourceLength < 64 then 256 else sourceLength*4)
+  private var output: scala.Array[Byte]^ =
+    new scala.Array[Byte](if sourceLength < 64 then 256 else sourceLength*4)
 
   private var pos: Int = 0
 
@@ -273,7 +273,7 @@ extends caps.Mutable:
     if needed > output.length then
       var size = output.length
       while size < needed do size <<= 1
-      val grown: Array[Byte]^ = new Array[Byte](size)
+      val grown: scala.Array[Byte]^ = new scala.Array[Byte](size)
       System.arraycopy(output, 0, grown, 0, pos)
       output = grown
 
@@ -283,24 +283,24 @@ extends caps.Mutable:
   private var isUncompressed = false
   private var isMetadata = false
 
-  private var blockTypeTrees: Array[Int]^ = new Array[Int](3*HuffmanMaxTableSize)
-  private var blockLenTrees: Array[Int]^ = new Array[Int](3*HuffmanMaxTableSize)
-  private var blockLength: Array[Int]^ = new Array[Int](3)
-  private var numBlockTypes: Array[Int]^ = new Array[Int](3)
-  private var blockTypeRb: Array[Int]^ = new Array[Int](6)
-  private var distRb: Array[Int]^ = Array(16, 15, 11, 4)
+  private var blockTypeTrees: scala.Array[Int]^ = new scala.Array[Int](3*HuffmanMaxTableSize)
+  private var blockLenTrees: scala.Array[Int]^ = new scala.Array[Int](3*HuffmanMaxTableSize)
+  private var blockLength: scala.Array[Int]^ = new scala.Array[Int](3)
+  private var numBlockTypes: scala.Array[Int]^ = new scala.Array[Int](3)
+  private var blockTypeRb: scala.Array[Int]^ = new scala.Array[Int](6)
+  private var distRb: scala.Array[Int]^ = scala.Array(16, 15, 11, 4)
 
   // The Huffman work table for `decodeContextMap`. A per-instance work area rather than a local,
   // because a fresh local array cannot flow into the `^{this}`-typed table parameters of
   // `readHuffmanCode` and `readSymbol`; it is fully rebuilt before each use.
-  private var contextTable: Array[Int]^ = new Array[Int](HuffmanMaxTableSize)
+  private var contextTable: scala.Array[Int]^ = new scala.Array[Int](HuffmanMaxTableSize)
 
-  private var hGroup0Codes: Array[Int]^ = new Array[Int](0)
-  private var hGroup0Trees: Array[Int]^ = new Array[Int](0)
-  private var hGroup1Codes: Array[Int]^ = new Array[Int](0)
-  private var hGroup1Trees: Array[Int]^ = new Array[Int](0)
-  private var hGroup2Codes: Array[Int]^ = new Array[Int](0)
-  private var hGroup2Trees: Array[Int]^ = new Array[Int](0)
+  private var hGroup0Codes: scala.Array[Int]^ = new scala.Array[Int](0)
+  private var hGroup0Trees: scala.Array[Int]^ = new scala.Array[Int](0)
+  private var hGroup1Codes: scala.Array[Int]^ = new scala.Array[Int](0)
+  private var hGroup1Trees: scala.Array[Int]^ = new scala.Array[Int](0)
+  private var hGroup2Codes: scala.Array[Int]^ = new scala.Array[Int](0)
+  private var hGroup2Trees: scala.Array[Int]^ = new scala.Array[Int](0)
 
   private var maxDistance = 0
   private var distRbIdx = 0
@@ -308,9 +308,9 @@ extends caps.Mutable:
   private var literalTreeIndex = 0
   private var literalTree = 0
   private var insertLength = 0
-  private var contextModes: Array[Byte]^ = new Array[Byte](0)
-  private var contextMap: Array[Byte]^ = new Array[Byte](0)
-  private var distContextMap: Array[Byte]^ = new Array[Byte](0)
+  private var contextModes: scala.Array[Byte]^ = new scala.Array[Byte](0)
+  private var contextMap: scala.Array[Byte]^ = new scala.Array[Byte](0)
+  private var distContextMap: scala.Array[Byte]^ = new scala.Array[Byte](0)
   private var contextMapSlice = 0
   private var distContextMapSlice = 0
   private var contextLookupOffset1 = 0
@@ -380,7 +380,7 @@ extends caps.Mutable:
         if !inputEnd then isUncompressed = readBits(1) == 1
 
   // --- Symbol reading ----------------------------------------------------------------------------
-  private update def readSymbol(table: Array[Int]^{this}, offset0: Int): Int =
+  private update def readSymbol(table: scala.Array[Int]^{this}, offset0: Int): Int =
     var offset = offset0
     val value = (accumulator >>> bitOffset).toInt
     offset += value & HuffmanTableMask
@@ -393,7 +393,7 @@ extends caps.Mutable:
       bitOffset += (table(offset) >> 16) + HuffmanTableBits
       table(offset) & 0xffff
 
-  private update def readBlockLength(table: Array[Int]^{this}, offset: Int): Int =
+  private update def readBlockLength(table: scala.Array[Int]^{this}, offset: Int): Int =
     fillBitWindow()
     val code = readSymbol(table, offset)
     blockLengthOffset(code) + readBits(blockLengthNBits(code))
@@ -406,7 +406,7 @@ extends caps.Mutable:
       code - NumDistanceShortCodes + 1
 
   private update def readHuffmanCodeLengths
-    ( codeLengthCodeLengths: Array[Int], numSymbols: Int, codeLengths: Array[Int]^ )
+    ( codeLengthCodeLengths: scala.Array[Int], numSymbols: Int, codeLengths: scala.Array[Int]^ )
   :   Unit =
 
     var symbol = 0
@@ -414,7 +414,7 @@ extends caps.Mutable:
     var repeat = 0
     var repeatCodeLen = 0
     var space = 32768
-    val table: Array[Int]^ = new Array[Int](32)
+    val table: scala.Array[Int]^ = new scala.Array[Int](32)
 
     buildHuffmanTable(table, 0, 5, codeLengthCodeLengths, CodeLengthCodes)
 
@@ -444,16 +444,16 @@ extends caps.Mutable:
 
     if space != 0 then corrupt("unused code-length space")
 
-  private update def readHuffmanCode(alphabetSize: Int, table: Array[Int]^{this}, offset: Int)
+  private update def readHuffmanCode(alphabetSize: Int, table: scala.Array[Int]^{this}, offset: Int)
   :   Unit =
     var ok = true
-    val codeLengths: Array[Int]^ = new Array[Int](alphabetSize)
+    val codeLengths: scala.Array[Int]^ = new scala.Array[Int](alphabetSize)
     val simpleCodeOrSkip = readBits(2)
 
     if simpleCodeOrSkip == 1 then
       var maxBitsCounter = alphabetSize - 1
       var maxBits = 0
-      val symbols: Array[Int]^ = new Array[Int](4)
+      val symbols: scala.Array[Int]^ = new scala.Array[Int](4)
       val numSymbols = readBits(2) + 1
       while maxBitsCounter != 0 do { maxBitsCounter >>= 1; maxBits += 1 }
       var i = 0
@@ -485,7 +485,7 @@ extends caps.Mutable:
           else
             codeLengths(symbols(0)) = 2
     else
-      val codeLengthCodeLengths: Array[Int]^ = new Array[Int](CodeLengthCodes)
+      val codeLengthCodeLengths: scala.Array[Int]^ = new scala.Array[Int](CodeLengthCodes)
       var space = 32
       var numCodes = 0
       var i = simpleCodeOrSkip
@@ -506,7 +506,7 @@ extends caps.Mutable:
     if !ok then corrupt("invalid Huffman code")
     buildHuffmanTable(table, offset, HuffmanTableBits, codeLengths, alphabetSize)
 
-  private update def decodeContextMap(contextMapSize: Int, contextMap: Array[Byte]^{this}): Int =
+  private update def decodeContextMap(contextMapSize: Int, contextMap: scala.Array[Byte]^{this}): Int =
     val numTrees = decodeVarLenUnsignedByte() + 1
 
     if numTrees == 1 then numTrees else
@@ -568,7 +568,7 @@ extends caps.Mutable:
     distContextMapSlice = blockTypeRb(5) << DistanceContextBits
 
   private update def huffmanTreeGroupDecode
-    ( codes: Array[Int]^{this}, trees: Array[Int]^{this}, alphabetSize: Int )
+    ( codes: scala.Array[Int]^{this}, trees: scala.Array[Int]^{this}, alphabetSize: Int )
   :   Unit =
 
     var next = 0
@@ -599,14 +599,14 @@ extends caps.Mutable:
     distancePostfixMask = (1 << distancePostfixBits) - 1
     val numDistanceCodes = numDirectDistanceCodes + (48 << distancePostfixBits)
 
-    contextModes = new Array[Byte](numBlockTypes(0))
+    contextModes = new scala.Array[Byte](numBlockTypes(0))
     i = 0
 
     while i < numBlockTypes(0) do
       contextModes(i) = (readBits(2) << 1).toByte
       i += 1
 
-    contextMap = new Array[Byte](numBlockTypes(0) << LiteralContextBits)
+    contextMap = new scala.Array[Byte](numBlockTypes(0) << LiteralContextBits)
     val numLiteralTrees = decodeContextMap(numBlockTypes(0) << LiteralContextBits, contextMap)
     trivialLiteralContext = true
     var j = 0
@@ -618,15 +618,15 @@ extends caps.Mutable:
       else
         j += 1
 
-    distContextMap = new Array[Byte](numBlockTypes(2) << DistanceContextBits)
+    distContextMap = new scala.Array[Byte](numBlockTypes(2) << DistanceContextBits)
     val numDistTrees = decodeContextMap(numBlockTypes(2) << DistanceContextBits, distContextMap)
 
-    hGroup0Codes = new Array[Int](numLiteralTrees*HuffmanMaxTableSize)
-    hGroup0Trees = new Array[Int](numLiteralTrees)
-    hGroup1Codes = new Array[Int](numBlockTypes(1)*HuffmanMaxTableSize)
-    hGroup1Trees = new Array[Int](numBlockTypes(1))
-    hGroup2Codes = new Array[Int](numDistTrees*HuffmanMaxTableSize)
-    hGroup2Trees = new Array[Int](numDistTrees)
+    hGroup0Codes = new scala.Array[Int](numLiteralTrees*HuffmanMaxTableSize)
+    hGroup0Trees = new scala.Array[Int](numLiteralTrees)
+    hGroup1Codes = new scala.Array[Int](numBlockTypes(1)*HuffmanMaxTableSize)
+    hGroup1Trees = new scala.Array[Int](numBlockTypes(1))
+    hGroup2Codes = new scala.Array[Int](numDistTrees*HuffmanMaxTableSize)
+    hGroup2Trees = new scala.Array[Int](numDistTrees)
 
     huffmanTreeGroupDecode(hGroup0Codes, hGroup0Trees, NumLiteralCodes)
     huffmanTreeGroupDecode(hGroup1Codes, hGroup1Trees, NumInsertAndCopyCodes)
@@ -761,7 +761,7 @@ extends caps.Mutable:
   private val sizeBitsByLength = BrotliDictionary.sizeBitsByLength
   private val dictData = BrotliDictionary.data
 
-  update def run(): Array[Byte] =
+  update def run(): scala.Array[Byte] =
     prime()
     val windowBits = decodeWindowBits()
     if windowBits == 9 then corrupt("invalid window-bits code")
@@ -790,6 +790,6 @@ extends caps.Mutable:
         if inputEnd then done = true
 
     jumpToByteBoundary()
-    val result: Array[Byte]^ = new Array[Byte](pos)
+    val result: scala.Array[Byte]^ = new scala.Array[Byte](pos)
     System.arraycopy(output, 0, result, 0, pos)
     result

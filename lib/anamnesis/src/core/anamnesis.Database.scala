@@ -68,9 +68,9 @@ class Database(size: Int) extends Findable:
   private var dereferences: Map[Ref, Any] = Map()
 
   @scala.caps.unsafe.untrackedCaptures
-  private val relations: Array[Map[Ref, Set[Ref]]] = Array.fill(size)(Map())
+  private val relations: scala.Array[Map[Ref, Set[Ref]]] = scala.Array.fill(size)(Map())
   @scala.caps.unsafe.untrackedCaptures
-  private val corelations: Array[Map[Ref, Ref]] = Array.fill(size)(Map())
+  private val corelations: scala.Array[Map[Ref, Ref]] = scala.Array.fill(size)(Map())
 
   def dereference[ref](ref: Ref of ref): ref = dereferences(ref).asInstanceOf[ref]
 

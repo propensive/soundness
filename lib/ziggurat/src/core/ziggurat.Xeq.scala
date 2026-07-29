@@ -231,7 +231,7 @@ object Xeq:
       write(outputPath, onlineLauncher(jarData, entries))
 
 
-  def main(args: Array[String]): Unit =
+  def main(args: scala.Array[String]): Unit =
     List.of(args.iterator.toList) match
       case "installer" :: output :: staging :: Nil =>
         installerMain(output.tt, staging.tt)

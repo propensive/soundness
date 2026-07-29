@@ -214,7 +214,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     private def bail(): Nothing = sys.error("fused spike: unsupported input shape")
 
-    def decode(buffer: Array[Byte]): BenchUsers =
+    def decode(buffer: scala.Array[Byte]): BenchUsers =
       val limit = buffer.length
 
       inline def ws(p0: Int): Int =
@@ -417,7 +417,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       if !usersSeen then bail()
       BenchUsers(users)
 
-  lazy val jsonArray4: Array[Byte] = jsonText4.getBytes("UTF-8").nn
+  lazy val jsonArray4: scala.Array[Byte] = jsonText4.getBytes("UTF-8").nn
 
   def decodeUsersFused(): BenchUsers = FusedSpike.decode(jsonArray4)
 
@@ -591,8 +591,8 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   lazy val jsonText5: String =
     val sb = new _root_.java.lang.StringBuilder
     sb.append("{\"logs\":[")
-    val levels = Array("info", "debug", "warn", "error")
-    val services = Array("auth", "api", "db", "cache", "worker")
+    val levels = scala.Array("info", "debug", "warn", "error")
+    val services = scala.Array("auth", "api", "db", "cache", "worker")
     var i = 0
     while i < 500 do
       if i > 0 then sb.append(',')

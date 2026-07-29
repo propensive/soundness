@@ -35,8 +35,8 @@ package hallucination
 // field, or a closure capture): update sites route through this rebind, as in pneumatic's
 // `writable`. Sound because each codec reaches its scratch buffers only through `this` or
 // its own confined locals.
-private[hallucination] def writable[element](array: Array[element]): Array[element]^ =
-  array.asInstanceOf[Array[element]]
+private[hallucination] def writable[element](array: scala.Array[element]): scala.Array[element]^ =
+  array.asInstanceOf[scala.Array[element]]
 
 // The row colour-conversion callback: a SAM trait rather than a function type, because a
 // nested-array parameter of a function type is elaborated with fresh element capabilities
@@ -44,14 +44,14 @@ private[hallucination] def writable[element](array: Array[element]): Array[eleme
 private[hallucination] trait JpegColorConverter:
   // `buffers0` is the untyped view of an `Array[Array[Byte]]`: a nested-array parameter
   // type is elaborated with fresh element capabilities that nothing can satisfy.
-  def convert(buffers0: AnyRef, output: Array[Byte]): Unit
+  def convert(buffers0: AnyRef, output: scala.Array[Byte]): Unit
 
 // A freshly-allocated array with a PURE type: routing the allocation through the Java
 // `Arrays.copyOf` lets its fluid result adapt to the pure declared result type, where a
 // Scala-side `new Array` is charged a fresh read capability.
-private[hallucination] def pureBytes(size: Int): Array[Byte] =
-  java.util.Arrays.copyOf(new Array[Byte](0), size).nn
+private[hallucination] def pureBytes(size: Int): scala.Array[Byte] =
+  java.util.Arrays.copyOf(new scala.Array[Byte](0), size).nn
 
 // As `pureBytes`: a pure-typed copy of an int-array range via the Java API.
-private[hallucination] def pureCopyRange(source: Array[Int], from: Int, until: Int): Array[Int] =
+private[hallucination] def pureCopyRange(source: scala.Array[Int], from: Int, until: Int): scala.Array[Int] =
   java.util.Arrays.copyOfRange(source, from, until).nn

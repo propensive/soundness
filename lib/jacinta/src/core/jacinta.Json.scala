@@ -576,7 +576,7 @@ object Json extends Json2, Dynamic:
   case object JsonNull
   type JsonNull    = JsonNull.type
   type JsonObject  = IArray[Any]
-  type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
+  type JsonArray   = IArray[Any] | scala.Array[Long] | scala.Array[Int]
 
   object Encodable:
     def apply[value](shape0: () => Morphology)(lambda: (value -> Json)^)
@@ -1323,7 +1323,7 @@ object Json extends Json2, Dynamic:
 
           producer.put("]")
 
-        def writeBcdLongArray(bcds: Array[Long]): Unit =
+        def writeBcdLongArray(bcds: scala.Array[Long]): Unit =
           val n = bcds.length
           producer.put("[")
           val last = n - 1
@@ -1336,7 +1336,7 @@ object Json extends Json2, Dynamic:
 
           producer.put("]")
 
-        def writeSmallBcdArray(smalls: Array[Int]): Unit =
+        def writeSmallBcdArray(smalls: scala.Array[Int]): Unit =
           val n = smalls.length
           producer.put("[")
           val last = n - 1
@@ -1350,13 +1350,13 @@ object Json extends Json2, Dynamic:
           producer.put("]")
 
         def recur(json: Json.Ast, level: Int): Unit = json.asMatchable match
-          case bcds: Array[Long] @unchecked =>
+          case bcds: scala.Array[Long] @unchecked =>
             writeBcdLongArray(bcds)
 
-          case smalls: Array[Int] @unchecked =>
+          case smalls: scala.Array[Int] @unchecked =>
             writeSmallBcdArray(smalls)
 
-          case bcd: Array[Double] @unchecked =>
+          case bcd: scala.Array[Double] @unchecked =>
             // High-precision number — emit the canonical JSON-number text from the
             // BCD nibble stream directly; this preserves all digits the parser saw,
             // in contrast to a `Double.toString` round-trip.
@@ -1554,12 +1554,12 @@ object Json extends Json2, Dynamic:
     // (see `Bcd.packBcdLong`). Each `Long` element carries one number's
     // sign + count + nibbles inline — no per-element `Double` materialisation
     // and no per-element heap allocation.
-    def bcdArr(values: Array[Long]): Ast = values.immutable(using Unsafe)
+    def bcdArr(values: scala.Array[Long]): Ast = values.immutable(using Unsafe)
 
     // Build a number-only array node using the single-Int small-BCD
     // encoding (see `Bcd.packBcdInt`). For arrays where every number
     // fits in 7 nibbles — the half-memory variant of `bcdArr`.
-    def smallBcdArr(values: Array[Int]): Ast = values.immutable(using Unsafe)
+    def smallBcdArr(values: scala.Array[Int]): Ast = values.immutable(using Unsafe)
 
     // Accessors over the opaque AST representation. They live in the `Ast`
     // companion so they are in implicit scope wherever a `Json.Ast` is used,
@@ -1582,7 +1582,7 @@ object Json extends Json2, Dynamic:
       // mantissa — distinct from `Array[Int]` (`[I`, arrays of small BCDs),
       // `Array[Long]` (`[J`, arrays of larger BCDs), and `Array[AnyRef]`
       // (`[Ljava/lang/Object;`).
-      inline def isBcd: Boolean = json.isInstanceOf[Array[Double]]
+      inline def isBcd: Boolean = json.isInstanceOf[scala.Array[Double]]
       inline def isString: Boolean = json.isInstanceOf[String]
       inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
       inline def isNull: Boolean = json.asInstanceOf[AnyRef] eq Json.JsonNull
@@ -1594,24 +1594,24 @@ object Json extends Json2, Dynamic:
       // Number-only arrays are stored unboxed as `Array[Double]` (`[D`),
       // a distinct runtime class.
       inline def isObject: Boolean =
-        json.isInstanceOf[Array[AnyRef]] &&
-          (json.asInstanceOf[Array[?]].length & 1) == 0
+        json.isInstanceOf[scala.Array[AnyRef]] &&
+          (json.asInstanceOf[scala.Array[?]].length & 1) == 0
 
       inline def isArray: Boolean =
-        json.isInstanceOf[Array[Long]] ||
-          json.isInstanceOf[Array[Int]] ||
-          (json.isInstanceOf[Array[AnyRef]] &&
-            (json.asInstanceOf[Array[?]].length & 1) == 1)
+        json.isInstanceOf[scala.Array[Long]] ||
+          json.isInstanceOf[scala.Array[Int]] ||
+          (json.isInstanceOf[scala.Array[AnyRef]] &&
+            (json.asInstanceOf[scala.Array[?]].length & 1) == 1)
 
       // True when the array is in either unboxed number-only form (BCD-packed).
       inline def isNumberArray: Boolean =
-        json.isInstanceOf[Array[Long]] || json.isInstanceOf[Array[Int]]
+        json.isInstanceOf[scala.Array[Long]] || json.isInstanceOf[scala.Array[Int]]
 
       // True when the array is in the small-BCD `Array[Int]` form.
-      inline def isBcdIntArray:  Boolean = json.isInstanceOf[Array[Int]]
+      inline def isBcdIntArray:  Boolean = json.isInstanceOf[scala.Array[Int]]
 
       // True when the array is in the larger-BCD `Array[Long]` form.
-      inline def isBcdLongArray: Boolean = json.isInstanceOf[Array[Long]]
+      inline def isBcdLongArray: Boolean = json.isInstanceOf[scala.Array[Long]]
 
       private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
         val reason = if isAbsent then Reason.Absent else Reason.NotType(primitive, jsonPrimitive)
@@ -1624,7 +1624,7 @@ object Json extends Json2, Dynamic:
         case smalls: IArray[Int] @unchecked  => smalls.length
 
         case _ =>
-          val arr = json.asInstanceOf[Array[?]]
+          val arr = json.asInstanceOf[scala.Array[?]]
           val n = arr.length
           if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
 
@@ -1703,11 +1703,11 @@ object Json extends Json2, Dynamic:
         case value: Double                   => value
         case value: Long                     => value.toDouble
         case value: Int                      => Bcd.bcdIntToDouble(value)
-        case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
         case _                               => expected(JsonPrimitive.Number) yet 0.0
 
       def bcd: Bcd raises JsonError = json.asMatchable match
-        case value: Array[Double] @unchecked => value.asInstanceOf[Bcd]
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd]
         case value: Long                     => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
         case value: Double                   => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
 
@@ -1722,7 +1722,7 @@ object Json extends Json2, Dynamic:
         case value: Long                     => value
         case value: Double                   => value.toLong
         case value: Int                      => Bcd.bcdIntToDouble(value).toLong
-        case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
         case _                               => expected(JsonPrimitive.Number) yet 0L
 
       def primitive: JsonPrimitive =
@@ -2701,7 +2701,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         // it stays consistent with the `Bcd` / `Long` / `Double` paths.
         BigDecimal(Bcd.bcdIntText(value)).hashCode
 
-      case value: Array[Long] @unchecked =>
+      case value: scala.Array[Long] @unchecked =>
         // BCD-packed number array — same recursion as `Array[Double]` so
         // arrays of equal values hash identically regardless of which
         // backing representation the parser picked.
@@ -2716,13 +2716,13 @@ extends Dynamic, Topical, Original derives CanEqual:
 
         acc
 
-      case value: Array[Double] @unchecked =>
+      case value: scala.Array[Double] @unchecked =>
         // High-precision number (`Bcd`) — hash via the BigDecimal
         // projection so a Bcd whose value equals a BigDecimal literal has
         // a consistent hash.
         value.asInstanceOf[Bcd].toBigDecimal.hashCode
 
-      case value: Array[Int] @unchecked =>
+      case value: scala.Array[Int] @unchecked =>
         // Number array in single-Int small-BCD form — recurse per element
         // for cross-form equality with the boxed/Double/Long array shapes.
         val ast = value.asInstanceOf[Json.Ast]
@@ -2811,7 +2811,7 @@ extends Dynamic, Topical, Original derives CanEqual:
           case left: Int                     => left == right.toInt && left.toLong == right
           case left: Double                  => left == right
 
-          case left: Array[Double] @unchecked =>
+          case left: scala.Array[Double] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
 
           case _                             => false
@@ -2821,7 +2821,7 @@ extends Dynamic, Topical, Original derives CanEqual:
           case left: Long   => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
           case left: Double => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
 
-          case left: Array[Double] @unchecked =>
+          case left: scala.Array[Double] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(Bcd.bcdIntText(right))
 
           case _                             => false
@@ -2831,7 +2831,7 @@ extends Dynamic, Topical, Original derives CanEqual:
           case left: Int    => BigDecimal(Bcd.bcdIntText(left)) == BigDecimal(right)
           case left: Double => left == right
 
-          case left: Array[Double] @unchecked =>
+          case left: scala.Array[Double] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
 
           case _                             => false
@@ -2844,20 +2844,20 @@ extends Dynamic, Topical, Original derives CanEqual:
           case left: Boolean => left == right
           case _             => false
 
-        case right: Array[Long] @unchecked =>
+        case right: scala.Array[Long] @unchecked =>
           // BCD-Long-packed number array.
           val rightAst = right.asInstanceOf[Json.Ast]
 
           left.asMatchable match
-            case _: Array[Long] @unchecked => arrayEq(left, rightAst)
-            case _: Array[Int] @unchecked  => arrayEq(left, rightAst)
+            case _: scala.Array[Long] @unchecked => arrayEq(left, rightAst)
+            case _: scala.Array[Int] @unchecked  => arrayEq(left, rightAst)
 
-            case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
+            case _: scala.Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
 
             case _ => false
 
-        case right: Array[Double] @unchecked =>
+        case right: scala.Array[Double] @unchecked =>
           // High-precision number (`Bcd`).
           val rb = right.asInstanceOf[Bcd]
 
@@ -2866,20 +2866,20 @@ extends Dynamic, Topical, Original derives CanEqual:
             case left: Int    => BigDecimal(Bcd.bcdIntText(left)) == rb.toBigDecimal
             case left: Double => BigDecimal(left) == rb.toBigDecimal
 
-            case left: Array[Double] @unchecked =>
+            case left: scala.Array[Double] @unchecked =>
               left.asInstanceOf[Bcd].toBigDecimal == rb.toBigDecimal
 
             case _                             => false
 
-        case right: Array[Int] @unchecked =>
+        case right: scala.Array[Int] @unchecked =>
           // Number array in single-Int small-BCD form.
           val rightAst = right.asInstanceOf[Json.Ast]
 
           left.asMatchable match
-            case _: Array[Int] @unchecked  => arrayEq(left, rightAst)
-            case _: Array[Long] @unchecked => arrayEq(left, rightAst)
+            case _: scala.Array[Int] @unchecked  => arrayEq(left, rightAst)
+            case _: scala.Array[Long] @unchecked => arrayEq(left, rightAst)
 
-            case _: Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
+            case _: scala.Array[AnyRef] @unchecked if left.asInstanceOf[Json.Ast].isArray =>
               arrayEq(left, rightAst)
 
             case _ => false
@@ -2890,7 +2890,7 @@ extends Dynamic, Topical, Original derives CanEqual:
           val rightIsObject = rightAst.isObject
 
           left.asMatchable match
-            case _: Array[AnyRef] @unchecked =>
+            case _: scala.Array[AnyRef] @unchecked =>
               val leftAst = left.asInstanceOf[Json.Ast]
 
               if rightIsObject then
@@ -2900,10 +2900,10 @@ extends Dynamic, Topical, Original derives CanEqual:
               else
                 false
 
-            case _: Array[Long] @unchecked if !rightIsObject =>
+            case _: scala.Array[Long] @unchecked if !rightIsObject =>
               arrayEq(left, rightAst)
 
-            case _: Array[Int] @unchecked if !rightIsObject =>
+            case _: scala.Array[Int] @unchecked if !rightIsObject =>
               arrayEq(left, rightAst)
 
             case _ => false

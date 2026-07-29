@@ -75,14 +75,14 @@ private[facsimile] object Predictor:
     val bytesPerPixel = ((colors*bits + 7)/8).max(1)
     val rowLength = (columns*colors*bits + 7)/8
     val out = DataBuilder()
-    var previous: Array[Byte] = pureByteArray(rowLength)
+    var previous: scala.Array[Byte] = pureByteArray(rowLength)
     var in = 0
 
     while in < data.length do
       val filter = data(in) & 0xff
       in += 1
       val available = rowLength.min(data.length - in)
-      val row: Array[Byte] = pureByteArray(rowLength)
+      val row: scala.Array[Byte] = pureByteArray(rowLength)
       var i = 0
 
       while i < available do

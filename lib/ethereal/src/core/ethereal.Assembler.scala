@@ -65,8 +65,8 @@ case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detai
 object Assembler:
   // v2 ETHRCFG layout — keep in sync with lib/ethereal/src/runner/src/config.rs.
   @scala.caps.unsafe.untrackedCaptures
-  val MagicMarker: Array[Byte] =
-    Array[Byte]('E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
+  val MagicMarker: scala.Array[Byte] =
+    scala.Array[Byte]('E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
                 'C'.toByte, 'F'.toByte, 'G'.toByte, 2.toByte)
 
   val PublicKeyLength: Int = 1312   // ML-DSA-44 public key size
@@ -85,7 +85,7 @@ object Assembler:
     ( using Tactic[AssemblyError] )
   :   Data =
 
-    val bytes: Array[Byte] = runner.stdlib.toArray
+    val bytes: scala.Array[Byte] = runner.stdlib.toArray
 
     val magicOffset: Int =
       var found: Int = -1
@@ -108,7 +108,7 @@ object Assembler:
       found
 
     val configOffset: Int = magicOffset + MagicMarker.length
-    val keyBytes: Array[Byte] = publicKey.stdlib.toArray
+    val keyBytes: scala.Array[Byte] = publicKey.stdlib.toArray
 
     // Write the 24-byte metadata region.
     val metaBuf = jnio.ByteBuffer.wrap(bytes, configOffset, 24).nn

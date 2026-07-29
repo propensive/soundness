@@ -295,7 +295,7 @@ object internal:
         case '[type result <: Tuple; result] =>
           ' {
               $matchResult.map: captures =>
-                val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
+                val arr: scala.Array[Object] = captures.toArray.asInstanceOf[scala.Array[Object]]
                 scala.runtime.Tuples.fromArray(arr).asInstanceOf[result]
             }
 

@@ -206,17 +206,17 @@ object Zip:
   private[zeppelin] val zip64LocatorSig:  Int = 0x07064b50
 
   // Little-endian writers into a mutable array.
-  private[zeppelin] def putU16(array: Array[Byte], offset: Int, value: Int): Unit =
+  private[zeppelin] def putU16(array: scala.Array[Byte], offset: Int, value: Int): Unit =
     array(offset) = (value & 0xff).toByte
     array(offset + 1) = ((value >> 8) & 0xff).toByte
 
-  private[zeppelin] def putU32(array: Array[Byte], offset: Int, value: Long): Unit =
+  private[zeppelin] def putU32(array: scala.Array[Byte], offset: Int, value: Long): Unit =
     array(offset) = (value & 0xff).toByte
     array(offset + 1) = ((value >> 8) & 0xff).toByte
     array(offset + 2) = ((value >> 16) & 0xff).toByte
     array(offset + 3) = ((value >> 24) & 0xff).toByte
 
-  private[zeppelin] def putU64(array: Array[Byte], offset: Int, value: Long): Unit =
+  private[zeppelin] def putU64(array: scala.Array[Byte], offset: Int, value: Long): Unit =
     var i = 0
 
     while i < 8 do

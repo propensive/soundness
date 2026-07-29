@@ -78,7 +78,7 @@ case class TestId
 
     Spread(this, axis, action(using _))
 
-  def over[value <: reflect.Enum: Enumerable, result](companion: { def values: Array[value] })
+  def over[value <: reflect.Enum: Enumerable, result](companion: { def values: scala.Array[value] })
     ( action: Harness ?=> (value ~> result) )
   :   Spread[value, result]^{action} =
 
@@ -92,21 +92,21 @@ case class TestId
     Spread2(this, first, second, action(using _))
 
   def over[left <: reflect.Enum: Enumerable, right, result]
-    ( first: { def values: Array[left] }, second: Axis[right] )
+    ( first: { def values: scala.Array[left] }, second: Axis[right] )
     ( action: Harness ?=> (((left, right)) ~> result) )
   :   Spread2[left, right, result]^{action} =
 
     Spread2(this, Axis(first), second, action(using _))
 
   def over[left, right <: reflect.Enum: Enumerable, result]
-    ( first: Axis[left], second: { def values: Array[right] } )
+    ( first: Axis[left], second: { def values: scala.Array[right] } )
     ( action: Harness ?=> (((left, right)) ~> result) )
   :   Spread2[left, right, result]^{action} =
 
     Spread2(this, first, Axis(second), action(using _))
 
   def over[left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, result]
-    ( first: { def values: Array[left] }, second: { def values: Array[right] } )
+    ( first: { def values: scala.Array[left] }, second: { def values: scala.Array[right] } )
     ( action: Harness ?=> (((left, right)) ~> result) )
   :   Spread2[left, right, result]^{action} =
 

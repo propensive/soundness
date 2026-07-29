@@ -62,10 +62,10 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
     new com.fasterxml.jackson.databind.ObjectMapper(
       new com.fasterxml.jackson.dataformat.cbor.CBORFactory())
 
-  def parseWithJackson(bytes: Array[Byte]): com.fasterxml.jackson.databind.JsonNode =
+  def parseWithJackson(bytes: scala.Array[Byte]): com.fasterxml.jackson.databind.JsonNode =
     jacksonMapper.readTree(bytes).nn
 
-  def parseWithBorer(bytes: Array[Byte]): io.bullet.borer.Dom.Element =
+  def parseWithBorer(bytes: scala.Array[Byte]): io.bullet.borer.Dom.Element =
     io.bullet.borer.Cbor.decode(bytes).to[io.bullet.borer.Dom.Element].value
 
   // Helper to build CBOR bytes by hand for the benchmark corpora. Uses the
@@ -94,8 +94,8 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   // Corpus 3: 500 log entries with six keys each — larger throughput target,
   // dominated by short-string parsing and small-integer head bytes.
   lazy val cborBytes3: IArray[Byte] =
-    val levels = Array("info", "debug", "warn", "error")
-    val services = Array("auth", "api", "db", "cache", "worker")
+    val levels = scala.Array("info", "debug", "warn", "error")
+    val services = scala.Array("auth", "api", "db", "cache", "worker")
     val records = (0 until 500).map: index =>
       val keys = IArray[Any]("timestamp", "level", "service", "requestId", "userId", "message")
       val ts = 1700000000L + index
@@ -116,7 +116,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   // which JSON has no analog for.
   lazy val cborBytes5: IArray[Byte] =
     val records = (0 until 100).map: index =>
-      val payload = new Array[Byte](32)
+      val payload = new scala.Array[Byte](32)
       var j = 0
       while j < payload.length do { payload(j) = ((index + j) & 0xFF).toByte; j += 1 }
       payload.asInstanceOf[IArray[Byte]].asInstanceOf[Any]
@@ -136,12 +136,12 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   // Pre-converted to plain Array[Byte] for the comparison parsers (Jackson and
   // borer take Array[Byte]; the IArray.unsafeMutable cast is safe for read-only
   // benchmarks since neither parser mutates the input).
-  lazy val raw1: Array[Byte] = cborBytes1.asInstanceOf[Array[Byte]]
-  lazy val raw2: Array[Byte] = cborBytes2.asInstanceOf[Array[Byte]]
-  lazy val raw3: Array[Byte] = cborBytes3.asInstanceOf[Array[Byte]]
-  lazy val raw4: Array[Byte] = cborBytes4.asInstanceOf[Array[Byte]]
-  lazy val raw5: Array[Byte] = cborBytes5.asInstanceOf[Array[Byte]]
-  lazy val raw6: Array[Byte] = cborBytes6.asInstanceOf[Array[Byte]]
+  lazy val raw1: scala.Array[Byte] = cborBytes1.asInstanceOf[scala.Array[Byte]]
+  lazy val raw2: scala.Array[Byte] = cborBytes2.asInstanceOf[scala.Array[Byte]]
+  lazy val raw3: scala.Array[Byte] = cborBytes3.asInstanceOf[scala.Array[Byte]]
+  lazy val raw4: scala.Array[Byte] = cborBytes4.asInstanceOf[scala.Array[Byte]]
+  lazy val raw5: scala.Array[Byte] = cborBytes5.asInstanceOf[scala.Array[Byte]]
+  lazy val raw6: scala.Array[Byte] = cborBytes6.asInstanceOf[scala.Array[Byte]]
 
   def run(): Unit =
     val bench = Bench()

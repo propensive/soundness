@@ -1541,12 +1541,12 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(identity)
 
       test(m"decode returns next offset"):
-        val data: Data = Array[Byte](0x80.toByte, 0x01, 0x42).asInstanceOf[IArray[Byte]]
+        val data: Data = scala.Array[Byte](0x80.toByte, 0x01, 0x42).asInstanceOf[IArray[Byte]]
         Varint.decode(data, 0).next
       . assert(_ == 2)
 
       test(m"decode raises on truncated continuation"):
-        val data: Data = Array[Byte](0x80.toByte).asInstanceOf[IArray[Byte]]
+        val data: Data = scala.Array[Byte](0x80.toByte).asInstanceOf[IArray[Byte]]
         capture[VarintError](Varint.decode(data, 0)).reason
       . assert(_ == VarintError.Reason.Truncated)
 
@@ -1580,7 +1580,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       sb.toString
 
     def hexBytes(s: String): Seq[Byte] =
-      val arr = new Array[Byte](s.length / 2)
+      val arr = new scala.Array[Byte](s.length / 2)
       var i = 0
       while i < arr.length do
         arr(i) = jl.Integer.parseInt(s.substring(i * 2, i * 2 + 2), 16).toByte
@@ -1842,7 +1842,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // out of range for the schema. nameSchema has 1 flat-keyword
         // entry (index 0); we use index 5.
         val bytes: Data =
-          Array[Byte](
+          scala.Array[Byte](
             0x01,                   // child-count 1
             0x05,                   // keyword index 5 (out of range)
             0x00                    // scalar length 0
@@ -1851,60 +1851,60 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == BintelError.Reason.BadKeywordIndex)
 
     suite(m"BinTEL §6 file framing"):
-      val sig32: Data = Array.fill[Byte](32)(0x55.toByte).asInstanceOf[IArray[Byte]]
-      val sig34: Data = Array.fill[Byte](34)(0xAA.toByte).asInstanceOf[IArray[Byte]]
+      val sig32: Data = scala.Array.fill[Byte](32)(0x55.toByte).asInstanceOf[IArray[Byte]]
+      val sig34: Data = scala.Array.fill[Byte](34)(0xAA.toByte).asInstanceOf[IArray[Byte]]
 
       test(m"magic number bytes are B2 C4 B5 BB"):
         hex(Bintel.magic)
       . assert(_ == "B2 C4 B5 BB")
 
       test(m"frame prepends magic, signature-length varint, signature"):
-        val body: Data = Array[Byte](0x01, 0x02).asInstanceOf[IArray[Byte]]
+        val body: Data = scala.Array[Byte](0x01, 0x02).asInstanceOf[IArray[Byte]]
         val framed = Bintel.frame(body, sig32)
         // magic (4) + sigLen varint (1: 0x20) + signature (32) + body (2) = 39
         framed.stdlib.length
       . assert(_ == 39)
 
       test(m"frame writes signature length immediately after magic"):
-        val body: Data = Array[Byte](0x01).asInstanceOf[IArray[Byte]]
+        val body: Data = scala.Array[Byte](0x01).asInstanceOf[IArray[Byte]]
         val framed = Bintel.frame(body, sig32)
         framed.stdlib.slice(0, 5).toSeq
       . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte))
 
       test(m"frame rejects too-short signature"):
-        val tooShort: Data = Array.fill[Byte](1)(0).asInstanceOf[IArray[Byte]]
+        val tooShort: Data = scala.Array.fill[Byte](1)(0).asInstanceOf[IArray[Byte]]
         val body: Data     = IArray.empty[Byte]
         capture[BintelError](Bintel.frame(body, tooShort)).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
       test(m"frame rejects signature with reserved hash-size index"):
         // XOR-fold ⇒ 0xA0, naming reserved s = 10
-        val bad: Data = Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[IArray[Byte]]
+        val bad: Data = scala.Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[IArray[Byte]]
         val body: Data = IArray.empty[Byte]
         capture[BintelError](Bintel.frame(body, bad)).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
       test(m"unframe recovers signature and body"):
-        val body: Data = Array[Byte](0x01, 0x02, 0x03).asInstanceOf[IArray[Byte]]
+        val body: Data = scala.Array[Byte](0x01, 0x02, 0x03).asInstanceOf[IArray[Byte]]
         val framed = Bintel.frame(body, sig32)
         val Bintel.Framed(sig, recovered) = Bintel.unframe(framed)
         (sig.stdlib.toSeq, recovered.stdlib.toSeq)
       . assert(_ == (sig32.stdlib.toSeq, Seq[Byte](0x01, 0x02, 0x03)))
 
       test(m"unframe rejects bad magic"):
-        val bytes: Data = Array.fill[Byte](40)(0).asInstanceOf[IArray[Byte]]
+        val bytes: Data = scala.Array.fill[Byte](40)(0).asInstanceOf[IArray[Byte]]
         capture[BintelError](Bintel.unframe(bytes)).reason
       . assert(_ == BintelError.Reason.BadMagic)
 
       test(m"unframe rejects truncated input"):
         val bytes: Data =
-          Array[Byte](0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte)
+          scala.Array[Byte](0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x20.toByte)
             .asInstanceOf[IArray[Byte]]
         capture[BintelError](Bintel.unframe(bytes)).reason
       . assert(_ == BintelError.Reason.UnexpectedEoi)
 
       test(m"larger signatures of permitted lengths are accepted"):
-        val body: Data = Array[Byte](0x01).asInstanceOf[IArray[Byte]]
+        val body: Data = scala.Array[Byte](0x01).asInstanceOf[IArray[Byte]]
         val framed = Bintel.frame(body, sig34)
         Bintel.unframe(framed).signature.stdlib.length
       . assert(_ == 34)
@@ -1932,7 +1932,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == List(t"Alice"))
 
     suite(m"BinTEL §9 textual encoding"):
-      val sig32: Data = Array.fill[Byte](32)(0x55.toByte).asInstanceOf[IArray[Byte]]
+      val sig32: Data = scala.Array.fill[Byte](32)(0x55.toByte).asInstanceOf[IArray[Byte]]
 
       test(m"text begins with βτελ (the four BASE-256 chars for the magic bytes)"):
         val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
@@ -1949,7 +1949,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     suite(m"BinTEL §8.2 schema signature"):
       // BinTEL-pinned Cadence(initial = 4, regular = 2, hashSize = 32).
       def synthetic(seed: Int): Data =
-        val arr = new Array[Byte](32)
+        val arr = new scala.Array[Byte](32)
         var i = 0
         while i < 32 do
           arr(i) = ((seed * 31 + i * 17) & 0xff).toByte
@@ -1981,7 +1981,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
       test(m"wrong-size hash raises BadSignatureLength"):
-        val bad: Data = Array.fill[Byte](16)(0).asInstanceOf[IArray[Byte]]
+        val bad: Data = scala.Array.fill[Byte](16)(0).asInstanceOf[IArray[Byte]]
         capture[BintelError](SchemaSignature.encode(List(bad))).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
@@ -2005,7 +2005,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"decode with reserved hash-size index raises BadSignatureLength"):
         // XOR-fold ⇒ 0xA0, naming reserved s = 10
-        val bad: Data = Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[IArray[Byte]]
+        val bad: Data = scala.Array[Byte](0xA0.toByte, 0, 0, 0, 0).asInstanceOf[IArray[Byte]]
         capture[BintelError](SchemaSignature.decode(bad, List(h0))).reason
       . assert(_ == BintelError.Reason.BadSignatureLength)
 
@@ -2179,7 +2179,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val docBody    = dataDoc.read[Tel].bintel(schema)
         // A valid-length but wrong signature: flip the first body byte and
         // the trailing cadence byte so the XOR-fold length check still passes.
-        val wrong = SchemaSignature.fromDocument(sd, axiom).asInstanceOf[Array[Byte]].clone()
+        val wrong = SchemaSignature.fromDocument(sd, axiom).asInstanceOf[scala.Array[Byte]].clone()
         wrong(0) = (wrong(0) ^ 0x01).toByte
         wrong(wrong.length - 1) = (wrong(wrong.length - 1) ^ 0x01).toByte
         val bytes = Bintel.frameSelfContained(wrong.asInstanceOf[IArray[Byte]], schemaBody, docBody)

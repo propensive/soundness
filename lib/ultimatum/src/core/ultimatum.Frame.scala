@@ -80,7 +80,7 @@ object Frame:
     val frac = fractions.stdlib.toIndexedSeq
     val min = limits.stdlib.map(_.min).toIndexedSeq
     val max = limits.stdlib.map(_.max).toIndexedSeq
-    val pinned = Array.fill[Optional[Int]](n)(Unset)
+    val pinned = scala.Array.fill[Optional[Int]](n)(Unset)
 
     def poolAndWeight(): (Int, Double) =
       var used = 0
@@ -116,8 +116,8 @@ object Frame:
         i += 1
 
     val (pool, weight) = poolAndWeight()
-    val sizes = Array.fill(n)(0)
-    val remainders = Array.fill(n)(0.0)
+    val sizes = scala.Array.fill(n)(0)
+    val remainders = scala.Array.fill(n)(0.0)
     var floorSum = 0
     var i = 0
 

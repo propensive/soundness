@@ -190,6 +190,6 @@ object JavaStdlibCrypto extends Crypto:
           // whole input pending a complete block.
           cipher.update(chunk.mutable(using Unsafe)) match
             case null              => Data()
-            case out: Array[Byte]  => out.immutable(using Unsafe)
+            case out: scala.Array[Byte]  => out.immutable(using Unsafe)
 
         def finish(): Data = cipher.doFinal().nn.immutable(using Unsafe)

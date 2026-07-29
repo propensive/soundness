@@ -62,7 +62,7 @@ object Base256:
       "ÐǑǒǓÔϕӖϗῘÙῚӛӜӝÞӟàῡǢǣӤåæçǨῩӪӫìíӮӯðñỲỳôỵǶỷӸùῺûǼǽþǿ"
 
   val alphabet: IArray[Char] =
-    val arr = new Array[Char](256)
+    val arr = new scala.Array[Char](256)
     var i = 0
 
     while i < 256 do
@@ -72,7 +72,7 @@ object Base256:
     arr.asInstanceOf[IArray[Char]]
 
   private val membership: IArray[Boolean] =
-    val table = new Array[Boolean](Char.MaxValue.toInt + 1)
+    val table = new scala.Array[Boolean](Char.MaxValue.toInt + 1)
     var i = 0
 
     while i < 256 do
@@ -99,7 +99,7 @@ object Base256:
 
       i += 1
 
-    val seen = new Array[Boolean](Char.MaxValue.toInt + 1)
+    val seen = new scala.Array[Boolean](Char.MaxValue.toInt + 1)
     var j = 0
 
     while j < 256 do
@@ -126,7 +126,7 @@ object Base256:
   // rejected; their residue is taken as-is.
   def decode(text: Text): Data =
     val s = text.s
-    val out = new Array[Byte](s.length)
+    val out = new scala.Array[Byte](s.length)
     var i = 0
 
     while i < s.length do
@@ -141,7 +141,7 @@ object Base256:
   // identically to `decode`.
   def decodeStrict(text: Text): Data raises Base256Error =
     val s = text.s
-    val out = new Array[Byte](s.length)
+    val out = new scala.Array[Byte](s.length)
     var i = 0
 
     while i < s.length do

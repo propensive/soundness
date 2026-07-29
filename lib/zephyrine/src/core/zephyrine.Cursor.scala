@@ -315,13 +315,13 @@ object Cursor:
   // the next cursor operation that may compact or grow the buffer.
   extension [cap^](cursor: Cursor[Data, cap])
     @targetName("dataBuffer")
-    inline def buffer(using erased unsafe: Unsafe): Array[Byte] =
-      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    inline def buffer(using erased unsafe: Unsafe): scala.Array[Byte] =
+      cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
-    inline def buffer(using erased unsafe: Unsafe): Array[Char] =
-      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+    inline def buffer(using erased unsafe: Unsafe): scala.Array[Char] =
+      cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
 
 
 // `cap^` is the capture set of the `load` thunk: `{}` for an in-memory cursor (the loader is a
@@ -396,8 +396,8 @@ extends caps.Mutable:
   // `ArrayDeque[Mark]`/`ArrayDeque[Offset]` avoids two `java.lang.Long` boxes
   // per `mark()` call — a meaningful saving on parser hot paths that mark
   // every token boundary.
-  private var marks:     Array[Long]^ = new scala.Array[Long](16)
-  private var offsets:   Array[Long]^ = new scala.Array[Long](16)
+  private var marks:     scala.Array[Long]^ = new scala.Array[Long](16)
+  private var offsets:   scala.Array[Long]^ = new scala.Array[Long](16)
   private var marksSize: Int = 0
 
   private var lineNo:   Ordinal = Prim

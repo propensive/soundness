@@ -47,7 +47,7 @@ private[hallucination] object Vp8Filter:
   private inline def diff(a: Int, b: Int): Int = math.abs(a - b)
 
   // Adjusts the two middle samples of an edge; returns the primary adjustment `a`.
-  private def commonAdjust(useOuter: Boolean, p: Array[Int], p1i: Int, p0i: Int, q0i: Int, q1i: Int)
+  private def commonAdjust(useOuter: Boolean, p: scala.Array[Int], p1i: Int, p0i: Int, q0i: Int, q1i: Int)
   :   Int =
 
     val p1 = signed(p(p1i)); val p0 = signed(p(p0i))
@@ -75,11 +75,11 @@ private[hallucination] object Vp8Filter:
 
   // Horizontal filters (vertical edge, eight consecutive samples at `base`).
 
-  def simpleSegmentHorizontal(edge: Int, p: Array[Int], base: Int): Unit =
+  def simpleSegmentHorizontal(edge: Int, p: scala.Array[Int], base: Int): Unit =
     if simpleThreshold(edge, p(base + 3), p(base + 4), p(base + 2), p(base + 5))
     then commonAdjust(true, p, base + 2, base + 3, base + 4, base + 5)
 
-  def subblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: Array[Int], base: Int): Unit =
+  def subblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: scala.Array[Int], base: Int): Unit =
     if shouldFilter(interior, edge, k => p(base + k)) then
       val hv = highVariance(hev, p(base + 2), p(base + 3), p(base + 4), p(base + 5))
       val a = (commonAdjust(hv, p, base + 2, base + 3, base + 4, base + 5) + 1) >> 1
@@ -88,7 +88,7 @@ private[hallucination] object Vp8Filter:
         writable(p)(base + 5) = unsigned(signed(p(base + 5)) - a)
         writable(p)(base + 2) = unsigned(signed(p(base + 2)) + a)
 
-  def macroblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: Array[Int], base: Int)
+  def macroblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: scala.Array[Int], base: Int)
   :   Unit =
 
     if shouldFilter(interior, edge, k => p(base + k)) then
@@ -107,12 +107,12 @@ private[hallucination] object Vp8Filter:
 
   // Vertical filters (horizontal edge, eight samples down a column at `point`, spacing `stride`).
 
-  def simpleSegmentVertical(edge: Int, p: Array[Int], point: Int, stride: Int): Unit =
+  def simpleSegmentVertical(edge: Int, p: scala.Array[Int], point: Int, stride: Int): Unit =
     if simpleThreshold(edge, p(point - stride), p(point), p(point - 2*stride), p(point + stride))
     then commonAdjust(true, p, point - 2*stride, point - stride, point, point + stride)
 
   def subblockFilterVertical
-    ( hev: Int, interior: Int, edge: Int, p: Array[Int], point: Int, stride: Int )
+    ( hev: Int, interior: Int, edge: Int, p: scala.Array[Int], point: Int, stride: Int )
   :   Unit =
 
     if shouldFilter(interior, edge, k => p(point + (k - 4)*stride)) then
@@ -127,7 +127,7 @@ private[hallucination] object Vp8Filter:
         writable(p)(point - 2*stride) = unsigned(signed(p(point - 2*stride)) + a)
 
   def macroblockFilterVertical
-    ( hev: Int, interior: Int, edge: Int, p: Array[Int], point: Int, stride: Int )
+    ( hev: Int, interior: Int, edge: Int, p: scala.Array[Int], point: Int, stride: Int )
   :   Unit =
 
     if shouldFilter(interior, edge, k => p(point + (k - 4)*stride)) then

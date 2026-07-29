@@ -203,7 +203,7 @@ extends Rig:
             // Preallocate every measurement structure before the allocation snapshot, so none
             // of it pollutes the allocation-per-operation figure.
             val ops = new scala.Array[Long](n)
-            val histograms = new scala.Array[Array[Long] | Null](n)
+            val histograms = new scala.Array[scala.Array[Long] | Null](n)
             val threads = new scala.Array[java.lang.Thread | Null](n)
             val oom = new java.util.concurrent.atomic.AtomicBoolean(false)
             var k = 0

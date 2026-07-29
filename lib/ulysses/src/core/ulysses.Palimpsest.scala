@@ -108,17 +108,17 @@ case class Palimpsest(data: Data, length: Int):
           if n != length then Unset else
             // The scratch array is threaded through the nested defs as an exclusive (`^`)
             // parameter: a captured array would be read-only inside them.
-            val body0: Array[Byte]^ = new scala.Array[Byte](bodyLen)
-            System.arraycopy(data.asInstanceOf[Array[Byte]], 0, body0, 0, bodyLen)
+            val body0: scala.Array[Byte]^ = new scala.Array[Byte](bodyLen)
+            System.arraycopy(data.asInstanceOf[scala.Array[Byte]], 0, body0, 0, bodyLen)
 
-            def xor_(body: Array[Byte]^, hash: Data, offset: Int): Unit =
+            def xor_(body: scala.Array[Byte]^, hash: Data, offset: Int): Unit =
               var j = 0
 
               while j < cadence.hashSize do
                 body(offset + j) = (body(offset + j) ^ hash(j)).toByte
                 j += 1
 
-            def recur(body: Array[Byte]^, item: Int, matched: List[Data]): Optional[List[Data]] =
+            def recur(body: scala.Array[Byte]^, item: Int, matched: List[Data]): Optional[List[Data]] =
               if item == n then
                 var allZero = true
                 var k       = 0

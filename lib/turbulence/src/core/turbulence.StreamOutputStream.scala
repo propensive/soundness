@@ -49,11 +49,11 @@ class StreamOutputStream() extends ji.OutputStream:
   def write(int: Int): Unit = buffer.append(int.toByte)
   override def close(): Unit = flush().also(chunks.stop())
 
-  override def write(bytes: Array[Byte] | Null): Unit =
+  override def write(bytes: scala.Array[Byte] | Null): Unit =
     flush()
     if bytes != null then chunks.put(bytes.immutable(using Unsafe))
 
-  override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
+  override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
     flush()
     if bytes != null then chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
 

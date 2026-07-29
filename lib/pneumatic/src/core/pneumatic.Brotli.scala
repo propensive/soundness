@@ -54,10 +54,10 @@ private[pneumatic] trait BrotliEngine extends caps.Mutable:
 
   private var delivered: Int = 0
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
-  update def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
+  update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -91,14 +91,14 @@ private[pneumatic] class BrotliDecoderEngine extends BrotliEngine:
 
   private var finished = false
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = 0
     while i < length do { input += bytes(offset + i); i += 1 }
 
   update def finish(): Unit =
     if !finished then
       finished = true
-      val array: Array[Byte]^ = new Array[Byte](input.length)
+      val array: scala.Array[Byte]^ = new scala.Array[Byte](input.length)
       var k = 0
       while k < input.length do { array(k) = input(k); k += 1 }
       val decoded = BrotliDecoder.decode(array, array.length)
@@ -112,14 +112,14 @@ private[pneumatic] class BrotliEncoderEngine extends BrotliEngine:
 
   private var finished = false
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = 0
     while i < length do { input += bytes(offset + i); i += 1 }
 
   update def finish(): Unit =
     if !finished then
       finished = true
-      val array: Array[Byte]^ = new Array[Byte](input.length)
+      val array: scala.Array[Byte]^ = new scala.Array[Byte](input.length)
       var k = 0
       while k < input.length do { array(k) = input(k); k += 1 }
       val encoded = BrotliEncoder.encode(array, array.length)
@@ -149,18 +149,18 @@ private[pneumatic] class BrotliStage(engine0: => BrotliEngine^) extends Duct[Dat
       targetSpace: Int )
   :   Duct.Progress =
 
-    engine.accept(source.asInstanceOf[Array[Byte]], sourceOffset, sourceLength)
+    engine.accept(source.asInstanceOf[scala.Array[Byte]], sourceOffset, sourceLength)
 
     Duct.Progress
       ( sourceLength,
-        engine.deliver(target.asInstanceOf[Array[Byte]], targetOffset, targetSpace) )
+        engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace) )
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
     if !finishing then
       engine.finish()
       finishing = true
 
-    engine.deliver(target.asInstanceOf[Array[Byte]], targetOffset, targetSpace)
+    engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace)
 
 object Brotli:
   given compression: Brotli is Compression:

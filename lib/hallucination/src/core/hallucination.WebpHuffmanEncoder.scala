@@ -40,7 +40,7 @@ import scala.collection.mutable as scm
 private[hallucination] object WebpHuffmanEncoder:
   // The order in which the 19 code-length codes are written.
   private val CodeLengthCodeOrder: IArray[Int] =
-    Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+    scala.Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
     . asInstanceOf[IArray[Int]]
 
   def writeSingleEntry(writer: WebpBitWriter^, symbol: Int): Unit =
@@ -56,7 +56,7 @@ private[hallucination] object WebpHuffmanEncoder:
   // Builds codes for `frequencies` and writes the tree; falls back to a single-entry tree when
   // fewer than two symbols occur.
   def writeTree
-    ( writer: WebpBitWriter^, frequencies: Array[Int], lengths: Array[Int], codes: Array[Int] )
+    ( writer: WebpBitWriter^, frequencies: scala.Array[Int], lengths: scala.Array[Int], codes: scala.Array[Int] )
   :   Unit =
 
     if !build(frequencies, lengths, codes, 15) then
@@ -65,9 +65,9 @@ private[hallucination] object WebpHuffmanEncoder:
       while symbol < frequencies.length && frequencies(symbol) == 0 do symbol += 1
       writeSingleEntry(writer, if symbol < frequencies.length then symbol else 0)
     else
-      val codeLengthLengths = new Array[Int](16)
-      val codeLengthCodes = new Array[Int](16)
-      val codeLengthFrequencies = new Array[Int](16)
+      val codeLengthLengths = new scala.Array[Int](16)
+      val codeLengthCodes = new scala.Array[Int](16)
+      val codeLengthFrequencies = new scala.Array[Int](16)
       var i = 0
 
       while i < lengths.length do
@@ -79,7 +79,7 @@ private[hallucination] object WebpHuffmanEncoder:
       writer.writeBits(0, 1)
       writer.writeBits(19 - 4, 4)
 
-      for j <- CodeLengthCodeOrder.asInstanceOf[Array[Int]] do
+      for j <- CodeLengthCodeOrder.asInstanceOf[scala.Array[Int]] do
         if j > 15 || codeLengthFrequencies(j) == 0 then writer.writeBits(0, 3)
         else if singleCodeLength then writer.writeBits(1, 3)
         else writer.writeBits(codeLengthLengths(j).toLong, 3)
@@ -102,7 +102,7 @@ private[hallucination] object WebpHuffmanEncoder:
 
   // Builds canonical code lengths (≤ `limit`) and codes from frequencies; returns false (and zeroes
   // the arrays) if fewer than two symbols occur.
-  private def build(frequencies: Array[Int], lengths: Array[Int], codes: Array[Int], limit: Int)
+  private def build(frequencies: scala.Array[Int], lengths: scala.Array[Int], codes: scala.Array[Int], limit: Int)
   :   Boolean =
 
     java.util.Arrays.fill(lengths, 0)
@@ -151,7 +151,7 @@ private[hallucination] object WebpHuffmanEncoder:
       true
 
   // Rebalances code lengths so none exceeds `limit`, preserving a valid (Kraft-complete) tree.
-  private def limitLengths(frequencies: Array[Int], lengths: Array[Int], limit: Int): Unit =
+  private def limitLengths(frequencies: scala.Array[Int], lengths: scala.Array[Int], limit: Int): Unit =
     var maxLength = 0
     var i = 0
 
@@ -160,7 +160,7 @@ private[hallucination] object WebpHuffmanEncoder:
       i += 1
 
     if maxLength > limit then
-      val counts = new Array[Int](16)
+      val counts = new scala.Array[Int](16)
       i = 0
 
       while i < lengths.length do
@@ -199,7 +199,7 @@ private[hallucination] object WebpHuffmanEncoder:
         k += 1
 
   // Assigns canonical, bit-reversed codes in increasing length order.
-  private def assignCodes(lengths: Array[Int], codes: Array[Int], limit: Int): Unit =
+  private def assignCodes(lengths: scala.Array[Int], codes: scala.Array[Int], limit: Int): Unit =
     var code = 0
     var len = 1
 

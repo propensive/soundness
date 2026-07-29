@@ -754,7 +754,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+              val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -788,7 +788,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(8)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+              val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, stream.start, count))
               stream.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -807,7 +807,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           def recur(): Unit = decoded.refill(Credit(4)) match
             case count: Int =>
-              val window = unsafely(decoded.window).asInstanceOf[Array[Char]]
+              val window = unsafely(decoded.window).asInstanceOf[scala.Array[Char]]
               builder.append(String(window, decoded.start, count))
               decoded.skip(count)
               scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -826,7 +826,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
            stream.refill(Credit(7)) match
             case count: Int =>
-              val window = unsafely(stream.window).asInstanceOf[Array[AnyRef]]
+              val window = unsafely(stream.window).asInstanceOf[scala.Array[AnyRef]]
 
               for index <- 0 until count
               do collected = window(stream.start + index).asInstanceOf[String] :: collected
@@ -853,7 +853,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
           Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5)))
           . sweep: (storage, start, count) =>
-              val bytes = storage.asInstanceOf[Array[Byte]]
+              val bytes = storage.asInstanceOf[scala.Array[Byte]]
               for index <- 0 until count do collected = bytes(start + index) :: collected
 
           collected.reverse
@@ -914,7 +914,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"fold reduces over windows without boxing"):
           import zephyrine.fold
           bytes.stream.fold(0L): (total, storage, start, count) =>
-            val array = storage.asInstanceOf[Array[Byte]]
+            val array = storage.asInstanceOf[scala.Array[Byte]]
             var sum = total
             var index = 0
             while index < count do { sum += (array(start + index) & 0xff); index += 1 }

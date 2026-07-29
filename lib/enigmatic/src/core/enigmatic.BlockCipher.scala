@@ -162,7 +162,7 @@ extends Duct[Data, Data]:
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
 
-  private update def deliver(target: Array[Byte], targetOffset: Int, targetSpace: Int): Int =
+  private update def deliver(target: scala.Array[Byte], targetOffset: Int, targetSpace: Int): Int =
     val count = targetSpace.min(pending.length - offset)
 
     if count > 0 then
@@ -180,7 +180,7 @@ extends Duct[Data, Data]:
       targetSpace: Int )
   :   Duct.Progress =
 
-    val bytes = target.asInstanceOf[Array[Byte]]
+    val bytes = target.asInstanceOf[scala.Array[Byte]]
 
     if offset < pending.length then Duct.Progress(0, deliver(bytes, targetOffset, targetSpace))
     else
@@ -191,7 +191,7 @@ extends Duct[Data, Data]:
       Duct.Progress(sourceLength, deliver(bytes, targetOffset, targetSpace))
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val bytes = target.asInstanceOf[Array[Byte]]
+    val bytes = target.asInstanceOf[scala.Array[Byte]]
 
     if offset < pending.length then deliver(bytes, targetOffset, targetSpace)
     else if !finished then
@@ -221,7 +221,7 @@ extends Duct[Data, Data]:
     case null         => Unset
     case text: String => text.tt
 
-  private val header: Array[Byte] = new scala.Array[Byte](ivSize)
+  private val header: scala.Array[Byte] = new scala.Array[Byte](ivSize)
   private var headerFilled: Int = 0
 
   // Untracked, cast-erased: the inner duct is reached only through this
@@ -258,7 +258,7 @@ extends Duct[Data, Data]:
 
       case null =>
         val take = sourceLength.min(ivSize - headerFilled)
-        System.arraycopy(source.asInstanceOf[Array[Byte]], sourceOffset, header, headerFilled, take)
+        System.arraycopy(source.asInstanceOf[scala.Array[Byte]], sourceOffset, header, headerFilled, take)
         headerFilled += take
         if headerFilled == ivSize then inner = begin().asInstanceOf[CipherDuct]
         Duct.Progress(take, 0)

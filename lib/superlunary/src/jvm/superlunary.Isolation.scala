@@ -46,7 +46,7 @@ import classloaders.systemClassloader
 
 object Isolation extends Rig:
   type Result[output] = output
-  type Form = Array[Pojo]
+  type Form = scala.Array[Pojo]
   type Target = Classloader
   type Transport = Pojo
 
@@ -57,7 +57,7 @@ object Isolation extends Rig:
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
     // The bridge crosses through an `AnyRef` rim (the kernel-module-sep idiom): a directly
     // typed lambda mints fresh read capabilities that cannot match the stage's own.
-    val bridge: AnyRef = ((input: Array[Pojo]) =>
+    val bridge: AnyRef = ((input: scala.Array[Pojo]) =>
       val classloader: Classloader = stage.target
       val cls = classloader.on(t"Generated$$Code$$From$$Quoted").or(???)
       val instance = cls.getDeclaredConstructor().nn.newInstance().nn
@@ -67,11 +67,11 @@ object Isolation extends Rig:
       val method2 = function.getClass.getMethod("apply", classOf[Object]).nn
       method2.setAccessible(true)
       val result =
-        method2.invoke(function, input.asInstanceOf[Array[AnyRef | Null]])
-        . asInstanceOf[Array[AnyRef | Null]]
+        method2.invoke(function, input.asInstanceOf[scala.Array[AnyRef | Null]])
+        . asInstanceOf[scala.Array[AnyRef | Null]]
 
       // A pure-typed copy via the Java API, so the bridge's result carries no capability.
-      java.util.Arrays.copyOf(result, result.length).nn.asInstanceOf[Array[Pojo]]
+      java.util.Arrays.copyOf(result, result.length).nn.asInstanceOf[scala.Array[Pojo]]
     ).asInstanceOf[AnyRef]
 
     stage.remote.asInstanceOf[AnyRef => AnyRef](bridge).asInstanceOf[output]

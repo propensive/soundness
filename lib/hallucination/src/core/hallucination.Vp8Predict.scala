@@ -49,11 +49,11 @@ private[hallucination] object Vp8Predict:
 
   // Builds the luma working block with its borders drawn from the neighbouring macroblocks'
   // saved edges (or the frame-edge defaults 127 above and 129 left).
-  def createBorderLuma(mbx: Int, mby: Int, mbw: Int, top: Array[Int], left: Array[Int])
-  :   Array[Int] =
+  def createBorderLuma(mbx: Int, mby: Int, mbw: Int, top: scala.Array[Int], left: scala.Array[Int])
+  :   scala.Array[Int] =
 
     val stride = LumaStride
-    val ws = new Array[Int](LumaBlockSize)
+    val ws = new scala.Array[Int](LumaBlockSize)
 
     if mby == 0 then
       var i = 1
@@ -105,9 +105,9 @@ private[hallucination] object Vp8Predict:
     ws(0) = if mby == 0 then 127 else if mbx == 0 then 129 else left(0)
     ws
 
-  def createBorderChroma(mbx: Int, mby: Int, top: Array[Int], left: Array[Int]): Array[Int] =
+  def createBorderChroma(mbx: Int, mby: Int, top: scala.Array[Int], left: scala.Array[Int]): scala.Array[Int] =
     val stride = ChromaStride
-    val ws = new Array[Int](ChromaBlockSize)
+    val ws = new scala.Array[Int](ChromaBlockSize)
 
     if mby == 0 then
       var i = 1
@@ -140,7 +140,7 @@ private[hallucination] object Vp8Predict:
 
   // Adds a decoded 4×4 residual block to the predicted pixels, clamping to 0–255.
   def addResidue
-    ( pblock: Array[Int], rblock: Array[Int], rOffset: Int, y0: Int, x0: Int, stride: Int )
+    ( pblock: scala.Array[Int], rblock: scala.Array[Int], rOffset: Int, y0: Int, x0: Int, stride: Int )
   :   Unit =
 
     var pos = y0*stride + x0
@@ -157,7 +157,7 @@ private[hallucination] object Vp8Predict:
       pos += stride
       row += 1
 
-  def predictVpred(a: Array[Int], size: Int, x0: Int, y0: Int, stride: Int): Unit =
+  def predictVpred(a: scala.Array[Int], size: Int, x0: Int, y0: Int, stride: Int): Unit =
     var y = 0
 
     while y < size do
@@ -169,7 +169,7 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  def predictHpred(a: Array[Int], size: Int, x0: Int, y0: Int, stride: Int): Unit =
+  def predictHpred(a: scala.Array[Int], size: Int, x0: Int, y0: Int, stride: Int): Unit =
     var y = 0
 
     while y < size do
@@ -182,7 +182,7 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  def predictDcpred(a: Array[Int], size: Int, stride: Int, above: Boolean, left: Boolean): Unit =
+  def predictDcpred(a: scala.Array[Int], size: Int, stride: Int, above: Boolean, left: Boolean): Unit =
     var sum = 0
     var shift = if size == 8 then 2 else 3
 
@@ -217,7 +217,7 @@ private[hallucination] object Vp8Predict:
       y += 1
 
   // The "TrueMotion" predictor: X_ij = clamp(L_i + A_j − P).
-  def predictTmpred(a: Array[Int], size: Int, x0: Int, y0: Int, stride: Int): Unit =
+  def predictTmpred(a: scala.Array[Int], size: Int, x0: Int, y0: Int, stride: Int): Unit =
     val p = a((y0 - 1)*stride + x0 - 1)
     var y = 0
 
@@ -233,7 +233,7 @@ private[hallucination] object Vp8Predict:
       y += 1
 
   // Dispatches each of a macroblock's sixteen 4×4 subblocks to its B_PRED mode, adding residue.
-  def predict4x4(ws: Array[Int], stride: Int, modes: Array[Int], resdata: Array[Int]): Unit =
+  def predict4x4(ws: scala.Array[Int], stride: Int, modes: scala.Array[Int], resdata: scala.Array[Int]): Unit =
     var sby = 0
 
     while sby < 4 do
@@ -261,18 +261,18 @@ private[hallucination] object Vp8Predict:
 
       sby += 1
 
-  private inline def topLeft(a: Array[Int], x0: Int, y0: Int, stride: Int): Int =
+  private inline def topLeft(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Int =
     a((y0 - 1)*stride + x0 - 1)
 
-  private inline def top(a: Array[Int], x0: Int, y0: Int, stride: Int, k: Int): Int =
+  private inline def top(a: scala.Array[Int], x0: Int, y0: Int, stride: Int, k: Int): Int =
     a((y0 - 1)*stride + x0 + k)
 
-  private inline def leftPixel(a: Array[Int], x0: Int, y0: Int, stride: Int, k: Int): Int =
+  private inline def leftPixel(a: scala.Array[Int], x0: Int, y0: Int, stride: Int, k: Int): Int =
     a((y0 + k)*stride + x0 - 1)
 
   // The nine edge pixels around a subblock, ordered bottom-left (e0) up the left column, through
   // the top-left corner (e4), along the top row to e8.
-  private inline def edge(a: Array[Int], x0: Int, y0: Int, stride: Int, k: Int): Int =
+  private inline def edge(a: scala.Array[Int], x0: Int, y0: Int, stride: Int, k: Int): Int =
     val corner = (y0 - 1)*stride + x0 - 1
 
     k match
@@ -282,7 +282,7 @@ private[hallucination] object Vp8Predict:
       case 3 => a(corner + stride)
       case _ => a(corner + (k - 4))
 
-  private def bdcpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+  private def bdcpred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     var v = 4
     var k = 0
 
@@ -303,10 +303,10 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  private def bvepred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+  private def bvepred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     val p = topLeft(a, x0, y0, stride)
 
-    val avg = Array(avg3(p, top(a, x0, y0, stride, 0), top(a, x0, y0, stride, 1)),
+    val avg = scala.Array(avg3(p, top(a, x0, y0, stride, 0), top(a, x0, y0, stride, 1)),
         avg3(top(a, x0, y0, stride, 0), top(a, x0, y0, stride, 1), top(a, x0, y0, stride, 2)),
         avg3(top(a, x0, y0, stride, 1), top(a, x0, y0, stride, 2), top(a, x0, y0, stride, 3)),
         avg3(top(a, x0, y0, stride, 2), top(a, x0, y0, stride, 3), top(a, x0, y0, stride, 4)))
@@ -322,11 +322,11 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  private def bhepred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+  private def bhepred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     val p = topLeft(a, x0, y0, stride)
     val l0 = leftPixel(a, x0, y0, stride, 0); val l1 = leftPixel(a, x0, y0, stride, 1)
     val l2 = leftPixel(a, x0, y0, stride, 2); val l3 = leftPixel(a, x0, y0, stride, 3)
-    val avg = Array(avg3(p, l0, l1), avg3(l0, l1, l2), avg3(l1, l2, l3), avg3(l2, l3, l3))
+    val avg = scala.Array(avg3(p, l0, l1), avg3(l0, l1, l2), avg3(l1, l2, l3), avg3(l2, l3, l3))
 
     var y = 0
 
@@ -339,10 +339,10 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  private def bldpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
-    val t = Array.tabulate(8)(top(a, x0, y0, stride, _))
+  private def bldpred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+    val t = scala.Array.tabulate(8)(top(a, x0, y0, stride, _))
 
-    val avg = Array(avg3(t(0), t(1), t(2)), avg3(t(1), t(2), t(3)), avg3(t(2), t(3), t(4)),
+    val avg = scala.Array(avg3(t(0), t(1), t(2)), avg3(t(1), t(2), t(3)), avg3(t(2), t(3), t(4)),
         avg3(t(3), t(4), t(5)), avg3(t(4), t(5), t(6)), avg3(t(5), t(6), t(7)),
         avg3(t(6), t(7), t(7)))
 
@@ -357,10 +357,10 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  private def brdpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
-    val e = Array.tabulate(9)(edge(a, x0, y0, stride, _))
+  private def brdpred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+    val e = scala.Array.tabulate(9)(edge(a, x0, y0, stride, _))
 
-    val avg = Array(avg3(e(0), e(1), e(2)), avg3(e(1), e(2), e(3)), avg3(e(2), e(3), e(4)),
+    val avg = scala.Array(avg3(e(0), e(1), e(2)), avg3(e(1), e(2), e(3)), avg3(e(2), e(3), e(4)),
         avg3(e(3), e(4), e(5)), avg3(e(4), e(5), e(6)), avg3(e(5), e(6), e(7)),
         avg3(e(6), e(7), e(8)))
 
@@ -375,8 +375,8 @@ private[hallucination] object Vp8Predict:
 
       y += 1
 
-  private def bvrpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
-    val e = Array.tabulate(9)(edge(a, x0, y0, stride, _))
+  private def bvrpred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+    val e = scala.Array.tabulate(9)(edge(a, x0, y0, stride, _))
     inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v
 
     set(3, 0, avg3(e(1), e(2), e(3)))
@@ -390,8 +390,8 @@ private[hallucination] object Vp8Predict:
     set(1, 3, avg3(e(6), e(7), e(8)))
     set(0, 3, avg2(e(7), e(8)))
 
-  private def bvlpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
-    val t = Array.tabulate(8)(top(a, x0, y0, stride, _))
+  private def bvlpred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+    val t = scala.Array.tabulate(8)(top(a, x0, y0, stride, _))
     inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v
 
     set(0, 0, avg2(t(0), t(1)))
@@ -405,8 +405,8 @@ private[hallucination] object Vp8Predict:
     set(2, 3, avg3(t(4), t(5), t(6)))
     set(3, 3, avg3(t(5), t(6), t(7)))
 
-  private def bhdpred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
-    val e = Array.tabulate(9)(edge(a, x0, y0, stride, _))
+  private def bhdpred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+    val e = scala.Array.tabulate(9)(edge(a, x0, y0, stride, _))
     inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v
 
     set(3, 0, avg2(e(0), e(1)))
@@ -420,7 +420,7 @@ private[hallucination] object Vp8Predict:
     set(0, 2, avg3(e(4), e(5), e(6)))
     set(0, 3, avg3(e(5), e(6), e(7)))
 
-  private def bhupred(a: Array[Int], x0: Int, y0: Int, stride: Int): Unit =
+  private def bhupred(a: scala.Array[Int], x0: Int, y0: Int, stride: Int): Unit =
     val l0 = leftPixel(a, x0, y0, stride, 0); val l1 = leftPixel(a, x0, y0, stride, 1)
     val l2 = leftPixel(a, x0, y0, stride, 2); val l3 = leftPixel(a, x0, y0, stride, 3)
     inline def set(dy: Int, dx: Int, v: Int): Unit = writable(a)((y0 + dy)*stride + x0 + dx) = v

@@ -195,7 +195,7 @@ object KotlinDialect extends Dialect:
   // nullability, so every reference type reads as definite; a later refinement could consult
   // `@Nullable` annotations.
   // Array traversal without `Predef`'s `ArrayOps` (this module compiles with `-Yno-predef`).
-  private def listOf[element](array: Array[element | Null] | Null): List[element] =
+  private def listOf[element](array: scala.Array[element | Null] | Null): List[element] =
     val definite = array.nn
 
     def recur(index: Int, acc: List[element]): List[element] =

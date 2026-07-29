@@ -172,11 +172,11 @@ extension (consume stream: (Stream[Data] over Credit)^)
         val available = ensure()
 
         if available < 0 then -1 else
-          val byte = stream.window(using Unsafe).asInstanceOf[Array[Byte]](stream.start) & 0xff
+          val byte = stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]](stream.start) & 0xff
           stream.skip(1)
           byte
 
-      override def read(target: Array[Byte] | Null, offset: Int, length: Int): Int =
+      override def read(target: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
         if length == 0 then 0 else
           val available = ensure()
 
@@ -331,9 +331,9 @@ extension (stream: Progression[Data])
   def shred(mean: Double, variance: Double)(using Random): Progression[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
-    def newArray(): Array[Byte]^ = new scala.Array[Byte](arbitrary[Double]().toInt.max(1))
+    def newArray(): scala.Array[Byte]^ = new scala.Array[Byte](arbitrary[Double]().toInt.max(1))
 
-    def recur(stream: Progression[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
+    def recur(stream: Progression[Data], sourcePos: Int, dest: scala.Array[Byte]^, destPos: Int)
     :   Progression[Data] =
 
       stream match
@@ -392,7 +392,7 @@ extension (stream: Progression[Data])
 
     def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
 
-    override def read(array: Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
+    override def read(array: scala.Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
       if length == 0 then 0 else
         val count = length.min(available())
 

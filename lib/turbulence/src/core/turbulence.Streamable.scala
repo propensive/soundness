@@ -100,7 +100,7 @@ object Streamable:
         type Transport = Credit
 
         private val capacity: Int = summon[Buffering].capacity(Substrate.Chars)
-        private val storage: Array[Char] = new scala.Array[Char](capacity)
+        private val storage: scala.Array[Char] = new scala.Array[Char](capacity)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var total: Long = 0
@@ -153,7 +153,7 @@ object Streamable:
       type Transport = Credit
 
       private val capacity: Int = buffering.capacity(Substrate.Bytes)
-      private val storage: Array[Byte] = new scala.Array[Byte](capacity)
+      private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
       private val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(storage).nn
       private var start0: Int = 0
       private var limit0: Int = 0

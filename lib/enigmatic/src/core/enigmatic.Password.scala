@@ -51,7 +51,7 @@ object Password:
 
   // From mutable chars: encodes to UTF-8, then zeroes both the input array and the
   // intermediate encoding buffer, leaving the cloaked copy as the only cleartext.
-  def apply(cleartext: Array[Char])(using cloak: Cloak^): Password^{cloak} =
+  def apply(cleartext: scala.Array[Char])(using cloak: Cloak^): Password^{cloak} =
     val buffer = jnc.StandardCharsets.UTF_8.nn.encode(jn.CharBuffer.wrap(cleartext)).nn
     val bytes = new scala.Array[Byte](buffer.remaining)
     buffer.get(bytes)
@@ -85,7 +85,7 @@ class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
 // The chars are held as the pure `IArray` view (a bare `Array` field would violate this
 // shared capability's classifier); `chars` re-exposes the mutable view for zeroing.
 class Cleartext private[enigmatic] (private val secret: IArray[Char]) extends caps.SharedCapability:
-  def chars: Array[Char] = secret.asInstanceOf[Array[Char]]
+  def chars: scala.Array[Char] = secret.asInstanceOf[scala.Array[Char]]
 
 // The cleartext lent within an `uncloak` block, reached contextually: `cleartext.chars` rather
 // than `summon[Cleartext].chars`, following the same idiom as parasite's `monitor`.

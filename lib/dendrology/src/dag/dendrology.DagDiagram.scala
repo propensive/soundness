@@ -51,7 +51,7 @@ object DagDiagram:
     // A flat exclusive scratch array rather than a nested `Array[Array[Int]]`: writing
     // through an element read of a nested array is rejected by separation checking.
     val n = nodes.length
-    val layout: Array[Int]^ = new scala.Array[Int](n*n)
+    val layout: scala.Array[Int]^ = new scala.Array[Int](n*n)
     var rest = dag.edges.to(List)
 
     while rest.nonEmpty do

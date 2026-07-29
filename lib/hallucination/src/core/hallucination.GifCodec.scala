@@ -70,7 +70,7 @@ private[hallucination] object GifCodec:
           IArray()
 
       var transparentIndex = -1
-      val screen = new Array[Long](width*height)
+      val screen = new scala.Array[Long](width*height)
 
       def skipBlocks(): Unit =
         while u8(data, position) != 0 do position += u8(data, position) + 1
@@ -132,7 +132,7 @@ private[hallucination] object GifCodec:
               GifLzw.decode(minimum, compressed.result().immutable(using Unsafe), pixels)
 
             // Interlaced frames deliver their rows in four passes.
-            val rows: Array[Int]^ = new Array[Int](frameHeight)
+            val rows: scala.Array[Int]^ = new scala.Array[Int](frameHeight)
 
             if interlaced then
               var row = 0
@@ -189,8 +189,8 @@ private[hallucination] object GifCodec:
     val width = raster.width
     val height = raster.height
     val counts = scm.HashMap[Int, Int]()
-    val opacity = new Array[Boolean](width*height)
-    val colors = new Array[Int](width*height)
+    val opacity = new scala.Array[Boolean](width*height)
+    val colors = new scala.Array[Int](width*height)
     var transparent = false
 
     for index <- 0 until width*height do
@@ -209,7 +209,7 @@ private[hallucination] object GifCodec:
     val (palette, assignment) = Quantization(counts, limit)
     val transparentIndex = palette.length
 
-    val indices = new Array[Byte](width*height)
+    val indices = new scala.Array[Byte](width*height)
 
     for index <- 0 until width*height do
       indices(index) =

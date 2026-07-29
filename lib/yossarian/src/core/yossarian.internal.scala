@@ -48,9 +48,9 @@ object internal:
 
   object Screen:
     def apply[styling: ClassTag](width: Int, height: Int, blank: styling): Screen[styling] =
-      val graphemes = Array.fill[Grapheme](width*height)(Grapheme(" "))
-      val styles = Array.fill[styling](width*height)(blank)
-      val links = Array.fill[Text](width*height)(t"")
+      val graphemes = scala.Array.fill[Grapheme](width*height)(Grapheme(" "))
+      val styles = scala.Array.fill[styling](width*height)(blank)
+      val links = scala.Array.fill[Text](width*height)(t"")
       new Screen(width, blank, styles, graphemes, links)
 
     // The terminal-emulator buffer: cells are `yossarian.Style` blanked to the
@@ -68,17 +68,17 @@ object internal:
   class Screen[styling]
     ( val width:      Int,
       blank:          styling,
-      @scala.caps.unsafe.untrackedCaptures styleBuffer:    Array[styling],
-      @scala.caps.unsafe.untrackedCaptures graphemeBuffer: Array[Grapheme],
-      @scala.caps.unsafe.untrackedCaptures linkBuffer:     Array[Text] ):
+      @scala.caps.unsafe.untrackedCaptures styleBuffer:    scala.Array[styling],
+      @scala.caps.unsafe.untrackedCaptures graphemeBuffer: scala.Array[Grapheme],
+      @scala.caps.unsafe.untrackedCaptures linkBuffer:     scala.Array[Text] ):
 
     // Exclusive views for writes: the untracked fields read as read-only.
-    private inline def styleTarget: Array[styling]^ = styleBuffer.asInstanceOf[Array[styling]^]
+    private inline def styleTarget: scala.Array[styling]^ = styleBuffer.asInstanceOf[scala.Array[styling]^]
 
-    private inline def graphemeTarget: Array[Grapheme]^ =
-      graphemeBuffer.asInstanceOf[Array[Grapheme]^]
+    private inline def graphemeTarget: scala.Array[Grapheme]^ =
+      graphemeBuffer.asInstanceOf[scala.Array[Grapheme]^]
 
-    private inline def linkTarget: Array[Text]^ = linkBuffer.asInstanceOf[Array[Text]^]
+    private inline def linkTarget: scala.Array[Text]^ = linkBuffer.asInstanceOf[scala.Array[Text]^]
 
     def capacity: Int = graphemeBuffer.length
     def height: Int = capacity/width

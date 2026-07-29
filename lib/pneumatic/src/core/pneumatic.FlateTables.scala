@@ -43,7 +43,7 @@ private[pneumatic] object FlateTables:
   // Fixed literal/length and distance decoding tables (InfTree.fixed_tl/fixed_td).
   val fixedTl: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       96, 7, 256, 0, 8, 80, 0, 8, 16, 84, 8, 115,
       82, 7, 31, 0, 8, 112, 0, 8, 48, 0, 9, 192,
       80, 7, 10, 0, 8, 96, 0, 8, 32, 0, 9, 160,
@@ -175,7 +175,7 @@ private[pneumatic] object FlateTables:
 
   val fixedTd: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       80, 5, 1, 87, 5, 257, 83, 5, 17, 91, 5, 4097,
       81, 5, 5, 89, 5, 1025, 85, 5, 65, 93, 5, 16385,
       80, 5, 3, 88, 5, 513, 84, 5, 33, 92, 5, 8193,
@@ -189,64 +189,64 @@ private[pneumatic] object FlateTables:
   // for distance codes 0..29 (112 marks an invalid code).
   val cplens: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       3, 4, 5, 6, 7, 8, 9, 10, 11, 13, 15, 17, 19, 23, 27, 31,
       35, 43, 51, 59, 67, 83, 99, 115, 131, 163, 195, 227, 258, 0, 0)
 
   val cplext: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
       3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0, 112, 112)
 
   val cpdist: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       1, 2, 3, 4, 5, 7, 9, 13, 17, 25, 33, 49, 65, 97, 129, 193,
       257, 385, 513, 769, 1025, 1537, 2049, 3073, 4097, 6145, 8193, 12289, 16385, 24577)
 
   val cpdext: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
       7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13)
 
   // Order of the bit-length code lengths.
   val border: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2,
       14, 1, 15)
 
   // Extra bits for each length, distance and bit-length code (Tree).
   val extraLbits: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 2, 2, 2, 2,
       3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 0)
 
   val extraDbits: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6,
       7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12, 12, 13, 13)
 
   val extraBlbits: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       2, 3, 7)
 
   val blOrder: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13, 2,
       14, 1, 15)
 
   // Distance and length code mappings and their base values (Tree).
   val distCode: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 1, 2, 3, 4, 4, 5, 5, 6, 6, 6, 6, 7, 7, 7, 7,
       8, 8, 8, 8, 8, 8, 8, 8, 9, 9, 9, 9, 9, 9, 9, 9,
       10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10,
@@ -282,7 +282,7 @@ private[pneumatic] object FlateTables:
 
   val lengthCode: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 9, 10, 10, 11, 11,
       12, 12, 12, 12, 13, 13, 13, 13, 14, 14, 14, 14, 15, 15, 15, 15,
       16, 16, 16, 16, 16, 16, 16, 16, 17, 17, 17, 17, 17, 17, 17, 17,
@@ -302,20 +302,20 @@ private[pneumatic] object FlateTables:
 
   val baseLength: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 20, 24, 28,
       32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 0)
 
   val baseDist: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 1, 2, 3, 4, 6, 8, 12, 16, 24, 32, 48, 64, 96, 128, 192,
       256, 384, 512, 768, 1024, 1536, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576)
 
   // The static literal and distance trees (StaticTree), as (code, bits) pairs.
   val staticLtree: IArray[Short] =
     IArray.unsafeFromArray:
-      Array[Short](
+      scala.Array[Short](
       12, 8, 140, 8, 76, 8, 204, 8, 44, 8, 172, 8, 108, 8, 236, 8, 28, 8, 156, 8,
       92, 8, 220, 8, 60, 8, 188, 8, 124, 8, 252, 8, 2, 8, 130, 8, 66, 8, 194, 8,
       34, 8, 162, 8, 98, 8, 226, 8, 18, 8, 146, 8, 82, 8, 210, 8, 50, 8, 178, 8,
@@ -348,7 +348,7 @@ private[pneumatic] object FlateTables:
 
   val staticDtree: IArray[Short] =
     IArray.unsafeFromArray:
-      Array[Short](
+      scala.Array[Short](
       0, 5, 16, 5, 8, 5, 24, 5, 4, 5, 20, 5, 12, 5, 28, 5, 2, 5, 18, 5,
       10, 5, 26, 5, 6, 5, 22, 5, 14, 5, 30, 5, 1, 5, 17, 5, 9, 5, 25, 5,
       5, 5, 21, 5, 13, 5, 29, 5, 3, 5, 19, 5, 11, 5, 27, 5, 7, 5, 23, 5)

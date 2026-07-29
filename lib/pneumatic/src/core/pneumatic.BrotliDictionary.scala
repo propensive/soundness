@@ -56,19 +56,19 @@ private[pneumatic] object BrotliDictionary:
 
   val offsetsByLength: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 0, 0, 0, 0, 4096, 9216, 21504, 35840, 44032, 53248, 63488, 74752, 87040, 93696, 100864,
       104704, 106752, 108928, 113536, 115968, 118528, 119872, 121280, 122016)
 
   val sizeBitsByLength: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       0, 0, 0, 0, 10, 10, 11, 11, 10, 10, 10, 10, 10, 9, 9, 8, 7, 7, 8, 7, 7, 6, 6, 5, 5)
 
   def data: IArray[Byte] = BrotliDictionaryData.data
 
   private def uni(s: String): IArray[Byte] =
-    val out: Array[Byte]^ = new Array[Byte](s.length)
+    val out: scala.Array[Byte]^ = new scala.Array[Byte](s.length)
     var i = 0
     while i < s.length do { out(i) = s.charAt(i).toByte; i += 1 }
     IArray.unsafeFromArray(out)
@@ -82,7 +82,7 @@ private[pneumatic] object BrotliDictionary:
 
   val transforms: IArray[Transform] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
       Transform("", Identity, ""),
       Transform("", Identity, " "),
       Transform(" ", Identity, " "),
@@ -207,7 +207,7 @@ private[pneumatic] object BrotliDictionary:
   )
 
   def transformDictionaryWord
-    ( dst: Array[Byte]^, dstOffset: Int, word: IArray[Byte], wordOffset0: Int, len0: Int,
+    ( dst: scala.Array[Byte]^, dstOffset: Int, word: IArray[Byte], wordOffset0: Int, len0: Int,
       transform: Transform )
   :   Int =
 

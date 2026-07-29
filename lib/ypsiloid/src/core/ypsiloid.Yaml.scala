@@ -788,7 +788,7 @@ object Yaml extends Yaml2, Dynamic:
     // value that overflowed `Long`/`Double` precision during parsing.
     object BcdValue:
       def unapply(ast: Yaml.Ast): Option[Bcd] = ast match
-        case b: Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
+        case b: scala.Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
         case _                           => None
 
     object Str:
@@ -799,7 +799,7 @@ object Yaml extends Yaml2, Dynamic:
     object Sequence:
       def unapply(ast: Yaml.Ast): Option[IArray[Yaml.Ast]] = ast match
         case xs: IArray[?] @unchecked
-          if xs.isInstanceOf[Array[AnyRef]] && ((xs.length & 1) == 1 || xs.length == 1) =>
+          if xs.isInstanceOf[scala.Array[AnyRef]] && ((xs.length & 1) == 1 || xs.length == 1) =>
           // Strip the sentinel if present.
           val n = xs.length
 
@@ -815,7 +815,7 @@ object Yaml extends Yaml2, Dynamic:
     object Mapping:
       def unapply(ast: Yaml.Ast): Option[IArray[(Yaml.Ast, Yaml.Ast)]] = ast match
         case xs: IArray[?] @unchecked
-          if xs.isInstanceOf[Array[AnyRef]] && (xs.length & 1) == 0 =>
+          if xs.isInstanceOf[scala.Array[AnyRef]] && (xs.length & 1) == 0 =>
           val n = xs.length / 2
 
           Some(IArray.tabulate(n): i =>
@@ -839,22 +839,22 @@ object Yaml extends Yaml2, Dynamic:
         // Cross-shape numeric comparisons: a `Bcd` may be equal in value
         // to a `Long`, `Double`, or another `Bcd`, when their canonical
         // BigDecimal projections compare equal.
-        case (a: Array[Double] @unchecked, b: Array[Double] @unchecked) =>
+        case (a: scala.Array[Double] @unchecked, b: scala.Array[Double] @unchecked) =>
           a.asInstanceOf[Bcd].toBigDecimal == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Array[Double] @unchecked, b: Long) =>
+        case (a: scala.Array[Double] @unchecked, b: Long) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
 
-        case (a: Array[Double] @unchecked, b: Double) =>
+        case (a: scala.Array[Double] @unchecked, b: Double) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
 
-        case (a: Long, b: Array[Double] @unchecked) =>
+        case (a: Long, b: scala.Array[Double] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Double, b: Array[Double] @unchecked) =>
+        case (a: Double, b: scala.Array[Double] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Array[AnyRef] @unchecked, b: Array[AnyRef] @unchecked) =>
+        case (a: scala.Array[AnyRef] @unchecked, b: scala.Array[AnyRef] @unchecked) =>
           a.length == b.length && {
             var i = 0
             var equal = true
@@ -881,12 +881,12 @@ object Yaml extends Yaml2, Dynamic:
       case d: Double     => d.hashCode
       case s: String     => s.hashCode
 
-      case b: Array[Double] @unchecked =>
+      case b: scala.Array[Double] @unchecked =>
         // Hash via the BigDecimal projection so a `Bcd` whose value equals
         // a numeric `Long`/`Double` literal has a consistent hash.
         b.asInstanceOf[Bcd].toBigDecimal.hashCode
 
-      case xs: Array[AnyRef] @unchecked =>
+      case xs: scala.Array[AnyRef] @unchecked =>
         var h = xs.length
         var i = 0
 
@@ -914,18 +914,18 @@ object Yaml extends Yaml2, Dynamic:
       inline def isNull:    Boolean = yaml.asInstanceOf[AnyRef] eq Yaml.YamlNull
       inline def isLong:    Boolean = yaml.isInstanceOf[Long]
       inline def isDouble:  Boolean = yaml.isInstanceOf[Double]
-      inline def isBcd:     Boolean = yaml.isInstanceOf[Array[Double]]
+      inline def isBcd:     Boolean = yaml.isInstanceOf[scala.Array[Double]]
       inline def isNumber:  Boolean = isLong || isDouble || isBcd
       inline def isString:  Boolean = yaml.isInstanceOf[String]
       inline def isBoolean: Boolean = yaml.isInstanceOf[Boolean]
 
       inline def isObject: Boolean =
-        yaml.isInstanceOf[Array[AnyRef]] &&
-          (yaml.asInstanceOf[Array[?]].length & 1) == 0
+        yaml.isInstanceOf[scala.Array[AnyRef]] &&
+          (yaml.asInstanceOf[scala.Array[?]].length & 1) == 0
 
       inline def isArray: Boolean =
-        yaml.isInstanceOf[Array[AnyRef]] &&
-          (yaml.asInstanceOf[Array[?]].length & 1) == 1
+        yaml.isInstanceOf[scala.Array[AnyRef]] &&
+          (yaml.asInstanceOf[scala.Array[?]].length & 1) == 1
 
       private def expected(yamlPrimitive: YamlPrimitive)(using Tactic[YamlError]): Unit =
         raise:
@@ -949,7 +949,7 @@ object Yaml extends Yaml2, Dynamic:
       // value) or `-1` if the key is absent. Only string-typed keys match.
       def objectIndexOf(key: String): Int =
         if !isObject then -1 else
-          val arr = yaml.asInstanceOf[Array[?]]
+          val arr = yaml.asInstanceOf[scala.Array[?]]
           val len = arr.length
           var i = 0
           var hit = -1
@@ -976,17 +976,17 @@ object Yaml extends Yaml2, Dynamic:
       def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
         case value: Double                   => value
         case value: Long                     => value.toDouble
-        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
         case _                               => expected(YamlPrimitive.Decimal) yet 0.0
 
       def long(using Tactic[YamlError]): Long = yaml.asInstanceOf[Matchable] match
         case value: Long                     => value
         case value: Double                   => value.toLong
-        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
         case _                               => expected(YamlPrimitive.Integer) yet 0L
 
       def bcd(using Tactic[YamlError]): jacinta.Bcd = yaml.asInstanceOf[Matchable] match
-        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd]
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd]
         case value: Long                     => jacinta.Bcd(BigDecimal(value))
         case value: Double                   => jacinta.Bcd(BigDecimal(value))
 
@@ -1715,10 +1715,10 @@ object Yaml extends Yaml2, Dynamic:
       case _: Double                    => YamlPrimitive.Decimal
       // High-precision BCD numbers report as `Decimal`. The AST-level
       // distinction (`isBcd`) remains available for callers that care.
-      case _: Array[Double] @unchecked  => YamlPrimitive.Decimal
+      case _: scala.Array[Double] @unchecked  => YamlPrimitive.Decimal
       case _: String                    => YamlPrimitive.Str
 
-      case xs: Array[AnyRef] @unchecked =>
+      case xs: scala.Array[AnyRef] @unchecked =>
         if (xs.length & 1) == 0 then YamlPrimitive.Mapping else YamlPrimitive.Sequence
 
       case _ => YamlPrimitive.Null
@@ -1878,7 +1878,7 @@ object Yaml extends Yaml2, Dynamic:
     @scala.caps.unsafe.untrackedCaptures
     private var bytes1: AnyRef = null.asInstanceOf[AnyRef]
 
-    private inline def bytes: Array[Byte]^ = bytes1.asInstanceOf[Array[Byte]^]
+    private inline def bytes: scala.Array[Byte]^ = bytes1.asInstanceOf[scala.Array[Byte]^]
     var pos:       Int               = 0
     var bufEnd:    Int               = 0
 
@@ -1945,8 +1945,8 @@ object Yaml extends Yaml2, Dynamic:
     @scala.caps.unsafe.untrackedCaptures
     private var chars1: AnyRef = (new scala.Array[Char](64)).asInstanceOf[AnyRef]
 
-    private inline def chars: Array[Char]^ = chars1.asInstanceOf[Array[Char]^]
-    private inline def charsTarget: Array[Char]^ = chars1.asInstanceOf[Array[Char]^]
+    private inline def chars: scala.Array[Char]^ = chars1.asInstanceOf[scala.Array[Char]^]
+    private inline def charsTarget: scala.Array[Char]^ = chars1.asInstanceOf[scala.Array[Char]^]
     var stringCursor: Int     = 0
 
     // Pool of buffer instances for nested sequences/mappings so we can
@@ -2165,7 +2165,7 @@ object Yaml extends Yaml2, Dynamic:
       val end = cursor.mark(using heldToken.nn)
 
       cursor.slice(start, end): (storage, off, len) =>
-        val arr = storage.asInstanceOf[Array[Byte]]
+        val arr = storage.asInstanceOf[scala.Array[Byte]]
         new String(arr, off, len, java.nio.charset.StandardCharsets.UTF_8)
 
     private update inline def holding[result](inline action: => result): result =
@@ -2509,14 +2509,14 @@ object Yaml extends Yaml2, Dynamic:
             if sawYaml then errorAt(Issue.DuplicateYamlDirective)
             sawYaml = true
             if argText.isEmpty then errorAt(Issue.YamlDirectiveRequiresVersion)
-            val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
+            val parts = argText.split("\\s+").nn.asInstanceOf[scala.Array[String]]
             if parts.length != 1 then errorAt(Issue.YamlDirectiveTooManyArguments)
 
             if !parts(0).matches("\\d+\\.\\d+") then
               errorAt(Issue.YamlDirectiveInvalidVersion)
 
           case "TAG" =>
-            val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
+            val parts = argText.split("\\s+").nn.asInstanceOf[scala.Array[String]]
             if parts.length != 2 then errorAt(Issue.TagDirectiveRequiresHandleAndPrefix)
             tagHandles(parts(0)) = parts(1)
 

@@ -48,7 +48,7 @@ object Permutation:
 
   def apply(series: Series[Int]): Permutation raises PermutationError =
     val sequence = series.stdlib
-    val array: Array[Int]^ = new Array(sequence.length)
+    val array: scala.Array[Int]^ = new scala.Array(sequence.length)
     val seen: BitSet = BitSet()
     var index = 0
 
@@ -107,7 +107,7 @@ case class Permutation(factoradic: Factoradic):
 
   def inverse: Permutation = if lehmer.nil then this else
     val length = lehmer.length
-    val array: Array[Int]^ = new Array(lehmer.length)
+    val array: scala.Array[Int]^ = new scala.Array(lehmer.length)
     var index = 0
     var sequence: List[Int] = expansion
 

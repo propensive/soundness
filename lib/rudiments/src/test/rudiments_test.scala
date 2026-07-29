@@ -92,7 +92,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
       test(m"Array element membership"):
         Inclusive.array[Int]
-          . has(java.util.Arrays.copyOf(Array(1, 2, 3), 3).nn.asInstanceOf[Array[Int]], 2)
+          . has(java.util.Arrays.copyOf(scala.Array(1, 2, 3), 3).nn.asInstanceOf[scala.Array[Int]], 2)
       . assert(_ == true)
 
       test(m"Map key membership"):
@@ -316,7 +316,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Set((1, 1, 1), (2, 2, 2), (3, 3, 3)))
 
       test(m"Take a snapshot of an array"):
-        val array = Array[Int](1, 2, 3, 4, 5)
+        val array = scala.Array[Int](1, 2, 3, 4, 5)
         array(1) = 17
         val snapshot: IArray[Int] = array.snapshot
         array(1) = 42

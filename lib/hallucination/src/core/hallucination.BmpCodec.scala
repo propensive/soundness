@@ -148,15 +148,15 @@ private[hallucination] object BmpCodec:
     val imageSize = rowSize*raster.height
     // A raw exclusive array rather than a `Buffer`: the buffer-typed local's definition
     // hides its own fresh capability, poisoning the helper calls below.
-    val buffer: Array[Byte]^ = new Array[Byte](54 + imageSize)
+    val buffer: scala.Array[Byte]^ = new scala.Array[Byte](54 + imageSize)
 
     // The buffer is threaded as an exclusive parameter: a captured buffer would be
     // read-only inside these helpers.
-    def put16(buffer: Array[Byte]^, offset: Int, value: Int): Unit =
+    def put16(buffer: scala.Array[Byte]^, offset: Int, value: Int): Unit =
       buffer(offset) = value.toByte
       buffer(offset + 1) = (value >> 8).toByte
 
-    def put32(buffer: Array[Byte]^, offset: Int, value: Int): Unit =
+    def put32(buffer: scala.Array[Byte]^, offset: Int, value: Int): Unit =
       put16(buffer, offset, value&0xffff)
       put16(buffer, offset + 2, value >>> 16)
 

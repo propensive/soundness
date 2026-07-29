@@ -100,7 +100,7 @@ object CorpusLoader:
     val text = readResourceText(t"/stratiform/corpus/$category.index")
     text.cut(t"\n").map(_.trim).filter(_ != t"")
 
-  private def readResource(path: Text): Array[Byte] =
+  private def readResource(path: Text): scala.Array[Byte] =
     val stream = getClass.getResourceAsStream(path.s)
     if stream == null then sys.error(s"missing resource: $path")
     try stream.readAllBytes() finally stream.close()

@@ -69,7 +69,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // Untracked: the reassembly buffer is reached only through this (exclusive)
   // reader, and every `slice` copies out of it.
   @caps.unsafe.untrackedCaptures
-  private var buffer: Array[Byte] = new Array(0)
+  private var buffer: scala.Array[Byte] = new scala.Array(0)
   private var pos: Int = 0
 
   // Ensure at least `n` unread bytes are buffered; false if the stream ends first.
@@ -86,7 +86,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
           input.skip(count)
           // The cast erases the fresh array's capture: it is confined to this
           // (exclusive) reader from here on.
-          buffer = grown.asInstanceOf[Array[Byte]]
+          buffer = grown.asInstanceOf[scala.Array[Byte]]
           pos = 0
 
       case _ =>

@@ -107,8 +107,8 @@ object Classpath extends Root(t""):
   def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
     val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
 
-    val urls: Array[jn.URL | Null] =
-      Array.from(classpath.entries.stdlib.flatMap:
+    val urls: scala.Array[jn.URL | Null] =
+      scala.Array.from(classpath.entries.stdlib.flatMap:
         case ClasspathEntry.JavaRuntime => Nil.stdlib
         case other                      => List(other.javaUrl).stdlib)
 
@@ -125,7 +125,7 @@ object Classpath extends Root(t""):
   // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
   // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so
   // does not spuriously capture it under capture checking.
-  private[hellenism] def delegatingClassloader(urls: Array[jn.URL | Null], parent: ClassLoader)
+  private[hellenism] def delegatingClassloader(urls: scala.Array[jn.URL | Null], parent: ClassLoader)
   :   jn.URLClassLoader =
 
     // The anonymous classloader's only capture is the read view of the freshly-built URL
@@ -139,7 +139,7 @@ object Classpath extends Root(t""):
 
 trait Classpath:
   def entries: List[ClasspathEntry]
-  private def array: Array[jn.URL | Null] = Array.from(entries.stdlib.map(_.javaUrl))
+  private def array: scala.Array[jn.URL | Null] = scala.Array.from(entries.stdlib.map(_.javaUrl))
 
   def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
     new Classloader(Classpath.delegatingClassloader(array, parent.java))
@@ -150,7 +150,7 @@ trait Classpath:
       case other                      => List(other.javaUrl).stdlib
 
     new Classloader
-      ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
+      ( new jn.URLClassLoader(scala.Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
 
   inline def services[service]: Set[service] =
     Classpath.servicesFor[service](this, reflectClass[service])

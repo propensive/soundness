@@ -639,7 +639,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       // A client that trusts any certificate, so the self-signed one is accepted.
       val trustManager = new javax.net.ssl.X509TrustManager:
-        type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+        type Certs = scala.Array[java.security.cert.X509Certificate | Null] | Null
         def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
         def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
         def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()

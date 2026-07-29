@@ -85,7 +85,7 @@ private[facsimile] object Guard:
 
   // The password arrives as a mutable char array — as lent by `Password.uncloak` — never as
   // an immutable string, so the transient encodings derived from it here can all be zeroed.
-  def apply(encrypt: Map[Text, Cos], id: Data, password: Array[Char])(using pdf: Pdf)
+  def apply(encrypt: Map[Text, Cos], id: Data, password: scala.Array[Char])(using pdf: Pdf)
   ( using Tactic[PdfError] )
   :   Guard =
 
@@ -145,7 +145,7 @@ private[facsimile] object Guard:
 
   // Algorithm 2: the file encryption key for revisions 2–4.
   private def deriveKey
-    ( password: Array[Char], owner: Data, permissions: Int, id: Data, keyBytes: Int,
+    ( password: scala.Array[Char], owner: Data, permissions: Int, id: Data, keyBytes: Int,
       revision: Int, encryptMetadata: Boolean )
   :   Data =
 
@@ -195,7 +195,7 @@ private[facsimile] object Guard:
   // Algorithms 2.A/8 (revision 6): validate the user password against `/U`, then unwrap the
   // file key from `/UE` with the intermediate key, using AES-256-CBC with a zero IV and no
   // padding.
-  private def unwrap6(password: Array[Char], user: Data, ue: Data): Optional[Data] =
+  private def unwrap6(password: scala.Array[Char], user: Data, ue: Data): Optional[Data] =
     if user.length < 48 || ue.length < 32 then Unset else
       val passwordBytes = encoded(password, jnc.StandardCharsets.UTF_8.nn)
       val salt = user.slice(32, 40)
@@ -225,7 +225,7 @@ private[facsimile] object Guard:
 
   // Revision-6 hash (algorithm 2.B): SHA-256 seeded, then rounds mixing SHA-256/384/512
   // selected by the running hash, until the 64th-plus round whose last byte is ≤ round−32.
-  private def hash6(password: Array[Byte], salt: Data, extra: Data): Data =
+  private def hash6(password: scala.Array[Byte], salt: Data, extra: Data): Data =
     var k: Data = sha(256, password.immutable(using Unsafe) ++ salt ++ extra)
 
     var round = 0
@@ -271,14 +271,14 @@ private[facsimile] object Guard:
 
   // Encodes the password chars to a mutable byte array, zeroing the encoder's intermediate
   // buffer; callers zero the result once the derived key is computed.
-  private def encoded(password: Array[Char], charset: jnc.Charset): Array[Byte] =
+  private def encoded(password: scala.Array[Char], charset: jnc.Charset): scala.Array[Byte] =
     val buffer = charset.encode(jn.CharBuffer.wrap(password)).nn
     val bytes = new scala.Array[Byte](buffer.remaining)
     buffer.get(bytes)
     if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, 0.toByte)
     bytes
 
-  private def padded(password: Array[Char]): Array[Byte] =
+  private def padded(password: scala.Array[Char]): scala.Array[Byte] =
     val bytes = encoded(password, jnc.StandardCharsets.ISO_8859_1.nn)
     val out = new scala.Array[Byte](32)
     val count = 32.min(bytes.length)

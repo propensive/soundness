@@ -269,7 +269,7 @@ class ProtobufParser(data: Data):
 
     val result =
       java.lang.String
-        ( data.asInstanceOf[Array[Byte]], pos, boundary - pos,
+        ( data.asInstanceOf[scala.Array[Byte]], pos, boundary - pos,
           java.nio.charset.StandardCharsets.UTF_8 )
 
     directLeaveField(saved)
@@ -299,7 +299,7 @@ class ProtobufParser(data: Data):
   def directStringWindow(): String =
     val result =
       java.lang.String
-        ( data.asInstanceOf[Array[Byte]], pos, boundary - pos,
+        ( data.asInstanceOf[scala.Array[Byte]], pos, boundary - pos,
           java.nio.charset.StandardCharsets.UTF_8 )
 
     pos = boundary

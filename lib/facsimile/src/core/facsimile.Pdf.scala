@@ -121,7 +121,7 @@ object Pdf:
         case Cos.Sequence(first :: _) => first.chars.or(IArray.empty[Byte])
         case _                        => IArray.empty[Byte]
 
-      pdf.guard = password.lay(Guard(encrypt, id, Array.empty[Char])(using pdf)): password =>
+      pdf.guard = password.lay(Guard(encrypt, id, scala.Array.empty[Char])(using pdf)): password =>
         password.uncloak(Guard(encrypt, id, cleartext.chars)(using pdf))
 
   // The header comment is nominally at offset 0, but tolerated anywhere in the first 1KiB,

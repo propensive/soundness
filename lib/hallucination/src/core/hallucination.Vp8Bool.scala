@@ -98,7 +98,7 @@ extends caps.Mutable:
   // Walks a token tree: `tree` holds branch targets in sibling pairs (positive = next node index
   // ×2, non-positive = negated leaf value); `probs`/`probOffset` give the per-node probability.
   // `startPosition` seeds the walk (2 skips the first decision — used after a zero coefficient).
-  update def tree(tree: Array[Int], probs: Array[Int], probOffset: Int, startPosition: Int): Int =
+  update def tree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, startPosition: Int): Int =
     var position = startPosition
 
     while
@@ -110,5 +110,5 @@ extends caps.Mutable:
 
     -position
 
-  update def tree(tree: Array[Int], probs: Array[Int], probOffset: Int): Int =
+  update def tree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int): Int =
     this.tree(tree, probs, probOffset, 0)

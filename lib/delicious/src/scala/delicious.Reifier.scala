@@ -122,7 +122,7 @@ class Reifier(classpath: LocalClasspath):
         // As in `Scalac`: the argument array crosses in through a Java-side copy.
         val args = java.util.ArrayList[String]()
         args.add("-classpath"); args.add(entries.s); args.add("")
-        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[Array[String]], initCtx.fresh)
+        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]], initCtx.fresh)
         . map(_(1)).get
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)
@@ -146,7 +146,7 @@ class Reifier(classpath: LocalClasspath):
         // capability.
         val unpickler =
           DottyUnpickler
-            ( NoAbstractFile, ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[Array[Byte]],
+            ( NoAbstractFile, ju.Base64.getDecoder.nn.decode(tasty.s).nn.asInstanceOf[scala.Array[Byte]],
               isBestEffortTasty = false, UnpickleMode.TypeTree )
 
         unpickler.enter(scala.collection.immutable.Set.empty)

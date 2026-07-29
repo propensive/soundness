@@ -92,8 +92,8 @@ class Relay[record]():
       // `Substrate.Boxes` media store records erased (`boxed`, `texts`), so
       // the window storage is written directly.
       @caps.unsafe.untrackedCaptures
-      private val storage: Array[AnyRef] =
-        new scala.Array[AnyRef](capacity).asInstanceOf[Array[AnyRef]]
+      private val storage: scala.Array[AnyRef] =
+        new scala.Array[AnyRef](capacity).asInstanceOf[scala.Array[AnyRef]]
 
       private var start0: Int = 0
       private var limit0: Int = 0
@@ -121,7 +121,7 @@ class Relay[record]():
                 Unset
 
               case first =>
-                storage.asInstanceOf[Array[AnyRef]^](0) = first.asInstanceOf[AnyRef]
+                storage.asInstanceOf[scala.Array[AnyRef]^](0) = first.asInstanceOf[AnyRef]
                 limit0 = 1
 
                 // Opportunistic batching: whatever else has already arrived
@@ -133,7 +133,7 @@ class Relay[record]():
                   case null              => draining = false
                   case Relay.Termination => ended = true
                                             draining = false
-                  case record            => storage.asInstanceOf[Array[AnyRef]^](limit0) =
+                  case record            => storage.asInstanceOf[scala.Array[AnyRef]^](limit0) =
                                               record.asInstanceOf[AnyRef]
                                             limit0 += 1
 

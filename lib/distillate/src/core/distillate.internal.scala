@@ -61,7 +61,7 @@ object internal:
                       . getOrElse:
                           halt(m"enum ${TypeRepr.of[enumeration].show} is not a simple choice")
 
-                    companion.asTerm.select(ref).asExprOf[Array[enumeration]]
+                    companion.asTerm.select(ref).asExprOf[scala.Array[enumeration]]
               }
 
             . asInstanceOf[IArray[enumeration]]

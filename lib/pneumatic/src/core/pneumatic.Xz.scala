@@ -59,10 +59,10 @@ private[pneumatic] trait XzEngine extends caps.Mutable:
   protected val pending: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private var delivered: Int = 0
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
-  update def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
+  update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -96,9 +96,9 @@ private[pneumatic] abstract class BufferedEngine extends XzEngine:
   private val input: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private var finished = false
 
-  protected def transform(bytes: Array[Byte]): Array[Byte]
+  protected def transform(bytes: scala.Array[Byte]): scala.Array[Byte]
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = 0
     while i < length do { input += bytes(offset + i); i += 1 }
 
@@ -122,7 +122,7 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
   private var headerEmitted = false
   private var finished = false
 
-  private def emit(bytes: Array[Byte]): Unit =
+  private def emit(bytes: scala.Array[Byte]): Unit =
     var i = 0
     while i < bytes.length do { pending += bytes(i); i += 1 }
 
@@ -139,7 +139,7 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
       emit(blockBytes)
       records += ((unpadded, data.length.toLong))
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensureHeader()
     var i = 0
 
@@ -157,14 +157,14 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
 
 // The `.xz` container decoder.
 private[pneumatic] final class XzDecompressorEngine extends BufferedEngine:
-  protected def transform(bytes: Array[Byte]): Array[Byte] =
+  protected def transform(bytes: scala.Array[Byte]): scala.Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()
     XzContainer.decode(bytes, out)
     out.toArray
 
 // The container-free raw-LZMA2 encoder.
 private[pneumatic] final class Lzma2CompressorEngine(preset: Int) extends BufferedEngine:
-  protected def transform(bytes: Array[Byte]): Array[Byte] =
+  protected def transform(bytes: scala.Array[Byte]): scala.Array[Byte] =
     Lzma2Compressor(bytes, Lzma2Options.preset(preset)).compress()
 
 // Streams LZMA2 decompression: feeds input into the chunk decoder as it arrives and drains the
@@ -172,7 +172,7 @@ private[pneumatic] final class Lzma2CompressorEngine(preset: Int) extends Buffer
 private[pneumatic] final class Lzma2DecompressorEngine(dictSize: Int) extends XzEngine:
   private val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     decompressor.accept(bytes, offset, length)
     drain()
 
@@ -207,18 +207,18 @@ private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]
       targetSpace: Int )
   :   Duct.Progress =
 
-    engine.accept(source.asInstanceOf[Array[Byte]], sourceOffset, sourceLength)
+    engine.accept(source.asInstanceOf[scala.Array[Byte]], sourceOffset, sourceLength)
 
     Duct.Progress
       ( sourceLength,
-        engine.deliver(target.asInstanceOf[Array[Byte]], targetOffset, targetSpace) )
+        engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace) )
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
     if !finishing then
       engine.finish()
       finishing = true
 
-    engine.deliver(target.asInstanceOf[Array[Byte]], targetOffset, targetSpace)
+    engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace)
 
 object Xz:
   inline val DefaultPreset = 6

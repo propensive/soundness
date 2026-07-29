@@ -62,7 +62,7 @@ object SymmetricKey:
   // cloaked, leaving the cloaked copy as the only key material. (The `@targetName`
   // disambiguates from the `Data` overload, with which it clashes after erasure.)
   @targetName("applyMutable")
-  def apply[cipher <: Cipher](bytes: Array[Byte])(using cloak: Cloak^)
+  def apply[cipher <: Cipher](bytes: scala.Array[Byte])(using cloak: Cloak^)
   :   SymmetricKey[cipher]^{cloak} =
 
     new SymmetricKey(cloak.cloak(bytes))

@@ -93,7 +93,7 @@ private[pneumatic] object Inflater:
 
   // The `d`/`e` tables are unused when building the bit-lengths tree (every code value is below
   // the simple-code threshold), so an empty table is passed.
-  val noExtra: IArray[Int] = IArray.unsafeFromArray(new Array[Int](0))
+  val noExtra: IArray[Int] = IArray.unsafeFromArray(new scala.Array[Int](0))
 
 // Huffman decoding tables, built by `huftBuild` (zlib's `huft_build`): each entry is a triple
 // (operation, bits, value) flattened into an `Array[Int]`.
@@ -120,22 +120,22 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   // The tree space, sliding window and per-instance mutable clones of the fixed trees are
   // allocated first: the tree-pointer fields below alias them, so they must already be
   // initialized.
-  var hufts: Array[Int]^ = new Array[Int](Many*3) // single allocation for tree space
-  var window: Array[Byte]^ = new Array[Byte](1 << wbits) // sliding window
-  private val fixedLtree: Array[Int]^ = fixedTl.mutable(using Unsafe).clone()
-  private val fixedDtree: Array[Int]^ = fixedTd.mutable(using Unsafe).clone()
+  var hufts: scala.Array[Int]^ = new scala.Array[Int](Many*3) // single allocation for tree space
+  var window: scala.Array[Byte]^ = new scala.Array[Byte](1 << wbits) // sliding window
+  private val fixedLtree: scala.Array[Int]^ = fixedTl.mutable(using Unsafe).clone()
+  private val fixedDtree: scala.Array[Int]^ = fixedTd.mutable(using Unsafe).clone()
 
   private var hn: Int = 0        // hufts used in space
   private var huftTable: Int = 0 // huftBuild out-value: starting index of the built table
   private var huftBits: Int = 0  // huftBuild in/out-value: bits per table
-  private var v: Array[Int]^ = new Array[Int](288)      // work area for huftBuild
-  private val c: Array[Int]^ = new Array[Int](Bmax + 1) // bit length count table
-  private val r: Array[Int]^ = new Array[Int](3)        // table entry for structure assignment
-  private val u: Array[Int]^ = new Array[Int](Bmax)     // table stack
-  private val x: Array[Int]^ = new Array[Int](Bmax + 1) // bit offsets, then code stack
+  private var v: scala.Array[Int]^ = new scala.Array[Int](288)      // work area for huftBuild
+  private val c: scala.Array[Int]^ = new scala.Array[Int](Bmax + 1) // bit length count table
+  private val r: scala.Array[Int]^ = new scala.Array[Int](3)        // table entry for structure assignment
+  private val u: scala.Array[Int]^ = new scala.Array[Int](Bmax)     // table stack
+  private val x: scala.Array[Int]^ = new scala.Array[Int](Bmax + 1) // bit offsets, then code stack
 
   private update def initWorkArea(vsize: Int): Unit =
-    if v.length < vsize then v = new Array[Int](vsize)
+    if v.length < vsize then v = new scala.Array[Int](vsize)
     var i = 0
     while i < vsize do { v(i) = 0; i += 1 }
     i = 0
@@ -402,7 +402,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   var codesMode: Int = 0 // current inflate_codes mode
 
   var len: Int = 0
-  var tree: Array[Int]^{this} = hufts // pointer into the tree being walked
+  var tree: scala.Array[Int]^{this} = hufts // pointer into the tree being walked
   var treeIndex: Int = 0
   var codesNeed: Int = 0 // bits needed
   var lit: Int = 0
@@ -411,13 +411,13 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
 
   var lbits: Int = 0 // ltree bits decoded per branch
   var dbits: Int = 0 // dtree bits decoded per branch
-  var ltree: Array[Int]^{this} = hufts
+  var ltree: scala.Array[Int]^{this} = hufts
   var ltreeIndex: Int = 0
-  var dtree: Array[Int]^{this} = hufts
+  var dtree: scala.Array[Int]^{this} = hufts
   var dtreeIndex: Int = 0
 
   private update def codesInit
-    ( bl: Int, bd: Int, tl: Array[Int]^{this}, tlIndex: Int, td: Array[Int]^{this}, tdIndex: Int )
+    ( bl: Int, bd: Int, tl: scala.Array[Int]^{this}, tlIndex: Int, td: scala.Array[Int]^{this}, tdIndex: Int )
   :   Unit =
 
     codesMode = Start
@@ -429,7 +429,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     dtreeIndex = tdIndex
     tree = tl // placeholder: the `Start` state reassigns `tree` before any read
 
-  private update def codesProc(r0: Int, target: Array[Byte]^): Int =
+  private update def codesProc(r0: Int, target: scala.Array[Byte]^): Int =
     var r = r0
     var j = 0      // temporary storage
     var tindex = 0 // temporary pointer
@@ -663,7 +663,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   // Called with number of bytes left to write in window at least 258 (the maximum string length)
   // and number of input bytes available at least ten.
   private update def inflateFast
-    ( bl: Int, bd: Int, tl: Array[Int]^{this}, tlIndex: Int, td: Array[Int]^{this}, tdIndex: Int )
+    ( bl: Int, bd: Int, tl: scala.Array[Int]^{this}, tlIndex: Int, td: scala.Array[Int]^{this}, tdIndex: Int )
   :   Int =
 
 
@@ -856,7 +856,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   var left: Int = 0    // if Stored, bytes left to copy
   var table: Int = 0   // table lengths (14 bits)
   var index: Int = 0   // index into blens (or border)
-  var blens: Array[Int]^ = new Array[Int](0) // bit lengths of codes
+  var blens: scala.Array[Int]^ = new scala.Array[Int](0) // bit lengths of codes
   var bb: Int = 0 // bit length tree depth
   var tb: Int = 0 // bit length decoding tree
 
@@ -882,7 +882,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     write = 0
     if wrap != 0 then adler.reset()
 
-  private update def blocksProc(r0: Int, target: Array[Byte]^): Int =
+  private update def blocksProc(r0: Int, target: scala.Array[Byte]^): Int =
     var r = r0
     var t = 0 // temporary storage
     var b = 0 // bit buffer
@@ -1019,7 +1019,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
 
           t = 258 + (t & 0x1f) + ((t >> 5) & 0x1f)
 
-          if blens.length < t then blens = new Array[Int](t)
+          if blens.length < t then blens = new scala.Array[Int](t)
           else
             var i = 0
             while i < t do { blens(i) = 0; i += 1 }
@@ -1184,7 +1184,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     ZStreamError // unreachable
 
   // copy as much as possible from the sliding window to the output area
-  private update def inflateFlush(r0: Int, target: Array[Byte]^): Int =
+  private update def inflateFlush(r0: Int, target: scala.Array[Byte]^): Int =
     var r = r0
 
     // local copies of source and destination pointers
@@ -1237,7 +1237,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
 
     r
 
-  private var nextIn: Array[Byte] = new Array[Byte](0)
+  private var nextIn: scala.Array[Byte] = new scala.Array[Byte](0)
   private[pneumatic] var nextInIndex: Int = 0
   private[pneumatic] var availIn: Int = 0
   private[pneumatic] var totalIn: Long = 0
@@ -1253,7 +1253,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   private var need: Long = 0 // stream check value
   private var needBytes: Int = -1
 
-  private update def run(f0: Int, target: Array[Byte]^): Int =
+  private update def run(f0: Int, target: scala.Array[Byte]^): Int =
     val f = if f0 == ZFinish then ZBufError else ZOk
     var r = ZBufError
 
@@ -1366,14 +1366,14 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
 
     ZStreamError // unreachable
 
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}): Unit = setInput(buffer, 0, buffer.length)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit = setInput(buffer, 0, buffer.length)
 
   // The engine borrows the caller's buffer zero-copy until the next `setInput`. The cast erases
   // the borrow's provenance, which separation checking would otherwise reject as a stored
   // parameter; it is sound because the engine only ever reads the input, and the driving ducts
   // release the reference (by re-feeding an empty buffer) before their step returns.
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
-    nextIn = buffer.asInstanceOf[Array[Byte]]
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+    nextIn = buffer.asInstanceOf[scala.Array[Byte]]
     nextInIndex = offset
     availIn = length
 
@@ -1381,9 +1381,9 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
 
   def finished: Boolean = mode == Inflater.Done
 
-  update def inflate(target: Array[Byte]^): Int = inflate(target, 0, target.length)
+  update def inflate(target: scala.Array[Byte]^): Int = inflate(target, 0, target.length)
 
-  update def inflate(target: Array[Byte]^, offset: Int, space: Int): Int =
+  update def inflate(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
     nextOutIndex = offset
     availOut = space
     val result = run(ZNoFlush, target)

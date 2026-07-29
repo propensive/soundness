@@ -77,7 +77,7 @@ given (CStatus is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
 
 private def hex(s: String): IArray[Byte] =
   val clean = s.filter(c => !c.isWhitespace)
-  val out = new Array[Byte](clean.length/2)
+  val out = new scala.Array[Byte](clean.length/2)
   var index = 0
   while index < out.length do
     out(index) = Integer.parseInt(clean.substring(index*2, index*2 + 2), 16).toByte

@@ -475,7 +475,7 @@ object Mutation:
 
       def textWidth(text: Text): Int = text.s.length
 
-      val widths = new Array[Int](n)
+      val widths = new scala.Array[Int](n)
       var col = 0
 
       while col < n do
@@ -503,7 +503,7 @@ object Mutation:
       // Minimal-offsets algorithm:
       //   markerOffsets[0] = w_0 + 2
       //   markerOffsets[i] = markerOffsets[i-1] + 1 + w_i + 2
-      val newOffsets = new Array[Int](n)
+      val newOffsets = new scala.Array[Int](n)
       newOffsets(0) = widths(0) + 2
       var i = 1
 

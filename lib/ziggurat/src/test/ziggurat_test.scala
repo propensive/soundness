@@ -219,10 +219,10 @@ object Tests extends Suite(m"Ziggurat tests"):
       def writeStub(dir: Path on Linux, label: Text): Unit =
         val file: Path on Linux = t"$dir/runner-$label".as[Path on Linux]
 
-        val bytes: Array[Byte] =
-          Array.fill(64)(0.toByte)
+        val bytes: scala.Array[Byte] =
+          scala.Array.fill(64)(0.toByte)
           ++ ethereal.Assembler.MagicMarker
-          ++ Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
+          ++ scala.Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
 
         file.create[File]()
         file.open[File](Write) { h ?=> h.write(Progression(bytes.immutable(using Unsafe): Data)) }

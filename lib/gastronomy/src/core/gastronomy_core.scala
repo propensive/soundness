@@ -154,7 +154,7 @@ extension [source: Streamable by Data over Credit](source: source)
 
     val digester = Digester: digestion =>
       source.source[Data].sweep: (storage, start, count) =>
-        digestion.append(storage.asInstanceOf[Array[Byte]], start, count)
+        digestion.append(storage.asInstanceOf[scala.Array[Byte]], start, count)
 
     digester.apply
 

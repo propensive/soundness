@@ -58,7 +58,7 @@ private[hallucination] object Quantization:
 
       def channel(color: Int, shift: Int): Int = (color >> shift)&0xff
 
-      def range(colors: Array[Int]): (Int, Int) =
+      def range(colors: scala.Array[Int]): (Int, Int) =
         var best = 0
         var bestShift = 16
 
@@ -84,7 +84,7 @@ private[hallucination] object Quantization:
         var shift = 16
 
         for index <- boxes.indices do
-          val (spread, spreadShift) = range(boxes(index).asInstanceOf[Array[Int]])
+          val (spread, spreadShift) = range(boxes(index).asInstanceOf[scala.Array[Int]])
 
           if spread > widest then
             widest = spread
@@ -93,7 +93,7 @@ private[hallucination] object Quantization:
 
         if candidate == -1 then boxes += IArray[Int]()
         else
-          val sorted = boxes(candidate).asInstanceOf[Array[Int]].sortBy(channel(_, shift))
+          val sorted = boxes(candidate).asInstanceOf[scala.Array[Int]].sortBy(channel(_, shift))
 
           var total = 0L
 
@@ -113,7 +113,7 @@ private[hallucination] object Quantization:
           boxes += pureCopyRange(sorted, split.max(1), sorted.length).asInstanceOf[IArray[Int]]
 
       val palette = IArray.tabulate(boxes.length): index =>
-        val colors = boxes(index).asInstanceOf[Array[Int]]
+        val colors = boxes(index).asInstanceOf[scala.Array[Int]]
 
         if colors.isEmpty then 0 else
           var red = 0L

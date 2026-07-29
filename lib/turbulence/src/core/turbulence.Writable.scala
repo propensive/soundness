@@ -62,7 +62,7 @@ object Writable:
       (storage, start, count) =>
         if !failed then
           try
-            outputStream.write(storage.asInstanceOf[Array[Byte]], start, count)
+            outputStream.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
             total += count
           catch case error: ji.IOException => failed = true
 
@@ -136,7 +136,7 @@ object Writable:
       stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep:
         (storage, start, count) =>
           if !failed then
-            val buffer = jn.ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
+            val buffer = jn.ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count).nn
 
             try
               while buffer.hasRemaining do

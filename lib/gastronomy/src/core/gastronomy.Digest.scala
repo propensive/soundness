@@ -60,4 +60,4 @@ class Digest(val data: Data):
     case digest: Digest => data.sameElements(digest.data)
     case _              => false
 
-  override def hashCode: Int = ju.Arrays.hashCode(data.mutable(using Unsafe): Array[Byte])
+  override def hashCode: Int = ju.Arrays.hashCode(data.mutable(using Unsafe): scala.Array[Byte])

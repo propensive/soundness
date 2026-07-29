@@ -98,13 +98,13 @@ object LaneDagDiagram:
       val rowOf: Map[node, Int] = nodes.zipWithIndex.to(Map)
       val forward: Map[node, Set[node]] = dag.invert.edgeMap
 
-      val nodeCol: Array[Int]^ = new scala.Array[Int](total)
+      val nodeCol: scala.Array[Int]^ = new scala.Array[Int](total)
 
-      val laneState: Array[Map[Int, Lane[node]]]^ =
-        Array.fill(total + 1)(Map.empty[Int, Lane[node]])
+      val laneState: scala.Array[Map[Int, Lane[node]]]^ =
+        scala.Array.fill(total + 1)(Map.empty[Int, Lane[node]])
 
-      val started: Array[Vector[Lane[node]]]^ = Array.fill(total)(Vector.empty[Lane[node]])
-      val directOut: Array[Boolean]^ = new scala.Array[Boolean](total)
+      val started: scala.Array[Vector[Lane[node]]]^ = scala.Array.fill(total)(Vector.empty[Lane[node]])
+      val directOut: scala.Array[Boolean]^ = new scala.Array[Boolean](total)
       var r = 0
 
       while r < total do
@@ -191,7 +191,7 @@ object LaneDagDiagram:
       width:        Int )
   :   List[DagTile] =
 
-    val cells = Array.fill(width)(LaneDagDiagram.Cell())
+    val cells = scala.Array.fill(width)(LaneDagDiagram.Cell())
     val startedCols = justStarted.iterator.map(_.col).to(Set)
 
     def drawBend(topEntry: Int, bottomExit: Int, continuing: Boolean): Unit =
@@ -274,7 +274,7 @@ object LaneDagDiagram:
   :   List[Int] =
 
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
-    val widths = Array.fill(maxCol)(2)
+    val widths = scala.Array.fill(maxCol)(2)
 
     rows.foreach: (tiles, optNode) =>
       if optNode.present then

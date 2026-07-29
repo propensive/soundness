@@ -329,7 +329,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"a Scala array bridges to a Java array parameter (element conversion)"):
         // The `E[]` constructor wants `CharSequence[]`; a Scala `Array[Text]` bridges to it.
-        val strings: Array[Text] = Array(t"a", t"bb")
+        val strings: scala.Array[Text] = scala.Array(t"a", t"bb")
         val list = make[java.util.concurrent.CopyOnWriteArrayList[CharSequence]](strings)
         list.size()
       . assert(_ == 2)

@@ -44,7 +44,7 @@ import vacuous.*
 class SseSource(capacity: Int):
   private val mutex: Mutex = Mutex()
   @scala.caps.unsafe.untrackedCaptures
-  private val buffer: Array[Sse] = new Array(capacity)
+  private val buffer: scala.Array[Sse] = new scala.Array(capacity)
 
   @scala.caps.unsafe.untrackedCaptures
   private var current: Int = 0
@@ -53,7 +53,7 @@ class SseSource(capacity: Int):
 
   def put[entity: Encodable in Sse](value: entity): Unit = mutex:
     val sse = value.encode.copy(id = current.show)
-    buffer.asInstanceOf[Array[Sse]^](current%capacity) = sse
+    buffer.asInstanceOf[scala.Array[Sse]^](current%capacity) = sse
     spool.put(sse)
     current += 1
 

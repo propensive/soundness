@@ -56,7 +56,7 @@ private[pneumatic] object RangeCoder:
   // Fixed-point bit prices (in 1/16-bit units): the cost of coding a bit whose probability index is
   // `prob >>> MoveReducingBits`. Built once, then read by the encoder's cost estimator.
   val prices: IArray[Short] =
-    val table: Array[Short]^ = new Array[Short](BitModelTotal >>> MoveReducingBits)
+    val table: scala.Array[Short]^ = new scala.Array[Short](BitModelTotal >>> MoveReducingBits)
     var i = 1 << (MoveReducingBits - 1)
 
     while i < BitModelTotal do
@@ -86,7 +86,7 @@ private[pneumatic] object RangeCoder:
   // The price of coding `symbol0` against the MSB-first tree of `size` entries at `offset`
   // within `probs` (read-only: prices never adapt the model).
   def bitTreePrice
-    ( probs: Array[Short]^{scala.caps.any.rd}, offset: Int, size: Int, symbol0: Int )
+    ( probs: scala.Array[Short]^{scala.caps.any.rd}, offset: Int, size: Int, symbol0: Int )
   :   Int =
 
     var price = 0
@@ -100,7 +100,7 @@ private[pneumatic] object RangeCoder:
     price
 
   def bitTreeReversePrice
-    ( probs: Array[Short]^{scala.caps.any.rd}, offset: Int, size: Int, symbol0: Int )
+    ( probs: scala.Array[Short]^{scala.caps.any.rd}, offset: Int, size: Int, symbol0: Int )
   :   Int =
 
     var price = 0

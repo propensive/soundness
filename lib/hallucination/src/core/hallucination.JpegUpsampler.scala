@@ -66,12 +66,12 @@ private[hallucination] object JpegUpsampler:
       vMax = vMax.max(components(index).verticalSamplingFactor)
       index += 1
 
-    val kinds = new Array[Int](count)
-    val widths = new Array[Int](count)
-    val heights = new Array[Int](count)
-    val rowStrides = new Array[Int](count)
-    val hScales = new Array[Int](count)
-    val vScales = new Array[Int](count)
+    val kinds = new scala.Array[Int](count)
+    val widths = new scala.Array[Int](count)
+    val heights = new scala.Array[Int](count)
+    val rowStrides = new scala.Array[Int](count)
+    val hScales = new scala.Array[Int](count)
+    val vScales = new scala.Array[Int](count)
     index = 0
 
     while index < count do
@@ -129,26 +129,26 @@ private[hallucination] final class JpegUpsampler private
   // fresh element capabilities nothing can satisfy.
   @scala.caps.unsafe.untrackedCaptures
   private val lineBuffers0: AnyRef =
-    val buffers = new Array[Array[Byte]](count)
+    val buffers = new scala.Array[scala.Array[Byte]](count)
     var index = 0
 
     while index < count do
-      buffers(index) = new Array[Byte](lineBufferSize)
+      buffers(index) = new scala.Array[Byte](lineBufferSize)
       index += 1
 
     buffers.asInstanceOf[AnyRef]
 
-  private inline def lineBuffers: Array[Array[Byte]] =
-    lineBuffers0.asInstanceOf[Array[Array[Byte]]]
+  private inline def lineBuffers: scala.Array[scala.Array[Byte]] =
+    lineBuffers0.asInstanceOf[scala.Array[scala.Array[Byte]]]
 
-  private inline def lineBuffer(index: Int): Array[Byte] =
-    lineBuffers0.asInstanceOf[Array[Array[Byte]]](index)
+  private inline def lineBuffer(index: Int): scala.Array[Byte] =
+    lineBuffers0.asInstanceOf[scala.Array[scala.Array[Byte]]](index)
 
   // Upsamples row `row` of every component to full width and interleaves via `colorConvert`.
   def upsampleAndInterleaveRow
-    ( componentData: Array[Array[Byte]],
+    ( componentData: scala.Array[scala.Array[Byte]],
       row:           Int,
-      output:        Array[Byte],
+      output:        scala.Array[Byte],
       colorConvert:  JpegColorConverter )
   :   Unit =
 
@@ -165,14 +165,14 @@ private[hallucination] final class JpegUpsampler private
 
   private def upsampleRow
     ( kind:      Int,
-      input:     Array[Byte],
+      input:     scala.Array[Byte],
       width:     Int,
       height:    Int,
       rowStride: Int,
       hScale:    Int,
       vScale:    Int,
       row:       Int,
-      output:    Array[Byte] )
+      output:    scala.Array[Byte] )
   :   Unit =
 
     inline def sample(offset: Int): Int = input(offset) & 0xff

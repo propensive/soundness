@@ -197,7 +197,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       // Feed the windowed `append` deliberately misaligned slices of a buffer with a
       // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
       def windowed(digestion: Digestion^): Text =
-        val array = new Array[Byte](payload.stdlib.length + 13)
+        val array = new scala.Array[Byte](payload.stdlib.length + 13)
         java.lang.System.arraycopy(payload.mutable(using Unsafe), 0, array, 13, payload.stdlib.length)
         var offset = 13
         var step = 1

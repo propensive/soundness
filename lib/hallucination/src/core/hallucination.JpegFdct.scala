@@ -55,8 +55,8 @@ private[hallucination] object JpegFdct:
 
   private inline def descale(value: Int, bits: Int): Int = (value + (1 << (bits - 1))) >> bits
 
-  def fdct(data: Array[Int]): Unit =
-    val temp = new Array[Int](64)
+  def fdct(data: scala.Array[Int]): Unit =
+    val temp = new scala.Array[Int](64)
 
     // Pass 1: rows, scaled up by 2**Pass1Bits.
     var y = 0

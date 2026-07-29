@@ -142,7 +142,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val inflater = java.util.zip.Inflater(nowrap)
         inflater.setInput(data.mutable(using Unsafe))
         val out = ji.ByteArrayOutputStream()
-        val buffer = new Array[Byte](4096)
+        val buffer = new scala.Array[Byte](4096)
 
         while !inflater.finished && !inflater.needsInput do
           val count = inflater.inflate(buffer)
@@ -156,7 +156,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         deflater.setInput(data.mutable(using Unsafe))
         deflater.finish()
         val out = ji.ByteArrayOutputStream()
-        val buffer = new Array[Byte](4096)
+        val buffer = new scala.Array[Byte](4096)
 
         while !deflater.finished do
           val count = deflater.deflate(buffer)
@@ -170,7 +170,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         deflater.setInput(data.mutable(using Unsafe))
         deflater.finish()
         val out = ji.ByteArrayOutputStream()
-        val buffer = new Array[Byte](4096)
+        val buffer = new scala.Array[Byte](4096)
 
         while !deflater.finished do
           val count = deflater.deflate(buffer, 0, buffer.length)
@@ -182,7 +182,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val inflater = Inflater(nowrap)
         val bytes = data.mutable(using Unsafe)
         val out = ji.ByteArrayOutputStream()
-        val buffer = new Array[Byte](4096)
+        val buffer = new scala.Array[Byte](4096)
         var position = 0
 
         while position < bytes.length && !inflater.finished do
@@ -242,14 +242,14 @@ object Tests extends Suite(m"Pneumatic tests"):
         val crc = java.util.zip.CRC32()
         crc.update(payload.mutable(using Unsafe))
 
-        val headerStart: Array[Byte] =
-          Array[Byte](31, -117, 8, (4 | 8 | 16).toByte, 0, 0, 0, 0, 0, -1)
+        val headerStart: scala.Array[Byte] =
+          scala.Array[Byte](31, -117, 8, (4 | 8 | 16).toByte, 0, 0, 0, 0, 0, -1)
 
         out.write(headerStart)
-        out.write(Array[Byte](3, 0)) // XLEN = 3
-        out.write(Array[Byte](1, 2, 3)) // extra field
-        out.write(Array[Byte]('n', 'a', 'm', 'e', 0)) // zero-terminated name
-        out.write(Array[Byte]('c', 'o', 'm', 'm', 'e', 'n', 't', 0)) // zero-terminated comment
+        out.write(scala.Array[Byte](3, 0)) // XLEN = 3
+        out.write(scala.Array[Byte](1, 2, 3)) // extra field
+        out.write(scala.Array[Byte]('n', 'a', 'm', 'e', 0)) // zero-terminated name
+        out.write(scala.Array[Byte]('c', 'o', 'm', 'm', 'e', 'n', 't', 0)) // zero-terminated comment
         out.write(deflated.mutable(using Unsafe))
 
         var index = 0
@@ -387,7 +387,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         // and confirm decoding rejects it — via either a decode error or a check mismatch.
         val original = (t"the quick brown fox " * 40).in[Data]
         val bytes = original.compress[Xz].mutable(using Unsafe)
-        bytes.asInstanceOf[Array[Byte]^](36) = (bytes(36) ^ 0x55).toByte
+        bytes.asInstanceOf[scala.Array[Byte]^](36) = (bytes(36) ^ 0x55).toByte
         val corrupted: Data = bytes.immutable(using Unsafe)
         try corrupted.decompress[Xz].to[List] != original.to[List]
         catch case _: Exception => true
@@ -469,7 +469,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           IArray.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
         val encodedChunks = Xz.compress(Progression(payload), 0)
         val roundtrips = encodedChunks.decompress[Xz].stdlib.map(_.stdlib).flatten.to(proscenium.List) == payload.stdlib.to(proscenium.List)
-        val encodedBytes: Array[Byte] = IArray.from(encodedChunks.stdlib.map(_.stdlib).flatten).mutable(using Unsafe)
+        val encodedBytes: scala.Array[Byte] = IArray.from(encodedChunks.stdlib.map(_.stdlib).flatten).mutable(using Unsafe)
         val byXz =
           try
             val process = ProcessBuilder("xz", "-d", "-c").start().nn
@@ -616,7 +616,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
          stream.refill(Credit(3)) match
           case count: Int =>
-            val window = unsafely(stream.window).asInstanceOf[Array[Byte]]
+            val window = unsafely(stream.window).asInstanceOf[scala.Array[Byte]]
             var index = 0
             while index < count do
               builder += window(stream.start + index)

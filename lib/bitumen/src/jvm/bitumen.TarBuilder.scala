@@ -267,7 +267,7 @@ object TarBuilder:
 
         try
           stream.sweep: (window, start, count) =>
-            out.write(window.asInstanceOf[Array[Byte]], start, count)
+            out.write(window.asInstanceOf[scala.Array[Byte]], start, count)
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

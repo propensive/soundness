@@ -45,7 +45,7 @@ object Executor:
     method2.setAccessible(true)
     method2.invoke(function, input).asInstanceOf[String]
 
-  def main(arguments: Array[String]): Unit =
+  def main(arguments: scala.Array[String]): Unit =
     val out = System.out.nn
     System.setOut(null)
     Console.withOut(_ => ())(out.println(run(arguments(0))))

@@ -144,11 +144,11 @@ object Ductile:
           // the whole window for a non-UTF-8 charset, or the remainder after
           // the point where the UTF-8 kernel encountered malformed input.
           private update def stepDecoder
-            ( bytes: Array[Byte],
+            ( bytes: scala.Array[Byte],
               sourceOffset: Int,
               sourceLength: Int,
               start: Int,
-              chars: Array[Char]^,
+              chars: scala.Array[Char]^,
               targetOffset: Int,
               targetSpace: Int,
               first: Int )
@@ -179,10 +179,10 @@ object Ductile:
           // charset decoder for the window remainder, which owns sanitizer
           // semantics unchanged.
           private update def stepUtf8
-            ( bytes: Array[Byte],
+            ( bytes: scala.Array[Byte],
               sourceOffset: Int,
               sourceLength: Int,
-              chars: Array[Char]^,
+              chars: scala.Array[Char]^,
               targetOffset: Int,
               targetSpace: Int )
           :   Duct.Progress =
@@ -302,10 +302,10 @@ object Ductile:
               targetSpace: Int )
           :   Duct.Progress =
 
-            val bytes = source.asInstanceOf[Array[Byte]]
+            val bytes = source.asInstanceOf[scala.Array[Byte]]
             // The exclusive cast is sound for the same reason as `Conduit.put`'s:
             // the target is the stage's single-owner output buffer.
-            val chars = target.asInstanceOf[Array[Char]^]
+            val chars = target.asInstanceOf[scala.Array[Char]^]
 
             if staging.position == 0 then
               // Fast path: with no carried bytes, decode straight from the source
@@ -333,7 +333,7 @@ object Ductile:
           :   Int =
 
             if ended then 0 else
-              val chars = target.asInstanceOf[Array[Char]]
+              val chars = target.asInstanceOf[scala.Array[Char]]
               val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
               staging.flip()
               decode(staging, out, total, true)
@@ -392,8 +392,8 @@ object Ductile:
               targetSpace: Int )
           :   Duct.Progress =
 
-            val chars = source.asInstanceOf[Array[Char]]
-            val bytes = target.asInstanceOf[Array[Byte]]
+            val chars = source.asInstanceOf[scala.Array[Char]]
+            val bytes = target.asInstanceOf[scala.Array[Byte]]
             val copy = sourceLength.min(staging.remaining)
             staging.put(chars, sourceOffset, copy)
             staging.flip()
@@ -408,7 +408,7 @@ object Ductile:
           :   Int =
 
             if ended then 0 else
-              val bytes = target.asInstanceOf[Array[Byte]]
+              val bytes = target.asInstanceOf[scala.Array[Byte]]
               val out = jn.ByteBuffer.wrap(bytes, targetOffset, targetSpace).nn
               staging.flip()
               encoder.encode(staging, out, true)

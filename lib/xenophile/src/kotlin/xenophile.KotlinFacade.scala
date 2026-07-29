@@ -379,7 +379,7 @@ object KotlinFacade:
 
       interface.asType.absolve match
         case '[i] =>
-          val handler: Expr[(Array[Object | Null] | Null) => Object | Null] = arity match
+          val handler: Expr[(scala.Array[Object | Null] | Null) => Object | Null] = arity match
             case 0 =>
               val lambda = argument.asExprOf[() => Any]
               '{_ => KotlinRuntime.dispatch($lambda())}
@@ -405,7 +405,7 @@ object KotlinFacade:
                 val loader = $samClass.getClassLoader
                 val invocations = KotlinRuntime.forwarder($handler)
 
-                java.lang.reflect.Proxy.newProxyInstance(loader, Array($samClass), invocations)
+                java.lang.reflect.Proxy.newProxyInstance(loader, scala.Array($samClass), invocations)
                 . asInstanceOf[i]
               }
 
@@ -1198,7 +1198,7 @@ object KotlinFacade:
           KotlinRuntime.invokeDefault
             ( ${ownerClass.asExprOf[Class[?]]},
               ${Expr(bridgeName.s)},
-              Array[Any | Null]($arguments*) )
+              scala.Array[Any | Null]($arguments*) )
         }
 
     val cast = TypeApply(Select.unique(call.asTerm, "asInstanceOf"), List(Inferred(solid(result))))

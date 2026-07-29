@@ -52,14 +52,14 @@ object Bintel:
   // When viewed as BASE-256 text these are the four Greek letters
   // `β τ ε λ` — visually evocative of "binary TEL".
   val magic: Data =
-    Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbb.toByte)
+    scala.Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbb.toByte)
       .asInstanceOf[IArray[Byte]]
 
   // §6.2 self-contained magic number. In BASE-256 text these are the four
   // characters `β τ ε μ` — the trailing `μ` (for *monolithic*) distinguishes
   // self-contained mode from external mode's `βτελ`.
   val magicSelfContained: Data =
-    Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte)
+    scala.Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte)
       .asInstanceOf[IArray[Byte]]
 
   // The result of unframing a complete §6 file: the carried schema
@@ -104,7 +104,7 @@ object Bintel:
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
     val out = new ByteArrayOutputStream(magic.length + 10 + signature.length + body.length)
-    out.write(magic.asInstanceOf[Array[Byte]])
+    out.write(magic.asInstanceOf[scala.Array[Byte]])
     val sigLen = new ByteArrayOutputStream(10)
     var n = signature.length.toLong
 
@@ -114,8 +114,8 @@ object Bintel:
 
     sigLen.write(n.toInt)
     out.write(sigLen.toByteArray)
-    out.write(signature.asInstanceOf[Array[Byte]])
-    out.write(body.asInstanceOf[Array[Byte]])
+    out.write(signature.asInstanceOf[scala.Array[Byte]])
+    out.write(body.asInstanceOf[scala.Array[Byte]])
     out.toByteArray.asInstanceOf[IArray[Byte]]
 
   // §6 unframing. Parse a complete BinTEL byte sequence into its
@@ -147,10 +147,10 @@ object Bintel:
 
     if sigEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
 
-    val sigBytes = new Array[Byte](sigLength)
-    System.arraycopy(data.asInstanceOf[Array[Byte]], sigStart, sigBytes, 0, sigLength)
-    val bodyBytes = new Array[Byte](data.length - sigEnd)
-    System.arraycopy(data.asInstanceOf[Array[Byte]], sigEnd, bodyBytes, 0, bodyBytes.length)
+    val sigBytes = new scala.Array[Byte](sigLength)
+    System.arraycopy(data.asInstanceOf[scala.Array[Byte]], sigStart, sigBytes, 0, sigLength)
+    val bodyBytes = new scala.Array[Byte](data.length - sigEnd)
+    System.arraycopy(data.asInstanceOf[scala.Array[Byte]], sigEnd, bodyBytes, 0, bodyBytes.length)
 
     val sig = sigBytes.asInstanceOf[IArray[Byte]]
 
@@ -181,12 +181,12 @@ object Bintel:
     val out = new ByteArrayOutputStream(
         magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length)
 
-    out.write(magicSelfContained.asInstanceOf[Array[Byte]])
+    out.write(magicSelfContained.asInstanceOf[scala.Array[Byte]])
     writeVarint(out, signature.length.toLong)
-    out.write(signature.asInstanceOf[Array[Byte]])
+    out.write(signature.asInstanceOf[scala.Array[Byte]])
     writeVarint(out, schemaBody.length.toLong)
-    out.write(schemaBody.asInstanceOf[Array[Byte]])
-    out.write(body.asInstanceOf[Array[Byte]])
+    out.write(schemaBody.asInstanceOf[scala.Array[Byte]])
+    out.write(body.asInstanceOf[scala.Array[Byte]])
     out.toByteArray.asInstanceOf[IArray[Byte]]
 
   // §6.2 self-contained encoding of the TEL document `tel`, whose schema is given
@@ -304,7 +304,7 @@ object Bintel:
 
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
-    val children = new Array[Tel.Element](childCount.toInt)
+    val children = new scala.Array[Tel.Element](childCount.toInt)
     var i = 0
 
     while i < childCount.toInt do
@@ -332,7 +332,7 @@ object Bintel:
         if cursor.offset + len > cursor.data.length
         then abort(BintelError(BintelError.Reason.ValueTruncated))
 
-        val bytes = new Array[Byte](len.toInt)
+        val bytes = new scala.Array[Byte](len.toInt)
         var j = 0
 
         while j < len.toInt do
@@ -586,7 +586,7 @@ object Bintel:
         val flat = kidxOf(e)
         if flat >= 0 && flat < memberBase.length then memberBase(flat) else flat
 
-      val arr = new Array[Tel.Element](children.length)
+      val arr = new scala.Array[Tel.Element](children.length)
       var i = 0
 
       while i < children.length do
@@ -596,7 +596,7 @@ object Bintel:
       // java.util.Arrays.sort with a Comparator is stable — preserves
       // source order within equal-key groups.
       java.util.Arrays.sort
-        ( arr.asInstanceOf[Array[AnyRef]],
+        ( arr.asInstanceOf[scala.Array[AnyRef]],
          (a: AnyRef, b: AnyRef) => Integer.compare(keyOf(a.asInstanceOf[Tel.Element]),
                                                     keyOf(b.asInstanceOf[Tel.Element])) )
 

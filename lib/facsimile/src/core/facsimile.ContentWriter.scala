@@ -199,21 +199,21 @@ private[facsimile] object ContentWriter:
 // pattern: untracked storage, exclusive view for writes, Java-side copies for growth/freeze).
 private[facsimile] final class DataBuilder:
   @scala.caps.unsafe.untrackedCaptures
-  private var storage: Array[Byte] = new scala.Array[Byte](64)
+  private var storage: scala.Array[Byte] = new scala.Array[Byte](64)
 
   @scala.caps.unsafe.untrackedCaptures
   private var size0: Int = 0
 
-  private inline def target: Array[Byte]^ = storage.asInstanceOf[Array[Byte]^]
+  private inline def target: scala.Array[Byte]^ = storage.asInstanceOf[scala.Array[Byte]^]
 
   def += (byte: Byte): Unit =
     if size0 >= storage.length
-    then storage = java.util.Arrays.copyOf(storage, storage.length*2).nn.asInstanceOf[Array[Byte]]
+    then storage = java.util.Arrays.copyOf(storage, storage.length*2).nn.asInstanceOf[scala.Array[Byte]]
 
     target(size0) = byte
     size0 += 1
 
-  def addAll(bytes: Array[Byte]): Unit =
+  def addAll(bytes: scala.Array[Byte]): Unit =
     var index = 0
 
     while index < bytes.length do
@@ -225,10 +225,10 @@ private[facsimile] final class DataBuilder:
 // An exclusive, writable view of an array reached through a read-only path (an untracked
 // field, or a closure capture): update sites route through this rebind, as in pneumatic's
 // `writable`.
-private[facsimile] def writable[element](array: Array[element]): Array[element]^ =
-  array.asInstanceOf[Array[element]]
+private[facsimile] def writable[element](array: scala.Array[element]): scala.Array[element]^ =
+  array.asInstanceOf[scala.Array[element]]
 
 // A freshly-allocated array with a PURE type (the Java `copyOf` result adapts), as
 // hallucination's `pureBytes`: writes route through `writable`.
-private[facsimile] def pureByteArray(size: Int): Array[Byte] =
+private[facsimile] def pureByteArray(size: Int): scala.Array[Byte] =
   java.util.Arrays.copyOf(new scala.Array[Byte](0), size).nn

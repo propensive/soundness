@@ -50,7 +50,7 @@ import Control.*
 // (defaults to 9101) and point a fuzzingclient at `ws://<host>:<port>`. It is
 // not part of the test suite — it only runs when invoked directly.
 object AutobahnServer:
-  def main(args: Array[String]): Unit =
+  def main(args: scala.Array[String]): Unit =
     val port = if args.length > 0 then Integer.parseInt(args(0)) else 9101
 
     supervise:

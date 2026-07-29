@@ -58,11 +58,11 @@ object References:
 abstract class References():
   type Transport <: Object
 
-  private var ref: Optional[Expr[Array[Object]]] = Unset
+  private var ref: Optional[Expr[scala.Array[Object]]] = Unset
   private var allocations: scala.collection.immutable.List[Transport] = scala.collection.immutable.Nil
 
-  def update(expr: Expr[Array[Object]]): Unit = ref = expr
-  def array: Expr[Array[Object]] = ref.vouch
+  def update(expr: Expr[scala.Array[Object]]): Unit = ref = expr
+  def array: Expr[scala.Array[Object]] = ref.vouch
   def current: Int = allocations.length
   def allocate(value: => Transport): Int = allocations.length.also { allocations ::= value }
-  inline def apply(): Array[Object] = Array.from[Object](allocations.reverse)
+  inline def apply(): scala.Array[Object] = scala.Array.from[Object](allocations.reverse)

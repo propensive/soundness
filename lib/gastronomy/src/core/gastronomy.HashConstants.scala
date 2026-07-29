@@ -35,15 +35,15 @@ package gastronomy
 // Round constants and initial hash values for the pure-Scala SHA and MD5 implementations,
 // as defined by FIPS 180-4 (SHA) and RFC 1321 (MD5). Generated; do not edit by hand.
 private[gastronomy] object HashConstants:
-  val sha256H: IArray[Int] = Array[Int](
+  val sha256H: IArray[Int] = scala.Array[Int](
     0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19)
   . asInstanceOf[IArray[Int]]
 
-  val sha224H: IArray[Int] = Array[Int](
+  val sha224H: IArray[Int] = scala.Array[Int](
     0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939, 0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4)
   . asInstanceOf[IArray[Int]]
 
-  val sha256K: IArray[Int] = Array[Int](
+  val sha256K: IArray[Int] = scala.Array[Int](
     0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
     0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
     0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
@@ -54,17 +54,17 @@ private[gastronomy] object HashConstants:
     0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
   . asInstanceOf[IArray[Int]]
 
-  val sha512H: IArray[Long] = Array[Long](
+  val sha512H: IArray[Long] = scala.Array[Long](
     0x6a09e667f3bcc908L, 0xbb67ae8584caa73bL, 0x3c6ef372fe94f82bL, 0xa54ff53a5f1d36f1L,
     0x510e527fade682d1L, 0x9b05688c2b3e6c1fL, 0x1f83d9abfb41bd6bL, 0x5be0cd19137e2179L)
   . asInstanceOf[IArray[Long]]
 
-  val sha384H: IArray[Long] = Array[Long](
+  val sha384H: IArray[Long] = scala.Array[Long](
     0xcbbb9d5dc1059ed8L, 0x629a292a367cd507L, 0x9159015a3070dd17L, 0x152fecd8f70e5939L,
     0x67332667ffc00b31L, 0x8eb44a8768581511L, 0xdb0c2e0d64f98fa7L, 0x47b5481dbefa4fa4L)
   . asInstanceOf[IArray[Long]]
 
-  val sha512K: IArray[Long] = Array[Long](
+  val sha512K: IArray[Long] = scala.Array[Long](
     0x428a2f98d728ae22L, 0x7137449123ef65cdL, 0xb5c0fbcfec4d3b2fL, 0xe9b5dba58189dbbcL,
     0x3956c25bf348b538L, 0x59f111f1b605d019L, 0x923f82a4af194f9bL, 0xab1c5ed5da6d8118L,
     0xd807aa98a3030242L, 0x12835b0145706fbeL, 0x243185be4ee4b28cL, 0x550c7dc3d5ffb4e2L,
@@ -87,7 +87,7 @@ private[gastronomy] object HashConstants:
     0x4cc5d4becb3e42b6L, 0x597f299cfc657e2aL, 0x5fcb6fab3ad6faecL, 0x6c44198c4a475817L)
   . asInstanceOf[IArray[Long]]
 
-  val md5T: IArray[Int] = Array[Int](
+  val md5T: IArray[Int] = scala.Array[Int](
     0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee, 0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
     0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be, 0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
     0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa, 0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,

@@ -40,7 +40,7 @@ private[hallucination] object Vp8Transform:
   private val Const2: Long = 35468 // sin(pi/8)·sqrt(2), 16-bit fixed point
 
   // Forward discrete cosine transform (encoder), inverse of `idct4x4`.
-  def dct4x4(block: Array[Int]): Unit =
+  def dct4x4(block: scala.Array[Int]): Unit =
     var i = 0
 
     while i < 4 do
@@ -70,14 +70,14 @@ private[hallucination] object Vp8Transform:
       i += 1
 
   // Forward DCT on a 16-element subblock at `offset` within a larger array.
-  def dct4x4Slice(block: Array[Int], offset: Int): Unit =
-    val temp = new Array[Int](16)
+  def dct4x4Slice(block: scala.Array[Int], offset: Int): Unit =
+    val temp = new scala.Array[Int](16)
     System.arraycopy(block, offset, temp, 0, 16)
     dct4x4(temp)
     System.arraycopy(temp, 0, block, offset, 16)
 
   // Forward Walsh-Hadamard transform (encoder) for the Y2 block, inverse of `iwht4x4`.
-  def wht4x4(block: Array[Int]): Unit =
+  def wht4x4(block: scala.Array[Int]): Unit =
     var i = 0
 
     while i < 4 do
@@ -111,7 +111,7 @@ private[hallucination] object Vp8Transform:
       i += 1
 
   // Inverse discrete cosine transform.
-  def idct4x4(block: Array[Int], offset: Int = 0): Unit =
+  def idct4x4(block: scala.Array[Int], offset: Int = 0): Unit =
     inline def b(i: Int): Int = block(offset + i)
     inline def set(i: Int, v: Int): Unit = writable(block)(offset + i) = v
     var i = 0
@@ -151,7 +151,7 @@ private[hallucination] object Vp8Transform:
       i += 1
 
   // Inverse Walsh-Hadamard transform, used for the Y2 (DC-of-DC) block.
-  def iwht4x4(block: Array[Int], offset: Int = 0): Unit =
+  def iwht4x4(block: scala.Array[Int], offset: Int = 0): Unit =
     inline def b(i: Int): Int = block(offset + i)
     inline def set(i: Int, v: Int): Unit = writable(block)(offset + i) = v
     var i = 0

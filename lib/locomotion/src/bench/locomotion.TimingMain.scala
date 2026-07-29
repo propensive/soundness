@@ -51,7 +51,7 @@ object TimingMain:
     println:
       f"$label%-40s ${nsPerOp}%9.1f ns/op  ${opsPerSec.toLong}%14d ops/s  ${mbPerSec}%8.1f MB/s"
 
-  def main(args: Array[String]): Unit =
+  def main(args: scala.Array[String]): Unit =
     val iterations = if args.length > 0 then args(0).toInt else 1_000_000
 
     println(s"Timing $iterations iterations per benchmark.")

@@ -587,10 +587,10 @@ object Tests extends Suite(m"Turbulence tests"):
         . assert(_ == List(t"first", t"second", t"third"))
 
         test(m"a line spanning many windows is reassembled"):
-          val long = Text(String(Array.fill(10000)('x')))
+          val long = Text(String(scala.Array.fill(10000)('x')))
           val input = long + t"\ny"
           input.s.grouped(7).map(_.tt).stream.delineate.records.to(List)
-        . assert(_ == List(Text(String(Array.fill(10000)('x'))), t"y"))
+        . assert(_ == List(Text(String(scala.Array.fill(10000)('x'))), t"y"))
 
         test(m"lines of an empty byte stream is empty"):
           Iterator.empty[Data].stream.delineate.records.to(List)
@@ -626,7 +626,7 @@ object Tests extends Suite(m"Turbulence tests"):
         def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
          stream.refill(Credit(64)) match
           case count: Int =>
-            val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+            val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
             scala.caps.unsafe.unsafeAssumeSeparate(recur())
@@ -655,7 +655,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
         val broken = new ji.OutputStream():
           override def write(byte: Int): Unit = throw ji.IOException("cut")
-          override def write(array: Array[Byte] | Null, off: Int, len: Int): Unit =
+          override def write(array: scala.Array[Byte] | Null, off: Int, len: Int): Unit =
             throw ji.IOException("cut")
 
         val sink = summon[ji.OutputStream is Sink by Data over Credit]

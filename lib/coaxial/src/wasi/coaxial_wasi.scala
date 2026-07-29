@@ -141,7 +141,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private var chunk: Array[Byte] = new scala.Array[Byte](0)
+        private var chunk: scala.Array[Byte] = new scala.Array[Byte](0)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -179,7 +179,7 @@ package socketBackends:
       val stream: Foreign of "output-stream" from Wit = outputHandle
 
       input.sweep: (storage, start, count) =>
-        val slice = storage.asInstanceOf[Array[Byte]].slice(start, start + count).nn
+        val slice = storage.asInstanceOf[scala.Array[Byte]].slice(start, start + count).nn
         stream.`blocking-write-and-flush`(slice.immutable(using Unsafe)).invoke[Unit]
 
     // Presents a connected socket's stream halves as a `Duplex`: `source` reads, `send` writes,

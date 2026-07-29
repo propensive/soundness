@@ -106,11 +106,11 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
       staging.withQuotes:
         ' {
-            (array: Array[Object]) =>
+            (array: scala.Array[Object]) =>
               $ {
                   // As with `incoming` below: launder the reach `.rd` capability off
                   // the quoted array reference.
-                  probe() = ('array).asInstanceOf[Expr[Array[Object]]]
+                  probe() = ('array).asInstanceOf[Expr[scala.Array[Object]]]
                   body(using probe)
                 }
           }
@@ -125,10 +125,10 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
         // This is necessary to allocate references as a side effect
         staging.withQuotes:
           ' {
-              (array: Array[Object]) =>
+              (array: scala.Array[Object]) =>
                 $ {
                     // As with `incoming` below.
-                    references() = ('array).asInstanceOf[Expr[Array[Object]]]
+                    references() = ('array).asInstanceOf[Expr[scala.Array[Object]]]
                     body(using references)
                   }
             }
@@ -157,7 +157,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                 // Bound once: splices read transported values from this array, so it must
                 // not be re-deserialized per evaluation — a spliced value inside a hot loop
                 // would otherwise decode the whole transport on every iteration.
-                val incoming: Array[Object] =
+                val incoming: scala.Array[Object] =
                   import strategies.throwUnsafely
                   stageable.deserialize(form)
 
@@ -172,7 +172,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                           // reach `.rd` capability at inline expansion sites, which the pure
                           // `Expr[Array[Object]]` slot cannot hold; the staged program never
                           // mutates the array through this alias.
-                          references() = ('incoming).asInstanceOf[Expr[Array[Object]]]
+                          references() = ('incoming).asInstanceOf[Expr[scala.Array[Object]]]
                           body(using references)
                         }
 

@@ -59,18 +59,18 @@ extension (cbor: Cbor.Ast)
 
   // Byte strings have runtime class `[B`; arrays/maps have `[Ljava/lang/Object;`.
   @unexported
-  inline def isByteString: Boolean = cbor.isInstanceOf[Array[Byte]]
+  inline def isByteString: Boolean = cbor.isInstanceOf[scala.Array[Byte]]
 
   // Maps and arrays share the `Array[AnyRef]` runtime layout. Maps have an
   // even-length backing array; arrays are odd-length (with sentinel padding
   // when the logical element count is even).
   @unexported
   inline def isMap: Boolean =
-    cbor.isInstanceOf[Array[AnyRef]] && (cbor.asInstanceOf[Array[?]].length & 1) == 0
+    cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 0
 
   @unexported
   inline def isArray: Boolean =
-    cbor.isInstanceOf[Array[AnyRef]] && (cbor.asInstanceOf[Array[?]].length & 1) == 1
+    cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 1
 
   @unexported
   def primitive: Primitive =

@@ -54,10 +54,10 @@ private[pneumatic] trait LzwEngine extends caps.Mutable:
 
   private var delivered: Int = 0
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
-  update def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
+  update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -108,7 +108,7 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
       pending += ((bits >> (bitCount - 8)) & 0xff).toByte
       bitCount -= 8
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     if !begun then
       emit(256)
       begun = true
@@ -156,7 +156,7 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
       ended = true
 
 private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
-  private val table: scala.collection.mutable.ArrayBuffer[Array[Byte]] =
+  private val table: scala.collection.mutable.ArrayBuffer[scala.Array[Byte]] =
     scala.collection.mutable.ArrayBuffer()
 
   private var width = 9
@@ -164,7 +164,7 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
   private var bitCount = 0
   private var finished = false
 
-  private var previous: Array[Byte] = new Array[Byte](0)
+  private var previous: scala.Array[Byte] = new scala.Array[Byte](0)
 
   private val early: Int = if earlyChange then 1 else 0
 
@@ -175,13 +175,13 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
     var byte = 0
 
     while byte < 256 do
-      table += Array(byte.toByte)
+      table += scala.Array(byte.toByte)
       byte += 1
 
-    table += new Array[Byte](0) // the clear code
-    table += new Array[Byte](0) // the end-of-data code
+    table += new scala.Array[Byte](0) // the clear code
+    table += new scala.Array[Byte](0) // the end-of-data code
     width = 9
-    previous = new Array[Byte](0)
+    previous = new scala.Array[Byte](0)
 
   private update def interpret(): Unit =
     val code = ((bits >> (bitCount - width)) & ((1L << width) - 1)).toInt
@@ -195,7 +195,7 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
         finished = true
 
       case code =>
-        val entry: Array[Byte] =
+        val entry: scala.Array[Byte] =
           if code < table.length then table(code).nn
           else if code == table.length && previous.length > 0 then previous :+ previous(0)
           else throw IllegalStateException("the LZW data is corrupt")
@@ -210,7 +210,7 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
         previous = entry
         if table.length >= (1 << width) - early && width < 12 then width += 1
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var consumed = 0
 
     while consumed < length do
@@ -247,15 +247,15 @@ private[pneumatic] class LzwStage(engine0: => LzwEngine^) extends Duct[Data, Dat
       targetSpace: Int )
   :   Duct.Progress =
 
-    engine.accept(source.asInstanceOf[Array[Byte]], sourceOffset, sourceLength)
+    engine.accept(source.asInstanceOf[scala.Array[Byte]], sourceOffset, sourceLength)
 
     Duct.Progress
       ( sourceLength,
-        engine.deliver(target.asInstanceOf[Array[Byte]], targetOffset, targetSpace) )
+        engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace) )
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
     if !finishing then
       engine.finish()
       finishing = true
 
-    engine.deliver(target.asInstanceOf[Array[Byte]], targetOffset, targetSpace)
+    engine.deliver(target.asInstanceOf[scala.Array[Byte]], targetOffset, targetSpace)

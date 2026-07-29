@@ -64,8 +64,8 @@ private[hallucination] object Vp8Encoder:
   // the companion, not `Encoder`: its arguments are `Encoder`-derived arrays, which cannot be
   // passed to a method on the (exclusive) encoder itself.
   private def difference
-    ( predicted: Array[Int], plane: Array[Int], planeWidth: Int, stride: Int, px: Int, py: Int,
-        bx: Int, by: Int, out: Array[Int], outOffset: Int )
+    ( predicted: scala.Array[Int], plane: scala.Array[Int], planeWidth: Int, stride: Int, px: Int, py: Int,
+        bx: Int, by: Int, out: scala.Array[Int], outOffset: Int )
   :   Unit =
 
     var y = 0
@@ -89,9 +89,9 @@ private[hallucination] object Vp8Encoder:
     private val lumaWidth = mbWidth*16
     private val chromaWidth = mbWidth*8
 
-    private var ybuf: Array[Int]^ = new Array[Int](lumaWidth*mbHeight*16)
-    private var ubuf: Array[Int]^ = new Array[Int](chromaWidth*mbHeight*8)
-    private var vbuf: Array[Int]^ = new Array[Int](chromaWidth*mbHeight*8)
+    private var ybuf: scala.Array[Int]^ = new scala.Array[Int](lumaWidth*mbHeight*16)
+    private var ubuf: scala.Array[Int]^ = new scala.Array[Int](chromaWidth*mbHeight*8)
+    private var vbuf: scala.Array[Int]^ = new scala.Array[Int](chromaWidth*mbHeight*8)
 
     private val quantIndex = 127 - quality.max(0).min(100)*127/100
     private val ydc = dcQuant(quantIndex)
@@ -106,24 +106,24 @@ private[hallucination] object Vp8Encoder:
     private var header: Vp8BoolEncoder^ = Vp8BoolEncoder()
     private var partition: Vp8BoolEncoder^ = Vp8BoolEncoder()
 
-    private var leftBorderY: Array[Int]^ = Array.fill(17)(129)
-    private var leftBorderU: Array[Int]^ = Array.fill(9)(129)
-    private var leftBorderV: Array[Int]^ = Array.fill(9)(129)
-    private var topBorderY: Array[Int]^ = Array.fill(lumaWidth + 4)(127)
-    private var topBorderU: Array[Int]^ = Array.fill(chromaWidth)(127)
-    private var topBorderV: Array[Int]^ = Array.fill(chromaWidth)(127)
+    private var leftBorderY: scala.Array[Int]^ = scala.Array.fill(17)(129)
+    private var leftBorderU: scala.Array[Int]^ = scala.Array.fill(9)(129)
+    private var leftBorderV: scala.Array[Int]^ = scala.Array.fill(9)(129)
+    private var topBorderY: scala.Array[Int]^ = scala.Array.fill(lumaWidth + 4)(127)
+    private var topBorderU: scala.Array[Int]^ = scala.Array.fill(chromaWidth)(127)
+    private var topBorderV: scala.Array[Int]^ = scala.Array.fill(chromaWidth)(127)
 
     // Per-column and per-row non-zero "complexity" carried between macroblocks: y2, 4×y, 2×u, 2×v.
     // Built with a loop: nested `Array.fill` trips ClassTag synthesis under cc.
     private val topComplexity: AnyRef =
-      val rows = new Array[Array[Int]](mbWidth)
+      val rows = new scala.Array[scala.Array[Int]](mbWidth)
       var i = 0
-      while i < rows.length do { rows(i) = new Array[Int](9); i += 1 }
+      while i < rows.length do { rows(i) = new scala.Array[Int](9); i += 1 }
       rows.asInstanceOf[AnyRef]
     
-    private inline def topComplexityRows(index: Int): Array[Int] =
-      topComplexity.asInstanceOf[Array[Array[Int]]](index)
-    private var leftComplexity: Array[Int]^ = new Array[Int](9)
+    private inline def topComplexityRows(index: Int): scala.Array[Int] =
+      topComplexity.asInstanceOf[scala.Array[scala.Array[Int]]](index)
+    private var leftComplexity: scala.Array[Int]^ = new scala.Array[Int](9)
 
     update def run(): Data =
       rgbToYuv()
@@ -132,16 +132,16 @@ private[hallucination] object Vp8Encoder:
       var mby = 0
 
       while mby < mbHeight do
-        leftComplexity = new Array[Int](9)
-        leftBorderY = Array.fill(17)(129)
-        leftBorderU = Array.fill(9)(129)
-        leftBorderV = Array.fill(9)(129)
+        leftComplexity = new scala.Array[Int](9)
+        leftBorderY = scala.Array.fill(17)(129)
+        leftBorderU = scala.Array.fill(9)(129)
+        leftBorderV = scala.Array.fill(9)(129)
         var mbx = 0
 
         while mbx < mbWidth do
           // Macroblock header: DC luma mode, DC chroma mode (no segment or skip flag).
-          header.writeTree(keyframeYmodeTree.asInstanceOf[Array[Int]], keyframeYmodeProbs.asInstanceOf[Array[Int]], 0, DcPred)
-          header.writeTree(keyframeUvModeTree.asInstanceOf[Array[Int]], keyframeUvModeProbs.asInstanceOf[Array[Int]], 0, DcPred)
+          header.writeTree(keyframeYmodeTree.asInstanceOf[scala.Array[Int]], keyframeYmodeProbs.asInstanceOf[scala.Array[Int]], 0, DcPred)
+          header.writeTree(keyframeUvModeTree.asInstanceOf[scala.Array[Int]], keyframeUvModeProbs.asInstanceOf[scala.Array[Int]], 0, DcPred)
 
           val yBlocks = transformLuma(mbx, mby)
           val (uBlocks, vBlocks) = transformChroma(mbx, mby)
@@ -196,11 +196,11 @@ private[hallucination] object Vp8Encoder:
       header.writeLiteral(1, 0) // no macroblock skip-coefficient probability
 
     private update def encodeResidual
-      ( mbx: Int, yBlocks: Array[Int], uBlocks: Array[Int], vBlocks: Array[Int] )
+      ( mbx: Int, yBlocks: scala.Array[Int], uBlocks: scala.Array[Int], vBlocks: scala.Array[Int] )
     :   Unit =
 
       // Y2: the DC coefficient of each of the 16 luma subblocks, Walsh-Hadamard transformed.
-      val coeffs0: Array[Int]^ = new Array[Int](16)
+      val coeffs0: scala.Array[Int]^ = new scala.Array[Int](16)
       var k = 0
 
       while k < 16 do
@@ -233,7 +233,7 @@ private[hallucination] object Vp8Encoder:
       encodeChromaPlane(mbx, uBlocks, 5)
       encodeChromaPlane(mbx, vBlocks, 7)
 
-    private update def encodeChromaPlane(mbx: Int, blocks: Array[Int], base: Int): Unit =
+    private update def encodeChromaPlane(mbx: Int, blocks: scala.Array[Int], base: Int): Unit =
       var y = 0
 
       while y < 2 do
@@ -255,14 +255,14 @@ private[hallucination] object Vp8Encoder:
 
     // Quantizes one 4×4 DCT block and entropy-codes its tokens; returns whether it was non-empty.
     private update def encodeCoefficients
-      ( block: Array[Int], offset: Int, plane: Int, complexity0: Int, dcq: Int, acq: Int )
+      ( block: scala.Array[Int], offset: Int, plane: Int, complexity0: Int, dcq: Int, acq: Int )
     :   Boolean =
 
       val firstCoeff = if plane == 0 then 1 else 0
       var complexity = complexity0
 
       // Quantize into zigzag order.
-      val zigzagBlock: Array[Int]^ = new Array[Int](16)
+      val zigzagBlock: scala.Array[Int]^ = new scala.Array[Int](16)
       var i = firstCoeff
 
       while i < 16 do
@@ -288,11 +288,11 @@ private[hallucination] object Vp8Encoder:
 
         val token =
           if absValue == 0 then
-            partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], probOffset, Dct0, startIndex)
+            partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], probOffset, Dct0, startIndex)
             skipEob = true
             Dct0
           else if absValue <= 4 then
-            partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], probOffset, absValue, startIndex)
+            partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], probOffset, absValue, startIndex)
             skipEob = false
             absValue
           else
@@ -301,7 +301,7 @@ private[hallucination] object Vp8Encoder:
               else if absValue <= 18 then DctCat3 else if absValue <= 34 then DctCat4
               else if absValue <= 66 then DctCat5 else DctCat6
 
-            partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], probOffset, category, startIndex)
+            partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], probOffset, category, startIndex)
             val extra = absValue - dctCatBase(category - DctCat1)
             var mask = if category == DctCat6 then 1 << 10 else 1 << (category - DctCat1)
             var c = (category - DctCat1)*12
@@ -321,7 +321,7 @@ private[hallucination] object Vp8Encoder:
       if endOfBlock < 16 then
         val band = coeffBands(firstCoeff.max(endOfBlock))
 
-        partition.writeTree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs.asInstanceOf[Array[Int]], coeffIndex(plane, band, complexity, 0),
+        partition.writeTree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs.asInstanceOf[scala.Array[Int]], coeffIndex(plane, band, complexity, 0),
             DctEob)
 
       endOfBlock > 0
@@ -377,11 +377,11 @@ private[hallucination] object Vp8Encoder:
 
     // Predicts (DC), differences and forward-transforms the luma macroblock, returning the 16
     // subblocks' un-quantized DCT coefficients. Also reconstructs the block to update the borders.
-    private update def transformLuma(mbx: Int, mby: Int): Array[Int]^ =
+    private update def transformLuma(mbx: Int, mby: Int): scala.Array[Int]^ =
       val predicted = Vp8Predict.createBorderLuma(mbx, mby, mbWidth, topBorderY, leftBorderY)
       Vp8Predict.predictDcpred(predicted, 16, LumaStride, mby != 0, mbx != 0)
 
-      val blocks: Array[Int]^ = new Array[Int](256)
+      val blocks: scala.Array[Int]^ = new scala.Array[Int](256)
       var by = 0
 
       while by < 4 do
@@ -398,9 +398,9 @@ private[hallucination] object Vp8Encoder:
       reconstructLuma(predicted, blocks, mbx)
       blocks
 
-    private update def reconstructLuma(predicted: Array[Int], blocks: Array[Int], mbx: Int): Unit =
+    private update def reconstructLuma(predicted: scala.Array[Int], blocks: scala.Array[Int], mbx: Int): Unit =
       val recon = blocks.clone()
-      val c0: Array[Int]^ = new Array[Int](16)
+      val c0: scala.Array[Int]^ = new scala.Array[Int](16)
       var k = 0
 
       while k < 16 do
@@ -471,19 +471,19 @@ private[hallucination] object Vp8Encoder:
         topBorderY(mbx*16 + k) = predicted(16*LumaStride + k + 1)
         k += 1
 
-    private update def transformChroma(mbx: Int, mby: Int): (Array[Int], Array[Int]) =
+    private update def transformChroma(mbx: Int, mby: Int): (scala.Array[Int], scala.Array[Int]) =
       (transformChromaPlane(mbx, mby, u = true), transformChromaPlane(mbx, mby, u = false))
 
     // Selects the U or V plane and border fields itself: passing `this`-derived arrays as
     // arguments to a method on `this` is a separation failure while `this` is exclusive.
-    private update def transformChromaPlane(mbx: Int, mby: Int, u: Boolean): Array[Int]^ =
+    private update def transformChromaPlane(mbx: Int, mby: Int, u: Boolean): scala.Array[Int]^ =
       val plane = if u then ubuf else vbuf
       val topBorder = if u then topBorderU else topBorderV
       val leftBorder = if u then leftBorderU else leftBorderV
       val predicted = Vp8Predict.createBorderChroma(mbx, mby, topBorder, leftBorder)
       Vp8Predict.predictDcpred(predicted, 8, ChromaStride, mby != 0, mbx != 0)
 
-      val blocks: Array[Int]^ = new Array[Int](64)
+      val blocks: scala.Array[Int]^ = new scala.Array[Int](64)
       var by = 0
 
       while by < 2 do

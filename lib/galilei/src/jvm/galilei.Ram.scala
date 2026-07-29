@@ -93,7 +93,7 @@ object Ram:
     def growTo(newSize: Long): Unit =
       if newSize > currentSize then
         buffer.force()
-        channel.write(jn.ByteBuffer.wrap(Array[Byte](0)).nn, newSize - 1)
+        channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, newSize - 1)
         buffer = channel.map(mapMode, 0, newSize).nn
         currentSize = newSize
 
@@ -207,7 +207,7 @@ object Ram:
         try
           try
             // Extend the new, empty file to its mapped size by writing its final byte.
-            channel.write(jn.ByteBuffer.wrap(Array[Byte](0)).nn, size - 1)
+            channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, size - 1)
 
             val handle = new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
             try block(using handle)

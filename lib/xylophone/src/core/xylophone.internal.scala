@@ -96,30 +96,30 @@ object internal:
 
       var types: List[TypeRepr] = Nil
 
-      def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
+      def checkText(array: Expr[scala.Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
+      def checkComment(array: Expr[scala.Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkCdata(array: Expr[Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
+      def checkCdata(array: Expr[scala.Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkPi
-        ( array:     Expr[Array[Any]],
+        ( array:     Expr[scala.Array[Any]],
           pattern:   ProcessingInstruction,
           scrutinee: Expr[ProcessingInstruction] )
       :   Expr[Boolean] =
 
         '{${Expr(pattern.target)} == $scrutinee.target && ${Expr(pattern.data)} == $scrutinee.data}
 
-      def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
+      def checkHeader(array: Expr[scala.Array[Any]], pattern: Header, scrutinee: Expr[Header])
       :   Expr[Boolean] =
 
         val encoding: Expr[Boolean] =
@@ -132,7 +132,7 @@ object internal:
 
         '{${Expr(pattern.version)} == $scrutinee.version && $encoding && $standalone}
 
-      def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
+      def checkFragment(array: Expr[scala.Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       :   Expr[Boolean] =
 
         val children = '{$scrutinee.nodes}
@@ -148,7 +148,7 @@ object internal:
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
-      def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
+      def checkElement(array: Expr[scala.Array[Any]], pattern: Element, scrutinee: Expr[Element])
       :   Expr[Boolean] =
 
         def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
@@ -198,7 +198,7 @@ object internal:
 
         '{$attributesChecked && $elementsChecked}
 
-      def descend(array: Expr[Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
+      def descend(array: Expr[scala.Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
       :   Expr[Boolean] =
 
         pattern match
@@ -627,7 +627,7 @@ object internal:
           val map = '{Map(${Expr.ofList(exprs)}*)}
           val elements =
             val serialized = scala.collection.immutable.ArraySeq
-            . unsafeWrapArray(children.asInstanceOf[Array[Node]]).flatMap(serialize(_)).toList
+            . unsafeWrapArray(children.asInstanceOf[scala.Array[Node]]).flatMap(serialize(_)).toList
 
             '{IArray.of(scala.IArray(${Expr.ofList(serialized)}*))}
 
@@ -823,8 +823,8 @@ object internal:
     // Unwrap to the raw `Array[String]` for hot-path internal access. Safe
     // within the package: the storage is shared but never mutated outside
     // construction.
-    private[xylophone] inline def storage(attrs: Attributes): Array[String] =
-      attrs.asInstanceOf[Array[String]]
+    private[xylophone] inline def storage(attrs: Attributes): scala.Array[String] =
+      attrs.asInstanceOf[scala.Array[String]]
 
     // The throwing lookup as a plain method: inside this file the opaque is transparent, so
     // the `IArray` migration shims intercept the extension forms; internal call sites (and

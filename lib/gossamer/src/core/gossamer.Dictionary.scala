@@ -50,7 +50,7 @@ import vacuous.*
 // materialising the trie into a dense form up-front.
 //
 // `value` is expected to be a reference type at runtime; the internal
-// storage allocates `new scala.Array[value](n)` via `ClassTag` and re-views it
+// storage allocates `new Array[value](n)` via `ClassTag` and re-views it
 // as `Array[value | Null]` so callers can null-check at access sites.
 // Storing a primitive `value` (e.g. `Int`) would box at runtime — fine
 // for occasional access, wasteful in hot loops.
@@ -67,7 +67,7 @@ object Dictionary:
     // The table arrays are written only during construction; the finished alphabet is
     // observationally pure.
     def of(chars: String): Alphabet =
-      val table0 = Array.fill[Int](128)(-1)
+      val table0 = scala.Array.fill[Int](128)(-1)
 
       locally:
         var i = 0
@@ -80,8 +80,8 @@ object Dictionary:
       scala.caps.unsafe.unsafeAssumePure:
         scala.caps.unsafe.unsafeAssumeSeparate:
           new Alphabet:
-            private val table: Array[Int] = scala.caps.unsafe.unsafeAssumePure(table0)
-            private val charTable: Array[Char] = chars.toCharArray.nn
+            private val table: scala.Array[Int] = scala.caps.unsafe.unsafeAssumePure(table0)
+            private val charTable: scala.Array[Char] = chars.toCharArray.nn
             private val n = chars.length
 
             def size = n
@@ -116,8 +116,8 @@ object Dictionary:
   def empty[value: ClassTag]: Dictionary[value] =
     val emptyInts = new scala.Array[Int](0)
 
-    val emptyValues: Array[AnyRef | Null] =
-      new scala.Array[AnyRef](0).asInstanceOf[Array[AnyRef | Null]]
+    val emptyValues: scala.Array[AnyRef | Null] =
+      new scala.Array[AnyRef](0).asInstanceOf[scala.Array[AnyRef | Null]]
 
     scala.caps.unsafe.unsafeAssumePure:
       new Dictionary[value]
@@ -226,10 +226,10 @@ object Dictionary:
       ids(nodeList(i)) = i
       i += 1
 
-    val childrenArr: Array[Int]^ = Array.fill[Int](nodeCount*alpha)(-1)
+    val childrenArr: scala.Array[Int]^ = scala.Array.fill[Int](nodeCount*alpha)(-1)
 
-    val valuesArr: Array[AnyRef | Null]^ =
-      new scala.Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
+    val valuesArr: scala.Array[AnyRef | Null]^ =
+      new scala.Array[AnyRef](nodeCount).asInstanceOf[scala.Array[AnyRef | Null]]
 
     i = 0
 
@@ -311,11 +311,11 @@ object Dictionary:
             summon )
 
 final class Dictionary[+value]
-  ( val children: Array[Int],
-    val values:   Array[AnyRef | Null],
-    val depth:    Array[Int],
-    val fail:     Array[Int],
-    val dictLink: Array[Int],
+  ( val children: scala.Array[Int],
+    val values:   scala.Array[AnyRef | Null],
+    val depth:    scala.Array[Int],
+    val fail:     scala.Array[Int],
+    val dictLink: scala.Array[Int],
     val alphabet: Dictionary.Alphabet,
     classTag:     ClassTag[value @uncheckedVariance] ):
 
@@ -360,7 +360,7 @@ final class Dictionary[+value]
   // Slice variant: lookup against `buffer[offset, offset + length)`
   // without allocating a `Text`. Useful in hot loops that already hold a
   // char buffer (e.g. parser word boundaries).
-  def apply(buffer: Array[Char], offset: Int, length: Int): Optional[value] =
+  def apply(buffer: scala.Array[Char], offset: Int, length: Int): Optional[value] =
     var node = 0
     var i = 0
 

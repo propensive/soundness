@@ -378,7 +378,7 @@ def cli[bus <: Matchable](using executive: Executive)
           . or(SignalResponse.Reject)
 
         val ackByte: Byte = if response == SignalResponse.Accept then 'a' else 'r'
-        safely(rawOut.write(Array[Byte](ackByte, '\n'.toByte)))
+        safely(rawOut.write(scala.Array[Byte](ackByte, '\n'.toByte)))
         safely(rawOut.flush())
         connection.close()
 
@@ -429,9 +429,9 @@ def cli[bus <: Matchable](using executive: Executive)
               newS
 
           def write(i: Int): Unit = connected().write(i)
-          override def write(bytes: Array[Byte] | Null): Unit = connected().write(bytes)
+          override def write(bytes: scala.Array[Byte] | Null): Unit = connected().write(bytes)
 
-          override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
+          override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
             connected().write(bytes, offset, length)
 
           override def close(): Unit =

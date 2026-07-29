@@ -406,9 +406,9 @@ extension [value](iterable: Iterable[value])
     recur(0, iterable, 0, 0, 0)
 
 extension [element](value: IArray[element])
-  inline def mutable(using erased unsafe: Unsafe): Array[element] = value.asInstanceOf[Array[element]]
+  inline def mutable(using erased unsafe: Unsafe): scala.Array[element] = value.asInstanceOf[scala.Array[element]]
 
-extension [element](array: Array[element])
+extension [element](array: scala.Array[element])
   inline def immutable(using erased unsafe: Unsafe): IArray[element] = array.asInstanceOf[IArray[element]]
 
   def snapshot(using ClassTag[element]): IArray[element] =
@@ -417,7 +417,7 @@ extension [element](array: Array[element])
     Buffer.freeze(newArray)
 
   inline def place(value: IArray[element], ordinal: Ordinal = Prim): Unit =
-    System.arraycopy(value.asInstanceOf[Array[element]], 0, array, ordinal.n0, value.stdlib.length)
+    System.arraycopy(value.asInstanceOf[scala.Array[element]], 0, array, ordinal.n0, value.stdlib.length)
 
 extension [key, value](map: sc.Map[key, value])
   inline def defines(key: key): Boolean = map.contains(key)

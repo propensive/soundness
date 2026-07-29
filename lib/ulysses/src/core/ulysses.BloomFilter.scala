@@ -60,7 +60,7 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
 
   private def hash(value: element): BigInt =
-    def recur(count: Int = 0, data: List[Array[Byte]] = Nil): BigInt =
+    def recur(count: Int = 0, data: List[scala.Array[Byte]] = Nil): BigInt =
       if data.stdlib.map(_.length).sum*8 < requiredEntropyBits
       then recur(count + 1, (count, value).digest[algorithm].data.mutable(using Unsafe) :: data)
       else

@@ -642,8 +642,8 @@ object Checker:
   // Multi-line quote/splices are handled by 473.2–473.6.
   private def checkInlineQuoteSplice
     ( file:    String,
-      arr:     Array[Lexeme],
-      cols:    Array[Int],
+      arr:     scala.Array[Lexeme],
+      cols:    scala.Array[Int],
       lineNum: Int,
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
@@ -1334,8 +1334,8 @@ object Checker:
 
   private def checkBracketInteriors
     ( s:       State,
-      arr:     Array[Lexeme],
-      cols:    Array[Int],
+      arr:     scala.Array[Lexeme],
+      cols:    scala.Array[Int],
       prevTok: String,
       emit:    (Int, String, String) => Unit )
   :   Unit =
@@ -1548,7 +1548,7 @@ object Checker:
   // expression (no commas, no `:`, has operators like `||`, `&&`, `==`,
   // `+`, etc.).
   private def bracketHasArgListShape
-    ( arr: Array[Lexeme], opener: Int, closer: Int )
+    ( arr: scala.Array[Lexeme], opener: Int, closer: Int )
   :   Boolean =
 
     var depth = 0
@@ -1583,7 +1583,7 @@ object Checker:
   // annotation (parameter list). Used to distinguish `:   ( a: T )`
   // (param list) from `:   (T1, T2)` (tuple type).
   private def bracketHasTopColon
-    ( arr: Array[Lexeme], opener: Int, closer: Int )
+    ( arr: scala.Array[Lexeme], opener: Int, closer: Int )
   :   Boolean =
 
     var depth = 0
@@ -1601,8 +1601,8 @@ object Checker:
 
   private def checkComments
     ( lineNum: Int,
-      arr:     Array[Lexeme],
-      cols:    Array[Int],
+      arr:     scala.Array[Lexeme],
+      cols:    scala.Array[Int],
       emit:    (Int, String, String) => Unit )
   :   Unit =
 
@@ -1667,14 +1667,14 @@ object Checker:
       ( "if", "then", "else", "match", "case", "do", "while", "for", "yield",
         "return", "throw", "try", "catch", "finally" )
 
-  private def caseIsModifier(arr: Array[Lexeme], i: Int): Boolean =
+  private def caseIsModifier(arr: scala.Array[Lexeme], i: Int): Boolean =
     var j = i + 1
     while j < arr.length && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do
       j += 1
     j < arr.length && arr(j).kind == Sort.Code
       && (arr(j).text == "class" || arr(j).text == "object")
 
-  private def isBinaryContext(arr: Array[Lexeme], i: Int): Boolean =
+  private def isBinaryContext(arr: scala.Array[Lexeme], i: Int): Boolean =
     val left =
       var j = i - 1
       while j >= 0 && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do j -= 1
@@ -1711,8 +1711,8 @@ object Checker:
     left && right
 
   private def checkOperatorSpacing
-    ( arr:  Array[Lexeme],
-      cols: Array[Int],
+    ( arr:  scala.Array[Lexeme],
+      cols: scala.Array[Int],
       emit: (Int, String, String) => Unit )
   :   Unit =
 
@@ -1793,7 +1793,7 @@ object Checker:
     Set("=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=")
 
   private def checkAssignmentSpacing
-    ( arr: Array[Lexeme], cols: Array[Int], emit: (Int, String, String) => Unit )
+    ( arr: scala.Array[Lexeme], cols: scala.Array[Int], emit: (Int, String, String) => Unit )
   :   Unit =
 
     var lastSemantic = arr.length - 1
@@ -1875,8 +1875,8 @@ object Checker:
         case _                                                   => false
 
   private def checkSymbolicMethodNames
-    ( arr:  Array[Lexeme],
-      cols: Array[Int],
+    ( arr:  scala.Array[Lexeme],
+      cols: scala.Array[Int],
       emit: (Int, String, String) => Unit )
   :   Unit =
 

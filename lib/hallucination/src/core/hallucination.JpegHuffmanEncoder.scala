@@ -44,7 +44,7 @@ private[hallucination] final class JpegEncodeTable
   // The per-symbol (size, code) lookup, from the canonical code assignment (Figures C.1–C.3),
   // built into fresh arrays and frozen zero-copy.
   val (sizeOf, codeOf) =
-    val sizes = new Array[Int](256)
+    val sizes = new scala.Array[Int](256)
     var k = 0
     var i = 0
 
@@ -58,7 +58,7 @@ private[hallucination] final class JpegEncodeTable
 
       i += 1
 
-    val codes = new Array[Int](256)
+    val codes = new scala.Array[Int](256)
     var code = 0
     var currentSize = if k > 0 then sizes(0) else 0
     var index = 0
@@ -72,8 +72,8 @@ private[hallucination] final class JpegEncodeTable
       code += 1
       index += 1
 
-    val sizeOf0 = new Array[Int](256)
-    val codeOf0 = new Array[Int](256)
+    val sizeOf0 = new scala.Array[Int](256)
+    val codeOf0 = new scala.Array[Int](256)
     i = 0
 
     while i < values.length do
@@ -139,10 +139,10 @@ private[hallucination] object JpegHuffmanEncoder:
 
   // Builds an image-optimized table from symbol frequencies (Annex K.2, Figures K.1–K.4). `freq`
   // has 257 entries; index 256 is a reserved sentinel guaranteeing a spare longest code.
-  def newOptimized(freq0: Array[Int]): JpegEncodeTable =
+  def newOptimized(freq0: scala.Array[Int]): JpegEncodeTable =
     val freq = freq0.clone()
-    val others = Array.fill(257)(-1)
-    val codesize = new Array[Int](257)
+    val others = scala.Array.fill(257)(-1)
+    val codesize = new scala.Array[Int](257)
     var running = true
 
     // Figure K.1: combine the two least-frequent symbols repeatedly, tracking merged chains.
@@ -183,7 +183,7 @@ private[hallucination] object JpegHuffmanEncoder:
             codesize(w2) += 1
 
     // Figure K.2: count codes of each length.
-    val bits = new Array[Int](33)
+    val bits = new scala.Array[Int](33)
     var i = 0
 
     while i < 257 do
@@ -208,7 +208,7 @@ private[hallucination] object JpegHuffmanEncoder:
     bits(length) -= 1
 
     // Figure K.4: sort the symbols by increasing code length.
-    val huffval = new Array[Int](256)
+    val huffval = new scala.Array[Int](256)
     var k = 0
     var size = 1
 
@@ -221,7 +221,7 @@ private[hallucination] object JpegHuffmanEncoder:
 
       size += 1
 
-    val lengths = new Array[Int](16)
+    val lengths = new scala.Array[Int](16)
     i = 0
     while i < 16 do { lengths(i) = bits(i + 1); i += 1 }
 

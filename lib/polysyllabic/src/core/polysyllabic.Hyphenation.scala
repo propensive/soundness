@@ -171,10 +171,10 @@ object Hyphenation:
     Buffer.freeze(result)
 
   private def walkCompact
-    ( padded:       Array[Char],
+    ( padded:       scala.Array[Char],
       paddedLength: Int,
       trie:         Dictionary[IArray[Byte]],
-      scores:       Array[Byte]^ )
+      scores:       scala.Array[Byte]^ )
   :   Unit =
 
     val children = trie.children
@@ -239,9 +239,9 @@ object Hyphenation:
       hyphenation:  Hyphenation,
       leftMin:      Int,
       rightMin:     Int,
-      padded:       Array[Char]^,
-      scores:       Array[Byte]^,
-      breaks:       Array[Int]^ )
+      padded:       scala.Array[Char]^,
+      scores:       scala.Array[Byte]^,
+      breaks:       scala.Array[Int]^ )
   :   Int =
 
     // Fill `padded` with `.` sentinels + lowercased word chars.
@@ -279,7 +279,7 @@ object Hyphenation:
       trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
 
   private inline def mergePattern
-    ( scores: Array[Byte]^, base: Int, pattern: IArray[Byte] )
+    ( scores: scala.Array[Byte]^, base: Int, pattern: IArray[Byte] )
   :   Unit =
 
     var k = 0
@@ -291,14 +291,14 @@ object Hyphenation:
       k += 1
 
   private def trieWalkInto
-    ( padded:       Array[Char],
+    ( padded:       scala.Array[Char],
       paddedLength: Int,
       length:       Int,
       hyphenation:  Hyphenation,
       leftMin:      Int,
       rightMin:     Int,
-      scores:       Array[Byte]^,
-      breaks:       Array[Int]^ )
+      scores:       scala.Array[Byte]^,
+      breaks:       scala.Array[Int]^ )
   :   Int =
 
     // `scores(g)` is the running maximum for the gap immediately before

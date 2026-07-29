@@ -312,7 +312,7 @@ object Bench:
             ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
 
     inline def over[value <: reflect.Enum: Enumerable, report]
-      ( companion: { def values: Array[value] } )
+      ( companion: { def values: scala.Array[value] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -386,7 +386,7 @@ object Bench:
                   Anchor(second.spec, second.point(value), comparison) )
 
     inline def over[left <: reflect.Enum: Enumerable, right, report]
-      ( first: { def values: Array[left] }, second: Axis[right] )
+      ( first: { def values: scala.Array[left] }, second: Axis[right] )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -399,7 +399,7 @@ object Bench:
       over(Axis(first), second)(body)
 
     inline def over[left, right <: reflect.Enum: Enumerable, report]
-      ( first: Axis[left], second: { def values: Array[right] } )
+      ( first: Axis[left], second: { def values: scala.Array[right] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -412,7 +412,7 @@ object Bench:
       over(first, Axis(second))(body)
 
     inline def over[left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, report]
-      ( first: { def values: Array[left] }, second: { def values: Array[right] } )
+      ( first: { def values: scala.Array[left] }, second: { def values: scala.Array[right] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],

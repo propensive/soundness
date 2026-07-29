@@ -126,13 +126,13 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
   private val flushCap =
     if dictSize >= (1 << 16) then 1 << 16 else if dictSize > 0 then dictSize else 1
 
-  private val flushBuffer: Array[Byte]^ = new Array[Byte](flushCap)
+  private val flushBuffer: scala.Array[Byte]^ = new scala.Array[Byte](flushCap)
 
   // --- The sliding-window dictionary (the former `LzDecoder`): a flat buffer of recently-decoded
   // bytes, from which match copies read. `dictStart..dictPos` is the not-yet-flushed run;
   // `dictFull` tracks the history available for distance references. `dictSetLimit` bounds how far
   // a single decode pass may advance `dictPos` before a flush, keeping match copies in the buffer.
-  private val dictBuffer: Array[Byte]^ = new Array[Byte](dictSize)
+  private val dictBuffer: scala.Array[Byte]^ = new scala.Array[Byte](dictSize)
   private var dictStart: Int = 0
   private var dictPos: Int = 0
   private var dictFull: Int = 0
@@ -230,7 +230,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
     rcPos += 1
     byte
 
-  private update def rcDecodeBit(probs: Array[Short]^{this}, index: Int): Int =
+  private update def rcDecodeBit(probs: scala.Array[Short]^{this}, index: Int): Int =
     rcNormalize()
     val prob = probs(index).toInt
     val bound = (rcRange >>> BitModelTotalBits)*prob
@@ -246,7 +246,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
       1
 
   // An MSB-first probability tree of `size` entries at `offset` within `probs`.
-  private update def rcDecodeBitTree(probs: Array[Short]^{this}, offset: Int, size: Int): Int =
+  private update def rcDecodeBitTree(probs: scala.Array[Short]^{this}, offset: Int, size: Int): Int =
     var symbol = 1
 
     while
@@ -256,7 +256,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
 
     symbol - size
 
-  private update def rcDecodeBitTreeReverse(probs: Array[Short]^{this}, offset: Int, size: Int)
+  private update def rcDecodeBitTreeReverse(probs: scala.Array[Short]^{this}, offset: Int, size: Int)
   :   Int =
 
     var symbol = 1
@@ -300,29 +300,29 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
   private var literalContextBits: Int = 0
 
   private var lzmaState: Int = 0
-  private val reps: Array[Int]^ = new Array[Int](Reps)
+  private val reps: scala.Array[Int]^ = new scala.Array[Int](Reps)
 
-  private val isMatch: Array[Short]^ = new Array[Short](States*PosStatesMax)
-  private val isRep: Array[Short]^ = new Array[Short](States)
-  private val isRep0: Array[Short]^ = new Array[Short](States)
-  private val isRep1: Array[Short]^ = new Array[Short](States)
-  private val isRep2: Array[Short]^ = new Array[Short](States)
-  private val isRep0Long: Array[Short]^ = new Array[Short](States*PosStatesMax)
-  private val distSlots: Array[Short]^ = new Array[Short](DistStates*DistSlots)
-  private val distSpecial: Array[Short]^ = new Array[Short](DistSpecialTotal)
-  private val distAlign: Array[Short]^ = new Array[Short](AlignSize)
-  private var literalProbs: Array[Short]^ = new Array[Short](0x300)
+  private val isMatch: scala.Array[Short]^ = new scala.Array[Short](States*PosStatesMax)
+  private val isRep: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep0: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep1: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep2: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep0Long: scala.Array[Short]^ = new scala.Array[Short](States*PosStatesMax)
+  private val distSlots: scala.Array[Short]^ = new scala.Array[Short](DistStates*DistSlots)
+  private val distSpecial: scala.Array[Short]^ = new scala.Array[Short](DistSpecialTotal)
+  private val distAlign: scala.Array[Short]^ = new scala.Array[Short](AlignSize)
+  private var literalProbs: scala.Array[Short]^ = new scala.Array[Short](0x300)
 
-  private val matchLenChoice: Array[Short]^ = new Array[Short](2)
-  private val matchLenLow: Array[Short]^ = new Array[Short](PosStatesMax*LenLowSymbols)
-  private val matchLenMid: Array[Short]^ = new Array[Short](PosStatesMax*LenMidSymbols)
-  private val matchLenHigh: Array[Short]^ = new Array[Short](LenHighSymbols)
-  private val repLenChoice: Array[Short]^ = new Array[Short](2)
-  private val repLenLow: Array[Short]^ = new Array[Short](PosStatesMax*LenLowSymbols)
-  private val repLenMid: Array[Short]^ = new Array[Short](PosStatesMax*LenMidSymbols)
-  private val repLenHigh: Array[Short]^ = new Array[Short](LenHighSymbols)
+  private val matchLenChoice: scala.Array[Short]^ = new scala.Array[Short](2)
+  private val matchLenLow: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenLowSymbols)
+  private val matchLenMid: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenMidSymbols)
+  private val matchLenHigh: scala.Array[Short]^ = new scala.Array[Short](LenHighSymbols)
+  private val repLenChoice: scala.Array[Short]^ = new scala.Array[Short](2)
+  private val repLenLow: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenLowSymbols)
+  private val repLenMid: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenMidSymbols)
+  private val repLenHigh: scala.Array[Short]^ = new scala.Array[Short](LenHighSymbols)
 
-  private update def resetProbs(probs: Array[Short]^{this}): Unit =
+  private update def resetProbs(probs: scala.Array[Short]^{this}): Unit =
     var i = 0
     while i < probs.length do { probs(i) = ProbInit; i += 1 }
 
@@ -367,10 +367,10 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
   // The length model (the former `LengthDecoder`): a choice bit selects the low (8), mid (8) or
   // high (256) symbol range, each a bit-tree; low/mid are indexed by position-state.
   private update def decodeLength
-    ( choice: Array[Short]^{this},
-      low: Array[Short]^{this},
-      mid: Array[Short]^{this},
-      high: Array[Short]^{this},
+    ( choice: scala.Array[Short]^{this},
+      low: scala.Array[Short]^{this},
+      mid: scala.Array[Short]^{this},
+      high: scala.Array[Short]^{this},
       posState: Int )
   :   Int =
 
@@ -476,7 +476,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
   private var stage = Lzma2State.Control
 
   // Buffered, not-yet-consumed compressed input, with a read cursor.
-  private var input: Array[Byte]^ = new Array[Byte](1 << 16)
+  private var input: scala.Array[Byte]^ = new scala.Array[Byte](1 << 16)
   private var readPos = 0
   private var writePos = 0
 
@@ -513,13 +513,13 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
       if writePos + extra > input.length then
         var size = input.length*2
         while writePos + extra > size do size *= 2
-        val grown: Array[Byte]^ = new Array[Byte](size)
+        val grown: scala.Array[Byte]^ = new scala.Array[Byte](size)
         System.arraycopy(input, 0, grown, 0, writePos)
         input = grown
 
-  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensureCapacity(length)
-    System.arraycopy(bytes.asInstanceOf[Array[Byte]], offset, input, writePos, length)
+    System.arraycopy(bytes.asInstanceOf[scala.Array[Byte]], offset, input, writePos, length)
     writePos += length
     process()
 
@@ -633,14 +633,14 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
       literalPosMask = (1 << lp) - 1
       literalContextBits = lc
       val literalSize = 0x300 << (lc + lp)
-      if literalProbs.length != literalSize then literalProbs = new Array[Short](literalSize)
+      if literalProbs.length != literalSize then literalProbs = new scala.Array[Short](literalSize)
       modelReady = true
 
     resetModel()
 
   // Append the first `count` bytes of the flush scratch (passed in as `this`-scoped so the field
   // array flows through the exclusive-parameter shape) to the decoded output.
-  private update def appendOutput(flushed: Array[Byte]^{this}, count: Int): Unit =
+  private update def appendOutput(flushed: scala.Array[Byte]^{this}, count: Int): Unit =
     var i = 0
     while i < count do { output += flushed(i); i += 1 }
 
@@ -658,7 +658,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
 // the `LzmaEncoder` with its `LzmaCoder`/`LengthEncoder` model — are flattened into one
 // `caps.Mutable` state machine, with the probability matrices flattened into single tracked
 // arrays indexed by computed offsets.
-private[pneumatic] final class Lzma2Compressor(data: Array[Byte], options: Lzma2Options)
+private[pneumatic] final class Lzma2Compressor(data: scala.Array[Byte], options: Lzma2Options)
 extends caps.Mutable:
   import Lzma.*
   import RangeCoder.{TopMask, BitModelTotalBits, BitModelTotal, MoveBits, ProbInit}
@@ -667,7 +667,7 @@ extends caps.Mutable:
   // probability trees into a growable buffer. `rcLow` is a 33-bit carry accumulator; `rcShiftLow`
   // propagates carries into already-buffered bytes through the one-byte `rcCache` plus a run of
   // `rcCacheSize` deferred `0xff`s.
-  private var rcBuffer: Array[Byte]^ = new Array[Byte](1 << 16)
+  private var rcBuffer: scala.Array[Byte]^ = new scala.Array[Byte](1 << 16)
   private var rcCount: Int = 0
   private var rcLow: Long = 0
   private var rcRange: Int = 0
@@ -688,7 +688,7 @@ extends caps.Mutable:
 
   private update def rcWriteByte(byte: Int): Unit =
     if rcCount == rcBuffer.length then
-      val grown: Array[Byte]^ = new Array[Byte](rcBuffer.length*2)
+      val grown: scala.Array[Byte]^ = new scala.Array[Byte](rcBuffer.length*2)
       System.arraycopy(rcBuffer, 0, grown, 0, rcCount)
       rcBuffer = grown
 
@@ -713,7 +713,7 @@ extends caps.Mutable:
     rcCacheSize += 1
     rcLow = (rcLow & 0x00ffffff) << 8
 
-  private update def rcEncodeBit(probs: Array[Short]^{this}, index: Int, bit: Int): Unit =
+  private update def rcEncodeBit(probs: scala.Array[Short]^{this}, index: Int, bit: Int): Unit =
     val prob = probs(index).toInt
     val bound = (rcRange >>> BitModelTotalBits)*prob
 
@@ -731,7 +731,7 @@ extends caps.Mutable:
 
   // An MSB-first probability tree of `size` entries at `offset` within `probs`.
   private update def rcEncodeBitTree
-    ( probs: Array[Short]^{this}, offset: Int, size: Int, symbol: Int )
+    ( probs: scala.Array[Short]^{this}, offset: Int, size: Int, symbol: Int )
   :   Unit =
 
     var index = 1
@@ -747,7 +747,7 @@ extends caps.Mutable:
       continue = mask != 1
 
   private update def rcEncodeBitTreeReverse
-    ( probs: Array[Short]^{this}, offset: Int, size: Int, symbol0: Int )
+    ( probs: scala.Array[Short]^{this}, offset: Int, size: Int, symbol0: Int )
   :   Unit =
 
     var index = 1
@@ -793,8 +793,8 @@ extends caps.Mutable:
   private val depth = if options.depthLimit > 0 then options.depthLimit else 32
 
   private final val HashBits = 17
-  private val hashHead: Array[Int]^ = new Array[Int](1 << HashBits)
-  private val hashChain: Array[Int]^ = new Array[Int](if length > 0 then length else 1)
+  private val hashHead: scala.Array[Int]^ = new scala.Array[Int](1 << HashBits)
+  private val hashChain: scala.Array[Int]^ = new scala.Array[Int](if length > 0 then length else 1)
 
   private def hashAt(pos: Int): Int =
     val value = (data(pos) & 0xff) | ((data(pos + 1) & 0xff) << 8) |
@@ -836,7 +836,7 @@ extends caps.Mutable:
   // Results fill `candidateLen`/`candidateDist`; the return value is the count. Read-only with
   // respect to the finder (does not insert `pos`).
   private update def finderFindAll
-    ( pos: Int, lenLimit: Int, outLen: Array[Int]^{this}, outDist: Array[Int]^{this} )
+    ( pos: Int, lenLimit: Int, outLen: scala.Array[Int]^{this}, outDist: scala.Array[Int]^{this} )
   :   Int =
 
     if pos + 4 > length || lenLimit < MatchLenMin then 0 else
@@ -875,31 +875,31 @@ extends caps.Mutable:
   private val normal: Boolean = options.mode == Lzma2Options.ModeNormal
 
   private var lzmaState: Int = 0
-  private val reps: Array[Int]^ = new Array[Int](Reps)
+  private val reps: scala.Array[Int]^ = new scala.Array[Int](Reps)
 
-  private val isMatch: Array[Short]^ = new Array[Short](States*PosStatesMax)
-  private val isRep: Array[Short]^ = new Array[Short](States)
-  private val isRep0: Array[Short]^ = new Array[Short](States)
-  private val isRep1: Array[Short]^ = new Array[Short](States)
-  private val isRep2: Array[Short]^ = new Array[Short](States)
-  private val isRep0Long: Array[Short]^ = new Array[Short](States*PosStatesMax)
-  private val distSlotProbs: Array[Short]^ = new Array[Short](DistStates*DistSlots)
-  private val distSpecial: Array[Short]^ = new Array[Short](DistSpecialTotal)
-  private val distAlign: Array[Short]^ = new Array[Short](AlignSize)
+  private val isMatch: scala.Array[Short]^ = new scala.Array[Short](States*PosStatesMax)
+  private val isRep: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep0: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep1: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep2: scala.Array[Short]^ = new scala.Array[Short](States)
+  private val isRep0Long: scala.Array[Short]^ = new scala.Array[Short](States*PosStatesMax)
+  private val distSlotProbs: scala.Array[Short]^ = new scala.Array[Short](DistStates*DistSlots)
+  private val distSpecial: scala.Array[Short]^ = new scala.Array[Short](DistSpecialTotal)
+  private val distAlign: scala.Array[Short]^ = new scala.Array[Short](AlignSize)
 
-  private val literalProbs: Array[Short]^ =
-    new Array[Short](0x300 << (options.lc + options.lp))
+  private val literalProbs: scala.Array[Short]^ =
+    new scala.Array[Short](0x300 << (options.lc + options.lp))
 
-  private val matchLenChoice: Array[Short]^ = new Array[Short](2)
-  private val matchLenLow: Array[Short]^ = new Array[Short](PosStatesMax*LenLowSymbols)
-  private val matchLenMid: Array[Short]^ = new Array[Short](PosStatesMax*LenMidSymbols)
-  private val matchLenHigh: Array[Short]^ = new Array[Short](LenHighSymbols)
-  private val repLenChoice: Array[Short]^ = new Array[Short](2)
-  private val repLenLow: Array[Short]^ = new Array[Short](PosStatesMax*LenLowSymbols)
-  private val repLenMid: Array[Short]^ = new Array[Short](PosStatesMax*LenMidSymbols)
-  private val repLenHigh: Array[Short]^ = new Array[Short](LenHighSymbols)
+  private val matchLenChoice: scala.Array[Short]^ = new scala.Array[Short](2)
+  private val matchLenLow: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenLowSymbols)
+  private val matchLenMid: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenMidSymbols)
+  private val matchLenHigh: scala.Array[Short]^ = new scala.Array[Short](LenHighSymbols)
+  private val repLenChoice: scala.Array[Short]^ = new scala.Array[Short](2)
+  private val repLenLow: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenLowSymbols)
+  private val repLenMid: scala.Array[Short]^ = new scala.Array[Short](PosStatesMax*LenMidSymbols)
+  private val repLenHigh: scala.Array[Short]^ = new scala.Array[Short](LenHighSymbols)
 
-  private update def resetProbs(probs: Array[Short]^{this}): Unit =
+  private update def resetProbs(probs: scala.Array[Short]^{this}): Unit =
     var i = 0
     while i < probs.length do { probs(i) = ProbInit; i += 1 }
 
@@ -943,10 +943,10 @@ extends caps.Mutable:
   // The length model (the former `LengthEncoder`): a choice bit chooses the low/mid/high range,
   // then a bit-tree codes the symbol within it. Lengths are offset by `MatchLenMin`.
   private update def encodeLength
-    ( choice: Array[Short]^{this},
-      low: Array[Short]^{this},
-      mid: Array[Short]^{this},
-      high: Array[Short]^{this},
+    ( choice: scala.Array[Short]^{this},
+      low: scala.Array[Short]^{this},
+      mid: scala.Array[Short]^{this},
+      high: scala.Array[Short]^{this},
       len: Int,
       posState: Int )
   :   Unit =
@@ -975,8 +975,8 @@ extends caps.Mutable:
   private var readPos = 0
 
   // Reusable candidate buffers for the price-based normal parser.
-  private val candidateLen: Array[Int]^ = new Array[Int](MatchLenMax + 1)
-  private val candidateDist: Array[Int]^ = new Array[Int](MatchLenMax + 1)
+  private val candidateLen: scala.Array[Int]^ = new scala.Array[Int](MatchLenMax + 1)
+  private val candidateDist: scala.Array[Int]^ = new scala.Array[Int](MatchLenMax + 1)
 
   private def pos: Int = readPos
   private def hasMore: Boolean = readPos < length
@@ -1115,14 +1115,14 @@ extends caps.Mutable:
       (nextFound >>> 32).toInt > currentLen
 
   // Pricing only reads the model, so these take read-only views of the probability arrays.
-  private def priceBit(probs: Array[Short]^{caps.any.rd}, index: Int, bit: Int): Int =
+  private def priceBit(probs: scala.Array[Short]^{caps.any.rd}, index: Int, bit: Int): Int =
     RangeCoder.bitPrice(probs(index).toInt, bit)
 
   private def lengthPrice
-    ( choice: Array[Short]^{caps.any.rd},
-      low: Array[Short]^{caps.any.rd},
-      mid: Array[Short]^{caps.any.rd},
-      high: Array[Short]^{caps.any.rd},
+    ( choice: scala.Array[Short]^{caps.any.rd},
+      low: scala.Array[Short]^{caps.any.rd},
+      mid: scala.Array[Short]^{caps.any.rd},
+      high: scala.Array[Short]^{caps.any.rd},
       len: Int,
       posState: Int )
   :   Int =
@@ -1302,7 +1302,7 @@ extends caps.Mutable:
   resetModel()
   rcReset()
 
-  update def compress(): Array[Byte] =
+  update def compress(): scala.Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()
 
     if data.length == 0 then out += 0x00.toByte else
@@ -1344,7 +1344,7 @@ extends caps.Mutable:
   // Append the freshly-encoded chunk payload (passed in as `this`-scoped so the field array flows
   // through the exclusive-parameter shape) to the output.
   private update def appendPayload
-    ( payload: Array[Byte]^{this}, count: Int, out: scm.ArrayBuffer[Byte] )
+    ( payload: scala.Array[Byte]^{this}, count: Int, out: scm.ArrayBuffer[Byte] )
   :   Unit =
 
     var i = 0

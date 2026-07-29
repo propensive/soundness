@@ -80,7 +80,7 @@ object Traversable extends Traversable2:
   // wrapper is allocation-free and the cast never escapes.
   given iarray: [element] => IArray[element] is Traversable by element =
     iarray =>
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[Array[element]])
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[scala.Array[element]])
       . iterator
 
   // Java collections traverse through `.asScala`, so `javaCollection.to[List]` (and `[Set]`,

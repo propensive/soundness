@@ -55,7 +55,7 @@ private[hallucination] object WebpTransform:
   private inline def colorDelta(t: Byte, c: Byte): Int = (t.toInt*c.toInt) >> 5
 
   def predictor
-    ( data: Array[Byte], width: Int, height: Int, sizeBits: Int, predictorData: IArray[Byte] )
+    ( data: scala.Array[Byte], width: Int, height: Int, sizeBits: Int, predictorData: IArray[Byte] )
   :   Unit =
 
     val blockWidth = subsampleSize(width, sizeBits)
@@ -92,7 +92,7 @@ private[hallucination] object WebpTransform:
 
       y += 1
 
-  private def dispatch(mode: Int, data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def dispatch(mode: Int, data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     mode match
       case 0  => opaque(data, start, end)
       case 1  => left(data, start, end)
@@ -110,42 +110,42 @@ private[hallucination] object WebpTransform:
       case 13 => select13(data, start, end, stride)
       case _  => ()
 
-  private def opaque(data: Array[Byte], start: Int, end: Int): Unit =
+  private def opaque(data: scala.Array[Byte], start: Int, end: Int): Unit =
     var i = start + 3
 
     while i < end do
       writable(data)(i) = (u(data(i)) + 0xff).toByte
       i += 4
 
-  private def left(data: Array[Byte], start: Int, end: Int): Unit =
+  private def left(data: scala.Array[Byte], start: Int, end: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + u(data(i - 4))).toByte
       i += 1
 
-  private def top(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def top(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + u(data(i - stride))).toByte
       i += 1
 
-  private def topRight(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def topRight(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + u(data(i - stride + 4))).toByte
       i += 1
 
-  private def topLeft(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def topLeft(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + u(data(i - stride - 4))).toByte
       i += 1
 
-  private def select5(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select5(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
@@ -153,35 +153,35 @@ private[hallucination] object WebpTransform:
       writable(data)(i) = (u(data(i)) + ((a + u(data(i - stride))) >> 1)).toByte
       i += 1
 
-  private def select6(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select6(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + average2(data(i - 4), data(i - stride - 4))).toByte
       i += 1
 
-  private def select7(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select7(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + average2(data(i - 4), data(i - stride))).toByte
       i += 1
 
-  private def select8(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select8(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + average2(data(i - stride - 4), data(i - stride))).toByte
       i += 1
 
-  private def select9(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select9(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
       writable(data)(i) = (u(data(i)) + average2(data(i - stride), data(i - stride + 4))).toByte
       i += 1
 
-  private def select10(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select10(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
@@ -192,7 +192,7 @@ private[hallucination] object WebpTransform:
 
   // The select predictor: per pixel, choose the left or top neighbour by which is nearer to the
   // gradient L + T - TL, summed across all four channels.
-  private def select11(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select11(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
@@ -218,7 +218,7 @@ private[hallucination] object WebpTransform:
 
       i += 4
 
-  private def select12(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select12(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
@@ -226,7 +226,7 @@ private[hallucination] object WebpTransform:
       writable(data)(i) = (u(data(i)) + a).toByte
       i += 1
 
-  private def select13(data: Array[Byte], start: Int, end: Int, stride: Int): Unit =
+  private def select13(data: scala.Array[Byte], start: Int, end: Int, stride: Int): Unit =
     var i = start
 
     while i < end do
@@ -236,7 +236,7 @@ private[hallucination] object WebpTransform:
       writable(data)(i) = (u(data(i)) + a).toByte
       i += 1
 
-  def color(data: Array[Byte], width: Int, sizeBits: Int, transformData: IArray[Byte]): Unit =
+  def color(data: scala.Array[Byte], width: Int, sizeBits: Int, transformData: IArray[Byte]): Unit =
     val blockWidth = subsampleSize(width, sizeBits)
     val stride = width*4
     val height = data.length/stride
@@ -265,7 +265,7 @@ private[hallucination] object WebpTransform:
 
       y += 1
 
-  def subtractGreen(data: Array[Byte]): Unit =
+  def subtractGreen(data: scala.Array[Byte]): Unit =
     var i = 0
 
     while i < data.length do
@@ -277,12 +277,12 @@ private[hallucination] object WebpTransform:
   // The image was decoded at a subsampled width, several indices packed into each byte for small
   // palettes; rows are processed bottom-up so the wider output never overwrites unread input.
   def colorIndexing
-    ( data: Array[Byte], width: Int, height: Int, tableSize: Int, table: IArray[Byte] )
+    ( data: scala.Array[Byte], width: Int, height: Int, tableSize: Int, table: IArray[Byte] )
   :   Unit =
 
     inline def lookup(index: Int, pixel: Int): Unit =
       if index < tableSize
-      then System.arraycopy(table.asInstanceOf[Array[Byte]], index*4, data, pixel, 4)
+      then System.arraycopy(table.asInstanceOf[scala.Array[Byte]], index*4, data, pixel, 4)
       else
         writable(data)(pixel) = 0; writable(data)(pixel + 1) = 0
         writable(data)(pixel + 2) = 0; writable(data)(pixel + 3) = 0
@@ -299,7 +299,7 @@ private[hallucination] object WebpTransform:
       val bitsPerEntry = 8/perByte
       val mask = (1 << bitsPerEntry) - 1
       val packedWidth = (width + perByte - 1)/perByte
-      val packed = new Array[Int](packedWidth)
+      val packed = new scala.Array[Int](packedWidth)
       var y = height - 1
 
       while y >= 0 do

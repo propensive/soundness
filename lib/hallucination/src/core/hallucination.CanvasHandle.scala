@@ -51,16 +51,16 @@ object CanvasHandle:
 
       inline erasedValue[Channel.Storage[layout]] match
         case _: Byte =>
-          canvas.raster.buffer.asInstanceOf[Array[Byte]^](index) = Pixel.value(pixel).toByte
+          canvas.raster.buffer.asInstanceOf[scala.Array[Byte]^](index) = Pixel.value(pixel).toByte
 
         case _: Short =>
-          canvas.raster.buffer.asInstanceOf[Array[Short]^](index) = Pixel.value(pixel).toShort
+          canvas.raster.buffer.asInstanceOf[scala.Array[Short]^](index) = Pixel.value(pixel).toShort
 
         case _: Int =>
-          canvas.raster.buffer.asInstanceOf[Array[Int]^](index) = Pixel.value(pixel).toInt
+          canvas.raster.buffer.asInstanceOf[scala.Array[Int]^](index) = Pixel.value(pixel).toInt
 
         case _: Long =>
-          canvas.raster.buffer.asInstanceOf[Array[Long]^](index) = Pixel.value(pixel)
+          canvas.raster.buffer.asInstanceOf[scala.Array[Long]^](index) = Pixel.value(pixel)
 
 // The scoped capability for pixel access to an open raster. Writes through a `Write`-granted
 // canvas mutate the raster's buffer in place, with the same semantics as writing through an

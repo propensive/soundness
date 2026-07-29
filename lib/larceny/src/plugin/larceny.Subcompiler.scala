@@ -157,7 +157,7 @@ object Subcompiler:
         val importOptions =
           (if yimports.isEmpty then Nil else List(s"-Yimports:${yimports.mkString(",")}"))
           ++ (if noPredef then List("-Yno-predef") else Nil)
-        val args = Array[String]("") ++ ccOptions ++ importOptions ++ plugins.map: p => s"-Xplugin:$p"
+        val args = scala.Array[String]("") ++ ccOptions ++ importOptions ++ plugins.map: p => s"-Xplugin:$p"
         setup(args, context2).map(_(1)).get
 
 

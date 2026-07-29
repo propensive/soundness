@@ -90,7 +90,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new scala.Array[Byte](capacity)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
         private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
         private var start0: Int = 0
         private var limit0: Int = 0
@@ -188,11 +188,11 @@ package socketBackends:
 
       val ip = address.getAddress.nn.absolve match
         case ip: jn.Inet4Address =>
-          val bytes: Array[Byte] = ip.getAddress.nn
+          val bytes: scala.Array[Byte] = ip.getAddress.nn
           Ipv4(bytes(0), bytes(1), bytes(2), bytes(3))
 
         case ip: jn.Inet6Address =>
-          val bytes: Array[Byte] = ip.getAddress.nn
+          val bytes: scala.Array[Byte] = ip.getAddress.nn
 
           Ipv6
             ( Long(bytes.take(8).immutable(using Unsafe)),
@@ -209,12 +209,12 @@ package socketBackends:
       val ip: jn.InetAddress = sender.absolve match
         case ip: (Ipv4 @unchecked) =>
           val array =
-            Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
+            scala.Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
 
           jn.InetAddress.getByAddress(array).nn
 
         case ip: Ipv6 =>
-          val array: Array[Byte]^ =
+          val array: scala.Array[Byte]^ =
             val high = ip.highBits.bits.bytes
             val bytes = new scala.Array[Byte](16)
             var index = 0
@@ -275,7 +275,7 @@ package socketBackends:
         val out = socket.getOutputStream.nn
 
         caps.unsafe.unsafeAssumePure(input).sweep: (storage, start, count) =>
-          out.write(storage.asInstanceOf[Array[Byte]], start, count)
+          out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
           out.flush()
 
     def response(exchange: ClientExchange)(using Buffering, Tactic[StreamError])
@@ -413,8 +413,8 @@ private[coaxial] def configure(socket: jn.DatagramSocket, options: List[SocketOp
 
 // Resolves a `MacAddress` to the local network interface whose hardware address matches, if any.
 private[coaxial] def interfaceFor(mac: MacAddress): Optional[jn.NetworkInterface] =
-  val target: Array[Byte] =
-    Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
+  val target: scala.Array[Byte] =
+    scala.Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
 
   def recur(interfaces: ju.Enumeration[jn.NetworkInterface]): Optional[jn.NetworkInterface] =
     if !interfaces.hasMoreElements then Unset else
@@ -454,7 +454,7 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new scala.Array[Byte](capacity)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -488,7 +488,7 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
       data.sweep: (storage, start, count) =>
-        out.write(storage.asInstanceOf[Array[Byte]], start, count)
+        out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
         out.flush()
 
     def close(): Unit = shutdown()
@@ -549,7 +549,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
         type Transport = Credit
 
         private[coaxial] val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private[coaxial] val storage: Array[Byte] = new scala.Array[Byte](capacity)
+        private[coaxial] val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -573,7 +573,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
               // `atUnsafe` is Scala Native's array-to-pointer view — its bounds-checked `at`
               // is shadowed by rudiments' `at` extension; the indices here are in range by
               // construction.)
-              val pure = storage.asInstanceOf[Array[Byte]]
+              val pure = storage.asInstanceOf[scala.Array[Byte]]
               val count = libcrypto.BIO_read(bio, pure.atUnsafe(0), capacity.min(granted))
 
               if count <= 0 then
@@ -589,7 +589,7 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
       import unsafeExceptions.canThrowAny
 
       data.sweep: (storage, start, count) =>
-        val array = storage.asInstanceOf[Array[Byte]]
+        val array = storage.asInstanceOf[scala.Array[Byte]]
         var written = 0
 
         while written < count do

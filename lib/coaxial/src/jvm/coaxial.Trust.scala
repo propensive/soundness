@@ -127,7 +127,7 @@ object TlsAcceptance:
       val context =
         if acceptance == TlsAcceptance() then jns.SSLContext.getDefault.nn else
           val custom = jns.SSLContext.getInstance("TLS").nn
-          custom.init(null, Array(trustManager(acceptance)), null)
+          custom.init(null, scala.Array(trustManager(acceptance)), null)
           custom
 
       val parameters = context.getDefaultSSLParameters().nn
@@ -230,17 +230,17 @@ object TlsAcceptance:
           case error: jsc.CertificateException =>
             if !tolerable(error) then throw error
 
-      def getAcceptedIssuers(): Array[jsc.X509Certificate | Null] | Null =
+      def getAcceptedIssuers(): scala.Array[jsc.X509Certificate | Null] | Null =
         platform.getAcceptedIssuers()
 
       def checkClientTrusted
-        ( chain: Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
+        ( chain: scala.Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
       :   Unit =
 
         platform.checkClientTrusted(chain, authType)
 
       def checkClientTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           socket:   java.net.Socket | Null )
       :   Unit =
@@ -248,7 +248,7 @@ object TlsAcceptance:
         platform.checkClientTrusted(chain, authType, socket)
 
       def checkClientTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           engine:   jns.SSLEngine | Null )
       :   Unit =
@@ -256,13 +256,13 @@ object TlsAcceptance:
         platform.checkClientTrusted(chain, authType, engine)
 
       def checkServerTrusted
-        ( chain: Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
+        ( chain: scala.Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
       :   Unit =
 
         attempt(platform.checkServerTrusted(chain, authType))
 
       def checkServerTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           socket:   java.net.Socket | Null )
       :   Unit =
@@ -270,7 +270,7 @@ object TlsAcceptance:
         attempt(platform.checkServerTrusted(chain, authType, socket))
 
       def checkServerTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           engine:   jns.SSLEngine | Null )
       :   Unit =

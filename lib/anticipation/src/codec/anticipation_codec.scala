@@ -37,8 +37,8 @@ import prepositional.*
 object Data:
   def apply(xs: Byte*): Data = IArray(xs*)
 
-  def build(count: Int)(lambda: Array[Byte]^ => Unit): Data =
-    val array: Array[Byte]^ = new scala.Array[Byte](count)
+  def build(count: Int)(lambda: scala.Array[Byte]^ => Unit): Data =
+    val array: scala.Array[Byte]^ = new scala.Array[Byte](count)
     lambda(array)
     array.asInstanceOf[Data]
 

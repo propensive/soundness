@@ -438,7 +438,7 @@ private def recordIterator[record]
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the `inputStream` adapter's precedent).
       @caps.unsafe.untrackedCaptures
-      private var storage: Array[AnyRef] = new scala.Array[AnyRef](0)
+      private var storage: scala.Array[AnyRef] = new scala.Array[AnyRef](0)
       @caps.unsafe.untrackedCaptures
       private var index: Int = 0
       @caps.unsafe.untrackedCaptures
@@ -457,7 +457,7 @@ private def recordIterator[record]
 
         stream.refill(Credit(block)) match
           case count: Int =>
-            storage = stream.window(using Unsafe).asInstanceOf[Array[AnyRef]]
+            storage = stream.window(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
             index = stream.start
             limit = stream.start + count
             consumed = count

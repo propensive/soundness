@@ -131,7 +131,7 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
 
     // Emit a scalar (or an empty collection) with no surrounding newlines.
     def scalar(ast: Yaml.Ast): Unit = ast.asMatchable match
-      case bcd: Array[Double] @unchecked => producer.put(bcd.asInstanceOf[jacinta.Bcd].text.tt)
+      case bcd: scala.Array[Double] @unchecked => producer.put(bcd.asInstanceOf[jacinta.Bcd].text.tt)
       case n: Long                       => producer.put(n.toString.tt)
 
       case d: Double =>

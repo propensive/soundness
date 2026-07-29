@@ -159,7 +159,7 @@ object Inspectable extends Inspectable2:
 
 
   given array: [element] => (inspectable: => element is Inspectable)
-  =>  Array[element] is Inspectable =
+  =>  scala.Array[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 

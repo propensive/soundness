@@ -590,9 +590,9 @@ object Html extends Tag.Container
     // Node and open-tag stacks for the tree builder. `nodes` accumulates the children of the
     // element currently being read (the trailing `count` entries belong to the innermost
     // element); `stack` mirrors the open-element ancestry.
-    var nodes: Array[Node]^ = new Array(4)
+    var nodes: scala.Array[Node]^ = new scala.Array(4)
     var index: Int = 0
-    var stack: Array[Tag]^ = new Array(4)
+    var stack: scala.Array[Tag]^ = new scala.Array(4)
     var depth: Int = 0
     // Shared scratch buffer for attribute accumulation (parser-lifetime).
     // Stores key/value pairs interleaved as `[k0, v0, k1, v1, ...]`. Keys are
@@ -600,24 +600,24 @@ object Html extends Tag.Container
     // writes here, then snapshots the populated prefix into a freshly-sized
     // `IArray[String | Null]` and wraps it as an opaque `Attributes`. Grows
     // geometrically when filled.
-    var attrInterleaved: Array[String | Null]^ = new scala.Array[String | Null](16)
+    var attrInterleaved: scala.Array[String | Null]^ = new scala.Array[String | Null](16)
     // Pending formatting tags awaiting reconstruction (see WHATWG "active
     // formatting elements"). Stored as parallel arrays of label/Attributes
     // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
     // O(N) (and allocates a `Tuple2` per append), and even though valid
     // HTML rarely populates this list, malformed-input handling can append
     // multiple entries at once. Capacity grows geometrically when filled.
-    var pendingFormattingLabels: Array[Text]^ = new scala.Array[Text](4)
-    var pendingFormattingAttrs:  Array[Attributes]^ = new scala.Array[Attributes](4)
+    var pendingFormattingLabels: scala.Array[Text]^ = new scala.Array[Text](4)
+    var pendingFormattingAttrs:  scala.Array[Attributes]^ = new scala.Array[Attributes](4)
     var pendingFormattingSize: Int = 0
     // Foster-parented children awaiting placement around the next `<table>`
     // close. Stored as a pair of `Array[Node]` buffers (with size counters)
     // rather than `List[Node]`s appended via `:+`: list `:+` is `O(N)`
     // and the per-append cons cell + traversal-on-flush is wasted on a
     // structure we always drain in arrival order.
-    var fosteredBefore: Array[Node]^ = new scala.Array[Node](4)
+    var fosteredBefore: scala.Array[Node]^ = new scala.Array[Node](4)
     var fosteredBeforeSize: Int = 0
-    var fosteredAfter: Array[Node]^ = new scala.Array[Node](4)
+    var fosteredAfter: scala.Array[Node]^ = new scala.Array[Node](4)
     var fosteredAfterSize: Int = 0
 
     def findAncestorIndex(label: Text): Int =
@@ -791,7 +791,7 @@ object Html extends Tag.Container
     // not derive from a constructor parameter under the provenance rule — and
     // populated by `syncFrom()` at the top of `parseHtml`.
     @caps.unsafe.untrackedCaptures
-    private var bytes:  Array[Char] = new scala.Array[Char](0)
+    private var bytes:  scala.Array[Char] = new scala.Array[Char](0)
     private var pos:    Int = 0
     private var bufEnd: Int = 0
 
@@ -1878,7 +1878,7 @@ extends Node, Topical, Transportive, Dynamic:
     // element type; the per-element decorations defeat an outer seal.
     Fragment[tag.Topic]
       ( caps.unsafe.unsafeAssumePure
-          (children2.mutable(using Unsafe).asInstanceOf[Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
+          (children2.mutable(using Unsafe).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
     . in[tag.Form]
 
   def body: Fragment of Topic over Transport in Form =

@@ -176,8 +176,8 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
     val sb = new _root_.java.lang.StringBuilder
     sb.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>")
     sb.append("<logs>")
-    val levels = Array("info", "debug", "warn", "error")
-    val services = Array("auth", "api", "db", "cache", "worker")
+    val levels = scala.Array("info", "debug", "warn", "error")
+    val services = scala.Array("auth", "api", "db", "cache", "worker")
     var i = 0
     while i < 500 do
       val ts = 1700000000L + i

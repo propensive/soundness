@@ -656,7 +656,7 @@ object internal:
     val classTag = Expr.summon[ClassTag[result]].getOrElse:
       report.errorAndAbort("wisteria: no ClassTag available for the result type")
 
-    '{Array[result](${Varargs(results)}*)(using $classTag).immutable(using Unsafe)}
+    '{scala.Array[result](${Varargs(results)}*)(using $classTag).immutable(using Unsafe)}
 
   // The derivation type may be an intersection `Variant & Parent` (when deriving a sum's
   // variant); resolve to the variant side. The parent of `Variant & Parent` is the sum, which has

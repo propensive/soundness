@@ -92,17 +92,17 @@ object internal:
 
       var types: List[TypeRepr] = Nil
 
-      def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
+      def checkText(array: Expr[scala.Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
+      def checkComment(array: Expr[scala.Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
+      def checkFragment(array: Expr[scala.Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       :   Expr[Boolean] =
 
         val children = '{$scrutinee.nodes}
@@ -118,7 +118,7 @@ object internal:
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
-      def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
+      def checkElement(array: Expr[scala.Array[Any]], pattern: Element, scrutinee: Expr[Element])
       :   Expr[Boolean] =
 
         def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
@@ -171,7 +171,7 @@ object internal:
         '{$attributesChecked && $elementsChecked}
 
       def descend
-        ( array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )
+        ( array: Expr[scala.Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )
       :   Expr[Boolean] =
 
         pattern match
@@ -670,8 +670,8 @@ object internal:
     // Unwrap to the raw `Array[String | Null]` for hot-path internal access.
     // Safe within the package: the storage is shared but never mutated outside
     // construction.
-    private[honeycomb] inline def storage(attrs: Attributes): Array[String | Null] =
-      attrs.asInstanceOf[Array[String | Null]]
+    private[honeycomb] inline def storage(attrs: Attributes): scala.Array[String | Null] =
+      attrs.asInstanceOf[scala.Array[String | Null]]
 
     extension (attrs: Attributes)
       inline def size: Int = attrs.stdlib.length/2

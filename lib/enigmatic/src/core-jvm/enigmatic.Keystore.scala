@@ -109,7 +109,7 @@ object Keystore:
     // Public, and failure-wrapping: any of the JDK's load-time exceptions (bad password, bad
     // format, truncation) becomes `Unreadable`, which deliberately does not distinguish a
     // wrong password from a corrupt store.
-    def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: Array[Char] | Null)
+    def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: scala.Array[Char] | Null)
     :   Unit =
       try keystore.load(in, password)
       catch case error: Exception => abort(KeystoreError(KeystoreError.Reason.Unreadable))

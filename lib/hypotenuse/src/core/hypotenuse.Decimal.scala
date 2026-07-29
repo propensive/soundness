@@ -178,7 +178,7 @@ object decimalInternal:
     // Builds the canonical form: high zero limbs dropped, factors of ten moved into the
     // scale (as `stripTrailingZeros`), and the unique zero when the magnitude vanishes. The
     // input is copied into a fresh working array, which the strip loops then clobber.
-    private[hypotenuse] def compose(signum: Int, magnitude0: Array[Int], count0: Int, scale0: Int)
+    private[hypotenuse] def compose(signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int)
     :   Decimal =
       val magnitude = Buffer[Int](count0)
       System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
@@ -212,7 +212,7 @@ object decimalInternal:
         Buffer.freeze(result)
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
-    private def divideSmall(magnitude: Array[Int]^, count: Int, divisor: Int): Int =
+    private def divideSmall(magnitude: scala.Array[Int]^, count: Int, divisor: Int): Int =
       var remainder = 0L
       var i = count - 1
 
@@ -226,7 +226,7 @@ object decimalInternal:
 
     // The magnitude scaled up by 10ᵖᵒʷᵉʳ: whole limbs are prepended for each factor of 10⁹,
     // then a single small multiplication handles the residue.
-    private[hypotenuse] def scaleUp(magnitude: Array[Int], count: Int, power: Int): (Array[Int], Int) =
+    private[hypotenuse] def scaleUp(magnitude: scala.Array[Int], count: Int, power: Int): (scala.Array[Int], Int) =
       val shift = power/BaseDigits
       val residue = power%BaseDigits
       val result = new scala.Array[Int](count + shift + 1)
@@ -251,7 +251,7 @@ object decimalInternal:
       (result, length)
 
     private[hypotenuse] def compareMagnitude
-        (left: Array[Int], leftCount: Int, right: Array[Int], rightCount: Int): Int =
+        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int): Int =
       if leftCount != rightCount then if leftCount < rightCount then -1 else 1 else
         var i = leftCount - 1
         var result = 0
@@ -263,8 +263,8 @@ object decimalInternal:
         result
 
     private[hypotenuse] def addMagnitude
-        (left: Array[Int], leftCount: Int, right: Array[Int], rightCount: Int)
-    :   (Array[Int], Int) =
+        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+    :   (scala.Array[Int], Int) =
 
       val count = math.max(leftCount, rightCount)
       val result = new scala.Array[Int](count + 1)
@@ -291,8 +291,8 @@ object decimalInternal:
 
     // Subtraction of a smaller-or-equal magnitude from a larger.
     private[hypotenuse] def subtractMagnitude
-        (left: Array[Int], leftCount: Int, right: Array[Int], rightCount: Int)
-    :   (Array[Int], Int) =
+        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+    :   (scala.Array[Int], Int) =
 
       val result = new scala.Array[Int](leftCount)
       var borrow = 0
@@ -315,8 +315,8 @@ object decimalInternal:
       (result, count)
 
     private[hypotenuse] def multiplyMagnitude
-        (left: Array[Int], leftCount: Int, right: Array[Int], rightCount: Int)
-    :   (Array[Int], Int) =
+        (left: scala.Array[Int], leftCount: Int, right: scala.Array[Int], rightCount: Int)
+    :   (scala.Array[Int], Int) =
 
       val result = new scala.Array[Int](leftCount + rightCount)
       var i = 0
@@ -348,8 +348,8 @@ object decimalInternal:
     // Knuth's algorithm D in base 10⁹: every trial numerator and product fits in a `Long`,
     // since 10¹⁸ < 2⁶³. Returns the quotient and remainder magnitudes.
     private[hypotenuse] def divideMagnitude
-        (dividend: Array[Int], dividendCount: Int, divisor: Array[Int], divisorCount: Int)
-    :   (Array[Int], Int, Array[Int], Int) =
+        (dividend: scala.Array[Int], dividendCount: Int, divisor: scala.Array[Int], divisorCount: Int)
+    :   (scala.Array[Int], Int, scala.Array[Int], Int) =
 
       if divisorCount == 1 then
         val quotient = new scala.Array[Int](dividendCount)
@@ -357,11 +357,11 @@ object decimalInternal:
         val remainder = divideSmall(quotient, dividendCount, divisor(0))
         var count = dividendCount
         while count > 1 && quotient(count - 1) == 0 do count -= 1
-        (quotient, count, Array(remainder), 1)
+        (quotient, count, scala.Array(remainder), 1)
       else if compareMagnitude(dividend, dividendCount, divisor, divisorCount) < 0 then
         val remainder = new scala.Array[Int](dividendCount)
         System.arraycopy(dividend, 0, remainder, 0, dividendCount)
-        (Array(0), 1, remainder, dividendCount)
+        (scala.Array(0), 1, remainder, dividendCount)
       else
         // Normalize so the divisor's top limb is at least half the base.
         val shift = Base/(divisor(divisorCount - 1) + 1)
@@ -449,7 +449,7 @@ object decimalInternal:
 
         (quotient, count, u, remainderCount)
 
-    private[hypotenuse] def magnitudeOf(decimal: Decimal): Array[Int] =
+    private[hypotenuse] def magnitudeOf(decimal: Decimal): scala.Array[Int] =
       val array = new scala.Array[Int](decimal.length - 2)
       var i = 0
 
@@ -459,7 +459,7 @@ object decimalInternal:
 
       array
 
-    private def digitLength(magnitude: Array[Int], count: Int): Int =
+    private def digitLength(magnitude: scala.Array[Int], count: Int): Int =
       var digits = (count - 1)*BaseDigits
       var topLimb = magnitude(count - 1)
 
@@ -505,7 +505,7 @@ object decimalInternal:
         if leftSign > 0 then result else -result
 
     // Aligns two nonzero operands to their common (larger) scale.
-    private[hypotenuse] def aligned(left: Decimal, right: Decimal): (Array[Int], Int, Array[Int], Int, Int) =
+    private[hypotenuse] def aligned(left: Decimal, right: Decimal): (scala.Array[Int], Int, scala.Array[Int], Int, Int) =
       val scale = math.max(left(1), right(1))
       val leftMagnitude = magnitudeOf(left)
       val rightMagnitude = magnitudeOf(right)
@@ -655,7 +655,7 @@ object decimalInternal:
                     order > 0
 
           val (rounded, roundedCount) =
-            if increment then Decimal.addMagnitude(quotient, quotientCount, Array(1), 1)
+            if increment then Decimal.addMagnitude(quotient, quotientCount, scala.Array(1), 1)
             else (quotient, quotientCount)
 
           Decimal.compose(sign, rounded, roundedCount, scale)

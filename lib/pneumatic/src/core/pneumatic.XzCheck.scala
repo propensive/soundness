@@ -86,24 +86,24 @@ private[pneumatic] object Crc64:
 // `NoChecker`, whose instances are trivially cheap).
 private[pneumatic] trait XzChecker extends caps.Mutable:
   def size: Int
-  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
-  update def bytes: Array[Byte]^
+  update def absorb(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def bytes: scala.Array[Byte]^
 
 private[pneumatic] final class NoChecker extends XzChecker:
   def size: Int = 0
-  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit = ()
-  update def bytes: Array[Byte]^ = new Array[Byte](0)
+  update def absorb(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit = ()
+  update def bytes: scala.Array[Byte]^ = new scala.Array[Byte](0)
 
 private[pneumatic] final class Crc32Checker extends XzChecker:
   private val crc = Crc32()
   def size: Int = 4
 
-  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def absorb(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     crc.update(buffer, offset, length)
 
-  update def bytes: Array[Byte]^ =
+  update def bytes: scala.Array[Byte]^ =
     val value = crc.value
-    val out: Array[Byte]^ = new Array[Byte](4)
+    val out: scala.Array[Byte]^ = new scala.Array[Byte](4)
     var i = 0
     while i < 4 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }
     out
@@ -112,7 +112,7 @@ private[pneumatic] final class Crc64Checker extends XzChecker:
   private var v: Long = -1L
   def size: Int = 8
 
-  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def absorb(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = offset
     val end = offset + length
 
@@ -120,9 +120,9 @@ private[pneumatic] final class Crc64Checker extends XzChecker:
       v = Crc64.table(((v ^ buffer(i)) & 0xff).toInt) ^ (v >>> 8)
       i += 1
 
-  update def bytes: Array[Byte]^ =
+  update def bytes: scala.Array[Byte]^ =
     val value = v ^ -1L
-    val out: Array[Byte]^ = new Array[Byte](8)
+    val out: scala.Array[Byte]^ = new scala.Array[Byte](8)
     var i = 0
     while i < 8 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }
     out
@@ -133,7 +133,7 @@ private[pneumatic] final class Crc64Checker extends XzChecker:
 private[pneumatic] object Sha256:
   val roundConstants: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(
+      scala.Array(
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
         0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
         0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174, 0xe49b69c1, 0xefbe4786,
@@ -147,9 +147,9 @@ private[pneumatic] object Sha256:
         0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2)
 
 private[pneumatic] final class Sha256Checker extends XzChecker:
-  private val h: Array[Int]^ = new Array[Int](8)
-  private val block: Array[Byte]^ = new Array[Byte](64)
-  private val w: Array[Int]^ = new Array[Int](64)
+  private val h: scala.Array[Int]^ = new scala.Array[Int](8)
+  private val block: scala.Array[Byte]^ = new scala.Array[Byte](64)
+  private val w: scala.Array[Int]^ = new scala.Array[Int](64)
   private var blockLength = 0
   private var totalLength = 0L
 
@@ -197,7 +197,7 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
     h(0) += a; h(1) += b; h(2) += c; h(3) += d
     h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
-  update def absorb(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def absorb(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = offset
     val end = offset + length
     totalLength += length
@@ -208,7 +208,7 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
       if blockLength == 64 then { processBlock(); blockLength = 0 }
       i += 1
 
-  update def bytes: Array[Byte]^ =
+  update def bytes: scala.Array[Byte]^ =
     val bitLength = totalLength*8
     block(blockLength) = 0x80.toByte
     blockLength += 1
@@ -224,7 +224,7 @@ private[pneumatic] final class Sha256Checker extends XzChecker:
     while i < 8 do { block(56 + i) = ((bitLength >>> (56 - i*8)) & 0xff).toByte; i += 1 }
     processBlock()
 
-    val out: Array[Byte]^ = new Array[Byte](32)
+    val out: scala.Array[Byte]^ = new scala.Array[Byte](32)
     var j = 0
 
     while j < 8 do

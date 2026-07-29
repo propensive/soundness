@@ -95,7 +95,7 @@ object Axis:
   // (and, when the type was inferred, may carry a capture annotation), so the label keeps
   // only the simple name.
   def apply[enumeration <: reflect.Enum: Enumerable as evidence]
-    ( companion: { def values: Array[enumeration] } )
+    ( companion: { def values: scala.Array[enumeration] } )
   :   Axis[enumeration] =
 
     val label = evidence.name.cut(t" ").head.cut(t".").last.lower
@@ -110,7 +110,7 @@ object Axis:
   // positions such as `over` cannot drive this conversion (the element type is still a
   // type variable there), so they take explicit companion overloads via `Axis(companion)`.
   given companion: [enumeration <: reflect.Enum: Enumerable as evidence]
-  =>  Conversion[{ def values: Array[enumeration] }, Axis[enumeration]] =
+  =>  Conversion[{ def values: scala.Array[enumeration] }, Axis[enumeration]] =
     Axis(_)
 
 // One input variable of a test: a labelled domain of values, each of which contributes one

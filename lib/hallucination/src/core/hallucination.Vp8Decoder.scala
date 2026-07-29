@@ -65,11 +65,11 @@ private[hallucination] object Vp8Decoder:
   // The bottom/right edge state carried from already-decoded neighbours: per-subblock non-zero
   // "complexity" (laid out y2, 4×y, 2×u, 2×v) and the four B_PRED modes.
   private final class Edge extends caps.Mutable:
-    val complexity: Array[Int]^ = new Array[Int](9)
-    val bpred: Array[Int]^ = new Array[Int](4)
+    val complexity: scala.Array[Int]^ = new scala.Array[Int](9)
+    val bpred: scala.Array[Int]^ = new scala.Array[Int](4)
 
   private final class Macroblock extends caps.Mutable:
-    val bpred: Array[Int]^ = new Array[Int](16)
+    val bpred: scala.Array[Int]^ = new scala.Array[Int](16)
     var lumaMode = DcPred
     var chromaMode = DcPred
     var segmentId = 0
@@ -85,9 +85,9 @@ private[hallucination] object Vp8Decoder:
     private var height = 0
     private var bufferWidth = 0
 
-    private var ybuf: Array[Int]^ = new Array(0)
-    private var ubuf: Array[Int]^ = new Array(0)
-    private var vbuf: Array[Int]^ = new Array(0)
+    private var ybuf: scala.Array[Int]^ = new scala.Array(0)
+    private var ubuf: scala.Array[Int]^ = new scala.Array(0)
+    private var vbuf: scala.Array[Int]^ = new scala.Array(0)
 
     private var filterType = false // true: simple filter; false: normal filter
     private var filterLevel = 0
@@ -95,37 +95,37 @@ private[hallucination] object Vp8Decoder:
 
     private var segmentsEnabled = false
     private var segmentsUpdateMap = false
-    private var segments: Array[Segment^]^ = Array.fill(4)(Segment())
+    private var segments: scala.Array[Segment^]^ = scala.Array.fill(4)(Segment())
     // Passed to `bool.tree` while `bool` (itself held by `this`) is the exclusive receiver: a
     // genuine aliasing pattern separation checking rejects, so this one var stays untracked.
     @scala.caps.unsafe.untrackedCaptures
-    private val segmentProbs: Array[Int] = Array(255, 255, 255)
+    private val segmentProbs: scala.Array[Int] = scala.Array(255, 255, 255)
 
     private var loopFilterAdjustments = false
-    private var refDelta: Array[Int]^ = new Array[Int](4)
-    private var modeDelta: Array[Int]^ = new Array[Int](4)
+    private var refDelta: scala.Array[Int]^ = new scala.Array[Int](4)
+    private var modeDelta: scala.Array[Int]^ = new scala.Array[Int](4)
 
     private var numPartitions = 1
-    private var partitions: Array[Vp8Bool^]^ = new Array[Vp8Bool^](8)
+    private var partitions: scala.Array[Vp8Bool^]^ = new scala.Array[Vp8Bool^](8)
     private var bool: Vp8Bool^ = Vp8Bool(data, start, start)
 
     // Untracked for the same reason as `segmentProbs`: read by `bool.tree`/`partitions(p).tree`
     // while the reader is the exclusive receiver.
     @scala.caps.unsafe.untrackedCaptures
-    private val tokenProbs: Array[Int] = coeffProbs.asInstanceOf[Array[Int]].clone()
+    private val tokenProbs: scala.Array[Int] = coeffProbs.asInstanceOf[scala.Array[Int]].clone()
     private var probSkipFalse = -1 // −1 means no skip probability
 
-    private var top: Array[Edge^]^ = Array()
+    private var top: scala.Array[Edge^]^ = scala.Array()
     private var left: Edge^ = Edge()
 
-    private var topBorderY: Array[Int]^ = Array()
-    private var leftBorderY: Array[Int]^ = Array()
-    private var topBorderU: Array[Int]^ = Array()
-    private var leftBorderU: Array[Int]^ = Array()
-    private var topBorderV: Array[Int]^ = Array()
-    private var leftBorderV: Array[Int]^ = Array()
+    private var topBorderY: scala.Array[Int]^ = scala.Array()
+    private var leftBorderY: scala.Array[Int]^ = scala.Array()
+    private var topBorderU: scala.Array[Int]^ = scala.Array()
+    private var leftBorderU: scala.Array[Int]^ = scala.Array()
+    private var topBorderV: scala.Array[Int]^ = scala.Array()
+    private var leftBorderV: scala.Array[Int]^ = scala.Array()
 
-    private var macroblocks: Array[Macroblock^]^ = Array()
+    private var macroblocks: scala.Array[Macroblock^]^ = scala.Array()
 
     private inline def u8(index: Int): Int = data.stdlib(index) & 0xff
 
@@ -143,7 +143,7 @@ private[hallucination] object Vp8Decoder:
 
         while mbx < mbWidth do
           val mb = readMacroblockHeader(mbx)
-          val blocks: Array[Int]^ = new Array[Int](384)
+          val blocks: scala.Array[Int]^ = new scala.Array[Int](384)
 
           if !mb.coeffsSkipped then readResidualData(mb, mbx, p, blocks)
           else
@@ -163,9 +163,9 @@ private[hallucination] object Vp8Decoder:
           (macroblocks)(mby*mbWidth + mbx) = mb
           mbx += 1
 
-        leftBorderY = Array.fill(1 + 16)(129)
-        leftBorderU = Array.fill(1 + 8)(129)
-        leftBorderV = Array.fill(1 + 8)(129)
+        leftBorderY = scala.Array.fill(1 + 16)(129)
+        leftBorderU = scala.Array.fill(1 + 8)(129)
+        leftBorderV = scala.Array.fill(1 + 8)(129)
         mby += 1
 
       mby = 0
@@ -203,20 +203,20 @@ private[hallucination] object Vp8Decoder:
       mbHeight = (height + 15)/16
       bufferWidth = mbWidth*16
 
-      top = Array.fill(mbWidth)(Edge())
+      top = scala.Array.fill(mbWidth)(Edge())
       left = Edge()
-      macroblocks = Array.fill(mbWidth*mbHeight)(Macroblock())
+      macroblocks = scala.Array.fill(mbWidth*mbHeight)(Macroblock())
 
-      ybuf = new Array[Int](mbWidth*16*mbHeight*16)
-      ubuf = new Array[Int](mbWidth*8*mbHeight*8)
-      vbuf = new Array[Int](mbWidth*8*mbHeight*8)
+      ybuf = new scala.Array[Int](mbWidth*16*mbHeight*16)
+      ubuf = new scala.Array[Int](mbWidth*8*mbHeight*8)
+      vbuf = new scala.Array[Int](mbWidth*8*mbHeight*8)
 
-      topBorderY = Array.fill(width + 4 + 16)(127)
-      leftBorderY = Array.fill(1 + 16)(129)
-      topBorderU = Array.fill(8*mbWidth)(127)
-      leftBorderU = Array.fill(1 + 8)(129)
-      topBorderV = Array.fill(8*mbWidth)(127)
-      leftBorderV = Array.fill(1 + 8)(129)
+      topBorderY = scala.Array.fill(width + 4 + 16)(127)
+      leftBorderY = scala.Array.fill(1 + 16)(129)
+      topBorderU = scala.Array.fill(8*mbWidth)(127)
+      leftBorderU = scala.Array.fill(1 + 8)(129)
+      topBorderV = scala.Array.fill(8*mbWidth)(127)
+      leftBorderV = scala.Array.fill(1 + 8)(129)
 
       val headerStart = position
       bool = Vp8Bool(data, headerStart, headerStart + firstPartitionSize)
@@ -357,7 +357,7 @@ private[hallucination] object Vp8Decoder:
             var t = 0
 
             while t < 11 do
-              if bool.bool(coeffUpdateProbs.asInstanceOf[Array[Int]](coeffIndex(i, j, k, t)))
+              if bool.bool(coeffUpdateProbs.asInstanceOf[scala.Array[Int]](coeffIndex(i, j, k, t)))
               then writable(tokenProbs)(coeffIndex(i, j, k, t)) = bool.literal(8)
 
               t += 1
@@ -373,10 +373,10 @@ private[hallucination] object Vp8Decoder:
       val mb = Macroblock()
 
       if segmentsEnabled && segmentsUpdateMap then
-        mb.segmentId = bool.tree(segmentIdTree.asInstanceOf[Array[Int]], segmentProbs, 0)
+        mb.segmentId = bool.tree(segmentIdTree.asInstanceOf[scala.Array[Int]], segmentProbs, 0)
 
       mb.coeffsSkipped = if probSkipFalse >= 0 then bool.bool(probSkipFalse) else false
-      mb.lumaMode = bool.tree(keyframeYmodeTree.asInstanceOf[Array[Int]], keyframeYmodeProbs.asInstanceOf[Array[Int]], 0)
+      mb.lumaMode = bool.tree(keyframeYmodeTree.asInstanceOf[scala.Array[Int]], keyframeYmodeProbs.asInstanceOf[scala.Array[Int]], 0)
 
       if mb.lumaMode == BPred then
         var y = 0
@@ -388,7 +388,7 @@ private[hallucination] object Vp8Decoder:
             val topMode = top(mbx).bpred(x)
             val leftMode = left.bpred(y)
 
-            val intra = bool.tree(keyframeBpredModeTree.asInstanceOf[Array[Int]], keyframeBpredModeProbs.asInstanceOf[Array[Int]],
+            val intra = bool.tree(keyframeBpredModeTree.asInstanceOf[scala.Array[Int]], keyframeBpredModeProbs.asInstanceOf[scala.Array[Int]],
                 (topMode*10 + leftMode)*9)
 
             (mb.bpred)(x + y*4) = intra
@@ -406,7 +406,7 @@ private[hallucination] object Vp8Decoder:
           (left.bpred)(i) = mode
           i += 1
 
-      mb.chromaMode = bool.tree(keyframeUvModeTree.asInstanceOf[Array[Int]], keyframeUvModeProbs.asInstanceOf[Array[Int]], 0)
+      mb.chromaMode = bool.tree(keyframeUvModeTree.asInstanceOf[scala.Array[Int]], keyframeUvModeProbs.asInstanceOf[scala.Array[Int]], 0)
       var i = 0
 
       while i < 4 do
@@ -425,7 +425,7 @@ private[hallucination] object Vp8Decoder:
     // Reads one 4×4 block's dequantized coefficients into `block(offset..)`; returns whether
     // it has any non-zero coefficient. For the Y-after-Y2 plane the DC (index 0) is untouched.
     private update def readCoefficients
-      ( block: Array[Int]^, offset: Int, p: Int, plane: Int, complexity: Int, dcq: Int, acq: Int )
+      ( block: scala.Array[Int]^, offset: Int, p: Int, plane: Int, complexity: Int, dcq: Int, acq: Int )
     :   Boolean =
 
       val decoder = partitions(p)
@@ -437,9 +437,9 @@ private[hallucination] object Vp8Decoder:
       var stop = false
 
       while i < 16 && !stop do
-        val band = coeffBands.asInstanceOf[Array[Int]](i)
+        val band = coeffBands.asInstanceOf[scala.Array[Int]](i)
         val probOffset = coeffIndex(plane, band, context, 0)
-        val token = decoder.tree(dctTokenTree.asInstanceOf[Array[Int]], tokenProbs, probOffset, 2*(if skip then 1 else 0))
+        val token = decoder.tree(dctTokenTree.asInstanceOf[scala.Array[Int]], tokenProbs, probOffset, 2*(if skip then 1 else 0))
 
         if token == DctEob then stop = true
         else if token == Dct0 then
@@ -455,11 +455,11 @@ private[hallucination] object Vp8Decoder:
               var extra = 0
               var c = category*12
 
-              while probDctCat.asInstanceOf[Array[Int]](c) != 0 do
-                extra = extra + extra + (if decoder.bool(probDctCat.asInstanceOf[Array[Int]](c)) then 1 else 0)
+              while probDctCat.asInstanceOf[scala.Array[Int]](c) != 0 do
+                extra = extra + extra + (if decoder.bool(probDctCat.asInstanceOf[scala.Array[Int]](c)) then 1 else 0)
                 c += 1
 
-              dctCatBase.asInstanceOf[Array[Int]](category) + extra
+              dctCatBase.asInstanceOf[scala.Array[Int]](category) + extra
 
           skip = false
           context = if absValue == 0 then 0 else if absValue == 1 then 1 else 2
@@ -473,16 +473,16 @@ private[hallucination] object Vp8Decoder:
 
       hasCoefficients
 
-    private def zigzagTable(i: Int): Int = zigzag.asInstanceOf[Array[Int]](i)
+    private def zigzagTable(i: Int): Int = zigzag.asInstanceOf[scala.Array[Int]](i)
 
-    private update def readResidualData(mb: Macroblock^, mbx: Int, p: Int, blocks: Array[Int]^)
+    private update def readResidualData(mb: Macroblock^, mbx: Int, p: Int, blocks: scala.Array[Int]^)
     :   Unit =
       val sindex = mb.segmentId
       var plane = if mb.lumaMode == BPred then 3 else 1 // YCoeff0 or Y2
 
       if plane == 1 then
         val complexity = top(mbx).complexity(0) + left.complexity(0)
-        val block: Array[Int]^ = new Array[Int](16)
+        val block: scala.Array[Int]^ = new scala.Array[Int](16)
 
         val n = readCoefficients(block, 0, p, 1, complexity, segments(sindex).y2dc,
             segments(sindex).y2ac)
@@ -547,7 +547,7 @@ private[hallucination] object Vp8Decoder:
           (left.complexity)(yy + j) = leftComplexity
           yy += 1
 
-    private update def intraPredictLuma(mbx: Int, mby: Int, mb: Macroblock^, resdata: Array[Int]^)
+    private update def intraPredictLuma(mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^)
     :   Unit =
       val stride = Vp8Predict.LumaStride
       val ws = Vp8Predict.createBorderLuma(mbx, mby, mbWidth, topBorderY, leftBorderY)
@@ -595,7 +595,7 @@ private[hallucination] object Vp8Decoder:
 
         y += 1
 
-    private update def intraPredictChroma(mbx: Int, mby: Int, mb: Macroblock^, resdata: Array[Int]^)
+    private update def intraPredictChroma(mbx: Int, mby: Int, mb: Macroblock^, resdata: scala.Array[Int]^)
     :   Unit =
       val stride = Vp8Predict.ChromaStride
       val chromaWidth = bufferWidth/2
@@ -650,7 +650,7 @@ private[hallucination] object Vp8Decoder:
 
     // Selects the U or V border fields itself: passing two `this`-derived arrays as exclusive
     // arguments to an update method on `this` is a separation failure.
-    private update def setChromaBorder(u: Boolean, block: Array[Int], mbx: Int): Unit =
+    private update def setChromaBorder(u: Boolean, block: scala.Array[Int], mbx: Int): Unit =
       val stride = Vp8Predict.ChromaStride
       val leftBorder = if u then leftBorderU else leftBorderV
       val topBorder = if u then topBorderU else topBorderV

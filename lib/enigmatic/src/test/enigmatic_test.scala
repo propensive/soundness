@@ -492,16 +492,16 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       given (Text is Abstractable across Paths to Text) = identity(_)
 
-      def createKeystore(password: Array[Char] | Null): Text =
+      def createKeystore(password: scala.Array[Char] | Null): Text =
         val path = t"/tmp/enigmatic-keystore-${java.util.UUID.randomUUID.nn.toString}.p12"
         val keystore = js.KeyStore.getInstance("PKCS12").nn
         keystore.load(null, null)
         val out = ji.FileOutputStream(path.s)
-        try keystore.store(out, if password == null then Array.empty[Char] else password)
+        try keystore.store(out, if password == null then scala.Array.empty[Char] else password)
         finally out.close()
         path
 
-      val guarded = createKeystore(Array('s', 'e', 's', 'a', 'm', 'e'))
+      val guarded = createKeystore(scala.Array('s', 'e', 's', 'a', 'm', 'e'))
 
       test(m"An empty keystore opens with the right password"):
         guarded.open[Keystore](Password(t"sesame")):
@@ -573,7 +573,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       . assert(_ == t"hunter2")
 
       test(m"constructing a password from chars zeroes the input array"):
-        val chars = Array('h', 'u', 'n', 't', 'e', 'r', '2')
+        val chars = scala.Array('h', 'u', 'n', 't', 'e', 'r', '2')
         val password = Password(chars)
         (chars.forall(_ == '\u0000'), password.uncloak(String(cleartext.chars).tt))
       . assert(_ == (true, t"hunter2"))

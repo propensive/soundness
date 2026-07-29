@@ -60,7 +60,7 @@ object protointernal:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Pojo =
 
-      case array: Array[Pojo @unchecked] =>
+      case array: scala.Array[Pojo @unchecked] =>
         provide[Tactic[PojoError]]:
           build[derivation]: [field] =>
             _.decoded(array(index))
@@ -70,7 +70,7 @@ object protointernal:
 
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Pojo =
-      case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
+      case scala.Array(label: String @unchecked, pojo: Pojo @unchecked) =>
         provide[Tactic[PojoError]]:
           provide[Tactic[VariantError]]:
             delegate(label): [variant <: derivation] => _.decoded(pojo)

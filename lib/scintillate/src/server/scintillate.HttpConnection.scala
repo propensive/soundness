@@ -153,7 +153,7 @@ object HttpConnection:
             def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
               case size: Int =>
                 try
-                  val window = stream.window(using Unsafe).asInstanceOf[Array[Byte]]
+                  val window = stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]]
                   responseBody.write(window, stream.start, size)
                   count += size
                   responseBody.flush()

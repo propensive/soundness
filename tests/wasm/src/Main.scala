@@ -32,7 +32,7 @@ object Main extends Run:
     import anticipation.termcapDefinitions.basicTermcap
 
     val io = summon[Stdio]
-    val buffer = new Array[Byte](256)
+    val buffer = new scala.Array[Byte](256)
     val count = io.in.read(buffer, 0, buffer.length)
     val received = if count <= 0 then "<no input>" else new String(buffer, 0, count, "UTF-8").trim.nn
     io.print(("echo: " + received + "\n").tt)

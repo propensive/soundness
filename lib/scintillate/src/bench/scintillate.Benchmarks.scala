@@ -80,7 +80,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     . join(t"", t"\r\n", t"\r\n\r\n")
     . in[Data]
 
-  lazy val getRequestBytes: Array[Byte] = getRequest.mutable(using Unsafe)
+  lazy val getRequestBytes: scala.Array[Byte] = getRequest.mutable(using Unsafe)
 
   lazy val okResponse: Http.Response = Http.Response(Http.Ok)(t"Hello, World!")
 
@@ -90,9 +90,9 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
   // fresh (O(1)) `ByteArrayInputStream`, so the measurement excludes buffer setup.
   val pipelineCount: Int = 1000
 
-  lazy val pipelineBuffer: Array[Byte] =
+  lazy val pipelineBuffer: scala.Array[Byte] =
     val unit = getRequestBytes
-    val total = new Array[Byte](unit.length*pipelineCount)
+    val total = new scala.Array[Byte](unit.length*pipelineCount)
     var index = 0
 
     while index < pipelineCount do

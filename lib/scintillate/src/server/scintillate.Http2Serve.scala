@@ -129,7 +129,7 @@ object Http2Serve:
                   connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
 
                   source().sweep: (storage, start, size) =>
-                    val block = storage.asInstanceOf[Array[Byte]]
+                    val block = storage.asInstanceOf[scala.Array[Byte]]
                       . slice(start, start + size).immutable(using Unsafe)
 
                     connection0.sendData(streamId, block, endStream = false)
@@ -217,7 +217,7 @@ extends Duplex:
 
   def send(consume data: (Stream[Data] over Credit)^): Unit =
     data.sweep: (storage, start, size) =>
-      out.write(storage.asInstanceOf[Array[Byte]], start, size)
+      out.write(storage.asInstanceOf[scala.Array[Byte]], start, size)
 
     out.flush()
 

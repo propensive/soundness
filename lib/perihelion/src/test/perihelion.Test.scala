@@ -84,7 +84,7 @@ object Tests extends Suite(m"Perihelion tests"):
       serverContext.init(keyManagers.getKeyManagers, null, null)
 
       val trustManager = new javax.net.ssl.X509TrustManager:
-        type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+        type Certs = scala.Array[java.security.cert.X509Certificate | Null] | Null
         def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
         def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
         def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
@@ -95,9 +95,9 @@ object Tests extends Suite(m"Perihelion tests"):
       (serverContext, clientContext)
 
     // Build a masked client frame (clients must mask).
-    def clientFrame(opcode: Int, payload: Array[Byte]): Array[Byte] =
-      val mask = Array[Byte](0x12, 0x34, 0x56, 0x78)
-      val masked = new Array[Byte](payload.length)
+    def clientFrame(opcode: Int, payload: scala.Array[Byte]): scala.Array[Byte] =
+      val mask = scala.Array[Byte](0x12, 0x34, 0x56, 0x78)
+      val masked = new scala.Array[Byte](payload.length)
       var i = 0
       while i < payload.length do
         masked(i) = (payload(i)^mask(i%4)).toByte
@@ -106,13 +106,13 @@ object Tests extends Suite(m"Perihelion tests"):
       val length = payload.length
 
       val header =
-        if length <= 125 then Array[Byte]((0x80|opcode).toByte, (0x80|length).toByte)
-        else Array[Byte]((0x80|opcode).toByte, (0x80|126).toByte, (length >> 8).toByte, length.toByte)
+        if length <= 125 then scala.Array[Byte]((0x80|opcode).toByte, (0x80|length).toByte)
+        else scala.Array[Byte]((0x80|opcode).toByte, (0x80|126).toByte, (length >> 8).toByte, length.toByte)
 
       header ++ mask ++ masked
 
     // Read one unmasked server frame: (opcode, payload).
-    def serverFrame(in: java.io.InputStream): (Int, Array[Byte]) =
+    def serverFrame(in: java.io.InputStream): (Int, scala.Array[Byte]) =
       val opcode = in.read & 0x0f
       val length7 = in.read & 0x7f
 
@@ -132,12 +132,12 @@ object Tests extends Suite(m"Perihelion tests"):
       while !builder.toString.endsWith("\r\n\r\n") do builder.append(in.read.toChar)
       builder.toString.tt
 
-    def octets(text: String): Array[Byte] = text.getBytes("UTF-8").nn
+    def octets(text: String): scala.Array[Byte] = text.getBytes("UTF-8").nn
 
     // Build a frame (masked by default, as a client must); `fin` and `masked`
     // are configurable for protocol tests, with a fixed mask key.
-    def frame(opcode: Int, payload: Array[Byte], fin: Boolean = true, masked: Boolean = true)
-    :   Array[Byte] =
+    def frame(opcode: Int, payload: scala.Array[Byte], fin: Boolean = true, masked: Boolean = true)
+    :   scala.Array[Byte] =
 
       val first = ((if fin then 0x80 else 0) | opcode).toByte
       val length = payload.length
@@ -163,13 +163,13 @@ object Tests extends Suite(m"Perihelion tests"):
 
         header ++ key ++ coded
 
-    def closeBytes(code: Int, reason: String): Array[Byte] =
+    def closeBytes(code: Int, reason: String): scala.Array[Byte] =
       scala.Array[Byte]((code >> 8).toByte, code.toByte) ++ octets(reason)
 
-    def parseFrame(bytes: Array[Byte]): Optional[Frame] =
+    def parseFrame(bytes: scala.Array[Byte]): Optional[Frame] =
       Frame.parse(Cursor[Data](Progression(bytes.immutable(using Unsafe)).iterator))
 
-    def readMessages(frames: Array[Byte]*): List[perihelion.Message] =
+    def readMessages(frames: scala.Array[Byte]*): List[perihelion.Message] =
       val stream = Progression(frames*).map(_.immutable(using Unsafe))
       List.of(Reader(() => zephyrine.Stream(stream.iterator), Channel()).messages.stdlib.toList)
 

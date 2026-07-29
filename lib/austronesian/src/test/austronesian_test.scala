@@ -48,17 +48,17 @@ enum Color:
 object Tests extends Suite(m"Austronesian tests"):
   def run(): Unit =
     test(m"Serialize a case class")(Person("John", 30).pojo)
-    . assert(_ === Pojo(Array("John", java.lang.Integer.valueOf(30).nn)))
+    . assert(_ === Pojo(scala.Array("John", java.lang.Integer.valueOf(30).nn)))
 
     test(m"Serialize a list of longs")(List(1L, 99L, 203L).pojo)
-    . assert(_ === Pojo(Array[Object](java.lang.Long.valueOf(1L).nn, java.lang.Long.valueOf(99L).nn, java.lang.Long.valueOf(203L).nn)))
+    . assert(_ === Pojo(scala.Array[Object](java.lang.Long.valueOf(1L).nn, java.lang.Long.valueOf(99L).nn, java.lang.Long.valueOf(203L).nn)))
 
     test(m"Serialize a list of case classes")(List(Person("John", 12), Person("Jane", 93)).pojo)
-    . assert(_ === Pojo(Array(Array("John", java.lang.Integer.valueOf(12).nn), Array("Jane", java.lang.Integer.valueOf(93).nn))))
+    . assert(_ === Pojo(scala.Array(scala.Array("John", java.lang.Integer.valueOf(12).nn), scala.Array("Jane", java.lang.Integer.valueOf(93).nn))))
 
     test(m"Serialize a nested case class structure"):
       Group(List(Person("John", 30), Person("Jane", 25)), 2).pojo
-    . assert(_ === Pojo(Array(Array(Array("John", 30), Array("Jane", 25)), java.lang.Integer.valueOf(2).nn)))
+    . assert(_ === Pojo(scala.Array(scala.Array(scala.Array("John", 30), scala.Array("Jane", 25)), java.lang.Integer.valueOf(2).nn)))
 
     val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
 
@@ -69,7 +69,7 @@ object Tests extends Suite(m"Austronesian tests"):
     test(m"Encode an enum"):
       val color: Color = Color.Green
       color.pojo
-    . assert(_ === Pojo(Array("Green", Array[Any]())))
+    . assert(_ === Pojo(scala.Array("Green", scala.Array[Any]())))
 
     test(m"Roundtrip an enum"):
       val color: Color = Color.Green

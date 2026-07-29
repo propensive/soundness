@@ -38,7 +38,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 object ScanAll:
-  def main(args: Array[String]): Unit =
+  def main(args: scala.Array[String]): Unit =
     val libRoot     = JPath.of(args.head)
     val ruleFilter  = if args.length > 1 then Some(args(1)) else None
     val all         = mutable.ArrayBuffer[Violation]()

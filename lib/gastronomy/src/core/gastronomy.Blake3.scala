@@ -68,9 +68,9 @@ object Blake3:
     . asInstanceOf[IArray[Int]]
 
   private final val MsgPermutation: IArray[Int] =
-    Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[IArray[Int]]
+    scala.Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[IArray[Int]]
 
-  private def mix(state: Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
+  private def mix(state: scala.Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
     state(a) = state(a) + state(b) + mx
     state(d) = Integer.rotateRight(state(d) ^ state(a), 16)
     state(c) = state(c) + state(d)
@@ -80,7 +80,7 @@ object Blake3:
     state(c) = state(c) + state(d)
     state(b) = Integer.rotateRight(state(b) ^ state(c), 7)
 
-  private def round(state: Array[Int]^, m: Array[Int]): Unit =
+  private def round(state: scala.Array[Int]^, m: scala.Array[Int]): Unit =
     // SIMD: these four column mixes operate on disjoint quadruples of state and would be
     //       issued as a single 4-lane vector instruction by an SSE/NEON backend.
     mix(state, 0, 4,  8, 12, m(0), m(1))
@@ -93,7 +93,7 @@ object Blake3:
     mix(state, 2, 7,  8, 13, m(12), m(13))
     mix(state, 3, 4,  9, 14, m(14), m(15))
 
-  private def permute(m: Array[Int]^): Unit =
+  private def permute(m: scala.Array[Int]^): Unit =
     val out = Buffer[Int](16)
     var i = 0
 
@@ -104,14 +104,14 @@ object Blake3:
     System.arraycopy(out.raw, 0, m, 0, 16)
 
   private def compress
-    ( chainingValue: Array[Int],
-      blockWords:    Array[Int],
+    ( chainingValue: scala.Array[Int],
+      blockWords:    scala.Array[Int],
       counter:       Long,
       blockLen:      Int,
       flags:         Int )
-  :   Array[Int]^ =
+  :   scala.Array[Int]^ =
 
-    val state: Array[Int]^ = new scala.Array[Int](16)
+    val state: scala.Array[Int]^ = new scala.Array[Int](16)
     System.arraycopy(chainingValue, 0, state, 0, 8)
     state(8)  = Iv(0); state(9)  = Iv(1); state(10) = Iv(2); state(11) = Iv(3)
     state(12) = counter.toInt
@@ -119,7 +119,7 @@ object Blake3:
     state(14) = blockLen
     state(15) = flags
 
-    val block: Array[Int]^ = blockWords.clone()
+    val block: scala.Array[Int]^ = blockWords.clone()
 
     round(state, block); permute(block)
     round(state, block); permute(block)
@@ -138,7 +138,7 @@ object Blake3:
 
     state
 
-  private def wordsFromBytes(bytes: Array[Byte], offset: Int, words: Array[Int]^): Unit =
+  private def wordsFromBytes(bytes: scala.Array[Byte], offset: Int, words: scala.Array[Int]^): Unit =
     var i = 0
 
     while i < words.length do
@@ -153,13 +153,13 @@ object Blake3:
       i += 1
 
   private final class Output
-    ( val inputChainingValue: Array[Int],
-      val blockWords:         Array[Int],
+    ( val inputChainingValue: scala.Array[Int],
+      val blockWords:         scala.Array[Int],
       val counter:            Long,
       val blockLen:           Int,
       val flags:              Int ):
 
-    def chainingValue(): Array[Int] =
+    def chainingValue(): scala.Array[Int] =
       val out = compress(inputChainingValue, blockWords, counter, blockLen, flags)
       val cv = new scala.Array[Int](8)
       System.arraycopy(out, 0, cv, 0, 8)
@@ -187,7 +187,7 @@ object Blake3:
       Buffer.freeze(result)
 
   private def parentOutput
-    ( leftCv: Array[Int], rightCv: Array[Int], keyWords: Array[Int], flags: Int )
+    ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
   :   Output =
 
     val blockWords = new scala.Array[Int](16)
@@ -198,15 +198,15 @@ object Blake3:
       ( Output(keyWords.clone(), blockWords, 0L, BlockLen, ParentFlag | flags) )
 
   private def parentCv
-    ( leftCv: Array[Int], rightCv: Array[Int], keyWords: Array[Int], flags: Int )
-  :   Array[Int] =
+    ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
+  :   scala.Array[Int] =
 
     parentOutput(leftCv, rightCv, keyWords, flags).chainingValue()
 
-  private final class ChunkState(keyWordsInit: Array[Int], var chunkCounter: Long, val flags: Int)
+  private final class ChunkState(keyWordsInit: scala.Array[Int], var chunkCounter: Long, val flags: Int)
   extends caps.Mutable:
-    private var chainingValue: Array[Int]^  = keyWordsInit.clone()
-    private var block:         Array[Byte]^ = new scala.Array[Byte](BlockLen)
+    private var chainingValue: scala.Array[Int]^  = keyWordsInit.clone()
+    private var block:         scala.Array[Byte]^ = new scala.Array[Byte](BlockLen)
 
     var blockLen:         Int = 0
     var blocksCompressed: Int = 0
@@ -215,7 +215,7 @@ object Blake3:
 
     private def startFlag: Int = if blocksCompressed == 0 then ChunkStart else 0
 
-    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
+    update def update(input: scala.Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
       val blockWords = new scala.Array[Int](16)
       var pos = start
 
@@ -250,21 +250,21 @@ object Blake3:
               blockLen,
               flags | startFlag | ChunkEnd ) )
 
-  private final class Hasher(keyWordsInit: Array[Int], val flags: Int) extends caps.Mutable:
-    private val keyWords: Array[Int] = keyWordsInit.clone()
+  private final class Hasher(keyWordsInit: scala.Array[Int], val flags: Int) extends caps.Mutable:
+    private val keyWords: scala.Array[Int] = keyWordsInit.clone()
     private var chunkState: ChunkState^ = ChunkState(keyWords, 0L, flags)
-    private var cvStack: Array[Array[Int]]^ = new scala.Array[Array[Int]](54)
+    private var cvStack: scala.Array[scala.Array[Int]]^ = new scala.Array[scala.Array[Int]](54)
     private var cvStackLen: Int = 0
 
-    private update def pushStack(cv: Array[Int]): Unit =
+    private update def pushStack(cv: scala.Array[Int]): Unit =
       cvStack(cvStackLen) = cv
       cvStackLen += 1
 
-    private update def popStack(): Array[Int] =
+    private update def popStack(): scala.Array[Int] =
       cvStackLen -= 1
       cvStack(cvStackLen)
 
-    private update def addChunkCv(initialCv: Array[Int], initialTotal: Long): Unit =
+    private update def addChunkCv(initialCv: scala.Array[Int], initialTotal: Long): Unit =
       var cv = initialCv
       var totalChunks = initialTotal
 
@@ -277,7 +277,7 @@ object Blake3:
     update def update(data: IArray[Byte]): Unit =
       update(data.mutable(using Unsafe), 0, data.length)
 
-    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
+    update def update(input: scala.Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
       // SIMD: AVX2 / AVX-512 backends process 4 / 8 / 16 chunks at a time here using interleaved
       //       state; the scalar path below handles one chunk per iteration.
       var pos = start
@@ -312,7 +312,7 @@ object Blake3:
     private var hasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), 0)
     update def append(bytes: Data): Unit = hasher.update(bytes)
 
-    override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+    override update def append(array: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
       hasher.update(array, start, start + count)
 
     update def digest(): Data = hasher.complete(OutLen)
@@ -335,7 +335,7 @@ object Blake3:
     hasher.complete(length)
 
   def deriveKey(context: Text, material: IArray[Byte], length: Int = OutLen): IArray[Byte] =
-    val ctxBytes: Array[Byte] = context.s.getBytes(StandardCharsets.UTF_8).nn
+    val ctxBytes: scala.Array[Byte] = context.s.getBytes(StandardCharsets.UTF_8).nn
     val ctxHasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), DeriveKeyContext)
     ctxHasher.update(ctxBytes.immutable(using Unsafe))
 

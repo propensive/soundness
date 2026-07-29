@@ -80,7 +80,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   // Generic field walk — the analog of `read[Protobuf]`. The accumulated
   // checksum is returned so the JIT cannot dead-code-eliminate the reads.
-  def walkWithProtobufJava(bytes: Array[Byte]): Long =
+  def walkWithProtobufJava(bytes: scala.Array[Byte]): Long =
     import com.google.protobuf.WireFormat
     val in = com.google.protobuf.CodedInputStream.newInstance(bytes).nn
     var checksum = 0L
@@ -100,7 +100,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // message, repeated nested messages, packed varints). The remaining corpora
   // (map entries, deep nesting) are omitted on the protobuf-java side because
   // hand-writing their wire format adds bulk without changing the picture.
-  def encodeSmallWithProtobufJava: Array[Byte] =
+  def encodeSmallWithProtobufJava: scala.Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(32)
     val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
     cos.writeInt64(1, 42L)
@@ -109,7 +109,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     cos.flush()
     out.toByteArray.nn
 
-  def encodeUsersWithProtobufJava: Array[Byte] =
+  def encodeUsersWithProtobufJava: scala.Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(8192)
     val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
     var index = 0
@@ -130,7 +130,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     cos.flush()
     out.toByteArray.nn
 
-  def encodeIntsWithProtobufJava: Array[Byte] =
+  def encodeIntsWithProtobufJava: scala.Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(4096)
     val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
     val body = new _root_.java.io.ByteArrayOutputStream(4096)
@@ -203,12 +203,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   // Plain Array[Byte] views for protobuf-java (the cast is sound for read-only
   // consumers; CodedInputStream never mutates its input).
-  lazy val raw1: Array[Byte] = bytes1.asInstanceOf[Array[Byte]]
-  lazy val raw2: Array[Byte] = bytes2.asInstanceOf[Array[Byte]]
-  lazy val raw3: Array[Byte] = bytes3.asInstanceOf[Array[Byte]]
-  lazy val raw4: Array[Byte] = bytes4.asInstanceOf[Array[Byte]]
-  lazy val raw5: Array[Byte] = bytes5.asInstanceOf[Array[Byte]]
-  lazy val raw6: Array[Byte] = bytes6.asInstanceOf[Array[Byte]]
+  lazy val raw1: scala.Array[Byte] = bytes1.asInstanceOf[scala.Array[Byte]]
+  lazy val raw2: scala.Array[Byte] = bytes2.asInstanceOf[scala.Array[Byte]]
+  lazy val raw3: scala.Array[Byte] = bytes3.asInstanceOf[scala.Array[Byte]]
+  lazy val raw4: scala.Array[Byte] = bytes4.asInstanceOf[scala.Array[Byte]]
+  lazy val raw5: scala.Array[Byte] = bytes5.asInstanceOf[scala.Array[Byte]]
+  lazy val raw6: scala.Array[Byte] = bytes6.asInstanceOf[scala.Array[Byte]]
 
   // The benchmark bodies are staged and recompiled by superlunary, so the
   // contextual `Tactic[ProtobufError]` and the derived codec instances must be

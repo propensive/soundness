@@ -47,7 +47,7 @@ import contingency.*
 // read path can construct one.
 final class BintelParser private[stratiform] (input: Data):
   @scala.caps.unsafe.untrackedCaptures
-  private[stratiform] val data: Array[Byte] = input.asInstanceOf[Array[Byte]]
+  private[stratiform] val data: scala.Array[Byte] = input.asInstanceOf[scala.Array[Byte]]
 
   @scala.caps.unsafe.untrackedCaptures
   private[stratiform] var offset: Int = 0

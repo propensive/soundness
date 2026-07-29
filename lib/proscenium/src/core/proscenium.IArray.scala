@@ -53,7 +53,7 @@ object IArray:
 
   def empty[element: ClassTag]: IArray[element] = of(scala.IArray.empty[element])
 
-  def unsafeFromArray[element](array: Array[element]): IArray[element] =
+  def unsafeFromArray[element](array: scala.Array[element]): IArray[element] =
     array.asInstanceOf[IArray[element]]
 
   def from[element: ClassTag](elements: IterableOnce[element]^): IArray[element] =

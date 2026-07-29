@@ -344,7 +344,7 @@ object WasmInvoke:
                 (_, parameters) => elementDecode(parameters.head.asInstanceOf[Term].asExprOf[Any])
                   . asTerm)
 
-            val elements = '{$call.asInstanceOf[Array[Any]]}
+            val elements = '{$call.asInstanceOf[_root_.scala.Array[Any]]}
             val wrapped = '{_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray($elements)}
 
             val mapped = Select.overloaded(wrapped.asTerm, "map", List(elementType), List(mapper))

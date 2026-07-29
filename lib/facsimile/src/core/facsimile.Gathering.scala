@@ -66,7 +66,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
       targetSpace: Int )
   :   Duct.Progress =
 
-    val bytes = source.asInstanceOf[Array[Byte]]
+    val bytes = source.asInstanceOf[scala.Array[Byte]]
     var i = 0
 
     while i < sourceLength do
@@ -76,7 +76,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
     Duct.Progress(sourceLength, 0)
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val out = target.asInstanceOf[Array[Byte]]
+    val out = target.asInstanceOf[scala.Array[Byte]]
 
     val data = result.or:
       val transformed = transform(gathered.toArray.immutable(using Unsafe))

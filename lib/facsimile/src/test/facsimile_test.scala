@@ -69,7 +69,7 @@ object Tests extends Suite(m"Facsimile tests"):
       val deflater = juz.Deflater()
       deflater.setInput(bytes.mutable(using Unsafe))
       deflater.finish()
-      val buffer = new Array[Byte](1024)
+      val buffer = new scala.Array[Byte](1024)
       val out = ji.ByteArrayOutputStream()
       while !deflater.finished do out.write(buffer, 0, deflater.deflate(buffer))
       deflater.end()
@@ -1222,7 +1222,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         def recur(): Unit = stream.refill(Credit(4096)) match
           case count: Int =>
-            val window = unsafely(stream.window).asInstanceOf[Array[Byte]]
+            val window = unsafely(stream.window).asInstanceOf[scala.Array[Byte]]
             var i = 0
 
             while i < count do
@@ -1288,13 +1288,13 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == (t"again and again", t"again and again"))
 
     suite(m"Encryption"):
-      val padding: Array[Byte] = Array[Byte]
+      val padding: scala.Array[Byte] = scala.Array[Byte]
         ( 0x28, 0xbf.toByte, 0x4e, 0x5e, 0x4e, 0x75, 0x8a.toByte, 0x41, 0x64, 0x00, 0x4e,
           0x56, 0xff.toByte, 0xfa.toByte, 0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6.toByte,
           0xd0.toByte, 0x68, 0x3e, 0x80.toByte, 0x2f, 0x0c, 0xa9.toByte, 0xfe.toByte,
           0x64, 0x53, 0x69, 0x7a )
 
-      def hexOf(bytes: Array[Byte]): Text =
+      def hexOf(bytes: scala.Array[Byte]): Text =
         val builder = StringBuilder()
         var i = 0
         while i < bytes.length do
@@ -1302,8 +1302,8 @@ object Tests extends Suite(m"Facsimile tests"):
           i += 1
         builder.toString.tt
 
-      def xor(bytes: Array[Byte], value: Int): Array[Byte] =
-        val out = new Array[Byte](bytes.length)
+      def xor(bytes: scala.Array[Byte], value: Int): scala.Array[Byte] =
+        val out = new scala.Array[Byte](bytes.length)
         var i = 0
         while i < bytes.length do
           out(i) = (bytes(i) ^ value).toByte
@@ -1312,7 +1312,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       // `Data` (immutable, PURE) chunks rather than arrays: array varargs elements carry
       // the sequence's reach capability, which leaks out of the method's capture scope.
-      def md5(chunks: Data*): Array[Byte] =
+      def md5(chunks: Data*): scala.Array[Byte] =
         val digest = js.MessageDigest.getInstance("MD5").nn
         chunks.foreach { chunk => digest.update(chunk.mutable(using Unsafe)) }
         digest.digest().nn
@@ -1320,13 +1320,13 @@ object Tests extends Suite(m"Facsimile tests"):
       // A test-side implementation of the standard security handler's *encryption* — the
       // inverse of the reader's `Guard`, and independently written — used to build encrypted
       // fixtures with an empty user password.
-      def rc4(key: Array[Byte], data: Array[Byte]): Array[Byte] =
+      def rc4(key: scala.Array[Byte], data: scala.Array[Byte]): scala.Array[Byte] =
         Rc4(key.immutable(using Unsafe), data.immutable(using Unsafe)).mutable(using Unsafe)
 
       // A PURE array type (the Java `copyOf` fluid result adapts): reads of a suite-level
       // `rd`-charged array would otherwise be rejected inside the test closures.
-      val id: Array[Byte] =
-        val bytes = new Array[Byte](16)
+      val id: scala.Array[Byte] =
+        val bytes = new scala.Array[Byte](16)
         var i = 0
         while i < 16 do
           bytes(i) = i.toByte
@@ -1343,7 +1343,7 @@ object Tests extends Suite(m"Facsimile tests"):
         // fresh `rd` capability which may not be reassigned into an existing variable, but
         // flows freely into a fresh parameter.
         val ownerKey =
-          def stir(hash: Array[Byte], count: Int): Array[Byte] =
+          def stir(hash: scala.Array[Byte], count: Int): scala.Array[Byte] =
             if count >= 50 then hash
             else stir(md5(hash.take(keyBytes).immutable(using Unsafe)), count + 1)
           val hash = md5(padding.immutable(using Unsafe))
@@ -1352,16 +1352,16 @@ object Tests extends Suite(m"Facsimile tests"):
         // The block reads `ownerKey`, whose Unscoped root is conflated with the fresh
         // results minted inside: a false positive, since `ownerKey` is never mutated.
         val ownerEntry = scala.caps.unsafe.unsafeAssumeSeparate:
-          def stir(value: Array[Byte], i: Int): Array[Byte] =
+          def stir(value: scala.Array[Byte], i: Int): scala.Array[Byte] =
             if i > 19 then value else stir(rc4(xor(ownerKey, i), value), i + 1)
           val value = rc4(ownerKey, padding)
           if revision >= 3 then stir(value, 1) else value
 
-        val permBytes = Array((permissions & 0xff).toByte, ((permissions >> 8) & 0xff).toByte,
+        val permBytes = scala.Array((permissions & 0xff).toByte, ((permissions >> 8) & 0xff).toByte,
             ((permissions >> 16) & 0xff).toByte, ((permissions >> 24) & 0xff).toByte)
 
         val fileKey =
-          def stir(hash: Array[Byte], count: Int): Array[Byte] =
+          def stir(hash: scala.Array[Byte], count: Int): scala.Array[Byte] =
             if count >= 50 then hash
             else stir(md5(hash.take(keyBytes).immutable(using Unsafe)), count + 1)
           val hash = md5(padding.immutable(using Unsafe), ownerEntry.immutable(using Unsafe),
@@ -1372,19 +1372,19 @@ object Tests extends Suite(m"Facsimile tests"):
         val userEntry = scala.caps.unsafe.unsafeAssumeSeparate:
           if revision == 2 then rc4(fileKey, padding)
           else
-            def stir(value: Array[Byte], i: Int): Array[Byte] =
+            def stir(value: scala.Array[Byte], i: Int): scala.Array[Byte] =
               if i > 19 then value else stir(rc4(xor(fileKey, i), value), i + 1)
             stir(rc4(fileKey, md5(padding.immutable(using Unsafe), id.immutable(using Unsafe))), 1)
-            ++ new Array[Byte](16)
+            ++ new scala.Array[Byte](16)
 
-        def objectKey(number: Int, generation: Int): Array[Byte] =
-          md5(fileKey.immutable(using Unsafe), Array((number & 0xff).toByte,
+        def objectKey(number: Int, generation: Int): scala.Array[Byte] =
+          md5(fileKey.immutable(using Unsafe), scala.Array((number & 0xff).toByte,
               ((number >> 8) & 0xff).toByte, ((number >> 16) & 0xff).toByte,
               (generation & 0xff).toByte,
               ((generation >> 8) & 0xff).toByte).immutable(using Unsafe))
           . take((keyBytes + 5).min(16))
 
-        def hex(bytes: Array[Byte]): Text = hexOf(bytes)
+        def hex(bytes: scala.Array[Byte]): Text = hexOf(bytes)
 
         val version = if revision == 2 then 1 else 2
         val secret = rc4(objectKey(2, 0), t"Secret".s.getBytes("ISO-8859-1").nn)
@@ -1425,8 +1425,8 @@ object Tests extends Suite(m"Facsimile tests"):
 
       // An AES-256 (revision 6) fixture, whose key derivation the reader must mirror exactly.
       def aes256Document(password: Text): Data =
-        def hash6(pw: Array[Byte], salt: Array[Byte]): Array[Byte] =
-          var k: Array[Byte] = // placeholder, replaced below
+        def hash6(pw: scala.Array[Byte], salt: scala.Array[Byte]): scala.Array[Byte] =
+          var k: scala.Array[Byte] = // placeholder, replaced below
             md5(pw.immutable(using Unsafe), salt.immutable(using Unsafe))
           val sha256 = js.MessageDigest.getInstance("SHA-256").nn
           sha256.update(pw)
@@ -1464,12 +1464,12 @@ object Tests extends Suite(m"Facsimile tests"):
 
         val pw = password.s.getBytes("UTF-8").nn
         val random = js.SecureRandom()
-        val userSalt = new Array[Byte](8)
-        val userKeySalt = new Array[Byte](8)
+        val userSalt = new scala.Array[Byte](8)
+        val userKeySalt = new scala.Array[Byte](8)
         random.nextBytes(userSalt)
         random.nextBytes(userKeySalt)
 
-        val fileKey = new Array[Byte](32)
+        val fileKey = new scala.Array[Byte](32)
         random.nextBytes(fileKey)
 
         val userEntry = hash6(pw, userSalt) ++ userSalt ++ userKeySalt
@@ -1477,16 +1477,16 @@ object Tests extends Suite(m"Facsimile tests"):
 
         val wrap = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
         wrap.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(intermediate, "AES"),
-            jcs.IvParameterSpec(new Array[Byte](16)))
+            jcs.IvParameterSpec(new scala.Array[Byte](16)))
         val ue = wrap.doFinal(fileKey).nn
 
-        def hex(bytes: Array[Byte]): Text = hexOf(bytes)
+        def hex(bytes: scala.Array[Byte]): Text = hexOf(bytes)
 
-        def encryptStream(number: Int, plain: Array[Byte]): Array[Byte] =
-          val iv = new Array[Byte](16)
+        def encryptStream(number: Int, plain: scala.Array[Byte]): scala.Array[Byte] =
+          val iv = new scala.Array[Byte](16)
           random.nextBytes(iv)
           val padLength = 16 - plain.length%16
-          val padded = plain ++ Array.fill(padLength)(padLength.toByte)
+          val padded = plain ++ scala.Array.fill(padLength)(padLength.toByte)
           val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
           cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(fileKey, "AES"),
               jcs.IvParameterSpec(iv))
@@ -1495,7 +1495,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val secret = encryptStream(2, t"Secret".s.getBytes("UTF-8").nn)
         val streamCipher = encryptStream(3, t"encrypted stream".s.getBytes("UTF-8").nn)
 
-        val ownerHex = hex(new Array[Byte](48))
+        val ownerHex = hex(new scala.Array[Byte](48))
         val encrypt =
           t"<< /Filter /Standard /V 5 /R 6 /Length 256 /P -44 /O <$ownerHex> /U <${hex(userEntry)}> /UE <${hex(ue)}> /CF << /StdCF << /CFM /AESV3 >> >> /StmF /StdCF /StrF /StdCF >>"
 

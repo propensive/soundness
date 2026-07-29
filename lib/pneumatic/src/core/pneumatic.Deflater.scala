@@ -95,23 +95,23 @@ private[pneumatic] object Deflater:
   // maxLazy; quit search above niceLength; never search chains longer than maxChain.
   val configGoodLength: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(0, 4, 4, 4, 4, 8, 8, 8, 32, 32)
+      scala.Array(0, 4, 4, 4, 4, 8, 8, 8, 32, 32)
 
   val configMaxLazy: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(0, 4, 5, 6, 4, 16, 16, 32, 128, 258)
+      scala.Array(0, 4, 5, 6, 4, 16, 16, 32, 128, 258)
 
   val configNiceLength: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(0, 8, 16, 32, 16, 32, 128, 128, 258, 258)
+      scala.Array(0, 8, 16, 32, 16, 32, 128, 128, 258, 258)
 
   val configMaxChain: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(0, 4, 8, 32, 16, 32, 128, 256, 1024, 4096)
+      scala.Array(0, 4, 8, 32, 16, 32, 128, 256, 1024, 4096)
 
   val configFunc: IArray[Int] =
     IArray.unsafeFromArray:
-      Array(StoredFunc, FastFunc, FastFunc, FastFunc, SlowFunc, SlowFunc, SlowFunc, SlowFunc,
+      scala.Array(StoredFunc, FastFunc, FastFunc, FastFunc, SlowFunc, SlowFunc, SlowFunc, SlowFunc,
           SlowFunc, SlowFunc)
 
   // Mapping from a distance to a distance code, where dist is the distance - 1.
@@ -157,7 +157,7 @@ private[pneumatic] final class TreeConfig
 private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends DeflateEngine:
   import Deflater.*
 
-  private var nextIn: Array[Byte] = new Array[Byte](0)
+  private var nextIn: scala.Array[Byte] = new scala.Array[Byte](0)
   private[pneumatic] var nextInIndex: Int = 0
   private[pneumatic] var availIn: Int = 0
   private[pneumatic] var totalIn: Long = 0
@@ -179,10 +179,10 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   private val wSize: Int = 1 << wBits
   private val wMask: Int = wSize - 1
 
-  private var window: Array[Byte]^ = new Array[Byte](wSize*2)
+  private var window: scala.Array[Byte]^ = new scala.Array[Byte](wSize*2)
   private val windowSize: Int = 2*wSize
-  private var prev: Array[Short]^ = new Array[Short](wSize)
-  private var head: Array[Short]^ = new Array[Short](1 << (DefMemLevel + 7))
+  private var prev: scala.Array[Short]^ = new scala.Array[Short](wSize)
+  private var head: scala.Array[Short]^ = new scala.Array[Short](1 << (DefMemLevel + 7))
 
   private val hashBits: Int = DefMemLevel + 7
   private val hashSize: Int = 1 << hashBits
@@ -190,10 +190,10 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   private val hashShift: Int = (hashBits + MinMatch - 1)/MinMatch
 
   private val litBufsize: Int = 1 << (DefMemLevel + 6)
-  private var pendingBuf: Array[Byte]^ = new Array[Byte](litBufsize*3)
+  private var pendingBuf: scala.Array[Byte]^ = new scala.Array[Byte](litBufsize*3)
   private val pendingBufSize: Int = litBufsize*3
   private val dBuf: Int = litBufsize
-  private var lBuf: Array[Byte]^ = new Array[Byte](litBufsize)
+  private var lBuf: scala.Array[Byte]^ = new scala.Array[Byte](litBufsize)
 
   private var pending: Int = 0    // number of bytes in the pending buffer
   private var pendingOut: Int = 0 // next pending byte to output to the stream
@@ -213,9 +213,9 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
   private var goodMatch: Int = 0
   private var niceMatch: Int = 0
 
-  private var dynLtree: Array[Short]^ = new Array[Short](HeapSize*2)
-  private var dynDtree: Array[Short]^ = new Array[Short]((2*DCodes + 1)*2)
-  private var blTree: Array[Short]^ = new Array[Short]((2*BlCodes + 1)*2)
+  private var dynLtree: scala.Array[Short]^ = new scala.Array[Short](HeapSize*2)
+  private var dynDtree: scala.Array[Short]^ = new scala.Array[Short]((2*DCodes + 1)*2)
+  private var blTree: scala.Array[Short]^ = new scala.Array[Short]((2*BlCodes + 1)*2)
 
   // The largest codes with non-zero frequency in each dynamic tree, set by `buildTree` (the
   // former per-`FlateTree` `maxCode` fields).
@@ -225,15 +225,15 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Per-instance mutable clones of the static trees, so `compressBlock`, `sendCode` and
   // `buildTree` can take every tree through the same exclusive-parameter shape.
-  private val staticLtreeCopy: Array[Short]^ = staticLtree.mutable(using Unsafe).clone()
-  private val staticDtreeCopy: Array[Short]^ = staticDtree.mutable(using Unsafe).clone()
+  private val staticLtreeCopy: scala.Array[Short]^ = staticLtree.mutable(using Unsafe).clone()
+  private val staticDtreeCopy: scala.Array[Short]^ = staticDtree.mutable(using Unsafe).clone()
 
-  private var blCount: Array[Short]^ = new Array[Short](MaxBits + 1)
-  private var nextCode: Array[Short]^ = new Array[Short](MaxBits + 1)
-  private var heap: Array[Int]^ = new Array[Int](2*LCodes + 1)
+  private var blCount: scala.Array[Short]^ = new scala.Array[Short](MaxBits + 1)
+  private var nextCode: scala.Array[Short]^ = new scala.Array[Short](MaxBits + 1)
+  private var heap: scala.Array[Int]^ = new scala.Array[Int](2*LCodes + 1)
   private var heapLen: Int = 0
   private var heapMax: Int = 0
-  private var depth: Array[Byte]^ = new Array[Byte](2*LCodes + 1)
+  private var depth: scala.Array[Byte]^ = new scala.Array[Byte](2*LCodes + 1)
 
   private var lastLit: Int = 0
   private var optLen: Int = 0
@@ -287,7 +287,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     matches = 0
 
   // Restore the heap property by moving down the tree starting at node k.
-  private update def pqdownheap(tree: Array[Short]^{this}, k0: Int): Unit =
+  private update def pqdownheap(tree: scala.Array[Short]^{this}, k0: Int): Unit =
     var k = k0
     val v = heap(k)
     var j = k << 1 // left son of k
@@ -307,13 +307,13 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
     heap(k) = v
 
-  private update def smaller(tree: Array[Short]^{this}, n: Int, m: Int): Boolean =
+  private update def smaller(tree: scala.Array[Short]^{this}, n: Int, m: Int): Boolean =
     val tn2 = tree(n*2)
     val tm2 = tree(m*2)
     tn2 < tm2 || (tn2 == tm2 && depth(n) <= depth(m))
 
   // Generate the codes for a given tree and bit counts (which need not be optimal).
-  private update def genCodes(tree: Array[Short]^{this}, maxCode: Int): Unit =
+  private update def genCodes(tree: scala.Array[Short]^{this}, maxCode: Int): Unit =
     var code: Int = 0
     nextCode(0) = 0
     var bits = 1
@@ -336,7 +336,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Compute the optimal bit lengths for a tree and update the total bit length for the current
   // block.
-  private update def genBitlen(tree: Array[Short]^{this}, statDesc: TreeConfig, maxCode: Int)
+  private update def genBitlen(tree: scala.Array[Short]^{this}, statDesc: TreeConfig, maxCode: Int)
   :   Unit =
 
     val stree = statDesc.staticTree
@@ -414,7 +414,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Construct one Huffman tree and assign the code bit strings and lengths. Update the total bit
   // length for the current block.
-  private update def buildTree(tree: Array[Short]^{this}, statDesc: TreeConfig): Int =
+  private update def buildTree(tree: scala.Array[Short]^{this}, statDesc: TreeConfig): Int =
     val stree = statDesc.staticTree
     val elems = statDesc.elems
     var n = 0 // iterate over heap elements
@@ -501,7 +501,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Scan a literal or distance tree to determine the frequencies of the codes in the bit length
   // tree.
-  private update def scanTree(tree: Array[Short]^{this}, maxCode: Int): Unit =
+  private update def scanTree(tree: scala.Array[Short]^{this}, maxCode: Int): Unit =
     var prevlen = -1              // last emitted length
     var curlen = 0                // length of current code
     var nextlen = tree(1).toInt   // length of next code
@@ -587,7 +587,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     sendTree(dynDtree, dcodes - 1) // distance tree
 
   // Send a literal or distance tree in compressed form, using the codes in blTree.
-  private update def sendTree(tree: Array[Short]^{this}, maxCode: Int): Unit =
+  private update def sendTree(tree: scala.Array[Short]^{this}, maxCode: Int): Unit =
     var prevlen = -1            // last emitted length
     var curlen = 0              // length of current code
     var nextlen = tree(1).toInt // length of next code
@@ -640,7 +640,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       n += 1
 
   // Output bytes and bits on the stream; there is always enough room in pendingBuf.
-  private update def putByteRange(p: Array[Byte]^{this}, start: Int, len: Int): Unit =
+  private update def putByteRange(p: scala.Array[Byte]^{this}, start: Int, len: Int): Unit =
     System.arraycopy(p, start, pendingBuf, pending, len)
     pending += len
 
@@ -656,7 +656,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     putByte((b >> 8).toByte)
     putByte(b.toByte)
 
-  private update def sendCode(c: Int, tree: Array[Short]^{this}): Unit =
+  private update def sendCode(c: Int, tree: scala.Array[Short]^{this}): Unit =
     val c2 = c*2
     sendBits(tree(c2) & 0xffff, tree(c2 + 1) & 0xffff)
 
@@ -724,7 +724,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     // are restricted to 64K-1 bytes.
 
   // Send the block data compressed using the given Huffman trees
-  private update def compressBlock(ltree: Array[Short]^{this}, dtree: Array[Short]^{this}): Unit =
+  private update def compressBlock(ltree: scala.Array[Short]^{this}, dtree: scala.Array[Short]^{this}): Unit =
     var dist = 0 // distance of matched string
     var lc = 0   // match length or unmatched char (if dist == 0)
     var lx = 0   // running index in lBuf
@@ -805,13 +805,13 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
     putByteRange(window, buf, len)
 
-  private update def flushBlockOnly(eof: Boolean, target: Array[Byte]^): Unit =
+  private update def flushBlockOnly(eof: Boolean, target: scala.Array[Byte]^): Unit =
     trFlushBlock(if blockStart >= 0 then blockStart else -1, strstart - blockStart, eof)
     blockStart = strstart
     flushPending(target)
 
   // Copy without compression as much as possible from the input stream: used only for level 0.
-  private update def deflateStored(flush: Int, target: Array[Byte]^): Int =
+  private update def deflateStored(flush: Int, target: scala.Array[Byte]^): Int =
     // Stored blocks are limited to 0xffff bytes, pendingBuf to pendingBufSize, and each stored
     // block has a 5 byte header:
     var maxBlockSize = 0xffff
@@ -905,7 +905,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Read a new buffer from the current input stream, update the adler32 and total number of
   // bytes read.
-  private update def readBuf(buf: Array[Byte]^{this}, start: Int, size: Int): Int =
+  private update def readBuf(buf: scala.Array[Byte]^{this}, start: Int, size: Int): Int =
     var len = availIn
 
     if len > size then len = size
@@ -980,7 +980,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Compress as much as possible from the input stream, returning the current block state. This
   // function does not perform lazy evaluation of matches: used for the fast compression levels.
-  private update def deflateFast(flush: Int, target: Array[Byte]^): Int =
+  private update def deflateFast(flush: Int, target: scala.Array[Byte]^): Int =
     var hashHead = 0     // head of the hash chain
     var bflush = false   // set if current block must be flushed
     var result = -1
@@ -1057,7 +1057,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Same as above, but achieves better compression: a match is finally adopted only if there is
   // no better match at the next window position.
-  private update def deflateSlow(flush: Int, target: Array[Byte]^): Int =
+  private update def deflateSlow(flush: Int, target: scala.Array[Byte]^): Int =
     var hashHead = 0   // head of hash chain
     var bflush = false // set if current block must be flushed
     var result = -1
@@ -1251,7 +1251,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
     lmInit()
 
   // Flush as much pending output as possible.
-  private update def flushPending(target: Array[Byte]^): Unit =
+  private update def flushPending(target: scala.Array[Byte]^): Unit =
     var len = pending
 
     if len > availOut then len = availOut
@@ -1265,7 +1265,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
       pending -= len
       if pending == 0 then pendingOut = 0
 
-  private update def deflateInternal(flush: Int, target: Array[Byte]^): Int =
+  private update def deflateInternal(flush: Int, target: scala.Array[Byte]^): Int =
     if flush > ZFinish || flush < 0 then return ZStreamError
 
     if status == FinishState && flush != ZFinish then
@@ -1355,14 +1355,14 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
       if pending != 0 then ZOk else ZStreamEnd
 
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}): Unit = setInput(buffer, 0, buffer.length)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit = setInput(buffer, 0, buffer.length)
 
   // The engine borrows the caller's buffer zero-copy until the next `setInput`. The cast erases
   // the borrow's provenance, which separation checking would otherwise reject as a stored
   // parameter; it is sound because the engine only ever reads the input, and the driving ducts
   // release the reference (by re-feeding an empty buffer) before their step returns.
-  update def setInput(buffer: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
-    nextIn = buffer.asInstanceOf[Array[Byte]]
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+    nextIn = buffer.asInstanceOf[scala.Array[Byte]]
     nextInIndex = offset
     availIn = length
 
@@ -1372,10 +1372,10 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   def finished: Boolean = streamEnded
 
-  update def deflate(target: Array[Byte]^, offset: Int, space: Int): Int =
+  update def deflate(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
     deflate(target, offset, space, if finishing then ZFinish else ZNoFlush)
 
-  update def deflate(target: Array[Byte]^, offset: Int, space: Int, flush: Int): Int =
+  update def deflate(target: scala.Array[Byte]^, offset: Int, space: Int, flush: Int): Int =
     nextOutIndex = offset
     availOut = space
     val result = deflateInternal(flush, target)

@@ -85,7 +85,7 @@ object Raster:
       y += 1
 
   private[hallucination] def make[layout <: Tuple]
-    ( width: Int, height: Int, buffer: Array[?], descriptor: Descriptor )
+    ( width: Int, height: Int, buffer: scala.Array[?], descriptor: Descriptor )
   :   Raster by layout =
 
     new Raster(width, height, buffer, descriptor).asInstanceOf[Raster by layout]
@@ -97,9 +97,9 @@ object Raster:
 
     val length = width*height
 
-    val buffer: Array[?] = descriptor.storageBits match
+    val buffer: scala.Array[?] = descriptor.storageBits match
       case 8 =>
-        val buffer = new Array[Byte](length)
+        val buffer = new scala.Array[Byte](length)
         var index = 0
         while index < length do
           writable(buffer)(index) = pixel(index).toByte
@@ -107,7 +107,7 @@ object Raster:
         buffer
 
       case 16 =>
-        val buffer = new Array[Short](length)
+        val buffer = new scala.Array[Short](length)
         var index = 0
         while index < length do
           writable(buffer)(index) = pixel(index).toShort
@@ -115,7 +115,7 @@ object Raster:
         buffer
 
       case 32 =>
-        val buffer = new Array[Int](length)
+        val buffer = new scala.Array[Int](length)
         var index = 0
         while index < length do
           writable(buffer)(index) = pixel(index).toInt
@@ -123,7 +123,7 @@ object Raster:
         buffer
 
       case _ =>
-        val buffer = new Array[Long](length)
+        val buffer = new scala.Array[Long](length)
         var index = 0
         while index < length do
           writable(buffer)(index) = pixel(index)
@@ -174,7 +174,7 @@ class Raster private[hallucination]
     val height: Int,
     // Not an `IArray`: a `Write`-granted `CanvasHandle` mutates the buffer in place, so it is
     // untracked instead, keeping the class type free of a capture variable.
-    @scala.caps.unsafe.untrackedCaptures private[hallucination] val buffer: Array[?],
+    @scala.caps.unsafe.untrackedCaptures private[hallucination] val buffer: scala.Array[?],
     val descriptor: Descriptor )
 extends Formal, Operable:
   type Operand <: Tuple
@@ -182,10 +182,10 @@ extends Formal, Operable:
   def apply(x: Int, y: Int): Chroma = descriptor.chroma(word(y*width + x))
 
   private[hallucination] def word(index: Int): Long = buffer.asMatchable match
-    case buffer: Array[Byte]  => buffer(index)&0xffL
-    case buffer: Array[Short] => buffer(index)&0xffffL
-    case buffer: Array[Int]   => buffer(index)&0xffffffffL
-    case buffer: Array[Long]  => buffer(index)
+    case buffer: scala.Array[Byte]  => buffer(index)&0xffL
+    case buffer: scala.Array[Short] => buffer(index)&0xffffL
+    case buffer: scala.Array[Int]   => buffer(index)&0xffffffffL
+    case buffer: scala.Array[Long]  => buffer(index)
     case _                    => panic(m"raster buffer has an unexpected element type")
 
   def to[format: Rasterizable]: Raster in format = asInstanceOf[Raster in format]
@@ -213,32 +213,32 @@ extends Formal, Operable:
       y2*width + x2
 
     buffer.asMatchable match
-      case buffer: Array[Byte] =>
-        val buffer2 = new Array[Byte](width2*height2)
+      case buffer: scala.Array[Byte] =>
+        val buffer2 = new scala.Array[Byte](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) =>
           buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
-      case buffer: Array[Short] =>
-        val buffer2 = new Array[Short](width2*height2)
+      case buffer: scala.Array[Short] =>
+        val buffer2 = new scala.Array[Short](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) =>
           buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
-      case buffer: Array[Int] =>
-        val buffer2 = new Array[Int](width2*height2)
+      case buffer: scala.Array[Int] =>
+        val buffer2 = new scala.Array[Int](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) =>
           buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
-      case buffer: Array[Long] =>
-        val buffer2 = new Array[Long](width2*height2)
+      case buffer: scala.Array[Long] =>
+        val buffer2 = new scala.Array[Long](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) =>
           buffer2(index2) = buffer(index(x, y))

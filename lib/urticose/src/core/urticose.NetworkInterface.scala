@@ -118,11 +118,11 @@ object NetworkInterface:
     val bytes = address.getAddress.nn
     Ipv4(bytes(0).toInt, bytes(1).toInt, bytes(2).toInt, bytes(3).toInt)
 
-  private def longOf(bytes: Array[Byte], offset: Int): Long =
+  private def longOf(bytes: scala.Array[Byte], offset: Int): Long =
     (0 until 8).foldLeft(0L): (acc, index) =>
       (acc << 8) | (bytes(offset + index) & 0xff).toLong
 
-  private def bytes(address: Ipv4 | Ipv6): Array[Byte] = address match
+  private def bytes(address: Ipv4 | Ipv6): scala.Array[Byte] = address match
     case ipv6: Ipv6 =>
       val array = new scala.Array[Byte](16)
       for index <- 0 until 8 do array(index) = (ipv6.highBits >>> (56 - index*8)).toByte
@@ -130,7 +130,7 @@ object NetworkInterface:
       array
 
     case ipv4: (Ipv4 @unchecked) =>
-      Array(ipv4.byte0.toByte, ipv4.byte1.toByte, ipv4.byte2.toByte, ipv4.byte3.toByte)
+      scala.Array(ipv4.byte0.toByte, ipv4.byte1.toByte, ipv4.byte2.toByte, ipv4.byte3.toByte)
 
 case class NetworkInterface
   ( name:         Text,

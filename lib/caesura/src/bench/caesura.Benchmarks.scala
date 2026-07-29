@@ -176,7 +176,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
     val reader = new _root_.java.io.StringReader(text)
     parser.beginParsing(reader)
     var n = 0
-    var row: Array[String] = parser.parseNext()
+    var row: scala.Array[String] = parser.parseNext()
     while row != null do
       n += 1
       row = parser.parseNext()
@@ -190,7 +190,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
     val reader = new _root_.java.io.StringReader(text)
     parser.beginParsing(reader)
     var n = 0
-    var row: Array[String] = parser.parseNext()
+    var row: scala.Array[String] = parser.parseNext()
     while row != null do
       n += 1
       row = parser.parseNext()
@@ -202,7 +202,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
   def openCsvParseCsv(text: String): Int =
     val reader = new com.opencsv.CSVReader(new _root_.java.io.StringReader(text))
     var n = 0
-    var row: Array[String] = reader.readNext()
+    var row: scala.Array[String] = reader.readNext()
     while row != null do
       n += 1
       row = reader.readNext()
@@ -214,7 +214,7 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
     val reader = new com.opencsv.CSVReaderBuilder(new _root_.java.io.StringReader(text))
       .withCSVParser(parser).build()
     var n = 0
-    var row: Array[String] = reader.readNext()
+    var row: scala.Array[String] = reader.readNext()
     while row != null do
       n += 1
       row = reader.readNext()

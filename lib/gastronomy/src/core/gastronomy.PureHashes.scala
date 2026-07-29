@@ -49,16 +49,16 @@ private[gastronomy] object PureHashes:
 
   // SHA-256 and SHA-224 (a truncation of SHA-256 with a different initial state).
   final class Sha256(initial: IArray[Int], outputBytes: Int) extends BlockDigestion(64):
-    private var h: Array[Int]^ = initial.mutable(using Unsafe).clone
-    private var w: Array[Int]^ = new scala.Array[Int](64)
+    private var h: scala.Array[Int]^ = initial.mutable(using Unsafe).clone
+    private var w: scala.Array[Int]^ = new scala.Array[Int](64)
 
     protected def bitLengthBytes: Int = 8
 
-    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
+    protected def writeLength(target: scala.Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = (bits >>> ((7 - i)*8)).toByte; i += 1 }
 
-    protected update def compress(data: Array[Byte]^{caps.any.rd}, start: Int): Unit =
+    protected update def compress(data: scala.Array[Byte]^{caps.any.rd}, start: Int): Unit =
       var i = 0
 
       while i < 16 do
@@ -100,19 +100,19 @@ private[gastronomy] object PureHashes:
 
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
   final class Sha512(initial: IArray[Long], outputBytes: Int) extends BlockDigestion(128):
-    private var h: Array[Long]^ = initial.mutable(using Unsafe).clone
-    private var w: Array[Long]^ = new scala.Array[Long](80)
+    private var h: scala.Array[Long]^ = initial.mutable(using Unsafe).clone
+    private var w: scala.Array[Long]^ = new scala.Array[Long](80)
 
     // The message length is a 128-bit big-endian count of bits; inputs never approach 2^64 bytes,
     // so the high 64 bits are always zero.
     protected def bitLengthBytes: Int = 16
 
-    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
+    protected def writeLength(target: scala.Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = 0; i += 1 }
       while i < 16 do { target(offset + i) = (bits >>> ((15 - i)*8)).toByte; i += 1 }
 
-    protected update def compress(data: Array[Byte]^{caps.any.rd}, start: Int): Unit =
+    protected update def compress(data: scala.Array[Byte]^{caps.any.rd}, start: Int): Unit =
       var i = 0
 
       while i < 16 do
@@ -160,15 +160,15 @@ private[gastronomy] object PureHashes:
     private var h2 = 0x98badcfe
     private var h3 = 0x10325476
     private var h4 = 0xc3d2e1f0
-    private var w: Array[Int]^ = new scala.Array[Int](80)
+    private var w: scala.Array[Int]^ = new scala.Array[Int](80)
 
     protected def bitLengthBytes: Int = 8
 
-    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
+    protected def writeLength(target: scala.Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = (bits >>> ((7 - i)*8)).toByte; i += 1 }
 
-    protected update def compress(data: Array[Byte]^{caps.any.rd}, start: Int): Unit =
+    protected update def compress(data: scala.Array[Byte]^{caps.any.rd}, start: Int): Unit =
       var i = 0
 
       while i < 16 do
@@ -196,7 +196,7 @@ private[gastronomy] object PureHashes:
       h0 += a; h1 += b; h2 += c; h3 += d; h4 += e
 
     protected update def result(): Data =
-      val h = Array(h0, h1, h2, h3, h4)
+      val h = scala.Array(h0, h1, h2, h3, h4)
       val out = Buffer[Byte](20)
       var i = 0
 
@@ -210,9 +210,9 @@ private[gastronomy] object PureHashes:
     private var b0 = 0xefcdab89
     private var c0 = 0x98badcfe
     private var d0 = 0x10325476
-    private var m: Array[Int]^ = new scala.Array[Int](16)
+    private var m: scala.Array[Int]^ = new scala.Array[Int](16)
 
-    private val shifts: IArray[Int] = Array(
+    private val shifts: IArray[Int] = scala.Array(
       7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
       5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
       4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
@@ -222,11 +222,11 @@ private[gastronomy] object PureHashes:
     protected def bitLengthBytes: Int = 8
 
     // The bit-length trailer is little-endian for MD5.
-    protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit =
+    protected def writeLength(target: scala.Array[Byte]^, offset: Int, bits: Long): Unit =
       var i = 0
       while i < 8 do { target(offset + i) = (bits >>> (i*8)).toByte; i += 1 }
 
-    protected update def compress(data: Array[Byte]^{caps.any.rd}, start: Int): Unit =
+    protected update def compress(data: scala.Array[Byte]^{caps.any.rd}, start: Int): Unit =
       var i = 0
 
       while i < 16 do
@@ -254,7 +254,7 @@ private[gastronomy] object PureHashes:
       a0 += a; b0 += b; c0 += c; d0 += d
 
     protected update def result(): Data =
-      val h = Array(a0, b0, c0, d0)
+      val h = scala.Array(a0, b0, c0, d0)
       val out = Buffer[Byte](16)
       var i = 0
 
@@ -282,7 +282,7 @@ private[gastronomy] object PureHashes:
 
     update def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
 
-    override update def append(data: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+    override update def append(data: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
       val end = start + count
       var c = ~value
       var i = start
@@ -310,18 +310,18 @@ private[gastronomy] object PureHashes:
 // `compress` on each, and applies the standard Merkle–Damgård padding (a `0x80` byte, zero
 // padding, then the message bit-length) on `digest`.
 private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digestion:
-  private var block: Array[Byte]^ = new scala.Array[Byte](blockSize)
+  private var block: scala.Array[Byte]^ = new scala.Array[Byte](blockSize)
   private var filled: Int = 0
   private var totalBytes: Long = 0
 
-  protected update def compress(data: Array[Byte]^{caps.any.rd}, start: Int): Unit
+  protected update def compress(data: scala.Array[Byte]^{caps.any.rd}, start: Int): Unit
   protected update def result(): Data
   protected def bitLengthBytes: Int
-  protected def writeLength(target: Array[Byte]^, offset: Int, bits: Long): Unit
+  protected def writeLength(target: scala.Array[Byte]^, offset: Int, bits: Long): Unit
 
   update def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
 
-  override update def append(data: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+  override update def append(data: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
     var offset = start
     val end = start + count
     totalBytes += count
@@ -352,7 +352,7 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
     // bytes stay zero (a freshly-allocated array).
     val twoBlocks = filled + 1 + bitLengthBytes > blockSize
     val padded = if twoBlocks then blockSize*2 else blockSize
-    val pad: Array[Byte]^ = new scala.Array[Byte](padded)
+    val pad: scala.Array[Byte]^ = new scala.Array[Byte](padded)
     var i = 0
 
     while i < filled do { pad(i) = block(i); i += 1 }

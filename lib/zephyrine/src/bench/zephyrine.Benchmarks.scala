@@ -72,7 +72,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
   // A 10 KB block of bytes (all 'A') for `Cursor[Data]` linear iteration.
   lazy val data10k: Data =
-    val arr = new Array[Byte](10000)
+    val arr = new scala.Array[Byte](10000)
     var i = 0
     while i < arr.length do { arr(i) = 0x41.toByte; i += 1 }
     arr.immutable(using Unsafe)
@@ -81,7 +81,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
   // by the stream-backed cursor factory.
   lazy val data10kFragments: List[Data] =
     List.tabulate(100): _ =>
-      val arr = new Array[Byte](100)
+      val arr = new scala.Array[Byte](100)
       var i = 0
       while i < arr.length do { arr(i) = 0x41.toByte; i += 1 }
       arr.immutable(using Unsafe)

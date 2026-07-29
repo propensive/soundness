@@ -520,7 +520,7 @@ object Tel extends Tel2:
         private def parseFields(reader: TelReader^, indent: Int): derivation =
           val entries = fields
           val count = entries.length
-          val values = new Array[Any](count)
+          val values = new scala.Array[Any](count)
           var index = 0
 
           while index < count do
@@ -1190,7 +1190,7 @@ object Tel extends Tel2:
       // arena's next growth event. UTF-8 decode is deferred until
       // `.text` is first accessed.
       private[stratiform] def fromArena
-        ( arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int )
+        ( arena: scala.Array[Byte], off: Int, len: Int, precedingSpaces: Int )
       :   Inline =
 
         // The arena slice is committed before any subsequent arena mutation, so the
@@ -1216,7 +1216,7 @@ object Tel extends Tel2:
     // pattern-match syntax; equality and hashCode are derived manually
     // to match the prior structural behaviour.
     final class Inline private[stratiform]
-      ( private val bytes:           Array[Byte] | Null,
+      ( private val bytes:           scala.Array[Byte] | Null,
         private val byteOff:         Int,
         private val byteLen:         Int,
         @scala.caps.unsafe.untrackedCaptures
@@ -1321,9 +1321,9 @@ object Tel extends Tel2:
   private[stratiform] def buildIndex(document: Tel.Document, triples: IArray[Int]): IArray[Int] =
     var cursor = 0
 
-    def build(node: Tel.Subtree, line: Int, column: Int, length: Int): Array[Int] =
+    def build(node: Tel.Subtree, line: Int, column: Int, length: Int): scala.Array[Int] =
       val children = node.children.bind(_.compounds)
-      val childDescriptors = new Array[Array[Int]](children.length)
+      val childDescriptors = new scala.Array[scala.Array[Int]](children.length)
       var k = 0
 
       while k < children.length do
@@ -1342,7 +1342,7 @@ object Tel extends Tel2:
         total += childDescriptors(k).length
         k += 1
 
-      val buffer = new Array[Int](total)
+      val buffer = new scala.Array[Int](total)
       buffer(0) = total
       buffer(1) = line
       buffer(2) = column
@@ -1985,7 +1985,7 @@ object Tel extends Tel2:
     // rather than through a `java.lang.invoke.VarHandle` byte-array view so that
     // this compiles and links on Scala.js (which has no `java.lang.invoke`); the
     // JIT folds this to an equivalent load on the JVM.
-    private def longView(bytes: Array[Byte], pos: Int): Long =
+    private def longView(bytes: scala.Array[Byte], pos: Int): Long =
       (bytes(pos) & 0xffL) |
         ((bytes(pos + 1) & 0xffL) << 8) |
         ((bytes(pos + 2) & 0xffL) << 16) |
@@ -2096,7 +2096,7 @@ object Tel extends Tel2:
 
     // An exclusive view of the buffer snapshot: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
-    private inline def bytes: Array[Byte]^ = bytes0.asInstanceOf[Array[Byte]^]
+    private inline def bytes: scala.Array[Byte]^ = bytes0.asInstanceOf[scala.Array[Byte]^]
     var pos:    Int = 0
     var bufEnd: Int = 0
 
@@ -2185,11 +2185,11 @@ object Tel extends Tel2:
     // new array at offset 0 so the atom remains contiguous; the old array
     // (which still holds completed atoms) stays alive via their Inline
     // references.
-    var atomArena0:    AnyRef = (new Array[Byte](256)).asInstanceOf[AnyRef]
+    var atomArena0:    AnyRef = (new scala.Array[Byte](256)).asInstanceOf[AnyRef]
 
     // An exclusive view of the arena: the untracked `AnyRef` field keeps the
     // mutable array's capture out of the parser's fields.
-    private inline def atomArena: Array[Byte]^ = atomArena0.asInstanceOf[Array[Byte]^]
+    private inline def atomArena: scala.Array[Byte]^ = atomArena0.asInstanceOf[scala.Array[Byte]^]
     var arenaPos:      Int = 0
     var inFlightStart: Int = -1
 
@@ -2268,7 +2268,7 @@ object Tel extends Tel2:
       val needed = inFlightLen + n
       var newCap = (atomArena.length * 2).max(256)
       while newCap < needed do newCap *= 2
-      val newArena = new Array[Byte](newCap)
+      val newArena = new scala.Array[Byte](newCap)
 
       if inFlightLen > 0 then
         System.arraycopy(atomArena, inFlightStart, newArena, 0, inFlightLen)
@@ -2279,14 +2279,14 @@ object Tel extends Tel2:
       arenaPos = inFlightLen
 
     // An exclusive view for writes: the untracked field reads as read-only.
-    private inline def arenaTarget: Array[Byte]^ = atomArena.asInstanceOf[Array[Byte]^]
+    private inline def arenaTarget: scala.Array[Byte]^ = atomArena.asInstanceOf[scala.Array[Byte]^]
 
     private update def appendToArena(b: Byte): Unit =
       ensureArenaSpace(1)
       arenaTarget(arenaPos) = b
       arenaPos += 1
 
-    private update def appendToArenaRange(src: Array[Byte], off: Int, len: Int): Unit =
+    private update def appendToArenaRange(src: scala.Array[Byte], off: Int, len: Int): Unit =
       ensureArenaSpace(len)
       System.arraycopy(src, off, atomArena, arenaPos, len)
       arenaPos += len
@@ -2307,77 +2307,77 @@ object Tel extends Tel2:
     // it eliminates several thousand allocations per parse.
 
     @scala.caps.unsafe.untrackedCaptures
-    var scratchAtoms0: AnyRef = (new Array[Tel.Atom](16)).asInstanceOf[AnyRef]
+    var scratchAtoms0: AnyRef = (new scala.Array[Tel.Atom](16)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchAtoms: Array[Tel.Atom]^ =
-      scratchAtoms0.asInstanceOf[Array[Tel.Atom]^]
+    private inline def scratchAtoms: scala.Array[Tel.Atom]^ =
+      scratchAtoms0.asInstanceOf[scala.Array[Tel.Atom]^]
     var atomScratchIx:    Int = 0
 
     @scala.caps.unsafe.untrackedCaptures
-    var scratchComments0: AnyRef = (new Array[Tel.Comment](8)).asInstanceOf[AnyRef]
+    var scratchComments0: AnyRef = (new scala.Array[Tel.Comment](8)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchComments: Array[Tel.Comment]^ =
-      scratchComments0.asInstanceOf[Array[Tel.Comment]^]
+    private inline def scratchComments: scala.Array[Tel.Comment]^ =
+      scratchComments0.asInstanceOf[scala.Array[Tel.Comment]^]
     var commentScratchIx: Int = 0
 
     @scala.caps.unsafe.untrackedCaptures
-    var scratchCompounds0: AnyRef = (new Array[Tel.Compound](8)).asInstanceOf[AnyRef]
+    var scratchCompounds0: AnyRef = (new scala.Array[Tel.Compound](8)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchCompounds: Array[Tel.Compound]^ =
-      scratchCompounds0.asInstanceOf[Array[Tel.Compound]^]
+    private inline def scratchCompounds: scala.Array[Tel.Compound]^ =
+      scratchCompounds0.asInstanceOf[scala.Array[Tel.Compound]^]
     var compoundScratchIx: Int = 0
 
     @scala.caps.unsafe.untrackedCaptures
-    var scratchBlocks0: AnyRef = (new Array[Tel.Block](16)).asInstanceOf[AnyRef]
+    var scratchBlocks0: AnyRef = (new scala.Array[Tel.Block](16)).asInstanceOf[AnyRef]
 
     // An exclusive view of the scratch stack: the untracked `AnyRef` field
     // keeps the mutable array's capture out of the parser's fields.
-    private inline def scratchBlocks: Array[Tel.Block]^ =
-      scratchBlocks0.asInstanceOf[Array[Tel.Block]^]
+    private inline def scratchBlocks: scala.Array[Tel.Block]^ =
+      scratchBlocks0.asInstanceOf[scala.Array[Tel.Block]^]
     var blockScratchIx:   Int = 0
 
     private update def reserveAtom(): Unit =
       if atomScratchIx >= scratchAtoms.length then
-        val grown = new Array[Tel.Atom](scratchAtoms.length*2)
+        val grown = new scala.Array[Tel.Atom](scratchAtoms.length*2)
         System.arraycopy(scratchAtoms, 0, grown, 0, atomScratchIx)
         scratchAtoms0 = grown.asInstanceOf[AnyRef]
 
     private update def reserveComment(): Unit =
       if commentScratchIx >= scratchComments.length then
-        val grown = new Array[Tel.Comment](scratchComments.length*2)
+        val grown = new scala.Array[Tel.Comment](scratchComments.length*2)
         System.arraycopy(scratchComments, 0, grown, 0, commentScratchIx)
         scratchComments0 = grown.asInstanceOf[AnyRef]
 
     private update def reserveCompound(): Unit =
       if compoundScratchIx >= scratchCompounds.length then
-        val grown = new Array[Tel.Compound](scratchCompounds.length*2)
+        val grown = new scala.Array[Tel.Compound](scratchCompounds.length*2)
         System.arraycopy(scratchCompounds, 0, grown, 0, compoundScratchIx)
         scratchCompounds0 = grown.asInstanceOf[AnyRef]
 
     private update def reserveBlock(): Unit =
       if blockScratchIx >= scratchBlocks.length then
-        val grown = new Array[Tel.Block](scratchBlocks.length*2)
+        val grown = new scala.Array[Tel.Block](scratchBlocks.length*2)
         System.arraycopy(scratchBlocks, 0, grown, 0, blockScratchIx)
         scratchBlocks0 = grown.asInstanceOf[AnyRef]
 
     // Exclusive views for writes: the untracked fields read as read-only.
-    private inline def atomsTarget: Array[Tel.Atom]^ =
-      scratchAtoms.asInstanceOf[Array[Tel.Atom]^]
+    private inline def atomsTarget: scala.Array[Tel.Atom]^ =
+      scratchAtoms.asInstanceOf[scala.Array[Tel.Atom]^]
 
-    private inline def commentsTarget: Array[Tel.Comment]^ =
-      scratchComments.asInstanceOf[Array[Tel.Comment]^]
+    private inline def commentsTarget: scala.Array[Tel.Comment]^ =
+      scratchComments.asInstanceOf[scala.Array[Tel.Comment]^]
 
-    private inline def compoundsTarget: Array[Tel.Compound]^ =
-      scratchCompounds.asInstanceOf[Array[Tel.Compound]^]
+    private inline def compoundsTarget: scala.Array[Tel.Compound]^ =
+      scratchCompounds.asInstanceOf[scala.Array[Tel.Compound]^]
 
-    private inline def blocksTarget: Array[Tel.Block]^ =
-      scratchBlocks.asInstanceOf[Array[Tel.Block]^]
+    private inline def blocksTarget: scala.Array[Tel.Block]^ =
+      scratchBlocks.asInstanceOf[scala.Array[Tel.Block]^]
 
     private update def pushAtom(atom: Tel.Atom): Unit =
       reserveAtom()
@@ -2405,7 +2405,7 @@ object Tel extends Tel2:
     private update def takeAtoms(count: Int): IArray[Tel.Atom] =
       if count == 0 then IArray.empty[Tel.Atom]
       else
-        val result = new Array[Tel.Atom](count)
+        val result = new scala.Array[Tel.Atom](count)
         System.arraycopy(scratchAtoms, atomScratchIx - count, result, 0, count)
         atomScratchIx -= count
         result.asInstanceOf[IArray[Tel.Atom]]
@@ -2413,7 +2413,7 @@ object Tel extends Tel2:
     private update def takeComments(count: Int): IArray[Tel.Comment] =
       if count == 0 then IArray.empty[Tel.Comment]
       else
-        val result = new Array[Tel.Comment](count)
+        val result = new scala.Array[Tel.Comment](count)
         System.arraycopy(scratchComments, commentScratchIx - count, result, 0, count)
         commentScratchIx -= count
         result.asInstanceOf[IArray[Tel.Comment]]
@@ -2421,7 +2421,7 @@ object Tel extends Tel2:
     private update def takeCompounds(count: Int): IArray[Tel.Compound] =
       if count == 0 then IArray.empty[Tel.Compound]
       else
-        val result = new Array[Tel.Compound](count)
+        val result = new scala.Array[Tel.Compound](count)
         System.arraycopy(scratchCompounds, compoundScratchIx - count, result, 0, count)
         compoundScratchIx -= count
         result.asInstanceOf[IArray[Tel.Compound]]
@@ -2429,7 +2429,7 @@ object Tel extends Tel2:
     private update def takeBlocks(count: Int): IArray[Tel.Block] =
       if count == 0 then EmptyBlocks
       else
-        val result = new Array[Tel.Block](count)
+        val result = new scala.Array[Tel.Block](count)
         System.arraycopy(scratchBlocks, blockScratchIx - count, result, 0, count)
         blockScratchIx -= count
         result.asInstanceOf[IArray[Tel.Block]]
@@ -2451,20 +2451,20 @@ object Tel extends Tel2:
     // fingerprint injectively; multibyte UTF-8 keywords fingerprint by raw
     // bytes (still injective for ≤8 bytes).
     @scala.caps.unsafe.untrackedCaptures
-    val keyCache:     Array[String] = new Array[String](64)
+    val keyCache:     scala.Array[String] = new scala.Array[String](64)
     @scala.caps.unsafe.untrackedCaptures
-    val keyCacheLow:  Array[Long]   = new Array[Long](64)
+    val keyCacheLow:  scala.Array[Long]   = new scala.Array[Long](64)
     @scala.caps.unsafe.untrackedCaptures
-    val keyCacheHigh: Array[Long]   = new Array[Long](64)
+    val keyCacheHigh: scala.Array[Long]   = new scala.Array[Long](64)
 
     // Exclusive views for writes: the untracked fields read as read-only.
-    private inline def keyCacheTarget: Array[String]^ = keyCache.asInstanceOf[Array[String]^]
+    private inline def keyCacheTarget: scala.Array[String]^ = keyCache.asInstanceOf[scala.Array[String]^]
 
-    private inline def keyCacheLowTarget: Array[Long]^ =
-      keyCacheLow.asInstanceOf[Array[Long]^]
+    private inline def keyCacheLowTarget: scala.Array[Long]^ =
+      keyCacheLow.asInstanceOf[scala.Array[Long]^]
 
-    private inline def keyCacheHighTarget: Array[Long]^ =
-      keyCacheHigh.asInstanceOf[Array[Long]^]
+    private inline def keyCacheHighTarget: scala.Array[Long]^ =
+      keyCacheHigh.asInstanceOf[scala.Array[Long]^]
 
     // ── Substrate ─────────────────────────────────────────────────────────────
 
@@ -2691,7 +2691,7 @@ object Tel extends Tel2:
       val endMk = cursor.mark(using Cursor.shared)
 
       cursor.slice(start, endMk): (storage, off, len) =>
-        val arr = storage.asInstanceOf[Array[Byte]]
+        val arr = storage.asInstanceOf[scala.Array[Byte]]
         if len <= 0 then "" else new String(arr, off, len, StandardCharsets.UTF_8)
 
     // Rewind to a held mark — the bail of a speculative fast scan (the
@@ -2740,20 +2740,20 @@ object Tel extends Tel2:
       // Fresh arena: previous parse's Inlines hold the old array via their
       // (arena, off, len) backing reference, so it stays alive as long as
       // those Inlines are referenced.
-      atomArena0    = (new Array[Byte](256)).asInstanceOf[AnyRef]
+      atomArena0    = (new scala.Array[Byte](256)).asInstanceOf[AnyRef]
       arenaPos      = 0
       inFlightStart = -1
       // Null out the scratch arrays so they don't pin references from the
       // previous parse. Cheap (one pass over what are typically small arrays);
       // worth it to let GC collect the previous Document's transient nodes
       // promptly while the parser sits in the ThreadLocal between calls.
-      java.util.Arrays.fill(scratchAtoms.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchAtoms.asInstanceOf[scala.Array[AnyRef]], null)
       atomScratchIx = 0
-      java.util.Arrays.fill(scratchComments.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchComments.asInstanceOf[scala.Array[AnyRef]], null)
       commentScratchIx = 0
-      java.util.Arrays.fill(scratchCompounds.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchCompounds.asInstanceOf[scala.Array[AnyRef]], null)
       compoundScratchIx = 0
-      java.util.Arrays.fill(scratchBlocks.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchBlocks.asInstanceOf[scala.Array[AnyRef]], null)
       blockScratchIx = 0
       compoundLineKeyword = t""
       compoundLineRemark  = Unset
@@ -2779,16 +2779,16 @@ object Tel extends Tel2:
       documentEndsWithLf = false
       ancestors.clear()
       sb.setLength(0)
-      atomArena0    = (new Array[Byte](256)).asInstanceOf[AnyRef]
+      atomArena0    = (new scala.Array[Byte](256)).asInstanceOf[AnyRef]
       arenaPos      = 0
       inFlightStart = -1
-      java.util.Arrays.fill(scratchAtoms.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchAtoms.asInstanceOf[scala.Array[AnyRef]], null)
       atomScratchIx = 0
-      java.util.Arrays.fill(scratchComments.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchComments.asInstanceOf[scala.Array[AnyRef]], null)
       commentScratchIx = 0
-      java.util.Arrays.fill(scratchCompounds.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchCompounds.asInstanceOf[scala.Array[AnyRef]], null)
       compoundScratchIx = 0
-      java.util.Arrays.fill(scratchBlocks.asInstanceOf[Array[AnyRef]], null)
+      java.util.Arrays.fill(scratchBlocks.asInstanceOf[scala.Array[AnyRef]], null)
       blockScratchIx = 0
       compoundLineKeyword = t""
       compoundLineRemark  = Unset
@@ -4469,7 +4469,7 @@ object Tel extends Tel2:
 
     private update def fingerprintString(): String =
       val len = directKeywordLen
-      val chars = new Array[Char](len)
+      val chars = new scala.Array[Char](len)
       var index = 0
 
       while index < len do

@@ -46,12 +46,12 @@ import wisteria.*
 
 object internal:
   opaque type Pojo <: Object =
-    Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
+    scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
       java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float | java.lang.Double
 
   object Pojo extends Pojo2:
     def apply
-      ( pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
+      ( pojo: scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
         java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float |
         java.lang.Double )
     :   Pojo =
@@ -110,7 +110,7 @@ object internal:
     =>  collection[element] is Encodable in Pojo =
 
       iterable =>
-        Array.from[Object](iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
+        scala.Array.from[Object](iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
 
     // Alias counterparts of `list`/`collection`: the opaque prelude collections
     // do not conform to `Iterable`, so each gets its own instance built at the
@@ -182,7 +182,7 @@ object internal:
       // The by-name element codec and resolution-scoped tactic share this instance's
       // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
       caps.unsafe.unsafeAssumePure:
-        case array: Array[Pojo @unchecked] =>
+        case array: scala.Array[Pojo @unchecked] =>
           factory.newBuilder.pipe: builder =>
             array.iterator.each(builder += decodable.decoded(_))
             builder.result()
@@ -220,9 +220,9 @@ object internal:
       type Contrast = Pojo
 
       def check(left: Pojo, right: Pojo): Boolean = left match
-        case left: Array[?] =>
+        case left: scala.Array[?] =>
           right match
-            case right: Array[?] =>
+            case right: scala.Array[?] =>
               left.length == right.length && left.indices.forall: index =>
                 left(index) match
                   case left: Pojo @unchecked => right(index) match

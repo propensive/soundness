@@ -145,5 +145,5 @@ class Classfile(data: Data):
       Bytecode(sourceFile, instructions, code.maxStack, code.maxLocals)
 
   private lazy val model: jlc.ClassModel =
-    jlc.ClassFile.of().nn.parse(data.asInstanceOf[Array[Byte]]).nn
+    jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
   lazy val methods: List[Method] = model.methods.nn.to[List].map(Method(_))

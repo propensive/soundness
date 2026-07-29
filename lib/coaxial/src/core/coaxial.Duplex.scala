@@ -89,7 +89,7 @@ trait Duplex:
       type Transport = Credit
 
       private val block: Int = buffering.capacity(Substrate.Bytes)
-      private val storage: Array[Byte] = new scala.Array[Byte](block)
+      private val storage: scala.Array[Byte] = new scala.Array[Byte](block)
       private var mark0: Int = 0
 
       def demand: Credit = Credit(Long.MaxValue)

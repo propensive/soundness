@@ -401,7 +401,7 @@ case class Sheet
     rows.to[List].map(_.as[value])
 
   override def hashCode: Int =
-    (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[Array[Object | Null]])*31
+    (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])*31
         + format.hashCode)*31
     + columns.lay(-1): array =>
         ju.Arrays.hashCode(array.mutable(using Unsafe))

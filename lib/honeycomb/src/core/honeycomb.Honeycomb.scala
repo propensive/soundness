@@ -83,17 +83,17 @@ object Honeycomb:
 
       var types: List[TypeRepr] = Nil
 
-      def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
+      def checkText(array: Expr[scala.Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
+      def checkComment(array: Expr[scala.Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
+      def checkFragment(array: Expr[scala.Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       :   Expr[Boolean] =
 
         val children = '{$scrutinee.nodes}
@@ -109,7 +109,7 @@ object Honeycomb:
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
-      def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
+      def checkElement(array: Expr[scala.Array[Any]], pattern: Element, scrutinee: Expr[Element])
       :   Expr[Boolean] =
 
         def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
@@ -162,7 +162,7 @@ object Honeycomb:
         '{$attributesChecked && $elementsChecked}
 
       def descend
-        ( array: Expr[Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )
+        ( array: Expr[scala.Array[Any]], pattern: Html, scrutinee: Expr[Html], expr: Expr[Boolean] )
       :   Expr[Boolean] =
 
         pattern match

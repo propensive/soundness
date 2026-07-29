@@ -53,7 +53,7 @@ object Varint:
   // and keyword indices in a single schema.
   def encode(value: Long): Data =
     if value < 0L then throw IllegalArgumentException(s"varint value must be non-negative: $value")
-    val buf = new Array[Byte](10)
+    val buf = new scala.Array[Byte](10)
     var n = value
     var i = 0
 
@@ -63,7 +63,7 @@ object Varint:
       i += 1
 
     buf(i) = n.toByte
-    val out = new Array[Byte](i + 1)
+    val out = new scala.Array[Byte](i + 1)
     System.arraycopy(buf, 0, out, 0, i + 1)
     out.asInstanceOf[IArray[Byte]]
 

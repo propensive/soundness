@@ -87,11 +87,11 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
   private var reader: JpegReader^ = JpegReader(data, 0)
 
   private var frame: Optional[JpegFrame] = Unset
-  private var dcTables: Array[Optional[JpegHuffmanTable]]^ = Array(Unset, Unset, Unset, Unset)
-  private var acTables: Array[Optional[JpegHuffmanTable]]^ = Array(Unset, Unset, Unset, Unset)
+  private var dcTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
+  private var acTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
 
   // Quantization tables in natural (un-zigzagged) order, indexed by destination identifier.
-  private var quantTables: Array[Optional[Array[Int]]]^ = Array(Unset, Unset, Unset, Unset)
+  private var quantTables: scala.Array[Optional[scala.Array[Int]]]^ = scala.Array(Unset, Unset, Unset, Unset)
 
   private var restartInterval = 0
   private var adobeTransform: Optional[Int] = Unset
@@ -101,14 +101,14 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
   // across all scans.
   // `AnyRef` field + exclusive-view accessor: a typed nested-array field's element types
   // are elaborated with fresh read capabilities that nothing can satisfy.
-  private var coefficients0: AnyRef = (new Array[Array[Int]](0)).asInstanceOf[AnyRef]
+  private var coefficients0: AnyRef = (new scala.Array[scala.Array[Int]](0)).asInstanceOf[AnyRef]
 
-  private inline def coefficients: Array[Array[Int]] =
-    coefficients0.asInstanceOf[Array[Array[Int]]]
+  private inline def coefficients: scala.Array[scala.Array[Int]] =
+    coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]]
 
   // The zig-zag scan order: `Unzigzag(k)` is the natural (row-major) block index of the k-th
   // coefficient in the bitstream.
-  private val Unzigzag: IArray[Int] = Array(
+  private val Unzigzag: IArray[Int] = scala.Array(
     0, 1, 8, 16, 9, 2, 3, 10,
     17, 24, 32, 25, 18, 11, 4, 5,
     12, 19, 26, 33, 40, 48, 41, 34,
@@ -145,12 +145,12 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
 
         // Built with an explicit loop: `map` to a fresh nested array trips ClassTag
         // synthesis under capture checking.
-        val planes = new Array[Array[Int]](parsed.components.length)
+        val planes = new scala.Array[scala.Array[Int]](parsed.components.length)
         var index = 0
 
         while index < planes.length do
           val component = parsed.components(index)
-          planes(index) = new Array[Int](component.blockWidth*component.blockHeight*64)
+          planes(index) = new scala.Array[Int](component.blockWidth*component.blockHeight*64)
           index += 1
 
         coefficients0 = planes.asInstanceOf[AnyRef]
@@ -212,12 +212,12 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
 
   private update def loadQuantizationTables()(using Tactic[RasterError]): Unit =
     // A pure view of the parser's freshly-built result, for the `Optional` reads below.
-    val tables = JpegParser.parseDqt(reader).asInstanceOf[Array[Optional[Array[Int]]]]
+    val tables = JpegParser.parseDqt(reader).asInstanceOf[scala.Array[Optional[scala.Array[Int]]]]
     var index = 0
 
     while index < 4 do
       tables(index).let: table =>
-        val natural = new Array[Int](64)
+        val natural = new scala.Array[Int](64)
         var j = 0
         while j < 64 do { natural(Unzigzag(j)) = table(j); j += 1 }
         quantTables(index) = natural
@@ -262,13 +262,13 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
 
     val isInterleaved = count > 1
     val huffman = JpegHuffmanDecoder()
-    val dcPredictors = new Array[Int](count)
-    val eobRun = new Array[Int](1)
+    val dcPredictors = new scala.Array[Int](count)
+    val eobRun = new scala.Array[Int](1)
     var mcusLeftUntilRestart = restartInterval
     var expectedRst = 0
 
-    val mcuHoriz = new Array[Int](count)
-    val mcuVert = new Array[Int](count)
+    val mcuHoriz = new scala.Array[Int](count)
+    val mcuVert = new scala.Array[Int](count)
     var index = 0
 
     while index < count do
@@ -305,7 +305,7 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
               val component = components(i)
               val globalIndex = scan.componentIndices(i)
               // An exclusive view of this decoder's own plane, for the writes below.
-              val planes0 = coefficients0.asInstanceOf[Array[Array[Int]]]
+              val planes0 = coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]]
               val plane = writable[Int](planes0(globalIndex))
               var vPos = 0
 
@@ -346,15 +346,15 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
   // Section F.2.2: decodes the coefficients of one block on the first pass over its spectral band.
   private update def decodeBlock
     ( huffman:       JpegHuffmanDecoder^,
-      coeff:         Array[Int],
+      coeff:         scala.Array[Int],
       base:          Int,
       dcTableIndex:  Int,
       acTableIndex:  Int,
       spectralStart: Int,
       spectralEnd:   Int,
       successiveLow: Int,
-      eobRun:        Array[Int],
-      dcPredictors:  Array[Int],
+      eobRun:        scala.Array[Int],
+      dcPredictors:  scala.Array[Int],
       predIndex:     Int )
     ( using Tactic[RasterError] )
   :   Unit =
@@ -405,13 +405,13 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
   // Section G.1.2: refines coefficients on later (successive-approximation) passes.
   private update def decodeBlockRefine
     ( huffman:       JpegHuffmanDecoder^,
-      coeff:         Array[Int],
+      coeff:         scala.Array[Int],
       base:          Int,
       acTableIndex:  Int,
       spectralStart: Int,
       spectralEnd:   Int,
       successiveLow: Int,
-      eobRun:        Array[Int] )
+      eobRun:        scala.Array[Int] )
     ( using Tactic[RasterError] )
   :   Unit =
 
@@ -453,7 +453,7 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
   // until `zrl` zero coefficients have been skipped; returns the index reached.
   private update def refineNonZeroes
     ( huffman:     JpegHuffmanDecoder^,
-      coeff:       Array[Int],
+      coeff:       scala.Array[Int],
       base:        Int,
       acTable:     JpegHuffmanTable,
       start:       Int,
@@ -488,11 +488,11 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
   // Dequantizes and inverse-transforms every coefficient plane, then assembles the interleaved,
   // colour-converted image and wraps it as a `Raster`.
   private update def render(frame: JpegFrame)(using Tactic[RasterError]): Raster =
-    val planes = new Array[Array[Byte]](frame.components.length)
+    val planes = new scala.Array[scala.Array[Byte]](frame.components.length)
     var index = 0
 
     while index < frame.components.length do
-      planes(index) = renderPlane(frame.components(index), coefficients0.asInstanceOf[Array[Array[Int]]](index))
+      planes(index) = renderPlane(frame.components(index), coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]](index))
       index += 1
 
     val width = frame.imageWidth
@@ -502,10 +502,10 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
     then grayscaleRaster(frame.components(0), planes(0), width, height)
     else colorRaster(frame, planes, width, height)
 
-  private update def renderPlane(component: JpegComponent, coeff: Array[Int]): Array[Byte] =
+  private update def renderPlane(component: JpegComponent, coeff: scala.Array[Int]): scala.Array[Byte] =
     val quant = quantTables(component.quantizationTableIndex).vouch
     val stride = component.blockWidth*8
-    val plane = new Array[Byte](stride*component.blockHeight*8)
+    val plane = new scala.Array[Byte](stride*component.blockHeight*8)
     var blockY = 0
 
     while blockY < component.blockHeight do
@@ -520,7 +520,7 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
 
     plane
 
-  private def grayscaleRaster(component: JpegComponent, plane: Array[Byte], width: Int, height: Int)
+  private def grayscaleRaster(component: JpegComponent, plane: scala.Array[Byte], width: Int, height: Int)
   :   Raster =
 
     val stride = component.blockWidth*8
@@ -532,15 +532,15 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
       (luma << 16) | (luma << 8) | luma
 
   private def colorRaster
-    ( frame: JpegFrame, planes: Array[Array[Byte]], width: Int, height: Int )
+    ( frame: JpegFrame, planes: scala.Array[scala.Array[Byte]], width: Int, height: Int )
     ( using Tactic[RasterError] )
   :   Raster =
 
     val transform = determineColorTransform(frame)
     val upsampler = JpegUpsampler(frame.components, width, height)
     val convert = chooseColorConvert(frame.components.length, transform)
-    val rgb = new Array[Byte](width*height*3)
-    val row = new Array[Byte](width*3)
+    val rgb = new scala.Array[Byte](width*height*3)
+    val row = new scala.Array[Byte](width*3)
 
     var y = 0
 
@@ -556,9 +556,9 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
   // function type is elaborated with fresh element capabilities that leak on every read.
   private def chooseColorConvert(count: Int, transform: JpegColor): JpegColorConverter =
     new JpegColorConverter:
-      def convert(buffers0: AnyRef, output: Array[Byte]): Unit =
-        inline def buffers(index: Int): Array[Byte] =
-          buffers0.asInstanceOf[Array[Array[Byte]]](index)
+      def convert(buffers0: AnyRef, output: scala.Array[Byte]): Unit =
+        inline def buffers(index: Int): scala.Array[Byte] =
+          buffers0.asInstanceOf[scala.Array[scala.Array[Byte]]](index)
 
         val width = output.length/3
         var x = 0

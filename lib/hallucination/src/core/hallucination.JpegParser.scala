@@ -155,10 +155,10 @@ private[hallucination] object JpegParser:
 
     // First read the raw per-component parameters; the pixel and block dimensions can only be
     // derived once the maximum sampling factors across all components are known.
-    val identifiers = new Array[Int](componentCount)
-    val horizontals = new Array[Int](componentCount)
-    val verticals = new Array[Int](componentCount)
-    val quantizationIndices = new Array[Int](componentCount)
+    val identifiers = new scala.Array[Int](componentCount)
+    val horizontals = new scala.Array[Int](componentCount)
+    val verticals = new scala.Array[Int](componentCount)
+    val quantizationIndices = new scala.Array[Int](componentCount)
     var index = 0
 
     while index < componentCount do
@@ -197,7 +197,7 @@ private[hallucination] object JpegParser:
     val mcuWidth = ceilDiv(width, hMax*8)
     val mcuHeight = ceilDiv(height, vMax*8)
 
-    val components = new Array[JpegComponent](componentCount)
+    val components = new scala.Array[JpegComponent](componentCount)
     index = 0
 
     while index < componentCount do
@@ -226,9 +226,9 @@ private[hallucination] object JpegParser:
     if componentCount == 0 || componentCount > 4 then bad()
     if length != 4 + 2*componentCount then bad()
 
-    val componentIndices = new Array[Int](componentCount)
-    val dcTableIndices = new Array[Int](componentCount)
-    val acTableIndices = new Array[Int](componentCount)
+    val componentIndices = new scala.Array[Int](componentCount)
+    val dcTableIndices = new scala.Array[Int](componentCount)
+    val acTableIndices = new scala.Array[Int](componentCount)
     var index = 0
 
     while index < componentCount do
@@ -287,9 +287,9 @@ private[hallucination] object JpegParser:
 
   // Section B.2.4.1: quantization tables, each returned in the file's zigzag order (unzigzagged by
   // the decoder). The four slots are indexed by the table's destination identifier.
-  def parseDqt(reader: JpegReader^)(using Tactic[RasterError]): Array[Optional[Array[Int]]] =
+  def parseDqt(reader: JpegReader^)(using Tactic[RasterError]): scala.Array[Optional[scala.Array[Int]]] =
     var length = readLength(reader)
-    val tables: Array[Optional[Array[Int]]] = Array(Unset, Unset, Unset, Unset)
+    val tables: scala.Array[Optional[scala.Array[Int]]] = scala.Array(Unset, Unset, Unset, Unset)
 
     while length > 0 do
       val byte = reader.u8()
@@ -299,7 +299,7 @@ private[hallucination] object JpegParser:
       if index > 3 then bad()
       if length < 65 + 64*precision then bad()
 
-      val table = new Array[Int](64)
+      val table = new scala.Array[Int](64)
       var item = 0
 
       while item < 64 do
@@ -314,11 +314,11 @@ private[hallucination] object JpegParser:
 
   // Section B.2.4.2: Huffman tables. Returns the DC tables then the AC tables, four slots each.
   def parseDht(reader: JpegReader^, isBaseline: Boolean)(using Tactic[RasterError])
-  :   (Array[Optional[JpegHuffmanTable]], Array[Optional[JpegHuffmanTable]]) =
+  :   (scala.Array[Optional[JpegHuffmanTable]], scala.Array[Optional[JpegHuffmanTable]]) =
 
     var length = readLength(reader)
-    val dcTables: Array[Optional[JpegHuffmanTable]]^ = Array(Unset, Unset, Unset, Unset)
-    val acTables: Array[Optional[JpegHuffmanTable]]^ = Array(Unset, Unset, Unset, Unset)
+    val dcTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
+    val acTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
 
     while length > 17 do
       val byte = reader.u8()
@@ -328,7 +328,7 @@ private[hallucination] object JpegParser:
       if isBaseline && index > 1 then bad()
       if index > 3 then bad()
 
-      val counts = new Array[Int](16)
+      val counts = new scala.Array[Int](16)
       var size = 0
       var count = 0
 
@@ -341,7 +341,7 @@ private[hallucination] object JpegParser:
       if size > 256 then bad()
       if size > length - 17 then bad()
 
-      val values = new Array[Int](size)
+      val values = new scala.Array[Int](size)
       var value = 0
 
       while value < size do
@@ -372,7 +372,7 @@ private[hallucination] object JpegParser:
   // colour interpretation, are recognised; the rest are skipped.
   def parseApp(reader: JpegReader^, code: Int)(using Tactic[RasterError]): JpegApp =
     val length = readLength(reader)
-    val buffer = new Array[Byte](length)
+    val buffer = new scala.Array[Byte](length)
     reader.readExact(buffer)
 
     def matches(prefix: String): Boolean =

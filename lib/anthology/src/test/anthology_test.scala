@@ -217,7 +217,7 @@ object Tests extends Suite(m"Anthology Tests"):
     // the Scala.js runtime JARs) can be found.
     val source: Text =
       t"""|object Main:
-          |  def main(args: Array[String]): Unit = println("hello")
+          |  def main(args: scala.Array[String]): Unit = println("hello")
           |""".s.stripMargin.tt
 
     sjsClasspath().let: classpath =>

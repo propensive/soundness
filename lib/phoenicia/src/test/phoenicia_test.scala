@@ -154,7 +154,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
   val cmapFormat4: Data = u16(0, 1) ++ u16(3, 1) ++ u32(12L) ++ format4Subtable
 
   val cmapFormat0: Data =
-    val glyphIds = Array.fill[Byte](256)(0)
+    val glyphIds = scala.Array.fill[Byte](256)(0)
     glyphIds(0x41) = 7
     u16(0, 1) ++ u16(1, 0) ++ u32(12L) ++ u16(0, 262, 0) ++ glyphIds.immutable(using Unsafe)
 

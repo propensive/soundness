@@ -302,7 +302,7 @@ object internal:
       def serializeString(s: String): Expr[Yaml.Ast] =
         if !hasMarker(s) then '{Yaml.Ast(${Expr(s)})}
         else
-          val parts: Array[String | Null] = s.split(MarkerString, -1).nn
+          val parts: scala.Array[String | Null] = s.split(MarkerString, -1).nn
           var resultExpr: Expr[String] = Expr(parts(0).nn)
           var i = 1
 
@@ -437,7 +437,7 @@ object internal:
       var types: List[TypeRepr] = Nil
 
       def descend
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          pattern: Any,
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )
@@ -496,7 +496,7 @@ object internal:
             halt(m"unexpected YAML AST node ${other.toString.tt}")
 
       def descendArray
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          elements: IArray[Any],
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )
@@ -607,7 +607,7 @@ object internal:
         case _ => 0
 
       def descendObject
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          node: IArray[Any],
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )

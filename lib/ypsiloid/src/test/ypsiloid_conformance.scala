@@ -237,7 +237,7 @@ object Conformance:
   private inline def isJsonWhitespace(c: Char): Boolean =
     c == ' ' || c == '\n' || c == '\t' || c == '\r'
 
-  def main(args: Array[String]): Unit =
+  def main(args: scala.Array[String]): Unit =
     val suiteRoot = args.headOption.filterNot(_.startsWith("--")).getOrElse(suitePath)
     val verbose = args.contains("--verbose")
     val maxFailuresShown = if verbose then Int.MaxValue else 30
@@ -323,15 +323,15 @@ object Conformance:
 
     case Yaml.Ast.Sequence(items) =>
       val converted: IArray[Any] =
-        IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(items.asInstanceOf[Array[Yaml.Ast]]).map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
+        IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(items.asInstanceOf[scala.Array[Yaml.Ast]]).map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
       Json.ast(Json.Ast.arr(converted))
 
     case Yaml.Ast.Mapping(entries) =>
       val pairs = entries.collect:
         case (Yaml.Ast.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
-      val keys: IArray[String] = IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[Array[(String, Json.Ast)]]).map(_._1))
-      val values: IArray[Any] = IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[Array[(String, Json.Ast)]]).map(_._2.asInstanceOf[Any]))
+      val keys: IArray[String] = IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._1))
+      val values: IArray[Any] = IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._2.asInstanceOf[Any]))
       Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =
@@ -349,7 +349,7 @@ object Conformance:
       else d.toString
     case s: String         => "\"" + s + "\""
 
-    case nums: Array[Double] @unchecked =>
+    case nums: scala.Array[Double] @unchecked =>
       // jacinta stores number-only JSON arrays unboxed as `Array[Double]`.
       // Render as a flat JSON array.
       nums.iterator.map(d => renderAny(d)).mkString("[", ",", "]")

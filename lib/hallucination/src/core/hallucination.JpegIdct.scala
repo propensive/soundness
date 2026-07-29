@@ -60,15 +60,15 @@ private[hallucination] object JpegIdct:
   // DCT, and writes the 8x8 block of samples into `output` at `outputBase`, one row every `stride`
   // bytes.
   def dequantizeAndIdct8x8
-    ( coefficients: Array[Int],
+    ( coefficients: scala.Array[Int],
       coeffBase:    Int,
-      quant:        Array[Int],
-      output:       Array[Byte],
+      quant:        scala.Array[Int],
+      output:       scala.Array[Byte],
       outputBase:   Int,
       stride:       Int )
   :   Unit =
 
-    val temp = new Array[Int](64)
+    val temp = new scala.Array[Int](64)
 
     // Pass 1: the columns.
     var i = 0

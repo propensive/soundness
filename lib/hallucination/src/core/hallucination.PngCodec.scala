@@ -153,7 +153,7 @@ private[hallucination] object PngCodec:
         if transparency.length < index*2 + 2 then -1
         else transparency(index*2) << 8 | transparency(index*2 + 1)
 
-      val words = new Array[Long](width*height)
+      val words = new scala.Array[Long](width*height)
 
       // Decodes one (possibly interlaced) pass, whose scanlines are `passWidth` pixels wide,
       // placing pixel (x, y) of the pass at `locate(x, y)` in the image.
@@ -164,8 +164,8 @@ private[hallucination] object PngCodec:
           val rowBytes = (passWidth*channels*depth + 7)/8
           val unit = ((channels*depth + 7)/8).max(1)
           // Pure-typed rows (see `pureBytes`): writes route through `writable`.
-          var previous: Array[Byte] = pureBytes(rowBytes)
-          var current: Array[Byte] = pureBytes(rowBytes)
+          var previous: scala.Array[Byte] = pureBytes(rowBytes)
+          var current: scala.Array[Byte] = pureBytes(rowBytes)
           var position = offset
 
           def sample(x: Int, channel: Int): Int =
@@ -288,11 +288,11 @@ private[hallucination] object PngCodec:
     val alpha = raster.descriptor.hasAlpha
     val channels = if alpha then 4 else 3
     val rowBytes = width*channels
-    val raw = new Array[Byte]((rowBytes + 1)*height)
-    var previous = new Array[Byte](rowBytes)
-    val current = new Array[Byte](rowBytes)
-    val filtered = new Array[Byte](rowBytes)
-    val best = new Array[Byte](rowBytes)
+    val raw = new scala.Array[Byte]((rowBytes + 1)*height)
+    var previous = new scala.Array[Byte](rowBytes)
+    val current = new scala.Array[Byte](rowBytes)
+    val filtered = new scala.Array[Byte](rowBytes)
+    val best = new scala.Array[Byte](rowBytes)
 
     for y <- 0 until height do
       for x <- 0 until width do
@@ -352,7 +352,7 @@ private[hallucination] object PngCodec:
     val output = ji.ByteArrayOutputStream()
     signature.foreach(output.write(_))
 
-    def chunk(chunkType: String, body: Array[Byte]): Unit =
+    def chunk(chunkType: String, body: scala.Array[Byte]): Unit =
       writeInt(output, body.length)
       val typeBytes = chunkType.getBytes("UTF-8").nn
       output.write(typeBytes)
@@ -361,7 +361,7 @@ private[hallucination] object PngCodec:
       writeInt(output, Crc32.checksum(typeBytes.immutable(using Unsafe),
                                       body.immutable(using Unsafe)))
 
-    val header = new Array[Byte](13)
+    val header = new scala.Array[Byte](13)
     header(0) = (width >> 24).toByte
     header(1) = (width >> 16).toByte
     header(2) = (width >> 8).toByte
@@ -375,7 +375,7 @@ private[hallucination] object PngCodec:
 
     chunk("IHDR", header)
     chunk("IDAT", compressed)
-    chunk("IEND", new Array[Byte](0))
+    chunk("IEND", new scala.Array[Byte](0))
     output.toByteArray.nn.immutable(using Unsafe)
 
   private def pack(red: Int, green: Int, blue: Int, alpha: Int): Long =
@@ -387,7 +387,7 @@ private[hallucination] object PngCodec:
     output.write((value >> 8)&0xff)
     output.write(value&0xff)
 
-  private def concatenate(stream: Progression[Data]): Array[Byte] =
+  private def concatenate(stream: Progression[Data]): scala.Array[Byte] =
     val output = ji.ByteArrayOutputStream()
 
     stream.each: data =>

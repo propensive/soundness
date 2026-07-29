@@ -60,7 +60,7 @@ object Serializable:
       private val padByte: Byte = if padding then alphabet(1 << bits).toByte else 0
 
       def encode(bytes: Data): Text =
-        val src = bytes.asInstanceOf[Array[Byte]]
+        val src = bytes.asInstanceOf[scala.Array[Byte]]
 
         val out = bits match
           case 4 => hex(src)
@@ -85,7 +85,7 @@ object Serializable:
             val lo = lookup(b & 0xf) & 0xff
             (hi | (lo << 8)).toShort
 
-      private def hex(src: Array[Byte]): Buffer[Byte]^ =
+      private def hex(src: scala.Array[Byte]): Buffer[Byte]^ =
         val pairs = hexPairs
         val n = src.length
         val out = Buffer[Byte](n*2)
@@ -103,7 +103,7 @@ object Serializable:
 
       // Base64: three input bytes become four characters; a trailing group of
       // one or two bytes is completed with padding when the alphabet demands it.
-      private def base64(src: Array[Byte]): Buffer[Byte]^ =
+      private def base64(src: scala.Array[Byte]): Buffer[Byte]^ =
         val n = src.length
         val full = n/3
         val rem = n - full*3
@@ -150,7 +150,7 @@ object Serializable:
 
       // Base32: five input bytes become eight characters; trailing groups of
       // 1/2/3/4 bytes emit 2/4/5/7 characters, padded to a multiple of eight.
-      private def base32(src: Array[Byte]): Buffer[Byte]^ =
+      private def base32(src: scala.Array[Byte]): Buffer[Byte]^ =
         val n = src.length
         val full = n/5
         val rem = n - full*5
@@ -215,7 +215,7 @@ object Serializable:
 
       // Binary/quaternary/octal: a general bit-accumulator, for the bases whose
       // group size makes an unrolled kernel unprofitable.
-      private def generic(src: Array[Byte]): Buffer[Byte]^ =
+      private def generic(src: scala.Array[Byte]): Buffer[Byte]^ =
         val mask = (1 << bits) - 1
         val divisor = bits/bits.gcd(8)
         val multiple = 8/bits.gcd(8)
