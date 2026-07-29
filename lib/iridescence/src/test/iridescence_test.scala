@@ -183,6 +183,136 @@ object Tests extends Suite(m"Iridescence tests"):
         Srgb(0.2, 0.4, 0.6).mix(Srgb(0.8, 0.6, 0.4))
       . assert(_ == Srgb(0.5, 0.5, 0.5))
 
+    suite(m"Proportional mixing"):
+      import mixing.proportional
+
+      given Srgb is Checkable against Srgb = (left, right) =>
+        left.red === (right.red +/- 1e-9)
+        && left.green === (right.green +/- 1e-9)
+        && left.blue === (right.blue +/- 1e-9)
+
+      test(m"one part of a color is that color"):
+        (1*Srgb(0.2, 0.4, 0.6)).to[Srgb]
+      . assert(_ == Srgb(0.2, 0.4, 0.6))
+
+      test(m"five parts of a color is still that color"):
+        (5*Srgb(0.2, 0.4, 0.6)).to[Srgb]
+      . assert(_ == Srgb(0.2, 0.4, 0.6))
+
+      test(m"equal parts average the channels"):
+        (1*Srgb(0.2, 0.4, 0.6) + 1*Srgb(0.8, 0.6, 0.4)).to[Srgb]
+      . assert(_ === Srgb(0.5, 0.5, 0.5))
+
+      test(m"unequal parts weight the mix"):
+        (3*Srgb(0.0, 0.0, 0.0) + 1*Srgb(1.0, 1.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.25, 0.25, 0.25))
+
+      test(m"parts are proportions, not absolutes"):
+        (30*Srgb(0.0, 0.0, 0.0) + 10*Srgb(1.0, 1.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.25, 0.25, 0.25))
+
+      test(m"a third daub is weighted against the running total"):
+        (1*Srgb(1.0, 0, 0) + 1*Srgb(0, 1.0, 0) + 1*Srgb(0, 0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(1.0/3, 1.0/3, 1.0/3))
+
+      test(m"proportional mixing is commutative"):
+        (5*Srgb(0.2, 0.4, 0.6) + 3*Srgb(0.8, 0.6, 0.4)).to[Srgb]
+      . assert(_ === (3*Srgb(0.8, 0.6, 0.4) + 5*Srgb(0.2, 0.4, 0.6)).to[Srgb])
+
+      test(m"fractional parts mix"):
+        (0.5*Srgb(0.0, 0.0, 0.0) + 0.5*Srgb(1.0, 1.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.5, 0.5, 0.5))
+
+      test(m"a daub converts to another space"):
+        (1*Srgb(0.0, 0.0, 0.0) + 1*Srgb(1.0, 1.0, 1.0)).to[Cmy]
+      . assert(_ == Cmy(0.5, 0.5, 0.5))
+
+      test(m"CIELAB mixes on its own coordinates"):
+        (1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)).to[Cielab]
+      . assert(_ == Cielab(20, 10, 5))
+
+      // `WebColors` entries are typed `Color in Srgb` rather than `Srgb`, so these also pin the
+      // inference that normalizes both spellings to the same `Daub[Srgb]`.
+      test(m"five parts red and three parts yellow make an orange"):
+        (5*WebColors.Red + 3*WebColors.Yellow).to[Srgb]
+      . assert(_ === Srgb(1, 0.375, 0))
+
+      test(m"a mixture of named colors converts to another space"):
+        (5*WebColors.Red + 3*WebColors.Yellow).to[Hsl].hue.degrees
+      . assert(_ === 22.5 +/- 1e-9)
+
+      test(m"a named color and a literal color mix together"):
+        (5*WebColors.Red + 3*Srgb(1, 1, 0)).to[Srgb]
+      . assert(_ === Srgb(1, 0.375, 0))
+
+    suite(m"Mixing modes"):
+      given Srgb is Checkable against Srgb = (left, right) =>
+        left.red === (right.red +/- 1e-9)
+        && left.green === (right.green +/- 1e-9)
+        && left.blue === (right.blue +/- 1e-9)
+
+      test(m"multiply darkens toward the product of the channels"):
+        import mixing.multiply
+        (1*Srgb(1.0, 0.5, 0.5) + 1*Srgb(0.5, 0.5, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.75, 0.375, 0.5))
+
+      test(m"screen lightens toward white"):
+        import mixing.screen
+        (1*Srgb(0.5, 0.5, 0.5) + 1*Srgb(0.5, 0.5, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.625, 0.625, 0.625))
+
+      test(m"darken pulls each channel toward the lower of the two"):
+        import mixing.darken
+        (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.2, 0.6, 0.5))
+
+      test(m"lighten pulls each channel toward the higher of the two"):
+        import mixing.lighten
+        (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.4, 0.8, 0.5))
+
+      test(m"difference pulls each channel toward the gap between them"):
+        import mixing.difference
+        (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.3, 0.6, 0.25))
+
+      test(m"a mode acts in proportion to the added daub's share"):
+        import mixing.multiply
+        (3*Srgb(1.0, 1.0, 1.0) + 1*Srgb(0.0, 0.0, 0.0)).to[Srgb]
+      . assert(_ === Srgb(0.75, 0.75, 0.75))
+
+      test(m"a smaller share of the same daub moves the backdrop less"):
+        import mixing.multiply
+        (9*Srgb(1.0, 1.0, 1.0) + 1*Srgb(0.0, 0.0, 0.0)).to[Srgb]
+      . assert(_ === Srgb(0.9, 0.9, 0.9))
+
+      test(m"a mode other than proportional is not commutative"):
+        import mixing.difference
+        (3*Srgb(0.8, 0.8, 0.8) + 1*Srgb(0.2, 0.2, 0.2)).to[Srgb]
+      . assert(_ === Srgb(0.75, 0.75, 0.75))
+
+      test(m"the same two daubs in the other order give a different color"):
+        import mixing.difference
+        (1*Srgb(0.2, 0.2, 0.2) + 3*Srgb(0.8, 0.8, 0.8)).to[Srgb]
+      . assert(_ === Srgb(0.5, 0.5, 0.5))
+
+      test(m"yellow and cyan multiply to a green, as paint mixes"):
+        import mixing.multiply
+        (1*WebColors.Yellow + 1*WebColors.Cyan).to[Srgb]
+      . assert(_ === Srgb(0.5, 1, 0))
+
+      test(m"a daub of no parts takes no part in the mix"):
+        import mixing.multiply
+        (0*Srgb(1.0, 0.0, 0.0) + 1*Srgb(0.0, 0.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.0, 0.0, 1.0))
+
+      test(m"a channel mode is rejected in a space with unbounded coordinates"):
+        demilitarize:
+          import mixing.multiply
+          1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)
+        . map(_.message)
+      . assert(!_.nil)
+
     suite(m"Cielab manipulation"):
       test(m"delta to self is zero"):
         Cielab(50, 10, -20).delta(Cielab(50, 10, -20))

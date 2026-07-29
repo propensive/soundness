@@ -30,35 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package iridescence
 
-// `Channel` clashes with perihelion's WebSocket `Channel` in the umbrella; reach the pixel
-// channel machinery via `iridescence.Channel`.
-export
-  iridescence
-  . { Alpha, Blendable, Blue, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, Colorimetry, Cyan, dark,
-      Daub, Green, Grey, Hsl, Hsv, Key, light, Magenta, Mixing, Palette, Perceptual, Pixel, pixel,
-      PixelOpaque, Red, rgb, Rgb, Rgba, Rgb12, Rgb12Opaque, Rgb32, rgb32, Rgb32Opaque, Solarized,
-      Spectrum, Srgb, Theme, Tonal, WebColors, Xyz, Yellow }
+// Blending works coordinate by coordinate, so a space needs only to say how a pointwise operation
+// over its coordinates rebuilds a color. `Hsl` and `Hsv` have no instance: their hue is an angle on
+// a circle, and averaging two hues coordinatewise would take the long way round whenever the pair
+// straddles zero — mixing two reds would give cyan.
+object Blendable:
+  given srgb: Srgb is Blendable = (left, right, operation) =>
+    Srgb
+      ( operation(left.red, right.red),
+        operation(left.green, right.green),
+        operation(left.blue, right.blue) )
 
-package colorimetry:
-  export
-    iridescence.colorimetry
-    . { adobeRgb, coolFluorescent, coolWhiteFluorescent, d50Simulator, d65Simulator, daylight,
-        daylightFluorescentF1, daylightFluorescentF5, daylightFluorescentF7, equalEnergy,
-        iccProfilePcs, incandescentTungsten, liteWhiteFluorescent, midMorningDaylight,
-        northSkyDaylight, oldDaylight, oldDirectSunlightAtNoon, philipsTl83, philipsTl84,
-        philipsTl85, srgb, sylvaniaF40, ultralume30, ultralume40, ultralume50, warmWhiteFluorescent,
-        whiteFluorescent }
+  given cmy: Cmy is Blendable = (left, right, operation) =>
+    Cmy
+      ( operation(left.cyan, right.cyan),
+        operation(left.magenta, right.magenta),
+        operation(left.yellow, right.yellow) )
 
-package luminosity:
-  export iridescence.luminosity.{darkBrightness, lightBrightness}
+  given cmyk: Cmyk is Blendable = (left, right, operation) =>
+    Cmyk
+      ( operation(left.cyan, right.cyan),
+        operation(left.magenta, right.magenta),
+        operation(left.yellow, right.yellow),
+        operation(left.key, right.key) )
 
-package mixing:
-  export
-    iridescence.mixing
-    . { colorBurn, colorDodge, darken, difference, exclusion, hardLight, lighten, linearBurn,
-        linearDodge, multiply, overlay, proportional, screen, softLight }
+  given cielab: Cielab is Blendable = (left, right, operation) =>
+    Cielab
+      ( operation(left.lightness, right.lightness),
+        operation(left.blueYellow, right.blueYellow),
+        operation(left.greenRed, right.greenRed) )
 
-package themes:
-  export iridescence.themes.solarizedTheme
+  given xyz: Xyz is Blendable = (left, right, operation) =>
+    Xyz(operation(left.x, right.x), operation(left.y, right.y), operation(left.z, right.z))
+
+trait Blendable:
+  type Self <: Color
+
+  def zip(left: Self, right: Self, operation: (Double, Double) => Double): Self
