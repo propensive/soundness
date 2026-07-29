@@ -77,5 +77,40 @@ given Hyphenation = englishHyphenation.extending(patterns = Seq(t"klm9nop"))
 t"klmnop".hyphenate(hyphen = '-')   // t"klm-nop"
 ```
 
+Patterns are merged by taking the higher score at each position, so an added pattern with an odd
+score reinstates a break that a standard even-scored pattern had forbidden — which is how one word
+is corrected without disturbing the rest of the language.
+
+Some words no pattern gets right. An *exception* states a word's breaks outright, and takes
+precedence over the algorithm:
+
+```scala
+given Hyphenation = englishHyphenation.extending(exceptions = Seq(t"hy-phenation"))
+```
+
+The standard English set already carries the exception list TeX ships, so `associate` breaks as
+`as-so-ciate` and `table` as `ta-ble`, where the patterns alone would not.
+
 A whole language is supplied the same way: `Hyphenation.fromTex` reads any TeX hyphenation
 pattern file, so the languages published for TeX are available by loading their patterns.
+
+### Text that is not one word
+
+Hyphenation applies to letters, and text is rarely only letters. Each run of letters is
+hyphenated independently, and everything else — spaces, punctuation, digits — passes through
+untouched:
+
+```scala
+t"hello, world!".hyphenate(hyphen = '-')      // unchanged: both words are too short
+t"the algorithm runs".hyphenate(hyphen = '-') // t"the al-go-rithm runs"
+```
+
+`syllables` follows the same rule, yielding the non-letter runs as segments of their own, so
+reassembling the segments reproduces the original text exactly.
+
+### When no patterns are available
+
+A language for which no pattern set has been loaded hyphenates nothing rather than guessing:
+`hyphenate` returns the text unchanged, and `breakPoints` is empty. A line-wrapping algorithm
+therefore degrades to breaking at spaces, which is the correct behaviour, rather than inventing
+breaks in a language whose rules it does not know.

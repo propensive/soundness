@@ -11,7 +11,7 @@ Prose is learnable by analogy, and so is a well-designed API. A reader who has s
 `text.read[Json]` should correctly guess that `text.read[Markdown]` parses Markdown,
 that `bytes.read[Audio in Wave]` reads a WAV file, and that `stream.read[Csv]` would
 read CSV — one verb, meaning the same thing across every format. The same analogy runs
-through the whole vocabulary: whatever can be decoded is `text.decode[T]`, whatever can
+through the whole vocabulary: whatever can be decoded is `text.as[T]`, whatever can
 be shown is `value.show`, whatever streams is `source.stream[Data]`, every checked
 literal is an interpolator (`url"…"`, `p"…"`, `json"…"`, `v"…"`), and every serialized
 form round-trips through the same pair of operations. Learning one corner of Soundness

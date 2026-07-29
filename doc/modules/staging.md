@@ -70,3 +70,25 @@ What crosses the boundary must be serializable, and the transport is a `Stageabl
 instances carry values as [Pojo](generic-data.md) trees or as JSON. A captured value with no
 transportable form is rejected when the block compiles — the boundary is in the types, not
 discovered at a distance.
+
+### What is cached, and when it is not
+
+Compiling a block is expensive, so the result is cached — but the cache key matters. It is the
+*fingerprint of the staged tree* together with the call site, not the call site alone.
+
+That distinction is load-bearing. One call site inside an inline method may expand to a different
+tree at each use, and keying on the call site alone would silently re-run the first expansion for
+every subsequent one. Keying on the tree means several distinct expansions from one site each
+compile once, while calls that differ only in the data they transport share a single compilation —
+which is the behaviour that makes dispatching from a generic or inline context safe.
+
+A spliced value is evaluated once per dispatch, not once per occurrence: `${job.name}` used twice
+in a block refers to the same marshalled value rather than evaluating `job.name` twice.
+
+### Errors across the boundary
+
+Code running elsewhere can fail, and the failure has to come back. An error raised in the staged
+block is carried across and re-raised at the call site, so `dispatch` reports the failure of the
+remote computation rather than reporting that the remote computation could not be reached. A
+failure of the rig itself — a subprocess that would not start, a classloader that could not be
+built — is distinct, since the two call for different responses.

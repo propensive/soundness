@@ -81,3 +81,37 @@ import strategies.throwUnsafely
 changes.serialize            // a Stream[Text] in unix diff format
 diffStream.read[Diff[Text]]  // parsed back to a value
 ```
+
+### Redrafts
+
+The unix format is precise and unforgiving: a patch must state its context exactly, with the right
+line numbers, or it does not apply. That is right for a version-control system and wrong for a
+person — or a language model — proposing an edit in prose.
+
+A *redraft* is the forgiving form. It states only the lines to remove and the lines to add, with
+unchanged lines omitted entirely, and finds where they belong:
+
+```scala
+Redraft.parse(LazyList(t"- line2", t"+ new line 2a")).patch(source)
+// the second line replaced
+
+Redraft.parse(LazyList(t"+ line0")).patch(source)
+// inserted before the first line
+```
+
+Where a redraft is ambiguous — the lines it names appear more than once — that is reported rather
+than resolved by guessing, so an edit is never applied in the wrong place.
+
+### Evolution
+
+A diff compares two versions. An *evolution* tracks an element through many, so that a value
+present in the first version and the last can be recognised as the same value even where it
+disappeared and returned in between:
+
+```scala
+val evolution = evolve(versions)
+evolution(Ter)   // the third version, reconstructed
+```
+
+Each version is addressed by ordinal, and reconstructing one gives back exactly what it was — the
+structure a document history, an undo stack, or a series of drafts wants.

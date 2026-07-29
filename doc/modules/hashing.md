@@ -45,6 +45,11 @@ t"Hello world".digest[Sha2[256]].serialize[Hex]
 The provider in scope supplies the algorithms — `javaStdlibProvider` for the SHA and MD5 family and
 CRC-32, and `soundnessProvider` for the pure-Scala BLAKE3.
 
+`javaStdlibProvider` names the JDK's `MessageDigest` where there is one. Off the JVM there is
+not, so the same import selects pure-Scala implementations of MD5, SHA-1, SHA-2 and CRC-32,
+validated byte for byte against the JDK's. Code that hashes therefore reads the same, and
+produces the same digests, on the JVM, in a browser and inside a WebAssembly component.
+
 ### Hashing your own types
 
 Any value that can be reduced to bytes is digestible, and a case class derives that automatically
@@ -57,6 +62,31 @@ Person(t"Alice", 30).digest[Sha2[256]]
 ```
 
 A digest is itself digestible, so a hash can be combined into a larger structure and hashed again.
+
+### Hashing a stream
+
+Data too large to hold is hashed as it passes. The digest accumulates over successive windows,
+carrying partial blocks across the boundaries between them, so the result is identical whatever
+sizes the chunks happen to arrive in — including chunks of one byte, and windows that begin part
+way into a buffer:
+
+```scala
+file.stream.digest[Sha2[256]].serialize[Hex]
+```
+
+This is what makes a digest computable over a [stream](streams.md) with bounded memory, and it is
+why hashing composes with [compression](compression.md) and [encryption](cryptography.md) in one
+pipeline rather than requiring the data to be materialized between them.
+
+### BLAKE3
+
+`Blake3` is the pure-Scala implementation, and it offers the algorithm's three modes: an ordinary
+hash, a *keyed* hash for message authentication, and key *derivation* from a context string. All
+three are checked against the official test vectors, at every input length the vectors cover, so
+the implementation is verified rather than merely tested for self-consistency.
+
+Its output is extendable: a BLAKE3 digest may be taken at any length, not only at 256 bits, which
+is what makes it usable as a key-derivation function as well as a hash.
 
 ### Rendering a digest
 

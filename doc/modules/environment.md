@@ -81,4 +81,35 @@ variables(EDITOR = t"vim"):
 
 Substituting an entirely different environment — `environments.emptyEnvironment`, or one built
 for a test — replaces every lookup within its scope, so code that reads the environment can be
-exercised without depending on the machine it runs on.
+exercised without depending on the machine it runs on. `systems.emptySystem` does the same for
+system properties, so a test need not depend on the JVM it happens to run under either.
+
+### Standard directories
+
+The [XDG base directory specification](https://specifications.freedesktop.org/basedir-spec/latest/)
+says where a program's data, configuration, cache and state belong, honouring the user's
+environment where it is set and falling back to the specification's defaults where it is not.
+`Xdg` gives each of them, and the search paths for data and configuration:
+
+```scala
+Xdg.configHome[Path on Linux]   // ~/.config, or $XDG_CONFIG_HOME
+Xdg.cacheHome[Path on Linux]
+Xdg.dataDirs[Path on Linux]     // the search path, in order
+```
+
+Using these rather than a hard-coded `~/.myapp` is what makes a program's files land where the
+user's backup, sync and cleanup tools expect them.
+
+A temporary directory comes from `temporaryDirectory`, and the directory the program was launched
+in from `workingDirectory`, each resolved to the path type asked for.
+
+### The machine
+
+`Architecture` names the processor a program is running on, parsed from the platform's own
+reporting into a typed value — `X86(64)`, `Arm(64)`, `Ppc(64, littleEndian = true)` and the rest —
+so code that must choose a native library or a code path by architecture matches on a value
+rather than on a string whose spelling varies by platform.
+
+`termcaps.environmentTermcap` reports what the terminal can do, deciding colour depth from
+`COLORTERM` where it is set and from `tput` otherwise, which is how styled output degrades
+correctly on a terminal that cannot show it.

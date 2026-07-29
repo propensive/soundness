@@ -68,3 +68,30 @@ box.assign(shelf)        // does not compile: no Box -< Shelf relation
 
 The last line is the point: the schema is not documentation but a type, and an operation outside it
 never runs because it never compiles.
+
+`ref` finds the reference for a value already stored, raising a `DataError` where it is not —
+which is how a value arriving from elsewhere is matched to what the database already holds,
+rather than stored a second time.
+
+### Interning
+
+`store` *interns*: storing an equal value twice yields the same reference, so identity in the
+database is by value rather than by allocation. That is what makes a reference safe to compare, to
+use as a key, and to hold in place of the value it names.
+
+A reference is an opaque handle rather than a pointer or an index into a table the caller can see,
+so a reference from one database cannot be dereferenced against another — the type says which
+database it belongs to, and there is no way to construct one that lies.
+
+### Querying
+
+`lookup` follows one relation. Where a query must select rather than traverse, a `Listable`
+instance lists the references whose values satisfy a predicate:
+
+```scala
+summon[Box is Listable].list(_.name.starts(t"a"))
+```
+
+Because the predicate is an ordinary function over the stored type, a query is written in Scala
+rather than in a query language embedded in strings — and is therefore checked by the compiler
+like the rest of the program.

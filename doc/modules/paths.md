@@ -87,12 +87,12 @@ a.conjunction(b)   // % / "home" / "work"
 
 ### Text and paths
 
-A path renders to text with `encode`, and text parses to a path with `decode`, naming the platform
+A path renders to text with `encode`, and text parses to a path with `as`, naming the platform
 whose rules should apply. A path that breaks those rules fails to decode:
 
 ```scala
 (Drive('D') / "Foo").encode          // t"D:\\Foo"
-t"/home/work".decode[Path on Linux]  // % / "home" / "work"
+t"/home/work".as[Path on Linux]  // % / "home" / "work"
 ```
 
 ### Deconstructing
@@ -105,3 +105,32 @@ path match
   case root /: t"home" /: rest => rest
   case _                       => path.relative
 ```
+
+The root is matched too, which matters where a platform has more than one — a Windows drive
+letter, a UNC share — since the root is part of what a path *is* rather than a prefix of its text.
+
+### Paths in the type
+
+A path's element names may be carried in its type, so that a path known at compiletime is known
+precisely:
+
+```scala
+val path: Path of ("bar", "foo") = % / "foo" / "bar"
+```
+
+The names appear innermost-first, matching how the path is constructed. A path built entirely from
+literals therefore has a type describing exactly where it points, which is what lets a
+[classpath](classpath.md) resource or a project-relative file be checked as the code compiles.
+
+Where the elements are not known — a path built from runtime text, or one read from a
+[filesystem](filesystem.md) listing — the type simply says `Path on Linux`, and the operations are
+the same.
+
+### What a relative path knows
+
+A relative path carries its platform too, so a `Relative on Linux` cannot be applied to a Windows
+path. It also carries how far up it reaches, in its `Relation`, so a relative path that ascends
+above a root can be rejected where it is written rather than resolving to nowhere at runtime.
+
+`^` ascends one level and `?` marks the current location, so `? / ^ / "more"` reads as "up one,
+then into `more`" — the form `toward` produces.

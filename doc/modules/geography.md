@@ -55,6 +55,15 @@ Compass[8](Angle.degrees(315))   // Northwest
 The winds are ordinary enumerations — `CardinalWind`, `IntercardinalWind`, `HalfWind` — so a bearing
 can be matched, stored and shown like any other value.
 
+The number of points is a type argument rather than a runtime parameter, so the *type* of a
+resolved bearing says which rose it came from: a `CardinalWind` cannot be passed where a
+sixteen-point `HalfWind` is expected, and a match on a four-point bearing is exhaustive over four
+cases rather than sixteen.
+
+A rose with a different number of points is added by implementing `Directional`, which is a single
+method from an angle to a value, so a domain with its own sectors — a wind-rose with twelve points,
+a radar with sixty — uses the same `Compass` machinery.
+
 ### Locations
 
 A `Location` pairs a latitude and longitude, constructed from angles, and answers geographic
@@ -73,7 +82,19 @@ here.geohash(6)                   // a six-character geohash
 
 The surface distance is itself an `Angle` — the fraction of the great circle between the points —
 which multiplies by a planet's radius to give a length, keeping the geometry separate from the
-choice of sphere.
+choice of sphere. A calculation on Earth and the same calculation on Mars differ only in the
+radius they are multiplied by.
+
+A `Location` is stored as a packed pair of fixed-point angles rather than two boxed doubles, so a
+collection of positions costs one machine word each. A type that has a position — a city, a
+station, a photograph — supplies a `Locatable` instance and is then accepted wherever a location
+is, so the geographic operations apply to domain values directly rather than requiring their
+coordinates to be extracted first.
+
+Geohashes are the usual base-32 encoding, and share the property that matters: two locations close
+together usually share a prefix, so a prefix query is a coarse proximity search. "Usually" is the
+honest word — the encoding's cell boundaries mean two points either side of one share nothing —
+which is why a geohash prefix is a first filter rather than an answer.
 
 ### Geo URIs
 
@@ -84,5 +105,5 @@ typed error naming the fault when the URI is malformed — and encodes back:
 ```scala
 import strategies.throwUnsafely
 
-t"geo:51.5,0.1".decode[Geolocation].location
+t"geo:51.5,0.1".as[Geolocation].location
 ```

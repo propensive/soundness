@@ -71,6 +71,48 @@ Person(t"Ada", 36).present   // t"Person(name=Ada, age=36)"
 
 Nested structures derive recursively: a case class of case classes needs nothing more.
 
+### What a derivation can see
+
+Inside `conjunction`, each field carries more than its value. `label` is the field's name as
+written, `index` its position, `typeName` the enclosing type's name, and `contextual` the instance
+of the typeclass being derived for that field's type. A derivation can therefore produce something
+that mentions the structure, not only something that folds over it:
+
+```scala
+Labels.derived[Person].labels    // List(t"name", t"age", t"male")
+Labels.derived[Empty].labels     // Nil
+```
+
+An empty product is a product with no fields, and a single-field product is not special-cased —
+both derive from the same rule, which is where hand-written instances usually go wrong.
+
+Inside `disjunction`, `variant` narrows the value to its actual case, so the body is typed at that
+case rather than at the sum, and the case's own label is available for a discriminator.
+
+### Deriving beyond codecs
+
+Nothing about the engine is specific to encoding. Any typeclass whose instances compose
+structurally derives the same way — including the arithmetic ones, which combine two values of a
+product field by field:
+
+```scala
+import arithmetic.addable
+
+Pair(t"foo", 10) + Pair(t"bar", 15)   // Pair(t"foobar", 25)
+```
+
+Addition on `Pair` is addition on each field, so `Text` concatenates while `Int` sums, with no
+instance written for `Pair` at all. `Subtractable`, `Multiplicable` and their siblings follow the
+same rule.
+
+### When derivation fails
+
+A typeclass may sensibly derive for products but not for coproducts, or the reverse. Extending
+`ProductDerivation` rather than `Derivation` says so, and applying it to a sum type is then a
+compile error naming the mismatch rather than a runtime surprise. A type with no `Mirror` at all —
+an ordinary trait, a class that is not a case class — likewise fails at the point of derivation,
+where the message can say what is missing.
+
 ### Per-field instances
 
 Occasionally one field of one type needs a different instance from the default — a special codec

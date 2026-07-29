@@ -3,15 +3,19 @@
 ### About
 
 Data that arrives or departs over time — a file too large to hold in memory, a network
-connection, the output of a process — is handled as a stream. A `Stream` is a lazy sequence,
-usually of bytes or of text, and one set of polymorphic operations moves data between sources
-and sinks: `read` pulls a source in as a chosen type, `writeTo` sends a value to a
-destination, and `stream` exposes a value as a stream of pieces.
+connection, the output of a process — is handled as a stream. One set of polymorphic operations
+moves data between sources and sinks: `read` pulls a source in as a chosen type, `writeTo` sends
+a value to a destination, and `stream` exposes a value as a stream of pieces.
 
 What can be read, and what can be written, is decided by typeclasses. A type that describes how
 it becomes a stream can be read; a type that describes how it consumes one can be written to; so
 a new source or sink joins the same `read` and `writeTo` as everything else, with no bespoke
 plumbing.
+
+Underneath those operations is a streaming *kernel* whose central type is a `Stream`: not a lazy
+sequence of chunks, but a pull endpoint over a buffer whose readable window is handed to exactly
+one consumer, without copying. Backpressure is intrinsic to it, and the compiler enforces the
+single ownership its zero-copy window depends on.
 
 ### On streaming
 
@@ -20,12 +24,28 @@ are read and written by side effect, one imperative call at a time, with the rea
 for buffering, decoding, and closing. Nothing in a method's type says whether it streams, what
 element it streams, or how the bytes become text.
 
-A stream here is an immutable lazy list, so it is a value like any other: it can be mapped,
-filtered and combined, and it is consumed only as far as it is needed, which is what keeps a
-large source from being pulled wholly into memory. Reading and writing are polymorphic over the
-element type and the participating types, so the same `read` yields text, bytes, or a stream of
-either, according to the type asked for. Everything comes from the `soundness` package, with a
-character encoding and decoding in scope for the text/byte boundary:
+The obvious functional answer — a lazy list of chunks — fixes the typing and loses the
+performance: every chunk is an allocation, every stage copies, and the memoization that makes a
+lazy list replayable is exactly what keeps a large source alive in memory when nothing wanted it
+kept.
+
+Soundness takes a third route. A `Stream` is a *pull endpoint*: a consumer calls `refill` with
+the amount it is prepared to take, and gets back a window into a buffer, which it reads and then
+skips past. Nothing is copied and nothing is retained. A consumer that does not pull demands
+nothing, so backpressure is not a mechanism bolted on but the absence of a call. Stages compose
+as nested calls on the consumer's thread, with no queues and no synchronization, until a stage
+explicitly crosses a thread boundary.
+
+That design has one requirement: a window belongs to one consumer, and a stream must not be read
+twice or shared. This is checked, not merely documented. Streams are exclusive capabilities, and
+the streaming modules compile with [capture and separation checking](../philosophy/capture-checking.md)
+enabled, so aliasing a stream, or letting one escape the scope that owns its source, is a
+compile error. Where replay really is wanted, `memoize` drains the stream once into an immutable
+value which may then be shared freely — the explicit, bounded replacement for a lazy list's
+implicit caching.
+
+Everything comes from the `soundness` package, with a character encoding and decoding in scope
+for the text/byte boundary:
 
 ```scala
 import soundness.*
@@ -43,7 +63,6 @@ val source = t"The quick brown fox"
 
 source.read[Text]            // t"The quick brown fox"
 source.read[Data]            // the UTF-8 bytes
-source.read[Stream[Text]]    // the text in chunks
 ```
 
 The same `read` works on any source with a `Readable` instance — a file, a network socket, a
@@ -72,6 +91,65 @@ given Record is Streamable by Text = record => Stream(record.fields.join(t","))
 With that instance in scope a `Record` can be `read`, `writeTo` a destination, or `stream`ed,
 without any further definitions.
 
+### Streaming a value
+
+`stream` turns a value into a pull endpoint, and `source` does the same through a `Streamable`
+instance, naming the element type:
+
+```scala
+val bytes = t"The quick brown fox".in[Data].stream   // Stream[Data]
+val text = document.source[Text]                     // Stream[Text]
+```
+
+### Composing a pipeline
+
+A stage transforms a stream into a differently-typed stream. `via` attaches one on the pull
+side, and the whole chain runs on the consumer's thread as nested refills — no threads, no
+queues, no intermediate collections:
+
+```scala
+file.stream.via(decompressor).via(decoder)
+```
+
+The stage may be a `Duct` — the kernel's transformation type — or any descriptor value with a
+`Ductile` instance, which is how compression formats, cipher modes and character codings all
+present themselves as stages.
+
+A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
+
+```scala
+stream.memoize                          // drain into one immutable value
+stream.sweep((storage, start, n) => …)  // drain, seeing each raw window
+```
+
+`sweep` — and `fold`, its accumulating counterpart — expose the raw window rather than boxed
+elements, so a byte-level reduction runs over the array with no per-element cost. `take` and
+`drop` bound a stream without draining it, releasing the remainder of the upstream unread. These
+three are reached through `import zephyrine.{take, drop, fold}`.
+
+Where a pipeline ends in a *push* chain rather than a value, `pump` is the single point at which
+data crosses from the pull side to the push side:
+
+```scala
+stream.pump(intake)
+```
+
+### Records
+
+Between raw windows and materialized collections sits record-granularity streaming: rows,
+events, frames, messages. A `Records[record]` is a stream whose windows are chunks of records,
+so credit counts records rather than bytes. `delineate` splits a character source into lines,
+and `records` iterates the parsed records of such a stream:
+
+```scala
+import lineSeparation.adaptiveLinefeedLineSeparation
+
+t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to(List)   // List(1, 2, 3)
+```
+
+Records are immutable values, so — unlike windows — they cross stage and thread boundaries by
+reference.
+
 ### Standard streams
 
 Standard output and error are reached through `Out` and `Err`, which print through the `Stdio`
@@ -86,45 +164,46 @@ Err.println(t"a warning")
 ### Producing a stream over time
 
 Where the elements of a stream are produced by one part of a program and consumed by another, a
-`Spool` bridges the two: values are `put` into it as they arise, and its `stream` yields them in
-order until it is stopped:
+`Relay` bridges the two: any number of producers `put` records into it as they arise, one of
+them eventually calls `stop`, and a single reader owns the resulting stream:
 
 ```scala
-val spool = Spool[Text]()
-spool.put(t"first")
-spool.put(t"second")
-spool.stop()
-spool.stream   // Stream(t"first", t"second")
+val relay = Relay[Text]()
+relay.put(t"first")
+relay.put(t"second")
+relay.stop()
+relay.stream
 ```
 
-### Combining streams
+A relay's refill blocks for the first record and then drains whatever else has already arrived
+into the same window, so records batch across the thread boundary instead of paying a hand-off
+each. For byte and character traffic between two threads, a `Conduit` is the strictly
+single-producer, single-consumer, block-structured counterpart: data crosses in blocks through a
+bounded queue, so a writer that outpaces its reader parks — cross-thread backpressure — and the
+free capacity is exactly the credit the reader reports as demand.
 
-Several streams merge into one, interleaving their elements as they arrive, with `multiplex`.
-Because the merge draws from all sources concurrently, it runs inside a supervised scope:
+### Combining and replicating streams
+
+`Confluence` merges several streams into one, in arrival order, running one pump per input; a
+slow consumer backpressures every input, and the merged stream ends when all of them have. Both
+draw on concurrency, so they run inside a supervised scope:
 
 ```scala
 import threading.platformThreading
 
-val evens = Stream(2, 4, 6)
-val odds = Stream(1, 3, 5)
-supervise(evens.multiplex(odds).to(Set))   // Set(1, 2, 3, 4, 5, 6)
+supervise(Confluence(first, second, third))
 ```
+
+`Divergence` is the opposite: one source is delivered to several subscribers, each chunk
+materialized once and shared immutably between them. A full subscriber queue parks the pump, so
+the slowest subscriber gates the source — the correct behaviour for replication.
 
 ### Compression
 
-A byte stream compresses and decompresses with a named scheme — [Gzip](https://en.wikipedia.org/wiki/Gzip),
-`Zlib` or `Deflate` — and a single block of bytes has eager `gzip` and `gunzip`:
+A byte stream compresses and decompresses with a named scheme, as a stage in a pipeline or over
+a whole value; see [compression](compression.md) for the formats available:
 
 ```scala
-Stream(Data(1, 2, 3, 5, 8)).compress[Gzip].decompress[Gzip]   // the original bytes
-```
-
-### Framing
-
-A stream of bytes carrying length-prefixed frames — a common shape in network protocols —
-splits into its frames with `framed`, naming the width of the length prefix. A truncated frame
-raises a `StreamError`:
-
-```scala
-Stream(Data(0, 0, 0, 3, 10, 20, 30)).framed[U32]()   // Stream(Data(10, 20, 30))
+Data(1, 2, 3, 5, 8).compress[Gzip].decompress[Gzip]   // the original bytes
+file.stream.decompress[Gzip].read[Text]
 ```

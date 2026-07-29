@@ -5,10 +5,15 @@ ambience: envvar system-properties configuration xdg directories environment
 anamnesis: database entity persistence storage data-access
 anthology: scala-compiler compilation programmatic-compiler diagnostics
 anticipation: integration typeclass-bridges abstract-typeclasses cross-module
+aperture: open create scoped-resource handle capability grant mode
+apoplexy: openapi swagger api-specification rest schema
+archimedes: mathml equations mathematical-notation rendering
 austronesian: pojo java-interop serialization classloader-isolation
 aviation: time date calendar timezone iso8601 rfc1123 holidays leap-seconds tzdb
 baroque: complex-numbers math imaginary algebra
+beneficence: build-plugin publishing artifacts distribution
 bitumen: tar archive pax tarball unix-permissions
+breviloquence: cbor binary-json concise-binary serialization
 burdock: bootstrap installer self-installer
 cacophony: audio sound aiff wav playback recording stereo waveform
 caduceus: email smtp mime sender attachment envelope
@@ -17,7 +22,6 @@ camouflage: cache lru-cache memoization
 capricious: random rng probability gaussian gamma distribution sampling seed
 cardinality: refinement-types numeric-range bounded-numbers ranges
 cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
-cellulose: codl config configuration-language declarative
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition
 coaxial: socket tcp udp networking domain-socket bindable connection
@@ -25,6 +29,7 @@ contextual: string-interpolation interpolator typesafe-interpolation custom-inte
 contingency: error-handling exceptions tactics recovery validation effects
 cosmopolite: i18n internationalization locale language polyglot l10n
 decorum: compiler-plugin code-style linting static-analysis
+delicious: semantic-diagnostics compiler-errors explanations diagnostics
 dendrology: tree-diagram dag-diagram ascii-tree visualization tree-rendering
 denominative: ordinal indexing zero-based one-based interval
 digression: stacktrace codepoint fqcn introspection debugging
@@ -39,6 +44,7 @@ ethereal: daemon ipc background-process service-installer client-server
 eucalyptus: logging logs realm logger structured-logging
 exegesis: lsp language-server-protocol ide-integration
 exoskeleton: cli command-line application-framework entrypoint shell-completion
+facsimile: pdf cos document page-tree text-extraction annotations bookmarks
 frontier: implicits given-search compile-time-reflection enumeration
 fulminate: error-messages diagnostics fail-fast structured-messages internationalization-messages
 galilei: filesystem io files directories symlinks volumes posix
@@ -48,6 +54,7 @@ gesticulate: mime media-types multipart content-type assets
 gigantism: macros metaprogramming compile-time scala-compiler-internals
 gnossienne: reference foreign-key entity-reference resolvable
 gossamer: text strings text-utilities decimal-formatting bidi unicode joining
+graffiti: templates text-templates interpolation html-templates
 guillotine: shell process subprocess command-execution posix sh
 hallucination: image png jpeg gif bmp raster image-io
 harlequin: syntax-highlighting source-code tokenization scala-parser
@@ -59,13 +66,13 @@ hypotenuse: numeric overflow division integer-arithmetic ordered
 imperial: directory-layout home-directory base-directory filesystem-layout xdg
 inimitable: uuid identifier guid
 iridescence: color color-spaces rgb cielab hsl srgb palette theme colorimetry
-jacinta: json parser serialization json-pointer ndjson dynamic-access
+jacinta: json parser serialization json-pointer json-schema schema-validation dynamic-access
 kaleidoscope: regex glob pattern-matching scanner regular-expressions
 larceny: compiler-plugin compile-error testing compile-time-testing
 legerdemain: forms widgets html-forms input fields
+locomotion: protobuf protocol-buffers wire-format binary-serialization
 mandible: bytecode jvm classfile class-file
 mercator: functor monad applicative typeclass functional-programming
-merino: json parser fast-parser json-ast
 metamorphose: permutations combinatorics factoradic lehmer
 monotonous: base64 base32 hex binary-encoding base-encoding serialization
 mosquito: matrix linear-algebra math vector
@@ -78,14 +85,19 @@ parasite: async threading concurrency tasks promise daemon supervision
 perihelion: websocket frame ws-protocol
 phoenicia: fonts typography ttf truetype font-metrics opentype
 plutocrat: currency money price finance luhn isin fixed-point
+pneumatic: compression deflate gzip zlib brotli xz lzma2 lzw
 polaris: binary-serialization buffer pack unpack byte-buffer
+polysyllabic: hyphenation liang-algorithm line-breaking typesetting
 polyvinyl: structural-types records anonymous-records type-providers
 prepositional: typeclass type-infrastructure refinement-types abstract-types
+prescience: staging macro-typeclass code-generation expansion-time
 probably: testing test-runner property-testing benchmark assertions
 profanity: terminal tui keyboard line-editor interactive console
+prophesy: completions dynamic-types tab-completion ide-suggestions
 proscenium: re-exports stdlib utilities boilerplate-reduction
 punctuation: markdown commonmark prose text-formatting
 quantitative: units quantities dimensional-analysis si-units measurements physics
+querencia: dom browser typed-dom web-ui client-side
 revolution: jar-manifest semver versioning
 rudiments: utilities core-library bijection loops indexable
 savagery: svg vector-graphics 2d-graphics path shapes
@@ -94,24 +106,27 @@ sedentary: benchmarking performance-testing micro-benchmark
 serpentine: path filesystem-paths posix windows linux relative-path absolute-path
 spectacular: show pretty-printing display inspect
 stenography: typename qualified-names imports symbol-rendering scala-types
+stratiform: tel configuration-language records schema binary-tel
 superlunary: staging remote-execution multi-stage-programming distributed-computing
 surveillance: file-watcher filesystem file-events directory-monitoring nio
 symbolism: operators arithmetic typeclass operator-overloading algebra
 synesthesia: mcp model-context-protocol llm ai-protocol
 tarantula: webdriver browser-automation chrome firefox selenium
 telekinesis: http http-client cookies authentication rest-client web-requests
-turbulence: streams io stdio gzip compression streaming reactive
+turbulence: streams io stdio streaming reactive line-separation
 typonym: type-level type-list type-map heterogeneous reflection
+ultimatum: inline-arrays resizing collections tuples
 ulysses: bloom-filter probabilistic-data-structures palimpsest
 umbrageous: compiler-plugin shading namespace-isolation
 urticose: hostname email-address ip-address mac-address port network-identifiers endpoint
 vacuous: optional null-safety option maybe nullable
 vexillology: bit-flags flags enumeration bitfield
 vicarious: catalog proxy type-indexed records
-villainy: json-schema schema-validation jsonschema
 wisteria: derivation product-types sum-types case-class typeclass-derivation magnolia
+xenophile: ffi foreign-interop wit webidl typescript kotlin wasm native
 xylophone: xml xml-schema typesafe-xml dynamic-xml
 yossarian: pty terminal-emulator ansi-escape screen-buffer vt100 cursor
+ypsiloid: yaml parser serialization yaml-ast anchors
 zephyrine: parser parsing cursor emitter sparse-format
 zeppelin: zip archive zip-file compression
 ziggurat: installer bootstrap deployment payload

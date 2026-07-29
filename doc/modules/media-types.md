@@ -48,7 +48,7 @@ media"application/jsom"   // does not compile: did you mean application/json?
 A parsed `MediaType` exposes its parts, and parameters are added as named arguments:
 
 ```scala
-val mediaType = t"application/json; charset=UTF-8".decode[MediaType]
+val mediaType = t"application/json; charset=UTF-8".as[MediaType]
 
 mediaType.group      // Media.Group.Application
 mediaType.basic      // t"application/json" — without parameters

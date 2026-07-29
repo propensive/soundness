@@ -73,6 +73,41 @@ List(t"one", t"two").inspect      // t"""[t"one", t"two"]"""
 the distinction the two audiences call for. A custom `Inspectable` is written just as a
 `Showable` is, where the structural default is not wanted.
 
+The source form is a real source form: control characters and quotes are escaped as Scala would
+escape them, so an inspected value could be pasted back into code, and a text containing a newline
+is distinguishable from one containing the two characters `\` and `n`:
+
+```scala
+t"Hello\nworld".inspect     // t"t\"Hello\\nworld\""
+t"Hello \"world\"".inspect  // the quotes escaped
+```
+
+Collections render in forms chosen so that the *kind* of collection is visible without naming it,
+and so that nesting is unambiguous — a map with arrows, a list in brackets, an optional value in
+its own brackets or as a circle when unset:
+
+```scala
+Map(1 -> 2, 3 -> 4).inspect     // t"{1 → 2, 3 → 4}"
+Map[Int, Int]().inspect         // t"{}"
+Set(1).inspect                  // a set, not an optional
+```
+
+Enumerations and sealed hierarchies derive too, and a case object renders as its bare name rather
+than with empty parentheses, since it has no fields to show:
+
+```scala
+(Dog(t"Rex"): Animal).inspect   // t"""Dog(name:t"Rex")"""
+(Cat: Animal).inspect           // t"Cat"
+```
+
+### The fallback chain
+
+`Inspectable` is total, but it is not indiscriminate. Asked to inspect a value, it tries in turn:
+the type's own `Inspectable` instance, then its `Showable`, then a structural rendering derived
+from its shape, and only then a last-resort rendering. A type that has said how it should look is
+therefore shown that way in debugging output too, and a type that has said nothing still produces
+something useful rather than a hash code.
+
 ### Booleans
 
 A boolean has no single obvious rendering — "yes" and "no", "on" and "off", "true" and

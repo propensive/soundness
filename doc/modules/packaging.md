@@ -75,3 +75,20 @@ scalac -Xplugin:umbrageous.jar -P:umbrageous:com.example:shaded *.scala
 
 Every package matching `com.example` compiles as `shaded.com.example`, and references follow, so
 two versions of the same library coexist in one classpath without touching each other.
+
+### Android applications
+
+An Android application is a further target of the same [linking](compiler.md) scheme rather than
+a separate toolchain. Classfiles link to Dalvik bytecode as an `Artifact.Dex`, and an
+`Artifact.Apk` goes further: the dexed code, a binary `AndroidManifest.xml`, zip-aligned and
+signed, ready to install:
+
+```scala
+import apkLinkages.given
+
+Linker[Artifact.Apk](List(apkOptions.minApi(24)))
+. link(Compilation(output, classpath), destination)
+```
+
+The manifest is built from a typed configuration and encoded as Android's binary XML, and signing
+uses the APK signature scheme, so no external `aapt`, `zipalign` or `apksigner` is involved.

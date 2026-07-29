@@ -58,8 +58,8 @@ value in any of them is a `Color`.
 The `in` method converts a color to another model:
 
 ```scala
-val lab = red.in[Cielab]
-val back = lab.in[Srgb]      // the original red, within rounding
+val lab = red.to[Cielab]
+val back = lab.to[Srgb]      // the original red, within rounding
 ```
 
 Conversions compose, so a color reaches any model from any other, passing through the
@@ -85,7 +85,7 @@ Two colors mix into one, by default halfway between them, or in any ratio:
 
 ```scala
 Srgb(0.2, 0.4, 0.6).mix(Srgb(0.8, 0.6, 0.4))        // Srgb(0.5, 0.5, 0.5)
-WebColors.Ivory.in[Cielab].mix(WebColors.DeepPink.in[Cielab])
+WebColors.Ivory.to[Cielab].mix(WebColors.DeepPink.to[Cielab])
 ```
 
 Mixing in sRGB blends the screen values; mixing in CIELAB blends what the eye perceives,
@@ -97,11 +97,11 @@ Hue, saturation and lightness are what a person reaches for to adjust a color, s
 operations live on `Hsl` and `Hsv`. Convert into one, adjust, and convert back:
 
 ```scala
-val tomato = WebColors.Tomato.in[Hsl]
+val tomato = WebColors.Tomato.to[Hsl]
 
-tomato.rotate(180).in[Srgb]     // the complementary color
-tomato.lighten(0.2).in[Srgb]    // a fifth of the way toward white
-tomato.desaturate.in[Srgb]      // the same lightness, no color
+tomato.rotate(180).to[Srgb]     // the complementary color
+tomato.lighten(0.2).to[Srgb]    // a fifth of the way toward white
+tomato.desaturate.to[Srgb]      // the same lightness, no color
 ```
 
 `rotate` turns the hue by a number of degrees, `complement` turns it halfway round,
@@ -115,7 +115,7 @@ CIELAB exists so that the distance between two colors matches how different they
 `delta` gives that distance:
 
 ```scala
-WebColors.DeepPink.in[Cielab].delta(WebColors.Tomato.in[Cielab])
+WebColors.DeepPink.to[Cielab].delta(WebColors.Tomato.to[Cielab])
 ```
 
 A small delta means two colors are hard to tell apart; a large one means they contrast.
@@ -146,5 +146,29 @@ conversion within its scope uses it, and none has to name it:
 ```scala
 given Colorimetry = colorimetry.incandescentTungsten
 
-WebColors.Ivory.in[Cielab]   // computed for tungsten light
+WebColors.Ivory.to[Cielab]   // computed for tungsten light
 ```
+
+### Pixel layouts
+
+A colour on screen is not usually a triple of doubles but a packed integer, and how it is packed
+varies: eight bits per channel with or without alpha, five-six-five for a 16-bit display, ten bits
+per channel for high dynamic range, a single channel for greyscale. A *layout* states that packing
+as a tuple of channel types, most significant first, and the compiler works out the rest:
+
+```scala
+type Rgb565 = (Red[5], Green[6], Blue[5])
+
+compiletime.constValue[Channel.TotalBits[Rgb]]      // 24
+summon[Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
+summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+```
+
+Each channel's shift and mask follow from its position in the tuple, computed as the code
+compiles, so reading a channel from a packed pixel is a single shift-and-mask instruction with no
+runtime dispatch. A `Pixel[layout]` is an unboxed integer carrying the packed value, and converts
+to and from `Chroma`, `Srgb` and `Cmyk` exactly where its layout supports it — a layout with no
+alpha channel has no alpha to read.
+
+This is what [images](images.md) use to give a raster typed pixel access, and it is where a
+colour computed in one of the perceptual spaces above ends up when it reaches a screen.

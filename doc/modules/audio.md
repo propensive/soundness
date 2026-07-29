@@ -116,3 +116,21 @@ playback.await()
 
 Playing to an outlet that is unavailable or cannot accept the audio's configuration raises
 an `OutletError`.
+
+### Scoped lines
+
+`record` and `play` suit open-ended use, where the device is held for as long as the program
+wants it. Where the device should be held for exactly one block, a line is *opened* instead, as
+[a file is](filesystem.md): the audio line lasts precisely as long as the scope, and the layout
+and configuration are given as the form and its flags.
+
+```scala
+feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
+  input.stream.head
+
+outlet.open[Pcm](Write): out ?=>
+  out.play(audio)
+```
+
+Playing requires the `Write` grant, so a line opened for capture cannot be played to, and the
+compiler — not the audio driver — says so.

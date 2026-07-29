@@ -40,7 +40,7 @@ import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
 import textSanitizers.strictSanitizer
 
-val bytes = t"café".data   // UTF-8 bytes
+val bytes = t"café".in[Data]   // UTF-8 bytes
 bytes.utf8                 // t"café"
 ```
 
@@ -81,6 +81,39 @@ locally:
 Which behaviour is right depends on the data: strictness for input that should be trusted
 absolutely, tolerance for text recovered from a lossy source. The choice is visible at the
 import.
+
+A fourth choice keeps both: `accrueSanitizer` carries on decoding, as the skipping one does, but
+records each fault so that the whole of a damaged input is recovered *and* every bad sequence is
+reported, each with the position at which it occurred:
+
+```scala
+validate[CharDecoder.Focus](DecodeIssues()):
+  case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+. protect:
+    import textSanitizers.accrueSanitizer
+    charDecoders.utf8Decoder.decoded(data)
+```
+
+This is what a tool importing a file of uncertain provenance wants: the text, plus a list of
+where it was wrong, rather than a choice between the two.
+
+### Encodings
+
+`charEncoders` and `charDecoders` provide the encodings a program is likely to need — `utf8`,
+`utf16` with its explicit little- and big-endian forms, `ascii` and `iso88591` — each as a named
+given, so the encoding a piece of code uses is stated at its import rather than defaulted from the
+platform. An encoding named at runtime is looked up with the `enc"…"` interpolator, which checks
+the name as the code compiles:
+
+```scala
+import charEncoders.utf8Encoder
+
+enc"UTF-8".encoder
+```
+
+Encoding to bytes and decoding back also work as [stream](streams.md) stages, and a multi-byte
+character split across two chunks is carried over the boundary rather than corrupted — including
+a surrogate pair split between chunks, which is where naive implementations lose a character.
 
 ### Character widths
 

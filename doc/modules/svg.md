@@ -71,6 +71,32 @@ typed angles of [geography](geography.md):
 Rectangle((0, 0), 1, 1).translate(Delta(5, 0)).rotate(Angle.degrees(45))
 ```
 
+A transform is recorded on the figure rather than applied to its coordinates, so the geometry a
+figure was defined with is the geometry it keeps, and the rendered element carries a `transform`
+attribute — which is what makes the output editable in a drawing program afterwards:
+
+```scala
+Rectangle((0, 0), 10, 5).translate(Delta(3, 4)).xml.show
+// <rect x="0.0" y="0.0" width="10.0" height="5.0" transform="translate(3.0,4.0)"/>
+```
+
+Transforms compose in the order they are applied, and several may be supplied at construction
+instead. A tuple may stand for a delta, with unary `+` reading as a displacement:
+
+```scala
+Rectangle((0, 0), 10, 5).translate(+(3, 4))
+```
+
+### Identifiers
+
+A figure or definition may carry an `SvgId`, which is what a gradient reference, an animation
+target or a `<use>` element needs to name it. The identifier is a distinct type rather than text,
+so a reference to a definition that does not exist is not silently rendered:
+
+```scala
+Outline(id = SvgId(t"plus")).moveTo((0, 0)).closed
+```
+
 ### Gradients and color
 
 A linear gradient is a definition with typed stops, each an offset in `[0, 1]` — a
@@ -90,3 +116,17 @@ its XML header, or parsed back from SVG text:
 val drawing = Svg(50, 50, figures = List(plus))
 Document(drawing, enc"UTF-8").show   // <?xml version="1.0" …?><svg …>
 ```
+
+Parsing runs the other way, reading SVG text back into typed figures and definitions, so a drawing
+produced elsewhere can be inspected, measured or altered rather than merely embedded:
+
+```scala
+val svg = t"""<svg width="50" height="50"><rect x="0" y="0" width="10" height="10"/></svg>"""
+        . read[Svg]
+
+(svg.width, svg.height, svg.figures.length)   // (50.0f, 50.0f, 1)
+```
+
+Because an `Svg` is an [XML](xml.md) value underneath, a drawing embeds directly into an
+[HTML](html.md) page with no serialization step between, and the same drawing serves as a
+standalone `.svg` file when wrapped in a `Document`.

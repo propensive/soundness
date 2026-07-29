@@ -48,6 +48,49 @@ result is a trace that reads as the program was written, not as it was compiled.
 Whether Soundness's own errors capture traces at all is the `Diagnostics` choice described in
 [error handling](errors.md) — traces for debugging, omitted where errors are expected and handled.
 
+### Resolving frames to their source
+
+Demangling can only tidy a compiled name up. `$anonfun$3` becomes `λ₃`, which says a lambda ran
+but not *which* lambda — and the names that most need explaining are exactly the ones the compiler
+mints after its output is pickled: anonymous functions, initialisers, bridges, specialisations. No
+amount of rewriting recovers them, because the information is not in the name.
+
+Position does what name cannot. The compiler records the extent of every definition, so the line a
+frame already carries is enough to find the definition it came from. Importing a resolver makes
+every trace captured in that scope carry it:
+
+```scala
+import stackResolutions.tastyStackResolution
+```
+
+A resolved `Frame` gains a `Source`: the path of the file, the chain of enclosing definitions, the
+definition's own source name, and what kind of definition it is. `displayClass` and
+`displayMethod` give the resolved names where they are known and fall back to the demangled ones
+where they are not, so a renderer needs no branch of its own:
+
+```scala
+frame.displayClass    // the enclosing definitions, in source terms
+frame.displayMethod   // the definition's own name
+frame.source.let(_.kind)
+```
+
+The `Kind` distinguishes a method from a lambda, a value, a constructor, an extension or a default
+argument — and, separately, marks the kinds that are pure plumbing: bridges, forwarders,
+initialisers and specialisations, which `plumbing` reports so that a renderer can dim or drop
+them.
+
+Resolution costs one file read per top-level class named in the trace, so it is opt-in rather than
+automatic. A trace already in hand is resolved explicitly instead of by import:
+
+```scala
+trace.resolved
+```
+
+The capability to read those files is one this layer deliberately does not have: the default
+resolver does nothing, and an implementation is supplied from a module that has a classpath. That
+is what keeps stack traces working unchanged where no such capability exists — in a browser, in a
+native binary, inside a WebAssembly component.
+
 ### Codepoints
 
 A `Codepoint` is the source file and line of a call site, captured automatically wherever a method

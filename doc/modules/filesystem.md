@@ -33,8 +33,8 @@ import soundness.*
 import strategies.throwUnsafely
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
-import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.deleteRecursively.enabled
 ```
 
 ### Files and directories
@@ -50,22 +50,110 @@ val file = directory/t"notes.txt"
 file.create[File]()
 ```
 
-`create[File]()` and `create[Directory]()` bring the entry into being, drawing on the policy
-givens in scope — here, creating any missing parent directories and overwriting anything already
-present.
+`create[File]()` and `create[Directory]()` bring the entry into being, and refuse to destroy
+anything by default: creating over something that exists, or under a parent that does not, is an
+`IoError`. Where that is the intent, a flag says so at the call site rather than an import saying
+it for the whole file:
+
+```scala
+target.create[File](CreateFlag.Replace)
+target.create[Directory](CreateFlag.Parents)
+```
+
+`Fifo` and `Socket` are entries too, created the same way.
 
 ### Reading and writing
 
-A file is read and written by opening it, which yields a handle that behaves as a byte source and
-sink for the [stream](streams.md) operations. Writing sends a value to the handle; reading pulls
-the handle in as a chosen type:
+A file is read and written by *opening* it. `open` names the form to open the path as, and the
+mode to open it in, and runs a block with a handle for its capability. The handle exists only
+for the duration of the block, so the descriptor cannot outlive the scope that owns it:
 
 ```scala
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
 
-file.open(t"Hello, world".writeTo(_))
-val text = file.open(_.read[Text])
+file.open[File](Write, OpenFlag.Create): handle ?=>
+  handle.write(LazyList(t"Hello, world".in[Data]))
+
+val text = file.open[File]()(file.stream.read[Data]).utf8
+```
+
+Where a whole small file is wanted, and the ceremony of a scope buys nothing, `read` and `write`
+act directly on the path:
+
+```scala
+path.write(t"Hello world")
+path.read[Text]
+```
+
+The mode is not merely a runtime flag: it is carried in the handle's type as a set of *grants*.
+Opening with the default `Read` mode yields a handle that grants only reading, and a write
+through it does not compile; `Read & Write` grants both. A whole class of mistakes — writing
+through a read-only handle, holding a descriptor past its scope — becomes a compile error
+rather than a runtime failure.
+
+For a path that names a directory, opening confines what may be reached through it. Paths
+derived from the handle live on a *fresh plane* of their own, so `..` does not compile, and a
+path obtained from one open directory cannot be written under another:
+
+```scala
+directory.open[Directory](Read & Write): dir ?=>
+  (dir/"greeting.txt").overwrite(t"Hello directory")
+  dir.base.entries.to(List).map(_.name)
+```
+
+### Exclusive access
+
+`Exclusive` is a third grant, alongside `Read` and `Write`, and it means what it says: no other
+scope in the program may hold an overlapping path open while it lasts. Overlap is by containment,
+not by equality — a directory and something beneath it overlap; two siblings do not:
+
+```scala
+directory.open[Directory](Read & Exclusive): dir ?=>
+  // nothing else in this program may open `directory` or anything under it
+```
+
+Two ordinary reads may coexist. An exclusive open conflicts with an overlapping open in either
+direction — whether the exclusive scope is the outer or the inner one — and the conflict is an
+`IoError` whose reason is `Busy`, raised at the point of the second open rather than discovered
+as corruption later. The claim is released when the scope ends, however it ends.
+
+For a *file* rather than a directory, `Exclusive` additionally takes an operating-system lock, so
+exclusivity holds against other processes and not merely within this one.
+
+### Creating as a scope
+
+`create` is the counterpart of `open`: where opening acts on something that exists, creating
+brings it into being and hands back a handle over it, for the same lexical scope. Content
+written within the scope is committed when the block completes, and a scope that fails leaves
+nothing behind:
+
+```scala
+target.create[File](): handle ?=>
+  handle.write(LazyList(t"payload".in[Data]))
+
+target.create[Directory](): dir ?=>
+  (dir/"inner.txt").overwrite(t"hello")
+```
+
+A *scratch* directory is created and removed by its scope, whether the scope succeeds or fails:
+
+```scala
+base.open[Scratch](Read & Write): scratch ?=>
+  (scratch/"file.txt").overwrite(t"data")
+```
+
+### Memory-mapped access
+
+A file opened as `Ram` is memory-mapped, and serves positional reads and writes without
+streaming through it. The `Write` grant is required to write, as everywhere else:
+
+```scala
+file.open[Ram](): ram ?=>
+  ram(2, 3)               // three bytes from offset 2
+
+file.open[Ram](Read & Write): ram ?=>
+  ram(3L) = t"XYZ".in[Data]
 ```
 
 ### Copying, moving and deleting
@@ -109,17 +197,30 @@ Base.Usr.Share()   // /usr/share
 
 ### Watching for changes
 
-A directory is watched within a scope, which yields a stream of `WatchEvent`s — a file created,
-modified or deleted — and stops watching when the scope ends:
+A directory is watched by opening it as `Watch`, which yields a stream of `WatchEvent`s — a
+file created, modified or deleted. The registration lasts exactly as long as the block:
 
 ```scala
-directory.watch: watch =>
-  watch.stream.each:
+directory.open[Watch](): watcher ?=>
+  watcher.stream.each:
     case WatchEvent.NewFile(dir, file) => Out.println(t"created $file")
     case WatchEvent.Modify(dir, file)  => Out.println(t"modified $file")
     case WatchEvent.Delete(dir, file)  => Out.println(t"deleted $file")
     case _                             => ()
 ```
 
+Several paths are watched together by opening a list of them, which yields one event stream
+across all of them.
+
 The default watcher uses the operating system's own file-change notifications; where those are
 unavailable, `watchers.polling` checks at an interval instead.
+
+### Choosing a backend
+
+Nothing above names a platform API. The primitive operations a filesystem must offer — stat,
+open, read, write, list, link, delete — are gathered into a `FilesystemBackend` for a plane,
+and everything else is defined in terms of them. The `java.nio` implementation is
+`filesystemBackends.virtualMachine`, and a WASI implementation over `wasi:filesystem` is
+supplied by `galilei.wasi`, so the same code reads and writes files on the JVM and inside a
+WebAssembly component. An operation a backend cannot support raises an `IoError` whose reason
+is `Unsupported`, rather than approximating it.

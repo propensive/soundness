@@ -83,6 +83,10 @@ val priced = Gbp(2.30).tax(0.2)   // Price(Gbp(2.30), Gbp(0.46))
 priced.inclusive                  // Gbp(2.76)
 ```
 
+Tax rounds *up* to the minor unit, which is what tax authorities require and what a naive
+rounding gets wrong in exactly the cases that matter: twenty per cent of £2.94 is £0.588, charged
+as £0.59 rather than £0.58.
+
 A `Price` deliberately has no `show`: whether to display the inclusive or exclusive amount is a
 decision the application must make explicitly, by showing the member it means.
 
@@ -113,3 +117,10 @@ isin"GB00BH4HKS39"          // a valid ISIN
 isin"GB00BH4HKS3"           // does not compile: wrong length
 Luhn.check(17893729974L)    // true
 ```
+
+An `IsinError` says which rule was broken — the length, the country prefix, the permitted
+characters, or the Luhn check on the final digit — so a rejected identifier can be reported
+precisely rather than as "invalid".
+
+An `Isin` is an opaque type over a `Long`, so a validated identifier costs nothing to hold or
+compare, and cannot be confused with an unvalidated string.

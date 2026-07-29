@@ -89,5 +89,17 @@ interactive: terminal ?=>
   form(Mode.Inline)(file(sidebar, body))
 ```
 
-Sizes solve as fractions with minima and maxima, focus moves between widgets with Tab, and
-repaints touch only the cells that changed.
+Sizes solve as fractions with minima and maxima, and focus moves between widgets with Tab.
+
+### Redrawing without flicker
+
+Rendering keeps a model of what is actually on the screen, and each frame is diffed against it,
+so a repaint overprints only the runs that changed and an identical frame emits nothing at all.
+Full-screen output is buffered and flushed as one write rather than as a stream of small ones. A
+geometry change or a resize takes the full redraw path, because nothing about the previous
+contents can then be relied upon.
+
+An inline block — one that leaves scrollback intact — has a further problem: the terminal may
+reflow its lines when the window narrows, moving the block out from under the cursor. Rather than
+redrawing in the wrong place, an inline block re-establishes where it is after a resize, so a
+running interface survives a reflow instead of scribbling over the scrollback above it.

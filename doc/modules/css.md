@@ -103,3 +103,51 @@ hook by which [HTML](html.md) class attributes are checked against the styles th
 Selectors are structural values covering the full modern grammar — combinators including the column
 `||`, attribute tests, `:is`, `:not`, `:has`, `An+B` expressions and nesting `&` — so a selector can
 be built, inspected and rendered rather than spliced together as text.
+
+A parsed selector is a tree, not a string: a compound selector holds its simple parts, a complex
+selector holds compounds joined by combinators, and a selector list holds alternatives. Each part
+is a typed case, so a program can ask what a selector actually matches:
+
+```scala
+t"a > b".read[Css]        // a child combinator between two type selectors
+t"a:hover".read[Css]      // a type selector with a pseudo-class
+t"p::before".read[Css]    // a pseudo-element
+```
+
+Attribute selectors carry their matcher — presence, exact, prefix, suffix, substring, dash-match
+and whitespace-match — and the case-sensitivity modifier where one is given, so `[href^="https" i]`
+is understood rather than merely preserved.
+
+`An+B` arguments to `:nth-child` and its siblings parse to their coefficients, with `odd` and
+`even` normalized to `2n+1` and `2n`, and an `of` clause kept alongside. `:is`, `:not` and `:has`
+carry selector lists as their arguments, so their contents are themselves inspectable.
+
+Namespaced type selectors — `svg|rect`, `*|a` and the default-namespace `|a` — keep their prefix
+distinctly, since the three mean different things.
+
+### Property validation
+
+Parsing checks property names against the known set, so a misspelling is an error rather than a
+declaration that silently does nothing:
+
+```scala
+capture[CssErrors](t"a { colour: red }".read[Css]).errors.head.reason
+// CssError.Reason.UnknownProperty(t"colour")
+```
+
+Errors accumulate: a rule with several bad declarations reports all of them, so a stylesheet is
+corrected in one pass. The error type is plural — `CssErrors` — because reporting one fault at a
+time from a document that has several is the wrong shape for the job.
+
+### Checking class names against a stylesheet
+
+The point of knowing which classes and ids a stylesheet defines is to check the markup that uses
+them. Binding a stylesheet resource makes its names available at compiletime, and an
+[HTML](html.md) attribute referring to a name resolves to `class` or `id` according to which the
+stylesheet declares — so a misspelled class name in a template is a compile error, and the right
+attribute is used without saying which:
+
+```scala
+given (Styles at "/site.css") = Styles(cp"/site.css")
+import cssBindings.checkedBinding
+```
