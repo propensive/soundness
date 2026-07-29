@@ -111,7 +111,7 @@ object Blake3:
       flags:         Int )
   :   Array[Int]^ =
 
-    val state: Array[Int]^ = new Array[Int](16)
+    val state: Array[Int]^ = new scala.Array[Int](16)
     System.arraycopy(chainingValue, 0, state, 0, 8)
     state(8)  = Iv(0); state(9)  = Iv(1); state(10) = Iv(2); state(11) = Iv(3)
     state(12) = counter.toInt
@@ -161,7 +161,7 @@ object Blake3:
 
     def chainingValue(): Array[Int] =
       val out = compress(inputChainingValue, blockWords, counter, blockLen, flags)
-      val cv = new Array[Int](8)
+      val cv = new scala.Array[Int](8)
       System.arraycopy(out, 0, cv, 0, 8)
       cv
 
@@ -190,7 +190,7 @@ object Blake3:
     ( leftCv: Array[Int], rightCv: Array[Int], keyWords: Array[Int], flags: Int )
   :   Output =
 
-    val blockWords = new Array[Int](16)
+    val blockWords = new scala.Array[Int](16)
     System.arraycopy(leftCv, 0, blockWords, 0, 8)
     System.arraycopy(rightCv, 0, blockWords, 8, 8)
     // The freshly-constructed Output only holds fresh or private arrays.
@@ -206,7 +206,7 @@ object Blake3:
   private final class ChunkState(keyWordsInit: Array[Int], var chunkCounter: Long, val flags: Int)
   extends caps.Mutable:
     private var chainingValue: Array[Int]^  = keyWordsInit.clone()
-    private var block:         Array[Byte]^ = new Array[Byte](BlockLen)
+    private var block:         Array[Byte]^ = new scala.Array[Byte](BlockLen)
 
     var blockLen:         Int = 0
     var blocksCompressed: Int = 0
@@ -216,7 +216,7 @@ object Blake3:
     private def startFlag: Int = if blocksCompressed == 0 then ChunkStart else 0
 
     update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
-      val blockWords = new Array[Int](16)
+      val blockWords = new scala.Array[Int](16)
       var pos = start
 
       while pos < end do
@@ -238,7 +238,7 @@ object Blake3:
         pos += take
 
     def output(): Output =
-      val blockWords = new Array[Int](16)
+      val blockWords = new scala.Array[Int](16)
       wordsFromBytes(block, 0, blockWords)
 
       // The freshly-constructed Output only holds fresh or private arrays.
@@ -253,7 +253,7 @@ object Blake3:
   private final class Hasher(keyWordsInit: Array[Int], val flags: Int) extends caps.Mutable:
     private val keyWords: Array[Int] = keyWordsInit.clone()
     private var chunkState: ChunkState^ = ChunkState(keyWords, 0L, flags)
-    private var cvStack: Array[Array[Int]]^ = new Array[Array[Int]](54)
+    private var cvStack: Array[Array[Int]]^ = new scala.Array[Array[Int]](54)
     private var cvStackLen: Int = 0
 
     private update def pushStack(cv: Array[Int]): Unit =
@@ -327,7 +327,7 @@ object Blake3:
     then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
 
     val keyBytes = key.mutable(using Unsafe)
-    val keyWords = new Array[Int](8)
+    val keyWords = new scala.Array[Int](8)
     wordsFromBytes(keyBytes, 0, keyWords)
 
     val hasher: Hasher^ = Hasher(keyWords, KeyedHashFlag)
@@ -340,7 +340,7 @@ object Blake3:
     ctxHasher.update(ctxBytes.immutable(using Unsafe))
 
     val ctxKey = ctxHasher.complete(KeyLen).mutable(using Unsafe)
-    val ctxKeyWords = new Array[Int](8)
+    val ctxKeyWords = new scala.Array[Int](8)
     wordsFromBytes(ctxKey, 0, ctxKeyWords)
 
     val matHasher: Hasher^ = Hasher(ctxKeyWords, DeriveKeyMaterial)

@@ -217,7 +217,7 @@ private[facsimile] object Guard:
 
             cipher.init(jc.Cipher.DECRYPT_MODE,
                 jcs.SecretKeySpec(intermediate.mutable(using Unsafe), "AES"),
-                jcs.IvParameterSpec(new Array[Byte](16)))
+                jcs.IvParameterSpec(new scala.Array[Byte](16)))
 
             cipher.doFinal(ue.take(32).mutable(using Unsafe)).nn.immutable(using Unsafe)
           catch case _: Exception => Unset
@@ -273,14 +273,14 @@ private[facsimile] object Guard:
   // buffer; callers zero the result once the derived key is computed.
   private def encoded(password: Array[Char], charset: jnc.Charset): Array[Byte] =
     val buffer = charset.encode(jn.CharBuffer.wrap(password)).nn
-    val bytes = new Array[Byte](buffer.remaining)
+    val bytes = new scala.Array[Byte](buffer.remaining)
     buffer.get(bytes)
     if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, 0.toByte)
     bytes
 
   private def padded(password: Array[Char]): Array[Byte] =
     val bytes = encoded(password, jnc.StandardCharsets.ISO_8859_1.nn)
-    val out = new Array[Byte](32)
+    val out = new scala.Array[Byte](32)
     val count = 32.min(bytes.length)
     System.arraycopy(bytes, 0, out, 0, count)
     System.arraycopy(padding.mutable(using Unsafe), 0, out, count, 32 - count)

@@ -44,7 +44,7 @@ import vacuous.*
 // which would need per-call `Cipher` machinery for what is a dozen lines of arithmetic.
 private[facsimile] object Rc4:
   def apply(key: Data, data: Data): Data =
-    val state = new Array[Int](256)
+    val state = Buffer[Int](256)
     var i = 0
 
     while i < 256 do

@@ -42,6 +42,7 @@ import anticipation.*
 import beneficence.*
 import hypotenuse.*
 import prepositional.*
+import vacuous.*
 
 object Serializable:
   def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base]): Serializable in base =
@@ -70,7 +71,7 @@ object Serializable:
         // Every alphabet character is ASCII, so decoding the output as Latin-1
         // yields identical text while letting the JVM adopt the byte array as the
         // compact-string backing directly, with no validating charset scan.
-        Text(String(out, StandardCharsets.ISO_8859_1))
+        Text(String(out.raw, StandardCharsets.ISO_8859_1))
 
       // Hex: each byte is a self-contained group of two characters, so there is
       // no bit carry and never any padding. Both output bytes for a given input
@@ -84,10 +85,10 @@ object Serializable:
             val lo = lookup(b & 0xf) & 0xff
             (hi | (lo << 8)).toShort
 
-      private def hex(src: Array[Byte]): Array[Byte] =
+      private def hex(src: Array[Byte]): Buffer[Byte]^ =
         val pairs = hexPairs
         val n = src.length
-        val out = new Array[Byte](n*2)
+        val out = Buffer[Byte](n*2)
         var i = 0
         var j = 0
 
@@ -102,7 +103,7 @@ object Serializable:
 
       // Base64: three input bytes become four characters; a trailing group of
       // one or two bytes is completed with padding when the alphabet demands it.
-      private def base64(src: Array[Byte]): Array[Byte] =
+      private def base64(src: Array[Byte]): Buffer[Byte]^ =
         val n = src.length
         val full = n/3
         val rem = n - full*3
@@ -111,7 +112,7 @@ object Serializable:
           if padding then (full + (if rem > 0 then 1 else 0))*4
           else full*4 + (if rem == 1 then 2 else if rem == 2 then 3 else 0)
 
-        val out = new Array[Byte](length)
+        val out = Buffer[Byte](length)
         var i = 0
         var j = 0
         var g = 0
@@ -149,7 +150,7 @@ object Serializable:
 
       // Base32: five input bytes become eight characters; trailing groups of
       // 1/2/3/4 bytes emit 2/4/5/7 characters, padded to a multiple of eight.
-      private def base32(src: Array[Byte]): Array[Byte] =
+      private def base32(src: Array[Byte]): Buffer[Byte]^ =
         val n = src.length
         val full = n/5
         val rem = n - full*5
@@ -162,7 +163,7 @@ object Serializable:
           case _ => 7
 
         val length = if padding then (full + (if rem > 0 then 1 else 0))*8 else full*8 + tail
-        val out = new Array[Byte](length)
+        val out = Buffer[Byte](length)
         var i = 0
         var j = 0
         var g = 0
@@ -214,7 +215,7 @@ object Serializable:
 
       // Binary/quaternary/octal: a general bit-accumulator, for the bases whose
       // group size makes an unrolled kernel unprofitable.
-      private def generic(src: Array[Byte]): Array[Byte] =
+      private def generic(src: Array[Byte]): Buffer[Byte]^ =
         val mask = (1 << bits) - 1
         val divisor = bits/bits.gcd(8)
         val multiple = 8/bits.gcd(8)
@@ -223,7 +224,7 @@ object Serializable:
           if padding then multiple*((src.length + divisor - 1)/divisor)
           else (src.length*8 + bits - 1)/bits
 
-        val out = new Array[Byte](length)
+        val out = Buffer[Byte](length)
         var current = 0
         var loaded = 0
         var index = 0

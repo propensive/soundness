@@ -199,7 +199,7 @@ private[facsimile] object ContentWriter:
 // pattern: untracked storage, exclusive view for writes, Java-side copies for growth/freeze).
 private[facsimile] final class DataBuilder:
   @scala.caps.unsafe.untrackedCaptures
-  private var storage: Array[Byte] = new Array[Byte](64)
+  private var storage: Array[Byte] = new scala.Array[Byte](64)
 
   @scala.caps.unsafe.untrackedCaptures
   private var size0: Int = 0
@@ -231,4 +231,4 @@ private[facsimile] def writable[element](array: Array[element]): Array[element]^
 // A freshly-allocated array with a PURE type (the Java `copyOf` result adapts), as
 // hallucination's `pureBytes`: writes route through `writable`.
 private[facsimile] def pureByteArray(size: Int): Array[Byte] =
-  java.util.Arrays.copyOf(new Array[Byte](0), size).nn
+  java.util.Arrays.copyOf(new scala.Array[Byte](0), size).nn

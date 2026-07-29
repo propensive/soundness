@@ -46,7 +46,7 @@ import vacuous.*
 private[facsimile] object Ascii85:
   def decode(data: Data)(using Tactic[PdfError]): Data =
     val bytes = DataBuilder()
-    val group = new Array[Int](5)
+    val group = new scala.Array[Int](5)
     var members = 0
     var done = false
     var i = 0

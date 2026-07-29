@@ -49,9 +49,9 @@ import vacuous.*
 object JavaStdlibCrypto extends Crypto:
   def random: Crypto.Random = new Crypto.Random:
     def bytes(size: Int): Data =
-      val output = new Array[Byte](size)
-      js.SecureRandom().nextBytes(output)
-      output.immutable(using Unsafe)
+      val output = Buffer[Byte](size)
+      js.SecureRandom().nextBytes(output.raw)
+      Buffer.freeze(output)
 
   def aes:       Crypto.SymmetricCipher = symmetric(t"AES")
   def des:       Crypto.SymmetricCipher = symmetric(t"DES")

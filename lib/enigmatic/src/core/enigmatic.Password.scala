@@ -53,7 +53,7 @@ object Password:
   // intermediate encoding buffer, leaving the cloaked copy as the only cleartext.
   def apply(cleartext: Array[Char])(using cloak: Cloak^): Password^{cloak} =
     val buffer = jnc.StandardCharsets.UTF_8.nn.encode(jn.CharBuffer.wrap(cleartext)).nn
-    val bytes = new Array[Byte](buffer.remaining)
+    val bytes = new scala.Array[Byte](buffer.remaining)
     buffer.get(bytes)
     if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, 0.toByte)
     ju.Arrays.fill(cleartext, '\u0000')
@@ -72,7 +72,7 @@ class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
   def uncloak[result](block: Cleartext^ ?=> result): result =
     secret.uncloak: bytes =>
       val buffer = jnc.StandardCharsets.UTF_8.nn.decode(jn.ByteBuffer.wrap(bytes)).nn
-      val chars = new Array[Char](buffer.remaining)
+      val chars = new scala.Array[Char](buffer.remaining)
       buffer.get(chars)
       if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, '\u0000')
       try block(using Cleartext(chars.asInstanceOf[IArray[Char]]))

@@ -221,7 +221,7 @@ extends Duct[Data, Data]:
     case null         => Unset
     case text: String => text.tt
 
-  private val header: Array[Byte] = new Array[Byte](ivSize)
+  private val header: Array[Byte] = new scala.Array[Byte](ivSize)
   private var headerFilled: Int = 0
 
   // Untracked, cast-erased: the inner duct is reached only through this

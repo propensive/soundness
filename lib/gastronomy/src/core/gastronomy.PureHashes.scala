@@ -50,7 +50,7 @@ private[gastronomy] object PureHashes:
   // SHA-256 and SHA-224 (a truncation of SHA-256 with a different initial state).
   final class Sha256(initial: IArray[Int], outputBytes: Int) extends BlockDigestion(64):
     private var h: Array[Int]^ = initial.mutable(using Unsafe).clone
-    private var w: Array[Int]^ = new Array[Int](64)
+    private var w: Array[Int]^ = new scala.Array[Int](64)
 
     protected def bitLengthBytes: Int = 8
 
@@ -101,7 +101,7 @@ private[gastronomy] object PureHashes:
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
   final class Sha512(initial: IArray[Long], outputBytes: Int) extends BlockDigestion(128):
     private var h: Array[Long]^ = initial.mutable(using Unsafe).clone
-    private var w: Array[Long]^ = new Array[Long](80)
+    private var w: Array[Long]^ = new scala.Array[Long](80)
 
     // The message length is a 128-bit big-endian count of bits; inputs never approach 2^64 bytes,
     // so the high 64 bits are always zero.
@@ -160,7 +160,7 @@ private[gastronomy] object PureHashes:
     private var h2 = 0x98badcfe
     private var h3 = 0x10325476
     private var h4 = 0xc3d2e1f0
-    private var w: Array[Int]^ = new Array[Int](80)
+    private var w: Array[Int]^ = new scala.Array[Int](80)
 
     protected def bitLengthBytes: Int = 8
 
@@ -210,7 +210,7 @@ private[gastronomy] object PureHashes:
     private var b0 = 0xefcdab89
     private var c0 = 0x98badcfe
     private var d0 = 0x10325476
-    private var m: Array[Int]^ = new Array[Int](16)
+    private var m: Array[Int]^ = new scala.Array[Int](16)
 
     private val shifts: IArray[Int] = Array(
       7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
@@ -310,7 +310,7 @@ private[gastronomy] object PureHashes:
 // `compress` on each, and applies the standard Merkle–Damgård padding (a `0x80` byte, zero
 // padding, then the message bit-length) on `digest`.
 private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digestion:
-  private var block: Array[Byte]^ = new Array[Byte](blockSize)
+  private var block: Array[Byte]^ = new scala.Array[Byte](blockSize)
   private var filled: Int = 0
   private var totalBytes: Long = 0
 
@@ -352,7 +352,7 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
     // bytes stay zero (a freshly-allocated array).
     val twoBlocks = filled + 1 + bitLengthBytes > blockSize
     val padded = if twoBlocks then blockSize*2 else blockSize
-    val pad: Array[Byte]^ = new Array[Byte](padded)
+    val pad: Array[Byte]^ = new scala.Array[Byte](padded)
     var i = 0
 
     while i < filled do { pad(i) = block(i); i += 1 }

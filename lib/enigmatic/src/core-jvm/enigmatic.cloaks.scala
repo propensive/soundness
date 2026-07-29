@@ -76,7 +76,7 @@ private def offload(bytes: Array[Byte], arena: jlf.Arena): jlf.MemorySegment =
 
 // Reads a segment back into a fresh mutable heap array.
 private def reload(segment: jlf.MemorySegment, length: Int): Array[Byte] =
-  val bytes = new Array[Byte](length)
+  val bytes = new scala.Array[Byte](length)
   jlf.MemorySegment.copy(segment, jlf.ValueLayout.JAVA_BYTE, 0L, bytes, 0, length)
   bytes
 
@@ -137,7 +137,7 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
     try block(keyBytes) finally ju.Arrays.fill(keyBytes, 0.toByte)
 
   def cloak(bytes: Array[Byte]): Secret^{this} =
-    val nonce = new Array[Byte](12)
+    val nonce = new scala.Array[Byte](12)
     random.nextBytes(nonce)
 
     val ciphertext = withKey: keyBytes =>
@@ -162,7 +162,7 @@ private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability
   private val keyBytes: IArray[Byte] = freshKey().asInstanceOf[IArray[Byte]]
 
   def cloak(bytes: Array[Byte]): Secret^{this} =
-    val nonce = new Array[Byte](12)
+    val nonce = new scala.Array[Byte](12)
     random.nextBytes(nonce)
     val ciphertext =
       aes[Array[Byte]](keyBytes.asInstanceOf[Array[Byte]], jc.Cipher.ENCRYPT_MODE, nonce):
