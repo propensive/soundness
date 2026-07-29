@@ -53,7 +53,9 @@ trait Rule:
 object Rules:
   val all: List[Rule] =
     List
-      ( AnchorRules.SequenceLayout, AnchorRules.DefinitionAnchors,
+      ( FrameRules.LicenceFrame, FrameRules.PackageDeclaration, FrameRules.PackageBlank,
+        FrameRules.ImportSeparation, FrameRules.ImportOrdering,
+        AnchorRules.SequenceLayout, AnchorRules.DefinitionAnchors,
         AnchorRules.InterpolationLayout, TabulationRules.CaseAlignment,
         TabulationRules.ForComprehensionAlignment, DensityRules.LambdaLayout,
         ProximityRules.ChunkSeparation, ContinuationRules.OperatorContinuation,

@@ -39,7 +39,6 @@ import dotty.tools.dotc.util.SourceFile
 
 object Checker:
   private val MaxColumns: Int = 100
-  private val PackageLine: Int = 33
 
   // Test-friendly entry point: parses `rawText` standalone via `Parsing.parse`
   // before delegating to the tree-aware overload. The plugin should call the
@@ -74,10 +73,7 @@ object Checker:
 
     val out   = mutable.ListBuffer[Violation]()
     val state = State(file, expectedModule)
-    val lines = ctx.tokenRows
-    state.packageInfo        = ctx.packageInfo
     state.importLineSet      = ctx.imports.iterator.flatMap{ i => i.startLine to i.endLine }.toSet
-    state.hasImports         = ctx.imports.nonEmpty
     state.annotationEndLines = ctx.annotationEndLines
     state.forFilterLines     = ctx.forGroups.iterator.flatMap: gens =>
                                  gens.iterator.collect:
@@ -86,8 +82,6 @@ object Checker:
                                      gl.line
                                .toSet
     scanRawTabs(file, rawText, out)
-    checkPackageRules(file, expectedModule, state.packageInfo, out)
-    checkImportRules(file, ctx.imports, lines, out)
     Rules.all.foreach: rule =>
       out ++= rule.check(ctx)
     var idx = 0
@@ -142,11 +136,11 @@ object Checker:
     var bodyLineIndent: Int = -1
 
   private class State(val file: String, val expectedModule: Option[String]):
-    var phase:                Phase                      = Phase.License
     var consecutiveBlanks:    Int                        = 0
+    // Lines belonging to top-level imports; R31 (473.1) suspends its
+    // indent-step check inside them (multi-line selector lists align
+    // under the opener's braces, not the indent grid).
     var importLineSet:        Set[Int]                   = Set.empty
-    var hasImports:           Boolean                    = false
-    var packageInfo:          Option[PackageInfo]        = None
     var annotationEndLines:   Set[Int]                   = Set.empty
     // Lines that are `if`-filter rows inside a `for`-comprehension and sit
     // alone on their line (i.e. the filter doesn't share a line with the
@@ -274,13 +268,6 @@ object Checker:
         emit(1, "783", "more than two consecutive blank lines")
     else
       s.consecutiveBlanks = 0
-
-    s.phase match
-      case Phase.License      => checkLicense(s, lineNum, line.lexemes, emit)
-      case Phase.Package      => checkPackage(s)
-      case Phase.AfterPackage => checkAfterPackage(s, isBlank, emit)
-      case Phase.Imports      => checkImports(s, isBlank, lineNum, emit)
-      case Phase.Body         => ()
 
     checkTokens(s, lineNum, line, s.prevCodeLineLastTok, emit)
     checkCommas(s, lineNum, line, isBlank, out)
@@ -956,230 +943,6 @@ object Checker:
           "heavy `(`/`[` continuation must follow a tight expression on its "
             +"own line; the preceding line contains a top-level operator or "
             +"assignment, so the anchor is mid-line" )
-
-  private def checkLicense
-    ( s: State, lineNum: Int, line: IndexedSeq[Lexeme], emit: (Int, String, String) => Unit )
-  :   Unit =
-
-    val text = line.iterator.map(_.text).mkString
-
-    if lineNum == 1 && !text.contains("/*") then
-      emit(1, "799", "line 1 must open the license-header block comment with `/*`")
-
-    if lineNum == 32 then
-      if !text.contains("*/") then
-        emit(1, "799", "line 32 must close the license-header block comment with `*/`")
-      s.phase = Phase.Package
-
-  // Phase machine: when the line containing the package declaration is
-  // reached (or any line beyond the license region if the file has no
-  // valid package), advance the phase. R7 violations are emitted from
-  // `checkPackageRules` over the parsed `PackageDef`.
-  private def checkPackage(s: State): Unit =
-    s.packageInfo match
-      case Some(p) if p.line == PackageLine => s.phase = Phase.AfterPackage
-      case _                                => s.phase = Phase.Body
-
-  // R7: validate the file's `package` declaration. The parsed package
-  // info distinguishes "no real declaration" (empty-package wrapper)
-  // from a real `PackageDef`. Multi-segment paths (`a.b`), wrong line,
-  // names that don't match `expectedModule`, names with invalid
-  // characters (e.g. backticked identifiers), and extra statements on
-  // the same line are each rejected with rule "131".
-  private def checkPackageRules
-    ( file:           String,
-      expectedModule: Option[String],
-      pkg:            Option[PackageInfo],
-      out:            mutable.ListBuffer[Violation] )
-  :   Unit =
-
-    pkg match
-      case None =>
-        out += Violation(file, PackageLine, 1, "131", "line 33 must be `package <module>`")
-
-      case Some(p) if p.line != PackageLine =>
-        out +=
-          Violation
-            ( file, p.line, 1, "131",
-              s"expected `package` declaration on line 33, "
-                +s"found content on line ${p.line}" )
-
-      case Some(p) =>
-        val name = p.segments.mkString(".")
-        if p.segments.length > 1 || !p.segments.head.matches("[A-Za-z_][A-Za-z0-9_]*") then
-          out +=
-            Violation
-              ( file, p.line, 1, "131",
-                s"package declaration must be a single identifier segment, not `$name`" )
-        else
-          expectedModule.foreach: expected =>
-            if name != expected then
-              out +=
-                Violation
-                  ( file, p.line, 1, "131",
-                    s"package `$name` does not match expected module `$expected`" )
-
-        if p.extraStatementOnSameLine then
-          out +=
-            Violation
-              ( file, p.line, 1, "131",
-                "package declaration must contain only `package <ident>` on line 33" )
-
-  private def checkAfterPackage
-    ( s: State, isBlank: Boolean, emit: (Int, String, String) => Unit )
-  :   Unit =
-
-    if !isBlank then
-      emit(1, "658", "line 34 must be a single blank line after `package`")
-
-    s.phase = Phase.Imports
-
-  // Drives the phase machine across the imports region. R9.1/9.2/9.3 are
-  // emitted from `checkImportRules` over the parsed import list; this
-  // function only handles transition to `Phase.Body` and R10 (blank line
-  // between imports and the first declaration).
-  private def checkImports
-    ( s:       State,
-      isBlank: Boolean,
-      lineNum: Int,
-      emit:    (Int, String, String) => Unit )
-  :   Unit =
-
-    if isBlank then ()
-    else if s.importLineSet.contains(lineNum) then ()
-    else
-      if !s.prevLineWasBlank && s.hasImports then
-        emit(1, "441", "missing blank line between imports and first declaration")
-      s.phase = Phase.Body
-
-  // R9.1/9.2/9.3: classify and order the parsed top-level imports. Multi-line
-  // imports (`import a.{\n  b,\n  c\n}`) span lines naturally via the tree,
-  // and multi-import lines (`import a.b, c.d`) appear as multiple Import
-  // nodes whose `startLine` collide — only the first import on each line
-  // drives the group, the rest are treated as continuations.
-  private def checkImportRules
-    ( file:    String,
-      imports: List[ImportInfo],
-      lines:   IndexedSeq[IndexedSeq[Lexeme]],
-      out:     mutable.ListBuffer[Violation] )
-  :   Unit =
-
-    val rows: List[ImportInfo] =
-      imports.groupBy(_.startLine).toList.sortBy(_._1).flatMap(_._2.headOption)
-
-    var prevGroup:   Option[Int]    = None
-    var prevName:    Option[String] = None
-    var prevEndLine: Int            = -1
-
-    rows.foreach: imp =>
-      val group = classifyImport(imp.path)
-
-      // Top-level aliases are forbidden only for soundness libs (group 5+).
-      // Standard-library aliases (`import scala.collection.mutable as scm`,
-      // `import java.util.concurrent as juc`) and language-feature aliases
-      // remain an established convention.
-      if imp.hasTopLevelAlias && group >= 5 then
-        out +=
-          Violation
-            ( file, imp.startLine, 1, "302.1",
-              "top-level imports must not use aliases (`as` or `=>`); "
-                +"write the full path" )
-
-      prevGroup match
-        case Some(pg) =>
-          // Groups 5 and 6 are "third-party" siblings: lowercase wildcard
-          // (`import contingency.*`) and other named imports
-          // (`import filesystemOptions.x`, `import AsyncError.Reason`)
-          // routinely interleave in soundness code, so we don't require
-          // ordering or blank lines between them. Alphabetical and
-          // blank-within-group checks still apply within strictly the
-          // same group (5 with 5, 6 with 6).
-          val areSiblings  = group >= 5 && pg >= 5
-          val blankBetween = blankLinesBetween(prevEndLine, imp.startLine, lines) > 0
-          if !areSiblings && group < pg then
-            out +=
-              Violation
-                ( file, imp.startLine, 1, "302.2",
-                  s"import group $group appears after group $pg" )
-          else if !areSiblings && group > pg then
-            if !blankBetween then
-              out +=
-                Violation
-                  ( file, imp.startLine, 1, "302.3",
-                    "import groups must be separated by exactly one blank line" )
-          else if group == pg then
-            if blankBetween then
-              out +=
-                Violation
-                  ( file, imp.startLine, 1, "302.3",
-                    "unexpected blank line within an import group" )
-            prevName.foreach: pn =>
-              if imp.path < pn then
-                out +=
-                  Violation
-                    ( file, imp.startLine, 1, "302.2",
-                      s"import `${imp.path}` is out of alphabetical order "
-                        +s"(after `$pn`)" )
-
-        case None => ()
-
-      prevGroup   = Some(group)
-      prevName    = Some(imp.path)
-      prevEndLine = imp.endLine
-
-  private def blankLinesBetween
-    ( prevEnd: Int,
-      curStart: Int,
-      lines: IndexedSeq[IndexedSeq[Lexeme]] )
-  :   Int =
-
-    var count = 0
-    var l     = prevEnd + 1
-    while l < curStart do
-      val idx = l - 1
-      if idx >= 0 && idx < lines.length then
-        val toks = lines(idx)
-        if toks.isEmpty || toks.forall(_.kind == Sort.Space) then count += 1
-      l += 1
-    count
-
-  private def classifyImport(path: String): Int =
-    // For multi-import lines (`import a.*, b.x, c.y`), classify by the first
-    // import only — additional comma-separated imports are sub-imports of
-    // the same group. A braced wildcard `{… , *}` counts as a wildcard
-    // import (group 4), since the `*` selector still pulls in everything.
-    // Stop the first-import scan at the first top-level `,` (commas inside
-    // `{…}` are part of the same import).
-    val firstImport =
-      val sb = new StringBuilder
-      var depth = 0
-      var done  = false
-      path.foreach: c =>
-        if !done then
-          if c == '{' then { depth += 1; sb.append(c) }
-          else if c == '}' then { depth -= 1; sb.append(c) }
-          else if depth == 0 && c == ',' then done = true
-          else sb.append(c)
-      sb.toString
-
-    val firstSegment = firstImport.takeWhile{ c => c != '.' && c != '{' && c != ' ' }
-
-    val wildcardImport =
-      firstImport.endsWith(".*") || firstImport.endsWith("*}") || firstImport.endsWith("*, *}")
-    firstSegment match
-      case "language"                          => 1
-      case "java" | "javax"                    => 2
-      case "scala"                             => 3
-      // Compiler / JVM-internals and JEE: dotty (compiler API), `com.sun.*`
-      // (Oracle JVM internals), `sun.*` (raw JVM internals), and `jakarta.*`
-      // (JEE). These are alias-friendly like the JDK but conceptually
-      // distinct from `scala.*`, so they form their own group.
-      case "dotty" | "com" | "sun" | "jakarta" => 4
-
-      case _ =>
-        if firstSegment.headOption.exists(_.isUpper) then 6
-        else if !wildcardImport then 6
-        else 5
 
   private def checkTokens
     ( s:       State,
