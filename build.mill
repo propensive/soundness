@@ -830,6 +830,15 @@ object anthology extends Library:
     override def scalaJs = false // wraps the Java compiler tooling
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  // Drives the Kotlin compiler through `kotlin-compiler-embeddable`, presenting the same
+  // interface as `Scalac` and `Javac`. The compiler is a runtime dependency because it is
+  // invoked in-process, and it brings the Kotlin standard library with it.
+  object kotlin extends Component(core):
+    override def scalaJs = false // wraps the Kotlin compiler
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(mvn"org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10")
+
   object linker extends Component(core, zeppelin.core, revolution.core, eucalyptus.core):
     override def scalaJs = false // JAR packaging and the engine-independent `Linker` machinery
     override def scalacOptions = Task:
@@ -856,7 +865,8 @@ object anthology extends Library:
     override def scalaJs = false // packages Android applications (`java.security`, `zeppelin`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(`scala`, `java`, core, linker, link, nir, dex, apk, spectacular.core):
+  object test
+  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, spectacular.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
