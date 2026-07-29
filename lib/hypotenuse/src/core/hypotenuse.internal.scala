@@ -891,7 +891,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Buffer[Char](8)
+      val chars = Array[Char](8)
 
       while index < 8 do
         chars(index) = if n < 0 then '1' else '0'
@@ -986,7 +986,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Buffer[Char](16)
+      val chars = Array[Char](16)
 
       while index < 16 do
         chars(index) = if n < 0 then '1' else '0'
@@ -1083,7 +1083,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Buffer[Char](32)
+      val chars = Array[Char](32)
 
       while index < 32 do
         chars(index) = if n < 0 then '1' else '0'
@@ -1187,7 +1187,7 @@ object internal:
       var index: Int = 0
       var n: Long = bitmap
 
-      val chars = Buffer[Char](64)
+      val chars = Array[Char](64)
 
       while index < 64 do
         chars(index) = if n < 0 then '1' else '0'

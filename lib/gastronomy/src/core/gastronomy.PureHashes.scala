@@ -91,12 +91,12 @@ private[gastronomy] object PureHashes:
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
     protected update def result(): Data =
-      val out = Buffer[Byte](outputBytes)
+      val out = Array[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
 
-      Buffer.freeze(out)
+      Array.freeze(out)
 
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
   final class Sha512(initial: IArray[Long], outputBytes: Int) extends BlockDigestion(128):
@@ -146,12 +146,12 @@ private[gastronomy] object PureHashes:
       h(4) += e; h(5) += f; h(6) += g; h(7) += hh
 
     protected update def result(): Data =
-      val out = Buffer[Byte](outputBytes)
+      val out = Array[Byte](outputBytes)
       var i = 0
 
       while i < outputBytes do { out(i) = (h(i/8) >>> ((7 - i%8)*8)).toByte; i += 1 }
 
-      Buffer.freeze(out)
+      Array.freeze(out)
 
   // SHA-1 (RFC 3174).
   final class Sha1 extends BlockDigestion(64):
@@ -197,12 +197,12 @@ private[gastronomy] object PureHashes:
 
     protected update def result(): Data =
       val h = scala.Array(h0, h1, h2, h3, h4)
-      val out = Buffer[Byte](20)
+      val out = Array[Byte](20)
       var i = 0
 
       while i < 20 do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
 
-      Buffer.freeze(out)
+      Array.freeze(out)
 
   // MD5 (RFC 1321). Little-endian throughout, unlike the SHA family.
   final class Md5 extends BlockDigestion(64):
@@ -255,16 +255,16 @@ private[gastronomy] object PureHashes:
 
     protected update def result(): Data =
       val h = scala.Array(a0, b0, c0, d0)
-      val out = Buffer[Byte](16)
+      val out = Array[Byte](16)
       var i = 0
 
       while i < 16 do { out(i) = (h(i/4) >>> ((i%4)*8)).toByte; i += 1 }
 
-      Buffer.freeze(out)
+      Array.freeze(out)
 
   object Crc32:
     val table: IArray[Int] =
-      val result = Buffer[Int](256)
+      val result = Array[Int](256)
       var n = 0
 
       while n < 256 do
@@ -274,7 +274,7 @@ private[gastronomy] object PureHashes:
         result(n) = c
         n += 1
 
-      Buffer.freeze(result)
+      Array.freeze(result)
 
   // CRC-32 (RFC 1952), the checksum used by gzip and zip.
   final class Crc32 extends Digestion:

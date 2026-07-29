@@ -59,8 +59,8 @@ object CanonicalCbor:
         index += 1
 
       val sorted = builder.sortWith: (a, b) => compareBytes(a._1, b._1) < 0
-      val keys = Buffer[Any](n)
-      val values = Buffer[Any](n)
+      val keys = Array[Any](n)
+      val values = Array[Any](n)
       var write = 0
 
       while write < n do
@@ -68,17 +68,17 @@ object CanonicalCbor:
         values(write) = sorted(write)._3
         write += 1
 
-      Cbor.Ast.map(Buffer.freeze(keys), Buffer.freeze(values))
+      Cbor.Ast.map(Array.freeze(keys), Array.freeze(values))
     else if ast.isArray then
       val n = ast.elements
-      val out = Buffer[Any](n)
+      val out = Array[Any](n)
       var index = 0
 
       while index < n do
         out(index) = canonicalise(ast.element(index))
         index += 1
 
-      Cbor.Ast.array(Buffer.freeze(out))
+      Cbor.Ast.array(Array.freeze(out))
     else if ast.isTag then
       val tag = ast.asInstanceOf[Cbor.Tag]
       Cbor.Ast(Cbor.Tag(tag.tag, canonicalise(tag.value.asInstanceOf[Cbor.Ast])))

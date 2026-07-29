@@ -146,7 +146,7 @@ private[hallucination] object BmpCodec:
   def encode(raster: Raster): Data =
     val rowSize = (raster.width*3 + 3)& -4
     val imageSize = rowSize*raster.height
-    // A raw exclusive array rather than a `Buffer`: the buffer-typed local's definition
+    // A raw exclusive array rather than a `Array`: the buffer-typed local's definition
     // hides its own fresh capability, poisoning the helper calls below.
     val buffer: scala.Array[Byte]^ = new scala.Array[Byte](54 + imageSize)
 

@@ -790,7 +790,7 @@ object internal:
     def apply(pairs: (Text, Text)*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length
-        val buffer = Buffer[String](n*2)
+        val buffer = Array[String](n*2)
         var i = 0
 
         pairs.foreach: pair =>
@@ -798,13 +798,13 @@ object internal:
           buffer(i*2 + 1) = pair._2.s
           i += 1
 
-        Buffer.freeze(buffer)
+        Array.freeze(buffer)
 
     def from(map: Map[Text, Text]): Attributes =
       val entries = map.stdlib
       if entries.isEmpty then empty else
         val n = entries.size
-        val buffer = Buffer[String](n*2)
+        val buffer = Array[String](n*2)
         var i = 0
 
         entries.foreach: (k, v) =>
@@ -812,7 +812,7 @@ object internal:
           buffer(i*2 + 1) = v.s
           i += 1
 
-        Buffer.freeze(buffer)
+        Array.freeze(buffer)
 
     // Construct an `Attributes` directly from an interleaved `IArray`. The
     // caller guarantees the array's length is even and that every key slot
@@ -985,10 +985,10 @@ object internal:
           i += 2
 
         if idx < 0 then attrs else
-          val nu = Buffer[String](n - 2)
+          val nu = Array[String](n - 2)
           if idx > 0 then nu.copyFrom(attrs, 0, 0, idx)
           if idx < n - 2 then nu.copyFrom(attrs, idx + 2, idx, n - 2 - idx)
-          Buffer.freeze(nu)
+          Array.freeze(nu)
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -1010,16 +1010,16 @@ object internal:
           i += 2
 
         if idx >= 0 then
-          val nu = Buffer[String](n)
+          val nu = Array[String](n)
           nu.copyFrom(attrs, 0, 0, n)
           nu(idx + 1) = value.s
-          Buffer.freeze(nu)
+          Array.freeze(nu)
         else
-          val nu = Buffer[String](n + 2)
+          val nu = Array[String](n + 2)
           nu.copyFrom(attrs, 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.s
-          Buffer.freeze(nu)
+          Array.freeze(nu)
 
       def `++`(other: Attributes): Attributes =
         val a = storage(attrs)
@@ -1029,7 +1029,7 @@ object internal:
         else if a.length == 0 then other
         else
           val total = a.length + b.length
-          val nu = Buffer[String](total)
+          val nu = Array[String](total)
           var written = 0
           var i = 0
 
@@ -1065,12 +1065,12 @@ object internal:
 
             j += 2
 
-          val frozen = Buffer.freeze(nu)
+          val frozen = Array.freeze(nu)
 
           if written == total then frozen else
-            val tu = Buffer[String](written)
+            val tu = Array[String](written)
             tu.copyFrom(frozen, 0, 0, written)
-            Buffer.freeze(tu)
+            Array.freeze(tu)
 
       def `++`(other: Map[Text, Text]): Attributes =
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)

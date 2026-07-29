@@ -61,8 +61,7 @@ object Blake3:
   private final val DeriveKeyMaterial = 64
 
   private final val Iv: IArray[Int] =
-    Array
-      ( 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+    scala.Array      ( 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
         0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 )
 
     . asInstanceOf[IArray[Int]]
@@ -94,7 +93,7 @@ object Blake3:
     mix(state, 3, 4,  9, 14, m(14), m(15))
 
   private def permute(m: scala.Array[Int]^): Unit =
-    val out = Buffer[Int](16)
+    val out = Array[Int](16)
     var i = 0
 
     while i < 16 do
@@ -166,7 +165,7 @@ object Blake3:
       cv
 
     def rootOutputBytes(outLen: Int): IArray[Byte] =
-      val result = Buffer[Byte](outLen)
+      val result = Array[Byte](outLen)
       var blockCounter = 0L
       var pos = 0
 
@@ -184,7 +183,7 @@ object Blake3:
         pos += take
         blockCounter += 1
 
-      Buffer.freeze(result)
+      Array.freeze(result)
 
   private def parentOutput
     ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )

@@ -50,7 +50,7 @@ import vacuous.*
 // materialising the trie into a dense form up-front.
 //
 // `value` is expected to be a reference type at runtime; the internal
-// storage allocates `new Array[value](n)` via `ClassTag` and re-views it
+// storage allocates `new scala.Array[value](n)` via `ClassTag` and re-views it
 // as `Array[value | Null]` so callers can null-check at access sites.
 // Storing a primitive `value` (e.g. `Int`) would box at runtime — fine
 // for occasional access, wasteful in hot loops.
@@ -260,11 +260,11 @@ object Dictionary:
       // nodes get fail = 0; deeper nodes get the longest proper suffix
       // of their path that is itself a path from root. `dictLink` skips
       // fail-chain ancestors that have no value. The four scratch buffers are
-      // fresh `Buffer`s, so the checker tracks their separation directly.
-      val depthArr    = Buffer[Int](nodeCount)
-      val failArr     = Buffer[Int](nodeCount)
-      val dictLinkArr = Buffer[Int](nodeCount)
-      val queue       = Buffer[Int](nodeCount)
+      // fresh `Array`s, so the checker tracks their separation directly.
+      val depthArr    = Array[Int](nodeCount)
+      val failArr     = Array[Int](nodeCount)
+      val dictLinkArr = Array[Int](nodeCount)
+      val queue       = Array[Int](nodeCount)
       var qHead = 0
       var qTail = 0
       var c = 0

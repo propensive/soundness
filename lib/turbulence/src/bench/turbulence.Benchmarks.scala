@@ -738,7 +738,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             total
         }
 
-      bench(m"Raw  Array[Byte] loop")(target = 1*Second, operationSize = size):
+      bench(m"Raw  scala.Array[Byte] loop")(target = 1*Second, operationSize = size):
         '{
             val array = turbulence.Benchmarks.inputArray
             var total = 0L

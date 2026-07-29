@@ -135,7 +135,7 @@ object Tar:
         def hasNext: Boolean = replenish()
 
         def next(): Data =
-          val block = Buffer[Byte](512)
+          val block = Array[Byte](512)
           var position = 0
 
           while position < 512 && replenish() do
@@ -144,7 +144,7 @@ object Tar:
             offset += count
             position += count
 
-          Buffer.freeze(block)
+          Array.freeze(block)
 
   enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File

@@ -50,8 +50,8 @@ trait Digestion extends caps.Mutable:
   // its input synchronously and never retains it. The default copies the window;
   // providers that can consume a slice in place override it.
   update def append(array: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
-    val copy = Buffer[Byte](count)
+    val copy = Array[Byte](count)
     System.arraycopy(array, start, copy.raw, 0, count)
-    append(Buffer.freeze(copy))
+    append(Array.freeze(copy))
 
   update def digest(): Data

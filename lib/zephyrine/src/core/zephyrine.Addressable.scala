@@ -181,9 +181,9 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): IArray[element] =
-      val array = Buffer[element](len)
+      val array = Array[element](len)
       System.arraycopy(storage, off, array.raw, 0, len)
-      Buffer.freeze(array)
+      Array.freeze(array)
 
     def cloneStorage
       (storage: scala.Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[element])
@@ -211,20 +211,20 @@ object Addressable:
     // element type is generic), so materialized chunks must really be
     // `String[]`s; the storage stays `Array[AnyRef]`, which `String[]` enters
     // covariantly.
-    val empty: IArray[Text] = Buffer.freeze(Buffer[String](0)).asInstanceOf[IArray[Text]]
+    val empty: IArray[Text] = Array.freeze(Array[String](0)).asInstanceOf[IArray[Text]]
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[Text] = scm.ArrayBuffer[Text]()
 
     def build(target: scm.ArrayBuffer[Text]): IArray[Text] =
-      val array = Buffer[String](target.length)
+      val array = Array[String](target.length)
       var index = 0
 
       while index < target.length do
         array(index) = target(index).s
         index += 1
 
-      Buffer.freeze(array).asInstanceOf[IArray[Text]]
+      Array.freeze(array).asInstanceOf[IArray[Text]]
 
     def length(block: IArray[Text]): Int = block.length
     def address(block: IArray[Text], index: Ordinal): Text = block(index.n0)
@@ -272,9 +272,9 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): IArray[Text] =
-      val array = Buffer[String](len)
+      val array = Array[String](len)
       System.arraycopy(storage, off, array.raw, 0, len)
-      Buffer.freeze(array).asInstanceOf[IArray[Text]]
+      Array.freeze(array).asInstanceOf[IArray[Text]]
 
     def cloneStorage
       (storage: scala.Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Text])
@@ -296,20 +296,20 @@ object Addressable:
     type Target = scm.ArrayBuffer[Data]
     type Storage = scala.Array[AnyRef]
 
-    val empty: IArray[Data] = Buffer.freeze(Buffer[Data](0))
+    val empty: IArray[Data] = Array.freeze(Array[Data](0))
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[Data] = scm.ArrayBuffer[Data]()
 
     def build(target: scm.ArrayBuffer[Data]): IArray[Data] =
-      val array = Buffer[Data](target.length)
+      val array = Array[Data](target.length)
       var index = 0
 
       while index < target.length do
         array(index) = target(index)
         index += 1
 
-      Buffer.freeze(array)
+      Array.freeze(array)
 
     def length(block: IArray[Data]): Int = block.length
     def address(block: IArray[Data], index: Ordinal): Data = block(index.n0)
@@ -357,9 +357,9 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): IArray[Data] =
-      val array = Buffer[Data](len)
+      val array = Array[Data](len)
       System.arraycopy(storage, off, array.raw, 0, len)
-      Buffer.freeze(array)
+      Array.freeze(array)
 
     def cloneStorage
       (storage: scala.Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Data])

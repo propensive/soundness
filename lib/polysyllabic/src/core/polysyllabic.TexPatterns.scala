@@ -61,7 +61,7 @@ private[polysyllabic] object TexPatterns:
       if !Character.isDigit(s.charAt(i)) then letterCount += 1
       i += 1
 
-    val scores = Buffer[Byte](letterCount + 1)
+    val scores = Array[Byte](letterCount + 1)
     val letters = new java.lang.StringBuilder(letterCount)
     var letterIndex = 0
     i = 0
@@ -76,7 +76,7 @@ private[polysyllabic] object TexPatterns:
 
       i += 1
 
-    (letters.toString.tt, Buffer.freeze(scores))
+    (letters.toString.tt, Array.freeze(scores))
 
   // Decode one TeX exception entry. `as-so-ciate` ↦ (`associate`, [2, 4]).
   // The break offsets count letter positions in the dehyphenated word.
@@ -84,7 +84,7 @@ private[polysyllabic] object TexPatterns:
     val s = raw.s
     val n = s.length
     val letters = new java.lang.StringBuilder(n)
-    val breaks = Buffer[Int](n)
+    val breaks = Array[Int](n)
     var count = 0
     var i = 0
 
@@ -98,9 +98,9 @@ private[polysyllabic] object TexPatterns:
 
       i += 1
 
-    val exact = Buffer[Int](count)
-    exact.copyFromBuffer(breaks, 0, 0, count)
-    (letters.toString.tt, Buffer.freeze(exact))
+    val exact = Array[Int](count)
+    exact.copyFromArray(breaks, 0, 0, count)
+    (letters.toString.tt, Array.freeze(exact))
 
   // Strip `%`-to-end-of-line comments from a TeX file. Backslash-escaped
   // percents are not used in hyphenation pattern files, so a naive scan

@@ -70,13 +70,13 @@ extension (text: Text)
     // the same allocation across the entire `text.hyphenate` call. A `var`
     // cannot hold an exclusive buffer, so growth recurses instead: each
     // `walk` frame scans until a word outgrows the scratch, then consumes
-    // the buffers into `Buffer.grow` and continues from the same position —
+    // the buffers into `Array.grow` and continues from the same position —
     // recursion depth is the number of growths, not the number of words.
     def walk
       ( from:           Int,
-        consume padded: Buffer[Char]^,
-        consume scores: Buffer[Byte]^,
-        consume breaks: Buffer[Int]^ )
+        consume padded: Array[Char]^,
+        consume scores: Array[Byte]^,
+        consume breaks: Array[Int]^ )
     :   Unit =
 
       var i = from
@@ -119,11 +119,11 @@ extension (text: Text)
 
         walk
           ( i,
-            Buffer.grow(padded, newSize),
-            Buffer.grow(scores, newSize + 1),
-            Buffer.grow(breaks, newSize) )
+            Array.grow(padded, newSize),
+            Array.grow(scores, newSize + 1),
+            Array.grow(breaks, newSize) )
 
-    walk(0, Buffer[Char](32), Buffer[Byte](33), Buffer[Int](32))
+    walk(0, Array[Char](32), Array[Byte](33), Array[Int](32))
     out.toString.tt
 
   // Split a single word at every admissible break point. For multi-word

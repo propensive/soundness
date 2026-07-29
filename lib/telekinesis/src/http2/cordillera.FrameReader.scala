@@ -95,10 +95,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
     buffer.length - pos >= n
 
   private update def slice(n: Int): Bytes =
-    val out = Buffer[Byte](n)
+    val out = Array[Byte](n)
     System.arraycopy(buffer, pos, out.raw, 0, n)
     pos += n
-    Buffer.freeze(out)
+    Array.freeze(out)
 
   // Consume and validate the given connection preface (RFC 7540 §3.5) ahead of
   // the first frame — the server role's first read on a new connection. A

@@ -34,15 +34,9 @@ package vacuous
 
 import scala.caps
 
-// `Buffer` itself lives in `proscenium` (the prelude module, which sits below this one);
-// aliased here so `import vacuous.*` continues to provide it. Type and val aliases, not an
-// `export`: forwarders re-elaborate the companion's capture-carrying signatures, degrading
-// the fresh (`^`) results to `{any}` (the same overload-precision hazard the prelude notes
-// for `Array`/`IArray`). This module adds the total read, `at`, which `proscenium` cannot
-// define because `Optional` lives here.
-type Buffer[element] = proscenium.Buffer[element]
-val Buffer: proscenium.Buffer.type = proscenium.Buffer
-
-extension [element](buffer: Buffer[element]^{caps.any.rd})
+// `Array` (the separation-checked opaque) lives in `proscenium`, beneath this module; this
+// file adds its total read, `at`, which `proscenium` cannot define because `Optional`
+// lives here. Built on the bounds-partial `readUnchecked`, which exists for this layering.
+extension [element](array: Array[element]^{caps.any.rd})
   def at(index: Int): Optional[element] =
-    if index >= 0 && index < buffer.length then buffer.readUnchecked(index) else Unset
+    if index >= 0 && index < array.length then array.readUnchecked(index) else Unset

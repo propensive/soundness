@@ -87,9 +87,9 @@ inline def builder[value](using value: value aka "builder"): value = value()
 
 extension (module: IArray.type)
   def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): IArray[element] =
-    val array = Buffer[element](size)
+    val array = Array[element](size)
     lambda(array.raw)
-    Buffer.freeze(array)
+    Array.freeze(array)
 
 extension (module: Text.type)
   def build(block: TextBuilder aka "builder" ?=> Unit): Text =
@@ -100,7 +100,7 @@ extension (module: Text.type)
   def ascii(bytes: Data): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
 
   def fill(length: Int)(lambda: Int => Char): Text =
-    val buffer = Buffer[Char](length)
+    val buffer = Array[Char](length)
     var index = 0
 
     while index < length do
@@ -478,8 +478,8 @@ package proximities:
     (left, right) =>
       val m = left.s.length
       val n = right.length
-      val old = Buffer[Int](n + 1)
-      val dist = Buffer[Int](n + 1)
+      val old = Array[Int](n + 1)
+      val dist = Array[Int](n + 1)
       var j = 1
 
       while j <= n do
@@ -499,7 +499,7 @@ package proximities:
           dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
           j += 1
 
-        old.copyFromBuffer(dist, 0, 0, n + 1)
+        old.copyFromArray(dist, 0, 0, n + 1)
         i += 1
 
       if m == 0 then n else dist(n)

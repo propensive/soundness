@@ -112,11 +112,11 @@ class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
     drain()
 
     if memo.length == 1 then memo(0) else
-      val whole = Buffer[Byte](size.toInt)
+      val whole = Array[Byte](size.toInt)
       var offset = 0
 
       memo.each: chunk =>
         whole.copyFrom(chunk, 0, offset, chunk.length)
         offset += chunk.length
 
-      Buffer.freeze(whole)
+      Array.freeze(whole)

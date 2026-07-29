@@ -49,9 +49,9 @@ import vacuous.*
 object JavaStdlibCrypto extends Crypto:
   def random: Crypto.Random = new Crypto.Random:
     def bytes(size: Int): Data =
-      val output = Buffer[Byte](size)
+      val output = Array[Byte](size)
       js.SecureRandom().nextBytes(output.raw)
-      Buffer.freeze(output)
+      Array.freeze(output)
 
   def aes:       Crypto.SymmetricCipher = symmetric(t"AES")
   def des:       Crypto.SymmetricCipher = symmetric(t"DES")
@@ -62,8 +62,8 @@ object JavaStdlibCrypto extends Crypto:
   def hmac(algorithm: Text): Crypto.Mac = new Crypto.Mac:
     def mac(key: Data, data: Data): Data =
       val mac = jc.Mac.getInstance(algorithm.s).nn
-      mac.init(SecretKeySpec(key.stdlib.to(Array), algorithm.s))
-      mac.doFinal(data.stdlib.to(Array)).nn.immutable(using Unsafe)
+      mac.init(SecretKeySpec(key.stdlib.to(scala.Array), algorithm.s))
+      mac.doFinal(data.stdlib.to(scala.Array)).nn.immutable(using Unsafe)
 
   def rsa: Crypto.PublicKeyCipher = new Crypto.PublicKeyCipher:
     private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
@@ -106,15 +106,15 @@ object JavaStdlibCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = signature()
-      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(Array))))
-      sig.update(data.stdlib.to(Array))
+      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(scala.Array))))
+      sig.update(data.stdlib.to(scala.Array))
       sig.sign().nn.immutable(using Unsafe)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = signature()
-      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.stdlib.to(Array))))
-      sig.update(data.stdlib.to(Array))
-      sig.verify(signature0.stdlib.to(Array))
+      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.stdlib.to(scala.Array))))
+      sig.update(data.stdlib.to(scala.Array))
+      sig.verify(signature0.stdlib.to(scala.Array))
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("DSA").nn
@@ -122,7 +122,7 @@ object JavaStdlibCrypto extends Crypto:
       generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
     def privateToPublic(privateKey: Data): Data =
-      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(Array))).nn match
+      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.stdlib.to(scala.Array))).nn match
         case key: jsi.DSAPrivateKey => key
         case key: js.PrivateKey     => panic(m"unexpected private key type")
 

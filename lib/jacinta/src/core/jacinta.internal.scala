@@ -303,7 +303,7 @@ object internal:
       fromRawBits(sign | (count.toLong & MantissaMask))
 
     // Internal: wrap a freshly-built header+data array as a `Bcd`.
-    private[jacinta] inline def wrap(arr: Array[Double]): Bcd = IArray.unsafeFromArray(arr)
+    private[jacinta] inline def wrap(arr: scala.Array[Double]): Bcd = IArray.unsafeFromArray(arr)
 
     // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
     // a `Json.Ast` array variant. One number per Long:
@@ -447,7 +447,7 @@ object internal:
     // `Bcd.Builder` allocation and the `seedFromLong` re-walk; the layout
     // is fixed (1 header + 1 data word).
     private[jacinta] def fromContent15(content: Long, negative: Boolean): Bcd =
-      val arr = new Array[Double](2)
+      val arr = new scala.Array[Double](2)
       arr(0) = packHeaderDouble(negative, 15)
       arr(1) = packDataDouble(content)
       IArray.unsafeFromArray(arr)
@@ -504,7 +504,7 @@ object internal:
     // at a time as it overflows the in-Long fast path. Keeps a growing
     // `Array[Double]` of completed words and a current 52-bit nibble buffer.
     final class Builder extends caps.Mutable:
-      private var data: Array[Double]^ = new Array[Double](2)
+      private var data: scala.Array[Double]^ = new scala.Array[Double](2)
       private var wordIdx: Int = 0
       private var word: Long = 0L   // raw nibble buffer; packed into a Double on commit
       private var inWord: Int = 0
@@ -550,7 +550,7 @@ object internal:
       // committed right-justified in its data slot.
       def finish(negative: Boolean): Bcd =
         val totalDataDoubles = if inWord > 0 then wordIdx + 1 else wordIdx
-        val arr = new Array[Double](1 + totalDataDoubles)
+        val arr = new scala.Array[Double](1 + totalDataDoubles)
         arr(0) = packHeaderDouble(negative, nibbles)
         System.arraycopy(data, 0, arr, 1, wordIdx)
         if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
@@ -559,7 +559,7 @@ object internal:
       private update def ensureCapacity(needed: Int): Unit =
         if needed > data.length then
           val newSize = (data.length * 2).max(needed)
-          val newData = new Array[Double](newSize)
+          val newData = new scala.Array[Double](newSize)
           System.arraycopy(data, 0, newData, 0, wordIdx)
           data = newData
 
@@ -857,7 +857,7 @@ object internal:
       def serializeString(s: String): Expr[Json.Ast] =
         if !hasMarker(s) then '{Json.Ast(${Expr(s)})}
         else
-          val parts: Array[String | Null] = s.split(MarkerString, -1).nn
+          val parts: scala.Array[String | Null] = s.split(MarkerString, -1).nn
           var resultExpr: Expr[String] = Expr(parts(0).nn)
           var i = 1
 
@@ -954,7 +954,7 @@ object internal:
         case d: Double =>
           '{Json.Ast(${Expr(d)})}
 
-        case bcd: Array[Double] @unchecked =>
+        case bcd: scala.Array[Double] @unchecked =>
           // High-precision BCD value parsed at compile time. Reconstruct it
           // at runtime from its canonical text form so the literal stays
           // independent of the parser's internal nibble layout.
@@ -970,12 +970,12 @@ object internal:
         case null =>
           '{Json.Ast(Json.JsonNull)}
 
-        case bcds: Array[Long] @unchecked =>
+        case bcds: scala.Array[Long] @unchecked =>
           // Number-only array literal (BCD-Long packed).
           val seq: Expr[Seq[Long]] = Expr(bcds.toSeq)
           '{Json.Ast.bcdArr($seq.toArray)}
 
-        case smalls: Array[Int] @unchecked =>
+        case smalls: scala.Array[Int] @unchecked =>
           // Number-only array literal (small-BCD packed).
           val seq: Expr[Seq[Int]] = Expr(smalls.toSeq)
           '{Json.Ast.smallBcdArr($seq.toArray)}
@@ -1015,7 +1015,7 @@ object internal:
       var types: List[TypeRepr] = Nil
 
       def descend
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          pattern: Any,
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
@@ -1065,7 +1065,7 @@ object internal:
                   $scrutinee.asInstanceOf[Double] == ${Expr(d)}
               }
 
-          case bcd: Array[Long] @unchecked =>
+          case bcd: scala.Array[Long] @unchecked =>
             // High-precision BCD literal in the extractor pattern. We
             // compare the scrutinee's BCD against the same literal text
             // form, going via `BigDecimal` so a parsed `Bcd("1.0")` matches
@@ -1080,7 +1080,7 @@ object internal:
           case null =>
             '{$accept && $scrutinee.isNull}
 
-          case nums: Array[Double] @unchecked =>
+          case nums: scala.Array[Double] @unchecked =>
             // Number-only array literal in the pattern: descend by treating
             // each Double as an element. Synthesise an `IArray[Any]` of
             // unpacked element literals (Long for whole-valued, Double
@@ -1108,7 +1108,7 @@ object internal:
             halt(m"unexpected JSON AST node ${other.toString.tt}")
 
       def descendArray
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          elements: IArray[Any],
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
@@ -1152,7 +1152,7 @@ object internal:
                 $combined && {
                   val total = $scrutinee.arrayLength
                   val tailLen = total - ${Expr(prefixLen)}
-                  val tail = new Array[Any](tailLen)
+                  val tail = new scala.Array[Any](tailLen)
                   var k = 0
 
                   while k < tailLen do
@@ -1192,7 +1192,7 @@ object internal:
 
           c
 
-        case _: Array[Double] @unchecked =>
+        case _: scala.Array[Double] @unchecked =>
           // Number-only array literal — never contains holes.
           0
 
@@ -1228,7 +1228,7 @@ object internal:
           0
 
       def descendObject
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          node: IArray[Any],
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
@@ -1344,7 +1344,7 @@ object internal:
 
       val result: Expr[Extrapolation[Json]] =
         ' {
-            val extracts = new Array[Any](${Expr(numberOfHoles)})
+            val extracts = new scala.Array[Any](${Expr(numberOfHoles)})
 
             val matches: Boolean =
               ${descend('extracts, ast, '{$scrutinee.root}, '{true})}

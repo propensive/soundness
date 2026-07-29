@@ -104,7 +104,7 @@ object Html extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val buffer = Buffer[Node](count)
+      val buffer = Array[Node](count)
 
       var index = 0
 
@@ -117,7 +117,7 @@ object Html extends Tag.Container
           buffer(index) = node
           index += 1
 
-      Buffer.freeze(buffer)
+      Array.freeze(buffer)
 
   inline given interpolator: Html is Interpolable:
     type Result = Html
@@ -653,10 +653,10 @@ object Html extends Tag.Container
 
     // Snapshot the trailing `count` accumulated nodes into an `IArray` and release them.
     update def array(count: Int): IArray[Node] =
-      val result = Buffer[Node](count)
+      val result = Array[Node](count)
       System.arraycopy(nodes, 0.max(index - count), result.raw, 0, count)
       index -= count
-      Buffer.freeze(result)
+      Array.freeze(result)
 
     // Grow-and-write one interleaved attribute pair at slot `n` (the caller counts).
     update def attrAppend(n: Int, key: String | Null, value: String | Null): Unit =
@@ -685,7 +685,7 @@ object Html extends Tag.Container
 
     update def resetPendingFormatting(): Unit = pendingFormattingSize = 0
 
-    // Buffer one foster-parented child: after the table if we're already inside table
+    // Array one foster-parented child: after the table if we're already inside table
     // content, before it otherwise.
     update def foster(node: Node, inTable: Boolean): Unit =
       if inTable then
@@ -1240,9 +1240,9 @@ object Html extends Tag.Container
 
         if n == 0 then Attributes.empty
         else
-          val arr = Buffer[String | Null](2*n)
+          val arr = Array[String | Null](2*n)
           jl.System.arraycopy(state.attrInterleaved, 0, arr.raw, 0, 2*n)
-          Attributes.fromInterleaved(Buffer.freeze(arr))
+          Attributes.fromInterleaved(Array.freeze(arr))
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):

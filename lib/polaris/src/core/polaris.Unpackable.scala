@@ -49,14 +49,14 @@ object Unpackable:
 
       count =>
         val local = Sextant(bytes, start)
-        val buffer = Buffer[pack](count)
+        val buffer = Array[pack](count)
         var index = 0
 
         while index < count do
           buffer(index) = pack.debuffer(local)
           index += 1
 
-        Buffer.freeze(buffer)
+        Array.freeze(buffer)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type

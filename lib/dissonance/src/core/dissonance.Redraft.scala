@@ -228,7 +228,7 @@ object Redraft:
         Redraft(minimize(resolved, original, List.from(diff.patch(original.to(List)).stdlib))*)
 
   private def trim(directives: List[Directive], k: Int): List[Directive] =
-    val keep = directives.stdlib.map { case Directive.Keep(_) => false; case _ => true }.to(Array)
+    val keep = directives.stdlib.map { case Directive.Keep(_) => false; case _ => true }.to(scala.Array)
     val n = keep.length
 
     def near(index: Int): Boolean =
@@ -242,7 +242,7 @@ object Redraft:
     ( directives: List[Directive], original: IndexedSeq[Text], target: List[Text] )
   :   List[Directive] =
 
-    val array = directives.stdlib.to(Array)
+    val array = directives.stdlib.to(scala.Array)
     val dropped = scala.collection.mutable.Set[Int]()
 
     def remaining: List[Directive] =

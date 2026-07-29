@@ -1009,7 +1009,7 @@ object Xml extends Tag.Container
           given tactic: Tactic[XmlError] = reader.errorTactic
           val entries = fields
           val count = entries.length
-          val values = new Array[Any](count)
+          val values = new scala.Array[Any](count)
           var index = 0
 
           while index < count do
@@ -1124,7 +1124,7 @@ object Xml extends Tag.Container
 
           val entries = fields
           val count = entries.length
-          val values = new Array[Any](count)
+          val values = new scala.Array[Any](count)
           val focused = foci.active
           var index = 0
 
@@ -1410,7 +1410,7 @@ object Xml extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val array = new Array[Node](count)
+      val array = new scala.Array[Node](count)
 
       var index = 0
 
@@ -2106,7 +2106,7 @@ object Xml extends Tag.Container
     // exactly representable, so `mantissa.toDouble / TenPow(scale)` is
     // correctly rounded whenever the mantissa fits in 53 bits.
     private[xylophone] val TenPow: IArray[Double] =
-      Array(1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15)
+      scala.Array(1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15)
       . asInstanceOf[IArray[Double]]
 
     // `true` and `false` packed LSB-first, for the boolean content fast path.
@@ -2162,10 +2162,10 @@ object Xml extends Tag.Container
     // the populated prefix into a freshly-sized `IArray[String]` to wrap
     // as the opaque `Attributes`. Geometric growth.
     @scala.caps.unsafe.untrackedCaptures
-    private var attrBuf: Array[String] = new Array[String](16)
+    private var attrBuf: scala.Array[String] = new scala.Array[String](16)
 
     // An exclusive view for writes: the untracked field reads as read-only.
-    private inline def attrBufTarget: Array[String]^ = attrBuf.asInstanceOf[Array[String]^]
+    private inline def attrBufTarget: scala.Array[String]^ = attrBuf.asInstanceOf[scala.Array[String]^]
 
     // Pool of `ArrayBuffer[Node]` instances re-used across recursive
     // `readChildren` calls. Each nesting level borrows one, fills it, copies
@@ -2193,20 +2193,20 @@ object Xml extends Tag.Container
     private inline val TagCacheSize = 64
     private inline val TagCacheMaxChars = 16
     @scala.caps.unsafe.untrackedCaptures
-    private val tagCache:     Array[Text | Null] = new Array(TagCacheSize)
+    private val tagCache:     scala.Array[Text | Null] = new scala.Array(TagCacheSize)
 
     @scala.caps.unsafe.untrackedCaptures
-    private val tagCacheLow:  Array[Long]        = new Array(TagCacheSize)
+    private val tagCacheLow:  scala.Array[Long]        = new scala.Array(TagCacheSize)
 
     @scala.caps.unsafe.untrackedCaptures
-    private val tagCacheHigh: Array[Long]        = new Array(TagCacheSize)
+    private val tagCacheHigh: scala.Array[Long]        = new scala.Array(TagCacheSize)
 
     // Exclusive views for writes: the untracked fields read as read-only.
-    private inline def tagCacheTarget: Array[Text | Null]^ =
-      tagCache.asInstanceOf[Array[Text | Null]^]
+    private inline def tagCacheTarget: scala.Array[Text | Null]^ =
+      tagCache.asInstanceOf[scala.Array[Text | Null]^]
 
-    private inline def tagCacheLowTarget: Array[Long]^ = tagCacheLow.asInstanceOf[Array[Long]^]
-    private inline def tagCacheHighTarget: Array[Long]^ = tagCacheHigh.asInstanceOf[Array[Long]^]
+    private inline def tagCacheLowTarget: scala.Array[Long]^ = tagCacheLow.asInstanceOf[scala.Array[Long]^]
+    private inline def tagCacheHighTarget: scala.Array[Long]^ = tagCacheHigh.asInstanceOf[scala.Array[Long]^]
 
     // Fingerprint of the name most recently read by `readName` — the packed
     // words it computes anyway for the tag cache, and whether they identify
@@ -2377,7 +2377,7 @@ object Xml extends Tag.Container
     @scala.caps.unsafe.untrackedCaptures
     private var bytes0: AnyRef = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
 
-    private inline def bytes: Array[Char]^ = bytes0.asInstanceOf[Array[Char]^]
+    private inline def bytes: scala.Array[Char]^ = bytes0.asInstanceOf[scala.Array[Char]^]
     @scala.caps.unsafe.untrackedCaptures
     private var pos:    Int = cursor.unsafePos(using Unsafe)
     @scala.caps.unsafe.untrackedCaptures
@@ -2681,8 +2681,8 @@ object Xml extends Tag.Container
           // `Arrays.copyOf` (a Java method) yields an array that adapts to the pure field
           // type; a Scala-side fresh array could not be assigned inside the parse loop.
           attrBuf = java.util.Arrays
-          . copyOf(attrBuf.asInstanceOf[Array[AnyRef | Null]], attrBuf.length*2)
-          . nn.asInstanceOf[Array[String]]
+          . copyOf(attrBuf.asInstanceOf[scala.Array[AnyRef | Null]], attrBuf.length*2)
+          . nn.asInstanceOf[scala.Array[String]]
 
       while !done do
         skipWs()
@@ -2737,7 +2737,7 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = new Array[String](2*n)
+        val arr = new scala.Array[String](2*n)
         jl.System.arraycopy(attrBuf, 0, arr, 0, 2*n)
         Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
@@ -3044,7 +3044,7 @@ object Xml extends Tag.Container
       val result =
         if children.nil then IArray.empty[Node]
         else
-          val arr = new Array[Node](children.length)
+          val arr = new scala.Array[Node](children.length)
           var i = 0
 
           while i < children.length do
@@ -3225,8 +3225,8 @@ object Xml extends Tag.Container
           // `Arrays.copyOf` (a Java method) yields an array that adapts to the pure field
           // type; a Scala-side fresh array could not be assigned inside the parse loop.
           attrBuf = java.util.Arrays
-          . copyOf(attrBuf.asInstanceOf[Array[AnyRef | Null]], attrBuf.length*2)
-          . nn.asInstanceOf[Array[String]]
+          . copyOf(attrBuf.asInstanceOf[scala.Array[AnyRef | Null]], attrBuf.length*2)
+          . nn.asInstanceOf[scala.Array[String]]
 
       while !done do
         skipWs()
@@ -3297,7 +3297,7 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = new Array[String](2*n)
+        val arr = new scala.Array[String](2*n)
         jl.System.arraycopy(attrBuf, 0, arr, 0, 2*n)
         Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
@@ -3368,7 +3368,7 @@ object Xml extends Tag.Container
       val result =
         if children.nil then IArray.empty[Node]
         else
-          val arr = new Array[Node](children.length)
+          val arr = new scala.Array[Node](children.length)
           var i = 0
 
           while i < children.length do

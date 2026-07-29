@@ -35,38 +35,38 @@ package proscenium
 import scala.caps
 import scala.reflect.ClassTag
 
-// A `Buffer` is a fixed-size mutable array whose access rights are tracked by separation
+// An `Array` is a fixed-size mutable array whose access rights are tracked by separation
 // checking: any reference can read, but only an exclusive (`^`) reference can write, aliased
-// writers are rejected, and `freeze` consumes the buffer to yield an immutable `IArray`
+// writers are rejected, and `freeze` consumes the array to yield an immutable `IArray`
 // without copying -- sound because `consume` statically retires every writer. An opaque
 // alias rather than a wrapper class: the mutalias compiler patch classifies the alias as
-// mutable wherever it appears, so hiding `Array` costs nothing at runtime.
+// mutable wherever it appears, so hiding `scala.Array` costs nothing at runtime.
 //
 // The total, `Optional`-returning read (`at`) lives in `vacuous`, which sits above this
 // module; it is built from `length` and the bounds-partial `readUnchecked` below.
-object Buffer:
-  def apply[element: ClassTag](size: Int): Buffer[element]^ = new Array[element](size)
+object Array:
+  def apply[element: ClassTag](size: Int): Array[element]^ = new scala.Array[element](size)
 
   // A bare JVM array, allocated through the companion so that interior scratch (the
-  // fields of `caps.Mutable` state machines, and other code below the reach of `Buffer`'s
+  // fields of `caps.Mutable` state machines, and other code below the reach of `Array`'s
   // exclusivity discipline) shares this vocabulary without spelling `new`. Named
   // `scratch`, not `raw`, because `raw` is the exclusive-reference interop view below.
   inline def scratch[element: ClassTag](size: Int): scala.Array[element]^ =
     new scala.Array[element](size)
 
-  def freeze[element](consume buffer: Buffer[element]^): IArray[element] =
+  def freeze[element](consume buffer: Array[element]^): IArray[element] =
     buffer.asInstanceOf[IArray[element]]
 
   // Linear growth for accumulating builders: consumes the old buffer, so the idiom is
   // recursion threading the buffer through `consume` parameters -- a `var` cannot hold an
   // exclusive buffer.
-  def grow[element: ClassTag](consume buffer: Buffer[element]^, size: Int): Buffer[element]^ =
+  def grow[element: ClassTag](consume buffer: Array[element]^, size: Int): Array[element]^ =
     val count = buffer.length.min(size)
-    val bigger: Array[element]^ = new Array[element](size)
+    val bigger: Array[element]^ = new scala.Array[element](size)
     java.lang.System.arraycopy(buffer, 0, bigger, 0, count)
     bigger
 
-  extension [element, C^](buffer: Buffer[element]^{C})
+  extension [element, C^](buffer: Array[element]^{C})
     def length: Int = buffer.length
 
     // The bounds-partial shared read: exists for layering (`vacuous`'s total `at` wraps
@@ -75,7 +75,7 @@ object Buffer:
     // separation excludes live writers wherever readers alias.
     def readUnchecked(index: Int): element = buffer(index)
 
-  extension [element](buffer: Buffer[element]^)
+  extension [element](buffer: Array[element]^)
     // An exclusive reference has sole ownership, so it may also read without the
     // `Optional` guard: nobody else can have resized or replaced the content.
     def apply(index: Int): element = buffer(index)
@@ -93,14 +93,16 @@ object Buffer:
     :   Unit =
       java.lang.System.arraycopy(source, sourceStart, buffer, targetStart, count)
 
-    def copyFromBuffer
-      ( source: Buffer[element]^{caps.any.rd}, sourceStart: Int, targetStart: Int, count: Int )
+    // Distinctly named from `copyFrom`: an `IArray[element]` parameter erases to the same
+    // JVM signature, so an overload would clash.
+    def copyFromArray
+      ( source: Array[element]^{caps.any.rd}, sourceStart: Int, targetStart: Int, count: Int )
     :   Unit =
       java.lang.System.arraycopy(source, sourceStart, buffer, targetStart, count)
 
-    // The underlying array, exclusively: the escape for JDK interop (`random.nextBytes`,
+    // The underlying JVM array, exclusively: the escape for interop (`random.nextBytes`,
     // `stream.read`, `System.arraycopy` from external sources). The result aliases the
-    // buffer, so it shares the buffer's exclusivity rather than escaping it.
-    def raw: Array[element]^ = buffer
+    // array, so it shares the array's exclusivity rather than escaping it.
+    def raw: scala.Array[element]^ = buffer
 
-opaque type Buffer[element] = Array[element]
+opaque type Array[element] = scala.Array[element]

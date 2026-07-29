@@ -241,7 +241,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
 
       def shape(node: Any): Any = node.asMatchable match
-        case nums: Array[Double] @unchecked =>
+        case nums: scala.Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
           scala.collection.immutable.ArraySeq.unsafeWrapArray(nums).to(List).map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
@@ -316,11 +316,11 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
     suite(m"Number-only arrays"):
       def parseRaw(text: Text): Any = Json.Ast.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe))
 
-      test(m"Pure integer array uses the unboxed small-BCD Array[Int] form"):
+      test(m"Pure integer array uses the unboxed small-BCD scala.Array[Int] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
       . assert(_ == "[I")
 
-      test(m"Array with an 8-nibble number widens to the Array[Long] form"):
+      test(m"Array with an 8-nibble number widens to the scala.Array[Long] form"):
         parseRaw(t"[12345678, 2]").getClass.getName
       . assert(_ == "[J")
 
@@ -384,7 +384,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
-      test(m"14-nibble integer stays in the unboxed Array[Long] form"):
+      test(m"14-nibble integer stays in the unboxed scala.Array[Long] form"):
         val raw = parseRaw(t"[1, 12345678901234]")
         raw.getClass.getName
       . assert(_ == "[J")

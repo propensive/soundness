@@ -52,7 +52,7 @@ object Palimpsest:
 
     val n        = hashes.length
     val bodyLen  = cadence.bodyLength(n)
-    val body     = Buffer[Byte](bodyLen)
+    val body     = Array[Byte](bodyLen)
     val hashSize = cadence.hashSize
 
     var i = 0
@@ -75,11 +75,11 @@ object Palimpsest:
       xor = xor ^ (body(k) & 0xff)
       k += 1
 
-    val out = Buffer[Byte](bodyLen + 1)
-    out.copyFromBuffer(body, 0, 0, bodyLen)
+    val out = Array[Byte](bodyLen + 1)
+    out.copyFromArray(body, 0, 0, bodyLen)
     out(bodyLen) = (xor ^ (cadence.byte & 0xff)).toByte
 
-    Palimpsest(Buffer.freeze(out), n)
+    Palimpsest(Array.freeze(out), n)
 
 case class Palimpsest(data: Data, length: Int):
   // §4 decoding. Recover the cadence byte from the XOR-fold, derive `n`
@@ -131,11 +131,11 @@ case class Palimpsest(data: Data, length: Int):
               else
                 val o         = cadence.offset(item)
                 val prefixLen = if item == 0 then cadence.initial else cadence.regular
-                val prefix    = Buffer[Byte](prefixLen)
+                val prefix    = Array[Byte](prefixLen)
                 System.arraycopy(body, o, prefix.raw, 0, prefixLen)
 
                 val candidates =
-                  bibliography.lookup(Buffer.freeze(prefix)).iterator
+                  bibliography.lookup(Array.freeze(prefix)).iterator
 
                 var found: Optional[List[Data]] = Unset
 

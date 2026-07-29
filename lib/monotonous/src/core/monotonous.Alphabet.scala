@@ -87,8 +87,8 @@ object Alphabet:
 
           // Character lookup table for the `2^base` data symbols, so the hot
           // loop indexes an array rather than re-reading the alphabet string.
-          private val table: Array[Char] =
-            caps.unsafe.unsafeAssumePure(Array.tabulate(1 << base)(alphabet(_)))
+          private val table: scala.Array[Char] =
+            caps.unsafe.unsafeAssumePure(scala.Array.tabulate(1 << base)(alphabet(_)))
 
           private var accumulator: Int = 0
           private var accumulated: Int = 0
@@ -109,9 +109,9 @@ object Alphabet:
               targetSpace: Int )
           :   Duct.Progress =
 
-            val bytes = source.asInstanceOf[Array[Byte]]
+            val bytes = source.asInstanceOf[scala.Array[Byte]]
             // The stage's own buffer, asserted exclusive at the cast rim.
-            val chars: Array[Char]^ = target.asInstanceOf[Array[Char]^]
+            val chars: scala.Array[Char]^ = target.asInstanceOf[scala.Array[Char]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -154,7 +154,7 @@ object Alphabet:
           override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
 
-            val chars: Array[Char]^ = target.asInstanceOf[Array[Char]^]
+            val chars: scala.Array[Char]^ = target.asInstanceOf[scala.Array[Char]^]
             var produced: Int = 0
 
             if !flushing then
@@ -234,9 +234,9 @@ object Alphabet:
               targetSpace: Int )
           :   Duct.Progress =
 
-            val chars = source.asInstanceOf[Array[Char]]
+            val chars = source.asInstanceOf[scala.Array[Char]]
             // The stage's own buffer, asserted exclusive at the cast rim.
-            val bytes: Array[Byte]^ = target.asInstanceOf[Array[Byte]^]
+            val bytes: scala.Array[Byte]^ = target.asInstanceOf[scala.Array[Byte]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true

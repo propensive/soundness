@@ -74,7 +74,7 @@ private[pneumatic] trait LzwEngine extends caps.Mutable:
   // Everything not yet delivered, drained in one immutable piece: the whole-value
   // counterpart of `deliver`.
   update def gather(): Data =
-    val result = Buffer[Byte](pending.length - delivered)
+    val result = Array[Byte](pending.length - delivered)
     var i = 0
 
     while delivered < pending.length do
@@ -84,7 +84,7 @@ private[pneumatic] trait LzwEngine extends caps.Mutable:
 
     pending.clear()
     delivered = 0
-    Buffer.freeze(result)
+    Array.freeze(result)
 
 private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
   private val codes: scala.collection.mutable.HashMap[(Int, Byte), Int] =

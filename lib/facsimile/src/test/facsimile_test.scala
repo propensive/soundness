@@ -63,7 +63,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
     def bytesOf(cos: Cos): scala.collection.immutable.List[Int] = cos.chars.let(v => (v.to[List]: List[Byte]).stdlib.map(_.toInt & 0xff)).or(scala.collection.immutable.List())
 
-    def data(values: Int*): Data = values.map(_.toByte).to(Array).immutable(using Unsafe)
+    def data(values: Int*): Data = values.map(_.toByte).to(scala.Array).immutable(using Unsafe)
 
     def deflate(bytes: Data): Data =
       val deflater = juz.Deflater()

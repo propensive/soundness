@@ -81,7 +81,7 @@ object decimalInternal:
       if unscaled == 0L then Zero else
         val signum = if unscaled < 0 then -1 else 1
         var rest: Long = math.abs(unscaled)
-        val magnitude = Buffer[Int](3)
+        val magnitude = Array[Int](3)
         var count = 0
 
         while rest != 0L do
@@ -156,7 +156,7 @@ object decimalInternal:
           if digits.length - start == 1 && digits.charAt(start) == '0' then Zero else
             val significant = digits.length - start
             val count = (significant + BaseDigits - 1)/BaseDigits
-            val magnitude = Buffer[Int](count)
+            val magnitude = Array[Int](count)
             var limb = 0
             var position = digits.length
 
@@ -180,7 +180,7 @@ object decimalInternal:
     // input is copied into a fresh working array, which the strip loops then clobber.
     private[hypotenuse] def compose(signum: Int, magnitude0: scala.Array[Int], count0: Int, scale0: Int)
     :   Decimal =
-      val magnitude = Buffer[Int](count0)
+      val magnitude = Array[Int](count0)
       System.arraycopy(magnitude0, 0, magnitude.raw, 0, count0)
       var count = count0
       while count > 0 && magnitude(count - 1) == 0 do count -= 1
@@ -205,11 +205,11 @@ object decimalInternal:
           if count > 1 && magnitude(count - 1) == 0 then count -= 1
           scale -= 1
 
-        val result = Buffer[Int](count + 2)
+        val result = Array[Int](count + 2)
         result(0) = signum
         result(1) = scale
-        result.copyFromBuffer(magnitude, 0, 2, count)
-        Buffer.freeze(result)
+        result.copyFromArray(magnitude, 0, 2, count)
+        Array.freeze(result)
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
     private def divideSmall(magnitude: scala.Array[Int]^, count: Int, divisor: Int): Int =
@@ -536,10 +536,10 @@ object decimalInternal:
 
     def negation(value: Decimal): Decimal =
       if value(0) == 0 then value else
-        val result = Buffer[Int](value.length)
+        val result = Array[Int](value.length)
         result.copyFrom(value, 0, 0, value.length)
         result(0) = -value(0)
-        Buffer.freeze(result)
+        Array.freeze(result)
 
     def sum(left: Decimal, right: Decimal): Decimal =
       if left(0) == 0 then right else if right(0) == 0 then left else

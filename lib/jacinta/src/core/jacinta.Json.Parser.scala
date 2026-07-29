@@ -124,7 +124,7 @@ private[jacinta] object Parser:
 
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
   private val TenPow: IArray[Double] =
-    Array.tabulate(23): i =>
+    scala.Array.tabulate(23): i =>
       var p = 1.0
       var n = i
       while n > 0 do { p *= 10.0; n -= 1 }
@@ -142,7 +142,7 @@ private[jacinta] object Parser:
   // multi-byte UTF-8 decoder in `tail`, not the fast slice path.
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
   private val StringScanContinue: IArray[Byte] =
-    val arr = new Array[Byte](256)
+    val arr = new scala.Array[Byte](256)
     var i = 0
 
     while i < 256 do
@@ -260,7 +260,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
 
   // Parser-local snapshot (see comment above).
-  private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
+  private var bytes:  scala.Array[Byte] = null.asInstanceOf[scala.Array[Byte]]
   private var pos:    Int = 0
   private var bufEnd: Int = 0
 
@@ -279,7 +279,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // Exclusive scratch arrays: element reads/writes go through DIRECT field paths only
   // (`chars(i) = x`) — binding one into a local would hide the parser for the rest of
   // the scope (see `reconcileLineation`).
-  protected var chars:               Array[Char]^ = new Array(arraySize)
+  protected var chars:               scala.Array[Char]^ = new scala.Array(arraySize)
   protected var stringCursor:        Int = 0
   protected var arrayBufferId:       Int = -1
   protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]]  = ArrayBuffer.empty
@@ -319,9 +319,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // allocate normally.
   private inline val KeyCacheSize = 256
   private inline val KeyCacheMaxBytes = 16
-  private val keyCache:    Array[String | Null]^ = new Array(KeyCacheSize)
-  private val keyCacheLow:  Array[Long]^        = new Array(KeyCacheSize)
-  private val keyCacheHigh: Array[Long]^       = new Array(KeyCacheSize)
+  private val keyCache:    scala.Array[String | Null]^ = new scala.Array(KeyCacheSize)
+  private val keyCacheLow:  scala.Array[Long]^        = new scala.Array(KeyCacheSize)
+  private val keyCacheHigh: scala.Array[Long]^       = new scala.Array(KeyCacheSize)
 
   update def resetData(input: Data): Unit =
     if tracking then
@@ -534,7 +534,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val end = current.mark(using held)
 
     current.slice(start, end): (storage, off, len) =>
-      val arr = storage.asInstanceOf[Array[Byte]]
+      val arr = storage.asInstanceOf[scala.Array[Byte]]
       new String(arr, off, len, java.nio.charset.StandardCharsets.ISO_8859_1)
 
   protected update def appendRegionToBuffer(start: Cursor.Mark)(using held: Cursor.Held): Unit =
@@ -555,8 +555,8 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         locally:
           val current = cursor
           current.slice(start, end): (storage, off, len2) =>
-            val arr = storage.asInstanceOf[Array[Byte]]
-            val tmp = new Array[Char](len2)
+            val arr = storage.asInstanceOf[scala.Array[Byte]]
+            val tmp = new scala.Array[Char](len2)
             var i = 0
 
             while i < len2 do
@@ -623,14 +623,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     while stringCursor + n > arraySize do arraySize *= 2
 
     if chars.length < arraySize then
-      val newArr = new Array[Char](arraySize)
+      val newArr = new scala.Array[Char](arraySize)
       System.arraycopy(chars, 0, newArr, 0, stringCursor)
       chars = newArr
 
   protected update def appendChar(char: Char): Unit =
     if stringCursor == arraySize then
       arraySize *= 2
-      val newArray = new Array[Char](arraySize)
+      val newArray = new scala.Array[Char](arraySize)
       System.arraycopy(chars, 0, newArray, 0, stringCursor)
       chars = newArray
 
@@ -787,7 +787,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var scanning = true
 
     while scanning && i <= limit - 8 do
-      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+      val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
       val stops = stringStops(word)
 
       if stops == 0L then i += 8
@@ -843,7 +843,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     var scanning = true
 
     while scanning && i <= limit - 8 do
-      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+      val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
       val stops = stringStops(word)
 
       if stops == 0L then i += 8
@@ -910,7 +910,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           val end = current.mark(using held)
 
           current.slice(region, end): (storage, off, len) =>
-            val arr = storage.asInstanceOf[Array[Byte]]
+            val arr = storage.asInstanceOf[scala.Array[Byte]]
 
             if len > KeyCacheMaxBytes then
               new String(arr, off, len, java.nio.charset.StandardCharsets.ISO_8859_1)
@@ -941,7 +941,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // zero — combined with the fact that JSON keys can't contain `\0`,
   // this means two distinct byte sequences of length ≤ 8 always pack to
   // distinct Longs.
-  private inline update def packBytes(arr: Array[Byte], off: Int, n: Int): Long =
+  private inline update def packBytes(arr: scala.Array[Byte], off: Int, n: Int): Long =
     var out: Long = 0L
     var i = 0
 
@@ -1552,21 +1552,21 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       // Empty array — no buffer was ever allocated. The empty case has
       // even (zero) length so the sentinel pad is required to keep arrays
       // distinguishable from objects.
-      val out = new Array[Any](1)
+      val out = new scala.Array[Any](1)
       out(0) = Json.Ast.arrayPad
       out.asInstanceOf[IArray[Any]]
     else
       (mode: @switch) match
         case ModeBcdInt =>
           val src = intItems.nn
-          val out = new Array[Int](src.length)
+          val out = new scala.Array[Int](src.length)
           src.copyToArray(out)
           relinquishBcdIntBuffer()
           out.immutable(using Unsafe)
 
         case ModeBcdLong =>
           val src = longItems.nn
-          val out = new Array[Long](src.length)
+          val out = new scala.Array[Long](src.length)
           src.copyToArray(out)
           relinquishBcdLongBuffer()
           out.immutable(using Unsafe)
@@ -1580,11 +1580,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
           val out =
             if (n & 1) == 1 then
-              val arr = new Array[Any](n)
+              val arr = new scala.Array[Any](n)
               src.copyToArray(arr)
               arr
             else
-              val arr = new Array[Any](n + 1)
+              val arr = new scala.Array[Any](n + 1)
               src.copyToArray(arr)
               arr(n) = Json.Ast.arrayPad
               arr
@@ -1745,21 +1745,21 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
     val astValue: Raw =
       if first then
-        val out = new Array[Any](1)
+        val out = new scala.Array[Any](1)
         out(0) = Json.Ast.arrayPad
         out.asInstanceOf[IArray[Any]]
       else
         (mode: @switch) match
           case ModeBcdInt =>
             val src = intItems.nn
-            val out = new Array[Int](src.length)
+            val out = new scala.Array[Int](src.length)
             src.copyToArray(out)
             relinquishBcdIntBuffer()
             out.immutable(using Unsafe)
 
           case ModeBcdLong =>
             val src = longItems.nn
-            val out = new Array[Long](src.length)
+            val out = new scala.Array[Long](src.length)
             src.copyToArray(out)
             relinquishBcdLongBuffer()
             out.immutable(using Unsafe)
@@ -1770,11 +1770,11 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
             val out =
               if (n & 1) == 1 then
-                val arr = new Array[Any](n)
+                val arr = new scala.Array[Any](n)
                 src.copyToArray(arr)
                 arr
               else
-                val arr = new Array[Any](n + 1)
+                val arr = new scala.Array[Any](n + 1)
                 src.copyToArray(arr)
                 arr(n) = Json.Ast.arrayPad
                 arr
@@ -1878,7 +1878,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         case ch =>
           errorAt(Issue.ExpectedString(ch.toChar))
 
-    val out = new Array[Any](items.length)
+    val out = new scala.Array[Any](items.length)
     items.copyToArray(out)
     relinquishArrayBuffer()
     out.asInstanceOf[IArray[Any]]
@@ -2025,7 +2025,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
         case ch =>
           errorAt(Issue.ExpectedString(ch.toChar))
 
-    val out = new Array[Any](items.length)
+    val out = new scala.Array[Any](items.length)
     items.copyToArray(out)
     relinquishArrayBuffer()
 
@@ -2076,7 +2076,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // through this (exclusive) parser.
   private var directDepth: Int = 0
   private var directMask0: Long = 0L
-  private var directMask: Array[Long]^ = new Array[Long](1)
+  private var directMask: scala.Array[Long]^ = new scala.Array[Long](1)
 
   // Depths zero to sixty-three — all realistic JSON — keep their seen-bits
   // in a single `Long` field, so the per-key `directSeen` test is two
@@ -2089,7 +2089,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       val word = (level - 64) >> 6
 
       if directMask.length <= word then
-        val grown = new Array[Long](directMask.length*2)
+        val grown = new scala.Array[Long](directMask.length*2)
         System.arraycopy(directMask, 0, grown, 0, directMask.length)
         directMask = grown
 
@@ -2241,7 +2241,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       var scanning = true
 
       while scanning && i <= limit - 8 do
-        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+        val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
         val stops = stringStops(word)
 
         if stops == 0L then i += 8
@@ -2303,7 +2303,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       var scanning = true
 
       while scanning && i <= limit - 8 do
-        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+        val word: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], i)
         val stops = stringStops(word)
 
         if stops == 0L then i += 8
@@ -2407,7 +2407,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case value: Long                     => value
       case value: Double                   => value.toLong
       case value: Int                      => Bcd.bcdIntToDouble(value).toLong
-      case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+      case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
       case _                               => 0L // unreachable: only number forms are produced
 
   // Buffer-local fast path for the overwhelmingly common double shape:
@@ -2514,14 +2514,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       case value: Double                   => value
       case value: Long                     => value.toDouble
       case value: Int                      => Bcd.bcdIntToDouble(value)
-      case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
+      case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
       case _                               => 0.0 // unreachable: only number forms are produced
 
   private[jacinta] update def directBcd()(using Tactic[ParseError]): Bcd =
     val raw: Any = directNumber()
 
     raw.asMatchable match
-      case value: Array[Double] @unchecked => value.asInstanceOf[Bcd]
+      case value: scala.Array[Double] @unchecked => value.asInstanceOf[Bcd]
       case value: Long                     => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
       case value: Double                   => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
 
@@ -2633,7 +2633,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // find the closing quote are the packed form. Window-edge keys take the
     // general step.
     if start + 8 > limit then return Int.MinValue
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2646,7 +2646,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return Int.MinValue
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2732,7 +2732,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2747,7 +2747,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2812,7 +2812,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2827,7 +2827,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 
@@ -2899,7 +2899,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     // scanning. A key at the window's edge takes the general step, exactly
     // like an escaped or oversized one.
     if start + 8 > limit then return -2L
-    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start)
     val stops0 = stringStops(word0)
     var low = 0L
     var high = 0L
@@ -2914,7 +2914,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
-      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[scala.Array[Byte]], start + 8)
       val stops1 = stringStops(word1)
       low = word0
 

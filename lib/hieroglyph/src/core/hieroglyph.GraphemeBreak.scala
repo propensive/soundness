@@ -134,9 +134,9 @@ object GraphemeBreak:
   private def buildTables(entries: sci.List[Entry]): Tables =
     val sorted = entries.sortBy(_.start).toArray
     val count = sorted.length
-    val starts = Buffer[Int](count)
-    val ends = Buffer[Int](count)
-    val props = Buffer[Byte](count)
+    val starts = Array[Int](count)
+    val ends = Array[Int](count)
+    val props = Array[Byte](count)
 
     var index = 0
 
@@ -146,7 +146,7 @@ object GraphemeBreak:
       props(index) = sorted(index).prop.toByte
       index += 1
 
-    Tables(Buffer.freeze(starts), Buffer.freeze(ends), Buffer.freeze(props))
+    Tables(Array.freeze(starts), Array.freeze(ends), Array.freeze(props))
 
   private lazy val gbpTables: Tables =
     val in = loadResource(
@@ -200,12 +200,12 @@ object GraphemeBreak:
     // A pre-sized exclusive buffer rather than an `ArrayBuilder`: boundary count
     // is bounded by `n + 2`, and the stdlib builder's internal reads count as
     // uses the enclosing object would have to declare under separation checking.
-    val breaks = Buffer[Int](n + 2)
+    val breaks = Array[Int](n + 2)
     var size = 0
     breaks(size) = 0
     size += 1
 
-    if n == 0 then Buffer.freeze(Buffer[Int](1))
+    if n == 0 then Array.freeze(Array[Int](1))
     else
       var index = 0
       val firstCodepoint = Character.codePointAt(s, 0)
@@ -283,7 +283,7 @@ object GraphemeBreak:
 
       // Trimmed to the exact count, then frozen: the checked build-then-share
       // conversion.
-      val frozen = Buffer.freeze(breaks)
-      val result = Buffer[Int](size)
+      val frozen = Array.freeze(breaks)
+      val result = Array[Int](size)
       result.copyFrom(frozen, 0, 0, size)
-      Buffer.freeze(result)
+      Array.freeze(result)

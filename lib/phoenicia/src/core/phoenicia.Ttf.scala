@@ -187,7 +187,7 @@ case class Ttf(data: Data):
 
     offsets(count) = position
 
-    val newGlyf = Buffer[Byte](position)
+    val newGlyf = Array[Byte](position)
     var written = 0
 
     parts.result().each: part =>
@@ -195,7 +195,7 @@ case class Ttf(data: Data):
       written += part.length
 
     // The rebuilt loca always uses the long format, so head's format field must agree.
-    val newLoca = Buffer[Byte]((count + 1)*4)
+    val newLoca = Array[Byte]((count + 1)*4)
 
     (0 to count).each: id =>
       newLoca(id*4) = (offsets(id) >> 24).toByte
@@ -205,7 +205,7 @@ case class Ttf(data: Data):
 
     val headRef = tables.at(TtfTag.Head).lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
     val headData = data.slice(headRef.offset, headRef.offset + headRef.length)
-    val newHead = Buffer[Byte](headData.length)
+    val newHead = Array[Byte](headData.length)
     newHead.copyFrom(headData, 0, 0, headData.length)
     (8 to 11).each { index => newHead(index) = 0 } // adjustment is recomputed on assembly
     newHead(50) = 0
@@ -216,9 +216,9 @@ case class Ttf(data: Data):
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
     val entries =
-      (t"glyf", Buffer.freeze(newGlyf)) ::
-        (t"loca", Buffer.freeze(newLoca)) ::
-        (t"head", Buffer.freeze(newHead)) :: (carried: List[(Text, Data)])
+      (t"glyf", Array.freeze(newGlyf)) ::
+        (t"loca", Array.freeze(newLoca)) ::
+        (t"head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
 
     Ttf(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 

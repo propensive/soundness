@@ -160,7 +160,7 @@ private[pneumatic] final class Adler32 extends FlateChecksum:
 
 private[pneumatic] object Crc32:
   val table: IArray[Int] =
-    val result = Buffer[Int](256)
+    val result = Array[Int](256)
     var n = 0
 
     while n < 256 do
@@ -174,7 +174,7 @@ private[pneumatic] object Crc32:
       result(n) = c
       n += 1
 
-    Buffer.freeze(result)
+    Array.freeze(result)
 
 private[pneumatic] final class Crc32 extends FlateChecksum:
   @scala.caps.unsafe.untrackedCaptures
