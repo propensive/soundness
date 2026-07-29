@@ -32,35 +32,33 @@
                                                                                                   */
 package decorum
 
-import dotty.tools.dotc.ast.untpd
-import dotty.tools.dotc.util.SourceFile
+object ContinuationRules:
+  // R-616: a symbolic infix operator whose operands wrap onto separate source
+  // lines must terminate the first line (616.1), and the continuation must be
+  // indented exactly two columns beyond the first line of the operator chain
+  // (616.2). The bad shapes are the operator beginning the continuation line
+  // (`left\n  ++ right`), the operator alone on its own line, and any
+  // continuation indent other than +2.
+  object OperatorContinuation extends Rule:
+    def id: String = "616"
+    def principle: Principle = Principle.ContinuationMarking
 
-// The per-file bundle of inputs and derived data shared by every check.
-// Construction is cheap; derived values are computed lazily, at most once
-// per file.
-final class Context
-  ( val file:              String,
-    val expectedModule:    Option[String],
-    val text:              String,
-    val tree:              untpd.Tree,
-    val source:            SourceFile,
-    val siblingTypes:      List[String],
-    val siblingExtensions: List[String],
-    val unexported:        Set[String] ):
-
-  lazy val tokenRows: IndexedSeq[IndexedSeq[Lexeme]] = Tokenizer.tokenize(text)
-  lazy val lines: IndexedSeq[Line] = tokenRows.map(Line(_))
-
-  lazy val imports: List[ImportInfo] = Imports.extract(tree, source)
-  lazy val packageInfo: Option[PackageInfo] = Packages.extract(tree, source)
-  lazy val annotationEndLines: Set[Int] = Annotations.collectEndLines(tree, source)
-  lazy val companions: CompanionDecls = Companions.extract(tree, source)
-  lazy val caseGroups: List[List[CaseInfo]] = Cases.extract(tree, source)
-  lazy val forGroups: List[List[GenLine]] = Comprehensions.extract(tree, source)
-  lazy val sequences: List[Sequence] = Sequences.extract(tree, source)
-  lazy val stmtGroups: List[StmtGroup] = Statements.extract(tree, source)
-  lazy val lambdaSites: List[Lambdas.LambdaSite] = Lambdas.extract(tree, source)
-  lazy val operatorSites: List[OpInfo] = Operators.extract(tree, source)
-  lazy val interpolations: List[InterpolationInfo] = Interpolations.extract(tree, source)
-  lazy val definitions: List[DefnAnchor] = Definitions.extract(tree, source)
-  lazy val soundnessExports: ExportInfo = SoundnessExports.extract(tree, source)
+    def check(ctx: Context): List[Violation] =
+      ctx.operatorSites.flatMap: op =>
+        if op.multiline then
+          if op.opLine != op.leftEndLine then
+            List
+              ( Violation
+                  ( ctx.file, op.opLine, op.opCol, "616.1",
+                    "a multi-line infix operator must terminate the first line, not begin "
+                      +"the continuation line" ) )
+          else if op.rightCol - 1 != op.anchorIndent + 2 then
+            List
+              ( Violation
+                  ( ctx.file, op.rightLine, op.rightCol, "616.2",
+                    s"a multi-line infix continuation must be indented ${op.anchorIndent + 2} "
+                      +s"columns (found ${op.rightCol - 1})" ) )
+          else
+            Nil
+        else
+          Nil

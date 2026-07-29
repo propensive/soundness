@@ -32,35 +32,54 @@
                                                                                                   */
 package decorum
 
-import dotty.tools.dotc.ast.untpd
-import dotty.tools.dotc.util.SourceFile
+import scala.collection.mutable
 
-// The per-file bundle of inputs and derived data shared by every check.
-// Construction is cheap; derived values are computed lazily, at most once
-// per file.
-final class Context
-  ( val file:              String,
-    val expectedModule:    Option[String],
-    val text:              String,
-    val tree:              untpd.Tree,
-    val source:            SourceFile,
-    val siblingTypes:      List[String],
-    val siblingExtensions: List[String],
-    val unexported:        Set[String] ):
+object DensityRules:
+  // R312 — lambda layout, four sub-rules:
+  //   312.1 named single-line lambda using `(…)` (must be `{…}` or `: …`)
+  //   312.2 named single-line `{…}` at end-of-line (must be `: …`)
+  //   312.3 multi-line lambda using `{…}` or `(…)` (must be `: …`)
+  //   312.4 anonymous (placeholder) lambda using `{…}` or `: …` (must be `(…)`)
+  object LambdaLayout extends Rule:
+    def id: String = "312"
+    def principle: Principle = Principle.Density
 
-  lazy val tokenRows: IndexedSeq[IndexedSeq[Lexeme]] = Tokenizer.tokenize(text)
-  lazy val lines: IndexedSeq[Line] = tokenRows.map(Line(_))
+    def check(ctx: Context): List[Violation] =
+      import Lambdas.Opener
+      val file = ctx.file
+      val out  = mutable.ListBuffer[Violation]()
 
-  lazy val imports: List[ImportInfo] = Imports.extract(tree, source)
-  lazy val packageInfo: Option[PackageInfo] = Packages.extract(tree, source)
-  lazy val annotationEndLines: Set[Int] = Annotations.collectEndLines(tree, source)
-  lazy val companions: CompanionDecls = Companions.extract(tree, source)
-  lazy val caseGroups: List[List[CaseInfo]] = Cases.extract(tree, source)
-  lazy val forGroups: List[List[GenLine]] = Comprehensions.extract(tree, source)
-  lazy val sequences: List[Sequence] = Sequences.extract(tree, source)
-  lazy val stmtGroups: List[StmtGroup] = Statements.extract(tree, source)
-  lazy val lambdaSites: List[Lambdas.LambdaSite] = Lambdas.extract(tree, source)
-  lazy val operatorSites: List[OpInfo] = Operators.extract(tree, source)
-  lazy val interpolations: List[InterpolationInfo] = Interpolations.extract(tree, source)
-  lazy val definitions: List[DefnAnchor] = Definitions.extract(tree, source)
-  lazy val soundnessExports: ExportInfo = SoundnessExports.extract(tree, source)
+      ctx.lambdaSites.foreach: s =>
+        // Multi-line wins regardless of parameter shape — only a colon-arg
+        // body can house a multi-line lambda cleanly.
+        if s.isMultiLine then
+          if s.opener != Opener.Colon then
+            out +=
+              Violation
+                ( file, s.openerLine, s.openerCol, "312.3",
+                  "multi-line lambda must use a colon-arg `f: x => …` form, "
+                    +s"not `${s.opener.toString.toLowerCase}`" )
+        else if s.isAnonymous then
+          if s.opener != Opener.Paren then
+            out +=
+              Violation
+                ( file, s.openerLine, s.openerCol, "312.4",
+                  "anonymous (`_`-)lambda must be wrapped in `(…)`, not "
+                    +s"`${s.opener.toString.toLowerCase}`" )
+        else // named, single-line
+          if s.opener == Opener.Paren then
+            out +=
+              Violation
+                ( file, s.openerLine, s.openerCol, "312.1",
+                  "named-parameter lambda must be wrapped in `{…}`, not `(…)`"
+                    +(if s.lastOnLine
+                      then " (or use `f: x => …` since the lambda is last on the line)"
+                      else "") )
+          else if s.opener == Opener.Brace && s.lastOnLine then
+            out +=
+              Violation
+                ( file, s.openerLine, s.openerCol, "312.2",
+                  "lambda is the last thing on its line; prefer `f: x => …` "
+                    +"over `f { x => … }`" )
+
+      out.toList

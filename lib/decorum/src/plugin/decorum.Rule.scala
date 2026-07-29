@@ -32,35 +32,31 @@
                                                                                                   */
 package decorum
 
-import dotty.tools.dotc.ast.untpd
-import dotty.tools.dotc.util.SourceFile
+// The eight principles from which every Decorum rule derives. Part I of
+// doc/standards/syntax.md states each principle and its readability
+// motivation; every rule in `Rules.all` cites the principle it derives
+// from.
+enum Principle:
+  case Frame, Anchoring, Density, ContinuationMarking, Balance, Proximity, Tabulation,
+    Findability
 
-// The per-file bundle of inputs and derived data shared by every check.
-// Construction is cheap; derived values are computed lazily, at most once
-// per file.
-final class Context
-  ( val file:              String,
-    val expectedModule:    Option[String],
-    val text:              String,
-    val tree:              untpd.Tree,
-    val source:            SourceFile,
-    val siblingTypes:      List[String],
-    val siblingExtensions: List[String],
-    val unexported:        Set[String] ):
+// One house-style rule: an SN identifier (a family such as `833` may span
+// several sub-rules emitted with suffixed identifiers), the principle it
+// derives from, and a check over the per-file `Context`. A rule must not
+// throw on malformed input: extraction failures surface as an absence of
+// data, never as an exception.
+trait Rule:
+  def id: String
+  def principle: Principle
+  def check(ctx: Context): List[Violation]
 
-  lazy val tokenRows: IndexedSeq[IndexedSeq[Lexeme]] = Tokenizer.tokenize(text)
-  lazy val lines: IndexedSeq[Line] = tokenRows.map(Line(_))
-
-  lazy val imports: List[ImportInfo] = Imports.extract(tree, source)
-  lazy val packageInfo: Option[PackageInfo] = Packages.extract(tree, source)
-  lazy val annotationEndLines: Set[Int] = Annotations.collectEndLines(tree, source)
-  lazy val companions: CompanionDecls = Companions.extract(tree, source)
-  lazy val caseGroups: List[List[CaseInfo]] = Cases.extract(tree, source)
-  lazy val forGroups: List[List[GenLine]] = Comprehensions.extract(tree, source)
-  lazy val sequences: List[Sequence] = Sequences.extract(tree, source)
-  lazy val stmtGroups: List[StmtGroup] = Statements.extract(tree, source)
-  lazy val lambdaSites: List[Lambdas.LambdaSite] = Lambdas.extract(tree, source)
-  lazy val operatorSites: List[OpInfo] = Operators.extract(tree, source)
-  lazy val interpolations: List[InterpolationInfo] = Interpolations.extract(tree, source)
-  lazy val definitions: List[DefnAnchor] = Definitions.extract(tree, source)
-  lazy val soundnessExports: ExportInfo = SoundnessExports.extract(tree, source)
+object Rules:
+  val all: List[Rule] =
+    List
+      ( AnchorRules.SequenceLayout, AnchorRules.DefinitionAnchors,
+        AnchorRules.InterpolationLayout, TabulationRules.CaseAlignment,
+        TabulationRules.ForComprehensionAlignment, DensityRules.LambdaLayout,
+        ProximityRules.ChunkSeparation, ContinuationRules.OperatorContinuation,
+        FindabilityRules.FileNaming, FindabilityRules.CompanionOrdering,
+        FindabilityRules.SoundnessExportCompleteness,
+        FindabilityRules.ExtensionExportCompleteness )
