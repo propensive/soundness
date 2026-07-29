@@ -115,15 +115,15 @@ is a diagnosis rather than a hang.
 
 A protocol implementation that only round-trips against itself proves nothing: two matching bugs
 look exactly like correctness. The HTTP/2 and gRPC codecs are therefore checked against *golden
-bytes* — the exact octets a frame must serialize to — and against the specifications' own
-published test vectors:
+bytes* — the exact octets each frame must serialize to, written out in the tests — as well as
+round-tripped. A gRPC message's framing is one flag byte and a four-byte length, and the encoder
+is checked to produce exactly that:
 
 ```scala
-Frame.Settings(Nil, ack = true).serialize   // 000000040100000000
-GrpcFraming.encode(payload)                 // flag byte, then a 4-byte length
+GrpcFraming.encode(payload)   // 00 00 00 00 05, then the payload
 ```
 
 HPACK's header compression is verified against every example in
 [RFC 7541](https://datatracker.ietf.org/doc/html/rfc7541)'s appendices, with and without Huffman
-coding, and the Huffman codec against the strings the specification tabulates. Where a
+coding, and the `Huffman` codec against the strings the specification tabulates. Where a
 specification publishes vectors, they are what the implementation is measured against.

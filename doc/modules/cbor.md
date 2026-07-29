@@ -56,10 +56,15 @@ A type with a `Cbor.Parsable` instance is read straight from the bytes, with no 
 built. The instance is derived at compiletime, composing a parser for that exact shape:
 
 ```scala
+import breviloquence.Inlinable
+
 given (Person is Cbor.Parsable) = Inlinable.parsable[Person]
 
 data.read[Person in Cbor]
 ```
+
+The derivation composes the parser at expansion time, so it lives in a separate module from the
+runtime codecs and is imported by name.
 
 Reading also works over a [stream](streams.md) whose chunk boundaries fall anywhere: a value split
 across two chunks reads exactly as one that arrives whole, so a message need not be assembled
