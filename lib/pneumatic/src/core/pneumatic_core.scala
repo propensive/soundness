@@ -76,9 +76,3 @@ extension (stream: Progression[Data])
 
   def decompress[compression <: Compressor: Compression]: Progression[Data] =
     compression.decompress(stream)
-
-// An exclusive, writable view of an array held in an untracked (`untrackedCaptures`) field:
-// reading such a field yields a read-only capture, so update sites route through this
-// assume-pure rebind. Sound because each engine reaches its buffers only through `this`.
-private[pneumatic] def writable[element](array: Array[element]): Array[element]^ =
-  array.asInstanceOf[Array[element]]
