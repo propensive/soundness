@@ -164,8 +164,13 @@ final class Report(using environment: Environment)(using palette: TestPalette):
 
     . getOrElse(lines)
 
+  // Non-destructive: a suite is declared once per run, but two distinct suites can share a
+  // `TestId` — `Testable`'s identity is its name and parent, and `Suite`'s own `Testable` is
+  // built on a single source line, so every top-level suite of the same name has the same id.
+  // An unconditional update would replace the earlier suite's whole subtree, silently
+  // discarding everything it had recorded; merging into the existing node keeps both.
   def declare(suite: Testable): Report = this.also:
-    resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
+    resolve(suite.parent).tests.getOrElseUpdate(suite.id, ReportLine.Suite(suite))
 
   def fail(error: Throwable, active: Set[TestId]): Unit = failure0 = (error, active)
 

@@ -45,7 +45,7 @@ class TestServiceA extends TestService:
 class TestServiceB extends TestService:
   def name: Text = t"B"
 
-object Tests extends Suite(m"Proscenium Tests"):
+object Tests extends Suite(m"Hellenism Tests"):
   def run(): Unit =
     test(m"check that a classpath file is accessible"):
       cp"/scala/Option.class"

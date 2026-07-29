@@ -44,7 +44,7 @@ import cloaks.cloakHeap
 
 import alphabets.hexUpperCase
 
-object Tests extends Suite(m"Gastronomy tests"):
+object Tests extends Suite(m"Enigmatic tests"):
 
   val request: Text = t"""
     |-----BEGIN CERTIFICATE REQUEST-----
