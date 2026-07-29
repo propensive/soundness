@@ -92,3 +92,29 @@ summoned, passed around and composed, for the cases where the access itself is t
 val nameLens = summon["name" is Lens from Json onto Json]
 nameLens.modify(document)(transform)
 ```
+
+### Naming paths without traversing them
+
+The same path syntax that writes an update can name a position without going there. A `Specific`
+maps paths to values, which is how a derived typeclass is overridden at one field rather than for
+a whole type:
+
+```scala
+val orgSpecific: Org is Specific over (Codec in Json) =
+  specifically:
+    case root.cto.name() => nameCodec
+    case root.ceo.age()  => ageCodec
+```
+
+The paths are checked against the type's structure as the code compiles, so a misspelled field or
+a path that does not exist is a compile error, and each value must have the right type for the
+field it names. The result is an ordinary map keyed by the path, which a derivation consults as it
+visits each field:
+
+```scala
+orgSpecific.instances.keySet   // Set("cto.name", "ceo.age")
+```
+
+This is what the [JSON](json.md) per-field encoder override is built on, and the mechanism is not
+specific to codecs — any typeclass whose derivation consults a `Specific` can be overridden the
+same way.
