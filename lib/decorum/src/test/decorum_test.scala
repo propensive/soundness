@@ -70,6 +70,14 @@ object Tests extends Suite(m"Decorum Tests"):
     val (tree, source) = Parsing.parse("<test>", stub(body))
     Annotations.unexported(tree)
 
+  def anchors(body: String): Anchors.AnchorModel =
+    val full = stub(body)
+    val (tree, source) = Parsing.parse("<test>", full)
+    Anchors.build(tree, source, full)
+
+  def anchorKinds(body: String, line: Int): List[Anchors.FrameKind] =
+    anchors(body).stackAt(line).map(_.kind)
+
   def run(): Unit =
     suite(m"Phase 1: Universal rules"):
 
@@ -1013,3 +1021,84 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"unannotated definitions are not collected"):
         extractedUnexported("object Foo\nextension (x: Int) def bar: Int = x\n")
       . assert(_ == Set())
+
+    suite(m"Phase 8: Anchor model"):
+
+      test(m"Def with indented rhs yields a DefnRhs frame"):
+        anchors("def foo(): Int =\n  1 + 1\n").innermostAt(36)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.DefnRhs, 35, 1, 3, 35, 36)))
+
+      test(m"Single-line def yields no frame"):
+        anchors("def foo(): Int = 1\n").frames
+      . assert(_ == Nil)
+
+      test(m"Class body yields a ColonBlock frame"):
+        anchors("class Foo:\n  val x: Int = 1\n").innermostAt(36)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.ColonBlock, 35, 1, 3, 35, 36)))
+
+      test(m"Nested class and method bodies nest correctly"):
+        anchorKinds("class Foo:\n  def bar(): Int =\n    42\n", 37)
+      . assert(_ == List(Anchors.FrameKind.ColonBlock, Anchors.FrameKind.DefnRhs))
+
+      test(m"Method frame inside a class covers only the method body"):
+        anchorKinds("class Foo:\n  def bar(): Int =\n    42\n", 36)
+      . assert(_ == List(Anchors.FrameKind.ColonBlock))
+
+      test(m"Match inside a def stacks a MatchBody over the DefnRhs"):
+        val src = "def foo(x: Int): Int =\n  x match\n    case 1 => 0\n    case _ => 1\n"
+        anchorKinds(src, 37)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs, Anchors.FrameKind.MatchBody))
+
+      test(m"Match frame is anchored on the match keyword's line"):
+        val src = "def foo(x: Int): Int =\n  x match\n    case 1 => 0\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.MatchBody, 36, 3, 5, 36, 37)))
+
+      test(m"Case body on a later line yields a LambdaBody frame"):
+        val src = "val r = 1 match\n  case 1 =>\n    2\n"
+        anchorKinds(src, 37)
+      . assert(_ == List(Anchors.FrameKind.MatchBody, Anchors.FrameKind.LambdaBody))
+
+      test(m"Lambda body under a colon-arg application is framed"):
+        val src = "def foo(xs: List[Int]): List[Int] =\n  xs.map: x =>\n    x + 1\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.LambdaBody, 36, 3, 5, 36, 37)))
+
+      test(m"Colon-arg lambda stacks over the enclosing DefnRhs"):
+        val src = "def foo(xs: List[Int]): List[Int] =\n  xs.map: x =>\n    x + 1\n"
+        anchorKinds(src, 37)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs, Anchors.FrameKind.LambdaBody))
+
+      test(m"Colon-block application yields a ColonBlock frame"):
+        anchors("def foo(): Int =\n  locally:\n    42\n").innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.ColonBlock, 36, 3, 5, 36, 37)))
+
+      test(m"Multi-line quote yields a QuoteSplice frame"):
+        val src = "def foo(): Int =\n  ' {\n    42\n  }\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.QuoteSplice, 36, 3, 5, 36, 38)))
+
+      test(m"Sibling defs close their scopes at the next sibling"):
+        val src = "def foo(): Int =\n  1\n\ndef bar(): Int =\n  2\n"
+        anchors(src).stackAt(38)
+      . assert(_ == Nil)
+
+      test(m"Second sibling def opens its own frame"):
+        val src = "def foo(): Int =\n  1\n\ndef bar(): Int =\n  2\n"
+        anchors(src).innermostAt(39)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.DefnRhs, 38, 1, 3, 38, 39)))
+
+      test(m"Blank line inside a scope keeps the frame open"):
+        val src = "def foo(): Int =\n  val x = 1\n\n  x\n"
+        anchors(src).stackAt(37).map(_.kind)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs))
+
+      test(m"Anchor extends leftward to the val keyword's column"):
+        val src = "object A:\n  val foo: Int = bar:\n    compute()\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.ColonBlock, 36, 3, 5, 36, 37)))
+
+      test(m"Chain opener yields a ChainCall frame"):
+        val src = "def foo(x: List[Int]): List[Int] =\n  x\n  . map: y =>\n      y + 1\n"
+        anchorKinds(src, 38)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs, Anchors.FrameKind.ChainCall))
