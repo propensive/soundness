@@ -163,7 +163,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
                 stageable.serialize:
 
-                  val array = new Array[Object](1)
+                  val array = new scala.Array[Object](1)
 
                   array(0) =
                     stageable.embed[output]:

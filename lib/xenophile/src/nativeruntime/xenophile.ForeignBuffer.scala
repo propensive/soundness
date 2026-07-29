@@ -66,14 +66,14 @@ class ForeignBuffer(private[xenophile] val memory: Ptr[Byte], val size: Int):
   def pointer: Pointer = Pointer(Intrinsics.castRawPtrToLong(toRawPtr(memory)))
 
   def data(length: Int): Data =
-    val array = new Array[Byte](length)
+    val array = Buffer[Byte](length)
     var index = 0
 
     while index < length do
       array(index) = memory(index)
       index += 1
 
-    array.immutable(using Unsafe)
+    Buffer.freeze(array)
 
   def int: Int = !memory.asInstanceOf[Ptr[Int]]
   def free(): Unit = stdlib.free(memory)

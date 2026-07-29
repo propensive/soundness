@@ -947,7 +947,7 @@ object Json extends Json2, Dynamic:
         def parse(reader: JsonReader^): derivation =
           val entries = fields
           val count = entries.length
-          val values = new Array[Any](count)
+          val values = Buffer[Any](count)
           var index = 0
 
           while index < count do
@@ -994,7 +994,7 @@ object Json extends Json2, Dynamic:
 
             index += 1
 
-          make(values.immutable(using Unsafe))
+          make(Buffer.freeze(values))
 
   // The direct-parsing counterpart of `Json.Decodable`: consumes JSON tokens
   // from a `JsonReader` instead of walking a materialized `Json`, so

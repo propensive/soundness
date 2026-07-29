@@ -162,13 +162,13 @@ object Bench:
 
         var rate: Double = d.toDouble/count
         count = math.max(1L, (${Expr(batch)}/rate).toLong)
-        val result = new Array[Long](${Expr(iterations)} + 1)
+        val result = new scala.Array[Long](${Expr(iterations)} + 1)
 
         // Warmup / calibration: run `warmups` full-count batches, adjusting
         // count run-by-run so it converges on the batch target, then pick the
         // final count from the median of all observed rates so a single
         // GC-affected run can't bias the measurement count.
-        val rates = new Array[Double](${Expr(warmups)})
+        val rates = new scala.Array[Double](${Expr(warmups)})
         var c = 0
 
         while c < ${Expr(warmups)} do

@@ -63,7 +63,7 @@ object Pcm:
 
     def stream: Progression[Audio across layout] =
       def recur: Progression[Audio across layout] =
-        val buffer: Array[Byte] = new Array[Byte](chunkBytes)
+        val buffer: Array[Byte] = new scala.Array[Byte](chunkBytes)
         val count = line.read(buffer, 0, buffer.length)
 
         if count <= 0 then Progression() else

@@ -55,7 +55,7 @@ private[punctuation] object InlineParser:
   // handled there must also be flagged here, otherwise it'll be silently
   // batched as plain text.
   private val Specials: IArray[Boolean] =
-    val arr: Array[Boolean]^ = new Array[Boolean](128)
+    val arr = Buffer[Boolean](128)
     val special = "\\&`<\n*_[!]"
     var i = 0
 
@@ -63,7 +63,7 @@ private[punctuation] object InlineParser:
       arr(special.charAt(i).toInt) = true
       i += 1
 
-    arr.asInstanceOf[IArray[Boolean]]
+    Buffer.freeze(arr)
 
   private inline def isSpecial(inline c: Char): Boolean =
     c < 128 && Specials.stdlib(c.toInt)

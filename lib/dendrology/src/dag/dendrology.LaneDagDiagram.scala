@@ -98,13 +98,13 @@ object LaneDagDiagram:
       val rowOf: Map[node, Int] = nodes.zipWithIndex.to(Map)
       val forward: Map[node, Set[node]] = dag.invert.edgeMap
 
-      val nodeCol: Array[Int]^ = new Array[Int](total)
+      val nodeCol: Array[Int]^ = new scala.Array[Int](total)
 
       val laneState: Array[Map[Int, Lane[node]]]^ =
         Array.fill(total + 1)(Map.empty[Int, Lane[node]])
 
       val started: Array[Vector[Lane[node]]]^ = Array.fill(total)(Vector.empty[Lane[node]])
-      val directOut: Array[Boolean]^ = new Array[Boolean](total)
+      val directOut: Array[Boolean]^ = new scala.Array[Boolean](total)
       var r = 0
 
       while r < total do

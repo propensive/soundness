@@ -105,9 +105,9 @@ object ApkSigner:
     while offset < until do
       val end = math.min(offset + chunkSize, until)
       val length = end - offset
-      val chunk = new Array[Byte](length)
-      System.arraycopy(data.mutable(using Unsafe), offset, chunk, 0, length)
-      val prefixed = concat(IArray(0xa5.toByte), u32(length.toLong), chunk.immutable(using Unsafe))
+      val chunk = Buffer[Byte](length)
+      chunk.copyFrom(data, offset, 0, length)
+      val prefixed = concat(IArray(0xa5.toByte), u32(length.toLong), Buffer.freeze(chunk))
       builder += sha256(prefixed)
       offset = end
 

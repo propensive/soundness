@@ -196,7 +196,7 @@ private[punctuation] object EmphasisProcessor:
     var current: InlineNode | Null =
       if stackBottom == null then list.first else stackBottom.next
 
-    val openersBottom = new Array[InlineNode | Null](12)
+    val openersBottom = new scala.Array[InlineNode | Null](12)
 
     if stackBottom != null then
 

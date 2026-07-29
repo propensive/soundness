@@ -148,7 +148,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
       def stream: Progression[Audio across layout] =
         def recur: Progression[Audio across layout] =
           if stopped then Progression() else
-            val buf: Array[Byte] = new Array[Byte](chunkBytes)
+            val buf: Array[Byte] = new scala.Array[Byte](chunkBytes)
             val n = line.read(buf, 0, buf.length)
 
             if n <= 0 then Progression() else

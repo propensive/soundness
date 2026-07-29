@@ -38,7 +38,7 @@ object Data:
   def apply(xs: Byte*): Data = IArray(xs*)
 
   def build(count: Int)(lambda: Array[Byte]^ => Unit): Data =
-    val array: Array[Byte]^ = new Array[Byte](count)
+    val array: Array[Byte]^ = new scala.Array[Byte](count)
     lambda(array)
     array.asInstanceOf[Data]
 

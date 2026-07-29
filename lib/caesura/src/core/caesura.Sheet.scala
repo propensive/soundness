@@ -257,9 +257,9 @@ object Sheet:
 
     private[caesura] def materialize(): Dsv =
       val n = cellsBuf.length
-      val arr = new Array[Text](n)
-      cellsBuf.copyToArray(arr)
-      Dsv(IArray.unsafeFromArray(arr), headings)
+      val arr = Buffer[Text](n)
+      cellsBuf.copyToArray(arr.raw)
+      Dsv(Buffer.freeze(arr), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
     // bulk-appending the run of regular characters in one operation, then

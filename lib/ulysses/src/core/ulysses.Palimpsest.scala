@@ -52,7 +52,7 @@ object Palimpsest:
 
     val n        = hashes.length
     val bodyLen  = cadence.bodyLength(n)
-    val body     = new Array[Byte](bodyLen)
+    val body     = Buffer[Byte](bodyLen)
     val hashSize = cadence.hashSize
 
     var i = 0
@@ -75,11 +75,11 @@ object Palimpsest:
       xor = xor ^ (body(k) & 0xff)
       k += 1
 
-    val out = new Array[Byte](bodyLen + 1)
-    System.arraycopy(body, 0, out, 0, bodyLen)
+    val out = Buffer[Byte](bodyLen + 1)
+    out.copyFromBuffer(body, 0, 0, bodyLen)
     out(bodyLen) = (xor ^ (cadence.byte & 0xff)).toByte
 
-    Palimpsest(out.asInstanceOf[IArray[Byte]], n)
+    Palimpsest(Buffer.freeze(out), n)
 
 case class Palimpsest(data: Data, length: Int):
   // §4 decoding. Recover the cadence byte from the XOR-fold, derive `n`
@@ -108,7 +108,7 @@ case class Palimpsest(data: Data, length: Int):
           if n != length then Unset else
             // The scratch array is threaded through the nested defs as an exclusive (`^`)
             // parameter: a captured array would be read-only inside them.
-            val body0: Array[Byte]^ = new Array[Byte](bodyLen)
+            val body0: Array[Byte]^ = new scala.Array[Byte](bodyLen)
             System.arraycopy(data.asInstanceOf[Array[Byte]], 0, body0, 0, bodyLen)
 
             def xor_(body: Array[Byte]^, hash: Data, offset: Int): Unit =
@@ -131,11 +131,11 @@ case class Palimpsest(data: Data, length: Int):
               else
                 val o         = cadence.offset(item)
                 val prefixLen = if item == 0 then cadence.initial else cadence.regular
-                val prefix    = new Array[Byte](prefixLen)
-                System.arraycopy(body, o, prefix, 0, prefixLen)
+                val prefix    = Buffer[Byte](prefixLen)
+                System.arraycopy(body, o, prefix.raw, 0, prefixLen)
 
                 val candidates =
-                  bibliography.lookup(prefix.asInstanceOf[IArray[Byte]]).iterator
+                  bibliography.lookup(Buffer.freeze(prefix)).iterator
 
                 var found: Optional[List[Data]] = Unset
 

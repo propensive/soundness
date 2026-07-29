@@ -202,14 +202,14 @@ extends Rig:
 
             // Preallocate every measurement structure before the allocation snapshot, so none
             // of it pollutes the allocation-per-operation figure.
-            val ops = new Array[Long](n)
-            val histograms = new Array[Array[Long] | Null](n)
-            val threads = new Array[java.lang.Thread | Null](n)
+            val ops = new scala.Array[Long](n)
+            val histograms = new scala.Array[Array[Long] | Null](n)
+            val threads = new scala.Array[java.lang.Thread | Null](n)
             val oom = new java.util.concurrent.atomic.AtomicBoolean(false)
             var k = 0
 
             while k < n do
-              histograms(k) = new Array[Long](1024)
+              histograms(k) = new scala.Array[Long](1024)
               k += 1
 
             var i = 0
@@ -319,7 +319,7 @@ extends Rig:
               k += 1
 
             // Merge the worker histograms and extract the latency percentiles.
-            val merged = new Array[Long](1024)
+            val merged = new scala.Array[Long](1024)
             k = 0
 
             while k < n do

@@ -412,9 +412,9 @@ extension [element](array: Array[element])
   inline def immutable(using erased unsafe: Unsafe): IArray[element] = array.asInstanceOf[IArray[element]]
 
   def snapshot(using ClassTag[element]): IArray[element] =
-    val newArray = new Array[element](array.length)
-    System.arraycopy(array, 0, newArray, 0, array.length)
-    newArray.immutable(using Unsafe)
+    val newArray = Buffer[element](array.length)
+    System.arraycopy(array, 0, newArray.raw, 0, array.length)
+    Buffer.freeze(newArray)
 
   inline def place(value: IArray[element], ordinal: Ordinal = Prim): Unit =
     System.arraycopy(value.asInstanceOf[Array[element]], 0, array, ordinal.n0, value.stdlib.length)

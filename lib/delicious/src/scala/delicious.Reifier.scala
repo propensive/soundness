@@ -122,7 +122,7 @@ class Reifier(classpath: LocalClasspath):
         // As in `Scalac`: the argument array crosses in through a Java-side copy.
         val args = java.util.ArrayList[String]()
         args.add("-classpath"); args.add(entries.s); args.add("")
-        setup(args.toArray(new Array[String | Null](0)).nn.asInstanceOf[Array[String]], initCtx.fresh)
+        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[Array[String]], initCtx.fresh)
         . map(_(1)).get
 
     val base = driver.context.fresh.setReporter(Reporter.NoReporter)

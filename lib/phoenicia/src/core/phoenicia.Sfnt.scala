@@ -54,7 +54,7 @@ private[phoenicia] object Sfnt:
     val total = tablesStart + sorted.sumBy: entry =>
       padded(entry(1).length)
 
-    val buffer = new Array[Byte](total)
+    val buffer = new scala.Array[Byte](total)
 
     def putU16(position: Int, value: Int): Unit =
       buffer(position) = (value >> 8).toByte

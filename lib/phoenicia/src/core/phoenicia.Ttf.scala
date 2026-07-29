@@ -173,7 +173,7 @@ case class Ttf(data: Data):
     val glyphs = glyf
     val count = maxp.glyphCount
 
-    val offsets = new Array[Int](count + 1)
+    val offsets = new scala.Array[Int](count + 1)
     val parts = scala.collection.immutable.List.newBuilder[Data]
     var position = 0
 

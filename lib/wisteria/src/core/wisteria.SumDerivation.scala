@@ -87,7 +87,7 @@ object SumDerivation:
       type Variants = reflection.MirroredElemTypes
 
       provide[ClassTag[result]]:
-        val array = new Array[result](valueOf[Tuple.Size[Variants]])
+        val array = new scala.Array[result](valueOf[Tuple.Size[Variants]])
 
         choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
           [variant <: derivation] => context ?=>

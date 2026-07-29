@@ -457,7 +457,7 @@ object SourceCode:
           args.add(argument.s)
           ()
 
-        setup(args.toArray(new Array[String | Null](0)).nn.asInstanceOf[Array[String]], base)
+        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[Array[String]], base)
         . map(_(1)).get
 
     val base: Contexts.FreshContext = driver.context.fresh

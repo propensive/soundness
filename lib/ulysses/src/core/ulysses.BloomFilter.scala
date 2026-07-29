@@ -66,19 +66,19 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
       else
         // A manual concatenation into a fresh exclusive array: `toArray` yields a read-only
         // array, which `BigInt`'s pure formal rejects.
-        val whole: Array[Byte]^ = new Array[Byte](data.stdlib.map(_.length).sum)
+        val whole = Buffer[Byte](data.stdlib.map(_.length).sum)
         var offset = 0
         var rest = data.stdlib
 
         while rest.nonEmpty do
           val chunk = rest.head
-          System.arraycopy(chunk, 0, whole, offset, chunk.length)
+          System.arraycopy(chunk, 0, whole.raw, offset, chunk.length)
           offset += chunk.length
           rest = rest.tail
 
         // Via `java.math.BigInteger`: the Java constructor accepts the array where
         // `BigInt.apply`'s pure Scala formal does not.
-        BigInt(java.math.BigInteger(whole)).abs
+        BigInt(java.math.BigInteger(whole.raw)).abs
 
     recur()
 
