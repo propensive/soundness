@@ -30,49 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package hyperbole
+
+import dotty.tools.dotc.core.tasty.TastyUnpickler
 
 import anticipation.*
-import digression.*
-import doms.html.whatwg.*
-import fulminate.*
-import gossamer.*
-import prepositional.*
-import spectacular.*
+import rudiments.*
 import vacuous.*
 
-object Renderable:
-  given message: Message is Renderable:
-    type Form = Phrasing
+object TastyFile:
+  // A TASTy file is only ever a source of extra detail, so anything unexpected about it—a version
+  // this reader does not understand, a truncated file, a section that is absent—means falling
+  // back to what the stack trace already said, never failing.
+  def apply(data: Data): Optional[TastyFile] =
+    try
+      val unpickler = TastyUnpickler(data.mutable(using Unsafe))
+      val positions = unpickler.unpickle(stacksInternal.PositionSection())
 
-      def render(message: Message): Html of Phrasing =
-        val elements: List[Html of Phrasing] = message.segments.flatMap:
-          case message: Message => List(render(message))
-          case text: Text       => List(text)
-          case _                => Nil
+      positions.map: positions =>
+        val definitions =
+          unpickler.unpickle(stacksInternal.DefinitionSection(positions)).getOrElse(Nil)
 
-        Fragment(elements*)
+        val path = unpickler.unpickle(stacksInternal.AttributeSection()).getOrElse(Unset)
 
-  given stackTrace: StackTrace is Renderable in Flow = stackTrace =>
-    type Topic = "at" | "class" | "stack" | "method" | "file" | "line" | "code"
-    given attribution: (Attribution of Topic) = Attribution.classes()
+        TastyFile(path, definitions)
 
-    val rows = stackTrace.frames.map: frame =>
-      Tr
-        ( Td.at(Code(t"at")),
-          Td.`class`(Code(frame.displayClass)),
-          Td.method(Code(frame.displayMethod)),
-          Td.file(Code(frame.file)),
-          Td(Code(t":")),
-          Td.line(Code(frame.line.let(_.show).or(t""))),
-          Td.code(Code(frame.source.let(_.code).or(t""))) )
+      . getOrElse(Unset)
 
-    Div.stack
-      ( H2(stackTrace.component),
-        H3(stackTrace.className),
-        H4(stackTrace.message.html),
-        Table(Tbody(rows*)) )
+    catch case error: Throwable => Unset
 
-
-trait Renderable extends Typeclass, Formal:
-  def render(value: Self): Html of Form
+// The definitions the compiler recorded for one top-level class, and the source file they came
+// from. `path` is the full path the file was compiled from, of which a stack trace keeps only the
+// last segment.
+case class TastyFile(path: Optional[Text], definitions: List[TastyDefinition]):
+  // Every definition covering `line`, innermost first, where nesting is measured by how much
+  // source a definition covers—so an anonymous function comes before the method containing it.
+  // Definitions the compiler synthesized, such as a constructor an `object` never declared, are
+  // pickled with an empty extent at whatever position was to hand, and so cannot be innermost
+  // anything; they sort last, to be reached only when a frame really is one of them.
+  def covering(line: Int): List[TastyDefinition] =
+    definitions.filter(_.covers(line)).sortBy: definition =>
+      (if definition.span == 0 then 1 else 0, definition.span)

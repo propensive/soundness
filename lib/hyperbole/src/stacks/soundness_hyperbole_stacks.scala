@@ -30,49 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package soundness
 
-import anticipation.*
-import digression.*
-import doms.html.whatwg.*
-import fulminate.*
-import gossamer.*
-import prepositional.*
-import spectacular.*
-import vacuous.*
+export hyperbole.{resolved, StackResolver, TastyDefinition, TastyFile}
 
-object Renderable:
-  given message: Message is Renderable:
-    type Form = Phrasing
-
-      def render(message: Message): Html of Phrasing =
-        val elements: List[Html of Phrasing] = message.segments.flatMap:
-          case message: Message => List(render(message))
-          case text: Text       => List(text)
-          case _                => Nil
-
-        Fragment(elements*)
-
-  given stackTrace: StackTrace is Renderable in Flow = stackTrace =>
-    type Topic = "at" | "class" | "stack" | "method" | "file" | "line" | "code"
-    given attribution: (Attribution of Topic) = Attribution.classes()
-
-    val rows = stackTrace.frames.map: frame =>
-      Tr
-        ( Td.at(Code(t"at")),
-          Td.`class`(Code(frame.displayClass)),
-          Td.method(Code(frame.displayMethod)),
-          Td.file(Code(frame.file)),
-          Td(Code(t":")),
-          Td.line(Code(frame.line.let(_.show).or(t""))),
-          Td.code(Code(frame.source.let(_.code).or(t""))) )
-
-    Div.stack
-      ( H2(stackTrace.component),
-        H3(stackTrace.className),
-        H4(stackTrace.message.html),
-        Table(Tbody(rows*)) )
-
-
-trait Renderable extends Typeclass, Formal:
-  def render(value: Self): Html of Form
+package stackResolutions:
+  export hyperbole.stackResolutions.tastyStackResolution

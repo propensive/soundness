@@ -30,49 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package hyperbole
 
-import anticipation.*
 import digression.*
-import doms.html.whatwg.*
-import fulminate.*
-import gossamer.*
-import prepositional.*
-import spectacular.*
+import hellenism.*
 import vacuous.*
 
-object Renderable:
-  given message: Message is Renderable:
-    type Form = Phrasing
+package stackResolutions:
+  // Importing this makes every `StackTrace` captured in the enclosing scope name the source
+  // definitions its frames were compiled from, at the cost of reading one TASTy file per
+  // top-level class named in the trace.
+  given tastyStackResolution: Classloader => StackTrace.Resolver = StackResolver()
 
-      def render(message: Message): Html of Phrasing =
-        val elements: List[Html of Phrasing] = message.segments.flatMap:
-          case message: Message => List(render(message))
-          case text: Text       => List(text)
-          case _                => Nil
+extension (stackTrace: StackTrace)
+  // Resolves an existing trace, for callers which hold a `Classloader` and would rather ask
+  // explicitly than import a resolver into scope.
+  def resolved(using Classloader): StackTrace =
+    val resolver = StackResolver()
 
-        Fragment(elements*)
+    def recur(stackTrace: StackTrace): StackTrace =
+      StackTrace
+        ( stackTrace.component,
+          stackTrace.className,
+          stackTrace.message,
+          stackTrace.frames.map(resolver.resolve),
+          stackTrace.cause.let(recur) )
 
-  given stackTrace: StackTrace is Renderable in Flow = stackTrace =>
-    type Topic = "at" | "class" | "stack" | "method" | "file" | "line" | "code"
-    given attribution: (Attribution of Topic) = Attribution.classes()
-
-    val rows = stackTrace.frames.map: frame =>
-      Tr
-        ( Td.at(Code(t"at")),
-          Td.`class`(Code(frame.displayClass)),
-          Td.method(Code(frame.displayMethod)),
-          Td.file(Code(frame.file)),
-          Td(Code(t":")),
-          Td.line(Code(frame.line.let(_.show).or(t""))),
-          Td.code(Code(frame.source.let(_.code).or(t""))) )
-
-    Div.stack
-      ( H2(stackTrace.component),
-        H3(stackTrace.className),
-        H4(stackTrace.message.html),
-        Table(Tbody(rows*)) )
-
-
-trait Renderable extends Typeclass, Formal:
-  def render(value: Self): Html of Form
+    recur(stackTrace)

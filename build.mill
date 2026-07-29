@@ -1709,7 +1709,16 @@ object hyperbole extends Library:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(core, quantitative.units, mandible.core):
+  // Resolves the frames of a runtime stack trace against the TASTy written beside the classfiles,
+  // naming the source definitions the compiled names were derived from. Split from `core` because
+  // it reads TASTy files rather than introspecting trees during macro expansion, but it shares
+  // `core`'s dependency on the compiler, which supplies the header and name-table readers.
+  object stacks extends Component(core, galilei.jvm, hellenism.jvm):
+    override def scalaJs = false // depends on JVM-only `hyperbole.core` and the filesystem
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+
+  object test extends Tests(core, stacks, quantitative.units, mandible.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
