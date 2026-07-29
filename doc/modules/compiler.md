@@ -117,6 +117,24 @@ import dexLinkages.given
 
 `Javac` compiles Java sources through the same shape of API, so a tool that orchestrates
 compilation does not change idiom per language, and a mixed Scala and Java application links into
-one artifact. Calling *into* a compiled Kotlin library needs no compilation at all: its
-declarations are read from its classfiles, as [foreign interoperability](foreign-interop.md)
-describes.
+one artifact.
+
+`Kotlinc` does the same for Kotlin, parameterized by the language version it targets, with its
+options — `-Werror`, `-jvm-target`, explicit API mode, and the rest — under `kotlincOptions` and
+version-checked in the same way:
+
+```scala
+supervise:
+  val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
+  val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> source), outputPath)
+  process.complete()
+```
+
+The Kotlin compiler reads its sources from disk, so they are written to a scratch directory that
+is removed when the compilation ends; a diagnostic still names the source as it was given, not the
+file it was written to. The Kotlin standard library is never implied — like every other classpath
+entry, it is supplied explicitly — and the output is classfiles, linkable as any classfile
+artifact, including a `Dex` or an `Apk`.
+
+Calling *into* a compiled Kotlin library, meanwhile, needs no compilation at all: its declarations
+are read from its classfiles, as [foreign interoperability](foreign-interop.md) describes.

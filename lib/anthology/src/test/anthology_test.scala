@@ -324,6 +324,69 @@ object Tests extends Suite(m"Anthology Tests"):
                 mute[ExecEvent](sh"$artifact".exec[Text]()).trim
           . assert(_ == t"hello")
 
+    test(m"Kotlinc options become command-line arguments"):
+      Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
+      . commandLineArguments
+    . assert(_ == List(t"-Werror", t"-jvm-target", t"17"))
+
+    test(m"A Kotlin 2 option does not apply to a Kotlin 1.9 compiler"):
+      demilitarize:
+        Kotlinc[1.9](List(kotlincOptions.warnings.extra))
+    . assert(_.nonEmpty)
+
+    // The Kotlin compiler runs in-process against an explicit classpath, so the standard library
+    // is the caller's to supply; it is found on this suite's own classpath.
+    kotlinStdlib().let: stdlib =>
+      supervise:
+        val classpath = LocalClasspath(List(ClasspathEntry.Jar(stdlib))*)
+        val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+
+        val greeting: Text =
+          t"""|package demo
+              |
+              |fun greet(): String = "hello"
+              |""".s.stripMargin.tt
+
+        val process = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Greeting.kt" -> greeting), out)
+
+        test(m"A Kotlin compilation succeeds"):
+          process.complete()
+        . assert(_ == CompileResult.Success)
+
+        test(m"A Kotlin compilation emits classfiles"):
+          Files.list(Paths.get(out.encode.s, "demo")).nn.iterator.nn.asScala
+          . exists(_.getFileName.nn.toString == "GreetingKt.class")
+        . assert(_ == true)
+
+        val broken: Text =
+          t"""|package demo
+              |
+              |fun broken(): Int = "not an integer"
+              |""".s.stripMargin.tt
+
+        val out2: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+        val failing = Kotlinc[2.4](Nil)(classpath)(Map(t"demo/Broken.kt" -> broken), out2)
+
+        test(m"A Kotlin compilation with a type error fails"):
+          failing.complete()
+        . assert(_ == CompileResult.Failure)
+
+        test(m"A Kotlin error is counted"):
+          failing.errors
+        . assert(_ > 0)
+
+        test(m"A Kotlin notice names the source it was given"):
+          failing.notices.map(_.file).to(List)
+        . assert(_ == List(t"demo/Broken.kt"))
+
+  // Locates the Kotlin standard library on this suite's classpath; the Kotlin compiler never
+  // implies it, so a compilation must be given it explicitly.
+  def kotlinStdlib(): Optional[Text] =
+    java.lang.System.getProperty("java.class.path").nn.tt
+    . cut(java.io.File.pathSeparator.nn.tt)
+    . filter(_.contains(t"kotlin-stdlib"))
+    . prim
+
   // Locates a cached proscala release's `lib` directory, which carries the fork standard
   // library and the Scala.js runtime JARs.
   def proscalaLibrary(): Optional[JnfPath] =
