@@ -47,4 +47,4 @@ object LinkError:
     case Reason.ManyEntryPoints => m"an executable JAR permits at most one entry point"
 
 case class LinkError(reason: LinkError.Reason)(using Diagnostics)
-extends Error(779, reason.number)(m"linking failed because $reason")
+extends Error(443, reason.number)(m"linking failed because $reason")
