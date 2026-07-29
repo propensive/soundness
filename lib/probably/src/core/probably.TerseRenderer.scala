@@ -160,7 +160,7 @@ private[probably] object TerseRenderer:
 
   private def formatFrame(frame: StackTrace.Frame): Text =
     val ln = frame.line.let(_.toString.tt).or(t"?")
-    t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
+    t"  at ${frame.displaySegment}.${frame.displayMethod} (${frame.file}:$ln)"
 
   private def renderFailures(document: Document, columns: Int)(using Stdio): Unit =
     val failureStatuses: Set[Status] =
