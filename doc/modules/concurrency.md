@@ -63,6 +63,22 @@ supervise:
   async(3).bind(n => async(n + 4)).await()             // 7
 ```
 
+`sequence` runs its tasks in parallel and collects the results *in order*, so the ordering of the
+results says nothing about the order in which they finished. `race` returns the first to finish
+and the rest are cancelled, since their results were not wanted.
+
+### Naming tasks
+
+A task may be given a name, checked as the code compiles against the rules for a task name — no
+path separators, since names compose into a hierarchy mirroring the scope tree:
+
+```scala
+val name: Name[Async] = n"worker"
+```
+
+Named tasks make a running program legible: a stack trace, a monitor dump or a debugger shows
+`server/connection-4/reader` rather than an anonymous thread number.
+
 ### Cancellation
 
 A task is cancelled with `cancel`, and a cancellable task cooperates by pausing at points where it
@@ -93,6 +109,23 @@ supervise:
 
 A `daemon` is fire-and-forget work — a background loop, a listener — that the scope does not wait for
 and cancels when it ends. It runs for the life of its scope and no longer.
+
+A daemon's body is *hygienic*: it cannot capture an error handler from the code that spawned it.
+That is deliberate. The spawning code has already moved on, so a handler there is not in any
+meaningful sense enclosing the daemon, and delivering an error to it would mean resuming a
+computation that has finished. A daemon that fails therefore escalates as a `Fault`, which a
+program intercepts where it handles the unexpected, rather than silently reaching a handler that
+was never intended for it.
+
+### Cancellation in both directions
+
+Cancelling a scope cancels its children, and the *probate* decides what happens to a child that is
+still running when its parent's body completes. Under `cancelProbate` the child is cancelled;
+under `awaitProbate` the parent waits for it.
+
+Cancellation also runs upward: a task that fails propagates its failure to the scope that owns it,
+which cancels the scope's other children. Work that has become pointless therefore stops, rather
+than continuing to consume resources on behalf of a computation that has already failed.
 
 ### Threads and completion
 
