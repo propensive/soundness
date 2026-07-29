@@ -32,97 +32,38 @@
                                                                                                   */
 package geodesy
 
-import anticipation.*
-import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import spectacular.*
 import symbolism.*
 
-object internal:
-  private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
+object angleInternal:
+  opaque type Angle = Double
 
-  opaque type Location = Long
+  object Angle:
+    private val c = 2*π
 
-  object Location:
-    given encodable: Location is Encodable in Text = location =>
-      t"${location.latitude.degrees},${location.longitude.degrees}"
+    def apply(value: Double): Angle = value
+    def degrees(value: Double): Angle = value*π/180
+    def turns(value: Double): Angle = value*c
 
-    private def fromAngle(latitude: Angle, longitude: Angle): Location =
-      (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
+    given addable: Angle is Addable by Angle to Angle = Addable: (left, right) => (left + right)%c
 
-    private def encodeLatitude(latitude: Angle): Int =
-      (latitude.radians*2*Int.MaxValue/math.Pi).toInt
+    given subtractable: Angle is Subtractable by Angle to Angle =
+      Subtractable: (left, right) => (c + left - right)%c
 
-    private def encodeLongitude(longitude: Angle): Int =
-      ((longitude.radians - math.Pi)*Int.MaxValue/math.Pi).toInt
+    given multiplicable: Angle is Multiplicable by Double to Angle =
+      Multiplicable: (left, right) => (left*right)%c
 
-    def apply(latitude: Angle, longitude: Angle): Location = fromAngle(latitude, longitude)
+    given divisible: Angle is Divisible by Double to Angle =
+      Divisible: (left, right) => (left/right)%c
 
-    def apply(north: Int, east: Int): Location =
-      fromAngle(Degree*north.toDouble/1000000.0, Degree*((360.0 + east/1000000.0)%360.0))
+    given multiplicable2: Double is Multiplicable by Angle to Angle =
+      Multiplicable: (left, right) => (left*right)%c
 
-  extension (left: Location)
-    def latitude: Angle = Angle(((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*π)
+  extension (angle: Angle)
+    def degrees: Double = angle*180/π
 
-    def longitude: Angle = Angle((left & 0xffffffffL).toInt.toDouble/Int.MaxValue*π + π)
-    def pair: (Angle, Angle) = (latitude, longitude)
-
-    def geohash(length: Int): Text =
-
-      val bits = length*5
-      val lat: Int = ((left >>> 32)&0xffffffffL).toInt
-
-      val long: Int =
-        val long0 = left&0xffffffffL
-        if long0 < 0 then (long0 + Int.MaxValue).toInt else (long0 - Int.MaxValue).toInt
-
-
-      def recur(value: Long, latMin: Long, latMax: Long, longMin: Long, longMax: Long, count: Int)
-      :   Long =
-
-        if count >= bits then value else (count%2).absolve match
-          case 0 =>
-            val midpoint = (longMin + longMax)/2
-
-            if long < midpoint
-            then recur(value << 1, latMin, latMax, longMin, midpoint, count + 1)
-            else recur((value << 1) | 1L, latMin, latMax, midpoint, longMax, count + 1)
-
-          case 1 =>
-            val midpoint = (latMin + latMax)/2
-
-            if lat < midpoint
-            then recur(value << 1, latMin, midpoint, longMin, longMax, count + 1)
-            else recur((value << 1) | 1L, midpoint, latMax, longMin, longMax, count + 1)
-
-
-      val binary = recur(0L, Int.MinValue + 1, Int.MaxValue, Int.MinValue + 1, Int.MaxValue, 0)
-
-      Text:
-        IArray.tabulate[Char](length): index =>
-          "0123456789bcdefghjkmnpqrstuvwxyz".charAt((binary >> ((length - index - 1)*5)&31).toInt)
-
-    def surfaceDistance(right: Location): Angle =
-      val lat0 = left.latitude.radians
-      val lat1 = right.latitude.radians
-      val dLat = math.abs(lat0 - lat1)
-      val dLng = math.abs(left.longitude.radians - right.longitude.radians)
-
-      val a =
-        math.pow(math.sin(dLat/2), 2) +
-          math.cos(lat0)*math.cos(lat1)*math.pow(math.sin(dLng/2), 2)
-
-      Angle(2*math.atan2(math.sqrt(a), math.sqrt(1 - a)))
-
-    def bearing[compass: Directional](right: Location): compass =
-      val lat0 = left.latitude.radians
-      val lat1 = right.latitude.radians
-      val dLng = math.abs(left.longitude.radians - right.longitude.radians)
-
-      val result: Double =
-        math.atan2
-          ( math.sin(dLng)*math.cos(lat1),
-            math.cos(lat0)*math.sin(lat1) - math.sin(lat0)*math.cos(lat1)*math.cos(dLng) )
-
-      compass.direction(Angle(result))
+    def radians: Double = angle
+    def turns: Double = angle/(2*π)
+    def principal: Angle = angle%%(2*π)
+    def canonical: Angle = (angle + π).principal - π
