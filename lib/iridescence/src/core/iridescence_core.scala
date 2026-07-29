@@ -52,6 +52,71 @@ package luminosity:
   given darkBrightness: Brightness = Brightness.Dark
   given lightBrightness: Brightness = Brightness.Light
 
+// The blend modes, named as Photoshop and GIMP name them and defined as the W3C compositing
+// specification defines them, for `Daub` arithmetic to add through. All but `proportional` read
+// coordinates as fractions of full intensity, so they are offered only for the spaces marked
+// `Tonal`; asking for `multiply` in CIELAB, where lightness runs to 100, will not compile.
+package mixing:
+  // The layer replaces the backdrop, so mixing it back in proportion leaves a plain weighted
+  // average — what pairwise `mix` does, and the only mode that means anything in a space whose
+  // coordinates are not confined to 0..1.
+  given proportional: [topic <: Color] => topic is Mixing = (_, layer) => layer
+
+  given multiply: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => backdrop*layer
+
+  given screen: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => backdrop + layer - backdrop*layer
+
+  given darken: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => math.min(backdrop, layer)
+
+  given lighten: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => math.max(backdrop, layer)
+
+  given difference: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => math.abs(backdrop - layer)
+
+  given exclusion: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => backdrop + layer - 2*backdrop*layer
+
+  given linearDodge: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => math.min(1.0, backdrop + layer)
+
+  given linearBurn: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) => math.max(0.0, backdrop + layer - 1)
+
+  given hardLight: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) =>
+      if layer <= 0.5 then 2*backdrop*layer else 1 - 2*(1 - backdrop)*(1 - layer)
+
+  // Overlay is hard light with the two operands exchanged: the backdrop, rather than the layer,
+  // decides whether the pair is multiplied or screened.
+  given overlay: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) =>
+      if backdrop <= 0.5 then 2*backdrop*layer else 1 - 2*(1 - backdrop)*(1 - layer)
+
+  given softLight: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) =>
+      if layer <= 0.5 then backdrop - (1 - 2*layer)*backdrop*(1 - backdrop) else
+        val toward =
+          if backdrop <= 0.25 then ((16*backdrop - 12)*backdrop + 4)*backdrop
+          else math.sqrt(backdrop)
+
+        backdrop + (2*layer - 1)*(toward - backdrop)
+
+  given colorDodge: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) =>
+      if backdrop == 0.0 then 0.0
+      else if layer == 1.0 then 1.0
+      else math.min(1.0, backdrop/(1 - layer))
+
+  given colorBurn: [topic <: Color: Tonal] => topic is Mixing =
+    (backdrop, layer) =>
+      if backdrop == 1.0 then 1.0
+      else if layer == 0.0 then 0.0
+      else 1 - math.min(1.0, (1 - backdrop)/layer)
+
 package colorimetry:
   given incandescentTungsten: Colorimetry = Colorimetry(109.850, 100, 35.585, 111.144, 100, 35.2)
 

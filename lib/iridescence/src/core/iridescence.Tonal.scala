@@ -30,35 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package iridescence
 
-// `Channel` clashes with perihelion's WebSocket `Channel` in the umbrella; reach the pixel
-// channel machinery via `iridescence.Channel`.
-export
-  iridescence
-  . { Alpha, Blendable, Blue, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, Colorimetry, Cyan, dark,
-      Daub, Green, Grey, Hsl, Hsv, Key, light, Magenta, Mixing, Palette, Perceptual, Pixel, pixel,
-      PixelOpaque, Red, rgb, Rgb, Rgba, Rgb12, Rgb12Opaque, Rgb32, rgb32, Rgb32Opaque, Solarized,
-      Spectrum, Srgb, Theme, Tonal, WebColors, Xyz, Yellow }
+// Marks a space whose coordinates all run from 0 to 1, which is what every mixing mode except
+// `proportional` assumes: `multiply` is a product of coordinates and `screen` a product of their
+// complements, and neither describes anything where a coordinate can be 100 or negative. `Cielab`
+// and `Xyz` therefore have no instance, so they mix proportionally or not at all.
+object Tonal:
+  given srgb: Srgb is Tonal = new Tonal:
+    type Self = Srgb
 
-package colorimetry:
-  export
-    iridescence.colorimetry
-    . { adobeRgb, coolFluorescent, coolWhiteFluorescent, d50Simulator, d65Simulator, daylight,
-        daylightFluorescentF1, daylightFluorescentF5, daylightFluorescentF7, equalEnergy,
-        iccProfilePcs, incandescentTungsten, liteWhiteFluorescent, midMorningDaylight,
-        northSkyDaylight, oldDaylight, oldDirectSunlightAtNoon, philipsTl83, philipsTl84,
-        philipsTl85, srgb, sylvaniaF40, ultralume30, ultralume40, ultralume50, warmWhiteFluorescent,
-        whiteFluorescent }
+  given cmy: Cmy is Tonal = new Tonal:
+    type Self = Cmy
 
-package luminosity:
-  export iridescence.luminosity.{darkBrightness, lightBrightness}
+  given cmyk: Cmyk is Tonal = new Tonal:
+    type Self = Cmyk
 
-package mixing:
-  export
-    iridescence.mixing
-    . { colorBurn, colorDodge, darken, difference, exclusion, hardLight, lighten, linearBurn,
-        linearDodge, multiply, overlay, proportional, screen, softLight }
-
-package themes:
-  export iridescence.themes.solarizedTheme
+trait Tonal:
+  type Self <: Color

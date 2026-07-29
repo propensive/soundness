@@ -34,12 +34,29 @@ package iridescence
 
 import anticipation.*
 import prepositional.*
+import symbolism.*
 
 object Color:
   given chromatic: [form <: Color: Perceptual in Srgb as perceptual] => Color in form is Chromatic =
     color =>
       val srgb = color.to[Srgb]
       Chroma((srgb.red*255).toInt, (srgb.green*255).toInt, (srgb.blue*255).toInt)
+
+  // Lifting a color to a `Daub` lives here, rather than in `Daub`'s companion, because `Daub`
+  // appears only in the result: the implicit scope searched for `5*Red` is built from `Int` and
+  // the color's type, and `Color`'s companion is the one place common to every space.
+  //
+  // `Multiplicable`'s `Operand` is an invariant type member, so it must be the operand's own type
+  // rather than `Color in topic`, which would never match a concrete `Srgb`. The space comes from
+  // the bound instead, which normalizes `5*WebColors.Red` (a `Color in Srgb`) and `5*Srgb(1, 0, 0)`
+  // to the same `Daub[Srgb]`, so the two can be added to one another.
+  given multiplicable: [topic <: Color, color <: Color in topic]
+  =>  Double is Multiplicable by color to Daub[topic] =
+    Multiplicable: (parts, color) => Daub(parts, color.to[topic])
+
+  given wholeMultiplicable: [topic <: Color, color <: Color in topic]
+  =>  Int is Multiplicable by color to Daub[topic] =
+    Multiplicable: (parts, color) => Daub(parts, color.to[topic])
 
 
 // A `Color` is a pure value (it holds no capabilities), so it extends `Pure`; this keeps `this.type`

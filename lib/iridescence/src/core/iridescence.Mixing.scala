@@ -30,35 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package iridescence
 
-// `Channel` clashes with perihelion's WebSocket `Channel` in the umbrella; reach the pixel
-// channel machinery via `iridescence.Channel`.
-export
-  iridescence
-  . { Alpha, Blendable, Blue, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, Colorimetry, Cyan, dark,
-      Daub, Green, Grey, Hsl, Hsv, Key, light, Magenta, Mixing, Palette, Perceptual, Pixel, pixel,
-      PixelOpaque, Red, rgb, Rgb, Rgba, Rgb12, Rgb12Opaque, Rgb32, rgb32, Rgb32Opaque, Solarized,
-      Spectrum, Srgb, Theme, Tonal, WebColors, Xyz, Yellow }
+// How a layer's coordinate combines with the backdrop it is laid over — the blend modes of
+// Photoshop and GIMP, in the separable form the W3C compositing specification gives them. A daub's
+// share of the total parts is its opacity: the mode is applied at full strength and the result
+// mixed back in that proportion, which is exactly what a layer's opacity slider does. Only
+// `proportional` is therefore commutative; under every other mode `5*Red + 3*Yellow` differs from
+// `3*Yellow + 5*Red`, just as reordering two layers does.
+//
+// There is deliberately no default instance in this companion. A mode reachable through the
+// implicit scope would be found whenever the imported one did not apply — mixing CIELAB under
+// `import mixing.multiply` would quietly fall back to a proportional mix rather than being
+// rejected — so the mode is always named by an import from `mixing`.
+trait Mixing:
+  type Self <: Color
 
-package colorimetry:
-  export
-    iridescence.colorimetry
-    . { adobeRgb, coolFluorescent, coolWhiteFluorescent, d50Simulator, d65Simulator, daylight,
-        daylightFluorescentF1, daylightFluorescentF5, daylightFluorescentF7, equalEnergy,
-        iccProfilePcs, incandescentTungsten, liteWhiteFluorescent, midMorningDaylight,
-        northSkyDaylight, oldDaylight, oldDirectSunlightAtNoon, philipsTl83, philipsTl84,
-        philipsTl85, srgb, sylvaniaF40, ultralume30, ultralume40, ultralume50, warmWhiteFluorescent,
-        whiteFluorescent }
-
-package luminosity:
-  export iridescence.luminosity.{darkBrightness, lightBrightness}
-
-package mixing:
-  export
-    iridescence.mixing
-    . { colorBurn, colorDodge, darken, difference, exclusion, hardLight, lighten, linearBurn,
-        linearDodge, multiply, overlay, proportional, screen, softLight }
-
-package themes:
-  export iridescence.themes.solarizedTheme
+  def blend(backdrop: Double, layer: Double): Double

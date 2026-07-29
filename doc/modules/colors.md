@@ -92,6 +92,57 @@ WebColors.Ivory.to[Cielab].mix(WebColors.DeepPink.to[Cielab])
 Mixing in sRGB blends the screen values; mixing in CIELAB blends what the eye perceives,
 which gives a more natural midpoint between two colors.
 
+### Mixing by parts
+
+`mix` takes two colors at a time. To combine several, multiply each by the number of
+parts of it going into the mixture and add them up, the way a painter measures paint
+onto a palette. A mixing mode is chosen by importing one:
+
+```scala
+import mixing.proportional
+
+5*WebColors.Red + 3*WebColors.Yellow   // Srgb(1, 0.375, 0) — an orange
+```
+
+`5*Red` is a `Daub`: an amount of a color, which is still that color — one part of red
+and five parts of red are both red. A `Daub` is a `Color`, so a mixture converts,
+renders and measures like any other, and the parts matter only when more paint is added:
+
+```scala
+val mixture = 5*WebColors.Red + 3*WebColors.Yellow
+mixture.to[Cielab]
+mixture.to[Hsl].hue.degrees   // 22.5
+```
+
+Parts are proportions, so `5*Red + 3*Yellow` and `50*Red + 30*Yellow` are the same color,
+and a third daub is weighted against the total so far rather than against its neighbour:
+
+```scala
+1*WebColors.Red + 1*WebColors.Lime + 1*WebColors.Blue   // an even third of each
+```
+
+### Mixing modes
+
+`proportional` averages the colors, which is what `mix` does. The other modes are the
+blend modes of Photoshop and GIMP — `multiply`, `screen`, `overlay`, `hardLight`,
+`softLight`, `darken`, `lighten`, `colorDodge`, `colorBurn`, `difference`, `exclusion`,
+`linearDodge` and `linearBurn` — and each is imported the same way:
+
+```scala
+import mixing.multiply
+
+1*WebColors.Yellow + 1*WebColors.Cyan   // Srgb(0.5, 1, 0) — a green, as paint mixes
+```
+
+A daub's share of the total parts acts as its opacity: the mode is applied at full
+strength and the result mixed back in that proportion, exactly as a layer's opacity
+slider works. Only `proportional` is therefore commutative — under any other mode
+`5*Red + 3*Yellow` differs from `3*Yellow + 5*Red`, just as reordering two layers does.
+
+Every mode but `proportional` reads coordinates as fractions of full intensity, so they
+are offered only for sRGB, CMY and CMYK. Asking for `multiply` in CIELAB, where lightness
+runs to 100, will not compile rather than quietly meaning something else.
+
 ### Adjusting
 
 Hue, saturation and lightness are what a person reaches for to adjust a color, so those
