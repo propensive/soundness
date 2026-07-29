@@ -34,6 +34,7 @@ package enigmatic
 
 import anticipation.*
 import gastronomy.*
+import gossamer.*
 import prepositional.*
 import gastronomy.Concession
 
@@ -45,6 +46,13 @@ extension [encodable: Encodable in Data](value: encodable)
   :   Hmac in algorithm =
 
     Hmac(crypto.hmac(hash.hmacName).mac(key, encodable.encode(value)))
+
+// The digest an asymmetric signature is taken over. `SignatureDigest`'s companion supplies
+// SHA-256, so importing one of these is only necessary to choose something else.
+package signatureDigests:
+  given sha256Signature: SignatureDigest = SignatureDigest(t"SHA256")
+  given sha384Signature: SignatureDigest = SignatureDigest(t"SHA384")
+  given sha512Signature: SignatureDigest = SignatureDigest(t"SHA512")
 
 package blockCipherMode:
   export Cbc.mode as cbc

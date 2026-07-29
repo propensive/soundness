@@ -35,26 +35,18 @@ package enigmatic
 import anticipation.*
 import fulminate.*
 
-// The Scala Native twin of the JVM `JavaStdlibCrypto` provider. `javax.crypto` does not exist on
-// Scala Native, so every operation panics: the object exists only so the platform-neutral
-// `Crypto.javaStdlibCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
-// delegation) compiles unchanged — selecting it *and using it* on native is the error.
-object JavaStdlibCrypto extends Crypto:
-  private def unavailable: Nothing =
-    panic(m"the Java standard library's cryptography is unavailable on Scala Native")
+object CertificateError:
+  given communicable: Reason is Communicable =
+    case Reason.UnknownAlgorithm(digest) => m"no signature algorithm is assigned to $digest"
+    case Reason.BadPublicKey             => m"the public key was not a SubjectPublicKeyInfo"
+    case Reason.BadSerialNumber          => m"the serial number was negative or zero"
+    case Reason.BadValidity              => m"the validity period ended before it began"
 
-  def random: Crypto.Random = unavailable
-  def aes: Crypto.SymmetricCipher = unavailable
-  def rsa: Crypto.PublicKeyCipher = unavailable
-  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
-  def hmac(algorithm: Text): Crypto.Mac = unavailable
+  enum Reason(val number: Int) extends Clarification:
+    case UnknownAlgorithm(digest: Text) extends Reason(1)
+    case BadPublicKey extends Reason(2)
+    case BadSerialNumber extends Reason(3)
+    case BadValidity extends Reason(4)
 
-  // Structural members exist here only where something references them — `OpensslCrypto`
-  // delegates its `ecdsa` to this object, so the stub must carry it (as `dsa`, which nothing
-  // delegates, need not be).
-  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable
-
-  def des: Crypto.SymmetricCipher = unavailable
-  def tripleDes: Crypto.SymmetricCipher = unavailable
-  def blowfish: Crypto.SymmetricCipher = unavailable
-  def rc2: Crypto.SymmetricCipher = unavailable
+case class CertificateError(reason: CertificateError.Reason)(using Diagnostics)
+extends Error(524, reason.number)(m"could not build the certificate because $reason")

@@ -30,31 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package soundness
 
-import anticipation.*
-import fulminate.*
-
-// The Scala Native twin of the JVM `JavaStdlibCrypto` provider. `javax.crypto` does not exist on
-// Scala Native, so every operation panics: the object exists only so the platform-neutral
-// `Crypto.javaStdlibCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
-// delegation) compiles unchanged — selecting it *and using it* on native is the error.
-object JavaStdlibCrypto extends Crypto:
-  private def unavailable: Nothing =
-    panic(m"the Java standard library's cryptography is unavailable on Scala Native")
-
-  def random: Crypto.Random = unavailable
-  def aes: Crypto.SymmetricCipher = unavailable
-  def rsa: Crypto.PublicKeyCipher = unavailable
-  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
-  def hmac(algorithm: Text): Crypto.Mac = unavailable
-
-  // Structural members exist here only where something references them — `OpensslCrypto`
-  // delegates its `ecdsa` to this object, so the stub must carry it (as `dsa`, which nothing
-  // delegates, need not be).
-  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable
-
-  def des: Crypto.SymmetricCipher = unavailable
-  def tripleDes: Crypto.SymmetricCipher = unavailable
-  def blowfish: Crypto.SymmetricCipher = unavailable
-  def rc2: Crypto.SymmetricCipher = unavailable
+export enigmatic.{Certificate, CertificateError, Distinguished, SignatureAlgorithm}

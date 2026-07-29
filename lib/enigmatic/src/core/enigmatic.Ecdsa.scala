@@ -32,29 +32,29 @@
                                                                                                   */
 package enigmatic
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
-import fulminate.*
 
-// The Scala Native twin of the JVM `JavaStdlibCrypto` provider. `javax.crypto` does not exist on
-// Scala Native, so every operation panics: the object exists only so the platform-neutral
-// `Crypto.javaStdlibCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
-// delegation) compiles unchanged — selecting it *and using it* on native is the error.
-object JavaStdlibCrypto extends Crypto:
-  private def unavailable: Nothing =
-    panic(m"the Java standard library's cryptography is unavailable on Scala Native")
+// ECDSA over a NIST prime curve, with the curve chosen by key size: 256 is P-256 (`secp256r1`),
+// 384 is P-384 and 521 is P-521. Unlike `Rsa`, ECDSA is not part of the mandatory provider
+// baseline, so — like `Dsa` — it is reached through a structural refinement, and a provider that
+// does not offer it is a compile error at the use site rather than a failure at run time.
+object Ecdsa:
+  given value: [bits <: 256 | 384 | 521: ValueOf]
+  =>  ( digest: SignatureDigest,
+        crypto: Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme } )
+  =>  Ecdsa[bits] =
+    Ecdsa(crypto.ecdsa(digest.token))
 
-  def random: Crypto.Random = unavailable
-  def aes: Crypto.SymmetricCipher = unavailable
-  def rsa: Crypto.PublicKeyCipher = unavailable
-  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
-  def hmac(algorithm: Text): Crypto.Mac = unavailable
+class Ecdsa[bits <: 256 | 384 | 521: ValueOf](scheme: Crypto.SignatureScheme)
+extends Cipher, Signing:
+  type Size = bits
 
-  // Structural members exist here only where something references them — `OpensslCrypto`
-  // delegates its `ecdsa` to this object, so the stub must carry it (as `dsa`, which nothing
-  // delegates, need not be).
-  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable
+  def keySize: bits = valueOf[bits]
+  def genKey(): Data = scheme.generateKeyPair(keySize)
+  def privateToPublic(keyData: Data): Data = scheme.privateToPublic(keyData)
+  def sign(data: Data, keyData: Data): Data = scheme.sign(data, keyData)
 
-  def des: Crypto.SymmetricCipher = unavailable
-  def tripleDes: Crypto.SymmetricCipher = unavailable
-  def blowfish: Crypto.SymmetricCipher = unavailable
-  def rc2: Crypto.SymmetricCipher = unavailable
+  def verify(data: Data, signature: Data, keyData: Data): Boolean =
+    scheme.verify(data, signature, keyData)

@@ -33,28 +33,63 @@
 package enigmatic
 
 import anticipation.*
-import fulminate.*
+import prepositional.*
+import vacuous.*
 
-// The Scala Native twin of the JVM `JavaStdlibCrypto` provider. `javax.crypto` does not exist on
-// Scala Native, so every operation panics: the object exists only so the platform-neutral
-// `Crypto.javaStdlibCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
-// delegation) compiles unchanged — selecting it *and using it* on native is the error.
-object JavaStdlibCrypto extends Crypto:
-  private def unavailable: Nothing =
-    panic(m"the Java standard library's cryptography is unavailable on Scala Native")
+// A distinguished name: the X.501 structure that names a certificate's subject and issuer. Only
+// the attributes that appear in practice are modelled; each is optional, and absent ones are
+// simply not encoded.
+object Distinguished:
+  // The attribute type object identifiers, all under the X.500 attribute arc 2.5.4 except the
+  // email address, which is a PKCS#9 attribute.
+  private val CommonName: List[Int] = List(2, 5, 4, 3)
+  private val Country: List[Int] = List(2, 5, 4, 6)
+  private val Locality: List[Int] = List(2, 5, 4, 7)
+  private val State: List[Int] = List(2, 5, 4, 8)
+  private val Organization: List[Int] = List(2, 5, 4, 10)
+  private val OrganizationalUnit: List[Int] = List(2, 5, 4, 11)
+  private val Email: List[Int] = List(1, 2, 840, 113549, 1, 9, 1)
 
-  def random: Crypto.Random = unavailable
-  def aes: Crypto.SymmetricCipher = unavailable
-  def rsa: Crypto.PublicKeyCipher = unavailable
-  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
-  def hmac(algorithm: Text): Crypto.Mac = unavailable
+  // A `Name` is a `SEQUENCE OF RelativeDistinguishedName`, each a `SET OF AttributeTypeAndValue`.
+  // Multi-valued RDNs are legal but almost unheard of, so each attribute becomes its own
+  // single-member set. The order is the conventional one, most general first, which is also the
+  // order `openssl x509` prints.
+  given encodable: Distinguished is Encodable in Der = sequence(_).in[Der]
 
-  // Structural members exist here only where something references them — `OpensslCrypto`
-  // delegates its `ecdsa` to this object, so the stub must carry it (as `dsa`, which nothing
-  // delegates, need not be).
-  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable
+  private[enigmatic] def sequence(name: Distinguished): Asn1 =
+    val attributes =
+      List
+        ( name.country.let(attribute(Country, _, printable = true)),
+          name.state.let(attribute(State, _)),
+          name.locality.let(attribute(Locality, _)),
+          name.organization.let(attribute(Organization, _)),
+          name.organizationalUnit.let(attribute(OrganizationalUnit, _)),
+          name.commonName.let(attribute(CommonName, _)),
+          name.email.let(attribute(Email, _, ia5 = true)) )
 
-  def des: Crypto.SymmetricCipher = unavailable
-  def tripleDes: Crypto.SymmetricCipher = unavailable
-  def blowfish: Crypto.SymmetricCipher = unavailable
-  def rc2: Crypto.SymmetricCipher = unavailable
+    Asn1.Sequence(attributes.flatMap(_.option))
+
+  // `countryName` is a `PrintableString` by definition, and `emailAddress` an `IA5String`;
+  // everything else is a `UTF8String`, which is what every modern profile prefers.
+  private def attribute
+    ( identifier: List[Int],
+      value:      Text,
+      printable:  Boolean = false,
+      ia5:        Boolean = false )
+  :   Asn1 =
+
+    val text =
+      if printable then Asn1.PrintableString(value)
+      else if ia5 then Asn1.Ia5String(value)
+      else Asn1.Utf8String(value)
+
+    Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(identifier), text))))
+
+case class Distinguished
+  ( commonName:         Optional[Text] = Unset,
+    organization:       Optional[Text] = Unset,
+    organizationalUnit: Optional[Text] = Unset,
+    locality:           Optional[Text] = Unset,
+    state:              Optional[Text] = Unset,
+    country:            Optional[Text] = Unset,
+    email:              Optional[Text] = Unset )

@@ -33,28 +33,31 @@
 package enigmatic
 
 import anticipation.*
-import fulminate.*
+import gossamer.*
+import vacuous.*
 
-// The Scala Native twin of the JVM `JavaStdlibCrypto` provider. `javax.crypto` does not exist on
-// Scala Native, so every operation panics: the object exists only so the platform-neutral
-// `Crypto.javaStdlibCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
-// delegation) compiles unchanged — selecting it *and using it* on native is the error.
-object JavaStdlibCrypto extends Crypto:
-  private def unavailable: Nothing =
-    panic(m"the Java standard library's cryptography is unavailable on Scala Native")
+// The `AlgorithmIdentifier` that names a cipher-and-digest pair in a certificate. It is a property
+// of the pair, not of either alone: `sha256WithRSAEncryption` and `sha384WithRSAEncryption` are
+// different object identifiers over the same key type.
+object SignatureAlgorithm:
+  // RSASSA-PKCS1-v1_5 identifiers live under the PKCS#1 arc, and RFC 3279 requires the parameters
+  // field to be present and NULL — not absent.
+  given rsa: [bits <: 1024 | 2048 | 3072 | 4096] => Rsa[bits] is SignatureAlgorithm = digest =>
+    arc(digest, t"SHA256" -> 11, t"SHA384" -> 12, t"SHA512" -> 13).let: last =>
+      Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, last)), Asn1.Null))
 
-  def random: Crypto.Random = unavailable
-  def aes: Crypto.SymmetricCipher = unavailable
-  def rsa: Crypto.PublicKeyCipher = unavailable
-  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
-  def hmac(algorithm: Text): Crypto.Mac = unavailable
+  // ECDSA identifiers live under the ANSI X9.62 arc, and RFC 5758 requires the parameters field to
+  // be absent, since the curve is already named by the public key.
+  given ecdsa: [bits <: 256 | 384 | 521] => Ecdsa[bits] is SignatureAlgorithm = digest =>
+    arc(digest, t"SHA256" -> 2, t"SHA384" -> 3, t"SHA512" -> 4).let: last =>
+      Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 10045, 4, 3, last))))
 
-  // Structural members exist here only where something references them — `OpensslCrypto`
-  // delegates its `ecdsa` to this object, so the stub must carry it (as `dsa`, which nothing
-  // delegates, need not be).
-  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable
+  private def arc(digest: SignatureDigest, entries: (Text, Int)*): Optional[Int] =
+    entries.find(_(0) == digest.token).map(_(1)).getOrElse(Unset)
 
-  def des: Crypto.SymmetricCipher = unavailable
-  def tripleDes: Crypto.SymmetricCipher = unavailable
-  def blowfish: Crypto.SymmetricCipher = unavailable
-  def rc2: Crypto.SymmetricCipher = unavailable
+trait SignatureAlgorithm:
+  type Self
+
+  // `Unset` when the cipher and digest have no object identifier between them, which a caller
+  // turns into a `CertificateError` rather than an encoding that no verifier would recognize.
+  def identifier(digest: SignatureDigest): Optional[Asn1]

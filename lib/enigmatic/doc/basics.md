@@ -61,3 +61,33 @@ decoder yields `Asn1.Unknown` for an implicit tag instead.
 universal types outside the PKIX subset modelled here, such as `T61String` and
 `BMPString`. It is what makes decoding total, and what makes the round-trip above hold for
 certificates in the wild.
+
+### Certificates
+
+A self-signed certificate needs a name, a key, a validity period and a serial number:
+```scala
+import chronometries.unix
+
+val subject = Distinguished(commonName = t"example.com", organization = t"Example Ltd")
+val key = PrivateKey.generate[Rsa[2048]]()
+val validity = now() ~ (now() + 365*Day)
+
+val certificate =
+  Certificate.selfSigned
+   (subject, key, validity, BigInt(1), alternatives = List(t"example.com", t"www.example.com"))
+
+val armored: Text = certificate.pem.serialize
+```
+The certificate is version 3, and carries basic constraints, key usage and a subject key
+identifier; `alternatives` become `dNSName` subject alternative names, which is what TLS
+clients check. Passing `authority = true` marks it as a certificate authority and gives it
+the key usage to sign other certificates.
+
+The signature algorithm follows the key and the ambient `SignatureDigest`: an `Rsa` key under
+the default digest signs with `sha256WithRSAEncryption`, an `Ecdsa[256]` key with
+`ecdsa-with-SHA256`. `Ecdsa` is available where the provider offers it; `Rsa` always signs.
+
+Reading a certificate back is the ordinary codec:
+```scala
+val parsed: Certificate = armored.read[Certificate in Pem]
+```

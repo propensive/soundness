@@ -299,6 +299,9 @@ object Tests extends Suite(m"Enigmatic tests"):
         def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
         def hmac(algorithm: Text): Crypto.Mac = JavaStdlibCrypto.hmac(algorithm)
 
+        def rsaSignature(digest: Text): Crypto.SignatureScheme =
+          JavaStdlibCrypto.rsaSignature(digest)
+
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val first = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
@@ -620,6 +623,249 @@ object Tests extends Suite(m"Enigmatic tests"):
         val second = key.data(Divulgence)
         first.serialize[Hex] == second.serialize[Hex]
       . assert(_ == true)
+
+    suite(m"Asymmetric signatures"):
+      test(m"An RSA signature verifies against the matching public key"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An RSA signature fails against a different key"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val other = PrivateKey.generate[Rsa[2048]]()
+        other.public.verify(pangram, key.sign(pangram))
+      . assert(!_)
+
+      test(m"An RSA signature fails over different content"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        key.public.verify(t"a different message", key.sign(pangram))
+      . assert(!_)
+
+      test(m"The signature digest is selectable"):
+        import signatureDigests.sha512Signature
+        val key = PrivateKey.generate[Rsa[2048]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A signature made under one digest fails to verify under another"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val signature = key.sign(pangram)
+        import signatureDigests.sha512Signature
+        key.public.verify(pangram, signature)
+      . assert(!_)
+
+      test(m"RSA still encrypts and decrypts"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val message: Data = key.public.uncloak(t"Hello world".encrypt(InitializationVector.random))
+        key.uncloak(message.decrypt.as[Text])
+      . assert(_ == t"Hello world")
+
+      test(m"An ECDSA signature verifies against the matching public key"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"ECDSA works over each NIST prime curve"):
+        val p256 = PrivateKey.generate[Ecdsa[256]]()
+        val p384 = PrivateKey.generate[Ecdsa[384]]()
+        val p521 = PrivateKey.generate[Ecdsa[521]]()
+
+        List
+         (p256.public.verify(pangram, p256.sign(pangram)),
+          p384.public.verify(pangram, p384.sign(pangram)),
+          p521.public.verify(pangram, p521.sign(pangram)))
+      . assert(_ == List(true, true, true))
+
+      test(m"An ECDSA signature fails against a different key"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val other = PrivateKey.generate[Ecdsa[256]]()
+        other.public.verify(pangram, key.sign(pangram))
+      . assert(!_)
+
+      // The JDK does not write RFC 5915's optional public-key field, so enigmatic adds it at
+      // generation; this checks the re-encoded key is still a well-formed `PrivateKeyInfo` that
+      // the JDK reads back, and that the public key recovered from it is the right one.
+      test(m"An ECDSA private key carries its public key in RFC 5915 form"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+
+        val info = key.pem(Divulgence).as[Der].as[Asn1]
+
+        val inner = info match
+          case Asn1.Sequence(List(_, _, Asn1.OctetString(octets))) => Der(octets).as[Asn1]
+          case _                                                  => Asn1.Null
+
+        inner match
+          case Asn1.Sequence(elements) => elements.collect:
+            case tagged: Asn1.Tagged => tagged.tag
+
+          case _ => Nil
+      . assert(_ == List(1))
+
+      test(m"An ECDSA public key is a well-formed SubjectPublicKeyInfo"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+
+        Der(key.public.bytes).as[Asn1] match
+          case Asn1.Sequence(List(Asn1.Sequence(_), _: Asn1.BitString)) => true
+          case _                                                       => false
+      . assert(identity)
+
+    suite(m"X.509 certificates"):
+      import java.io as ji
+      import java.security as js, js.cert as jsc
+
+      import chronometries.unix
+
+      val subject = Distinguished
+                     ( commonName = t"asn1.example.com",
+                       organization = t"Propensive",
+                       country = t"GB" )
+
+      val period = Instant(1_600_000_000_000L) ~ Instant(1_900_000_000_000L)
+
+      def certificate(): Certificate =
+        val key = PrivateKey.generate[Rsa[2048]]()
+        Certificate.selfSigned(subject, key, period, BigInt(1), alternatives = List(t"example.com"))
+
+      // The JDK's X.509 implementation is an independent reader of what enigmatic writes: it
+      // parses the structure, decodes every field, and — through `verify` — checks the signature
+      // over the exact `TBSCertificate` bytes it re-derived from the encoding. `openssl x509` and
+      // `openssl verify` agree with it, but cannot be run from here.
+      def parse(certificate: Certificate): jsc.X509Certificate =
+        val factory = jsc.CertificateFactory.getInstance("X.509").nn
+        val bytes = ji.ByteArrayInputStream(certificate.in[Der].data.mutable(using Unsafe))
+
+        factory.generateCertificate(bytes).nn.asInstanceOf[jsc.X509Certificate]
+
+      def publicKey(certificate: Certificate): js.PublicKey = parse(certificate).getPublicKey.nn
+
+      test(m"The JDK parses a generated certificate and checks its signature"):
+        val certificate0 = certificate()
+        parse(certificate0).verify(publicKey(certificate0))
+        true
+      . assert(identity)
+
+      test(m"The JDK checks an ECDSA certificate's signature"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val certificate0 = Certificate.selfSigned(subject, key, period, BigInt(3))
+        parse(certificate0).verify(publicKey(certificate0))
+        true
+      . assert(identity)
+
+      test(m"A tampered certificate fails the JDK's signature check"):
+        val certificate0 = certificate()
+        val bytes = certificate0.in[Der].data.mutable(using Unsafe).clone.nn
+        // Flip a bit inside the signature, which the structure keeps well-formed.
+        bytes(bytes.length - 1) = (bytes(bytes.length - 1) ^ 0xff.toByte).toByte
+        val tampered = Certificate(Der(bytes.immutable(using Unsafe)).as[Asn1])
+
+        try
+          parse(tampered).verify(publicKey(certificate0))
+          false
+        catch case _: js.GeneralSecurityException => true
+      . assert(identity)
+
+      test(m"The JDK reads back the subject, serial number and validity"):
+        val parsed = parse(certificate())
+
+        List
+         ( parsed.getSubjectX500Principal.nn.getName.nn.tt,
+           parsed.getSerialNumber.nn.toString.nn.tt,
+           parsed.getNotBefore.nn.getTime.toString.tt )
+      . assert(_ == List(t"CN=asn1.example.com,O=Propensive,C=GB", t"1", t"1600000000000"))
+
+      test(m"The JDK reads back the subject alternative names"):
+        val names = parse(certificate()).getSubjectAlternativeNames.nn
+        names.size
+      . assert(_ == 1)
+
+      test(m"A certificate authority is marked as one"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+
+        val authority =
+          Certificate.selfSigned(subject, key, period, BigInt(9), authority = true)
+
+        // `getBasicConstraints` returns the path-length constraint for a CA, and -1 otherwise.
+        (parse(authority).getBasicConstraints, parse(certificate()).getBasicConstraints)
+      . assert(_ == (Int.MaxValue, -1))
+
+      test(m"A self-signed certificate is a well-formed X.509 structure"):
+        certificate().asn1 match
+          case Asn1.Sequence(List(Asn1.Sequence(_), Asn1.Sequence(_), _: Asn1.BitString)) => true
+          case _                                                                          => false
+      . assert(identity)
+
+      test(m"A certificate round-trips through DER byte-exactly"):
+        val der = certificate().in[Der]
+        der.as[Certificate].in[Der] == der
+      . assert(identity)
+
+      test(m"A certificate round-trips through PEM"):
+        val original = certificate()
+        val read: Certificate = original.pem.serialize.read[Certificate in Pem]
+        read.in[Der] == original.in[Der]
+      . assert(identity)
+
+      test(m"The certificate is version 3 with the given serial number"):
+        certificate().asn1 match
+          case Asn1.Sequence(List(Asn1.Sequence(tbs), _, _)) => tbs.take(2)
+          case _                                             => Nil
+      . assert(_ == List(Asn1.Tagged(0, true, Asn1.Integer(BigInt(2))), Asn1.Integer(BigInt(1))))
+
+      test(m"The signature verifies against the certificate's own public key"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val cert = Certificate.selfSigned(subject, key, period, BigInt(7))
+
+        cert.asn1 match
+          case Asn1.Sequence(List(tbs, _, Asn1.BitString(bytes, 0))) =>
+            key.public.verify(tbs.in[Der].data, Signature[Rsa[2048]](bytes))
+
+          case _ => false
+      . assert(identity)
+
+      test(m"An ECDSA certificate is signed and verifies"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val cert = Certificate.selfSigned(subject, key, period, BigInt(3))
+
+        cert.asn1 match
+          case Asn1.Sequence(List(tbs, _, Asn1.BitString(bytes, 0))) =>
+            key.public.verify(tbs.in[Der].data, Signature[Ecdsa[256]](bytes))
+
+          case _ => false
+      . assert(identity)
+
+      test(m"The signature algorithm identifier matches the digest"):
+        val key = PrivateKey.generate[Rsa[2048]]()
+        val cert = Certificate.selfSigned(subject, key, period, BigInt(1))
+
+        cert.asn1 match
+          case Asn1.Sequence(List(_, algorithm, _)) => algorithm
+          case _                                    => Asn1.Null
+      . assert(_ == Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, 11)), Asn1.Null)))
+
+      test(m"A serial number of zero is refused"):
+        capture[CertificateError]:
+          val key = PrivateKey.generate[Rsa[2048]]()
+          Certificate.selfSigned(subject, key, period, BigInt(0))
+        . reason
+      . assert(_ == CertificateError.Reason.BadSerialNumber)
+
+      test(m"A validity period that ends before it starts is refused"):
+        capture[CertificateError]:
+          val key = PrivateKey.generate[Rsa[2048]]()
+          val backwards = Instant(1_900_000_000_000L) ~ Instant(1_600_000_000_000L)
+          Certificate.selfSigned(subject, key, backwards, BigInt(1))
+        . reason
+      . assert(_ == CertificateError.Reason.BadValidity)
+
+      test(m"A distinguished name encodes its attributes in conventional order"):
+        val identifiers = Distinguished.sequence(subject) match
+          case Asn1.Sequence(elements) => elements.collect:
+            case Asn1.Set(List(Asn1.Sequence(List(Asn1.ObjectId(arcs), _)))) => arcs
+
+          case _ => Nil
+
+        identifiers
+      . assert(_ == List(List(2, 5, 4, 6), List(2, 5, 4, 10), List(2, 5, 4, 3)))
 
     suite(m"ASN.1 and DER"):
       // DER is canonical, so `encode` is the equality of record: the byte-carrying cases of `Asn1`
