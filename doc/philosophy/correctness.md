@@ -10,8 +10,9 @@ starting point, not an extra to be bolted on later.
 
 ## What "a great deal" amounts to
 
-The claim is worth making concrete. In a program built on Soundness, the following are
-compile errors rather than possibilities:
+The claim is worth making concrete. In a program built on Soundness — each line below
+with the relevant module's names in scope — the following are compile errors rather than
+possibilities:
 
 ```scala
 2012-Feb-30                            // a date that does not exist

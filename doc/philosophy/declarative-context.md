@@ -17,7 +17,7 @@ lines:
 import formatting.compactJsonFormatting     // the file's default
 
 def debugDump(json: Json): Text =
-  given JsonFormatting = indentedJsonFormatting   // this function only
+  given Json.Formatting = indentedJsonFormatting   // this function only
   json.show
 
 locally:

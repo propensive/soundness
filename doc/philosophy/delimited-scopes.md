@@ -60,7 +60,7 @@ exception to a few lines:
 import formatting.compactJsonFormatting        // this file
 
 def debugDump(json: Json): Text =
-  given JsonFormatting = indentedJsonFormatting  // this method only
+  given Json.Formatting = indentedJsonFormatting  // this method only
   json.show
 
 locally:

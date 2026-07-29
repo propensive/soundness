@@ -13,12 +13,15 @@ Nothing, in the common case, because they are not there. An opaque type is its u
 representation with a different name for the compiler's purposes only:
 
 ```scala
-opaque type Text = String
-opaque type Quantity[units] = Double
-opaque type Optional[value] = value | Unset.type
+into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
+opaque type Quantity[units <: Measure] = Double
+opaque type Unset <: Matchable & caps.Pure = Null & caps.Pure
 opaque type Location = Long          // latitude and longitude, packed
 opaque type Isin = Long              // a validated security identifier
 ```
+
+`Optional[value]` is then simply `Unset | value` — a union with a null-backed sentinel,
+so an absent value costs one null reference and a present one costs exactly the value.
 
 A `Quantity[Metres[1]]` is a `Double`. A million of them in an array is a million
 doubles, not a million objects. The units exist while the code is being typechecked and
