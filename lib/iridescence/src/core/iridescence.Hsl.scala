@@ -32,7 +32,10 @@
                                                                                                   */
 package iridescence
 
+import geodesy.*
+import hypotenuse.*
 import prepositional.*
+import symbolism.*
 
 object Hsl:
   given perceptual: Hsl is Perceptual in Srgb =
@@ -44,24 +47,26 @@ object Hsl:
 
         val v1 = 2*color.lightness - v2
 
-        def convert(h: Double): Double =
-          val vh = unitary(h)
+        def convert(hue: Angle): Double =
+          val vh = hue.principal.turns
 
           if 6*vh < 1 then v1 + (v2 - v1)*6*vh
           else if 2*vh < 1 then v2
           else if 3*vh < 2 then v1 + (v2 - v1)*((2.0/3) - vh)*6
           else v1
 
-        Srgb(convert(color.hue + (1.0/3.0)), convert(color.hue), convert(color.hue - (1.0/3.0)))
+        val third = Angle.turns(1.0/3.0)
 
-case class Hsl(hue: Double, saturation: Double, lightness: Double) extends Color:
+        Srgb(convert(color.hue + third), convert(color.hue), convert(color.hue - third))
+
+case class Hsl(hue: Angle, saturation: Double, lightness: Double) extends Color:
   type Form = Hsl
 
-  def saturate: Hsl                = Hsl(hue, 1, lightness)
-  def desaturate: Hsl              = Hsl(hue, 0, lightness)
-  def rotate(degrees: Double): Hsl = Hsl(unitary(hue + degrees/360), saturation, lightness)
-  def complement: Hsl              = rotate(180)
-  def pure: Hsl                    = Hsl(hue, 1, 0.5)
+  def saturate: Hsl               = Hsl(hue, 1, lightness)
+  def desaturate: Hsl             = Hsl(hue, 0, lightness)
+  def rotate(angle: Angle): Hsl   = Hsl((hue + angle).principal, saturation, lightness)
+  def complement: Hsl             = rotate(Angle(π))
+  def pure: Hsl                   = Hsl(hue, 1, 0.5)
 
   def lighten(amount: Double): Hsl = Hsl(hue, saturation, lightness + (1 - lightness)*amount)
   def darken(amount: Double): Hsl  = Hsl(hue, saturation, lightness*(1 - amount))
