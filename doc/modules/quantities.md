@@ -338,6 +338,18 @@ def displacement
   initial*time + 0.5*accel*time*time
 ```
 
+### What it costs at runtime
+
+None of this survives to the bytecode. A `Quantity` is an opaque type over a `Double`, its units
+exist only in the type, and every operation is `inline`, so a dimensional calculation compiles to
+the same arithmetic instructions the equivalent bare `Double` arithmetic would produce — no
+boxing, no wrapper objects, and no virtual dispatch to a typeclass.
+
+That is a property worth checking rather than asserting, and it is checked: the test suite
+inspects the compiled bytecode of representative calculations and fails if a typeclass dispatch
+appears where inlined arithmetic should be. A performance guarantee that is only claimed tends to
+stop being true.
+
 Both terms of the sum come out as a distance — a velocity times a time, and an
 acceleration times a time squared — so the addition type-checks and the result is a
 distance. Passing an argument in the wrong units, or returning the wrong dimension,

@@ -93,6 +93,40 @@ Matrix[2, 2]((1.0, 2.0), (3.0, 4.0)).inverse
 // Matrix[2, 2]((-2.0, 1.0), (1.5, -0.5))
 ```
 
+The `adjugate` — the transpose of the cofactor matrix — is available in its own right, since it is
+defined over any ring and not only where division is possible, so an integer matrix has an
+adjugate where it has no inverse:
+
+```scala
+Matrix[2, 2]((1, 2), (3, 4)).adjugate   // Matrix[2, 2]((4, -2), (-3, 1))
+```
+
+`frobeniusNorm` gives the matrix's magnitude — the square root of the sum of the squares of its
+entries — and `eigenvalues` computes the values for which the matrix has an eigenvector, as an
+`Optional` since not every matrix has real eigenvalues:
+
+```scala
+Matrix[2, 2]((3.0, 0.0), (0.0, 4.0)).frobeniusNorm   // 5.0
+Matrix[2, 2]((2.0, 1.0), (1.0, 2.0)).eigenvalues     // 1.0 and 3.0
+```
+
+### Elements that are not numbers
+
+Nothing above requires the entries to be `Double`s. Vectors and matrices are generic in their
+element type, and the operations resolve through the arithmetic typeclasses, so anything with the
+right structure works — including typed [quantities](quantities.md), where the dimensions compose
+as the arithmetic does:
+
+```scala
+val v1 = Vector(5*Inch, 2*Inch, Inch)
+val v2 = Vector(2*Inch, 3*Inch, 6*Inch)
+
+v1.dot(v2)   // 22 square inches — the units multiplied too
+```
+
+A dot product of lengths is an area, and the type says so. The same holds for complex entries, for
+exact rationals, and for any other element type with the operations the computation needs.
+
 ### Permutations
 
 A `Permutation` is a reversible rearrangement, built from the reordered indexes and applied to any
