@@ -49,6 +49,11 @@ object JavaStdlibCrypto extends Crypto:
   def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
   def hmac(algorithm: Text): Crypto.Mac = unavailable
 
+  // Structural members exist here only where something references them — `OpensslCrypto`
+  // delegates its `ecdsa` to this object, so the stub must carry it (as `dsa`, which nothing
+  // delegates, need not be).
+  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable
+
   def des: Crypto.SymmetricCipher = unavailable
   def tripleDes: Crypto.SymmetricCipher = unavailable
   def blowfish: Crypto.SymmetricCipher = unavailable
