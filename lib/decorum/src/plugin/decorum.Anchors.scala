@@ -77,18 +77,19 @@ object Anchors:
     def innermostAt(line: Int): Option[Frame] = stackAt(line).lastOption
 
   def build(tree: untpd.Tree, source: SourceFile, text: String): AnchorModel =
-    val out = mutable.ListBuffer[Frame]()
+    val out     = mutable.ListBuffer[Frame]()
+    val lineMap = LineMap(text)
 
     walk(tree): t =>
       t match
-        case m: untpd.Match       => matchFrame(m, text, source).foreach(out += _)
-        case c: untpd.CaseDef     => caseFrame(c, text, source).foreach(out += _)
-        case f: untpd.Function    => functionFrame(f, text, source).foreach(out += _)
-        case d: untpd.ValOrDefDef => defnFrame(d, text, source).foreach(out += _)
-        case tm: untpd.Template   => templateFrame(tm, text, source).foreach(out += _)
-        case a: untpd.Apply       => applyFrame(a, text, source).foreach(out += _)
-        case q: untpd.Quote       => spanFrame(q.span, text, source).foreach(out += _)
-        case s: untpd.Splice      => spanFrame(s.span, text, source).foreach(out += _)
+        case m: untpd.Match       => matchFrame(m, text, lineMap).foreach(out += _)
+        case c: untpd.CaseDef     => caseFrame(c, text, lineMap).foreach(out += _)
+        case f: untpd.Function    => functionFrame(f, text, lineMap).foreach(out += _)
+        case d: untpd.ValOrDefDef => defnFrame(d, text, lineMap).foreach(out += _)
+        case tm: untpd.Template   => templateFrame(tm, text, lineMap).foreach(out += _)
+        case a: untpd.Apply       => applyFrame(a, text, lineMap).foreach(out += _)
+        case q: untpd.Quote       => spanFrame(q.span, text, lineMap).foreach(out += _)
+        case s: untpd.Splice      => spanFrame(s.span, text, lineMap).foreach(out += _)
         case _                    => ()
 
     val frames =
@@ -99,7 +100,7 @@ object Anchors:
 
   // A `match` whose first case sits on a later line than the `match` keyword
   // opens a scope over the case region.
-  private def matchFrame(m: untpd.Match, content: String, source: SourceFile): Option[Frame] =
+  private def matchFrame(m: untpd.Match, content: String, lineMap: LineMap): Option[Frame] =
     val selSp = m.selector.span
 
     if !m.span.exists || m.span.isZeroExtent || !selSp.exists then None
@@ -110,19 +111,19 @@ object Anchors:
 
           if matchOffset < 0 then None
           else
-            val openLine = lineOf(source, matchOffset)
+            val openLine = lineMap.lineOf(matchOffset)
 
-            if lineOf(source, first.span.start) <= openLine then None
+            if lineMap.lineOf(first.span.start) <= openLine then None
             else
-              val endLine = endLineOf(source, m.span)
-              Some(mkFrame(FrameKind.MatchBody, openLine, openLine, endLine, content, source))
+              val endLine = lineMap.endLineOf(m.span)
+              Some(mkFrame(FrameKind.MatchBody, openLine, openLine, endLine, content, lineMap))
 
         case _ =>
           None
 
   // A `case` whose body starts on a later line than its `=>` opens a scope
   // over the body lines.
-  private def caseFrame(c: untpd.CaseDef, content: String, source: SourceFile): Option[Frame] =
+  private def caseFrame(c: untpd.CaseDef, content: String, lineMap: LineMap): Option[Frame] =
     val bodySp = c.body.span
 
     if !bodySp.exists || bodySp.isZeroExtent || !c.pat.span.exists then None
@@ -130,11 +131,11 @@ object Anchors:
       val from =
         if !c.guard.isEmpty && c.guard.span.exists then c.guard.span.end else c.pat.span.end
 
-      arrowFrame(from, bodySp, content, source)
+      arrowFrame(from, bodySp, content, lineMap)
 
   // A function literal whose body starts on a later line than its `=>` opens
   // a scope over the body lines.
-  private def functionFrame(f: untpd.Function, content: String, source: SourceFile): Option[Frame] =
+  private def functionFrame(f: untpd.Function, content: String, lineMap: LineMap): Option[Frame] =
     val bodySp = f.body.span
 
     if !bodySp.exists || bodySp.isZeroExtent then None
@@ -144,7 +145,7 @@ object Anchors:
           case Some(arg) if arg.span.exists => arg.span.end
           case _                            => if f.span.exists then f.span.start else -1
 
-      if from < 0 then None else arrowFrame(from, bodySp, content, source)
+      if from < 0 then None else arrowFrame(from, bodySp, content, lineMap)
 
   // Shared tail of `caseFrame`/`functionFrame`: locate the `=>` between the
   // parameters (or pattern) and the body, and frame the body region if it
@@ -157,25 +158,25 @@ object Anchors:
     ( from:    Int,
       bodySp:  Span,
       content: String,
-      source:  SourceFile )
+      lineMap: LineMap )
   :   Option[Frame] =
 
     val arrowOffset = findKeyword(content, from, bodySp.start + 2, "=>")
 
     if arrowOffset < 0 then None
     else
-      val openLine  = lineOf(source, arrowOffset)
+      val openLine  = lineMap.lineOf(arrowOffset)
       val bodyStart = nextNonWs(content, arrowOffset + 2, bodySp.end)
 
-      if bodyStart < 0 || lineOf(source, bodyStart) <= openLine then None
+      if bodyStart < 0 || lineMap.lineOf(bodyStart) <= openLine then None
       else
-        val kind = chainAware(FrameKind.LambdaBody, content, source, openLine)
-        Some(mkFrame(kind, openLine, openLine, endLineOf(source, bodySp), content, source))
+        val kind = chainAware(FrameKind.LambdaBody, content, lineMap, openLine)
+        Some(mkFrame(kind, openLine, openLine, lineMap.endLineOf(bodySp), content, lineMap))
 
   // A definition whose right-hand side starts on a later line than its `=`
   // opens a scope over the RHS lines. The anchor is the definition keyword's
   // line (leftward-extended past any leading modifiers), not the `=` line.
-  private def defnFrame(d: untpd.ValOrDefDef, content: String, source: SourceFile): Option[Frame] =
+  private def defnFrame(d: untpd.ValOrDefDef, content: String, lineMap: LineMap): Option[Frame] =
     if !d.span.exists then None
     else
       d.unforcedRhs match
@@ -188,14 +189,14 @@ object Anchors:
 
             if eq < 0 || content.charAt(eq) != '=' then None
             else
-              val openLine = lineOf(source, eq)
+              val openLine = lineMap.lineOf(eq)
 
-              if lineOf(source, sp.start) <= openLine then None
+              if lineMap.lineOf(sp.start) <= openLine then None
               else
                 val point      = d.span.point.max(0).min(content.length - 1)
-                val anchorLine = lineOf(source, point)
-                val endLine    = endLineOf(source, sp)
-                Some(mkFrame(FrameKind.DefnRhs, anchorLine, openLine, endLine, content, source))
+                val anchorLine = lineMap.lineOf(point)
+                val endLine    = lineMap.endLineOf(sp)
+                Some(mkFrame(FrameKind.DefnRhs, anchorLine, openLine, endLine, content, lineMap))
 
         case _ =>
           None
@@ -203,7 +204,7 @@ object Anchors:
   // A template body (`class Foo:`, `object Bar:`, `enum Quux:`) whose first
   // statement sits on a later line than the introducing `:` opens a scope
   // over the statements.
-  private def templateFrame(t: untpd.Template, content: String, source: SourceFile): Option[Frame] =
+  private def templateFrame(t: untpd.Template, content: String, lineMap: LineMap): Option[Frame] =
     t.unforcedBody match
       case stats: List[untpd.Tree @unchecked] =>
         val spanned =
@@ -212,8 +213,8 @@ object Anchors:
 
         spanned match
           case first :: _ =>
-            val endLine = endLineOf(source, spanned.last.span)
-            colonFrame(first.span.start, endLine, content, source)
+            val endLine = lineMap.endLineOf(spanned.last.span)
+            colonFrame(first.span.start, endLine, content, lineMap)
 
           case Nil =>
             None
@@ -224,13 +225,13 @@ object Anchors:
   // A colon-block application (`recv:` with an indented body): the last
   // argument starts on a later line, and the last code character before it
   // is a line-final `:` after the receiver.
-  private def applyFrame(a: untpd.Apply, content: String, source: SourceFile): Option[Frame] =
+  private def applyFrame(a: untpd.Apply, content: String, lineMap: LineMap): Option[Frame] =
     a.args.lastOption match
       case Some(arg) if arg.span.exists && !arg.span.isZeroExtent && a.fun.span.exists =>
         val colon = prevNonWs(content, arg.span.start)
 
         if colon < a.fun.span.end then None
-        else colonFrame(arg.span.start, endLineOf(source, arg.span), content, source)
+        else colonFrame(arg.span.start, lineMap.endLineOf(arg.span), content, lineMap)
 
       case _ =>
         None
@@ -243,31 +244,31 @@ object Anchors:
     ( bodyStart: Int,
       endLine:   Int,
       content:   String,
-      source:    SourceFile )
+      lineMap:   LineMap )
   :   Option[Frame] =
 
     val colon = prevNonWs(content, bodyStart)
 
     if colon < 0 || content.charAt(colon) != ':' || !lineFinal(content, colon) then None
     else
-      val openLine = lineOf(source, colon)
+      val openLine = lineMap.lineOf(colon)
 
-      if lineOf(source, bodyStart) <= openLine then None
+      if lineMap.lineOf(bodyStart) <= openLine then None
       else
-        val kind = chainAware(FrameKind.ColonBlock, content, source, openLine)
-        Some(mkFrame(kind, openLine, openLine, endLine, content, source))
+        val kind = chainAware(FrameKind.ColonBlock, content, lineMap, openLine)
+        Some(mkFrame(kind, openLine, openLine, endLine, content, lineMap))
 
   // A quote or splice spanning multiple lines. The body-column rules for
   // quote/splice interiors differ from ordinary scopes (473.2–473.6); the
   // frame records the region and the opener line's leftward-extended anchor.
-  private def spanFrame(span: Span, content: String, source: SourceFile): Option[Frame] =
+  private def spanFrame(span: Span, content: String, lineMap: LineMap): Option[Frame] =
     if !span.exists || span.isZeroExtent then None
     else
-      val openLine = lineOf(source, span.start)
-      val endLine  = endLineOf(source, span)
+      val openLine = lineMap.lineOf(span.start)
+      val endLine  = lineMap.endLineOf(span)
 
       if endLine <= openLine then None
-      else Some(mkFrame(FrameKind.QuoteSplice, openLine, openLine, endLine, content, source))
+      else Some(mkFrame(FrameKind.QuoteSplice, openLine, openLine, endLine, content, lineMap))
 
   private def mkFrame
     ( kind:       FrameKind,
@@ -275,38 +276,66 @@ object Anchors:
       openLine:   Int,
       endLine:    Int,
       content:    String,
-      source:     SourceFile )
+      lineMap:    LineMap )
   :   Frame =
 
-    val anchorCol = leadingColumn(content, source, anchorLine)
+    val anchorCol = leadingColumn(content, lineMap, anchorLine)
     Frame(kind, anchorLine, anchorCol, anchorCol + 2, openLine, endLine)
 
   private def chainAware
     ( default: FrameKind,
       content: String,
-      source:  SourceFile,
+      lineMap: LineMap,
       line:    Int )
   :   FrameKind =
 
-    if lineStartsWithDot(content, source, line) then FrameKind.ChainCall else default
+    if lineStartsWithDot(content, lineMap, line) then FrameKind.ChainCall else default
 
-  private def lineOf(source: SourceFile, offset: Int): Int =
-    source.offsetToLine(offset.max(0)) + 1
+  // Line bookkeeping computed from the raw text, counting only `\n` as a
+  // line terminator. The compiler's `SourceFile` additionally treats form
+  // feeds and carriage returns as line breaks, which would desynchronise
+  // frame line numbers from the tokenizer's (`Context.lines`) whenever such
+  // a character appears in a source file.
+  private final class LineMap(content: String):
+    private val starts: Array[Int] =
+      val buffer = mutable.ArrayBuffer[Int](0)
+      var i = 0
 
-  private def endLineOf(source: SourceFile, span: Span): Int =
-    lineOf(source, (span.end - 1).max(span.start))
+      while i < content.length do
+        if content.charAt(i) == '\n' then buffer += i + 1
+        i += 1
+
+      buffer.toArray
+
+    // The 1-based line containing `offset` (clamped to the text).
+    def lineOf(offset: Int): Int =
+      val target = offset.max(0).min(content.length)
+      var low  = 0
+      var high = starts.length - 1
+
+      while low < high do
+        val mid = (low + high + 1)/2
+        if starts(mid) <= target then low = mid else high = mid - 1
+
+      low + 1
+
+    def endLineOf(span: Span): Int = lineOf((span.end - 1).max(span.start))
+
+    // The offset of the first character of the given 1-based line.
+    def startOf(line: Int): Int = starts((line - 1).max(0).min(starts.length - 1))
 
   // The 1-based column of the leftmost non-whitespace character on a line
   // (mirrors `Definitions.leadingColumn`).
-  private def leadingColumn(content: String, source: SourceFile, line: Int): Int =
-    var i = source.lineToOffset(line - 1)
+  private def leadingColumn(content: String, lineMap: LineMap, line: Int): Int =
+    val start = lineMap.startOf(line)
+    var i     = start
     while i < content.length && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do i += 1
-    source.column(i.min(content.length - 1).max(0)) + 1
+    i - start + 1
 
   // True if the first non-whitespace character of the line is `.` — the
   // line is a chain method-application continuation.
-  private def lineStartsWithDot(content: String, source: SourceFile, line: Int): Boolean =
-    var i = source.lineToOffset(line - 1)
+  private def lineStartsWithDot(content: String, lineMap: LineMap, line: Int): Boolean =
+    var i = lineMap.startOf(line)
     while i < content.length && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do i += 1
     i < content.length && content.charAt(i) == '.'
 

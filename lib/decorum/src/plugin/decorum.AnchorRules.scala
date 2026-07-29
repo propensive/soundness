@@ -148,6 +148,375 @@ object AnchorRules:
         else
           Nil
 
+  // ------------------------------------------------------------------------
+  // Shared lexical tables for the indentation rules (473.8/473.1). Both rules
+  // suspend inside brackets and braces left open by an earlier line, so a
+  // single linear pre-scan computes, for each line, the bracket state carried
+  // *into* it: the count of unclosed `(`/`[` openers from earlier lines, the
+  // count of unclosed `{` braces, and the net `(`-depth (clamped at zero, as
+  // the old checker's `openParens` was).
+  // ------------------------------------------------------------------------
+  private final class CarriedDepths(ctx: Context):
+    val length: Int = ctx.lines.length
+    val brackets: Array[Int] = new Array[Int](length)
+    val braces:   Array[Int] = new Array[Int](length)
+    val parens:   Array[Int] = new Array[Int](length)
+
+    private var crossBrackets = 0
+    private var crossBraces   = 0
+    private var openParens    = 0
+    private var idx           = 0
+
+    while idx < length do
+      brackets(idx) = crossBrackets
+      braces(idx)   = crossBraces
+      parens(idx)   = openParens
+
+      val arr = ctx.lines(idx).arr
+      var bracketOpens = 0
+      var bracketPops  = 0
+      var braceOpens   = 0
+      var bracePops    = 0
+      var parenDepth   = openParens
+      var i = 0
+
+      while i < arr.length do
+        if arr(i).kind == Sort.Code then
+          arr(i).text match
+            case "(" | "[" =>
+              bracketOpens += 1
+              if arr(i).text == "(" then parenDepth += 1
+
+            case ")" | "]" =>
+              if bracketOpens > 0 then bracketOpens -= 1 else bracketPops += 1
+              if arr(i).text == ")" then parenDepth -= 1
+
+            case "{" =>
+              braceOpens += 1
+
+            case "}" =>
+              if braceOpens > 0 then braceOpens -= 1 else bracePops += 1
+
+            case _ =>
+              ()
+
+        i += 1
+
+      crossBrackets = 0.max(crossBrackets - bracketPops) + bracketOpens
+      crossBraces   = 0.max(crossBraces - bracePops) + braceOpens
+      openParens    = parenDepth.max(0)
+      idx += 1
+
+  // The semantic (non-whitespace, non-comment) tokens of a line.
+  private def semTokens(line: Line): IndexedSeq[Lexeme] =
+    line.rest.filter: t => t.kind != Sort.Space && t.kind != Sort.Comment
+
+  // True if the semantic tokens of a line end with `' {` or `$ {` (the
+  // opening of a quote/splice block whose body lives on the following lines).
+  private def endsWithQuoteSpliceBrace(sem: IndexedSeq[Lexeme]): Boolean =
+    if sem.length < 2 then false
+    else
+      val last = sem(sem.length - 1).text
+      val prev = sem(sem.length - 2).text
+      last == "{" && (prev == "'" || prev == "$")
+
+  // True if the line is a chain method-application opener — the first
+  // semantic token is `.` and the last is `:` or `=>` (e.g. `. within:` or
+  // `. map: x =>`). Such lines deepen indentation by +4 rather than +2.
+  private def isChainOpener(sem: IndexedSeq[Lexeme]): Boolean =
+    if sem.isEmpty then false
+    else
+      val first = sem(0).text
+      val last  = sem(sem.length - 1).text
+      first == "." && (last == ":" || last == "=>")
+
+  // Keyword-sequence heads (`if/then/else`, `while/do`, `for/yield`,
+  // `try/catch/finally`). Lines headed by one of these keep their own anchor
+  // (833.x) and never open a 473.8 scope of their own.
+  private val SequenceStarters: Set[String] =
+    Set("if", "while", "for", "try", "then", "else", "do", "yield", "catch", "finally")
+
+  private final class Scope(val anchorCol: Int, val openLine: Int):
+    var bodySeen: Boolean = false
+
+  // The core scan shared by 473.8 (which emits its violations) and 473.1
+  // (which suppresses itself on each scope's first body line). The scope
+  // inventory comes from the tree-derived anchor model (`ctx.anchors`):
+  // every frame's opener line opens one scope, except `ChainCall` frames
+  // (their +4 body indent is governed by 473.1's deep-step allowance),
+  // `QuoteSplice` frames (governed by 473.2–.6), keyword-sequence starter
+  // lines (governed by 833.x), and `=>`-led given-signature continuation
+  // lines (governed by R32/140).
+  //
+  // Anchor semantics: the scope's anchor is the *opener* line's leading
+  // column (for `DefnRhs` frames this is the `=` line, not the model's
+  // keyword-line `anchorCol`; behaviour preservation of the old checker
+  // pins this choice — revisiting it is a rule change for a later step).
+  // A scope is popped when a later checkable line dedents to or past its
+  // anchor; only the first checkable interior line of the innermost open
+  // scope is checked, and must sit at exactly anchor + 2. Lines inside
+  // carried-over brackets or braces are neither checked nor pop scopes.
+  //
+  // Lexical fallback: a line with no tree-derived frame still opens a scope
+  // when its final semantic token is `:` / `match` / `=>` / `=` (subject to
+  // the same exclusions). Two corners need this: assignment statements
+  // (`x(i) =` with the value on the next line — `untpd.Assign` is not part
+  // of the anchor model), and regions the standalone parser cannot fully
+  // parse (capture-checking syntax such as `^{...}` mangles the enclosing
+  // definitions' trees, taking their frames with them).
+  private def bodyScopeScan
+    ( ctx:    Context,
+      depths: CarriedDepths )
+  :   (List[Violation], Set[Int]) =
+
+    val out       = mutable.ListBuffer[Violation]()
+    val bodyLines = mutable.Set[Int]()
+
+    val scopeLines: Map[Int, Int] =
+      val builder = Map.newBuilder[Int, Int]
+
+      ctx.anchors.frames.foreach: frame =>
+        if frame.kind != Anchors.FrameKind.ChainCall &&
+          frame.kind != Anchors.FrameKind.QuoteSplice
+        then
+          val opener = ctx.lines(frame.openLine - 1)
+          val head   = semTokens(opener).headOption.map(_.text).getOrElse("")
+
+          if !SequenceStarters.contains(head) && head != "=>" then
+            builder += frame.openLine -> opener.leadingCols
+
+      builder.result()
+
+    val stack = mutable.Stack[Scope]()
+    var idx   = 0
+
+    while idx < ctx.lines.length do
+      val line    = ctx.lines(idx)
+      val lineNum = idx + 1
+
+      val checkable =
+        !line.isBlank &&
+          depths.brackets(idx) == 0 && depths.braces(idx) == 0 && depths.parens(idx) == 0 &&
+          !line.firstReal.exists(_.kind == Sort.Comment) &&
+          !(line.firstReal.exists(_.kind == Sort.Strs) && line.leadingCols == 0)
+
+      if checkable then
+        while stack.nonEmpty && line.leadingCols <= stack.top.anchorCol do stack.pop()
+
+        if stack.nonEmpty then
+          val top = stack.top
+
+          if lineNum != top.openLine && !top.bodySeen then
+            top.bodySeen = true
+            bodyLines += lineNum
+
+            if line.leadingCols != top.anchorCol + 2 then
+              out +=
+                Violation
+                  ( ctx.file, lineNum, line.leadingCols + 1, "473.8",
+                    s"indented scope body must be indented to column ${top.anchorCol + 3} " +
+                      s"(anchor + 2); found column ${line.leadingCols + 1}" )
+
+      if !line.isBlank then
+        val anchorCol =
+          scopeLines.get(lineNum).orElse:
+            val sem  = semTokens(line)
+            val head = sem.headOption.map(_.text).getOrElse("")
+
+            val opens =
+              sem.lastOption.exists: t =>
+                t.text == ":" || t.text == "match" || t.text == "=>" || t.text == "="
+
+            if opens && !SequenceStarters.contains(head) && head != "=>" && !isChainOpener(sem)
+            then Some(line.leadingCols)
+            else None
+
+        anchorCol.foreach: col => stack.push(Scope(col, lineNum))
+
+      idx += 1
+
+    (out.toList, bodyLines.toSet)
+
+  // R473.8: the body of an indented scope (a colon-block `recv:`, a `match`,
+  // a lambda/`case` arrow `=>`, or a definition `=` RHS) must sit at exactly
+  // anchor + 2. Bracket and quote interiors are governed by R30/R12/R44.
+  object BodyScopeIndent extends Rule:
+    def id: String = "473.8"
+    def principle: Principle = Principle.Anchoring
+
+    def check(ctx: Context): List[Violation] =
+      bodyScopeScan(ctx, CarriedDepths(ctx))(0)
+
+  // R473.1: a non-blank code line cannot be indented more than two columns
+  // deeper than the previous code line. This forbids "alignment" indents
+  // that line up under a name on the previous line — when a continuation
+  // needs deeper indent, the previous line should be split so the rule
+  // is satisfied by ordinary +2 stepping.
+  //
+  // Two exceptions allow +4 instead of +2:
+  //   - the previous line opened a quote or splice context (`' {` or `$ {`
+  //     as its trailing tokens);
+  //   - the previous line is a chain method-application opener — it begins
+  //     with `.` and ends with `:` or `=>` (e.g. `. within:` or
+  //     `. map: x =>`).
+  //
+  // Suspended when the line is inside an unclosed `(`, `[`, or `{` from an
+  // earlier line (alignment there is governed by R12/R22/R30 and the
+  // surrounding bracket structure), inside a multi-line import's selector
+  // list, on a lone `for`-filter row (governed by 924.3), and on the first
+  // body line of an indented scope (governed by 473.8).
+  object ContinuationIndent extends Rule:
+    def id: String = "473.1"
+    def principle: Principle = Principle.Anchoring
+
+    def check(ctx: Context): List[Violation] =
+      val out    = mutable.ListBuffer[Violation]()
+      val depths = CarriedDepths(ctx)
+      val (_, bodyLines) = bodyScopeScan(ctx, depths)
+
+      val importLineSet = ctx.imports.iterator.flatMap{ i => i.startLine to i.endLine }.toSet
+
+      val forFilterLines: Set[Int] =
+        val builder = Set.newBuilder[Int]
+
+        ctx.forGroups.foreach: gens =>
+          gens.foreach: gl =>
+            if gl.isFilter then
+              val shared =
+                gens.exists: other =>
+                  (other ne gl) && other.line == gl.line
+
+              if !shared then builder += gl.line
+
+        builder.result()
+
+      var prevCodeLineIndent   = -1
+      var prevOpensQuoteSplice = false
+      var prevOpensChain       = false
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line    = ctx.lines(idx)
+        val lineNum = idx + 1
+
+        if !line.isBlank then
+          val isCommentOnly   = line.firstReal.exists(_.kind == Sort.Comment)
+          val isStringContent = line.firstReal.exists(_.kind == Sort.Strs)
+
+          val suppressed =
+            bodyLines.contains(lineNum) || prevCodeLineIndent < 0 ||
+              depths.brackets(idx) > 0 || depths.braces(idx) > 0 ||
+              importLineSet.contains(lineNum) || forFilterLines.contains(lineNum) ||
+              isCommentOnly || isStringContent
+
+          if !suppressed then
+            val deepStep   = prevOpensQuoteSplice || prevOpensChain
+            val step       = if deepStep then 4 else 2
+            val maxAllowed = prevCodeLineIndent + step
+
+            if line.leadingCols > maxAllowed then
+              out +=
+                Violation
+                  ( ctx.file, lineNum, line.leadingCols + 1, "473.1",
+                    s"indent ${line.leadingCols} cannot exceed previous line's indent " +
+                      s"$prevCodeLineIndent by more than $step" )
+
+          val sem = semTokens(line)
+          prevOpensQuoteSplice = endsWithQuoteSpliceBrace(sem)
+          prevOpensChain       = isChainOpener(sem)
+
+          // Comment-only, annotation-only and triple-quoted-string
+          // continuation lines don't update the previous-code-line indent.
+          val isAnnotationOnly = line.firstReal.exists(_.text.startsWith("@"))
+
+          val isStringContinuation =
+            line.firstReal.exists(_.kind == Sort.Strs) && line.leadingWs.isEmpty
+
+          if !isCommentOnly && !isAnnotationOnly && !isStringContinuation then
+            prevCodeLineIndent = line.leadingCols
+
+        idx += 1
+
+      out.toList
+
+  // R473.9: in a multi-line `def`/`given` signature, the body-introducing
+  // top-level `=` must be the last code token on the final signature line.
+  //
+  // The trigger condition is lexical: the line has a top-level `=`, the
+  // previous code line left a declaration signature in progress (it started
+  // with a declaration keyword or modifier, or continued one with a `(`/`[`
+  // clause, without reaching its own top-level `=`), and this line begins
+  // with a genuine signature-continuation token (`:` return type, or a
+  // `(`/`[` parameter clause). Template-body members (`class Foo:` followed
+  // by `val a = 1`) do not qualify: their head token is the member's own
+  // keyword.
+  object SignatureEqLast extends Rule:
+    def id: String = "473.9"
+    def principle: Principle = Principle.Anchoring
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var prevLineStartedDecl = false
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line = ctx.lines(idx)
+        val lineNum = idx + 1
+
+        if !line.isBlank then
+          val sem = semTokens(line)
+
+          val hasTopLevelEq =
+            var depth = 0
+            var found = false
+
+            sem.foreach: t =>
+              if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
+              else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
+              else if depth == 0 && t.text == "=" then found = true
+
+            found
+
+          val startsWithDecl =
+            sem.headOption.exists: t =>
+              Checker.DeclKeywords.contains(t.text) || Checker.ModifierWords.contains(t.text)
+
+          val wasDeclInProgress = prevLineStartedDecl
+
+          val isContinuationOfDecl =
+            prevLineStartedDecl && sem.headOption.exists: t => t.text == "(" || t.text == "["
+
+          prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
+          val headTok = sem.headOption.map(_.text).getOrElse("")
+
+          if hasTopLevelEq && wasDeclInProgress &&
+            (headTok == ":" || headTok == "(" || headTok == "[")
+          then
+            var col     = line.leadingCols + 1
+            var depth   = 0
+            var seenEq  = false
+            var emitCol = -1
+
+            line.rest.foreach: t =>
+              if t.kind == Sort.Code then
+                if seenEq && emitCol < 0 then emitCol = col
+                else if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
+                else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
+                else if depth == 0 && t.text == "=" then seenEq = true
+
+              col += t.text.length
+
+            if emitCol >= 0 then
+              out +=
+                Violation
+                  ( ctx.file, lineNum, emitCol, "473.9",
+                    "the body-introducing `=` of a multi-line definition signature must " +
+                      "be the last token on the signature's final line" )
+
+        idx += 1
+
+      out.toList
+
   // R560: a multi-line `m`/`j`/`x`/`y`/`tel` triple-quoted string is laid out as
   // a block — the opening quotes end their line, the content is indented two
   // columns beyond the prefix, no content line is indented less than the first,

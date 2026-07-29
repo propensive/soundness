@@ -56,9 +56,16 @@ object Rules:
       ( FrameRules.LicenceFrame, FrameRules.PackageDeclaration, FrameRules.PackageBlank,
         FrameRules.ImportSeparation, FrameRules.ImportOrdering,
         AnchorRules.SequenceLayout, AnchorRules.DefinitionAnchors,
+        // OperatorContinuation must precede ContinuationIndent: both can fire
+        // at the same position (a continuation line led by an operator), and
+        // dotty's reporter keeps only the first diagnostic per position — 616
+        // is the more specific message there.
+        ContinuationRules.OperatorContinuation,
+        AnchorRules.BodyScopeIndent, AnchorRules.ContinuationIndent,
+        AnchorRules.SignatureEqLast,
         AnchorRules.InterpolationLayout, TabulationRules.CaseAlignment,
         TabulationRules.ForComprehensionAlignment, DensityRules.LambdaLayout,
-        ProximityRules.ChunkSeparation, ContinuationRules.OperatorContinuation,
+        ProximityRules.ChunkSeparation,
         FindabilityRules.FileNaming, FindabilityRules.CompanionOrdering,
         FindabilityRules.SoundnessExportCompleteness,
         FindabilityRules.ExtensionExportCompleteness )

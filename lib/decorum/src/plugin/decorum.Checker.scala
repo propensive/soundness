@@ -73,14 +73,7 @@ object Checker:
 
     val out   = mutable.ListBuffer[Violation]()
     val state = State(file, expectedModule)
-    state.importLineSet      = ctx.imports.iterator.flatMap{ i => i.startLine to i.endLine }.toSet
     state.annotationEndLines = ctx.annotationEndLines
-    state.forFilterLines     = ctx.forGroups.iterator.flatMap: gens =>
-                                 gens.iterator.collect:
-                                   case gl if gl.isFilter
-                                         && !gens.exists(o => (o ne gl) && o.line == gl.line) =>
-                                     gl.line
-                               .toSet
     scanRawTabs(file, rawText, out)
     Rules.all.foreach: rule =>
       out ++= rule.check(ctx)
@@ -127,28 +120,9 @@ object Checker:
   // == -1` is the sentinel for any other `{`.
   private case class QuoteBrace(braceCol: Int, prefixCol: Int, openerLine: Int)
 
-  // Rule B (473.8): one open significant-indentation scope, opened by a
-  // line-final `:` / `match` / `=>` / `=`. `anchorCol` is the (leftward-
-  // extended) anchor column; `bodyIndent` == anchorCol + 2 is the required
-  // body column; `bodyLineIndent` records the first interior line's indent
-  // (-1 until seen) so only that first body line is checked.
-  private case class IndentScope(anchorCol: Int, bodyIndent: Int, openerLine: Int):
-    var bodyLineIndent: Int = -1
-
   private class State(val file: String, val expectedModule: Option[String]):
     var consecutiveBlanks:    Int                        = 0
-    // Lines belonging to top-level imports; R31 (473.1) suspends its
-    // indent-step check inside them (multi-line selector lists align
-    // under the opener's braces, not the indent grid).
-    var importLineSet:        Set[Int]                   = Set.empty
     var annotationEndLines:   Set[Int]                   = Set.empty
-    // Lines that are `if`-filter rows inside a `for`-comprehension and sit
-    // alone on their line (i.e. the filter doesn't share a line with the
-    // generator above it). R34 (924.3) requires these to align vertically
-    // with the comprehension's `<-`/`=` column, which can sit far to the
-    // right of the previous line's indent — so R31 (473.1) must not
-    // additionally complain about that indent jump.
-    var forFilterLines:       Set[Int]                   = Set.empty
     var prevLineWasBlank:     Boolean                    = false
     var prevWasAnnotation:    Boolean                    = false
     var prevLineNum:          Int                        = 0
@@ -187,14 +161,6 @@ object Checker:
     // first param block is on a single line, so the second clause `(
     // using ... )` on the next line is a continuation.
     var prevLineStartedDecl: Boolean                      = false
-    // True if the previous code line ended with `' {` or `$ {` — a quote
-    // or splice context that takes its body indented +4 (instead of the
-    // usual +2) on the following line. R31 widens its allowance accordingly.
-    var prevLineOpensQuoteSplice: Boolean                 = false
-    // True if the previous code line was a chain method-application opener
-    // — i.e. it began with `.` and ended with `:` or `=>`. The body of such
-    // a chain takes indent +4 from the opener line (R31 exception).
-    var prevLineOpensChain:       Boolean                 = false
     // Stack of currently-unclosed `{` braces. For a multi-line `' {` /
     // `$ {` opener, the entry records the `{` column, the prefix
     // (`'` / `$`) column, and the opener line; other braces use sentinel
@@ -215,14 +181,6 @@ object Checker:
     // a leading expression-introducing keyword. Used by R33 (833.4) to
     // require that a heavy `(`/`[` continuation attach to a tight anchor.
     var prevLineIsTight:          Boolean                  = false
-    // Rule B (473.8): stack of currently-open significant-indentation scopes
-    // (colon-block / match / lambda-or-case body / definition `=` RHS). A
-    // scope is pushed when a line ends with `:` / `match` / `=>` / `=`, and
-    // popped when a later line dedents to or past its anchor.
-    val indentScopes:             mutable.Stack[IndentScope] = mutable.Stack.empty
-    // True iff the current line is the first body line of an active indented
-    // scope; R31 (473.1) yields to 473.8 on that line to avoid double-report.
-    var ruleBBodyLine:            Boolean                  = false
 
   private def checkLine
     ( s:       State,
@@ -257,8 +215,6 @@ object Checker:
     if !isStringContent && s.openParens == 0 then
       checkR3IndentWidth(isBlank, leadingCols, emit)
     if !isStringContinuation then checkR4TrailingWs(line.lexemes, emit)
-    checkR45BodyScopeIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
-    checkR31ContinuationIndent(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
     checkR33HeavyBracketAnchor(s, leadingCols, isBlank, firstReal, rest, emit)
 
@@ -301,46 +257,12 @@ object Checker:
       val startsWithDecl =
         sem.headOption.exists: t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text)
 
-      val wasDeclInProgress = s.prevLineStartedDecl
       val isContinuationOfDecl =
         s.prevLineStartedDecl
           && sem.headOption.exists{ t => t.text == "(" || t.text == "[" }
       s.prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
 
-      // Rule B (473.9): a multi-line def/given signature whose `=` line
-      // completes it must put the `=` last on the line. Only genuine signature
-      // continuations (lines starting with `:` return-type, or `(`/`[` param
-      // clauses) qualify — NOT template-body members like `class Foo:` ⏎
-      // `val a = 1`, which also leave the prior line "in progress".
-      val headTok = sem.headOption.map(_.text).getOrElse("")
-      if hasTopLevelEq && wasDeclInProgress
-        && (headTok == ":" || headTok == "(" || headTok == "[")
-      then
-        checkSignatureEqLast(s, lineNum, rest, leadingCols, emit)
-
-      // Rule B (473.8): push an indented-scope frame for a line that opens a
-      // scope via a line-final `:` / `match` / `=>` / `=`. Keyword sequences
-      // (if/then/else, while/do, for/yield, try/catch/finally) keep their own
-      // anchor (833.x); `=>`-led given-signature continuations are owned by R32.
-      // Chain-method openers (`. method: x =>`) are excluded: their body indent
-      // has a +2..+4 *range* governed by the R31 deep-step allowance, not a
-      // fixed anchor + 2.
-      val isSequenceLine =
-        SequenceStarters.contains(headTok) || (s.givenSignatureIndent >= 0 && headTok == "=>")
-
-      val opensScope =
-        sem.lastOption.exists: t =>
-          t.text == ":" || t.text == "match" || t.text == "=>" || t.text == "="
-
-      if opensScope && !isSequenceLine && !lineIsChainOpener(sem)
-      then s.indentScopes.push(IndentScope(leadingCols, leadingCols + 2, lineNum))
-
-      // R31 exceptions: detect quote/splice opener and chain opener on this
-      // line so the next line gets a +4 (rather than +2) allowance. Also
-      // track quote/splice brace columns for the closing-`}`-alignment check.
-      s.prevLineOpensQuoteSplice = lineEndsWithQuoteSpliceBrace(sem)
-      s.prevLineOpensChain       = lineIsChainOpener(sem)
-      s.prevLineIsTight          = isTightExpression(line.lexemes)
+      s.prevLineIsTight = isTightExpression(line.lexemes)
       trackQuoteSpliceBraces(s, line, lineNum, out)
       checkInlineQuoteSplice(s.file, line.arr, line.cols, lineNum, out)
 
@@ -425,72 +347,6 @@ object Checker:
 
     if !isBlank && leadingCols%2 != 0 then
       emit(1, "926", s"indent width $leadingCols is not a multiple of 2")
-
-  // R31: a non-blank code line cannot be indented more than two columns
-  // deeper than the previous code line. This forbids "alignment" indents
-  // that line up under a name on the previous line — when a continuation
-  // needs deeper indent, the previous line should be split so the rule
-  // is satisfied by ordinary +2 stepping.
-  //
-  // Two exceptions allow +4 instead of +2:
-  //   - the previous line opened a quote or splice context (`' {` or `$ {`
-  //     as its trailing tokens);
-  //   - the previous line is a chain method-application opener — it begins
-  //     with `.` and ends with `:` or `=>` (e.g. `. within:` or
-  //     `. map: x =>`).
-  //
-  // Suspended when the line is inside an unclosed `(`, `[`, or `{` from an
-  // earlier line: alignment inside parameter / selector lists (e.g. the
-  // multi-line `import …. { A, B, /\n      C, D }` and `export` patterns)
-  // is governed by R12/R22/R30 and the surrounding bracket structure.
-  private def checkR31ContinuationIndent
-    ( s:           State,
-      lineNum:     Int,
-      leadingCols: Int,
-      isBlank:     Boolean,
-      firstReal:   Option[Lexeme],
-      emit:        (Int, String, String) => Unit )
-  :   Unit =
-
-    if isBlank then ()
-    else if s.ruleBBodyLine then ()
-    else if s.prevCodeLineIndent < 0 then ()
-    else if s.bracketFormality.nonEmpty then ()
-    else if s.quoteSpliceBraces.nonEmpty then ()
-    else if s.importLineSet.contains(lineNum) then ()
-    else if s.forFilterLines.contains(lineNum) then ()
-    else
-      val isCommentOnly   = firstReal.exists(_.kind == Sort.Comment)
-      val isStringContent = firstReal.exists(_.kind == Sort.Strs)
-      if isCommentOnly || isStringContent then ()
-      else
-        val deepStep   = s.prevLineOpensQuoteSplice || s.prevLineOpensChain
-        val step       = if deepStep then 4 else 2
-        val maxAllowed = s.prevCodeLineIndent + step
-        if leadingCols > maxAllowed then
-          emit
-            ( leadingCols + 1, "473.1",
-              s"indent $leadingCols cannot exceed previous line's indent "
-                +s"${s.prevCodeLineIndent} by more than $step" )
-
-  // True if the semantic tokens of a line end with `' {` or `$ {` (the
-  // opening of a quote/splice block whose body lives on the following lines).
-  private def lineEndsWithQuoteSpliceBrace(sem: IndexedSeq[Lexeme]): Boolean =
-    if sem.length < 2 then false
-    else
-      val last = sem(sem.length - 1).text
-      val prev = sem(sem.length - 2).text
-      last == "{" && (prev == "'" || prev == "$")
-
-  // True if the line is a chain method-application opener — the first
-  // semantic token is `.` and the last is `:` or `=>` (e.g. `. within:` or
-  // `. map: x =>`). Such lines deepen indentation by +4 rather than +2.
-  private def lineIsChainOpener(sem: IndexedSeq[Lexeme]): Boolean =
-    if sem.isEmpty then false
-    else
-      val first = sem(0).text
-      val last  = sem(sem.length - 1).text
-      first == "." && (last == ":" || last == "=>")
 
   // Walk a line's tokens to maintain the quote/splice brace stack and to
   // enforce the multi-line quote/splice layout (rule 473.2–473.6, see
@@ -678,77 +534,6 @@ object Checker:
         ( leadingCols + 1, "473.5",
           s"body of a multi-line quote/splice must be indented to column "
             +s"${top.braceCol + 2} (found ${leadingCols + 1})" )
-
-  // Rule B (473.8): the body of an indented scope (a colon-block `recv:`, a
-  // `match`, a lambda/`case` arrow `=>`, or a definition `=` RHS) must sit at
-  // exactly anchor + 2. Scopes are pushed (with their anchor) when their
-  // opener line is processed; here we pop scopes the current line has
-  // dedented out of, then check the first interior line of the innermost
-  // remaining scope. Bracket / quote interiors are governed by R30/R12/R44.
-  private def checkR45BodyScopeIndent
-    ( s:           State,
-      lineNum:     Int,
-      isBlank:     Boolean,
-      leadingCols: Int,
-      firstReal:   Option[Lexeme],
-      emit:        (Int, String, String) => Unit )
-  :   Unit =
-
-    s.ruleBBodyLine = false
-    if isBlank then ()
-    else if s.bracketFormality.nonEmpty || s.quoteSpliceBraces.nonEmpty || s.openParens > 0 then ()
-    else if firstReal.exists(_.kind == Sort.Comment) then ()
-    // A line that *starts* with a string interpolation is still a real body
-    // line; only a triple-quoted-string CONTINUATION (a `Strs` token with no
-    // leading whitespace, hence leadingCols == 0) must be skipped.
-    else if firstReal.exists(_.kind == Sort.Strs) && leadingCols == 0 then ()
-    else
-      while s.indentScopes.nonEmpty && leadingCols <= s.indentScopes.top.anchorCol do
-        s.indentScopes.pop()
-      if s.indentScopes.nonEmpty then
-        val top = s.indentScopes.top
-        if lineNum != top.openerLine && top.bodyLineIndent < 0 then
-          top.bodyLineIndent = leadingCols
-          s.ruleBBodyLine = true
-          if leadingCols != top.bodyIndent then
-            emit
-              ( leadingCols + 1, "473.8",
-                s"indented scope body must be indented to column ${top.bodyIndent + 1} "
-                  +s"(anchor + 2); found column ${leadingCols + 1}" )
-
-  // Keyword-sequence heads (`if/then/else`, `while/do`, `for/yield`,
-  // `try/catch/finally`). Lines headed by one of these keep their own anchor
-  // (833.1/.2) and are excluded from Rule B's leftward extension.
-  private val SequenceStarters: Set[String] =
-    Set("if", "while", "for", "try", "then", "else", "do", "yield", "catch", "finally")
-
-  // Rule B (473.9): in a multi-line `def`/`given` signature, the
-  // body-introducing top-level `=` must be the last code token on the final
-  // signature line. Emits at the first code token following that `=`.
-  private def checkSignatureEqLast
-    ( s:           State,
-      lineNum:     Int,
-      rest:        IndexedSeq[Lexeme],
-      leadingCols: Int,
-      emit:        (Int, String, String) => Unit )
-  :   Unit =
-
-    var col     = leadingCols + 1
-    var depth   = 0
-    var seenEq  = false
-    var emitCol = -1
-    rest.foreach: t =>
-      if t.kind == Sort.Code then
-        if seenEq && emitCol < 0 then emitCol = col
-        else if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
-        else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
-        else if depth == 0 && t.text == "=" then seenEq = true
-      col += t.text.length
-    if emitCol >= 0 then
-      emit
-        ( emitCol, "473.9",
-          "the body-introducing `=` of a multi-line definition signature must "
-            +"be the last token on the signature's final line" )
 
   private def checkR4TrailingWs
     ( line: IndexedSeq[Lexeme], emit: (Int, String, String) => Unit )
@@ -1666,7 +1451,7 @@ object Checker:
     rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Sort.Space
       && rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
 
-  private val ModifierWords: Set[String] =
+  private[decorum] val ModifierWords: Set[String] =
     Set
       ( "private", "protected", "public", "final", "sealed", "abstract",
         "implicit", "lazy", "override", "case", "inline", "transparent",
@@ -1683,7 +1468,7 @@ object Checker:
       i += 1
     (lastModifier, i)
 
-  private val DeclKeywords: Set[String] =
+  private[decorum] val DeclKeywords: Set[String] =
     Set("def", "val", "var", "type", "class", "trait", "object", "enum", "given")
 
   private def checkUsingAlignment
