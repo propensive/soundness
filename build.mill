@@ -1616,7 +1616,6 @@ object gigantism extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
-    override def enabled = false
 
 object gnossienne extends Library:
   object core extends Component(distillate.core, adversaria.core):

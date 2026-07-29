@@ -1324,7 +1324,7 @@ object KotlinFacade:
       bridgeCall(self, repr, className, member, provided, prototype)
 
   // The facade of an `enum class` entry, a static field of the enum's own type.
-  def entry[kotlinType: Type](name: Expr[String])(using Quotes): Expr[Any] =
+  def enumEntry[kotlinType: Type](name: Expr[String])(using Quotes): Expr[Any] =
     import quotes.reflect.*
 
     val repr = TypeRepr.of[kotlinType]

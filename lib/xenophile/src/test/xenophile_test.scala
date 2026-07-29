@@ -220,7 +220,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an enum entry is reachable by name, and usable as an argument"):
         val relaxed = make[kotlin.text.Regex]
-          ( t"[a-z]+", entry[kotlin.text.RegexOption]("IGNORE_CASE") )
+          ( t"[a-z]+", enumEntry[kotlin.text.RegexOption]("IGNORE_CASE") )
 
         val matches: Boolean = relaxed.matches(t"ABC")
         matches
@@ -228,7 +228,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an unknown enum entry lists the real ones"):
         demilitarize:
-          entry[kotlin.text.RegexOption]("IGNORE_CAES")
+          enumEntry[kotlin.text.RegexOption]("IGNORE_CAES")
         . map(_.message)
       . assert(_.exists(_.contains("IGNORE_CASE")))
 
