@@ -135,3 +135,15 @@ raises a `ConnectError` naming the reason:
 ```scala
 capture[ConnectError](url"http://no-such-host.invalid/".fetch()).reason   // ConnectError.Reason.Dns
 ```
+
+A TLS failure is distinguished from a network one, and its own reason says at which stage it
+failed. An expired certificate, a certificate for the wrong host, a revoked one, a broken cipher
+suite, an undersized Diffie–Hellman group — each is refused at the handshake rather than accepted
+with a warning nobody reads. The client is tested against the
+[badssl.com](https://badssl.com/) suite of deliberately-broken endpoints, so the refusals are
+verified rather than assumed.
+
+Where a connection genuinely must be made to a host whose certificate cannot be validated — a
+development server with a self-signed certificate — a relaxed `TlsAcceptance` in scope permits it.
+Making that an explicit, searchable import is the point: accepting an unvalidated certificate is a
+decision, not a default.
