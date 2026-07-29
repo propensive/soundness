@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import scala.caps
+
 import java.security as js
 import java.util.zip as juz
 
@@ -50,23 +52,23 @@ object JavaStdlibHashing extends Hashing:
   def sha2(bits: Int): Hashing.Function = messageDigest(t"SHA-$bits")
 
   def crc32: Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion = new Digestion:
+    def digestion(): Digestion^ = new Digestion:
       private val state: juz.CRC32 = juz.CRC32()
-      def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
+      update def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
 
-      override def append(array: Array[Byte], start: Int, count: Int): Unit =
+      override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
         state.update(array, start, count)
 
-      def digest(): Data =
+      update def digest(): Data =
         val value = state.getValue()
         IArray[Byte]((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
   private def messageDigest(name: Text): Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion = new Digestion:
+    def digestion(): Digestion^ = new Digestion:
       private val md: js.MessageDigest = js.MessageDigest.getInstance(name.s).nn
-      def append(bytes: Data): Unit = md.update(bytes.mutable(using Unsafe))
+      update def append(bytes: Data): Unit = md.update(bytes.mutable(using Unsafe))
 
-      override def append(array: Array[Byte], start: Int, count: Int): Unit =
+      override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
         md.update(array, start, count)
 
-      def digest(): Data = md.digest.nn.immutable(using Unsafe)
+      update def digest(): Data = md.digest.nn.immutable(using Unsafe)

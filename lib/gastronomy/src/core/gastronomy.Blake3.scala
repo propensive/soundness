@@ -32,7 +32,7 @@
                                                                                                   */
 package gastronomy
 
-import scala.math
+import scala.{caps, math}
 import proscenium.compat.*
 
 import java.nio.charset.StandardCharsets
@@ -203,25 +203,19 @@ object Blake3:
 
     parentOutput(leftCv, rightCv, keyWords, flags).chainingValue()
 
-  private final class ChunkState
-    ( keyWordsInit: Array[Int],
-      @scala.caps.unsafe.untrackedCaptures
-      var chunkCounter: Long,
-      val flags: Int ):
-    val chainingValue:    Array[Int]  = keyWordsInit.clone()
-    val block:            Array[Byte] = new Array[Byte](BlockLen)
+  private final class ChunkState(keyWordsInit: Array[Int], var chunkCounter: Long, val flags: Int)
+  extends caps.Mutable:
+    private var chainingValue: Array[Int]^  = keyWordsInit.clone()
+    private var block:         Array[Byte]^ = new Array[Byte](BlockLen)
 
-    @scala.caps.unsafe.untrackedCaptures
-    var blockLen:         Int         = 0
-
-    @scala.caps.unsafe.untrackedCaptures
-    var blocksCompressed: Int         = 0
+    var blockLen:         Int = 0
+    var blocksCompressed: Int = 0
 
     def len: Int = BlockLen*blocksCompressed + blockLen
 
     private def startFlag: Int = if blocksCompressed == 0 then ChunkStart else 0
 
-    def update(input: Array[Byte], start: Int, end: Int): Unit =
+    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
       val blockWords = new Array[Int](16)
       var pos = start
 
@@ -256,28 +250,21 @@ object Blake3:
               blockLen,
               flags | startFlag | ChunkEnd ) )
 
-  private final class Hasher(keyWordsInit: Array[Int], val flags: Int):
+  private final class Hasher(keyWordsInit: Array[Int], val flags: Int) extends caps.Mutable:
     private val keyWords: Array[Int] = keyWordsInit.clone()
-
-    @scala.caps.unsafe.untrackedCaptures
-    // The freshly-constructed ChunkState only holds fresh or private arrays.
-    private var chunkState: ChunkState =
-      scala.caps.unsafe.unsafeAssumePure(ChunkState(keyWords, 0L, flags))
-
-    private val cvStack: Array[Array[Int]]^ = new Array[Array[Int]](54)
-
-    @scala.caps.unsafe.untrackedCaptures
+    private var chunkState: ChunkState^ = ChunkState(keyWords, 0L, flags)
+    private var cvStack: Array[Array[Int]]^ = new Array[Array[Int]](54)
     private var cvStackLen: Int = 0
 
-    private def pushStack(cv: Array[Int]): Unit =
+    private update def pushStack(cv: Array[Int]): Unit =
       cvStack(cvStackLen) = cv
       cvStackLen += 1
 
-    private def popStack(): Array[Int] =
+    private update def popStack(): Array[Int] =
       cvStackLen -= 1
       cvStack(cvStackLen)
 
-    private def addChunkCv(initialCv: Array[Int], initialTotal: Long): Unit =
+    private update def addChunkCv(initialCv: Array[Int], initialTotal: Long): Unit =
       var cv = initialCv
       var totalChunks = initialTotal
 
@@ -287,10 +274,10 @@ object Blake3:
 
       pushStack(cv)
 
-    def update(data: IArray[Byte]): Unit =
+    update def update(data: IArray[Byte]): Unit =
       update(data.mutable(using Unsafe), 0, data.length)
 
-    def update(input: Array[Byte], start: Int, end: Int): Unit =
+    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
       // SIMD: AVX2 / AVX-512 backends process 4 / 8 / 16 chunks at a time here using interleaved
       //       state; the scalar path below handles one chunk per iteration.
       var pos = start
@@ -300,16 +287,14 @@ object Blake3:
           val chunkCv = chunkState.output().chainingValue()
           val totalChunks = chunkState.chunkCounter + 1L
           addChunkCv(chunkCv, totalChunks)
-          // The freshly-constructed ChunkState only holds fresh or private arrays.
-          chunkState =
-            scala.caps.unsafe.unsafeAssumePure(ChunkState(keyWords, totalChunks, flags))
+          chunkState = ChunkState(keyWords, totalChunks, flags)
 
         val want = ChunkLen - chunkState.len
         val take = math.min(want, end - pos)
         chunkState.update(input, pos, pos + take)
         pos += take
 
-    def complete(outLen: Int): IArray[Byte] =
+    update def complete(outLen: Int): IArray[Byte] =
       var current = chunkState.output()
       var i = cvStackLen
 
@@ -323,20 +308,17 @@ object Blake3:
     Hash(t"BLAKE3", t"HMAC-BLAKE3", hashing.blake3)
 
   // The pure-Scala BLAKE3 `Digestion`, used by the Soundness hashing provider.
-  def digestion(): Digestion = new Digestion:
-    // The freshly-constructed Hasher only holds fresh or private arrays.
-    private val hasher: Hasher =
-      scala.caps.unsafe.unsafeAssumePure(Hasher(Iv.mutable(using Unsafe), 0))
-    def append(bytes: Data): Unit = hasher.update(bytes)
+  def digestion(): Digestion^ = new Digestion:
+    private var hasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), 0)
+    update def append(bytes: Data): Unit = hasher.update(bytes)
 
-    override def append(array: Array[Byte], start: Int, count: Int): Unit =
+    override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
       hasher.update(array, start, start + count)
 
-    def digest(): Data = hasher.complete(OutLen)
+    update def digest(): Data = hasher.complete(OutLen)
 
   def hashOf(input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
-    // The freshly-constructed Hasher only holds fresh or private arrays.
-    val hasher = scala.caps.unsafe.unsafeAssumePure(Hasher(Iv.mutable(using Unsafe), 0))
+    val hasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), 0)
     hasher.update(input)
     hasher.complete(length)
 
@@ -348,24 +330,20 @@ object Blake3:
     val keyWords = new Array[Int](8)
     wordsFromBytes(keyBytes, 0, keyWords)
 
-    // The freshly-constructed Hasher only holds fresh or private arrays.
-    val hasher = scala.caps.unsafe.unsafeAssumePure(Hasher(keyWords, KeyedHashFlag))
+    val hasher: Hasher^ = Hasher(keyWords, KeyedHashFlag)
     hasher.update(input)
     hasher.complete(length)
 
   def deriveKey(context: Text, material: IArray[Byte], length: Int = OutLen): IArray[Byte] =
     val ctxBytes: Array[Byte] = context.s.getBytes(StandardCharsets.UTF_8).nn
-    // The freshly-constructed Hasher only holds fresh or private arrays.
-    val ctxHasher =
-      scala.caps.unsafe.unsafeAssumePure(Hasher(Iv.mutable(using Unsafe), DeriveKeyContext))
+    val ctxHasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), DeriveKeyContext)
     ctxHasher.update(ctxBytes.immutable(using Unsafe))
 
     val ctxKey = ctxHasher.complete(KeyLen).mutable(using Unsafe)
     val ctxKeyWords = new Array[Int](8)
     wordsFromBytes(ctxKey, 0, ctxKeyWords)
 
-    // The freshly-constructed Hasher only holds fresh or private arrays.
-    val matHasher = scala.caps.unsafe.unsafeAssumePure(Hasher(ctxKeyWords, DeriveKeyMaterial))
+    val matHasher: Hasher^ = Hasher(ctxKeyWords, DeriveKeyMaterial)
     matHasher.update(material)
     matHasher.complete(length)
 

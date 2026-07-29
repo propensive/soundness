@@ -148,7 +148,9 @@ object Digestible extends Derivable[Digestible]:
 trait Digestible extends Typeclass.Pure:
   digestible: Digestible =>
 
-    def digest(digestion: Digestion, value: Self): Unit
+    // Exclusivity lives at the method level (`Digestion^`), not the instance: a
+    // `Digestible` is a pure value which may be handed any exclusive accumulator.
+    def digest(digestion: Digestion^, value: Self): Unit
 
   // Deviates from the impure-lambda combinator convention: a capturing `contramap` result
   // makes every SAM conversion to `Digestible` capture-tracked, which rejects the (sealed,
@@ -157,5 +159,5 @@ trait Digestible extends Typeclass.Pure:
   def contramap[self2](lambda: self2 -> Self): self2 is Digestible = new Digestible:
     type Self = self2
 
-    def digest(digestion: Digestion, value: Self): Unit =
+    def digest(digestion: Digestion^, value: Self): Unit =
       digestible.digest(digestion, lambda(value))

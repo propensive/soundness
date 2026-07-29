@@ -129,7 +129,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     // exercised directly here against the NIST/RFC "abc" vectors and cross-validated against the
     // JDK for random inputs across the block-boundary sizes.
     suite(m"Pure hash implementations"):
-      def hex(digestion: Digestion, message: Text): Text =
+      def hex(digestion: Digestion^, message: Text): Text =
         digestion.append(message.s.getBytes("UTF-8").nn.immutable(using Unsafe))
         digestion.digest().serialize[Hex]
 
@@ -171,7 +171,7 @@ object Tests extends Suite(m"Gastronomy tests"):
           val md = java.security.MessageDigest.getInstance(name.s).nn
           md.digest(data.mutable(using Unsafe)).nn.immutable(using Unsafe).serialize[Hex]
 
-        def pureHex(digestion: Digestion): Text =
+        def pureHex(digestion: Digestion^): Text =
           digestion.append(data)
           digestion.digest().serialize[Hex]
 
@@ -196,7 +196,7 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       // Feed the windowed `append` deliberately misaligned slices of a buffer with a
       // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
-      def windowed(digestion: Digestion): Text =
+      def windowed(digestion: Digestion^): Text =
         val array = new Array[Byte](payload.stdlib.length + 13)
         java.lang.System.arraycopy(payload.mutable(using Unsafe), 0, array, 13, payload.stdlib.length)
         var offset = 13
@@ -210,7 +210,7 @@ object Tests extends Suite(m"Gastronomy tests"):
 
         digestion.digest().serialize[Hex]
 
-      def whole(digestion: Digestion): Text =
+      def whole(digestion: Digestion^): Text =
         digestion.append(payload)
         digestion.digest().serialize[Hex]
 
