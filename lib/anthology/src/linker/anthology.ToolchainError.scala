@@ -36,4 +36,4 @@ import anticipation.*
 import fulminate.*
 
 case class ToolchainError(tool: Text)(using Diagnostics)
-extends Error(779, 2)(m"the native tool $tool is not available on the PATH")
+extends Error(586, 0)(m"the native tool $tool is not available on the PATH")

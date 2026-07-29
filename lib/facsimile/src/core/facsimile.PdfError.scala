@@ -109,4 +109,4 @@ object PdfError:
           m"cross-reference table can be edited in place)"
 
 case class PdfError(reason: PdfError.Reason)(using Diagnostics)
-extends Error(728, reason.number)(m"the PDF could not be read because $reason")
+extends Error(280, reason.number)(m"the PDF could not be read because $reason")
