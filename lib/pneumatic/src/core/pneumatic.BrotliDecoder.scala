@@ -197,17 +197,13 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
   import BrotliTables.*
 
   // --- Bit reader (LSB-first, over a zero-padded copy of the whole input) ------------------------
-  @scala.caps.unsafe.untrackedCaptures
   private var data: Array[Byte] =
     val buffer: Array[Byte]^ = new Array[Byte](sourceLength + 16)
     System.arraycopy(source, 0, buffer, 0, sourceLength)
     buffer
 
-  @scala.caps.unsafe.untrackedCaptures
   private var bytePos: Int = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var accumulator: Long = 0L
-  @scala.caps.unsafe.untrackedCaptures
   private var bitOffset: Int = 64
 
   private def nextInt(): Int =
@@ -247,11 +243,9 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
     prime()
 
   // --- Output (one growable array; `pos` is the count of decoded bytes) --------------------------
-  @scala.caps.unsafe.untrackedCaptures
   private var output: Array[Byte] =
     new Array[Byte](if sourceLength < 64 then 256 else sourceLength*4)
 
-  @scala.caps.unsafe.untrackedCaptures
   private var pos: Int = 0
 
   private def ensureCapacity(needed: Int): Unit =
@@ -263,84 +257,46 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
       output = grown
 
   // --- Meta-block and Huffman state --------------------------------------------------------------
-  @scala.caps.unsafe.untrackedCaptures
   private var metaBlockLength = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var inputEnd = false
-  @scala.caps.unsafe.untrackedCaptures
   private var isUncompressed = false
-  @scala.caps.unsafe.untrackedCaptures
   private var isMetadata = false
 
-  @scala.caps.unsafe.untrackedCaptures
   private var blockTypeTrees = new Array[Int](3*HuffmanMaxTableSize)
-  @scala.caps.unsafe.untrackedCaptures
   private var blockLenTrees = new Array[Int](3*HuffmanMaxTableSize)
-  @scala.caps.unsafe.untrackedCaptures
   private var blockLength: Array[Int]^ = new Array[Int](3)
-  @scala.caps.unsafe.untrackedCaptures
   private var numBlockTypes = new Array[Int](3)
-  @scala.caps.unsafe.untrackedCaptures
   private var blockTypeRb = new Array[Int](6)
-  @scala.caps.unsafe.untrackedCaptures
   private var distRb = Array(16, 15, 11, 4)
 
-  @scala.caps.unsafe.untrackedCaptures
   private var hGroup0Codes: Array[Int] = new Array[Int](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var hGroup0Trees: Array[Int] = new Array[Int](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var hGroup1Codes: Array[Int] = new Array[Int](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var hGroup1Trees: Array[Int] = new Array[Int](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var hGroup2Codes: Array[Int] = new Array[Int](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var hGroup2Trees: Array[Int] = new Array[Int](0)
 
-  @scala.caps.unsafe.untrackedCaptures
   private var maxDistance = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var distRbIdx = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var trivialLiteralContext = false
-  @scala.caps.unsafe.untrackedCaptures
   private var literalTreeIndex = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var literalTree = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var insertLength = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var contextModes: Array[Byte] = new Array[Byte](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var contextMap: Array[Byte] = new Array[Byte](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var distContextMap: Array[Byte] = new Array[Byte](0)
-  @scala.caps.unsafe.untrackedCaptures
   private var contextMapSlice = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var distContextMapSlice = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var contextLookupOffset1 = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var contextLookupOffset2 = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var treeCommandOffset = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var distanceCode = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var numDirectDistanceCodes = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var distancePostfixMask = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var distancePostfixBits = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var distance = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var copyLength = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var copyDst = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var maxBackwardDistance = 0
 
   // --- Header ------------------------------------------------------------------------------------
@@ -555,17 +511,17 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
         fillBitWindow()
         val code = readSymbol(table, 0)
 
-        if code == 0 then { writable(contextMap)(i) = 0; i += 1 }
+        if code == 0 then { contextMap(i) = 0; i += 1 }
         else if code <= maxRunLengthPrefix then
           var reps = (1 << code) + readBits(code)
 
           while reps != 0 do
             if i >= contextMapSize then corrupt("context map overflow")
-            writable(contextMap)(i) = 0
+            contextMap(i) = 0
             i += 1
             reps -= 1
         else
-          writable(contextMap)(i) = (code - maxRunLengthPrefix).toByte
+          contextMap(i) = (code - maxRunLengthPrefix).toByte
           i += 1
 
       if readBits(1) == 1 then inverseMoveToFrontTransform(contextMap, contextMapSize)
@@ -575,15 +531,15 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
     val offset = treeType*2
     fillBitWindow()
     var blockType = readSymbol(blockTypeTrees, treeType*HuffmanMaxTableSize)
-    writable(blockLength)(treeType) = readBlockLength(blockLenTrees, treeType*HuffmanMaxTableSize)
+    blockLength(treeType) = readBlockLength(blockLenTrees, treeType*HuffmanMaxTableSize)
 
     if blockType == 1 then blockType = blockTypeRb(offset + 1) + 1
     else if blockType == 0 then blockType = blockTypeRb(offset)
     else blockType -= 2
 
     if blockType >= numBlockTypes(treeType) then blockType -= numBlockTypes(treeType)
-    writable(blockTypeRb)(offset) = blockTypeRb(offset + 1)
-    writable(blockTypeRb)(offset + 1) = blockType
+    blockTypeRb(offset) = blockTypeRb(offset + 1)
+    blockTypeRb(offset + 1) = blockType
 
   private def decodeLiteralBlockSwitch(): Unit =
     decodeBlockTypeAndLength(0)
@@ -619,13 +575,13 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
     var i = 0
 
     while i < 3 do
-      writable(numBlockTypes)(i) = decodeVarLenUnsignedByte() + 1
-      writable(blockLength)(i) = 1 << 28
+      numBlockTypes(i) = decodeVarLenUnsignedByte() + 1
+      blockLength(i) = 1 << 28
 
       if numBlockTypes(i) > 1 then
         readHuffmanCode(numBlockTypes(i) + 2, blockTypeTrees, i*HuffmanMaxTableSize)
         readHuffmanCode(NumBlockLengthCodes, blockLenTrees, i*HuffmanMaxTableSize)
-        writable(blockLength)(i) = readBlockLength(blockLenTrees, i*HuffmanMaxTableSize)
+        blockLength(i) = readBlockLength(blockLenTrees, i*HuffmanMaxTableSize)
 
       i += 1
 
@@ -638,7 +594,7 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
     i = 0
 
     while i < numBlockTypes(0) do
-      writable(contextModes)(i) = (readBits(2) << 1).toByte
+      contextModes(i) = (readBits(2) << 1).toByte
       i += 1
 
     contextMap = new Array[Byte](numBlockTypes(0) << LiteralContextBits)
@@ -675,14 +631,14 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
     literalTree = hGroup0Trees(0)
     treeCommandOffset = hGroup1Trees(0)
 
-    writable(blockTypeRb)(0) = 1; writable(blockTypeRb)(2) = 1; writable(blockTypeRb)(4) = 1
-    writable(blockTypeRb)(1) = 0; writable(blockTypeRb)(3) = 0; writable(blockTypeRb)(5) = 0
+    blockTypeRb(0) = 1; blockTypeRb(2) = 1; blockTypeRb(4) = 1
+    blockTypeRb(1) = 0; blockTypeRb(3) = 0; blockTypeRb(5) = 0
 
   // --- Command loop ------------------------------------------------------------------------------
   private def runCommands(): Unit =
     while metaBlockLength > 0 do
       if blockLength(1) == 0 then decodeCommandBlockSwitch()
-      writable(blockLength)(1) -= 1
+      blockLength(1) -= 1
       fillBitWindow()
       val cmdCode = readSymbol(hGroup1Codes, treeCommandOffset)
       var rangeIdx = cmdCode >>> 6
@@ -700,9 +656,9 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
 
         while j < insertLength do
           if blockLength(0) == 0 then decodeLiteralBlockSwitch()
-          writable(blockLength)(0) -= 1
+          blockLength(0) -= 1
           fillBitWindow()
-          writable(output)(pos) = readSymbol(hGroup0Codes, literalTree).toByte
+          output(pos) = readSymbol(hGroup0Codes, literalTree).toByte
           pos += 1
           j += 1
       else
@@ -717,11 +673,11 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
             (contextLookup(contextLookupOffset1 + prevByte1) |
               contextLookup(contextLookupOffset2 + prevByte2))) & 0xff
 
-          writable(blockLength)(0) -= 1
+          blockLength(0) -= 1
           prevByte2 = prevByte1
           fillBitWindow()
           prevByte1 = readSymbol(hGroup0Codes, hGroup0Trees(treeIndex))
-          writable(output)(pos) = prevByte1.toByte
+          output(pos) = prevByte1.toByte
           pos += 1
           j += 1
 
@@ -730,7 +686,7 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
       if metaBlockLength <= 0 then () else
         if distanceCode < 0 then
           if blockLength(2) == 0 then decodeDistanceBlockSwitch()
-          writable(blockLength)(2) -= 1
+          blockLength(2) -= 1
           fillBitWindow()
 
           distanceCode = readSymbol(hGroup2Codes, hGroup2Trees(
@@ -782,7 +738,7 @@ private[pneumatic] final class BrotliDecode(source: Array[Byte], sourceLength: I
           var j = 0
 
           while j < copyLength do
-            writable(output)(pos) = output(pos - distance)
+            output(pos) = output(pos - distance)
             pos += 1
             metaBlockLength -= 1
             j += 1
