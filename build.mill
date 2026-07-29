@@ -831,13 +831,15 @@ object anthology extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   // Drives the Kotlin compiler through `kotlin-compiler-embeddable`, presenting the same
-  // interface as `Scalac` and `Javac`. The compiler is a runtime dependency because it is
-  // invoked in-process, and it brings the Kotlin standard library with it.
+  // interface as `Scalac` and `Javac`. As with the Scala compiler in `scala`, the dependency is
+  // compile-only: the caller supplies the compiler it wants to drive. That also keeps 28,000
+  // classfiles out of every downstream assembly — enough to push the umbrella test assembly past
+  // the 65,535-entry limit at which a JAR must become ZIP64, which ethereal's runner cannot read.
   object kotlin extends Component(core):
     override def scalaJs = false // wraps the Kotlin compiler
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-    def mvnDeps = Seq(mvn"org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10")
+    def compileMvnDeps = Seq(mvn"org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10")
 
   object linker extends Component(core, zeppelin.core, revolution.core, eucalyptus.core):
     override def scalaJs = false // JAR packaging and the engine-independent `Linker` machinery
@@ -2677,6 +2679,11 @@ object zeppelin extends Library:
   object test extends Tests(core, imperial.core, diuretic.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
+  object bench extends Benchmarks(core, gastronomy.core, monotonous.core, breviloquence.core):
+    def mvnDeps = Seq(
+      mvn"io.bullet::borer-core:1.16.1",
+      mvn"io.bullet::borer-derivation:1.16.1"
+    )
 
 object ziggurat extends Library:
   object core

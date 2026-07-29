@@ -324,9 +324,10 @@ object Tests extends Suite(m"Anthology Tests"):
                 mute[ExecEvent](sh"$artifact".exec[Text]()).trim
           . assert(_ == t"hello")
 
-    test(m"Kotlinc options become command-line arguments"):
-      Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
-      . commandLineArguments
+    // `Kotlinc` itself is not constructed here: linking it resolves the compiler classes, which
+    // are a compile-only dependency, so the options are checked through the flags they carry.
+    test(m"Kotlinc options carry their command-line flags"):
+      List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)).flatMap(_.flags)
     . assert(_ == List(t"-Werror", t"-jvm-target", t"17"))
 
     test(m"A Kotlin 2 option does not apply to a Kotlin 1.9 compiler"):
@@ -334,9 +335,11 @@ object Tests extends Suite(m"Anthology Tests"):
         Kotlinc[1.9](List(kotlincOptions.warnings.extra))
     . assert(_.nonEmpty)
 
-    // The Kotlin compiler runs in-process against an explicit classpath, so the standard library
-    // is the caller's to supply; it is found on this suite's own classpath.
-    kotlinStdlib().let: stdlib =>
+    // An end-to-end Kotlin compilation, which runs only where the compiler it drives is on the
+    // classpath. It is a compile-only dependency of the `kotlin` component — the caller supplies
+    // the compiler, as with `Scalac` — so this suite skips these tests rather than carrying
+    // 28,000 classfiles into every assembly built from it.
+    kotlinToolchain().let: stdlib =>
       supervise:
         val classpath = LocalClasspath(List(ClasspathEntry.Jar(stdlib))*)
         val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
@@ -379,13 +382,19 @@ object Tests extends Suite(m"Anthology Tests"):
           failing.notices.map(_.file).to(List)
         . assert(_ == List(t"demo/Broken.kt"))
 
-  // Locates the Kotlin standard library on this suite's classpath; the Kotlin compiler never
-  // implies it, so a compilation must be given it explicitly.
-  def kotlinStdlib(): Optional[Text] =
-    java.lang.System.getProperty("java.class.path").nn.tt
-    . cut(java.io.File.pathSeparator.nn.tt)
-    . filter(_.contains(t"kotlin-stdlib"))
-    . prim
+  // Locates the Kotlin standard library on this suite's classpath, when the Kotlin compiler is
+  // there to be driven. The compiler never implies the standard library, so a compilation must be
+  // given it explicitly.
+  def kotlinToolchain(): Optional[Text] =
+    val compiler =
+      try Class.forName("org.jetbrains.kotlin.cli.jvm.K2JVMCompiler") != null
+      catch case _: ClassNotFoundException => false
+
+    if !compiler then Unset else
+      java.lang.System.getProperty("java.class.path").nn.tt
+      . cut(java.io.File.pathSeparator.nn.tt)
+      . filter(_.contains(t"kotlin-stdlib"))
+      . prim
 
   // Locates a cached proscala release's `lib` directory, which carries the fork standard
   // library and the Scala.js runtime JARs.

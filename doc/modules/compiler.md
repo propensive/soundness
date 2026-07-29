@@ -136,5 +136,9 @@ file it was written to. The Kotlin standard library is never implied — like ev
 entry, it is supplied explicitly — and the output is classfiles, linkable as any classfile
 artifact, including a `Dex` or an `Apk`.
 
+As with the Scala compiler behind `Scalac`, the Kotlin compiler itself is a compile-only
+dependency: a tool that drives it puts `kotlin-compiler-embeddable` on its own runtime classpath,
+choosing the version it wants to drive, rather than inheriting one.
+
 Calling *into* a compiled Kotlin library, meanwhile, needs no compilation at all: its declarations
 are read from its classfiles, as [foreign interoperability](foreign-interop.md) describes.
