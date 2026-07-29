@@ -262,6 +262,31 @@ t"P1Y2M3DT4H5M6S".as[Timespan] // the same span
 dur"P1Y2M3DT4H5M6S"                // checked at compiletime
 ```
 
+### Periods
+
+Two points of the same kind bound a `Period` with `~`, which is a half-open interval: the start is
+included, the finish is not, so consecutive periods tile a timeline without overlapping at their
+boundaries.
+
+`by` walks a period at a step, yielding each point:
+
+```scala
+(Instant(0L) ~ Instant(3_600_000L)).by(15*Minute)   // four instants
+Period(2024-Jan-1, 2024-Jan-5).by(1*Day)            // four dates
+```
+
+`segments` divides it into sub-periods rather than points, which is what a calendar view or a
+bucketed report needs. A step that does not divide the period evenly drops the remainder by
+default, or keeps it as a short final segment on request:
+
+```scala
+(Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute)                 // four segments
+(Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = true) // three, the last short
+```
+
+Because a period is generic in its point type, the same operations serve instants, dates and
+timestamps, with the step expressed in whatever units that kind of point moves by.
+
 ### Arithmetic on dates
 
 Adding a span to a date moves it forward. Days and weeks are regular — they need
@@ -430,6 +455,22 @@ val earlier = Moment(2024-Oct-27, clock, tz"Europe/London")
 val later = Moment(2024-Oct-27, clock, tz"Europe/London", Occurrence.Second)
 later.instant.long - earlier.instant.long   // 3600000
 ```
+
+### The zone database
+
+The rules behind all of this come from the [tz database](https://www.iana.org/time-zones), and its
+source files are parsed directly rather than reached through a platform API. The parser
+understands the format's own vocabulary — `Rule` lines with their `Sun>=8`-style day
+specifications, `Zone` lines with their offsets and formats, and `Link` aliases — so a database
+newer than the platform's own can be loaded, which matters when a government changes its rules at
+short notice:
+
+```scala
+Tzdb.parse(t"northamerica", lines)
+```
+
+A file that does not exist, or a line the format does not permit, raises a `TzdbError` naming the
+fault rather than silently producing a zone with the wrong rules.
 
 ### Calendars
 
