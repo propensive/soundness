@@ -82,3 +82,44 @@ An interpolator's parsing logic is ordinary code, and it runs in both worlds: at
 literals, giving compile errors; and at runtime for dynamically-built input, giving typed errors.
 The two cannot drift apart, because they are the same code — a guarantee no hand-written macro
 plus separate runtime parser can make.
+
+### Parts and origins
+
+`interpolate` receives two type parameters that carry what the compiler knows about the literal.
+`parts` is a tuple of the literal fragments as singleton string types, so the interpolator sees
+the text of each; `origins` carries where each fragment began in the source file, so an error
+reported against a character within a fragment resolves to that character's position in the file
+rather than to the start of the expression:
+
+```scala
+inline given interpolable: MediaType is Interpolable:
+  transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
+  :   MediaType =
+
+    ${internal.mediaInterpolator[parts]('insertions)}
+```
+
+That is what makes a compile error underline the misspelled subtype in `media"text/plian"`
+instead of the whole literal.
+
+### Returning a precise type
+
+The prefix method is `transparent inline`, so an interpolator may return something more specific
+than its declared type — this is how a literal can carry what it *is* into the type system rather
+than merely validating itself. A path literal returns a path on a particular platform; a name
+literal returns a name proved to be valid for its plane; a schema-checked document literal returns
+a document typed by its schema.
+
+The cost of that precision is that the result type depends on the literal's content, so the
+literal must be known at compiletime. Where it is not, the corresponding runtime parser — the same
+code — returns the general type and a typed error.
+
+### Choosing between compiletime and runtime
+
+An interpolator is the right tool where a literal has a syntax and that syntax can be checked. It
+is the wrong tool where the content is genuinely dynamic: there is nothing to check as the code
+compiles, and the interpolator's machinery buys nothing over the runtime parser it delegates to.
+
+The convention throughout is therefore to offer both — `url"…"` for a literal and `as[Url]` for
+text obtained at runtime — with the same code behind each, so a program can move a value from one
+to the other without a change in behaviour.

@@ -76,3 +76,61 @@ import tableStyles.thinRoundedTableStyle
 
 Styled [terminal text](terminal.md) works as cell content, so a table of highlighted or colored
 values lays out by its visible width, not the length of its escape codes.
+
+### Alignment
+
+Each column states how its content sits within the width it is given. `Left` pads on the right,
+`Right` pads on the left, and `Center` splits the padding, putting the odd column on the right
+where it cannot be split evenly. `Justify` spreads the spaces between words so that every line
+but the last reaches the full width — the newspaper setting, which suits a prose column and
+nothing else.
+
+Vertical alignment matters as soon as one cell wraps: a wrapped cell makes its whole row taller,
+and the other cells in that row sit at the top, middle or bottom of the extra height according to
+their `VerticalAlignment`.
+
+### Titles
+
+A derived table titles its columns from the field names, capitalized — `linesOfCode` becomes
+`Lines Of Code`. Where that is not the wanted title, a `TableRelabelling` overrides it by name,
+so the Scala field keeps its name and the table gets its own:
+
+```scala
+given TableRelabelling[Library]:
+  def relabelling() = Map(t"linesOfCode" -> t"LoC")
+```
+
+An explicitly-defined column names itself, and `retitle` renames one after the fact, which is
+useful where a table definition is shared and one caller wants a different heading.
+
+### Reusing a column definition
+
+A `Column` is parameterized by the row type it reads from, which would make a column defined for
+one type useless for another. `contramap` adapts it, so a column defined once — with its
+alignment, sizing and title — serves every type that can produce the value it displays:
+
+```scala
+val nameColumn = Column[Text](t"Name")(identity)
+val libraryName = nameColumn.contramap[Library](_.name)
+```
+
+### Tabulating something that is not a case class
+
+A sequence of anything with a `Tabulable` instance tabulates, so a list of plain integers or of
+text renders as a one-column table without a wrapper type. That instance is also the seam for a
+type whose columns are not its fields — a record read from a schema, or a value whose display
+columns are computed.
+
+### When the table does not fit
+
+Below some width, no arrangement of columns is satisfactory, and what should happen then is a
+policy rather than a fixed behaviour. The `columnAttenuation` given decides: `ignoreAttenuation`
+renders anyway, at whatever quality the width allows, while `failAttenuation` raises a
+`TableError` rather than producing something misleading.
+
+```scala
+import columnAttenuation.failAttenuation
+```
+
+A report written to a file, where nobody will see that the columns were mangled, wants the
+failure; an interactive display, where the user can widen the window, wants the rendering.

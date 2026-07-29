@@ -154,6 +154,86 @@ import proximities.levenshteinProximity
 t"Hello world".proximity(t"Hello orld")   // 1
 ```
 
+Comparing one word against a whole vocabulary that way is quadratic, and a spelling suggestion
+needs it to be fast. A `Lexicon` is a
+[BK-tree](https://en.wikipedia.org/wiki/BK-tree) over the words, which uses the triangle
+inequality the distance metric obeys to prune most of the vocabulary without measuring it:
+
+```scala
+val lexicon = Lexicon(words)
+
+lexicon.search("book", 0)   // exact matches only
+lexicon.search("booq", 1)   // everything within one edit
+```
+
+A search at distance zero is an exact lookup; widening the radius admits progressively more
+distant candidates, which is how a "did you mean" suggestion is produced from a large word list.
+
+### Prefix dictionaries
+
+Where lookup is by exact key rather than by proximity, a `Dictionary` maps text to values through
+a trie, so a lookup costs the length of the key rather than a hash of the whole of it, and a
+prefix query costs the length of the prefix:
+
+```scala
+val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+
+dictionary(t"color")     // 0
+dictionary.size          // 2
+```
+
+### Graphemes and width
+
+A character is not a unit of text a person would recognise. `é` may be one code point or two, and
+a family emoji is several joined together, so counting `Char`s answers the wrong question.
+`Writing` gives a text's *grapheme clusters* — what a reader would call characters — and the
+boundaries between them:
+
+```scala
+Writing(t"abc").graphemeCount   // 3
+Writing(t"").boundaries.toList  // List(0)
+```
+
+Nor is a grapheme one column wide on a terminal. Under a metric in scope, `metrics` gives the
+display width the terminal will actually use — one for ASCII, one for a letter with a combining
+accent, two for CJK and for most emoji — which is what aligning columns of text requires:
+
+```scala
+import textMetrics.wideCharacterWidthMetric
+
+Grapheme("a").metrics    // 1
+Grapheme("é").metrics    // 1 — a base plus a combining mark
+Grapheme("日").metrics   // 2
+```
+
+### Rendering numbers
+
+Turning a number into text involves a choice — how many digits are worth showing — that
+`toString` makes badly. A `Decimalizer` in scope states it as significant figures, and is what
+every `show` of a floating-point number consults:
+
+```scala
+Decimalizer(3).decimalize(-math.Pi)   // t"-3.14"
+```
+
+The same value therefore renders consistently everywhere in a program, and changing the precision
+is one given rather than a search for format strings.
+
+### Multi-line literals
+
+Prose in source code wants to be wrapped for the reader, and unwrapped for the output. The
+`txt"…"` interpolator collapses a wrapped paragraph into a single line, treats a blank line as a
+paragraph break, and strips the indentation the source needed:
+
+```scala
+txt"""Hello
+      world"""      // t"Hello world"
+
+txt"""Hello
+
+      world"""      // t"Hello\nworld"
+```
+
 ### Any textual type
 
 Every operation above is defined over the `Textual` typeclass, not over `Text` alone. A type

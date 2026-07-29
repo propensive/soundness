@@ -72,3 +72,54 @@ tightens the layout; `LayeredDagDiagram` arranges nodes in levels instead of lan
 A diagram exposes its rows — the tiles and the node of each line — so a consumer can render lines
 itself: colored labels for one kind of node, annotations appended to another. The box-drawing
 characters stay the style's business, and the meaning stays the caller's.
+
+```scala
+diagram.nodes    // the node of each line, in drawing order
+diagram.tiles    // the tiles of each line
+diagram.map { tiles => node => renderMyself(tiles, node) }
+```
+
+A `TreeTile` is one of four things: a branch, a last branch, an extender carrying a line down past
+a node, or a space. A style says what each becomes, and a `TextualTreeStyle` says it as four short
+pieces of text, which is all a new style needs:
+
+```scala
+val myStyle = TextualTreeStyle[Text](t"  ", t"└─", t"├─", t"│ ")
+```
+
+Because the style is parameterized by the line type rather than fixed to `Text`, a diagram renders
+directly into styled [terminal output](terminal.md), with the tree furniture in one colour and the
+labels in another, and the widths still computed correctly.
+
+### Supplying the tree
+
+A tree can be given in two ways. `TreeDiagram.by` takes a function from node to children, which
+suits a structure that is already in hand:
+
+```scala
+TreeDiagram.by[Taxon](_.children)(root)
+```
+
+`TreeDiagram.apply` instead takes roots and finds children through an `Expandable` instance on the
+node type, which suits a node type whose children are what it means by children — a filesystem
+path, a dependency, a syntax node:
+
+```scala
+given Taxon is Expandable = _.children
+
+TreeDiagram(root)
+```
+
+The lines are produced lazily, so a large or deep tree is drawn as far as it is consumed rather
+than all at once.
+
+### Choosing a graph layout
+
+The three graph diagrams answer different questions. `DagDiagram` is dense: every edge is drawn,
+in a grid of connecting tiles, which is what a small graph with complicated edges needs.
+`LaneDagDiagram` puts each node on a vertical lane, as version-control history is drawn, which
+suits a long graph with few concurrent branches. `LayeredDagDiagram` arranges nodes into levels
+by depth, which suits showing what depends on what rather than what happened in what order.
+
+All three take a `Dag`, and all three raise a `DagError` where the graph is not acyclic — a cycle
+has no drawing, so it is reported rather than approximated.
