@@ -32,48 +32,28 @@
                                                                                                   */
 package hyperbole
 
-import scala.annotation.*
+import digression.*
+import hellenism.*
+import vacuous.*
 
-import soundness.*
+package stackResolutions:
+  // Importing this makes every `StackTrace` captured in the enclosing scope name the source
+  // definitions its frames were compiled from, at the cost of reading one TASTy file per
+  // top-level class named in the trace.
+  given tastyStackResolution: Classloader => StackTrace.Resolver = StackResolver()
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    StackTests()
+extension (stackTrace: StackTrace)
+  // Resolves an existing trace, for callers which hold a `Classloader` and would rather ask
+  // explicitly than import a resolver into scope.
+  def resolved(using Classloader): StackTrace =
+    val resolver = StackResolver()
 
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+    def recur(stackTrace: StackTrace): StackTrace =
+      StackTrace
+        ( stackTrace.component,
+          stackTrace.className,
+          stackTrace.message,
+          stackTrace.frames.map(resolver.resolve),
+          stackTrace.cause.let(recur) )
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+    recur(stackTrace)

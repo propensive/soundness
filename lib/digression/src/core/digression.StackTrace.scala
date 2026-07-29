@@ -47,7 +47,62 @@ object StackTrace:
     lazy val cls: Text = if pivot >= 0 then className.s.substring(pivot + 1).nn.tt else className.s
     lazy val prefix: Text = if pivot >= 0 then className.s.substring(0, pivot).nn.tt else "".tt
 
-  case class Frame(method: Method, file: Text, line: Optional[Int], native: Boolean)
+  object Frame:
+    // What a frame turned out to be, once resolved against the definitions the compiler recorded.
+    // Everything from `Bridge` onwards is plumbing the compiler synthesized, which renderers may
+    // reasonably dim or drop.
+    enum Kind:
+      case Method, Lambda, Value, Class, Constructor, Extension, Default
+      case Bridge, Forwarder, Initializer, Specialized, Synthetic
+
+      def plumbing: Boolean = this match
+        case Bridge | Forwarder | Initializer | Specialized | Synthetic => true
+        case _                                                          => false
+
+    // The source-level definition a frame was compiled from. `owner` is the chain of enclosing
+    // definitions and `name` the definition's own source name, so that renderers which show the
+    // class and the method in separate columns can keep doing so. `path` is the full source path,
+    // of which a stack trace records only the last segment.
+    case class Source
+      ( path: Text, owner: Text, name: Text, kind: Kind, code: Optional[Text] = Unset ):
+
+      def definition: Text = if owner.s.isEmpty then name else (owner.s+"."+name.s).tt
+
+  case class Frame
+    ( method:    Method,
+      file:      Text,
+      line:      Optional[Int],
+      native:    Boolean,
+      jvmClass:  Text = "".tt,
+      jvmMethod: Text = "".tt,
+      source:    Optional[Frame.Source] = Unset ):
+
+    // What to show for the frame's owner: the chain of source definitions it sits inside, when
+    // that is known, and otherwise the demangled class name.
+    def displayClass: Text = source.lay(method.className)(_.owner)
+
+    // What to show for the frame itself: its source name, when that is known, and otherwise the
+    // demangled method name.
+    def displayMethod: Text = source.lay(method.method)(_.name)
+
+    private def pivot: Int = displayClass.s.lastIndexOf(".")
+
+    // `displayClass` without its last segment.
+    def displayPrefix: Text =
+      if pivot >= 0 then displayClass.s.substring(0, pivot).nn.tt else "".tt
+
+    // The last segment of `displayClass`.
+    def displaySegment: Text =
+      if pivot >= 0 then displayClass.s.substring(pivot + 1).nn.tt else displayClass
+
+  object Resolver:
+    given none: Resolver = frame => frame
+
+  // Recovers the source-level definition behind each frame's compiled name. Resolution needs
+  // capabilities — at minimum a classpath — which this module deliberately does not have, so the
+  // default does nothing, and an implementation is supplied from elsewhere by importing it.
+  trait Resolver:
+    def resolve(frame: Frame): Frame
 
   trait Palette extends iridescence.Palette:
     type Form = Srgb
@@ -312,17 +367,20 @@ object StackTrace:
     else
       rewritten
 
-  def apply(exception: Throwable): StackTrace =
+  def apply(exception: Throwable)(using resolver: Resolver): StackTrace =
     val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
-      StackTrace.Frame(
-        StackTrace.Method(
-          rewrite(frame.getClassName.nn),
-          rewrite(frame.getMethodName.nn, method = true)
-        ),
-        Text(Option(frame.getFileName).map(_.nn).getOrElse("———")),
-        if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
-        frame.isNativeMethod
-      )
+      val jvmClass = frame.getClassName.nn
+      val jvmMethod = frame.getMethodName.nn
+
+      resolver.resolve:
+        StackTrace.Frame(
+          StackTrace.Method(rewrite(jvmClass), rewrite(jvmMethod, method = true)),
+          Text(Option(frame.getFileName).map(_.nn).getOrElse("———")),
+          if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
+          frame.isNativeMethod,
+          jvmClass.tt,
+          jvmMethod.tt
+        )
 
     val cause = Option(exception.getCause)
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
@@ -340,8 +398,8 @@ object StackTrace:
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).optional)
 
   given communicable: StackTrace is Communicable = stack =>
-    val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
+    val methodWidth = stack.frames.map(_.displayMethod.s.length).maxOption.getOrElse(0)
+    val classWidth = stack.frames.map(_.displayClass.s.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
@@ -349,12 +407,12 @@ object StackTrace:
 
     val root = stack.frames.fuse(init):
       val obj = next.method.className.s.endsWith("#")
-      val drop = if obj then 1 else 0
+      val drop = if next.source.absent && obj then 1 else 0
       val file = (nbsp*(fileWidth - next.file.s.length))+next.file
-      val dot = if obj then ".".tt else "#".tt
-      val className = next.method.className.s.dropRight(drop)
+      val dot = if next.source.present || obj then ".".tt else "#".tt
+      val className = next.displayClass.s.dropRight(drop)
       val classPad = (nbsp*(classWidth - className.length))
-      val method = next.method.method
+      val method = next.displayMethod
       val methodPad = (nbsp*(methodWidth - method.s.length))
 
       val line = next.line match

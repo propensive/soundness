@@ -32,48 +32,22 @@
                                                                                                   */
 package hyperbole
 
-import scala.annotation.*
+import anticipation.*
+import digression.*
 
-import soundness.*
+import StackTrace.Frame.Kind
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    StackTests()
+// One definition the compiler recorded in a TASTy file, reduced to what resolving a stack frame
+// needs: what the definition is called, what encloses it, and which part of the source it covers.
+// `owners` runs innermost-first, and includes the package.
+case class TastyDefinition
+  ( name:      Text,
+    owners:    List[Text],
+    kind:      Kind,
+    start:     Int,
+    end:       Int,
+    firstLine: Int,
+    lastLine:  Int ):
 
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
-
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+  def span: Int = end - start
+  def covers(line: Int): Boolean = firstLine <= line && line <= lastLine

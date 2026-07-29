@@ -32,48 +32,104 @@
                                                                                                   */
 package hyperbole
 
-import scala.annotation.*
-
 import soundness.*
 
-object Tests extends Suite(m"Hyperbole Tests"):
+import classloaders.threadContextClassloader
+import unsafeExceptions.canThrowAny
+
+import StackTrace.Frame.Kind
+
+object StackFixture:
+  def method(): Unit = throw Exception("method")
+
+  def lambda(): Unit = List(1).foreach: value =>
+    throw Exception("lambda")
+
+  def defaulted(value: Int = throw Exception("default")): Int = value
+
+  lazy val lazily: Int = throw Exception("lazily")
+
+extension (value: Int) def extended: Int = throw Exception("extension")
+
+object StackTests extends Suite(m"Stack-trace resolution tests"):
   def run(): Unit =
-    StackTests()
+    def capture(block: => Unit): StackTrace =
+      try
+        block
+        panic(m"the fixture did not throw")
+      catch case error: Throwable => error.stackTrace.resolved
 
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+    // The frames below the fixture belong to the test framework and the JDK, so every test looks
+    // at the topmost frame in the fixture's own file.
+    def frame(stackTrace: StackTrace): StackTrace.Frame =
+      stackTrace.frames.find(_.jvmClass.starts(t"hyperbole.")).optional.vouch
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+    suite(m"Locating the TASTy for a class"):
+      test(m"A module class resolves through its top-level class"):
+        frame(capture(StackFixture.method())).source.let(_.path)
+
+      . assert(_.let(_.ends(t"hyperbole.StackTests.scala")) == true)
+
+      test(m"An unresolvable class leaves the frame untouched"):
+        val frame = StackTrace.Frame(StackTrace.Method(t"java.lang.Thread", t"run()"), t"", 1, false)
+        StackResolver().resolve(frame).source
+
+      . assert(_ == Unset)
+
+    suite(m"Naming the definition a frame was compiled from"):
+      test(m"A method frame names the method"):
+        frame(capture(StackFixture.method())).source.let(_.definition)
+
+      . assert(_ == t"hyperbole.StackFixture.method")
+
+      test(m"A lambda frame names the method containing it"):
+        frame(capture(StackFixture.lambda())).source.let(_.definition)
+
+      . assert(_ == t"hyperbole.StackFixture.lambda.λ")
+
+      test(m"An extension method frame names the extension"):
+        frame(capture(1.extended)).source.let(_.definition)
+
+      . assert(_ == t"hyperbole.hyperbole.StackTests⁆.extended")
+
+      test(m"A default getter is named as `rewrite` would name it"):
+        frame(capture(StackFixture.defaulted())).source.let(_.definition)
+
+      . assert(_ == t"hyperbole.StackFixture.defaultedδ₁")
+
+      test(m"A lazy value's initializer names the value"):
+        frame(capture(StackFixture.lazily)).source.let(_.definition)
+
+      . assert(_ == t"hyperbole.StackFixture.lazily")
+
+    suite(m"Classifying frames"):
+      test(m"A lambda is classified as a lambda"):
+        frame(capture(StackFixture.lambda())).source.let(_.kind)
+
+      . assert(_ == Kind.Lambda)
+
+      test(m"An extension method is classified as an extension"):
+        frame(capture(1.extended)).source.let(_.kind)
+
+      . assert(_ == Kind.Extension)
+
+      test(m"A default argument is classified as a default"):
+        frame(capture(StackFixture.defaulted())).source.let(_.kind)
+
+      . assert(_ == Kind.Default)
+
+      test(m"A lazy value's initializer is classified as an initializer"):
+        frame(capture(StackFixture.lazily)).source.let(_.kind)
+
+      . assert(_ == Kind.Initializer)
+
+    suite(m"Quoting the source"):
+      test(m"A frame carries the line of source it was compiled from"):
+        frame(capture(StackFixture.method())).source.let(_.code)
+
+      . assert(_ == t"""def method(): Unit = throw Exception("method")""")
+
+      test(m"The line quoted for a lambda is the line inside it"):
+        frame(capture(StackFixture.lambda())).source.let(_.code)
+
+      . assert(_ == t"""throw Exception("lambda")""")

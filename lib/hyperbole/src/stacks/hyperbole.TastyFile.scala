@@ -32,48 +32,42 @@
                                                                                                   */
 package hyperbole
 
-import scala.annotation.*
+import dotty.tools.dotc.core.tasty.TastyUnpickler
 
-import soundness.*
+import anticipation.*
+import rudiments.*
+import vacuous.*
 
-object Tests extends Suite(m"Hyperbole Tests"):
-  def run(): Unit =
-    StackTests()
+object TastyFile:
+  // A TASTy file is only ever a source of extra detail, so anything unexpected about it—a version
+  // this reader does not understand, a truncated file, a section that is absent—means falling
+  // back to what the stack trace already said, never failing.
+  def apply(data: Data): Optional[TastyFile] =
+    try
+      val unpickler = TastyUnpickler(data.mutable(using Unsafe))
+      val positions = unpickler.unpickle(stacksInternal.PositionSection())
 
-    test(m"Produce hello-world tree"):
-      Introspect.syntax(true):
-        println("hello world")
+      positions.map: positions =>
+        val definitions =
+          unpickler.unpickle(stacksInternal.DefinitionSection(positions)).getOrElse(Nil)
 
-    . assert: result =>
-        result
-        ==
-        TastyTree
-          ( ' ',
-            "Unit",
-            "Apply",
-            "scala.Predef.println(\"hello world\")",
-            "println(\"hello world\")",
-            List
-              ( TastyTree
-                  ( ' ',
-                    "",
-                    "Ident",
-                    "scala.Predef.println",
-                    "println",
-                    Nil,
-                    "println",
-                    true,
-                    false ),
-                TastyTree
-                  ( 'a',
-                    "\"hello world\"",
-                    "Literal",
-                    "\"hello world\"",
-                    "        \"hello world\"",
-                    Nil,
-                    "\"hello world\"",
-                    true,
-                    false ) ),
-            Unset,
-            true,
-            false )
+        val path = unpickler.unpickle(stacksInternal.AttributeSection()).getOrElse(Unset)
+
+        TastyFile(path, definitions)
+
+      . getOrElse(Unset)
+
+    catch case error: Throwable => Unset
+
+// The definitions the compiler recorded for one top-level class, and the source file they came
+// from. `path` is the full path the file was compiled from, of which a stack trace keeps only the
+// last segment.
+case class TastyFile(path: Optional[Text], definitions: List[TastyDefinition]):
+  // Every definition covering `line`, innermost first, where nesting is measured by how much
+  // source a definition covers—so an anonymous function comes before the method containing it.
+  // Definitions the compiler synthesized, such as a constructor an `object` never declared, are
+  // pickled with an empty extent at whatever position was to hand, and so cannot be innermost
+  // anything; they sort last, to be reached only when a frame really is one of them.
+  def covering(line: Int): List[TastyDefinition] =
+    definitions.filter(_.covers(line)).sortBy: definition =>
+      (if definition.span == 0 then 1 else 0, definition.span)
