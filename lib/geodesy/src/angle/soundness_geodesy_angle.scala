@@ -30,37 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package iridescence
+package soundness
 
-import geodesy.*
-import hypotenuse.*
-import prepositional.*
-import symbolism.*
-
-object Hsv:
-  given perceptual: Hsv is Perceptual in Srgb =
-    color =>
-      val hue = color.hue.principal.turns
-      val i = (hue*6).toInt%6
-      val a1 = color.value*(1 - color.saturation)
-      val a2 = color.value*(1 - color.saturation*(hue*6 - i))
-      val a3 = color.value*(1 - color.saturation*(1 - (hue*6 - i)))
-
-      val red = if i == 1 then a2 else if i/2 == 1 then a1 else if i == 4 then a3 else color.value
-      val green = if i/2 == 2 then a1 else if i == 3 then a2 else if i == 0 then a3 else color.value
-      val blue = if i/2 == 0 then a1 else if i == 2 then a3 else if i == 5 then a2 else color.value
-
-      Srgb(red, green, blue)
-
-case class Hsv(hue: Angle, saturation: Double, value: Double) extends Color:
-  type Form = Hsv
-
-  def saturate: Hsv             = Hsv(hue, 1, value)
-  def desaturate: Hsv           = Hsv(hue, 0, value)
-  def rotate(angle: Angle): Hsv = Hsv((hue + angle).principal, saturation, value)
-  def complement: Hsv           = rotate(Angle(π))
-  def pure: Hsv                 = Hsv(hue, 1, 1)
-
-  def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black))
-  def tint(white: Double = 0): Hsv  = Hsv(hue, saturation*(1 - white), value)
-  def tone(black: Double = 0, white: Double = 0): Hsv = shade(black).tint(white)
+export geodesy.{Angle, ArcMinute, ArcSecond, deg, Degree, rad}

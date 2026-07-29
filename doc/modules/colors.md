@@ -43,11 +43,12 @@ given Colorimetry = colorimetry.daylight
 ### Color spaces
 
 Each model is a type whose fields are its coordinates, given as fractions between 0
-and 1. A color is constructed directly in whichever model is convenient:
+and 1 — except hue, which is a point on a circle and is given as an `Angle`. A color
+is constructed directly in whichever model is convenient:
 
 ```scala
 val red = Srgb(0.8, 0.2, 0.2)
-val slate = Hsl(0.58, 0.3, 0.4)
+val slate = Hsl(208.8.deg, 0.3, 0.4)
 ```
 
 `Srgb`, `Hsl`, `Hsv`, `Cielab`, `Xyz`, `Cmy` and `Cmyk` are the models available, and a
@@ -99,15 +100,24 @@ operations live on `Hsl` and `Hsv`. Convert into one, adjust, and convert back:
 ```scala
 val tomato = WebColors.Tomato.to[Hsl]
 
-tomato.rotate(180).to[Srgb]     // the complementary color
-tomato.lighten(0.2).to[Srgb]    // a fifth of the way toward white
-tomato.desaturate.to[Srgb]      // the same lightness, no color
+tomato.rotate(180.deg).to[Srgb]   // the complementary color
+tomato.lighten(0.2).to[Srgb]      // a fifth of the way toward white
+tomato.desaturate.to[Srgb]        // the same lightness, no color
 ```
 
-`rotate` turns the hue by a number of degrees, `complement` turns it halfway round,
+`rotate` turns the hue by an `Angle`, so the unit is written down rather than assumed:
+`180.deg` and `π.rad` are the same half-turn. `complement` is that half-turn.
 `saturate` and `desaturate` push saturation to its extremes, and `lighten` and `darken`
 move lightness by a fraction. On `Hsv`, `tint`, `shade` and `tone` mix toward white,
 toward black, or both.
+
+A hue is a point on a circle rather than a quantity, so a rotation always lands back in
+the range the eye reads as a color: turning past a full circle, or backwards past zero,
+wraps round.
+
+```scala
+tomato.rotate((-30).deg).hue.degrees   // 339.1, never negative
+```
 
 ### Perceptual distance
 

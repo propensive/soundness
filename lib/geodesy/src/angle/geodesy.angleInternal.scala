@@ -30,37 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package iridescence
+package geodesy
 
-import geodesy.*
 import hypotenuse.*
 import prepositional.*
 import symbolism.*
 
-object Hsv:
-  given perceptual: Hsv is Perceptual in Srgb =
-    color =>
-      val hue = color.hue.principal.turns
-      val i = (hue*6).toInt%6
-      val a1 = color.value*(1 - color.saturation)
-      val a2 = color.value*(1 - color.saturation*(hue*6 - i))
-      val a3 = color.value*(1 - color.saturation*(1 - (hue*6 - i)))
+object angleInternal:
+  opaque type Angle = Double
 
-      val red = if i == 1 then a2 else if i/2 == 1 then a1 else if i == 4 then a3 else color.value
-      val green = if i/2 == 2 then a1 else if i == 3 then a2 else if i == 0 then a3 else color.value
-      val blue = if i/2 == 0 then a1 else if i == 2 then a3 else if i == 5 then a2 else color.value
+  object Angle:
+    private val c = 2*π
 
-      Srgb(red, green, blue)
+    def apply(value: Double): Angle = value
+    def degrees(value: Double): Angle = value*π/180
+    def turns(value: Double): Angle = value*c
 
-case class Hsv(hue: Angle, saturation: Double, value: Double) extends Color:
-  type Form = Hsv
+    given addable: Angle is Addable by Angle to Angle = Addable: (left, right) => (left + right)%c
 
-  def saturate: Hsv             = Hsv(hue, 1, value)
-  def desaturate: Hsv           = Hsv(hue, 0, value)
-  def rotate(angle: Angle): Hsv = Hsv((hue + angle).principal, saturation, value)
-  def complement: Hsv           = rotate(Angle(π))
-  def pure: Hsv                 = Hsv(hue, 1, 1)
+    given subtractable: Angle is Subtractable by Angle to Angle =
+      Subtractable: (left, right) => (c + left - right)%c
 
-  def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black))
-  def tint(white: Double = 0): Hsv  = Hsv(hue, saturation*(1 - white), value)
-  def tone(black: Double = 0, white: Double = 0): Hsv = shade(black).tint(white)
+    given multiplicable: Angle is Multiplicable by Double to Angle =
+      Multiplicable: (left, right) => (left*right)%c
+
+    given divisible: Angle is Divisible by Double to Angle =
+      Divisible: (left, right) => (left/right)%c
+
+    given multiplicable2: Double is Multiplicable by Angle to Angle =
+      Multiplicable: (left, right) => (left*right)%c
+
+  extension (angle: Angle)
+    def degrees: Double = angle*180/π
+
+    def radians: Double = angle
+    def turns: Double = angle/(2*π)
+    def principal: Angle = angle%%(2*π)
+    def canonical: Angle = (angle + π).principal - π

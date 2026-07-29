@@ -7,9 +7,10 @@ _Iridescence_ provides seven different ways of representing colors:
 - `Hsl`: [HSL](https://en.wikipedia.org/wiki/HSL_and_HSV)
 - `Hsv`: [HSV](https://en.wikipedia.org/wiki/HSL_and_HSV)
 
-Each color model uses either three or four continuous coordinates, all represented in Iridescence as `Double`s
-in the unit interval (0 ≤ *c* ≤ 1), to describe an apparently full spectrum of colors perceived by the human
-eye.
+Each color model uses either three or four continuous coordinates to describe an apparently full spectrum of
+colors perceived by the human eye. These are represented in Iridescence as `Double`s in the unit interval
+(0 ≤ *c* ≤ 1), with the exception of hue, which is a point on a circle rather than a position on a scale, and
+is represented as a Geodesy `Angle`.
 
 Given the complex nature of sight and color, different models make different tradeoffs in their representations
 of different colors. While sRGB is the most direct representation of the colored light emitted by a computer
@@ -96,6 +97,10 @@ For example, the methods `saturate`, `desaturate`, `pure` and `rotate` (for chan
 `Hsl` and `Hsv` types, while `Hsv` additionally provides `shade`, `tint` and `tone` methods. These latter
 methods take `black` and/or `white` parameters to specify the amount of shading, tinting or toning to be
 applied.
+
+`rotate` takes an `Angle`, so the unit is explicit — `rotate(180.deg)` and `rotate(π.rad)` are the same
+half-turn — and `complement` is exactly that half-turn. Since a hue is modular, rotations past a full circle,
+or backwards past zero, wrap round rather than escaping the circle.
 
 `Cielab` provides a `delta` method for comparing two colors (returning a `Double` in the unit interval), and the
 `mix` method for combining two colors. `Cielab#mix` takes another `Cielab` color as its first parameter, and

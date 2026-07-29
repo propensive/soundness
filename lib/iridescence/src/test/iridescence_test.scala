@@ -46,7 +46,7 @@ object Tests extends Suite(m"Iridescence tests"):
         && left.blue === (right.blue +/- 0.01)
 
       given Hsv is Checkable against Hsv = (left, right) =>
-        left.hue === (right.hue +/- 0.05)
+        left.hue.turns === (right.hue.turns +/- 0.05)
         && left.saturation === (right.saturation +/- 0.05)
         && left.value === (right.value +/- 0.05)
 
@@ -94,68 +94,80 @@ object Tests extends Suite(m"Iridescence tests"):
 
     suite(m"Hsl manipulation"):
       test(m"saturate stays in Hsl"):
-        Hsl(0.5, 0.3, 0.4).saturate
-      . assert(_ == Hsl(0.5, 1.0, 0.4))
+        Hsl(180.deg, 0.3, 0.4).saturate
+      . assert(_ == Hsl(180.deg, 1.0, 0.4))
 
       test(m"desaturate stays in Hsl"):
-        Hsl(0.5, 0.3, 0.4).desaturate
-      . assert(_ == Hsl(0.5, 0.0, 0.4))
+        Hsl(180.deg, 0.3, 0.4).desaturate
+      . assert(_ == Hsl(180.deg, 0.0, 0.4))
 
-      test(m"rotate wraps around 360 degrees"):
-        Hsl(0.5, 0.3, 0.4).rotate(360).hue
-      . assert(_ == 0.5)
+      test(m"rotate by a full turn leaves the hue alone"):
+        Hsl(180.deg, 0.3, 0.4).rotate(360.deg).hue.degrees
+      . assert(_ === 180.0 +/- 1e-9)
 
-      test(m"rotate by 180 produces the complement"):
-        Hsl(0.25, 0.3, 0.4).rotate(180).hue
-      . assert(_ == 0.75)
+      test(m"rotate by 180 degrees produces the complement"):
+        Hsl(90.deg, 0.3, 0.4).rotate(180.deg).hue.degrees
+      . assert(_ === 270.0 +/- 1e-9)
+
+      test(m"rotate backwards past zero wraps to the top of the circle"):
+        Hsl(90.deg, 0.3, 0.4).rotate((-135).deg).hue.degrees
+      . assert(_ === 315.0 +/- 1e-9)
+
+      test(m"rotate backwards onto zero does not wrap to a full turn"):
+        Hsl(90.deg, 0.3, 0.4).rotate((-90).deg).hue.degrees
+      . assert(_ === 0.0 +/- 1e-9)
 
       test(m"complement matches a 180-degree rotation"):
-        Hsl(0.25, 0.3, 0.4).complement
-      . assert(_ == Hsl(0.25, 0.3, 0.4).rotate(180))
+        Hsl(90.deg, 0.3, 0.4).complement
+      . assert(_ == Hsl(90.deg, 0.3, 0.4).rotate(180.deg))
 
       test(m"pure has maximum saturation at mid lightness"):
-        Hsl(0.3, 0.2, 0.7).pure
-      . assert(_ == Hsl(0.3, 1.0, 0.5))
+        Hsl(108.deg, 0.2, 0.7).pure
+      . assert(_ == Hsl(108.deg, 1.0, 0.5))
 
       test(m"lighten moves halfway toward 1"):
-        Hsl(0.5, 0.3, 0.4).lighten(0.5).lightness
+        Hsl(180.deg, 0.3, 0.4).lighten(0.5).lightness
       . assert(_ == 0.7)
 
       test(m"darken moves halfway toward 0"):
-        Hsl(0.5, 0.3, 0.4).darken(0.5).lightness
+        Hsl(180.deg, 0.3, 0.4).darken(0.5).lightness
       . assert(_ == 0.2)
 
     suite(m"Hsv manipulation"):
       test(m"saturate stays in Hsv"):
-        Hsv(0.5, 0.3, 0.4).saturate
-      . assert(_ == Hsv(0.5, 1.0, 0.4))
+        Hsv(180.deg, 0.3, 0.4).saturate
+      . assert(_ == Hsv(180.deg, 1.0, 0.4))
 
       test(m"desaturate stays in Hsv"):
-        Hsv(0.5, 0.3, 0.4).desaturate
-      . assert(_ == Hsv(0.5, 0.0, 0.4))
+        Hsv(180.deg, 0.3, 0.4).desaturate
+      . assert(_ == Hsv(180.deg, 0.0, 0.4))
+
+      test(m"rotate by 120 degrees advances a third of a turn"):
+        Hsv(90.deg, 0.3, 0.4).rotate(120.deg).hue.degrees
+      . assert(_ === 210.0 +/- 1e-9)
 
       test(m"complement matches a 180-degree rotation"):
-        Hsv(0.25, 0.3, 0.4).complement
-      . assert(_ == Hsv(0.25, 0.3, 0.4).rotate(180))
+        Hsv(90.deg, 0.3, 0.4).complement
+      . assert(_ == Hsv(90.deg, 0.3, 0.4).rotate(180.deg))
 
       test(m"pure has maximum saturation and value"):
-        Hsv(0.3, 0.2, 0.7).pure
-      . assert(_ == Hsv(0.3, 1.0, 1.0))
+        Hsv(108.deg, 0.2, 0.7).pure
+      . assert(_ == Hsv(108.deg, 1.0, 1.0))
 
       test(m"shade(0) is a no-op"):
-        Hsv(0.5, 0.3, 0.4).shade(0)
-      . assert(_ == Hsv(0.5, 0.3, 0.4))
+        Hsv(180.deg, 0.3, 0.4).shade(0)
+      . assert(_ == Hsv(180.deg, 0.3, 0.4))
 
       test(m"shade(1) drives value to 0"):
-        Hsv(0.5, 0.3, 0.4).shade(1).value
+        Hsv(180.deg, 0.3, 0.4).shade(1).value
       . assert(_ == 0.0)
 
       test(m"tint(0) is a no-op"):
-        Hsv(0.5, 0.3, 0.4).tint(0)
-      . assert(_ == Hsv(0.5, 0.3, 0.4))
+        Hsv(180.deg, 0.3, 0.4).tint(0)
+      . assert(_ == Hsv(180.deg, 0.3, 0.4))
 
       test(m"tint(1) drives saturation to 0"):
-        Hsv(0.5, 0.3, 0.4).tint(1).saturation
+        Hsv(180.deg, 0.3, 0.4).tint(1).saturation
       . assert(_ == 0.0)
 
     suite(m"Srgb manipulation"):

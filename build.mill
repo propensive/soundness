@@ -572,7 +572,7 @@ object soundness extends Toolchain:
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
-    charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
+    charisma.core, geodesy.angle, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
     quantitative.core, quantitative.units)
 
   object test extends Bundle(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
@@ -1565,10 +1565,17 @@ object gastronomy extends Library:
       settings.cc(super.scalacOptions())
 
 object geodesy extends Library:
-  object core extends Component(gossamer.core):
+  // The `Angle` type and its arithmetic, split from `core` because it needs nothing but
+  // `hypotenuse` (π and floor-mod) and `symbolism` (the operator typeclasses), while `core` sits
+  // on the text stack for rendering and geohashing. Modules below that stack — `iridescence`,
+  // whose hue is an angle — depend on this component alone.
+  object angle extends Component(hypotenuse.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core):
+  object core extends Component(angle, gossamer.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, angle):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
@@ -1748,7 +1755,8 @@ object inimitable extends Library:
       settings.cc(super.scalacOptions())
 
 object iridescence extends Library:
-  object core extends Component(contextual.core, anticipation.color, hypotenuse.core):
+  object core extends
+    Component(contextual.core, anticipation.color, hypotenuse.core, geodesy.angle):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
