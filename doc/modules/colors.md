@@ -148,3 +148,27 @@ given Colorimetry = colorimetry.incandescentTungsten
 
 WebColors.Ivory.to[Cielab]   // computed for tungsten light
 ```
+
+### Pixel layouts
+
+A colour on screen is not usually a triple of doubles but a packed integer, and how it is packed
+varies: eight bits per channel with or without alpha, five-six-five for a 16-bit display, ten bits
+per channel for high dynamic range, a single channel for greyscale. A *layout* states that packing
+as a tuple of channel types, most significant first, and the compiler works out the rest:
+
+```scala
+type Rgb565 = (Red[5], Green[6], Blue[5])
+
+compiletime.constValue[Channel.TotalBits[Rgb]]      // 24
+summon[Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
+summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+```
+
+Each channel's shift and mask follow from its position in the tuple, computed as the code
+compiles, so reading a channel from a packed pixel is a single shift-and-mask instruction with no
+runtime dispatch. A `Pixel[layout]` is an unboxed integer carrying the packed value, and converts
+to and from `Chroma`, `Srgb` and `Cmyk` exactly where its layout supports it — a layout with no
+alpha channel has no alpha to read.
+
+This is what [images](images.md) use to give a raster typed pixel access, and it is where a
+colour computed in one of the perceptual spaces above ends up when it reaches a screen.

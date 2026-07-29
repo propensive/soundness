@@ -96,3 +96,34 @@ is how a path element containing a slash fails where it is written.
 `MustNotMatch` cover most namespaces, and each knows how to describe itself — which is where the
 error messages, and the compile errors, get their words. A namespace with a rule none of these
 express defines its own, as `DomId` does, by pairing a predicate with its description.
+
+A rule is therefore two things: a check, and a phrase describing what it demands. Writing one is
+supplying both:
+
+```scala
+object MustEnd extends Rule({ text => m"must end with $text" }, _.ends(_))
+```
+
+Because the description is part of the rule rather than written at each use, the compile error for
+a bad literal and the runtime error for bad input say the same thing, in the same words.
+
+`JavaIdentifier` shows the other shape a rule can take: rather than parameterizing on text to
+compare against, it parameterizes on the *description*, and checks against a predicate of its own —
+which is what a rule expressible as a predicate but not as a comparison needs.
+
+### Combining rules
+
+A plane's rules conjoin: a name must satisfy all of them, and the first violated is the one
+reported, so an error names a single concrete fault rather than a list of everything wrong.
+Writing a plane is therefore stating its rules in the order they should be reported.
+
+Because a plane is a type, one plane's names are not another's. A `Name[Tag]` cannot be passed
+where a `Name[Branch]` is expected even if the two happen to have identical rules — which is the
+point, since the rules may diverge later and the two namespaces were never the same thing.
+
+### Length limits
+
+A `Nominative` carries a `Limit` alongside its `Self`, which is how a plane states a maximum
+length: a filesystem whose names may not exceed 255 bytes, a protocol field of fixed width, a
+database column. The limit is part of the plane's type, so it is checked where a name is
+constructed rather than where it is finally written out.
