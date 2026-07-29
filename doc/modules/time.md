@@ -7,7 +7,9 @@ clock, absolute instants on a physical timeline, the spans between them, the tim
 zones that connect human and physical time, and the rules by which events recur.
 Wherever a value can be known when the code is written, Soundness checks it as
 the code compiles, so a date that cannot exist, or a time zone that was never
-defined, is a compile error rather than a runtime surprise.
+defined, is a compile error rather than a runtime surprise. That is
+[safety by construction](../philosophy/safety-by-construction.md) applied to a domain
+where almost every value has a rule.
 
 ### On time
 

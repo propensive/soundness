@@ -24,8 +24,9 @@ case where a value is simply present.
 An `Optional` keeps the safety of `Option` — absence is in the type, and the compiler makes
 sure it is handled — while behaving like the value itself when present. It rests on Scala's
 [union types](https://docs.scala-lang.org/scala3/reference/new-types/union-types.html):
-`Unset | value` needs no wrapper, and because a union is a set, the same type never nests.
-Everything comes from the `soundness` package:
+`Unset | value` needs no wrapper, and because a union is a set, the same type never nests —
+the [optionality](../philosophy/optionality.md) principle in its purest form. Everything
+comes from the `soundness` package:
 
 ```scala
 import soundness.*

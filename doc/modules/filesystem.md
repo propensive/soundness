@@ -66,7 +66,9 @@ target.create[Directory](CreateFlag.Parents)
 
 A file is read and written by *opening* it. `open` names the form to open the path as, and the
 mode to open it in, and runs a block with a handle for its capability. The handle exists only
-for the duration of the block, so the descriptor cannot outlive the scope that owns it:
+for the duration of the block, so the descriptor cannot outlive the scope that owns it — the
+shape described under [delimited scopes](../philosophy/delimited-scopes.md), and enforced by
+[capture checking](../philosophy/capture-checking.md):
 
 ```scala
 import charEncoders.utf8Encoder
@@ -223,4 +225,5 @@ and everything else is defined in terms of them. The `java.nio` implementation i
 `filesystemBackends.virtualMachine`, and a WASI implementation over `wasi:filesystem` is
 supplied by `galilei.wasi`, so the same code reads and writes files on the JVM and inside a
 WebAssembly component. An operation a backend cannot support raises an `IoError` whose reason
-is `Unsupported`, rather than approximating it.
+is `Unsupported`, rather than approximating it. Narrowing the platform's surface to a seam
+this small is [decoupling](../philosophy/decoupling.md) applied within a module.

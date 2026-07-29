@@ -5,7 +5,8 @@
 A path is a sequence of names leading through a hierarchy, and Soundness keeps the facts about
 it in its type. An absolute path is a `Path`, rooted on some value; a relative path is a
 `Relative`, a number of steps up followed by a descent; and both are typed by the *platform* they
-belong to, so a `Path on Linux` and a `Path on Windows` are distinct. The elements of a path
+belong to, so a `Path on Linux` and a `Path on Windows` are distinct. The `on` clause is one of the
+[infix types](../philosophy/infix-types.md) used throughout. The elements of a path
 built in source are known to the compiler, so path arithmetic — descending, ascending, finding the
 route from one to another — is checked as the code compiles.
 

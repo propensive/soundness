@@ -22,3 +22,83 @@ a method is generic over `element`, `format`, `duration` or `plane` — never `A
 constraint clauses (`element: Encodable in Json`) read as statements about them. The
 convention costs a few characters per declaration and repays them at every reading,
 which is the trade naming should always make.
+
+## Names that form phrases
+
+A name is chosen for how it reads *in position*, not in isolation. The test is whether
+the resulting expression can be read aloud:
+
+```scala
+5.25.pm on 2018-Aug-11
+key.uncloak(message.decrypt.as[Text])
+worktree.merge(GitBranch(t"feature"), ff = FastForward.Never)
+path.open[Directory](Read & Exclusive)
+```
+
+`on` joins a time to a date because that is the English preposition; `uncloak` says what
+happens to a secret; `Read & Exclusive` reads as the mode it names. None would be
+improved by a more literal name, and several would be worse: `combineTimeAndDate` says
+less than `on` and reads far worse.
+
+The same applies to contextual values, which are named for what they *select* rather
+than for their type, since the import is what a reader sees:
+
+```scala
+import strategies.throwUnsafely
+import charEncoders.utf8Encoder
+import dateFormats.iso8601DateFormat
+import probates.cancelProbate
+```
+
+Someone encountering `import strategies.accrue` in unfamiliar code learns something about
+that code from the import line alone.
+
+## Type parameters as words
+
+The convention is easiest to judge by comparison. A signature in the conventional style:
+
+```scala
+def read[T](using R: Readable[S, T]): T
+```
+
+and the same signature in the Soundness style:
+
+```scala
+def read[result](using readable: value is Readable to result): result
+```
+
+The second says what the pieces *are*: `result` is what is produced, `value` what it is
+read from, and the constraint clause reads as a claim about them. No key is needed to
+decode the letters, and there is no room for the mental slip where `T` in one signature
+means something different from `T` in the next.
+
+## Uniqueness is enforced, not aspired to
+
+Name uniqueness is not merely a convention that reviewers watch for. Because every module
+re-exports into one `soundness` namespace, a clash is a compile error in the umbrella
+module — so a collision is discovered when it is introduced, not when a user meets it.
+
+The consequences appear in the repository's history as deliberate renames: aviation's
+`Posix` timeline became `Unix` to free `soundness.Posix` for the filesystem plane;
+`Transmitter`, `Trust` and `enumerate` were renamed when they collided; MathML's element
+types were nested inside `Mathml` rather than shadowing the general names. Each was
+churn, accepted because the alternative — two meanings for one word, qualified forever —
+is a permanent tax on every reader.
+
+## What it costs
+
+**Renaming is disruptive.** A collision found late means changing a published name and
+breaking downstream code. The policy accepts that, on the grounds that the alternative
+compounds.
+
+**Good names are hard to find.** `Teletype` for styled terminal text took thought that
+`AnsiString` would not have, and the search is not always successful on the first
+attempt.
+
+**A namespace of unique names has many names in it.** `import soundness.*` brings in a
+great deal, and a name that looks free may not be — which is the direct price of the
+umbrella import, and why a new module's names are checked against the whole before it is
+added.
+
+See [elegant prose](elegant-prose.md) for what the naming is in service of, and
+[small APIs](small-apis.md) for why there are fewer names to choose than there might be.

@@ -10,7 +10,8 @@ the checking is opt-in, paid for only where it is wanted.
 
 Bounded types go further: a number can carry its permitted range in its type, so a value
 outside `[0, 1]` is a compile error where it is written, and arithmetic on bounded numbers
-works out the range of the result.
+works out the range of the result. A range in the type is the plainest way to make an
+[impossible state](../philosophy/impossible-states.md) unrepresentable.
 
 ### On numbers
 

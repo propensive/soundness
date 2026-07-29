@@ -4,9 +4,11 @@
 
 Money is a fixed-point amount of a particular currency, and Soundness keeps the currency in the
 type: a `Money in "EUR"` and a `Money in "GBP"` cannot be added together, because adding euros to
-pounds is not a sum but a mistake. Within a currency, amounts add, subtract, scale, divide and
-compare; an amount splits into equal shares without losing a penny; and a price carries its tax
-alongside its principal.
+pounds is not a sum but a mistake. Parameterizing by the currency is how an
+[impossible state](../philosophy/impossible-states.md) is ruled out by the type.
+
+Within a currency, amounts add, subtract, scale, divide and compare; an amount splits into
+equal shares without losing a penny; and a price carries its tax alongside its principal.
 
 Thirty-seven currencies come defined, each a value that constructs amounts, and rendering an
 amount uses either its symbol or its ISO code, chosen by a style in scope.

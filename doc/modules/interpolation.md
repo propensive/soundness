@@ -7,7 +7,8 @@ quoting must balance, a `json"…"` that must parse — are all built on one pie
 defining custom [string interpolators](https://docs.scala-lang.org/scala3/book/string-interpolation.html).
 An interpolator defined with it validates its literal content as the code compiles, reporting an
 error at the exact character at fault, and accepts substitutions only of the types it declares,
-each checked for the position it occupies.
+each checked for the position it occupies. This is the principal instrument of
+[safety by construction](../philosophy/safety-by-construction.md).
 
 Defining one does not mean writing a macro by hand: the compilation-time plumbing — capturing the
 literal parts and their positions in the source file — is done once, and an interpolator's author

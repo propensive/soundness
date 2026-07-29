@@ -10,7 +10,8 @@ a value to a destination, and `stream` exposes a value as a stream of pieces.
 What can be read, and what can be written, is decided by typeclasses. A type that describes how
 it becomes a stream can be read; a type that describes how it consumes one can be written to; so
 a new source or sink joins the same `read` and `writeTo` as everything else, with no bespoke
-plumbing.
+plumbing. One verb per operation, ranging over every type that supports it, is the
+[small-APIs](../philosophy/small-apis.md) discipline.
 
 Underneath those operations is a streaming *kernel* whose central type is a `Stream`: not a lazy
 sequence of chunks, but a pull endpoint over a buffer whose readable window is handed to exactly
@@ -105,7 +106,8 @@ val text = document.source[Text]                     // Stream[Text]
 
 A stage transforms a stream into a differently-typed stream. `via` attaches one on the pull
 side, and the whole chain runs on the consumer's thread as nested refills — no threads, no
-queues, no intermediate collections:
+queues, no intermediate collections. Each stage takes what the last one produced, which is
+[composability](../philosophy/composability.md) in its most literal form:
 
 ```scala
 file.stream.via(decompressor).via(decoder)

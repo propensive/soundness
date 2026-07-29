@@ -106,7 +106,8 @@ connect and converse, receive and reply, dispatch a datagram — are gathered in
 `wasi:sockets` and over Scala Native's sockets supply the same operations, so the same protocol
 code runs on the JVM, inside a WebAssembly component, and in a native binary. An operation a
 backend cannot support — Unix-domain sockets or TLS on WASI — raises the appropriate error rather
-than approximating it.
+than approximating it. Narrowing the platform's surface to a seam this small is
+[decoupling](../philosophy/decoupling.md) applied within a module.
 
 ### Socket options
 

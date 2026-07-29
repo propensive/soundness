@@ -6,7 +6,9 @@ A running program receives much of its data as loose, untyped text: command-line
 arguments, environment variables, configuration files, the fields captured by a
 regular expression, a line typed at a prompt. Soundness turns that text into
 typed values — an `Int`, a `Uuid`, an email address — and reflects in the types
-the one thing every such conversion shares: it might not succeed.
+the one thing every such conversion shares: it might not succeed. Making that
+possibility explicit, rather than returning a plausible value for input it cannot read, is
+what [total transitions](../philosophy/total-transitions.md) demands.
 
 ### On conversion
 

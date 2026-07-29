@@ -59,7 +59,8 @@ key.uncloak:
 // t"Hello world"
 ```
 
-`uncloak` lends the key to its block as an `Encryptor` and `Decryptor` capability, and capture
+`uncloak` is a [delimited scope](../philosophy/delimited-scopes.md): it lends the key to its
+block as an `Encryptor` and `Decryptor` capability, and capture
 checking confines both: neither the capability nor a closure that would use it later can escape
 the block, so the compiler — not a convention — keeps the key's use inside its scope.
 
