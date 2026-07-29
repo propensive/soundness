@@ -108,6 +108,45 @@ A cell is quoted only when it contains the delimiter, a quote, or a line break, 
 within a cell is doubled — the conventions the format prescribes, applied on the way out and
 understood on the way in.
 
+### Column spans
+
+A nested case class occupies as many columns as it has fields, and that count is computed from
+the type rather than discovered while parsing. Each field's *span* says how many columns it
+consumes, so a decoder knows where one field ends and the next begins even when several are
+nested:
+
+```scala
+case class Name(first: Text, last: Text)
+case class Person(id: Int, name: Name, age: Int)
+
+Spannable.derived[Person].spans().to(List)   // List(1, 2, 1)
+Spannable.derived[Person].spans().sum        // 4 columns in total
+```
+
+An `Optional` field spans one column, and a row that stops short of it decodes it as `Unset`
+rather than failing — which is what a trailing optional column in a real spreadsheet means:
+
+```scala
+case class Greeting(word: Text, name: Optional[Text])
+
+t"hello,world".read[Greeting in Dsv]   // Greeting(t"hello", t"world")
+t"hello".read[Greeting in Dsv]         // Greeting(t"hello", Unset)
+```
+
+### Header names
+
+Where a format carries a header, the column names in the file rarely match Scala's field names.
+A *redesignation* in scope maps between them, so a header of `Target Person` matches a field
+named `targetPerson` with no per-field annotation:
+
+```scala
+import dsvRedesignations.capitalizedWordsRedesignation
+```
+
+`unchangedRedesignation` keeps the field name as it is; `lowerWordsRedesignation`,
+`lowerDottedRedesignation` and `lowerSlashedRedesignation` cover the other conventions files
+tend to use. A single field that does not follow the convention is renamed with `@name`.
+
 ### Parsing directly to a type
 
 Building a `Dsv` for every row, only to decode it and throw it away, is wasted work. A type that
@@ -146,3 +185,10 @@ import dynamicDsvAccess.enabled
 val row = t"greeting,number\nhello,23".read[Sheet].rows.head
 row.number[Int]   // 23
 ```
+
+### Reporting every bad cell
+
+A spreadsheet exported from elsewhere is rarely wrong in only one place, and a decoder that stops
+at the first bad cell makes fixing it a series of guesses. Under an accruing strategy, every cell
+that fails is reported — missing cells and unparseable ones together — each identified by its
+column, so one pass over a file yields the whole list of what to correct.

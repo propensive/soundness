@@ -61,6 +61,41 @@ case class Typed
 A nested case class is a nested message, and an enumeration or sealed hierarchy encodes as proto3's
 `oneof`, with the variant chosen by field number.
 
+### Presence, repetition and maps
+
+Proto3's treatment of absence is a well-known source of confusion, and the type says which
+behaviour applies. An `Optional` field has explicit presence: unset, it writes nothing, and reads
+back as `Unset` — distinct from a field that is present and zero.
+
+A `List` field is repeated, and keeps its order and its default elements: a list of `0, 1, 2`
+round-trips as three elements rather than losing the zero. Repeated numbers are packed into a
+single length-delimited field, as proto3 requires of a writer, while a reader accepts both packed
+and unpacked forms, as it requires of a reader.
+
+A `Map` becomes the standard repeated key–value entry messages, so a `Map[Text, Int]` is on the
+wire exactly what `map<string, int32>` would be:
+
+```scala
+case class Labels(@field(1) labels: Map[Text, Text])
+case class Tags(@field(1) tags: List[Text])
+case class MaybeName(@field(1) name: Optional[Text])
+```
+
+### Navigating a message
+
+A message is number-keyed rather than name-keyed, so an optic selects a field by its number: `Prim`
+is field 1, `Sec` field 2, and so on. A lens reaches through nested messages and replaces a field
+without disturbing the rest:
+
+```scala
+import protobufConversion.encodable
+
+wrapper.lens(_(Prim) = Point(7, 8).in[Protobuf]).as[Wrapper]
+```
+
+This is what to use where a message must be relayed with one field altered and everything else —
+including fields this program does not know about — passed through untouched.
+
 ### Compatibility
 
 Compatibility with `protoc` is by construction and by test: the canonical example message from the
@@ -73,7 +108,17 @@ Sample(150).in[Protobuf].encode   // the bytes 08 96 01
 ```
 
 Decoding accepts both packed and unpacked repeated fields, as the proto3 specification requires of
-a conforming reader.
+a conforming reader, and the encodings of the sized numeric types are checked against golden wire
+vectors rather than merely round-tripped — a round trip agrees with itself even when both
+directions are wrong.
+
+Where a message needs no interoperability, the field numbers may be left off entirely: an
+unannotated message numbers its fields from one in declaration order, which is what `protoc` would
+have produced for the same declarations.
+
+```scala
+case class Unnumbered(value: Int, other: Int)   // fields 1 and 2
+```
 
 ### Errors
 
