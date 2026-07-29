@@ -32,6 +32,8 @@
                                                                                                   */
 package pneumatic
 
+import scala.caps
+
 import anticipation.*
 import rudiments.*
 import vacuous.*
@@ -46,17 +48,16 @@ import zephyrine.*
 // sooner. The decoder's table trails the encoder's by one entry, so the encoder widens (and
 // clears) at a `nextCode` threshold one higher than the decoder's table-length threshold,
 // which is what keeps the two in step.
-private[pneumatic] trait LzwEngine:
+private[pneumatic] trait LzwEngine extends caps.Mutable:
   protected val pending: scala.collection.mutable.ArrayBuffer[Byte] =
     scala.collection.mutable.ArrayBuffer()
 
-  @scala.caps.unsafe.untrackedCaptures
   private var delivered: Int = 0
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit
-  def finish(): Unit
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def finish(): Unit
 
-  def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
+  update def deliver(target: Array[Byte]^, offset: Int, space: Int): Int =
     var produced = 0
 
     while delivered < pending.length && produced < space do
@@ -71,9 +72,8 @@ private[pneumatic] trait LzwEngine:
     produced
 
   // Everything not yet delivered, drained in one immutable piece: the whole-value
-  // counterpart of `deliver`, and — being a method of an untracked engine with a pure
-  // result — safe to call from within a lazy stream's thunks.
-  def gather(): Data =
+  // counterpart of `deliver`.
+  update def gather(): Data =
     val result = Buffer[Byte](pending.length - delivered)
     var i = 0
 
@@ -90,24 +90,17 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
   private val codes: scala.collection.mutable.HashMap[(Int, Byte), Int] =
     scala.collection.mutable.HashMap()
 
-  @scala.caps.unsafe.untrackedCaptures
   private var nextCode = 258
-  @scala.caps.unsafe.untrackedCaptures
   private var width = 9
-  @scala.caps.unsafe.untrackedCaptures
   private var prefix = -1
-  @scala.caps.unsafe.untrackedCaptures
   private var bits = 0L
-  @scala.caps.unsafe.untrackedCaptures
   private var bitCount = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var begun = false
-  @scala.caps.unsafe.untrackedCaptures
   private var ended = false
 
   private val early: Int = if earlyChange then 1 else 0
 
-  private def emit(code: Int): Unit =
+  private update def emit(code: Int): Unit =
     bits = (bits << width) | code
     bitCount += width
 
@@ -115,7 +108,7 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
       pending += ((bits >> (bitCount - 8)) & 0xff).toByte
       bitCount -= 8
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     if !begun then
       emit(256)
       begun = true
@@ -147,7 +140,7 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
 
       i += 1
 
-  def finish(): Unit =
+  update def finish(): Unit =
     if !ended then
       if !begun then
         emit(256)
@@ -166,23 +159,18 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
   private val table: scala.collection.mutable.ArrayBuffer[Array[Byte]] =
     scala.collection.mutable.ArrayBuffer()
 
-  @scala.caps.unsafe.untrackedCaptures
   private var width = 9
-  @scala.caps.unsafe.untrackedCaptures
   private var bits = 0L
-  @scala.caps.unsafe.untrackedCaptures
   private var bitCount = 0
-  @scala.caps.unsafe.untrackedCaptures
   private var finished = false
 
-  @scala.caps.unsafe.untrackedCaptures
   private var previous: Array[Byte] = new Array[Byte](0)
 
   private val early: Int = if earlyChange then 1 else 0
 
   reset()
 
-  private def reset(): Unit =
+  private update def reset(): Unit =
     table.clear()
     var byte = 0
 
@@ -195,7 +183,7 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
     width = 9
     previous = new Array[Byte](0)
 
-  private def interpret(): Unit =
+  private update def interpret(): Unit =
     val code = ((bits >> (bitCount - width)) & ((1L << width) - 1)).toInt
     bitCount -= width
 
@@ -222,7 +210,7 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
         previous = entry
         if table.length >= (1 << width) - early && width < 12 then width += 1
 
-  def accept(bytes: Array[Byte], offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var consumed = 0
 
     while consumed < length do
@@ -234,16 +222,17 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
       while bitCount >= width && !finished do interpret()
       if finished then consumed = length // trailing bytes after end-of-data are noise
 
-  def finish(): Unit = while bitCount >= width && !finished do interpret()
+  update def finish(): Unit = while bitCount >= width && !finished do interpret()
 
 // The `Duct` stages: thin wrappers presenting an engine to the streaming kernel. All output
 // is staged through the engine's retained `pending` buffer, drained into whatever target
-// space each step or flush offers.
-private[pneumatic] class LzwStage(engine: LzwEngine) extends Duct[Data, Data]:
+// space each step or flush offers. The engine is created by the by-name argument inside the
+// stage, so the stage owns it exclusively.
+private[pneumatic] class LzwStage(engine0: => LzwEngine^) extends Duct[Data, Data]:
   type Transport = Credit
   type Upstream = Credit
 
-  @scala.caps.unsafe.untrackedCaptures
+  private val engine: LzwEngine^ = engine0
   private var finishing = false
 
   def regulation: Credit is Regulation = summon[Credit is Regulation]
