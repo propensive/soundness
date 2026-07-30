@@ -298,8 +298,7 @@ object BalanceRules:
             // operator frame and open a fresh one at the same nesting level.
             checkOpFrame(frames.pop(), emit)
             frames.push(mutable.ArrayBuffer.empty)
-          else if BoundaryWords.contains(text) &&
-            !(text == "case" && caseIsModifier(arr, i))
+          else if BoundaryWords.contains(text) && !(text == "case" && caseIsModifier(arr, i))
           then
             // Control-flow keywords cut the expression into sub-expressions:
             // `if` predicates, `then`/`else` clauses, `match` scrutinee and

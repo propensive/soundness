@@ -62,8 +62,7 @@ object GitRepo:
     unsafely(path.generic.as[Path on Linux]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
 
-      if (path / ".git").exists() then GitRepo((path / ".git"))
-      else GitRepo(path)
+      if (path / ".git").exists() then GitRepo((path / ".git")) else GitRepo(path)
 
 
 case class GitRepo(gitDir: Path on Linux):

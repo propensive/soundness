@@ -79,8 +79,8 @@ object ProximityRules:
             out +=
               Violation
                 ( file, prev.endLine + 1, 1, "315",
-                  "a multi-line statement must be separated from its siblings "
-                    +"by a blank line" )
+                  "a multi-line statement must be separated from its siblings by a blank line" )
+
           i += 1
 
       out.toList
@@ -102,8 +102,7 @@ object ProximityRules:
       // the three lines starts with an infix operator, the boundary is
       // inside an operator chain and the rule must skip — inserting a
       // blank line there would break parsing.
-      (line - 1 to line + 1).exists: l =>
-        lineStartsWithOperator(content, source, l)
+      (line - 1 to line + 1).exists: l => lineStartsWithOperator(content, source, l)
 
     private def lineStartsWithOperator
       ( content: String, source: SourceFile, line: Int )
@@ -267,16 +266,14 @@ object ProximityRules:
 
         while found < 0 && idx >= 0 && !ctx.lines(idx).isBlank do
           if ctx.lines(idx).leadingCols <= indent then
-            if ctx.lines(idx).leadingCols == indent then found = idx
-            else idx = -1
+            if ctx.lines(idx).leadingCols == indent then found = idx else idx = -1
           idx -= 1
 
         if found < 0 then Nil
         else
           var top = found
 
-          while top >= 1 && ctx.lines(top - 1).firstReal.exists(_.text.startsWith("@")) do
-            top -= 1
+          while top >= 1 && ctx.lines(top - 1).firstReal.exists(_.text.startsWith("@")) do top -= 1
 
           List(top + 1)
       .toSet

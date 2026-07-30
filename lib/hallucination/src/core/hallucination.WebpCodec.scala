@@ -58,8 +58,7 @@ private[hallucination] object WebpCodec:
     val frame = Vp8Encoder.encode(raster, quality)
     val out = ji.ByteArrayOutputStream()
 
-    def fourcc(text: String): Unit = text.foreach: char =>
-      out.write(char.toInt)
+    def fourcc(text: String): Unit = text.foreach: char => out.write(char.toInt)
 
     def u32(value: Int): Unit =
       out.write(value & 0xff); out.write((value >>> 8) & 0xff)

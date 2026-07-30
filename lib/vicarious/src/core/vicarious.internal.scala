@@ -86,8 +86,7 @@ object internal:
     import quotes.reflect.*
 
     def recur(repr: TypeRepr): List[TypeRepr] =
-      repr.typeSymbol.caseFields.flatMap: field =>
-        field.info :: recur(field.info)
+      repr.typeSymbol.caseFields.flatMap: field => field.info :: recur(field.info)
 
     TypeRepr.of[product] :: recur(TypeRepr.of[product])
 

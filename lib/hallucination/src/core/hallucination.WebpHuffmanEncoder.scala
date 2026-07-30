@@ -116,8 +116,7 @@ private[hallucination] object WebpHuffmanEncoder:
 
     if used <= 1 then false else
       // A min-heap of (frequency, node index); internal nodes get indices past the leaves.
-      val ordering: Ordering[(Int, Int)] = Ordering.by: item =>
-        -item(0)
+      val ordering: Ordering[(Int, Int)] = Ordering.by: item => -item(0)
       val nodes = scm.PriorityQueue.empty[(Int, Int)](using ordering)
       val internal = scm.ArrayBuffer[(Int, Int)]()
       var i = 0

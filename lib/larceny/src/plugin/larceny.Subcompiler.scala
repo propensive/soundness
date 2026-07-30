@@ -194,9 +194,7 @@ object Subcompiler:
                 else run(source, regions -- done, errors ::: newErrors)
 
               case error :: tail =>
-                regions.find: (start, end) =>
-                  error.point >= start && error.point <= end
-
+                regions.find: (start, end) => error.point >= start && error.point <= end
                 . match
                   case None =>
                     recompile(tail, done, source)

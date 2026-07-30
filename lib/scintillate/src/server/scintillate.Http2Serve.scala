@@ -206,8 +206,7 @@ extends Duplex:
   def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)
 
   def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.sweep: (storage, start, size) =>
-      out.write(storage.asInstanceOf[Array[Byte]], start, size)
+    data.sweep: (storage, start, size) => out.write(storage.asInstanceOf[Array[Byte]], start, size)
 
     out.flush()
 

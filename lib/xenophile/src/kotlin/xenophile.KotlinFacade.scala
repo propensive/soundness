@@ -77,8 +77,7 @@ object KotlinFacade:
       t"${simple(name)}<${arguments.map(kotlinType).join(t", ")}>"
 
   private def simple(name: Text): Text =
-    if name.s.startsWith("#") then t"T"
-    else name.s.substring(name.s.lastIndexOf('.') + 1).nn.tt
+    if name.s.startsWith("#") then t"T" else name.s.substring(name.s.lastIndexOf('.') + 1).nn.tt
 
   private[xenophile] def rendered(name: Text, prototype: Prototype): Text =
     prototype.parameters.lay(t"val $name: ${kotlinType(prototype.result)}"): parameters =>
@@ -984,8 +983,7 @@ object KotlinFacade:
     // Exact conformance outranks adaptation, so `Text` never makes two `String`-flavoured
     // overloads ambiguous when one matches the arguments as given.
     val exact = distinct.filter: (_, types) =>
-      args.zip(types).forall: (argument, parameter) =>
-        argument.tpe.widen <:< solid(parameter)
+      args.zip(types).forall: (argument, parameter) => argument.tpe.widen <:< solid(parameter)
 
     val (method, types) = (if exact.nonEmpty then exact else distinct) match
       case List(one) => one
@@ -1027,8 +1025,7 @@ object KotlinFacade:
         front :+ Typed(Repeated(rest, Inferred(target)), Inferred(repeatedType))
 
       case _ =>
-        args.zip(types).map: (argument, parameter) =>
-          adapted(argument, parameter)
+        args.zip(types).map: (argument, parameter) => adapted(argument, parameter)
 
     val call = Apply(Select(receiver(self, repr), method), adaptedArgs)
 
@@ -1066,8 +1063,7 @@ object KotlinFacade:
 
       application.tpe.widen match
         case MethodType(_, types, _) =>
-          val fits = args.zip(types).forall: (argument, parameter) =>
-            satisfies(argument, parameter)
+          val fits = args.zip(types).forall: (argument, parameter) => satisfies(argument, parameter)
 
           if types.length == args.length && fits then List((application, types)) else Nil
 
@@ -1079,8 +1075,7 @@ object KotlinFacade:
       case one :: _  => one
       case Nil       => halt(m"xenophile: no constructor of $className accepts these arguments")
 
-    val adaptedArgs = args.zip(types).map: (argument, parameter) =>
-      adapted(argument, parameter)
+    val adaptedArgs = args.zip(types).map: (argument, parameter) => adapted(argument, parameter)
 
     val created = Apply(application, adaptedArgs)
 
@@ -1104,8 +1099,7 @@ object KotlinFacade:
     val classSymbol = repr.classSymbol.getOrElse(halt(m"xenophile: not a class type"))
     val field = classSymbol.companionModule.fieldMember(name.s)
 
-    if !field.exists
-    then halt(m"xenophile: the companion object of $className is not accessible")
+    if !field.exists then halt(m"xenophile: the companion object of $className is not accessible")
 
     val term = Select(Ref(classSymbol.companionModule), field)
 
@@ -1314,8 +1308,7 @@ object KotlinFacade:
       val ordered = (0 until member.arity).to(List).map(provided(_))
       invocation(self, repr, className, field, ordered, prototype)
     else
-      val undefaulted = absent.filter: index =>
-        !member.defaults.lift(index).getOrElse(false)
+      val undefaulted = absent.filter: index => !member.defaults.lift(index).getOrElse(false)
 
       if undefaulted.nonEmpty then
         val names = undefaulted.map { index => member.parameters(index) }.join(t", ")

@@ -57,8 +57,7 @@ object Dag:
 
   extension (dag: Dag[Text])
     def dot: Dot = unsafely:
-      val edges = dag.edges.to(List).map: (a, b) =>
-        Name[DotId](a) --> Name[DotId](b)
+      val edges = dag.edges.to(List).map: (a, b) => Name[DotId](a) --> Name[DotId](b)
 
       Dot.Digraph(None, false, edges*)
 
@@ -172,8 +171,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
       pruned -- deletions
 
   private def findCycle(start: node): Option[List[node]] raises DagError =
-    if !edgeMap.defines(start)
-    then abort(DagError(DagError.Reason.NodeMissing(start.toString.tt)))
+    if !edgeMap.defines(start) then abort(DagError(DagError.Reason.NodeMissing(start.toString.tt)))
 
     @tailrec
     def recur(queue: List[(node, List[node])], finished: Set[node])

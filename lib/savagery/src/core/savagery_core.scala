@@ -56,8 +56,7 @@ extension [numeric: Numeric, numeric2: Numeric](tuple: (numeric, numeric2))
 
 given negatableTuple: [numeric: Numeric, numeric2: Numeric]
 =>  (numeric, numeric2) is Negatable to Delta =
-  Negatable: tuple =>
-    Delta(-numeric.toFloat(tuple(0)), -numeric2.toFloat(tuple(1)))
+  Negatable: tuple => Delta(-numeric.toFloat(tuple(0)), -numeric2.toFloat(tuple(1)))
 
 extension [figure: Transformable as transformable](figure: figure)
   private def appended(transform: Transform): figure =

@@ -1059,8 +1059,7 @@ object internal:
               if b(j) == k then found = j
               j += 2
 
-            if found < 0 then ok = false
-            else if va != b(found + 1) then ok = false
+            if found < 0 then ok = false else if va != b(found + 1) then ok = false
 
             i += 2
 
@@ -1166,8 +1165,7 @@ object internal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 &&
-        name.forall { char => char >= '!' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall { char => char >= '!' && char < 127 }
 
       if !packs then None else
         var low = 0L
@@ -1176,8 +1174,7 @@ object internal:
 
         while position < length do
           val byte = name.charAt(position).toLong & 0xFF
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
           position += 1
 
         Some((low, high))
@@ -1264,8 +1261,7 @@ object internal:
         ValDef(seens(index), Some(Literal(BooleanConstant(false))))
 
       val bufferDefs = List.range(0, arity).flatMap: index =>
-        buffers(index).map: symbol =>
-          ValDef(symbol, Some('{ null }.asTerm))
+        buffers(index).map: symbol => ValDef(symbol, Some('{ null }.asTerm))
 
       val unit = Literal(UnitConstant())
 

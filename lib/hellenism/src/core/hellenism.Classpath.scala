@@ -87,8 +87,7 @@ object Classpath extends Root(t""):
     caps.unsafe.unsafeAssumePure:
       given Tactic[StreamError] = strategies.throwUnsafely
 
-      Streamable.inputStream.contramap: path =>
-        classloader.inputStream(path.encode)
+      Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
   given source: [path <: Path on Classpath] => Tactic[ClasspathError]
   =>  ( classloader: Classloader, buffering: Buffering )
@@ -98,8 +97,7 @@ object Classpath extends Root(t""):
     caps.unsafe.unsafeAssumePure:
       given Tactic[StreamError] = strategies.throwUnsafely
 
-      Streamable.inputStream.contramap: path =>
-        classloader.inputStream(path.encode)
+      Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
   def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
     val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)

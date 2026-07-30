@@ -192,8 +192,7 @@ final class Report(using environment: Environment)(using palette: TestPalette):
         case ReportLine.Item(entry) =>
           entry.cell(coordinates).record(run)
 
-          headline.let: metric =>
-            entry.headline = metric
+          headline.let: metric => entry.headline = metric
 
   def addDetail(testId: TestId, info: Verdict.Detail): Report =
     this.also(details(testId) = details(testId).append(info))

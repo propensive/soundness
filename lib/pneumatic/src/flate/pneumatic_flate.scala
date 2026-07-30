@@ -46,8 +46,7 @@ private def concatenate(stream: LazyList[Data]): Data =
   val chunks = stream.to(List)
   var total = 0
 
-  chunks.each: chunk =>
-    total += chunk.length
+  chunks.each: chunk => total += chunk.length
 
   val result = new Array[Byte](total)
   var offset = 0

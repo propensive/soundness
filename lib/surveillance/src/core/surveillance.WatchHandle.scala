@@ -62,8 +62,7 @@ extends Openable:
   :   result =
 
     val watch = Watch(List(value))
-    try block(using new WatchHandle(watch) with Granting[grants] {})
-    finally watch.unregister()
+    try block(using new WatchHandle(watch) with Granting[grants] {}) finally watch.unregister()
 
 // Watching several paths at once: `List(a, b, c).open[Watch]()`, with one event stream
 // multiplexing all of them, exactly as `Watch` itself works. Parameterized over the concrete
@@ -83,5 +82,4 @@ extends Openable:
   :   result =
 
     val watch = Watch(value)
-    try block(using new WatchHandle(watch) with Granting[grants] {})
-    finally watch.unregister()
+    try block(using new WatchHandle(watch) with Granting[grants] {}) finally watch.unregister()

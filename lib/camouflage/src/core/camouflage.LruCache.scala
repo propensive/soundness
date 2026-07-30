@@ -70,9 +70,7 @@ class LruCache[key, value](maxSize: Int):
   def apply(key: key)(value: => value): value =
     val newId = counter.getAndIncrement()
 
-    ids.getOrElse(key, Unset).let: oldId =>
-      values(oldId).tap(touch(oldId, newId, key, _))
-
+    ids.getOrElse(key, Unset).let: oldId => values(oldId).tap(touch(oldId, newId, key, _))
     . or:
         value.tap: value =>
           values(newId) = value

@@ -250,8 +250,7 @@ private[punctuation] object ParserSupport:
     while i < n do
       val c = s.charAt(i)
 
-      if c == ch then count += 1
-      else if !isSpaceTab(c) then return false
+      if c == ch then count += 1 else if !isSpaceTab(c) then return false
 
       i += 1
 
@@ -295,8 +294,7 @@ private[punctuation] object ParserSupport:
     var postCol = 0
 
     while j < s.length && isSpaceTab(s.charAt(j)) && postCol < 5 do
-      if s.charAt(j) == ' ' then postCol += 1
-      else postCol += 4 - ((markerColEnd + postCol) & 3)
+      if s.charAt(j) == ' ' then postCol += 1 else postCol += 4 - ((markerColEnd + postCol) & 3)
 
       j += 1
 

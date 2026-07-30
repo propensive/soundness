@@ -230,15 +230,11 @@ object Http:
         try request.body().memoize.utf8 catch case error: StreamError  => t"[-/-]"
 
       val headers: Text =
-        request.textHeaders.map: header =>
-          t"${header.key}: ${header.value}"
-
+        request.textHeaders.map: header => t"${header.key}: ${header.value}"
         . join(t"\n          ")
 
       val params: Text =
-        request.query.values.map: (key, value) =>
-          t"$key = \"$value\""
-
+        request.query.values.map: (key, value) => t"$key = \"$value\""
         . join(t"\n          ")
 
       ListMap[Text, Text](

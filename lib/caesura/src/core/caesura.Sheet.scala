@@ -85,8 +85,7 @@ object Sheet:
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
         dsv.columns.let(_.to(List)).or:
-          dsv.rows.prim.let: head =>
-            (1 to head.data.length).to(List).map(_.toString.tt)
+          dsv.rows.prim.let: head => (1 to head.data.length).to(List).map(_.toString.tt)
 
         . or(Nil)
 
@@ -395,8 +394,7 @@ case class Sheet
   override def hashCode: Int =
     (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[Array[Object | Null]])*31
         + format.hashCode)*31
-    + columns.lay(-1): array =>
-        ju.Arrays.hashCode(array.mutable(using Unsafe))
+    + columns.lay(-1): array => ju.Arrays.hashCode(array.mutable(using Unsafe))
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>

@@ -178,8 +178,7 @@ extension [self](self: self)(using traversable: self is Traversable)
     val last  = whole.length - part.length
 
     part.isEmpty || whole.indices.exists: start =>
-      start <= last && part.indices.forall: offset =>
-        whole(start + offset) == part(offset)
+      start <= last && part.indices.forall: offset => whole(start + offset) == part(offset)
 
 // The `Text` fast path of the generic `subsumes` above (an overload sibling, so the
 // receiver selects it): substring containment through `String.indexOf`, with no
@@ -241,8 +240,7 @@ extension [value](iterable: Iterable[value])
     if iterable.nil then Unset else
       val arbitrary = iterable.head
 
-      iterable.map(_ - arbitrary).total.let: total =>
-        arbitrary + total/iterable.size.toDouble
+      iterable.map(_ - arbitrary).total.let: total => arbitrary + total/iterable.size.toDouble
 
   def variance[addResult, divResult, subResult, mulResult, add2Result, div2Result]
     ( using addable:       value is Addable by value to addResult,
@@ -318,8 +316,7 @@ extension [value](iterable: Iterable[value])
     val iterator: Iterator[value] = iterable.iterator
     var state: state = base
 
-    while iterator.hasNext
-    do state = lambda(using state.aka["state"], iterator.next().aka["next"])
+    while iterator.hasNext do state = lambda(using state.aka["state"], iterator.next().aka["next"])
 
     state
 
@@ -327,8 +324,7 @@ extension [value](iterable: Iterable[value])
   def sumBy[number: Numeric](lambda: value => number): number =
     var count = number.zero
 
-    iterable.foreach: value =>
-      count = number.plus(count, lambda(value))
+    iterable.foreach: value => count = number.plus(count, lambda(value))
 
     count
 
@@ -339,9 +335,7 @@ extension [value](iterable: Iterable[value])
     iterable.map: value => (value, value, value)
 
   def indexBy[value2](lambda: value => value2): Map[value2, value] =
-    iterable.map: value =>
-      (lambda(value), value)
-
+    iterable.map: value => (lambda(value), value)
     . to(Map)
 
   def longestTrain(predicate: value => Boolean): (Int, Int) =

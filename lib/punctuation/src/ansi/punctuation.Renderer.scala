@@ -171,9 +171,7 @@ object Renderer:
       val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(_.nonEmpty)
       val joined = interleaveBlanks(innerBlocks.to(List))
 
-      joined.map: line =>
-        if line.plain.length == 0 then bar
-        else bar + Space + line
+      joined.map: line => if line.plain.length == 0 then bar else bar + Space + line
 
     case Layout.BulletList(_, tight, items*) =>
       renderList(items.to(List), tight, width, _ => bullet(palette))
@@ -195,8 +193,7 @@ object Renderer:
       // Drop a trailing empty line that comes from a final '\n' in `code`.
       val lines = if raw.lastOption.exists(_.plain.length == 0) then raw.dropRight(1) else raw
 
-      lines.map: line =>
-        e"  $line"
+      lines.map: line => e"  $line"
 
     case Layout.HtmlBlock(_, html) =>
       val text: Teletype = e"${Fg(palette.subdued)}($html)"
@@ -237,8 +234,7 @@ object Renderer:
           case head :: tail =>
             (mk + Space + head) :: tail.map(indent(_, hang))
 
-      if tight then rendered.flatten
-      else interleaveBlanks(rendered)
+      if tight then rendered.flatten else interleaveBlanks(rendered)
 
 
   // -- helpers --------------------------------------------------------------
@@ -341,8 +337,7 @@ object Renderer:
             col = wlen
             flush()
 
-    segment.cut(t" ").each: word =>
-      placeWord(word)
+    segment.cut(t" ").each: word => placeWord(word)
 
     if col > 0 then flush()
 

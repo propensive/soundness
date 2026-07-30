@@ -199,8 +199,7 @@ object internal:
 
         inline if greaterThan
         then
-          inline if strict then (left: Float) > (right: Float)
-          else (left: Float) >= (right: Float)
+          inline if strict then (left: Float) > (right: Float) else (left: Float) >= (right: Float)
         else
           inline if strict then (left: Float) < (right: Float)
           else (left: Float) <= (right: Float)
@@ -409,8 +408,7 @@ object internal:
 
         inline if greaterThan
         then
-          inline if strict then (left: Short) > (right: Short)
-          else (left: Short) >= (right: Short)
+          inline if strict then (left: Short) > (right: Short) else (left: Short) >= (right: Short)
         else
           inline if strict then (left: Short) < (right: Short)
           else (left: Short) <= (right: Short)

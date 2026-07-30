@@ -89,5 +89,4 @@ class TrackFoci[focus]() extends Foci[focus]:
 
 
   def supplement(count: Int, transform: Optional[focus] => focus): Unit =
-    for i <- (errors.length - count) until errors.length
-    do focuses(i) = transform(focuses(i))
+    for i <- (errors.length - count) until errors.length do focuses(i) = transform(focuses(i))

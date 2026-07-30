@@ -95,8 +95,7 @@ package httpBackends:
       val fieldsHandle = Foreign["fields", Wit].constructor.invoke[WitHandle of "fields"]
       val fields: Foreign of "fields" from Wit = fieldsHandle
 
-      headers.each: header =>
-        fields.append(header.key, bytes(header.value)).invoke[Unit]
+      headers.each: header => fields.append(header.key, bytes(header.value)).invoke[Unit]
 
       // Applied calls need stable receivers with visible `Origin`s, so the argument conversions
       // can resolve their ecosystem; roots invoked with arguments are bound to `val`s first. (The
@@ -187,8 +186,7 @@ package httpBackends:
       var chunks: List[Data] = Nil
 
       try
-        while true do
-          chunks = stream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
+        while true do chunks = stream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
       catch case error: WitError => ()
 
       streamHandle.dispose()
@@ -237,8 +235,7 @@ object WasiHttpServer:
     var chunks: List[Data] = Nil
 
     try
-      while true do
-        chunks = inputStream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
+      while true do chunks = inputStream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
     catch case error: WitError => ()
 
     streamHandle.dispose()
@@ -266,8 +263,7 @@ object WasiHttpServer:
     val fieldsHandle = Foreign["fields", Wit].constructor.invoke[WitHandle of "fields"]
     val fields: Foreign of "fields" from Wit = fieldsHandle
 
-    response.textHeaders.each: header =>
-      fields.append(header.key, bytes(header.value)).invoke[Unit]
+    response.textHeaders.each: header => fields.append(header.key, bytes(header.value)).invoke[Unit]
 
     val outgoingResponse =
       Foreign["outgoing-response", Wit].asInstanceOf[Foreign of "outgoing-response" from Wit]

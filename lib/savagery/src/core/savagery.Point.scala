@@ -44,24 +44,20 @@ import symbolism.*
 object Point:
   def apply(x: Float, y: Float): Point = Point(Vector((x, y)))
 
-  given showable: Point is Showable = point =>
-    t"${point.x.toString} ${point.y.toString}"
+  given showable: Point is Showable = point => t"${point.x.toString} ${point.y.toString}"
 
   given fromTuple: [numeric: Numeric, numeric2: Numeric]
   =>  Conversion[(numeric, numeric2), Point] =
-    tuple =>
-      Point(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))
+    tuple => Point(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))
 
   given addable: Point is Addable by Delta to Point = Addable: (point, delta) =>
     Point(point.x + delta.dx, point.y + delta.dy)
 
   given subtractableByDelta: Point is Subtractable by Delta to Point =
-    Subtractable: (point, delta) =>
-      Point(point.x - delta.dx, point.y - delta.dy)
+    Subtractable: (point, delta) => Point(point.x - delta.dx, point.y - delta.dy)
 
   given subtractableByPoint: Point is Subtractable by Point to Delta =
-    Subtractable: (left, right) =>
-      Delta(left.x - right.x, left.y - right.y)
+    Subtractable: (left, right) => Delta(left.x - right.x, left.y - right.y)
 
 final case class Point(vector: Vector[Float, 2]):
   def x: Float = vector.element(0)

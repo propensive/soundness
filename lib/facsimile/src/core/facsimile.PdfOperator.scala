@@ -171,8 +171,7 @@ object PdfOperator:
       case "TJ" => operands match
         case List(Cos.Sequence(elements)) =>
           ShowTexts:
-            elements.map: element =>
-              element.chars.or(element.double.or(malformed))
+            elements.map: element => element.chars.or(element.double.or(malformed))
 
         case _ =>
           malformed

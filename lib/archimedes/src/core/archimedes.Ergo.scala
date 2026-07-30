@@ -294,8 +294,7 @@ object Ergo:
       if s.isEmpty then abort(ErgoError(ErgoError.Reason.Empty))
       open = s.charAt(0)
 
-      if !pairs.contains(open)
-      then abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt)))
+      if !pairs.contains(open) then abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt)))
 
       close = pairs(open)
 

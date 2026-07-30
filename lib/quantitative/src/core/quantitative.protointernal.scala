@@ -222,9 +222,7 @@ trait protointernal extends caps.Pure:
         Expr.summon[Principal[dimension, ?]].absolve match
           case None =>
             val dimensionName =
-              dimensionality.quantityName.map: name =>
-                "the physical quantity "+name
-
+              dimensionality.quantityName.map: name => "the physical quantity "+name
               . getOrElse("the same quantity")
 
             halt:

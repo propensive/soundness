@@ -123,8 +123,7 @@ object Statements:
     var i = spanEnd - 1
     val lo = spanStart
     while i > lo && i < content.length && isWhitespace(content.charAt(i)) do i -= 1
-    if i < 0 then source.offsetToLine(spanStart) + 1
-    else source.offsetToLine(i) + 1
+    if i < 0 then source.offsetToLine(spanStart) + 1 else source.offsetToLine(i) + 1
 
   private def isWhitespace(c: Char): Boolean =
     c == ' ' || c == '\t' || c == '\n' || c == '\r'

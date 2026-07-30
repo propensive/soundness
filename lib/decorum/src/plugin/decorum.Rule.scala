@@ -129,4 +129,13 @@ object Rules:
         // positional collision with an earlier rule (e.g. 616.1 with 473.5)
         // must keep resolving in the earlier rule's favour — dotty's
         // reporter keeps only the first diagnostic per position.
-        QuoteRules.QuoteSpliceLayout )
+        QuoteRules.QuoteSpliceLayout,
+        // UnnecessaryBreak (247) is a new rule, not a port of the per-line
+        // walk, so it carries no historical ordering evidence — it sits
+        // last so that any positional collision with an established rule
+        // resolves in the established rule's favour. The corpus has one
+        // such collision: 247 and 473.5 both fire at stratiform
+        // .bintelInternal:633:13, and 473.5 (the established diagnostic)
+        // must keep winning — dotty's reporter keeps only the first
+        // diagnostic per position.
+        DensityRules.UnnecessaryBreak )

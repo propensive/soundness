@@ -52,8 +52,7 @@ object Cadence:
     if s >= hashSizes.length then Unset else Cadence(initial, regular, hashSizes(s))
 
 case class Cadence(initial: Int, regular: Int, hashSize: Int):
-  if regular < 1 || regular > 4
-  then panic(m"regular cadence must be in 1..4 (got $regular)")
+  if regular < 1 || regular > 4 then panic(m"regular cadence must be in 1..4 (got $regular)")
 
   if initial < regular || initial > regular + 3
   then panic(m"initial cadence must be in $regular..${regular + 3} (got $initial)")

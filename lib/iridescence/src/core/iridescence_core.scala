@@ -87,8 +87,7 @@ package mixing:
     (backdrop, layer) => math.max(0.0, backdrop + layer - 1)
 
   given hardLight: [topic <: Color: Tonal] => topic is Mixing =
-    (backdrop, layer) =>
-      if layer <= 0.5 then 2*backdrop*layer else 1 - 2*(1 - backdrop)*(1 - layer)
+    (backdrop, layer) => if layer <= 0.5 then 2*backdrop*layer else 1 - 2*(1 - backdrop)*(1 - layer)
 
   // Overlay is hard light with the two operands exchanged: the backdrop, rather than the layer,
   // decides whether the pair is multiplied or screened.

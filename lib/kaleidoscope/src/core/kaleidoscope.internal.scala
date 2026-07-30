@@ -64,8 +64,7 @@ object internal:
           if group.charMatcher then TypeRepr.of[Char] else TypeRepr.of[Text]
 
         case Regex.Quantifier.Between(0, 1) =>
-          if group.charMatcher then TypeRepr.of[Optional[Char]]
-          else TypeRepr.of[Optional[Text]]
+          if group.charMatcher then TypeRepr.of[Optional[Char]] else TypeRepr.of[Optional[Text]]
 
         case _ =>
           if group.charMatcher then TypeRepr.of[List[Char]] else TypeRepr.of[List[Text]]

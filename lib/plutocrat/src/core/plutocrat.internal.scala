@@ -142,20 +142,17 @@ object internal:
     given addable: [currency <: Label]
     =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
 
-      Addable: (left, right) =>
-        Money(left.currency, left.value + right.value).to[currency]
+      Addable: (left, right) => Money(left.currency, left.value + right.value).to[currency]
 
     given subtractable: [currency <: Label]
     =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
 
-      Subtractable: (left, right) =>
-        Money(left.currency, left.value - right.value).to[currency]
+      Subtractable: (left, right) => Money(left.currency, left.value - right.value).to[currency]
 
     given multiplicable: [currency <: Label]
     =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
 
-      Multiplicable: (left, right) =>
-        Money(left.currency, left.value*right).to[currency]
+      Multiplicable: (left, right) => Money(left.currency, left.value*right).to[currency]
 
     given divisible: [currency <: Label, money <: (Money in currency)]
     =>  money is Divisible:

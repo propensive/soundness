@@ -51,8 +51,7 @@ object Unpackable:
         val local = Buffer(bytes, start)
         val array = new Array[pack](count)
 
-        array.indices.each: index =>
-          array(index) = pack.debuffer(local)
+        array.indices.each: index => array(index) = pack.debuffer(local)
 
         array.immutable(using Unsafe)
 

@@ -131,8 +131,7 @@ object Math:
   // A quantity renders its magnitude as `<mn>` followed by each unit as `<mi>`
   // (or `<msup>` when the exponent is not 1), joined by invisible multiplication.
   inline given quantity: [units <: Measure] => Quantity[units] is Encodable in Math =
-    QuantityEncodable[units]: quantity =>
-      Math(quantityMathml(quantity.value, quantity.units))
+    QuantityEncodable[units]: quantity => Math(quantityMathml(quantity.value, quantity.units))
 
   given complex: [component: Encodable in Math] => Complex[component] is Encodable in Math =
     value => Math(Mrow(List(value.real.mathml, Mo(t"+"), value.imaginary.mathml, Mi(t"i"))))

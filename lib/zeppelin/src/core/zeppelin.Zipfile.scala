@@ -58,8 +58,7 @@ object Zipfile:
   private val u32Max: Long = 0xffffffffL
   private val u16Max: Int  = 0xffff
 
-  given streamable: Zipfile is Streamable by Data over Credit = zipfile =>
-    zipfile.serialize
+  given streamable: Zipfile is Streamable by Data over Credit = zipfile => zipfile.serialize
 
   def write[path: Abstractable across Paths to Text]
     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
@@ -87,8 +86,7 @@ object Zipfile:
     val seen = scala.collection.mutable.HashSet[Text]()
 
     entries.foreach: entry =>
-      if !seen.add(entry.ref.encode)
-      then raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
+      if !seen.add(entry.ref.encode) then raise(ZipError(ZipError.Reason.DuplicateEntry(entry.ref)))
 
   // Sources implement zephyrine's shared `Expanse`, the random-access view of the bytes
   // backing an archive, so other positional consumers (and future ones, such as ranged HTTP)
@@ -160,8 +158,7 @@ object Zipfile:
     val commentLength = Zip.u16(window, i + 20)
 
     val comment: Optional[Text] =
-      if commentLength == 0 then Unset
-      else decodeText(window.slice(i + 22, i + 22 + commentLength))
+      if commentLength == 0 then Unset else decodeText(window.slice(i + 22, i + 22 + commentLength))
 
     // Follow the ZIP64 locator if any EOCD field is saturated.
     if entryCount == u16Max.toLong || cdSize == u32Max || cdOffset == u32Max then

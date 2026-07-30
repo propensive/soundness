@@ -214,8 +214,7 @@ object Apoplexy:
   private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
     val status = operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim
 
-    status.let(operation.responses.at(_)).let: response =>
-      wireOf(response.content)
+    status.let(operation.responses.at(_)).let: response => wireOf(response.content)
 
   // The spec-wide wire format if every operation agrees, else `Json` as a neutral
   // placeholder for navigation types. The authoritative format is always recomputed
@@ -296,11 +295,9 @@ object Apoplexy:
     // The wire format the spec dictates for this operation: the response body's
     // media type, else the request body's, else JSON. An operation that mixes
     // request and response media types is not supported.
-    val respWire = operation.responses.at(status).let: response =>
-      wireOf(response.content)
+    val respWire = operation.responses.at(status).let: response => wireOf(response.content)
 
-    val reqWire = operation.requestBody.let: body =>
-      wireOf(body.content)
+    val reqWire = operation.requestBody.let: body => wireOf(body.content)
 
     if respWire.present && reqWire.present && respWire.vouch != reqWire.vouch
     then halt(m"apoplexy: $verb $locus mixes request and response media types")
@@ -608,8 +605,7 @@ object Apoplexy:
       case _: JsonSchema.Object  => value.typeSymbol.flags.is(Flags.Case)
 
       case array: JsonSchema.Array =>
-        listElement(value).lay(false): element =>
-          array.items.lay(true)(ok(element, _))
+        listElement(value).lay(false): element => array.items.lay(true)(ok(element, _))
 
       case _ => true
 

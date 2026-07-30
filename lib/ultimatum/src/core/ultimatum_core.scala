@@ -173,8 +173,7 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
         val root = ScreenRoot(terminal)
         root.cursor(false)
 
-        try Form(root, mode, pane, wake).run(terminal.eventIterator())
-        finally root.finish()
+        try Form(root, mode, pane, wake).run(terminal.eventIterator()) finally root.finish()
 
     case Mode.Inline =>
       // A deferred resize repaint is woken by posting a `Redraw` after the remaining
@@ -196,8 +195,7 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 // rectangle and content are both unchanged is omitted, so it is left untouched on
 // screen — the basis of flicker-free redraw.
 def dirtyCells(previous: IndexedSeq[Rect], current: IndexedSeq[Rect], changed: Set[Int]): Set[Int] =
-  val moved = current.indices.filter: i =>
-    i >= previous.length || previous(i) != current(i)
+  val moved = current.indices.filter: i => i >= previous.length || previous(i) != current(i)
 
   moved.to(Set) ++ changed
 

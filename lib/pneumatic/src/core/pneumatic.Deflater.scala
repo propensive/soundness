@@ -767,8 +767,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Flush the bit buffer and align the output on a byte boundary
   private def biWindup(): Unit =
-    if biValid > 8 then putShort(biBuf)
-    else if biValid > 0 then putByte(biBuf.toByte)
+    if biValid > 8 then putShort(biBuf) else if biValid > 0 then putByte(biBuf.toByte)
 
     biBuf = 0
     biValid = 0
@@ -1082,8 +1081,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
           matchLength = longestMatch(hashHead)
           // longestMatch sets matchStart
 
-          if matchLength == MinMatch && strstart - matchStart > 4096
-          then matchLength = MinMatch - 1
+          if matchLength == MinMatch && strstart - matchStart > 4096 then matchLength = MinMatch - 1
           // If prevMatch is also MinMatch, matchStart is garbage but we will ignore the current
           // match anyway.
 

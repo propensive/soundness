@@ -43,8 +43,7 @@ object Composable:
     type Result = Optic from origin onto target
 
     def composition(left: Self^, right: Operand^): Result^ =
-      Optic[Any, origin, target]: (origin, lambda) =>
-        left.modify(origin)(right.modify(_)(lambda))
+      Optic[Any, origin, target]: (origin, lambda) => left.modify(origin)(right.modify(_)(lambda))
 
   given lenses: [origin, target, target2]
   =>  ( (Lens from origin onto target) is Composable by (Lens from target onto target2) to

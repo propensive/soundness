@@ -312,8 +312,7 @@ object Blake3:
     hasher.complete(length)
 
   def keyedHash(key: IArray[Byte], input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
-    if key.length != KeyLen
-    then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
+    if key.length != KeyLen then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
 
     val keyBytes = key.mutable(using Unsafe)
     val keyWords = new Array[Int](8)

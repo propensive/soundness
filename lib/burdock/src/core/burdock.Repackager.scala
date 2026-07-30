@@ -143,8 +143,7 @@ object Repackager:
     . protect:
         supervise:
           hashes.grouped(parallelism).to(List).each: group =>
-            val tasks = group.map: hash =>
-              async((hash, classify(hash)))
+            val tasks = group.map: hash => async((hash, classify(hash)))
 
             tasks.map(_.await()).each: (hash, result) =>
               val (reqs, entries) =

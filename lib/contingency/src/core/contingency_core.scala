@@ -148,8 +148,7 @@ def attempt[error <: Hazard](using erased void: Void)[success]
   ( using Diagnostics )
 :   Attempt[success, error] =
 
-  boundary: label ?=>
-    Attempt.Success(block(using AttemptTactic(label)))
+  boundary: label ?=> Attempt.Success(block(using AttemptTactic(label)))
 
 
 def amalgamate[error <: Hazard](using erased void: Void)[success]
@@ -157,8 +156,7 @@ def amalgamate[error <: Hazard](using erased void: Void)[success]
   ( using Diagnostics )
 :   success | error =
 
-  boundary: label ?=>
-    block(using AmalgamateTactic(label))
+  boundary: label ?=> block(using AmalgamateTactic(label))
 
 
 def abortive[error <: Error](using Quotes)[success]

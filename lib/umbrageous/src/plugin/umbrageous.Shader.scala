@@ -82,9 +82,7 @@ class Shader(options: List[String]) extends PluginPhase:
         val fqn = segments.mkString(".")
 
         prefixes
-        . filter: (k, _) => fqn == k || fqn.startsWith(k+".")
-        . sortBy(_(0).length)
-        . lastOption
+        . filter: (k, _) => fqn == k || fqn.startsWith(k+".") . sortBy(_(0).length) . lastOption
 
       def rewriteRootRef(tree: Tree): Option[Tree] =
         def collect(t: Tree, acc: List[String]): Option[List[String]] = t match

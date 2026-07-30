@@ -365,8 +365,7 @@ case class Cell(lines: IndexedSeq[Writing], width: Int, baseline: Int):
     val leftText = Cell.spaces(left).text
     val rightText = Cell.spaces(right).text
 
-    val padded = lines.map: line =>
-      Writing(t"$leftText${line.text}$rightText")
+    val padded = lines.map: line => Writing(t"$leftText${line.text}$rightText")
 
     Cell(padded, width + Cell.max(left, 0) + Cell.max(right, 0), baseline)
 

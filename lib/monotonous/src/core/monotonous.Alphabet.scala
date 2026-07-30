@@ -312,5 +312,4 @@ case class Alphabet[encoding <: Serialization]
     val max = inverse.keysIterator.max
 
     caps.unsafe.unsafeAssumePure:
-      IArray.tabulate(max + 1): index =>
-        inverse.getOrElse(index.toChar, -1)
+      IArray.tabulate(max + 1): index => inverse.getOrElse(index.toChar, -1)

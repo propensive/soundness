@@ -132,8 +132,7 @@ object Scans:
       found
 
     val startsWithDecl =
-      sem.headOption.exists: t =>
-        DeclKeywords.contains(t.text) || ModifierWords.contains(t.text)
+      sem.headOption.exists: t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text)
 
     val continuesDecl =
       prevStartedDecl && sem.headOption.exists: t => t.text == "(" || t.text == "["

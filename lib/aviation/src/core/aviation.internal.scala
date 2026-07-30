@@ -264,8 +264,7 @@ object internal:
 
       val parsed = jdnOf(calendars.gregorianCalendar, year.nn.toInt, month.nn.toInt, day.nn.toInt)
 
-      parsed.flatMap: jdn =>
-        isoTime(jdn, hour.nn.toInt, minute.nn.toInt, secondValue, nanos, zone)
+      parsed.flatMap: jdn => isoTime(jdn, hour.nn.toInt, minute.nn.toInt, secondValue, nanos, zone)
 
     case _ =>
       Left(m"$text is not a valid ISO 8601 timestamp")

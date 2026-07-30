@@ -1138,3 +1138,80 @@ object Tests extends Suite(m"Decorum Tests"):
         val src = "def foo(x: List[Int]): List[Int] =\n  x\n  . map: y =>\n      y + 1\n"
         anchorKinds(src, 38)
       . assert(_ == List(Anchors.FrameKind.DefnRhs, Anchors.FrameKind.ChainCall))
+
+    suite(m"Necessity (SN-247)"):
+
+      test(m"Broken if/then/else that fits on one line is rejected"):
+        rules("def f(a: Boolean): Int =\n  if a\n  then 1\n  else 2\n")
+      . assert(_.contains("247"))
+
+      test(m"247 message names the construct kind and width"):
+        violations("def f(a: Boolean): Int =\n  if a\n  then 1\n  else 2\n")
+          .filter(_.rule == "247").map(_.message)
+      . assert(_.exists { m => m.contains("if-expression") && m.contains("columns") })
+
+      test(m"Broken if that genuinely does not fit is accepted"):
+        rules
+          ( "def f(aLongConditionValue: Boolean): Int =\n"
+              +"  if aLongConditionValue\n"
+              +"  then firstAlternativeValue + secondAlternativeValueWithLongName\n"
+              +"  else thirdAlternativeValue + fourthAlternativeValueWithLongName\n" )
+      . assert(r => !r.contains("247"))
+
+      test(m"Multi-line infix chain that fits on one line is rejected"):
+        rules("val x = 1 +\n  2\n")
+      . assert(_.contains("247"))
+
+      test(m"Multi-line infix chain that does not fit is accepted"):
+        rules
+          ( "val veryLongValueName = firstOperandWithAnExtremelyLongName +\n"
+              +"  secondOperandWithAnEvenLongerNameThatOverflowsTheLimit\n" )
+      . assert(r => !r.contains("247"))
+
+      test(m"Brace lambda with its body on a later line is rejected"):
+        rules("val y = List(1).map { x =>\n  x + 1 }\n")
+      . assert(_.contains("247"))
+
+      test(m"Colon-arg lambda with a short body on a later line is rejected"):
+        rules("def f(xs: List[Int]): List[Int] =\n  xs.map: x =>\n    x + 1\n")
+      . assert(_.contains("247"))
+
+      test(m"Broken if containing a comment is accepted"):
+        rules("def f(a: Boolean): Int =\n  if a // choose\n  then 1\n  else 2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Broken if containing a colon-block line is accepted"):
+        rules("def f(a: Boolean): Int =\n  if a then bar:\n    1\n  else 2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Chain broken around a blank interior line is accepted"):
+        rules("val x = 1 +\n\n  2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Chain containing a multi-line string is accepted"):
+        rules("val s = a +\n  \"\"\"line1\nline2\"\"\"\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"If with a multi-statement then-block is accepted"):
+        rules("def f(a: Boolean): Int =\n  if a then\n    val b = 1\n    b + 1\n  else 2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Broken while that fits on one line is rejected"):
+        rules("def f(): Unit =\n  while cond\n  do work()\n")
+      . assert(_.contains("247"))
+
+      test(m"For with single-line generators and broken yield is rejected"):
+        rules("val x =\n  for i <- List(1)\n  yield i\n")
+      . assert(_.contains("247"))
+
+      test(m"For whose generators span several lines is accepted"):
+        rules("val x =\n  for\n    i <- List(1)\n    j <- List(2)\n  yield i\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Broken try/finally that fits on one line is rejected"):
+        rules("def f(): Int =\n  try compute()\n  finally cleanup()\n")
+      . assert(_.contains("247"))
+
+      test(m"Broken try with a catch case is accepted"):
+        rules("def f(): Int =\n  try compute()\n  catch case e: Exception => 0\n")
+      . assert(r => !r.contains("247"))

@@ -184,8 +184,7 @@ private[punctuation] object InlineParser:
             pending.setLength(j)
             flushPending()
 
-            if spaces >= 2 then list.append(LinebreakData)
-            else list.append(SoftbreakData)
+            if spaces >= 2 then list.append(LinebreakData) else list.append(SoftbreakData)
 
             i += 1
             while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do i += 1

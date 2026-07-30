@@ -168,8 +168,7 @@ private[facsimile] object PdfWriter:
       ascii(t" /$key ")
       appendObject(pdf, raw, ascii, value)
 
-    pdf.xref.startxref.let: previous =>
-      ascii(t" /Prev $previous")
+    pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
 
     ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
 

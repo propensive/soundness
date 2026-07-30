@@ -105,16 +105,14 @@ object NetworkInterface:
   private def inet(address: jn.InetAddress): Ipv4 | Ipv6 =
     val bytes = address.getAddress.nn
 
-    if bytes.length == 4 then ipv4(address)
-    else Ipv6(longOf(bytes, 0), longOf(bytes, 8))
+    if bytes.length == 4 then ipv4(address) else Ipv6(longOf(bytes, 0), longOf(bytes, 8))
 
   private def ipv4(address: jn.InetAddress): Ipv4 =
     val bytes = address.getAddress.nn
     Ipv4(bytes(0).toInt, bytes(1).toInt, bytes(2).toInt, bytes(3).toInt)
 
   private def longOf(bytes: Array[Byte], offset: Int): Long =
-    (0 until 8).foldLeft(0L): (acc, index) =>
-      (acc << 8) | (bytes(offset + index) & 0xff).toLong
+    (0 until 8).foldLeft(0L): (acc, index) => (acc << 8) | (bytes(offset + index) & 0xff).toLong
 
   private def bytes(address: Ipv4 | Ipv6): Array[Byte] = address match
     case ipv6: Ipv6 =>

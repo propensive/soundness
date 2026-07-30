@@ -83,8 +83,7 @@ private[hallucination] object BmpCodec:
         else
           val size = if colorCount == 0 then 1 << bitCount else colorCount
 
-          IArray.tabulate(size): index =>
-            u32le(data, paletteOffset + index*4)&0xffffff
+          IArray.tabulate(size): index => u32le(data, paletteOffset + index*4)&0xffffff
 
       val rowSize = ((bitCount*width + 31)/32)*4
       val alpha = masks(3) != 0

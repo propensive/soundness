@@ -366,8 +366,7 @@ trait Mathml:
     attributes.map { case (key, value) => (key, value: Optional[Text]) }
 
   def xml: Xml =
-    val children: Seq[Xml] = text.lay(contents.map(_.xml)): value =>
-      List(TextNode(value))
+    val children: Seq[Xml] = text.lay(contents.map(_.xml)): value => List(TextNode(value))
 
     Element(label, Attributes(attributes*), children.nodes)
 

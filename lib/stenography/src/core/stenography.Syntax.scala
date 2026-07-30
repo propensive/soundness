@@ -69,8 +69,7 @@ object Syntax:
 
     val raw = base(rt.underlying)
 
-    if raw.isEmpty then "self".tt
-    else (raw.head.toLower.toString + raw.drop(1)).tt
+    if raw.isEmpty then "self".tt else (raw.head.toLower.toString + raw.drop(1)).tt
 
 
   def typeBounds(using Quotes, Bindings)

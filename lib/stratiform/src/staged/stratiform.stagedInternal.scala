@@ -211,8 +211,7 @@ object stagedInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -395,8 +394,7 @@ object stagedInternal:
   private def packedTelKeyword(name: String): Option[Long] =
     val length = name.length
 
-    val packs = length > 0 && length <= 8 &&
-      name.forall { char => char >= '!' && char <= '~' }
+    val packs = length > 0 && length <= 8 && name.forall { char => char >= '!' && char <= '~' }
 
     if !packs then None else
       var word = 0L
@@ -936,8 +934,7 @@ object stagedInternal:
 
     cache.active += TypeRepr.of[sum].dealias.show
 
-    try sumBody0[sum](reader, indent, cache)
-    finally cache.active -= TypeRepr.of[sum].dealias.show
+    try sumBody0[sum](reader, indent, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
     (using Quotes)

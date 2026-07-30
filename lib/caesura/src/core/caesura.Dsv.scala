@@ -151,15 +151,11 @@ object Dsv extends Dsv2:
 
   given text: (format: DsvFormat) => (tactic: Tactic[DsvError])
   =>  Text is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Text", t""): cell =>
-        cell
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t""): cell => cell
 
   given string: (format: DsvFormat) => (tactic: Tactic[DsvError])
   =>  String is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"String", ""): cell =>
-        cell.s
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", ""): cell => cell.s
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
@@ -284,8 +280,7 @@ object Dsv extends Dsv2:
           type Self = value
 
           def parse(reader: DsvReader^, offset: Int): value =
-            reader.cell(offset).lay(reader.absent()): cell =>
-              decodable.decoded(cell)
+            reader.cell(offset).lay(reader.absent()): cell => decodable.decoded(cell)
 
     given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
     =>  ( field: => inner is Dsv.Field )
@@ -361,8 +356,7 @@ object Dsv extends Dsv2:
                 // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
                 // position.
                 val row2 = row.columns.lay(Dsv(row.data.drop(count))): columns =>
-                  columns.at(label).lay(Dsv(IArray[Text]())): i =>
-                    Dsv(row.data.drop(i))
+                  columns.at(label).lay(Dsv(IArray[Text]())): i => Dsv(row.data.drop(i))
 
                 count += spans(index)
 
@@ -406,8 +400,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.indices.all: index =>
-        data(index) == row.data(index)
+      data.length == row.data.length && data.indices.all: index => data(index) == row.data(index)
 
     case _ =>
       false

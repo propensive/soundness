@@ -78,8 +78,7 @@ object TabulationRules:
               out +=
                 Violation
                   ( file, c.arrowLine, c.arrowCol, "R33-multiline-pattern-body-newline",
-                    "body of a multi-line case pattern must start on the line "
-                      +"after `=>`" )
+                    "body of a multi-line case pattern must start on the line after `=>`" )
           // Single-line pattern, multi-line body: keep the original sub-rule
           // (exactly one space before `=>` on the case-keyword line). Only
           // meaningful when `=>` trails content on a line; if the case has a

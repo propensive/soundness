@@ -309,8 +309,7 @@ object Cbor extends Cbor2, Dynamic:
         if cbor.isInteger then
           val long = cbor.asInstanceOf[Long]
 
-          if long >= 0 then head(out, 0, long)
-          else head(out, 1, -1L - long)
+          if long >= 0 then head(out, 0, long) else head(out, 1, -1L - long)
 
         else if cbor.isFloat then
           out.push((0xE0 | 27).toByte)
@@ -359,8 +358,7 @@ object Cbor extends Cbor2, Dynamic:
             write(out, cbor.value(index))
             index += 1
 
-      Producer.collect[Data](): producer =>
-        write(producer, cbor)
+      Producer.collect[Data](): producer => write(producer, cbor)
 
     // Renders a CBOR node in the RFC 8949 §8 diagnostic notation. The whole rendering lives in this
     // instance so `.show` is the single route to diagnostic text.
@@ -1386,8 +1384,7 @@ object Cbor extends Cbor2, Dynamic:
           val byte = data(pos + 1 + position).toLong & 0xFF
           ascii |= byte.toInt
 
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
 
           position += 1
 

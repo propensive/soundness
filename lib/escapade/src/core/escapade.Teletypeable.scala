@@ -105,9 +105,7 @@ object Teletypeable:
 
     val packages: Map[Text, Color in Srgb] =
       dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-      . zipWithIndex.map: (prefix, index) =>
-          prefix -> accent(index)
-
+      . zipWithIndex.map: (prefix, index) => prefix -> accent(index)
       . to(Map)
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
@@ -191,8 +189,7 @@ object Teletypeable:
 
     val root = (init :: tableLines).join(e"\n")
 
-    stack.cause.lay(root): cause =>
-      e"$root\n${palette.message}(caused by:)\n$cause"
+    stack.cause.lay(root): cause => e"$root\n${palette.message}(caused by:)\n$cause"
 
   given frame: (Text is Measurable) => (palette: StackTrace.Palette)
   =>  StackTrace.Frame is Teletypeable = frame =>

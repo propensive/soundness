@@ -102,8 +102,7 @@ object Cuttable:
   given textualText: [textual] => (cuttable: textual is Cuttable by Text)
   =>  textual is Cuttable by Char =
 
-    (text, delimiter, limit) =>
-      cuttable.cut(text, delimiter.toString.tt, limit)
+    (text, delimiter, limit) => cuttable.cut(text, delimiter.toString.tt, limit)
 
 trait Cuttable extends Typeclass.Pure, Operable:
   def cut(value: Self, delimiter: Operand, limit: Int): List[Self]

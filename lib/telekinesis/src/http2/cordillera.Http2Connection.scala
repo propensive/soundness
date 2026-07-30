@@ -194,8 +194,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
         val writer = daemon:
           duplex0.send(zephyrine.Stream(connectionPreface))
 
-          outbound0.stream.records.each: frame =>
-            duplex0.send(zephyrine.Stream(frame.serialize))
+          outbound0.stream.records.each: frame => duplex0.send(zephyrine.Stream(frame.serialize))
 
         val frameReaderRef: AnyRef = FrameReader(duplex0.source).asInstanceOf[AnyRef]
 
@@ -233,8 +232,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
     send(Frame.Headers(id, encoder.encode(headerBlock), endStream = noBody, endHeaders = true))
 
-    body.let: payload =>
-      send(Frame.Data(id, payload, endStream = true))
+    body.let: payload => send(Frame.Data(id, payload, endStream = true))
 
     stream
 

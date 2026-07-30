@@ -150,8 +150,7 @@ extension [cipher <: Cipher](key: PublicKey[cipher])
 
 extension [cipher <: Cipher](key: PrivateKey[cipher]^)
   def uncloak[result](block: Decryptor[cipher]^ ?=> result): result =
-    key.secret.uncloak: bytes =>
-      block(using Decryptor(bytes.immutable(using Unsafe)))
+    key.secret.uncloak: bytes => block(using Decryptor(bytes.immutable(using Unsafe)))
 
 extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
   def uncloak[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?=> result): result =

@@ -1113,8 +1113,7 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           p = z.nextInIndex; n = z.availIn; b = bitb; k = bitk
           q = write; m = if q < read then read - q - 1 else end - q
 
-          if last == 0 then mode = Type
-          else mode = Dry
+          if last == 0 then mode = Type else mode = Dry
 
         case Dry =>
           write = q

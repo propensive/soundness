@@ -104,8 +104,7 @@ object Showable:
 
         s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code".tt
 
-    stack.cause.lay(root): cause =>
-      s"$root\ncaused by:\n$cause".tt
+    stack.cause.lay(root): cause => s"$root\ncaused by:\n$cause".tt
 
 trait Showable extends Communicable:
   def text(value: Self): Text

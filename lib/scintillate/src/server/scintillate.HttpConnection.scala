@@ -76,8 +76,7 @@ object HttpConnection:
     val headers: List[Http.Header] =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
         pair.absolve match
-          case (key, values) => values.map: value =>
-            Http.Header(key, value.tt)
+          case (key, values) => values.map: value => Http.Header(key, value.tt)
 
       . to(List)
 

@@ -37,21 +37,17 @@ import vacuous.*
 object Frame:
   // Combine two optional maxima as a minimum, treating `Unset` as +infinity.
   private def lesser(a: Optional[Int], b: Optional[Int]): Optional[Int] =
-    a.lay(b): av =>
-      b.lay(av): bv =>
-        av.min(bv)
+    a.lay(b): av => b.lay(av): bv => av.min(bv)
 
   // Min/max along the split axis: the minimum is the larger of the split's own
   // minimum and the SUM of its children's minima (a container can be no smaller
   // than its contents); the maximum is the smaller of its own maximum and the
   // sum of its children's maxima (any unbounded child makes the sum unbounded).
   private def alongLimits(own: Limits, children: List[Limits]): Limits =
-    val minSum = children.foldLeft(0): (acc, child) =>
-      acc + child.min
+    val minSum = children.foldLeft(0): (acc, child) => acc + child.min
 
     val maxSum: Optional[Int] = children.foldLeft(0: Optional[Int]): (acc, child) =>
-      acc.let: total =>
-        child.max.let(total + _)
+      acc.let: total => child.max.let(total + _)
 
     Limits(own.min.max(minSum), lesser(own.max, maxSum))
 
@@ -59,11 +55,9 @@ object Frame:
   // cross extent must hold every child); the maximum is the smallest child
   // maximum.
   private def crossLimits(own: Limits, children: List[Limits]): Limits =
-    val minMax = children.foldLeft(0): (acc, child) =>
-      acc.max(child.min)
+    val minMax = children.foldLeft(0): (acc, child) => acc.max(child.min)
 
-    val maxMin = children.foldLeft(Unset: Optional[Int]): (acc, child) =>
-      lesser(acc, child.max)
+    val maxMin = children.foldLeft(Unset: Optional[Int]): (acc, child) => lesser(acc, child.max)
 
     Limits(own.min.max(minMax), lesser(own.max, maxMin))
 

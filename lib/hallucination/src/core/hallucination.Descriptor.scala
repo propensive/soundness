@@ -68,8 +68,7 @@ case class Descriptor(entries: List[Descriptor.Entry]):
 
   // The width of the storage primitive for one pixel, mirroring `Channel.Storage`.
   def storageBits: Int =
-    if totalBits <= 8 then 8 else if totalBits <= 16 then 16 else if totalBits <= 32 then 32
-    else 64
+    if totalBits <= 8 then 8 else if totalBits <= 16 then 16 else if totalBits <= 32 then 32 else 64
 
   // The shift and depth of the labelled channel, if the layout has it.
   def locate(label: Text): Optional[(Int, Int)] =
@@ -145,8 +144,7 @@ case class Descriptor(entries: List[Descriptor.Entry]):
           scale(color.green, locate("green".tt).vouch) +
           scale(color.blue, locate("blue".tt).vouch)
 
-      locate("alpha".tt).lay(opaque): position =>
-        opaque + scale(alpha, position)
+      locate("alpha".tt).lay(opaque): position => opaque + scale(alpha, position)
 
     else if has("cyan".tt) then
       val key = 1.0 - color.red.max(color.green).max(color.blue)

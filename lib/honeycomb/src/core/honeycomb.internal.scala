@@ -822,8 +822,7 @@ object internal:
         if isEmpty then attrs else
           var result: Attributes = attrs
 
-          others.foreach: k =>
-            result = result.removed(k)
+          others.foreach: k => result = result.removed(k)
 
           result
 

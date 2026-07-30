@@ -170,8 +170,7 @@ private[bitumen] object TarFilesystem:
     val prefix = if rootText.endsWith("/") then rootText else rootText+"/"
 
     val relText: Text =
-      if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt
-      else fullText.tt
+      if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt else fullText.tt
 
     mitigate:
       case PathError(_, _) => TarError(TarError.Reason.BadName(relText))

@@ -54,8 +54,7 @@ object Inspectable extends Inspectable2:
 
     inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
-        [variant <: derivation] => variant =>
-          contextual.give(variant.inspect)
+        [variant <: derivation] => variant => contextual.give(variant.inspect)
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
   given long: Long is Inspectable = long => (long.toString+"L").tt
@@ -125,9 +124,7 @@ object Inspectable extends Inspectable2:
       caps.unsafe.unsafeAssumePure(() => inspectableValue)
 
     entries =>
-      entries.map: (key, value) =>
-        inspKey().text(key).s+" → "+inspValue().text(value).s
-
+      entries.map: (key, value) => inspKey().text(key).s+" → "+inspValue().text(value).s
       . mkString("{", ", ", "}").tt
 
   given series: [element] => (inspectable: => element is Inspectable)

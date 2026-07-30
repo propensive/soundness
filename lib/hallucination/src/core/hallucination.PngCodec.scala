@@ -57,8 +57,7 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises RasterError =
     try
       val signed =
-        data.length >= 8 && signature.indices.forall: index =>
-          u8(data, index) == signature(index)
+        data.length >= 8 && signature.indices.forall: index => u8(data, index) == signature(index)
 
       if !signed then abort(RasterError(Png(), Reason.BadSignature))
 
@@ -112,8 +111,7 @@ private[hallucination] object PngCodec:
                 u8(data, position + 10 + index*3)
 
           case "tRNS" =>
-            transparency = IArray.tabulate(length): index =>
-              u8(data, position + 8 + index)
+            transparency = IArray.tabulate(length): index => u8(data, position + 8 + index)
 
           case "IDAT" =>
             idat.addAll(body.mutable(using Unsafe), 0, length)
@@ -253,8 +251,7 @@ private[hallucination] object PngCodec:
 
       if interlace == 0
       then
-        decodePass(0, width, height): (x, y) =>
-          y*width + x
+        decodePass(0, width, height): (x, y) => y*width + x
       else
         // Adam7: seven passes, each a subsampling of the image.
         val passes = List((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4),
@@ -383,7 +380,6 @@ private[hallucination] object PngCodec:
   private def concatenate(stream: LazyList[Data]): Array[Byte] =
     val output = ji.ByteArrayOutputStream()
 
-    stream.foreach: data =>
-      output.write(data.mutable(using Unsafe))
+    stream.foreach: data => output.write(data.mutable(using Unsafe))
 
     output.toByteArray.nn

@@ -182,5 +182,4 @@ object QuoteRules:
         out +=
           Violation
             ( file, site.line, site.spaceBeforeCol, "473.7",
-              s"no space is permitted directly before `$closeText` " +
-                "in an inline quote/splice" )
+              s"no space is permitted directly before `$closeText` " + "in an inline quote/splice" )

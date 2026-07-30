@@ -60,8 +60,7 @@ extends Figure:
     attrs += t"width" -> width.show
     attrs += t"height" -> height.show
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.nonEmpty then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     Element(t"rect", Attributes.from(attrs.result()), IArray())
 
@@ -80,8 +79,7 @@ extends Figure:
     attrs += t"d" -> d
     id.let: svgId => attrs += t"id" -> svgId.text
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.nonEmpty then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     style.let: css => attrs += t"style" -> css.text
     Element(t"path", Attributes.from(attrs.result()), IArray())
@@ -137,7 +135,6 @@ extends Figure:
       attrs += t"rx" -> xRadius.show
       attrs += t"ry" -> yRadius.show
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.nonEmpty then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())

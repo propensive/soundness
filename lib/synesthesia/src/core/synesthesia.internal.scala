@@ -360,8 +360,7 @@ object internal:
 
         . getOrElse('{Unset})
 
-      val paramNames = method.paramSymss.head.map: param =>
-        Expr(param.name.tt)
+      val paramNames = method.paramSymss.head.map: param => Expr(param.name.tt)
 
       val params = method.paramSymss.head.map: param =>
         param.info.asType.absolve match

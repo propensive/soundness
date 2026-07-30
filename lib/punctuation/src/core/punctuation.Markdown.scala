@@ -130,8 +130,7 @@ object Markdown:
       val alt: Text = content.map(text(_)).join
       val base = Img(src = destination, alt = alt)
 
-      title.lay(base): title =>
-        base.title = title
+      title.lay(base): title => base.title = title
 
   // Render a Markdown document back to CommonMark source text. `.show` is the single route to the
   // source: the output re-parses to an equal AST (modulo `line` metadata) and paragraph text is
@@ -192,15 +191,13 @@ object Markdown:
 
         case Layout.BulletList(line, tight, items*) =>
           val items2 = items.map: item =>
-            if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
 
           Ul(items2*)
 
         case Layout.OrderedList(line, start, tight, delimiter, items*) =>
           val items2 = items.map: item =>
-            if item.nil then Li
-            else Li(merge(false, item, Nil, tight)*)
+            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
 
           val start2 = start.puncture(1)
 

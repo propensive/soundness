@@ -202,14 +202,12 @@ object AnchorRules:
       sawCodeAtTopLevel = true
       i += 1
 
-      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then
-        i += 1
+      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then i += 1
     else if arr(i).kind == Sort.Code && arr(i).text == "." then
       sawCodeAtTopLevel = true
       i += 1
 
-      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then
-        i += 1
+      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then i += 1
 
     while i < arr.length do
       val tok = arr(i)
@@ -295,8 +293,7 @@ object AnchorRules:
         val lineNum = idx + 1
 
         val headIsBracket =
-          line.firstReal.exists: t =>
-            t.kind == Sort.Code && (t.text == "(" || t.text == "[")
+          line.firstReal.exists: t => t.kind == Sort.Code && (t.text == "(" || t.text == "[")
 
         if line.isBlank then ()
         else if depths.parens(idx) > 0 then ()
@@ -485,8 +482,7 @@ object AnchorRules:
       val builder = Map.newBuilder[Int, Int]
 
       ctx.anchors.frames.foreach: frame =>
-        if frame.kind != Anchors.FrameKind.ChainCall &&
-          frame.kind != Anchors.FrameKind.QuoteSplice
+        if frame.kind != Anchors.FrameKind.ChainCall && frame.kind != Anchors.FrameKind.QuoteSplice
         then
           val opener = ctx.lines(frame.openLine - 1)
           val head   = semTokens(opener).headOption.map(_.text).getOrElse("")
@@ -592,8 +588,7 @@ object AnchorRules:
           gens.foreach: gl =>
             if gl.isFilter then
               val shared =
-                gens.exists: other =>
-                  (other ne gl) && other.line == gl.line
+                gens.exists: other => (other ne gl) && other.line == gl.line
 
               if !shared then builder += gl.line
 

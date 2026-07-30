@@ -107,14 +107,12 @@ object SchemaSignature:
     // proceed by treating the whole document as the base schema.
     val layerIdx: Optional[Int] = layerKeywordIndex(axiom.document, axiom)
 
-    val baseChildren = root.children.filter: child =>
-      keywordIndexOf(child) != layerIdx
+    val baseChildren = root.children.filter: child => keywordIndexOf(child) != layerIdx
 
     val baseElement = Tel.Element.Node(Unset, axiom.document, baseChildren)
     val baseHash    = Blake3.hashOf(baseElement.bintel(axiom), cadence.hashSize)
 
-    val layerChildren = root.children.filter: child =>
-      keywordIndexOf(child) == layerIdx
+    val layerChildren = root.children.filter: child => keywordIndexOf(child) == layerIdx
 
     val layerStruct: Optional[Tels.Struct] =
       axiom.records.find(_.name == Text("Layer")) match
@@ -178,8 +176,7 @@ object SchemaSignature:
     val it = hashes.iterator
     var bad = false
 
-    while it.hasNext && !bad do
-      if it.next().length != cadence.hashSize then bad = true
+    while it.hasNext && !bad do if it.next().length != cadence.hashSize then bad = true
 
     if bad then abort(BintelError(BintelError.Reason.BadSignatureLength))
 

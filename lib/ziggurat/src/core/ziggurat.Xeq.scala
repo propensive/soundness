@@ -74,8 +74,7 @@ object Xeq:
 
     val encoded: List[(Text, Text)] = payloads.map: payload =>
       val raw: Data =
-        if !payload.gzip then payload.bytes
-        else LazyList(payload.bytes).compress[Gzip].read[Data]
+        if !payload.gzip then payload.bytes else LazyList(payload.bytes).compress[Gzip].read[Data]
 
       payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
@@ -141,8 +140,7 @@ object Xeq:
     // same `index:`/`-----BEGIN CERTIFICATE-----` extraction logic decodes it.
     val content: Text = jar.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
-    val rows: List[Text] = entries.map: (label, url, hash) =>
-      t"$label=$url|$hash"
+    val rows: List[Text] = entries.map: (label, url, hash) => t"$label=$url|$hash"
 
     val builder = StringBuilder()
     builder.add(prefix)

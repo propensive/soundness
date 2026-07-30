@@ -86,8 +86,7 @@ object Enclave:
       block(using tool).also:
         sh"$path '{admin}' kill".exec[Exit]()
 
-        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item =>
-          safely(item.delete())
+        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item => safely(item.delete())
 
 
 case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)

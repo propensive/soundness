@@ -133,8 +133,7 @@ object FrameRules:
           val t = line.rest(i)
 
           if t.kind == Sort.Code then
-            if t.text == "(" then depth += 1
-            else if t.text == ")" then depth -= 1
+            if t.text == "(" then depth += 1 else if t.text == ")" then depth -= 1
 
           i += 1
 
@@ -168,8 +167,7 @@ object FrameRules:
           line.lexemes.lastOption match
             case Some(token) if token.kind == Sort.Space && token.text.length > 0 =>
               val hasNonWs =
-                line.lexemes.exists: t =>
-                  t.kind != Sort.Space && t.kind != Sort.Comment
+                line.lexemes.exists: t => t.kind != Sort.Space && t.kind != Sort.Comment
 
               if hasNonWs then
                 val col = line.lexemes.iterator.map(_.text.length).sum - token.text.length + 1
@@ -235,8 +233,7 @@ object FrameRules:
       val out = mutable.ListBuffer[Violation]()
 
       def lineText(idx: Int): String =
-        if idx < ctx.lines.length then ctx.lines(idx).lexemes.iterator.map(_.text).mkString
-        else ""
+        if idx < ctx.lines.length then ctx.lines(idx).lexemes.iterator.map(_.text).mkString else ""
 
       if ctx.lines.nonEmpty && !lineText(0).contains("/*") then
         out +=
@@ -274,8 +271,7 @@ object FrameRules:
           out +=
             Violation
               ( file, p.line, 1, "131",
-                s"expected `package` declaration on line 33, "
-                  +s"found content on line ${p.line}" )
+                s"expected `package` declaration on line 33, found content on line ${p.line}" )
 
         case Some(p) =>
           val name = p.segments.mkString(".")
@@ -381,8 +377,7 @@ object FrameRules:
           out +=
             Violation
               ( file, imp.startLine, 1, "302.1",
-                "top-level imports must not use aliases (`as` or `=>`); "
-                  +"write the full path" )
+                "top-level imports must not use aliases (`as` or `=>`); write the full path" )
 
         prevGroup match
           case Some(pg) =>
@@ -417,8 +412,7 @@ object FrameRules:
                   out +=
                     Violation
                       ( file, imp.startLine, 1, "302.2",
-                        s"import `${imp.path}` is out of alphabetical order "
-                          +s"(after `$pn`)" )
+                        s"import `${imp.path}` is out of alphabetical order (after `$pn`)" )
 
           case None => ()
 
@@ -478,6 +472,4 @@ object FrameRules:
         case "dotty" | "com" | "sun" | "jakarta" => 4
 
         case _ =>
-          if firstSegment.headOption.exists(_.isUpper) then 6
-          else if !wildcardImport then 6
-          else 5
+          if firstSegment.headOption.exists(_.isUpper) then 6 else if !wildcardImport then 6 else 5

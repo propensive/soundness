@@ -106,8 +106,7 @@ object Brackets:
         else arr.indexWhere(t => t.kind != Sort.Space && t.kind != Sort.Comment, firstSemantic + 1)
 
       val lineStartsWithBracket =
-        firstSemantic >= 0 &&
-          (arr(firstSemantic).text == "(" || arr(firstSemantic).text == "[")
+        firstSemantic >= 0 && (arr(firstSemantic).text == "(" || arr(firstSemantic).text == "[")
 
       // A line beginning `=> (`/`=> [` continues an anonymous-given chain;
       // one beginning `:   (`/`:   [` is a heavy-signature continuation.

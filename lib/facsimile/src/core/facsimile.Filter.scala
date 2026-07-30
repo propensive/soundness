@@ -188,8 +188,7 @@ private[facsimile] object Filter:
       // Forcing the stream incrementally means a truncated (but valid-so-far) input keeps
       // whatever it decoded before the bytes ran out, matching the eager inflater's
       // partial-on-truncation behaviour; corrupt data throws from the backend.
-      chunks.each: chunk =>
-        builder.addAll(chunk.mutable(using Unsafe))
+      chunks.each: chunk => builder.addAll(chunk.mutable(using Unsafe))
     catch case _: IllegalStateException => ()
 
     val result = builder.result()
@@ -240,8 +239,7 @@ private[facsimile] object Filter:
 
         i += length + 1
       else
-        if i >= data.length
-        then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
+        if i >= data.length then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
 
         var j = 0
 

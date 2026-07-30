@@ -82,8 +82,7 @@ object Operators:
     def lineIndent(offset: Int): Int =
       val lineStart = source.startOfLine(offset)
       var i         = lineStart
-      while i < content.length && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do
-        i += 1
+      while i < content.length && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do i += 1
       i - lineStart
 
     // `anchor` >= 0 means an enclosing chain has already fixed the indent;

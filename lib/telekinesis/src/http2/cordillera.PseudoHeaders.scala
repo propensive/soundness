@@ -63,8 +63,7 @@ object PseudoHeaders:
           HpackEntry(t":authority", authority),
           HpackEntry(t":path", request.target) )
 
-    val regular = request.textHeaders.map: header =>
-      HpackEntry(header.key.lower, header.value)
+    val regular = request.textHeaders.map: header => HpackEntry(header.key.lower, header.value)
 
     pseudo ++ regular
 
@@ -129,10 +128,7 @@ object PseudoHeaders:
     val forbidden: List[Text] =
       List(t"connection", t"keep-alive", t"transfer-encoding", t"upgrade", t"proxy-connection")
 
-    val regular = response.textHeaders.map: header =>
-      HpackEntry(header.key.lower, header.value)
-
-    . filter: entry =>
-        !forbidden.contains(entry.name)
+    val regular = response.textHeaders.map: header => HpackEntry(header.key.lower, header.value)
+    . filter: entry => !forbidden.contains(entry.name)
 
     HpackEntry(t":status", response.status.code.show) :: regular

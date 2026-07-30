@@ -205,14 +205,12 @@ private[pneumatic] object BrotliEncoder:
       if left(p) >= 0 then
         level += 1
 
-        if level > maxDepth then result = 2
-        else { stack(level) = right(p); p = left(p) }
+        if level > maxDepth then result = 2 else { stack(level) = right(p); p = left(p) }
       else
         depth(right(p)) = level.toByte
         while level >= 0 && stack(level) == -1 do level -= 1
 
-        if level < 0 then result = 1
-        else { p = stack(level); stack(level) = -1 }
+        if level < 0 then result = 1 else { p = stack(level); stack(level) = -1 }
 
     result == 1
 

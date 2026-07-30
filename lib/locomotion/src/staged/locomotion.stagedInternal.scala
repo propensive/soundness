@@ -235,8 +235,7 @@ object stagedInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -1077,8 +1076,7 @@ object stagedInternal:
 
     cache.active += TypeRepr.of[sum].dealias.show
 
-    try sumBody0[sum](reader, cache)
-    finally cache.active -= TypeRepr.of[sum].dealias.show
+    try sumBody0[sum](reader, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[ProtobufReader], cache: Cache)(using Quotes)
   :   Expr[sum] =

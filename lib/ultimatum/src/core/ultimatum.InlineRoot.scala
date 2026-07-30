@@ -407,8 +407,7 @@ extends GridSurface(widthFn(), 0):
       val parkLocal = presentedCaretRow - snapshotTop     // the park cell, block-local
       val parkColumn = presentedCaretColumn - 1           // 0-based
 
-      if parkLocal < 0 || parkLocal >= oldH || anchorRow < 1 || anchorRow > rows
-        || newColumns <= 0
+      if parkLocal < 0 || parkLocal >= oldH || anchorRow < 1 || anchorRow > rows || newColumns <= 0
       then Unset
       else
         // Simulate the terminal re-wrapping snapshot row `r`'s content (trimmed, so
@@ -478,8 +477,7 @@ extends GridSurface(widthFn(), 0):
           then (anchorRow - reflowAbove).min(anchorRow - truncateAbove)
           else Unset
 
-        clearTop.let: top =>
-          if top > rows then Unset else top.max(1)
+        clearTop.let: top => if top > rows then Unset else top.max(1)
 
   // On exit, drop the cursor onto a fresh line below the block and re-show it, so
   // subsequent output continues after the rendered block (like a submitted prompt).

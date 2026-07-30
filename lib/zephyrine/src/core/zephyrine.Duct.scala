@@ -97,8 +97,7 @@ object Duct:
     while consumed < length do
       val progress = duct.step(source0, consumed, length - consumed, window0, 0, space)
 
-      if progress.produced > 0
-      then duct.output.cloneStorage(window0, 0, progress.produced)(target)
+      if progress.produced > 0 then duct.output.cloneStorage(window0, 0, progress.produced)(target)
 
       // The step contract guarantees progress given input and `quantum` space;
       // a zero-progress step would loop forever, so treat it as terminal.

@@ -135,8 +135,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
   def self: Boolean = ascent == 0 && descent == Nil
 
   transparent inline def rename(lambda: (Text aka "prior") ?=> Text): Optional[Relative] =
-    descent.prim.let: prior =>
-      parent / lambda(using prior.aka["prior"])
+    descent.prim.let: prior => parent / lambda(using prior.aka["prior"])
 
   private inline def check[topic, filesystem](path: List[Text]): Unit =
     inline !![topic] match

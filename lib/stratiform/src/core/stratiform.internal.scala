@@ -334,8 +334,7 @@ object internal:
       var i = 0
 
       while i < pattern.compounds.length do
-        if !matchCompound(pattern.compounds(i), input.compounds(i), marker, out) then
-          return false
+        if !matchCompound(pattern.compounds(i), input.compounds(i), marker, out) then return false
 
         i += 1
 
@@ -529,8 +528,7 @@ object internal:
       val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
         ++ fields.flatMap(_.annotations)
 
-      !annotated.exists { annotation =>
-        annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+      !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
 
     val wireNames: List[String] = fieldNames.map { name => Tel.camelToKebab(name).s }
 
@@ -538,8 +536,7 @@ object internal:
       val name = wireNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 8 &&
-        name.forall { char => char >= '!' && char <= '~' }
+      val packs = length > 0 && length <= 8 && name.forall: char => char >= '!' && char <= '~'
 
       if !packs then None else
         var word = 0L
@@ -606,8 +603,7 @@ object internal:
         ValDef(seens(index), Some(Literal(BooleanConstant(false))))
 
       val bufferDefs = List.range(0, arity).flatMap: index =>
-        buffers(index).map: symbol =>
-          ValDef(symbol, Some('{ null }.asTerm))
+        buffers(index).map: symbol => ValDef(symbol, Some('{ null }.asTerm))
 
       val unit = Literal(UnitConstant())
 

@@ -163,14 +163,12 @@ object QuoteSites:
 
           if i == lastSemantic && precededByQuoteSplice then
             val singleSpace =
-              i - 1 >= 0 && arr(i - 1).kind == Sort.Space && arr(i - 1).text == " " &&
-                (i - 2) == j
+              i - 1 >= 0 && arr(i - 1).kind == Sort.Space && arr(i - 1).text == " " && (i - 2) == j
 
             val badBefore =
               (0 until j).exists: k =>
                 val t = arr(k)
-                t.kind != Sort.Space && t.kind != Sort.Comment &&
-                  t.text != "(" && t.text != "{"
+                t.kind != Sort.Space && t.kind != Sort.Comment && t.text != "(" && t.text != "{"
 
             sites +=
               Opener
@@ -216,8 +214,7 @@ object QuoteSites:
           val prefix = if j >= 0 && arr(j).kind == Sort.Code then arr(j).text else ""
 
           val isQuoteOpener =
-            (text == "{" && (prefix == "'" || prefix == "$")) ||
-              (text == "[" && prefix == "'")
+            (text == "{" && (prefix == "'" || prefix == "$")) || (text == "[" && prefix == "'")
 
           if isQuoteOpener then
             val closeText = if text == "{" then "}" else "]"

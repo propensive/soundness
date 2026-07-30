@@ -71,8 +71,7 @@ object Anchors:
   // the given line, outermost first — so the innermost frame is last.
   class AnchorModel(val frames: List[Frame], val lineCount: Int):
     def stackAt(line: Int): List[Frame] =
-      frames.filter: frame =>
-        line > frame.openLine && line <= frame.endLine
+      frames.filter: frame => line > frame.openLine && line <= frame.endLine
 
     def innermostAt(line: Int): Option[Frame] = stackAt(line).lastOption
 
@@ -93,8 +92,7 @@ object Anchors:
         case _                    => ()
 
     val frames =
-      out.toList.distinct.sortBy: frame =>
-        (frame.openLine, -frame.endLine)
+      out.toList.distinct.sortBy: frame => (frame.openLine, -frame.endLine)
 
     AnchorModel(frames, text.count(_ == '\n') + 1)
 
@@ -208,8 +206,7 @@ object Anchors:
     t.unforcedBody match
       case stats: List[untpd.Tree @unchecked] =>
         val spanned =
-          stats.filter: s =>
-            s.span.exists && !s.span.isZeroExtent
+          stats.filter: s => s.span.exists && !s.span.isZeroExtent
 
         spanned match
           case first :: _ =>

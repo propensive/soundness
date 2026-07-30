@@ -121,8 +121,7 @@ object PdfFont:
                   code = value.toInt
 
                 case Cos.Name(name) =>
-                  builder += code ->
-                    PdfEncoding.glyph(name).lay(t"�")(_.toString.tt)
+                  builder += code -> PdfEncoding.glyph(name).lay(t"�")(_.toString.tt)
                   code += 1
 
                 case _ =>

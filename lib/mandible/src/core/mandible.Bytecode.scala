@@ -127,8 +127,7 @@ object Bytecode:
         case obj: jlca.StackMapFrameInfo.ObjectVerificationTypeInfo =>
           val raw = obj.className.nn.name.nn.stringValue.nn
 
-          if raw.startsWith("[") then parseOne(raw.tt, 0)._1
-          else L(raw.replace('/', '.').nn.tt)
+          if raw.startsWith("[") then parseOne(raw.tt, 0)._1 else L(raw.replace('/', '.').nn.tt)
 
         case _: jlca.StackMapFrameInfo.UninitializedVerificationTypeInfo =>
           L(t"uninit")
@@ -171,8 +170,7 @@ object Bytecode:
         val indent: Text = Text("  ".repeat(line.depth).nn)
 
         val src =
-          if line.source == t"" then e""
-          else e"${Fg(palette.bytecode)}(${line.source})  "
+          if line.source == t"" then e"" else e"${Fg(palette.bytecode)}(${line.source})  "
 
         e"$indent$src${line.instruction.opcode.teletype}"
 

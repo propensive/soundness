@@ -52,8 +52,7 @@ object internal:
               $checks
               $cursor.next()
 
-              $cursor.lay($otherwise): datum =>
-                if datum != ${Expr(char)} then $otherwise
+              $cursor.lay($otherwise): datum => if datum != ${Expr(char)} then $otherwise
             }
 
         recur(index + 1, checks2)

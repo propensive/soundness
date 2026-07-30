@@ -105,8 +105,7 @@ enum Decomposition:
           append(t": ")
           item.multiline(indent + 1, true)
 
-          if ordinal < last - 1 then
-            append(t"\n"+(space*indent))
+          if ordinal < last - 1 then append(t"\n"+(space*indent))
 
       case Product(name, values, _) =>
         if newline then
@@ -121,5 +120,4 @@ enum Decomposition:
           append(t"$space$key:")
           value.multiline(indent + 2, true)
 
-          if ordinal < last - 1 then
-            append(t"\n"+(space*indent))
+          if ordinal < last - 1 then append(t"\n"+(space*indent))

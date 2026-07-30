@@ -156,8 +156,7 @@ def repackage(): Unit = application(Nil):
       Out.println(m"  application classes kept:  ${summary.ownKept}")
       Out.println(m"  dependencies externalized: ${summary.externalized.length}")
 
-      summary.externalized.each: requirement =>
-        Out.println(m"    - ${requirement.text}")
+      summary.externalized.each: requirement => Out.println(m"    - ${requirement.text}")
 
       Out.println(m"  dependency classes inlined: ${summary.inlined}")
       Out.println(m"  bundled classes stripped:  ${summary.stripped}")

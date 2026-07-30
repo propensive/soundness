@@ -179,9 +179,7 @@ object Hyphenation:
       val char = padded(j)
 
       val sl =
-        if char >= 'a' && char <= 'z' then char - 'a'
-        else if char == '.' then 26
-        else -1
+        if char >= 'a' && char <= 'z' then char - 'a' else if char == '.' then 26 else -1
 
       if sl < 0 then node = 0 else
         // Follow failure links until we find a node whose child slot is set.
@@ -199,8 +197,7 @@ object Hyphenation:
         while emit > 0 do
           val v = values(emit)
 
-          if v != null then
-            mergePattern(scores, j - depth(emit) + 1, v.asInstanceOf[IArray[Byte]])
+          if v != null then mergePattern(scores, j - depth(emit) + 1, v.asInstanceOf[IArray[Byte]])
 
           emit = dictLink(emit)
 

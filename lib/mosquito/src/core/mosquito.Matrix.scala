@@ -772,8 +772,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   Matrix[multiplication.Result, rows, columns] =
 
     val elements2 = IArray.build[multiplication.Result](elements.length): array =>
-      elements.indices.foreach: index =>
-        array(index) = elements(index)*right
+      elements.indices.foreach: index => array(index) = elements(index)*right
 
     new Matrix(rows, columns, elements2)
 
@@ -783,8 +782,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   Matrix[div.Result, rows, columns] =
 
     val elements2 = IArray.build[div.Result](elements.length): array =>
-      elements.indices.foreach: index =>
-        array(index) = elements(index)/right
+      elements.indices.foreach: index => array(index) = elements(index)/right
 
     new Matrix(rows, columns, elements2)
 

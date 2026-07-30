@@ -35,6 +35,22 @@ package decorum
 import scala.collection.mutable
 
 object DensityRules:
+  // R247 — the "necessity" rule: a construct spread over several source
+  // lines whose one-line rendering would fit within 100 columns is a
+  // violation — a break must always mean "didn't fit". The measurement,
+  // the construct kinds covered, and the (extensive) bail-outs all live in
+  // `Necessity`.
+  object UnnecessaryBreak extends Rule:
+    def id: String = "247"
+    def principle: Principle = Principle.Density
+
+    def check(ctx: Context): List[Violation] =
+      ctx.necessity.map: site =>
+        Violation
+          ( ctx.file, site.line, site.col, "247",
+            s"this ${site.kind} fits on one line (would be ${site.width} columns); " +
+              "breaks are reserved for code that does not fit" )
+
   // R312 — lambda layout, four sub-rules:
   //   312.1 named single-line lambda using `(…)` (must be `{…}` or `: …`)
   //   312.2 named single-line `{…}` at end-of-line (must be `: …`)

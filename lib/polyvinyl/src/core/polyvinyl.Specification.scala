@@ -115,10 +115,7 @@ trait Specification extends Original:
                   val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
 
                   val matchFn: Expr[Text -> Origin -> Any] =
-                    ' {
-                        name =>
-                          ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}
-                      }
+                    '{name => ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}}
 
                   val maker: Expr[Origin => Record] = '{field => $target.build(field, $matchFn)}
 

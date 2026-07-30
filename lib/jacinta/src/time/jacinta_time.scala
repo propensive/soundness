@@ -50,8 +50,7 @@ package decodables:
   given instantJsonDecodable: (tactic: Tactic[JsonError])
   =>  (Instant over Unix) is Json.Decodable =
     caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Whole): json =>
-        Instant.of[Unix](json.root.long)
+      Json.Decodable(Morphology.Whole): json => Instant.of[Unix](json.root.long)
 
   given durationJsonDecodable: (tactic: Tactic[JsonError])
   =>  Duration is Json.Decodable =

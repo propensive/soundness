@@ -46,8 +46,7 @@ object DagDiagram:
     val indexes: Map[node, Int] = nodes.zipWithIndex.to(Map)
 
     val layout: Array[Array[Int]] = Array.from:
-      nodes.indices.map: i =>
-        Array.range(0, i).map(_ => 0)
+      nodes.indices.map: i => Array.range(0, i).map(_ => 0)
 
     dag.edges.map: (source, destination) =>
       val si = indexes(source)

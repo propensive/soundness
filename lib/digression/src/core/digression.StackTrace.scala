@@ -422,8 +422,7 @@ object StackTrace:
       s"$state\n\n${nbsp*2}at$nbsp$classPad$className$dot$method$methodPad$nbsp$file:$line".tt
 
     Message:
-      stack.cause.lay(root): cause =>
-        s"$root\ncaused by:\n\n$cause".tt
+      stack.cause.lay(root): cause => s"$root\ncaused by:\n\n$cause".tt
 
 case class StackTrace
   ( component: Text,

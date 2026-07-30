@@ -146,8 +146,7 @@ object SyntaxMatcher:
         functionMatch(name, body, tokens)
 
       case Syntax.Sequence(terms) =>
-        terms.foldLeft(List(tokens)): (states, term) =>
-          states.flatMap(consume(term, _))
+        terms.foldLeft(List(tokens)): (states, term) => states.flatMap(consume(term, _))
 
       case Syntax.OneOf(options) =>
         options.flatMap(consume(_, tokens))
@@ -168,18 +167,15 @@ object SyntaxMatcher:
     :   List[(List[Syntax], List[ValueToken])] =
 
       terms.indices.to(List).flatMap: index =>
-        consume(terms(index), tokens).map: rem =>
-          (terms.patch(index, Nil, 1), rem)
+        consume(terms(index), tokens).map: rem => (terms.patch(index, Nil, 1), rem)
 
     private def allOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
       if terms.nil then List(tokens)
       else
-        pickEach(terms, tokens).flatMap: (rest, rem) =>
-          allOf(rest, rem)
+        pickEach(terms, tokens).flatMap: (rest, rem) => allOf(rest, rem)
 
     private def anyOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
-      pickEach(terms, tokens).flatMap: (rest, rem) =>
-        rem :: anyOf(rest, rem)
+      pickEach(terms, tokens).flatMap: (rest, rem) => rem :: anyOf(rest, rem)
 
     private def repeat
       ( term: Syntax, min: Int, max: Optional[Int], separated: Boolean, tokens: List[ValueToken] )
@@ -250,8 +246,7 @@ object SyntaxMatcher:
         case ValueToken.Function(fname) :: tail if same(fname, name) =>
           val (inner, after) = split(tail)
 
-          after.lay(Nil): rest =>
-            if consume(body, inner).exists(_.nil) then List(rest) else Nil
+          after.lay(Nil): rest => if consume(body, inner).exists(_.nil) then List(rest) else Nil
 
         case _ =>
           Nil

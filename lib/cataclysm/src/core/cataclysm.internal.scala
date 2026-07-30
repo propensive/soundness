@@ -138,8 +138,7 @@ object internal:
       val segments = text.cut(placeholder)
       var acc: Expr[String] = Expr(segments.head.s)
 
-      for segment <- segments.tail do
-        acc = '{$acc + ${selectorFragment()}.s + ${Expr(segment.s)}}
+      for segment <- segments.tail do acc = '{$acc + ${selectorFragment()}.s + ${Expr(segment.s)}}
 
       '{SelectorList.read($acc.tt)}
 

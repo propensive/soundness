@@ -189,8 +189,7 @@ object bintelInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -630,8 +629,7 @@ object bintelInternal:
 
         def focusedOver[result: Type](raw: Expr[result]): Expr[result] =
           '{
-            if $focused then Tel.Parsable.focusing($foci, $keyword)($raw)
-            else $raw
+            if $focused then Tel.Parsable.focusing($foci, $keyword)($raw) else $raw
           }
 
         val rhs: Term = plans(index) match
@@ -829,8 +827,7 @@ object bintelInternal:
 
     cache.active += TypeRepr.of[sum].dealias.show
 
-    try sumBody0[sum](reader, cache)
-    finally cache.active -= TypeRepr.of[sum].dealias.show
+    try sumBody0[sum](reader, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[BintelReader], cache: Cache)(using Quotes)
   :   Expr[sum] =

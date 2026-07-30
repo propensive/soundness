@@ -78,8 +78,7 @@ object Lambdas:
     def walk(t: untpd.Tree): Unit =
       t match
         case a: untpd.Apply if a.args.length == 1 =>
-          directLambda(a.args.head).foreach: f =>
-            siteFor(f, a, content, source).foreach(out += _)
+          directLambda(a.args.head).foreach: f => siteFor(f, a, content, source).foreach(out += _)
 
         case _ => ()
       t.productIterator.foreach(descend(_, walk))

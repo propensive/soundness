@@ -149,8 +149,7 @@ object internal:
     import quotes.reflect.*
     val members = refinements(self.asTerm.tpe.widen)
 
-    members.at(t"Topic").let: position =>
-      (position, members.at(t"Origin").or(position))
+    members.at(t"Topic").let: position => (position, members.at(t"Origin").or(position))
 
   def select(self: Expr[Json], field: Expr[String]): Macro[Json] =
 
@@ -618,9 +617,7 @@ object internal:
   private def arrayElements(arr: IArray[Any]): IArray[Any] =
     val n = arr.length
 
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
-    then arr.take(n - 1)
-    else arr
+    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.take(n - 1) else arr
 
   private def hasMarker(s: String): Boolean =
     var i = 0
@@ -945,8 +942,7 @@ object internal:
 
         case arr: IArray[Any] @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
-          if (arr.length & 1) == 0 then serializeObject(arr)
-          else serializeArray(arrayElements(arr))
+          if (arr.length & 1) == 0 then serializeObject(arr) else serializeArray(arrayElements(arr))
 
         case other =>
           halt(m"unexpected JSON AST node ${other.toString.tt}")
@@ -1006,26 +1002,22 @@ object internal:
 
           case s: String =>
             ' {
-                $accept && $scrutinee.isString &&
-                  $scrutinee.asInstanceOf[String] == ${Expr(s)}
+                $accept && $scrutinee.isString && $scrutinee.asInstanceOf[String] == ${Expr(s)}
               }
 
           case b: Boolean =>
             ' {
-                $accept && $scrutinee.isBoolean &&
-                  $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
+                $accept && $scrutinee.isBoolean && $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
               }
 
           case l: Long =>
             ' {
-                $accept && $scrutinee.isLong &&
-                  $scrutinee.asInstanceOf[Long] == ${Expr(l)}
+                $accept && $scrutinee.isLong && $scrutinee.asInstanceOf[Long] == ${Expr(l)}
               }
 
           case d: Double =>
             ' {
-                $accept && $scrutinee.isDouble &&
-                  $scrutinee.asInstanceOf[Double] == ${Expr(d)}
+                $accept && $scrutinee.isDouble && $scrutinee.asInstanceOf[Double] == ${Expr(d)}
               }
 
           case bcd: Array[Long] @unchecked =>
@@ -1169,8 +1161,7 @@ object internal:
             var k = 0
 
             while k < pairs do
-              if arr(k*2) == MarkerString then c += 1
-              else c += countHolesIn(arr(k*2 + 1))
+              if arr(k*2) == MarkerString then c += 1 else c += countHolesIn(arr(k*2 + 1))
 
               k += 1
 
@@ -1408,15 +1399,13 @@ object internal:
       val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
         ++ fields.flatMap(_.annotations)
 
-      !annotated.exists { annotation =>
-        annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+      !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
 
     def packedName(index: Int): Option[(Long, Long)] =
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 &&
-        name.forall { char => char >= ' ' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall: char => char >= ' ' && char < 127
 
       if !packs then None else
         var low = 0L
@@ -1425,8 +1414,7 @@ object internal:
 
         while position < length do
           val byte = name.charAt(position).toLong & 0xFF
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
           position += 1
 
         Some((low, high))
@@ -1620,10 +1608,7 @@ object internal:
         Apply(applied, slots.map { slot => Ref(slot) })
 
       Block
-        ( '{ $reader.openObject() }.asTerm
-            :: slotDefs ::: seenDefs
-            ::: loop
-            ::: absents,
+        ( '{ $reader.openObject() }.asTerm :: slotDefs ::: seenDefs ::: loop ::: absents,
           construct )
       . asExprOf[value]
 

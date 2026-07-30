@@ -113,8 +113,7 @@ class Page private[facsimile]
 
     pdf.resolved(resources.at(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
     . to(List).flatMap: (name, value) =>
-        PdfFont.read(pdf.resolved(value))(using pdf).lay(List()): font =>
-          List(name -> font)
+        PdfFont.read(pdf.resolved(value))(using pdf).lay(List()): font => List(name -> font)
 
     . to(Map)
 

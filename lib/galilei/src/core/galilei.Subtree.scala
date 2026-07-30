@@ -92,8 +92,7 @@ object Subtree:
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[IoError] )
     :   LazyList[Path on plane] =
-      entriesResolved(handle.resolve(path)).map: child =>
-        path.child(child.name)(using Unsafe)
+      entriesResolved(handle.resolve(path)).map: child => path.child(child.name)(using Unsafe)
 
     transparent inline def remove()
       ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Write])^ )

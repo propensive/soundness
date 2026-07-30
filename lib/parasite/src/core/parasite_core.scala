@@ -104,8 +104,7 @@ def daemon[error <: Hazard](using Codepoint)
 :   Daemon =
 
   val tactic = AsyncTactic[error]()
-  Daemon: worker =>
-    evaluate(using worker, tactic)
+  Daemon: worker => evaluate(using worker, tactic)
 
 
 // Contains *thrown* exceptions escaping a region of fire-and-forget work:

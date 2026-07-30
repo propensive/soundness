@@ -52,8 +52,7 @@ object Strain:
             Metric.P99  -> strain.p99,
             Metric.P999 -> strain.p999 )
 
-        . flatMap: (key, value) =>
-            value.option.map(key -> _.toDouble)
+        . flatMap: (key, value) => value.option.map(key -> _.toDouble)
 
       val slo: List[(Metric, Double)] =
         strain.compliance.option.map(Metric.Compliance -> _).to(List)

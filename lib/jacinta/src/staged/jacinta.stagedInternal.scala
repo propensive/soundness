@@ -204,8 +204,7 @@ object stagedInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -470,8 +469,7 @@ object stagedInternal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 &&
-        name.forall { char => char >= ' ' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall { char => char >= ' ' && char < 127 }
 
       if !packs then None else
         var low = 0L
@@ -480,8 +478,7 @@ object stagedInternal:
 
         while position < length do
           val byte = name.charAt(position).toLong & 0xFF
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
           position += 1
 
         Some((low, high))

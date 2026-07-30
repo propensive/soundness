@@ -91,8 +91,7 @@ trait Optic extends Findable, Dynamic:
   private def andThen[next](following: (Optic from Target onto next)^)
   :   (Optic from Origin onto next)^ =
 
-    Optic[Any, Origin, next]: (origin, lambda) =>
-      this.modify(origin)(following.modify(_)(lambda))
+    Optic[Any, Origin, next]: (origin, lambda) => this.modify(origin)(following.modify(_)(lambda))
 
 
   def selectDynamic(name: Label)(using lens: name.type is Optic from Target)
@@ -107,8 +106,7 @@ trait Optic extends Findable, Dynamic:
     ( using coercible: source is Coercible to lens.Target )
   :   Origin => Origin =
 
-    andThen(lens).modify(_): prior =>
-      coercible.coerce(value(using prior.aka["prior"]))
+    andThen(lens).modify(_): prior => coercible.coerce(value(using prior.aka["prior"]))
 
 
   def update[source, target](traversal: Any, value: source)
@@ -116,8 +114,7 @@ trait Optic extends Findable, Dynamic:
             coercible: source is Coercible to target )
   :   Origin => Origin =
 
-    andThen(optical.optic(traversal)).modify(_): _ =>
-      coercible.coerce(value)
+    andThen(optical.optic(traversal)).modify(_): _ => coercible.coerce(value)
 
 
   def applyDynamic(name: Label)[operand](using lens: name.type is Optic from Target onto operand)

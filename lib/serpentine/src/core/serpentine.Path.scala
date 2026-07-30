@@ -204,8 +204,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
         check[tail, filesystem](path.tail)
 
       case _ =>
-        path.each: element =>
-          infer[Text is Admissible on filesystem].check(element)
+        path.each: element => infer[Text is Admissible on filesystem].check(element)
 
   inline def on[filesystem]: Path of Topic under Limit on filesystem = summonFrom:
     case given (`filesystem` =:= Plane) =>
@@ -242,8 +241,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       root == right.root
 
   transparent inline def rename(lambda: (Text aka "prior") ?=> Text): Optional[Path] =
-    parent.let: parent =>
-      descent.prim.let: prior => parent / lambda(using prior.aka["prior"])
+    parent.let: parent => descent.prim.let: prior => parent / lambda(using prior.aka["prior"])
 
   def relative: Relative of Topic on Plane under 0 =
     Relative[Plane, Topic, 0](0, descent*)
@@ -270,8 +268,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
       case EmptyTuple   => Unset
 
       case _ =>
-        if descent.nil then Unset
-        else Path[Plane, Limit, Tuple](root, descent.tail)
+        if descent.nil then Unset else Path[Plane, Limit, Tuple](root, descent.tail)
 
   def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => parent :: parent.ancestors }.or(Nil)

@@ -70,16 +70,14 @@ object TarHeader:
 
     while i < blockSize do
       val byte: Int =
-        if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20
-        else block(i) & 0xff
+        if i >= checksumOffset && i < checksumOffset + checksumLength then 0x20 else block(i) & 0xff
 
       sum = sum + byte
       i = i + 1
 
     val actual: U32 = sum.toInt.bits.u32
 
-    if actual != recorded
-    then raise(TarError(TarError.Reason.BadChecksum(recorded, actual)))
+    if actual != recorded then raise(TarError(TarError.Reason.BadChecksum(recorded, actual)))
 
   def decodeOctal(data: Data, field: Text): U32 raises TarError =
     var i = 0

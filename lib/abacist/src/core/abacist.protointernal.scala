@@ -139,9 +139,7 @@ object protointernal extends anteprotointernal:
     :   quanta is Distributive by Long =
 
       distributive[quanta](_.components.map(_(1)).to(List)): (value, parts) =>
-        parts.zip(value.components.map(_(0))).map: (number, units) =>
-          t"$number $units"
-
+        parts.zip(value.components.map(_(0))).map: (number, units) => t"$number $units"
         . join(t", ")
 
     inline given distributive2: [base <: AnyUnit, form <: Divisions]

@@ -149,8 +149,7 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
 
             if n <= 0 then LazyList() else
               val chunk =
-                if n == buf.length then buf
-                else java.util.Arrays.copyOf(buf, n).nn
+                if n == buf.length then buf else java.util.Arrays.copyOf(buf, n).nn
 
               Audio.of[layout](line.getFormat.nn, chunk) #:: recur
 

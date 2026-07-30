@@ -307,8 +307,7 @@ case class TelError(reason: TelError.Reason, position: Optional[TelError.Positio
   ( using Diagnostics )
 extends Error
   ( 605, reason.number )
-  ( position.let: p =>
-      m"the TEL document is invalid at $p because $reason"
+  ( position.let: p => m"the TEL document is invalid at $p because $reason"
 
     . or(m"the TEL document is invalid because $reason") ):
 

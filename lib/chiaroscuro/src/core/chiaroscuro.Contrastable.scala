@@ -220,8 +220,7 @@ object Contrastable:
             label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
           case Ins(rightIndex, value) =>
-            t" ╱${rightIndex.show.subscripts}" ->
-              Juxtaposition.Different(t"", value.short)
+            t" ╱${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"", value.short)
 
           case Del(leftIndex, value) =>
             t"${leftIndex.show.superscripts}╱ " ->

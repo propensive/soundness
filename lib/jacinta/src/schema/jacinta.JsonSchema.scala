@@ -157,8 +157,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // `Json.Encodable` so generic derivation resolves it as a leaf rather than structurally
   // deriving `serpentine.Path`.
   given pointerEncodable: JsonPointer is Json.Encodable =
-    Json.Encodable(() => Morphology.Str): pointer =>
-      Json.ast(Json.Ast(pointer.encode.s))
+    Json.Encodable(() => Morphology.Str): pointer => Json.ast(Json.Ast(pointer.encode.s))
 
   // `$ref` schemas have no `type` discriminator, so they are handled here
   // explicitly; every other variant is delegated to the `type`-discriminated

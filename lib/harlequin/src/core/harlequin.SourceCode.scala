@@ -100,8 +100,7 @@ object SourceCode:
           val (prefix, context) = Lexis.context(text, caret)
           val found = prophesy.ScalaKeywords.pattern(context)
 
-          val words = prefix.lay(found.keywords): p =>
-            found.keywords.filter(_.starts(p))
+          val words = prefix.lay(found.keywords): p => found.keywords.filter(_.starts(p))
 
           val prefixLength = prefix.lay(0)(_.length)
           val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
@@ -163,8 +162,7 @@ object SourceCode:
         Token(text, Accent.Modifier) #:: soften(more)
 
       case (token@Token(text, Accent.Term, _, _, _)) #:: more if soft.has(text) =>
-        if hard(more) then Token(text, Accent.Modifier) #:: soften(more)
-        else token #:: soften(more)
+        if hard(more) then Token(text, Accent.Modifier) #:: soften(more) else token #:: soften(more)
 
       case token #:: more =>
         token #:: soften(more)
@@ -583,8 +581,7 @@ object SourceCode:
               !tree.tpe.isError && tree.tpe.derivesFrom(Symbols.defn.DynamicClass)
 
           if matches then
-            val wider = qualifier.let: previous =>
-              tree.span.start < previous.span.start
+            val wider = qualifier.let: previous => tree.span.start < previous.span.start
 
             if wider.or(true) then qualifier = tree
 
@@ -673,8 +670,7 @@ object SourceCode:
 
         traverseChildren(tree)
 
-    run.units.foreach: unit =>
-      traverser.traverse(unit.tpdTree)
+    run.units.foreach: unit => traverser.traverse(unit.tpdTree)
 
     types.to(Map)
 

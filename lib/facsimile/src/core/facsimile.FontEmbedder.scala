@@ -55,13 +55,11 @@ private[facsimile] object FontEmbedder:
   def embed(pdf: Pdf, ttf: Ttf, name: Optional[Text], subset: Optional[Text])
   :   Cos.Ref raises PdfError =
 
-    val program = subset.lay(ttf): chars =>
-      safely(ttf.subset(chars)).or(ttf)
+    val program = subset.lay(ttf): chars => safely(ttf.subset(chars)).or(ttf)
 
     val baseName = name.or(postScriptName(ttf)).or(t"Embedded")
 
-    val baseFont = subset.lay(baseName): chars =>
-      t"${tag(baseName, chars)}+$baseName"
+    val baseFont = subset.lay(baseName): chars => t"${tag(baseName, chars)}+$baseName"
 
     val unitsPerEm = safely(program.head.unitsPerEm.int).or(1000).max(1)
     def scaled(units: Int): Long = units.toLong*1000/unitsPerEm
@@ -140,8 +138,7 @@ private[facsimile] object FontEmbedder:
   private def tag(name: Text, chars: Text): Text =
     val digest = t"$name:$chars".digest[Md5].data
 
-    val letters = (0 until 6).map: index =>
-      ('A' + ((digest(index) & 0xff)%26)).toChar
+    val letters = (0 until 6).map: index => ('A' + ((digest(index) & 0xff)%26)).toChar
 
     String(letters.toArray).tt
 

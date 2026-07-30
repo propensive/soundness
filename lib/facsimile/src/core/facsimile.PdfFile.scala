@@ -87,8 +87,7 @@ object PdfFile:
         then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
 
         if flags.contains(CreateFlag.Parents) then
-          target.parent.let: parent =>
-            if !parent.exists() then parent.create[Directory]()
+          target.parent.let: parent => if !parent.exists() then parent.create[Directory]()
 
         val part: Text = t".${target.name}.part"
         val temporary = target.peer(part)

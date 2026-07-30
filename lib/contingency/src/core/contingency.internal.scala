@@ -478,8 +478,7 @@ object internal:
           try Right:
             $ {
                 val tactics =
-                  cases.map: (_, _) =>
-                    '{acc}.asTerm
+                  cases.map: (_, _) => '{acc}.asTerm
 
                 val contextTypeRepr = TypeRepr.of[context[result]]
                 val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head

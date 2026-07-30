@@ -42,9 +42,7 @@ object Discoverable:
   def noSuggestions[operand]: operand is Discoverable = _ => Nil
 
   given enumerable: [value: {Enumerable, Identifiable}] => value is Discoverable = _ =>
-    value.values.to(List)
-    . map: element => value.encode(value.name(element))
-    . map(Suggestion(_))
+    value.values.to(List) . map: element => value.encode(value.name(element)) . map(Suggestion(_))
 
 trait Discoverable extends Typeclass:
   def discover(tab: Ordinal): Iterable[Suggestion]
