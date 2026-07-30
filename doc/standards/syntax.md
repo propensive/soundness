@@ -1,8 +1,11 @@
-# Soundness Syntax and Formatting
+# Syntax and Formatting
 
-This document defines the syntactic and whitespace conventions used in the
-Soundness libraries, enforced by the Decorum compiler plugin. Examples are
-drawn verbatim from `lib/*/src/core/*.scala`.
+This document defines the syntactic and whitespace conventions enforced by
+the Decorum compiler plugin. It is written to govern any project that adopts
+it; a project fixes two parameters — the exact text of its licence header
+(and hence the header's length in lines) and, optionally, the name of its
+umbrella re-export package — and every other convention applies unchanged.
+Examples are drawn verbatim from real code governed by this standard.
 
 The style has a single organizing idea: **layout is a deterministic function
 of the code**. Given a fragment of Scala, there is one correct way to lay it
@@ -20,9 +23,9 @@ extension methods.
 
 ### P1 — The Frame
 
-**One fixed canvas per file: licence on lines 1–32, `package` on line 33,
-blank line 34, 100 columns, two-space even indentation, spaces only, no
-trailing whitespace.**
+**One fixed canvas per file: the project's licence header first, `package`
+on the line after it, then one blank line; 100 columns, two-space even
+indentation, spaces only, no trailing whitespace.**
 
 File geography should be muscle memory. When every file has the same shape —
 the same header in the same place, the code starting at the same line, lines
@@ -31,10 +34,17 @@ columns — the reader's attention is free to go entirely to content. Nothing
 about the frame is ever a decision, so nothing about it is ever a signal;
 all signal lives inside it.
 
+Each project fixes its licence header once, as a block comment of some
+exact, unvarying length — call it *H* lines. Every file in the project then
+carries that header verbatim on lines 1 to *H*, the `package` declaration on
+line *H* + 1, and a blank line at *H* + 2, so code always starts at the same
+line. (In the project this document was written for, *H* is 32; the examples
+below use those line numbers.)
+
 ```scala
-package gossamer        // always line 33
-                        // always blank line 34
-import anticipation.*   // content starts at line 35
+package gossamer        // always the line after the header (here, line 33)
+                        // always one blank line
+import anticipation.*   // content always starts at the same line
 ```
 
 Rules: [SN-799], [SN-131], [SN-658], [SN-230], [SN-135], [SN-926],
@@ -195,9 +205,9 @@ Rules: [SN-326], [SN-946], [SN-924], and the alignment relaxation of
 lives in the file named after it; a companion object — the most-read API
 surface — comes before its type; imports are grouped and alphabetised and
 never aliased, so a name in code is the name at its definition; every public
-name is re-exported to `soundness`, so one import reaches everything; and
-prose documentation lives in `doc/`, not in doc-comments, so it has one home
-too.
+name is re-exported to the project's umbrella package, so one import reaches
+everything; and prose documentation lives in `doc/`, not in doc-comments, so
+it has one home too.
 
 Rules: [SN-302], [SN-847], [SN-398], [SN-742], [SN-742.1], [SN-162.2].
 
@@ -223,15 +233,16 @@ discretion is:
 
 #### License header [SN-799]
 
-Every file begins with the canonical 32-line ASCII-art license header inside
-a single `/* … */` block. Line 1 opens the block comment with `/*` and line
-32 closes it with `*/`. Lines 1–32 are reserved for it. No exceptions.
+Every file begins with the project's canonical license header — a block of
+exactly *H* lines inside a single `/* … */` comment, identical in every
+file. Line 1 opens the block comment with `/*` and line *H* closes it with
+`*/`. Lines 1 to *H* are reserved for it. No exceptions.
 
 #### Package declaration [SN-131] [SN-658]
 
-Line 33 is `package <module>` — a single identifier segment matching the
-module the file belongs to, with nothing else on the line [SN-131]. Line 34
-is a single blank line [SN-658].
+The line after the header is `package <module>` — a single identifier
+segment matching the module the file belongs to, with nothing else on the
+line [SN-131]. It is followed by a single blank line [SN-658].
 
 #### Line length [SN-230]
 
@@ -269,7 +280,7 @@ content), as are whitespace-only lines.
 
 #### Block comments [SN-162]
 
-`/* … */` block comments are reserved for the license header on lines 1–32
+`/* … */` block comments are reserved for the license header
 [SN-162.1] — the frame owns the only block comment in the file. `/** … */`
 doc comments are never permitted [SN-162.2]: prose documentation lives in
 `doc/` markdown files (P8).
@@ -1198,14 +1209,15 @@ each group ([SN-302.2]). The groups appear in this order:
 3. `scala.*`
 4. compiler and JVM/JEE internals (`dotty.*`, `com.sun.*`, `sun.*`,
    `jakarta.*`)
-5. Soundness library imports
+5. project-family library imports (the project's own modules and the
+   libraries that share this standard)
 
 Wildcard imports (`import anticipation.*`) are the norm for library
-imports. Within the Soundness group, wildcard imports and named imports
-(`import filesystemOptions.readAccess`, `import AsyncError.Reason`) may
-interleave as the code requires.
+imports. Within the project-family group, wildcard imports and named
+imports (`import filesystemOptions.readAccess`, `import AsyncError.Reason`)
+may interleave as the code requires.
 
-Soundness-library imports must not introduce aliases [SN-302.1]. Both
+Project-family imports must not introduce aliases [SN-302.1]. Both
 `import x.y as z` (Scala 3) and `import x.{y => z}` (Scala 2 style) are
 forbidden for group-5 imports — write the full path instead, so the name
 in code is the name at its definition. Standard-library and JDK aliases
@@ -1222,9 +1234,9 @@ A module's source files follow these patterns:
   type. The package given block for that type lives in the companion.
 - `module_core.scala` — top-level extensions, package-level given blocks,
   and nested package blocks for the module.
-- `soundness_module_core.scala` — re-exports under the umbrella package
-  `soundness`. Contains only `package soundness` and one or more `export`
-  statements.
+- `<umbrella>_module_core.scala` — re-exports under the project's umbrella
+  package. Contains only the umbrella `package` declaration and one or more
+  `export` statements.
 - `module.internal.scala`, `module.protointernal.scala`,
   `module.anteprotointernal.scala` — implementation-detail traits and
   objects layered to satisfy compile-time ordering of givens. The prefixes
@@ -1237,14 +1249,15 @@ When a type and its companion appear in the same file, place the companion
 resolved at use-site, so this ordering keeps the more frequently-read API
 surface at the top of the file.
 
-#### `soundness` re-exports [SN-742] [SN-742.1]
+#### Umbrella re-exports [SN-742] [SN-742.1]
 
-Every public module in a component — a top-level definition living in its
-own `<component>.<Name>.scala` file, other than `internal` modules — must
-be re-exported into the `soundness` package by its export surface
-[SN-742], and every public top-level extension method likewise by its leaf
-name [SN-742.1] (unless marked `@unexported`). One import,
-`import soundness.*`, then reaches everything.
+A project may define an *umbrella package*: a single package that
+re-exports every public name, so that one wildcard import reaches
+everything. Where it does, every public module in a component — a top-level
+definition living in its own `<component>.<Name>.scala` file, other than
+`internal` modules — must be re-exported into the umbrella package by its
+export surface [SN-742], and every public top-level extension method
+likewise by its leaf name [SN-742.1] (unless marked `@unexported`).
 
 #### Documentation [SN-162.2]
 
@@ -1289,8 +1302,8 @@ their family.
 | [SN-616]   | Symbolic-operator continuation           | P4 — Continuation Marking (616.3 grounded in P5) |
 | [SN-658]   | Package declaration                      | P1 — The Frame |
 | [SN-677]   | Blank line after a heavy return type     | P6 — Proximity |
-| [SN-742]   | `soundness` re-exports                   | P8 — Findability |
-| [SN-742.1] | `soundness` re-exports                   | P8 — Findability |
+| [SN-742]   | Umbrella re-exports                      | P8 — Findability |
+| [SN-742.1] | Umbrella re-exports                      | P8 — Findability |
 | [SN-783]   | Maximum blank lines                      | P6 — Proximity |
 | [SN-799]   | License header                           | P1 — The Frame |
 | [SN-811]   | Bracket interiors: both or neither       | P5 — Balance |
@@ -1449,7 +1462,7 @@ scopes, and *where* the extension is declared decides which:
 
 1. **Lexical scope** — the extension is declared at, or imported into, the
    current scope. This is how every top-level extension is reached: a consumer
-   writes `import gossamer.*` (or `import soundness.*`, whose umbrella
+   writes `import gossamer.*` (or the project's umbrella import, which
    re-exports member modules) and the package-level extension comes into scope.
 
 2. **Implicit scope of the receiver type** — the extension is a member of an
@@ -1480,7 +1493,7 @@ Keep an extension **at the top level** when:
 
 Two traps when moving an extension into a companion:
 
-- **Named umbrella re-exports.** `soundness_<module>_core.scala` often lists the
+- **Named umbrella re-exports.** `<umbrella>_<module>_core.scala` often lists the
   extension by name (`export module.{ Foo, bar }`). Once `bar` lives in
   `object Foo` it is no longer a top-level member, so drop it from that list —
   the exported *type* `Foo` already carries its companion's extensions through
@@ -1499,10 +1512,10 @@ Two traps when moving an extension into a companion:
 
 - 2-space indent, spaces only, 100-column hard limit; even-column indent
   grid, marker tokens on the grid.
-- License header (32 lines) → `package` on line 33 → blank → grouped
-  imports → blank → code.
+- License header (the project's fixed *H* lines) → `package` → blank →
+  grouped imports → blank → code.
 - Imports: fixed group order, alphabetical within group, no aliases for
-  Soundness libraries.
+  project-family libraries.
 - Indented (colon) syntax; lambda bracketing by the SN-312 table.
 - Anything that fits on one line goes on one line (SN-247); break at the
   loosest-binding seam first.
@@ -1538,4 +1551,4 @@ Two traps when moving an extension into a companion:
 - Blank lines: chunks set off by one blank; at most one blank anywhere,
   except up to two around a heavy-signature definition.
 - Companion `object` before the class/trait/enum it accompanies; every
-  public name re-exported to `soundness`.
+  public name re-exported to the umbrella package.
