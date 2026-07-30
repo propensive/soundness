@@ -39,7 +39,6 @@ import scala.caps
 
 import java.io as ji
 
-import scala.collection.immutable as sci
 import scala.collection.mutable.ArrayBuilder
 
 import anticipation.*
@@ -70,9 +69,10 @@ object GraphemeBreak:
 
   private def parseEntries
     ( in: ji.InputStream, classify: Text => Optional[Int] )
-  :   sci.List[Entry] =
+  :   List[Entry] =
 
-    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+    List.of:
+     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
           classify(name).option.map(Entry(from, to, _))
@@ -108,8 +108,9 @@ object GraphemeBreak:
     val Extend: Int = 1
     val Linker: Int = 2
 
-  private def parseIncbEntries(in: ji.InputStream): sci.List[Entry] =
-    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+  private def parseIncbEntries(in: ji.InputStream): List[Entry] =
+    List.of:
+     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
           case r"${Hex(to)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
@@ -131,8 +132,8 @@ object GraphemeBreak:
 
   private case class Tables(starts: Array[Int]^{}, ends: Array[Int]^{}, props: Array[Byte]^{})
 
-  private def buildTables(entries: sci.List[Entry]): Tables =
-    val sorted = entries.sortBy(_.start).toArray
+  private def buildTables(entries: List[Entry]): Tables =
+    val sorted = entries.stdlib.sortBy(_.start).toArray
     val count = sorted.length
     val starts = Array[Int](count)
     val ends = Array[Int](count)

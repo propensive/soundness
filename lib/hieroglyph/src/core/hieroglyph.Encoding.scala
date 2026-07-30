@@ -36,6 +36,8 @@ import java.nio as jn, jn.charset as jnc
 
 import scala.jdk.CollectionConverters.SetHasAsScala
 
+import proscenium.compat.*
+
 import anticipation.*
 import fulminate.*
 
@@ -43,24 +45,20 @@ object Encoding:
   given textualizable: Encoding is Textualizable = _.name
   given communicable: Encoding is Communicable = encoding => Message(encoding.name)
 
-  private val allCharsets: scala.collection.immutable.Set[jnc.Charset] =
-    jnc.Charset.availableCharsets.nn.asScala.toMap.values.toSet
+  private val allCharsets: Set[jnc.Charset] =
+    Set.of(jnc.Charset.availableCharsets.nn.asScala.toMap.values.toSet)
 
-  private[hieroglyph] val codecs
-  :   scala.collection.immutable.Map[Text, Encoding { type CanEncode = true }] =
-    allCharsets.filter(_.canEncode).flatMap: charset =>
-      (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
-        name.toLowerCase.nn.tt -> Encoding(name.tt, true)
+  private[hieroglyph] val codecs: Map[Text, Encoding { type CanEncode = true }] =
+    Map.from:
+      allCharsets.stdlib.filter(_.canEncode).flatMap: charset =>
+        (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
+          name.toLowerCase.nn.tt -> Encoding(name.tt, true)
 
-    . to(scala.collection.immutable.Map)
-
-  private[hieroglyph] val decodeOnly
-  :   scala.collection.immutable.Map[Text, Encoding { type CanEncode = false }] =
-    allCharsets.filter(!_.canEncode).flatMap: charset =>
-      (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
-        name.toLowerCase.nn.tt -> Encoding(name.tt, false)
-
-    . to(scala.collection.immutable.Map)
+  private[hieroglyph] val decodeOnly: Map[Text, Encoding { type CanEncode = false }] =
+    Map.from:
+      allCharsets.stdlib.filter(!_.canEncode).flatMap: charset =>
+        (charset.aliases.nn.asScala.toSet + charset.displayName.nn).map: name =>
+          name.toLowerCase.nn.tt -> Encoding(name.tt, false)
 
   def unapply(name: Text): Option[Encoding] =
     codecs.get(name.s.toLowerCase.nn.tt).orElse(decodeOnly.get(name.s.toLowerCase.nn.tt))

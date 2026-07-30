@@ -34,7 +34,8 @@ package honeycomb
 
 import scala.language.dynamics
 
-import scala.collection.immutable as sci
+
+import proscenium.compat.*
 
 import adversaria.*
 import anticipation.*
@@ -392,7 +393,7 @@ class Whatwg() extends Dom:
   type Heading = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "hgroup"
 
   def insertable(tag: Tag): Set[Tag] =
-    Set.of(tag.admissible.stdlib.map(elements(_)).compact.to(scala.collection.immutable.Set).filter(_.insertable))
+    Set.from(tag.admissible.stdlib.map(elements(_)).compact).filter(_.insertable)
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =
@@ -678,22 +679,22 @@ class Whatwg() extends Dom:
     Dictionary(this.membersOfType[Tag].bi.map(_.label -> _).toSeq*)
 
   val entities: Dictionary[Text] =
-    val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n").stdlib
-    . map(_.cut(t"\t").stdlib).collect:
-        case scala.collection.immutable.List(key, value) => (key, value)
+    val html4 = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
+    . map(_.cut(t"\t")).collect:
+        case List(key, value) => (key, value)
 
-    val extra = cp"/honeycomb/entities-extra.tsv".read[Text].cut(t"\n").stdlib
-    . map(_.cut(t"\t").stdlib).collect:
-        case scala.collection.immutable.List(key, value) => (key, value)
+    val extra = cp"/honeycomb/entities-extra.tsv".read[Text].cut(t"\n")
+    . map(_.cut(t"\t")).collect:
+        case List(key, value) => (key, value)
 
-    Dictionary((html4 ++ extra)*)
+    Dictionary((html4 ::: extra).stdlib*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
       Whatwg.membersOfType[honeycomb.Attribute]
-      . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
+      . foldLeft(proscenium.Map[Text, Attribute]()): (map, next) =>
           map.updated(next.label, map.get(next.label).optional.let(_.merge(next)).or(next))
 
-      . to(List)
+      . toList
 
     Dictionary(list*)

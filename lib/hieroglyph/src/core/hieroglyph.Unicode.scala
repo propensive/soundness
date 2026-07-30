@@ -101,25 +101,22 @@ object Unicode:
   def apply(name: Text): Optional[Char | Text] = unicodeData.at(name)
   def name(char: Char): Optional[Text] = unicodeNames.at(char)
 
-  lazy val unicodeData: Map[Text, Char | Text] = Map.of(unicodeData0)
-
-  private lazy val unicodeData0: scala.collection.immutable.Map[Text, Char | Text] =
+  lazy val unicodeData: Map[Text, Char | Text] =
     val in: ji.InputStream =
       Optional(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt"))
       . or(remoteUnicodeData("UnicodeData.txt".tt))
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
-    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
-      case hex :: name :: _ if !name.nn.startsWith("<") =>
-        val hexInt = Integer.parseInt(hex, 16)
+    Map.from:
+      scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
+        case hex :: name :: _ if !name.nn.startsWith("<") =>
+          val hexInt = Integer.parseInt(hex, 16)
 
-        if hexInt < 65536 then List((name.nn.tt, hexInt.toChar)).stdlib
-        else List((name.nn.tt, new String(Character.toChars(hexInt)).tt)).stdlib
+          if hexInt < 65536 then List((name.nn.tt, hexInt.toChar)).stdlib
+          else List((name.nn.tt, new String(Character.toChars(hexInt)).tt)).stdlib
 
-      case _ =>
-        Nil.stdlib
-
-    . to(scala.collection.immutable.Map)
+        case _ =>
+          Nil.stdlib
 
   lazy val unicodeNames: Map[Char | Text, Text] = Map.from:
     unicodeData.stdlib.map: (key, value) =>

@@ -34,7 +34,6 @@ package honeycomb
 
 import proscenium.compat.*
 
-import scala.collection.immutable as sci
 
 import soundness.*
 

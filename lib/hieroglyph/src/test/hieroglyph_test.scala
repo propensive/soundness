@@ -243,8 +243,8 @@ object Tests extends Suite(m"Hieroglyph tests"):
           val trimmed = withoutComment.trim.nn
 
           if trimmed.nonEmpty then
-            val tokens: scala.collection.immutable.List[String] =
-              scala.collection.immutable.ArraySeq.unsafeWrapArray(trimmed.split("\\s+").nn).toList.map(_.nn)
+            val tokens: List[String] =
+              Array.unsafeFrozen(trimmed.split("\\s+").nn).toList.map(_.nn)
             val sb = jl.StringBuilder()
             val expected = scala.collection.mutable.ArrayBuffer[Int]()
 

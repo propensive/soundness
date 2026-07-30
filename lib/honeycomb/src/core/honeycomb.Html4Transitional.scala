@@ -34,7 +34,8 @@ package honeycomb
 
 import scala.language.dynamics
 
-import scala.collection.immutable as sci
+
+import proscenium.compat.*
 
 import adversaria.*
 import anticipation.*
@@ -353,7 +354,7 @@ class Html4Transitional() extends Dom:
   type Metadata = "title" | "base" | "script" | "style" | "meta" | "link" | "object"
 
   def insertable(tag: Tag): Set[Tag] =
-    Set.of(tag.admissible.stdlib.map(elements(_)).compact.to(scala.collection.immutable.Set).filter(_.insertable))
+    Set.from(tag.admissible.stdlib.map(elements(_)).compact).filter(_.insertable)
 
   def infer(parent: Tag, child: Tag): Optional[Tag] =
     def recur(parent: Tag): Boolean =
@@ -513,21 +514,21 @@ class Html4Transitional() extends Dom:
     Dictionary(this.membersOfType[Tag].bi.map(_.label -> _).toSeq*)
 
   val entities: Dictionary[Text] =
-    val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n").stdlib
-    . map(_.cut(t"\t").stdlib).collect:
-        case scala.collection.immutable.List(key, value) => (key, value)
+    val list = cp"/honeycomb/entities-html4.tsv".read[Text].cut(t"\n")
+    . map(_.cut(t"\t")).collect:
+        case List(key, value) => (key, value)
 
     Dictionary(list*)
 
   val attributes: Dictionary[Attribute] =
     val list: List[(Text, Attribute)] =
       Html4Transitional.membersOfType[honeycomb.Attribute]
-      . foldLeft(sci.Map[Text, Attribute]()): (map, next) =>
+      . foldLeft(proscenium.Map[Text, Attribute]()): (map, next) =>
         val coerced = next.asInstanceOf[Attribute]
         val merged =
           map.get(coerced.label).optional.let(_.merge(coerced).asInstanceOf[Attribute]).or(coerced)
         map.updated(coerced.label, merged)
 
-      . to(List)
+      . toList
 
     Dictionary(list*)
