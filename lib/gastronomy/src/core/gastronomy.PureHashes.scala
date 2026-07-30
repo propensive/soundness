@@ -35,8 +35,6 @@ package gastronomy
 import scala.caps
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 import proscenium.compat.*
 
 // Pure-Scala implementations of the MD5, SHA-1 and SHA-2 hash families and the CRC-32 checksum,
@@ -280,13 +278,17 @@ private[gastronomy] object PureHashes:
   final class Crc32 extends Digestion:
     private var value: Int = 0
 
-    update def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
+    update def append(bytes: Data): Unit = append(bytes, 0, bytes.length)
 
-    override update def append(data: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+    override update def append(data: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
       val end = start + count
       var c = ~value
       var i = start
-      while i < end do { c = Crc32.table((c ^ data(i)) & 0xff) ^ (c >>> 8); i += 1 }
+
+      while i < end do
+        c = Crc32.table((c ^ data.readUnchecked(i)) & 0xff) ^ (c >>> 8)
+        i += 1
+
       value = ~c
 
     update def digest(): Data =
@@ -319,9 +321,12 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
   protected def bitLengthBytes: Int
   protected def writeLength(target: scala.Array[Byte]^, offset: Int, bits: Long): Unit
 
-  update def append(bytes: Data): Unit = append(bytes.mutable(using Unsafe), 0, bytes.length)
+  update def append(bytes: Data): Unit = append(bytes, 0, bytes.length)
 
-  override update def append(data: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+  override update def append(data: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+    // `compress` and the two block copies all read the window and none writes to it, so one
+    // named JVM view serves the whole call rather than one per use.
+    val input = Array.unsafeJvm(data)
     var offset = start
     val end = start + count
     totalBytes += count
@@ -329,19 +334,19 @@ private[gastronomy] abstract class BlockDigestion(blockSize: Int) extends Digest
     // Complete a partially-filled block first.
     if filled > 0 then
       val take = Math.min(blockSize - filled, end - offset)
-      System.arraycopy(data, offset, block, filled, take)
+      System.arraycopy(input, offset, block, filled, take)
       filled += take
       offset += take
       if filled == blockSize then { compress(block, 0); filled = 0 }
 
     // Process whole blocks straight from the input.
     while end - offset >= blockSize do
-      compress(data, offset)
+      compress(input, offset)
       offset += blockSize
 
     // Retain the remainder.
     if offset < end then
-      System.arraycopy(data, offset, block, 0, end - offset)
+      System.arraycopy(input, offset, block, 0, end - offset)
       filled = end - offset
 
   update def digest(): Data =

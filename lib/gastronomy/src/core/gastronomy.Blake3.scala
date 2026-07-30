@@ -43,8 +43,6 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
 object Blake3:
   private final val OutLen   = 32
@@ -65,6 +63,10 @@ object Blake3:
         0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 )
 
     . asInstanceOf[Array[Int]^{}]
+
+  // `Hasher` clones the words it is given before it does anything else, so handing it the
+  // shared frozen `Iv` as a JVM array asserts only that the clone does not write.
+  private def ivWords: scala.Array[Int] = Array.unsafeJvm(Iv)
 
   private final val MsgPermutation: Array[Int]^{} =
     scala.Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[Array[Int]^{}]
@@ -214,7 +216,9 @@ object Blake3:
 
     private def startFlag: Int = if blocksCompressed == 0 then ChunkStart else 0
 
-    update def update(input: scala.Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
+    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
+      // The window is copied out of, never into, so one named JVM view covers the whole call.
+      val source = Array.unsafeJvm(input)
       val blockWords = new scala.Array[Int](16)
       var pos = start
 
@@ -232,7 +236,7 @@ object Blake3:
 
         val want = BlockLen - blockLen
         val take = math.min(want, end - pos)
-        System.arraycopy(input, pos, block, blockLen, take)
+        System.arraycopy(source, pos, block, blockLen, take)
         blockLen += take
         pos += take
 
@@ -273,10 +277,9 @@ object Blake3:
 
       pushStack(cv)
 
-    update def update(data: Array[Byte]^{}): Unit =
-      update(data.mutable(using Unsafe), 0, data.length)
+    update def update(data: Array[Byte]^{}): Unit = update(data, 0, data.length)
 
-    update def update(input: scala.Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
+    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
       // SIMD: AVX2 / AVX-512 backends process 4 / 8 / 16 chunks at a time here using interleaved
       //       state; the scalar path below handles one chunk per iteration.
       var pos = start
@@ -308,16 +311,16 @@ object Blake3:
 
   // The pure-Scala BLAKE3 `Digestion`, used by the Soundness hashing provider.
   def digestion(): Digestion^ = new Digestion:
-    private var hasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), 0)
+    private var hasher: Hasher^ = Hasher(ivWords, 0)
     update def append(bytes: Data): Unit = hasher.update(bytes)
 
-    override update def append(array: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+    override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
       hasher.update(array, start, start + count)
 
     update def digest(): Data = hasher.complete(OutLen)
 
   def hashOf(input: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
-    val hasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), 0)
+    val hasher: Hasher^ = Hasher(ivWords, 0)
     hasher.update(input)
     hasher.complete(length)
 
@@ -325,22 +328,22 @@ object Blake3:
     if key.length != KeyLen
     then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
 
-    val keyBytes = key.mutable(using Unsafe)
     val keyWords = new scala.Array[Int](8)
-    wordsFromBytes(keyBytes, 0, keyWords)
+    // `wordsFromBytes` only reads its bytes.
+    wordsFromBytes(Array.unsafeJvm(key), 0, keyWords)
 
     val hasher: Hasher^ = Hasher(keyWords, KeyedHashFlag)
     hasher.update(input)
     hasher.complete(length)
 
   def deriveKey(context: Text, material: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
-    val ctxBytes: scala.Array[Byte] = context.s.getBytes(StandardCharsets.UTF_8).nn
-    val ctxHasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), DeriveKeyContext)
-    ctxHasher.update(ctxBytes.immutable(using Unsafe))
+    val ctxBytes = Array.unsafeFrozen(context.s.getBytes(StandardCharsets.UTF_8).nn)
+    val ctxHasher: Hasher^ = Hasher(ivWords, DeriveKeyContext)
+    ctxHasher.update(ctxBytes)
 
-    val ctxKey = ctxHasher.complete(KeyLen).mutable(using Unsafe)
+    val ctxKey = ctxHasher.complete(KeyLen)
     val ctxKeyWords = new scala.Array[Int](8)
-    wordsFromBytes(ctxKey, 0, ctxKeyWords)
+    wordsFromBytes(Array.unsafeJvm(ctxKey), 0, ctxKeyWords)
 
     val matHasher: Hasher^ = Hasher(ctxKeyWords, DeriveKeyMaterial)
     matHasher.update(material)

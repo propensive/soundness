@@ -49,9 +49,9 @@ trait Digestion extends caps.Mutable:
   // consumer can feed a reusable window without snapshotting it — hashing consumes
   // its input synchronously and never retains it. The default copies the window;
   // providers that can consume a slice in place override it.
-  update def append(array: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+  update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
     val copy = Array[Byte](count)
-    System.arraycopy(array, start, copy.raw, 0, count)
+    copy.copyFrom(array, start, 0, count)
     append(Array.freeze(copy))
 
   update def digest(): Data

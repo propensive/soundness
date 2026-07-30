@@ -104,7 +104,7 @@ object Tests extends Suite(m"Gastronomy tests"):
         digest == t"AF1349B9F5F9A1A6A0404DEA36DCC9499BCB25C9ADC112B7CC9A93CAE41F3262"
 
     suite(m"Blake3 official test vectors"):
-      val key: Array[Byte]^{} = Blake3TestVectors.Key.getBytes("UTF-8").nn.immutable(using Unsafe)
+      val key: Array[Byte]^{} = Array.unsafeFrozen(Blake3TestVectors.Key.getBytes("UTF-8").nn)
       val context: Text = Blake3TestVectors.ContextString.tt
 
       Blake3TestVectors.cases.each: vector =>
@@ -130,7 +130,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     // JDK for random inputs across the block-boundary sizes.
     suite(m"Pure hash implementations"):
       def hex(digestion: Digestion^, message: Text): Text =
-        digestion.append(message.s.getBytes("UTF-8").nn.immutable(using Unsafe))
+        digestion.append(Array.unsafeFrozen(message.s.getBytes("UTF-8").nn))
         digestion.digest().serialize[Hex]
 
       test(m"pure SHA-256 of \"abc\""):
@@ -169,7 +169,7 @@ object Tests extends Suite(m"Gastronomy tests"):
 
         def jdk(name: Text): Text =
           val md = java.security.MessageDigest.getInstance(name.s).nn
-          md.digest(data.mutable(using Unsafe)).nn.immutable(using Unsafe).serialize[Hex]
+          Array.unsafeFrozen(md.digest(Array.unsafeJvm(data)).nn).serialize[Hex]
 
         def pureHex(digestion: Digestion^): Text =
           digestion.append(data)
@@ -197,8 +197,9 @@ object Tests extends Suite(m"Gastronomy tests"):
       // Feed the windowed `append` deliberately misaligned slices of a buffer with a
       // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
       def windowed(digestion: Digestion^): Text =
-        val array = new scala.Array[Byte](payload.readable.length + 13)
-        java.lang.System.arraycopy(payload.mutable(using Unsafe), 0, array, 13, payload.readable.length)
+        val buffer = Array[Byte](payload.length + 13)
+        buffer.copyFrom(payload, 0, 13, payload.length)
+        val array = Array.freeze(buffer)
         var offset = 13
         var step = 1
 

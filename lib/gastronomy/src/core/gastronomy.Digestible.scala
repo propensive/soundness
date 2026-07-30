@@ -117,10 +117,10 @@ object Digestible extends Derivable[Digestible]:
     (digestion, iterable) => iterable.each(dig().digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
-    digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
+    digestion.append(Array.unsafeFrozen((24 to 0 by -8).map(value >> _).map(_.toByte).toArray))
 
   given long: Long is Digestible = (digestion, value) =>
-    digestion.append((56 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
+    digestion.append(Array.unsafeFrozen((56 to 0 by -8).map(value >> _).map(_.toByte).toArray))
 
   given double: Double is Digestible = long.contramap(jl.Double.doubleToRawLongBits(_))
   given float: Float is Digestible = int.contramap(jl.Float.floatToRawIntBits(_))

@@ -39,8 +39,6 @@ import java.util.zip as juz
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
-import vacuous.*
 
 // The default hashing provider, backed by the JDK: `MessageDigest` for the
 // cryptographic hashes and `java.util.zip.CRC32` for the checksum. This is the
@@ -54,10 +52,10 @@ object JavaStdlibHashing extends Hashing:
   def crc32: Hashing.Function = new Hashing.Function:
     def digestion(): Digestion^ = new Digestion:
       private val state: juz.CRC32 = juz.CRC32()
-      update def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
+      update def append(bytes: Data): Unit = state.update(Array.unsafeJvm(bytes))
 
-      override update def append(array: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
-        state.update(array, start, count)
+      override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+        state.update(Array.unsafeJvm(array), start, count)
 
       update def digest(): Data =
         val value = state.getValue()
@@ -66,9 +64,9 @@ object JavaStdlibHashing extends Hashing:
   private def messageDigest(name: Text): Hashing.Function = new Hashing.Function:
     def digestion(): Digestion^ = new Digestion:
       private val md: js.MessageDigest = js.MessageDigest.getInstance(name.s).nn
-      update def append(bytes: Data): Unit = md.update(bytes.mutable(using Unsafe))
+      update def append(bytes: Data): Unit = md.update(Array.unsafeJvm(bytes))
 
-      override update def append(array: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
-        md.update(array, start, count)
+      override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+        md.update(Array.unsafeJvm(array), start, count)
 
-      update def digest(): Data = md.digest.nn.immutable(using Unsafe)
+      update def digest(): Data = Array.unsafeFrozen(md.digest.nn)
