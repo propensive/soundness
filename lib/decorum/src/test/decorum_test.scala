@@ -880,6 +880,10 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val x = a ++\n  b ++\n  c\n")
       . assert(r => !r.contains("616.1") && !r.contains("616.2"))
 
+      test(m"Colon-lambda inside an unclosed paren is never a 247 site"):
+        rules("val e =\n  f\n    ( g.let: p =>\n        h(p)\n\n      . or(k) )\n")
+      . assert(r => !r.contains("247"))
+
       test(m"Trailing operator abutting its left operand is rejected"):
         rules("val x = alpha ++\n  beta\nval y = gamma++\n  delta\n")
       . assert(_.contains("616.3"))

@@ -177,7 +177,9 @@ object Necessity:
         // (the same precedent as Anchors' `\n`-only line map).
         if text.substring(lineStart, suffixEnd).nn.contains('\f') then None
         else
-          collapsedText(text, start, end, colonException).flatMap: collapsed =>
+          val isLambda = node.isInstanceOf[untpd.Function]
+
+          collapsedText(text, start, end, colonException, isLambda).flatMap: collapsed =>
             val width = (start - lineStart) + collapsed.length + (suffixTrim - end) + pad
 
             if width <= 100 then
@@ -286,7 +288,12 @@ object Necessity:
 
     opener match
       case ':' =>
-        if trailingCode(text, sp.end) then None else Some((i, sp.end, true, 0))
+        // A colon-arg is only legal where the argument may end the line
+        // and the statement: inside an unclosed `(`/`[` region the joined
+        // `f: x => body` form does not parse (the colon reads as a type
+        // ascription), so such lambdas can never be one-lined.
+        if trailingCode(text, sp.end) || bracketDepthAt(text, i) > 0 then None
+        else Some((i, sp.end, true, 0))
 
       case '{' | '(' =>
         val closer = if opener == '{' then '}' else ')'
@@ -303,6 +310,53 @@ object Necessity:
 
   private def isWhitespace(c: Char): Boolean =
     c == ' ' || c == '\t' || c == '\n' || c == '\r'
+
+  // Net unclosed `(`/`[` depth at `offset`, counting only brackets outside
+  // string literals, character literals and comments. Any scanning state
+  // this simplified tracker cannot resolve reports depth 1 — the caller
+  // treats nonzero depth as a bail, so uncertainty is conservative.
+  private def bracketDepthAt(text: String, offset: Int): Int =
+    var depth = 0
+    var i     = 0
+
+    while i < offset && i < text.length do
+      val c = text.charAt(i)
+
+      if c == '"' then
+        val triple = i + 2 < text.length && text.charAt(i + 1) == '"' && text.charAt(i + 2) == '"'
+
+        if triple then
+          i += 3
+          while i + 2 < text.length &&
+            !(text.charAt(i) == '"' && text.charAt(i + 1) == '"' && text.charAt(i + 2) == '"')
+          do i += 1
+          if i + 2 >= text.length then return 1
+          i += 3
+        else
+          i += 1
+          while i < text.length && text.charAt(i) != '"' && text.charAt(i) != '\n' do
+            if text.charAt(i) == '\\' then i += 1
+            i += 1
+          if i >= text.length || text.charAt(i) == '\n' then return 1
+          i += 1
+      else if c == '\'' && i + 2 < text.length &&
+        (text.charAt(i + 1) != '\\' && text.charAt(i + 2) == '\'')
+      then i += 3
+      else if c == '\'' && i + 3 < text.length &&
+        (text.charAt(i + 1) == '\\' && text.charAt(i + 3) == '\'')
+      then i += 4
+      else if c == '/' && i + 1 < text.length && text.charAt(i + 1) == '/' then
+        while i < text.length && text.charAt(i) != '\n' do i += 1
+      else if c == '/' && i + 1 < text.length && text.charAt(i + 1) == '*' then
+        i += 2
+        while i + 1 < text.length && !(text.charAt(i) == '*' && text.charAt(i + 1) == '/') do i += 1
+        if i + 1 >= text.length then return 1
+        i += 2
+      else
+        if c == '(' || c == '[' then depth += 1 else if c == ')' || c == ']' then depth -= 1
+        i += 1
+
+    depth.max(0)
 
   // True when a non-whitespace character follows `offset` on its line.
   private def trailingCode(text: String, offset: Int): Boolean =
@@ -322,7 +376,7 @@ object Necessity:
   // form feed, an unterminated literal, or any interpolation the scanner
   // cannot prove flat.
   private def collapsedText
-    ( text: String, start: Int, end: Int, colonException: Boolean )
+    ( text: String, start: Int, end: Int, colonException: Boolean, arrowException: Boolean )
   :   Option[String] =
 
     var i           = start
@@ -331,6 +385,7 @@ object Necessity:
     var lastCh      = ' '
     var atLineStart = false
     var colonWaiver = colonException
+    var arrowWaiver = arrowException
 
     // Scan a string literal beginning at `from` (the opening quote; any
     // interpolator prefix has already been consumed). Returns the offset
@@ -397,7 +452,16 @@ object Necessity:
 
         if newlines >= 2 then return None
         if newlines >= 1 && lastCh == ':' && !colonWaiver then return None
-        if newlines >= 1 then atLineStart = true
+
+        // A line ending with a lambda arrow opens a block body: joining it
+        // would fold the block into an inline lambda, which does not parse
+        // in operand or ascription positions. Only a lambda construct's
+        // own first break across its arrow is sanctioned.
+        if newlines >= 1 && lastCh == '>' && buf.endsWith("=>") && !arrowWaiver then return None
+
+        if newlines >= 1 then
+          atLineStart = true
+          arrowWaiver = false
 
         pendingWs = true
         colonWaiver = false
