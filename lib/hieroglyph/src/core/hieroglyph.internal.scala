@@ -69,7 +69,7 @@ object internal:
       case Some(encoding) =>
         if !encoding.charset.isRegistered
         then report.warning(
-          s"hieroglyph: the encoding ${encoding.charset.displayName} is not an IANA-registered "+
+          s"hieroglyph: the encoding ${encoding.charset.displayName} is not an IANA-registered " +
             "encoding, and may not be universally available")
 
         val name = context.parts.head.toLowerCase.nn

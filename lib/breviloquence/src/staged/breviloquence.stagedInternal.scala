@@ -233,7 +233,7 @@ object stagedInternal:
         result match
           case instance: Inlinable =>
             report.info
-              ( s"breviloquence: staged summon for ${TypeRepr.of[field].show} took "+
+              ( s"breviloquence: staged summon for ${TypeRepr.of[field].show} took " +
                 s"${duration}ms" )
 
             Some(instance)
@@ -565,8 +565,8 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"breviloquence: ${tpe.show} is not an inlinable product (a non-generic, top-level "+
-          "or object-nested case class with a single parameter list and no `@name` renames); "+
+        (s"breviloquence: ${tpe.show} is not an inlinable product (a non-generic, top-level " +
+          "or object-nested case class with a single parameter list and no `@name` renames); " +
           "use a `Decodable in Cbor`")
 
     val classSymbol = tpe.classSymbol.get
@@ -853,7 +853,7 @@ object stagedInternal:
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"breviloquence: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic "+
+        (s"breviloquence: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic " +
           "sealed type whose variants are all case classes without `@name` renames)")
 
     val arity = variants.length
@@ -897,14 +897,14 @@ object stagedInternal:
 
     val root: Inlinable = resolve[value](cache).getOrElse:
       report.errorAndAbort
-        (s"breviloquence: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not "+
+        (s"breviloquence: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
           "an inlinable product, collection or key-discriminated sum; use a `Decodable in Cbor`")
 
     // A runtime-tier root would find the very given under definition — an
     // infinite self-call — or add nothing over the instance it wraps.
     if root.isInstanceOf[RuntimeInlinable[?]] || root.isInstanceOf[DecodedInlinable[?]] then
       report.errorAndAbort
-        (s"breviloquence: ${TypeRepr.of[value].show} has no generator of its own; use its "+
+        (s"breviloquence: ${TypeRepr.of[value].show} has no generator of its own; use its " +
           "existing instance directly rather than `Inlinable.parsable`")
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]

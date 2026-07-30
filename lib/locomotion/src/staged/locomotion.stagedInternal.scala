@@ -74,7 +74,7 @@ object stagedInternal:
 
       case failure: ImplicitSearchFailure =>
         report.errorAndAbort
-          (s"locomotion: no Decodable in Protobuf for ${TypeRepr.of[fieldType].show}: "+
+          (s"locomotion: no Decodable in Protobuf for ${TypeRepr.of[fieldType].show}: " +
             failure.explanation)
 
   // A nominal `Protobuf.Parsable` for a field type, resolved at expansion
@@ -251,7 +251,7 @@ object stagedInternal:
         result match
           case instance: Inlinable =>
             report.info
-              ( s"locomotion: staged summon for ${TypeRepr.of[field].show} took "+
+              ( s"locomotion: staged summon for ${TypeRepr.of[field].show} took " +
                 s"${duration}ms" )
 
             Some(instance)
@@ -566,8 +566,8 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"locomotion: ${tpe.show} is not an inlinable message (a non-generic, top-level or "+
-          "object-nested case class with a single parameter list and distinct, statically "+
+        (s"locomotion: ${tpe.show} is not an inlinable message (a non-generic, top-level or " +
+          "object-nested case class with a single parameter list and distinct, statically " +
           "readable field numbers); use a `Decodable in Protobuf`")
 
     val classSymbol = tpe.classSymbol.get
@@ -1087,7 +1087,7 @@ object stagedInternal:
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"locomotion: ${TypeRepr.of[sum].show} is not an inlinable oneof (a non-generic "+
+        (s"locomotion: ${TypeRepr.of[sum].show} is not an inlinable oneof (a non-generic " +
           "sealed type whose variants are all case classes)")
 
     val arity = variants.length
@@ -1147,12 +1147,12 @@ object stagedInternal:
 
     val root: Inlinable = resolve[value](cache).getOrElse:
       report.errorAndAbort
-        (s"locomotion: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not "+
+        (s"locomotion: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not " +
           "an inlinable message or oneof; use a `Decodable in Protobuf`")
 
     if root.isInstanceOf[Inlinable.IterableInlinable[?]] then
       report.errorAndAbort
-        (s"locomotion: ${TypeRepr.of[value].show} is a collection; a Protobuf message is the "+
+        (s"locomotion: ${TypeRepr.of[value].show} is a collection; a Protobuf message is the " +
           "unit of direct parsing")
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]

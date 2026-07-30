@@ -860,6 +860,22 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val x = a ++\n  b ++\n  c\n")
       . assert(r => !r.contains("616.1") && !r.contains("616.2"))
 
+      test(m"Trailing operator abutting its left operand is rejected"):
+        rules("val x = alpha ++\n  beta\nval y = gamma++\n  delta\n")
+      . assert(_.contains("616.3"))
+
+      test(m"Trailing operator with two spaces before it is rejected"):
+        rules("val x = alpha  ++\n  beta\n")
+      . assert(_.contains("616.3"))
+
+      test(m"Trailing operator with exactly one space is accepted"):
+        rules("val x = alpha ++\n  beta\n")
+      . assert(r => !r.contains("616.3"))
+
+      test(m"Tight infix stays legal when it fits on one line"):
+        rules("val x = alpha++beta\n")
+      . assert(r => !r.contains("616.3"))
+
       test(m"Operator beginning the continuation line is rejected"):
         rules("val x =\n  alpha\n  ++ beta\n")
       . assert(_.contains("616.1"))

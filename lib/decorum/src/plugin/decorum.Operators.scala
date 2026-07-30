@@ -52,7 +52,8 @@ case class OpInfo
     anchorIndent: Int,
     rightLine:    Int,
     rightCol:     Int,
-    multiline:    Boolean )
+    multiline:    Boolean,
+    opOffset:     Int )
 
 object Operators:
   // Walk the untyped tree and emit one `OpInfo` per *symbolic* infix-operator
@@ -137,7 +138,7 @@ object Operators:
     val rightLine   = source.offsetToLine(rightStart) + 1
     val rightCol    = source.column(rightStart) + 1
     val multiline   = leftEndLine != rightLine
-    Some(OpInfo(opLine, opCol, leftEndLine, anchorIndent, rightLine, rightCol, multiline))
+    Some(OpInfo(opLine, opCol, leftEndLine, anchorIndent, rightLine, rightCol, multiline, osp.start))
 
   // True iff every character of `text` is a symbolic-operator character.
   // Mirrors `Scans.isSymbolicOperator`; replicated here so each extractor

@@ -50,7 +50,7 @@ class Shader(options: List[String]) extends PluginPhase:
           case List(from, to) => List((from, to))
 
           case other =>
-            report.warning(s"umbrageous: the option '$opt' is not a valid shading mapping; "+
+            report.warning(s"umbrageous: the option '$opt' is not a valid shading mapping; " +
               "please specify a mapping of the form, '<package>:<new-prefix>'"); Nil
 
     object transformer extends UntypedTreeMap:

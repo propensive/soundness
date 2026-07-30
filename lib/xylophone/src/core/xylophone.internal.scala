@@ -1114,19 +1114,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a case class; sums and other types use "+
+        ("xylophone: staged parsing requires a case class; sums and other types use " +
           "`Xml.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a top-level or object-nested case class; "+
+        ("xylophone: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Xml.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a single parameter list; use "+
+        ("xylophone: staged parsing requires a single parameter list; use " +
           "`Xml.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -1192,7 +1192,7 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Xml.Field].getOrElse:
             report.errorAndAbort
-              (s"xylophone: no Xml.Field instance for field ${fieldNames(index)}: "+
+              (s"xylophone: no Xml.Field instance for field ${fieldNames(index)}: " +
                 fieldTypes(index).show)
 
     def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match

@@ -489,19 +489,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a case class; sums and other types use "+
+        ("stratiform: staged parsing requires a case class; sums and other types use " +
           "`Tel.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a top-level or object-nested case class; "+
+        ("stratiform: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Tel.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a single parameter list; use "+
+        ("stratiform: staged parsing requires a single parameter list; use " +
           "`Tel.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -560,7 +560,7 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Tel.Field].getOrElse:
             report.errorAndAbort
-              (s"stratiform: no Tel.Field instance for field ${fieldNames(index)}: "+
+              (s"stratiform: no Tel.Field instance for field ${fieldNames(index)}: " +
                 fieldTypes(index).show)
 
     def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match

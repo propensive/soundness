@@ -36,11 +36,15 @@ import scala.collection.mutable
 
 object ContinuationRules:
   // R-616: a symbolic infix operator whose operands wrap onto separate source
-  // lines must terminate the first line (616.1), and the continuation must be
-  // indented exactly two columns beyond the first line of the operator chain
-  // (616.2). The bad shapes are the operator beginning the continuation line
-  // (`left\n  ++ right`), the operator alone on its own line, and any
-  // continuation indent other than +2.
+  // lines must terminate the first line (616.1), preceded by exactly one
+  // space (616.3), and the continuation must be indented exactly two columns
+  // beyond the first line of the operator chain (616.2). The bad shapes are
+  // the operator beginning the continuation line (`left\n  ++ right`), the
+  // operator alone on its own line, any continuation indent other than +2,
+  // and a trailing operator that abuts its left operand (`left++`) or
+  // carries extra padding — the line break on the operator's right must be
+  // balanced by a single space on its left, even for operators written
+  // tight (`a++b`) when they fit on one line.
   object OperatorContinuation extends Rule:
     def id: String = "616"
     def principle: Principle = Principle.ContinuationMarking
@@ -54,16 +58,44 @@ object ContinuationRules:
                   ( ctx.file, op.opLine, op.opCol, "616.1",
                     "a multi-line infix operator must terminate the first line, not begin "
                       +"the continuation line" ) )
-          else if op.rightCol - 1 != op.anchorIndent + 2 then
-            List
-              ( Violation
-                  ( ctx.file, op.rightLine, op.rightCol, "616.2",
-                    s"a multi-line infix continuation must be indented ${op.anchorIndent + 2} "
-                      +s"columns (found ${op.rightCol - 1})" ) )
           else
-            Nil
+            val balance =
+              if spacesBeforeOperator(ctx, op.opOffset) == 1 then Nil
+              else
+                List
+                  ( Violation
+                      ( ctx.file, op.opLine, op.opCol, "616.3",
+                        "a trailing infix operator must be preceded by exactly one space, "
+                          +"balancing the line break that follows it" ) )
+
+            val indent =
+              if op.rightCol - 1 != op.anchorIndent + 2 then
+                List
+                  ( Violation
+                      ( ctx.file, op.rightLine, op.rightCol, "616.2",
+                        s"a multi-line infix continuation must be indented "
+                          +s"${op.anchorIndent + 2} columns (found ${op.rightCol - 1})" ) )
+              else
+                Nil
+
+            balance ++ indent
         else
           Nil
+
+    // Counts spaces in the raw text immediately before the operator's
+    // offset. The raw offset is used rather than (line, column) because
+    // dotty's `SourceFile` counts form feeds as line breaks while the
+    // tokenizer's line table does not, so the two disagree about line
+    // numbers in files containing a form feed.
+    private def spacesBeforeOperator(ctx: Context, offset: Int): Int =
+      var count = 0
+      var i     = offset - 1
+
+      while i >= 0 && i < ctx.text.length && ctx.text.charAt(i) == ' ' do
+        count += 1
+        i -= 1
+
+      count
 
   // R-444: continuation markers are followed by a fixed "hard space". A line
   // whose first token is the `=>` continuation marker must separate it from

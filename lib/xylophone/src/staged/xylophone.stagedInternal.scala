@@ -591,8 +591,8 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"xylophone: ${tpe.show} is not an inlinable product (a non-generic, top-level or "+
-          "object-nested case class with a single parameter list and no `@name` or "+
+        (s"xylophone: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
+          "object-nested case class with a single parameter list and no `@name` or " +
           "`@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
 
     val classSymbol = tpe.classSymbol.get
@@ -1116,7 +1116,7 @@ object stagedInternal:
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"xylophone: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed "+
+        (s"xylophone: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed " +
           "type whose variants are all case classes without annotations)")
 
     val arity = variants.length
@@ -1178,8 +1178,8 @@ object stagedInternal:
 
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
-        (s"xylophone: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, "+
-          "top-level or object-nested case class with a single parameter list and no `@name` "+
+        (s"xylophone: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
+          "top-level or object-nested case class with a single parameter list and no `@name` " +
           "or `@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
 
     '{

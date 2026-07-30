@@ -1369,19 +1369,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a case class; sums and other types use "+
+        ("jacinta: staged parsing requires a case class; sums and other types use " +
           "`Json.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a top-level or object-nested case class; "+
+        ("jacinta: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Json.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a single parameter list; use "+
+        ("jacinta: staged parsing requires a single parameter list; use " +
           "`Json.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -1441,7 +1441,7 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for field ${fieldNames(index)}: "+
+              (s"jacinta: no Json.Field instance for field ${fieldNames(index)}: " +
                 fieldTypes(index).show)
 
     def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
@@ -1703,7 +1703,7 @@ object internal:
 
     if !children.forall { child => child.isClassDef && child.flags.is(Flags.Case) } then
       report.errorAndAbort
-        ("jacinta: staged sum parsing requires every variant to be a case class; singleton "+
+        ("jacinta: staged sum parsing requires every variant to be a case class; singleton " +
           "variants use `Json.Parsable.derived`")
 
     val variantTypes: List[TypeRepr] = children.map(_.typeRef)
@@ -1715,13 +1715,13 @@ object internal:
         case '[variantType] =>
           Expr.summon[variantType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for variant ${variantNames(index)}: "+
+              (s"jacinta: no Json.Field instance for variant ${variantNames(index)}: " +
                 variantTypes(index).show)
 
     val discriminableExpr: Expr[value is Discriminable in Json] =
       Expr.summon[value is Discriminable in Json].getOrElse:
         report.errorAndAbort
-          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like "+
+          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
             "`jacinta.discriminables.jsonByKindDiscriminable`")
 
     val nameExprs = variantNames.map { name => Expr(name) }
