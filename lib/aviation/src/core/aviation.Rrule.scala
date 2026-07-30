@@ -95,26 +95,26 @@ object Rrule:
       t"$ordinal${code(entry.weekday)}"
 
   given encodable: [point: Encodable in Text] => Rrule[point] is Encodable in Text = rule =>
-    def part(condition: Boolean, text: => Text): scala.collection.immutable.List[Text] =
-      if condition then scala.collection.immutable.List(text) else scala.collection.immutable.Nil
+    def part(condition: Boolean, text: => Text): List[Text] =
+      if condition then List(text) else List()
 
     val parts =
-      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") ++
-        part(rule.interval != 1, t"INTERVAL=${rule.interval}") ++
-        part(rule.count.present, t"COUNT=${rule.count.vouch}") ++
-        part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") ++
-        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") ++
-        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") ++
-        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") ++
-        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") ++
-        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") ++
-        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") ++
-        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") ++
-        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") ++
-        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") ++
+      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") :::
+        part(rule.interval != 1, t"INTERVAL=${rule.interval}") :::
+        part(rule.count.present, t"COUNT=${rule.count.vouch}") :::
+        part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") :::
+        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") :::
+        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") :::
+        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") :::
+        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") :::
+        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") :::
+        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") :::
+        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") :::
+        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") :::
+        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") :::
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
-    List.of(parts).join(t";")
+    parts.join(t";")
 
   def parse[point: Decodable in Text](text: Text, start: point)(using Tactic[RruleError])
   :   Rrule[point] =
@@ -122,10 +122,10 @@ object Rrule:
     val fields: Map[Text, Text] = Map.from:
       text.cut(t";").stdlib.flatMap: pair =>
         pair.cut(t"=") match
-          case List(key, value) => scala.collection.immutable.List(key.upper -> value)
-          case _                => scala.collection.immutable.Nil
+          case List(key, value) => Some(key.upper -> value)
+          case _                => None
 
-    def field(key: Text): Optional[Text] = fields.stdlib.get(key).getOrElse(Unset)
+    def field(key: Text): Optional[Text] = fields.at(key)
 
     Rrule
       ( start,

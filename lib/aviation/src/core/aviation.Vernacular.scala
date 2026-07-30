@@ -294,10 +294,9 @@ trait Vernacular:
       if rule.bySetPos.isEmpty then Unset else takingPositions(rule.bySetPos)
 
     val clauses =
-      List.of:
-        scala.collection.immutable.List(cadence)
-        ++ onClause.lay(scala.collection.immutable.Nil)(scala.collection.immutable.List(_))
-        ++ monthClause.lay(scala.collection.immutable.Nil)(scala.collection.immutable.List(_))
-        ++ setPosClause.lay(scala.collection.immutable.Nil)(scala.collection.immutable.List(_))
+      List(cadence)
+      ::: onClause.lay(List[Text]())(List(_))
+      ::: monthClause.lay(List[Text]())(List(_))
+      ::: setPosClause.lay(List[Text]())(List(_))
 
     t"${clauses.join(t" ")}${rule.count.lay(t"")(times)}"

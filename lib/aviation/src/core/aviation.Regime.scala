@@ -32,9 +32,12 @@
                                                                                                   */
 package aviation
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import fulminate.*
+import rudiments.*
 import vacuous.*
 
 // A `Regime` is the calendar in force as it changed through history: an ordered sequence of
@@ -55,8 +58,8 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   // bound is the next segment's first day: the two calendars are aligned so that the last day of
   // one and the first day of the next share a Julian day number (Julian 1582-10-04 and Gregorian
   // 1582-10-15 are the same day), so that shared day is valid under both — the bound is inclusive.
-  private val bounded: scala.collection.immutable.List[(Segment, Int)] =
-    segments.stdlib.zip(segments.stdlib.drop(1).map(_.from.jdn) :+ Int.MaxValue)
+  private val bounded: List[(Segment, Int)] =
+    List.of(segments.stdlib.zip(segments.stdlib.drop(1).map(_.from.jdn) :+ Int.MaxValue))
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =
@@ -78,7 +81,7 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
       case Nil =>
         Unset
 
-    recur(List.of(bounded))
+    recur(bounded)
 
   // The calendar governing a year, sampled at its midpoint (never inside a historical cutover gap).
   private def governing(year: Year): RomanCalendar =
