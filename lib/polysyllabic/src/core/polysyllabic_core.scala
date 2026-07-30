@@ -34,8 +34,6 @@ package polysyllabic
 
 import proscenium.compat.*
 
-import scala.collection.immutable.IndexedSeq
-
 import scala.collection.mutable.ArrayBuffer
 
 import anticipation.*
@@ -129,7 +127,7 @@ extension (text: Text)
   // Split a single word at every admissible break point. For multi-word
   // input, non-letter regions and letter regions are treated as opaque
   // segments — only letter regions are split into syllables.
-  def syllables(using hyphenation: Hyphenation): IndexedSeq[Text] =
+  def syllables(using hyphenation: Hyphenation): Series[Text] =
     val source = text.s
     val length = source.length
     val parts = new ArrayBuffer[Text]
@@ -165,7 +163,7 @@ extension (text: Text)
         parts += source.substring(i, end).nn.tt
         i = end
 
-    parts.toIndexedSeq
+    Series.from(parts)
 
 package hyphenations:
   // The CTAN hyph-utf8 American-English pattern file. Lazy: the patterns are

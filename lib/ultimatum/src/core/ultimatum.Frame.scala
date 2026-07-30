@@ -32,7 +32,7 @@
                                                                                                   */
 package ultimatum
 
-import scala.collection.immutable.IndexedSeq
+import proscenium.compat.*
 
 import rudiments.*
 import vacuous.*
@@ -75,11 +75,11 @@ object Frame:
   // redistributing) until a fixed point, then hand the still-free children their
   // fractional shares with largest-remainder (Hamilton) rounding so the sizes sum
   // to exactly `available`.
-  def distribute(fractions: List[Double], limits: List[Limits], available: Int): IndexedSeq[Int] =
+  def distribute(fractions: List[Double], limits: List[Limits], available: Int): Series[Int] =
     val n = fractions.stdlib.length
-    val frac = fractions.stdlib.toIndexedSeq
-    val min = limits.stdlib.map(_.min).toIndexedSeq
-    val max = limits.stdlib.map(_.max).toIndexedSeq
+    val frac = Series.from(fractions.stdlib)
+    val min = Series.from(limits.stdlib.map(_.min))
+    val max = Series.from(limits.stdlib.map(_.max))
     val pinned = scala.Array.fill[Optional[Int]](n)(Unset)
 
     def poolAndWeight(): (Int, Double) =
@@ -152,7 +152,7 @@ object Frame:
         remainders(best) = -1.0
         remainder -= 1
 
-    sizes.toIndexedSeq
+    Series.from(sizes.iterator)
 
 // A node in a layout tree: a `Cell` (a leaf panel that hosts content) or a
 // `Split` that divides its space among children along an `Axis`. Solving against
@@ -200,7 +200,7 @@ enum Frame:
         case Axis.File => rect.left
         case Axis.Rank => rect.top
 
-      val offsets = sizes.scanLeft(start)(_ + _)
+      val offsets = Series.from(sizes.stdlib.scanLeft(start)(_ + _))
 
       val placements = children.stdlib.zipWithIndex.map: (child, i) =>
         val childRect = axis match

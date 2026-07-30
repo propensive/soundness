@@ -32,8 +32,6 @@
                                                                                                   */
 package ultimatum
 
-import scala.collection.immutable.IndexedSeq
-
 import java.io as ji
 
 import soundness.*
@@ -246,17 +244,17 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == t"b")
 
       test(m"a moved or resized cell is dirty"):
-        val before = IndexedSeq(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
-        val after  = IndexedSeq(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
+        val before = Series(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        val after  = Series(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
         dirtyCells(before, after, Set())
       . assert(_ == Set(0, 1))
 
       test(m"an unchanged cell is not dirty"):
-        dirtyCells(IndexedSeq(Rect(0, 0, 10, 1)), IndexedSeq(Rect(0, 0, 10, 1)), Set())
+        dirtyCells(Series(Rect(0, 0, 10, 1)), Series(Rect(0, 0, 10, 1)), Set())
       . assert(_ == Set())
 
       test(m"a content-changed cell is dirty though its rectangle is unchanged"):
-        val rects = IndexedSeq(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        val rects = Series(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
         dirtyCells(rects, rects, Set(1))
       . assert(_ == Set(1))
 
@@ -743,6 +741,8 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
         val events = new Iterator[TerminalEvent]:
           @scala.caps.unsafe.untrackedCaptures
+          // Capture-carrying elements do not flow through the opaque List (boxing), so
+          // this event queue deliberately stays a stdlib list.
           private var remaining: scala.collection.immutable.List[() => TerminalEvent] =
             scala.collection.immutable.List(
               () => Signal.Winch,

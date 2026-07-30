@@ -32,8 +32,6 @@
                                                                                                   */
 package ultimatum
 
-import scala.collection.immutable.IndexedSeq
-
 import proscenium.compat.*
 
 import denominative.*
@@ -60,21 +58,21 @@ class Form
     debounce:     Long         = 0,
     scheduleWake: Long => Unit = _ => () ):
   @scala.caps.unsafe.untrackedCaptures
-  private var leaves: IndexedSeq[Pane] = IndexedSeq()
+  private var leaves: Series[Pane] = Series()
   @scala.caps.unsafe.untrackedCaptures
-  private var focuses: IndexedSeq[Focus] = IndexedSeq()
+  private var focuses: Series[Focus] = Series()
   @scala.caps.unsafe.untrackedCaptures
-  private var focusLeaf: IndexedSeq[Int] = IndexedSeq()
+  private var focusLeaf: Series[Int] = Series()
   @scala.caps.unsafe.untrackedCaptures
   private var focused: Optional[Focus] = Unset
   @scala.caps.unsafe.untrackedCaptures
-  private var rects: IndexedSeq[Rect] = IndexedSeq()
+  private var rects: Series[Rect] = Series()
   @scala.caps.unsafe.untrackedCaptures
   private var lastRedraw: Long = 0
   @scala.caps.unsafe.untrackedCaptures
   private var lastWinch: Long = 0
   @scala.caps.unsafe.untrackedCaptures
-  private var deferred: Optional[scala.collection.immutable.Set[Int]] = Unset
+  private var deferred: Optional[Set[Int]] = Unset
   @scala.caps.unsafe.untrackedCaptures
   private var wakePending: Boolean = false
   @scala.caps.unsafe.untrackedCaptures
@@ -104,16 +102,17 @@ class Form
   // if it still exists, else fall back to the first.
   private def rederive(): Unit =
     bind(pane)
-    leaves = pane.leaves.stdlib.toIndexedSeq
+    leaves = Series.from(pane.leaves.stdlib)
     focuses = leaves.collect { case Pane.Widget(_, focus) => focus }
 
-    focusLeaf = leaves.indices.collect:
-      case i if leaves(i).isInstanceOf[Pane.Widget] => i
+    focusLeaf = Series.from:
+      (0 until leaves.length).collect:
+        case i if leaves(i).isInstanceOf[Pane.Widget] => i
 
     val stays = focused.lay(false): widget =>
       focuses.indexWhere(_ eq widget) >= 0
 
-    if !stays then focused = if focuses.nil then Unset else focuses(0)
+    if !stays then focused = if focuses.isEmpty then Unset else focuses(0)
 
   private def focusIndex: Int = focused.lay(0): widget =>
     val index = focuses.indexWhere(_ eq widget)
@@ -145,7 +144,7 @@ class Form
 
     project(pane)
 
-  private def solve(): IndexedSeq[Rect] =
+  private def solve(): Series[Rect] =
     val frame = liveFrame
 
     val height = mode match
@@ -157,7 +156,7 @@ class Form
       case screen: ScreenRoot => screen.reframe()
       case _                  => ()
 
-    frame.arrange(Rect(0, 0, root.width, height)).cells.stdlib.toIndexedSeq
+    Series.from(frame.arrange(Rect(0, 0, root.width, height)).cells.stdlib)
 
   private def paint(index: Int): Unit =
     val extent = FlowExtent(root, rects(index))
@@ -177,7 +176,7 @@ class Form
   // leaves (a pane was added or removed) forces a full repaint, clearing the
   // screen in fullscreen so a removed panel leaves no residue; otherwise
   // fullscreen repaints only the dirty cells and inline re-presents the block.
-  private def refresh(changed: scala.collection.immutable.Set[Int]): Unit =
+  private def refresh(changed: Set[Int]): Unit =
     rederive()
 
     if leaves.length != rects.length then
@@ -185,14 +184,14 @@ class Form
         case Mode.Fullscreen => root.clear()
         case Mode.Inline     => ()
 
-      rects = IndexedSeq()
+      rects = Series()
 
     val updated = solve()
 
     mode match
       case Mode.Inline =>
         rects = updated
-        rects.indices.each(paint(_))
+        (0 until rects.length).each(paint(_))
 
       case Mode.Fullscreen =>
         val dirty = dirtyCells(rects, updated, changed)
@@ -204,7 +203,7 @@ class Form
 
   // Repaint immediately, folding in any coalesced or pending-resize work. Used for
   // typing, focus changes and application redraws, which must stay responsive.
-  private def requestRefresh(changed: scala.collection.immutable.Set[Int]): Unit =
+  private def requestRefresh(changed: Set[Int]): Unit =
     deferred = deferred.lay(changed)(_ ++ changed)
     flushDeferred()
 
@@ -221,7 +220,7 @@ class Form
   // query is deferred to that repaint, so a whole drag costs one query. Typing is
   // unaffected and stays immediate.
   private def requestResizeRefresh(): Unit =
-    deferred = deferred.or(scala.collection.immutable.Set())
+    deferred = deferred.or(Set())
     lastWinch = System.currentTimeMillis
 
     if resizeDelay <= 0 then flushDeferred()
@@ -269,7 +268,7 @@ class Form
       refresh(changed)
 
   def run(events: Iterator[TerminalEvent]): Unit =
-    requestRefresh(scala.collection.immutable.Set())
+    requestRefresh(Set())
     var running = true
 
     while running && events.hasNext do events.next() match
@@ -279,7 +278,7 @@ class Form
           // the panel gaining focus is repainted by `refresh` (focused last).
           val vacated = focusLeaf(focusIndex)
           focused = focuses((focusIndex + 1)%focuses.length)
-          requestRefresh(scala.collection.immutable.Set(vacated))
+          requestRefresh(Set(vacated))
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
@@ -309,7 +308,7 @@ class Form
       // repaint clears the moved block (using the anchor reply, when one arrived).
       // The repaint is debounced until the drag pauses; typing is unaffected.
       case _: TerminalInfo.WindowSize =>
-        rects = IndexedSeq()
+        rects = Series()
         resizePending = true
         requestResizeRefresh()
 
@@ -317,7 +316,7 @@ class Form
       // scheduled wake for a debounced resize: repaint if the drag has gone quiet,
       // else reschedule the wake for the rest of the debounce window.
       case TerminalInfo.Redraw =>
-        if !resizePending then requestRefresh(scala.collection.immutable.Set())
+        if !resizePending then requestRefresh(Set())
         else if resizeDelay <= 0 then flushDeferred()
         else scheduleWake(resizeDelay)
 
@@ -328,7 +327,7 @@ class Form
       case event =>
         if focuses.nonEmpty then
           focuses(focusIndex).handle(event)
-          val changed = scala.collection.immutable.Set(focusLeaf(focusIndex))
+          val changed = Set(focusLeaf(focusIndex))
 
           // During a pending resize the widget's state updates immediately, but its
           // repaint coalesces into the debounced resize flush: presenting now would

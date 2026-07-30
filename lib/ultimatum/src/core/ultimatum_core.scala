@@ -32,7 +32,7 @@
                                                                                                   */
 package ultimatum
 
-import scala.collection.immutable.IndexedSeq
+import proscenium.compat.*
 
 import anticipation.*
 import denominative.*
@@ -136,17 +136,17 @@ def border
   // The middle band: the child flanked by whichever vertical edges are requested.
   val middle =
     val edge = if left then List(verticalRule) else Nil
-    file((edge.stdlib ++ scala.collection.immutable.List(child) ++ (if right then scala.collection.immutable.List(verticalRule) else scala.collection.immutable.Nil))*)
+    file(((edge :+ child) ::: (if right then List(verticalRule) else Nil)).stdlib*)
 
   // A horizontal band (the top or bottom): a rule flanked by whichever corners
   // are requested (a corner appears only where a vertical edge also meets it).
   def band(leftCorner: Text, rightCorner: Text): Pane =
     val start = if left then List(corner(leftCorner)) else Nil
-    file((start.stdlib ++ scala.collection.immutable.List(horizontalRule) ++ (if right then scala.collection.immutable.List(corner(rightCorner)) else scala.collection.immutable.Nil))*)
+    file(((start :+ horizontalRule) ::: (if right then List(corner(rightCorner)) else Nil)).stdlib*)
 
   val head = if top then List(band(style.topLeft, style.topRight)) else Nil
   val foot = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
-  rank((head.stdlib ++ scala.collection.immutable.List(middle) ++ foot.stdlib)*)
+  rank(((head :+ middle) ::: foot).stdlib*)
 
 // Drive an interactive layout, looping over terminal events until the user exits.
 // Used inside `interactive`. In `Fullscreen` mode the layout takes over the
@@ -201,15 +201,15 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 // rectangle and content are both unchanged is omitted, so it is left untouched on
 // screen — the basis of flicker-free redraw.
 def dirtyCells
-  ( previous: IndexedSeq[Rect],
-    current:  IndexedSeq[Rect],
-    changed:  scala.collection.immutable.Set[Int] )
-:   scala.collection.immutable.Set[Int] =
+  ( previous: Series[Rect],
+    current:  Series[Rect],
+    changed:  Set[Int] )
+:   Set[Int] =
 
-  val moved = current.indices.filter: i =>
+  val moved = (0 until current.length).filter: i =>
     i >= previous.length || previous(i) != current(i)
 
-  moved.toSet ++ changed
+  Set.from(moved) ++ changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
 // rectangle (no event loop). An `InlineRoot` is sized to the height its content
