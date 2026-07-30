@@ -175,7 +175,7 @@ object Keyboard:
                 Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
 
               case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
-                val size = tail.stdlib.indexOfSlice(scala.collection.immutable.List('\u001b', '[', '2', '0', '1', '~'))
+                val size = tail.stdlib.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~').stdlib)
                 val content = tail.take(size).map(_.show).join
                 TerminalInfo.Paste(content) #:: process(tail.drop(size + 6))
 

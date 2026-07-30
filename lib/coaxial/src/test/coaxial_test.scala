@@ -36,6 +36,8 @@ package coaxial
 // package, so they are already in scope; re-importing them through `soundness`
 // would make the two same-shaped `transmit` overloads (from `Serviceable` and
 // `Routable`) ambiguous, so they are excluded from the wildcard.
+import proscenium.compat.*
+
 import java.net as jn
 import java.nio.channels as jnc
 
@@ -60,7 +62,7 @@ object Tests extends Suite(m"Coaxial tests"):
     def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
     def bytes(data: Data): List[Byte] = data.to[List]
     def joined(stream: Progression[Data]): List[Byte] =
-      List.of(stream.flatMap { d => scala.collection.immutable.ArraySeq.unsafeWrapArray(Array.unsafeJvm(d)) }.stdlib.toList)
+      List.of(stream.flatMap { d => d.toSeq }.stdlib.toList)
     def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to[List]
 
     suite(m"Duplex streaming endpoints"):
@@ -328,6 +330,6 @@ object Tests extends Suite(m"Coaxial tests"):
         // Skip on hosts where no interface exposes a hardware address.
         if nic == null then true else
           var value = 0L
-          scala.collection.immutable.ArraySeq.unsafeWrapArray(nic.getHardwareAddress.nn).each: byte => value = (value << 8) | (byte & 0xFF)
+          Array.unsafeFrozen(nic.getHardwareAddress.nn).toSeq.each: byte => value = (value << 8) | (byte & 0xFF)
           interfaceFor(urticose.MacAddress(value)).let(_ => true).or(false)
       . assert(_ == true)

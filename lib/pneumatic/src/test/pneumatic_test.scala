@@ -149,7 +149,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           out.write(buffer, 0, count)
 
         inflater.end()
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(out.toByteArray.nn).to(List)
+        Array.unsafeFrozen(out.toByteArray.nn).toList
 
       def jdkDeflate(data: Data, nowrap: Boolean): Data =
         val deflater = java.util.zip.Deflater(-1, nowrap)
@@ -196,7 +196,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
           position += length - inflater.getRemaining
 
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(out.toByteArray.nn).to(List)
+        Array.unsafeFrozen(out.toByteArray.nn).toList
 
       test(m"pure deflate output inflates with the JDK (raw)"):
         jdkInflate(pureDeflate(corpus, true), true)
@@ -482,7 +482,7 @@ object Tests extends Suite(m"Pneumatic tests"):
             process.getOutputStream.nn.close()
             val decoded = process.getInputStream.nn.readAllBytes().nn
             process.waitFor()
-            scala.collection.immutable.ArraySeq.unsafeWrapArray(decoded).to(proscenium.List) == payload.readable.to(proscenium.List)
+            Array.unsafeFrozen(decoded).toList == payload.readable.to(proscenium.List)
           catch case _: ji.IOException => true
         roundtrips && byXz
       . assert(_ == true)
@@ -497,7 +497,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           stdin.close()
           val decoded = process.getInputStream.nn.readAllBytes().nn
           process.waitFor()
-          process.exitValue() == 0 && scala.collection.immutable.ArraySeq.unsafeWrapArray(decoded).to(proscenium.List) == data.readable.to(proscenium.List)
+          process.exitValue() == 0 && Array.unsafeFrozen(decoded).toList == data.readable.to(proscenium.List)
         catch case _: ji.IOException => true // xz binary unavailable; skip
 
       test(m"The xz binary decodes our output (repetitive)"):
@@ -582,7 +582,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
           java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
+        Array.unsafeFrozen(stream.readAllBytes().nn).toList
       . assert(_ == mixed.to[List])
 
       // JDK-produced gzip, delivered one byte per chunk: the header state
@@ -607,7 +607,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         Stream(chunks).compress[Gzip].pump(gather)
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
           java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
+        Array.unsafeFrozen(stream.readAllBytes().nn).toList
       . assert(_ == mixed.to[List])
 
       // Tiny demand: each refill grants a few bytes, so the inflater retains

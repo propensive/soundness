@@ -525,10 +525,10 @@ object Tests extends Suite(m"Profanity Tests"):
         test(m"SIGSYS is 31") (Signal.Sys.id)   .assert(_ == 31)
 
         test(m"every signal id is positive"):
-          scala.collection.immutable.ArraySeq.unsafeWrapArray(Signal.values).to(List).map(_.id).forall(_ > 0)
+          Array.unsafeFrozen(Signal.values).toList.map(_.id).forall(_ > 0)
         . assert(identity(_))
 
         test(m"signal ids are distinct"):
-          val ids = scala.collection.immutable.ArraySeq.unsafeWrapArray(Signal.values).to(List).map(_.id)
+          val ids = Array.unsafeFrozen(Signal.values).toList.map(_.id)
           ids.length == ids.distinct.length
         . assert(identity(_))
