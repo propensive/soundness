@@ -61,7 +61,7 @@ object Base256:
       "ƠơҢңƤƥΦƧƨΩΪΫάέήίưᾱβγδεζҷᾸικλμẽξοπӁӂÃτÅÆÇψωϊϋỌύώϏ" +
       "ÐǑǒǓÔϕӖϗῘÙῚӛӜӝÞӟàῡǢǣӤåæçǨῩӪӫìíӮӯðñỲỳôỵǶỷӸùῺûǼǽþǿ"
 
-  val alphabet: IArray[Char] =
+  val alphabet: Array[Char]^{} =
     val arr = new scala.Array[Char](256)
     var i = 0
 
@@ -69,9 +69,9 @@ object Base256:
       arr(i) = alphabetString.charAt(i)
       i += 1
 
-    arr.asInstanceOf[IArray[Char]]
+    arr.asInstanceOf[Array[Char]^{}]
 
-  private val membership: IArray[Boolean] =
+  private val membership: Array[Boolean]^{} =
     val table = new scala.Array[Boolean](Char.MaxValue.toInt + 1)
     var i = 0
 
@@ -79,7 +79,7 @@ object Base256:
       table(alphabet(i).toInt) = true
       i += 1
 
-    table.asInstanceOf[IArray[Boolean]]
+    table.asInstanceOf[Array[Boolean]^{}]
 
   // Self-check the alphabet's defining property — every implementation
   // MUST verify it per §4. We do it at module load so a transcription
@@ -133,7 +133,7 @@ object Base256:
       out(i) = (s.charAt(i).toInt % 256).toByte
       i += 1
 
-    out.asInstanceOf[IArray[Byte]]
+    out.asInstanceOf[Array[Byte]^{}]
 
   // Strict decode (§9). Verifies every input character is a member of
   // the alphabet; raises a `Base256Error` listing the first offending
@@ -150,4 +150,4 @@ object Base256:
       out(i) = (c.toInt % 256).toByte
       i += 1
 
-    out.asInstanceOf[IArray[Byte]]
+    out.asInstanceOf[Array[Byte]^{}]

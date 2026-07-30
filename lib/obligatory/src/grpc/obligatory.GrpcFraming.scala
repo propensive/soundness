@@ -59,7 +59,7 @@ object GrpcFraming:
     val length = payload.length
 
     val header: Data =
-      IArray
+      Array.of
         ( (if compress then 1 else 0).toByte,
           (length >>> 24).toByte,
           (length >>> 16).toByte,
@@ -98,7 +98,9 @@ object GrpcFraming:
 
     Framable.frames[Data]:
       header.let: (compressed, length) =>
-        val payload = cursor.take(truncated())(length)
+        // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
+        // the cast reasserts the frozen form, which `take` already guarantees.
+        val payload = cursor.take(truncated())(length).asInstanceOf[Data]
         if compressed then gunzip(payload) else payload
 
 sealed trait GrpcFraming

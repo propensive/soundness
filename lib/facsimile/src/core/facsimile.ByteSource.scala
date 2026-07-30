@@ -51,5 +51,5 @@ private[facsimile] class DataSource(data: Data) extends ByteSource:
 private[facsimile] class ExpanseSource(expanse: zephyrine.Expanse, val size: Long)
 extends ByteSource:
   def read(offset: Long, length: Int): Data =
-    if length <= 0 || offset >= size then IArray.empty[Byte]
+    if length <= 0 || offset >= size then Array.empty[Byte]
     else expanse.read(offset, length.min((size - offset).toInt))

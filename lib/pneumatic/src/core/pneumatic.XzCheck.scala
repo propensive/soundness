@@ -67,7 +67,7 @@ private[pneumatic] object XzCheck:
   def encoder(checkType: Int): XzChecker^ = checker(checkType)
 
 private[pneumatic] object Crc64:
-  val table: IArray[Long] =
+  val table: Array[Long]^{} =
     val result = Array[Long](256)
     val poly = 0xc96c5795d7870f42L
     var n = 0
@@ -79,7 +79,7 @@ private[pneumatic] object Crc64:
       result(n) = c
       n += 1
 
-    IArray.freeze(result)
+    Array.freeze(result)
 
 // A check that accumulates over the uncompressed bytes and yields its little-endian trailer
 // bytes. Checkers are mutable running state, so each use instantiates a fresh one (including
@@ -131,8 +131,8 @@ private[pneumatic] final class Crc64Checker extends XzChecker:
 // first 64 primes; the initial hash words are the fractional parts of the square roots of the first
 // eight. Big-endian digest, written to the block trailer in order.
 private[pneumatic] object Sha256:
-  val roundConstants: IArray[Int] =
-    IArray.unsafeFromArray:
+  val roundConstants: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
         0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1,
         0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,

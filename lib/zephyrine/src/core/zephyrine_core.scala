@@ -98,7 +98,7 @@ package parsing:
 
 export Cursor.{Mark, Offset}
 
-// A stream of parsed records: each window is an `IArray` chunk of them (the boxed
+// A stream of parsed records: each window is a frozen-array chunk of them (the boxed
 // medium), so credit counts records and `Buffering` sizes stage buffers by
 // reference count. Records are immutable values, so they cross stage and thread
 // boundaries by reference; a record must not itself hold a live endpoint. This
@@ -107,7 +107,7 @@ export Cursor.{Mark, Offset}
 // collections. The record type is unbounded here — the `Addressable` given that
 // admits a record type governs at stream construction — but it must erase to a
 // reference type.
-type Records[record] = Stream[IArray[record]] over Credit
+type Records[record] = Stream[Array[record]^{}] over Credit
 
 extension [in, transport](consume stream: (Stream[in] over transport)^)
   // Pull-composition: a differently-typed `Stream` whose refills translate
@@ -270,7 +270,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     Progression.empty.lazyAppendedAll(recur())
 
-extension [record](consume stream: (Stream[IArray[record]] over Credit)^)
+extension [record](consume stream: (Stream[Array[record]^{}] over Credit)^)
   // Element-wise access to a stream of records: a single-consumer iterator over
   // the records of successive windows, in order. The iterator owns the endpoint:
   // it closes the stream when it reports exhaustion, so a consumer must drain it
@@ -425,7 +425,7 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
         result
 
 private def recordIterator[record]
-  ( consume stream: (Stream[IArray[record]] over Credit)^ )
+  ( consume stream: (Stream[Array[record]^{}] over Credit)^ )
   ( using buffering: Buffering )
 :   Iterator[record]^ =
 

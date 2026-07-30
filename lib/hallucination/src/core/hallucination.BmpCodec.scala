@@ -81,12 +81,12 @@ private[hallucination] object BmpCodec:
 
       val paletteOffset = 14 + headerSize + (if headerSize == 40 && compression == 3 then 12 else 0)
 
-      val palette: IArray[Int] =
-        if bitCount > 8 then IArray()
+      val palette: Array[Int]^{} =
+        if bitCount > 8 then Array.of()
         else
           val size = if colorCount == 0 then 1 << bitCount else colorCount
 
-          IArray.tabulate(size): index =>
+          Array.tabulate(size): index =>
             u32le(data, paletteOffset + index*4)&0xffffff
 
       val rowSize = ((bitCount*width + 31)/32)*4

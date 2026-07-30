@@ -56,10 +56,10 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 object Tests extends Suite(m"Xylophone tests"):
 
   def elem(label: Text, children: Node*): Element =
-    Element(label, Attributes.empty, IArray.from(children))
+    Element(label, Attributes.empty, Array.from(children))
 
   def elem(label: Text, attrs: Map[Text, Text], children: Node*): Element =
-    Element(label, Attributes.from(attrs), IArray.from(children))
+    Element(label, Attributes.from(attrs), Array.from(children))
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform

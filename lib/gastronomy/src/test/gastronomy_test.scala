@@ -86,7 +86,7 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"Encode to Binary"):
       import alphabets.binaryStandard
-      IArray[Byte](1, 2, 3, 4).serialize[Binary]
+      Array.of[Byte](1, 2, 3, 4).serialize[Binary]
     . assert(_ == t"00000001000000100000001100000100")
 
     test(m"Long digest covers the low nibble"):
@@ -99,16 +99,16 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(identity(_))
 
     test(m"Blake3 via Hash typeclass, empty input"):
-      IArray[Byte]().digest[Blake3].serialize[Hex]
+      Array.of[Byte]().digest[Blake3].serialize[Hex]
     . assert: digest =>
         digest == t"AF1349B9F5F9A1A6A0404DEA36DCC9499BCB25C9ADC112B7CC9A93CAE41F3262"
 
     suite(m"Blake3 official test vectors"):
-      val key: IArray[Byte] = Blake3TestVectors.Key.getBytes("UTF-8").nn.immutable(using Unsafe)
+      val key: Array[Byte]^{} = Blake3TestVectors.Key.getBytes("UTF-8").nn.immutable(using Unsafe)
       val context: Text = Blake3TestVectors.ContextString.tt
 
       Blake3TestVectors.cases.each: vector =>
-        val input = IArray.tabulate(vector.inputLen)(i => (i % 251).toByte)
+        val input = Array.tabulate(vector.inputLen)(i => (i % 251).toByte)
         val expectedHash      = vector.hash.toUpperCase.nn.tt
         val expectedKeyed     = vector.keyedHash.toUpperCase.nn.tt
         val expectedDerived   = vector.deriveKey.toUpperCase.nn.tt
@@ -165,7 +165,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       val sizes = List(0, 1, 55, 56, 57, 63, 64, 65, 111, 112, 113, 127, 128, 129, 1000)
 
       sizes.each: size =>
-        val data: Data = IArray.tabulate(size)(i => ((i*31 + 7) & 0xff).toByte)
+        val data: Data = Array.tabulate(size)(i => ((i*31 + 7) & 0xff).toByte)
 
         def jdk(name: Text): Text =
           val md = java.security.MessageDigest.getInstance(name.s).nn
@@ -192,7 +192,7 @@ object Tests extends Suite(m"Gastronomy tests"):
         . assert(_ == jdk(t"MD5"))
 
     suite(m"Windowed digestion"):
-      val payload: Data = IArray.tabulate(200001)(i => ((i*31 + 7) & 0xff).toByte)
+      val payload: Data = Array.tabulate(200001)(i => ((i*31 + 7) & 0xff).toByte)
 
       // Feed the windowed `append` deliberately misaligned slices of a buffer with a
       // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
@@ -246,7 +246,7 @@ object Tests extends Suite(m"Gastronomy tests"):
         windowed(JavaStdlibHashing.crc32.digestion())
       . assert(_ == whole(JavaStdlibHashing.crc32.digestion()))
 
-      val chunked: Progression[Data] = payload.stdlib.grouped(7777).map(IArray.of(_)).to(Progression)
+      val chunked: Progression[Data] = payload.stdlib.grouped(7777).map(Array.frozen(_)).to(Progression)
 
       test(m"a chunked stream's checksum matches the whole-value digest"):
         chunked.checksum[Sha2[256]].serialize[Hex]

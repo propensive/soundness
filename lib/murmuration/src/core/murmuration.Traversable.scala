@@ -83,9 +83,12 @@ object Traversable extends Traversable2:
       scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[scala.Array[element]])
       . iterator
 
-  // The frozen array, `Array[element]^{}`, likewise: `Self` is the nominal alias with an
-  // explicitly empty capture set, so only references statically known frozen match.
-  given frozenArray: [element] => (Array[element]^{}) is Traversable by element =
+  // The frozen array, and any other readable reference: reading through a shared reference
+  // is sound under separation checking (live writers are excluded wherever readers alias),
+  // and inline re-elaboration freshens even statically-frozen references to `any.rd`, so
+  // the receiver admits the whole read-only spectrum. Capture-set polymorphism (rather
+  // than a fixed `any.rd` bound) lets boxed capture variables instantiate too.
+  given frozenArray: [element, refs^] => (Array[element]^{refs}) is Traversable by element =
     array =>
       scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
       . iterator

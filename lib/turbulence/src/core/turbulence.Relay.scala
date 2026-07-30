@@ -80,10 +80,10 @@ class Relay[record]():
   // The medium evidence resolves at the (concretely-typed) call site — the
   // generic `Addressable.boxed` for ordinary reference-typed records.
   @scala.annotation.nowarn("msg=match may not be exhaustive")
-  def stream(using addressable: IArray[record] is Addressable, buffering: Buffering)
-  :   (Stream[IArray[record]] over Credit)^ =
+  def stream(using addressable: (Array[record]^{}) is Addressable, buffering: Buffering)
+  :   (Stream[Array[record]^{}] over Credit)^ =
 
-    new Stream[IArray[record]](using addressable):
+    new Stream[Array[record]^{}](using addressable):
       type Transport = Credit
 
       private val capacity: Int = buffering.capacity(Substrate.Boxes)

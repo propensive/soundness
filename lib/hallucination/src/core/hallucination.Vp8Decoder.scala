@@ -127,7 +127,7 @@ private[hallucination] object Vp8Decoder:
 
     private var macroblocks: scala.Array[Macroblock^]^ = scala.Array()
 
-    private inline def u8(index: Int): Int = data.stdlib(index) & 0xff
+    private inline def u8(index: Int): Int = data.readable(index) & 0xff
 
     private def u16le(index: Int): Int = u8(index) | (u8(index + 1) << 8)
     private def u24le(index: Int): Int = u16le(index) | (u8(index + 2) << 16)

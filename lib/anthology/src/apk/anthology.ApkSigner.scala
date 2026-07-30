@@ -62,11 +62,11 @@ object ApkSigner:
   private val magic:             Text = t"APK Sig Block 42"
 
   private def u32(value: Long): Data =
-    IArray((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
+    Array.of((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
         ((value >> 24) & 0xff).toByte)
 
   private def u64(value: Long): Data =
-    IArray.range(0, 8).map: i =>
+    Array.range(0, 8).map: i =>
       ((value >> (i*8)) & 0xff).toByte
 
   private def concat(parts: Data*): Data =
@@ -78,7 +78,7 @@ object ApkSigner:
       buffer.copyFrom(part, 0, offset, part.length)
       offset += part.length
 
-    IArray.freeze(buffer)
+    Array.freeze(buffer)
 
   private def sha256(data: Data): Data = data.digest[Sha2[256]].data
 
@@ -107,7 +107,7 @@ object ApkSigner:
       val length = end - offset
       val chunk = Array[Byte](length)
       chunk.copyFrom(data, offset, 0, length)
-      val prefixed = concat(IArray(0xa5.toByte), u32(length.toLong), IArray.freeze(chunk))
+      val prefixed = concat(Array.of(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
       builder += sha256(prefixed)
       offset = end
 
@@ -141,7 +141,7 @@ object ApkSigner:
         chunkDigests(unsigned, eocdOffset, unsigned.length)
 
     val count = digests.length
-    val topLevel = sha256(concat(IArray(0x5a.toByte), u32(count.toLong), concat(digests*)))
+    val topLevel = sha256(concat(Array.of(0x5a.toByte), u32(count.toLong), concat(digests*)))
 
     // signed data: digests, certificates, additional attributes (none).
     val digestRecord = concat(u32(signAlgorithm), u32(topLevel.length.toLong), topLevel)
@@ -188,4 +188,4 @@ object ApkSigner:
     val length = until - from
     val buffer = Array[Byte](length)
     buffer.copyFrom(data, from, 0, length)
-    IArray.freeze(buffer)
+    Array.freeze(buffer)

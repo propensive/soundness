@@ -349,7 +349,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
 
   def matchGroups(text: Text)(using scanner: Scanner)
-  :   Option[IArray[List[Text | Char] | Optional[Text | Char]]] =
+  :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}] =
 
     val matcher: jur.Matcher = javaPattern.matcher(text.s).nn
 
@@ -404,7 +404,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
         if !matcher.find(index) then None else
           scanner.nextStart = matcher.start + 1
           scanner.matchEnd = matcher.end
-          Some(IArray.of(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))
+          Some(Array.frozen(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))
 
       case _ =>
-        if !matcher.matches then None else Some(IArray.of(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))
+        if !matcher.matches then None else Some(Array.frozen(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))

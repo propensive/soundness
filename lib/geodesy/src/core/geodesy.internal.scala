@@ -135,7 +135,7 @@ object internal:
       val binary = recur(0L, Int.MinValue + 1, Int.MaxValue, Int.MinValue + 1, Int.MaxValue, 0)
 
       Text:
-        IArray.tabulate[Char](length): index =>
+        Array.tabulate[Char](length): index =>
           "0123456789bcdefghjkmnpqrstuvwxyz".charAt((binary >> ((length - index - 1)*5)&31).toInt)
 
     def surfaceDistance(right: Location): Angle =

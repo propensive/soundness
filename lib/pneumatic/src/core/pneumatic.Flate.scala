@@ -61,8 +61,8 @@ private[pneumatic] object Flate:
   final val PresetDict = 0x20
 
   // And-ing with inflateMask(n) masks the lower n bits.
-  val inflateMask: IArray[Int] =
-    IArray.unsafeFromArray:
+  val inflateMask: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0x00000000, 0x00000001, 0x00000003, 0x00000007, 0x0000000f,
       0x0000001f, 0x0000003f, 0x0000007f, 0x000000ff, 0x000001ff,
@@ -71,7 +71,7 @@ private[pneumatic] object Flate:
 
   def empty: scala.Array[Byte]^ = new scala.Array[Byte](0)
   def emptyInts: scala.Array[Int]^ = new scala.Array[Int](0)
-  val emptyShorts: IArray[Short] = IArray.unsafeFromArray(new scala.Array[Short](0))
+  val emptyShorts: Array[Short]^{} = Array.unsafeFrozen(new scala.Array[Short](0))
 
   def corrupt(message: String): Nothing =
     throw IllegalStateException("the compressed data is corrupt: "+message)
@@ -159,7 +159,7 @@ private[pneumatic] final class Adler32 extends FlateChecksum:
       s2 %= Base
 
 private[pneumatic] object Crc32:
-  val table: IArray[Int] =
+  val table: Array[Int]^{} =
     val result = Array[Int](256)
     var n = 0
 
@@ -174,7 +174,7 @@ private[pneumatic] object Crc32:
       result(n) = c
       n += 1
 
-    IArray.freeze(result)
+    Array.freeze(result)
 
 private[pneumatic] final class Crc32 extends FlateChecksum:
   @scala.caps.unsafe.untrackedCaptures

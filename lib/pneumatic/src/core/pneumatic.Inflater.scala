@@ -93,7 +93,7 @@ private[pneumatic] object Inflater:
 
   // The `d`/`e` tables are unused when building the bit-lengths tree (every code value is below
   // the simple-code threshold), so an empty table is passed.
-  val noExtra: IArray[Int] = IArray.unsafeFromArray(new scala.Array[Int](0))
+  val noExtra: Array[Int]^{} = Array.unsafeFrozen(new scala.Array[Int](0))
 
 // Huffman decoding tables, built by `huftBuild` (zlib's `huft_build`): each entry is a triple
 // (operation, bits, value) flattened into an `Array[Int]`.
@@ -150,7 +150,7 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   // Given a list of code lengths and a maximum table size, make a set of tables to decode that
   // set of codes. Returns `ZOk` on success, `ZBufError` if the given code set is incomplete (the
   // tables are still built in this case), or `ZDataError` if the input is invalid.
-  private update def huftBuild(bindex: Int, n0: Int, s: Int, d: IArray[Int], e: IArray[Int])
+  private update def huftBuild(bindex: Int, n0: Int, s: Int, d: Array[Int]^{}, e: Array[Int]^{})
   :   Int =
 
     var n = n0

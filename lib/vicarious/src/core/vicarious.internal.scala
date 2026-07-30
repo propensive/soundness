@@ -64,7 +64,7 @@ object internal:
 
     ' {
         given classTag0: ClassTag[value] = $classTag
-        Catalog(IArray(${Varargs(values)}*))
+        Catalog(Array.of(${Varargs(values)}*))
       }
 
 

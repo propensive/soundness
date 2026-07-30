@@ -277,7 +277,11 @@ object internal:
       case _ =>
         plain
 
-  opaque type Bcd = IArray[Double]
+  // Represented as the stdlib's immutable array (pure by construction): the frozen
+  // `Array[Double]^{}` form gives every `Bcd`-typed result a fresh `any.rd` capability,
+  // which `unsafeAssumePure` call sites downstream cannot launder (it rejects read-only
+  // references).
+  opaque type Bcd = scala.IArray[Double]
 
   object Bcd:
     // Header masks for the raw-bits layout. Data words use all 64 bits.
@@ -303,7 +307,8 @@ object internal:
       fromRawBits(sign | (count.toLong & MantissaMask))
 
     // Internal: wrap a freshly-built header+data array as a `Bcd`.
-    private[jacinta] inline def wrap(arr: scala.Array[Double]): Bcd = IArray.unsafeFromArray(arr)
+    private[jacinta] inline def wrap(arr: scala.Array[Double]): Bcd =
+      Array.unsafeFrozen(arr).readable
 
     // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
     // a `Json.Ast` array variant. One number per Long:
@@ -450,7 +455,7 @@ object internal:
       val arr = new scala.Array[Double](2)
       arr(0) = packHeaderDouble(negative, 15)
       arr(1) = packDataDouble(content)
-      IArray.unsafeFromArray(arr)
+      Array.unsafeFrozen(arr).readable
 
     // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
     // matches the in-AST representation a parser would produce for the same
@@ -554,7 +559,7 @@ object internal:
         arr(0) = packHeaderDouble(negative, nibbles)
         System.arraycopy(data, 0, arr, 1, wordIdx)
         if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
-        IArray.unsafeFromArray(arr)
+        Array.unsafeFrozen(arr).readable
 
       private update def ensureCapacity(needed: Int): Unit =
         if needed > data.length then
@@ -633,7 +638,7 @@ object internal:
   // Strip the trailing sentinel pad (if present) from a parity-padded
   // heterogeneous array literal read at compile time, returning just the
   // user-visible elements.
-  private def arrayElements(arr: IArray[Any]): IArray[Any] =
+  private def arrayElements(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
     if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
@@ -699,7 +704,7 @@ object internal:
 
     val (parts2, spreads) = preprocess(parts)
     val source: String = parts2.mkString(MarkerString)
-    val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[IArray[Byte]]
+    val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
 
     // Map a parser char-offset (within the joined input) back to a source-file
     // Position. The cleaned parts (parts2) are what the parser sees; the
@@ -869,7 +874,7 @@ object internal:
 
           '{Json.Ast($resultExpr)}
 
-      def serializeArray(elements: IArray[Any]): Expr[Json.Ast] =
+      def serializeArray(elements: Array[Any]^{}): Expr[Json.Ast] =
         val n = elements.length
 
         val indexed = elements.zipWithIndex
@@ -893,10 +898,10 @@ object internal:
         ' {
             val all = ${Expr.ofList(pieces.stdlib)}
             . foldLeft(scala.collection.immutable.List.empty[Json.Ast])(_ ++ _)
-            Json.Ast.arr(IArray.from(all).asInstanceOf[IArray[Any]])
+            Json.Ast.arr(Array.from(all).asInstanceOf[Array[Any]^{}])
           }
 
-      def serializeObject(node: IArray[Any]): Expr[Json.Ast] =
+      def serializeObject(node: Array[Any]^{}): Expr[Json.Ast] =
         val n = node.length/2
 
         val pieces =
@@ -925,9 +930,9 @@ object internal:
               ${Expr.ofList(pieces)}
               . foldLeft(scala.collection.immutable.List.empty[(String, Json.Ast)])(_ ++ _)
 
-            val keysArr: IArray[String] = IArray.from(all.map(_(0)))
-            val valuesArr: IArray[Json.Ast] = IArray.from(all.map(_(1)))
-            Json.Ast.obj(keysArr, valuesArr.asInstanceOf[IArray[Any]])
+            val keysArr: Array[String]^{} = Array.from(all.map(_(0)))
+            val valuesArr: Array[Json.Ast]^{} = Array.from(all.map(_(1)))
+            Json.Ast.obj(keysArr, valuesArr.asInstanceOf[Array[Any]^{}])
           }
 
       def serialize(node: Any): Expr[Json.Ast] = node.asMatchable match
@@ -980,7 +985,7 @@ object internal:
           val seq: Expr[Seq[Int]] = Expr(smalls.toSeq)
           '{Json.Ast.smallBcdArr($seq.toArray)}
 
-        case arr: IArray[Any] @unchecked =>
+        case arr: (Array[Any]^{}) @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
           if (arr.length & 1) == 0 then serializeObject(arr)
           else serializeArray(arrayElements(arr))
@@ -1008,7 +1013,7 @@ object internal:
     abortive:
       val (parts2, spreads) = preprocess(parts)
       val source: String = parts2.mkString(MarkerString)
-      val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[IArray[Byte]]
+      val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
       val ast: Json.Ast = Json.Ast.parse(data, true)
 
       var nextHole: Int = 0
@@ -1082,24 +1087,24 @@ object internal:
 
           case nums: scala.Array[Double] @unchecked =>
             // Number-only array literal in the pattern: descend by treating
-            // each Double as an element. Synthesise an `IArray[Any]` of
+            // each Double as an element. Synthesise an `Array[Any]^{}` of
             // unpacked element literals (Long for whole-valued, Double
             // otherwise) so the existing `descendArray` element comparison
             // reuses the numeric-equality cases above.
             val n = nums.length
 
-            val elements0 = IArray.tabulate(n): i =>
+            val elements0 = Array.tabulate[Any](n): i =>
               val d = nums(i)
 
               if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
               then d.toLong
               else d
 
-            val elements: IArray[Any] = elements0
+            val elements: Array[Any]^{} = elements0
 
             descendArray(array, elements, scrutinee, accept)
 
-          case arr: IArray[Any] @unchecked =>
+          case arr: (Array[Any]^{}) @unchecked =>
             // Heterogeneous array or object, distinguished by parity.
             if (arr.length & 1) == 0 then descendObject(array, arr, scrutinee, accept)
             else descendArray(array, arrayElements(arr), scrutinee, accept)
@@ -1109,7 +1114,7 @@ object internal:
 
       def descendArray
         ( array: Expr[scala.Array[Any]],
-         elements: IArray[Any],
+         elements: Array[Any]^{},
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
@@ -1160,7 +1165,7 @@ object internal:
                     k += 1
 
                   $array(${Expr(idx)}) =
-                    Json.ast(Json.Ast.arr(tail.asInstanceOf[IArray[Any]]))
+                    Json.ast(Json.Ast.arr(tail.asInstanceOf[Array[Any]^{}]))
 
                   true
                 }
@@ -1168,7 +1173,7 @@ object internal:
 
         combined
 
-      def countHolesInPrefix(elements: IArray[Any], upTo: Int): Int =
+      def countHolesInPrefix(elements: Array[Any]^{}, upTo: Int): Int =
         var count = 0
         var i = 0
 
@@ -1196,7 +1201,7 @@ object internal:
           // Number-only array literal — never contains holes.
           0
 
-        case arr: IArray[Any] @unchecked =>
+        case arr: (Array[Any]^{}) @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
           if (arr.length & 1) == 0 then
             // Object: alternating key/value. A `MarkerString` key marks an
@@ -1229,7 +1234,7 @@ object internal:
 
       def descendObject
         ( array: Expr[scala.Array[Any]],
-         node: IArray[Any],
+         node: Array[Any]^{},
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
@@ -1312,7 +1317,7 @@ object internal:
                       j += 1
 
                     $array(${Expr(idx)}) =
-                      Json.ast(Json.Ast.obj(IArray.from(keysBuf), IArray.from(valsBuf)))
+                      Json.ast(Json.Ast.obj(Array.from(keysBuf), Array.from(valsBuf)))
 
                     true
                   }
@@ -1497,10 +1502,10 @@ object internal:
       ( reader:    Expr[JsonReader],
         foci:      Expr[Foci[Json.Focus]],
         tactic:    Expr[Tactic[JsonError]],
-        keys:      Expr[IArray[String]],
+        keys:      Expr[Array[String]^{}],
         table:     Expr[Json.KeyTable],
-        instances: Expr[IArray[Json.Field | Null]],
-        fallbacks: Expr[IArray[Any]] )
+        instances: Expr[Array[Json.Field | Null]^{}],
+        fallbacks: Expr[Array[Any]^{}] )
     :   Expr[value] =
 
       val owner = Symbol.spliceOwner
@@ -1685,13 +1690,13 @@ object internal:
         val foci: Foci[Json.Focus] = $fociExpr
         val tactic: Tactic[JsonError] = $tacticExpr
 
-        val keys: IArray[String] =
-          Json.Parsable.wireKeys(IArray[String](${Varargs[String](nameExprs)}*), $renames)
+        val keys: Array[String]^{} =
+          Json.Parsable.wireKeys(Array.of[String](${Varargs[String](nameExprs)}*), $renames)
 
         val table: Json.KeyTable = Json.KeyTable(keys)
-        lazy val instances: IArray[Json.Field | Null] =
-          IArray[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
-        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
+        lazy val instances: Array[Json.Field | Null]^{} =
+          Array.of[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
+        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
 
         new Json.Parsable:
           type Self = value
@@ -1772,8 +1777,8 @@ object internal:
         reader:       Expr[JsonReader],
         wire:         Expr[Text],
         wireString:   Expr[String],
-        variants:     Expr[IArray[Json.Field]],
-        wireVariants: Expr[IArray[String]] )
+        variants:     Expr[Array[Json.Field]^{}],
+        wireVariants: Expr[Array[String]^{}] )
     :   Expr[value] =
 
       if index == arity then
@@ -1797,11 +1802,11 @@ object internal:
         val discriminable: value is Discriminable in Json = $discriminableExpr
         val tagField: Text = Json.Parsable.discriminantField(discriminable)
 
-        val wireVariants: IArray[String] =
-          Json.Parsable.wireKeys(IArray[String](${Varargs[String](nameExprs)}*), $renames)
+        val wireVariants: Array[String]^{} =
+          Json.Parsable.wireKeys(Array.of[String](${Varargs[String](nameExprs)}*), $renames)
 
-        lazy val variants: IArray[Json.Field] =
-          IArray[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
+        lazy val variants: Array[Json.Field]^{} =
+          Array.of[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
 
         new Json.Parsable:
           type Self = value

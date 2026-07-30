@@ -150,10 +150,11 @@ package webserverErrorPages:
   private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
 
   given standardErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
-    Http.Response(Unfulfilled(Progression(prefix, postfix).ascribe(media"text/html")))
+    // Direct `Content`, not `.ascribe`: the inline re-elaboration freshens the chunk type.
+    Http.Response(Unfulfilled(Content(media"text/html", Progression[Data](prefix, postfix))))
 
   given stackTracesErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8Encoder
 
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
-    Http.Response(Unfulfilled(Progression(prefix, stack, postfix).ascribe(media"text/html")))
+    Http.Response(Unfulfilled(Content(media"text/html", Progression[Data](prefix, stack, postfix))))

@@ -38,7 +38,7 @@ import prepositional.*
 import turbulence.*
 
 extension (cbor: Cbor.Ast.type)
-  def parse(source: IArray[Byte]): Cbor.Ast raises CborError = Cbor.Parser.parse(source)
+  def parse(source: Array[Byte]^{}): Cbor.Ast raises CborError = Cbor.Parser.parse(source)
 
 given parserAggregable: (tactic: Tactic[CborError])
 =>  ((Cbor.Ast is Aggregable by Data)^{tactic}) =

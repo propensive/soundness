@@ -89,7 +89,9 @@ object ProductDerivation:
           'lambda)}
 
 
-    protected transparent inline def contexts[derivation <: Product]
+    // Not `transparent`: transparency re-infers the expansion's frozen-array type at each
+    // call site, freshening it to `any.rd`; the declared `^{}` is the type callers need.
+    protected inline def contexts[derivation <: Product]
       ()
       [ result ]
       ( inline lambda:  [field] => typeclass[field]
@@ -98,7 +100,7 @@ object ProductDerivation:
                               Text aka "label",
                               (derivation -> field) aka "dereference",
                               Int & FieldIndex[field] aka "index" ) ?=> result )
-    :   IArray[result] =
+    :   Array[result]^{} =
 
       ${wisteria.internal.contextsProduct[typeclass, derivation, result]('lambda)}
 
@@ -125,14 +127,15 @@ object ProductDerivation:
       product.productElement(fieldIndex.asInstanceOf[Int]).asInstanceOf[field]
 
 
-    protected transparent inline def fields[derivation <: Product](inline product: derivation)
+    // Not `transparent`: see `contexts`.
+    protected inline def fields[derivation <: Product](inline product: derivation)
       [ result ]
       ( inline lambda:  [field] => field
                         ->  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               (Int & FieldIndex[field]) aka "index" ) ?=> result )
-    :   IArray[result] =
+    :   Array[result]^{} =
 
       ${wisteria.internal.fieldsProduct[typeclass, derivation, result]('product, 'lambda)}
 

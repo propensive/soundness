@@ -136,7 +136,7 @@ object Http2Serve:
 
                   // Trailers close the stream; otherwise an empty END_STREAM DATA.
                   if trailing then sendTrailers()
-                  else connection0.sendData(streamId, IArray.empty[Byte], endStream = true)
+                  else connection0.sendData(streamId, Array.empty[Byte], endStream = true)
 
           val connection1 = new HttpConnection(request, true, port, respond)
           connection1.respond(handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response])

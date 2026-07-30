@@ -101,24 +101,24 @@ object Tels2:
   // permissive `Any` shape; precise schemas come from the standalone `Schematic`.
   private[stratiform] def reify(shape: Morphology): Tels.Type = shape match
     case Morphology.Str | Morphology.Whole | Morphology.Real | Morphology.Bool | Morphology.Empty =>
-      Tels.Scalar(IArray.empty)
+      Tels.Scalar(Array.empty)
 
-    case Morphology.Any        => Tels.Struct(IArray.empty, IArray.empty)
-    case Morphology.OneOf(_)   => Tels.Struct(IArray.empty, IArray.empty)
+    case Morphology.Any        => Tels.Struct(Array.empty, Array.empty)
+    case Morphology.OneOf(_)   => Tels.Struct(Array.empty, Array.empty)
     case Morphology.Opt(inner) => reify(inner)
     case Morphology.Arr(items) => reify(items)
 
     case Morphology.Dict(key, value) =>
       val entry =
         Tels.Struct
-          ( IArray
+          ( Array.of
               ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", reify(key), Unset),
                 Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", reify(value), Unset) ),
-            IArray.empty )
+            Array.empty )
 
       Tels.Struct
-        ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
-          IArray.empty )
+        ( Array.of(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+          Array.empty )
 
     case Morphology.Obj(fields, required) =>
       val members = fields.stdlib.map: (label, fieldShape) =>
@@ -135,19 +135,19 @@ object Tels2:
         Tels.Field
           ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )
 
-      Tels.Struct(IArray.from(members), IArray.empty)
+      Tels.Struct(Array.from(members), Array.empty)
 
 // Schema derivation for TEL: scalars map to `Tels.Scalar`, products to a
 // `Tels.Struct` of `Field`s, collections to a `Struct` with a repeatable `item`
 // field, and `Map` to repeatable `entries` of `key`/`value`. Mixed into `object
 // Tels` so the givens sit in the `Transport` companion's implicit scope.
 trait Tels2:
-  given text: Text is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
-  given string: String is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
-  given int: Int is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
-  given long: Long is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
-  given double: Double is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
-  given boolean: Boolean is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
+  given text: Text is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
+  given string: String is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
+  given int: Int is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
+  given long: Long is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
+  given double: Double is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
+  given boolean: Boolean is TelSchematic over Tels.Type = () => Tels.Scalar(Array.empty)
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( schematic: inner is Schematic over Tels.Type )
@@ -190,14 +190,14 @@ trait Tels2:
     () =>
       val entry =
         Tels.Struct
-          ( IArray
+          ( Array.of
               ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", key.schema(), Unset),
                 Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", value.schema(), Unset) ),
-            IArray.empty )
+            Array.empty )
 
       Tels.Struct
-        ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
-          IArray.empty )
+        ( Array.of(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+          Array.empty )
 
   inline given schematic: [value: Reflection] => value is TelSchematic over Tels.Type =
     TelsDerivation.derived
@@ -207,16 +207,16 @@ trait Tels2:
   // sum's schema is a `Reference`, so its document root is a struct with a single
   // select member referencing the registered `SelectDefinition`.
   def tels[value](name: Text)(using schematic: value is TelSchematic over Tels.Type): Tels =
-    val selects: IArray[Tels.SelectDefinition] = IArray.from(schematic.selectDefinitions.stdlib)
+    val selects: Array[Tels.SelectDefinition]^{} = Array.from(schematic.selectDefinitions.stdlib)
 
     schematic.schema().absolve match
       case struct: Tels.Struct =>
-        Tels(name, struct, IArray.empty, Unset, IArray.empty, IArray.empty, selects)
+        Tels(name, struct, Array.empty, Unset, Array.empty, Array.empty, selects)
 
       case Tels.Reference(reference) =>
         val member = Tels.SelectRef(Polarity.Implicit, Polarity.Implicit, reference)
-        val root   = Tels.Struct(IArray(member), IArray.empty)
-        Tels(name, root, IArray.empty, Unset, IArray.empty, IArray.empty, selects)
+        val root   = Tels.Struct(Array.of(member), Array.empty)
+        Tels(name, root, Array.empty, Unset, Array.empty, Array.empty, selects)
 
 object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   inline def conjunction[derivation <: Product: ProductReflection]
@@ -236,7 +236,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
         scala.collection.immutable.ArraySeq.unsafeWrapArray(array.mutable(using Unsafe))
 
-      Tels.Struct(IArray.from(members), IArray.empty)
+      Tels.Struct(Array.from(members), Array.empty)
 
   // The schematic for a sum: `schema()` indirects to the named select; the select
   // itself is surfaced through `selectDefinitions` for registration. A plain `def`
@@ -263,5 +263,5 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
       scala.collection.immutable.ArraySeq.unsafeWrapArray(array.mutable(using Unsafe))
 
-    val select = Tels.SelectDefinition(name, IArray.from(selectVariants), IArray.empty)
+    val select = Tels.SelectDefinition(name, Array.from(selectVariants), Array.empty)
     selectSchematic(select).asInstanceOf[derivation is TelSchematic over Tels.Type]

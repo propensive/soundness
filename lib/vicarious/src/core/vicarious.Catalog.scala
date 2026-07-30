@@ -47,12 +47,12 @@ object Catalog:
 
       val partialFunction = lambda(using proxy)
 
-      Catalog(IArray.tabulate(catalog.size): index =>
+      Catalog(Array.tabulate(catalog.size): index =>
         partialFunction.applyOrElse
           ( Proxy[key, value, index.type](index), _ => catalog.values(index) ))
 
 //case class Catalog[key, value](values: Map[Text, value]):
-case class Catalog[key, value: ClassTag](values: IArray[value]) extends Findable:
+case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findable:
   def size: Int = values.length
 
   inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?]): value =
@@ -73,5 +73,5 @@ case class Catalog[key, value: ClassTag](values: IArray[value]) extends Findable
     ( lambda: (value, value2) => result )
   :   Catalog[key, result] =
 
-    Catalog(IArray.tabulate(values.length): index =>
+    Catalog(Array.tabulate(values.length): index =>
       lambda(values(index), right.values(index)))

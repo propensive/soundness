@@ -59,14 +59,14 @@ extension (inline context: StringContext)
 // both the text and binary formats decode it back to `Unset` via the field's `absent()` path.
 private[stratiform] def emptyDocument: Tel =
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      IArray(Tel.Block(IArray.empty, Unset, IArray.empty, 0))))
+      Array.of(Tel.Block(Array.empty, Unset, Array.empty, 0))))
 
 // Encodes a collection by flattening each element's compound(s) into one document's children.
 private[stratiform] def collectionDocument[value]
     (values: Iterable[value])(using encodable: value is Encodable in Tel)
 :   Tel =
 
-  val compounds: IArray[Tel.Compound] = IArray.from:
+  val compounds: Array[Tel.Compound]^{} = Array.from:
     values.flatMap: element =>
       encodable.encoded(element).subtree match
         case compound: Tel.Compound => List(compound).stdlib
@@ -76,7 +76,7 @@ private[stratiform] def collectionDocument[value]
             ( document.children.flatMap(_.compounds).mutable(using Unsafe) )
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-      IArray(Tel.Block(IArray.empty, Unset, compounds, 0))))
+      Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
 
 // Re-keys a replacement compound to the original child's keyword (so a positional optic update
 // preserves field identity).
@@ -86,15 +86,15 @@ private[stratiform] def rewrap(original: Tel.Compound, replacement: Tel): Tel.Co
       compound.copy(keyword = original.keyword)
 
     case document: Tel.Document =>
-      original.copy(atoms = IArray.empty[Tel.Atom], remark = Unset, children = document.children)
+      original.copy(atoms = Array.empty[Tel.Atom], remark = Unset, children = document.children)
 
 // Rebuilds a node with replaced children, preserving its document/compound shape.
-private[stratiform] def rebuild(origin: Tel, children: IArray[Tel.Block]): Tel = origin.subtree match
+private[stratiform] def rebuild(origin: Tel, children: Array[Tel.Block]^{}): Tel = origin.subtree match
   case document: Tel.Document => Tel.make(document.copy(children = children))
   case compound: Tel.Compound => Tel.make(compound.copy(children = children))
 
 // Wraps a value as a compound under the given keyword (used to key map entries' key/value children).
 private[stratiform] def reKey(tel: Tel, keyword: Text): Tel.Compound = tel.subtree match
   case c: Tel.Compound => c.copy(keyword = keyword)
-  case d: Tel.Document => Tel.Compound(keyword, IArray.empty, Unset, d.children)
+  case d: Tel.Document => Tel.Compound(keyword, Array.empty, Unset, d.children)
 

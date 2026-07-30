@@ -113,7 +113,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     runner0 = runner
     runner.suite(testableView, run())
 
-  final def main(arguments: IArray[Text]): Unit =
+  final def main(arguments: Array[Text]^{}): Unit =
     val selection = Selection.parse(arguments.to[List])
     if !arguments.isEmpty then runner0 = makeRunner(selection)
 

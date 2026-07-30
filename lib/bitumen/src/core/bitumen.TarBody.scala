@@ -119,4 +119,4 @@ class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
         whole.copyFrom(chunk, 0, offset, chunk.length)
         offset += chunk.length
 
-      IArray.freeze(whole)
+      Array.freeze(whole)

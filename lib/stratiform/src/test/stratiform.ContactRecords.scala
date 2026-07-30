@@ -48,16 +48,16 @@ object ContactSchemaFixture:
   val tels: Tels = Tels(
     name     = t"contact",
     document = Struct(
-      members = IArray(
-        Field(Polarity.Implicit, Polarity.Implicit, t"name",  Scalar(IArray(t"string")),     Unset),
-        Field(Polarity.Loose,    Polarity.Implicit, t"email", Scalar(IArray(t"string")),     Unset),
-        Field(Polarity.Implicit, Polarity.Implicit, t"age",   Scalar(IArray(t"identifier")), Unset)),
-      validators = IArray.empty),
-    layers   = IArray.empty,
+      members = Array.of(
+        Field(Polarity.Implicit, Polarity.Implicit, t"name",  Scalar(Array.of(t"string")),     Unset),
+        Field(Polarity.Loose,    Polarity.Implicit, t"email", Scalar(Array.of(t"string")),     Unset),
+        Field(Polarity.Implicit, Polarity.Implicit, t"age",   Scalar(Array.of(t"identifier")), Unset)),
+      validators = Array.empty),
+    layers   = Array.empty,
     sigil    = Unset,
-    records  = IArray.empty,
-    scalars  = IArray.empty,
-    selects  = IArray.empty)
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array.empty)
 
 // User-defined TelBlueprint with the polyvinyl `record` inline-macro
 // entry point. Lives in its own file so its macro can be expanded
@@ -70,14 +70,14 @@ object FeatureSchemaFixture:
   val tels: Tels = Tels(
     name     = t"feature",
     document = Struct(
-      members    = IArray
+      members    = Array.of
                     (Field(Polarity.Loose, Polarity.Implicit, t"enabled", Tels.Flag, Unset)),
-      validators = IArray.empty),
-    layers   = IArray.empty,
+      validators = Array.empty),
+    layers   = Array.empty,
     sigil    = Unset,
-    records  = IArray.empty,
-    scalars  = IArray.empty,
-    selects  = IArray.empty)
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array.empty)
 
 object FeatureRecords extends TelBlueprint(FeatureSchemaFixture.tels):
   transparent inline def record(tel: Tel): Record = ${build('tel)}

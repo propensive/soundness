@@ -331,7 +331,7 @@ extends Canvas:
 
   // A `Teletype` of `text` in one uniform style (sparse single-run form).
   private def styledCell(text: Text, style: StyleWord): Teletype =
-    Teletype(text, IArray(style.raw, 0L), boundaries = IArray(0))
+    Teletype(text, Array.of(style.raw, 0L), boundaries = Array.of(0))
 
   // A plain-text snapshot of the grid (rows joined by newlines), for testing and for
   // content-change detection.

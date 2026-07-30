@@ -53,7 +53,7 @@ private[hallucination] object JpegCodec:
       (data(2) & 0xff) == 0xff
 
   def decode(data: Data): Raster raises RasterError =
-    try JpegDecoder(data).decode()
+    try JpegDecoder(data.readable).decode()
     catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
       abort(RasterError(Jpeg(), Reason.Truncated))
 
@@ -83,7 +83,8 @@ private[hallucination] object JpegColorConvert:
 
 // The `Tactic` is threaded through each method rather than captured by the class: a captured
 // tactic capability is not admitted by `Mutable`'s self capture set.
-private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
+// `data` is the stdlib immutable array: see the `JpegReader` comment.
+private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends caps.Mutable:
   private var reader: JpegReader^ = JpegReader(data, 0)
 
   private var frame: Optional[JpegFrame] = Unset
@@ -108,7 +109,7 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
 
   // The zig-zag scan order: `Unzigzag(k)` is the natural (row-major) block index of the k-th
   // coefficient in the bitstream.
-  private val Unzigzag: IArray[Int] = scala.Array(
+  private val Unzigzag: Array[Int]^{} = scala.Array(
     0, 1, 8, 16, 9, 2, 3, 10,
     17, 24, 32, 25, 18, 11, 4, 5,
     12, 19, 26, 33, 40, 48, 41, 34,
@@ -116,7 +117,7 @@ private[hallucination] final class JpegDecoder(data: Data) extends caps.Mutable:
     35, 42, 49, 56, 57, 50, 43, 36,
     29, 22, 15, 23, 30, 37, 44, 51,
     58, 59, 52, 45, 38, 31, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63).asInstanceOf[IArray[Int]]
+    53, 60, 61, 54, 47, 55, 62, 63).asInstanceOf[Array[Int]^{}]
 
   private def bad()(using Tactic[RasterError]): Nothing =
     abort(RasterError(Jpeg(), Reason.Bitstream))

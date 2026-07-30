@@ -46,7 +46,7 @@ object Fqcn:
       char == '_' || char == '$'
 
   def apply(name: Text): Fqcn raises FqcnError =
-    val parts = IArray.of(scala.IArray.from(name.s.split("\\.").nn.iterator.map(_.nn)))
+    val parts = Array.frozen(scala.IArray.from(name.s.split("\\.").nn.iterator.map(_.nn)))
 
     parts.each: part =>
       if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))
@@ -64,7 +64,7 @@ object Fqcn:
 
   given encodable: Fqcn is Encodable in Text = _.text
 
-  private[digression] def join(parts: IArray[Text], count: Int): Text =
+  private[digression] def join(parts: Array[Text]^{}, count: Int): Text =
     val builder = StringBuilder()
 
     var index = 0
@@ -75,7 +75,7 @@ object Fqcn:
 
     builder.toString.tt
 
-class Fqcn(val parts: IArray[Text]):
+class Fqcn(val parts: Array[Text]^{}):
   def text: Text = Fqcn.join(parts, parts.length)
   def className: Text = parts.last
   def packageName: Text = Fqcn.join(parts, parts.length - 1)

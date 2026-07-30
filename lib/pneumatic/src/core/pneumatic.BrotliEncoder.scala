@@ -295,8 +295,8 @@ private[pneumatic] object BrotliEncoder:
         else countLimit <<= 1
 
   // --- Huffman-tree serialization (inverse of the decoder's readHuffmanCode) ---------------------
-  private val codeLengthCodeOrder: IArray[Int] =
-    IArray.unsafeFromArray:
+  private val codeLengthCodeOrder: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
   private def writeCodeLengthCodeLength(writer: BrotliBitWriter^, v: Int): Unit = v match
@@ -374,7 +374,7 @@ private[pneumatic] object BrotliEncoder:
 
   // --- Length/distance prefix codes --------------------------------------------------------------
   // Scanning upward exits immediately for the common short lengths.
-  private def lengthCode(offsets: IArray[Int], nbits: IArray[Int], length: Int): Int =
+  private def lengthCode(offsets: Array[Int]^{}, nbits: Array[Int]^{}, length: Int): Int =
     var i = 0
     while i + 1 < offsets.length && offsets(i + 1) <= length do i += 1
     i
@@ -591,9 +591,9 @@ private[pneumatic] object BrotliEncoder:
     true
 
   // Insert group and copy group determine the range index; see the decoder's command decoding.
-  private val rangeIndex: IArray[Int] =
+  private val rangeIndex: Array[Int]^{} =
     // indexed by insGroup*3 + copGroup, giving the base range index (0..8)
-    IArray.unsafeFromArray:
+    Array.unsafeFrozen:
       scala.Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
 
   private def commandCode(insertCode: Int, copyCode: Int): Int =

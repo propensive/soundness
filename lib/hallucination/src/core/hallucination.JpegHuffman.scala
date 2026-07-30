@@ -148,20 +148,20 @@ private[hallucination] object JpegHuffmanTable:
     // The freshly-built arrays are frozen zero-copy; `values` is likewise freshly built by
     // `parseDht` and never written after this call.
     new JpegHuffmanTable
-      ( values.asInstanceOf[IArray[Int]], delta.asInstanceOf[IArray[Int]],
-        maxcode.asInstanceOf[IArray[Int]], lutValue.asInstanceOf[IArray[Int]],
-        lutSize.asInstanceOf[IArray[Int]], acValue.asInstanceOf[IArray[Int]],
-        acRunSize.asInstanceOf[IArray[Int]] )
+      ( values.asInstanceOf[Array[Int]^{}], delta.asInstanceOf[Array[Int]^{}],
+        maxcode.asInstanceOf[Array[Int]^{}], lutValue.asInstanceOf[Array[Int]^{}],
+        lutSize.asInstanceOf[Array[Int]^{}], acValue.asInstanceOf[Array[Int]^{}],
+        acRunSize.asInstanceOf[Array[Int]^{}] )
 
 // Immutable after construction: the factory above freezes the freshly-built tables.
 private[hallucination] final class JpegHuffmanTable
-  ( val values:    IArray[Int],
-    val delta:     IArray[Int],
-    val maxcode:   IArray[Int],
-    val lutValue:  IArray[Int],
-    val lutSize:   IArray[Int],
-    val acValue:   IArray[Int],
-    val acRunSize: IArray[Int] ):
+  ( val values:    Array[Int]^{},
+    val delta:     Array[Int]^{},
+    val maxcode:   Array[Int]^{},
+    val lutValue:  Array[Int]^{},
+    val lutSize:   Array[Int]^{},
+    val acValue:   Array[Int]^{},
+    val acRunSize: Array[Int]^{} ):
 
   // `acValue` and `acRunSize` are empty for DC tables.
   def hasAcLut: Boolean = acRunSize.length > 0

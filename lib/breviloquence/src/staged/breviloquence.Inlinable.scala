@@ -162,9 +162,9 @@ object Inlinable:
     def parse(reader: Expr[CborReader])(using Quotes, Type[String]): Expr[String] =
       '{ $reader.string() }
 
-  given byteString: (IArray[Byte] is Inlinable) = new Inlinable:
-    type Self = IArray[Byte]
-    def parse(reader: Expr[CborReader])(using Quotes, Type[IArray[Byte]]): Expr[IArray[Byte]] =
+  given byteString: ((Array[Byte]^{}) is Inlinable) = new Inlinable:
+    type Self = Array[Byte]^{}
+    def parse(reader: Expr[CborReader])(using Quotes, Type[Array[Byte]^{}]): Expr[Array[Byte]^{}] =
       '{ $reader.byteString() }
 
   given cbor: (Cbor is Inlinable) = new Inlinable:

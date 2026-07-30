@@ -51,7 +51,7 @@ object internal:
           type Self = enumeration
           val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
 
-          val values: IArray[enumeration] =
+          val values: Array[enumeration]^{} =
             $ {
                 companion.absolve match
                   case '{$companion: companion} =>
@@ -64,5 +64,5 @@ object internal:
                     companion.asTerm.select(ref).asExprOf[scala.Array[enumeration]]
               }
 
-            . asInstanceOf[IArray[enumeration]]
+            . asInstanceOf[Array[enumeration]^{}]
       }

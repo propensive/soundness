@@ -53,7 +53,7 @@ object Tests extends Suite(m"Gesticulate tests"):
         def go(offset: Int): Progression[Data] =
           if offset >= data.stdlib.length then Progression() else
             val end = math.min(offset + size, data.stdlib.length)
-            IArray.of(data.stdlib.slice(offset, end)) #:: go(end)
+            Array.frozen(data.stdlib.slice(offset, end)) #:: go(end)
         go(0)
 
       def bodyText(part: Part): Text = part.body.read[Data].utf8

@@ -38,7 +38,7 @@ import proscenium.compat.*
 // The standard CRC-32 (as used by PNG chunks), implemented locally: pneumatic's `Crc32` is
 // private to that module, and this one is only a table and a loop.
 private[hallucination] object Crc32:
-  private val table: IArray[Int] = IArray.tabulate(256): index =>
+  private val table: Array[Int]^{} = Array.tabulate(256): index =>
     var crc = index
     var bit = 0
 

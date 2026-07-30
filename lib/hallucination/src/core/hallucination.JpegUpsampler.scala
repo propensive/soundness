@@ -52,7 +52,7 @@ private[hallucination] object JpegUpsampler:
 
   // Derives the per-component upsampling parameters into fresh arrays, frozen zero-copy into
   // the fully-initialized upsampler.
-  def apply(components: IArray[JpegComponent], outputWidth: Int, outputHeight: Int)
+  def apply(components: scala.IArray[JpegComponent], outputWidth: Int, outputHeight: Int)
     ( using Tactic[RasterError] )
   :   JpegUpsampler =
 
@@ -102,20 +102,20 @@ private[hallucination] object JpegUpsampler:
 
     new JpegUpsampler
       ( count, outputWidth, hMax,
-        kinds.asInstanceOf[IArray[Int]], widths.asInstanceOf[IArray[Int]],
-        heights.asInstanceOf[IArray[Int]], rowStrides.asInstanceOf[IArray[Int]],
-        hScales.asInstanceOf[IArray[Int]], vScales.asInstanceOf[IArray[Int]] )
+        kinds.asInstanceOf[Array[Int]^{}], widths.asInstanceOf[Array[Int]^{}],
+        heights.asInstanceOf[Array[Int]^{}], rowStrides.asInstanceOf[Array[Int]^{}],
+        hScales.asInstanceOf[Array[Int]^{}], vScales.asInstanceOf[Array[Int]^{}] )
 
 private[hallucination] final class JpegUpsampler private
   ( count:       Int,
     outputWidth: Int,
     hMax:        Int,
-    kinds:       IArray[Int],
-    widths:      IArray[Int],
-    heights:     IArray[Int],
-    rowStrides:  IArray[Int],
-    hScales:     IArray[Int],
-    vScales:     IArray[Int] ):
+    kinds:       Array[Int]^{},
+    widths:      Array[Int]^{},
+    heights:     Array[Int]^{},
+    rowStrides:  Array[Int]^{},
+    hScales:     Array[Int]^{},
+    vScales:     Array[Int]^{} ):
 
   import JpegUpsampler.*
 

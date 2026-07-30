@@ -56,13 +56,13 @@ private[pneumatic] object Lzma2Options:
   inline val LpDefault = 0
   inline val PbDefault = 2
 
-  private val presetDictSizes: IArray[Int] =
-    IArray.unsafeFromArray:
+  private val presetDictSizes: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
         1 << 18, 1 << 20, 1 << 21, 1 << 22, 1 << 22, 1 << 23, 1 << 23, 1 << 24, 1 << 25, 1 << 26)
 
-  private val fastDepths: IArray[Int] =
-    IArray.unsafeFromArray:
+  private val fastDepths: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(4, 8, 24, 48)
 
   def preset(level0: Int): Lzma2Options =

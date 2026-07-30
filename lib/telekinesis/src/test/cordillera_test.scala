@@ -42,7 +42,7 @@ import Http2.*
 object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
   def run(): Unit =
     def bytes(hex: Text): Data =
-      IArray.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))
+      Array.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))
 
     def hex(data: Data): Text =
       data.to[List].map(b => String.format("%02x", java.lang.Integer.valueOf(b & 0xff)).nn).mkString.tt
@@ -96,7 +96,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == true)
 
       test(m"round-trip all 256 byte values"):
-        val every = IArray.from((0 until 256).map(_.toByte))
+        val every = Array.from((0 until 256).map(_.toByte))
         Huffman.decode(Huffman.encode(every)).to[List] == every.to[List]
       . assert(_ == true)
 
@@ -425,7 +425,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           // A body well over the 65535-byte connection window, so the server
           // must split DATA frames and wait for the client's WINDOW_UPDATEs.
           val size = 200000
-          val payload: Data = IArray.tabulate(size)(i => (i%256).toByte)
+          val payload: Data = Array.tabulate(size)(i => (i%256).toByte)
           val payloadRef: AnyRef = payload.asInstanceOf[AnyRef]
 
           daemon:

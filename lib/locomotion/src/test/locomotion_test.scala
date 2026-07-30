@@ -140,7 +140,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
       test(m"a packed field produced elsewhere decodes back to a List"):
         // The canonical packed encoding of [3, 270, 86942] (matches `protoc`).
-        val packed = IArray[Byte](0x0a, 0x06, 0x03, 0x8e.toByte, 0x02, 0x9e.toByte, 0xa7.toByte, 0x05)
+        val packed = Array.of[Byte](0x0a, 0x06, 0x03, 0x8e.toByte, 0x02, 0x9e.toByte, 0xa7.toByte, 0x05)
         proscenium.Progression(packed).read[Numbers in Protobuf]
       . assert(_ == Numbers(List(3, 270, 86942)))
 
@@ -224,7 +224,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
     suite(m"Parse errors carry a byte offset"):
       def decode(bytes: Byte*): Sample raises ProtobufError =
         scala.caps.unsafe.unsafeAssumeSeparate:
-          proscenium.Progression(IArray.from(bytes)).read[Sample in Protobuf]
+          proscenium.Progression(Array.from(bytes)).read[Sample in Protobuf]
 
       test(m"a truncated length-delimited payload reports the offset where data ran out"):
         // field 1, wire type Len, length 5, but only one payload byte present.
@@ -239,7 +239,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"a varint longer than ten bytes is malformed"):
         capture[ProtobufError]:
           scala.caps.unsafe.unsafeAssumeSeparate:
-            proscenium.Progression(IArray.fill(11)(0x80.toByte)).read[Sample in Protobuf]
+            proscenium.Progression(Array.fill(11)(0x80.toByte)).read[Sample in Protobuf]
       . assert(_ == ProtobufError(ProtobufError.Reason.MalformedVarint(0)))
 
       test(m"a varint whose value overflows 64 bits is rejected"):
@@ -310,39 +310,39 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == Tags(List(t"a", t"b", t"c")))
 
       test(m"a packed repeated field reads its run in place"):
-        val packed = IArray[Byte](0x0a, 0x06, 0x03, 0x8e.toByte, 0x02, 0x9e.toByte, 0xa7.toByte, 0x05)
+        val packed = Array.of[Byte](0x0a, 0x06, 0x03, 0x8e.toByte, 0x02, 0x9e.toByte, 0xa7.toByte, 0x05)
         packed.read[Numbers in Protobuf]
       . assert(_ == Numbers(List(3, 270, 86942)))
 
       test(m"unpacked occurrences of a packable element still gather"):
         // Two unpacked varint occurrences of field 1: 3 and 270.
-        val unpacked = IArray[Byte](0x08, 0x03, 0x08, 0x8e.toByte, 0x02)
+        val unpacked = Array.of[Byte](0x08, 0x03, 0x08, 0x8e.toByte, 0x02)
         unpacked.read[Numbers in Protobuf]
       . assert(_ == Numbers(List(3, 270)))
 
       test(m"the last occurrence of a scalar field wins"):
         // x=1, x=9, y=2.
-        val bytes = IArray[Byte](0x08, 0x01, 0x08, 0x09, 0x10, 0x02)
+        val bytes = Array.of[Byte](0x08, 0x01, 0x08, 0x09, 0x10, 0x02)
         bytes.read[Point in Protobuf]
       . assert(_ == Point(9, 2))
 
       test(m"an unknown field number is skipped whole"):
         // Field 5 (varint 1), then x=3, y=4.
-        val bytes = IArray[Byte](0x28, 0x01, 0x08, 0x03, 0x10, 0x04)
+        val bytes = Array.of[Byte](0x28, 0x01, 0x08, 0x03, 0x10, 0x04)
         bytes.read[Point in Protobuf]
       . assert(_ == Point(3, 4))
 
       test(m"a missing scalar field takes its proto3 zero"):
         // Only x=3.
-        IArray[Byte](0x08, 0x03).read[Point in Protobuf]
+        Array.of[Byte](0x08, 0x03).read[Point in Protobuf]
       . assert(_ == Point(3, 0))
 
       test(m"a missing field with a declared default takes it"):
-        IArray[Byte](0x08, 0x03).read[Defaulted in Protobuf]
+        Array.of[Byte](0x08, 0x03).read[Defaulted in Protobuf]
       . assert(_ == Defaulted(3, 7))
 
       test(m"an empty message reads as all-absent"):
-        IArray[Byte]().read[Point in Protobuf]
+        Array.of[Byte]().read[Point in Protobuf]
       . assert(_ == Point(0, 0))
 
       test(m"a set optional bridges through its Decodable"):

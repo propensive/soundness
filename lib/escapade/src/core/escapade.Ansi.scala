@@ -310,7 +310,7 @@ object Ansi extends Ansi2:
       state.styles += tail
 
       val plainText = state.plain.toString.tt
-      val denseStyles = IArray.unsafeFromArray(state.styles.toArray)
+      val denseStyles = Array.unsafeFrozen(state.styles.toArray)
       val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
 
       Teletype

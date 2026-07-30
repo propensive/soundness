@@ -213,7 +213,7 @@ def cli[bus <: Matchable](using executive: Executive)
             val publicKey: Data =
               safely(System.properties.ethereal.publicKey[Text]()).absolve match
                 case Unset =>
-                  IArray.fill(Assembler.PublicKeyLength)(0.toByte)   // upgrades blocked
+                  Array.fill(Assembler.PublicKeyLength)(0.toByte)   // upgrades blocked
 
                 case keyPath: Text =>
                   val resolved: Path on Linux = safely(keyPath.as[Path on Linux]).or:

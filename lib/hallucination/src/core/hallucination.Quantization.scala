@@ -41,20 +41,20 @@ import proscenium.compat.*
 private[hallucination] object Quantization:
   // Reduces the counted colours to at most `limit`, returning the palette and the assignment
   // of every original colour to its palette index.
-  def apply(counts: scm.HashMap[Int, Int], limit: Int): (IArray[Int], scm.HashMap[Int, Int]) =
+  def apply(counts: scm.HashMap[Int, Int], limit: Int): (Array[Int]^{}, scm.HashMap[Int, Int]) =
     val assignment = scm.HashMap[Int, Int]()
 
     if counts.size <= limit then
-      val palette = IArray.from(counts.keys)
+      val palette = Array.from(counts.keys)
 
       palette.indices.foreach: index =>
         assignment(palette(index)) = index
 
       (palette, assignment)
     else
-      // `IArray` elements: box contents are only read, and the pure element type avoids
+      // Frozen-array elements: box contents are only read, and the frozen element type avoids
       // the fresh read capability a mutable-array element type carries.
-      val boxes = scm.ArrayBuffer[IArray[Int]](counts.keys.toArray.asInstanceOf[IArray[Int]])
+      val boxes = scm.ArrayBuffer[Array[Int]^{}](counts.keys.toArray.asInstanceOf[Array[Int]^{}])
 
       def channel(color: Int, shift: Int): Int = (color >> shift)&0xff
 
@@ -91,7 +91,7 @@ private[hallucination] object Quantization:
             shift = spreadShift
             candidate = index
 
-        if candidate == -1 then boxes += IArray[Int]()
+        if candidate == -1 then boxes += Array.of[Int]()
         else
           val sorted = boxes(candidate).asInstanceOf[scala.Array[Int]].sortBy(channel(_, shift))
 
@@ -109,10 +109,10 @@ private[hallucination] object Quantization:
 
           // Pure-typed copies (see `pureCopyRange`); `take`/`drop` results carry a fresh
           // read capability the buffer's element type rejects.
-          boxes(candidate) = pureCopyRange(sorted, 0, split.max(1)).asInstanceOf[IArray[Int]]
-          boxes += pureCopyRange(sorted, split.max(1), sorted.length).asInstanceOf[IArray[Int]]
+          boxes(candidate) = pureCopyRange(sorted, 0, split.max(1)).asInstanceOf[Array[Int]^{}]
+          boxes += pureCopyRange(sorted, split.max(1), sorted.length).asInstanceOf[Array[Int]^{}]
 
-      val palette = IArray.tabulate(boxes.length): index =>
+      val palette = Array.tabulate(boxes.length): index =>
         val colors = boxes(index).asInstanceOf[scala.Array[Int]]
 
         if colors.isEmpty then 0 else

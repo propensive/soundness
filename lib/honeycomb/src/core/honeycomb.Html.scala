@@ -97,7 +97,7 @@ object Html extends Tag.Container
   def doctype: Doctype = Doctype(t"html")
 
   extension (html: List[Html])
-    def nodes: IArray[Node] =
+    def nodes: Array[Node]^{} =
       var count = 0
 
       for item <- html do item match
@@ -117,7 +117,7 @@ object Html extends Tag.Container
           buffer(index) = node
           index += 1
 
-      IArray.freeze(buffer)
+      Array.freeze(buffer)
 
   inline given interpolator: Html is Interpolable:
     type Result = Html
@@ -598,7 +598,7 @@ object Html extends Tag.Container
     // Stores key/value pairs interleaved as `[k0, v0, k1, v1, ...]`. Keys are
     // never null; a null in a value slot encodes `Unset`. `attributes()`
     // writes here, then snapshots the populated prefix into a freshly-sized
-    // `IArray[String | Null]` and wraps it as an opaque `Attributes`. Grows
+    // `Array[String | Null]^{}` and wraps it as an opaque `Attributes`. Grows
     // geometrically when filled.
     var attrInterleaved: scala.Array[String | Null]^ = new scala.Array[String | Null](16)
     // Pending formatting tags awaiting reconstruction (see WHATWG "active
@@ -651,12 +651,12 @@ object Html extends Tag.Container
 
     update def pop(): Unit = depth -= 1
 
-    // Snapshot the trailing `count` accumulated nodes into an `IArray` and release them.
-    update def array(count: Int): IArray[Node] =
+    // Snapshot the trailing `count` accumulated nodes into a frozen array and release them.
+    update def array(count: Int): Array[Node]^{} =
       val result = Array[Node](count)
       System.arraycopy(nodes, 0.max(index - count), result.raw, 0, count)
       index -= count
-      IArray.freeze(result)
+      Array.freeze(result)
 
     // Grow-and-write one interleaved attribute pair at slot `n` (the caller counts).
     update def attrAppend(n: Int, key: String | Null, value: String | Null): Unit =
@@ -956,7 +956,7 @@ object Html extends Tag.Container
       // `read`'s `Token.Open` / `Token.Empty` arms don't have to repeat the
       // lookup against `dom.elements(content)`.
       var openTag: Tag = root
-      var fragment: IArray[Node] = IArray()
+      var fragment: Array[Node]^{} = Array.of()
       var pendingAtDepth: Int = -1
       var inTableContent: Boolean = false
       var pendingFosterDescend: Boolean = false
@@ -1156,7 +1156,7 @@ object Html extends Tag.Container
       def attributes(tag: Text, foreign: Boolean): Attributes =
         // Append into the parser-shared interleaved scratch buffer (laid out
         // as `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
-        // into a freshly-sized `IArray[String | Null]` and wrap it as the
+        // into a freshly-sized `Array[String | Null]^{}` and wrap it as the
         // opaque `Attributes`. `Unset` values are encoded as `null` in the
         // array.
         //
@@ -1242,7 +1242,7 @@ object Html extends Tag.Container
         else
           val arr = Array[String | Null](2*n)
           jl.System.arraycopy(state.attrInterleaved, 0, arr.raw, 0, 2*n)
-          Attributes.fromInterleaved(IArray.freeze(arr))
+          Attributes.fromInterleaved(Array.freeze(arr))
 
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
@@ -1539,7 +1539,7 @@ object Html extends Tag.Container
                 current = Element(content, extra, state.array(count), parent.foreign)
 
               inline def empty(): Unit =
-                current = Element(content, extra, caps.unsafe.unsafeAssumePure(IArray()), parent.foreign)
+                current = Element(content, extra, Array.of(), parent.foreign)
 
               inline def close(): Unit =
                 current = Element(parent.label, map, state.array(count), parent.foreign)
@@ -1759,19 +1759,19 @@ object Html extends Tag.Container
               val text = textual(begin(), parent.label, false)
 
               if text.nil
-              then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)
+                  Array.of(TextNode(text)), parent.foreign)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
 
               if text.nil
-              then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)
+                  Array.of(TextNode(text)), parent.foreign)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)
@@ -1865,7 +1865,7 @@ object Element:
 case class Element
   ( label:      Text,
     attributes: Attributes,
-    children:   IArray[Node],
+    children:   Array[Node]^{},
     foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
   override def toString(): String = this.show.s
@@ -1882,7 +1882,7 @@ extends Node, Topical, Transportive, Dynamic:
     . in[tag.Form]
 
   def body: Fragment of Topic over Transport in Form =
-    Fragment[Topic](children.map(_.of[Topic]).asInstanceOf[IArray[Node of Topic]]*)
+    Fragment[Topic](children.map(_.of[Topic]).asInstanceOf[Array[Node of Topic]^{}]*)
     . over[Transport].in[Form]
 
   def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
@@ -1890,12 +1890,12 @@ extends Node, Topical, Transportive, Dynamic:
       case fragment: Fragment =>
         Element
           ( label, attributes,
-            (IArray.from(fragment.nodes).asInstanceOf[IArray[Node]] ++ children)
-            . asInstanceOf[IArray[Node]],
+            (Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] ++ children)
+            . asInstanceOf[Array[Node]^{}],
             foreign )
 
       case node: Node =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(IArray.of(node +: children.stdlib)), foreign)
+        Element(label, attributes, Array.frozen(node +: children.readable), foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1904,10 +1904,10 @@ extends Node, Topical, Transportive, Dynamic:
   def +^ (html: Html of Transport): Element of Topic over Transport in Form =
     (html: Html).match
       case fragment: Fragment =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(IArray.of(children.stdlib ++ fragment.nodes)), foreign)
+        Element(label, attributes, Array.frozen(children.readable ++ fragment.nodes), foreign)
 
       case node: Node =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(children :+ node), foreign)
+        Element(label, attributes, children :+ node, foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1919,13 +1919,13 @@ extends Node, Topical, Transportive, Dynamic:
     case Element(label, attributes, children, foreign) =>
       label == this.label && attributes.equalsAttributes(this.attributes) &&
         foreign == this.foreign &&
-        ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
+        ju.Arrays.equals(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]], this.children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashAttributes ^ label.hashCode
+    ju.Arrays.hashCode(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
 
   transparent inline def selectDynamic(name: Label): Any =
 

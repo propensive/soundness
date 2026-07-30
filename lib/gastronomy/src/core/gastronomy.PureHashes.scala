@@ -48,8 +48,8 @@ private[gastronomy] object PureHashes:
   import HashConstants.*
 
   // SHA-256 and SHA-224 (a truncation of SHA-256 with a different initial state).
-  final class Sha256(initial: IArray[Int], outputBytes: Int) extends BlockDigestion(64):
-    private var h: scala.Array[Int]^ = initial.mutable(using Unsafe).clone
+  final class Sha256(initial: scala.IArray[Int], outputBytes: Int) extends BlockDigestion(64):
+    private var h: scala.Array[Int]^ = initial.toArray
     private var w: scala.Array[Int]^ = new scala.Array[Int](64)
 
     protected def bitLengthBytes: Int = 8
@@ -96,11 +96,11 @@ private[gastronomy] object PureHashes:
 
       while i < outputBytes do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
 
-      IArray.freeze(out)
+      Array.freeze(out)
 
   // SHA-512 and SHA-384 (a truncation of SHA-512 with a different initial state).
-  final class Sha512(initial: IArray[Long], outputBytes: Int) extends BlockDigestion(128):
-    private var h: scala.Array[Long]^ = initial.mutable(using Unsafe).clone
+  final class Sha512(initial: scala.IArray[Long], outputBytes: Int) extends BlockDigestion(128):
+    private var h: scala.Array[Long]^ = initial.toArray
     private var w: scala.Array[Long]^ = new scala.Array[Long](80)
 
     // The message length is a 128-bit big-endian count of bits; inputs never approach 2^64 bytes,
@@ -151,7 +151,7 @@ private[gastronomy] object PureHashes:
 
       while i < outputBytes do { out(i) = (h(i/8) >>> ((7 - i%8)*8)).toByte; i += 1 }
 
-      IArray.freeze(out)
+      Array.freeze(out)
 
   // SHA-1 (RFC 3174).
   final class Sha1 extends BlockDigestion(64):
@@ -202,7 +202,7 @@ private[gastronomy] object PureHashes:
 
       while i < 20 do { out(i) = (h(i/4) >>> ((3 - i%4)*8)).toByte; i += 1 }
 
-      IArray.freeze(out)
+      Array.freeze(out)
 
   // MD5 (RFC 1321). Little-endian throughout, unlike the SHA family.
   final class Md5 extends BlockDigestion(64):
@@ -212,12 +212,12 @@ private[gastronomy] object PureHashes:
     private var d0 = 0x10325476
     private var m: scala.Array[Int]^ = new scala.Array[Int](16)
 
-    private val shifts: IArray[Int] = scala.Array(
+    private val shifts: Array[Int]^{} = scala.Array(
       7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22, 7, 12, 17, 22,
       5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20, 5, 9, 14, 20,
       4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23, 4, 11, 16, 23,
       6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21, 6, 10, 15, 21)
-    . asInstanceOf[IArray[Int]]
+    . asInstanceOf[Array[Int]^{}]
 
     protected def bitLengthBytes: Int = 8
 
@@ -260,10 +260,10 @@ private[gastronomy] object PureHashes:
 
       while i < 16 do { out(i) = (h(i/4) >>> ((i%4)*8)).toByte; i += 1 }
 
-      IArray.freeze(out)
+      Array.freeze(out)
 
   object Crc32:
-    val table: IArray[Int] =
+    val table: Array[Int]^{} =
       val result = Array[Int](256)
       var n = 0
 
@@ -274,7 +274,7 @@ private[gastronomy] object PureHashes:
         result(n) = c
         n += 1
 
-      IArray.freeze(result)
+      Array.freeze(result)
 
   // CRC-32 (RFC 1952), the checksum used by gzip and zip.
   final class Crc32 extends Digestion:
@@ -290,7 +290,7 @@ private[gastronomy] object PureHashes:
       value = ~c
 
     update def digest(): Data =
-      IArray[Byte]((value >>> 24).toByte, (value >>> 16).toByte, (value >>> 8).toByte, value.toByte)
+      Array.of[Byte]((value >>> 24).toByte, (value >>> 16).toByte, (value >>> 8).toByte, value.toByte)
 
   private def rotr(x: Int, n: Int): Int = (x >>> n) | (x << (32 - n))
   private def rotl(x: Int, n: Int): Int = (x << n) | (x >>> (32 - n))
@@ -301,10 +301,10 @@ private[gastronomy] object PureHashes:
   def crc32: Digestion^ = Crc32()
 
   def sha2(bits: Int): Digestion^ = bits match
-    case 224 => Sha256(sha224H, 28)
-    case 256 => Sha256(sha256H, 32)
-    case 384 => Sha512(sha384H, 48)
-    case _   => Sha512(sha512H, 64)
+    case 224 => Sha256(sha224H.readable, 28)
+    case 256 => Sha256(sha256H.readable, 32)
+    case 384 => Sha512(sha384H.readable, 48)
+    case _   => Sha512(sha512H.readable, 64)
 
 // A block-oriented incremental hash: buffers input into `blockSize`-byte blocks, running
 // `compress` on each, and applies the standard Merkle–Damgård padding (a `0x80` byte, zero

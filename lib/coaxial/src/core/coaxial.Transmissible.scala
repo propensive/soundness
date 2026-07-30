@@ -39,7 +39,9 @@ import prepositional.*
 import zephyrine.*
 
 object Transmissible:
-  given bytes: [bytes <: Data] => bytes is Transmissible = _.stream
+  // Bound directly at `Data`: a subtype parameter instantiates the frozen array at a
+  // wildcard capture that cannot flow back into `^{}`.
+  given bytes: Data is Transmissible = _.stream
 
   given stream: [stream <: Progression[Data]] => stream is Transmissible = value =>
     value.stdlib.iterator.stream

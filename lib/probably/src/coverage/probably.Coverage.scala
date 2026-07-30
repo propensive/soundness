@@ -50,7 +50,7 @@ object Coverage:
     val hits = measurements(currentFile)
     val dirFile = File(dir.s)
 
-    if !dirFile.exists() then Coverage(dir, IArray(), Set(), Set())
+    if !dirFile.exists() then Coverage(dir, Array.of(), Set(), Set())
     else
       val otherFiles =
         Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).toList).getOrElse(Nil.stdlib)
@@ -65,7 +65,7 @@ object Coverage:
   private def currentDir: Option[Text] =
     Option(System.getProperty("scalac.coverage")).map(_.nn).map(Text(_))
 
-  private def spec(dir: Text): IArray[Juncture] =
+  private def spec(dir: Text): Array[Juncture]^{} =
     val file = java.io.File(java.io.File(dir.s), "scoverage.coverage")
     val lines = Source.fromFile(file).getLines().to(Progression).map(Text(_))
 
@@ -84,7 +84,7 @@ object Coverage:
         case _ =>
           junctures.reverse
 
-    IArray.from(recur(lines.dropWhile(_.starts(t"#"))).stdlib)
+    Array.from(recur(lines.dropWhile(_.starts(t"#"))).stdlib)
 
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
@@ -95,9 +95,9 @@ object Coverage:
 
     Set.from(ids)
 
-case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
+case class Coverage(path: Text, spec: Array[Juncture]^{}, oldHits: Set[Int], hits: Set[Int]):
   lazy val structure: Map[Text, List[Surface]] =
-    val index: Int = spec.stdlib.lastIndexWhere(_.id == 0)
+    val index: Int = spec.readable.lastIndexWhere(_.id == 0)
 
     Map.from:
       scala.collection.immutable.ArraySeq.unsafeWrapArray(spec.mutable(using Unsafe))

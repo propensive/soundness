@@ -67,21 +67,21 @@ object Teletype:
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
 
   // Teletype values are records, so their streams travel on the boxed medium
-  // (windows of `IArray[Teletype]`); each record prints as it arrives.
-  given out: Stdio => Out.type is Writable by IArray[Teletype] = new Writable:
+  // (windows of `Array[Teletype]^{}`); each record prints as it arrives.
+  given out: Stdio => Out.type is Writable by (Array[Teletype]^{}) = new Writable:
     type Self = Out.type
-    type Operand = IArray[Teletype]
+    type Operand = Array[Teletype]^{}
 
-    def write(target: Self, stream: (Stream[IArray[Teletype]] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[IArray[Teletype]] over Credit)^]
+    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
       . records.each(Out.print(_))
 
-  given err: Stdio => Err.type is Writable by IArray[Teletype] = new Writable:
+  given err: Stdio => Err.type is Writable by (Array[Teletype]^{}) = new Writable:
     type Self = Err.type
-    type Operand = IArray[Teletype]
+    type Operand = Array[Teletype]^{}
 
-    def write(target: Self, stream: (Stream[IArray[Teletype]] over Credit)^): Unit =
-      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[IArray[Teletype]] over Credit)^]
+    def write(target: Self, stream: (Stream[Array[Teletype]^{}] over Credit)^): Unit =
+      stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[Teletype]^{}] over Credit)^]
       . records.each(Err.print(_))
 
   // In `Teletype`'s companion (implicit scope for `Teletype is Reversible`), delegating to gossamer's
@@ -133,7 +133,7 @@ object Teletype:
 
   // Empty Teletype: dense form with no chars and one trailing entry.
   val empty: Teletype =
-    new Teletype(t"", IArray(0L), Map.empty, TreeMap.empty, IArray.empty[Int])
+    new Teletype(t"", Array.of(0L), Map.empty, TreeMap.empty, Array.empty[Int])
 
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
   given printable: Teletype is Printable = _.render(_)
@@ -159,7 +159,7 @@ object Teletype:
 
   // Build a Teletype from text with no styling. Always sparse (1 run).
   def apply(text: Text): Teletype =
-    new Teletype(text, IArray(0L, 0L), Map.empty, TreeMap.empty, IArray(0))
+    new Teletype(text, Array.of(0L, 0L), Map.empty, TreeMap.empty, Array.of(0))
 
   // Build a Teletype with a single uniform style applied to all chars.
   def styled[value: Showable](value: value)(transform: Ansi.Transform): Teletype =
@@ -167,19 +167,19 @@ object Teletype:
     val styled: Long = transform(TextStyle()).styleWord
 
     if text.length == 0 then
-      new Teletype(t"", IArray(styled, 0L), Map.empty, TreeMap.empty, IArray(0))
+      new Teletype(t"", Array.of(styled, 0L), Map.empty, TreeMap.empty, Array.of(0))
     else
-      new Teletype(text, IArray(styled, 0L), Map.empty, TreeMap.empty, IArray(0))
+      new Teletype(text, Array.of(styled, 0L), Map.empty, TreeMap.empty, Array.of(0))
 
   // Compress a dense styles array into sparse form if it would benefit.
   // Returns the resulting (styles, boundaries) pair.
-  def compressIfBeneficial(plain: Text, denseStyles: IArray[Long])
-  :   (IArray[Long], IArray[Int]) =
+  def compressIfBeneficial(plain: Text, denseStyles: Array[Long]^{})
+  :   (Array[Long]^{}, Array[Int]^{}) =
 
     val n = plain.length
 
     if n == 0
-    then (IArray(if denseStyles.length > 0 then denseStyles(0) else 0L), IArray.empty[Int])
+    then (Array.of(if denseStyles.length > 0 then denseStyles(0) else 0L), Array.empty[Int])
     else
       // Count runs
       var runs = 1
@@ -191,7 +191,7 @@ object Teletype:
 
       if runs * SparseThreshold > n then
         // Keep dense
-        (denseStyles, IArray.empty[Int])
+        (denseStyles, Array.empty[Int])
       else
         // Convert to sparse
         val newStyles = Array[Long](runs + 1)
@@ -210,7 +210,7 @@ object Teletype:
           src += 1
 
         newStyles(runs) = denseStyles(n)  // trailing
-        (IArray.freeze(newStyles), IArray.freeze(newBoundaries))
+        (Array.freeze(newStyles), Array.freeze(newBoundaries))
 
 
 // `boundaries` is the run-start array for the sparse form; empty for the dense form.
@@ -222,10 +222,10 @@ object Teletype:
 //         trailing style.
 case class Teletype
   ( plain:      Text,
-    styles:     IArray[Long],
+    styles:     Array[Long]^{},
     hyperlinks: Map[Int, Text]            = Map.empty,
     insertions: TreeMap[Int, Text]        = TreeMap.empty,
-    boundaries: IArray[Int]               = IArray.empty[Int] ):
+    boundaries: Array[Int]^{}               = Array.empty[Int] ):
 
   inline def isDense: Boolean = boundaries.length == 0
 
@@ -250,9 +250,9 @@ case class Teletype
 
   // Convert to sparse form's (styles, boundaries) representation.
   // For an already-sparse Teletype this is O(1); for a dense one it's O(plain.length).
-  def asSparseArrays: (IArray[Long], IArray[Int]) =
+  def asSparseArrays: (Array[Long]^{}, Array[Int]^{}) =
     if !isDense then (styles, boundaries)
-    else if plain.length == 0 then (IArray(if styles.length > 0 then styles(0) else 0L), IArray(0))
+    else if plain.length == 0 then (Array.of(if styles.length > 0 then styles(0) else 0L), Array.of(0))
     else
       val n = plain.length
       // Count runs
@@ -279,7 +279,7 @@ case class Teletype
         src += 1
 
       newStyles(runs) = styles(n)
-      (IArray.freeze(newStyles), IArray.freeze(newBoundaries))
+      (Array.freeze(newStyles), Array.freeze(newBoundaries))
 
   def explicit: Text = Text:
     render(termcapDefinitions.xtermTrueColorTermcap).s.flatMap: char =>
@@ -304,7 +304,7 @@ case class Teletype
           arr(i) = tail
           i += 1
 
-        Teletype(combinedPlain, IArray.freeze(arr), hyperlinks, insertions, IArray.empty[Int])
+        Teletype(combinedPlain, Array.freeze(arr), hyperlinks, insertions, Array.empty[Int])
       else
         // Stay sparse: the new chars become part of the last run (since trailing style = last run
         // style) unless the last run's style differs from the trailing style — but that can't
@@ -328,10 +328,10 @@ case class Teletype
 
           Teletype
             ( combinedPlain,
-              IArray.freeze(newStyles),
+              Array.freeze(newStyles),
               hyperlinks,
               insertions,
-              IArray.freeze(newBoundaries) )
+              Array.freeze(newBoundaries) )
 
   @targetName("add2")
   def append(that: Teletype): Teletype =
@@ -355,10 +355,10 @@ case class Teletype
 
         Teletype
           ( combinedPlain,
-            IArray.freeze(arr),
+            Array.freeze(arr),
             shiftedLinks,
             shiftedInsertions,
-            IArray.empty[Int] )
+            Array.empty[Int] )
       else
         // At least one is sparse — combine in sparse form.
         val (aStyles, aBoundaries) = asSparseArrays
@@ -388,10 +388,10 @@ case class Teletype
 
         Teletype
           ( combinedPlain,
-            IArray.freeze(newStylesArr),
+            Array.freeze(newStylesArr),
             shiftedLinks,
             shiftedInsertions,
-            IArray.freeze(newBoundariesArr) )
+            Array.freeze(newBoundariesArr) )
 
   def dropChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => takeChars(plain.length - n)
@@ -417,10 +417,10 @@ case class Teletype
 
           Teletype
             ( plain.skip(n),
-              IArray.freeze(arr),
+              Array.freeze(arr),
               newHyperlinks,
               newInsertions,
-              IArray.empty[Int] )
+              Array.empty[Int] )
         else
           // Sparse: find the run that contains position n; drop earlier runs;
           // adjust the first kept run's boundary to 0; shift all other boundaries by -n.
@@ -450,10 +450,10 @@ case class Teletype
 
           Teletype
             ( plain.skip(n),
-              IArray.freeze(newStylesArr),
+              Array.freeze(newStylesArr),
               newHyperlinks,
               newInsertions,
-              IArray.freeze(newBoundariesArr) )
+              Array.freeze(newBoundariesArr) )
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl => dropChars(plain.length - n)
@@ -477,10 +477,10 @@ case class Teletype
 
           Teletype
             ( plain.keep(n),
-              IArray.freeze(arr),
+              Array.freeze(arr),
               newHyperlinks,
               newInsertions,
-              IArray.empty[Int] )
+              Array.empty[Int] )
         else
           // Sparse: keep runs whose start is < n; trim the last kept run; trailing style = 0L.
           val k = boundaries.length
@@ -507,10 +507,10 @@ case class Teletype
 
           Teletype
             ( plain.keep(n),
-              IArray.freeze(newStylesArr),
+              Array.freeze(newStylesArr),
               newHyperlinks,
               newInsertions,
-              IArray.freeze(newBoundariesArr) )
+              Array.freeze(newBoundariesArr) )
 
   def render(termcap: Termcap): Text =
     if !termcap.ansi then plain else

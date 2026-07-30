@@ -302,7 +302,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     // Line splitting: UTF-8 decode then split the 4 MB corpus into lines,
-    // counting them. Soundness' `delineate` emits boxed `IArray[Text]` windows
+    // counting them. Soundness' `delineate` emits boxed `Array[Text]^{}` windows
     // of lines and counts records per window with no per-line intermediate;
     // FS2/ZIO allocate a string per line.
     suite(m"Line splitting (4 MB)"):

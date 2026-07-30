@@ -82,7 +82,7 @@ case class Ttf(data: Data):
   def advanceWidth(char: Char): Int raises FontError = hmtx.advanceWidth(glyph(char).id)
 
   def width(text: Text): Quantity[Ems[1]] raises FontError =
-    text.chars.stdlib.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
+    text.chars.readable.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises FontError =
     hmtx.leftSideBearing(glyph(char).id)
@@ -216,13 +216,13 @@ case class Ttf(data: Data):
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
     val entries =
-      (t"glyf", IArray.freeze(newGlyf)) ::
-        (t"loca", IArray.freeze(newLoca)) ::
-        (t"head", IArray.freeze(newHead)) :: (carried: List[(Text, Data)])
+      (t"glyf", Array.freeze(newGlyf)) ::
+        (t"loca", Array.freeze(newLoca)) ::
+        (t"head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
 
     Ttf(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 
-  def subset(text: Text): Ttf raises FontError = subset(Set.from(text.chars.stdlib))
+  def subset(text: Text): Ttf raises FontError = subset(Set.from(text.chars.readable))
 
   // The transitive closure of a set of glyphs under composite-glyph components: every glyph
   // needed to render the given ones.
@@ -288,8 +288,8 @@ case class Ttf(data: Data):
   // The horizontal metrics: one (advance, bearing) pair per glyph up to `count`, after which
   // the last advance repeats — a monospaced tail — and bearings continue in their own array.
   case class HmtxTable(offset: Int, count: Int):
-    lazy val metrics: IArray[HMetrics] =
-      IArray.from:
+    lazy val metrics: Array[HMetrics]^{} =
+      Array.from:
         (0 until count).map: index =>
           HMetrics(B16(data, offset + index*4).u16.int, B16(data, offset + index*4 + 2).s16.int)
 
@@ -305,8 +305,8 @@ case class Ttf(data: Data):
   // The glyph-location index: for each glyph, the extent of its data within glyf. In the
   // short format, offsets are stored halved in sixteen bits.
   case class LocaTable(offset: Int, glyphCount: Int, longFormat: Boolean):
-    lazy val offsets: IArray[Int] =
-      IArray.from:
+    lazy val offsets: Array[Int]^{} =
+      Array.from:
         (0 to glyphCount).map: index =>
           if longFormat then B32(data, offset + index*4).s32.int
           else B16(data, offset + index*2).u16.int*2
@@ -398,8 +398,8 @@ case class Ttf(data: Data):
             try String(bytes, start, length, "x-MacRoman").tt
             catch case _: Exception => String(bytes, start, length, "ISO-8859-1").tt
 
-    lazy val records: IArray[Record] =
-      IArray.from:
+    lazy val records: Array[Record]^{} =
+      Array.from:
         (0 until count).map: n =>
           val base = offset + 6 + n*12
 
@@ -423,7 +423,7 @@ case class Ttf(data: Data):
         case (1, 0)  => 4
         case _       => 5
 
-      if candidates.isEmpty then Unset else candidates.stdlib.minBy(rank).decode
+      if candidates.isEmpty then Unset else candidates.readable.minBy(rank).decode
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):
@@ -453,7 +453,7 @@ case class Ttf(data: Data):
                     B16(data, idDeltasStart + n*2).s16.int,
                     B16(data, idRangeOffsetsStart + n*2).u16.int )
 
-              Format4(idRangeOffsetsStart, IArray.from(segments))
+              Format4(idRangeOffsetsStart, Array.from(segments))
 
             case 6 =>
               val first = B16(data, offset + 6).u16.int
@@ -482,7 +482,7 @@ case class Ttf(data: Data):
       // Segmented ranges over the Basic Multilingual Plane. Each segment maps by a delta, or
       // — when its range offset is nonzero — indirects into the glyph-id array which follows
       // the range offsets, addressed relative to the segment's own range-offset word.
-      case class Format4(idRangeOffsetsStart: Int, segments: IArray[Segment]) extends Format:
+      case class Format4(idRangeOffsetsStart: Int, segments: Array[Segment]^{}) extends Format:
         def glyph(char: Char): Glyph[ttf.type] =
           val index = segments.indexWhere(char <= _.end)
 

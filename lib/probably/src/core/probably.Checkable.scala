@@ -38,7 +38,10 @@ import rudiments.*
 import proscenium.compat.*
 
 object Checkable:
-  given iarray: [left, right] => IArray[left] is Checkable against IArray[right] = _.sameElements(_)
+  // The cast fixes the invariant element type only: `sameElements` compares via `equals`,
+  // which is safe across element types.
+  given iarray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
+    (left, right) => left.sameElements(right.asInstanceOf[Array[left]^{}])
 
 
   given stream: [left, right] => (left is Checkable against right)

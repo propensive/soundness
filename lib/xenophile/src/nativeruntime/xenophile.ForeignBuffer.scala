@@ -52,7 +52,7 @@ object ForeignBuffer:
     new ForeignBuffer(stdlib.malloc(size.toCSize).nn, size)
 
   def apply(data: Data): ForeignBuffer =
-    val buffer = apply(data.stdlib.length)
+    val buffer = apply(data.readable.length)
     val array = data.mutable(using Unsafe)
     var index = 0
 
@@ -73,7 +73,7 @@ class ForeignBuffer(private[xenophile] val memory: Ptr[Byte], val size: Int):
       array(index) = memory(index)
       index += 1
 
-    IArray.freeze(array)
+    Array.freeze(array)
 
   def int: Int = !memory.asInstanceOf[Ptr[Int]]
   def free(): Unit = stdlib.free(memory)

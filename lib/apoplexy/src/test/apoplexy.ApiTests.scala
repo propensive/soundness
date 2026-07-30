@@ -58,7 +58,7 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
   @scala.caps.unsafe.untrackedCaptures
   var lastMethod:  Optional[Http.Method] = Unset
   @scala.caps.unsafe.untrackedCaptures
-  var lastBody:    Optional[IArray[Byte]] = Unset
+  var lastBody:    Optional[Array[Byte]^{}] = Unset
   @scala.caps.unsafe.untrackedCaptures
   var lastHeaders: List[Http.Header]     = Nil
 

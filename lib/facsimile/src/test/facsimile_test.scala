@@ -115,12 +115,12 @@ object Tests extends Suite(m"Facsimile tests"):
 
     // Big-endian byte assembly for the font fixture below.
     def big16(values: Int*): Data =
-      IArray.from:
+      Array.from:
         values.flatMap: value =>
           Seq((value >> 8).toByte, value.toByte)
 
     def big32(values: Long*): Data =
-      IArray.from:
+      Array.from:
         values.flatMap: value =>
           Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
@@ -174,7 +174,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val padding = (4 - table.length%4)%4
         val entry = tag.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
         directory += entry ++ big32(0L, offset.toLong, table.length.toLong)
-        parts += table ++ IArray.fill[Byte](padding)(0)
+        parts += table ++ Array.fill[Byte](padding)(0)
         offset += table.length + padding
 
       big32(0x00010000L) ++ big16(10, 128, 3, 32) ++ directory.result().reduce(_ ++ _) ++
@@ -1051,7 +1051,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert: ordinals =>
           ordinals == proscenium.List(PdfOperator.Save, PdfOperator.Concat(PdfMatrix.Identity),
               PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12), PdfOperator.Offset(72, 720),
-              PdfOperator.ShowText(IArray[Byte]()), PdfOperator.EndText, PdfOperator.Restore)
+              PdfOperator.ShowText(Array.of[Byte]()), PdfOperator.EndText, PdfOperator.Restore)
             . map(_.ordinal)
 
       test(m"cm carries its matrix"):

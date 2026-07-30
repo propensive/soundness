@@ -152,7 +152,7 @@ object Http:
 
   object Status:
     private lazy val all: Map[Int, Status] =
-      Map.from(values.immutable(using Unsafe).stdlib.bi.map(_.code -> _))
+      Map.from(values.immutable(using Unsafe).readable.bi.map(_.code -> _))
 
     def unapply(code: Int): Option[Status] = all.get(code)
 
@@ -328,7 +328,7 @@ object Http:
         Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
       if second.absent then
-        val data = first.or(IArray.empty[Byte])
+        val data = first.or(Array.empty[Byte])
         val text = head(t"Content-Length: ${data.length}")
         Stream(if data.length == 0 then Iterator(text.in[Data]) else Iterator(text.in[Data], data))
       else

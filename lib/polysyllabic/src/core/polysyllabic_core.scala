@@ -46,7 +46,7 @@ extension (text: Text)
   // Hyphen-insertion offsets for a single word: position `p` means a hyphen
   // may be inserted between letters `p - 1` and `p`. Uses the ambient
   // `Hyphenation`'s default `leftMin` / `rightMin`.
-  def breakPoints(using hyphenation: Hyphenation): IArray[Int] =
+  def breakPoints(using hyphenation: Hyphenation): Array[Int]^{} =
     Hyphenation.breakPoints(text, hyphenation, hyphenation.leftMin, hyphenation.rightMin)
 
   // Insert `hyphen` (default: U+00AD SOFT HYPHEN) at every admissible break

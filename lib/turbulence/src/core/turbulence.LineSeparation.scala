@@ -54,18 +54,18 @@ object LineSeparation:
   //
   // A separator-free input grows `partial` without bound — the inherent
   // exposure of any line reader; cap upstream if the input is adversarial.
-  given lines: Ductile.Of[LineSeparation, Text, IArray[Text], Credit, Credit] =
+  given lines: Ductile.Of[LineSeparation, Text, Array[Text]^{}, Credit, Credit] =
     new Ductile:
       type Self = LineSeparation
       type Operand = Text
-      type Result = IArray[Text]
+      type Result = Array[Text]^{}
       type Transport = Credit
       type Upstream = Credit
 
       def duct(consume stage: LineSeparation^)(using Buffering)
-      :   (Duct[Text, IArray[Text]] { type Transport = Credit; type Upstream = Credit })^ =
+      :   (Duct[Text, Array[Text]^{}] { type Transport = Credit; type Upstream = Credit })^ =
 
-        new Duct[Text, IArray[Text]]:
+        new Duct[Text, Array[Text]^{}]:
           type Transport = Credit
           type Upstream = Credit
 

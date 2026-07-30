@@ -442,7 +442,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // reference identity (the extracted document is memoized, so its identity is stable),
   // costing one comparison per iteration rather than one copy.
   private var utf8Key: String | Null = null
-  private var utf8Value: Data = IArray[Byte]()
+  private var utf8Value: Data = Array.of[Byte]()
 
   def utf8(text: String): Data =
     if utf8Key ne text then

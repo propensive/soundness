@@ -220,13 +220,13 @@ package socketBackends:
             var index = 0
 
             while index < 8 do
-              bytes(index) = high.stdlib(index)
+              bytes(index) = high.readable(index)
               index += 1
 
             val low = ip.lowBits.bits.bytes
 
             while index < 16 do
-              bytes(index) = low.stdlib(index - 8)
+              bytes(index) = low.readable(index - 8)
               index += 1
 
             bytes

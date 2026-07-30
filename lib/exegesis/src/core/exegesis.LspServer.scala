@@ -547,13 +547,13 @@ trait LspServer() extends Lsp:
   // A runnable entry point: an `LspServer` object carries its own `main`, running as an
   // Ethereal resident daemon over the stdio JSON-RPC transport. `main` is a plain (non-inline)
   // method, so the object's static `main([Ljava/lang/String;)V` forwarder is a valid JVM entry
-  // point (`IArray[Text]` erases to `Array[String]`), and defining the server is enough to run
+  // point (`Array[Text]` erases to `Array[String]`), and defining the server is enough to run
   // it — no `@main`, and no `cli`/`execute`/`supervise` boilerplate. Ethereal's `cli` reads the
   // real invocation from the daemon environment, so the JVM `args` are unused; it also provides
   // the `-Dbuild.executable=<name>` native-launcher assembly path. To externalize the classpath
   // with Burdock (shipping a thin launcher rather than a fat JAR), override this in the server's
-  // own module with `override def main(args: IArray[Text]): Unit = externalize(super.main(args))`.
-  def main(args: IArray[Text]): Unit = cli:
+  // own module with `override def main(args: Array[Text]): Unit = externalize(super.main(args))`.
+  def main(args: Array[Text]): Unit = cli:
     execute:
       supervise(serve())
       Exit.Ok

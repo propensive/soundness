@@ -136,7 +136,7 @@ object Tests extends Suite(m"Wisteria tests"):
       def parse(s: String): Option[Boolean] = s.toBooleanOption
 
     inline def conjunction[derivation <: Product: ProductReflection]: Parser[derivation] = input =>
-      IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(input.split(','))).pipe: inputArr =>
+      Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(input.split(','))).pipe: inputArr =>
         construct[Option, derivation](
           [in, out] => _.flatMap,
           [monadic] => Some(_),

@@ -68,13 +68,13 @@ object Molecule:
         if molecule.charge == 0 then t"" else if molecule.charge < 0 then t"⁻" else t"⁺"
 
       val magnitude = if molecule.charge.abs < 2 then t"" else
-        t"${molecule.charge.abs.show.chars.stdlib.map(_.superscript).sift[Char].map(_.show).join}"
+        t"${molecule.charge.abs.show.chars.readable.map(_.superscript).sift[Char].map(_.show).join}"
 
       t"$magnitude$polarity${molecule.state.let(_.show).or(t"")}"
 
     orderedElements.map: (element, count) =>
       val number =
-        if count == 1 then t"" else count.show.chars.stdlib.map(_.subscript).sift[Char].map(_.show).join
+        if count == 1 then t"" else count.show.chars.readable.map(_.subscript).sift[Char].map(_.show).join
 
       t"${element.symbol}$number"
 

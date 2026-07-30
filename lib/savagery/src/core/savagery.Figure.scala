@@ -64,7 +64,7 @@ extends Figure:
     if transforms.stdlib.nonEmpty
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    Element(t"rect", Attributes.from(Map.of(attrs.result())), IArray())
+    Element(t"rect", Attributes.from(Map.of(attrs.result())), Array.of())
 
 case class Outline
   ( ops:        List[Stroke]       = Nil,
@@ -85,7 +85,7 @@ extends Figure:
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     style.let: css => attrs += t"style" -> css.text
-    Element(t"path", Attributes.from(Map.of(attrs.result())), IArray())
+    Element(t"path", Attributes.from(Map.of(attrs.result())), Array.of())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
@@ -141,4 +141,4 @@ extends Figure:
     if transforms.stdlib.nonEmpty
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(Map.of(attrs.result())), IArray())
+    Element(if circle then t"circle" else t"ellipse", Attributes.from(Map.of(attrs.result())), Array.of())

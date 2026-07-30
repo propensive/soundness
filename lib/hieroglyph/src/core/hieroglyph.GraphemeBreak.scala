@@ -129,7 +129,7 @@ object GraphemeBreak:
     case "Linker"    => IncbValue.Linker
     case _           => Unset
 
-  private case class Tables(starts: IArray[Int], ends: IArray[Int], props: IArray[Byte])
+  private case class Tables(starts: Array[Int]^{}, ends: Array[Int]^{}, props: Array[Byte]^{})
 
   private def buildTables(entries: sci.List[Entry]): Tables =
     val sorted = entries.sortBy(_.start).toArray
@@ -146,7 +146,7 @@ object GraphemeBreak:
       props(index) = sorted(index).prop.toByte
       index += 1
 
-    Tables(IArray.freeze(starts), IArray.freeze(ends), IArray.freeze(props))
+    Tables(Array.freeze(starts), Array.freeze(ends), Array.freeze(props))
 
   private lazy val gbpTables: Tables =
     val in = loadResource(
@@ -191,7 +191,7 @@ object GraphemeBreak:
   def extendedPictographic(codepoint: Int): Boolean = lookup(extPictTables, codepoint) >= 0
   def incb(codepoint: Int): Int = lookup(incbTables, codepoint)
 
-  def boundaries(text: Text): IArray[Int] =
+  def boundaries(text: Text): Array[Int]^{} =
     import Property.*
 
     val s = text.s
@@ -205,7 +205,7 @@ object GraphemeBreak:
     breaks(size) = 0
     size += 1
 
-    if n == 0 then IArray.freeze(Array[Int](1))
+    if n == 0 then Array.freeze(Array[Int](1))
     else
       var index = 0
       val firstCodepoint = Character.codePointAt(s, 0)
@@ -283,7 +283,7 @@ object GraphemeBreak:
 
       // Trimmed to the exact count, then frozen: the checked build-then-share
       // conversion.
-      val frozen = IArray.freeze(breaks)
+      val frozen = Array.freeze(breaks)
       val result = Array[Int](size)
       result.copyFrom(frozen, 0, 0, size)
-      IArray.freeze(result)
+      Array.freeze(result)

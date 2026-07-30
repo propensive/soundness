@@ -129,8 +129,8 @@ object Xml extends Tag.Container
   private def textOf(xml: Xml): Optional[Text] = xml match
     case _ if xml eq Absent                    => Unset
     case TextNode(text)                        => text
-    case Element(_, _, IArray(TextNode(text))) => text
-    case Element(_, _, IArray())               => t""
+    case Element(_, _, Array(TextNode(text))) => text
+    case Element(_, _, Array())               => t""
     case Fragment(node: Node)                  => textOf(node)
     case _                                     => Unset
 
@@ -316,7 +316,7 @@ object Xml extends Tag.Container
               // collection) has no per-element XML shape; it nests under an
               // unnamed element, relabelled by the enclosing product.
               case Fragment(nested*) =>
-                nodes += Element(t"", Attributes.empty, IArray.from(nested))
+                nodes += Element(t"", Attributes.empty, Array.from(nested))
 
           Fragment(nodes.toSeq*)
 
@@ -428,7 +428,7 @@ object Xml extends Tag.Container
 
             case _ =>
               raise(XmlError())
-              buildWith[derivation](Element(t"", Attributes.empty, IArray.empty))
+              buildWith[derivation](Element(t"", Attributes.empty, Array.empty))
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( element: Element )
@@ -609,7 +609,7 @@ object Xml extends Tag.Container
         Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
 
       case node: Node =>
-        Element(fieldName, Attributes.empty, IArray(node))
+        Element(fieldName, Attributes.empty, Array.of(node))
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
@@ -895,12 +895,12 @@ object Xml extends Tag.Container
     // buffer the parse loop filled. `fromProduct` is the only construction
     // form that works for method-local and object-nested case classes.
     def assemble[derivation <: Product]
-      ( reflection: ProductReflection[derivation], values: IArray[Any] )
+      ( reflection: ProductReflection[derivation], values: Array[Any]^{} )
     :   derivation =
 
       reflection.fromProduct(ArrayProduct(values))
 
-    private final class ArrayProduct(values: IArray[Any]) extends Product:
+    private final class ArrayProduct(values: Array[Any]^{}) extends Product:
       def canEqual(that: Any): Boolean = true
       def productArity: Int = values.length
       def productElement(index: Int): Any = values(index)
@@ -915,7 +915,7 @@ object Xml extends Tag.Container
     // modules and so may only reference public members.
 
     // The wire names of a product's fields, `@name` renames applied.
-    def wireNames(names: IArray[String], renames: Map[Text, Text]): IArray[String] =
+    def wireNames(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
       names.map { name => renames.at(name.tt).or(name.tt).s }
 
     // A required primitive field whose name never arrived: the primitives'
@@ -934,7 +934,7 @@ object Xml extends Tag.Container
     // or any child of a `@name`-annotated record. An `@attribute` field
     // never matches a child element, exactly as the derived engine's
     // `indexOf` skips them.
-    def childIndex(keys: IArray[String], attributes: IArray[Boolean], label: Text): Int =
+    def childIndex(keys: Array[String]^{}, attributes: Array[Boolean]^{}, label: Text): Int =
       val count = keys.length
       val name: String = label.s
       var index = 0
@@ -977,16 +977,16 @@ object Xml extends Tag.Container
     // accrues to it, exactly like the AST path (whose derivation is
     // inline-expanded at the `.as` call).
     def product[derivation]
-      ( fields0:  () => IArray[(String, Xml.Parsing, Any, Boolean)],
+      ( fields0:  () => Array[(String, Xml.Parsing, Any, Boolean)]^{},
         fallback: Optional[() => derivation],
-        make:     IArray[Any] -> derivation )
+        make:     Array[Any]^{} -> derivation )
     :   ((derivation is Xml.Field)^{fields0, fallback}) =
 
       new Xml.Field:
         type Self = derivation
 
-        private lazy val fields: IArray[(String, Xml.Parsing, Any, Boolean)] = fields0()
-        private lazy val keys: IArray[String] = fields.map(_(0))
+        private lazy val fields: Array[(String, Xml.Parsing, Any, Boolean)]^{} = fields0()
+        private lazy val keys: Array[String]^{} = fields.map(_(0))
 
         // Element dispatch. An `@attribute` field never matches a child
         // element: the AST derivation checks the annotation before looking
@@ -1403,7 +1403,7 @@ object Xml extends Tag.Container
   def header: Header = Header("1.0", Unset, Unset)
 
   extension (xml: Seq[Xml])
-    def nodes: IArray[Node] =
+    def nodes: Array[Node]^{} =
       var count = 0
 
       for item <- xml do item match
@@ -1585,7 +1585,7 @@ object Xml extends Tag.Container
     val positionIndex: Optional[PositionIndex] = tracking match
       case PositionTracking.On =>
         val index = parser.rootIndex
-        PositionIndex(if index == null then IArray.empty[Int] else index)
+        PositionIndex(if index == null then Array.empty[Int] else index)
 
       case PositionTracking.Off =>
         Unset
@@ -1892,13 +1892,15 @@ object Xml extends Tag.Container
   // slice extracted at a descriptor boundary is itself a valid
   // `PositionIndex`. See `XmlParser` (tracking mode) for the layout and
   // `Xml.Locator#walk` for the navigation algorithm.
-  opaque type PositionIndex = IArray[Int]
+  // Represented as the stdlib's immutable array (pure by construction): the frozen
+  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
+  opaque type PositionIndex = scala.IArray[Int]
 
   object PositionIndex:
-    private[xylophone] def apply(data: IArray[Int]): PositionIndex = data
+    private[xylophone] def apply(data: Array[Int]^{}): PositionIndex = data.readable
 
   extension (positionIndex: PositionIndex)
-    private[xylophone] def ints: IArray[Int] = positionIndex
+    private[xylophone] def ints: Array[Int]^{} = Array.frozen(positionIndex)
 
   // Focus value tracked by Xylophone's path-aware decoders / encoders.
   // `path` is the XPath to the current node; `position` is the source
@@ -1921,7 +1923,7 @@ object Xml extends Tag.Container
     // into children) and subsequent steps descend.
     private[xylophone] def walk
       ( xml:      Xml,
-        data:     IArray[Int],
+        data:     Array[Int]^{},
         offset:   Int,
         segments: IndexedSeq[Text],
         i:        Int )
@@ -1963,7 +1965,7 @@ object Xml extends Tag.Container
 
     private def attrPosition
       ( element:  Element,
-        data:     IArray[Int],
+        data:     Array[Int]^{},
         offset:   Int,
         attrName: Text )
     :   Optional[Position] =
@@ -2105,9 +2107,9 @@ object Xml extends Tag.Container
     // Exact powers of ten for the Clinger double fast path: every entry is
     // exactly representable, so `mantissa.toDouble / TenPow(scale)` is
     // correctly rounded whenever the mantissa fits in 53 bits.
-    private[xylophone] val TenPow: IArray[Double] =
+    private[xylophone] val TenPow: Array[Double]^{} =
       scala.Array(1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15)
-      . asInstanceOf[IArray[Double]]
+      . asInstanceOf[Array[Double]^{}]
 
     // `true` and `false` packed LSB-first, for the boolean content fast path.
     private[xylophone] val TrueWord: Long =
@@ -2159,7 +2161,7 @@ object Xml extends Tag.Container
     // Parser-shared scratch buffer for attribute accumulation (lifetime of
     // the `XmlParser` instance). Stores key/value pairs interleaved as
     // `[k0, v0, k1, v1, ...]`. `readAttributes()` writes here and snapshots
-    // the populated prefix into a freshly-sized `IArray[String]` to wrap
+    // the populated prefix into a freshly-sized `Array[String]^{}` to wrap
     // as the opaque `Attributes`. Geometric growth.
     @scala.caps.unsafe.untrackedCaptures
     private var attrBuf: scala.Array[String] = new scala.Array[String](16)
@@ -2169,7 +2171,7 @@ object Xml extends Tag.Container
 
     // Pool of `ArrayBuffer[Node]` instances re-used across recursive
     // `readChildren` calls. Each nesting level borrows one, fills it, copies
-    // its contents into an `IArray[Node]`, and returns it. Pool grows on
+    // its contents into an `Array[Node]^{}`, and returns it. Pool grows on
     // demand to the deepest nesting depth seen. Avoids one
     // `ArrayBuffer[Node]` allocation per element (plus its backing array)
     // for repetitive record-shaped XML.
@@ -2268,7 +2270,7 @@ object Xml extends Tag.Container
     // tracking-mode parse. Reset on every parse entry. Read by the
     // `XmlParser.fromText/Iterator(Tracked)` callers.
     @scala.caps.unsafe.untrackedCaptures
-    protected[xylophone] var rootIndex: IArray[Int] | Null = null
+    protected[xylophone] var rootIndex: Array[Int]^{} | Null = null
 
     // Local-buffer offset up to which `cursor.line` / `cursor.column` have
     // been brought up to date. The hot-loop `syncTo()` bypasses the
@@ -2661,7 +2663,7 @@ object Xml extends Tag.Container
     protected def readAttributes(tag: Text)(using Tactic[ParseError]): Attributes =
       // Append into the parser-shared interleaved scratch buffer (laid out as
       // `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
-      // into a freshly-sized `IArray[String]` and wrap it as the opaque
+      // into a freshly-sized `Array[String]^{}` and wrap it as the opaque
       // `Attributes`.
       //
       // Duplicate detection uses a Bloom-filter-style cheap test before
@@ -2975,7 +2977,7 @@ object Xml extends Tag.Container
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peek))
         advance()
-        Element(t"\u0000", Attributes.empty, IArray.empty[Node])
+        Element(t"\u0000", Attributes.empty, Array.empty[Node])
       else
         val name = readName()
         val attrs = readAttributes(name)
@@ -2986,14 +2988,14 @@ object Xml extends Tag.Container
           if !more then fail(Issue.ExpectedMore)
           if peek != '>' then fail(Issue.Unexpected(peek))
           advance()
-          Element(name, attrs, IArray.empty[Node])
+          Element(name, attrs, Array.empty[Node])
         else
           if peek != '>' then fail(Issue.Unexpected(peek))
           advance()
           val children = readChildren(name)
           Element(name, attrs, children)
 
-    protected def readChildren(parentName: Text)(using Tactic[ParseError]): IArray[Node] =
+    protected def readChildren(parentName: Text)(using Tactic[ParseError]): Array[Node]^{} =
       val children = getNodeBuffer()
       var done = false
 
@@ -3042,7 +3044,7 @@ object Xml extends Tag.Container
           if text.length > 0 then children += TextNode(text)
 
       val result =
-        if children.nil then IArray.empty[Node]
+        if children.nil then Array.empty[Node]
         else
           val arr = new scala.Array[Node](children.length)
           var i = 0
@@ -3077,7 +3079,7 @@ object Xml extends Tag.Container
         finally heldToken = null
 
     // Tracked variants of `readElement` / `readAttributes` / `readChildren`,
-    // building a parallel `IArray[Int]` position index as they parse. The
+    // building a parallel `Array[Int]^{}` position index as they parse. The
     // structural logic mirrors the untracked variants byte-for-byte; only
     // the position bookkeeping differs. Splitting keeps the untracked
     // hot path free of any tracking-related branches.
@@ -3140,7 +3142,7 @@ object Xml extends Tag.Container
         else Fragment(nodes.toSeq*)
 
       relinquishNodeBuffer()
-      rootIndex = IArray.from(rootBuf)
+      rootIndex = Array.from(rootBuf)
       relinquishIndexBuffer()
       result
 
@@ -3176,7 +3178,7 @@ object Xml extends Tag.Container
         relinquishIndexBuffer()
         relinquishIndexBuffer()
         relinquishIndexBuffer()
-        Element(t" ", Attributes.empty, IArray.empty[Node])
+        Element(t" ", Attributes.empty, Array.empty[Node])
       else
         val attrDescs = getIndexBuffer()
         val attrEnds  = getIndexBuffer()
@@ -3193,7 +3195,7 @@ object Xml extends Tag.Container
             if !more then fail(Issue.ExpectedMore)
             if peek != '>' then fail(Issue.Unexpected(peek))
             advance()
-            Element(name, attrs, IArray.empty[Node])
+            Element(name, attrs, Array.empty[Node])
           else
             if peek != '>' then fail(Issue.Unexpected(peek))
             advance()
@@ -3306,7 +3308,7 @@ object Xml extends Tag.Container
         childDescs: scala.collection.mutable.ArrayBuffer[Int],
         childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
       ( using Tactic[ParseError] )
-    :   IArray[Node] =
+    :   Array[Node]^{} =
 
       val children = getNodeBuffer()
       var done = false
@@ -3366,7 +3368,7 @@ object Xml extends Tag.Container
           if text.length > 0 then children += TextNode(text)
 
       val result =
-        if children.nil then IArray.empty[Node]
+        if children.nil then Array.empty[Node]
         else
           val arr = new scala.Array[Node](children.length)
           var i = 0
@@ -3665,7 +3667,7 @@ object Xml extends Tag.Container
     // The current element's text content, consumed together with its close
     // tag: the text when the content is exactly one text run (or empty), or
     // `null` for any other shape — mirroring `textOf`, which accepts only
-    // `Element(_, _, IArray(TextNode(text)))` and `Element(_, _, IArray())`.
+    // `Element(_, _, Array.of(TextNode(text)))` and `Element(_, _, Array.of())`.
     // A CDATA section, a comment, a processing instruction or a child
     // element therefore makes a leaf wrong-shaped on both paths.
     private[xylophone] def directText()(using Tactic[ParseError]): Text | Null =
@@ -3923,7 +3925,7 @@ object Xml extends Tag.Container
       val children =
         if directEmpty then
           directEmpty = false
-          IArray.empty[Node]
+          Array.empty[Node]
         else
           readChildren(name)
 
@@ -3975,11 +3977,11 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   // `Prim`, so `xml.foo()` is the first match. Both are gated by an imported
   // `DynamicXmlEnabler` (see `dynamicXmlAccess.enabled`).
 
-  private def selfNodes: IArray[Node] = this match
-    case Fragment(nodes*) => IArray.from(nodes)
-    case node: Node       => IArray(node)
+  private def selfNodes: Array[Node]^{} = this match
+    case Fragment(nodes*) => Array.from(nodes)
+    case node: Node       => Array.of(node)
 
-  private def childElements(name: String): IArray[Node] =
+  private def childElements(name: String): Array[Node]^{} =
     val buffer = scm.ArrayBuffer[Node]()
     val nodes = selfNodes
     var i = 0
@@ -4001,7 +4003,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 
       i += 1
 
-    IArray.from(buffer)
+    Array.from(buffer)
 
   def selectDynamic(name: String)(using erased dynamicXmlEnabler: DynamicXmlEnabler): Fragment =
     new Fragment(childElements(name)*)
@@ -4009,7 +4011,7 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased dynamicXmlEnabler: DynamicXmlEnabler)
   :   Fragment =
 
-    childElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))
+    vacuous.at(childElements(name))(ordinal.n0).lay(new Fragment())(new Fragment(_))
 
 sealed trait Node extends Xml
 
@@ -4058,7 +4060,7 @@ case class TextNode(text: Text) extends Node:
 case class Element
   ( label:      Text,
     attributes: Attributes,
-    children:   IArray[Node] )
+    children:   Array[Node]^{} )
 extends Node, Topical, Transportive:
   override def toString(): String =
     s"<$label>${children.mkString}</$label>"
@@ -4068,13 +4070,13 @@ extends Node, Topical, Transportive:
 
     case Element(label, attributes, children) =>
       label == this.label && attributes.equalsAttributes(this.attributes) &&
-        ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
+        ju.Arrays.equals(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]], this.children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashAttributes ^ label.hashCode
+    ju.Arrays.hashCode(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
 
 
   def selectDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute on Topic in Form)

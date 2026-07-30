@@ -60,14 +60,14 @@ private[hallucination] object GifCodec:
 
       var position = 13
 
-      val global: IArray[Int] =
+      val global: Array[Int]^{} =
         if (packed&0x80) != 0 then
           val size = 2 << (packed&7)
           val table = readTable(data, position, size)
           position += size*3
           table
         else
-          IArray()
+          Array.of()
 
       var transparentIndex = -1
       val screen = new scala.Array[Long](width*height)
@@ -99,7 +99,7 @@ private[hallucination] object GifCodec:
             val framePacked = u8(data, position + 9)
             position += 10
 
-            val palette: IArray[Int] =
+            val palette: Array[Int]^{} =
               if (framePacked&0x80) != 0 then
                 val size = 2 << (framePacked&7)
                 val table = readTable(data, position, size)
@@ -179,8 +179,8 @@ private[hallucination] object GifCodec:
 
     catch case _: IndexOutOfBoundsException => abort(RasterError(Gif(), Reason.Truncated))
 
-  private def readTable(data: Data, position: Int, size: Int): IArray[Int] =
-    IArray.tabulate(size): index =>
+  private def readTable(data: Data, position: Int, size: Int): Array[Int]^{} =
+    Array.tabulate(size): index =>
       u8(data, position + index*3) << 16 |
         u8(data, position + index*3 + 1) << 8 |
         u8(data, position + index*3 + 2)

@@ -61,8 +61,8 @@ object Logger:
       name:        Optional[Text]      = Unset,
       categories:  Set[Log.Category]   = Set() )
     ( using inscribable: (loggingType is Inscribable in format)^,
-            writable:    (target is Writable by IArray[format])^,
-            addressable: IArray[format] is Addressable,
+            writable:    (target is Writable by (Array[format]^{}))^,
+            addressable: (Array[format]^{}) is Addressable,
             buffering:   Buffering,
             monitor:     Monitor,
             codepoint:   Codepoint,
@@ -93,8 +93,8 @@ object Logger:
   // stopped.
   private def establish[format, target]
     ( destination: target )
-    ( using writable:    (target is Writable by IArray[format])^,
-            addressable: IArray[format] is Addressable,
+    ( using writable:    (target is Writable by (Array[format]^{}))^,
+            addressable: (Array[format]^{}) is Addressable,
             buffering:   Buffering,
             monitor:   Monitor,
             codepoint: Codepoint,
@@ -105,8 +105,8 @@ object Logger:
 
     // The daemon body must stay capture-free (hygienic, see above); the writer's lifetime is
     // the global spool registry's, so it is laundered pure for use inside the daemon.
-    val writable0: target is Writable by IArray[format] = caps.unsafe.unsafeAssumePure(writable)
-    val addressable0: IArray[format] is Addressable = addressable
+    val writable0: target is Writable by (Array[format]^{}) = caps.unsafe.unsafeAssumePure(writable)
+    val addressable0: (Array[format]^{}) is Addressable = addressable
 
     Relay[format]().tap: spool =>
       daemon:

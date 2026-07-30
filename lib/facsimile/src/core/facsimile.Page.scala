@@ -137,9 +137,9 @@ class Page private[facsimile]
         List()
 
     streams.map(pdf.payload(_)) match
-      case List()       => IArray.empty[Byte]
+      case List()       => Array.empty[Byte]
       case List(single) => single
-      case many         => many.reduce(_ ++ IArray(0x0a.toByte) ++ _)
+      case many         => many.reduce(_ ++ Array.of(0x0a.toByte) ++ _)
 
   def operators(using Tactic[PdfError]): List[PdfOperator] =
     ContentTokens.read(content).map(PdfOperator.read(_))

@@ -620,7 +620,7 @@ object stagedInternal:
         case KDouble  => Expr(0.0)
         case KFloat   => Expr(0.0f)
         case KText    => '{ Text("") }
-        case KData    => '{ IArray.empty[Byte] }
+        case KData    => '{ Array.empty[Byte] }
 
       // One scalar field read, dispatching on the tag's wire code — the
       // parser handles the natural fast path and payload-window fallback.
@@ -1035,7 +1035,7 @@ object stagedInternal:
               case KDouble  => Expr(0.0)
               case KFloat   => Expr(0.0f)
               case KText    => '{ Text("") }
-              case KData    => '{ IArray.empty[Byte] }
+              case KData    => '{ Array.empty[Byte] }
 
             case Plan.Nested(instance) =>
               instance.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)

@@ -50,21 +50,24 @@ object Scaffold:
 case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[row, text]*):
   scaffold =>
 
-    val columns: IArray[Column[row, text]] = IArray.from(columns0)
+    val columns: Array[Column[row, text]]^{} = Array.from(columns0)
 
-    val titles: List[IArray[IArray[text]]] =
+    // The element types are explicit: inference re-freshens the nested frozen arrays to
+    // `any.rd`, which cannot flow back into the declared `^{}`.
+    val titles: List[Array[Array[text]^{}]^{}] =
       List:
-        IArray.from:
+        Array.from[Array[text]^{}]:
           scala.collection.immutable.ArraySeq.unsafeWrapArray(columns.mutable(using Unsafe))
-          . map { column => IArray.from(column.title.cut(t"\n").stdlib) }
+          . map { column => Array.from[text](column.title.cut(t"\n").stdlib) }
 
     def tabulate(data: List[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
 
-      val columns: IArray[Column[Row, text]] = scaffold.columns
-      val titles: List[IArray[IArray[text]]] = scaffold.titles
+      val columns: Array[Column[Row, text]]^{} = scaffold.columns
+      val titles: List[Array[Array[text]^{}]^{}] = scaffold.titles
       val dataLength: Int = data.stdlib.length
 
-      val rows: List[IArray[IArray[text]]] =
+      val rows: List[Array[Array[text]^{}]^{}] =
         data.map: row =>
-          columns.map: column => IArray.from(column.get(row).lines.stdlib)
+          columns.map[Array[text]^{}]: column =>
+            Array.from[text](column.get(row).lines.stdlib)

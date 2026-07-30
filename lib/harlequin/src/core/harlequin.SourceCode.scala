@@ -255,7 +255,7 @@ object SourceCode:
         token.copy(span = Span.line(index.z, column.z, token.length))
 
     SourceCode
-      ( language, 1, IArray(positioned.map(List.of(_))*), diagnostics = diagnostics,
+      ( language, 1, Array.of(positioned.map(List.of(_))*), diagnostics = diagnostics,
         completions = completions )
 
   // The accent (colour category) and role (binding vs usage) resolved for a token span
@@ -694,7 +694,7 @@ object SourceCode:
 case class SourceCode
   ( language:    ProgrammingLanguage,
     offset:      Int,
-    lines:       IArray[List[Token]],
+    lines:       Array[List[Token]]^{},
     focus:       Optional[Span] = Unset,
     diagnostics: List[Diagnostic] = Nil,
     completions: Optional[Completions] = Unset ):

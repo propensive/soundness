@@ -168,15 +168,15 @@ private[hallucination] object WebpHuffman:
 
       // Both tables are freshly built (or fresh pure-typed copies), so freezing is zero-copy.
       WebpHuffman
-        ( single = -1, (tableSize - 1), primaryTable.asInstanceOf[IArray[Int]],
-          secondaryTable.asInstanceOf[IArray[Int]] )
+        ( single = -1, (tableSize - 1), primaryTable.asInstanceOf[Array[Int]^{}],
+          secondaryTable.asInstanceOf[Array[Int]^{}] )
 
-  private val empty: IArray[Int] = new scala.Array[Int](0).asInstanceOf[IArray[Int]]
+  private val empty: Array[Int]^{} = new scala.Array[Int](0).asInstanceOf[Array[Int]^{}]
 
   def single(symbol: Int): WebpHuffman = WebpHuffman(symbol, 0, empty, empty)
 
   def twoNode(zero: Int, one: Int): WebpHuffman =
-    WebpHuffman(-1, 0x1, scala.Array((1 << 12) | zero, (1 << 12) | one).asInstanceOf[IArray[Int]], empty)
+    WebpHuffman(-1, 0x1, scala.Array((1 << 12) | zero, (1 << 12) | one).asInstanceOf[Array[Int]^{}], empty)
 
   private def numberOfTrailingZeros(value: Int): Int =
     java.lang.Integer.numberOfTrailingZeros(value)
@@ -197,8 +197,8 @@ private[hallucination] object WebpHuffman:
 // Immutable after construction: the factories above freeze the freshly-built tables.
 private[hallucination] final class WebpHuffman
   ( val single: Int, tableMask: Int,
-    primaryTable:   IArray[Int],
-    secondaryTable: IArray[Int] ):
+    primaryTable:   Array[Int]^{},
+    secondaryTable: Array[Int]^{} ):
 
   def isSingleNode: Boolean = single >= 0
 

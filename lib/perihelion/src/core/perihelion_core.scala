@@ -229,7 +229,7 @@ given wsClient: ( online:            Online,
       val nonce: Data =
         val bytes = Array[Byte](16)
         SecureRandom().nextBytes(bytes.raw)
-        IArray.freeze(bytes)
+        Array.freeze(bytes)
 
       val key: Text = nonce.serialize[Base64]
 

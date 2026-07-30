@@ -78,4 +78,4 @@ extends caps.ExclusiveCapability, caps.Stateful:
   def data: Bytes =
     val out = Array[Byte](size0)
     System.arraycopy(storage, 0, out.raw, 0, size0)
-    IArray.freeze(out)
+    Array.freeze(out)

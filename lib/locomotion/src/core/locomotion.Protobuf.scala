@@ -587,7 +587,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      Map.from(pairs.stdlib.toSeq)
+      Map.from(pairs.readable.toSeq)
 
   object DecodableDerivation extends Derivable[Decodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -633,7 +633,7 @@ object Protobuf extends Protobuf2:
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
-      Map.from(pairs.stdlib.toSeq)
+      Map.from(pairs.readable.toSeq)
 
 // A single Protocol Buffers wire value, tagged with its wire type — the `Form` of
 // `Encodable`/`Decodable in Protobuf`. `Repeated` carries every occurrence of a
@@ -657,7 +657,7 @@ enum Protobuf:
 
   def payload: Data = single match
     case Wire(_, bytes) => bytes
-    case _              => IArray.empty[Byte]
+    case _              => Array.empty[Byte]
 
   // The wire type of the (single) value, or `Len` for absent — used to tell a packed
   // scalar field (`Len`) from inline-encoded scalar values during repeated decoding.

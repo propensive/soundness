@@ -44,10 +44,10 @@ object Tests extends Suite(m"Phoenicia Tests"):
 
   // Big-endian byte assembly for hand-built font fixtures.
   def u16(values: Int*): Data =
-    IArray.from(values.flatMap { value => Seq((value >> 8).toByte, value.toByte) })
+    Array.from(values.flatMap { value => Seq((value >> 8).toByte, value.toByte) })
 
   def u32(values: Long*): Data =
-    IArray.from:
+    Array.from:
       values.flatMap: value =>
         Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
@@ -70,7 +70,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
       val padding = if table.length%4 == 0 then 0 else 4 - table.length%4
       val tagBytes = tag.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
       directory += tagBytes ++ u32(0L, offset.toLong, table.length.toLong)
-      body += table ++ IArray.fill[Byte](padding)(0)
+      body += table ++ Array.fill[Byte](padding)(0)
       offset += table.length + padding
 
     Ttf(header ++ directory.result().reduce(_ ++ _) ++ body.result().reduce(_ ++ _))

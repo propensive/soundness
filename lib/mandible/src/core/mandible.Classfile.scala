@@ -47,17 +47,23 @@ import turbulence.*
 import vacuous.*
 
 object Classfile:
-  given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data])
+  given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data].readable)
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
-    classloader(name).let(new Classfile(_))
+    // Cast to the pure stdlib view (same erasure): the frozen member of the `Optional`
+    // union freshens to an `any.rd` the enclosing object cannot admit.
+    classloader(name).asInstanceOf[Optional[scala.IArray[Byte]]].let(new Classfile(_))
 
   def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
     val cls = classtype.runtimeClass
     val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
-    classloader(name).let(new Classfile(_))
+    // Cast to the pure stdlib view (same erasure): the frozen member of the `Optional`
+    // union freshens to an `any.rd` the enclosing object cannot admit.
+    classloader(name).asInstanceOf[Optional[scala.IArray[Byte]]].let(new Classfile(_))
 
-class Classfile(data: Data):
+// `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
+// field would make `Classfile` itself a capability. Conversion happens in the companion.
+class Classfile(data: scala.IArray[Byte]):
   val sourceFile: Optional[Text] =
     model.attributes.nn.to[List].stdlib.collect:
       case attribute: jlca.SourceFileAttribute =>

@@ -49,7 +49,7 @@ import vacuous.*
 object internal:
   object Vector:
     def apply(tuple: Tuple): Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
-      new Vector(IArray.of(tuple.toIArray))
+      new Vector(Array.frozen(tuple.toIArray))
 
     def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
       val buffer = Array[Any](size)
@@ -66,7 +66,7 @@ object internal:
             rest = tail
             i += 1
 
-      new Vector[element, size.type](IArray.freeze(buffer))
+      new Vector[element, size.type](Array.freeze(buffer))
 
 
     given addable
@@ -85,12 +85,12 @@ object internal:
       def add(left: left, right: right): Vector[result, size] =
         val length = left.data.length
 
-        val arr = IArray.build[Any](length): array =>
+        val arr = Array.build[Any](length): array =>
           var i = 0
 
           while i < length do
             array(i) =
-              addable.add(left.data.stdlib(i).asInstanceOf[value], right.data.stdlib(i).asInstanceOf[value2])
+              addable.add(left.data.readable(i).asInstanceOf[value], right.data.readable(i).asInstanceOf[value2])
 
             i += 1
 
@@ -123,13 +123,13 @@ object internal:
       def subtract(left: left, right: right): Vector[result, size] =
         val length = left.data.length
 
-        val arr = IArray.build[Any](length): array =>
+        val arr = Array.build[Any](length): array =>
           var i = 0
 
           while i < length do
             array(i) =
               subtractable.subtract
-                ( left.data.stdlib(i).asInstanceOf[value], right.data.stdlib(i).asInstanceOf[value2] )
+                ( left.data.readable(i).asInstanceOf[value], right.data.readable(i).asInstanceOf[value2] )
 
             i += 1
 
@@ -164,7 +164,7 @@ object internal:
       val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
       val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
-      new Vector[addition.Result, 3](IArray[Any](first, second, third))
+      new Vector[addition.Result, 3](Array.of[Any](first, second, third))
 
 
   extension [left](left: Vector[left, 7])
@@ -207,16 +207,16 @@ object internal:
       val c5 = combine(a6*b1, a1*b6, a0*b4, a4*b0, a2*b3, a3*b2)
       val c6 = combine(a0*b2, a2*b0, a1*b5, a5*b1, a3*b4, a4*b3)
 
-      new Vector[addition.Result, 7](IArray[Any](c0, c1, c2, c3, c4, c5, c6))
+      new Vector[addition.Result, 7](Array.of[Any](c0, c1, c2, c3, c4, c5, c6))
 
 
   extension [size <: Int, left](left: Vector[left, size])
-    def element(index: Int): left = left.data.stdlib(index).asInstanceOf[left]
+    def element(index: Int): left = left.data.readable(index).asInstanceOf[left]
 
-    def apply(index: Int): left = left.data.stdlib(index).asInstanceOf[left]
+    def apply(index: Int): left = left.data.readable(index).asInstanceOf[left]
     def list: List[left] = left.data.toList.asInstanceOf[List[left]]
-    def iarray(using scala.reflect.ClassTag[left]): IArray[left] =
-      IArray.of(left.data.stdlib.map(_.asInstanceOf[left]))
+    def iarray(using scala.reflect.ClassTag[left]): Array[left]^{} =
+      Array.frozen(left.data.readable.map(_.asInstanceOf[left]))
     def size(using ValueOf[size]): Int = valueOf[size]
 
 
@@ -238,11 +238,11 @@ object internal:
     def map[left2](fn: left => left2): Vector[left2, size] =
       val length = left.data.length
 
-      val arr = IArray.build[Any](length): array =>
+      val arr = Array.build[Any](length): array =>
         var i = 0
 
         while i < length do
-          array(i) = fn(left.data.stdlib(i).asInstanceOf[left])
+          array(i) = fn(left.data.readable(i).asInstanceOf[left])
           i += 1
 
       new Vector[left2, size](arr)
@@ -258,11 +258,11 @@ object internal:
       val magnitude: left = left.norm
       val length = left.data.length
 
-      val arr = IArray.build[Any](length): array =>
+      val arr = Array.build[Any](length): array =>
         var i = 0
 
         while i < length do
-          array(i) = left.data.stdlib(i).asInstanceOf[left]/magnitude
+          array(i) = left.data.readable(i).asInstanceOf[left]/magnitude
           i += 1
 
       new Vector[Double, size](arr)
@@ -282,19 +282,19 @@ object internal:
       val start = size.value - 1
       recur(start - 1, left.element(start)*right.element(start))
 
-  class Vector[value, size <: Int](val data: IArray[Any]):
+  class Vector[value, size <: Int](val data: Array[Any]^{}):
     override def equals(right: Any): Boolean = right.asMatchable match
       case that: Vector[?, ?] => data.sameElements(that.data)
       case _                  => false
 
     override def hashCode: Int =
       // Inlined `MurmurHash3.arrayHash`: `arrayHash` demands a pure `Array`, which the
-      // capture-checked `IArray` view cannot supply without an unsafe cast.
+      // capture-checked frozen form cannot supply without an unsafe cast.
       var hash = scala.util.hashing.MurmurHash3.arraySeed
       var index = 0
 
       while index < data.length do
-        hash = scala.util.hashing.MurmurHash3.mix(hash, data.stdlib(index).##)
+        hash = scala.util.hashing.MurmurHash3.mix(hash, data.readable(index).##)
         index += 1
 
       scala.util.hashing.MurmurHash3.finalizeHash(hash, data.length)

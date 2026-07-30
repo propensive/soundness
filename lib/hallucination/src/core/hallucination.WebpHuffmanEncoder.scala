@@ -39,9 +39,9 @@ import scala.collection.mutable as scm
 // are filled in for each symbol; the tree is written in the format the decoder expects.
 private[hallucination] object WebpHuffmanEncoder:
   // The order in which the 19 code-length codes are written.
-  private val CodeLengthCodeOrder: IArray[Int] =
+  private val CodeLengthCodeOrder: Array[Int]^{} =
     scala.Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-    . asInstanceOf[IArray[Int]]
+    . asInstanceOf[Array[Int]^{}]
 
   def writeSingleEntry(writer: WebpBitWriter^, symbol: Int): Unit =
     writer.writeBits(1, 2)

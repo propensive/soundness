@@ -79,7 +79,7 @@ class TeletypeBuilder(size: Optional[Int] = Unset) extends Builder[Teletype]:
     styles += 0L
 
     val plainText = builder.toString.tt
-    val denseStyles = IArray.unsafeFromArray(styles.toArray)
+    val denseStyles = Array.unsafeFrozen(styles.toArray)
     val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
 
     Teletype

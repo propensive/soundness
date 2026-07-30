@@ -60,14 +60,14 @@ object Blake3:
   private final val DeriveKeyContext  = 32
   private final val DeriveKeyMaterial = 64
 
-  private final val Iv: IArray[Int] =
+  private final val Iv: Array[Int]^{} =
     scala.Array      ( 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
         0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 )
 
-    . asInstanceOf[IArray[Int]]
+    . asInstanceOf[Array[Int]^{}]
 
-  private final val MsgPermutation: IArray[Int] =
-    scala.Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[IArray[Int]]
+  private final val MsgPermutation: Array[Int]^{} =
+    scala.Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[Array[Int]^{}]
 
   private def mix(state: scala.Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
     state(a) = state(a) + state(b) + mx
@@ -164,7 +164,7 @@ object Blake3:
       System.arraycopy(out, 0, cv, 0, 8)
       cv
 
-    def rootOutputBytes(outLen: Int): IArray[Byte] =
+    def rootOutputBytes(outLen: Int): Array[Byte]^{} =
       val result = Array[Byte](outLen)
       var blockCounter = 0L
       var pos = 0
@@ -183,7 +183,7 @@ object Blake3:
         pos += take
         blockCounter += 1
 
-      IArray.freeze(result)
+      Array.freeze(result)
 
   private def parentOutput
     ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
@@ -273,7 +273,7 @@ object Blake3:
 
       pushStack(cv)
 
-    update def update(data: IArray[Byte]): Unit =
+    update def update(data: Array[Byte]^{}): Unit =
       update(data.mutable(using Unsafe), 0, data.length)
 
     update def update(input: scala.Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
@@ -293,7 +293,7 @@ object Blake3:
         chunkState.update(input, pos, pos + take)
         pos += take
 
-    update def complete(outLen: Int): IArray[Byte] =
+    update def complete(outLen: Int): Array[Byte]^{} =
       var current = chunkState.output()
       var i = cvStackLen
 
@@ -316,12 +316,12 @@ object Blake3:
 
     update def digest(): Data = hasher.complete(OutLen)
 
-  def hashOf(input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
+  def hashOf(input: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
     val hasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), 0)
     hasher.update(input)
     hasher.complete(length)
 
-  def keyedHash(key: IArray[Byte], input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
+  def keyedHash(key: Array[Byte]^{}, input: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
     if key.length != KeyLen
     then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
 
@@ -333,7 +333,7 @@ object Blake3:
     hasher.update(input)
     hasher.complete(length)
 
-  def deriveKey(context: Text, material: IArray[Byte], length: Int = OutLen): IArray[Byte] =
+  def deriveKey(context: Text, material: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
     val ctxBytes: scala.Array[Byte] = context.s.getBytes(StandardCharsets.UTF_8).nn
     val ctxHasher: Hasher^ = Hasher(Iv.mutable(using Unsafe), DeriveKeyContext)
     ctxHasher.update(ctxBytes.immutable(using Unsafe))

@@ -52,7 +52,7 @@ import zephyrine.*
 // only when unambiguously a string, else double-quoted; mappings/sequences are 2-space-indented
 // block collections, empty ones the flow forms `{}` / `[]`. `Yaml.Ast` node shapes: scalars are
 // boxed JVM values; a high-precision number is a `jacinta.Bcd` (`Array[Double]`); a mapping is an
-// even-length `IArray[Any]` of alternating key/value; a sequence is an odd-length `IArray[Any]`
+// even-length `Array[Any]^{}` of alternating key/value; a sequence is an odd-length `Array[Any]^{}`
 // (trailing `arrayPad` sentinel when the item count is even). Mirrors jacinta's `Json.Ast`
 // `Showable`. Bring a `Yaml.Formatting` into scope to enable `.show` and HTTP encoding.
 given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml =>
@@ -143,14 +143,14 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
       case b: Boolean => producer.put(if b then "true" else "false")
       case s: String  => writeString(s)
 
-      case xs: IArray[Any] @unchecked =>
+      case xs: (Array[Any]^{}) @unchecked =>
         if (xs.length & 1) == 0 then producer.put("{}") else producer.put("[]")
 
       case _ => producer.put("null")
 
     // Scalars and empty collections render on one line; non-empty collections span multiple lines.
     def inlineable(ast: Yaml.Ast): Boolean = ast.asMatchable match
-      case xs: IArray[Any] @unchecked =>
+      case xs: (Array[Any]^{}) @unchecked =>
         if (xs.length & 1) == 0 then xs.length == 0 else Yaml.Ast.sequenceLength(xs) == 0
 
       case _ => true
@@ -167,7 +167,7 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
         block(ast, level + 2)
 
     def block(ast: Yaml.Ast, level: Int): Unit = ast.asMatchable match
-      case xs: IArray[Any] @unchecked =>
+      case xs: (Array[Any]^{}) @unchecked =>
         if (xs.length & 1) == 0 then
           val n = xs.length/2
           var i = 0

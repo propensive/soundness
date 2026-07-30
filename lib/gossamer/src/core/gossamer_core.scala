@@ -85,11 +85,11 @@ inline def appendln[textual: Textual, value](using builder: Builder[textual] aka
 
 inline def builder[value](using value: value aka "builder"): value = value()
 
-extension (module: IArray.type)
-  def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): IArray[element] =
+extension (module: Array.type)
+  def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): Array[element]^{} =
     val array = Array[element](size)
     lambda(array.raw)
-    IArray.freeze(array)
+    Array.freeze(array)
 
 extension (module: Text.type)
   def build(block: TextBuilder aka "builder" ?=> Unit): Text =
@@ -218,7 +218,7 @@ extension [textual: Textual](text: textual)
   inline def tail: textual = text.skip(1, Ltr)
   inline def init: textual = text.skip(1, Rtl)
 
-  def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
+  def chars: Array[Char]^{} = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
   def snip(n: Int): (textual, textual) =
     (text.segment(Prim till n.z), text.segment(n.z till text.limit))
@@ -539,7 +539,7 @@ extension (text: Text)
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
-  inline def sysData: IArray[Byte] = CharEncoder.system.encode(text)
+  inline def sysData: Array[Byte]^{} = CharEncoder.system.encode(text)
 
   inline def fuzzy[result]
     ( inline threshold: Double = Double.PositiveInfinity )
@@ -557,7 +557,7 @@ extension (text: Text)
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
     proximity.distance(text, other)
 
-extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
+extension (iarray: Array[Char]^{}) def text: Text = String(iarray.mutable(using Unsafe)).tt
 
 extension [textual: {Joinable, Textual}](values: Iterable[textual])
   def join: textual = textual.join(values)

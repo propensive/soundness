@@ -95,16 +95,16 @@ extension (cbor: Cbor.Ast)
   inline def entries: Int = Cbor.Ast.size(cbor)
 
   @unexported
-  def element(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]].stdlib(index)
+  def element(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index)
 
   @unexported
-  inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]].stdlib(index*2)
+  inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2)
   @unexported
-  inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]].stdlib(index*2 + 1)
+  inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2 + 1)
 
   @unexported
   def index(key: String): Int =
-    val array = cbor.asInstanceOf[IArray[Any]]
+    val array = cbor.asInstanceOf[Array[Any]^{}]
     val count = array.length
     var index = 0
 
@@ -130,9 +130,9 @@ extension (cbor: Cbor.Ast)
     if isTextString then cbor.asInstanceOf[String] else expected(Primitive.TextString) yet ""
 
   @unexported
-  def byteString: IArray[Byte] raises CborError =
-    if isByteString then cbor.asInstanceOf[IArray[Byte]]
-    else expected(Primitive.ByteString) yet IArray.empty[Byte]
+  def byteString: Array[Byte]^{} raises CborError =
+    if isByteString then cbor.asInstanceOf[Array[Byte]^{}]
+    else expected(Primitive.ByteString) yet Array.empty[Byte]
 
   @unexported
   def boolean: Boolean raises CborError =
@@ -144,12 +144,12 @@ extension (cbor: Cbor.Ast)
     else expected(Primitive.Tag) yet Cbor.Tag(0L, vacuous.Unset)
 
   @unexported
-  def array: IArray[Cbor.Ast] raises CborError =
+  def array: Array[Cbor.Ast]^{} raises CborError =
     if isArray then
-      val full = cbor.asInstanceOf[IArray[Cbor.Ast]]
+      val full = cbor.asInstanceOf[Array[Cbor.Ast]^{}]
       val count = elements
 
-      if count == full.length then full else IArray.tabulate(count)(full.stdlib(_))
+      if count == full.length then full else Array.tabulate(count)(full.readable(_))
     else
       expected(Primitive.Array)
-      IArray.empty[Cbor.Ast]
+      Array.empty[Cbor.Ast]

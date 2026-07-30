@@ -410,7 +410,7 @@ object internal:
       inline def applyTransform(mask: Long, bits: Long): StyleWord = (style & ~mask) | bits
 
 
-case class Teletype2(plain: Text, ansi: IArray[escapade.internal.AnsiStyle]):
+case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
   import escapade.internal.AnsiStyle
 
   @targetName("concat")

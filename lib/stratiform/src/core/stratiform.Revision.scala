@@ -47,7 +47,7 @@ import proscenium.compat.*
 
 object Revision:
 
-  val noop: Revision = new Revision(IArray.empty)
+  val noop: Revision = new Revision(Array.empty)
 
   // Begin a new edit anchored at `pointer`. The returned cursor exposes
   // the per-operation builders; each call produces a fresh `Revision` value
@@ -58,8 +58,10 @@ object Revision:
   // atom texts. Convenience for assembling Insert / Replace payloads
   // without explicit `Tel.Compound(...)` boilerplate.
   def compound(keyword: Text, atomTexts: Text*): Tel.Compound =
-    val atoms = IArray.from(atomTexts.map(Tel.Atom.Inline(_, 1)))
-    Tel.Compound(keyword, atoms, Unset, IArray.empty)
+    // Explicit element types: the frozen `Array` is invariant, so the atoms must be
+    // built at `Tel.Atom` rather than upcast from `Tel.Atom.Inline`.
+    val atoms = Array.from[Tel.Atom](atomTexts.map(Tel.Atom.Inline(_, 1)))
+    Tel.Compound(keyword, atoms, Unset, Array.empty[Tel.Block])
 
   // A cursor binds a pointer to the upcoming operation. Each operation
   // method returns a `Revision` (singleton op-log) that can be `++`-chained
@@ -118,10 +120,10 @@ object Revision:
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
     Mutation.construct(keyword, atoms*)
 
-  private def single(op: Mutation.Op): Revision = new Revision(IArray(op))
+  private def single(op: Mutation.Op): Revision = new Revision(Array.of(op))
 
 
-case class Revision private[stratiform] (ops: IArray[Mutation.Op]):
+case class Revision private[stratiform] (ops: Array[Mutation.Op]^{}):
   def ++ (next: Revision): Revision = new Revision(ops ++ next.ops)
 
   def apply(tel: Tel): Tel raises MutationError = Mutation(tel, ops.toList)

@@ -117,13 +117,13 @@ object Writable:
   given chunked: [medium, writable]
   =>  (writable0: (writable is Writable by medium)^, addressable: medium is Addressable,
       buffering: Buffering)
-  =>  ((writable is Writable by IArray[medium])^{writable0}) =
+  =>  ((writable is Writable by (Array[medium]^{}))^{writable0}) =
 
     (target, stream) =>
       writable0.write
         ( target,
           Stream
-            (stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[IArray[medium]] over Credit)^]
+            (stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[medium]^{}] over Credit)^]
               . records) )
 
   given channel: (streamCut: Emit[StreamError], buffering: Buffering)

@@ -259,7 +259,7 @@ trait Tel2 extends Tel3:
       Tel.Decodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to[List]
+          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
@@ -293,7 +293,7 @@ trait Tel2 extends Tel3:
                         Tel.make
                           ( Tel.Document
                             ( Unset, Unset, Tel.LineEndings.Lf,
-                             IArray(Tel.Block(IArray.empty, Unset, compounds, 0)) ) )
+                             Array.of(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
                     else
                       val match0 = telVal.field(keyword)
 
@@ -334,7 +334,7 @@ trait Tel2 extends Tel3:
       Tel.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to[List]
+          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
@@ -362,7 +362,7 @@ trait Tel2 extends Tel3:
                     child.compounds.each: compound =>
                       compounds += compound.copy(keyword = keyword)
 
-          Tel.compound(t"", IArray.empty, IArray.from(compounds))
+          Tel.compound(t"", Array.empty, Array.from(compounds))
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Encodable =
       // A sum encodes as a document whose single child compound is the chosen variant,
@@ -380,7 +380,7 @@ trait Tel2 extends Tel3:
 
               contextual.encode(v).subtree match
                 case compound: Tel.Compound =>
-                  Tel.compound(t"", IArray.empty, IArray(compound.copy(keyword = keyword)))
+                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
 
                 case other =>
                   Tel.make(other)
@@ -588,13 +588,13 @@ trait Tel2 extends Tel3:
   given mapEncodable: [key: Tel.Encodable, value: Tel.Encodable]
   =>  Map[key, value] is Tel.Encodable =
     Tel.Encodable(() => Morphology.Dict(key.shape(), value.shape())): map =>
-      val entries = IArray.from:
+      val entries = Array.from:
         map.stdlib.map: (k, v) =>
           val keyChild   = reKey(key.encoded(k), t"key")
           val valueChild = reKey(value.encoded(v), t"value")
-          reKey(Tel.compound(t"", IArray.empty, IArray(keyChild, valueChild)), t"entries")
+          reKey(Tel.compound(t"", Array.empty, Array.of(keyChild, valueChild)), t"entries")
 
-      Tel.compound(t"", IArray.empty, entries)
+      Tel.compound(t"", Array.empty, entries)
 
   given mapDecodable: [key: Tel.Decodable, value: Tel.Decodable] => Tactic[TelError]
   =>  Map[key, value] is Tel.Decodable =
@@ -611,19 +611,19 @@ trait Tel2 extends Tel3:
   // Helpers used by encoders to construct Tel values.
 
   def scalar(text: Text): Tel =
-    Tel.make(Tel.Compound(t"", IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty))
+    Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
   def compound
-    ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
+    ( keyword: Text, atoms: Array[Tel.Atom]^{}, compounds: Array[Tel.Compound]^{} )
   :   Tel =
 
     val children =
-      if compounds.nil then IArray.empty[Tel.Block]
-      else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
+      if compounds.nil then Array.empty[Tel.Block]
+      else Array.of(Tel.Block(Array.empty, Unset, compounds, 0))
 
     Tel.make(Tel.Compound(keyword, atoms, Unset, children))
 
-  def empty: Tel = Tel.make(Tel.Compound(t"", IArray.empty, Unset, IArray.empty))
+  def empty: Tel = Tel.make(Tel.Compound(t"", Array.empty, Unset, Array.empty))
 
 // `value.encode` (provided by the Encodable typeclass extension defined in
 // anticipation) is the idiomatic call site producing a Tel from any

@@ -181,12 +181,14 @@ object internal:
 
         val attributesChecked = attributes(Attributes.toList(pattern.attributes).map(_(0)))('{true})
 
-        val children = '{$scrutinee.children}
-
+        // The children access is quoted in one piece: splicing a `val children` Expr gives
+        // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
+        // read shim's `any.rd` receiver.
         def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
           if index == pattern.children.length then expr else
             val expr2 =
-              descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
+              descend
+                (array, pattern.children(index), '{$scrutinee.children(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 
@@ -629,7 +631,7 @@ object internal:
             val serialized = scala.collection.immutable.ArraySeq
             . unsafeWrapArray(children.asInstanceOf[scala.Array[Node]]).flatMap(serialize(_)).toList
 
-            '{IArray.of(scala.IArray(${Expr.ofList(serialized)}*))}
+            '{Array.frozen(scala.IArray(${Expr.ofList(serialized)}*))}
 
           List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
 
@@ -773,10 +775,14 @@ object internal:
 
     '{$tag.node(Attributes.from(Map.from(${Expr.ofList(attributes)}.compact)))}.asExprOf[result]
 
-  opaque type Attributes = IArray[String]
+  // Represented as the stdlib's immutable array, not the frozen `Array[String]^{}`:
+  // dealiasing the mutable-classified opaque gives `Attributes`-typed fields a fresh
+  // `any.rd` capability that leaks into every enclosing type. The stdlib `IArray` is pure
+  // by construction; conversions happen at the construction/`storage` edges.
+  opaque type Attributes = scala.IArray[String]
 
   object Attributes:
-    val empty: Attributes = IArray.empty[String]
+    val empty: Attributes = scala.IArray.empty[String]
 
     // `Attributes` is a `Text`-keyed map, so it indexes through the shared `at` (giving
     // `Optional`).
@@ -798,7 +804,7 @@ object internal:
           buffer(i*2 + 1) = pair._2.s
           i += 1
 
-        IArray.freeze(buffer)
+        Array.freeze(buffer).readable
 
     def from(map: Map[Text, Text]): Attributes =
       val entries = map.stdlib
@@ -812,13 +818,14 @@ object internal:
           buffer(i*2 + 1) = v.s
           i += 1
 
-        IArray.freeze(buffer)
+        Array.freeze(buffer).readable
 
-    // Construct an `Attributes` directly from an interleaved `IArray`. The
+    // Construct an `Attributes` directly from an interleaved frozen array. The
     // caller guarantees the array's length is even and that every key slot
     // (even index) holds a non-null `String`. Used by the parser, which
     // assembles the interleaved array as it tokenizes attributes.
-    private[xylophone] inline def fromInterleaved(array: IArray[String]): Attributes = array
+    private[xylophone] inline def fromInterleaved(array: Array[String]^{}): Attributes =
+      array.readable
 
     // Unwrap to the raw `Array[String]` for hot-path internal access. Safe
     // within the package: the storage is shared but never mutated outside
@@ -827,7 +834,7 @@ object internal:
       attrs.asInstanceOf[scala.Array[String]]
 
     // The throwing lookup as a plain method: inside this file the opaque is transparent, so
-    // the `IArray` migration shims intercept the extension forms; internal call sites (and
+    // the stdlib `IArray` extensions intercept the extension forms; internal call sites (and
     // the quotes compiled here) go through this instead.
     private[xylophone] def pick(attrs: Attributes, key: Text): Text =
       val a = storage(attrs)
@@ -842,10 +849,12 @@ object internal:
       throw new NoSuchElementException(s"key not found: $key")
 
     extension (attrs: Attributes)
-      inline def size: Int = attrs.length/2
-      inline def isEmpty: Boolean = attrs.length == 0
-      inline def nonEmpty: Boolean = attrs.length > 0
-      inline def nil: Boolean = attrs.length == 0
+      // Not `inline`: expansion outside this file re-typechecks the body where the opaque
+      // is abstract, so the array operations no longer resolve.
+      def size: Int = storage(attrs).length/2
+      def isEmpty: Boolean = storage(attrs).length == 0
+      def nonEmpty: Boolean = storage(attrs).length > 0
+      def nil: Boolean = storage(attrs).length == 0
 
       def apply(key: Text): Text =
         val a = storage(attrs)
@@ -860,7 +869,7 @@ object internal:
         throw new NoSuchElementException(s"key not found: $key")
 
       // `at` without the `Indexable` detour, whose resolution is ambiguous
-      // against the `IArray` instance under the opaque bound — used by
+      // against the array instance under the opaque bound — used by
       // staged parsers' generated `@attribute` steps.
       def fetch(key: Text): Optional[Text] =
         val a = storage(attrs)
@@ -888,7 +897,7 @@ object internal:
 
       def keys: Iterator[Text] =
         // The immutable view keeps the iterator pure (the raw array read is read-only).
-        val a = storage(attrs).asInstanceOf[IArray[AnyRef | Null]]
+        val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
           @scala.caps.unsafe.untrackedCaptures
@@ -896,12 +905,12 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val k = a.stdlib(i).asInstanceOf[Text]
+            val k = a.readable(i).asInstanceOf[Text]
             i += 2
             k
 
       def values: Iterator[Text] =
-        val a = storage(attrs).asInstanceOf[IArray[AnyRef | Null]]
+        val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
           @scala.caps.unsafe.untrackedCaptures
@@ -909,12 +918,12 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val v = a.stdlib(i).asInstanceOf[Text]
+            val v = a.readable(i).asInstanceOf[Text]
             i += 2
             v
 
       def iterator: Iterator[(Text, Text)] =
-        val a = storage(attrs).asInstanceOf[IArray[AnyRef | Null]]
+        val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[(Text, Text)]:
           @scala.caps.unsafe.untrackedCaptures
@@ -922,7 +931,7 @@ object internal:
           def hasNext: Boolean = i < a.length
 
           def next(): (Text, Text) =
-            val pair = (a.stdlib(i).asInstanceOf[Text], a.stdlib(i + 1).asInstanceOf[Text])
+            val pair = (a.readable(i).asInstanceOf[Text], a.readable(i + 1).asInstanceOf[Text])
             i += 2
             pair
 
@@ -986,9 +995,9 @@ object internal:
 
         if idx < 0 then attrs else
           val nu = Array[String](n - 2)
-          if idx > 0 then nu.copyFrom(attrs, 0, 0, idx)
-          if idx < n - 2 then nu.copyFrom(attrs, idx + 2, idx, n - 2 - idx)
-          IArray.freeze(nu)
+          if idx > 0 then nu.copyFrom(Array.frozen(attrs), 0, 0, idx)
+          if idx < n - 2 then nu.copyFrom(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
+          Array.freeze(nu).readable
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -1011,15 +1020,15 @@ object internal:
 
         if idx >= 0 then
           val nu = Array[String](n)
-          nu.copyFrom(attrs, 0, 0, n)
+          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(idx + 1) = value.s
-          IArray.freeze(nu)
+          Array.freeze(nu).readable
         else
           val nu = Array[String](n + 2)
-          nu.copyFrom(attrs, 0, 0, n)
+          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.s
-          IArray.freeze(nu)
+          Array.freeze(nu).readable
 
       def `++`(other: Attributes): Attributes =
         val a = storage(attrs)
@@ -1065,12 +1074,12 @@ object internal:
 
             j += 2
 
-          val frozen = IArray.freeze(nu)
+          val frozen = Array.freeze(nu)
 
-          if written == total then frozen else
+          if written == total then frozen.readable else
             val tu = Array[String](written)
             tu.copyFrom(frozen, 0, 0, written)
-            IArray.freeze(tu)
+            Array.freeze(tu).readable
 
       def `++`(other: Map[Text, Text]): Attributes =
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
@@ -1258,11 +1267,11 @@ object internal:
 
     def body
       ( reader:      Expr[XmlReader],
-        keys:        Expr[IArray[String]],
-        attrs:       Expr[IArray[Boolean]],
-        instances:   Expr[IArray[Xml.Field | Null]],
-        repeatables: Expr[IArray[Boolean]],
-        fallbacks:   Expr[IArray[Any]] )
+        keys:        Expr[Array[String]^{}],
+        attrs:       Expr[Array[Boolean]^{}],
+        instances:   Expr[Array[Xml.Field | Null]^{}],
+        repeatables: Expr[Array[Boolean]^{}],
+        fallbacks:   Expr[Array[Any]^{}] )
     :   Expr[value] =
 
       val owner = Symbol.spliceOwner
@@ -1588,10 +1597,10 @@ object internal:
     // sub-field takes its declared default or raises at its own focus,
     // mirroring the derived engine's `absentBuild`.
     def absentBody(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
-      ( keys:        Expr[IArray[String]],
-        instances:   Expr[IArray[Xml.Field | Null]],
-        repeatables: Expr[IArray[Boolean]],
-        fallbacks:   Expr[IArray[Any]] )
+      ( keys:        Expr[Array[String]^{}],
+        instances:   Expr[Array[Xml.Field | Null]^{}],
+        repeatables: Expr[Array[Boolean]^{}],
+        fallbacks:   Expr[Array[Any]^{}] )
     :   Expr[value] =
 
       val arguments: List[Term] = List.range(0, arity).map: index =>
@@ -1665,17 +1674,17 @@ object internal:
       // arrays are single lazy vals, so recursive self-references stay
       // deferred until the first parse.
       caps.unsafe.unsafeAssumePure:
-        val keys: IArray[String] =
-          Xml.Parsable.wireNames(IArray[String](${Varargs(nameExprs)}*), $renames)
+        val keys: Array[String]^{} =
+          Xml.Parsable.wireNames(Array.of[String](${Varargs(nameExprs)}*), $renames)
 
-        val attrs: IArray[Boolean] = IArray[Boolean](${Varargs(attrExprs)}*)
+        val attrs: Array[Boolean]^{} = Array.of[Boolean](${Varargs(attrExprs)}*)
 
-        lazy val instances: IArray[Xml.Field | Null] = IArray(${Varargs(instanceExprs)}*)
+        lazy val instances: Array[Xml.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
 
-        lazy val repeatables: IArray[Boolean] =
+        lazy val repeatables: Array[Boolean]^{} =
           instances.map { instance => instance != null && Xml.Parsable.repeats(instance) }
 
-        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs(fallbackExprs)}*)
+        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
         val fallback: Optional[() => value] = $defaultExpr
 
         new Xml.Parsable:

@@ -266,7 +266,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     (stream, PseudoHeaders.response(responseHeaders, Progression.from(stream.body.stream.records)))
 
   def close(): Unit =
-    send(Frame.GoAway(0, ErrorCode.NoError.code, IArray.empty[Byte]))
+    send(Frame.GoAway(0, ErrorCode.NoError.code, Array.empty[Byte]))
     outbound.stop()
     reader.cancel()
     writer.cancel()

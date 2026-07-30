@@ -52,6 +52,6 @@ trait Digestion extends caps.Mutable:
   update def append(array: scala.Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
     val copy = Array[Byte](count)
     System.arraycopy(array, start, copy.raw, 0, count)
-    append(IArray.freeze(copy))
+    append(Array.freeze(copy))
 
   update def digest(): Data

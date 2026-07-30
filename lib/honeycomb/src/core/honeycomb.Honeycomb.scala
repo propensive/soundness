@@ -144,12 +144,14 @@ object Honeycomb:
 
         val attributesChecked = attributes(pattern.attributes.toList.map(_(0)))('{true})
 
-        val children = '{$scrutinee.children}
-
+        // The children access is quoted in one piece: splicing a `val children` Expr gives
+        // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
+        // read shim's `any.rd` receiver.
         def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
           if index == pattern.children.length then expr else
             val expr2 =
-              descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
+              descend
+                (array, pattern.children(index), '{$scrutinee.children(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 
@@ -392,7 +394,7 @@ object Honeycomb:
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
           val elements =
-            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].stdlib.toList)}*)}
+            '{Array.of(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Node]]^{}].readable.toList)}*)}
 
           List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 

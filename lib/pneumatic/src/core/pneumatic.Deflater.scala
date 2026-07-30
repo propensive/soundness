@@ -93,24 +93,24 @@ private[pneumatic] object Deflater:
 
   // Per-level parameters: reduce lazy search above goodLength; do not perform lazy search above
   // maxLazy; quit search above niceLength; never search chains longer than maxChain.
-  val configGoodLength: IArray[Int] =
-    IArray.unsafeFromArray:
+  val configGoodLength: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(0, 4, 4, 4, 4, 8, 8, 8, 32, 32)
 
-  val configMaxLazy: IArray[Int] =
-    IArray.unsafeFromArray:
+  val configMaxLazy: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(0, 4, 5, 6, 4, 16, 16, 32, 128, 258)
 
-  val configNiceLength: IArray[Int] =
-    IArray.unsafeFromArray:
+  val configNiceLength: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(0, 8, 16, 32, 16, 32, 128, 128, 258, 258)
 
-  val configMaxChain: IArray[Int] =
-    IArray.unsafeFromArray:
+  val configMaxChain: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(0, 4, 8, 32, 16, 32, 128, 256, 1024, 4096)
 
-  val configFunc: IArray[Int] =
-    IArray.unsafeFromArray:
+  val configFunc: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(StoredFunc, FastFunc, FastFunc, FastFunc, SlowFunc, SlowFunc, SlowFunc, SlowFunc,
           SlowFunc, SlowFunc)
 
@@ -143,7 +143,7 @@ private[pneumatic] object TreeConfig:
 // The static configuration of one of the three Huffman trees: its static counterpart (empty for
 // the bit-length tree), extra-bit tables and size limits (JZlib's `StaticTree`).
 private[pneumatic] final class TreeConfig
-  ( val staticTree: IArray[Short], val extraBits: IArray[Int], val extraBase: Int, val elems: Int,
+  ( val staticTree: Array[Short]^{}, val extraBits: Array[Int]^{}, val extraBase: Int, val elems: Int,
     val maxLength: Int )
 
 // A streaming deflater with the same call pattern as `java.util.zip.Deflater`: feed input with

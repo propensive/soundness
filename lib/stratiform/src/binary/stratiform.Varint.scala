@@ -65,7 +65,7 @@ object Varint:
     buf(i) = n.toByte
     val out = new scala.Array[Byte](i + 1)
     System.arraycopy(buf, 0, out, 0, i + 1)
-    out.asInstanceOf[IArray[Byte]]
+    out.asInstanceOf[Array[Byte]^{}]
 
   // Decode a varint from `data` starting at `offset`. Returns the decoded
   // value and the next read position. Raises `Base256Error.Reason` is not

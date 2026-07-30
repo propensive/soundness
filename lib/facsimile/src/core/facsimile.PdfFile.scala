@@ -220,9 +220,13 @@ class PdfFile private (origin: PdfFile.Origin):
                 val source = ExpanseSource(ram.expanse, ram.size)
                 val (outcome, increment) = read[grants, result](source, password, true)(block)
 
-                increment.let: bytes =>
-                  ram.grow(source.size + bytes.length)
-                  ram(source.size) = bytes
+                // A `match`, not `.let`: the frozen member of the `Optional` union freshens
+                // under `let`'s type-variable instantiation.
+                increment.asInstanceOf[Matchable] match
+                  case bytes: (Array[Byte]^{}) @unchecked =>
+                    ram.grow(source.size + bytes.length)
+                    ram(source.size) = bytes
+                  case _ => ()
 
                 outcome
             else

@@ -61,7 +61,7 @@ import zephyrine.*
 //
 // `Tel` itself is a thin wrapper around a `Subtree` (either the document
 // root or a single compound). Both Subtree variants share a `children:
-// IArray[Block]` field, so flat traversal logic can address either form
+// Array[Block]^{}` field, so flat traversal logic can address either form
 // without case analysis.
 
 object Tel extends Tel2:
@@ -246,7 +246,7 @@ object Tel extends Tel2:
           def parseElement(reader: TelReader^, indent: Int): Any = reader.value(indent)
 
           def gathered(elements: List[Any]): value =
-            val compounds = IArray.from:
+            val compounds = Array.from:
               elements.stdlib.map: element =>
                 element.asInstanceOf[Tel].subtree.absolve match
                   case compound: Tel.Compound => compound
@@ -308,10 +308,10 @@ object Tel extends Tel2:
 
     // The synthetic document the AST derivation hands to a repeatable
     // decoder: one block containing the gathered compounds.
-    private[stratiform] def gatheredDocument(compounds: IArray[Tel.Compound]): Tel.Document =
+    private[stratiform] def gatheredDocument(compounds: Array[Tel.Compound]^{}): Tel.Document =
       Tel.Document
         ( Unset, Unset, Tel.LineEndings.Lf,
-          IArray(Tel.Block(IArray.empty[Tel.Comment], Unset, compounds, 0)) )
+          Array.of(Tel.Block(Array.empty[Tel.Comment], Unset, compounds, 0)) )
 
     // Shared collection implementation, used by the nominal `Tel.Parsable`
     // given (elements must themselves be nominally `Parsable`, so the read
@@ -390,12 +390,12 @@ object Tel extends Tel2:
     // buffer the parse loop filled. `fromProduct` is the only construction
     // form that works for method-local and object-nested case classes.
     def assemble[derivation <: Product]
-      ( reflection: ProductReflection[derivation], values: IArray[Any] )
+      ( reflection: ProductReflection[derivation], values: Array[Any]^{} )
     :   derivation =
 
       reflection.fromProduct(ArrayProduct(values))
 
-    private final class ArrayProduct(values: IArray[Any]) extends Product:
+    private final class ArrayProduct(values: Array[Any]^{}) extends Product:
       def canEqual(that: Any): Boolean = true
       def productArity: Int = values.length
       def productElement(index: Int): Any = values(index)
@@ -411,7 +411,7 @@ object Tel extends Tel2:
 
     // The wire keywords of a product's fields: `@name` renames applied
     // verbatim, camel→kebab otherwise — the same mapping as the derivations.
-    def wireKeywords(names: IArray[String], renames: Map[Text, Text]): IArray[String] =
+    def wireKeywords(names: Array[String]^{}, renames: Map[Text, Text]): Array[String]^{} =
       names.map { name => renames.at(name.tt).or(camelToKebab(name)).s }
 
     // A required primitive field whose keyword never arrived: the primitives'
@@ -438,7 +438,7 @@ object Tel extends Tel2:
 
     // Linear keyword dispatch for the general step — an unpackable wire
     // keyword, or any keyword of a `@name`-annotated record.
-    def keywordIndex(keys: IArray[String], keyword: Text): Int =
+    def keywordIndex(keys: Array[String]^{}, keyword: Text): Int =
       val count = keys.length
       val name: String = keyword.s
       var index = 0
@@ -478,16 +478,16 @@ object Tel extends Tel2:
     // (or `Unset`). The entry loop lives here, in an ordinary method body —
     // no Wisteria per-field lambda ever closes over the reader.
     def product[derivation]
-      ( fields0: () => IArray[(String, Tel.Parsing, Any)],
-        make:    IArray[Any] -> derivation )
+      ( fields0: () => Array[(String, Tel.Parsing, Any)]^{},
+        make:    Array[Any]^{} -> derivation )
       ( using foci: Foci[Tel.Focus], tactic: Tactic[TelError] )
     :   ((derivation is Tel.Field)^{fields0, tactic}) =
 
       new Tel.Field:
         type Self = derivation
 
-        private lazy val fields: IArray[(String, Tel.Parsing, Any)] = fields0()
-        private lazy val keys: IArray[String] = fields.map(_(0))
+        private lazy val fields: Array[(String, Tel.Parsing, Any)]^{} = fields0()
+        private lazy val keys: Array[String]^{} = fields.map(_(0))
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
@@ -603,7 +603,7 @@ object Tel extends Tel2:
 
             index += 1
 
-          make(values.asInstanceOf[IArray[Any]])
+          make(values.asInstanceOf[Array[Any]^{}])
 
   // The direct-parsing counterpart of `Tel.Decodable`: consumes compound
   // entries from a `TelReader` instead of walking a materialized `Tel`, so
@@ -663,11 +663,11 @@ object Tel extends Tel2:
       raise(TelError(reason)) yet continuation
 
     def assign(tel: Tel, schema: Tels): Tel.Element raises TelError tracks Tel.Focus =
-      val compounds: IArray[Tel.Compound] = tel.subtree.children.bind(_.compounds)
+      val compounds: Array[Tel.Compound]^{} = tel.subtree.children.bind(_.compounds)
       val rootChildren = assignChildren(compounds, schema.document, schema)
 
       val rootElements =
-        applyConstraints(schema.document, IArray.empty[Tel.Element], rootChildren, schema)
+        applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema)
 
       Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
@@ -795,10 +795,10 @@ object Tel extends Tel2:
     // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
     // uses flat positions per BinTEL §5.
     private def assignAtoms
-      ( atoms:  IArray[Tel.Atom],
+      ( atoms:  Array[Tel.Atom]^{},
        parent: Struct,
        schema: Tels )
-    :   IArray[Tel.Element] raises TelError =
+    :   Array[Tel.Element]^{} raises TelError =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var pos = 0
@@ -841,7 +841,7 @@ object Tel extends Tel2:
 
                   case Flag =>
                     if atomText == f.keyword then
-                      results += Tel.Element.Node(flatPos, Flag, IArray.empty)
+                      results += Tel.Element.Node(flatPos, Flag, Array.empty)
                       flatPos += 1
                       pos += 1
                       consumed = true
@@ -855,9 +855,9 @@ object Tel extends Tel2:
                 val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
                   abort(TelError(Reason.UnresolvedReference))
 
-                selectDef.variants.stdlib.zipWithIndex.find(_._1.keyword == atomText) match
+                selectDef.variants.readable.zipWithIndex.find(_._1.keyword == atomText) match
                   case Some((_, variantOffset)) =>
-                    results += Tel.Element.Node(flatPos + variantOffset, Flag, IArray.empty)
+                    results += Tel.Element.Node(flatPos + variantOffset, Flag, Array.empty)
 
                     if s.repeatable != Polarity.Loose then
                       flatPos += selectDef.variants.length
@@ -876,13 +876,13 @@ object Tel extends Tel2:
         if !consumed then abort(TelError(Reason.AtomFlagKeywordMismatch))
         i += 1
 
-      IArray.from(results)
+      Array.from(results)
 
     private def assignChildren
-      ( compounds: IArray[Tel.Compound],
+      ( compounds: Array[Tel.Compound]^{},
        parent:    Struct,
        schema:    Tels )
-    :   IArray[Tel.Element] raises TelError tracks Tel.Focus =
+    :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
 
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -899,18 +899,18 @@ object Tel extends Tel2:
 
         i += 1
 
-      IArray.from(results)
+      Array.from(results)
 
     private def applyConstraints
       ( parent:        Struct,
-        atomElements:  IArray[Tel.Element],
-        childElements: IArray[Tel.Element],
+        atomElements:  Array[Tel.Element]^{},
+        childElements: Array[Tel.Element]^{},
         schema:        Tels )
-    :   IArray[Tel.Element] raises TelError tracks Tel.Focus =
+    :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
-      results ++= atomElements.stdlib
-      results ++= childElements.stdlib
+      results ++= atomElements.readable
+      results ++= childElements.readable
 
       def flatWidth(member: Member): Int = member match
         case _: Tels.Field => 1
@@ -945,7 +945,7 @@ object Tel extends Tel2:
         flatStart += width
         memberIdx += 1
 
-      IArray.from(results)
+      Array.from(results)
 
     private def assignCompound
       ( compound: Tel.Compound,
@@ -958,7 +958,7 @@ object Tel extends Tel2:
       resolved match
         case s: Struct =>
           val atomElements = assignAtoms(compound.atoms, s, schema)
-          val childCompounds: IArray[Tel.Compound] = compound.children.bind(_.compounds)
+          val childCompounds: Array[Tel.Compound]^{} = compound.children.bind(_.compounds)
           val childElements = assignChildren(childCompounds, s, schema)
           val allElements = applyConstraints(s, atomElements, childElements, schema)
           Tel.Element.Node(entry.memberIndex, s, allElements)
@@ -977,11 +977,11 @@ object Tel extends Tel2:
           if compound.atoms.nonEmpty || compound.children.nonEmpty then
             recoverNode(Reason.FlagWithContent)(())
 
-          Tel.Element.Node(entry.memberIndex, Flag, IArray.empty)
+          Tel.Element.Node(entry.memberIndex, Flag, Array.empty)
 
         case _: Reference =>
           recoverNode(Reason.UnresolvedReference):
-            Tel.Element.Node(entry.memberIndex, Flag, IArray.empty)
+            Tel.Element.Node(entry.memberIndex, Flag, Array.empty)
 
   // Validator infrastructure per §21 of the TEL specification.
   object Validator:
@@ -1103,7 +1103,7 @@ object Tel extends Tel2:
     case class Node
       ( keywordIndex: Optional[Int],
         elementType:  Tels.Type,
-        children:     IArray[Element] )
+        children:     Array[Element]^{} )
     extends Element
 
     case class Value
@@ -1119,17 +1119,17 @@ object Tel extends Tel2:
   object Pointer:
     case class Step(keyword: Text, index: Optional[Int])
 
-    val Empty: Pointer = Pointer(IArray.empty)
+    val Empty: Pointer = Pointer(Array.empty)
 
     def of(keywords: Text*): Pointer =
-      Pointer(IArray.from(keywords.map(Step(_, Unset))))
+      Pointer(Array.from(keywords.map(Step(_, Unset))))
 
   // Logical address into a Tel document. A pointer is an ordered
   // sequence of `Step`s; each step selects a child compound from the
   // current node by keyword. When several siblings share a keyword
   // the optional `index` disambiguates them — `Unset` means "the
   // first" (index 0).
-  case class Pointer(steps: IArray[Pointer.Step]):
+  case class Pointer(steps: Array[Pointer.Step]^{}):
     def / (keyword: Text): Pointer =
       Pointer(steps :+ Pointer.Step(keyword, Unset))
 
@@ -1154,30 +1154,30 @@ object Tel extends Tel2:
       lineEndings:          LineEndings )
 
   sealed trait Subtree:
-    def children: IArray[Block]
+    def children: Array[Block]^{}
 
   case class Document
     ( interpreterDirective: Optional[Text],
       pragma:               Optional[Pragma],
       lineEndings:          LineEndings,
-      children:             IArray[Block] )
+      children:             Array[Block]^{} )
   extends Subtree
 
   case class Block
-    ( comments:           IArray[Comment],
+    ( comments:           Array[Comment]^{},
       tabulation:         Optional[Tabulation],
-      compounds:          IArray[Compound],
+      compounds:          Array[Compound]^{},
       trailingBlankLines: Int )
 
   case class Comment(text: Text)
 
-  case class Tabulation(markerOffsets: IArray[Int], headings: IArray[Text])
+  case class Tabulation(markerOffsets: Array[Int]^{}, headings: Array[Text]^{})
 
   case class Compound
     ( keyword:  Text,
-      atoms:    IArray[Atom],
+      atoms:    Array[Atom]^{},
       remark:   Optional[Text],
-      children: IArray[Block] )
+      children: Array[Block]^{} )
   extends Subtree
 
   object Atom:
@@ -1273,7 +1273,7 @@ object Tel extends Tel2:
 
   // ── Position tracking (editor / tooling support) ──────────────────────────
   //
-  // A flat `IArray[Int]` of position descriptors produced alongside the
+  // A flat `Array[Int]^{}` of position descriptors produced alongside the
   // presentation tree by `Tel.parseTracked`. All internal references are stored
   // as offsets relative to the start of the containing node descriptor, so any
   // slice taken at a descriptor boundary is itself a valid `PositionIndex` —
@@ -1289,13 +1289,15 @@ object Tel extends Tel2:
   //   … child descriptors laid out contiguously …
   // The document root occupies the outermost descriptor with a synthetic
   // (line 1, column 1, length 0) header; its children are the top-level compounds.
-  opaque type PositionIndex = IArray[Int]
+  // Represented as the stdlib's immutable array (pure by construction): the frozen
+  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
+  opaque type PositionIndex = scala.IArray[Int]
 
   object PositionIndex:
-    private[stratiform] def apply(data: IArray[Int]): PositionIndex = data
+    private[stratiform] def apply(data: Array[Int]^{}): PositionIndex = data.readable
 
   extension (positionIndex: PositionIndex)
-    private[stratiform] def ints: IArray[Int] = positionIndex
+    private[stratiform] def ints: Array[Int]^{} = Array.frozen(positionIndex)
 
   // Parse `bytes` into a `Tel` carrying a `PositionIndex`, so that
   // `tel.locate(pointer)` / `tel.locateKey(pointer)` resolve a node's keyword
@@ -1318,7 +1320,7 @@ object Tel extends Tel2:
   // descriptor layout documented on `PositionIndex`. The AST supplies the tree
   // shape; the triples supply the coordinates. Runs only under `parseTracked`,
   // never on the hot path.
-  private[stratiform] def buildIndex(document: Tel.Document, triples: IArray[Int]): IArray[Int] =
+  private[stratiform] def buildIndex(document: Tel.Document, triples: Array[Int]^{}): Array[Int]^{} =
     var cursor = 0
 
     def build(node: Tel.Subtree, line: Int, column: Int, length: Int): scala.Array[Int] =
@@ -1359,7 +1361,7 @@ object Tel extends Tel2:
 
       buffer
 
-    IArray.of(scala.IArray.unsafeFromArray(build(document, 1, 1, 0)))
+    Array.frozen(scala.IArray.unsafeFromArray(build(document, 1, 1, 0)))
 
   // Resolves a `TelPath` to the source `Position` recorded in a tracked `Tel`'s
   // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`
@@ -1385,7 +1387,7 @@ object Tel extends Tel2:
   // keyword and yields `Unset`.
   private def walkIndex
     ( node:     Tel.Subtree,
-      data:     IArray[Int],
+      data:     Array[Int]^{},
       offset:   Int,
       segments: IndexedSeq[Text],
       i:        Int,
@@ -1413,7 +1415,7 @@ object Tel extends Tel2:
     // rather than copied into a fresh array (jacinta's single-chunk fast
     // path; the copy dominated the entry cost of fast direct reads).
     if !source.nil && source.tail.nil then source.head else
-      var acc    = IArray.empty[Byte]
+      var acc    = Array.empty[Byte]
       var stream = source
 
       while !stream.nil do
@@ -1803,12 +1805,12 @@ object Tel extends Tel2:
   // blocks; if no compound matches, append the new compound to the
   // last block (creating a fresh block if there are none).
   private[stratiform] def replaceOrAppendCompound
-    ( blocks: IArray[Block], keyword: Text, compound: Compound )
-  :   IArray[Block] =
+    ( blocks: Array[Block]^{}, keyword: Text, compound: Compound )
+  :   Array[Block]^{} =
 
     var b = 0
     var found = false
-    val out = scala.collection.mutable.ArrayBuffer.from(blocks.stdlib)
+    val out = scala.collection.mutable.ArrayBuffer.from(blocks.readable)
 
     while b < out.length && !found do
       val cs = out(b).compounds
@@ -1821,25 +1823,25 @@ object Tel extends Tel2:
       b += 1
 
     if !found then
-      if out.isEmpty then out += Block(IArray.empty, Unset, IArray(compound), 0)
+      if out.isEmpty then out += Block(Array.empty, Unset, Array.of(compound), 0)
       else
         val lastIdx = out.length - 1
         out(lastIdx) = out(lastIdx).copy(compounds = out(lastIdx).compounds :+ compound)
 
-    IArray.from(out)
+    Array.from(out)
 
   // Replace the `index`-th child compound (flattened across blocks) by applying
   // `transform`, preserving block structure and surrounding formatting. An
   // out-of-range index leaves the children unchanged. Used by the panopticon
   // `Ordinal` optic.
   private[stratiform] def withChildCompound
-    ( blocks: IArray[Block], index: Int, transform: Compound => Compound )
-  :   IArray[Block] =
+    ( blocks: Array[Block]^{}, index: Int, transform: Compound => Compound )
+  :   Array[Block]^{} =
 
     var offset = 0
 
-    IArray.of:
-      blocks.stdlib.map: block =>
+    Array.frozen:
+      blocks.readable.map: block =>
         val compounds = block.compounds
         val base = offset
         offset += compounds.length
@@ -1852,8 +1854,8 @@ object Tel extends Tel2:
 
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
-  private[stratiform] def mapChildCompounds(blocks: IArray[Block], transform: Compound => Compound)
-  :   IArray[Block] =
+  private[stratiform] def mapChildCompounds(blocks: Array[Block]^{}, transform: Compound => Compound)
+  :   Array[Block]^{} =
 
     blocks.map: block => block.copy(compounds = block.compounds.map(transform))
 
@@ -1937,13 +1939,13 @@ object Tel extends Tel2:
     // triples backing `Tel.PositionIndex`. Uses `untrackedData` like the plain
     // path — coordinates come from the parser's own `lineNo` / `leadingSpaces`
     // bookkeeping, not the cursor's lineation.
-    def parseTracked(input: Data): (Tel.Document, IArray[Int]) raises TelError =
+    def parseTracked(input: Data): (Tel.Document, Array[Int]^{}) raises TelError =
       import zephyrine.Lineation.untrackedData
       val p = borrow()
       p.reset(Cursor[Data](input), Unset)
       p.tracking = true
 
-      try (p.parse(), IArray.from(p.positionTriples)) finally p.tracking = false
+      try (p.parse(), Array.from(p.positionTriples)) finally p.tracking = false
 
     // Streaming parse (§6.1) of a multi-document source into the documents it
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
@@ -1961,10 +1963,10 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), Unset)
       p.documentStream(first = true)
 
-    // The shared empty-children array: `IArray.empty[Tel.Block]` builds a
+    // The shared empty-children array: `Array.empty[Tel.Block]` builds a
     // fresh zero-length array through a reflective `ClassTag` on every call,
     // and `parseChildren` returns it once per leaf entry.
-    private val EmptyBlocks: IArray[Tel.Block] = IArray.empty[Tel.Block]
+    private val EmptyBlocks: Array[Tel.Block]^{} = Array.empty[Tel.Block]
 
     private final val SP: Byte = 0x20
     private final val LF: Byte = 0x0A
@@ -2297,11 +2299,11 @@ object Tel extends Tel2:
     // `parseBlock` / `parseCompoundLine` invocation snapshots the current
     // index at scope-entry; on scope-exit it computes `count = current - start`,
     // snapshots that range into a freshly allocated exact-size `Array` (wrapped
-    // as `IArray` via `.immutable(using Unsafe)`), and rewinds the index.
-    // Empty scopes return `IArray.empty` without any allocation.
+    // as a frozen array via `.immutable(using Unsafe)`), and rewinds the index.
+    // Empty scopes return `Array.empty` without any allocation.
     //
     // This replaces one `mutable.ArrayBuffer` (which itself allocates a backing
-    // array, grows geometrically, and copies on growth) + one `IArray.from`
+    // array, grows geometrically, and copies on growth) + one `Array.from`
     // call per scope with a single exact-size `Array.copyOfRange` allocation
     // per non-empty scope. For typical workloads (deep nesting, many siblings)
     // it eliminates several thousand allocations per parse.
@@ -2400,39 +2402,39 @@ object Tel extends Tel2:
       blockScratchIx += 1
 
     // Extract `count` items ending at the current index, rewind, and return
-    // them as an IArray. Empty scopes return the shared empty IArray with
+    // them as a frozen array. Empty scopes return the shared empty array with
     // zero allocation.
-    private update def takeAtoms(count: Int): IArray[Tel.Atom] =
-      if count == 0 then IArray.empty[Tel.Atom]
+    private update def takeAtoms(count: Int): Array[Tel.Atom]^{} =
+      if count == 0 then Array.empty[Tel.Atom]
       else
         val result = new scala.Array[Tel.Atom](count)
         System.arraycopy(scratchAtoms, atomScratchIx - count, result, 0, count)
         atomScratchIx -= count
-        result.asInstanceOf[IArray[Tel.Atom]]
+        result.asInstanceOf[Array[Tel.Atom]^{}]
 
-    private update def takeComments(count: Int): IArray[Tel.Comment] =
-      if count == 0 then IArray.empty[Tel.Comment]
+    private update def takeComments(count: Int): Array[Tel.Comment]^{} =
+      if count == 0 then Array.empty[Tel.Comment]
       else
         val result = new scala.Array[Tel.Comment](count)
         System.arraycopy(scratchComments, commentScratchIx - count, result, 0, count)
         commentScratchIx -= count
-        result.asInstanceOf[IArray[Tel.Comment]]
+        result.asInstanceOf[Array[Tel.Comment]^{}]
 
-    private update def takeCompounds(count: Int): IArray[Tel.Compound] =
-      if count == 0 then IArray.empty[Tel.Compound]
+    private update def takeCompounds(count: Int): Array[Tel.Compound]^{} =
+      if count == 0 then Array.empty[Tel.Compound]
       else
         val result = new scala.Array[Tel.Compound](count)
         System.arraycopy(scratchCompounds, compoundScratchIx - count, result, 0, count)
         compoundScratchIx -= count
-        result.asInstanceOf[IArray[Tel.Compound]]
+        result.asInstanceOf[Array[Tel.Compound]^{}]
 
-    private update def takeBlocks(count: Int): IArray[Tel.Block] =
+    private update def takeBlocks(count: Int): Array[Tel.Block]^{} =
       if count == 0 then EmptyBlocks
       else
         val result = new scala.Array[Tel.Block](count)
         System.arraycopy(scratchBlocks, blockScratchIx - count, result, 0, count)
         blockScratchIx -= count
-        result.asInstanceOf[IArray[Tel.Block]]
+        result.asInstanceOf[Array[Tel.Block]^{}]
 
     // ── parseCompoundLine result channels ──────────────────────────────────────
     // parseCompoundLine deposits its keyword + remark into these single-slot
@@ -3370,7 +3372,7 @@ object Tel extends Tel2:
 
     // ── parseChildren ────────────────────────────────────────────────────────
 
-    private update def parseChildren(parentIndent: Int): (Tactic[TelError]^) ?->{this} IArray[Tel.Block] =
+    private update def parseChildren(parentIndent: Int): (Tactic[TelError]^) ?->{this} Array[Tel.Block]^{} =
       val expected = parentIndent + 1
 
       if head.eof || head.separator || head.indentLevels < expected
@@ -3795,7 +3797,7 @@ object Tel extends Tel2:
                 errorAt(Reason.BadTabulationHeading, head.startLine, lineCol + 1)
 
       consumeLineEnding()
-      Tel.Tabulation(IArray.from(markers), IArray.from(headings))
+      Tel.Tabulation(Array.from(markers), Array.from(headings))
 
     // §16.2 column-rule validation. The cursor must be parked at the row's
     // first content byte (past leading spaces). Walks the bytes up to LF/CR
@@ -4707,7 +4709,7 @@ object Tel extends Tel2:
 
       if extraAtom.present then pushAtom(extraAtom.vouch)
 
-      val children: IArray[Tel.Block] =
+      val children: Array[Tel.Block]^{} =
         if !tabulated && extraAtom.absent then parseChildren(indent)
         else EmptyBlocks
 
@@ -4724,7 +4726,7 @@ object Tel extends Tel2:
     // Consume the whole entry in the given primary-capture `mode`, leaving the
     // captured value in the mode's slot (`directPrimaryText` /
     // `directPrimaryLongVal` / `directPrimaryBoolVal`, with `directPrimaryPresent`
-    // and `directPrimaryOk`). Materializes no `Tel.Compound`, no `IArray[Atom]`
+    // and `directPrimaryOk`). Materializes no `Tel.Compound`, no `Array[Atom]^{}`
     // (`takeAtoms`) and no `Tel.Atom.Inline`: the first inline atom is consumed
     // straight into the slot, and the source/literal continuation and child
     // subtree are consumed (discarded) so the reader lands on the next sibling.
@@ -5091,9 +5093,9 @@ extends scala.Dynamic, Documentary, Topical, Original:
 
   // Flat list of inline atom texts attached to this node. For the document
   // root this is always empty since the root has no atoms.
-  def atomTexts: IArray[Text] = subtree match
-    case c: Tel.Compound => IArray.of(c.atoms.stdlib.collect { case Tel.Atom.Inline(text, _) => text })
-    case _: Tel.Document => IArray.empty
+  def atomTexts: Array[Text]^{} = subtree match
+    case c: Tel.Compound => Array.frozen(c.atoms.readable.collect { case Tel.Atom.Inline(text, _) => text })
+    case _: Tel.Document => Array.empty
 
   // First inline atom text or empty string if none. Used by primitive
   // Decodable instances which interpret a compound's first atom as its
@@ -5103,7 +5105,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
 
   // All child compounds, flattened across the node's blocks (presentation-
   // level comments and tabulations are dropped from this view).
-  def childCompounds: IArray[Tel.Compound] =
+  def childCompounds: Array[Tel.Compound]^{} =
     subtree.children.bind(_.compounds)
 
   // First child compound whose keyword matches `target`, if any.
@@ -5114,7 +5116,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // All child compounds whose keyword matches `target`. Useful for
   // schema-repeatable fields that produce multiple compounds with the
   // same keyword in the presentation tree.
-  def fields(target: Text): IArray[Tel] =
+  def fields(target: Text): Array[Tel]^{} =
     childCompounds.filter(_.keyword == target).map(Tel(_))
 
   // Document accessor for downstream operations (printing, mutation). Only
@@ -5137,7 +5139,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
       case c: Tel.Compound => c.copy(keyword = name)
 
       case d: Tel.Document =>
-        Tel.Compound(name, IArray.empty[Tel.Atom], Unset, d.children)
+        Tel.Compound(name, Array.empty[Tel.Atom], Unset, d.children)
 
     val newChildren = Tel.replaceOrAppendCompound(subtree.children, name, newCompound)
 

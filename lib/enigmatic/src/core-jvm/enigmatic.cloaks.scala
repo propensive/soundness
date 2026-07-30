@@ -157,9 +157,9 @@ private[enigmatic] class VeiledHeapCloak extends Cloak, caps.SharedCapability:
 
 private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability:
   private val random = js.SecureRandom()
-  // Stored as the pure `IArray` view: a bare `Array` field would carry a fresh read
+  // Stored as the frozen form: a bare mutable `Array` field would carry a fresh read
   // capability, which this shared-capability class's classifier forbids.
-  private val keyBytes: IArray[Byte] = freshKey().asInstanceOf[IArray[Byte]]
+  private val keyBytes: Array[Byte]^{} = freshKey().asInstanceOf[Array[Byte]^{}]
 
   def cloak(bytes: scala.Array[Byte]): Secret^{this} =
     val nonce = new scala.Array[Byte](12)
@@ -179,12 +179,12 @@ private[enigmatic] class VeiledOffHeapCloak extends Cloak, caps.SharedCapability
         def uncloak[result](block: scala.Array[Byte] => result): result =
           val recovered = reload(segment, length)
 
-          // The `IArray` view keeps the `try` result pure: a raw `Array` result would carry
+          // The frozen form keeps the `try` result pure: a raw `Array` result would carry
           // a fresh read capability, which a `try` result may not.
-          val cleartext: IArray[Byte] =
+          val cleartext: Array[Byte]^{} =
             try
-              aes[IArray[Byte]](keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.DECRYPT_MODE, nonce):
-                _.doFinal(recovered).nn.asInstanceOf[IArray[Byte]]
+              aes[Array[Byte]^{}](keyBytes.asInstanceOf[scala.Array[Byte]], jc.Cipher.DECRYPT_MODE, nonce):
+                _.doFinal(recovered).nn.asInstanceOf[Array[Byte]^{}]
             finally ju.Arrays.fill(recovered, 0.toByte)
 
           val cleartext0 = cleartext.asInstanceOf[scala.Array[Byte]]

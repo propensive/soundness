@@ -39,14 +39,14 @@ import scala.math
 import rudiments.*
 
 object Compass:
-  val points4: IArray[CardinalWind] =
-    IArray(North, East, South, West)
+  val points4: Array[CardinalWind]^{} =
+    Array.of(North, East, South, West)
 
-  val points8: IArray[CardinalWind | IntercardinalWind] =
-    IArray(North, Northeast, East, Southeast, South, Southwest, West, Northwest)
+  val points8: Array[CardinalWind | IntercardinalWind]^{} =
+    Array.of(North, Northeast, East, Southeast, South, Southwest, West, Northwest)
 
-  val points16: IArray[CardinalWind | IntercardinalWind | HalfWind] =
-    IArray
+  val points16: Array[CardinalWind | IntercardinalWind | HalfWind]^{} =
+    Array.of
       ( North, NorthNortheast, Northeast, EastNortheast, East, EastSoutheast, Southeast,
         SouthSoutheast, South, SouthSouthwest, Southwest, WestSouthwest, West, WestNorthwest,
         Northwest, NorthNorthwest )

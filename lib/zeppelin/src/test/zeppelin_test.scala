@@ -250,11 +250,11 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == 0)
 
       test(m"reads back binary (non-text) content unchanged"):
-        val payload: Data = IArray.tabulate(512)(i => (i%256).toByte)
+        val payload: Data = Array.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         Zipfile.write(path)(List(Zip.Entry(zipRef(t"blob"), payload)))
         readEntries(path).head.read[Data].to[List]
-      . assert(_ == IArray.tabulate(512)(i => (i%256).toByte).to[List])
+      . assert(_ == Array.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
         readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).head.read[Text]
@@ -441,7 +441,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == 66000)
 
     suite(m"Binary prefix"):
-      val prefix: Data = IArray.tabulate(64)(i => (i*7).toByte)
+      val prefix: Data = Array.tabulate(64)(i => (i*7).toByte)
 
       test(m"a binary prefix round-trips"):
         val path = workDir/t"prefixed.zip"

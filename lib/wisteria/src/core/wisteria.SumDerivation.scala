@@ -81,7 +81,7 @@ object SumDerivation:
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
-    :   IArray[result] =
+    :   Array[result]^{} =
 
       type Labels = reflection.MirroredElemLabels
       type Variants = reflection.MirroredElemTypes

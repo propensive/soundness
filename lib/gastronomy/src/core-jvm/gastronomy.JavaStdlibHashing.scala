@@ -61,7 +61,7 @@ object JavaStdlibHashing extends Hashing:
 
       update def digest(): Data =
         val value = state.getValue()
-        IArray[Byte]((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+        Array.of[Byte]((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
   private def messageDigest(name: Text): Hashing.Function = new Hashing.Function:
     def digestion(): Digestion^ = new Digestion:

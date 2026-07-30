@@ -543,7 +543,7 @@ private[probably] object AnsiRenderer:
         if oldHits == 0 then main
         else e"${palette.detail}(${oldHits.show.subscripts}) $main"
 
-    val data = coverage.spec.stdlib.groupBy(_.path).toList.map: (path, branches) =>
+    val data = coverage.spec.readable.groupBy(_.path).toList.map: (path, branches) =>
       val hitCount: Int =
         branches.map(_.id).count(coverage.hits.has)
 

@@ -59,9 +59,9 @@ object Tabulation:
 abstract class Tabulation[text: ClassTag]():
   type Row
 
-  def columns: IArray[Column[Row, text]]
-  def titles: List[IArray[IArray[text]]]
-  def rows: List[IArray[IArray[text]]]
+  def columns: Array[Column[Row, text]]^{}
+  def titles: List[Array[Array[text]^{}]^{}]
+  def rows: List[Array[Array[text]^{}]^{}]
   def dataLength: Int
 
 
@@ -70,13 +70,13 @@ abstract class Tabulation[text: ClassTag]():
     ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
   :   Grid[text] =
 
-    case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
-      lazy val include: sci.BitSet = indices.stdlib.to(sci.BitSet)
+    case class Layout(slack: Double, indices: Array[Int]^{}, widths: Array[Int]^{}, totalWidth: Int):
+      lazy val include: sci.BitSet = indices.readable.to(sci.BitSet)
 
-      lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
-        indices.stdlib.indices.map: index =>
-          val columnIndex = indices.stdlib(index)
-          (columnIndex, columns.stdlib(columnIndex), widths.stdlib(index))
+      lazy val columnWidths: Array[(Int, Column[Row, text], Int)]^{} = Array.from:
+        indices.readable.indices.map: index =>
+          val columnIndex = indices.readable(index)
+          (columnIndex, columns.readable(columnIndex), widths.readable(index))
 
     def bisect(include: Int => Boolean): (Layout, Layout) =
       def shrink(slack: Double): Layout =
@@ -101,7 +101,7 @@ abstract class Tabulation[text: ClassTag]():
 
         val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
 
-        Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
+        Layout(slack, Array.from(indices), Array.from(widths.compact), totalWidth)
 
       def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
         if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)
@@ -120,13 +120,13 @@ abstract class Tabulation[text: ClassTag]():
     // We may be able to increase the slack in some of the remaining columns
     if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
 
-    def lines(data: List[IArray[IArray[text]]]): Progression[TableRow[text]] =
+    def lines(data: List[Array[Array[text]^{}]^{}]): Progression[TableRow[text]] =
       data.stdlib.to(Progression).map: cells =>
         val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
           val lines = column.sizing.fit(cells(index), width, column.textAlign)
           TableCell(width, 1, lines, lines.length, column.textAlign)
 
-        val height = tableCells.stdlib.maxBy(_.minHeight).minHeight
+        val height = tableCells.readable.maxBy(_.minHeight).minHeight
 
         TableRow(tableCells, false, height)
 

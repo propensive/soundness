@@ -172,7 +172,7 @@ object Raster:
 class Raster private[hallucination]
   ( val width:  Int,
     val height: Int,
-    // Not an `IArray`: a `Write`-granted `CanvasHandle` mutates the buffer in place, so it is
+    // Not frozen: a `Write`-granted `CanvasHandle` mutates the buffer in place, so it is
     // untracked instead, keeping the class type free of a capture variable.
     @scala.caps.unsafe.untrackedCaptures private[hallucination] val buffer: scala.Array[?],
     val descriptor: Descriptor )

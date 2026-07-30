@@ -48,5 +48,5 @@ trait Subprocess:
   def stderr()(using Tactic[StreamError]): (Stream[Data] over Credit)^
   def text(): Text
   def errorText(): Text
-  def lines()(using Tactic[StreamError]): (Stream[IArray[Text]] over Credit)^
+  def lines()(using Tactic[StreamError]): (Stream[Array[Text]^{}] over Credit)^
   def status(): Int

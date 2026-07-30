@@ -191,7 +191,7 @@ extends Documentary:
     (t"xmlns" -> mathmlNamespace) :: displayPairs ::: attributes
 
   def xml: Xml =
-    val children: IArray[Node] = contents.stdlib.map(_.xml).nodes
+    val children: Array[Node]^{} = contents.stdlib.map(_.xml).nodes
     Element(t"math", Attributes(attributePairs*), children)
 
   def html: Html of "math" = Math.renderable.render(this)

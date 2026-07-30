@@ -50,7 +50,7 @@ object protointernal:
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Pojo = sum =>
       variant(sum): [variant <: derivation] => value =>
-        IArray.build[Pojo](2): array =>
+        Array.build[Pojo](2): array =>
           array(0) = label.s.asInstanceOf[Pojo]
           array(1) = contextual.encoded(value)
 

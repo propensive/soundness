@@ -52,9 +52,9 @@ object Serializable:
       // `Array[Byte]` so the result `Text` is built directly from Latin-1 bytes,
       // avoiding both per-character boxing and the char-array compaction scan.
       // Sealed: `tabulate` closes over the alphabet, but the resulting table is an
-      // immutable `IArray` of bytes that holds no reference to it.
-      private val lookup: IArray[Byte] =
-        IArray.tabulate(1 << bits)(alphabet(_).toByte)
+      // immutable frozen array of bytes that holds no reference to it.
+      private val lookup: Array[Byte]^{} =
+        Array.tabulate(1 << bits)(alphabet(_).toByte)
 
       private val padding: Boolean = alphabet.padding
       private val padByte: Byte = if padding then alphabet(1 << bits).toByte else 0
@@ -78,12 +78,11 @@ object Serializable:
       // byte are precomputed and packed into one `Short` (low byte first, to
       // match the store order), so the hot loop is a single table load plus two
       // byte stores per input byte — the JDK `HexDigits.digitPair` trick.
-      private lazy val hexPairs: IArray[Short] =
-        caps.unsafe.unsafeAssumePure:
-          IArray.tabulate(256): b =>
-            val hi = lookup(b >>> 4) & 0xff
-            val lo = lookup(b & 0xf) & 0xff
-            (hi | (lo << 8)).toShort
+      private lazy val hexPairs: Array[Short]^{} =
+        Array.tabulate(256): b =>
+          val hi = lookup(b >>> 4) & 0xff
+          val lo = lookup(b & 0xf) & 0xff
+          (hi | (lo << 8)).toShort
 
       private def hex(src: scala.Array[Byte]): Array[Byte]^ =
         val pairs = hexPairs

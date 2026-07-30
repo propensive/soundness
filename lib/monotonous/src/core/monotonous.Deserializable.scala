@@ -61,7 +61,7 @@ object Deserializable:
           if last then text.pinpoint(_ != padding, bidi = Rtl).let(_.n0 + 1).or(text.length)*base/8
           else ((text.length - index0)/atomicity)*atomicity*base/8
 
-        IArray.build[Byte](length): array =>
+        Array.build[Byte](length): array =>
           var source = if index0 < 0 then previous else text
 
           def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index0: Int = 0): Unit =

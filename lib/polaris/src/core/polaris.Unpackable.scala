@@ -37,13 +37,13 @@ import rudiments.*
 import vacuous.*
 
 object Unpackable:
-  given iarray: [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
+  given iarray: [pack: Debufferable] => ClassTag[pack] => (Array[pack]^{}) is Unpackable:
     type Wrap[Type] = Int -> Type
 
     // The continuation records the (pure) backing data and start offset, and mints its own
     // sextant per invocation, so it does not capture the caller's `Sextant` capability: the
     // arrow stays pure, and the caller's read position is unaffected by a later invocation.
-    def unpack(sextant: Sextant): Int -> IArray[pack] =
+    def unpack(sextant: Sextant): Int -> Array[pack]^{} =
       val bytes = sextant.bytes
       val start = sextant.offset
 
@@ -56,7 +56,7 @@ object Unpackable:
           buffer(index) = pack.debuffer(local)
           index += 1
 
-        IArray.freeze(buffer)
+        Array.freeze(buffer)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type

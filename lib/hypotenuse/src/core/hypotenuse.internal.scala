@@ -506,22 +506,22 @@ object internal:
     inline def apply(inline short: Short): B64 = short.toLong
     inline def apply(inline byte: Byte): B64 = byte.toLong
 
-    def apply(bytes: IArray[Byte], offset: Int = 0): B64 =
-      var b64: Long = (bytes.stdlib(offset) & 0xFF).toLong
+    def apply(bytes: Array[Byte]^{}, offset: Int = 0): B64 =
+      var b64: Long = (bytes.readable(offset) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.stdlib(offset + 1) & 0xFF).toLong
+      b64 |= (bytes.readable(offset + 1) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.stdlib(offset + 2) & 0xFF).toLong
+      b64 |= (bytes.readable(offset + 2) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.stdlib(offset + 3) & 0xFF).toLong
+      b64 |= (bytes.readable(offset + 3) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.stdlib(offset + 4) & 0xFF).toLong
+      b64 |= (bytes.readable(offset + 4) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.stdlib(offset + 5) & 0xFF).toLong
+      b64 |= (bytes.readable(offset + 5) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.stdlib(offset + 6) & 0xFF).toLong
+      b64 |= (bytes.readable(offset + 6) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes.stdlib(offset + 7) & 0xFF).toLong
+      b64 |= (bytes.readable(offset + 7) & 0xFF).toLong
 
       b64
 
@@ -535,14 +535,14 @@ object internal:
     inline def apply(inline short: Short): B32 = short.toInt
     inline def apply(inline byte: Byte): B32 = byte.toInt
 
-    def apply(bytes: IArray[Byte], offset: Int = 0): B32 =
-      var b32: Int = (bytes.stdlib(offset) & 0xFF)
+    def apply(bytes: Array[Byte]^{}, offset: Int = 0): B32 =
+      var b32: Int = (bytes.readable(offset) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes.stdlib(offset + 1) & 0xFF)
+      b32 |= (bytes.readable(offset + 1) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes.stdlib(offset + 2) & 0xFF)
+      b32 |= (bytes.readable(offset + 2) & 0xFF)
       b32 <<= 8
-      b32 |= (bytes.stdlib(offset + 3) & 0xFF)
+      b32 |= (bytes.readable(offset + 3) & 0xFF)
 
       b32
 
@@ -558,10 +558,10 @@ object internal:
     inline def apply(inline short: Short): B16 = short
     inline def apply(inline byte: Byte): B16 = byte.toShort
 
-    def apply(bytes: IArray[Byte], offset: Int = 0): B16 =
-      var b16: Int = (bytes.stdlib(offset) & 0xFF)
+    def apply(bytes: Array[Byte]^{}, offset: Int = 0): B16 =
+      var b16: Int = (bytes.readable(offset) & 0xFF)
       b16 <<= 8
-      b16 |= (bytes.stdlib(offset + 1) & 0xFF)
+      b16 |= (bytes.readable(offset + 1) & 0xFF)
 
       b16.toShort
 
@@ -973,7 +973,7 @@ object internal:
     inline def zeros: S32 = 16 - JInt.bitCount(bitmap.toInt)
 
     @targetName("bytesB16")
-    def bytes: IArray[Byte] = IArray[Byte]((bitmap >> 8).toByte, bitmap.toByte)
+    def bytes: Array[Byte]^{} = Array.of[Byte]((bitmap >> 8).toByte, bitmap.toByte)
 
     @targetName("hexB16")
     inline def hex: Text = String.format("%04x", bitmap).nn.tt
@@ -1068,8 +1068,8 @@ object internal:
     inline def zeros: S32 = 32 - JInt.bitCount(bitmap.toInt)
 
     @targetName("bytesB32")
-    def bytes: IArray[Byte] =
-      IArray[Byte]
+    def bytes: Array[Byte]^{} =
+      Array.of[Byte]
         ( (bitmap >> 24).toByte, (bitmap >> 16).toByte, (bitmap >> 8).toByte, bitmap.toByte )
 
     @targetName("hexB32")
@@ -1165,8 +1165,8 @@ object internal:
     inline def zeros: S32 = 64 - JLong.bitCount(bitmap.toInt)
 
     @targetName("bytesB64")
-    def bytes: IArray[Byte] =
-      IArray[Byte]
+    def bytes: Array[Byte]^{} =
+      Array.of[Byte]
         ( (bitmap >> (8*7)).toByte,
           (bitmap >> (8*6)).toByte,
           (bitmap >> (8*5)).toByte,

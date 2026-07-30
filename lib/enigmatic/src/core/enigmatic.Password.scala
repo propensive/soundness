@@ -75,16 +75,16 @@ class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
       val chars = new scala.Array[Char](buffer.remaining)
       buffer.get(chars)
       if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, '\u0000')
-      try block(using Cleartext(chars.asInstanceOf[IArray[Char]]))
+      try block(using Cleartext(chars.asInstanceOf[Array[Char]^{}]))
       finally ju.Arrays.fill(chars, '\u0000')
 
 // The scoped view of a password's cleartext, lent within `uncloak` as a mutable char array,
 // zeroed when the block exits. A `SharedCapability`, freely aliasable within the block but
 // not beyond it. There is deliberately no `Text` accessor: an immutable `String` copy of the
 // cleartext could be neither confined to the block nor zeroed after it.
-// The chars are held as the pure `IArray` view (a bare `Array` field would violate this
+// The chars are held as the frozen form (a bare mutable `Array` field would violate this
 // shared capability's classifier); `chars` re-exposes the mutable view for zeroing.
-class Cleartext private[enigmatic] (private val secret: IArray[Char]) extends caps.SharedCapability:
+class Cleartext private[enigmatic] (private val secret: Array[Char]^{}) extends caps.SharedCapability:
   def chars: scala.Array[Char] = secret.asInstanceOf[scala.Array[Char]]
 
 // The cleartext lent within an `uncloak` block, reached contextually: `cleartext.chars` rather

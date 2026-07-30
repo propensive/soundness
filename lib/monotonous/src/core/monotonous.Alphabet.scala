@@ -212,7 +212,7 @@ object Alphabet:
           // Dense decode table and the largest valid data value, for the fast
           // path: a character outside `0..dataMax` (invalid, or a pad) bails to
           // the general path, which reports the error or realigns padding.
-          private val inversions: IArray[Int] = alphabet.inversions
+          private val inversions: Array[Int]^{} = alphabet.inversions
           private val invLength: Int = inversions.length
           private val dataMax: Int = (1 << base) - 1
 
@@ -310,13 +310,12 @@ case class Alphabet[encoding <: Serialization]
     else abort(SerializationError(position, char))
 
   lazy val inverse: Map[Char, Int] =
-    Map.of(tolerance.stdlib ++ chars.chars.stdlib.zipWithIndex.toMap)
+    Map.of(tolerance.stdlib ++ chars.chars.readable.zipWithIndex.toMap)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.
-  lazy val inversions: IArray[Int] =
+  lazy val inversions: Array[Int]^{} =
     val max = inverse.stdlib.keysIterator.max
 
-    caps.unsafe.unsafeAssumePure:
-      IArray.tabulate(max + 1): index =>
-        inverse.at(index.toChar).or(-1)
+    Array.tabulate(max + 1): index =>
+      inverse.at(index.toChar).or(-1)

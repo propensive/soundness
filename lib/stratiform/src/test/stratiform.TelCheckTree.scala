@@ -55,7 +55,7 @@ object TelCheckTree:
          ( t"interpreter_directive" -> ofOptional(document.interpreterDirective)(s => CheckTree.Str(s)),
            t"pragma"                -> ofOptional(document.pragma)(ofPragma),
            t"line_endings"          -> ofLineEndings(document.lineEndings),
-           t"children"              -> ofIArray(document.children)(ofBlock) ) )
+           t"children"              -> ofArray(document.children)(ofBlock) ) )
 
   private def ofPragma(p: Tel.Pragma): CheckTree =
     val (major, minor) = p.version
@@ -74,9 +74,9 @@ object TelCheckTree:
     CheckTree.Struct
       ( t"Block",
         List
-         ( t"comments"             -> ofIArray(block.comments)(ofComment),
+         ( t"comments"             -> ofArray(block.comments)(ofComment),
            t"tabulation"           -> ofOptional(block.tabulation)(ofTabulation),
-           t"compounds"            -> ofIArray(block.compounds)(ofCompound),
+           t"compounds"            -> ofArray(block.compounds)(ofCompound),
            t"trailing_blank_lines" -> CheckTree.Num(block.trailingBlankLines) ) )
 
   private def ofComment(comment: Tel.Comment): CheckTree =
@@ -94,9 +94,9 @@ object TelCheckTree:
       ( t"Compound",
         List
          ( t"keyword"  -> CheckTree.Str(compound.keyword),
-           t"atoms"    -> ofIArray(compound.atoms)(ofAtom),
+           t"atoms"    -> ofArray(compound.atoms)(ofAtom),
            t"remark"   -> ofOptional(compound.remark)(s => CheckTree.Str(s)),
-           t"children" -> ofIArray(compound.children)(ofBlock) ) )
+           t"children" -> ofArray(compound.children)(ofBlock) ) )
 
   private def ofAtom(atom: Tel.Atom): CheckTree = atom match
     case Tel.Atom.Inline(text, precedingSpaces) =>
@@ -119,5 +119,5 @@ object TelCheckTree:
   private def ofOptional[value](opt: Optional[value])(f: value => CheckTree): CheckTree =
     opt.lay(CheckTree.Variant(t"None", Unset))(v => CheckTree.Variant(t"Some", f(v)))
 
-  private def ofIArray[value](items: IArray[value])(f: value => CheckTree): CheckTree =
+  private def ofArray[value](items: Array[value]^{})(f: value => CheckTree): CheckTree =
     CheckTree.Sequence(List.of(items.stdlib.toList.map(f)))

@@ -49,7 +49,7 @@ extends caps.Mutable:
 
   locally { position = start + 2 }
 
-  private inline def byte(index: Int): Int = if index < end then data.stdlib(index) & 0xff else 0
+  private inline def byte(index: Int): Int = if index < end then data.readable(index) & 0xff else 0
 
   update def bool(probability: Int): Boolean =
     val split = 1 + (((range - 1)*probability) >> 8)

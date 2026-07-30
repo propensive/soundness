@@ -401,7 +401,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val container = Container(t"web", image = t"img:1",
               runtime = Runtime(t"io.containerd.runc.v2"),
-              spec = AnyMessage(t"oci-spec", t"hello".in[Data]))
+              spec = AnyMessage(t"oci-spec", AnyMessage.Payload(t"hello".in[Data])))
 
           val body = GrpcFraming.encode(CreateContainerResponse(container).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
@@ -413,7 +413,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           scala.caps.unsafe.unsafeAssumeSeparate:
             val created = Containerd(endpoint, t"example").createContainer(container)
-            (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to[List])
+            (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.data.to[List])
       . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to[List]))
 
       test(m"createTask sends rootfs mounts and returns the task pid"):

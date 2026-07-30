@@ -120,5 +120,5 @@ extends Documentary:
         scala.collection.immutable.List
           (Element(t"g", Attributes.from(Map.of(groupAttrs)), figures.stdlib.map(_.xml).nodes))
 
-    val children: IArray[Node] = (defsElement ++ figureNodes).nodes
+    val children: Array[Node]^{} = (defsElement ++ figureNodes).nodes
     Element(t"svg", Attributes.from(Map.of(attrs)), children)

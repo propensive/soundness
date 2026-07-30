@@ -73,13 +73,13 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
   =>  ( size: RandomSize )
-  =>  IArray[element] is Randomizable =
+  =>  (Array[element]^{}) is Randomizable =
 
     // Laundered pure, as for `list` above.
     caps.unsafe.unsafeAssumePure:
       random =>
         given random0: (Random^{random}) = random
-        IArray.fill(size.generate(random))(randomizable.randomize(random))
+        Array.fill(size.generate(random))(randomizable.randomize(random))
 
 
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)

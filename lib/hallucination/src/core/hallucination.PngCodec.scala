@@ -54,7 +54,7 @@ import RasterError.Reason
 // the raster's layout has it — choosing each scanline's filter by the minimum-sum-of-absolute-
 // differences heuristic.
 private[hallucination] object PngCodec:
-  private val signature: IArray[Int] = IArray(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+  private val signature: Array[Int]^{} = Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
 
   def decode(data: Data): Raster raises RasterError =
     try
@@ -70,8 +70,8 @@ private[hallucination] object PngCodec:
       var depth = 0
       var colorType = 0
       var interlace = 0
-      var palette: IArray[Int] = IArray()
-      var transparency: IArray[Int] = IArray()
+      var palette: Array[Int]^{} = Array.of()
+      var transparency: Array[Int]^{} = Array.of()
       val idat = scm.ArrayBuilder.ofByte()
       var finished = false
 
@@ -108,13 +108,13 @@ private[hallucination] object PngCodec:
             if !supported then abort(RasterError(Png(), Reason.UnsupportedVariant))
 
           case "PLTE" =>
-            palette = IArray.tabulate(length/3): index =>
+            palette = Array.tabulate(length/3): index =>
               u8(data, position + 8 + index*3) << 16 |
                 u8(data, position + 9 + index*3) << 8 |
                 u8(data, position + 10 + index*3)
 
           case "tRNS" =>
-            transparency = IArray.tabulate(length): index =>
+            transparency = Array.tabulate(length): index =>
               u8(data, position + 8 + index)
 
           case "IDAT" =>
@@ -128,14 +128,14 @@ private[hallucination] object PngCodec:
 
         position += length + 12
 
-      val inflated: IArray[Byte] =
+      val inflated: Array[Byte]^{} =
         val deflated = idat.result().immutable(using Unsafe)
 
-        // The pure `IArray` view keeps the `try` result free of the fresh read capability
+        // The frozen form keeps the `try` result free of the fresh read capability
         // a raw array result would carry.
         try
           concatenate(Zlib.compression.decompress(Progression(deflated)))
-          . asInstanceOf[IArray[Byte]]
+          . asInstanceOf[Array[Byte]^{}]
         catch case _: IllegalStateException => abort(RasterError(Png(), Reason.Truncated))
 
       val channels = colorType match

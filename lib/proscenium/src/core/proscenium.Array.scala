@@ -55,6 +55,22 @@ object Array:
   def of[element: ClassTag](elements: element*): Array[element]^{} =
     caps.unsafe.unsafeAssumePure(elements.toArray)
 
+  // Frozen constructors: each builds a fresh array no writer can ever alias, so the purity
+  // launder is discharged by construction, exactly as for `of`. Routed through the stdlib's
+  // `IArray` constructors and `frozen` (see its comment for why the cast lives there).
+  def empty[element: ClassTag]: Array[element]^{} = frozen(scala.IArray.empty[element])
+
+  def from[element: ClassTag](elements: IterableOnce[element]^): Array[element]^{} =
+    frozen(scala.IArray.from(elements))
+
+  def fill[element: ClassTag](count: Int)(element: => element): Array[element]^{} =
+    frozen(scala.IArray.fill(count)(element))
+
+  def tabulate[element: ClassTag](count: Int)(lambda: Int => element): Array[element]^{} =
+    frozen(scala.IArray.tabulate(count)(lambda))
+
+  def range(start: Int, end: Int): Array[Int]^{} = frozen(scala.IArray.range(start, end))
+
   // A bare JVM array, allocated through the companion so that interior scratch (the
   // fields of `caps.Mutable` state machines, and other code below the reach of `Array`'s
   // exclusivity discipline) shares this vocabulary without spelling `new`. Named

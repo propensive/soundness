@@ -36,8 +36,8 @@ import contingency.*, strategies.throwUnsafely
 import gossamer.t
 
 object TimingMain:
-  def time(label: String, payload: IArray[Byte], iterations: Int)
-    ( parse: IArray[Byte] => Any ): Unit =
+  def time(label: String, payload: Array[Byte]^{}, iterations: Int)
+    ( parse: Array[Byte]^{} => Any ): Unit =
 
     val raw = payload.asInstanceOf[scala.Array[Byte]]
 

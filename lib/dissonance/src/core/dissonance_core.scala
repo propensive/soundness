@@ -70,14 +70,14 @@ def evolve[element: ClassTag]
         :   List[Atom[element]] =
 
           def finish(): List[Atom[element]] =
-            val left = IArray.from(skips.stdlib)
-            val right = IArray.from(inserts.stdlib)
+            val left = Array.from(skips.stdlib)
+            val right = Array.from(inserts.stdlib)
 
             val updates =
-              diff(Series.from(left.stdlib), Series.from(right.stdlib), _.value == _.value).edits.toList.map:
+              diff(Series.from(left.readable), Series.from(right.readable), _.value == _.value).edits.toList.map:
                 case Ins(_, value)    => value
-                case Del(index, _)    => left.stdlib(index)
-                case Par(index, _, _) => left.stdlib(index).add(iteration)
+                case Del(index, _)    => left.readable(index)
+                case Par(index, _, _) => left.readable(index).add(iteration)
 
             List.of(updates ::: done.stdlib)
 
@@ -143,23 +143,23 @@ def diff[element]
     else position
 
   @tailrec
-  def trace(deletes: Int, inserts: Int, focus: sci.List[Int], rows: sci.List[IArray[Int]])
+  def trace(deletes: Int, inserts: Int, focus: sci.List[Int], rows: sci.List[Array[Int]^{}])
   :   Diff[element] =
 
-    val delPos = if deletes == 0 then 0 else count(rows.head.stdlib(deletes - 1) + 1, inserts - deletes)
-    val insPos = if inserts == 0 then 0 else count(rows.head.stdlib(deletes), inserts - deletes)
+    val delPos = if deletes == 0 then 0 else count(rows.head.readable(deletes - 1) + 1, inserts - deletes)
+    val insPos = if inserts == 0 then 0 else count(rows.head.readable(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 
     if best == left.length && (best - deletes + inserts) == right.length
     then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, sci.Nil, IArray.from((best :: focus).reverse) :: rows)
+    else trace(0, deletes + 1, sci.Nil, Array.from((best :: focus).reverse) :: rows)
 
   @tailrec
-  def backtrack(position: Int, deletes: Int, rows: sci.List[IArray[Int]], edits: Edits): Edits =
+  def backtrack(position: Int, deletes: Int, rows: sci.List[Array[Int]^{}], edits: Edits): Edits =
     val rightPosition = position + rows.length - deletes*2
-    lazy val ins = rows.head.stdlib(deletes) - 1
-    lazy val del = rows.head.stdlib(deletes - 1)
+    lazy val ins = rows.head.readable(deletes) - 1
+    lazy val del = rows.head.readable(deletes - 1)
 
     if position == -1 && rightPosition == -1 then edits else if rows.isEmpty
     then

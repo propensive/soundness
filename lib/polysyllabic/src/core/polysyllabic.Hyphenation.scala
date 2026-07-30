@@ -61,8 +61,8 @@ object Hyphenation:
 
     val patternPairs    = patterns.map(TexPatterns.parsePattern).toSeq
     val exceptionPairs  = exceptions.map(TexPatterns.parseException).toSeq
-    val patternDict     = Dictionary.aho(alphabet, patternPairs*)
-    val exceptionDict   = Dictionary(exceptionPairs*)
+    val patternDict     = Dictionary.aho[Array[Byte]^{}](alphabet, patternPairs*)
+    val exceptionDict   = Dictionary[Array[Int]^{}](exceptionPairs*)
 
     make(patternDict, exceptionDict, leftMin, rightMin)
 
@@ -71,11 +71,11 @@ object Hyphenation:
   // optional `\lefthyphenmin` / `\righthyphenmin` directives.
   def fromTex(content: Text): Hyphenation =
     val parsed = TexPatterns.parseFile(content)
-    apply(parsed.patterns.stdlib.toSeq, parsed.exceptions.stdlib.toSeq, parsed.leftMin, parsed.rightMin)
+    apply(parsed.patterns.readable.toSeq, parsed.exceptions.readable.toSeq, parsed.leftMin, parsed.rightMin)
 
   private[polysyllabic] def make
-    ( patterns0:   Dictionary[IArray[Byte]],
-      exceptions0: Dictionary[IArray[Int]],
+    ( patterns0:   Dictionary[Array[Byte]^{}],
+      exceptions0: Dictionary[Array[Int]^{}],
       leftMin0:    Int,
       rightMin0:   Int )
   :   Hyphenation =
@@ -96,7 +96,7 @@ object Hyphenation:
   // Returns positions in the original (un-padded) word at which a hyphen may
   // be inserted: position `p` means "insert before letter `p`".
   def breakPoints(word: Text, hyphenation: Hyphenation, leftMin: Int, rightMin: Int)
-  :   IArray[Int] =
+  :   Array[Int]^{} =
 
     breakPoints(word.s, 0, word.s.length, hyphenation, leftMin, rightMin)
 
@@ -111,7 +111,7 @@ object Hyphenation:
       hyphenation:  Hyphenation,
       leftMin:      Int,
       rightMin:     Int )
-  :   IArray[Int] =
+  :   Array[Int]^{} =
 
     val paddedLength = length + 2
     val padded = Array[Char](paddedLength)
@@ -127,7 +127,7 @@ object Hyphenation:
     val exception = hyphenation.exceptions(padded.raw, 1, length)
 
     if !exception.absent then
-      val offsets: IArray[Int] = exception.vouch
+      val offsets: Array[Int]^{} = exception.vouch
       val filtered = Array[Int](offsets.length)
       var count = 0
       var k = 0
@@ -165,15 +165,15 @@ object Hyphenation:
   // and dictionary-suffix-link traversal at each step. The outer loop visits
   // each padded character exactly once instead of `paddedLength` times.
   // The first `count` elements of `source`, as an immutable array.
-  private def exactCopy(source: Array[Int]^, count: Int): IArray[Int] =
+  private def exactCopy(source: Array[Int]^, count: Int): Array[Int]^{} =
     val result = Array[Int](count)
     result.copyFrom(source, 0, 0, count)
-    IArray.freeze(result)
+    Array.freeze(result)
 
   private def walkCompact
     ( padded:       scala.Array[Char],
       paddedLength: Int,
-      trie:         Dictionary[IArray[Byte]],
+      trie:         Dictionary[Array[Byte]^{}],
       scores:       scala.Array[Byte]^ )
   :   Unit =
 
@@ -217,7 +217,7 @@ object Hyphenation:
           val v = values(emit)
 
           if v != null then
-            mergePattern(scores, j - depth(emit) + 1, v.asInstanceOf[IArray[Byte]])
+            mergePattern(scores, j - depth(emit) + 1, v.asInstanceOf[Array[Byte]^{}])
 
           emit = dictLink(emit)
 
@@ -258,7 +258,7 @@ object Hyphenation:
     val exception = hyphenation.exceptions(padded, 1, length)
 
     if !exception.absent then
-      val offsets: IArray[Int] = exception.vouch
+      val offsets: Array[Int]^{} = exception.vouch
       var count = 0
       var k = 0
 
@@ -279,7 +279,7 @@ object Hyphenation:
       trieWalkInto(padded, paddedLength, length, hyphenation, leftMin, rightMin, scores, breaks)
 
   private inline def mergePattern
-    ( scores: scala.Array[Byte]^, base: Int, pattern: IArray[Byte] )
+    ( scores: scala.Array[Byte]^, base: Int, pattern: Array[Byte]^{} )
   :   Unit =
 
     var k = 0
@@ -324,8 +324,8 @@ object Hyphenation:
 trait Hyphenation:
   // `patterns` is built via `Dictionary.aho(alphabet, …)` so the algorithm's
   // single-pass walk has the failure and dictionary-suffix links it needs.
-  def patterns: Dictionary[IArray[Byte]]
-  def exceptions: Dictionary[IArray[Int]]
+  def patterns: Dictionary[Array[Byte]^{}]
+  def exceptions: Dictionary[Array[Int]^{}]
   def leftMin: Int
   def rightMin: Int
 
@@ -340,7 +340,7 @@ trait Hyphenation:
     val newExceptionPairs = exceptions.map(TexPatterns.parseException).toSeq
 
     val newPatterns =
-      Dictionary.aho(Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)*)
+      Dictionary.aho[Array[Byte]^{}](Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)*)
 
     val newExceptions = this.exceptions ++ newExceptionPairs
     val effectiveLeft = leftMin.or(this.leftMin)
@@ -351,10 +351,10 @@ private[polysyllabic] object Unhyphenated extends Hyphenation:
   // Empty dictionaries, but built with the hyphenation alphabet so the
   // algorithm's hardcoded slot indexing finds a 27-wide children array
   // (all `-1`) instead of an empty one.
-  val patterns: Dictionary[IArray[Byte]] = Dictionary.aho[IArray[Byte]](Hyphenation.alphabet)
+  val patterns: Dictionary[Array[Byte]^{}] = Dictionary.aho[Array[Byte]^{}](Hyphenation.alphabet)
 
-  val exceptions: Dictionary[IArray[Int]] =
-    Dictionary.withAlphabet[IArray[Int]](Hyphenation.alphabet)
+  val exceptions: Dictionary[Array[Int]^{}] =
+    Dictionary.withAlphabet[Array[Int]^{}](Hyphenation.alphabet)
 
   val leftMin: Int = Int.MaxValue
   val rightMin: Int = Int.MaxValue

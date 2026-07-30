@@ -35,10 +35,12 @@ package escritoire
 enum LineCharset:
   case Default, Rounded, Ascii
 
-  def apply(): IArray[Char] = this match
-    case Default => BoxDrawing.defaultChars
-    case Rounded => BoxDrawing.roundedChars
-    case Ascii   => BoxDrawing.asciiChars
+  // Each branch is ascribed: the inferred union of the three frozen vals picks up a
+  // fresh `any.rd` that cannot flow back into `^{}`.
+  def apply(): Array[Char]^{} = this match
+    case Default => BoxDrawing.defaultChars: Array[Char]^{}
+    case Rounded => BoxDrawing.roundedChars: Array[Char]^{}
+    case Ascii   => BoxDrawing.asciiChars: Array[Char]^{}
 
 
   def apply
@@ -48,4 +50,4 @@ enum LineCharset:
       left:   BoxLine = BoxLine.Blank )
   :   Char =
 
-    this().stdlib(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
+    this().readable(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)

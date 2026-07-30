@@ -38,7 +38,7 @@ object Pue:
   def apply(text: Text): Data =
     val length = text.length
 
-    IArray.build[Byte](length): array =>
+    Array.build[Byte](length): array =>
       var i = 0
 
       while i < length do

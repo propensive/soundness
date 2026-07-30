@@ -646,17 +646,23 @@ object internal:
         fullGraph
 
 
-  // Wraps a homogeneous list of field results into an `IArray`, summoning the `ClassTag` at the
-  // expansion site (where `result` is concrete).
+  // Wraps a homogeneous list of field results into a frozen array, summoning the `ClassTag` at
+  // the expansion site (where `result` is concrete). The array is fresh and never written after
+  // construction, so the `unsafeFrozen` boundary cast is sound.
   private def immutableArray[result: Type](results: sci.List[Expr[result]])(using Quotes)
-  :   Expr[IArray[result]] =
+  :   Expr[Array[result]^{}] =
 
     import quotes.reflect.*
 
     val classTag = Expr.summon[ClassTag[result]].getOrElse:
       report.errorAndAbort("wisteria: no ClassTag available for the result type")
 
-    '{scala.Array[result](${Varargs(results)}*)(using $classTag).immutable(using Unsafe)}
+    // Two casts: the in-quote `asInstanceOf` types the expanded TREE at the frozen form
+    // (transparent inline callers see the tree's type), while the outer `Expr` cast erases
+    // the fresh `any.rd` the checker puts on any frozen-array-typed quote. The array is
+    // fresh and never written after construction, so asserting the frozen form is sound.
+    '{scala.Array[result](${Varargs(results)}*)(using $classTag).asInstanceOf[Array[result]^{}]}
+    . asInstanceOf[Expr[Array[result]^{}]]
 
   // The derivation type may be an intersection `Variant & Parent` (when deriving a sum's
   // variant); resolve to the variant side. The parent of `Variant & Parent` is the sum, which has
@@ -785,7 +791,7 @@ object internal:
 
   def contextsProduct[typeclass[_]: Type, derivation: Type, result: Type]
     ( lambda: Expr[Any] )
-  :   Macro[IArray[result]] =
+  :   Macro[Array[result]^{}] =
 
     import quotes.reflect.*
 
@@ -820,7 +826,7 @@ object internal:
 
   def fieldsProduct[typeclass[_]: Type, derivation: Type, result: Type]
     ( product: Expr[derivation], lambda: Expr[Any] )
-  :   Macro[IArray[result]] =
+  :   Macro[Array[result]^{}] =
 
     import quotes.reflect.*
 

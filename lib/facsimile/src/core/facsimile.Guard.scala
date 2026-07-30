@@ -95,8 +95,8 @@ private[facsimile] object Guard:
     val revision = encrypt.at(t"R").let(pdf.resolved(_).long).or(0L).toInt
     val length = encrypt.at(t"Length").let(pdf.resolved(_).long).or(40L).toInt
     val permissions = encrypt.at(t"P").let(pdf.resolved(_).long).or(0L).toInt
-    val owner = encrypt.at(t"O").let(pdf.resolved(_).chars).or(IArray.empty[Byte])
-    val user = encrypt.at(t"U").let(pdf.resolved(_).chars).or(IArray.empty[Byte])
+    val owner = encrypt.at(t"O").let(pdf.resolved(_).chars).or(Array.empty[Byte])
+    val user = encrypt.at(t"U").let(pdf.resolved(_).chars).or(Array.empty[Byte])
 
     val encryptMetadata =
       encrypt.at(t"EncryptMetadata").let(pdf.resolved(_).truth).or(true)
@@ -125,7 +125,7 @@ private[facsimile] object Guard:
       // Revisions 5–6 (AES-256): the file key is unwrapped from `/UE` with a key derived
       // from the password, and neither object number nor generation enters the per-object
       // key.
-      val ue = encrypt.at(t"UE").let(pdf.resolved(_).chars).or(IArray.empty[Byte])
+      val ue = encrypt.at(t"UE").let(pdf.resolved(_).chars).or(Array.empty[Byte])
 
       val fileKey = unwrap6(password, user, ue)
         . or(abort(PdfError(PdfError.Reason.BadPassword)))
@@ -148,14 +148,14 @@ private[facsimile] object Guard:
       revision: Int, encryptMetadata: Boolean )
   :   Data =
 
-    val permissionsBytes: Data = IArray((permissions & 0xff).toByte,
+    val permissionsBytes: Data = Array.of((permissions & 0xff).toByte,
         ((permissions >> 8) & 0xff).toByte, ((permissions >> 16) & 0xff).toByte,
         ((permissions >> 24) & 0xff).toByte)
 
     val metadataBytes: Data =
       if revision >= 4 && !encryptMetadata
-      then IArray(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte)
-      else IArray.empty[Byte]
+      then Array.of(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte)
+      else Array.empty[Byte]
 
     var hash: Data =
       md5(padded(password).immutable(using Unsafe) ++ owner.take(32.min(owner.length)) ++
@@ -201,10 +201,10 @@ private[facsimile] object Guard:
       val keySalt = user.slice(40, 48)
 
       try
-        if hash6(passwordBytes, salt, IArray.empty[Byte]).to[List] != user.take(32).to[List]
+        if hash6(passwordBytes, salt, Array.empty[Byte]).to[List] != user.take(32).to[List]
         then Unset
         else
-          val intermediate = hash6(passwordBytes, keySalt, IArray.empty[Byte])
+          val intermediate = hash6(passwordBytes, keySalt, Array.empty[Byte])
 
           // AES-256-CBC with a zero IV and no padding. This stays on the JDK cipher:
           // enigmatic's `NoPadding` given captures a `Tactic[CryptoError]`, and the only
@@ -295,12 +295,12 @@ private[facsimile] class Guard
   // Algorithm 1: the per-object key. For revision 6 the file key is used directly.
   private def objectKey(number: Int, generation: Int, aes: Boolean): Data =
     if revision >= 5 then fileKey else
-      val numbering: Data = IArray((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
+      val numbering: Data = Array.of((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
           ((number >> 16) & 0xff).toByte, (generation & 0xff).toByte,
           ((generation >> 8) & 0xff).toByte)
 
       // the "sAlT" constant
-      val salt: Data = if aes then IArray[Byte](0x73, 0x41, 0x6c, 0x54) else IArray.empty[Byte]
+      val salt: Data = if aes then Array.of[Byte](0x73, 0x41, 0x6c, 0x54) else Array.empty[Byte]
 
       Guard.md5(fileKey ++ numbering ++ salt).take((fileKey.length + 5).min(16))
 
@@ -351,8 +351,8 @@ private[facsimile] class Guard
   // AESV2/V3 layout: a 16-byte initialization vector prefixes the ciphertext, which enigmatic
   // reads back off the front; `Pkcs7` strips the padding. Any failure yields empty bytes.
   private def aesCbc[bits <: 128 | 256: ValueOf](key: Data, bytes: Data): Data =
-    if bytes.length <= 16 then IArray.empty[Byte] else
+    if bytes.length <= 16 then Array.empty[Byte] else
       val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
 
       safely(symmetricKey.uncloak(bytes.decrypt[Data, Aes[bits] over Cbc against Pkcs7]))
-      . or(IArray.empty[Byte])
+      . or(Array.empty[Byte])

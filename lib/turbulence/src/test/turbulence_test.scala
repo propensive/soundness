@@ -64,11 +64,11 @@ object Tests extends Suite(m"Turbulence tests"):
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
-          IArray.of(stream.stdlib.map(_.stdlib).reduce(_ ++ _))
+          Array.frozen(stream.stdlib.map(_.stdlib).reduce(_ ++ _))
         . assert(_ === data)
 
     suite(m"Streaming Unicode tests"):
-      val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
+      val ascii = Array.of(t"", t"a", t"ab", t"abc", t"abcd")
 
       val strings = for
         asc0 <- List(t"", t"a", t"ab", t"abc") // 4 combinations
@@ -85,13 +85,13 @@ object Tests extends Suite(m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.in[Data].stdlib.grouped(bs).map(IArray.of(_)).to(proscenium.Progression)
+          val stream = string.in[Data].stdlib.grouped(bs).map(Array.frozen(_)).to(proscenium.Progression)
           val result = stream.read[Text]
           result.in[Data].stdlib.length
         . assert(_ == string.in[Data].stdlib.length)
 
         test(m"roundtrip tests"):
-          val stream = string.in[Data].stdlib.grouped(bs).map(IArray.of(_)).to(proscenium.Progression)
+          val stream = string.in[Data].stdlib.grouped(bs).map(Array.frozen(_)).to(proscenium.Progression)
           val result = stream.read[Text]
 
           result.s
@@ -143,7 +143,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == qbf)
 
       test(m"Bridge Data source to Progression"):
-        IArray.of(qbf.source[Data].toProgression.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List]
+        Array.frozen(qbf.source[Data].toProgression.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List]
       . assert(_ == qbfData.to[List])
 
       test(m"Read Text as Text"):
@@ -184,7 +184,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Text as Progression[Data]"):
         qbf.read[Progression[Data]]
-      . assert(stream => IArray.of(stream.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List] == qbfData.to[List])
+      . assert(stream => Array.frozen(stream.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List] == qbfData.to[List])
 
       test(m"Read Data as Text"):
         qbfData.read[Text].s
@@ -200,7 +200,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read Data as Progression[Data]"):
         qbfData.read[Progression[Data]]
-      . assert(stream => IArray.of(stream.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List] == qbfData.to[List])
+      . assert(stream => Array.frozen(stream.stdlib.map(_.stdlib).reduce(_ ++ _)).to[List] == qbfData.to[List])
 
       // test(m"Read Text as Lines"):
       //   qbf.read[Progression[Line]]
@@ -709,7 +709,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == List.fill(3)(payload.to[List]))
 
       val mixed: Data =
-        IArray.of(Data.fill(50000) { index => (index%251).toByte }.stdlib ++ (t"repetition "*500).in[Data].stdlib)
+        Array.frozen(Data.fill(50000) { index => (index%251).toByte }.stdlib ++ (t"repetition "*500).in[Data].stdlib)
 
       // A duct-chain source has a transient window (its buffer is reused between
       // refills), so the fan-out must snapshot each chunk rather than share it.

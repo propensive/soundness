@@ -49,7 +49,7 @@ object Pax:
     (total.toString+" "+key.s+"="+value.s+"\n").tt.in[Data]
 
   def records(pairs: Iterable[(Text, Text)]): Data =
-    pairs.foldLeft(IArray.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
+    pairs.foldLeft(Array.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
 
   def parse(data: Data): Map[Text, Text] raises TarError =
     val builder = scala.collection.immutable.Map.newBuilder[Text, Text]

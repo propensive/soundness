@@ -85,11 +85,11 @@ object Decomposable extends Decomposable2:
 
   given iarray: [element]
   =>  ( decomposable: => element is Decomposable )
-  =>  IArray[element] is Decomposable =
+  =>  (Array[element]^{}) is Decomposable =
 
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
-          ( t"IArray",
+          ( t"Array",
             scala.collection.immutable.ArraySeq.unsafeWrapArray:
               iarray.asInstanceOf[scala.Array[element]]
             . map(decomposable.decomposition(_)),
@@ -137,7 +137,7 @@ trait Decomposable2 extends Decomposable3:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          Map.from((fields(value) { [field] => field => label -> contextual.decomposition(field) }).stdlib)
+          Map.from((fields(value) { [field] => field => label -> contextual.decomposition(field) }).readable)
 
         Decomposition.Product(typeName, map, value)
 

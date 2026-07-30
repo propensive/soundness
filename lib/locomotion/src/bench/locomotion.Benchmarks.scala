@@ -169,8 +169,8 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // Corpus 3: 500 log entries with six fields each — a larger throughput target
   // dominated by short strings and small integers.
   lazy val value3: Logs =
-    val levels   = IArray(t"info", t"debug", t"warn", t"error")
-    val services = IArray(t"auth", t"api", t"db", t"cache", t"worker")
+    val levels   = Array.of(t"info", t"debug", t"warn", t"error")
+    val services = Array.of(t"auth", t"api", t"db", t"cache", t"worker")
     Logs:
       List.tabulate(500): index =>
         LogEntry

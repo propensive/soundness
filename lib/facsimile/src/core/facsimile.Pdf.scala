@@ -118,8 +118,8 @@ object Pdf:
         . or(abort(PdfError(PdfError.Reason.UnsupportedEncryption(0))))
 
       val id = pdf.trailer.at(t"ID") match
-        case Cos.Sequence(first :: _) => first.chars.or(IArray.empty[Byte])
-        case _                        => IArray.empty[Byte]
+        case Cos.Sequence(first :: _) => first.chars.or(Array.empty[Byte])
+        case _                        => Array.empty[Byte]
 
       pdf.guard = password.lay(Guard(encrypt, id, scala.Array.empty[Char])(using pdf)): password =>
         password.uncloak(Guard(encrypt, id, cleartext.chars)(using pdf))
@@ -600,7 +600,7 @@ extends caps.ExclusiveCapability:
   // The raw payload, decrypted if the document is encrypted and this stream is not exempt. A
   // stream created in this scope (negative sentinel start) yields its inline bytes directly.
   private[facsimile] def raw(body: Cos.Body)(using Tactic[PdfError]): Data =
-    if body.start < 0 then newStreams.at(body.start).or(IArray.empty[Byte]) else
+    if body.start < 0 then newStreams.at(body.start).or(Array.empty[Byte]) else
       val bytes = source.read(body.start, (payloadEnd(body) - body.start).toInt)
 
       if !encryptedStream(body) then bytes else

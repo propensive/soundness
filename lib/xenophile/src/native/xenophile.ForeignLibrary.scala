@@ -106,7 +106,7 @@ object ForeignLibrary:
   def bytes(segment: MemorySegment, length: Int): Data =
     val array = Array[Byte](length)
     MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0L, array.raw, 0, length)
-    IArray.freeze(array)
+    Array.freeze(array)
 
   //── Process-wide symbol resolution, for the macro `invoke` (`PanamaInvoke`) ─────────────────
   // A statically-linked native binary resolves every C symbol from one flat namespace

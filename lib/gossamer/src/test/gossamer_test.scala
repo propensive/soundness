@@ -325,8 +325,8 @@ object Tests extends Suite(m"Gossamer Tests"):
         List(0, 1, 2, 3, 4).after(Ter)
       . assert(_ == List(3, 4))
 
-      test(m"upto slices an IArray by ordinal"):
-        IArray(0, 1, 2, 3, 4).upto(Ter).to[List]
+      test(m"upto slices a frozen array by ordinal"):
+        Array.of(0, 1, 2, 3, 4).upto(Ter).to[List]
       . assert(_ == List(0, 1, 2))
 
       test(m"before slices an IndexedSeq by ordinal"):

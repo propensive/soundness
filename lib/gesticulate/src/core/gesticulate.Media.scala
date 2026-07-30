@@ -134,7 +134,7 @@ object Media:
 
       chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))
-        Subtype.X(IArray.from(chars.filter(!notAllowed(_))).text)
+        Subtype.X(Array.from(chars.filter(!notAllowed(_))).text)
 
       . getOrElse:
           if string.starts(t"vnd.") then Subtype.Vendor(string.skip(4))

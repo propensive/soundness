@@ -189,7 +189,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
           case Frame.Continuation(fin, data) =>
             partial.lay(abort(WebsocketError(WebsocketError.Reason.BadFragmentation))):
               (text, accumulated) =>
-                extend(text, caps.unsafe.unsafeAssumePure(accumulated ++ data), fin)
+                extend(text, accumulated ++ data, fin)
 
       recur(Unset)
 

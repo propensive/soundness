@@ -587,7 +587,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == ((true, "a")))
 
       suite(m"Streaming kernel tests"):
-        val small = IArray[Byte](1, 2, 3, 4, 5)
+        val small = Array.of[Byte](1, 2, 3, 4, 5)
 
         test(m"pump transfers a single-chunk stream"):
           val gather = Gather()
@@ -597,7 +597,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"iterator stream transfers all chunks in order"):
           val gather = Gather()
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5))).pump(gather)
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](), Array.of[Byte](4, 5))).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
         . assert(_ == List[Byte](1, 2, 3, 4, 5))
 
@@ -632,14 +632,14 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"duct flush emits terminal state on finish"):
           val gather = Gather()
           val intake = gather.accepting(Trailer())
-          intake.put(IArray[Byte](1, 2))
+          intake.put(Array.of[Byte](1, 2))
           intake.finish()
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stdlib.to(List)
         . assert(_ == List[Byte](1, 2, 99))
 
         test(m"duct flush emits terminal state at end of a pulled stream"):
           val gather = Gather()
-          Stream(IArray[Byte](1, 2)).via(Trailer()).pump(gather)
+          Stream(Array.of[Byte](1, 2)).via(Trailer()).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
         . assert(_ == List[Byte](1, 2, 99))
 
@@ -654,7 +654,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
         . assert(_ == bytes.to[List])
 
-        val big: Data = IArray.tabulate[Byte](10000)(index => (index%251).toByte)
+        val big: Data = Array.tabulate[Byte](10000)(index => (index%251).toByte)
 
         test(m"conduit passes a large chunk through after a buffered partial block"):
           Conduit[Data]() match
@@ -672,7 +672,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         // so the reader drains and returns ceiling-sized blocks that the writer
         // reuses from the pool: the data must survive the recycling intact.
         test(m"conduit recycles transfer blocks across many hand-offs"):
-          val payload: Data = IArray.tabulate[Byte](1000000)(index => (index%251).toByte)
+          val payload: Data = Array.tabulate[Byte](1000000)(index => (index%251).toByte)
           Conduit[Data]() match
            case (intake, stream) =>
             val gather = Gather()
@@ -686,8 +686,8 @@ object Tests extends Suite(m"Zephyrine tests"):
         // the reader must never return its backing to the pool: were it recycled,
         // the ceiling-sized blocks minted for `extra` would overwrite `original`.
         test(m"conduit never recycles a passed-through backing"):
-          val original: Data = IArray.tabulate[Byte](80000)(index => (index%251).toByte)
-          val extra: Data = IArray.tabulate[Byte](300000)(index => ((index + 1)%251).toByte)
+          val original: Data = Array.tabulate[Byte](80000)(index => (index%251).toByte)
+          val extra: Data = Array.tabulate[Byte](300000)(index => ((index + 1)%251).toByte)
           Conduit[Data]() match
            case (intake, stream) =>
             val gather = Gather()
@@ -695,14 +695,14 @@ object Tests extends Suite(m"Zephyrine tests"):
             intake.put(original)
             extra.stream.pump(intake)
             unsafely(scala.caps.unsafe.unsafeAssumeSeparate(task.await()))
-            original.to[List] == IArray.tabulate[Byte](80000)(index => (index%251).toByte).to[List]
+            original.to[List] == Array.tabulate[Byte](80000)(index => (index%251).toByte).to[List]
         . assert(identity)
 
         test(m"conduit demand reflects buffered data"):
           Conduit[Data]() match
            case (intake, stream) =>
             val before = intake.demand.count
-            intake.put(IArray[Byte](1, 2, 3))
+            intake.put(Array.of[Byte](1, 2, 3))
             val after = intake.demand.count
             before - after
         . assert(_ == 3L)
@@ -747,7 +747,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         val exotic = t"héllo → 🎉 fin"
 
         test(m"char decoder duct reassembles multi-byte characters split across refills"):
-          val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => IArray[Byte](byte) }
+          val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => Array.of[Byte](byte) }
           val stream = chunks.iterator.stream.via(summon[CharDecoder])
           val builder = StringBuilder()
 
@@ -774,7 +774,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         // Malformed input — a stray continuation, an overlong lead, a
         // truncated sequence mid-stream and a bad continuation — must decode
         // through the duct exactly as the whole-value decoder sanitizes it.
-        val malformed = IArray[Byte](
+        val malformed = Array.of[Byte](
           'a'.toByte, 0x80.toByte, 'b'.toByte,                              // stray continuation
           0xc0.toByte, 0xaf.toByte, 'c'.toByte,                             // overlong lead
           0xe4.toByte, 0xb8.toByte, 'd'.toByte,                             // truncated 3-byte
@@ -819,8 +819,8 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == exotic)
 
         test(m"record streams carry heap objects with credit counted in records"):
-          val records = IArray.from((1 to 100).map { index => s"record-$index" })
-          val stream = Stream[IArray[String]](records)
+          val records = Array.from((1 to 100).map { index => s"record-$index" })
+          val stream = Stream[Array[String]^{}](records)
           var collected: List[String] = Nil
 
           def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:
@@ -851,7 +851,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"sweep visits every element in order across chunks"):
           var collected: List[Byte] = Nil
 
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5)))
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](), Array.of[Byte](4, 5)))
           . sweep: (storage, start, count) =>
               val bytes = storage.asInstanceOf[scala.Array[Byte]]
               for index <- 0 until count do collected = bytes(start + index) :: collected
@@ -860,7 +860,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](1, 2, 3, 4, 5))
 
         test(m"memoize drains a byte stream into a single immutable value"):
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5))).memoize.to[List]
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5))).memoize.to[List]
         . assert(_ == List[Byte](1, 2, 3, 4, 5))
 
         test(m"memoize of an empty stream yields an empty value"):
@@ -880,7 +880,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](1, 2, 3))
 
         test(m"take across chunk boundaries"):
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5, 6))).take(4).memoize.to[List]
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6))).take(4).memoize.to[List]
         . assert(_ == List[Byte](1, 2, 3, 4))
 
         test(m"take of more than the stream holds yields the whole stream"):
@@ -896,7 +896,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](3, 4, 5))
 
         test(m"drop across chunk boundaries"):
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5, 6))).drop(4).memoize.to[List]
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5, 6))).drop(4).memoize.to[List]
         . assert(_ == List[Byte](5, 6))
 
         test(m"drop of more than the stream holds yields an empty stream"):
@@ -922,7 +922,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == bytes.to[List].map(_ & 0xff).sum.toLong)
 
         test(m"toProgression yields the stream's chunks in order"):
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5))).toProgression.stdlib.to(List)
+          Stream(Iterator(Array.of[Byte](1, 2, 3), Array.of[Byte](4, 5))).toProgression.stdlib.to(List)
           . map(_.to[List])
         . assert(_ == List(List[Byte](1, 2, 3), List[Byte](4, 5)))
 
@@ -932,39 +932,39 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"toProgression construction pulls nothing"):
           var pulled: Int = 0
-          val chunks = Iterator(IArray[Byte](1.toByte), IArray[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
+          val chunks = Iterator(Array.of[Byte](1.toByte), Array.of[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
           val list = chunks.stream.toProgression
           scala.caps.unsafe.unsafeAssumeSeparate(pulled)
         . assert(_ == 0)
 
         test(m"toProgression pulls chunks only as cells are forced"):
           var pulled: Int = 0
-          val chunks = Iterator(IArray[Byte](1.toByte), IArray[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
+          val chunks = Iterator(Array.of[Byte](1.toByte), Array.of[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
           val list = chunks.stream.toProgression
           list.head
           scala.caps.unsafe.unsafeAssumeSeparate(pulled)
         . assert(_ == 1)
 
         test(m"toProgression reassembles a transformed pipeline"):
-          val text = Stream(Iterator(IArray[Byte](104, 105))).via(summon[CharDecoder]).toProgression
+          val text = Stream(Iterator(Array.of[Byte](104, 105))).via(summon[CharDecoder]).toProgression
           text.stdlib.to(List).map(_.s).mkString
         . assert(_ == "hi")
 
         test(m"records iterates across chunks in order"):
-          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3)))).records.to(List)
+          Stream(Iterator(Array.of(Row(1), Row(2)), Array.of(Row(3)))).records.to(List)
         . assert(_ == List(Row(1), Row(2), Row(3)))
 
         test(m"records of an empty record stream is empty"):
-          Iterator.empty[IArray[Row]].stream.records.to(List)
+          Iterator.empty[Array[Row]^{}].stream.records.to(List)
         . assert(_ == List())
 
-        test(m"memoize materializes a record stream into one IArray"):
-          val rows: IArray[Row] = Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3)))).memoize
+        test(m"memoize materializes a record stream into one frozen array"):
+          val rows: Array[Row]^{} = Stream(Iterator(Array.of(Row(1), Row(2)), Array.of(Row(3)))).memoize
           rows.to[List]
         . assert(_ == List(Row(1), Row(2), Row(3)))
 
         test(m"records composes with take"):
-          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3), Row(4)))).take(3).records
+          Stream(Iterator(Array.of(Row(1), Row(2)), Array.of(Row(3), Row(4)))).take(3).records
           . to(List)
         . assert(_ == List(Row(1), Row(2), Row(3)))
 
@@ -985,12 +985,12 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](0, 1, 2, 3, 4, 5))
 
         test(m"streamOf spans cursor refills"):
-          val cursor = Cursor(Iterator(IArray[Byte](0, 1, 2), IArray[Byte](3, 4, 5), IArray[Byte](6.toByte)))
+          val cursor = Cursor(Iterator(Array.of[Byte](0, 1, 2), Array.of[Byte](3, 4, 5), Array.of[Byte](6.toByte)))
           scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
         . assert(_ == List[Byte](0, 1, 2, 3, 4))
 
         test(m"a lent sub-stream and the resumed cursor partition the input"):
-          val cursor = Cursor(Iterator(IArray[Byte](0, 1, 2), IArray[Byte](3, 4, 5), IArray[Byte](6.toByte)))
+          val cursor = Cursor(Iterator(Array.of[Byte](0, 1, 2), Array.of[Byte](3, 4, 5), Array.of[Byte](6.toByte)))
           val lent = scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
           val rest = cursor.remainder.stdlib.to(List).flatMap(_.stdlib.to(List))
           (lent, rest)

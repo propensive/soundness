@@ -56,7 +56,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert: stream => stream === proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
       val longData: Progression[Data] =
-        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+        proscenium.Progression.from(proscenium.Progression.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
@@ -64,7 +64,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       // The whole-value forms (`Duct.feed` over the format ducts) must
       // interoperate with the stream forms in both directions, per format.
-      val wholeData: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val wholeData: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
 
       for format <- List(t"Gzip", t"Zlib", t"Deflate") do
         test(m"whole-value compress roundtrips through whole-value decompress ($format)"):
@@ -94,7 +94,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       // Varied enough to push the code table through its 9-, 10- and 11-bit widths.
       val variedData: Progression[Data] =
-        proscenium.Progression(IArray.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }).asInstanceOf[Data])
+        proscenium.Progression(Array.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }).asInstanceOf[Data])
 
       test(m"Roundtrip compress/decompress across LZW width growth"):
         variedData.compress[Lzw].decompress[Lzw]
@@ -136,7 +136,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       // Scala.js and WASI) is exercised directly here, cross-validated against the JDK's zlib
       // in both directions and via byte-for-byte output equality.
       val corpus: Data =
-        IArray.from((0 until 300000).map { index => ((index*31 + (index >> 6)) & 0xff).toByte })
+        Array.from((0 until 300000).map { index => ((index*31 + (index >> 6)) & 0xff).toByte })
 
       def jdkInflate(data: Data, nowrap: Boolean): List[Byte] =
         val inflater = java.util.zip.Inflater(nowrap)
@@ -299,10 +299,10 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == foxPlain.in[Data].to[List])
 
       val brotliLong: Progression[Data] =
-        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
-      val brotliWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+        proscenium.Progression.from(proscenium.Progression.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+      val brotliWhole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val brotliVaried: Data =
-        IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
+        Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip compress/decompress a single block with Brotli"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Brotli].decompress[Brotli]
@@ -334,7 +334,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == true)
 
       test(m"Roundtrip a large multi-command payload (Brotli)"):
-        val big = IArray.from((0 until 2000000).map { index => ((index*31 + (index >> 6)) & 0xff).toByte })
+        val big = Array.from((0 until 2000000).map { index => ((index*31 + (index >> 6)) & 0xff).toByte })
         big.compress[Brotli].decompress[Brotli].to[List] == big.to[List]
       . assert(_ == true)
 
@@ -409,11 +409,11 @@ object Tests extends Suite(m"Pneumatic tests"):
         emptyXz.decompress[Xz].to[List]
       . assert(_ == Nil)
 
-      val xzWhole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val xzWhole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val xzLong: Progression[Data] =
-        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+        proscenium.Progression.from(proscenium.Progression.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
       val xzVaried: Data =
-        IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
+        Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip a single block with Xz"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Xz].decompress[Xz]
@@ -458,7 +458,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       test(m"Roundtrip a large multi-chunk payload (Xz)"):
         val big =
-          IArray.from((0 until 3000000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
+          Array.from((0 until 3000000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
         big.compress[Xz].decompress[Xz].to[List] == big.to[List]
       . assert(_ == true)
 
@@ -466,10 +466,10 @@ object Tests extends Suite(m"Pneumatic tests"):
         // Preset 0 has a 256 KiB dictionary, so ~700 KiB spans several self-contained blocks; the
         // multi-block stream must roundtrip and be accepted by the reference `xz` binary.
         val payload: Data =
-          IArray.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
+          Array.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
         val encodedChunks = Xz.compress(Progression(payload), 0)
         val roundtrips = encodedChunks.decompress[Xz].stdlib.map(_.stdlib).flatten.to(proscenium.List) == payload.stdlib.to(proscenium.List)
-        val encodedBytes: scala.Array[Byte] = IArray.from(encodedChunks.stdlib.map(_.stdlib).flatten).mutable(using Unsafe)
+        val encodedBytes: scala.Array[Byte] = Array.from(encodedChunks.stdlib.map(_.stdlib).flatten).mutable(using Unsafe)
         val byXz =
           try
             val process = ProcessBuilder("xz", "-d", "-c").start().nn
@@ -504,11 +504,11 @@ object Tests extends Suite(m"Pneumatic tests"):
       . assert(_ == true)
 
     suite(m"LZMA2 tests"):
-      val lzma2Whole: Data = IArray.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
+      val lzma2Whole: Data = Array.from((0 to 255).map(_.toByte)) ++ Data(1, 1, 2, 3, 5, 8, 13)
       val lzma2Long: Progression[Data] =
-        proscenium.Progression.from(proscenium.Progression.continually(IArray.from((0 to 255).map(_.toByte))).stdlib.take(1000))
+        proscenium.Progression.from(proscenium.Progression.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000))
       val lzma2Varied: Data =
-        IArray.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
+        Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
       test(m"Roundtrip a single block with raw LZMA2"):
         proscenium.Progression(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzma2].decompress[Lzma2]
@@ -638,7 +638,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val gather = Gather2()
 
         summon[Progression[Data] is Streamable by Data over Credit]
-        . stream(out.toByteArray.nn.immutable(using Unsafe).stdlib.grouped(7).map(IArray.of(_)).to(Progression))
+        . stream(out.toByteArray.nn.immutable(using Unsafe).stdlib.grouped(7).map(Array.frozen(_)).to(Progression))
         . decompress[Gzip].pump(gather)
 
         scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])

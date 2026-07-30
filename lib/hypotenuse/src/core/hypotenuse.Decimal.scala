@@ -34,6 +34,8 @@ package hypotenuse
 
 import proscenium.compat.*
 
+import scala.caps
+
 import scala.util.FromDigits
 import scala.math
 
@@ -60,16 +62,20 @@ import vacuous.*
 export decimalInternal.Decimal
 
 object decimalInternal:
-  opaque type Decimal = IArray[Int]
+  // Represented as the stdlib`s immutable array, not the frozen `Array[Int]^{}`: dealiasing
+  // the mutable-classified opaque inside this file gives `Decimal` fields a fresh `any.rd`
+  // capability, and intersecting with `caps.Pure` breaks `raises`/`is` usages. The stdlib
+  // `IArray` is pure by construction, which is the whole point of the representation.
+  opaque type Decimal = scala.IArray[Int]
 
   object Decimal:
     private val Base: Int = 1000000000 // 10⁹, the largest power of ten below 2³¹
     private val BaseDigits: Int = 9
 
-    private val powers: IArray[Int] =
-      IArray(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, Base)
+    private val powers: Array[Int]^{} =
+      Array.of(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, Base)
 
-    val Zero: Decimal = IArray(0, 0)
+    val Zero: Decimal = scala.IArray(0, 0)
 
     enum Rounding:
       case Up, Down, Ceiling, Floor, HalfUp, HalfDown, HalfEven
@@ -209,7 +215,7 @@ object decimalInternal:
         result(0) = signum
         result(1) = scale
         result.copyFrom(magnitude, 0, 2, count)
-        IArray.freeze(result)
+        Array.freeze(result).readable
 
     // In-place small division, returning the remainder; `divisor` is at most 10⁹.
     private def divideSmall(magnitude: scala.Array[Int]^, count: Int, divisor: Int): Int =
@@ -537,9 +543,9 @@ object decimalInternal:
     def negation(value: Decimal): Decimal =
       if value(0) == 0 then value else
         val result = Array[Int](value.length)
-        result.copyFrom(value, 0, 0, value.length)
+        result.copyFrom(Array.frozen(value), 0, 0, value.length)
         result(0) = -value(0)
-        IArray.freeze(result)
+        Array.freeze(result).readable
 
     def sum(left: Decimal, right: Decimal): Decimal =
       if left(0) == 0 then right else if right(0) == 0 then left else

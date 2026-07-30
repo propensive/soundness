@@ -82,12 +82,12 @@ object Tests extends Suite(m"Rudiments Tests"):
         Set(1, 2, 3).has(4)
       . assert(_ == false)
 
-      test(m"IArray element membership"):
-        IArray(1, 2, 3).has(2)
+      test(m"frozen array element membership"):
+        Array.of(1, 2, 3).has(2)
       . assert(_ == true)
 
-      test(m"IArray missing element"):
-        IArray(1, 2, 3).has(4)
+      test(m"frozen array missing element"):
+        Array.of(1, 2, 3).has(4)
       . assert(_ == false)
 
       test(m"Array element membership"):
@@ -133,7 +133,7 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"Confined index tests"):
       val text = t"hello"
-      val array = IArray(10, 20, 30)
+      val array = Array.of(10, 20, 30)
 
       test(m"Plain `at` returns Optional"):
         text.at(Prim).vouch
@@ -318,7 +318,7 @@ object Tests extends Suite(m"Rudiments Tests"):
       test(m"Take a snapshot of an array"):
         val array = scala.Array[Int](1, 2, 3, 4, 5)
         array(1) = 17
-        val snapshot: IArray[Int] = array.snapshot
+        val snapshot: Array[Int]^{} = array.snapshot
         array(1) = 42
         snapshot.to[List]
       . assert(_ == List(1, 17, 3, 4, 5))

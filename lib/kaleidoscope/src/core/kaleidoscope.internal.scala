@@ -110,8 +110,11 @@ object internal:
   class RExtractor[result](parts: Seq[String]):
     def unapply(scrutinee: Text)(using scanner: Scanner): result =
       val result = Regex(List.from(parts))(using Unsafe).matchGroups(scrutinee)
-      val result2 = result.asInstanceOf[Option[IArray[List[Text | Char] | Optional[Text | Char]]]]
+      val result2 = result.asInstanceOf[Option[Array[List[Text | Char] | Optional[Text | Char]]^{}]]
 
       if parts.length == 2
-      then result2.map { (groups: IArray[List[Text | Char] | Optional[Text | Char]]) => groups.head }.asInstanceOf[result]
-      else result2.map(x => Tuple.fromIArray(x.stdlib)).asInstanceOf[result]
+      then result2.map { (groups: Array[List[Text | Char] | Optional[Text | Char]]^{}) => groups.head }.asInstanceOf[result]
+      else
+        result2.map { (x: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
+          Tuple.fromIArray(x.readable) }
+        . asInstanceOf[result]

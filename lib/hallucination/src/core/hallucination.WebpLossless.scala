@@ -46,15 +46,15 @@ import RasterError.Reason
 private[hallucination] object WebpLossless:
   private val CodeLengthCodes: Int = 19
 
-  private val CodeLengthCodeOrder: IArray[Int] =
+  private val CodeLengthCodeOrder: Array[Int]^{} =
     scala.Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
-    . asInstanceOf[IArray[Int]]
+    . asInstanceOf[Array[Int]^{}]
 
   private val HuffmanCodesPerMetaCode: Int = 5
-  private val AlphabetSize: IArray[Int] = scala.Array(256 + 24, 256, 256, 256, 40).asInstanceOf[IArray[Int]]
+  private val AlphabetSize: Array[Int]^{} = scala.Array(256 + 24, 256, 256, 256, 40).asInstanceOf[Array[Int]^{}]
 
   // (xoffset, yoffset) pairs, flattened, for short backward-reference distances.
-  private val DistanceMap: IArray[Int] = scala.Array(
+  private val DistanceMap: Array[Int]^{} = scala.Array(
     0, 1, 1, 0, 1, 1, -1, 1, 0, 2, 2, 0, 1, 2, -1, 2, 2, 1,
     -2, 1, 2, 2, -2, 2, 0, 3, 3, 0, 1, 3, -1, 3, 3, 1, -3, 1,
     2, 3, -2, 3, 3, 2, -3, 2, 0, 4, 4, 0, 1, 4, -1, 4, 4, 1,
@@ -68,9 +68,9 @@ private[hallucination] object WebpLossless:
     7, 3, -7, 3, 5, 6, -5, 6, 6, 5, -6, 5, 8, 0, 4, 7, -4, 7,
     7, 4, -7, 4, 8, 1, 8, 2, 6, 6, -6, 6, 8, 3, 5, 7, -5, 7,
     7, 5, -7, 5, 8, 4, 6, 7, -6, 7, 7, 6, -7, 6, 8, 5, 7, 7,
-    -7, 7, 8, 6, 8, 7).asInstanceOf[IArray[Int]]
+    -7, 7, 8, 6, 8, 7).asInstanceOf[Array[Int]^{}]
 
-  private final class Group(val trees: IArray[WebpHuffman]):
+  private final class Group(val trees: Array[WebpHuffman]^{}):
     def allSingle: Boolean =
       trees(0).isSingleNode && trees(1).isSingleNode && trees(2).isSingleNode &&
         trees(3).isSingleNode
@@ -86,14 +86,14 @@ private[hallucination] object WebpLossless:
 
   private final class HuffmanInfo
     ( val xsize: Int, val cache: Optional[ColorCache],
-      val image: IArray[Int], val bits: Int,
-      val mask: Int, val groups: IArray[Group] ):
+      val image: Array[Int]^{}, val bits: Int,
+      val mask: Int, val groups: Array[Group]^{} ):
 
     def huffIndex(x: Int, y: Int): Int =
       if bits == 0 then 0 else image((y >> bits)*xsize + (x >> bits))
 
   private final class Transform(val kind: Int, val sizeBits: Int,
-      val data: IArray[Byte], val tableSize: Int)
+      val data: Array[Byte]^{}, val tableSize: Int)
 
   // Reads a full VP8L frame — its 5-byte header then the transformed image — returning the
   // dimensions and the un-transformed RGBA buffer.
@@ -170,10 +170,10 @@ private[hallucination] object WebpLossless:
             val blockHeight = WebpTransform.subsampleSize(height, sizeBits)
             val data = new scala.Array[Byte](blockWidth*blockHeight*4)
             decodeImageStream(blockWidth, blockHeight, false, data, 0)
-            Transform(kind, sizeBits, data.asInstanceOf[IArray[Byte]], 0)
+            Transform(kind, sizeBits, data.asInstanceOf[Array[Byte]^{}], 0)
 
           case 2 =>
-            Transform(2, 0, new scala.Array[Byte](0).asInstanceOf[IArray[Byte]], 0)
+            Transform(2, 0, new scala.Array[Byte](0).asInstanceOf[Array[Byte]^{}], 0)
 
           case _ =>
             val tableSize = reader.readBits(8) + 1
@@ -194,7 +194,7 @@ private[hallucination] object WebpLossless:
               else 0
 
             xsize = WebpTransform.subsampleSize(xsize, bits)
-            Transform(3, 0, colorMap.asInstanceOf[IArray[Byte]], tableSize)
+            Transform(3, 0, colorMap.asInstanceOf[Array[Byte]^{}], tableSize)
 
       xsize
 
@@ -255,14 +255,14 @@ private[hallucination] object WebpLossless:
           trees(j) = readHuffmanCode(alphabet)
           j += 1
 
-        groups(g) = Group(trees.asInstanceOf[IArray[WebpHuffman]])
+        groups(g) = Group(trees.asInstanceOf[Array[WebpHuffman]^{}])
         g += 1
 
       val mask = if huffmanBits == 0 then -1 else (1 << huffmanBits) - 1
 
       HuffmanInfo
-        ( huffmanXsize, cache, entropy.asInstanceOf[IArray[Int]], huffmanBits, mask,
-          groups.asInstanceOf[IArray[Group]] )
+        ( huffmanXsize, cache, entropy.asInstanceOf[Array[Int]^{}], huffmanBits, mask,
+          groups.asInstanceOf[Array[Group]^{}] )
 
     private update def readHuffmanCode(alphabetSize: Int)(using Tactic[RasterError]): WebpHuffman =
       if reader.readBits(1) == 1 then

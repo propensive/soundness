@@ -54,34 +54,34 @@ private[pneumatic] object BrotliDictionary:
   final val maxWordLength = 24
   final val maxTransformedWordLength = 5 + maxWordLength + 8
 
-  val offsetsByLength: IArray[Int] =
-    IArray.unsafeFromArray:
+  val offsetsByLength: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 0, 0, 0, 0, 4096, 9216, 21504, 35840, 44032, 53248, 63488, 74752, 87040, 93696, 100864,
       104704, 106752, 108928, 113536, 115968, 118528, 119872, 121280, 122016)
 
-  val sizeBitsByLength: IArray[Int] =
-    IArray.unsafeFromArray:
+  val sizeBitsByLength: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 0, 0, 0, 10, 10, 11, 11, 10, 10, 10, 10, 10, 9, 9, 8, 7, 7, 8, 7, 7, 6, 6, 5, 5)
 
-  def data: IArray[Byte] = BrotliDictionaryData.data
+  def data: Array[Byte]^{} = BrotliDictionaryData.data
 
-  private def uni(s: String): IArray[Byte] =
+  private def uni(s: String): Array[Byte]^{} =
     val out: scala.Array[Byte]^ = new scala.Array[Byte](s.length)
     var i = 0
     while i < s.length do { out(i) = s.charAt(i).toByte; i += 1 }
-    IArray.unsafeFromArray(out)
+    Array.unsafeFrozen(out)
 
   final class Transform(prefixString: String, val kind: Int, suffixString: String):
-    val prefix: IArray[Byte] = uni(prefixString)
-    val suffix: IArray[Byte] = uni(suffixString)
+    val prefix: Array[Byte]^{} = uni(prefixString)
+    val suffix: Array[Byte]^{} = uni(suffixString)
 
   private def omitFirst(kind: Int): Int = if kind >= OmitFirst1 then kind - OmitFirst1 + 1 else 0
   private def omitLast(kind: Int): Int = if kind <= OmitLast9 then kind - OmitLast1 + 1 else 0
 
-  val transforms: IArray[Transform] =
-    IArray.unsafeFromArray:
+  val transforms: Array[Transform]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       Transform("", Identity, ""),
       Transform("", Identity, " "),
@@ -207,7 +207,7 @@ private[pneumatic] object BrotliDictionary:
   )
 
   def transformDictionaryWord
-    ( dst: scala.Array[Byte]^, dstOffset: Int, word: IArray[Byte], wordOffset0: Int, len0: Int,
+    ( dst: scala.Array[Byte]^, dstOffset: Int, word: Array[Byte]^{}, wordOffset0: Int, len0: Int,
       transform: Transform )
   :   Int =
 

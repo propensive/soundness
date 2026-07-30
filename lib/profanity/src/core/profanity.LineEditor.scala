@@ -62,7 +62,7 @@ object LineEditor:
     val metric:     Grapheme is Measurable = summon[Grapheme is Measurable]
     val string:     String                 = text.s
     val limit:      Int                    = position.min(string.length)
-    val boundaries: IArray[Int]            = Writing(text).boundaries
+    val boundaries: Array[Int]^{}            = Writing(text).boundaries
     var row:        Int                    = 0
     var column:     Int                    = 0
     var index:      Int                    = 0

@@ -112,9 +112,9 @@ extension (consume stream: (Stream[Text] over Credit)^)
   // extensions from different modules shadow, not overload, under the flat
   // `soundness.*` re-export.)
   def delineate(using lineSeparation: LineSeparation, buffering: Buffering)
-  :   (Stream[IArray[Text]] over Credit)^ =
+  :   (Stream[Array[Text]^{}] over Credit)^ =
 
-    stream.via(lineSeparation).asInstanceOf[(Stream[IArray[Text]] over Credit)^]
+    stream.via(lineSeparation).asInstanceOf[(Stream[Array[Text]^{}] over Credit)^]
 
 extension (text: Text)
   // Split a whole `Text` into its lines through the SAME `LineSeparation`
@@ -122,7 +122,7 @@ extension (text: Text)
   // window (`Duct.feed`) — no stream endpoint, no credit machinery. One
   // implementation, two drivers.
   @targetName("delineateText")
-  def delineate(using lineSeparation: LineSeparation, buffering: Buffering): IArray[Text] =
+  def delineate(using lineSeparation: LineSeparation, buffering: Buffering): Array[Text]^{} =
     Duct.feed(text, LineSeparation.lines.duct(lineSeparation))
 
 extension (data: Data)
@@ -131,7 +131,7 @@ extension (data: Data)
   @targetName("delineateWholeData")
   def delineate
     ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
-  :   IArray[Text] =
+  :   Array[Text]^{} =
 
     decoder.decoded(data).delineate
 
@@ -141,7 +141,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
   @targetName("delineateData")
   def delineate
     ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
-  :   (Stream[IArray[Text]] over Credit)^ =
+  :   (Stream[Array[Text]^{}] over Credit)^ =
 
     stream.via(decoder).asInstanceOf[(Stream[Text] over Credit)^].delineate
 
@@ -212,7 +212,7 @@ extension (body: HttpStreams.Body)
       type Transport = Credit
 
       private val block: Int = buffering.capacity(Substrate.Bytes)
-      private var chunk: Data = IArray.empty[Byte].asInstanceOf[Data]
+      private var chunk: Data = Array.empty[Byte].asInstanceOf[Data]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var ended: Boolean = false
@@ -357,7 +357,7 @@ extension (stream: Progression[Data])
             // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
             val out = Array[Byte](destPos)
             jl.System.arraycopy(dest, 0, out.raw, 0, destPos)
-            Progression(IArray.freeze(out).asInstanceOf[Data])
+            Progression(Array.freeze(out).asInstanceOf[Data])
 
     recur(stream, 0, newArray(), 0)
 
@@ -375,7 +375,7 @@ extension (stream: Progression[Data])
     // A JDK adapter, not a capability class: its staging slots are untracked.
     @caps.unsafe.untrackedCaptures private var current: Progression[Data] = stream
     @caps.unsafe.untrackedCaptures private var offset: Int = 0
-    @caps.unsafe.untrackedCaptures private var focus: Data = IArray.empty[Byte].asInstanceOf[Data]
+    @caps.unsafe.untrackedCaptures private var focus: Data = Array.empty[Byte].asInstanceOf[Data]
 
     override def available(): Int =
       val diff = focus.length - offset

@@ -37,8 +37,8 @@ package pneumatic
 // range tables (RFC 7932 sections 7.3 and 5). This file is generated; do not edit by hand.
 private[pneumatic] object BrotliTables:
   // Context-modelling lookup table (1792 entries).
-  val contextLookup: IArray[Int] =
-    IArray.unsafeFromArray:
+  val contextLookup: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 0, 0, 0, 0, 0, 0, 0, 0, 4, 4, 0, 0, 4, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -154,54 +154,54 @@ private[pneumatic] object BrotliTables:
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 
   // Offsets into contextLookup for each context mode (LSB6, MSB6, UTF8, SIGNED).
-  val contextLookupOffsets: IArray[Int] =
-    IArray.unsafeFromArray:
+  val contextLookupOffsets: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       1024, 1536, 1280, 1536, 0, 256, 768, 512)
 
-  val blockLengthOffset: IArray[Int] =
-    IArray.unsafeFromArray:
+  val blockLengthOffset: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       1, 5, 9, 13, 17, 25, 33, 41, 49, 65, 81, 97, 113, 145, 177, 209,
       241, 305, 369, 497, 753, 1265, 2289, 4337, 8433, 16625)
 
-  val blockLengthNBits: IArray[Int] =
-    IArray.unsafeFromArray:
+  val blockLengthNBits: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5,
       6, 6, 7, 8, 9, 10, 11, 12, 13, 24)
 
-  val insertLengthOffset: IArray[Int] =
-    IArray.unsafeFromArray:
+  val insertLengthOffset: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 1, 2, 3, 4, 5, 6, 8, 10, 14, 18, 26, 34, 50, 66, 98,
       130, 194, 322, 578, 1090, 2114, 6210, 22594)
 
-  val insertLengthNBits: IArray[Int] =
-    IArray.unsafeFromArray:
+  val insertLengthNBits: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5,
       6, 7, 8, 9, 10, 12, 14, 24)
 
-  val copyLengthOffset: IArray[Int] =
-    IArray.unsafeFromArray:
+  val copyLengthOffset: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 18, 22, 30, 38, 54,
       70, 102, 134, 198, 326, 582, 1094, 2118)
 
-  val copyLengthNBits: IArray[Int] =
-    IArray.unsafeFromArray:
+  val copyLengthNBits: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4,
       5, 5, 6, 7, 8, 9, 10, 24)
 
-  val insertRangeLut: IArray[Int] =
-    IArray.unsafeFromArray:
+  val insertRangeLut: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 0, 8, 8, 0, 16, 8, 16, 16)
 
-  val copyRangeLut: IArray[Int] =
-    IArray.unsafeFromArray:
+  val copyRangeLut: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(
       0, 8, 0, 8, 16, 0, 16, 8, 16)
 

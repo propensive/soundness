@@ -37,7 +37,7 @@ import proscenium.compat.*
 import gossamer.*
 
 object BoxDrawing:
-  val asciiChars: IArray[Char] =
+  val asciiChars: Array[Char]^{} =
     List
       ( t" -- |+++|++  + +--- +++ +++ +++ --- +++++++  + +   -+ ++   -+ ++|+++|+++|+++    +++ +++ ",
         t"+++     ++++++++++++    + +++ +++ ++    |++ |+++|++  + ++++ +++ +++ +++ +++ +++++ +  + +",
@@ -46,7 +46,7 @@ object BoxDrawing:
     . join
     . chars
 
-  val defaultChars: IArray[Char] =
+  val defaultChars: Array[Char]^{} =
     List
       ( t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ",
         t"┟╁╅     ┕┶┷╛┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗",
@@ -55,7 +55,7 @@ object BoxDrawing:
     . join
     . chars
 
-  val roundedChars: IArray[Char] = defaultChars.map:
+  val roundedChars: Array[Char]^{} = defaultChars.map:
     case '┌'  => '╭'
     case '┘'  => '╯'
     case '┐'  => '╮'

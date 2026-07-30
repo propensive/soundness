@@ -64,21 +64,21 @@ private[pneumatic] object BrotliDecoder:
   private[pneumatic] final val NumDistanceShortCodes = 16
   private final val MaxLength = 15
 
-  private[pneumatic] val codeLengthCodeOrder: IArray[Int] =
-    IArray.unsafeFromArray:
+  private[pneumatic] val codeLengthCodeOrder: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
-  private[pneumatic] val distanceShortCodeIndexOffset: IArray[Int] =
-    IArray.unsafeFromArray:
+  private[pneumatic] val distanceShortCodeIndexOffset: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(3, 2, 1, 0, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2)
 
-  private[pneumatic] val distanceShortCodeValueOffset: IArray[Int] =
-    IArray.unsafeFromArray:
+  private[pneumatic] val distanceShortCodeValueOffset: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(0, 0, 0, 0, -1, 1, -2, 2, -3, 3, -1, 1, -2, 2, -3, 3)
 
   // Static Huffman code for the code-length code lengths.
-  private[pneumatic] val fixedTable: IArray[Int] =
-    IArray.unsafeFromArray:
+  private[pneumatic] val fixedTable: Array[Int]^{} =
+    Array.unsafeFrozen:
       scala.Array(0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040001,
           0x020000, 0x020004, 0x020003, 0x030002, 0x020000, 0x020004, 0x020003, 0x040005)
 

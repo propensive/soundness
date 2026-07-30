@@ -163,8 +163,8 @@ object PeriodicTable:
   val Ts = ChemicalElement(117, t"Ts", t"Tennessine")
   val Og = ChemicalElement(118, t"Og", t"Oganesson")
 
-  val elements: IArray[ChemicalElement] =
-    IArray
+  val elements: Array[ChemicalElement]^{} =
+    Array.of
       ( H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar, K, Ca, Sc, Ti, V, Cr, Mn,
         Fe, Co, Ni, Cu, Zn, Ga, Ge, As, Se, Br, Kr, Rb, Sr, Y, Zr, Nb, Mo, Tc, Ru, Rh, Pd, Ag, Cd,
         In, Sn, Sb, Te, I, Xe, Cs, Ba, La, Ce, Pr, Nd, Pm, Sm, Eu, Gd, Tb, Dy, Ho, Er, Tm, Yb, Lu,
@@ -172,15 +172,15 @@ object PeriodicTable:
         Am, Cm, Bk, Cf, Es, Fm, Md, No, Lr, Rf, Db, Sg, Bh, Hs, Mt, Ds, Rg, Cn, Nh, Fl, Mc, Lv, Ts,
         Og )
 
-  lazy val symbols: Map[Text, ChemicalElement] = unsafely(elements.stdlib.indexBy(_.symbol))
+  lazy val symbols: Map[Text, ChemicalElement] = unsafely(elements.readable.indexBy(_.symbol))
 
   def apply(number: Int): Optional[ChemicalElement] =
-    if 1 <= number <= 118 then elements.stdlib(number - 1) else Unset
+    if 1 <= number <= 118 then elements.readable(number - 1) else Unset
 
   def apply(symbol: Text): Optional[ChemicalElement] = symbols.at(symbol).or(Unset)
 
-  private val prefixes: IArray[Text] =
-    IArray(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")
+  private val prefixes: Array[Text]^{} =
+    Array.of(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")
 
   def element(number: Int): ChemicalElement =
     def recur(name: Text, symbol: Text, digits: Int): ChemicalElement =

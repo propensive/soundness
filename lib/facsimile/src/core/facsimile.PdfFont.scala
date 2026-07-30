@@ -53,10 +53,10 @@ object PdfFont:
     ( baseFont:     Text,
       standard:     Optional[Standard],
       firstChar:    Int,
-      widths:       IArray[Double],
+      widths:       Array[Double]^{},
       cidWidths:    Map[Int, Double],
       defaultWidth: Double,
-      encoding:     Optional[IArray[Char]],
+      encoding:     Optional[Array[Char]^{}],
       differences:  Map[Int, Text],
       toUnicode:    Optional[CharMap],
       embedded:     Optional[Ttf],
@@ -77,9 +77,9 @@ object PdfFont:
       val defaultWidth = descriptor.at(t"MissingWidth").let(pdf.resolved(_).double).or(0.0)
       val firstChar = entries.at(t"FirstChar").let(pdf.resolved(_).long).or(0L).toInt
 
-      val widths: IArray[Double] =
-        pdf.resolved(entries.at(t"Widths").or(Cos.Nil)).elements.lay(IArray.empty[Double]):
-          elements => IArray.from(elements.stdlib.map(pdf.resolved(_).double.or(0.0)))
+      val widths: Array[Double]^{} =
+        pdf.resolved(entries.at(t"Widths").or(Cos.Nil)).elements.lay(Array.empty[Double]):
+          elements => Array.from(elements.stdlib.map(pdf.resolved(_).double.or(0.0)))
 
       val embedded: Optional[Ttf] =
         val program = descriptor.at(t"FontFile2").or:
@@ -98,15 +98,17 @@ object PdfFont:
           case _              => Unset
 
       // The `/Encoding` entry: a base name, or a dictionary of a base name plus differences.
-      def encodingTable(name: Optional[Text]): Optional[IArray[Char]] = name.let:
-        case t"WinAnsiEncoding"  => PdfEncoding.winAnsi
-        case t"MacRomanEncoding" => PdfEncoding.macRoman
-        case t"StandardEncoding" => PdfEncoding.standard
+      // A `match`, not `.let`: the frozen member of the `Optional` union freshens under
+      // `let`'s type-variable instantiation.
+      def encodingTable(name: Optional[Text]): Optional[Array[Char]^{}] = name.asInstanceOf[Matchable] match
+        case t"WinAnsiEncoding"  => PdfEncoding.winAnsi: Array[Char]^{}
+        case t"MacRomanEncoding" => PdfEncoding.macRoman: Array[Char]^{}
+        case t"StandardEncoding" => PdfEncoding.standard: Array[Char]^{}
         case _                   => Unset
 
       val encodingValue = pdf.resolved(entries.at(t"Encoding").or(Cos.Nil))
 
-      val encoding: Optional[IArray[Char]] = encodingValue match
+      val encoding: Optional[Array[Char]^{}] = encodingValue match
         case Cos.Name(name)          => encodingTable(name)
         case dictionary: Cos.Dictionary => encodingTable(dictionary(t"BaseEncoding").let(_.name))
         case _                       => Unset
@@ -152,7 +154,7 @@ object PdfFont:
                   case _                      => PdfMatrix(0.001, 0, 0, 0.001, 0, 0)
 
           // Type 3 widths are in glyph space; normalize them to thousandths of an em.
-          val scaled = IArray.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(widths.mutable(using Unsafe)).map(_*matrix.a*1000))
+          val scaled = Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(widths.mutable(using Unsafe)).map(_*matrix.a*1000))
           Type3(matrix, common(false, Map(), defaultWidth).copy(widths = scaled))
 
         case "Type0" =>
@@ -176,7 +178,7 @@ object PdfFont:
 
           Type0:
             Common
-              ( baseFont, standard, 0, IArray.empty[Double], cidWidths, defaultCid, encoding,
+              ( baseFont, standard, 0, Array.empty[Double], cidWidths, defaultCid, encoding,
                 differences, toUnicode, cidEmbedded, twoByte = true, cidDescriptor )
 
         case _ =>

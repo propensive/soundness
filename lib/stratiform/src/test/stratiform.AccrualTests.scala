@@ -83,35 +83,35 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   private val twoRequiredSchema: Tels = Tels(
     name     = t"pair",
     document = Tels.Struct(
-      members = IArray(
+      members = Array.of(
         Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(IArray(t"string")), Unset ),
+           t"name", Tels.Scalar(Array.of(t"string")), Unset ),
         Tels.Field
          ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
-           t"email", Tels.Scalar(IArray(t"string")), Unset )),
-      validators = IArray.empty),
-    layers   = IArray.empty,
+           t"email", Tels.Scalar(Array.of(t"string")), Unset )),
+      validators = Array.empty),
+    layers   = Array.empty,
     sigil    = Unset,
-    records  = IArray.empty,
-    scalars  = IArray.empty,
-    selects  = IArray.empty)
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array.empty)
 
   // A document schema with a single optional field: unrecognised keywords yield
   // `UnknownKeyword` violations without any required-member errors.
   private val optionalFieldSchema: Tels = Tels(
     name     = t"loose",
     document = Tels.Struct(
-      members = IArray(
+      members = Array.of(
         Tels.Field
          ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
-           t"name", Tels.Scalar(IArray(t"string")), Unset )),
-      validators = IArray.empty),
-    layers   = IArray.empty,
+           t"name", Tels.Scalar(Array.of(t"string")), Unset )),
+      validators = Array.empty),
+    layers   = Array.empty,
     sigil    = Unset,
-    records  = IArray.empty,
-    scalars  = IArray.empty,
-    selects  = IArray.empty)
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array.empty)
 
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):

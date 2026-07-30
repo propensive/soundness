@@ -55,7 +55,7 @@ private[hallucination] object WebpTransform:
   private inline def colorDelta(t: Byte, c: Byte): Int = (t.toInt*c.toInt) >> 5
 
   def predictor
-    ( data: scala.Array[Byte], width: Int, height: Int, sizeBits: Int, predictorData: IArray[Byte] )
+    ( data: scala.Array[Byte], width: Int, height: Int, sizeBits: Int, predictorData: Array[Byte]^{} )
   :   Unit =
 
     val blockWidth = subsampleSize(width, sizeBits)
@@ -236,7 +236,7 @@ private[hallucination] object WebpTransform:
       writable(data)(i) = (u(data(i)) + a).toByte
       i += 1
 
-  def color(data: scala.Array[Byte], width: Int, sizeBits: Int, transformData: IArray[Byte]): Unit =
+  def color(data: scala.Array[Byte], width: Int, sizeBits: Int, transformData: Array[Byte]^{}): Unit =
     val blockWidth = subsampleSize(width, sizeBits)
     val stride = width*4
     val height = data.length/stride
@@ -277,7 +277,7 @@ private[hallucination] object WebpTransform:
   // The image was decoded at a subsampled width, several indices packed into each byte for small
   // palettes; rows are processed bottom-up so the wider output never overwrites unread input.
   def colorIndexing
-    ( data: scala.Array[Byte], width: Int, height: Int, tableSize: Int, table: IArray[Byte] )
+    ( data: scala.Array[Byte], width: Int, height: Int, tableSize: Int, table: Array[Byte]^{} )
   :   Unit =
 
     inline def lookup(index: Int, pixel: Int): Unit =

@@ -57,8 +57,8 @@ object Vocabulary:
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport
 
-  private val adjectiveArray: IArray[Text] = IArray.from(adjectives.stdlib)
-  private val animalArray:    IArray[Text] = IArray.from(animals.stdlib)
+  private val adjectiveArray: Array[Text]^{} = Array.from(adjectives.stdlib)
+  private val animalArray:    Array[Text]^{} = Array.from(animals.stdlib)
   private val animalCount:    Int          = animals.length
   private val adjectiveIndex: Map[Text, Int] = Map.from(adjectives.stdlib.zipWithIndex)
   private val animalIndex:    Map[Text, Int] = Map.from(animals.stdlib.zipWithIndex)

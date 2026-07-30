@@ -96,14 +96,14 @@ object Wasm:
   given textEncodable: ((Text is Encodable in Wasm) { type Carrier = String }) = enc(_.s)
   given textDecodable: ((Text is Decodable in Wasm) { type Carrier = String }) = dec(_.tt)
 
-  // The carrier is `IArray[Byte]` (which `Data` already is): its erasure is the same `byte[]`
+  // The carrier is `Array[Byte]^{}` (which `Data` already is): its erasure is the same `byte[]`
   // the WIT bridge passes, and unlike a mutable `Array[Byte]` carrier it is pure under capture
   // checking, so the codec instances stay pure fields of this object.
-  given dataEncodable: ((Data is Encodable in Wasm) { type Carrier = IArray[Byte] }) =
-    enc[Data, IArray[Byte]](identity(_))
+  given dataEncodable: ((Data is Encodable in Wasm) { type Carrier = Array[Byte]^{} }) =
+    enc[Data, Array[Byte]^{}](identity(_))
 
-  given dataDecodable: ((Data is Decodable in Wasm) { type Carrier = IArray[Byte] }) =
-    dec[Data, IArray[Byte]](identity(_))
+  given dataDecodable: ((Data is Decodable in Wasm) { type Carrier = Array[Byte]^{} }) =
+    dec[Data, Array[Byte]^{}](identity(_))
 
   // TODO: `F32`/`F64` (need the `Float`/`Double`->`F32`/`F64` constructors) and a WIT `list<T>`
   // codec (crosses the boundary as an `Array` of the element carrier) are not yet provided.

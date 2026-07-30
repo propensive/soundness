@@ -64,7 +64,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
     val midEdge =
       Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
 
-    def recur(widths: IArray[Int], rows: Progression[TableRow[text]]): Progression[text] =
+    def recur(widths: Array[Int]^{}, rows: Progression[TableRow[text]]): Progression[text] =
       rows match
         case row #:: tail =>
           val lines = (0 until row.height).map: lineNumber =>
@@ -86,15 +86,15 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
         case _ =>
           Progression()
 
-    def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): text =
+    def rule(above: Optional[Array[Int]^{}], below: Optional[Array[Int]^{}]): text =
       val width = above.or(below).vouch.pipe: widths =>
         widths.sum + style.cost(widths.length)
 
       val ascenders =
-        above.let(_.stdlib.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+        above.let(_.readable.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
 
       val descenders =
-        below.let(_.stdlib.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+        below.let(_.readable.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
 
       val horizontal =
         if above.absent then style.topLine

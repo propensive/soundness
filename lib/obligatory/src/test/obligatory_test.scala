@@ -124,7 +124,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"encode prefixes a flag byte and 4-byte length"):
         GrpcFraming.encode(ascii(t"hi")).to[List]
-      . assert(_ == IArray.of(Data(0, 0, 0, 0, 2).stdlib ++ ascii(t"hi").stdlib).to[List])
+      . assert(_ == Array.frozen(Data(0, 0, 0, 0, 2).stdlib ++ ascii(t"hi").stdlib).to[List])
 
       test(m"round-trip a single message"):
         val framed = GrpcFraming.encode(ascii(t"hello"))
@@ -132,7 +132,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
-        val framed = IArray.of(GrpcFraming.encode(ascii(t"one")).stdlib ++ GrpcFraming.encode(ascii(t"two")).stdlib)
+        val framed = Array.frozen(GrpcFraming.encode(ascii(t"one")).stdlib ++ GrpcFraming.encode(ascii(t"two")).stdlib)
         Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.stdlib.to(List))
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
@@ -243,7 +243,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           val (clientSide, serverSide) = pair()
 
           val body =
-            IArray.of
+            Array.frozen
              ( GrpcFraming.encode(Pong(t"a").in[Protobuf].encode).stdlib
                ++ GrpcFraming.encode(Pong(t"b").in[Protobuf].encode).stdlib
                ++ GrpcFraming.encode(Pong(t"c").in[Protobuf].encode).stdlib )

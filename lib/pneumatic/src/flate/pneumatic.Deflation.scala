@@ -156,18 +156,24 @@ extends Duct[Data, Data]:
 // Streaming decompression, the inverse of `Deflation`, over the pure-Scala `Inflater`,
 // with the gzip header parsed by a small state machine ahead of the inflater
 // and the 8-byte trailer consumed and ignored after it finishes.
-private[pneumatic] class Inflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
-extends Duct[Data, Data]:
-  type Transport = Credit
-  type Upstream = Credit
-
-  private enum Header:
+private[pneumatic] object Inflation:
+  // At the top level, not nested in the class: a nested enum's case fields make the
+  // capturing `Inflation` instance leak into the parent `Duct[Data, Data]` instantiation
+  // as an `any.rd` the callers' `^{}`-typed ducts cannot accept.
+  private[pneumatic] enum Header:
     case Fixed(remaining: Int)
     case ExtraLength(byte: Int, low: Int)
     case Extra(remaining: Int)
     case Name, Comment
     case Checksum(remaining: Int)
     case Done
+
+private[pneumatic] class Inflation(gzip: Boolean, nowrap: Boolean)(using Buffering)
+extends Duct[Data, Data]:
+  type Transport = Credit
+  type Upstream = Credit
+
+  import Inflation.Header
 
   private val inflater: InflateEngine^ = FlateBackend.inflater(nowrap || gzip)
   private val empty: scala.Array[Byte] = new scala.Array[Byte](0)

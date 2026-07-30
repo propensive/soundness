@@ -91,7 +91,7 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"Encode to Binary"):
       import alphabets.binaryStandard
-      IArray[Byte](1, 2, 3, 4).serialize[Binary]
+      Array.of[Byte](1, 2, 3, 4).serialize[Binary]
     . assert(_ == t"00000001000000100000001100000100")
 
     test(m"Extract PEM message type"):
@@ -209,8 +209,8 @@ object Tests extends Suite(m"Gastronomy tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
-        val encrypted = plain.stdlib.grouped(1).map(IArray.of(_)).iterator.stream.encrypt(InitializationVector.random)
-        encrypted.memoize.stdlib.grouped(1).map(IArray.of(_)).iterator.stream.decrypt.memoize.to[List]
+        val encrypted = plain.stdlib.grouped(1).map(Array.frozen(_)).iterator.stream.encrypt(InitializationVector.random)
+        encrypted.memoize.stdlib.grouped(1).map(Array.frozen(_)).iterator.stream.decrypt.memoize.to[List]
     . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
     test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
@@ -227,8 +227,8 @@ object Tests extends Suite(m"Gastronomy tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]
-        val chunks = plain.stdlib.grouped(1).map { chunk => IArray.of(chunk) }.to(Progression)
-        IArray.of(chunks.encrypt(InitializationVector.random).stdlib.map(_.stdlib).reduce(_ ++ _)).decrypt.as[Text]
+        val chunks = plain.stdlib.grouped(1).map { chunk => Array.frozen(chunk) }.to(Progression)
+        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.stdlib).reduce(_ ++ _)).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
@@ -266,7 +266,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       // resulting all-zero IV makes CBC encryption repeatable, demonstrating that
       // the provider seam (and its random source) is injectable.
       given Crypto:
-        def random: Crypto.Random = size => IArray.fill[Byte](size)(0.toByte)
+        def random: Crypto.Random = size => Array.fill[Byte](size)(0.toByte)
         def aes: Crypto.SymmetricCipher = JavaStdlibCrypto.aes
         def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
         def hmac(algorithm: Text): Crypto.Mac = JavaStdlibCrypto.hmac(algorithm)
@@ -345,7 +345,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val chunks = Progression(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-        IArray.of(chunks.encrypt(InitializationVector.random).stdlib.map(_.stdlib).reduce(_ ++ _)).decrypt.as[Text]
+        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.stdlib).reduce(_ ++ _)).decrypt.as[Text]
     . assert(_ == t"Hello, streaming world!")
 
     test(m"Streaming and one-shot encryption agree for a fixed IV"):
@@ -353,7 +353,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val streamed =
-          IArray.of(Progression(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.map(_.stdlib).reduce(_ ++ _))
+          Array.frozen(Progression(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.map(_.stdlib).reduce(_ ++ _))
 
         streamed.serialize[Hex] == t"Hello, streaming world!".in[Data].encrypt(iv).serialize[Hex]
     . assert(_ == true)
@@ -483,7 +483,7 @@ object Tests extends Suite(m"Gastronomy tests"):
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.uncloak:
           val chunks = Progression(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-          IArray.of(chunks.encrypt(InitializationVector.random).stdlib.map(_.stdlib).reduce(_ ++ _)).decrypt.as[Text]
+          Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.stdlib).reduce(_ ++ _)).decrypt.as[Text]
       . assert(_ == t"Hello, streaming world!")
 
     suite(m"Keystores"):

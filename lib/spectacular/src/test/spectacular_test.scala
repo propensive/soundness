@@ -219,12 +219,12 @@ object Tests extends Suite(m"Spectacular Tests"):
         Inspectable.array[Long].text(java.util.Arrays.copyOf(scala.Array(1L, 2L, 3L), 3).nn.asInstanceOf[scala.Array[Long]])
       . assert(_ == t"""⦋🅹₀1L∣₁2L∣₂3L⦌""")
 
-      test(m"serialize IArray of booleans"):
-        IArray(true, false, true).inspect
+      test(m"serialize frozen array of booleans"):
+        Array.of(true, false, true).inspect
       . assert(_ == t"""🆉⁅₀true╱₁false╱₂true⁆""")
 
-      test(m"serialize IArray of strings"):
-        IArray(t"one", t"two", t"three").inspect
+      test(m"serialize frozen array of strings"):
+        Array.of(t"one", t"two", t"three").inspect
       . assert(_ == t"""🅻⁅₀t"one"╱₁t"two"╱₂t"three"⁆""")
 
     suite(m"Derivation tests"):

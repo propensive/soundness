@@ -95,12 +95,12 @@ private[hallucination] final class JpegFrame
     val imageHeight:   Int,
     val mcuWidth:      Int,
     val mcuHeight:     Int,
-    val components:    IArray[JpegComponent] )
+    val components:    scala.IArray[JpegComponent] )
 
 private[hallucination] final class JpegScan
-  ( val componentIndices: IArray[Int],
-    val dcTableIndices:   IArray[Int],
-    val acTableIndices:   IArray[Int],
+  ( val componentIndices: scala.IArray[Int],
+    val dcTableIndices:   scala.IArray[Int],
+    val acTableIndices:   scala.IArray[Int],
     val spectralStart:     Int,
     val spectralEnd:       Int, // exclusive
     val successiveHigh:    Int,
@@ -215,7 +215,7 @@ private[hallucination] object JpegParser:
     // The freshly-built components array is frozen zero-copy.
     JpegFrame
       ( isBaseline, coding, precision, width, height, mcuWidth, mcuHeight,
-        components.asInstanceOf[IArray[JpegComponent]] )
+        components.asInstanceOf[scala.IArray[JpegComponent]] )
 
   // Section B.2.3: the Start Of Scan header.
   def parseSos(reader: JpegReader^, frame: JpegFrame)(using Tactic[RasterError]): JpegScan =
@@ -281,8 +281,8 @@ private[hallucination] object JpegParser:
 
     // As `parseSof`: the freshly-built index arrays are frozen zero-copy.
     JpegScan
-      ( componentIndices.asInstanceOf[IArray[Int]], dcTableIndices.asInstanceOf[IArray[Int]],
-        acTableIndices.asInstanceOf[IArray[Int]], spectralStart, spectralEnd + 1,
+      ( componentIndices.asInstanceOf[scala.IArray[Int]], dcTableIndices.asInstanceOf[scala.IArray[Int]],
+        acTableIndices.asInstanceOf[scala.IArray[Int]], spectralStart, spectralEnd + 1,
         successiveHigh, successiveLow )
 
   // Section B.2.4.1: quantization tables, each returned in the file's zigzag order (unzigzagged by

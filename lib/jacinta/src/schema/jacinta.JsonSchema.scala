@@ -179,9 +179,10 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     Json.Encodable(() => Morphology.Any):
       case JsonSchema.Ref(pointer, _, _) =>
         val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
+        // Qualified: `JsonSchema.Array` (this file's schema node) shadows the prelude `Array`.
         Json.ast(Json.Ast.obj
-          ( IArray("$ref"),
-            IArray(Json.Ast(ref)) ))
+          ( proscenium.Array.of("$ref"),
+            proscenium.Array.of[Any](Json.Ast(ref)) ))
 
       case other =>
         derivedEncodable.encoded(other)
@@ -340,13 +341,13 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
             (label, schema2)
 
-        .pipe(iarr => Map.from(iarr.stdlib))
+        .pipe(iarr => Map.from(iarr.readable))
 
       val required: List[Text] =
         contexts[derivation]():
           [field] => schema => label.unless(_ => schema.schema().optional)
 
-        . stdlib.compact
+        . readable.compact
         . to(proscenium.List)
 
       Object(properties = map, required = required)

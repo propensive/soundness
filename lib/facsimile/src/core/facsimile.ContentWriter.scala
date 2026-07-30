@@ -131,9 +131,12 @@ private[facsimile] object ContentWriter:
       case ShowTexts(elements) =>
         out(t"[")
 
-        elements.each:
-          case data: Data   => string(data)
-          case gap: Double  => out(t"${num(gap)}")
+        // Via `stdlib.foreach` and a `Double`-first match: the frozen-array union member
+        // takes a reach capture under pattern binding that `each`'s Traversable rejects.
+        elements.stdlib.foreach: element =>
+          (element.asInstanceOf[Matchable]: @unchecked) match
+            case gap: Double => out(t"${num(gap)}")
+            case data        => string(data.asInstanceOf[Data])
 
         out(t"] TJ\n")
 

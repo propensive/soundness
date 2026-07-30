@@ -48,19 +48,19 @@ private[hallucination] object Vp8Tables:
   val Dct0 = 0; val DctCat1 = 5; val DctCat2 = 6; val DctCat3 = 7; val DctCat4 = 8
   val DctCat5 = 9; val DctCat6 = 10; val DctEob = 11
 
-  val segmentIdTree: IArray[Int] = scala.Array(
-      2, 4, 0, -1, -2, -3).asInstanceOf[IArray[Int]]
+  val segmentIdTree: Array[Int]^{} = scala.Array(
+      2, 4, 0, -1, -2, -3).asInstanceOf[Array[Int]^{}]
 
-  val keyframeYmodeTree: IArray[Int] = scala.Array(
-      -4, 2, 4, 6, 0, -1, -2, -3).asInstanceOf[IArray[Int]]
+  val keyframeYmodeTree: Array[Int]^{} = scala.Array(
+      -4, 2, 4, 6, 0, -1, -2, -3).asInstanceOf[Array[Int]^{}]
 
-  val keyframeYmodeProbs: IArray[Int] = scala.Array(
-      145, 156, 163, 128).asInstanceOf[IArray[Int]]
+  val keyframeYmodeProbs: Array[Int]^{} = scala.Array(
+      145, 156, 163, 128).asInstanceOf[Array[Int]^{}]
 
-  val keyframeBpredModeTree: IArray[Int] = scala.Array(
-      0, 2, -1, 4, -2, 6, 8, 12, -3, 10, -5, -6, -4, 14, -7, 16, -8, -9).asInstanceOf[IArray[Int]]
+  val keyframeBpredModeTree: Array[Int]^{} = scala.Array(
+      0, 2, -1, 4, -2, 6, 8, 12, -3, 10, -5, -6, -4, 14, -7, 16, -8, -9).asInstanceOf[Array[Int]^{}]
 
-  val keyframeBpredModeProbs: IArray[Int] = scala.Array(
+  val keyframeBpredModeProbs: Array[Int]^{} = scala.Array(
       231, 120, 48, 89, 115, 113, 120, 152, 112, 152, 179, 64, 126, 170, 118, 46, 70, 95, 175, 69,
       143, 80, 85, 82, 72, 155, 103, 56, 58, 10, 171, 218, 189, 17, 13, 152, 144, 71, 10, 38, 171,
       213, 144, 34, 26, 114, 26, 17, 163, 44, 195, 21, 10, 173, 121, 24, 80, 195, 26, 62, 44, 64,
@@ -102,15 +102,15 @@ private[hallucination] object Vp8Tables:
       126, 47, 87, 176, 51, 41, 20, 32, 101, 75, 128, 139, 118, 146, 116, 128, 85, 56, 41, 15, 176,
       236, 85, 37, 9, 62, 146, 36, 19, 30, 171, 255, 97, 27, 20, 71, 30, 17, 119, 118, 255, 17, 18,
       138, 101, 38, 60, 138, 55, 70, 43, 26, 142, 138, 45, 61, 62, 219, 1, 81, 188, 64, 32, 41, 20,
-      117, 151, 142, 20, 21, 163, 112, 19, 12, 61, 195, 128, 48, 4, 24).asInstanceOf[IArray[Int]]
+      117, 151, 142, 20, 21, 163, 112, 19, 12, 61, 195, 128, 48, 4, 24).asInstanceOf[Array[Int]^{}]
 
-  val keyframeUvModeTree: IArray[Int] = scala.Array(
-      0, 2, -1, 4, -2, -3).asInstanceOf[IArray[Int]]
+  val keyframeUvModeTree: Array[Int]^{} = scala.Array(
+      0, 2, -1, 4, -2, -3).asInstanceOf[Array[Int]^{}]
 
-  val keyframeUvModeProbs: IArray[Int] = scala.Array(
-      142, 114, 183).asInstanceOf[IArray[Int]]
+  val keyframeUvModeProbs: Array[Int]^{} = scala.Array(
+      142, 114, 183).asInstanceOf[Array[Int]^{}]
 
-  val coeffUpdateProbs: IArray[Int] = scala.Array(
+  val coeffUpdateProbs: Array[Int]^{} = scala.Array(
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 176, 246, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 223, 241, 252, 255, 255, 255, 255, 255, 255, 255, 255, 249, 253,
@@ -166,9 +166,9 @@ private[hallucination] object Vp8Tables:
       255, 255, 255, 255, 253, 255, 255, 255, 255, 255, 255, 255, 255, 250, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
       255, 255, 255, 255, 255, 255, 255, 255, 254, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255).asInstanceOf[IArray[Int]]
+      255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255).asInstanceOf[Array[Int]^{}]
 
-  val coeffProbs: IArray[Int] = scala.Array(
+  val coeffProbs: Array[Int]^{} = scala.Array(
       128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128,
       128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 253, 136, 254, 255, 228,
       219, 128, 128, 128, 128, 128, 189, 129, 242, 255, 227, 213, 255, 219, 128, 128, 128, 106, 126,
@@ -224,40 +224,40 @@ private[hallucination] object Vp8Tables:
       121, 236, 253, 212, 214, 255, 255, 128, 128, 128, 141, 84, 213, 252, 201, 202, 255, 219, 128,
       128, 128, 42, 80, 160, 240, 162, 185, 255, 205, 128, 128, 128, 1, 1, 255, 128, 128, 128, 128,
       128, 128, 128, 128, 244, 1, 255, 128, 128, 128, 128, 128, 128, 128, 128, 238, 1, 255, 128,
-      128, 128, 128, 128, 128, 128, 128).asInstanceOf[IArray[Int]]
+      128, 128, 128, 128, 128, 128, 128).asInstanceOf[Array[Int]^{}]
 
-  val dctTokenTree: IArray[Int] = scala.Array(
-      -11, 2, 0, 4, -1, 6, 8, 12, -2, 10, -3, -4, 14, 16, -5, -6, 18, 20, -7, -8, -9, -10).asInstanceOf[IArray[Int]]
+  val dctTokenTree: Array[Int]^{} = scala.Array(
+      -11, 2, 0, 4, -1, 6, 8, 12, -2, 10, -3, -4, 14, 16, -5, -6, 18, 20, -7, -8, -9, -10).asInstanceOf[Array[Int]^{}]
 
-  val probDctCat: IArray[Int] = scala.Array(
+  val probDctCat: Array[Int]^{} = scala.Array(
       159, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 165, 145, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 173, 148, 140,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 176, 155, 140, 135, 0, 0, 0, 0, 0, 0, 0, 0, 180, 157, 141, 134,
-      130, 0, 0, 0, 0, 0, 0, 0, 254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0).asInstanceOf[IArray[Int]]
+      130, 0, 0, 0, 0, 0, 0, 0, 254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0).asInstanceOf[Array[Int]^{}]
 
-  val dctCatBase: IArray[Int] = scala.Array(
-      5, 7, 11, 19, 35, 67).asInstanceOf[IArray[Int]]
+  val dctCatBase: Array[Int]^{} = scala.Array(
+      5, 7, 11, 19, 35, 67).asInstanceOf[Array[Int]^{}]
 
-  val coeffBands: IArray[Int] = scala.Array(
-      0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7).asInstanceOf[IArray[Int]]
+  val coeffBands: Array[Int]^{} = scala.Array(
+      0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7).asInstanceOf[Array[Int]^{}]
 
-  val dcQuant: IArray[Int] = scala.Array(
+  val dcQuant: Array[Int]^{} = scala.Array(
       4, 5, 6, 7, 8, 9, 10, 10, 11, 12, 13, 14, 15, 16, 17, 17, 18, 19, 20, 20, 21, 21, 22, 22, 23,
       23, 24, 25, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 37, 38, 39, 40, 41, 42, 43,
       44, 45, 46, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65,
       66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,
       88, 89, 91, 93, 95, 96, 98, 100, 101, 102, 104, 106, 108, 110, 112, 114, 116, 118, 122, 124,
-      126, 128, 130, 132, 134, 136, 138, 140, 143, 145, 148, 151, 154, 157).asInstanceOf[IArray[Int]]
+      126, 128, 130, 132, 134, 136, 138, 140, 143, 145, 148, 151, 154, 157).asInstanceOf[Array[Int]^{}]
 
-  val acQuant: IArray[Int] = scala.Array(
+  val acQuant: Array[Int]^{} = scala.Array(
       4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
       29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
       52, 53, 54, 55, 56, 57, 58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90,
       92, 94, 96, 98, 100, 102, 104, 106, 108, 110, 112, 114, 116, 119, 122, 125, 128, 131, 134,
       137, 140, 143, 146, 149, 152, 155, 158, 161, 164, 167, 170, 173, 177, 181, 185, 189, 193, 197,
-      201, 205, 209, 213, 217, 221, 225, 229, 234, 239, 245, 249, 254, 259, 264, 269, 274, 279, 284).asInstanceOf[IArray[Int]]
+      201, 205, 209, 213, 217, 221, 225, 229, 234, 239, 245, 249, 254, 259, 264, 269, 274, 279, 284).asInstanceOf[Array[Int]^{}]
 
-  val zigzag: IArray[Int] = scala.Array(
-      0, 1, 4, 8, 5, 2, 3, 6, 9, 12, 13, 10, 7, 11, 14, 15).asInstanceOf[IArray[Int]]
+  val zigzag: Array[Int]^{} = scala.Array(
+      0, 1, 4, 8, 5, 2, 3, 6, 9, 12, 13, 10, 7, 11, 14, 15).asInstanceOf[Array[Int]^{}]
 
   // Indexes the flattened [plane 4][band 8][context 3][token 11] token-probability tables.
   inline def coeffIndex(plane: Int, band: Int, context: Int, token: Int): Int =

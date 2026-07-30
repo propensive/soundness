@@ -35,7 +35,7 @@ package anticipation
 import prepositional.*
 
 object Data:
-  def apply(xs: Byte*): Data = IArray(xs*)
+  def apply(xs: Byte*): Data = Array.of(xs*)
 
   def build(count: Int)(lambda: scala.Array[Byte]^ => Unit): Data =
     val array: scala.Array[Byte]^ = new scala.Array[Byte](count)
@@ -49,7 +49,7 @@ object Data:
       array(index) = lambda(index)
       index += 1
 
-type Data = IArray[Byte]
+type Data = Array[Byte]^{}
 
 extension [encodable: Encodable in Data](value: encodable)
   def bytestream: Data = encodable.encode(value)

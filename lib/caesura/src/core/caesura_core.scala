@@ -63,7 +63,7 @@ package dsvRedesignations:
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
 extension [encodable: Encodable in Dsv](value: List[encodable])
-  def dsv: Sheet = Sheet(IArray.from(value.stdlib.map(encodable.encode(_))))
+  def dsv: Sheet = Sheet(Array.from(value.stdlib.map(encodable.encode(_))))
 
 extension (consume stream: (Stream[Text] over Credit)^)
   // The rows of a character stream of DSV data, as a single-consumer
@@ -113,7 +113,7 @@ private def parsedIterator[value](consume reader: DsvReader^, parsable: value is
 // row (`Each`), or rows matching a predicate (`Filter`). So
 // `sheet.lens(_(Sec).name = t"…")` updates the "name" column of the second row.
 private def cell(row: Dsv, name: String): Text =
-  row.columns.let(_.at(name.tt)).let: index => row.data.at(index.z)
+  row.columns.let(_.at(name.tt)).let: index => vacuous.at(row.data)(index)
   . or(t"")
 
 private def withCell(row: Dsv, name: String, value: Text): Dsv =

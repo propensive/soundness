@@ -61,7 +61,7 @@ private[facsimile] object PdfWriter:
 
     // A binary comment after the header marks the file as containing binary data.
     ascii(t"%PDF-1.7\n")
-    raw(IArray[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
+    raw(Array.of[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
 
     val maxNumber = pdf.nextNumber - 1
     val offsets = scala.collection.mutable.HashMap[Int, Long]()

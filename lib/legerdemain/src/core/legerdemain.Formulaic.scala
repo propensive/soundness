@@ -74,7 +74,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
             val legend = label.uncamel.map(_.lower.capitalize).spaced
             context.fields(label2, legend, query(label), errors, formulation)
 
-        . stdlib.map(_.stdlib).flatten.toList.pipe(proscenium.List.of(_))
+        . readable.map(_.stdlib).flatten.toList.pipe(proscenium.List.of(_))
 
       List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow))
 

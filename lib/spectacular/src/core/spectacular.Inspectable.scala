@@ -200,12 +200,12 @@ object Inspectable extends Inspectable2:
 
 
   given iarray: [element] => (inspectable: => element is Inspectable)
-  =>  IArray[element] is Inspectable =
+  =>  (Array[element]^{}) is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     iarray =>
-      iarray.stdlib.zipWithIndex.map: (value, index) =>
+      iarray.readable.zipWithIndex.map: (value, index) =>
         val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
         subscript+insp().text(value).s.tt
 

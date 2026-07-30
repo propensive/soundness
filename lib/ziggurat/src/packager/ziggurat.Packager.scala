@@ -102,7 +102,7 @@ object Packager:
         val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk
 
         val publicKey: Data =
-          val zeros: Data = IArray.fill(Assembler.PublicKeyLength)(0.toByte)
+          val zeros: Data = Array.fill(Assembler.PublicKeyLength)(0.toByte)
 
           config.signing.lay(zeros): signing =>
             signing.publicKey.lay(zeros): key =>

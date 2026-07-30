@@ -164,7 +164,7 @@ private[facsimile] object Filter:
     case _            => data
 
   private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
-    try Lzw.decompress(Progression(data), earlyChange(parms)).foldLeft(IArray.empty[Byte])(_ ++ _)
+    try Lzw.decompress(Progression(data), earlyChange(parms)).foldLeft(Array.empty[Byte])(_ ++ _)
     catch case _: IllegalStateException =>
       abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
 

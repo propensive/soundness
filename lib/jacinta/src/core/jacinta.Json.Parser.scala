@@ -55,12 +55,12 @@ import vacuous.*
 import zephyrine.*
 
 private[jacinta] object Parser:
-  // The number-array AST nodes are IArray (frozen at their single build sites): the
+  // The number-array AST nodes are frozen arrays (frozen at their single build sites): the
   // arrays are filled once during the parse and never mutated after, and typing them
   // immutable keeps `Raw` free of stateful members under separation checking.
   private[jacinta] type Raw =
-    Long | Int | Double | Bcd | String | IArray[Any] |
-      IArray[Long] | IArray[Int] |
+    Long | Int | Double | Bcd | String | Array[Any]^{} |
+      Array[Long]^{} | Array[Int]^{} |
       Boolean | Json.JsonNull.type | Unset
 
   private inline val NumZero       = 0
@@ -123,7 +123,7 @@ private[jacinta] object Parser:
     matchByte(word, 0x22L) | matchByte(word, 0x5CL) | below32(word) | (word & HighBits)
 
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
-  private val TenPow: IArray[Double] =
+  private val TenPow: Array[Double]^{} =
     scala.Array.tabulate(23): i =>
       var p = 1.0
       var n = i
@@ -141,7 +141,7 @@ private[jacinta] object Parser:
   // those bytes appear as negative when read as signed and need the
   // multi-byte UTF-8 decoder in `tail`, not the fast slice path.
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
-  private val StringScanContinue: IArray[Byte] =
+  private val StringScanContinue: Array[Byte]^{} =
     val arr = new scala.Array[Byte](256)
     var i = 0
 
@@ -198,7 +198,7 @@ private[jacinta] object Parser:
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
-  :   (Raw, IArray[Int]) raises ParseError =
+  :   (Raw, Array[Int]^{}) raises ParseError =
 
     val parser = borrow()
     parser.tracking = true
@@ -209,7 +209,7 @@ private[jacinta] object Parser:
     (raw, parser.rootIndex.nn)
 
   def parseTracked(input: Iterator[Data], mode: NumberMode)
-  :   (Raw, IArray[Int]) raises ParseError =
+  :   (Raw, Array[Int]^{}) raises ParseError =
 
     val parser = borrow()
     parser.tracking = true
@@ -230,7 +230,7 @@ private[jacinta] object Parser:
     caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
-  :   (Raw, IArray[Int]) raises ParseError =
+  :   (Raw, Array[Int]^{}) raises ParseError =
 
     val parser = borrow()
     parser.tracking = true
@@ -292,7 +292,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   // Finalised root-level position index produced by the previous `parse()`
   // call when `tracking` was on. Reset to `null` at the start of every parse.
-  protected[jacinta] var rootIndex: IArray[Int] | Null = null
+  protected[jacinta] var rootIndex: Array[Int]^{} | Null = null
 
   // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
   // have been brought up to date. The hot-loop `syncTo()` bypasses the
@@ -668,7 +668,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   protected inline update def relinquishBcdLongBuffer(): Unit = bcdLongBufferId -= 1
 
   // Decode a single-Long BCD value to its scalar `JsonNumber` form for storage
-  // in a boxed (`IArray[Any]`) array: a `Long` if it is an exact integer that
+  // in a boxed (`Array[Any]^{}`) array: a `Long` if it is an exact integer that
   // fits, else a `Double`. A boxed array must never hold a raw packed BCD-Long —
   // its bits are `sign | count | nibbles`, not the numeric value, so
   // `Json.Ast.double`/`long` (which treat a bare `Long` node as numeric) would
@@ -1401,7 +1401,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     //
     //   `Array[Int]`  if every element fits 7 nibbles  (4 bytes / element)
     //   `Array[Long]` if every element fits 14 nibbles (8 bytes / element)
-    //   `IArray[Any]` otherwise                        (boxed)
+    //   `Array[Any]^{}` otherwise                        (boxed)
     //
     // Subsequent elements either fit the current container (cheap append)
     // or trigger a one-step migration to the next-wider form, with the
@@ -1483,7 +1483,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           //   bcdLong:    a Long return — parseNumber's bcdOnly fast path
           //               packed sign+count+nibbles into a single Long.
           //   nonNumber:  anything else (Bcd, String, Boolean, Null,
-          //               IArray[Any], etc.) — goes to boxed mode.
+          //               Array[Any]^{}, etc.) — goes to boxed mode.
           value match
             case bcdLong: Long =>
               val nibbles = ((bcdLong >>> 56) & 0x7FL).toInt
@@ -1554,7 +1554,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       // distinguishable from objects.
       val out = new scala.Array[Any](1)
       out(0) = Json.Ast.arrayPad
-      out.asInstanceOf[IArray[Any]]
+      out.asInstanceOf[Array[Any]^{}]
     else
       (mode: @switch) match
         case ModeBcdInt =>
@@ -1572,7 +1572,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           out.immutable(using Unsafe)
 
         case _ =>
-          // Mixed/boxed array — stored as `IArray[Any]` and parity-padded
+          // Mixed/boxed array — stored as `Array[Any]^{}` and parity-padded
           // when the element count is even, so arrays always have odd
           // length and can be distinguished from objects (always even).
           val src = anyItems.nn
@@ -1590,7 +1590,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
               arr
 
           relinquishArrayBuffer()
-          out.asInstanceOf[IArray[Any]]
+          out.asInstanceOf[Array[Any]^{}]
 
   // Tracked-mode `parseArray`. Mirrors `parseArray` exactly but uses
   // `parseValueTracked` for children and emits a composite descriptor
@@ -1747,7 +1747,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       if first then
         val out = new scala.Array[Any](1)
         out(0) = Json.Ast.arrayPad
-        out.asInstanceOf[IArray[Any]]
+        out.asInstanceOf[Array[Any]^{}]
       else
         (mode: @switch) match
           case ModeBcdInt =>
@@ -1780,7 +1780,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
                 arr
 
             relinquishArrayBuffer()
-            out.asInstanceOf[IArray[Any]]
+            out.asInstanceOf[Array[Any]^{}]
 
     emitCompositeDescriptor
       ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
@@ -1793,7 +1793,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   // Parse an object directly into the flat alternating-key/value layout. The
   // buffer always grows in pairs, so its length stays even, which is the
   // object/array parity invariant.
-  private update def parseObject()(using Tactic[ParseError]): IArray[Any] =
+  private update def parseObject()(using Tactic[ParseError]): Array[Any]^{} =
     val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
 
@@ -1881,7 +1881,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     val out = new scala.Array[Any](items.length)
     items.copyToArray(out)
     relinquishArrayBuffer()
-    out.asInstanceOf[IArray[Any]]
+    out.asInstanceOf[Array[Any]^{}]
 
   // Tracked-mode `parseObject`. Mirrors `parseObject` exactly but captures
   // key positions, runs values through `parseValueTracked`, and emits a
@@ -1892,7 +1892,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       startColumn: Int,
       startMark:   Long )
     ( using Tactic[ParseError] )
-  :   IArray[Any] =
+  :   Array[Any]^{} =
 
     val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
@@ -2035,7 +2035,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     relinquishIndexBuffer()
     relinquishIndexBuffer()
 
-    out.asInstanceOf[IArray[Any]]
+    out.asInstanceOf[Array[Any]^{}]
 
   update def parse()(using Tactic[ParseError]): Raw =
     bom()
@@ -2046,9 +2046,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       if tracking then
         val rootBuf = getIndexBuffer()
         val r = parseValueTracked(rootBuf)
-        // IArray.from's result carries a spurious fresh via the mutable source's reach;
+        // Array.from's result carries a spurious fresh via the mutable source's reach;
         // the copy is immutable — freeze-assert.
-        rootIndex = IArray.from(rootBuf).asInstanceOf[IArray[Int]]
+        rootIndex = Array.from(rootBuf).asInstanceOf[Array[Int]^{}]
         relinquishIndexBuffer()
         r
       else

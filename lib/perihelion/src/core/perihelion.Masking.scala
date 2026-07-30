@@ -71,7 +71,7 @@ object Masking:
       val key: Data =
         val bytes = Array[Byte](4)
         random.nextBytes(bytes.raw)
-        IArray.freeze(bytes)
+        Array.freeze(bytes)
 
       val header: Data = Data.fill(headerLength): index =>
         if index == 1 then (frame(1).toInt | 0x80).toByte else frame(index)

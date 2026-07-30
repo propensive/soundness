@@ -116,12 +116,12 @@ object Frame:
           // present" sentinel and must never travel on the wire.
           if payload.length == 1 then abort(WebsocketError(WebsocketError.Reason.BadClose))
           val code =
-            if payload.length >= 2 then B16(caps.unsafe.unsafeAssumePure(payload.take(2))).u16.int else 1005
+            if payload.length >= 2 then B16(payload.take(2)).u16.int else 1005
 
           if payload.length >= 2 && !validCloseCode(code)
           then abort(WebsocketError(WebsocketError.Reason.BadClose))
 
-          val reason = if payload.length > 2 then caps.unsafe.unsafeAssumePure(payload.drop(2)) else Data()
+          val reason = if payload.length > 2 then payload.drop(2) else Data()
           Close(code, reason)
 
         case other => abort(WebsocketError(WebsocketError.Reason.BadOpcode(other)))
@@ -158,4 +158,4 @@ enum Frame(val opcode: Int, val payload: Data):
             (length >> 16).toByte, (length >> 8).toByte, length.toByte )
 
     // Sealed: see `closeData`.
-    caps.unsafe.unsafeAssumePure(header ++ payload)
+    header ++ payload

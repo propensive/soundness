@@ -120,7 +120,7 @@ object Tar:
     private[bitumen] def blocks512(chunks: Iterator[Data]): Iterator[Data] =
       new Iterator[Data]:
         @scala.caps.unsafe.untrackedCaptures
-        private var chunk: Data = IArray.empty[Byte]
+        private var chunk: Data = Array.empty[Byte]
         @scala.caps.unsafe.untrackedCaptures
         private var offset: Int = 0
 
@@ -144,7 +144,7 @@ object Tar:
             offset += count
             position += count
 
-          IArray.freeze(block)
+          Array.freeze(block)
 
   enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File
@@ -246,7 +246,7 @@ object Tar:
       case pax: Pax        => Entry.blocks512(Iterator(pax.records))
 
       case long: GnuLong =>
-        Entry.blocks512(Iterator(long.content.in[Data] ++ IArray.fill[Byte](1)(0)))
+        Entry.blocks512(Iterator(long.content.in[Data] ++ Array.fill[Byte](1)(0)))
 
       case sparse: Sparse =>
         Entry.blocks512(sparse.data.chunks)

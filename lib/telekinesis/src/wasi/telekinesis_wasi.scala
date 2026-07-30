@@ -120,7 +120,7 @@ package httpBackends:
 
       // A method that carries a payload streams it through the request's `outgoing-body`, which
       // must then be `finish`ed (a static function) for the request to be complete.
-      val payload: Data = if method.payload then body().memoize else IArray.empty[Byte]
+      val payload: Data = if method.payload then body().memoize else Array.empty[Byte]
 
       val bodyHandles =
         if payload.isEmpty then Unset else
@@ -196,7 +196,7 @@ package httpBackends:
       bodyHandle.dispose()
       responseHandle.dispose()
 
-      val content: Data = chunks.stdlib.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+      val content: Data = chunks.stdlib.reverse.foldLeft(Array.empty[Byte])(_ ++ _)
       status(textHeaders, Http.Body.Fixed(content))
 
 // Serves HTTP from a Wasm Component: the bridge from `wasi:http/incoming-handler`'s exported
@@ -246,7 +246,7 @@ object WasiHttpServer:
     bodyHandle.dispose()
     requestHandle.dispose()
 
-    val content: Data = chunks.stdlib.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+    val content: Data = chunks.stdlib.reverse.foldLeft(Array.empty[Byte])(_ ++ _)
 
     // The request's host is the server's own; a component behind `wasi:http` is not addressed by
     // hostname, so `Localhost` stands in (and avoids parsing the authority, which would reach the
@@ -292,7 +292,7 @@ object WasiHttpServer:
 
     val payload: Data = response.body match
       case Http.Body.Fixed(data) => data
-      case Http.Body.Empty       => IArray.empty[Byte]
+      case Http.Body.Empty       => Array.empty[Byte]
       case body                  => body.stream.memoize
 
     val outBody: Foreign of "outgoing-body" from Wit = outBodyHandle

@@ -46,7 +46,7 @@ import Http2Error.Reason
 // byte values plus the EOS symbol (index 256), the right-aligned code and its bit
 // length. Codes are most-significant-bit first.
 object Huffman:
-  private val codes: IArray[Int] = IArray[Int](
+  private val codes: Array[Int]^{} = Array.of[Int](
     0x1ff8, 0x7fffd8, 0xfffffe2, 0xfffffe3, 0xfffffe4, 0xfffffe5, 0xfffffe6, 0xfffffe7,
     0xfffffe8, 0xffffea, 0x3ffffffc, 0xfffffe9, 0xfffffea, 0x3ffffffd, 0xfffffeb, 0xfffffec,
     0xfffffed, 0xfffffee, 0xfffffef, 0xffffff0, 0xffffff1, 0xffffff2, 0x3ffffffe, 0xffffff3,
@@ -81,7 +81,7 @@ object Huffman:
     0x7ffffeb, 0xffffffe, 0x7ffffec, 0x7ffffed, 0x7ffffee, 0x7ffffef, 0x7fffff0, 0x3ffffee,
     0x3fffffff )
 
-  private val lengths: IArray[Int] = IArray[Int](
+  private val lengths: Array[Int]^{} = Array.of[Int](
     13, 23, 28, 28, 28, 28, 28, 28,
     28, 24, 30, 28, 28, 30, 28, 28,
     28, 28, 28, 28, 28, 28, 30, 28,

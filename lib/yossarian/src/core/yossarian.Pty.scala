@@ -78,7 +78,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
     // state printable handling walks this array to find the smallest
     // boundary > index, extracts the substring as a Grapheme, and advances
     // recursion to that boundary. Escape-state handling stays char-by-char.
-    val boundaries: IArray[Int] = GraphemeBreak.boundaries(input)
+    val boundaries: Array[Int]^{} = GraphemeBreak.boundaries(input)
     var boundaryCursor: Int = 0
 
     var pendingWrap: Boolean = state.pendingWrap

@@ -154,7 +154,7 @@ object Contrastable:
     given text: Text is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left) else
-          def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
+          def decompose(chars: Array[Char]^{}): Array[Decomposition]^{} = chars.map: char =>
             Decomposition.Primitive(t"Char", char.show, char)
 
           comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
@@ -168,7 +168,7 @@ object Contrastable:
         Juxtaposition.Different(left, right)
 
       case (Decomposition.Sequence(name, left, _), Decomposition.Sequence(rightName, right, _)) =>
-        comparison(typeName, IArray.from(left), IArray.from(right), name, rightName)
+        comparison(typeName, Array.from(left), Array.from(right), name, rightName)
 
       case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         val name = if leftName == rightName then leftName else t"$leftName/$rightName"
@@ -209,15 +209,15 @@ object Contrastable:
 
   def comparison[value]
     ( name:       Text,
-      left:       IArray[Decomposition],
-      right:      IArray[Decomposition],
+      left:       Array[Decomposition]^{},
+      right:      Array[Decomposition]^{},
       leftDebug:  Text,
       rightDebug: Text )
   :   Juxtaposition =
 
     if left == right then Juxtaposition.Same(leftDebug) else
-      val comparison = IArray.from:
-        dissonance.diff(Series.from(left.stdlib), Series.from(right.stdlib)).rdiff(_ == _, 10).changes.map:
+      val comparison = Array.from:
+        dissonance.diff(Series.from(left.readable), Series.from(right.readable)).rdiff(_ == _, 10).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show

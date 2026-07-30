@@ -73,7 +73,7 @@ object internal:
 
   private def hasMarker(s: String): Boolean = s.contains(MarkerString)
 
-  private def stripPad(arr: IArray[Any]): IArray[Any] =
+  private def stripPad(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
     if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1)
@@ -314,11 +314,11 @@ object internal:
 
           '{Yaml.Ast(${resultExpr})}
 
-      def serializeArray(elements: IArray[Any]): Expr[Yaml.Ast] =
+      def serializeArray(elements: Array[Any]^{}): Expr[Yaml.Ast] =
         val n = elements.length
 
         val pieces: scala.collection.immutable.List[Expr[Iterable[Yaml.Ast]]] =
-          elements.stdlib.zipWithIndex.toList.map: (elem, idx) =>
+          elements.readable.zipWithIndex.toList.map: (elem, idx) =>
             elem.asMatchable match
               case s: String if s == MarkerString =>
                 if spreads.has(holeIndex) then
@@ -336,10 +336,10 @@ object internal:
 
         ' {
             val all = ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[Yaml.Ast])(_ ++ _)
-            Yaml.Ast.Sequence(IArray.from(all))
+            Yaml.Ast.Sequence(Array.from(all))
           }
 
-      def serializeObject(node: IArray[Any]): Expr[Yaml.Ast] =
+      def serializeObject(node: Array[Any]^{}): Expr[Yaml.Ast] =
         val n = node.length/2
 
         val pieces: scala.collection.immutable.List[Expr[Iterable[(String, Yaml.Ast)]]] =
@@ -376,7 +376,7 @@ object internal:
               arr(k*2 + 1) = pair(1).asInstanceOf[Any]
               k += 1
 
-            Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[IArray[Any]])
+            Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[Array[Any]^{}])
           }
 
       def serialize(node: Any): Expr[Yaml.Ast] = node.asMatchable match
@@ -401,7 +401,7 @@ object internal:
         case null =>
           '{Yaml.Ast.Null}
 
-        case arr: IArray[Any] @unchecked =>
+        case arr: (Array[Any]^{}) @unchecked =>
           if (arr.length & 1) == 0 then serializeObject(arr)
           else serializeArray(stripPad(arr))
 
@@ -488,7 +488,7 @@ object internal:
           case null =>
             '{$accept && $scrutinee.isNull}
 
-          case arr: IArray[Any] @unchecked =>
+          case arr: (Array[Any]^{}) @unchecked =>
             if (arr.length & 1) == 0 then descendObject(array, arr, scrutinee, accept)
             else descendArray(array, stripPad(arr), scrutinee, accept)
 
@@ -497,7 +497,7 @@ object internal:
 
       def descendArray
         ( array: Expr[scala.Array[Any]],
-         elements: IArray[Any],
+         elements: Array[Any]^{},
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
@@ -546,14 +546,14 @@ object internal:
                     k += 1
 
                   $array(${Expr(idx)}) =
-                    Yaml.ast(Yaml.Ast.seqFromAnyArray(tail.asInstanceOf[IArray[Any]]))
+                    Yaml.ast(Yaml.Ast.seqFromAnyArray(tail.asInstanceOf[Array[Any]^{}]))
                   true
                 }
               }
 
         combined
 
-      def countHolesInPrefix(elements: IArray[Any], upTo: Int): Int =
+      def countHolesInPrefix(elements: Array[Any]^{}, upTo: Int): Int =
         var count = 0
         var i = 0
 
@@ -580,7 +580,7 @@ object internal:
 
           c
 
-        case arr: IArray[Any] @unchecked =>
+        case arr: (Array[Any]^{}) @unchecked =>
           if (arr.length & 1) == 0 then
             val pairs = arr.length/2
             var c = 0
@@ -608,7 +608,7 @@ object internal:
 
       def descendObject
         ( array: Expr[scala.Array[Any]],
-         node: IArray[Any],
+         node: Array[Any]^{},
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
@@ -698,7 +698,7 @@ object internal:
                       m += 1
 
                     $array(${Expr(idx)}) =
-                      Yaml.ast(Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[IArray[Any]]))
+                      Yaml.ast(Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[Array[Any]^{}]))
                     true
                   }
                 }

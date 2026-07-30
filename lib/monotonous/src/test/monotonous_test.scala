@@ -41,10 +41,10 @@ given Seed = Seed(1L)
 
 object Tests extends Suite(m"Monotonous tests"):
 
-  val numbers = IArray[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
+  val numbers = Array.of[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
   val numberList = numbers.to[List]
 
-  val allNumbers = IArray.from((0 to 18).map(_.toByte))
+  val allNumbers = Array.from((0 to 18).map(_.toByte))
 
   val stream = Progression(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
       Data(11, 12, 13, 14, 15), Data(16, 17, 18, 19, 20, 21), Data(22, 23, 24, 25, 26, 27, 28))
@@ -154,7 +154,7 @@ object Tests extends Suite(m"Monotonous tests"):
 
     stochastic:
       for i <- 1 to 100 do
-        val arb = arbitrary[IArray[Byte]]()
+        val arb = arbitrary[Array[Byte]^{}]()
         val arbList = arb.to[List]
 
         locally:

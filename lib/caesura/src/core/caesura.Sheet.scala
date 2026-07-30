@@ -117,7 +117,7 @@ object Sheet:
           sheet(parseRows(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
         private def sheet(iterator: Iterator[Dsv]^): Sheet =
-          val rows = IArray.from(iterator)
+          val rows = Array.from(iterator)
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
           else Sheet(rows, format)
 
@@ -259,7 +259,7 @@ object Sheet:
       val n = cellsBuf.length
       val arr = Array[Text](n)
       cellsBuf.copyToArray(arr.raw)
-      Dsv(IArray.freeze(arr), headings)
+      Dsv(Array.freeze(arr), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
     // bulk-appending the run of regular characters in one operation, then
@@ -393,9 +393,9 @@ object Sheet:
 // and indexable. The streaming counterpart is `stream.rows`, an
 // `Iterator[Dsv]` over a live pull endpoint, which never builds a `Sheet`.
 case class Sheet
-  ( rows:    IArray[Dsv],
+  ( rows:    Array[Dsv]^{},
     format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset ):
+    columns: Optional[Array[Text]^{}] = Unset ):
 
   def as[value: Decodable in Dsv]: List[value] raises DsvError tracks CellRef =
     rows.to[List].map(_.as[value])
@@ -404,7 +404,7 @@ case class Sheet
     (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])*31
         + format.hashCode)*31
     + columns.lay(-1): array =>
-        ju.Arrays.hashCode(array.mutable(using Unsafe))
+        ju.Arrays.hashCode(array.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>

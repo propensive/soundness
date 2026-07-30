@@ -153,19 +153,22 @@ object internal:
 
         val attributesChecked = attributes(pattern.attributes.toList.map(_(0)))('{true})
 
-        val children = '{$scrutinee.children}
-
+        // The children access is quoted in one piece: splicing a `val children` Expr gives
+        // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
+        // read shim's `any.rd` receiver.
         def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
-          if index == pattern.children.stdlib.length then expr else
+          if index == pattern.children.readable.length then expr else
             val expr2 =
-              descend(array, pattern.children.stdlib(index), '{$children.stdlib(${Expr(index)})}, '{true})
+              descend
+                ( array, pattern.children.readable(index),
+                  '{$scrutinee.children.readable(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 
         val elementsChecked = elements(0):
           ' {
               ${Expr(pattern.label)} == $scrutinee.label &&
-                $scrutinee.children.stdlib.length == ${Expr(pattern.children.stdlib.length)}
+                $scrutinee.children.readable.length == ${Expr(pattern.children.readable.length)}
             }
 
         '{$attributesChecked && $elementsChecked}
@@ -502,7 +505,7 @@ object internal:
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
           val elements =
-            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].stdlib.toList)}*)}
+            '{Array.of(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Node]]^{}].readable.toList)}*)}
 
           List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
@@ -626,13 +629,14 @@ object internal:
     val attrsExpr = '{Attributes.from(Map.of($presets.stdlib ++ ${Expr.ofList(attributes)}.compact.toMap))}
     '{$tag.node($attrsExpr)}.asExprOf[result]
 
-  opaque type Attributes = IArray[String | Null]
+  // Represented as the stdlib's immutable array, not the frozen `Array[String | Null]^{}`:
+  // dealiasing the mutable-classified opaque gives `Attributes`-typed fields a fresh
+  // `any.rd` capability that leaks into every enclosing type. The stdlib `IArray` is pure
+  // by construction; conversions happen at the construction/`storage` edges.
+  opaque type Attributes = scala.IArray[String | Null]
 
   object Attributes:
-    // Sealed: fresh `IArray`s are immutable; fresh-ness is the opaque-Array
-    // artifact, which would otherwise decorate every constructed `Attributes`
-    // (and, through `Element`'s constructor, every `Tag`).
-    val empty: Attributes = caps.unsafe.unsafeAssumePure(IArray.empty[String | Null])
+    val empty: Attributes = scala.IArray.empty[String | Null]
 
     def apply(pairs: (Text, Optional[Text])*): Attributes =
       if pairs.isEmpty then empty else
@@ -645,7 +649,7 @@ object internal:
           buffer(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
           i += 1
 
-        IArray.freeze(buffer)
+        Array.freeze(buffer).readable
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
       val entries = map.stdlib
@@ -659,13 +663,14 @@ object internal:
           buffer(i*2 + 1) = v.lay(null: String | Null)(_.s)
           i += 1
 
-        IArray.freeze(buffer)
+        Array.freeze(buffer).readable
 
-    // Construct an `Attributes` directly from an interleaved `IArray`. The
+    // Construct an `Attributes` directly from an interleaved frozen array. The
     // caller guarantees the array's length is even and that every key slot
     // (even index) holds a non-null `String`. Used by the parser, which
     // assembles the interleaved array as it tokenizes attributes.
-    private[honeycomb] inline def fromInterleaved(array: IArray[String | Null]): Attributes = array
+    private[honeycomb] inline def fromInterleaved(array: Array[String | Null]^{}): Attributes =
+      array.readable
 
     // Unwrap to the raw `Array[String | Null]` for hot-path internal access.
     // Safe within the package: the storage is shared but never mutated outside
@@ -674,10 +679,12 @@ object internal:
       attrs.asInstanceOf[scala.Array[String | Null]]
 
     extension (attrs: Attributes)
-      inline def size: Int = attrs.stdlib.length/2
-      inline def isEmpty: Boolean = attrs.stdlib.length == 0
-      inline def nonEmpty: Boolean = attrs.stdlib.length > 0
-      inline def nil: Boolean = attrs.stdlib.length == 0
+      // Not `inline`: expansion outside this file re-typechecks the body where the opaque
+      // is abstract, so the array operations no longer resolve.
+      def size: Int = storage(attrs).length/2
+      def isEmpty: Boolean = storage(attrs).length == 0
+      def nonEmpty: Boolean = storage(attrs).length > 0
+      def nil: Boolean = storage(attrs).length == 0
 
       def apply(key: Text): Optional[Text] =
         val a = storage(attrs)
@@ -812,7 +819,7 @@ object internal:
           i += 2
 
       // O(N): finds and excludes the matching index, returning a new `Attributes`
-      // whose backing IArray is two slots shorter. If the key is absent, returns
+      // whose backing array is two slots shorter. If the key is absent, returns
       // `attrs` unchanged so callers don't allocate gratuitously.
       def removed(key: Text): Attributes =
         val a = storage(attrs)
@@ -827,9 +834,9 @@ object internal:
 
         if idx < 0 then attrs else
           val nu = Array[String | Null](n - 2)
-          if idx > 0 then nu.copyFrom(attrs, 0, 0, idx)
-          if idx < n - 2 then nu.copyFrom(attrs, idx + 2, idx, n - 2 - idx)
-          IArray.freeze(nu)
+          if idx > 0 then nu.copyFrom(Array.frozen(attrs), 0, 0, idx)
+          if idx < n - 2 then nu.copyFrom(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
+          Array.freeze(nu).readable
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -843,7 +850,7 @@ object internal:
           result
 
       // Updates an existing key in place (preserving order) or appends a new pair
-      // at the end. Always returns a new `Attributes` (the IArray is immutable).
+      // at the end. Always returns a new `Attributes` (the storage is immutable).
       def updated(key: Text, value: Optional[Text]): Attributes =
         val a = storage(attrs)
         val keyStr: String = key.s
@@ -857,15 +864,15 @@ object internal:
 
         if idx >= 0 then
           val nu = Array[String | Null](n)
-          nu.copyFrom(attrs, 0, 0, n)
+          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(idx + 1) = value.lay(null: String | Null)(_.s)
-          IArray.freeze(nu)
+          Array.freeze(nu).readable
         else
           val nu = Array[String | Null](n + 2)
-          nu.copyFrom(attrs, 0, 0, n)
+          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.lay(null: String | Null)(_.s)
-          IArray.freeze(nu)
+          Array.freeze(nu).readable
 
       // Combines two `Attributes`, with the right-hand side overriding duplicate
       // keys (matching `Map ++` semantics). Order: left's keys first (preserving
@@ -914,18 +921,18 @@ object internal:
 
             j += 2
 
-          val frozen = IArray.freeze(nu)
+          val frozen = Array.freeze(nu)
 
-          if written == total then frozen else
+          if written == total then frozen.readable else
             val tu = Array[String | Null](written)
             tu.copyFrom(frozen, 0, 0, written)
-            IArray.freeze(tu)
+            Array.freeze(tu).readable
 
       def `++`(other: Map[Text, Optional[Text]]): Attributes =
         if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
 
       // Structural equality: same key/value pairs in the same order. Provided
-      // explicitly because `Object.equals` on the underlying `IArray` would
+      // explicitly because `Object.equals` on the underlying array would
       // give reference equality.
       // Same set of (key, value) pairs (order-insensitive). Iterates the left,
       // looks up each key in the right.

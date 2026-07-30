@@ -93,7 +93,7 @@ object internal:
 
     val parts = collectParts[parts](Nil)
     val source: String = parts.mkString(MarkerString)
-    val data: Data = IArray.from(source.getBytes("UTF-8").nn.iterator)
+    val data: Data = Array.from(source.getBytes("UTF-8").nn.iterator)
 
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
       case Varargs(insertions) => insertions
@@ -162,17 +162,20 @@ object internal:
           val textExpr = substituteMarker(text)
           '{Tel.Atom.Literal($delimExpr.tt, $textExpr)}
 
-      def emitAtomsArray(atoms: IArray[Tel.Atom]): Expr[IArray[Tel.Atom]] =
-        val list = atoms.stdlib.toList.map(emitAtom)
-        '{IArray.from(${Expr.ofList(list)})}
+      // The casts happen on the `Expr`s, outside the quotes: any frozen-array-typed term
+      // inside a quote picks up a fresh `any.rd` capability that cannot flow into `^{}`.
+      // The emitted arrays are fresh and never written, so the frozen form is sound.
+      def emitAtomsArray(atoms: Array[Tel.Atom]^{}): Expr[Array[Tel.Atom]^{}] =
+        val list = atoms.readable.toList.map(emitAtom)
+        '{Array.from(${Expr.ofList(list)})}.asInstanceOf[Expr[Array[Tel.Atom]^{}]]
 
       def emitComment(c: Tel.Comment): Expr[Tel.Comment] =
         '{Tel.Comment(${Expr(c.text.s)}.tt)}
 
       def emitTabulation(t: Tel.Tabulation): Expr[Tel.Tabulation] =
-        val markers = Expr(t.markerOffsets.stdlib.toList)
-        val headings = Expr(t.headings.stdlib.toList.map(_.s))
-        '{Tel.Tabulation(IArray.from(${markers}), IArray.from(${headings}.map(_.tt)))}
+        val markers = Expr(t.markerOffsets.readable.toList)
+        val headings = Expr(t.headings.readable.toList.map(_.s))
+        '{Tel.Tabulation(Array.from(${markers}), Array.from(${headings}.map(_.tt)))}
 
       def emitCompound(c: Tel.Compound): Expr[Tel.Compound] =
         val keywordExpr = Expr(c.keyword.s)
@@ -186,20 +189,24 @@ object internal:
         '{Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr)}
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
-        val comments = '{IArray.from(${Expr.ofList(b.comments.stdlib.toList.map(emitComment))})}
+        val comments =
+          '{Array.from(${Expr.ofList(b.comments.readable.toList.map(emitComment))})}
+          . asInstanceOf[Expr[Array[Tel.Comment]^{}]]
 
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
           case t: Tel.Tabulation => '{${emitTabulation(t)}: Optional[Tel.Tabulation]}
           case _                 => '{Unset}
 
         val compounds =
-          '{IArray.from(${Expr.ofList(b.compounds.stdlib.toList.map(emitCompound))})}
+          '{Array.from(${Expr.ofList(b.compounds.readable.toList.map(emitCompound))})}
+          . asInstanceOf[Expr[Array[Tel.Compound]^{}]]
 
         val tbl = Expr(b.trailingBlankLines)
         '{Tel.Block($comments, $tab, $compounds, $tbl)}
 
-      def emitBlocks(blocks: IArray[Tel.Block]): Expr[IArray[Tel.Block]] =
-        '{IArray.from(${Expr.ofList(blocks.stdlib.toList.map(emitBlock))})}
+      def emitBlocks(blocks: Array[Tel.Block]^{}): Expr[Array[Tel.Block]^{}] =
+        '{Array.from(${Expr.ofList(blocks.readable.toList.map(emitBlock))})}
+        . asInstanceOf[Expr[Array[Tel.Block]^{}]]
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
         case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}
@@ -263,14 +270,14 @@ object internal:
         override def abort(error: Diagnostics ?=> TelError): Nothing =
           halt(m"the tel\"…\" pattern is invalid: ${error.message}")
 
-      Tel.Parser.parse(IArray.from(source.getBytes("UTF-8").nn.iterator))
+      Tel.Parser.parse(Array.from(source.getBytes("UTF-8").nn.iterator))
 
     // At runtime the matcher re-parses the assembled pattern source from
     // an embedded byte literal. We could emit the pre-parsed AST as an
     // Expr but that's a substantial amount of code; re-parsing once per
     // match-site invocation is cheap enough for the macro's purpose.
     val patternBytesExpr: Expr[Data] =
-      '{${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray.asInstanceOf[IArray[Byte]]}
+      '{${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray}.asInstanceOf[Expr[Data]]
 
     val markerExpr: Expr[Char] = Expr(Marker)
 
@@ -313,8 +320,8 @@ object internal:
     else None
 
   private def matchBlocks
-    ( pattern: IArray[Tel.Block],
-     input:   IArray[Tel.Block],
+    ( pattern: Array[Tel.Block]^{},
+     input:   Array[Tel.Block]^{},
      marker:  Char,
      out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
@@ -585,10 +592,10 @@ object internal:
         indent:      Expr[Int],
         foci:        Expr[Foci[Tel.Focus]],
         tactic:      Expr[Tactic[TelError]],
-        keys:        Expr[IArray[String]],
-        instances:   Expr[IArray[Tel.Field | Null]],
-        repeatables: Expr[IArray[Boolean]],
-        fallbacks:   Expr[IArray[Any]] )
+        keys:        Expr[Array[String]^{}],
+        instances:   Expr[Array[Tel.Field | Null]^{}],
+        repeatables: Expr[Array[Boolean]^{}],
+        fallbacks:   Expr[Array[Any]^{}] )
     :   Expr[value] =
 
       val owner = Symbol.spliceOwner
@@ -852,15 +859,15 @@ object internal:
         val foci: Foci[Tel.Focus] = $fociExpr
         val tactic: Tactic[TelError] = $tacticExpr
 
-        val keys: IArray[String] =
-          Tel.Parsable.wireKeywords(IArray[String](${Varargs(nameExprs)}*), $renames)
+        val keys: Array[String]^{} =
+          Tel.Parsable.wireKeywords(Array.of[String](${Varargs(nameExprs)}*), $renames)
 
-        lazy val instances: IArray[Tel.Field | Null] = IArray(${Varargs(instanceExprs)}*)
+        lazy val instances: Array[Tel.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
 
-        lazy val repeatables: IArray[Boolean] =
+        lazy val repeatables: Array[Boolean]^{} =
           instances.map { instance => instance != null && Tel.Parsable.repeats(instance) }
 
-        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs(fallbackExprs)}*)
+        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
 
         new Tel.Parsable:
           type Self = value

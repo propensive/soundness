@@ -55,7 +55,7 @@ import socketBackends.virtualMachine
 object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
 
-    // A `Data` (`IArray[Byte]`) compares by reference, so byte-level assertions
+    // A `Data` (`Array[Byte]^{}`) compares by reference, so byte-level assertions
     // go through `List[Byte]`.
     def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
     def bytes(data: Data): List[Byte] = data.to[List]

@@ -343,7 +343,7 @@ object Tests extends Suite(m"Hallucination Tests"):
     . assert(_ == true)
 
     test(m"a truncated JPEG fails cleanly"):
-      capture[RasterError](JpegCodec.decode(IArray.of(jpg420.stdlib.slice(0, 200)))).reason
+      capture[RasterError](JpegCodec.decode(Array.frozen(jpg420.stdlib.slice(0, 200)))).reason
     . assert(_ == RasterError.Reason.Truncated)
 
     // A smooth gradient whose channels stay within 0..255 (no wrap-around discontinuity that
@@ -391,7 +391,7 @@ object Tests extends Suite(m"Hallucination Tests"):
     . assert(_ == true)
 
     test(m"a corrupted PNG fails its checksum"):
-      val corrupted = IArray.tabulate(png.stdlib.length): index =>
+      val corrupted = Array.tabulate(png.stdlib.length): index =>
         if index == 40 then (png.stdlib(index) ^ 1).toByte else png.stdlib(index)
 
       capture[RasterError](PngCodec.decode(corrupted)).reason

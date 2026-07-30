@@ -47,8 +47,8 @@ import vacuous.*
 // Decoding buffers the whole compressed stream, then walks the blocks. Only the single-LZMA2-filter
 // chain is understood; delta/BCJ filters and multi-filter chains are rejected.
 private[pneumatic] object XzContainer:
-  val magic: IArray[Byte] =
-    IArray.unsafeFromArray:
+  val magic: Array[Byte]^{} =
+    Array.unsafeFrozen:
       scala.Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
   inline val Lzma2FilterId = 0x21
   inline val IndexIndicator = 0x00

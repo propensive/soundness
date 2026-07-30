@@ -41,7 +41,7 @@ import turbulence.*
 
 object Cose:
   private def emptyMapAst: Cbor.Ast =
-    Cbor.Ast.map(IArray.empty[Any], IArray.empty[Any])
+    Cbor.Ast.map(Array.empty[Any], Array.empty[Any])
 
   private[enigmatic] def emptyMap: Cbor = Cbor.ast(emptyMapAst)
 
@@ -54,7 +54,7 @@ object Cose:
   :   Data =
 
     val sigStruct =
-      Cbor.Ast.array(IArray[Any](context, bodyProtected, externalAad, payload))
+      Cbor.Ast.array(Array.of[Any](context, bodyProtected, externalAad, payload))
 
     CanonicalCbor.encode(sigStruct)
 
@@ -90,12 +90,12 @@ object Cose:
 
     val payload: Data  = source.read[Data]
     val algId          = auth.algId
-    val protectedAst   = Cbor.Ast.map(IArray[Any](1L), IArray[Any](algId))
+    val protectedAst   = Cbor.Ast.map(Array.of[Any](1L), Array.of[Any](algId))
     val protectedBstr  = CanonicalCbor.encode(protectedAst)
-    val externalAad    = IArray.empty[Byte]
+    val externalAad    = Array.empty[Byte]
     val tbs            = Cose.toBeSigned(auth.contextString, protectedBstr, externalAad, payload)
     val authentication = auth.authenticate(tbs, key)
-    val recipient      = CoseRecipient(IArray.empty[Byte], Cose.emptyMap, authentication)
+    val recipient      = CoseRecipient(Array.empty[Byte], Cose.emptyMap, authentication)
 
     Cose.make[auth.Form, auth.Operand]
       ( protectedBstr,
@@ -141,7 +141,7 @@ object Cose:
 
     val recipients: List[CoseRecipient] = tagNumber match
       case CoseTag.Sign1 | CoseTag.Mac0 =>
-        List(CoseRecipient(IArray.empty[Byte], emptyMap, readByteString(body.element(3))))
+        List(CoseRecipient(Array.empty[Byte], emptyMap, readByteString(body.element(3))))
 
       case _ =>
         val recipArray = body.element(3)
@@ -187,14 +187,14 @@ class Cose
     val envelope = cborTag match
       case CoseTag.Sign1 | CoseTag.Mac0 =>
         val auth = recipients.stdlib.head.authentication
-        Cbor.Ast.array(IArray[Any](protectedHeader, unprotectedAst, payload, auth))
+        Cbor.Ast.array(Array.of[Any](protectedHeader, unprotectedAst, payload, auth))
 
       case _ =>
-        val recipAst: IArray[Any] = IArray.from(recipients.stdlib.map: r =>
-          Cbor.Ast.array(IArray[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
+        val recipAst: Array[Any]^{} = Array.from(recipients.stdlib.map: r =>
+          Cbor.Ast.array(Array.of[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
             r.authentication)))
 
-        Cbor.Ast.array(IArray[Any](protectedHeader, unprotectedAst, payload,
+        Cbor.Ast.array(Array.of[Any](protectedHeader, unprotectedAst, payload,
           Cbor.Ast.array(recipAst)))
 
     Cbor.Ast(Cbor.Tag(cborTag, envelope)).encode
@@ -209,7 +209,7 @@ class Cose
       abort(CoseError(CoseError.Reason.VariantMismatch
        ( expected = verifier.contextString.tt, actual = contextString.tt )))
 
-    val externalAad = IArray.empty[Byte]
+    val externalAad = Array.empty[Byte]
     val tbs = Cose.toBeSigned(contextString, protectedHeader, externalAad, payload)
 
     recipients.stdlib.exists: recipient =>

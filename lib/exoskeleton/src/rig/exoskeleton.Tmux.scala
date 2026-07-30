@@ -77,7 +77,7 @@ object Tmux:
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
     . protect:
-        val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)
+        val content = Array.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)
         val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
         val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()
         val x = cx.trim.as[Int].z
@@ -191,7 +191,7 @@ extends Error(271, reason.number)(m"can't drive tmux: $reason")
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
 extends Findable, caps.ExclusiveCapability
 
-case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):
+case class Screenshot(screen: Array[Text]^{}, size: (Int, Int), cursor: (Ordinal, Ordinal)):
   def apply(): Text = screen.stdlib.toSeq.join(t"\n")
 
   def currentLine(decorate: Char => Text): Text =

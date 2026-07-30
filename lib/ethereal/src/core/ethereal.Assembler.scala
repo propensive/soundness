@@ -85,7 +85,7 @@ object Assembler:
     ( using Tactic[AssemblyError] )
   :   Data =
 
-    val bytes: scala.Array[Byte] = runner.stdlib.toArray
+    val bytes: scala.Array[Byte] = runner.readable.toArray
 
     val magicOffset: Int =
       var found: Int = -1
@@ -108,7 +108,7 @@ object Assembler:
       found
 
     val configOffset: Int = magicOffset + MagicMarker.length
-    val keyBytes: scala.Array[Byte] = publicKey.stdlib.toArray
+    val keyBytes: scala.Array[Byte] = publicKey.readable.toArray
 
     // Write the 24-byte metadata region.
     val metaBuf = jnio.ByteBuffer.wrap(bytes, configOffset, 24).nn
@@ -124,7 +124,7 @@ object Assembler:
     // later by the signer when shipped as an upgrade.
     jl.System.arraycopy(keyBytes, 0, bytes, configOffset + 24, PublicKeyLength)
 
-    IArray.from(bytes.iterator): IArray[Byte]
+    Array.from(bytes.iterator): Array[Byte]^{}
 
 
   def assemble

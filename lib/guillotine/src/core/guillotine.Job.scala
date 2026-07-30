@@ -95,7 +95,7 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
   // Standard output as a record stream of its lines: UTF-8 through the duct
   // kernel, with adaptive line separation — matching the treatment of `\n`,
   // `\r\n` and `\r` by `BufferedReader.readLine`, which this replaces.
-  def lines()(using Tactic[StreamError]): (Stream[IArray[Text]] over Credit)^ =
+  def lines()(using Tactic[StreamError]): (Stream[Array[Text]^{}] over Credit)^ =
     import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
     import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
     stdout().delineate

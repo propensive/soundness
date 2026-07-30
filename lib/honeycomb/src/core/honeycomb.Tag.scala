@@ -56,7 +56,7 @@ object Tag:
             case element@Element(tag.label, _, _, _) => lambda(element)
             case other                               => other
 
-          new Element(label, attributes, caps.unsafe.unsafeAssumePure(children2), boundary)
+          new Element(label, attributes, children2, boundary)
           . asInstanceOf[html]
 
         case other =>
@@ -162,7 +162,7 @@ object Tag:
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, Array.of(), foreign)
       with Html.Vacuiscible()
       . of[Topic]
       . over[Transport]
@@ -205,12 +205,12 @@ object Tag:
 
           presets.updated(attribution.attribute, value)
 
-      val nodes: IArray[Node] = children.compact.to(List).nodes
+      val nodes: Array[Node]^{} = children.compact.to(List).nodes
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, Array.of(), foreign)
       with Html.Transparent()
       . of[Topic]
       . over[Transport]
@@ -224,7 +224,7 @@ object Tag:
     def node(attributes: Attributes): Result =
       new Element
         ( label, Attributes.from(presets) ++ attributes,
-          IArray(), this.foreign )
+          Array.of(), this.foreign )
       . of[Topic]
       . in[Form]
 
@@ -239,9 +239,9 @@ abstract class Tag
     val void:        Boolean                   = false,
     val transparent: Boolean                   = false,
     val boundary:    Boolean                   = false )
-// The empty-children `IArray()` is sealed: a fresh `IArray` in the parent
+// The empty-children `Array.of()` is sealed: a fresh frozen array in the parent
 // constructor call would otherwise decorate `Tag`'s self type, which must stay
-extends Element(label, Attributes.from(presets), IArray(), foreign),
+extends Element(label, Attributes.from(presets), Array.of(), foreign),
   Formal, Dynamic, caps.Pure:
   type Result <: Element
 

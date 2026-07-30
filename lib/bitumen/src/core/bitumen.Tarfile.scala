@@ -58,7 +58,7 @@ enum LongNameFormat:
   case Gnu
 
 object Tarfile:
-  val zeroBlock: Data = IArray.fill[Byte](512)(0)
+  val zeroBlock: Data = Array.fill[Byte](512)(0)
 
   given streamable: Tarfile is Streamable by Data over Credit = tarfile =>
     Stream(tarfile.blocks)
@@ -111,8 +111,11 @@ object Tarfile:
       else
         val n = (size - consumed).min(chunkSize)
 
+        // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
+        // the cast reasserts the frozen form, which `take` already guarantees.
         val data =
           cursor.take(abort(TarError(TarError.Reason.TruncatedStream(n, cursor.available))))(n)
+          . asInstanceOf[Data]
 
         consumed += n
         data
@@ -230,7 +233,11 @@ object Tarfile:
                   // The body pulls off the shared cursor; advancing to the
                   // next entry drains whatever of it remains unread.
                   val body =
-                    TarBody.deferred(bodyPull(cursor, size, ((size + 511)/512)*512))
+                    TarBody.deferred:
+                      // Erases the two independently-freshened `any.rd`s on the frozen
+                      // chunk type (result position vs parameter position).
+                      bodyPull(cursor, size, ((size + 511)/512)*512)
+                      . asInstanceOf[() => Optional[Data]]
 
                   unread = body
                   lookahead = Tar.Entry.File(path, mode, user, group, mtime, body, extras)
