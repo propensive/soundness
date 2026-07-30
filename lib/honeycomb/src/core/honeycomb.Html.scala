@@ -1878,7 +1878,7 @@ extends Node, Topical, Transportive, Dynamic:
     // element type; the per-element decorations defeat an outer seal.
     Fragment[tag.Topic]
       ( caps.unsafe.unsafeAssumePure
-          (children2.mutable(using Unsafe).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
+          (Array.unsafeJvm(children2).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
     . in[tag.Form]
 
   def body: Fragment of Topic over Transport in Form =
@@ -1919,13 +1919,13 @@ extends Node, Topical, Transportive, Dynamic:
     case Element(label, attributes, children, foreign) =>
       label == this.label && attributes.equalsAttributes(this.attributes) &&
         foreign == this.foreign &&
-        ju.Arrays.equals(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]], this.children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])
+        ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
+    ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
 
   transparent inline def selectDynamic(name: Label): Any =
 

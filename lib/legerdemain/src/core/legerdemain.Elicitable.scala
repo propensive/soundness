@@ -65,7 +65,7 @@ object Elicitable extends Elicitable2:
         ( id,
           List.from:
             scala.collection.immutable.ArraySeq
-            . unsafeWrapArray(enumerable.values.mutable(using Unsafe)).map(enumerable.name(_)),
+            . unsafeWrapArray(Array.unsafeJvm(enumerable.values)).map(enumerable.name(_)),
           value )
 
 

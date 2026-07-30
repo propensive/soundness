@@ -85,8 +85,7 @@ object Sheet:
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
 
-    def rows(value: Sheet): List[Dsv] =
-      List.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(value.rows.mutable(using Unsafe)))
+    def rows(value: Sheet): List[Dsv] = value.rows.to[List]
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
@@ -401,10 +400,10 @@ case class Sheet
     rows.to[List].map(_.as[value])
 
   override def hashCode: Int =
-    (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])*31
+    (ju.Arrays.hashCode(Array.unsafeJvm(rows).asInstanceOf[scala.Array[Object | Null]])*31
         + format.hashCode)*31
     + columns.lay(-1): array =>
-        ju.Arrays.hashCode(array.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])
+        ju.Arrays.hashCode(Array.unsafeJvm(array).asInstanceOf[scala.Array[Object | Null]])
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>

@@ -57,8 +57,7 @@ case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[
     val titles: List[Array[Array[text]^{}]^{}] =
       List:
         Array.from[Array[text]^{}]:
-          scala.collection.immutable.ArraySeq.unsafeWrapArray(columns.mutable(using Unsafe))
-          . map { column => Array.from[text](column.title.cut(t"\n").stdlib) }
+          columns0.map { column => Array.from[text](column.title.cut(t"\n").stdlib) }
 
     def tabulate(data: List[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
