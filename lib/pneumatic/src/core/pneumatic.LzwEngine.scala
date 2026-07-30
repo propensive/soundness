@@ -54,7 +54,7 @@ private[pneumatic] trait LzwEngine extends caps.Mutable:
 
   private var delivered: Int = 0
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
   update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
@@ -108,7 +108,7 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
       pending += ((bits >> (bitCount - 8)) & 0xff).toByte
       bitCount -= 8
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     if !begun then
       emit(256)
       begun = true
@@ -116,7 +116,7 @@ private[pneumatic] class LzwEncoder(earlyChange: Boolean) extends LzwEngine:
     var i = 0
 
     while i < length do
-      val byte = bytes(offset + i)
+      val byte = bytes.readUnchecked(offset + i)
 
       if prefix < 0 then prefix = byte & 0xff else codes.at((prefix, byte)) match
         case code: Int =>
@@ -210,12 +210,12 @@ private[pneumatic] class LzwDecoder(earlyChange: Boolean) extends LzwEngine:
         previous = entry
         if table.length >= (1 << width) - early && width < 12 then width += 1
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var consumed = 0
 
     while consumed < length do
       while bitCount <= 56 && consumed < length do
-        bits = (bits << 8) | (bytes(offset + consumed) & 0xff)
+        bits = (bits << 8) | (bytes.readUnchecked(offset + consumed) & 0xff)
         bitCount += 8
         consumed += 1
 
@@ -247,7 +247,7 @@ private[pneumatic] class LzwStage(engine0: => LzwEngine^) extends Duct[Data, Dat
       targetSpace: Int )
   :   Duct.Progress =
 
-    engine.accept(source.asInstanceOf[scala.Array[Byte]], sourceOffset, sourceLength)
+    engine.accept(source.asInstanceOf[Array[Byte]^{caps.any.rd}], sourceOffset, sourceLength)
 
     Duct.Progress
       ( sourceLength,

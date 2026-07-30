@@ -517,7 +517,7 @@ private[pneumatic] final class Lzma2Decompressor(dictSize: Int) extends caps.Mut
         System.arraycopy(input, 0, grown, 0, writePos)
         input = grown
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensureCapacity(length)
     System.arraycopy(bytes.asInstanceOf[scala.Array[Byte]], offset, input, writePos, length)
     writePos += length

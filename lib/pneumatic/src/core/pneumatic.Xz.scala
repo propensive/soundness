@@ -59,7 +59,7 @@ private[pneumatic] trait XzEngine extends caps.Mutable:
   protected val pending: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private var delivered: Int = 0
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
   update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
@@ -98,9 +98,9 @@ private[pneumatic] abstract class BufferedEngine extends XzEngine:
 
   protected def transform(bytes: scala.Array[Byte]): scala.Array[Byte]
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = 0
-    while i < length do { input += bytes(offset + i); i += 1 }
+    while i < length do { input += bytes.readUnchecked(offset + i); i += 1 }
 
   update def finish(): Unit =
     if !finished then
@@ -139,12 +139,12 @@ private[pneumatic] final class XzCompressorEngine(preset: Int, checkType: Int) e
       emit(blockBytes)
       records += ((unpadded, data.length.toLong))
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensureHeader()
     var i = 0
 
     while i < length do
-      segment += bytes(offset + i)
+      segment += bytes.readUnchecked(offset + i)
       i += 1
       if segment.length >= segmentSize then emitSegment()
 
@@ -172,7 +172,7 @@ private[pneumatic] final class Lzma2CompressorEngine(preset: Int) extends Buffer
 private[pneumatic] final class Lzma2DecompressorEngine(dictSize: Int) extends XzEngine:
   private val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     decompressor.accept(bytes, offset, length)
     drain()
 
@@ -207,7 +207,7 @@ private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]
       targetSpace: Int )
   :   Duct.Progress =
 
-    engine.accept(source.asInstanceOf[scala.Array[Byte]], sourceOffset, sourceLength)
+    engine.accept(source.asInstanceOf[Array[Byte]^{caps.any.rd}], sourceOffset, sourceLength)
 
     Duct.Progress
       ( sourceLength,
@@ -265,7 +265,7 @@ object Xz:
 
     def recur(engine: XzEngine^, stream: Progression[Data]): Progression[Data] = stream match
       case head #:: tail =>
-        engine.accept(head.mutable(using Unsafe), 0, head.length)
+        engine.accept(head, 0, head.length)
         recur(engine, tail)
 
       case _ =>

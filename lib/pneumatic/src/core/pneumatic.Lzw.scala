@@ -84,7 +84,7 @@ object Lzw:
   private def drive(engine0: => LzwEngine^, stream: Progression[Data]): Progression[Data] =
     def recur(engine: LzwEngine^, stream: Progression[Data]): Progression[Data] = stream match
       case head #:: tail =>
-        engine.accept(head.mutable(using Unsafe), 0, head.length)
+        engine.accept(head, 0, head.length)
         val data = engine.gather()
         if data.length > 0 then data #:: recur(engine, tail) else recur(engine, tail)
 

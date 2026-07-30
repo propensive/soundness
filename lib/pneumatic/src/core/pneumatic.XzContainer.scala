@@ -127,7 +127,10 @@ private[pneumatic] object XzContainer:
       val dictSize = Lzma2Options.byteToDictSize(dictSizeByte)
 
       val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
-      decompressor.accept(buffer, blockDataStart, buffer.length - blockDataStart)
+      // `buffer` reaches `decode` from `BufferedEngine.transform`, which builds it fresh from
+      // its accumulated input, so nothing else holds it.
+      decompressor.accept
+       ( Array.unsafeFrozen(buffer), blockDataStart, buffer.length - blockDataStart )
       decompressor.finish()
 
       if !decompressor.ended then

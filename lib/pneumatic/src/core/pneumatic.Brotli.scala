@@ -54,7 +54,7 @@ private[pneumatic] trait BrotliEngine extends caps.Mutable:
 
   private var delivered: Int = 0
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit
   update def finish(): Unit
 
   update def deliver(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
@@ -91,9 +91,9 @@ private[pneumatic] class BrotliDecoderEngine extends BrotliEngine:
 
   private var finished = false
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = 0
-    while i < length do { input += bytes(offset + i); i += 1 }
+    while i < length do { input += bytes.readUnchecked(offset + i); i += 1 }
 
   update def finish(): Unit =
     if !finished then
@@ -112,9 +112,9 @@ private[pneumatic] class BrotliEncoderEngine extends BrotliEngine:
 
   private var finished = false
 
-  update def accept(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+  update def accept(bytes: Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     var i = 0
-    while i < length do { input += bytes(offset + i); i += 1 }
+    while i < length do { input += bytes.readUnchecked(offset + i); i += 1 }
 
   update def finish(): Unit =
     if !finished then
@@ -149,7 +149,7 @@ private[pneumatic] class BrotliStage(engine0: => BrotliEngine^) extends Duct[Dat
       targetSpace: Int )
   :   Duct.Progress =
 
-    engine.accept(source.asInstanceOf[scala.Array[Byte]], sourceOffset, sourceLength)
+    engine.accept(source.asInstanceOf[Array[Byte]^{caps.any.rd}], sourceOffset, sourceLength)
 
     Duct.Progress
       ( sourceLength,
@@ -188,7 +188,7 @@ object Brotli:
   private def drive(engine0: => BrotliEngine^, stream: Progression[Data]): Progression[Data] =
     def recur(engine: BrotliEngine^, stream: Progression[Data]): Progression[Data] = stream match
       case head #:: tail =>
-        engine.accept(head.mutable(using Unsafe), 0, head.length)
+        engine.accept(head, 0, head.length)
         recur(engine, tail)
 
       case _ =>
