@@ -32,7 +32,6 @@
                                                                                                   */
 package facsimile
 
-import scala.collection.immutable.Vector
 
 import scala.caps
 
@@ -270,12 +269,12 @@ extends caps.ExclusiveCapability:
   // back to a page by reference.
   private[facsimile] def pageEntries
   ( using Tactic[PdfError] )
-  :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
+  :   Series[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
     var visited = scala.collection.immutable.Set[Int]()
 
     def recur(node: Cos, number: Optional[Int], inherited: Page.Inherited)
-    :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
+    :   Series[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
       node match
         case Cos.Ref(reference, _) =>
@@ -289,29 +288,37 @@ extends caps.ExclusiveCapability:
           case t"Pages" =>
             val updated = inherited.update(entries)
 
-            resolved(entries.at(t"Kids").or(Cos.Nil)).elements.lay(Vector()): kids =>
-              kids.stdlib.toVector.flatMap(recur(_, Unset, updated))
+            resolved(entries.at(t"Kids").or(Cos.Nil)).elements.lay(Series()): kids =>
+              kids.to[Series].flatMap(recur(_, Unset, updated))
 
           case _ =>
-            Vector((number, entries, inherited))
+            Series((number, entries, inherited))
 
         case _ =>
-          Vector()
+          Series()
 
     recur(catalog.at(t"Pages").or(Cos.Nil), Unset, Page.Inherited())
 
-  def pages(using Tactic[PdfError]): Vector[Page^{this}] =
-    pageEntries.zipWithIndex.map: (entry, index) =>
-      Page(this, index.z, entry(0), entry(1), entry(2))
+  // Pages are exposed by position rather than as a collection: a `Page` captures its
+  // document, and capture-carrying elements do not yet flow through the opaque collections'
+  // typeclass surface (their element positions box). Positional access is total through the
+  // error channel every caller already carries.
+  def page(ordinal: Ordinal)(using Tactic[PdfError]): Page^{this} =
+    val entries = pageEntries
+
+    entries.at(ordinal).lay(abort(PdfError(PdfError.Reason.MissingPage(ordinal.n1)))): entry =>
+      Page(this, ordinal, entry(0), entry(1), entry(2))
+
+  def pageCount(using Tactic[PdfError]): Int = pageEntries.length
 
   // Leaf object numbers mapped to positions in the flattened page sequence, for resolving
   // destinations that refer to pages by reference.
   private[facsimile] def pageNumbers(using Tactic[PdfError]): Map[Int, Ordinal] =
     pageEntries.zipWithIndex.flatMap: (entry, index) =>
-      entry(0).lay(scala.collection.immutable.List()): number =>
-        scala.collection.immutable.List(number -> index.z)
+      entry(0).lay(Series()): number =>
+        Series(number -> index.z)
 
-    . pipe(Map.from(_))
+    . pipe { series => Map.from(series.stdlib) }
 
   // Named destinations from both homes: the old-style `/Dests` dictionary and the
   // `/Names /Dests` name tree, still as raw COS values.

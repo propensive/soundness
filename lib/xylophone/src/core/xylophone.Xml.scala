@@ -32,9 +32,10 @@
                                                                                                   */
 package xylophone
 
+import scala.collection.immutable.Vector
+
 import scala.collection.immutable.Seq
 import scala.collection.immutable.IndexedSeq
-import scala.collection.immutable.Vector
 
 import scala.caps
 
@@ -1970,8 +1971,7 @@ object Xml extends Tag.Container
         attrName: Text )
     :   Optional[Position] =
 
-      val keys: Vector[Text] = element.attributes.keys.toVector
-      val i = keys.indexOf(attrName)
+      val i = element.attributes.keys.indexOf(attrName)
 
       if i < 0 then Unset
       else

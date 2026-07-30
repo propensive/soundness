@@ -565,20 +565,20 @@ object Tests extends Suite(m"Facsimile tests"):
               PdfOperator.Offset(72, 720), PdfOperator.ShowText(t"Written".in[Data]),
               PdfOperator.EndText )
 
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.pages(0), operators))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.page(Prim), operators))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).text
+          pdf.page(Prim).text
       . assert(_ == t"Written")
 
       test(m"setting a page's rotation round-trips"):
         val path = tempPdf(onePage)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.setRotation(doc.pages(0), Page.Rotation.Quarter))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setRotation(doc.page(Prim), Page.Rotation.Quarter))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).rotation
+          pdf.page(Prim).rotation
       . assert(_ == Page.Rotation.Quarter)
 
       test(m"setting a page box round-trips"):
@@ -588,10 +588,10 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](200.0), Quantity[Points[1]](400.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.setBox(doc.pages(0), t"CropBox", target))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setBox(doc.page(Prim), t"CropBox", target))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).cropBox.width
+          pdf.page(Prim).cropBox.width
       . assert(_ == Quantity[Points[1]](200.0))
 
       test(m"an appended page increases the page count"):
@@ -604,7 +604,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.appendPage(a4)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages.length
+          pdf.pageCount
       . assert(_ == 2)
 
       test(m"an appended page's content extracts as text"):
@@ -627,7 +627,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.appendPage(a4, operators, resources)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(1).text
+          pdf.page(Sec).text
       . assert(_ == t"Second")
 
       test(m"a removed page decreases the page count"):
@@ -640,10 +640,10 @@ object Tests extends Suite(m"Facsimile tests"):
         val path = tempPdf(twoPages)
 
         PdfFile(path).open(Read & Write): doc ?=>
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.removePage(doc.pages(0)))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.removePage(doc.page(Prim)))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages.length
+          pdf.pageCount
       . assert(_ == 1)
 
       test(m"setting document information round-trips text fields"):
@@ -712,10 +712,10 @@ object Tests extends Suite(m"Facsimile tests"):
             Quantity[Points[1]](50.0), Quantity[Points[1]](20.0))
 
         PdfFile(path).open(Read & Write): doc ?=>
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.pages(0), rect, uri = t"https://soundness.dev/"))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.page(Prim), rect, uri = t"https://soundness.dev/"))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).annotations.head match
+          pdf.page(Prim).annotations.head match
             case Annotation.Link(_, _, uri, _) => uri
             case _                             => Unset
       . assert(_ == t"https://soundness.dev/")
@@ -736,10 +736,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).fonts(t"F1").embedded.let(_.data.to[List])
+          pdf.page(Prim).fonts(t"F1").embedded.let(_.data.to[List])
       . assert(_ == fontProgram.to[List])
 
       test(m"content using an embedded font extracts as text"):
@@ -747,17 +747,17 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
           val operators = List
             ( PdfOperator.BeginText, PdfOperator.SetFont(t"F1", 12),
               PdfOperator.Offset(72, 720), PdfOperator.ShowText(winAnsi(t"Embedded text")),
               PdfOperator.EndText )
 
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.pages(0), operators))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.setContents(doc.page(Prim), operators))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).text
+          pdf.page(Prim).text
       . assert(_ == t"Embedded text")
 
       test(m"the embedded font is a simple WinAnsi TrueType font"):
@@ -765,10 +765,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(fontProgram), t"MyFont")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).fonts(t"F1") match
+          pdf.page(Prim).fonts(t"F1") match
             case _: PdfFont.TrueType => true
             case _                   => false
       . assert(_ == true)
@@ -778,10 +778,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont))
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).fonts(t"F1").baseFont
+          pdf.page(Prim).fonts(t"F1").baseFont
       . assert(_ == t"TestSans")
 
       test(m"the font descriptor carries the font's real metrics"):
@@ -818,10 +818,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont), subset = t"AB")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).fonts(t"F1").baseFont
+          pdf.page(Prim).fonts(t"F1").baseFont
       . assert(_.s.matches("[A-Z]{6}\\+TestSans"))
 
       test(m"a subset program keeps used outlines and drops the rest"):
@@ -829,10 +829,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont), subset = t"A")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).fonts(t"F1").embedded.let: ttf =>
+          pdf.page(Prim).fonts(t"F1").embedded.let: ttf =>
             (ttf.glyf(1).empty, ttf.glyf(2).empty)
       . assert(_ == (false, true))
 
@@ -841,10 +841,10 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(path).open(Read & Write): doc ?=>
           val font = doc.embedFont(Ttf(miniFont), subset = t"C")
-          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.pages(0), t"Font", t"F1", font))
+          scala.caps.unsafe.unsafeAssumeSeparate(doc.addResource(doc.page(Prim), t"Font", t"F1", font))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).fonts(t"F1").embedded.let: ttf =>
+          pdf.page(Prim).fonts(t"F1").embedded.let: ttf =>
             (ttf.glyf(1).empty, ttf.glyf(2).empty, ttf.glyf(3).composite)
       . assert(_ == (false, false, true))
 
@@ -867,7 +867,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.appendPage(a4)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages.length
+          pdf.pageCount
       . assert(_ == 1)
 
       test(m"a created page carries its media box"):
@@ -876,7 +876,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.appendPage(a4)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).mediaBox.width
+          pdf.page(Prim).mediaBox.width
       . assert(_ == Quantity[Points[1]](595.0))
 
       test(m"a created page's content extracts as text"):
@@ -896,7 +896,7 @@ object Tests extends Suite(m"Facsimile tests"):
           doc.appendPage(a4, operators, resources)
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.pages(0).text
+          pdf.page(Prim).text
       . assert(_ == t"From scratch")
 
       test(m"document information set at creation round-trips"):
@@ -934,7 +934,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val truncated = text.substring(0, text.indexOf("xref")).nn.tt.in[Data]
 
         PdfFile(truncated).open():
-          (pdf.pages.length, pdf.pages(0).mediaBox.width)
+          (pdf.pageCount, pdf.page(Prim).mediaBox.width)
       . assert(_ == (1, Quantity[Points[1]](200.0)))
 
       test(m"the catalog is found when the trailer is gone"):
@@ -950,7 +950,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val corrupt = text.replaceAll("startxref\\n\\d+", "startxref\n999999").nn.tt.in[Data]
 
         PdfFile(corrupt).open():
-          pdf.pages.length
+          pdf.pageCount
       . assert(_ == 1)
 
       test(m"shifted cross-reference offsets are recovered per object"):
@@ -959,7 +959,7 @@ object Tests extends Suite(m"Facsimile tests"):
         val shifted = t"% a comment prepended by some tool\n".in[Data] ++ recoverable
 
         PdfFile(shifted).open():
-          pdf.pages(0).mediaBox.height
+          pdf.page(Prim).mediaBox.height
       . assert(_ == Quantity[Points[1]](300.0))
 
       test(m"garbage between objects does not prevent recovery"):
@@ -970,7 +970,7 @@ object Tests extends Suite(m"Facsimile tests"):
           . pipe { s => s.substring(0, s.indexOf("xref")).nn.tt.in[Data] }
 
         PdfFile(truncated).open():
-          pdf.pages.length
+          pdf.pageCount
       . assert(_ == 1)
 
       test(m"an incremental update's newer object wins during recovery"):
@@ -1044,7 +1044,7 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Content operators"):
       def operators(content: Text): List[PdfOperator] =
         PdfFile(contentPage(content)).open():
-          pdf.pages(0).operators
+          pdf.page(Prim).operators
 
       test(m"a graphics-state and text block parses to typed operators"):
         operators(t"q 1 0 0 1 50 60 cm BT /F1 12 Tf 72 720 Td (Hi) Tj ET Q").map(_.ordinal)
@@ -1108,7 +1108,7 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Fonts"):
       test(m"a standard-14 font is recognized with its metrics"):
         PdfFile(contentPage(t"")).open():
-          val font = pdf.pages(0).fonts(t"F1")
+          val font = pdf.page(Prim).fonts(t"F1")
           (font.standard, font.width('A'))
       . assert(_ == (PdfFont.Standard.Helvetica, 667.0))
 
@@ -1121,7 +1121,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          val font = pdf.pages(0).fonts(t"F1")
+          val font = pdf.page(Prim).fonts(t"F1")
           (font.width('A'), font.width('B'))
       . assert(_ == (800.0, 667.0))
 
@@ -1134,7 +1134,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.pages(0).fonts(t"F1").decode(data('A', 'B', 0x93))
+          pdf.page(Prim).fonts(t"F1").decode(data('A', 'B', 0x93))
       . assert(_ == t"éB“")
 
       test(m"a ToUnicode map takes precedence"):
@@ -1148,7 +1148,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Length ${cmap.length} >>\nstream\n$cmap\nendstream".in[Data] )
 
         PdfFile(doc).open():
-          pdf.pages(0).fonts(t"F1").decode(data('A', 0x60, 0x61, 0x62))
+          pdf.page(Prim).fonts(t"F1").decode(data('A', 0x60, 0x61, 0x62))
       . assert(_ == t"Bpqr")
 
       test(m"a Type0 font reads two-byte codes and CID widths"):
@@ -1162,14 +1162,14 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          val font = pdf.pages(0).fonts(t"F1")
+          val font = pdf.page(Prim).fonts(t"F1")
           (font.codes(data(0, 10, 0, 11)), font.width(10), font.width(21), font.width(99))
       . assert(_ == (List(10, 11), 600.0, 500.0, 750.0))
 
     suite(m"Text extraction"):
       def extracted(content: Text): Text =
         PdfFile(contentPage(content)).open():
-          pdf.pages(0).text
+          pdf.page(Prim).text
 
       test(m"a single show operation extracts its text"):
         extracted(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")
@@ -1197,7 +1197,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"runs carry their positions in points"):
         PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")).open():
-          pdf.pages(0).runs.stdlib match
+          pdf.page(Prim).runs.stdlib match
             case List(run) => (run.x, run.y, run.size, run.text)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
                                   Quantity[Points[1]](0.0), t"")
@@ -1206,14 +1206,14 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"the transformation matrix scales positions"):
         PdfFile(contentPage(t"q 2 0 0 2 0 0 cm BT /F1 12 Tf 50 100 Td (X) Tj ET Q")).open():
-          pdf.pages(0).runs.stdlib match
+          pdf.page(Prim).runs.stdlib match
             case List(run) => (run.x, run.size)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0))
       . assert(_ == (Quantity[Points[1]](100.0), Quantity[Points[1]](24.0)))
 
       test(m"text is a pure value and escapes the scope"):
         val kept = PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Kept) Tj ET")).open():
-          pdf.pages(0).text
+          pdf.page(Prim).text
 
         kept
       . assert(_ == t"Kept")
@@ -1603,47 +1603,47 @@ object Tests extends Suite(m"Facsimile tests"):
     suite(m"Pages"):
       test(m"the page tree flattens in order"):
         PdfFile(paged()).open():
-          pdf.pages.length
+          pdf.pageCount
       . assert(_ == 2)
 
       test(m"the media box is inherited from the page-tree root"):
         PdfFile(paged()).open():
-          pdf.pages(0).mediaBox.width
+          pdf.page(Prim).mediaBox.width
       . assert(_ == Quantity[Points[1]](595.0))
 
       test(m"the crop box defaults to the media box"):
         PdfFile(paged()).open():
-          pdf.pages(0).cropBox.height
+          pdf.page(Prim).cropBox.height
       . assert(_ == Quantity[Points[1]](842.0))
 
       test(m"a page's own crop box wins"):
         PdfFile(paged()).open():
-          pdf.pages(1).cropBox.width
+          pdf.page(Sec).cropBox.width
       . assert(_ == Quantity[Points[1]](290.0))
 
       test(m"the trim box defaults to the crop box"):
         PdfFile(paged()).open():
-          pdf.pages(1).trimBox.height
+          pdf.page(Sec).trimBox.height
       . assert(_ == Quantity[Points[1]](390.0))
 
       test(m"rotation is read from the page"):
         PdfFile(paged()).open():
-          pdf.pages(1).rotation
+          pdf.page(Sec).rotation
       . assert(_ == Page.Rotation.Quarter)
 
       test(m"a quarter-turned page exchanges width and height"):
         PdfFile(paged()).open():
-          pdf.pages(1).width
+          pdf.page(Sec).width
       . assert(_ == Quantity[Points[1]](390.0))
 
       test(m"an unrotated page keeps its axes"):
         PdfFile(paged()).open():
-          pdf.pages(0).rotation
+          pdf.page(Prim).rotation
       . assert(_ == Page.Rotation.None)
 
       test(m"a UserUnit scales the boxes"):
         PdfFile(paged(page3 = t"/UserUnit 2")).open():
-          pdf.pages(0).mediaBox.width
+          pdf.page(Prim).mediaBox.width
       . assert(_ == Quantity[Points[1]](1190.0))
 
       test(m"a cyclic page tree is an error"):
@@ -1653,7 +1653,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         capture[PdfError]:
           // Overlap false positive: the opened document is chained through `open`'s result.
-          scala.caps.unsafe.unsafeAssumeSeparate(PdfFile(doc).open()(pdf.pages.length))
+          scala.caps.unsafe.unsafeAssumeSeparate(PdfFile(doc).open()(pdf.pageCount))
         . reason
       . assert(_ == PdfError.Reason.CircularPageTree)
 
@@ -1772,7 +1772,7 @@ object Tests extends Suite(m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.pages(0).annotations.head match
+          pdf.page(Prim).annotations.head match
             case Annotation.Link(rect, _, uri, _) => (rect.height, uri)
             case _                                => (Quantity[Points[1]](0.0), Unset)
       . assert(_ == (Quantity[Points[1]](20.0), t"https://x.com"))
@@ -1785,7 +1785,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Subtype /Text /Rect [0 0 5 5] /Contents (Remember) /Open true >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.pages(0).annotations.head match
+          pdf.page(Prim).annotations.head match
             case Annotation.Note(_, contents, open, _) => (contents, open)
             case _                                     => (Unset, false)
       . assert(_ == (t"Remember", true))
