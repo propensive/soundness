@@ -38,7 +38,6 @@ import proscenium.compat.*
 import java.io as ji
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 import scala.caps
@@ -161,4 +160,4 @@ private[hallucination] final class Vp8BoolEncoder extends caps.Mutable:
       c -= 1
 
     buffer.foreach(out.write(_))
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)

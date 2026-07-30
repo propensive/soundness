@@ -37,8 +37,6 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import Binary.*
 import RasterError.Reason
@@ -189,7 +187,10 @@ private[hallucination] object BmpCodec:
 
       y += 1
 
-    buffer.immutable(using Unsafe)
+    // Freshly allocated above and never aliased, so freezing it asserts nothing about a
+    // surviving writer -- but it must be spelt as an assertion because the buffer is a raw
+    // JVM array for the reason given at its definition.
+    Array.unsafeFrozen(buffer)
 
   private def pack(red: Int, green: Int, blue: Int): Long =
     red.toLong << 16 | green << 8 | blue

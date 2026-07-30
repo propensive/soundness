@@ -37,8 +37,6 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import RasterError.Reason
 
@@ -180,4 +178,4 @@ private[hallucination] object GifLzw:
     write(end)
     if bits > 0 then output += (accumulator&0xff).toByte
 
-    output.result().immutable(using Unsafe)
+    Array.unsafeFrozen(output.result())

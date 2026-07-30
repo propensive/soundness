@@ -36,8 +36,6 @@ import java.io as ji
 import proscenium.compat.*
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 import scala.caps
 
@@ -79,4 +77,4 @@ private[hallucination] final class WebpBitWriter extends caps.Mutable:
 
     buffer = 0
     count = 0
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)

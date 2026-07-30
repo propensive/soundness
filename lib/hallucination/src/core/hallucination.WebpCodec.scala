@@ -37,8 +37,6 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import Binary.*
 import RasterError.Reason
@@ -72,9 +70,9 @@ private[hallucination] object WebpCodec:
     fourcc("WEBP")
     fourcc("VP8 ")
     u32(frame.length)
-    out.write(frame.mutable(using Unsafe))
+    out.write(Array.unsafeJvm(frame))
     if (frame.length & 1) == 1 then out.write(0)
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   def decode(data: Data): Raster raises RasterError =
     try

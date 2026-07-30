@@ -36,8 +36,6 @@ import java.io as ji
 import proscenium.compat.*
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 // The VP8L lossless encoder, ported from image-rs/image-webp (`src/lossless/encoder/mod.rs`,
 // MIT/Apache-2.0). It uses a fixed strategy — the subtract-green and (top/left) predictor
@@ -82,10 +80,10 @@ private[hallucination] object WebpEncoder:
     fourcc("WEBP")
     fourcc("VP8L")
     u32(frame.length)
-    out.write(frame.mutable(using Unsafe))
+    out.write(Array.unsafeJvm(frame))
 
     if (frame.length & 1) == 1 then out.write(0)
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   private def encodeFrame(pixels: scala.Array[Byte], width: Int, height: Int, alpha: Boolean): Data =
     val writer = WebpBitWriter()

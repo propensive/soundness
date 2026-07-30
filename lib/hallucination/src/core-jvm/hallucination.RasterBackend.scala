@@ -86,7 +86,7 @@ private[hallucination] object RasterBackend:
 
     val out = ji2.ByteArrayOutputStream()
     ji.ImageIO.write(image, format.name.s, out)
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   // Reads out the pixels in one bulk `getRGB`, as `Rgb` or `Rgba` according to the image's
   // colour model.

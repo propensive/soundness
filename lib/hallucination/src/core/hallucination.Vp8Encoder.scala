@@ -38,7 +38,6 @@ import proscenium.compat.*
 import java.io as ji
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 import scala.caps
@@ -163,9 +162,9 @@ private[hallucination] object Vp8Encoder:
       val w = width & 0x3fff; val h = height & 0x3fff
       out.write(w & 0xff); out.write((w >>> 8) & 0xff)
       out.write(h & 0xff); out.write((h >>> 8) & 0xff)
-      out.write(headerBytes.mutable(using Unsafe))
-      out.write(partitionBytes.mutable(using Unsafe))
-      out.toByteArray.nn.immutable(using Unsafe)
+      out.write(Array.unsafeJvm(headerBytes))
+      out.write(Array.unsafeJvm(partitionBytes))
+      Array.unsafeFrozen(out.toByteArray.nn)
 
     private update def encodeCompressedHeader(): Unit =
       header.writeLiteral(1, 0) // colour space

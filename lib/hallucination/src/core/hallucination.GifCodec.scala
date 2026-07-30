@@ -37,8 +37,6 @@ import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import Binary.*
 import RasterError.Reason
@@ -129,7 +127,7 @@ private[hallucination] object GifCodec:
             val pixels = frameWidth*frameHeight
 
             val indices =
-              GifLzw.decode(minimum, compressed.result().immutable(using Unsafe), pixels)
+              GifLzw.decode(minimum, Array.unsafeFrozen(compressed.result()), pixels)
 
             // Interlaced frames deliver their rows in four passes.
             val rows: scala.Array[Int]^ = new scala.Array[Int](frameHeight)
@@ -277,4 +275,4 @@ private[hallucination] object GifCodec:
 
     write8(0)
     write8(0x3b)
-    output.result().immutable(using Unsafe)
+    Array.unsafeFrozen(output.result())

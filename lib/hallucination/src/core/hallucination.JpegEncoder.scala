@@ -33,11 +33,13 @@
 package hallucination
 
 import java.io as ji
+
+import scala.caps
+
 import proscenium.compat.*
 
 import anticipation.*
 import rudiments.*
-import vacuous.*
 
 // A pure-Scala baseline JPEG encoder, ported from the jpeg-encoder crate (Apache-2.0/MIT). It
 // converts an RGB raster to YCbCr, quantizes with the mozjpeg-derived Annex K tables scaled by a
@@ -82,12 +84,14 @@ private[hallucination] object JpegEncoder:
   private def ceilDiv(x: Int, y: Int): Int = (x + y - 1)/y
 
   // The quantization divisors for a quality factor: the base table scaled and clamped to 1..255.
-  private def scaledTable(base: scala.Array[Int], quality: Int): scala.Array[Int] =
+  // Only reads its base table, so it takes any readable reference to the opaque array and the
+  // two frozen constants can be handed over directly.
+  private def scaledTable(base: Array[Int]^{caps.any.rd}, quality: Int): scala.Array[Int] =
     val q = clamp(quality, 1, 100)
     val scale = if q < 50 then 5000/q else 200 - q*2
 
-    base.map: value =>
-      clamp((value*scale + 50)/100, 1, 255)
+    scala.Array.tabulate(base.length): index =>
+      clamp((base.readUnchecked(index)*scale + 50)/100, 1, 255)
 
   // ITU-R BT.601 RGB-to-YCbCr, scaled by 2^16 (matching the encoder's fixed-point conversion).
   private def rgbToYcbcr(r: Int, g: Int, b: Int): (Int, Int, Int) =
@@ -168,8 +172,8 @@ private[hallucination] object JpegEncoder:
 
       y += 1
 
-    val lumaQuant = scaledTable(LumaQuant.mutable(using Unsafe), quality)
-    val chromaQuant = scaledTable(ChromaQuant.mutable(using Unsafe), quality)
+    val lumaQuant = scaledTable(LumaQuant, quality)
+    val chromaQuant = scaledTable(ChromaQuant, quality)
     val colsBlocks = ceilDiv(width, 8)
     val rowsBlocks = ceilDiv(height, 8)
 
@@ -248,7 +252,7 @@ private[hallucination] object JpegEncoder:
     writeScan(out, u8, u16, marker, 3, 1, 1, crBlocks, chromaDc, chromaAc)
 
     marker(JpegMarker.Eoi)
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   private def writeQuantization
     ( u8: Int => Unit, u16: Int => Unit, marker: Int => Unit, dest: Int, quant: scala.Array[Int] )
