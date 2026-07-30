@@ -140,7 +140,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       def jdkInflate(data: Data, nowrap: Boolean): List[Byte] =
         val inflater = java.util.zip.Inflater(nowrap)
-        inflater.setInput(data.mutable(using Unsafe))
+        inflater.setInput(Array.unsafeJvm(data))
         val out = ji.ByteArrayOutputStream()
         val buffer = new scala.Array[Byte](4096)
 
@@ -153,7 +153,7 @@ object Tests extends Suite(m"Pneumatic tests"):
 
       def jdkDeflate(data: Data, nowrap: Boolean): Data =
         val deflater = java.util.zip.Deflater(-1, nowrap)
-        deflater.setInput(data.mutable(using Unsafe))
+        deflater.setInput(Array.unsafeJvm(data))
         deflater.finish()
         val out = ji.ByteArrayOutputStream()
         val buffer = new scala.Array[Byte](4096)
@@ -163,11 +163,11 @@ object Tests extends Suite(m"Pneumatic tests"):
           out.write(buffer, 0, count)
 
         deflater.end()
-        out.toByteArray.nn.immutable(using Unsafe)
+        Array.unsafeFrozen(out.toByteArray.nn)
 
       def pureDeflate(data: Data, nowrap: Boolean): Data =
         val deflater = Deflater(-1, nowrap)
-        deflater.setInput(data.mutable(using Unsafe))
+        deflater.setInput(Array.unsafeJvm(data))
         deflater.finish()
         val out = ji.ByteArrayOutputStream()
         val buffer = new scala.Array[Byte](4096)
@@ -176,11 +176,11 @@ object Tests extends Suite(m"Pneumatic tests"):
           val count = deflater.deflate(buffer, 0, buffer.length)
           out.write(buffer, 0, count)
 
-        out.toByteArray.nn.immutable(using Unsafe)
+        Array.unsafeFrozen(out.toByteArray.nn)
 
       def pureInflate(data: Data, nowrap: Boolean, chunk: Int): List[Byte] =
         val inflater = Inflater(nowrap)
-        val bytes = data.mutable(using Unsafe)
+        val bytes = Array.unsafeJvm(data)
         val out = ji.ByteArrayOutputStream()
         val buffer = new scala.Array[Byte](4096)
         var position = 0
@@ -240,7 +240,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val payload: Data = t"optional header fields".in[Data]
         val deflated = jdkDeflate(payload, true)
         val crc = java.util.zip.CRC32()
-        crc.update(payload.mutable(using Unsafe))
+        crc.update(Array.unsafeJvm(payload))
 
         val headerStart: scala.Array[Byte] =
           scala.Array[Byte](31, -117, 8, (4 | 8 | 16).toByte, 0, 0, 0, 0, 0, -1)
@@ -250,7 +250,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         out.write(scala.Array[Byte](1, 2, 3)) // extra field
         out.write(scala.Array[Byte]('n', 'a', 'm', 'e', 0)) // zero-terminated name
         out.write(scala.Array[Byte]('c', 'o', 'm', 'm', 'e', 'n', 't', 0)) // zero-terminated comment
-        out.write(deflated.mutable(using Unsafe))
+        out.write(Array.unsafeJvm(deflated))
 
         var index = 0
         while index < 4 do
@@ -262,7 +262,7 @@ object Tests extends Suite(m"Pneumatic tests"):
           out.write(((payload.length >>> (index*8)) & 0xff).toInt)
           index += 1
 
-        out.toByteArray.nn.immutable(using Unsafe).decompress[Gzip].to[List]
+        Array.unsafeFrozen(out.toByteArray.nn).decompress[Gzip].to[List]
       . assert(_ == t"optional header fields".in[Data].to[List])
 
 
@@ -386,9 +386,14 @@ object Tests extends Suite(m"Pneumatic tests"):
         // Flip a byte inside the LZMA2 payload (after the 12-byte stream and 12-byte block headers)
         // and confirm decoding rejects it — via either a decode error or a check mismatch.
         val original = (t"the quick brown fox " * 40).in[Data]
-        val bytes = original.compress[Xz].mutable(using Unsafe)
-        bytes.asInstanceOf[scala.Array[Byte]^](36) = (bytes(36) ^ 0x55).toByte
-        val corrupted: Data = bytes.immutable(using Unsafe)
+        val source = original.compress[Xz]
+
+        // The tampered copy is built in an exclusive buffer and frozen once, so corrupting a
+        // byte asserts nothing.
+        val buffer = Array[Byte](source.length)
+        buffer.copyFrom(source, 0, 0, source.length)
+        buffer(36) = (buffer(36) ^ 0x55).toByte
+        val corrupted: Data = Array.freeze(buffer)
         try corrupted.decompress[Xz].to[List] != original.to[List]
         catch case _: Exception => true
       . assert(_ == true)
@@ -469,11 +474,11 @@ object Tests extends Suite(m"Pneumatic tests"):
           Array.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
         val encodedChunks = Xz.compress(Progression(payload), 0)
         val roundtrips = encodedChunks.decompress[Xz].stdlib.map(_.readable).flatten.to(proscenium.List) == payload.readable.to(proscenium.List)
-        val encodedBytes: scala.Array[Byte] = Array.from(encodedChunks.stdlib.map(_.readable).flatten).mutable(using Unsafe)
+        val encodedBytes: Data = Array.from(encodedChunks.stdlib.map(_.readable).flatten)
         val byXz =
           try
             val process = ProcessBuilder("xz", "-d", "-c").start().nn
-            process.getOutputStream.nn.write(encodedBytes)
+            process.getOutputStream.nn.write(Array.unsafeJvm(encodedBytes))
             process.getOutputStream.nn.close()
             val decoded = process.getInputStream.nn.readAllBytes().nn
             process.waitFor()
@@ -485,10 +490,10 @@ object Tests extends Suite(m"Pneumatic tests"):
       // Cross-check: the real `xz` binary must decode what we produce.
       def xzBinaryDecodes(data: Data): Boolean =
         try
-          val encoded = data.compress[Xz].mutable(using Unsafe)
+          val encoded = data.compress[Xz]
           val process = ProcessBuilder("xz", "-d", "-c").start().nn
           val stdin = process.getOutputStream.nn
-          stdin.write(encoded)
+          stdin.write(Array.unsafeJvm(encoded))
           stdin.close()
           val decoded = process.getInputStream.nn.readAllBytes().nn
           process.waitFor()
@@ -576,7 +581,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val gather = Gather2()
         summon[Data is Streamable by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
-          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
+          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
       . assert(_ == mixed.to[List])
 
@@ -586,7 +591,7 @@ object Tests extends Suite(m"Pneumatic tests"):
       test(m"gzip duct decompresses JDK gzip fed one byte at a time"):
         val buffer = ji.ByteArrayOutputStream()
         val zipped = java.util.zip.GZIPOutputStream(buffer)
-        zipped.write(mixed.mutable(using Unsafe))
+        zipped.write(Array.unsafeJvm(mixed))
         zipped.close()
         val chunks = buffer.toByteArray.nn.iterator.map { byte => Data(byte) }
         val gather = Gather2()
@@ -601,7 +606,7 @@ object Tests extends Suite(m"Pneumatic tests"):
         val gather = Gather2()
         Stream(chunks).compress[Gzip].pump(gather)
         val stream = scala.caps.unsafe.unsafeAssumeSeparate:
-          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
+          java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(Array.unsafeJvm(gather.data)))
         scala.collection.immutable.ArraySeq.unsafeWrapArray(stream.readAllBytes().nn).to(proscenium.List)
       . assert(_ == mixed.to[List])
 
@@ -633,12 +638,12 @@ object Tests extends Suite(m"Pneumatic tests"):
       test(m"gzip duct decompresses JDK-produced gzip"):
         val out = ji.ByteArrayOutputStream()
         val zipped = java.util.zip.GZIPOutputStream(out)
-        zipped.write(mixed.mutable(using Unsafe))
+        zipped.write(Array.unsafeJvm(mixed))
         zipped.close()
         val gather = Gather2()
 
         summon[Progression[Data] is Streamable by Data over Credit]
-        . stream(out.toByteArray.nn.immutable(using Unsafe).readable.grouped(7).map(Array.frozen(_)).to(Progression))
+        . stream(Array.unsafeFrozen(out.toByteArray.nn).readable.grouped(7).map(Array.frozen(_)).to(Progression))
         . decompress[Gzip].pump(gather)
 
         scala.caps.unsafe.unsafeAssumeSeparate(gather.data.to[List])

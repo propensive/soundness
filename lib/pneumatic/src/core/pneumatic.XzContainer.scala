@@ -200,7 +200,7 @@ private[pneumatic] object XzContainer:
   // The 12-byte stream header (magic, flags naming the check type, a CRC-32 of the flags).
   def streamHeader(checkType: Int): scala.Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()
-    appendBytes(out, magic.mutable(using Unsafe))
+    appendBytes(out, magic.readable.to(scala.Array))
     val flags = scala.Array[Byte](0x00, checkType.toByte)
     appendBytes(out, flags)
     appendBytes(out, crc32Bytes(flags, 0, 2))

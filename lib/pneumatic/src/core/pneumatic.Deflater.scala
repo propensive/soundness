@@ -225,8 +225,8 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
 
   // Per-instance mutable clones of the static trees, so `compressBlock`, `sendCode` and
   // `buildTree` can take every tree through the same exclusive-parameter shape.
-  private val staticLtreeCopy: scala.Array[Short]^ = staticLtree.mutable(using Unsafe).clone()
-  private val staticDtreeCopy: scala.Array[Short]^ = staticDtree.mutable(using Unsafe).clone()
+  private val staticLtreeCopy: scala.Array[Short]^ = staticLtree.readable.to(scala.Array)
+  private val staticDtreeCopy: scala.Array[Short]^ = staticDtree.readable.to(scala.Array)
 
   private var blCount: scala.Array[Short]^ = new scala.Array[Short](MaxBits + 1)
   private var nextCode: scala.Array[Short]^ = new scala.Array[Short](MaxBits + 1)

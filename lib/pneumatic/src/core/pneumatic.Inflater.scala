@@ -122,8 +122,8 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
   // initialized.
   var hufts: scala.Array[Int]^ = new scala.Array[Int](Many*3) // single allocation for tree space
   var window: scala.Array[Byte]^ = new scala.Array[Byte](1 << wbits) // sliding window
-  private val fixedLtree: scala.Array[Int]^ = fixedTl.mutable(using Unsafe).clone()
-  private val fixedDtree: scala.Array[Int]^ = fixedTd.mutable(using Unsafe).clone()
+  private val fixedLtree: scala.Array[Int]^ = fixedTl.readable.to(scala.Array)
+  private val fixedDtree: scala.Array[Int]^ = fixedTd.readable.to(scala.Array)
 
   private var hn: Int = 0        // hufts used in space
   private var huftTable: Int = 0 // huftBuild out-value: starting index of the built table
