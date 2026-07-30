@@ -72,7 +72,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   update def addAll(bytes: Bytes): Unit =
     ensure(bytes.length)
-    System.arraycopy(bytes.mutable(using Unsafe), 0, target, size0, bytes.length)
+    System.arraycopy(Array.unsafeJvm(bytes), 0, target, size0, bytes.length)
     size0 += bytes.length
 
   def data: Bytes =

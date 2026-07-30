@@ -697,7 +697,7 @@ object Tests extends Suite(m"Telekinesis tests"):
             val out = socket.getOutputStream.nn
 
             def write(frame: Frame): Unit =
-              out.write(frame.serialize.mutable(using Unsafe))
+              out.write(Array.unsafeJvm(frame.serialize))
               out.flush()
 
             write(Frame.Settings(Nil, ack = false))

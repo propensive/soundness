@@ -47,7 +47,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
     def hex(data: Data): Text =
       data.to[List].map(b => String.format("%02x", java.lang.Integer.valueOf(b & 0xff)).nn).mkString.tt
 
-    def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+    def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
 
     suite(m"Huffman (RFC 7541 Appendix C)"):
       // C.4.1: "www.example.com" → Huffman

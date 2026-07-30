@@ -88,7 +88,7 @@ package httpBackends:
         case List(host, path) => (host, t"/$path")
         case _                => (afterScheme, t"/")
 
-      def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+      def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
       // Request headers travel in a `fields` resource, whose ownership passes into the
       // `outgoing-request`, whose ownership in turn passes into `handle` — so neither is
@@ -211,7 +211,7 @@ object WasiHttpServer:
     ( inline handler: Http.Request => Http.Response )
   :   Unit =
 
-    def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
     val requestHandle = new WitHandle(request).asInstanceOf[WitHandle of "incoming-request"]
     val incoming: Foreign of "incoming-request" from Wit = requestHandle
