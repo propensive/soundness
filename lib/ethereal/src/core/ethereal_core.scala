@@ -386,7 +386,7 @@ def cli[bus <: Matchable](using executive: Executive)
         Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
         val exitStatus: Exit = client(pid).exitPromise.await()
 
-        rawOut.write(exitStatus().show.in[Data].mutable(using Unsafe))
+        rawOut.write(Array.unsafeJvm(exitStatus().show.in[Data]))
         connection.close()
         clients.remove(pid)
         if terminatePid() == pid then termination

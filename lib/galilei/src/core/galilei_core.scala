@@ -87,7 +87,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using Tactic[IoError]^ )
   :   Unit =
     val bytes: Data = summon[Data is Aggregable by Data].accept(streamable.stream(content))
-    protect(Operation.Write)(jnf.Files.write(javaPath, bytes.mutable(using Unsafe)))
+    protect(Operation.Write)(jnf.Files.write(javaPath, Array.unsafeJvm(bytes)))
 
   // Append `content` to the file in its entirety as a single, direct operation, creating the file
   // if it does not exist — the eager counterpart of `Eof(path).open(Write)(file.write(content))`.
@@ -100,7 +100,7 @@ extension [plane: Filesystem](path: Path on plane)
     protect(Operation.Write):
       jnf.Files.write
         ( javaPath,
-          bytes.mutable(using Unsafe),
+          Array.unsafeJvm(bytes),
           jnf.StandardOpenOption.CREATE,
           jnf.StandardOpenOption.APPEND )
 

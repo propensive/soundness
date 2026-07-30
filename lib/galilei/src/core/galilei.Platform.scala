@@ -70,7 +70,7 @@ object Platform:
   =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
     path =>
       val bytes: Data = path.protect(Operation.Read):
-        jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
+        Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
 
       readable.read(bytes)
 

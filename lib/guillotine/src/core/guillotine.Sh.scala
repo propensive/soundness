@@ -100,7 +100,7 @@ object Sh:
         state
 
     private def chars(text: Text): sci.ArraySeq[Char] =
-      sci.ArraySeq.unsafeWrapArray(text.chars.mutable(using Unsafe))
+      sci.ArraySeq.unsafeWrapArray(Array.unsafeJvm(text.chars))
 
     def parse(current: State, text: Text): State = chars(text).fuse(current):
       (state, next).absolve match

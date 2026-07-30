@@ -84,7 +84,7 @@ object Ram:
       Array.freeze(array)
 
     def writeTo(offset: Long, data: Data): Unit =
-      buffer.put(offset.toInt, data.mutable(using Unsafe), 0, data.length)
+      buffer.put(offset.toInt, Array.unsafeJvm(data), 0, data.length)
 
     // Extends the mapped file to `newSize` and remaps, so subsequent positional writes can
     // address the grown region — the growth that a fixed up-front mapping otherwise forbids.

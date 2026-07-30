@@ -394,7 +394,7 @@ object Tests extends Suite(m"Guillotine tests"):
         val proc = sh"sh -c 'echo err 1>&2; sleep 0.05'".fork[Unit]()
         val bytes = proc.stderr().memoize
         proc.await()
-        String(bytes.mutable(using Unsafe), "UTF-8").nn.trim
+        bytes.utf8.s.trim
       . assert(_ == "err")
 
     suite(m"Pid"):
