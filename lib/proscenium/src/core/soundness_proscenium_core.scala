@@ -40,7 +40,7 @@ export scala.reflect.{ClassTag, Typeable}
 export proscenium.Set
 export proscenium.Map
 export proscenium.{List, Nil, `::`, Progression, `#::`}
-export scala.collection.immutable.{ListMap, TreeMap, TreeSet}
+export scala.collection.immutable.{TreeMap, TreeSet}
 export scala.collection.concurrent.TrieMap
 
 export
