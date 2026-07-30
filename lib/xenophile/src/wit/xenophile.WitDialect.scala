@@ -36,7 +36,7 @@ package xenophile
 // throughout; the single `parse` boundary re-wraps as the opaque `Map` (erasure-identical cast).
 import scala.collection.immutable.Map
 
-import scala.collection.immutable.ListMap
+import proscenium.compat.*
 
 import anticipation.*
 import gossamer.*
@@ -186,7 +186,7 @@ object WitDialect extends Dialect:
 
     def recur
       ( todo:      List[String],
-        functions: Map[Text, Prototype],
+        functions: Ledger[Text, Prototype],
         types:     Map[Text, Map[Text, Prototype]],
         typedefs:  Map[Text, Foreign.Type] )
     :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
@@ -197,14 +197,16 @@ object WitDialect extends Dialect:
         // under this key, which a plain overwrite with the interface's (possibly empty) functions
         // would discard.
         case "}" :: rest =>
-          (types.updated(name, types.get(name).optional.lay(functions)(_ ++ functions)), typedefs, rest)
+          val merged = types.get(name).optional.lay(functions.stdlib)(_ ++ functions.stdlib)
+          (types.updated(name, merged), typedefs, rest)
 
         case Nil =>
-          (types.updated(name, types.get(name).optional.lay(functions)(_ ++ functions)), typedefs, Nil)
+          val merged = types.get(name).optional.lay(functions.stdlib)(_ ++ functions.stdlib)
+          (types.updated(name, merged), typedefs, Nil)
 
         case "record" :: record :: "{" :: rest =>
-          val (fields, after) = recordFields(rest, ListMap())
-          recur(after, functions, types.updated(record.tt, fields), typedefs)
+          val (fields, after) = recordFields(rest, Ledger())
+          recur(after, functions, types.updated(record.tt, fields.stdlib), typedefs)
 
         case "enum" :: alias :: "{" :: rest =>
           val (count, after) = enumerators(rest, 0)
@@ -229,8 +231,8 @@ object WitDialect extends Dialect:
           recur(skipBraces(rest, 1), functions, updated, typedefs)
 
         case "resource" :: resource :: "{" :: rest =>
-          val (methods, after) = resourceBody(rest, resource.tt, module, ListMap())
-          recur(after, functions, types.updated(resource.tt, methods), typedefs)
+          val (methods, after) = resourceBody(rest, resource.tt, module, Ledger())
+          recur(after, functions, types.updated(resource.tt, methods.stdlib), typedefs)
 
         case "resource" :: resource :: ";" :: rest =>
           val updated = types.updated(resource.tt, declaration(resource.tt, module))
@@ -261,7 +263,7 @@ object WitDialect extends Dialect:
         case _ :: rest =>
           recur(rest, functions, types, typedefs)
 
-    recur(tokens, ListMap(), types, typedefs)
+    recur(tokens, Ledger(), types, typedefs)
 
   // Walks a `resource … { … }` body: its methods become members of a type named after the
   // resource, each marked with the resource it belongs to (so an invocation can address it as
@@ -271,8 +273,8 @@ object WitDialect extends Dialect:
     ( tokens:   List[String],
       resource: Text,
       module:   Optional[Text],
-      methods:  Map[Text, Prototype] )
-  :   (Map[Text, Prototype], List[String]) =
+      methods:  Ledger[Text, Prototype] )
+  :   (Ledger[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -313,11 +315,14 @@ object WitDialect extends Dialect:
         resourceBody(rest, resource, module, methods)
 
   // The pseudo-member recording, for a memberless type declaration, the module that defines it.
+  // A `Ledger`'s underlying map, not a plain `Map(...)`: this single entry seeds the value that
+  // later `++`-merges with an interface's functions, and the LEFT operand's factory decides
+  // whether the merged map stays insertion-ordered.
   private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =
-    ListMap(t"" -> Prototype(Unset, Foreign.Type.Named(name), module))
+    Ledger(t"" -> Prototype(Unset, Foreign.Type.Named(name), module)).stdlib
 
-  private def recordFields(tokens: List[String], acc: Map[Text, Prototype])
-  :   (Map[Text, Prototype], List[String]) =
+  private def recordFields(tokens: List[String], acc: Ledger[Text, Prototype])
+  :   (Ledger[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>

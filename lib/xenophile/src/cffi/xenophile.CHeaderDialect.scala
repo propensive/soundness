@@ -36,7 +36,7 @@ package xenophile
 // throughout; the single `parse` boundary re-wraps as the opaque `Map` (erasure-identical cast).
 import scala.collection.immutable.Map
 
-import scala.collection.immutable.ListMap
+import proscenium.compat.*
 
 import anticipation.*
 import gossamer.*
@@ -175,8 +175,10 @@ object CHeaderDialect extends Dialect:
         typedef(rest, structs, functions, typedefs)
 
       case ("struct" | "union") :: name :: "{" :: more =>
-        val (fields, after) = members(more, ListMap())
-        declarations(skipStatement(after), structs.updated(name.tt, fields), functions, typedefs)
+        val (fields, after) = members(more, Ledger())
+
+        declarations
+          ( skipStatement(after), structs.updated(name.tt, fields.stdlib), functions, typedefs )
 
       case ("struct" | "union") :: "{" :: more =>
         declarations(skipStatement(skipBraces(more, 1)), structs, functions, typedefs)
@@ -223,16 +225,16 @@ object CHeaderDialect extends Dialect:
 
     tokens match
       case ("struct" | "union") :: name :: "{" :: more =>
-        val (fields, after) = members(more, ListMap())
+        val (fields, after) = members(more, Ledger())
         val (alias, after2) = aliasName(after)
-        declarations(after2, structs.updated(alias.or(name.tt), fields), functions, typedefs)
+        declarations(after2, structs.updated(alias.or(name.tt), fields.stdlib), functions, typedefs)
 
       case ("struct" | "union") :: "{" :: more =>
-        val (fields, after) = members(more, ListMap())
+        val (fields, after) = members(more, Ledger())
         val (alias, after2) = aliasName(after)
 
         alias.lay(declarations(after2, structs, functions, typedefs)): name =>
-          declarations(after2, structs.updated(name, fields), functions, typedefs)
+          declarations(after2, structs.updated(name, fields.stdlib), functions, typedefs)
 
       case "enum" :: rest =>
         val body = rest match
@@ -254,8 +256,8 @@ object CHeaderDialect extends Dialect:
           declarations(skipStatement(after), structs, functions, typedefs.updated(alias, kind))
 
   // Reads a struct or union body's fields up to the closing `}`.
-  private def members(tokens: List[String], acc: Map[Text, Prototype])
-  :   (Map[Text, Prototype], List[String]) =
+  private def members(tokens: List[String], acc: Ledger[Text, Prototype])
+  :   (Ledger[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>

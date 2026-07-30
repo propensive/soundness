@@ -48,7 +48,7 @@ trait Molecular extends Formulable:
     Molecule(elements2, molecule.charge + moleculable.molecule.charge)
 
   @targetName("times")
-  infix def * (multiplier: Int): ChemicalFormula = ChemicalFormula(ListMap(molecule -> multiplier))
+  infix def * (multiplier: Int): ChemicalFormula = ChemicalFormula(Ledger(molecule -> multiplier))
 
   @targetName("times2")
   infix def ** (multiplier: Int): Molecule =

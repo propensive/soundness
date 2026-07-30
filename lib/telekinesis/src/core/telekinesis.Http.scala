@@ -248,7 +248,7 @@ object Http:
 
         . join(t"\n          ")
 
-      ListMap[Text, Text](
+      Ledger[Text, Text](
         t"content" ->
           ( safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
             . or(t"?") ),
@@ -259,7 +259,7 @@ object Http:
         t"body"     -> bodySample,
         t"headers"  -> headers,
         t"params"   -> params
-      ).map { case (key, value) => t"$key = $value" }.join(t", ")
+      ).to[List].map { (key, value) => t"$key = $value" }.join(t", ")
 
     // Serialize the request to its HTTP/1.1 wire form: the request line, `Host`
     // and framing headers, then the header block and body, as a fresh pull

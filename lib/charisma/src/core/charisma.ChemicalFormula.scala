@@ -39,19 +39,19 @@ import spectacular.*
 import symbolism.*
 
 object ChemicalFormula:
-  def apply(molecule: Molecule): ChemicalFormula = ChemicalFormula(ListMap(molecule -> 1))
+  def apply(molecule: Molecule): ChemicalFormula = ChemicalFormula(Ledger(molecule -> 1))
 
   given showable: ChemicalFormula is Showable = formula =>
-    formula.molecules.to(List).map: (molecule, count) =>
+    formula.molecules.to[List].map: (molecule, count) =>
       (if count == 1 then t"" else count.show)+molecule.show
 
     . join(t" + ")
 
-case class ChemicalFormula(molecules: ListMap[Molecule, Int]) extends Formulable:
+case class ChemicalFormula(molecules: Ledger[Molecule, Int]) extends Formulable:
   def formula: ChemicalFormula = this
 
   def atoms: Map[ChemicalElement, Int] =
-    molecules.fuse(Molecule()):
+    molecules.stdlib.fuse(Molecule()):
       val (molecule, count) = next
       state*(molecule**count)
 

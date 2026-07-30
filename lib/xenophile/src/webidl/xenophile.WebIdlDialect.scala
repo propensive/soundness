@@ -38,8 +38,6 @@ import scala.collection.immutable.Map
 
 import proscenium.compat.*
 
-import scala.collection.immutable.ListMap
-
 import anticipation.*
 import gossamer.*
 import rudiments.*
@@ -269,8 +267,8 @@ object WebIdlDialect extends Dialect:
   private def body(tokens: List[String], name: Text, parent: Optional[Text], idl: Idl)
   :   (Idl, List[String]) =
 
-    val (members, rest) = memberList(tokens, ListMap())
-    val merged = idl.types.get(name).getOrElse(ListMap[Text, Prototype]()) ++ members
+    val (members, rest) = memberList(tokens, Ledger())
+    val merged = idl.types.get(name).optional.lay(members.stdlib)(_ ++ members.stdlib)
 
     val parents = parent.lay(idl.parents): base =>
       idl.parents.updated(name, base)
@@ -282,8 +280,8 @@ object WebIdlDialect extends Dialect:
   // (`getter`, `setter`, `iterable`, `constructor`, …), `[extended attributes]` and stray `;` are
   // skipped. A bare `Type name;` (a dictionary member) is read as a field; `Type name(args);` as a
   // method.
-  private def memberList(tokens: List[String], members: Map[Text, Prototype])
-  :   (Map[Text, Prototype], List[String]) =
+  private def memberList(tokens: List[String], members: Ledger[Text, Prototype])
+  :   (Ledger[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -381,13 +379,17 @@ object WebIdlDialect extends Dialect:
   // mixin, then its own (so a type's own members override inherited ones of the same name). A
   // visited set guards against cycles.
   private def flatten(idl: Idl): Map[Text, Map[Text, Prototype]] =
+    // An empty `Ledger`'s underlying map: as the left operand of the `++`-merges below, its
+    // factory keeps the flattened members insertion-ordered.
+    val empty = Ledger.empty[Text, Prototype].stdlib
+
     def collect(name: Text, visiting: Set[Text]): Map[Text, Prototype] =
-      if visiting.has(name) then idl.types.get(name).getOrElse(ListMap())
+      if visiting.has(name) then idl.types.get(name).getOrElse(empty)
       else
         val visiting2 = visiting + name
-        val own = idl.types.get(name).getOrElse(ListMap[Text, Prototype]())
+        val own = idl.types.get(name).getOrElse(empty)
 
-        val inherited = idl.parents.get(name).optional.lay(ListMap[Text, Prototype]()): base =>
+        val inherited = idl.parents.get(name).optional.lay(empty): base =>
           collect(base, visiting2)
 
         val mixedIn = idl.includes.get(name).getOrElse(Nil).fold(inherited): (acc, mixin) =>
