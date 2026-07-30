@@ -597,7 +597,6 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
     ( bl: Int, bd: Int, tl: Array[Int], tlIndex: Int, td: Array[Int], tdIndex: Int )
   :   Int =
 
-
     var t = 0       // temporary pointer
     var tp = tl     // temporary pointer
     var tpIndex = 0 // temporary pointer

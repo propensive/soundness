@@ -58,7 +58,6 @@ object Syntax:
   def symbolic(name: Text): Symbolic =
     Symbolic(if name.s.startsWith("_$") then name.s.drop(2).tt else name)
 
-
   private def candidateName(using Quotes)(rt: quotes.reflect.RecursiveType): Text =
     import quotes.reflect.*
 

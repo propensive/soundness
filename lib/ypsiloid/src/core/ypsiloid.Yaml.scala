@@ -76,7 +76,6 @@ trait Yaml2:
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_))
         . or(Yaml.ast(Yaml.Ast(Unset)))
 
-
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( tactic: Tactic[YamlError] )
   =>  ( decodable: => (inner is Decodable in Yaml)^ )
@@ -85,7 +84,6 @@ trait Yaml2:
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
     yaml => if yaml.root == Unset then Unset else decodable.decoded(yaml)
-
 
   // See `decodeMapping`: the `Tactic` is summoned at the SAM and passed to a stable helper, rather
   // than re-summoned via `provide` inside the SAM (which would capture the `yaml` parameter).
@@ -1358,7 +1356,6 @@ object Yaml extends Yaml2, Dynamic:
         case None        => Yaml.ast(Yaml.Ast(Unset))
         case Some(value) => encodable.encode(value)
 
-
   given integralEncodable: [integral: Integral] => integral is Encodable in Yaml =
     int => Yaml.ast(Yaml.Ast(integral.toLong(int)))
 
@@ -1371,7 +1368,6 @@ object Yaml extends Yaml2, Dynamic:
   given booleanEncodable: Boolean is Encodable in Yaml = boolean => Yaml.ast(Yaml.Ast(boolean))
   given unitEncodable: Unit is Encodable in Yaml = _ => Yaml.ast(Yaml.Ast.Null)
 
-
   given iterableEncodable: [collection <: Iterable, element]
   =>  ( encodable: => (element is Encodable in Yaml)^ )
   =>  ((collection[element] is Encodable in Yaml)^) =
@@ -1380,7 +1376,6 @@ object Yaml extends Yaml2, Dynamic:
     values =>
       val items = IArray.from(values.map(encodable.encode(_).root))
       Yaml.ast(Yaml.Ast.Sequence(items))
-
 
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: (element is Encodable in Yaml)^ )
@@ -1395,7 +1390,6 @@ object Yaml extends Yaml2, Dynamic:
       i += 1
 
     Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
-
 
   // ── Discriminator support for sum-type derivation ───────────────────────
 
@@ -1495,7 +1489,6 @@ object Yaml extends Yaml2, Dynamic:
               Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
 
           case _ => yaml
-
 
   // ── Parser entry-points ─────────────────────────────────────────────────
 

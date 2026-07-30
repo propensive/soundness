@@ -51,18 +51,15 @@ object Extractable:
     caps.unsafe.unsafeAssumePure:
       value => safely(decodable(using strategies.throwUnsafely).decoded(value))
 
-
   given optional: [result: Extractable]
   =>  Optional[result] is Extractable to result.Result =
 
     value => value.let(result.extract(_))
 
-
   given irrefutable: [result] => (irrefutable: Text is Irrefutable to result)
   =>  String is Irrefutable to result =
 
     value => irrefutable.unapply(value.tt)
-
 
   given textChar: [text <: Text] => text is Extractable to Char =
   // The `(x: Text)` ascriptions below widen the singleton-bounded parameter to `Text`:
@@ -145,7 +142,6 @@ object Extractable:
   given doubleFloat: [double <: Double] => double is Extractable to Float =
     double => double.toFloat.unless(_.toDouble != double)
 
-
   given valueOf: [enumeration <: Enum: Mirror.SumOf as mirror, text <: Text]
   =>  text is Extractable to enumeration =
 
@@ -156,7 +152,6 @@ object Extractable:
         case mirror: { def valueOf(name: String): enumeration } @unchecked =>
           try mirror.valueOf((text: Text).s) catch case error: Exception => Unset
 
-
   given fromOrdinal: [enumeration <: Enum: Mirror.SumOf as mirror, int <: Int]
   =>  int is Extractable to enumeration =
 
@@ -166,7 +161,6 @@ object Extractable:
       mirror match
         case mirror: { def fromOrdinal(ordinal: Int): enumeration } @unchecked =>
           try mirror.fromOrdinal(ordinal) catch case error: Exception => Unset
-
 
 trait Extractable extends Typeclass, Resultant:
   def extract(value: Self): Optional[Result]

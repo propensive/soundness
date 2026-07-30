@@ -47,7 +47,6 @@ import vacuous.*
 object Keyboard:
   import Keypress.*
 
-
   // A legacy modifier parameter is `1 + bitmask`, encoded as a single digit.
   def modified(code: Char, keypress: EditKey | FunctionKey)
   :   EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
@@ -103,7 +102,6 @@ object Keyboard:
 
     case _ =>
       CharKey(char)
-
 
   def navigation(code: Char): Keypress.EditKey = code match
     case 'A' => Keypress.Up

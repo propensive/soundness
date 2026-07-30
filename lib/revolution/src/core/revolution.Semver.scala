@@ -32,7 +32,6 @@
                                                                                                   */
 package revolution
 
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -143,7 +142,6 @@ object Semver:
         left.minor < right.minor
     else
       left.major < right.major
-
 
 case class Semver
   ( major:      Long,

@@ -88,11 +88,9 @@ object internal:
 
     recur(multipliers, values, '{0L})
 
-
   private def inputsOf(using Quotes)(values: Expr[Seq[Int]]): List[Expr[Int]] =
     values.absolve match
       case Varargs(values) => values.to(List).reverse
-
 
   // Construction (`Quanta(...)`): `base` and `form` come from the expected type, so the cascade
   // is built directly from them rather than by decomposing an opaque `Quanta` type (whose parent
@@ -218,7 +216,6 @@ object internal:
     resultType.asType.absolve match
       case '[result] => '{Quanta.fromLong[result]($count.asInstanceOf[Long])}
 
-
   private case class Multiplier(unitPower: UnitPower, subdivision: Int, max: Int)
 
   private def elements(using Quotes)(tpe: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
@@ -276,7 +273,6 @@ object internal:
             Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units )
 
     recur(cascade)
-
 
   private def multipliers[quanta: Type](using Quotes): List[Multiplier] =
     import quotes.reflect.*

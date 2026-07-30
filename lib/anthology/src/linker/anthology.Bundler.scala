@@ -82,7 +82,6 @@ object Bundler:
       . or:
           Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
 
-
     val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
 
     Zipfile.write(jarfile):

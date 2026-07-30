@@ -44,7 +44,6 @@ import prepositional.*
 import ulysses.*
 import vacuous.*
 
-
 object Bintel:
 
   // §6 magic number: the 4 bytes that prefix every BinTEL document.

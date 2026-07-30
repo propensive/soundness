@@ -78,7 +78,6 @@ extends caps.Pure:
   given dir: BaseLayout.Dir =
     BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
-
   // `inline` so the `raises` context-functions resolve at the call site: a non-inline `raises`
   // method called inside a deferred test block boxes its summoned tactic with the block's capability,
   // which cannot flow into the `raises` existential under capture checking.

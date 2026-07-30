@@ -49,7 +49,6 @@ import vacuous.*
 
 import filesystemBackends.virtualMachine
 
-
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
     ( root: Path on plane, path: Path on plane )

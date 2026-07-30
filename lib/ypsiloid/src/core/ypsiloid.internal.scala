@@ -86,7 +86,6 @@ object internal:
 
     (cleaned, spreads)
 
-
   // Reuses `YamlPath`'s own `Decodable` for validation: the literal is decoded
   // at macro-expansion time and, if it fails, the `YamlPathError`'s offset is
   // mapped back to a source position so the error points exactly at the

@@ -351,7 +351,6 @@ private[hallucination] object Vp8Decoder:
 
         i += 1
 
-
     private def readMacroblockHeader(mbx: Int): Macroblock =
       val mb = Macroblock()
 

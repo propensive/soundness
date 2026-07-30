@@ -207,30 +207,115 @@ object ProximityRules:
       rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Sort.Space &&
         rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
 
-  // R6 (783): at most two consecutive blank lines. The third and every
-  // subsequent blank line in a run each fire once, exactly as the old
-  // walk's `consecutiveBlanks` counter did.
+  // R6 (783): at most ONE blank line separates anything from anything —
+  // with a single exception grounded in the Proximity principle's gap
+  // scale (none < space < newline < blank < two blanks): a run of up to
+  // two blank lines is permitted immediately before the first line, or
+  // immediately after the last body line, of a definition with a heavy
+  // signature (one whose signature includes a `:   ReturnType =` line).
+  // The extra gap marks the heaviest construct the scale recognises.
+  // Every blank line beyond the permitted count fires once.
   object BlankLineRun extends Rule:
     def id: String = "783"
     def principle: Principle = Principle.Proximity
 
     def check(ctx: Context): List[Violation] =
       val out    = mutable.ListBuffer[Violation]()
-      var blanks = 0
+      val starts = heavyStartLines(ctx)
+      val ends   = heavyEndLines(ctx)
       var idx    = 0
 
       while idx < ctx.lines.length do
         if ctx.lines(idx).isBlank then
-          blanks += 1
+          val runStart = idx
 
-          if blanks > 2 then
-            out += Violation(ctx.file, idx + 1, 1, "783", "more than two consecutive blank lines")
+          while idx < ctx.lines.length && ctx.lines(idx).isBlank do idx += 1
+
+          val runLength = idx - runStart
+          val afterHeavy  = runStart >= 1 && ends.contains(runStart)
+          val beforeHeavy = idx < ctx.lines.length && starts.contains(idx + 1)
+          val allowed     = if afterHeavy || beforeHeavy then 2 else 1
+
+          if runLength > allowed then
+            var extra = runStart + allowed
+
+            while extra < idx do
+              out +=
+                Violation
+                  ( ctx.file, extra + 1, 1, "783",
+                    if allowed == 2 then "more than two consecutive blank lines"
+                    else
+                      "more than one consecutive blank line (two are permitted only around " +
+                        "a heavy-signature definition)" )
+
+              extra += 1
         else
-          blanks = 0
+          idx += 1
 
+      out.toList
+
+    // Lines (1-based) on which a heavy-signature definition begins —
+    // including any annotation lines directly above it. Found by locating
+    // each `:   ReturnType =` line and walking upwards over the
+    // more-indented signature continuation lines to the declaration line
+    // at the same indent.
+    private def heavyStartLines(ctx: Context): Set[Int] =
+      returnTypeLines(ctx).flatMap: r =>
+        val indent = ctx.lines(r - 1).leadingCols
+        var idx    = r - 2
+        var found  = -1
+
+        while found < 0 && idx >= 0 && !ctx.lines(idx).isBlank do
+          if ctx.lines(idx).leadingCols <= indent then
+            if ctx.lines(idx).leadingCols == indent then found = idx
+            else idx = -1
+          idx -= 1
+
+        if found < 0 then Nil
+        else
+          var top = found
+
+          while top >= 1 && ctx.lines(top - 1).firstReal.exists(_.text.startsWith("@")) do
+            top -= 1
+
+          List(top + 1)
+      .toSet
+
+    // Lines (1-based) of the last body line of each heavy-signature
+    // definition: from the `:   ReturnType =` line, the body is the
+    // following run of lines indented beyond the return-type line's
+    // indent (blank lines may intervene); it ends before the first
+    // non-blank line at or left of that indent.
+    private def heavyEndLines(ctx: Context): Set[Int] =
+      returnTypeLines(ctx).map: r =>
+        val indent  = ctx.lines(r - 1).leadingCols
+        var idx     = r
+        var lastNon = r
+
+        while idx < ctx.lines.length &&
+          (ctx.lines(idx).isBlank || ctx.lines(idx).leadingCols > indent)
+        do
+          if !ctx.lines(idx).isBlank then lastNon = idx + 1
+          idx += 1
+
+        lastNon
+      .toSet
+
+    private def returnTypeLines(ctx: Context): List[Int] =
+      val out = mutable.ListBuffer[Int]()
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line = ctx.lines(idx)
+
+        if !line.isBlank && isReturnTypeLine(line.rest) then out += idx + 1
         idx += 1
 
       out.toList
+
+    private def isReturnTypeLine(rest: IndexedSeq[Lexeme]): Boolean =
+      rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Sort.Space &&
+        rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
 
   // R-551: an annotation must sit directly above the declaration it
   // annotates. A blank line between them fires 551.2 (at the blank line,

@@ -77,12 +77,10 @@ object Property:
 
     (value, property) => value.lest(PropertyError(property))
 
-
   given javaHome: [path: Instantiable across Paths from Text]
   =>  ( "java.home" is Property of path ) =
 
     Property(path(_))
-
 
   // given javaLibraryPath: [path: Instantiable across Paths from Text]
   //       => (system: System, property: Tactic[PropertyError])
@@ -90,30 +88,25 @@ object Property:
 
   //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
-
   // given javaClassPath: [path: Instantiable across Paths from Text]
   //       => (system: System, property: Tactic[PropertyError])
   //       =>  Property["java.class.path", List[path]] =
 
   //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
-
   given javaVersion: ("java.version" is Property of Text) = Property(identity)
   given javaVendor: ("java.vendor" is Property of Text) = Property(identity)
   given javaVendorUrl: ("java.vendor.url" is Property of Text) = Property(identity)
-
 
   given javaRuntimeVersion: (tactic: Tactic[PropertyError])
   =>  (("java.runtime.version" is Property of Text)^{tactic}) =
 
     (value, name) => value.lest(PropertyError(name))
 
-
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
     // Decoded under `unsafely`, whose unscoped tactic is minted per call: the lambda captures
     // nothing, so the instance is pure and can be stored as a global given.
     Property(text => unsafely(text.as[Int]))
-
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
   // =>  ( system: System, property: Tactic[PropertyError] )
@@ -121,31 +114,26 @@ object Property:
 
   //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
-
   given fileSeparator: ("file.separator" is Property of Char) = Property(_.as[Char])
   given pathSeparator: ("path.separator" is Property of Char) = Property(_.as[Char])
   given lineSeparator: ("line.separator" is Property of Text) = Property(identity)
   given userName: ("user.name" is Property of Text) = Property(identity)
-
 
   given userHome: [path: Instantiable across Paths from Text]
   =>  ( "user.home" is Property of path ) =
 
     Property(path(_))
 
-
   given userDir: [path: Instantiable across Paths from Text]
   =>  ( "user.dir" is Property of path ) =
 
     Property(path(_))
-
 
   given osName: ("os.name" is Property of Text) = Property(identity)
   given osVersion: ("os.version" is Property of Text) = Property(identity)
 
   given osArch: ("os.arch" is Property of Architecture) =
     Property(_.as[Architecture])
-
 
   given decoder: [label <: Label, property] => (decoder: (property is Decodable in Text)^)
   =>  (tactic: Tactic[PropertyError])

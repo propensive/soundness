@@ -38,12 +38,10 @@ import prepositional.*
 object Irrefutable:
   given stringText: String is Irrefutable to Text = _.tt
 
-
   given irrefutable: [result] => (irrefutable: Text is Irrefutable to result)
   =>  String is Irrefutable to result =
 
     irrefutable.contramap(_.tt)
-
 
   given textString: [text <: Text] => text is Irrefutable to String = txt => (txt: Text).s
   given ident: [result] => result is Irrefutable to result = identity(_)

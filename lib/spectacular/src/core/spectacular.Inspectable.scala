@@ -130,26 +130,22 @@ object Inspectable extends Inspectable2:
 
       . mkString("{", ", ", "}").tt
 
-
   given series: [element] => (inspectable: => element is Inspectable)
   =>  Series[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).mkString("⟨ ", " ", " ⟩").tt
 
-
   given indexedSeq: [element] => (inspectable: => element is Inspectable)
   =>  IndexedSeq[element] is Inspectable =
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).mkString("⟨ ", " ", " ⟩ᵢ").tt
-
 
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).mkString("[", ", ", "]").tt
-
 
   given array: [element] => (inspectable: => element is Inspectable)
   =>  Array[element] is Inspectable =
@@ -162,7 +158,6 @@ object Inspectable extends Inspectable2:
         (subscript+insp().text(value).s).tt
 
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
-
 
   given arraySeq: [element] => (inspectable: => element is Inspectable)
   =>  scm.ArraySeq[element] is Inspectable =
@@ -189,7 +184,6 @@ object Inspectable extends Inspectable2:
 
       recur(stream, 3)
 
-
   given iarray: [element] => (inspectable: => element is Inspectable)
   =>  IArray[element] is Inspectable =
 
@@ -201,7 +195,6 @@ object Inspectable extends Inspectable2:
         subscript+insp().text(value).s.tt
 
       . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
-
 
   private def arrayPrefix(string: String): String =
     val brackets = string.count(_ == '[')

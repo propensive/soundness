@@ -161,7 +161,6 @@ object Dsv extends Dsv2:
       decodeCell(dsv, t"String", ""): cell =>
         cell.s
 
-
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
 
@@ -171,7 +170,6 @@ object Dsv extends Dsv2:
   =>  value is Encodable in Dsv =
 
     EncodableDerivation.derived[value]
-
 
   given showable: (format: DsvFormat) => Dsv is Showable = dsv =>
     val cells = caps.unsafe.unsafeAssumePure:

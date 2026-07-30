@@ -32,7 +32,6 @@
                                                                                                   */
 package quantitative
 
-
 object Principal:
   given distance: Principal[Distance, Metres]()
   given mass: Principal[Mass, Kilograms]()

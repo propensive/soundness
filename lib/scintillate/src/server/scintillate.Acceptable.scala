@@ -46,7 +46,6 @@ import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
 
-
 object Acceptable:
   // Honestly tracked: the instance retains its resolution-scoped tactic.
   given multipart: (tactic: Tactic[MultipartError])

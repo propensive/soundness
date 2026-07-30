@@ -50,13 +50,11 @@ package strategies:
   given throwSafely: [error <: Hazard: CanThrow, success] => (ThrowTactic[error, success]^) =
     ThrowTactic()
 
-
   given mitigation: [error <: Hazard, error2 <: Hazard: Mitigable to error]
   =>  (tactic: Tactic[error]^)
   =>  ( Tactic[error2]^ ) =
 
     tactic.contramap(error2.mitigate(_))
-
 
   // Like `ThrowTactic`, these ambient strategies are `caps.Unscoped`: they capture no scoped
   // capability (they throw or terminate in place), so a use-site instantiation may flow into the
@@ -255,7 +253,6 @@ def defer[result, error <: Hazard](body: Tactic[error]^ ?=> result)
 
 transparent inline def recover(inline handler: PartialFunction[Exception, Any]): Recovery[?] =
   ${contingency.internal.recoverBuild('handler)}
-
 
 transparent inline def mitigate(inline handler: PartialFunction[Exception, Any]): Mitigation[?] =
   ${contingency.internal.mitigateBuild('handler)}

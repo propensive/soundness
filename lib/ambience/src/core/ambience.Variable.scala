@@ -65,13 +65,11 @@ object Variable extends Protovariable:
 
     pathListVariable(instantiable, system)
 
-
   given xdgDataDirs: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
   =>  Variable["xdgDataDirs", List[path]] =
 
     pathListVariable(instantiable, system)
-
 
   given xdgConfigDirs: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^, system: System )
@@ -79,13 +77,11 @@ object Variable extends Protovariable:
 
     pathListVariable(instantiable, system)
 
-
   given xdgDataHome: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgDataHome", path] =
 
     pathVariable(instantiable)
-
 
   given xdgConfigHome: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
@@ -93,13 +89,11 @@ object Variable extends Protovariable:
 
     pathVariable(instantiable)
 
-
   given xdgStateHome: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgStateHome", path] =
 
     pathVariable(instantiable)
-
 
   given xdgCacheHome: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
@@ -107,13 +101,11 @@ object Variable extends Protovariable:
 
     pathVariable(instantiable)
 
-
   given xdgRuntimeDir: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["xdgRuntimeDir", path] =
 
     pathVariable(instantiable)
-
 
   given home: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
@@ -121,13 +113,11 @@ object Variable extends Protovariable:
 
     pathVariable(instantiable)
 
-
   given mail: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["mail", path] =
 
     pathVariable(instantiable)
-
 
   given shell: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
@@ -135,13 +125,11 @@ object Variable extends Protovariable:
 
     pathVariable(instantiable)
 
-
   given oldpwd: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["oldpwd", path] =
 
     pathVariable(instantiable)
-
 
   given windowid: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
@@ -149,13 +137,11 @@ object Variable extends Protovariable:
 
     pathVariable(instantiable)
 
-
   given editor: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["editor", path] =
 
     pathVariable(instantiable)
-
 
   given pager: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
@@ -163,20 +149,17 @@ object Variable extends Protovariable:
 
     pathVariable(instantiable)
 
-
   given sshAuthSock: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["sshAuthSock", path] =
 
     pathVariable(instantiable)
 
-
   given manpager: [path]
   =>  ( instantiable: (path is Instantiable across Paths from Text)^ )
   =>  Variable["manpager", path] =
 
     pathVariable(instantiable)
-
 
   given columns: (decodable: (Int is Decodable in Text)^)
   =>  ((Variable["columns", Int])^{decodable}) =

@@ -41,7 +41,6 @@ import vacuous.*
 
 import RedraftError.Reason
 
-
 object Redraft:
 
   enum Directive:

@@ -94,7 +94,6 @@ object Postable:
     import charEncoders.utf8Encoder
     Postable(media"application/x-www-form-urlencoded", query => query.queryString.in[Data].stream)
 
-
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  ( tactic: Tactic[MediaTypeError] )
   =>  ((response is Postable)^{tactic, caps.any}) =

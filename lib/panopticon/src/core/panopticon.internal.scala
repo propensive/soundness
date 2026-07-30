@@ -308,7 +308,6 @@ object internal:
 
       if opts.forall(_.isDefined) then Some(opts.flatten) else None
 
-
     def coerce[T: Type](sourceTerm: Term): Expr[T] =
       val sourceTpe = sourceTerm.tpe.widen
 

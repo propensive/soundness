@@ -164,7 +164,6 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
   private def send(frame: Frame): Unit = outbound.put(frame)
 
-
   // Tear the connection down after an unrecoverable reader/writer failure: unblock a
   // pending handshake, end every open stream so awaiters of its headers/body/trailers
   // don't hang on a connection that can no longer make progress, and stop the outbound
@@ -265,4 +264,3 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     reader.cancel()
     writer.cancel()
     duplex.close()
-

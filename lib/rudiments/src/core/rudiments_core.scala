@@ -470,7 +470,6 @@ extension (bs: Long)
 extension (data: Data)
   def bytes: Bytes = Bytes(data.size)
 
-
 extension [countable: Countable](inline value: countable)
   inline def limit: Ordinal = countable.size(value).z
 

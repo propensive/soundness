@@ -55,7 +55,6 @@ final val D: Drive = Drive('D')
 extension (inline context: StringContext)
   transparent inline def p(): Path = ${galilei.internal.path('context)}
 
-
 extension [target: Substantiable](value: target)
   def exists(): Boolean = target.existence(value)
 
@@ -137,7 +136,6 @@ extension [plane: Filesystem](path: Path on plane)
     descendants.fuse(summon[FilesystemBackend on plane].stat(path, false).size.b):
       state + next.size()
 
-
   def delete()(using deleteRecursively: DeleteRecursively on plane)
     ( using backend: FilesystemBackend on plane )
   ( using Tactic[IoError], (IoEvent is Loggable)^ )
@@ -160,7 +158,6 @@ extension [plane: Filesystem](path: Path on plane)
 
   def volume()(using backend: FilesystemBackend on plane): Volume raises IoError =
     backend.volume(path)
-
 
   def hardLinkTo(destination: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
@@ -354,7 +351,6 @@ package filesystemOptions:
       def conditionally[result](path: Path on Plane)(operation: => result): result raises IoError =
         path.children.each(recur(_)) yet operation
 
-
     given disabled: [plane: {Filesystem, Explorable}] => DeleteRecursively on plane:
 
       type Plane = plane
@@ -373,7 +369,6 @@ package filesystemOptions:
 
       def apply[result](path: Path on Plane)(operation: => result): result raises IoError =
         deleteRecursively.conditionally(path)(operation)
-
 
     // The backend raises `AlreadyExists` itself when the operation collides with an existing
     // entry, so nothing needs intercepting here.
@@ -398,11 +393,9 @@ package filesystemOptions:
         safely(path.parent).let(ensure(_))
         operation
 
-
     given disabled: [plane: Filesystem] => CreateNonexistentParents on plane:
 
       type Plane = plane
 
       def apply[result](path: Path on plane)(block: => result): result raises IoError =
         block
-

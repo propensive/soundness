@@ -126,7 +126,6 @@ case class Command(arguments: Text*) extends Executable:
 
   def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")
 
-
 object Pipeline:
   given communicable: Pipeline is Communicable =
     pipeline => m"${pipeline.commands.map(_.show).join(t" | ")}"

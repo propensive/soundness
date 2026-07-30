@@ -64,7 +64,6 @@ extension [remote: Remotable](value: remote)
   infix def via [port](port: port): Endpoint[port] =
     Endpoint(remote.remote(value), port)
 
-
 extension [port](port: port)
   transparent inline def serve[protocol: Protocolic over port]
     ( handler: (request: protocol.Request) ?=> protocol.Response^{request} )

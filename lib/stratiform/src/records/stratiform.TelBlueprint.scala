@@ -32,7 +32,6 @@
                                                                                                   */
 package stratiform
 
-
 import anticipation.*
 import contingency.*
 import gossamer.*

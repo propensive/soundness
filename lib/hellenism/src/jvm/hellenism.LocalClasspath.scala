@@ -48,7 +48,6 @@ import filesystemBackends.virtualMachine
 object LocalClasspath:
   given encodable: System => LocalClasspath is Encodable in Text = _()
 
-
   given decodable: (System, Tactic[PropertyError])
   =>  LocalClasspath is Decodable in Text =
 
@@ -91,7 +90,6 @@ object LocalClasspath:
 
         if classpath.entrySet.has(entry) then classpath
         else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
-
 
 class LocalClasspath private
   ( val entries

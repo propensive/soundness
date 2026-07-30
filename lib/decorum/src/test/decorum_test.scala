@@ -101,6 +101,26 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val a = 1\n\n\n\nval b = 2\n")
       . assert(_.contains("783"))
 
+      test(m"Two consecutive blank lines between plain statements are rejected"):
+        rules("val a = 1\n\n\nval b = 2\n")
+      . assert(_.contains("783"))
+
+      test(m"One blank line between plain statements is accepted"):
+        rules("val a = 1\n\nval b = 2\n")
+      . assert(r => !r.contains("783"))
+
+      test(m"Two blank lines before a heavy-signature definition are accepted"):
+        rules("val a = 1\n\n\ndef heavy(n: Int)\n:   Int =\n\n  n\n")
+      . assert(r => !r.contains("783"))
+
+      test(m"Two blank lines after a heavy-signature body are accepted"):
+        rules("def heavy(n: Int)\n:   Int =\n\n  n\n\n\nval a = 1\n")
+      . assert(r => !r.contains("783"))
+
+      test(m"Three blank lines around a heavy signature are still rejected"):
+        rules("val a = 1\n\n\n\ndef heavy(n: Int)\n:   Int =\n\n  n\n")
+      . assert(_.contains("783"))
+
       test(m"Clean stub produces no universal-rule diagnostics"):
         rules("val x: Int = 1\n")
       . assert(_.forall(r => !Set("135", "230", "926", "015", "783").contains(r)))

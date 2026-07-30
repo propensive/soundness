@@ -57,7 +57,6 @@ object Cookie:
 
     new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
 
-
   object Value:
     given showable: Value is Showable = cookie =>
       List

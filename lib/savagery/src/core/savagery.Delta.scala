@@ -32,14 +32,12 @@
                                                                                                   */
 package savagery
 
-
 import anticipation.*
 import gossamer.*
 import mosquito.*
 import prepositional.*
 import spectacular.*
 import symbolism.*
-
 
 object Delta:
   def apply(dx: Float, dy: Float): Delta = Delta(Vector((dx, dy)))
@@ -73,7 +71,6 @@ object Delta:
 
   given multiplicableByInt: Delta is Multiplicable by Int to Delta = Multiplicable:
     (delta, scalar) => Delta(delta.dx*scalar, delta.dy*scalar)
-
 
 final case class Delta(vector: Vector[Float, 2]):
   def dx: Float = vector.element(0)

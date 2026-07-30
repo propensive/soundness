@@ -130,7 +130,6 @@ object scalacOptions:
 
       val betterFors = Scalac.Option[3.6](t"-language:experimental.betterFors")
 
-
 private[anthology] def notice(diagnostic: Diagnostic): Notice =
   val importance: Importance = Importance.fromOrdinal(diagnostic.level)
   val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn

@@ -678,7 +678,6 @@ object SourceCode:
 
     types.to(Map)
 
-
 case class SourceCode
   ( language:    ProgrammingLanguage,
     offset:      Int,
@@ -697,7 +696,6 @@ case class SourceCode
     if startLine != endLine
     then fragment(startLine, (endLine + 2).min(lastLine), range)
     else fragment(startLine, (endLine + 1).min(lastLine), range)
-
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[Span] = Unset): SourceCode =
     SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)

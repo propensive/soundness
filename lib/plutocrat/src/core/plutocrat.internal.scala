@@ -76,7 +76,6 @@ object internal:
         if result.isin != isin then abort(IsinError(IsinError.LuhnCheck))
         result
 
-
   extension (isin: Isin)
     private[internal] def payload: Text =
 
@@ -102,7 +101,6 @@ object internal:
       t"$payload${Luhn.digit(data)}"
 
     def isin: Text = t"$countryCode$nsin"
-
 
   def interpolator(context: Expr[StringContext]): Macro[Isin] =
     abortive:
@@ -132,7 +130,6 @@ object internal:
     def apply[currency <: Label: ValueOf](value: Long): Money in currency =
       apply(valueOf[currency], value).to[currency]
 
-
     given showable: [currency: Currency] => (currencyStyle: CurrencyStyle)
     =>  Money in currency is Showable =
 
@@ -142,13 +139,11 @@ object internal:
 
         currencyStyle.format(currency.code, currency.symbol, units, subunit)
 
-
     given addable: [currency <: Label]
     =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
 
       Addable: (left, right) =>
         Money(left.currency, left.value + right.value).to[currency]
-
 
     given subtractable: [currency <: Label]
     =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
@@ -156,13 +151,11 @@ object internal:
       Subtractable: (left, right) =>
         Money(left.currency, left.value - right.value).to[currency]
 
-
     given multiplicable: [currency <: Label]
     =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
 
       Multiplicable: (left, right) =>
         Money(left.currency, left.value*right).to[currency]
-
 
     given divisible: [currency <: Label, money <: (Money in currency)]
     =>  money is Divisible:
@@ -174,7 +167,6 @@ object internal:
       def divide(left: money, right: Double): Money in currency =
         Money(left.currency, left.value/right).to[currency]
 
-
     given divisible2: [currency <: Label, left <: Money in currency, right <: Money in currency]
     =>  left is Divisible:
 
@@ -183,7 +175,6 @@ object internal:
       type Result = Double
 
       def divide(left: left, right: right): Double = left.value.toDouble/right.value.toDouble
-
 
     given divisible3: [currency <: Label, money <: Money in currency] => money is Divisible:
       type Self = money
@@ -212,7 +203,6 @@ object internal:
       def negate(money: Money in currency): Money in currency =
         Money(money.currency, -money.value).to[currency]
 
-
   extension (money: Money)
     def currency: Text =
 
@@ -223,7 +213,6 @@ object internal:
       new String(Array(c1, c2, c3)).tt
 
     def value: Long = (money << 15) >> 15
-
 
   extension [currency <: Label: ValueOf](left: Money in currency)
     def tax(rate: Double): Price in currency =

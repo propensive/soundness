@@ -49,7 +49,6 @@ import vacuous.*
 
 export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
-
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${hypotenuse.protointernal.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${hypotenuse.protointernal.hex('context)}

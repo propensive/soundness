@@ -32,7 +32,6 @@
                                                                                                   */
 package probably
 
-
 object Test:
   // The `Test` may capture (its block can close over a capability); the methods accept a capturing
   // receiver so a test whose block uses a capability still type-checks, while `test` (the asserted
@@ -46,7 +45,6 @@ object Test:
 
     inline def assert(inline predicate: test => Boolean): Unit =
       ${probably.internal.assert[test]('test, 'predicate)}
-
 
     inline def check(inline predicate: test => Boolean): test =
       ${probably.internal.check[test]('test, 'predicate)}

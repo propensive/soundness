@@ -56,12 +56,10 @@ object internal:
       case digit: Digit => digit
       case _            => Unset
 
-
   extension (digit: Digit)
     def int: Int = digit
 
     def char: Char = ('0' + int).toChar
-
 
   object Bytes:
     def apply(long: Long): Bytes = long
@@ -80,7 +78,6 @@ object internal:
     given multiplicable2: Int is Multiplicable by Bytes to Bytes = Multiplicable(_*_)
     given divisible: Bytes is Divisible by Int to Bytes = Divisible(_/_)
     given divisible2: Bytes is Divisible by Bytes to Double = Divisible(_.toDouble/_)
-
 
     extension (left: Bytes)
       def long: Long = left

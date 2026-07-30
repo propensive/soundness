@@ -58,5 +58,4 @@ object internal:
       case (text: Text) :: more => '{${Expr(text)} :: ${lift(more)}}
       case (long: Long) :: more => '{${Expr(long)} :: ${lift(more)}}
 
-
     '{Semver($major, $minor, $patch, ${lift(semver.prerelease)}, ${lift(semver.build)})}

@@ -34,7 +34,6 @@ package nomenclature
 
 import scala.quoted.*
 
-
 class NameExtractor[text <: Label]():
   transparent inline def apply(): Any = ${protointernal.inferName[text]}
 

@@ -63,7 +63,6 @@ object Css:
     case Declaration(property: Text, value: Text)
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
-
   given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text over Credit = css =>
     val producer = Producer[Text](4096)
 

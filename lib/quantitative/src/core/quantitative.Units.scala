@@ -32,7 +32,6 @@
                                                                                                   */
 package quantitative
 
-
 trait Units[power <: Nat, dimension <: Dimension] extends Measure
 
 sealed trait Metres[Power <: Nat] extends Units[Power, Distance]

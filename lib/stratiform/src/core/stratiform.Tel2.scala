@@ -357,7 +357,6 @@ trait Tel2 extends Tel3:
   // atom. These mirror jacinta.Json's primitive decoders but go through
   // the atom text rather than a JSON AST.
 
-
   given textDecodable: (tactic: Tactic[TelError]) => ((Text is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Str): tel =>
       primitiveFault(tel, t"Text", t""): atom =>

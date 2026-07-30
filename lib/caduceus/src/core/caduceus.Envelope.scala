@@ -42,7 +42,6 @@ object Envelope:
     case many: List[`entity` @unchecked] => many
     case one: (`entity` @unchecked)      => List(one)
 
-
 case class Envelope
   ( from:    EmailAddress,
     to:      List[EmailAddress],

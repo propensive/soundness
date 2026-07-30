@@ -56,13 +56,11 @@ import superlunary.*
 import symbolism.*
 import vacuous.*
 
-
 case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
   type Result[output] = output
   type Form = Text
   type Target = Path on Linux
   type Transport = Json
-
 
   // Captures the benchmark's name and settings; the returned plan is applied to a quoted
   // body directly (a single measurement) or spread `over` one or two axes, one measurement

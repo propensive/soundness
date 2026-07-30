@@ -32,5 +32,4 @@
                                                                                                   */
 package nomenclature
 
-
 trait Check[param <: Label]

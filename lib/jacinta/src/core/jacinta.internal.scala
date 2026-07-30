@@ -643,7 +643,6 @@ object internal:
 
     (cleaned, spreads)
 
-
   import Bcd.*
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
@@ -1337,7 +1336,6 @@ object internal:
           . absolve match
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
-
 
   // ── Staged parser generation ──────────────────────────────────────────────
   // Generates a monomorphic `Json.Parsable` for a case class: field values

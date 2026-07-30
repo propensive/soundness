@@ -189,7 +189,6 @@ object Ansi extends Ansi2:
     def applyOnce(transform: Transform): Unit =
       currentStyle = transform(currentStyle)
 
-
   object Runtime:
     import unsafeExceptions.canThrowAny
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')

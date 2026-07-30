@@ -98,7 +98,6 @@ object internal:
     inline given charDatum:  CanEqual[Char, Datum] = !!
     inline given datumDatum: CanEqual[Datum, Datum] = !!
 
-
     extension (datum: Datum)
       // The underlying `Int` representation. Use sparingly — anywhere it
       // leaks the `Datum` distinction is lost.
@@ -106,4 +105,3 @@ object internal:
 
       // `true` if the cursor that produced this `Datum` was exhausted.
       inline def isEnd: Boolean = datum == Datum.End
-

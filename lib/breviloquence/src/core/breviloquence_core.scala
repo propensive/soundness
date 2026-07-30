@@ -39,7 +39,6 @@ import rudiments.*
 
 import CborError.{Primitive, Reason}
 
-
 extension (cbor: Cbor.Ast)
   @unexported
   inline def unset: Boolean = cbor == vacuous.Unset

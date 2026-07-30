@@ -41,7 +41,6 @@ inline def every[value]: Every[value] = ${Every.summonAll[value]}
 inline def metaprogramming(using quotes: Quotes): Metaprogramming(quotes) =
   Metaprogramming(quotes)
 
-
 case class Metaprogramming(tracked val quotes: Quotes):
   import dotty.tools.dotc.core.*
   import quotes.reflect.*

@@ -130,4 +130,3 @@ package formatting:
 
   given indentedXmlFormatting: Xml.Formatting =
     Xml.Formatting(Text("  "), trailingNewline = true)
-

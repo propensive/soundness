@@ -238,7 +238,6 @@ extension (body: HttpStreams.Body)
                 limit0 = data.length
                 if limit0 == 0 then refill(demand) else limit0
 
-
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
 
@@ -289,7 +288,6 @@ extension [element](stream: LazyList[element])
 
     stream.flow(LazyList())(next #:: recur(next, more))
 
-
   // `next`/`more` are bound with `aka`-label refinements; under capture checking the
   // labelled singleton type does not simplify away in every position (the aka-Tagged/
   // castbox class), so use sites strip it with `next.asInstanceOf[element]`.
@@ -307,7 +305,6 @@ extension [element](stream: LazyList[element])
 extension (obj: LazyList.type)
   def defer[element](stream: => LazyList[element]): LazyList[element] =
     (null.asInstanceOf[element] #:: stream).tail
-
 
 extension (stream: LazyList[Data])
   def discard(bytes: Bytes): LazyList[Data] =

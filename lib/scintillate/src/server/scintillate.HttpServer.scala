@@ -73,7 +73,6 @@ extends RequestServable:
               try handler(using connection) catch case throwable: Throwable =>
                 errorPage.handle(throwable, connection)
 
-
       catch case NonFatal(exception) =>
         Log.fail(HttpServerEvent.ConnectionFailed(fulminate.Error(exception)))
 

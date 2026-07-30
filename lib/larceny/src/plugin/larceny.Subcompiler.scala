@@ -104,7 +104,6 @@ object Subcompiler:
         val content = context.compilationUnit.source.content
         val focus = String(content.slice(position.start, position.end))
 
-
         val offset = position.point - position.start
         val ordinal = diagnostic.msg.errorId.ordinal
 

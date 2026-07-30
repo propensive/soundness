@@ -55,7 +55,6 @@ object Svg:
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
       SvgParser.decodeSvg(SvgParser.rootElement(xml))
 
-
   given loadable: (XmlSchema)
   =>  (parseTactic: Tactic[ParseError])
   =>  (xmlTactic: Tactic[XmlError])
@@ -73,7 +72,6 @@ object Svg:
 
       Document[Svg](parsedSvg, encoding)
 
-
   given showable: [doc <: Document[Svg]] => doc is Showable =
     document =>
       val header = Header(t"1.0", document.metadata.name, Unset)
@@ -83,7 +81,6 @@ object Svg:
         case Fragment(nodes*) => Fragment((header +: nodes)*)
 
       full.show
-
 
 case class Svg
   ( width:      Float,

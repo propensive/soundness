@@ -576,7 +576,6 @@ object Http:
       case Body.Empty           => Iterator.empty[Data].stream
       case Body.Flowing(source) => source()
 
-
   // A request body with no bytes; each call constructs a fresh, already-empty
   // pull endpoint, matching the re-materializable contract of `body` thunks.
   def emptyBody(): (Stream[Data] over Credit)^ = Iterator.empty[Data].stream
@@ -628,7 +627,6 @@ object Http:
         cookie.bi.map(_.name -> _.value)
 
       . to(Map)
-
 
   // The swappable transport that physically sends a single request and returns
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
@@ -1020,7 +1018,6 @@ object Http:
     def successBody: Optional[(Stream[Data] over Credit)^] =
       if status.category != Http.Status.Category.Successful then Unset
       else body.stream
-
 
     def receive[body](using receivable: (body is Receivable)^): body =
       receivable.read(this)

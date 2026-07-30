@@ -144,7 +144,6 @@ object Html extends Tag.Container
     Addable: (left, right) =>
       Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
-
   // Internal Tactic used by the permissive-variant givens. Recovery warnings
   // (`raise`) are discarded; truly unrecoverable conditions (`abort`) still
   // throw, since the caller hasn't supplied a way to handle them.
@@ -157,7 +156,6 @@ object Html extends Tag.Container
       throw error(using diagnostics)
 
     def certify(): Unit = ()
-
 
   given strictAggregable: [content <: Label: Reifiable to List[String]]
   =>  ( dom:    Dom,
@@ -206,7 +204,6 @@ object Html extends Tag.Container
 
       case _ =>
         abort(ParseError(Html, Position(1.u, 1.u), Issue.BadDocument))
-
 
   // Last-resort safety net for the permissive variants. Tokenizer-level
   // conditions that haven't been wired into the parser's per-site recovery
@@ -462,26 +459,22 @@ object Html extends Tag.Container
 
     _.of[content]
 
-
   given comment: [content <: Label] =>  Conversion[Comment, Html of content] =
     _.of[content]
 
   given string2: Conversion[String, Html of "#foreign"] =
     string => TextNode(string.tt).of["#foreign"]
 
-
   given renderable: [content <: Label, value: Renderable in content]
   =>  Conversion[value, Html of content] =
 
     value.render(_)
-
 
   given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
   =>  Conversion[Seq[nodal], Seq[html]] =
 
     (sequence: Seq[nodal]) =>
       sequence.map(conversion(_))
-
 
   enum Issue extends Format.Issue:
     case BadInsertion
@@ -541,7 +534,6 @@ object Html extends Tag.Container
   extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
     override def span: Span = Span.line(line, column, length.or(0))
-
 
   enum Mode:
     case Raw, Rcdata, Whitespace, Normal
@@ -1019,7 +1011,6 @@ object Html extends Tag.Container
         case '\u0000'                                    => fail(BadInsertion, mark)
         case char                                        => fail(Unexpected(char), mark)
 
-
       @tailrec
       def value(mark: Mark): Text = lay(fail(ExpectedMore)):
         case '\u0000' => callback.let(_(position.z, Hole.Text)) yet next() yet value(mark)
@@ -1067,7 +1058,6 @@ object Html extends Tag.Container
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => false
         case '\u0000'                              => fail(BadInsertion)
         case char                                  => fail(Unexpected(char))
-
 
       def attributes(tag: Text, foreign: Boolean): Attributes =
         // Append into the parser-shared interleaved scratch buffer (laid out
@@ -1170,7 +1160,6 @@ object Html extends Tag.Container
           jl.System.arraycopy(attrInterleaved, 0, arr, 0, 2*n)
           Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
-
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
         case '#'   => next() yet numericEntity(mark)
         case other => textEntity(mark, 0)
@@ -1230,7 +1219,6 @@ object Html extends Tag.Container
           case char =>
             val v = dom.entities.value(node)
             if v == null then Unset else v.nn
-
 
       // Slow path: an entity reference or RCDATA close-tag check forced us to
       // switch to the buffer. Identical to the original textual() body.
@@ -1312,7 +1300,6 @@ object Html extends Tag.Container
                 fast() // buffer exhausted; outer @tailrec re-checks via `more`
 
           fast()
-
 
       def comment(mark: Mark): Text = lay(fail(ExpectedMore)):
         case '-' =>
@@ -1993,4 +1980,3 @@ case class Doctype(text: Text) extends Node:
     case _                        => false
 
   def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
-

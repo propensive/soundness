@@ -36,7 +36,6 @@ import fulminate.Hazard
 
 import language.experimental.pureFunctions
 
-
 enum Attempt[+success, +error <: Hazard]:
   case Success(value: success)
   case Failure(value: error)

@@ -116,7 +116,6 @@ def daemon[error <: Hazard](using Codepoint)
 def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^): Containment^ =
   Containment(handler, outer)
 
-
 // `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
 // reified two ways. For a `Task`, it is the bound `Task[result] { type Error <: e }` on its member;
 // the bound (not an equality) keeps the error covariant, so a task failing only with `AsyncError`
@@ -128,7 +127,6 @@ def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^): Co
 infix type emits[left, error <: Hazard] = left match
   case Task[?] => left { type Error <: error }
   case _       => Emit[error] ?=> left
-
 
 // `error` is the union of error types the body may `raise`, inferred exactly as for synchronous
 // `raises`, and carried in the task's `Error` member so it can be delivered, still typed, at the

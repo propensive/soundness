@@ -49,7 +49,6 @@ object Requirable:
     caps.unsafe.unsafeAssumePure:
       () => safely(decodable(using strategies.throwUnsafely).decoded("".tt)).absent
 
-
 trait Requirable extends Typeclass:
   protected def isRequired(): Boolean
   def required: Boolean = isRequired()

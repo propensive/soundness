@@ -51,7 +51,6 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-
 object internal:
   def prompt(context: Expr[StringContext], arguments0: Expr[Seq[Any]], human: Boolean)
   :   Macro[Discourse] =
@@ -142,7 +141,6 @@ object internal:
                                   Decodable in Json` instance for the parameter ${param.name} of
                                   ${method.name}
                                 """
-
 
                       val application = method.paramSymss.length match
                         case 1 => Apply(Select('target.asTerm, method), params)
@@ -266,7 +264,6 @@ object internal:
                   }
             }
         }
-
 
     val resourceInvocation: Expr[interface ~> (Text => Mcp.Contents)] =
       ' {

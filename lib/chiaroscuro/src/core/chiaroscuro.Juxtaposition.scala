@@ -60,7 +60,6 @@ object Juxtaposition:
     def positive: Color in Srgb
     def negative: Color in Srgb
 
-
   given (measurable: Text is Measurable) => (palette: JuxtapositionPalette)
   =>  Juxtaposition is Teletypeable =
 

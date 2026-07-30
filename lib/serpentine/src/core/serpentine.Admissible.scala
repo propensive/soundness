@@ -52,7 +52,6 @@ object Admissible:
       case _: Name[`filesystem`] => unchecked[text, filesystem]
       case _                     => provide[Tactic[NameError]](Name[filesystem](_))
 
-
   inline given admissible: [string <: Label, filesystem] => (nominative: filesystem is Nominative)
   =>  string is Admissible on filesystem =
 

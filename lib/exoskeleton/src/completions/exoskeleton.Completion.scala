@@ -106,7 +106,6 @@ extends Cli:
   override def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit =
     explanation = update(using explanation.aka["prior"])
 
-
   override def suggest
     ( argument: Argument,
       update:   (List[Suggestion] aka "prior") ?=> List[Suggestion],
@@ -119,7 +118,6 @@ extends Cli:
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 
       . sortBy(_.core)
-
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>

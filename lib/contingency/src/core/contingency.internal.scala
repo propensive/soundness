@@ -295,7 +295,6 @@ object internal:
 
       }
 
-
   // The type lambda `[result] => (Tactic[E1], …, Tactic[En]) ?=> result` capturing the handled
   // error types of a `recover`/`mitigate`/`accrue` handler, so `.protect` injects one tactic each.
   private def tacticLambda(using Quotes)(handler: Expr[PartialFunction[Exception, Any]])

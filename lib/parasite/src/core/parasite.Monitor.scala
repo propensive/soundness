@@ -277,7 +277,6 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
           case Delivered(_, result) => result
           case other                => panic(m"impossible state")
 
-
   // The raw, untyped join: the original exception of a `Failed` worker is rethrown verbatim (under
   // `canThrowAny`), so the static error is only `AsyncError`. Used internally (`map`/`bind`/
   // `sequence`/`race`) where the body's error type is not tracked. Public callers go via the typed
@@ -298,7 +297,6 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   def join()(using Monitor^): Result raises AsyncError =
     promise.attend()
     result()
-
 
   // The typed join. A `Failed` worker carries a pure exception; rather than rethrowing it raw
   // (which would bypass a non-throwing `Tactic`), we `abort` it through the caller's in-scope

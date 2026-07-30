@@ -105,7 +105,6 @@ object Interaction:
 
     def result(editor: LineEditor): Text = editor.value
 
-
 trait Interaction[result, question]:
   def before(): Unit = ()
   def render(state: Optional[question], menu: question): Unit

@@ -459,7 +459,6 @@ object internal:
                 case _ =>
                   missing(repr, Nil)
 
-
             // The `Apply @unchecked` test matches non-`Apply` trees too (the
             // unchecked bind skips the runtime check), so a `TypeApply` — e.g.
             // from a polymorphic given whose using-clause failed — reaches
@@ -495,7 +494,6 @@ object internal:
 
             case _ =>
               missing(repr, Nil)
-
 
     // Convert the compiler-typed search `Result` into the format-neutral,
     // pre-rendered `Diagnostic` model the shared renderer consumes.

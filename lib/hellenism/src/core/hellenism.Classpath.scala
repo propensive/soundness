@@ -101,7 +101,6 @@ object Classpath extends Root(t""):
       Streamable.inputStream.contramap: path =>
         classloader.inputStream(path.encode)
 
-
   def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
     val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
 

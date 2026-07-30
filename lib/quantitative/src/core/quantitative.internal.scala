@@ -50,14 +50,12 @@ object internal extends protointernal:
   opaque type MetricUnit[units <: Measure] <: Quantity[units] = Double
   opaque type Temperature = Double
 
-
   extension (temperature: Temperature)
     def kelvin: Double = temperature
 
     def celsius: Double = temperature - 273.15
     def fahrenheit: Double = celsius*9/5 + 32
     def rankine: Double = temperature*9/5
-
 
   object Temperature extends Temperature2:
     def apply(value: Double): Temperature = value
@@ -83,13 +81,11 @@ object internal extends protointernal:
     given subtractable3: Temperature is Subtractable by Temperature to Quantity[Kelvins[1]] =
       Subtractable: (left, right) => Quantity(left.kelvin - right.kelvin)
 
-
   extension [units <: Measure](quantity: Quantity[units])
     def underlying: Double = quantity
 
     inline def value: Double = quantity
     inline def amount[name <: Label]: Text = ${quantitative.internal.amount[units]}
-
 
   object MetricUnit:
     inline given underlying: [units <: Measure] => Underlying[MetricUnit[units], Double] = !!
@@ -188,18 +184,15 @@ object internal extends protointernal:
 
     given numeric: [units <: Measure] => Numeric[Quantity[units]] = summon[Numeric[Double]]
 
-
     given genericDuration: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Abstractable across Durations to Long =
 
       quantity => (quantity.normalize*1_000_000_000.0).toLong
 
-
     given specificDuration: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Instantiable across Durations from Long =
 
       long => Quantity[units](long*units.ratio()/1_000_000_000.0)
-
 
     transparent inline given addable
     :   [ left      <: Measure,
@@ -210,7 +203,6 @@ object internal extends protointernal:
 
       ${quantitative.internal.addTypeclass[left, quantity, right, quantity2]}
 
-
     inline given checkable
     :   [ left      <: Measure,
           quantity  <: Quantity[left],
@@ -219,7 +211,6 @@ object internal extends protointernal:
     =>  quantity is Checkable against quantity2 =
 
       ${quantitative.internal.checkable[left, quantity, right, quantity2]}
-
 
     transparent inline given subtractable
     :   [ left      <: Measure,
@@ -230,7 +221,6 @@ object internal extends protointernal:
 
       ${quantitative.internal.subTypeclass[left, quantity, right, quantity2]}
 
-
     transparent inline given multiplicable
     :   [ left         <: Measure,
           multiplicand <: Quantity[left],
@@ -240,13 +230,11 @@ object internal extends protointernal:
 
       ${quantitative.internal.mulTypeclass[left, multiplicand, right, multiplier]}
 
-
     given negatable: [left <: Measure, operand <: Quantity[left]] => operand is Negatable:
       type Self = operand
       type Result = Quantity[left]
 
       inline def negate(operand: Self): Quantity[left] = -operand
-
 
     given multiplicable2: [left <: Measure, multiplicand <: Quantity[left]]
     =>  multiplicand is Multiplicable:
@@ -257,7 +245,6 @@ object internal extends protointernal:
 
       inline def multiply(left: multiplicand, right: Double): Quantity[left] = left*right
 
-
     given multiplicable3: [right <: Measure, multiplier <: Quantity[right]]
     =>  Double is Multiplicable:
 
@@ -267,14 +254,12 @@ object internal extends protointernal:
 
       inline def multiply(left: Double, right: multiplier): Quantity[right] = left*right
 
-
     given multiplicable4: [right <: Measure, multiplier <: Quantity[right]] => Int is Multiplicable:
       type Self = Int
       type Operand = multiplier
       type Result = Quantity[right]
 
       inline def multiply(left: Int, right: multiplier): Quantity[right] = left*right
-
 
     given multiplicable5: [left <: Measure, multiplicand <: Quantity[left]]
     =>  multiplicand is Multiplicable:
@@ -285,7 +270,6 @@ object internal extends protointernal:
 
       inline def multiply(left: multiplicand, right: Int): Quantity[left] = left*right
 
-
     transparent inline given divisible
     :   [ left     <: Measure,
           dividend <: Quantity[left],
@@ -295,18 +279,15 @@ object internal extends protointernal:
 
       ${quantitative.internal.divTypeclass[left, dividend, right, divisor]}
 
-
     transparent inline given divisible2: [right <: Measure, divisor <: Quantity[right]]
     =>  Double is Divisible by divisor =
 
       ${quantitative.internal.divTypeclass2[right, divisor]}
 
-
     transparent inline given divisible3: [right <: Measure, divisor <: Quantity[right]]
     =>  Int is Divisible by divisor =
 
       ${quantitative.internal.divTypeclass3[right, divisor]}
-
 
     given divisibleDouble: [left <: Measure, dividend <: Quantity[left]] => dividend is Divisible:
       type Self = dividend

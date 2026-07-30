@@ -53,7 +53,6 @@ import serpentine.*
 import superlunary.*
 import vacuous.*
 
-
 // A profile test: where `Bench` measures how fast a fragment runs and `Stress` how it
 // scales, `Profile` measures where its time goes. The body is run repeatedly on a single
 // thread for a fixed wall-clock window while an in-process JFR recording samples execution;

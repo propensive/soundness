@@ -46,7 +46,6 @@ object Rgb12Opaque:
     def apply(red: Int, green: Int, blue: Int): Rgb12 =
       ((red&15) << 8) + ((green&15) << 4) + (blue&15)
 
-
   extension (color: Rgb12)
     def red: Int = (color >> 8)&15
 

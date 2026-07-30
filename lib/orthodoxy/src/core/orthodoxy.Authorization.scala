@@ -39,7 +39,6 @@ import prepositional.*
 import telekinesis.*
 import vacuous.*
 
-
 object Authorization:
   given authorization: ("authorization" is Directive of Authorization) =
     authorization => t"Bearer ${authorization.key}"

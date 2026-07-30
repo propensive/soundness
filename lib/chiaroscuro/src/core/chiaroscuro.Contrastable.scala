@@ -82,7 +82,6 @@ object Contrastable:
           case given (`derivation` is Showable) =>
             Decomposition.Primitive(typeName, value.show, value)
 
-
         if left == right then Juxtaposition.Same(show(left))
         else juxtaposition(typeName, decompose(left), decompose(right))
 

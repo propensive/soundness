@@ -32,7 +32,6 @@
                                                                                                   */
 package aviation
 
-
 object Base60:
   def apply(int: Int): Base60 =
     (((int%60) + 60)%60).absolve match

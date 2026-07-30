@@ -50,7 +50,6 @@ object Optic:
 
     def modify(origin: Origin)(lambda: Target => Target): Origin = lambda(origin)
 
-
   // The optic stores `lambda`, so the constructed instance captures whatever `lambda` captures
   // (`^{lambda}`, exactly like `LzyList.map(f): LzyList[B]^{xs, f}`). A pure transform yields a pure
   // optic; a transform that closes over a `Tactic` yields a capturing optic, so fallibility flows
@@ -83,7 +82,6 @@ trait Optic extends Findable, Dynamic:
   type Target
 
   def modify(origin: Origin)(lambda: Target => Target): Origin
-
 
   // Compose `this` with a following optic. Since `Optic` is an extensible trait, `this` has the
   // universal capture, which cannot flow into a `^` *parameter* of `Composable.composition`; so the

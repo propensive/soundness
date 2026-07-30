@@ -170,7 +170,6 @@ object Lambdas:
 
       case _ => false
 
-
   // Scan *backward* from `from` (the lambda's source start) past whitespace
   // and look at the first non-whitespace character. That character is the
   // immediate wrapper of the lambda — `{`, `(`, or `:` for an arg-list

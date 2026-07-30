@@ -83,7 +83,6 @@ package blockCipherPadding:
 // live in gastronomy (shared with hashing); the cipher concessions they cover are
 // mapped from cipher types by `Weakness`/`Authentication` in `enigmatic.Weakness`.
 
-
 // The cipher-side concession match types. The shared `Concession` markers, `Permit`
 // and the `crypto.permit…Crypto` aggregates live in gastronomy; these map a cipher
 // type to its concession.
@@ -100,14 +99,12 @@ type Weakness[cipher] = cipher match
   case Dsa[?]       => Concession.Dsa
   case _            => Concession.Acceptable
 
-
 // Every (non-AEAD) block cipher is unauthenticated; asymmetric ciphers are not
 // classified this way. When authenticated encryption is added, its ciphers will
 // fall through to `Acceptable` here.
 type Authentication[cipher] = cipher match
   case BlockCipher => Concession.Unauthenticated
   case _           => Concession.Acceptable
-
 
 // Matches a JCE exception by class name, walking superclasses, so the platform-neutral core can
 // map the failures a JVM provider throws to `CryptoError`s without referencing `javax.crypto` or

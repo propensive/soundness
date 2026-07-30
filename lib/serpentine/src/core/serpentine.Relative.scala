@@ -79,12 +79,10 @@ object Relative:
 
                 Relative(ascent, descent*)
 
-
   inline given conversion: [topic, ascent <: Int, filesystem]
   =>  Conversion[Relative of topic under ascent, Relative of topic under ascent on filesystem] =
 
     conversion(_.on[filesystem])
-
 
   given encodable: [filesystem: Filesystem] => Relative on filesystem is Encodable in Text =
     relative =>
@@ -97,7 +95,6 @@ object Relative:
         . descent
         . reverse
         . join(ascender*relative.ascent, filesystem.separator, t"")
-
 
   given showable: [filesystem: Filesystem, relative <: Relative on filesystem]
   =>  relative is Showable =
@@ -128,7 +125,6 @@ object Relative:
           None
 
   :   relative is Quotient of Text over (Relative on filesystem) | Text
-
 
 case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topical, Limited:
   type Topic <: Tuple
@@ -184,7 +180,6 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
           ( ascent, infer[child.type is Navigable].follow(child) :: descent* )
 
         . unqualified
-
 
 // case class Relative(ascent: Int, descent: Text*):
 //   type Plane

@@ -49,7 +49,6 @@ import spectacular.*
 import urticose.*
 import vacuous.*
 
-
 object internal:
   def methodNames[interface: Type]: Macro[Set[Text]] =
     import quotes.reflect.*
@@ -294,7 +293,6 @@ object internal:
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
 
-
     Block(modDef.toList, Ref(module)).asExprOf[interface]
 
   def client[interface: Type](rpc: Expr[JsonRpc]): Macro[interface] =
@@ -400,6 +398,5 @@ object internal:
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
-
 
     Block(modDef.toList, Ref(module)).asExprOf[interface]

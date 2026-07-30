@@ -135,7 +135,6 @@ object internal:
 
             elements(index + 1)('{$expr && $expr2})
 
-
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
@@ -297,7 +296,6 @@ object internal:
 
           case Doctype(_) =>
             halt(m"DOCTYPE patterns are not supported in extractors")
-
 
       // Every `$`-substitution in the pattern is one captured value, whether or
       // not the parser emitted a structural `Hole` for it (comment/CDATA/PI

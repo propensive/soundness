@@ -105,7 +105,6 @@ object internal:
   def t(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =
     textInterpolator(context, insertions, normalize = false)
 
-
   def txt(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =
     textInterpolator(context, insertions, normalize = true)
 

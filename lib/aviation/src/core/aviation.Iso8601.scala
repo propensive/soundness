@@ -217,7 +217,6 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
       case _ =>
         0.00.am.on(date).instant
 
-
     focus match
       case 'Z' | '\u0000' => instant
 

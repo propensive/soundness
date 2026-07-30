@@ -2003,7 +2003,6 @@ object Tel extends Tel2:
       // non-EOF, zero-indent lines.
       var separator:     Boolean = false
 
-
   // Holds an exclusive cursor in a field, so the parser is itself a capability
   // (fresh per instance; one per thread via the pool).
   private[stratiform] final class Parser() extends caps.ExclusiveCapability:
@@ -4904,7 +4903,6 @@ object Tel extends Tel2:
       compoundScratchIx = savedCompoundIx
       blockScratchIx = savedBlockIx
       substance
-
 
 class Tel private[stratiform]
   ( private[stratiform] val subtree:       Tel.Subtree,

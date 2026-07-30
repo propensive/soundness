@@ -46,7 +46,6 @@ object Composable:
       Optic[Any, origin, target]: (origin, lambda) =>
         left.modify(origin)(right.modify(_)(lambda))
 
-
   given lenses: [origin, target, target2]
   =>  ( (Lens from origin onto target) is Composable by (Lens from target onto target2) to
         (Lens from origin onto target2) ) = new Composable:
@@ -58,7 +57,6 @@ object Composable:
       Lens[Any, origin, target2]
         ( { origin => right(left(origin)) },
           { (origin, value) => left(origin) = right(left(origin)) = value } )
-
 
 // `composition` accepts capturing operands and yields a capturing result (`Result^`): composing a
 // fallible (capturing) optic yields a capturing optic. The fallibility *requirement* is enforced

@@ -216,7 +216,6 @@ object internal:
         case _ =>
           '{Unset}
 
-
       val lineEndingsExpr: Expr[Tel.LineEndings] = document.lineEndings match
         case Tel.LineEndings.Lf   => '{Tel.LineEndings.Lf}
         case Tel.LineEndings.Crlf => '{Tel.LineEndings.Crlf}

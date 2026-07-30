@@ -109,7 +109,6 @@ object internal:
       def add(tag: Char, nodes2: Tree*): TastyTree =
         tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag, _)))
 
-
     object TastyTree:
       def apply
         ( tag:       Char,
@@ -520,7 +519,6 @@ object internal:
         case Inlined(_, _, value) => value.symbol
         case other                => other.symbol
 
-
   def introspect(using Quotes)(symbol: quotes.reflect.Symbol): Expr[TastySymbol] =
     serialize(tastySymbol(symbol))
 
@@ -670,7 +668,6 @@ object internal:
             (if symbol.companionModule.exists then symbol.companionModule.fullName else t"") )
 
     TastySymbol(prefix, symbol.name, flags, properties, details)
-
 
   def serialize(symbol: TastySymbol): Macro[TastySymbol] =
     val flags = symbol.flags.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}
