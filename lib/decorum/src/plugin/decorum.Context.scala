@@ -66,3 +66,4 @@ final class Context
   lazy val soundnessExports: ExportInfo = SoundnessExports.extract(tree, source)
   lazy val anchors: Anchors.AnchorModel = Anchors.build(tree, source, text)
   lazy val quoteSites: QuoteSites.Model = QuoteSites.extract(lines)
+  lazy val brackets: Brackets.Model = Brackets.extract(lines)

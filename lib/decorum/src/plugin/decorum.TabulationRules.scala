@@ -206,3 +206,101 @@ object TabulationRules:
             i += 1
 
       out.toList
+
+  // R36 (946): inside a multi-line `( using ... )` clause, each fresh
+  // parameter row must begin at the column of the clause's first
+  // parameter token. A row is fresh iff the previous line ended with
+  // `,`, `(`, or `using` (the row-separator tokens); otherwise the line
+  // is a wrapped continuation of the previous parameter's type, aligned
+  // intentionally to the type column. Per-parameter modifiers (e.g.
+  // `inline`) are part of the parameter, so rows align under the FIRST
+  // token of the first parameter — including its modifier.
+  object UsingAlignment extends Rule:
+    def id: String = "946"
+    def principle: Principle = Principle.Tabulation
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+
+      var openParens = 0
+      var usingNameColumn: Option[Int] = None
+      var prevTok = ""
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line        = ctx.lines(idx)
+        val lineNum     = idx + 1
+        val rest        = line.rest
+        val leadingCols = line.leadingCols
+
+        // Alignment check first, using state from the prior line.
+        if openParens > 0 && rest.nonEmpty then
+          usingNameColumn.foreach: expected =>
+            val freshRow = prevTok == "," || prevTok == "(" || prevTok == "using"
+
+            val firstSemIdx =
+              rest.indexWhere: t => t.kind != Sort.Space && t.kind != Sort.Comment
+
+            if freshRow && firstSemIdx >= 0 && rest(firstSemIdx).text != ")" then
+              var c = leadingCols + 1
+              var k = 0
+
+              while k < firstSemIdx do
+                c += rest(k).text.length
+                k += 1
+
+              if c != expected then
+                out +=
+                  Violation
+                    ( ctx.file, lineNum, c, "946",
+                      s"using-clause parameter should align at column $expected (found $c)" )
+
+        // Then update state by walking tokens.
+        var depth = openParens
+        var i     = 0
+
+        while i < rest.length do
+          val t = rest(i)
+
+          if t.kind == Sort.Code then
+            if t.text == "(" then
+              if depth == 0 then
+                val nextSem = nextSemantic(rest, i + 1)
+
+                if nextSem >= 0 && rest(nextSem).text == "using" then
+                  val firstTokIdx = nextSemantic(rest, nextSem + 1)
+
+                  if firstTokIdx >= 0 then
+                    var c = leadingCols + 1
+                    var k = 0
+
+                    while k < firstTokIdx do
+                      c += rest(k).text.length
+                      k += 1
+
+                    usingNameColumn = Some(c)
+
+              depth += 1
+            else if t.text == ")" then
+              depth -= 1
+              if depth <= 0 then usingNameColumn = None
+
+          i += 1
+
+        openParens = depth max 0
+
+        if !line.isBlank then
+          val sem = rest.filter: t => t.kind != Sort.Space && t.kind != Sort.Comment
+          sem.lastOption.foreach: t => prevTok = t.text
+
+        idx += 1
+
+      out.toList
+
+    private def nextSemantic(rest: IndexedSeq[Lexeme], from: Int): Int =
+      var k = from
+
+      while k < rest.length && (rest(k).kind == Sort.Space || rest(k).kind == Sort.Comment) do
+        k += 1
+
+      if k < rest.length then k else -1

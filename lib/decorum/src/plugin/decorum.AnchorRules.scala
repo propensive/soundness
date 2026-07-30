@@ -148,6 +148,215 @@ object AnchorRules:
         else
           Nil
 
+  // The keywords that may introduce a tight expression — `new T`,
+  // `throw E`, `return E`, `yield E`, `then E`, `else E`, `do E`, `try E`,
+  // `catch …`, `finally …`. The space following one of these at the head
+  // of a line does not break "tightness": grammatically the keyword and
+  // the expression that follows it are one production, not an infix
+  // application.
+  private val ExprIntroKeywords: Set[String] =
+    Set
+      ( "new", "throw", "return", "yield",
+        "then", "else", "do", "try", "catch", "finally",
+        // Class/trait parent-spec introducers: `extends Foo(args)` and
+        // `with Foo(args)` take an expression-shaped tail just like `new`.
+        "extends", "with" )
+
+  // Tokens that, at the end of a code line, signal "the next line is a
+  // body" (lambda body, assignment RHS, block content, keyword-sequence
+  // body, etc.) rather than a heavy-bracket continuation of the current
+  // line's expression. Used to skip R33.4's anchor check on those lines.
+  private val BodyOpenerTerminators: Set[String] =
+    Set
+      ( "=", "=>", ":", ";", "match",
+        "then", "else", "do", "yield",
+        "try", "catch", "finally",
+        "for", "if", "while",
+        "with", "extends", "derives", "case" )
+
+  // A **tight expression** has no top-level whitespace between code
+  // tokens: at bracket depth zero, the only whitespace allowed is a
+  // single space directly after one leading expression-introducing
+  // keyword. Parenthesising any expression makes it tight, since the
+  // interior moves to depth > 0 where the rule does not reach.
+  //
+  // Examples — tight: `recur`, `foo.bar(baz).quux`, `new Exception`,
+  // `(x: Int)`, `Some(x)`, `( arg )` (a whole-line bracketed clause).
+  //
+  // Examples — not tight: `head :: recur`, `val foo = bar`,
+  // `if x then y else z`, `x: Int`.
+  private def isTightExpression(line: IndexedSeq[Lexeme]): Boolean =
+    val arr = line.toArray
+    var i = 0
+
+    while i < arr.length && arr(i).kind == Sort.Space do i += 1
+
+    if i >= arr.length then return false
+    var depth             = 0
+    var sawCodeAtTopLevel = false
+
+    // An optional leading expression-introducing keyword followed by one
+    // space, or an optional leading `.` (chain continuation) followed by
+    // one space.
+    if arr(i).kind == Sort.Code && ExprIntroKeywords.contains(arr(i).text) then
+      sawCodeAtTopLevel = true
+      i += 1
+
+      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then
+        i += 1
+    else if arr(i).kind == Sort.Code && arr(i).text == "." then
+      sawCodeAtTopLevel = true
+      i += 1
+
+      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then
+        i += 1
+
+    while i < arr.length do
+      val tok = arr(i)
+
+      tok.kind match
+        case Sort.Space =>
+          if depth == 0 && sawCodeAtTopLevel then return false
+
+        case Sort.Comment => ()
+
+        case _ =>
+          if depth == 0 then sawCodeAtTopLevel = true
+
+          tok.text match
+            case "(" | "[" | "{" => depth += 1
+            case ")" | "]" | "}" => depth -= 1
+            case _               => ()
+
+      i += 1
+
+    true
+
+  // A line whose leading `(`/`[` group is immediately followed by `=>` is a
+  // lambda (or polymorphic-function) parameter list, not a heavy argument
+  // continuation, so R33.4 must not flag it.
+  private def lineOpensLambda(rest: IndexedSeq[Lexeme]): Boolean =
+    val sem = rest.filter: t => t.kind != Sort.Space && t.kind != Sort.Comment
+
+    sem.headOption.exists { t => t.text == "(" || t.text == "[" } && {
+      var depth = 0
+      var i     = 0
+      var close = -1
+
+      while i < sem.length && close < 0 do
+        sem(i).text match
+          case "(" | "[" => depth += 1
+
+          case ")" | "]" =>
+            depth -= 1
+            if depth == 0 then close = i
+
+          case _ => ()
+
+        i += 1
+
+      close >= 0 && sem.lift(close + 1).exists(_.text == "=>")
+    }
+
+  // R33.4: a line whose first semantic token is `(` or `[` is a "heavy
+  // argument block" applied to the previous line's expression. That
+  // expression must be **tight** so the `(`/`[` attaches unambiguously
+  // to the entire previous line's content rather than to some mid-line
+  // subexpression.
+  //
+  // Three other ways a line is a valid anchor for a heavy continuation:
+  // - The previous line is a declaration signature in progress (no
+  //   top-level `=` yet) — its `(args)` is a parameter list, governed
+  //   by its own rules; the anchor check is exempt.
+  // - The previous line was itself a closed heavy bracket continuation
+  //   (multi-clause currying like `f` / `(x)` / `(y)`): a whole-line
+  //   `( ... )` is itself tight, so this case is naturally handled by
+  //   the tight check.
+  // - The current line is inside an open multi-line bracket (a carried
+  //   `(`-depth from a previous line) — the `(` is not a heavy
+  //   continuation but interior content of an enclosing bracket.
+  object HeavyBracketAnchor extends Rule:
+    def id: String = "833.4"
+    def principle: Principle = Principle.Anchoring
+
+    def check(ctx: Context): List[Violation] =
+      val out    = mutable.ListBuffer[Violation]()
+      val depths = CarriedDepths(ctx)
+
+      var prevLineWasBlank    = false
+      var prevCodeLineIndent  = -1
+      var prevTok             = ""
+      var prevLineIsTight     = false
+      var prevLineStartedDecl = false
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line    = ctx.lines(idx)
+        val lineNum = idx + 1
+
+        val headIsBracket =
+          line.firstReal.exists: t =>
+            t.kind == Sort.Code && (t.text == "(" || t.text == "[")
+
+        if line.isBlank then ()
+        else if depths.parens(idx) > 0 then ()
+        else if prevLineWasBlank then ()
+        else if !headIsBracket then ()
+        // A lambda parameter list (`(params) =>`) is not a heavy argument
+        // continuation; the `(…)` belongs to the lambda. Skip it.
+        else if lineOpensLambda(line.rest) then ()
+        // A heavy continuation is indented *more* than its anchor. If the
+        // current line's indent is ≤ the previous code line's indent, the
+        // `(`/`[` is a sibling statement (a tuple, parenthesised expression
+        // or type-application standing on its own), not a continuation.
+        else if prevCodeLineIndent < 0 || line.leadingCols <= prevCodeLineIndent then ()
+        // If the previous line ends with a "body opener" — `=`, `=>`, `:`,
+        // `then`, `else`, etc. — the current line is the body of that
+        // construct (assignment RHS, lambda body, case body, etc.), not a
+        // heavy continuation. Skip the check.
+        else if BodyOpenerTerminators.contains(prevTok) then ()
+        // If the previous line ends with a symbolic infix operator, the
+        // current `(`/`[` begins the right-hand operand of that operator —
+        // an operator continuation governed by R616, not a heavy argument
+        // block. Skip.
+        else if Checker.isSymbolicOperator(prevTok) then ()
+        // If the previous line opened a block, quote or splice (ending in
+        // `{`), the current line is the first expression *inside* that
+        // scope — a tuple or parenthesised value standing on its own, not
+        // an argument continuation of a mid-line receiver. Skip.
+        else if prevTok == "{" then ()
+        else if prevLineIsTight then ()
+        else if prevLineStartedDecl then ()
+        else
+          out +=
+            Violation
+              ( ctx.file, lineNum, line.leadingCols + 1, "833.4",
+                "heavy `(`/`[` continuation must follow a tight expression on its " +
+                  "own line; the preceding line contains a top-level operator or " +
+                  "assignment, so the anchor is mid-line" )
+
+        if !line.isBlank then
+          val sem = semTokens(line)
+
+          sem.lastOption.foreach: t => prevTok = t.text
+
+          prevLineStartedDecl = Scans.declStep(sem, prevLineStartedDecl).startedDecl
+          prevLineIsTight = isTightExpression(line.lexemes)
+
+          val isCommentOnly    = line.firstReal.exists(_.kind == Sort.Comment)
+          val isAnnotationOnly = line.firstReal.exists(_.text.startsWith("@"))
+
+          val isStringContinuation =
+            line.firstReal.exists(_.kind == Sort.Strs) && line.leadingWs.isEmpty
+
+          if !isCommentOnly && !isAnnotationOnly && !isStringContinuation then
+            prevCodeLineIndent = line.leadingCols
+
+        prevLineWasBlank = line.isBlank
+        idx += 1
+
+      out.toList
+
   // ------------------------------------------------------------------------
   // Shared lexical tables for the indentation rules (473.8/473.1). Both rules
   // suspend inside brackets and braces left open by an earlier line, so a
@@ -464,32 +673,14 @@ object AnchorRules:
         val lineNum = idx + 1
 
         if !line.isBlank then
-          val sem = semTokens(line)
-
-          val hasTopLevelEq =
-            var depth = 0
-            var found = false
-
-            sem.foreach: t =>
-              if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
-              else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
-              else if depth == 0 && t.text == "=" then found = true
-
-            found
-
-          val startsWithDecl =
-            sem.headOption.exists: t =>
-              Checker.DeclKeywords.contains(t.text) || Checker.ModifierWords.contains(t.text)
+          val sem  = semTokens(line)
+          val step = Scans.declStep(sem, prevLineStartedDecl)
 
           val wasDeclInProgress = prevLineStartedDecl
-
-          val isContinuationOfDecl =
-            prevLineStartedDecl && sem.headOption.exists: t => t.text == "(" || t.text == "["
-
-          prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
+          prevLineStartedDecl = step.startedDecl
           val headTok = sem.headOption.map(_.text).getOrElse("")
 
-          if hasTopLevelEq && wasDeclInProgress &&
+          if step.hasTopLevelEq && wasDeclInProgress &&
             (headTok == ":" || headTok == "(" || headTok == "[")
           then
             var col     = line.leadingCols + 1
@@ -550,25 +741,8 @@ object AnchorRules:
                   s"`=>` continuation of a `given` signature should align at column " +
                     s"${givenSignatureIndent + 1} (found ${line.leadingCols + 1})" )
 
-          val hasTopLevelEq =
-            var depth = 0
-            var found = false
-
-            sem.foreach: t =>
-              if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
-              else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
-              else if depth == 0 && t.text == "=" then found = true
-
-            found
-
-          val startsWithDecl =
-            sem.headOption.exists: t =>
-              Checker.DeclKeywords.contains(t.text) || Checker.ModifierWords.contains(t.text)
-
-          val isContinuationOfDecl =
-            prevLineStartedDecl && sem.headOption.exists: t => t.text == "(" || t.text == "["
-
-          prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
+          val step = Scans.declStep(sem, prevLineStartedDecl)
+          prevLineStartedDecl = step.startedDecl
 
           // A line that begins a `given` declaration (after any modifiers)
           // records its leading-cols as the anchor for arrow continuation.
@@ -578,12 +752,12 @@ object AnchorRules:
             kwIdx < sem.length && sem(kwIdx).kind == Sort.Code && sem(kwIdx).text == "given"
 
           if startsGiven then givenSignatureIndent = line.leadingCols
-          else if givenSignatureIndent >= 0 && hasTopLevelEq then givenSignatureIndent = -1
+          else if givenSignatureIndent >= 0 && step.hasTopLevelEq then givenSignatureIndent = -1
 
           // Any line that's neither an `=>` continuation nor part of the
           // initial signature ends the given-signature region.
           if givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
-            if !startsWithDecl && !isContinuationOfDecl then givenSignatureIndent = -1
+            if !step.startsWithDecl && !step.continuesDecl then givenSignatureIndent = -1
 
         idx += 1
 

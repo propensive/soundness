@@ -32,70 +32,49 @@
                                                                                                   */
 package decorum
 
-// The eight principles from which every Decorum rule derives. Part I of
-// doc/standards/syntax.md states each principle and its readability
-// motivation; every rule in `Rules.all` cites the principle it derives
-// from.
-enum Principle:
-  case Frame, Anchoring, Density, ContinuationMarking, Balance, Proximity, Tabulation,
-    Findability
+// Shared linear-scan helpers for checks that track, line by line, whether
+// the previous code line left a declaration signature "in progress" — a
+// line that started with a declaration keyword or modifier (or continued
+// such a signature with a `(`/`[` clause) without reaching its top-level
+// `=`. Four consumers share this state machine: `AnchorRules
+// .SignatureEqLast`, `AnchorRules.GivenArrowAlign`, `AnchorRules
+// .HeavyBracketAnchor` and the bracket-pair extraction in `Brackets`.
+object Scans:
 
-// One house-style rule: an SN identifier (a family such as `833` may span
-// several sub-rules emitted with suffixed identifiers), the principle it
-// derives from, and a check over the per-file `Context`. A rule must not
-// throw on malformed input: extraction failures surface as an absence of
-// data, never as an exception.
-trait Rule:
-  def id: String
-  def principle: Principle
-  def check(ctx: Context): List[Violation]
+  // The declaration-signature facts of one line: whether it has a
+  // top-level `=` (a completed declaration), whether it starts with a
+  // declaration keyword or modifier, whether it continues an in-progress
+  // signature with a `(`/`[` clause, and the resulting carried state
+  // (`startedDecl`) for the next line.
+  case class DeclStep
+    ( hasTopLevelEq:  Boolean,
+      startsWithDecl: Boolean,
+      continuesDecl:  Boolean,
+      startedDecl:    Boolean )
 
-object Rules:
-  val all: List[Rule] =
-    List
-      ( FrameRules.LicenceFrame, FrameRules.PackageDeclaration, FrameRules.PackageBlank,
-        FrameRules.ImportSeparation, FrameRules.ImportOrdering,
-        AnchorRules.SequenceLayout, AnchorRules.DefinitionAnchors,
-        // OperatorContinuation must precede ContinuationIndent: both can fire
-        // at the same position (a continuation line led by an operator), and
-        // dotty's reporter keeps only the first diagnostic per position — 616
-        // is the more specific message there.
-        ContinuationRules.OperatorContinuation,
-        AnchorRules.BodyScopeIndent, AnchorRules.ContinuationIndent,
-        AnchorRules.SignatureEqLast,
-        AnchorRules.InterpolationLayout, TabulationRules.CaseAlignment,
-        TabulationRules.ForComprehensionAlignment, DensityRules.LambdaLayout,
-        ProximityRules.ChunkSeparation,
-        FindabilityRules.FileNaming, FindabilityRules.CompanionOrdering,
-        FindabilityRules.SoundnessExportCompleteness,
-        FindabilityRules.ExtensionExportCompleteness,
-        // LineLength (230) fired at the top of the old per-line walk, before
-        // the quote/splice family — it must keep winning their one positional
-        // collision (a 101-column line inside an inline splice).
-        FrameRules.LineLength,
-        // These four fired towards the end of the old per-line walk (in this
-        // order: 444, 163, 140, 677), after LineLength and before the
-        // quote/splice family, so they sit between those two here. No
-        // positional collision with any other rule exists in the corpus, but
-        // the relative order is preserved regardless.
-        ContinuationRules.HardSpace, ContinuationRules.ChainContinuation,
-        AnchorRules.GivenArrowAlign, ProximityRules.ReturnTypeBlank,
-        // FormalBlockSpacing (811) must follow FrameRules.LineLength: both
-        // fire at turbulence.Benchmarks:523:101, and 230 fired first in the
-        // old walk (LineLength ran at the top of checkLine, before the
-        // bracket-interior checks), so 230 must keep winning there.
-        // HeavyBracketAnchor (833.4) must follow AnchorRules
-        // .ContinuationIndent: both fire at jacinta.stagedInternal:621:21
-        // and monotonous.Alphabet:287:25, and 473.1 won in the baseline
-        // compile (SN-473.1 is the surviving diagnostic at monotonous
-        // .Alphabet:287:25), so it must keep firing first. No other
-        // positional collision involves 811, 402, 946 or 833.4 in the
-        // corpus.
-        BalanceRules.FormalBlockSpacing, BalanceRules.CompactBracketSpacing,
-        TabulationRules.UsingAlignment, AnchorRules.HeavyBracketAnchor,
-        // QuoteSpliceLayout stays last: the 473.2–.7 family used to fire at
-        // the end of the per-line walk, after every registry rule, so any
-        // positional collision with an earlier rule (e.g. 616.1 with 473.5)
-        // must keep resolving in the earlier rule's favour — dotty's
-        // reporter keeps only the first diagnostic per position.
-        QuoteRules.QuoteSpliceLayout )
+  // Advance the declaration-signature state machine by one non-blank
+  // line. `sem` is the line's semantic (non-whitespace, non-comment)
+  // tokens; `prevStartedDecl` is the state carried from the previous
+  // non-blank line.
+  def declStep(sem: IndexedSeq[Lexeme], prevStartedDecl: Boolean): DeclStep =
+    val hasTopLevelEq =
+      var depth = 0
+      var found = false
+
+      sem.foreach: t =>
+        if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
+        else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
+        else if depth == 0 && t.text == "=" then found = true
+
+      found
+
+    val startsWithDecl =
+      sem.headOption.exists: t =>
+        Checker.DeclKeywords.contains(t.text) || Checker.ModifierWords.contains(t.text)
+
+    val continuesDecl =
+      prevStartedDecl && sem.headOption.exists: t => t.text == "(" || t.text == "["
+
+    DeclStep
+      ( hasTopLevelEq, startsWithDecl, continuesDecl,
+        !hasTopLevelEq && (startsWithDecl || continuesDecl) )
