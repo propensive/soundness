@@ -57,7 +57,7 @@ object CoseAuthenticator:
 
       def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
         key.secret.uncloak: bytes =>
-          algorithm.sign(toBeSigned, bytes.immutable(using Unsafe))
+          algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
   given symmetric: [cipher <: Cipher & Symmetric & Signing]
   =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
@@ -72,7 +72,7 @@ object CoseAuthenticator:
 
       def authenticate(toBeSigned: Data, key: SymmetricKey[cipher]): Data =
         key.secret.uncloak: bytes =>
-          algorithm.sign(toBeSigned, bytes.immutable(using Unsafe))
+          algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
 trait CoseAuthenticator:
   type Self

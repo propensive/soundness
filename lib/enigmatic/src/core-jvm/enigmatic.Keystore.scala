@@ -72,7 +72,7 @@ object Keystore:
     def certificate(alias: Text): Optional[Data] =
       keystore.getCertificate(alias.s) match
         case null        => Unset
-        case certificate => certificate.getEncoded.nn.immutable(using Unsafe)
+        case certificate => Array.unsafeFrozen(certificate.getEncoded.nn)
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Read-only until staged keystore writing lands.

@@ -418,10 +418,12 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       test(m"Verification fails after tampering the wire bytes"):
         val wire = Cose(payload, key).bytes
-        val tampered = wire.mutable(using Unsafe)
+        val tampered = Array[Byte](wire.length)
+        tampered.copyFrom(wire, 0, 0, wire.length)
         // Flip a bit in the MAC tag near the end of the envelope.
-        tampered(tampered.length - 5) = (tampered(tampered.length - 5) ^ 0xFF.toByte).toByte
-        tampered.immutable(using Unsafe).verify[Cose](key)
+        val index = wire.length - 5
+        tampered(index) = (tampered(index) ^ 0xFF.toByte).toByte
+        Array.freeze(tampered).verify[Cose](key)
       . assert(!_)
 
     suite(m"OpenSSL provider (libcrypto via xenophile FFM)"):

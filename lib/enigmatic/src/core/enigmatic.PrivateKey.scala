@@ -58,7 +58,7 @@ object PrivateKey:
     import alphabets.base64Standard
 
     key.secret.uncloak: bytes =>
-      t"PrivateKey(${bytes.immutable(using Unsafe).digest[Sha2[256]].serialize[Base64]})"
+      t"PrivateKey(${Array.unsafeFrozen(bytes).digest[Sha2[256]].serialize[Base64]})"
 
 // A private key held opaquely by whichever `Cloak` was in scope at construction, capturing
 // that cloak. Operations that need the key material — `public`, `sign`, `pem` — materialize
@@ -67,7 +67,7 @@ object PrivateKey:
 class PrivateKey[cipher <: Cipher](private[enigmatic] val secret: Secret^):
   def public(using cipher: cipher): PublicKey[cipher] =
     secret.uncloak: bytes =>
-      PublicKey(cipher.privateToPublic(bytes.immutable(using Unsafe)))
+      PublicKey(cipher.privateToPublic(Array.unsafeFrozen(bytes)))
 
 
   def sign[encodable: Encodable in Data](value: encodable)
@@ -75,10 +75,10 @@ class PrivateKey[cipher <: Cipher](private[enigmatic] val secret: Secret^):
   :   Signature[cipher] =
 
     secret.uncloak: bytes =>
-      Signature(cipher.sign(encodable.encode(value), bytes.immutable(using Unsafe)))
+      Signature(cipher.sign(encodable.encode(value), Array.unsafeFrozen(bytes)))
 
 
   // The immutable `Data` in the result outlives the cloak's zeroing, which is exactly why
   // revealing it demands the explicit `Divulgence` token.
   def pem(reveal: Divulgence.type): Pem = secret.uncloak: bytes =>
-    Pem(PemLabel.PrivateKey, bytes.clone.immutable(using Unsafe))
+    Pem(PemLabel.PrivateKey, Array.unsafeFrozen(bytes.clone))

@@ -43,7 +43,7 @@ import vacuous.*
 object InitializationVector:
   def random(using crypto: Crypto): InitializationVector = size => crypto.random.bytes(size)
   def fixed(iv: Data): InitializationVector = _ => iv
-  val zero: InitializationVector = size => scala.Array.fill[Byte](size)(0).immutable(using Unsafe)
+  val zero: InitializationVector = size => Array.fill[Byte](size)(0)
 
 trait InitializationVector:
   def apply(size: Int): Data

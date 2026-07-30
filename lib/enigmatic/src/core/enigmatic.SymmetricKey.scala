@@ -45,6 +45,9 @@ object SymmetricKey:
   def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher, cloak: Cloak^)
   :   SymmetricKey[cipher]^{cloak} =
 
+    // `Cloak.cloak` zeroes the array it is given, so this keeps the write launder rather than
+    // a named read-only view: the freshly-generated key is nobody else's, but `genKey`'s
+    // frozen `Data` result cannot say so, which is why the capability is still required here.
     new SymmetricKey(cloak.cloak(cipher.genKey().mutable(using Unsafe)))
 
   // Adopt externally-supplied key material — for example a key produced by a key-
@@ -79,4 +82,4 @@ extends PrivateKey[cipher](handle):
   // it demands the explicit `Divulgence` token. This replaces the former `Encodable` given,
   // which serialized the key material silently.
   def data(reveal: Divulgence.type): Data = secret.uncloak: bytes =>
-    bytes.clone.immutable(using Unsafe)
+    Array.unsafeFrozen(bytes.clone)

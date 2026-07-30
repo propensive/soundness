@@ -166,7 +166,7 @@ extends Duct[Data, Data]:
     val count = targetSpace.min(pending.length - offset)
 
     if count > 0 then
-      System.arraycopy(pending.mutable(using Unsafe), offset, target, targetOffset, count)
+      System.arraycopy(Array.unsafeJvm(pending), offset, target, targetOffset, count)
       offset += count
 
     count
@@ -230,7 +230,7 @@ extends Duct[Data, Data]:
   private var inner: CipherDuct | Null = null
 
   private update def begin(): CipherDuct =
-    CipherDuct(start(header.take(headerFilled).immutable(using Unsafe)), Unset, _ => ())
+    CipherDuct(start(Array.unsafeFrozen(header.take(headerFilled))), Unset, _ => ())
 
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
