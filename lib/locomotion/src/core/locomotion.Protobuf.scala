@@ -325,7 +325,7 @@ object Protobuf extends Protobuf2:
   private def zigzag(value: Long): Long = (value << 1) ^ (value >> 63)
   private def unzigzag(value: Long): Long = (value >>> 1) ^ -(value & 1)
 
-  private def utf8(text: Text): Data = text.s.getBytes(UTF_8).nn.immutable(using Unsafe)
+  private def utf8(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)
 
   given intEncodable: Int is Encodable in Protobuf =
     int => Wire(WireType.Varint, printed(_.varint(int.toLong)))
@@ -370,7 +370,7 @@ object Protobuf extends Protobuf2:
       else jl.Float.intBitsToFloat(ProtobufParser(protobuf.payload).fixed32())
 
   given textDecodable: Text is Decodable in Protobuf =
-    protobuf => Text(jl.String(protobuf.payload.mutable(using Unsafe), UTF_8).nn)
+    protobuf => Text(jl.String(Array.unsafeJvm(protobuf.payload), UTF_8).nn)
 
   given dataDecodable: Data is Decodable in Protobuf = _.payload
 

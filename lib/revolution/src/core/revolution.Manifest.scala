@@ -90,4 +90,4 @@ case class Manifest(entries: Map[Text, Text]):
 
     val out = ji.ByteArrayOutputStream()
     manifest.write(out)
-    out.toByteArray().nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray().nn)

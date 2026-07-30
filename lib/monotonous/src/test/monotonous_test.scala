@@ -270,4 +270,4 @@ object Drain:
       case _ => ()
 
     recur()
-    target.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(target.toByteArray.nn)

@@ -83,7 +83,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
     def wire[value: Encodable in Protobuf](value: value): List[Int] =
       List.of:
         scala.collection.immutable.ArraySeq
-        . unsafeWrapArray(value.in[Protobuf].encode.mutable(using Unsafe))
+        . unsafeWrapArray(Array.unsafeJvm(value.in[Protobuf].encode))
         . toList.map(_.toInt & 0xff)
 
     suite(m"Wire-format golden vectors"):

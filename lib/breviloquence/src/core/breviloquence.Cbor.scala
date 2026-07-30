@@ -329,14 +329,15 @@ object Cbor extends Cbor2, Dynamic:
 
         else if cbor.isTextString then
           val text = cbor.asInstanceOf[String]
-          val bytes = text.getBytes("UTF-8").nn
+          val bytes = Array.unsafeFrozen(text.getBytes("UTF-8").nn)
           head(out, 3, bytes.length.toLong)
-          out.put(bytes.immutable(using Unsafe))
+          out.put(bytes)
 
         else if cbor.isByteString then
-          val bytes = cbor.asInstanceOf[scala.Array[Byte]]
+          // `CborBytes` *is* the frozen array, so the erased storage needs no launder.
+          val bytes = cbor.asInstanceOf[Array[Byte]^{}]
           head(out, 2, bytes.length.toLong)
-          out.put(bytes.immutable(using Unsafe))
+          out.put(bytes)
 
         else if cbor.isBoolean then
           out.push(if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)

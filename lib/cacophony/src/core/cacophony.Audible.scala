@@ -51,7 +51,8 @@ trait Audible extends Typeclass:
 
     def read[input: Streamable by Data over Credit](source: input)
     :   Audio in Self raises AudioError =
-      val rawBytes: scala.Array[Byte] = source.read[Data].mutable(using Unsafe)
+      // `ByteArrayInputStream` only reads the array it wraps.
+      val rawBytes: scala.Array[Byte] = Array.unsafeJvm(source.read[Data])
 
       val fileFormat: jss.AudioFileFormat =
         try jss.AudioSystem.getAudioFileFormat(ji.ByteArrayInputStream(rawBytes)).nn

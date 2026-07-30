@@ -48,7 +48,8 @@ import vacuous.*
 object Audio:
   def apply[streamable: Streamable by Data over Credit](input: streamable)
   :   Audio raises AudioError =
-    val rawBytes: scala.Array[Byte] = input.read[Data].mutable(using Unsafe)
+    // `ByteArrayInputStream` only reads the array it wraps.
+    val rawBytes: scala.Array[Byte] = Array.unsafeJvm(input.read[Data])
 
     val raw: jss.AudioInputStream =
       try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
