@@ -123,6 +123,8 @@ private[facsimile] object Filter:
   // input and decode on flush, which is immaterial at their typical sizes.
   def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[PdfError])
   :   List[Step^{tactic}] =
+    // The steps capture `tactic`, and capture-carrying elements do not flow through the
+    // opaque `List` combinators (boxing), so the interior stays stdlib inside one `List.of`.
     List.of:
       chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
         val predicted = parms.at(t"Predictor").let(_.long).or(1L) > 1

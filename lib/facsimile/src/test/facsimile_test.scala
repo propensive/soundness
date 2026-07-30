@@ -61,7 +61,8 @@ object Tests extends Suite(m"Facsimile tests"):
         bytes.utf8
       . or(t"")
 
-    def bytesOf(cos: Cos): scala.collection.immutable.List[Int] = cos.chars.let(v => (v.to[List]: List[Byte]).stdlib.map(_.toInt & 0xff)).or(scala.collection.immutable.List())
+    def bytesOf(cos: Cos): List[Int] =
+      cos.chars.let(v => (v.to[List]: List[Byte]).map(_.toInt & 0xff)).or(List())
 
     def data(values: Int*): Data = Array.from(values.map(_.toByte))
 

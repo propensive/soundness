@@ -271,7 +271,7 @@ extends caps.ExclusiveCapability:
   ( using Tactic[PdfError] )
   :   Series[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
-    var visited = scala.collection.immutable.Set[Int]()
+    var visited: Set[Int] = Set()
 
     def recur(node: Cos, number: Optional[Int], inherited: Page.Inherited)
     :   Series[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
@@ -334,17 +334,17 @@ extends caps.ExclusiveCapability:
     val pages = pageNumbers
     val raw = rawDestinations
 
-    raw.stdlib.toList.flatMap: (name, value) =>
+    raw.toList.bind: (name, value) =>
       Destination.read(value, pages, raw.at(_))(using this)
-      . lay(scala.collection.immutable.List()): destination =>
-          scala.collection.immutable.List(name -> destination)
+      . lay(List[(Text, Destination)]()): destination =>
+          List(name -> destination)
 
-    . pipe(Map.from(_))
+    . toMap
 
   def bookmarks(using Tactic[PdfError]): List[Bookmark] =
     val pages = pageNumbers
     val raw = rawDestinations
-    var visited = scala.collection.immutable.Set[Int]()
+    var visited: Set[Int] = Set()
 
     // `/Dest` directly, or the `/D` of a `/GoTo` action.
     def target(entries: Map[Text, Cos])(using Tactic[PdfError]): Optional[Cos] =

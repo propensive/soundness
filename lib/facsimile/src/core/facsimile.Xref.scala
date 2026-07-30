@@ -63,7 +63,7 @@ private[facsimile] object Xref:
       ( offset:  Long,
         entries: Map[Int, Entry],
         trailer: Map[Text, Cos],
-        visited: scala.collection.immutable.Set[Long] )
+        visited: Set[Long] )
     :   Xref =
 
       if visited.has(offset) || offset < 0 || offset >= source.size
@@ -89,7 +89,7 @@ private[facsimile] object Xref:
       sectionTrailer.at(t"Prev").let(_.long).lay(Xref(mergedEntries, mergedTrailer, head)): previous =>
         recur(previous, mergedEntries, mergedTrailer, visited + offset)
 
-    recur(head, Map(), Map(), scala.collection.immutable.Set())
+    recur(head, Map(), Map(), Set())
 
   // Recovers a cross-reference table from a damaged file by scanning for `N G obj` markers,
   // the latest offset of each object number winning (an incremental update's newer copy
@@ -199,13 +199,13 @@ private[facsimile] object Xref:
           case Entry.Direct(offset, generation) =>
             safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
               content.dictionary.let(_.at(t"Type")).let(_.name) match
-                case t"Catalog" => scala.collection.immutable.List(number -> generation)
-                case _          => scala.collection.immutable.List()
+                case t"Catalog" => Some(number -> generation)
+                case _          => None
 
-            . or(scala.collection.immutable.List())
+            . or(None)
 
           case _ =>
-            scala.collection.immutable.List()
+            None
 
       . headOption.map: (number, generation) =>
           Map(t"Root" -> Cos.Ref(number, generation))

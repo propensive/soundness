@@ -136,9 +136,8 @@ private[facsimile] object PdfWriter:
 
     // Group the updated and freed object numbers (plus object 0, the free-list head, when
     // anything is freed) into ascending consecutive subsections.
-    val numbers = List.of:
-      (changed.stdlib ++ freed.stdlib ++ (if freed.stdlib.isEmpty then scala.collection.immutable.Nil else scala.collection.immutable.List(0)))
-      . distinct.sorted
+    val zero = if freed.isEmpty then List[Int]() else List(0)
+    val numbers = List.of((changed ::: freed ::: zero).stdlib.distinct.sorted)
 
     ascii(t"xref\n")
 

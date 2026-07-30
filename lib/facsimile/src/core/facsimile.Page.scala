@@ -114,11 +114,11 @@ class Page private[facsimile]
       . dictionary.or(Map[Text, Cos]())
 
     pdf.resolved(resources.at(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
-    . stdlib.toList.flatMap: (name, value) =>
-        PdfFont.read(pdf.resolved(value))(using pdf).lay(scala.collection.immutable.List()): font =>
-          scala.collection.immutable.List(name -> font)
+    . toList.bind: (name, value) =>
+        PdfFont.read(pdf.resolved(value))(using pdf).lay(List[(Text, PdfFont)]()): font =>
+          List(name -> font)
 
-    . pipe(Map.from(_))
+    . toMap
 
   // The page's content: its `/Contents` streams decoded and concatenated, which the
   // specification requires to be treated as a single stream, with whitespace between.

@@ -45,14 +45,14 @@ import vacuous.*
 // with reference cycles guarded.
 private[facsimile] object Trees:
   def names(root: Cos)(using Pdf)(using Tactic[PdfError]): List[(Text, Cos)] =
-    pairs(root, t"Names", scala.collection.immutable.Set()).bind: (key, value) =>
+    pairs(root, t"Names", Set()).bind: (key, value) =>
       key.text.let(text => List((text, value))).or(List())
 
   def numbers(root: Cos)(using Pdf)(using Tactic[PdfError]): List[(Long, Cos)] =
-    pairs(root, t"Nums", scala.collection.immutable.Set()).bind: (key, value) =>
+    pairs(root, t"Nums", Set()).bind: (key, value) =>
       key.long.let(number => List((number, value))).or(List())
 
-  private def pairs(node: Cos, key: Text, visited: scala.collection.immutable.Set[Int])(using pdf: Pdf)
+  private def pairs(node: Cos, key: Text, visited: Set[Int])(using pdf: Pdf)
   ( using Tactic[PdfError] )
   :   List[(Cos, Cos)] =
 
