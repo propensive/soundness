@@ -195,7 +195,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == List(104, 101, 108, 108, 111))
 
       test(m"get bytes from empty Text"):
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(t"".sysData.mutable(using Unsafe)).isEmpty
+        t"".sysData.readable.isEmpty
 
       . assert(identity(_))
 

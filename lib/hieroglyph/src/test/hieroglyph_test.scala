@@ -50,7 +50,7 @@ extends Error(m"${items.length} decoding issues"):
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =
     val japanese = t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
-    val japaneseData = japanese.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    val japaneseData = Array.unsafeFrozen(japanese.s.getBytes("UTF-8").nn)
 
     suite(m"Character widths"):
       test(m"Check narrow character width"):

@@ -53,7 +53,7 @@ extends Encodable, Findable:
   type Self = Text
   type Form = Data
 
-  def encoded(text: Text): Data = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
+  def encoded(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(encoding.name.s).nn)
 
   // Chunk boundaries are not character boundaries: a surrogate pair may be
   // split across two chunks, so encoding each chunk independently (as this

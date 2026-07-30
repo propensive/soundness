@@ -97,7 +97,7 @@ extension (module: Text.type)
     block(using builder.aka["builder"])
     builder()
 
-  def ascii(bytes: Data): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
+  def ascii(bytes: Data): Text = new String(Array.unsafeJvm(bytes), "ASCII").tt
 
   def fill(length: Int)(lambda: Int => Char): Text =
     val buffer = Array[Char](length)
@@ -124,9 +124,9 @@ extension (context: StringContext)
 given textDecodable: (decoder: CharDecoder) => Text is Decodable in Data = decoder.decoded(_)
 
 extension (bytes: Data)
-  def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
-  def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
-  def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
+  def utf8: Text = String(Array.unsafeJvm(bytes), "UTF-8").tt
+  def utf16: Text = String(Array.unsafeJvm(bytes), "UTF-16").tt
+  def ascii: Text = String(Array.unsafeJvm(bytes), "ASCII").tt
 
   // Printable Unicode Encoding
   def pue: Text =
@@ -218,7 +218,7 @@ extension [textual: Textual](text: textual)
   inline def tail: textual = text.skip(1, Ltr)
   inline def init: textual = text.skip(1, Rtl)
 
-  def chars: Array[Char]^{} = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
+  def chars: Array[Char]^{} = Array.unsafeFrozen(textual.text(text).s.toCharArray.nn)
 
   def snip(n: Int): (textual, textual) =
     (text.segment(Prim till n.z), text.segment(n.z till text.limit))
@@ -557,7 +557,7 @@ extension (text: Text)
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
     proximity.distance(text, other)
 
-extension (iarray: Array[Char]^{}) def text: Text = String(iarray.mutable(using Unsafe)).tt
+extension (iarray: Array[Char]^{}) def text: Text = String(Array.unsafeJvm(iarray)).tt
 
 extension [textual: {Joinable, Textual}](values: Iterable[textual])
   def join: textual = textual.join(values)

@@ -70,13 +70,12 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
 
     // The stream stays `Data` (pure): mapping it to mutable arrays up front
     // would give every element a reach capability that leaks into `recur`. The
-    // buffer only reads from the chunk, so the mutable view is taken at the
-    // single `put` site, under `Unsafe`.
+    // JVM view is taken at the single `put` site, which only reads from it.
     def recur(todo: Progression[Data], offset: Int = 0, total: Int = 0): Progression[Text] =
       val count = in.remaining
 
       if !todo.nil then
-        in.put(todo.head.mutable(using Unsafe), offset, in.remaining.min(todo.head.length - offset))
+        in.put(Array.unsafeJvm(todo.head), offset, in.remaining.min(todo.head.length - offset))
       in.flip()
 
       def decode(): jnc.CoderResult =
