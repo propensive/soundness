@@ -126,8 +126,8 @@ object ApkSigner:
 
     val privateKey = store.getKey(alias.s, keyPass.s.toCharArray).nn.asInstanceOf[js.PrivateKey]
     val certificate = store.getCertificate(alias.s).nn.asInstanceOf[jsc.X509Certificate]
-    val certificateDer = certificate.getEncoded.nn.immutable(using Unsafe)
-    val publicKeyDer = certificate.getPublicKey.nn.getEncoded.nn.immutable(using Unsafe)
+    val certificateDer = Array.unsafeFrozen(certificate.getEncoded.nn)
+    val publicKeyDer = Array.unsafeFrozen(certificate.getPublicKey.nn.getEncoded.nn)
 
     val eocdOffset = endOfCentralDirectory(unsigned)
     val cdOffset = readU32(unsigned, eocdOffset + 16).toInt
@@ -152,8 +152,8 @@ object ApkSigner:
 
     val signature = js.Signature.getInstance("SHA256withRSA").nn
     signature.initSign(privateKey)
-    signature.update(signedData.mutable(using Unsafe))
-    val signatureData = signature.sign.nn.immutable(using Unsafe)
+    signature.update(Array.unsafeJvm(signedData))
+    val signatureData = Array.unsafeFrozen(signature.sign.nn)
 
     // signer: signed data, signatures, public key.
     val signatureRecord =
@@ -170,19 +170,23 @@ object ApkSigner:
     // The ID-value pair, then the signing block framing (size, pair, size again, magic).
     val pair = concat(u64((4 + v2Block.length).toLong), u32(v2BlockId), v2Block)
     val blockLength = pair.length + 8 + 16
-    val magicBytes = magic.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+    val magicBytes = Array.unsafeFrozen(magic.s.getBytes("US-ASCII").nn)
     val signingBlock = concat(u64(blockLength.toLong), pair, u64(blockLength.toLong), magicBytes)
 
     // The final file: entries, signing block, central directory, and the EOCD with its
     // central-directory offset advanced past the inserted block.
     val section1 = slice(unsigned, 0, cdOffset)
     val centralDirectory = slice(unsigned, cdOffset, eocdOffset)
-    val eocd = slice(unsigned, eocdOffset, unsigned.length).mutable(using Unsafe)
     val newCdOffset = cdOffset + signingBlock.length
     val patch = u32(newCdOffset.toLong)
+
+    // The EOCD is copied out so its central-directory offset can be patched, so the buffer is
+    // built exclusively here rather than laundered out of a frozen `slice`.
+    val eocd = Array[Byte](unsigned.length - eocdOffset)
+    eocd.copyFrom(unsigned, eocdOffset, 0, eocd.length)
     for i <- 0 until 4 do eocd(16 + i) = patch(i)
 
-    concat(section1, signingBlock, centralDirectory, eocd.immutable(using Unsafe))
+    concat(section1, signingBlock, centralDirectory, Array.freeze(eocd))
 
   private def slice(data: Data, from: Int, until: Int): Data =
     val length = until - from

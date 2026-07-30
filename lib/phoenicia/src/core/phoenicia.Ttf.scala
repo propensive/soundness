@@ -90,7 +90,7 @@ case class Ttf(data: Data):
   lazy val tables: Map[TableTag, TableOffset] =
     (0 until numTables).flatMap: n =>
       val start = 12 + n*16
-      val tableTag = String(data.mutable(using Unsafe), start, 4, "ASCII").tt
+      val tableTag = String(Array.unsafeJvm(data), start, 4, "ASCII").tt
       val checksum = B32(data, start + 4)
       val offset = B32(data, start + 8).s32.int
       val length = B32(data, start + 12).s32.int
@@ -388,7 +388,7 @@ case class Ttf(data: Data):
       ( platformId: Int, encodingId: Int, languageId: Int, nameId: Int, length: Int, start: Int ):
 
       def decode: Text =
-        val bytes = data.mutable(using Unsafe)
+        val bytes = Array.unsafeJvm(data)
 
         platformId match
           case 0 | 3 =>

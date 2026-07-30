@@ -51,8 +51,8 @@ object Tests extends Suite(m"Phoenicia Tests"):
       values.flatMap: value =>
         Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
-  def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
-  def utf16(text: Text): Data = text.s.getBytes("UTF-16BE").nn.immutable(using Unsafe)
+  def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
+  def utf16(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-16BE").nn)
 
   // Assembles tables into an sfnt container: the header, a table directory, then the tables
   // themselves, four-byte aligned. Checksums are left zero: the parser does not verify them.
@@ -68,7 +68,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
 
     tables.each: (tag, table) =>
       val padding = if table.length%4 == 0 then 0 else 4 - table.length%4
-      val tagBytes = tag.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+      val tagBytes = Array.unsafeFrozen(tag.s.getBytes("US-ASCII").nn)
       directory += tagBytes ++ u32(0L, offset.toLong, table.length.toLong)
       body += table ++ Array.fill[Byte](padding)(0)
       offset += table.length + padding
@@ -156,7 +156,7 @@ object Tests extends Suite(m"Phoenicia Tests"):
   val cmapFormat0: Data =
     val glyphIds = scala.Array.fill[Byte](256)(0)
     glyphIds(0x41) = 7
-    u16(0, 1) ++ u16(1, 0) ++ u32(12L) ++ u16(0, 262, 0) ++ glyphIds.immutable(using Unsafe)
+    u16(0, 1) ++ u16(1, 0) ++ u32(12L) ++ u16(0, 262, 0) ++ Array.unsafeFrozen(glyphIds)
 
   val cmapFormat6: Data =
     u16(0, 1) ++ u16(1, 0) ++ u32(12L)

@@ -52,12 +52,11 @@ object ForeignBuffer:
     new ForeignBuffer(stdlib.malloc(size.toCSize).nn, size)
 
   def apply(data: Data): ForeignBuffer =
-    val buffer = apply(data.readable.length)
-    val array = data.mutable(using Unsafe)
+    val buffer = apply(data.length)
     var index = 0
 
-    while index < array.length do
-      buffer.memory(index) = array(index)
+    while index < data.length do
+      buffer.memory(index) = data.readUnchecked(index)
       index += 1
 
     buffer

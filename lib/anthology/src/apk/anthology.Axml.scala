@@ -108,7 +108,7 @@ object Axml:
       bytes(at + 3) = ((value >> 24) & 0xff).toByte
 
     def align4(): Unit = while position%4 != 0 do u8(0)
-    def data: Data = bytes.toArray.immutable(using Unsafe)
+    def data: Data = Array.unsafeFrozen(bytes.toArray)
 
   def encode(root: Element): Data =
     val strings = Strings()

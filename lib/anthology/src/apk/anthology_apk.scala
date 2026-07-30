@@ -138,11 +138,11 @@ object apkLinkages:
         val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
 
         val signed =
-          ApkSigner.sign(unsigned.immutable(using Unsafe), form.keystore, form.storePass,
+          ApkSigner.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
               form.alias, form.keyPass)
 
         val apkPath = out / "app.apk"
-        jnf.Files.write(jnf.Paths.get(apkPath.encode.s), signed.mutable(using Unsafe))
+        jnf.Files.write(jnf.Paths.get(apkPath.encode.s), Array.unsafeJvm(signed))
         apkPath
 
       catch case suc.NonFatal(error) =>

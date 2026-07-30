@@ -97,7 +97,7 @@ object ForeignLibrary:
 
   // Copies bytes into freshly-allocated native memory in `arena`.
   def segment(bytes: Data)(using arena: Arena): MemorySegment =
-    val source = bytes.mutable(using Unsafe)
+    val source = Array.unsafeJvm(bytes)
     val target = arena.allocate(bytes.length.toLong).nn
     MemorySegment.copy(source, 0, target, ValueLayout.JAVA_BYTE, 0L, bytes.length)
     target
