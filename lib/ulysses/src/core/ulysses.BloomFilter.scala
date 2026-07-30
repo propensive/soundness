@@ -60,9 +60,9 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
 
   private def hash(value: element): BigInt =
-    def recur(count: Int = 0, data: List[scala.Array[Byte]] = Nil): BigInt =
+    def recur(count: Int = 0, data: List[Array[Byte]^{}] = Nil): BigInt =
       if data.stdlib.map(_.length).sum*8 < requiredEntropyBits
-      then recur(count + 1, (count, value).digest[algorithm].data.mutable(using Unsafe) :: data)
+      then recur(count + 1, (count, value).digest[algorithm].data :: data)
       else
         // A manual concatenation into a fresh exclusive array: `toArray` yields a read-only
         // array, which `BigInt`'s pure formal rejects.
@@ -72,7 +72,7 @@ case class BloomFilter[element: Digestible, algorithm <: Algorithm]
 
         while rest.nonEmpty do
           val chunk = rest.head
-          System.arraycopy(chunk, 0, whole.raw, offset, chunk.length)
+          whole.copyFrom(chunk, 0, offset, chunk.length)
           offset += chunk.length
           rest = rest.tail
 

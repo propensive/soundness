@@ -60,8 +60,12 @@ case class Uuid(msb: Long, lsb: Long):
   def text: Text = this.java.toString.tt
 
   def bytes: Data =
-    (msb.bytestream.mutable(using Unsafe) ++ lsb.bytestream.mutable(using Unsafe))
-    . immutable(using Unsafe)
+    val high = msb.bytestream
+    val low = lsb.bytestream
+    val buffer = Array[Byte](high.length + low.length)
+    buffer.copyFrom(high, 0, 0, high.length)
+    buffer.copyFrom(low, 0, high.length, low.length)
+    Array.freeze(buffer)
 
   @targetName("invert")
   def `unary_~`: Uuid = Uuid(~msb, ~lsb)

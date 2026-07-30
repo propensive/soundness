@@ -120,7 +120,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):
-      def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+      def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
 
       test(m"encode prefixes a flag byte and 4-byte length"):
         GrpcFraming.encode(ascii(t"hi")).to[List]

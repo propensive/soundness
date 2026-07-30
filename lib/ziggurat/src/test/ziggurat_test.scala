@@ -225,7 +225,7 @@ object Tests extends Suite(m"Ziggurat tests"):
           ++ scala.Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
 
         file.create[File]()
-        file.open[File](Write) { h ?=> h.write(Progression(bytes.immutable(using Unsafe): Data)) }
+        file.open[File](Write) { h ?=> h.write(Progression(Array.unsafeFrozen(bytes): Data)) }
 
       test(m"EmbedAll bundles the JAR once and every patched stub"):
         val dir: Path on Linux = tempDir()

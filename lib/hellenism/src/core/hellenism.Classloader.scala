@@ -68,7 +68,7 @@ class Classloader(val java: ClassLoader) extends Findable:
   def apply(path: Text): Optional[Data] logs ClasspathEvent =
     Optional(java.getResourceAsStream(path.s)).let: stream =>
       Log.fine(ClasspathEvent.ResourceLoaded(path))
-      stream.readAllBytes().nn.immutable(using Unsafe)
+      Array.unsafeFrozen(stream.readAllBytes().nn)
 
   // A real `using` clause rather than the `logs` sugar: a context-function result would
   // hide the tactic parameter, which the separation checker rejects.

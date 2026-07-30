@@ -318,7 +318,7 @@ object Matrix:
 
       val size = matrix.rows
       val zero = zeroic.zero
-      val a: scala.Array[element]^ = matrix.elements.mutable(using Unsafe).clone()
+      val a: scala.Array[element]^ = Array.unsafeJvm(matrix.elements).clone()
       val b: scala.Array[element]^ = new scala.Array[element](size)
       var copyIndex = 0
 
@@ -503,7 +503,7 @@ object Matrix:
 
       if !symmetric then Unset
       else
-        val mat: scala.Array[Double]^ = matrix.elements.mutable(using Unsafe).clone()
+        val mat: scala.Array[Double]^ = Array.unsafeJvm(matrix.elements).clone()
         val vec: scala.Array[Double]^ = new scala.Array[Double](dimension*dimension)
         var diagIndex = 0
 
@@ -709,7 +709,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     val r = rows
     val c = columns
     val zero = zeroic.zero
-    val a: scala.Array[element]^ = elements.mutable(using Unsafe).clone()
+    val a: scala.Array[element]^ = Array.unsafeJvm(elements).clone()
 
     var rankCount = 0
     var col = 0

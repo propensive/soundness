@@ -1975,7 +1975,7 @@ object Yaml extends Yaml2, Dynamic:
     private var blockParentIndent: Int = -1
 
     update def resetText(input: Text): Unit =
-      val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+      val data: Data = Array.unsafeFrozen(input.s.getBytes("UTF-8").nn)
       val cursor0 = makeCursor(data)
       cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()

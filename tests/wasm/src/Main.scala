@@ -66,7 +66,7 @@ object Main extends Run:
 
     backend.createDirectory(path(t"work", t"sub"))
     val file = path(t"work", t"sub", t"probe.txt")
-    val payload: Data = "wasm e2e probe".getBytes("UTF-8").nn.immutable(using Unsafe)
+    val payload: Data = Array.unsafeFrozen("wasm e2e probe".getBytes("UTF-8").nn)
 
     backend.open(file, proscenium.List(OpenFlag.Write, OpenFlag.Create)): handle =>
       handle.writer(proscenium.Progression(payload))

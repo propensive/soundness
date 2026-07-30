@@ -130,7 +130,7 @@ object Media:
         char.isWhitespace || char.isControl || specials.has(char)
 
       val chars = scala.collection.immutable.ArraySeq.unsafeWrapArray:
-        string.chars.mutable(using Unsafe)
+        Array.unsafeJvm(string.chars)
 
       chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))

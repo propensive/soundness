@@ -129,7 +129,7 @@ object internal:
           graphemeBuffer.slice(index, index + text.length),
           linkBuffer.slice(index, index + text.length) )
 
-    def styles: Array[styling]^{} = styleBuffer.clone().immutable(using Unsafe)
+    def styles: Array[styling]^{} = Array.unsafeFrozen(styleBuffer.clone())
 
     def scroll(n: Int): Unit = scroll(n, 0, height - 1)
 
