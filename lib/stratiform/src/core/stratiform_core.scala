@@ -35,6 +35,7 @@ package stratiform
 import anticipation.*
 import contextual.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -72,8 +73,7 @@ private[stratiform] def collectionDocument[value]
         case compound: Tel.Compound => List(compound).stdlib
 
         case document: Tel.Document =>
-          scala.collection.immutable.ArraySeq.unsafeWrapArray
-            ( Array.unsafeJvm(document.children.flatMap(_.compounds)) )
+          document.children.flatMap(_.compounds).toSeq
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))

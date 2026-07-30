@@ -46,6 +46,7 @@ import honeycomb.Renderable
 import mosquito.*
 import prepositional.*
 import quantitative.*
+import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
@@ -158,16 +159,16 @@ object Math:
       Math(fenced(Mtable(rows*), t"[", t"]"))
 
   private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
-    val unitNodes: scala.collection.immutable.List[Mathml] =
-      units.stdlib.toList.sortBy(_._1.s).map: (symbol, power) =>
+    val unitNodes: List[Mathml] =
+      List.of(units.stdlib.toList.sortBy(_._1.s)).map: (symbol, power) =>
         if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
 
-    product(List.of(Mn(value.toString.tt) :: unitNodes))
+    product(Mn(value.toString.tt) :: unitNodes)
 
   private def product(nodes: List[Mathml]): Mathml = nodes match
     case one :: Nil   => one
     case head :: tail =>
-      Mrow(List.of(head :: tail.stdlib.flatMap { node => scala.collection.immutable.List(Mo(t"⁢"), node) }))
+      Mrow(head :: tail.flatMap { node => List(Mo(t"⁢"), node) })
     case Nil          => Mrow(Nil)
 
   private def fenced(inner: Mathml, open: Text, close: Text): Mathml =

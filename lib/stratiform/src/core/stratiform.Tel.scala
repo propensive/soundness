@@ -32,7 +32,6 @@
                                                                                                   */
 package stratiform
 
-import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Vector
 
 import scala.caps
@@ -1374,11 +1373,11 @@ object Tel extends Tel2:
 
       def locate(value: Tel, path: TelPath): Optional[TelError.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, path.keywords.stdlib.toIndexedSeq, 0, false)
+          walkIndex(value.subtree, index.ints, 0, Series.from(path.keywords.stdlib), 0, false)
 
       def locateKey(value: Tel, path: TelPath): Optional[TelError.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, path.keywords.stdlib.toIndexedSeq, 0, true)
+          walkIndex(value.subtree, index.ints, 0, Series.from(path.keywords.stdlib), 0, true)
 
   // Walk the packed `PositionIndex` alongside the AST, following `segments`
   // (a root-first keyword path) from the descriptor at `offset`. TEL has no
@@ -1389,7 +1388,7 @@ object Tel extends Tel2:
     ( node:     Tel.Subtree,
       data:     Array[Int]^{},
       offset:   Int,
-      segments: IndexedSeq[Text],
+      segments: Series[Text],
       i:        Int,
       keyMode:  Boolean )
   :   Optional[TelError.Position] =

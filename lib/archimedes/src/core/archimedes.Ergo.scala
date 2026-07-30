@@ -41,9 +41,12 @@ import scala.collection.immutable.{Map, Set}
 
 import scala.collection.mutable.ListBuffer
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 import Mathml.*
@@ -250,14 +253,19 @@ object Ergo:
     if accent then List.of(attributes.stdlib.filter { pair => pair != (name, t"true") }) else attributes
 
   private def serializeTable(table: Mtable)(using Tactic[ErgoError]): Text =
-    val rows: scala.collection.immutable.List[scala.collection.immutable.List[Text]] =
-      table.contents.stdlib.collect:
-        case Mtr(cells, _) => cells.stdlib.map(cellText)
+    val rows: List[List[Text]] =
+      table.contents.collect:
+        case Mtr(cells, _) => cells.map(cellText)
 
-    if rows.length == 1 then t"${RowVec.toString.tt}(${List.of(rows.head).join})"
-    else if rows.forall(_.length == 1)
-    then t"${ColVec.toString.tt}(${List.of(rows.map(_.head)).join})"
-    else t"${Matrix.toString.tt}(${List.of(rows.map { cells => group(List.of(cells).join) }).join})"
+    if rows.length == 1 then
+      val row = rows.head.join
+      t"${RowVec.toString.tt}($row)"
+    else if rows.forall(_.length == 1) then
+      val column = rows.map(_.head).join
+      t"${ColVec.toString.tt}($column)"
+    else
+      val body = rows.map { cells => group(cells.join) }.join
+      t"${Matrix.toString.tt}($body)"
 
   private def cellText(node: Mathml)(using Tactic[ErgoError]): Text = node match
     case Mtd(contents, _) => group(sequence(contents))
