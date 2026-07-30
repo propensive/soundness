@@ -73,6 +73,13 @@ object Rules:
         // the quote/splice family — it must keep winning their one positional
         // collision (a 101-column line inside an inline splice).
         FrameRules.LineLength,
+        // These four fired towards the end of the old per-line walk (in this
+        // order: 444, 163, 140, 677), after LineLength and before the
+        // quote/splice family, so they sit between those two here. No
+        // positional collision with any other rule exists in the corpus, but
+        // the relative order is preserved regardless.
+        ContinuationRules.HardSpace, ContinuationRules.ChainContinuation,
+        AnchorRules.GivenArrowAlign, ProximityRules.ReturnTypeBlank,
         // QuoteSpliceLayout stays last: the 473.2–.7 family used to fire at
         // the end of the per-line walk, after every registry rule, so any
         // positional collision with an earlier rule (e.g. 616.1 with 473.5)

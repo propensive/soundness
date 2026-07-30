@@ -119,7 +119,6 @@ object Checker:
     var prevLineWasBlank:     Boolean                    = false
     var prevWasAnnotation:    Boolean                    = false
     var prevLineNum:          Int                        = 0
-    var prevWasReturnType:    Boolean                    = false
     var prevCodeLineIndent:   Int                        = -1
     var prevCodeLineLastTok:  String                     = ""
     var openParens:           Int                        = 0
@@ -154,13 +153,6 @@ object Checker:
     // first param block is on a single line, so the second clause `(
     // using ... )` on the next line is a continuation.
     var prevLineStartedDecl: Boolean                      = false
-    // Indent of the first line of the current `given` declaration whose
-    // signature spans multiple lines, or -1 if we are not inside one. Set
-    // when a line begins with `given` (after any modifiers) and reset when
-    // the body opener (`=`) is reached. Used by R32 to require that any
-    // `=>` continuation line align vertically with the leading modifier or
-    // `given` keyword on the first signature line.
-    var givenSignatureIndent:     Int                     = -1
     // True iff the immediately preceding non-blank code line was a "tight
     // expression" — one whose top-level (depth 0) tokens contain no
     // whitespace between code tokens, with at most one allowed space after
@@ -210,10 +202,11 @@ object Checker:
 
     checkTokens(s, lineNum, line, s.prevCodeLineLastTok, emit)
     checkCommas(s, lineNum, line, isBlank, out)
-    checkHardSpace(rest, leadingCols, emit)
-    checkChainContinuation(s, lineNum, leadingCols, isBlank, firstReal, emit)
-    checkR32GivenArrowAlign(s, leadingCols, isBlank, rest, emit)
-    checkReturnTypeBlank(s, lineNum, isBlank, rest, emit)
+    // R-444 hard spaces, R-163 chain continuations, R32 (140) given-arrow
+    // alignment and R-677 return-type separation are enforced by registry
+    // rules (`ContinuationRules.HardSpace`, `ContinuationRules
+    // .ChainContinuation`, `AnchorRules.GivenArrowAlign` and
+    // `ProximityRules.ReturnTypeBlank`).
     // R28 chunk separation (315) is enforced tree-based by
     // `checkChunkBlanks`; the old line-by-line sibling-padding check has
     // been removed as redundant.
@@ -246,26 +239,6 @@ object Checker:
       s.prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
 
       s.prevLineIsTight = isTightExpression(line.lexemes)
-
-      // R32 anchor: a line that begins a `given` declaration (after any
-      // modifiers) records its leading-cols as the anchor for arrow
-      // continuation. The anchor clears when the body opener (`=`) appears
-      // at top level or when an unrelated declaration begins.
-      val (_, kwIdx) = skipModifiers(sem, 0)
-
-      val startsGiven =
-        kwIdx < sem.length && sem(kwIdx).kind == Sort.Code && sem(kwIdx).text == "given"
-
-      if startsGiven then s.givenSignatureIndent = leadingCols
-      else if s.givenSignatureIndent >= 0 && hasTopLevelEq then s.givenSignatureIndent = -1
-
-      // R32 given-signature termination: any line that's neither an `=>`
-      // continuation nor part of the initial signature ends the
-      // given-signature region. (The R33.3 type-annotation anchor used
-      // to be tracked here too, but is now driven from the untyped tree
-      // — see `Definitions.extract` and `checkDefnAnchors`.)
-      if s.givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
-        if !startsWithDecl && !isContinuationOfDecl then s.givenSignatureIndent = -1
 
     if isBlank then
       if s.prevWasAnnotation then
@@ -336,27 +309,6 @@ object Checker:
 
       case _ =>
         ()
-
-  // R32: continuation lines of a multi-line `given` signature that begin
-  // with `=>` must align vertically with the leading modifier or `given`
-  // keyword on the first line of the signature.
-  private def checkR32GivenArrowAlign
-    ( s:           State,
-      leadingCols: Int,
-      isBlank:     Boolean,
-      rest:        IndexedSeq[Lexeme],
-      emit:        (Int, String, String) => Unit )
-  :   Unit =
-
-    if isBlank then ()
-    else if s.givenSignatureIndent < 0 then ()
-    else
-      val sem = rest.filter{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
-      if sem.headOption.exists(_.text == "=>") && leadingCols != s.givenSignatureIndent then
-        emit
-          ( leadingCols + 1, "140",
-            s"`=>` continuation of a `given` signature should align at column "
-              +s"${s.givenSignatureIndent + 1} (found ${leadingCols + 1})" )
 
   // The keywords that may introduce a tight expression — `new T`,
   // `throw E`, `return E`, `yield E`, `then E`, `else E`, `do E`, `try E`,
@@ -1170,91 +1122,11 @@ object Checker:
                   +s"`${arr(nextIdx).text}`" )
       i += 1
 
-  private def checkHardSpace
-    ( rest: IndexedSeq[Lexeme], leadingCols: Int, emit: (Int, String, String) => Unit )
-  :   Unit =
-
-    rest.headOption match
-      case Some(tok) if tok.text == "=>" =>
-        if rest.length >= 2 then
-          val next = rest(1)
-          if next.kind != Sort.Space || next.text != "  " then
-            emit
-              ( leadingCols + 3, "444",
-                "`=>` continuation line must be followed by exactly two spaces" )
-
-      case Some(tok) if tok.text == ":" && lineEndsWithEqualsToken(rest) =>
-        if rest.length >= 2 then
-          val next = rest(1)
-          if next.kind != Sort.Space || next.text != "   " then
-            emit
-              ( leadingCols + 2, "444",
-                "heavy-signature return type `:` must be followed by exactly three spaces" )
-
-      case _ => ()
-
-  private def lineEndsWithEqualsToken(rest: IndexedSeq[Lexeme]): Boolean =
-    val nonWs = rest.filter{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
-    nonWs.lastOption.exists(_.text == "=")
-
-  private def checkChainContinuation
-    ( s:           State,
-      lineNum:     Int,
-      leadingCols: Int,
-      isBlank:     Boolean,
-      firstReal:   Option[Lexeme],
-      emit:        (Int, String, String) => Unit )
-  :   Unit =
-
-    if isBlank then ()
-    else firstReal.foreach: tok =>
-      if tok.text == "." && s.prevCodeLineIndent >= 0 then
-        if s.prevCodeLineIndent > leadingCols && !s.prevLineWasBlank then
-          emit
-            ( leadingCols + 1, "163.1",
-              "blank line is required before `. method` continuation following a "
-                +"more-indented line" )
-        else if s.prevCodeLineIndent == leadingCols && s.prevLineWasBlank then
-          emit
-            ( leadingCols + 1, "163.2",
-              "no blank line is permitted before `. method` continuation at the same indent" )
-
-  private def checkReturnTypeBlank
-    ( s:       State,
-      lineNum: Int,
-      isBlank: Boolean,
-      rest:    IndexedSeq[Lexeme],
-      emit:    (Int, String, String) => Unit )
-  :   Unit =
-
-    if s.prevWasReturnType then
-      if !isBlank then
-        emit
-          ( 1, "677",
-            "a blank line is required between a heavy-signature return type and the body" )
-      s.prevWasReturnType = false
-    if !isBlank && isReturnTypeLine(rest) then s.prevWasReturnType = true
-
-  private def isReturnTypeLine(rest: IndexedSeq[Lexeme]): Boolean =
-    rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Sort.Space
-      && rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
-
   private[decorum] val ModifierWords: Set[String] =
     Set
       ( "private", "protected", "public", "final", "sealed", "abstract",
         "implicit", "lazy", "override", "case", "inline", "transparent",
         "infix", "open", "opaque", "erased", "tracked", "given", "into" )
-
-  private def skipModifiers(tokens: IndexedSeq[Lexeme], start: Int): (Option[String], Int) =
-    var i = start
-    var lastModifier: Option[String] = None
-    while i < tokens.length && tokens(i).kind == Sort.Code
-      && ModifierWords.contains(tokens(i).text)
-      && tokens(i).text != "given"
-    do
-      lastModifier = Some(tokens(i).text)
-      i += 1
-    (lastModifier, i)
 
   private[decorum] val DeclKeywords: Set[String] =
     Set("def", "val", "var", "type", "class", "trait", "object", "enum", "given")

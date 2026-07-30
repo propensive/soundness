@@ -32,6 +32,8 @@
                                                                                                   */
 package decorum
 
+import scala.collection.mutable
+
 object ContinuationRules:
   // R-616: a symbolic infix operator whose operands wrap onto separate source
   // lines must terminate the first line (616.1), and the continuation must be
@@ -62,3 +64,105 @@ object ContinuationRules:
             Nil
         else
           Nil
+
+  // R-444: continuation markers are followed by a fixed "hard space". A line
+  // whose first token is the `=>` continuation marker must separate it from
+  // what follows by exactly two spaces; a heavy-signature return-type line —
+  // one that begins with `:` and ends with the body-introducing `=` — must
+  // follow the `:` with exactly three spaces.
+  object HardSpace extends Rule:
+    def id: String = "444"
+    def principle: Principle = Principle.ContinuationMarking
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line        = ctx.lines(idx)
+        val lineNum     = idx + 1
+        val rest        = line.rest
+        val leadingCols = line.leadingCols
+
+        rest.headOption match
+          case Some(tok) if tok.text == "=>" =>
+            if rest.length >= 2 then
+              val next = rest(1)
+
+              if next.kind != Sort.Space || next.text != "  " then
+                out +=
+                  Violation
+                    ( ctx.file, lineNum, leadingCols + 3, "444",
+                      "`=>` continuation line must be followed by exactly two spaces" )
+
+          case Some(tok) if tok.text == ":" && lineEndsWithEqualsToken(rest) =>
+            if rest.length >= 2 then
+              val next = rest(1)
+
+              if next.kind != Sort.Space || next.text != "   " then
+                out +=
+                  Violation
+                    ( ctx.file, lineNum, leadingCols + 2, "444",
+                      "heavy-signature return type `:` must be followed by exactly three spaces" )
+
+          case _ => ()
+
+        idx += 1
+
+      out.toList
+
+    private def lineEndsWithEqualsToken(rest: IndexedSeq[Lexeme]): Boolean =
+      val nonWs = rest.filter: t => t.kind != Sort.Space && t.kind != Sort.Comment
+      nonWs.lastOption.exists(_.text == "=")
+
+  // R-163: a `. method` chain continuation line relates to the previous code
+  // line through blank separation. When the previous code line is *more*
+  // indented, the continuation resumes an outer chain, so a blank line must
+  // separate them (163.1); when the previous code line is at the *same*
+  // indent, the chain is unbroken, so no blank line is permitted (163.2).
+  // Comment-only, annotation-only and triple-quoted-string continuation
+  // lines belong to what follows them and don't count as the previous code
+  // line.
+  object ChainContinuation extends Rule:
+    def id: String = "163"
+    def principle: Principle = Principle.ContinuationMarking
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var prevCodeLineIndent = -1
+      var prevLineWasBlank   = false
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line    = ctx.lines(idx)
+        val lineNum = idx + 1
+
+        if !line.isBlank then
+          line.firstReal.foreach: tok =>
+            if tok.text == "." && prevCodeLineIndent >= 0 then
+              if prevCodeLineIndent > line.leadingCols && !prevLineWasBlank then
+                out +=
+                  Violation
+                    ( ctx.file, lineNum, line.leadingCols + 1, "163.1",
+                      "blank line is required before `. method` continuation following a " +
+                        "more-indented line" )
+              else if prevCodeLineIndent == line.leadingCols && prevLineWasBlank then
+                out +=
+                  Violation
+                    ( ctx.file, lineNum, line.leadingCols + 1, "163.2",
+                      "no blank line is permitted before `. method` continuation at the " +
+                        "same indent" )
+
+          val isCommentOnly    = line.firstReal.exists(_.kind == Sort.Comment)
+          val isAnnotationOnly = line.firstReal.exists(_.text.startsWith("@"))
+
+          val isStringContinuation =
+            line.firstReal.exists(_.kind == Sort.Strs) && line.leadingWs.isEmpty
+
+          if !isCommentOnly && !isAnnotationOnly && !isStringContinuation then
+            prevCodeLineIndent = line.leadingCols
+
+        prevLineWasBlank = line.isBlank
+        idx += 1
+
+      out.toList

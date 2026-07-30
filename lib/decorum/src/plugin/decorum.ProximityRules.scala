@@ -170,3 +170,39 @@ object ProximityRules:
             val precededBySpace =
               j == start || content.charAt(j - 1) == ' ' || content.charAt(j - 1) == '\t'
             precededBySpace && !NonContinuationTrailers.contains(content.substring(j, last + 1).nn)
+
+  // R-677: the return-type line of a heavy signature — one that begins with
+  // `:` followed by exactly three spaces and ends with the body-introducing
+  // `=` — must be separated from the body that follows it by a blank line.
+  // The signature and the body are distinct in kind, and the blank line
+  // keeps that distinction visible.
+  object ReturnTypeBlank extends Rule:
+    def id: String = "677"
+    def principle: Principle = Principle.Proximity
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var prevWasReturnType = false
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line    = ctx.lines(idx)
+        val lineNum = idx + 1
+
+        if prevWasReturnType then
+          if !line.isBlank then
+            out +=
+              Violation
+                ( ctx.file, lineNum, 1, "677",
+                  "a blank line is required between a heavy-signature return type and the body" )
+
+          prevWasReturnType = false
+
+        if !line.isBlank && isReturnTypeLine(line.rest) then prevWasReturnType = true
+        idx += 1
+
+      out.toList
+
+    private def isReturnTypeLine(rest: IndexedSeq[Lexeme]): Boolean =
+      rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Sort.Space &&
+        rest(1).text == "   " && rest.lastOption.exists(_.text == "=")

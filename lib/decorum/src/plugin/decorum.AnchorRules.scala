@@ -517,6 +517,87 @@ object AnchorRules:
 
       out.toList
 
+  // R32 (140): continuation lines of a multi-line `given` signature that
+  // begin with `=>` must align vertically with the leading modifier or
+  // `given` keyword on the first line of the signature. The signature anchor
+  // is tracked lexically: a line whose first semantic token (after any
+  // modifiers) is `given` records its indent as the anchor; the anchor
+  // clears when the body opener (`=`) appears at top level, or when a line
+  // that is neither an `=>` continuation nor part of the signature begins.
+  object GivenArrowAlign extends Rule:
+    def id: String = "140"
+    def principle: Principle = Principle.Anchoring
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var givenSignatureIndent = -1
+      var prevLineStartedDecl  = false
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line    = ctx.lines(idx)
+        val lineNum = idx + 1
+
+        if !line.isBlank then
+          val sem = semTokens(line)
+
+          if givenSignatureIndent >= 0 && sem.headOption.exists(_.text == "=>") &&
+            line.leadingCols != givenSignatureIndent
+          then
+            out +=
+              Violation
+                ( ctx.file, lineNum, line.leadingCols + 1, "140",
+                  s"`=>` continuation of a `given` signature should align at column " +
+                    s"${givenSignatureIndent + 1} (found ${line.leadingCols + 1})" )
+
+          val hasTopLevelEq =
+            var depth = 0
+            var found = false
+
+            sem.foreach: t =>
+              if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
+              else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
+              else if depth == 0 && t.text == "=" then found = true
+
+            found
+
+          val startsWithDecl =
+            sem.headOption.exists: t =>
+              Checker.DeclKeywords.contains(t.text) || Checker.ModifierWords.contains(t.text)
+
+          val isContinuationOfDecl =
+            prevLineStartedDecl && sem.headOption.exists: t => t.text == "(" || t.text == "["
+
+          prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
+
+          // A line that begins a `given` declaration (after any modifiers)
+          // records its leading-cols as the anchor for arrow continuation.
+          val kwIdx = skipModifierTokens(sem)
+
+          val startsGiven =
+            kwIdx < sem.length && sem(kwIdx).kind == Sort.Code && sem(kwIdx).text == "given"
+
+          if startsGiven then givenSignatureIndent = line.leadingCols
+          else if givenSignatureIndent >= 0 && hasTopLevelEq then givenSignatureIndent = -1
+
+          // Any line that's neither an `=>` continuation nor part of the
+          // initial signature ends the given-signature region.
+          if givenSignatureIndent >= 0 && !sem.headOption.exists(_.text == "=>") then
+            if !startsWithDecl && !isContinuationOfDecl then givenSignatureIndent = -1
+
+        idx += 1
+
+      out.toList
+
+    private def skipModifierTokens(tokens: IndexedSeq[Lexeme]): Int =
+      var i = 0
+
+      while i < tokens.length && tokens(i).kind == Sort.Code &&
+        Checker.ModifierWords.contains(tokens(i).text) && tokens(i).text != "given"
+      do i += 1
+
+      i
+
   // R560: a multi-line `m`/`j`/`x`/`y`/`tel` triple-quoted string is laid out as
   // a block — the opening quotes end their line, the content is indented two
   // columns beyond the prefix, no content line is indented less than the first,
