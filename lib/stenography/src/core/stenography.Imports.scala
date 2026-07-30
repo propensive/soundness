@@ -35,6 +35,6 @@ package stenography
 object Imports:
   val empty: Imports = Imports(Set(), Set())
 
-case class Imports(typenames: Set[Typename], direct: Set[Typename]):
-  def has(typename: Typename): Boolean = typenames.contains(typename)
-  def hasDirect(typename: Typename): Boolean = direct.contains(typename)
+case class Imports(designators: Set[Designator], direct: Set[Designator]):
+  def has(designator: Designator): Boolean = designators.contains(designator)
+  def hasDirect(designator: Designator): Boolean = direct.contains(designator)

@@ -40,40 +40,45 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-object Typename:
-  def fromUrl(text: Text): Typename = apply(text.s.replaceAll("~", "#").nn.tt)
+object Designator:
+  def fromUrl(text: Text): Designator = apply(text.s.replaceAll("~", "#").nn.tt)
 
-  def apply(text: Text): Typename =
-    def recur(i: Ordinal, start: Ordinal, typename: Optional[Typename]): Typename =
+  def apply(text: Text): Designator =
+    def recur(i: Ordinal, start: Ordinal, designator: Optional[Designator]): Designator =
       def next = text.segment(start thru i - 1)
 
       text.at(i) match
-        case Unset => typename.lay(Typename.Top(next))(Typename.Term(_, next))
-        case '.'   => recur(i + 1, i + 1, typename.lay(Typename.Top(next))(Typename.Term(_, next)))
-        case '#'   => recur(i + 1, i + 1, typename.lay(Typename.Top(next))(Typename.Type(_, next)))
-        case char  => recur(i + 1, start, typename)
+        case Unset => designator.lay(Designator.Top(next))(Designator.Term(_, next))
+
+        case '.' =>
+          recur(i + 1, i + 1, designator.lay(Designator.Top(next))(Designator.Term(_, next)))
+        case '#' =>
+          recur(i + 1, i + 1, designator.lay(Designator.Top(next))(Designator.Type(_, next)))
+
+        case char =>
+          recur(i + 1, start, designator)
 
     recur(Prim, Prim, Unset)
 
 
-enum Typename:
+enum Designator:
   case Top(name: Text)
-  case Term(parent0: Typename, name: Text)
-  case Type(parent0: Typename, name: Text)
+  case Term(parent0: Designator, name: Text)
+  case Type(parent0: Designator, name: Text)
 
   def name: Text
   def child(name: Text, isType: Boolean) = if isType then Type(this, name) else Term(this, name)
   def qualified: Text = text(using Imports.empty)
 
-  def companionObject: Typename = this match
+  def companionObject: Designator = this match
     case Type(parent, name) => Term(parent, name)
     case other              => other
 
-  def companionType: Typename = this match
+  def companionType: Designator = this match
     case Term(parent, name) => Type(parent, name)
     case other              => other
 
-  def parent: Optional[Typename] = this match
+  def parent: Optional[Designator] = this match
     case Type(parent, _) => parent
     case Term(parent, _) => parent
     case Top(_)          => Unset
