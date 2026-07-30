@@ -80,7 +80,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     . join(t"", t"\r\n", t"\r\n\r\n")
     . in[Data]
 
-  lazy val getRequestBytes: scala.Array[Byte] = getRequest.mutable(using Unsafe)
+  lazy val getRequestBytes: scala.Array[Byte] = Array.unsafeJvm(getRequest)
 
   lazy val okResponse: Http.Response = Http.Response(Http.Ok)(t"Hello, World!")
 

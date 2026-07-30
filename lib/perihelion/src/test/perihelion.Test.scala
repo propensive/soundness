@@ -167,10 +167,10 @@ object Tests extends Suite(m"Perihelion tests"):
       scala.Array[Byte]((code >> 8).toByte, code.toByte) ++ octets(reason)
 
     def parseFrame(bytes: scala.Array[Byte]): Optional[Frame] =
-      Frame.parse(Cursor[Data](Progression(bytes.immutable(using Unsafe)).iterator))
+      Frame.parse(Cursor[Data](Progression(Array.unsafeFrozen(bytes)).iterator))
 
     def readMessages(frames: scala.Array[Byte]*): List[perihelion.Message] =
-      val stream = Progression(frames*).map(_.immutable(using Unsafe))
+      val stream = Progression(frames*).map(Array.unsafeFrozen(_))
       List.of(Reader(() => zephyrine.Stream(stream.iterator), Channel()).messages.stdlib.toList)
 
     def texts(messages: List[perihelion.Message]): List[Text] = messages.map:

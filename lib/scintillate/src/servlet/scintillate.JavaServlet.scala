@@ -111,7 +111,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
         response.body match
           case Http.Body.Fixed(data) =>
             servletResponse.addHeader("content-length", data.length.show.s)
-            out.write(data.mutable(using Unsafe))
+            out.write(Array.unsafeJvm(data))
 
           case Http.Body.Empty =>
             servletResponse.addHeader("content-length", "0")

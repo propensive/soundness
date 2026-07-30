@@ -142,7 +142,7 @@ object HttpConnection:
         response.body match
           case Http.Body.Fixed(data) =>
             try
-              responseBody.write(data.mutable(using Unsafe))
+              responseBody.write(Array.unsafeJvm(data))
               count += data.length
               responseBody.flush()
             catch case _: ji.IOException => abort(StreamError(count.b))

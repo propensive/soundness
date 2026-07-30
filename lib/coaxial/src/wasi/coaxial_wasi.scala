@@ -141,7 +141,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private var chunk: scala.Array[Byte] = new scala.Array[Byte](0)
+        private var chunk: Array[Byte]^{} = Array.empty[Byte]
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -163,7 +163,7 @@ package socketBackends:
               try
                 val want = if capacity < granted then capacity else granted
                 val data = stream.`blocking-read`(U64(want.toLong.bits)).invoke[Data]
-                chunk = data.mutable(using Unsafe)
+                chunk = data
                 start0 = 0
                 limit0 = chunk.length
                 if limit0 == 0 then refill(demand) else limit0
@@ -180,7 +180,7 @@ package socketBackends:
 
       input.sweep: (storage, start, count) =>
         val slice = storage.asInstanceOf[scala.Array[Byte]].slice(start, start + count).nn
-        stream.`blocking-write-and-flush`(slice.immutable(using Unsafe)).invoke[Unit]
+        stream.`blocking-write-and-flush`(Array.unsafeFrozen(slice)).invoke[Unit]
 
     // Presents a connected socket's stream halves as a `Duplex`: `source` reads, `send` writes,
     // `close` drops both streams and the socket.

@@ -204,11 +204,11 @@ package socketBackends:
           val bytes: scala.Array[Byte] = ip.getAddress.nn
 
           Ipv6
-            ( Long(bytes.take(8).immutable(using Unsafe)),
-              Long(bytes.drop(8).immutable(using Unsafe)) )
+            ( Long(Array.unsafeFrozen(bytes.take(8))),
+              Long(Array.unsafeFrozen(bytes.drop(8))) )
 
       Packet
-        ( array.take(packet.getLength).immutable(using Unsafe),
+        ( Array.unsafeFrozen(array.take(packet.getLength)),
           ip,
           Port.unsafe[Udp](address.getPort) )
 
@@ -242,7 +242,7 @@ package socketBackends:
 
           jn.InetAddress.getByAddress(array).nn
 
-      val packet = jn.DatagramPacket(data.mutable(using Unsafe), data.length, ip, port.number)
+      val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
       try socket.send(packet)
       catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
@@ -368,7 +368,7 @@ package socketBackends:
       val bytes = input.memoize
 
       val packet =
-        jn.DatagramPacket(bytes.mutable(using Unsafe), bytes.length, courier.address, courier.port)
+        jn.DatagramPacket(Array.unsafeJvm(bytes), bytes.length, courier.address, courier.port)
 
       courier.socket.send(packet)
 

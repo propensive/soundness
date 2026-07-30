@@ -57,10 +57,10 @@ object Tests extends Suite(m"Coaxial tests"):
 
     // A `Data` (`Array[Byte]^{}`) compares by reference, so byte-level assertions
     // go through `List[Byte]`.
-    def ascii(text: Text): Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+    def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
     def bytes(data: Data): List[Byte] = data.to[List]
     def joined(stream: Progression[Data]): List[Byte] =
-      List.of(stream.flatMap { d => scala.collection.immutable.ArraySeq.unsafeWrapArray(d.mutable(using Unsafe)) }.stdlib.toList)
+      List.of(stream.flatMap { d => scala.collection.immutable.ArraySeq.unsafeWrapArray(Array.unsafeJvm(d)) }.stdlib.toList)
     def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to[List]
 
     suite(m"Duplex streaming endpoints"):

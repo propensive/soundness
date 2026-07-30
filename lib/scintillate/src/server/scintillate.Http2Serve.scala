@@ -129,8 +129,8 @@ object Http2Serve:
                   connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
 
                   source().sweep: (storage, start, size) =>
-                    val block = storage.asInstanceOf[scala.Array[Byte]]
-                      . slice(start, start + size).immutable(using Unsafe)
+                    val window = storage.asInstanceOf[scala.Array[Byte]]
+                    val block = Array.unsafeFrozen(window.slice(start, start + size))
 
                     connection0.sendData(streamId, block, endStream = false)
 

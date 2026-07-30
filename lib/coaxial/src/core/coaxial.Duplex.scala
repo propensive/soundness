@@ -112,5 +112,5 @@ trait Duplex:
 
       private update def drain(): Unit =
         if mark0 > 0 then
-          send(Stream(storage.slice(0, mark0).nn.immutable(using Unsafe)))
+          send(Stream(Array.unsafeFrozen(storage.slice(0, mark0).nn)))
           mark0 = 0
