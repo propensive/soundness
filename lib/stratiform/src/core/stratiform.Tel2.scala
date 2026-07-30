@@ -283,7 +283,8 @@ trait Tel2 extends Tel3:
       // call, whose profile it dominated (map building plus generic-equality
       // lookups, per occurrence) — jacinta's map hoist.
       val labels: Map[Text, Text] =
-        variantLabels.map: label => Tel.camelToKebab(label.s) -> label . to(Map)
+        variantLabels.map: label => Tel.camelToKebab(label.s) -> label
+        . to(Map)
 
       Tel.Decodable(() => Morphology.Any):
         telVal =>
