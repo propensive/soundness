@@ -405,6 +405,17 @@ extension [value](iterable: Iterable[value])
 
     recur(0, iterable, 0, 0, 0)
 
+// The ambient-capability launderings between the opaque array and the JVM array. Prefer the
+// named forms in `Array`'s companion, which say what is being asserted and to whom:
+// `freeze` (sound, `consume`-gated), `unsafeFrozen` (this array is fresh and unaliased),
+// `unsafeJvm` (this Java callee reads but cannot say so), and `raw` (exclusive interop).
+// Three call sites remain, each for a reason the named forms cannot express:
+//   - `wisteria.SumDerivation` freezes an array a closure filled, so freshness is not evident;
+//   - `enigmatic.PrivateKey` and `SymmetricKey` hand key material to `Cloak.cloak`, which
+//     *zeroes* what it is given -- a write, so `unsafeJvm` would be a false claim. Fixing
+//     those properly means `cloak(consume Array[Byte]^)` and a `Crypto` provider contract
+//     that returns exclusive key material.
+// When those three go, so should these two.
 extension [element](value: Array[element]^{})
   inline def mutable(using erased unsafe: Unsafe): scala.Array[element] = value.asInstanceOf[scala.Array[element]]
 
