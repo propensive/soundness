@@ -619,7 +619,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         bytes.read[Tel].childCompounds.readable.length
       . assert(_ > 0)
@@ -631,7 +631,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         val doc = bytes.read[Tel]
         try
@@ -648,7 +648,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val bytes  =
           val arr = stream.readAllBytes().nn
           stream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         val doc = bytes.read[Tel]
         val reconstructed = Tels.Reconstructor.fromTel(doc)
@@ -2020,7 +2020,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         sig.readable.length
@@ -2031,7 +2031,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel(Tels.Axiom.tels)
@@ -2101,7 +2101,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val source =
           val arr = stream.readAllBytes().nn
           stream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         val a = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.readable.toSeq
         val b = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels).data.readable.toSeq
@@ -2113,7 +2113,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         val refStream = getClass.getResourceAsStream("/stratiform/corpus/tel-schema.bintel.hex").nn
         val refHex    =
@@ -2133,7 +2133,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val telBytes  =
           val arr = telStream.readAllBytes().nn
           telStream.close()
-          arr.immutable(using Unsafe)
+          Array.unsafeFrozen(arr)
 
         val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
         digest.data.readable.toSeq.map(b => f"${b & 0xff}%02x").mkString
@@ -2320,6 +2320,6 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"an inlined recursive type ties through its own nominal Parsable"):
         given (Tests.Tree is Tel.Parsable) = Inlinable.parsable[Tests.Tree]
         val tree = Tests.Tree(t"root", List(Tests.Tree(t"a", Nil)))
-        val data: Data = tree.in[Tel].show.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+        val data: Data = Array.unsafeFrozen(tree.in[Tel].show.s.getBytes("UTF-8").nn)
         data.read[Tests.Tree in Tel]
       . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))

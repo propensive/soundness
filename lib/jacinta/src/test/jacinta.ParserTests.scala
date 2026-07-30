@@ -201,7 +201,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         sizes.iterator.flatMap: size =>
           if offset >= bytes.length then None else
             val end = math.min(offset + size, bytes.length)
-            val slice: Data = bytes.slice(offset, end).immutable(using Unsafe)
+            val slice: Data = Array.unsafeFrozen(bytes.slice(offset, end))
             offset = end
             Some(slice)
 
@@ -238,7 +238,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == Json.Ast(42L))
 
     suite(m"Hole-mode parsing"):
-      def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+      def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
       def shape(node: Any): Any = node.asMatchable match
         case nums: scala.Array[Double] @unchecked =>
@@ -297,7 +297,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           case ParseError(_, _, _) => true
 
     suite(m"Position ranges"):
-      def asBytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+      def asBytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
       def position(input: Text): Json.Ast.Position =
         capture[ParseError](Json.Ast.parse(asBytes(input)))
         . position.asInstanceOf[Json.Ast.Position]
@@ -314,7 +314,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == (1: Int))
 
     suite(m"Number-only arrays"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe))
+      def parseRaw(text: Text): Any = Json.Ast.parse(Array.unsafeFrozen(text.s.getBytes("UTF-8").nn))
 
       test(m"Pure integer array uses the unboxed small-BCD scala.Array[Int] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
@@ -401,7 +401,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(identity)
 
     suite(m"Boxed-array storage"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(text.s.getBytes("UTF-8").nn.immutable(using Unsafe))
+      def parseRaw(text: Text): Any = Json.Ast.parse(Array.unsafeFrozen(text.s.getBytes("UTF-8").nn))
 
       test(m"Empty array round-trips via the printer"):
         given Json.Formatting = Json.Formatting(Unset, false)

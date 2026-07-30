@@ -1558,12 +1558,14 @@ object Json extends Json2, Dynamic:
     // (see `Bcd.packBcdLong`). Each `Long` element carries one number's
     // sign + count + nibbles inline — no per-element `Double` materialisation
     // and no per-element heap allocation.
-    def bcdArr(values: scala.Array[Long]): Ast = values.immutable(using Unsafe)
+    // The JVM array stays in the signature because the only caller is a splice in
+    // `jacinta.internal`, which passes a fresh `toArray` it does not retain.
+    def bcdArr(values: scala.Array[Long]): Ast = Array.unsafeFrozen(values)
 
     // Build a number-only array node using the single-Int small-BCD
     // encoding (see `Bcd.packBcdInt`). For arrays where every number
     // fits in 7 nibbles — the half-memory variant of `bcdArr`.
-    def smallBcdArr(values: scala.Array[Int]): Ast = values.immutable(using Unsafe)
+    def smallBcdArr(values: scala.Array[Int]): Ast = Array.unsafeFrozen(values)
 
     // Accessors over the opaque AST representation. They live in the `Ast`
     // companion so they are in implicit scope wherever a `Json.Ast` is used,

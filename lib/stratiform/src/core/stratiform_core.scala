@@ -73,7 +73,7 @@ private[stratiform] def collectionDocument[value]
 
         case document: Tel.Document =>
           scala.collection.immutable.ArraySeq.unsafeWrapArray
-            ( document.children.flatMap(_.compounds).mutable(using Unsafe) )
+            ( Array.unsafeJvm(document.children.flatMap(_.compounds)) )
 
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))

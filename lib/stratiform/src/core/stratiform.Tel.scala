@@ -2298,8 +2298,8 @@ object Tel extends Tel2:
     // pending child across the whole recursive descent. Each
     // `parseBlock` / `parseCompoundLine` invocation snapshots the current
     // index at scope-entry; on scope-exit it computes `count = current - start`,
-    // snapshots that range into a freshly allocated exact-size `Array` (wrapped
-    // as a frozen array via `.immutable(using Unsafe)`), and rewinds the index.
+    // snapshots that range into a freshly allocated exact-size, frozen `Array`
+    // (see `takeAtoms` and its siblings), and rewinds the index.
     // Empty scopes return `Array.empty` without any allocation.
     //
     // This replaces one `mutable.ArrayBuffer` (which itself allocates a backing

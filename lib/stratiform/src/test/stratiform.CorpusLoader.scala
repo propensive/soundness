@@ -66,7 +66,7 @@ object CorpusLoader:
   def caseByStem(category: Text, stem: Text): Case =
     val source = readResource(t"/stratiform/corpus/$category/$stem.tel")
     val check = readResourceText(t"/stratiform/corpus/$category/$stem.check")
-    Case(stem, source.immutable(using Unsafe), check)
+    Case(stem, source, check)
 
   // Extract the expected E-code from a negative case's stem name. Filenames
   // follow the upstream convention `e<n>-<description>.tel`; cases without
@@ -100,9 +100,9 @@ object CorpusLoader:
     val text = readResourceText(t"/stratiform/corpus/$category.index")
     text.cut(t"\n").map(_.trim).filter(_ != t"")
 
-  private def readResource(path: Text): scala.Array[Byte] =
+  private def readResource(path: Text): Data =
     val stream = getClass.getResourceAsStream(path.s)
     if stream == null then sys.error(s"missing resource: $path")
-    try stream.readAllBytes() finally stream.close()
+    try Array.unsafeFrozen(stream.readAllBytes().nn) finally stream.close()
 
-  private def readResourceText(path: Text): Text = Text(String(readResource(path), "UTF-8"))
+  private def readResourceText(path: Text): Text = readResource(path).utf8

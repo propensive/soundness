@@ -124,12 +124,11 @@ private[jacinta] object Parser:
 
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
   private val TenPow: Array[Double]^{} =
-    scala.Array.tabulate(23): i =>
+    Array.tabulate(23): i =>
       var p = 1.0
       var n = i
       while n > 0 do { p *= 10.0; n -= 1 }
       p
-    . immutable(using Unsafe)
 
   // Byte-class table for `parseString`'s fast-scan loop. Entry `i` is
   // 1 when byte `i` keeps the scan going (printable ASCII other than
@@ -142,7 +141,7 @@ private[jacinta] object Parser:
   // multi-byte UTF-8 decoder in `tail`, not the fast slice path.
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
   private val StringScanContinue: Array[Byte]^{} =
-    val arr = new scala.Array[Byte](256)
+    val arr = Array[Byte](256)
     var i = 0
 
     while i < 256 do
@@ -153,7 +152,7 @@ private[jacinta] object Parser:
 
       i += 1
 
-    arr.immutable(using Unsafe)
+    Array.freeze(arr)
 
   // The pool is a checker-opaque boundary (like Conduit's queue): ThreadLocal cannot
   // carry capture-typed arguments. Per-thread single ownership is the pool's construction
@@ -1562,14 +1561,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
           val out = new scala.Array[Int](src.length)
           src.copyToArray(out)
           relinquishBcdIntBuffer()
-          out.immutable(using Unsafe)
+          Array.unsafeFrozen(out)
 
         case ModeBcdLong =>
           val src = longItems.nn
           val out = new scala.Array[Long](src.length)
           src.copyToArray(out)
           relinquishBcdLongBuffer()
-          out.immutable(using Unsafe)
+          Array.unsafeFrozen(out)
 
         case _ =>
           // Mixed/boxed array — stored as `Array[Any]^{}` and parity-padded
@@ -1755,14 +1754,14 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
             val out = new scala.Array[Int](src.length)
             src.copyToArray(out)
             relinquishBcdIntBuffer()
-            out.immutable(using Unsafe)
+            Array.unsafeFrozen(out)
 
           case ModeBcdLong =>
             val src = longItems.nn
             val out = new scala.Array[Long](src.length)
             src.copyToArray(out)
             relinquishBcdLongBuffer()
-            out.immutable(using Unsafe)
+            Array.unsafeFrozen(out)
 
           case _ =>
             val src = anyItems.nn

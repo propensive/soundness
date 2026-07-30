@@ -606,7 +606,7 @@ object Xml extends Tag.Container
       case Fragment(Element(_, attributes, children)) => Element(fieldName, attributes, children)
 
       case Fragment(nodes*) =>
-        Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
+        Element(fieldName, Attributes.empty, Array.unsafeFrozen(nodes.toArray))
 
       case node: Node =>
         Element(fieldName, Attributes.empty, Array.of(node))
@@ -660,7 +660,7 @@ object Xml extends Tag.Container
         Element
           ( typeName,
             Attributes(attributes.toSeq*),
-            children.toArray.immutable(using Unsafe) )
+            Array.unsafeFrozen(children.toArray) )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
       value =>
@@ -1009,7 +1009,7 @@ object Xml extends Tag.Container
           given tactic: Tactic[XmlError] = reader.errorTactic
           val entries = fields
           val count = entries.length
-          val values = new scala.Array[Any](count)
+          val values = Array[Any](count)
           var index = 0
 
           while index < count do
@@ -1104,7 +1104,7 @@ object Xml extends Tag.Container
 
             index += 1
 
-          make(values.immutable(using Unsafe))
+          make(Array.freeze(values))
 
         // A missing (or wrong-shape) product value: one raise at the current
         // focus, then the user-supplied `Default[derivation]` sentinel, or
@@ -1124,7 +1124,7 @@ object Xml extends Tag.Container
 
           val entries = fields
           val count = entries.length
-          val values = new scala.Array[Any](count)
+          val values = Array[Any](count)
           val focused = foci.active
           var index = 0
 
@@ -1148,7 +1148,7 @@ object Xml extends Tag.Container
 
             index += 1
 
-          make(values.immutable(using Unsafe))
+          make(Array.freeze(values))
 
   // The direct-parsing counterpart of `Decodable in Xml`: consumes elements
   // from an `XmlReader` instead of walking a materialized `Xml`, so
@@ -1410,7 +1410,7 @@ object Xml extends Tag.Container
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val array = new scala.Array[Node](count)
+      val array = Array[Node](count)
 
       var index = 0
 
@@ -1425,7 +1425,7 @@ object Xml extends Tag.Container
           array(index) = node
           index += 1
 
-      array.immutable(using Unsafe)
+      Array.freeze(array)
 
   inline given interpolator: Xml is Interpolable:
     type Result = Xml
@@ -2739,9 +2739,9 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = new scala.Array[String](2*n)
-        jl.System.arraycopy(attrBuf, 0, arr, 0, 2*n)
-        Attributes.fromInterleaved(arr.immutable(using Unsafe))
+        val arr = Array[String](2*n)
+        jl.System.arraycopy(attrBuf, 0, arr.raw, 0, 2*n)
+        Attributes.fromInterleaved(Array.freeze(arr))
 
     // Read text up to the next '<'; returns the (possibly entity-expanded)
     // Text. Detects literal `]]>` as an error. Reports `\u0000` holes via
@@ -3046,14 +3046,14 @@ object Xml extends Tag.Container
       val result =
         if children.nil then Array.empty[Node]
         else
-          val arr = new scala.Array[Node](children.length)
+          val arr = Array[Node](children.length)
           var i = 0
 
           while i < children.length do
             arr(i) = children(i)
             i += 1
 
-          arr.immutable(using Unsafe)
+          Array.freeze(arr)
 
       relinquishNodeBuffer()
       result
@@ -3299,9 +3299,9 @@ object Xml extends Tag.Container
 
       if n == 0 then Attributes.empty
       else
-        val arr = new scala.Array[String](2*n)
-        jl.System.arraycopy(attrBuf, 0, arr, 0, 2*n)
-        Attributes.fromInterleaved(arr.immutable(using Unsafe))
+        val arr = Array[String](2*n)
+        jl.System.arraycopy(attrBuf, 0, arr.raw, 0, 2*n)
+        Attributes.fromInterleaved(Array.freeze(arr))
 
     private def readChildrenTracked
       ( parentName: Text,
@@ -3370,14 +3370,14 @@ object Xml extends Tag.Container
       val result =
         if children.nil then Array.empty[Node]
         else
-          val arr = new scala.Array[Node](children.length)
+          val arr = Array[Node](children.length)
           var i = 0
 
           while i < children.length do
             arr(i) = children(i)
             i += 1
 
-          arr.immutable(using Unsafe)
+          Array.freeze(arr)
 
       relinquishNodeBuffer()
       result
@@ -4070,13 +4070,13 @@ extends Node, Topical, Transportive:
 
     case Element(label, attributes, children) =>
       label == this.label && attributes.equalsAttributes(this.attributes) &&
-        ju.Arrays.equals(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]], this.children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]])
+        ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
+    ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
 
 
   def selectDynamic(name: Label)(using attribute: name.type is Xml.XmlAttribute on Topic in Form)

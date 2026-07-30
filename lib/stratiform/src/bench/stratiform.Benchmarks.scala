@@ -99,7 +99,7 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
       n = stream.read(buf)
 
     stream.close()
-    out.toByteArray.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   // Load and parse a schema TEL document into a Tels via the
   // reconstructor — this is the schema the parser will use to drive
