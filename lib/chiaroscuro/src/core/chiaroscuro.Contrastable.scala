@@ -98,15 +98,12 @@ object Contrastable:
     given set: [element: Showable] => Set[element] is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left.show) else
-          val leftOnly: scala.collection.immutable.Set[Text] =
-            (left.stdlib -- right.stdlib).map(_.show)
+          val leftOnly: Set[Text] = Set.of((left.stdlib -- right.stdlib).map(_.show))
+          val rightOnly: Set[Text] = Set.of((right.stdlib -- left.stdlib).map(_.show))
 
-          val rightOnly: scala.collection.immutable.Set[Text] =
-            (right.stdlib -- left.stdlib).map(_.show)
-
-          def describe(set: scala.collection.immutable.Set[Text]): Text =
-            ( if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}"
-              else set.to(List) )
+          def describe(set: Set[Text]): Text =
+            ( if set.size > 5 then set.toList.take(4) :+ t"…${(set.size - 4).show.subscripts}"
+              else set.toList )
 
             . join(t"{", t", ", t"}")
 

@@ -90,9 +90,7 @@ object Decomposable extends Decomposable2:
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
           ( t"Array",
-            scala.collection.immutable.ArraySeq.unsafeWrapArray:
-              iarray.asInstanceOf[scala.Array[element]]
-            . map(decomposable.decomposition(_)),
+            iarray.toSeq.map(decomposable.decomposition(_)),
             iarray )
 
 

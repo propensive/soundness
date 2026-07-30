@@ -34,6 +34,8 @@ package gesticulate
 
 import scala.language.dynamics
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -93,14 +95,14 @@ object Media:
 
   def parse(string: Text)(using Tactic[MediaTypeError]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
-      ps.stdlib match
-        case scala.collection.immutable.List(t"") =>
+      ps match
+        case List(t"") =>
           raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
 
         case _ =>
           ()
 
-      ps.map((param: Text) => param.cut(t"=", 2).stdlib).map: (p: scala.collection.immutable.List[Text]) =>
+      ps.map((param: Text) => param.cut(t"=", 2)).map: (p: List[Text]) =>
         p(0).show -> p(1).show
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
@@ -129,8 +131,7 @@ object Media:
       def notAllowed(char: Char): Boolean =
         char.isWhitespace || char.isControl || specials.has(char)
 
-      val chars = scala.collection.immutable.ArraySeq.unsafeWrapArray:
-        Array.unsafeJvm(string.chars)
+      val chars = string.chars.toSeq
 
       chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))

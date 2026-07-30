@@ -100,6 +100,6 @@ case class Coverage(path: Text, spec: Array[Juncture]^{}, oldHits: Set[Int], hit
     val index: Int = spec.readable.lastIndexWhere(_.id == 0)
 
     Map.from:
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(Array.unsafeJvm(spec))
+      spec.toSeq
       . toList.drop(index).groupBy(_.path).map: (path, junctures) =>
         path -> Surface.collapse(List.of(junctures.sortBy(-_.end).sortBy(_.start)), Nil)

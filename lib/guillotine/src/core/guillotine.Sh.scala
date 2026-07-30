@@ -42,6 +42,8 @@ import scala.collection.immutable as sci
 import scala.collection.immutable.::
 import scala.collection.{`:+`, `+:`}
 
+import proscenium.compat.*
+
 import rudiments.*
 import vacuous.*
 import spectacular.*
@@ -99,8 +101,7 @@ object Sh:
       case _ =>
         state
 
-    private def chars(text: Text): sci.ArraySeq[Char] =
-      sci.ArraySeq.unsafeWrapArray(Array.unsafeJvm(text.chars))
+    private def chars(text: Text): scala.Seq[Char] = text.chars.toSeq
 
     def parse(current: State, text: Text): State = chars(text).fuse(current):
       (state, next).absolve match

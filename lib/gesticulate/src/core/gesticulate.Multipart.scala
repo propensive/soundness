@@ -72,11 +72,11 @@ object Multipart:
     cursor.next()
     cursor.expect('\n')(expected('\n'))
 
-    def headers(list: List[(Text, Text)]): scala.collection.immutable.Map[Text, Text] =
+    def headers(list: List[(Text, Text)]): Map[Text, Text] =
       if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
-        list.stdlib.toMap
+        list.toMap
 
       else
         val key: Text = cursor.hold:
@@ -136,13 +136,13 @@ object Multipart:
 
       . or(Progression(cursor.grab(bodyStart, cursor.mark)))
 
-    def parsePart(headers: scala.collection.immutable.Map[Text, Text], stream: Progression[Data])
+    def parsePart(headers: Map[Text, Text], stream: Progression[Data])
     :   Part =
       headers.get(t"Content-Disposition").optional.let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
 
-        val params: scala.collection.immutable.Map[Text, Text] =
-          parts.stdlib.drop(1).map: param =>
+        val params: Map[Text, Text] =
+          parts.drop(1).map: param =>
             param.cut(t"=", 2) match
               case List(key, value) =>
                 if value.starts(t"\"") && value.ends(t"\"")
@@ -165,7 +165,7 @@ object Multipart:
         val filename = params.get(t"filename").optional
         val name = params.get(t"name").optional
 
-        Part(dispositionValue, Map.of(headers), name, filename, stream)
+        Part(dispositionValue, headers, name, filename, stream)
 
       . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 

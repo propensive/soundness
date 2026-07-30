@@ -46,7 +46,7 @@ object Watch:
   def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
   :   Watch raises WatchError =
 
-    val pathGroups: scala.collection.immutable.Map[jnf.Path, Iterable[Text -> Boolean]] =
+    val pathGroups =
       paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else
@@ -54,13 +54,11 @@ object Watch:
           val filename = javaPath.getFileName.nn.toString.tt
           (parent, (_: Text) == filename)
 
-      . groupBy(_(0)).view.mapValues(_.map(_(1))).toMap
+      . groupBy(_(0)).view.mapValues(_.map(_(1)))
 
-    val directories: Map[jnf.Path, Text -> Boolean] = Map.of:
-      pathGroups.view.mapValues: predicates =>
+    val directories: Map[jnf.Path, Text -> Boolean] = Map.from:
+      pathGroups.mapValues: predicates =>
         (value: Text) => predicates.exists(_(value))
-
-      . toMap
 
     val spool: Relay[WatchEvent] = Relay()
 

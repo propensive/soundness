@@ -34,6 +34,8 @@ package gesticulate
 
 import scala.language.dynamics
 
+import proscenium.compat.*
+
 import anticipation.*
 import fulminate.*
 import gossamer.*
@@ -56,8 +58,7 @@ object MediaTypeError:
       case InvalidSuffix(s)  => txt"the suffix '$s' is not recognized"
 
       case InvalidGroup =>
-        val list = scala.collection.immutable.ArraySeq
-        . unsafeWrapArray(Media.Group.values).map(_.name)
+        val list = Array.unsafeFrozen(Media.Group.values).toList.map(_.name)
         txt"the type must be one of: ${list.join(t", ", t" or ")}"
 
 case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
