@@ -38,7 +38,7 @@ import scala.math
 
 import scala.collection.immutable as sci
 
-import proscenium.{Array, List, Map, Set, Progression, Series}
+import proscenium.{Array, Ledger, List, Map, Set, Progression, Series}
 
 // MIGRATION SHIMS — temporarily restore the stdlib surface of the opaque `Set` so call sites
 // compile unchanged, one `import proscenium.compat.*` per file. Each shim is an independently
@@ -126,6 +126,45 @@ extension [key, value](map: Map[key, value])
     map.stdlib.collect(lambda)
 
   inline def mkString(sep: String): String = map.stdlib.mkString(sep)
+
+// The `Ledger` twin of the `Map` block above: the same surface, closed over the
+// insertion-ordered type, with the same omissions for the same reasons (no `getOrElse` —
+// cc boxer crash on by-name defaults in inline extensions — so call sites bridge via
+// `stdlib` or `at(...).or(...)`).
+extension [key, value](ledger: Ledger[key, value])
+  inline def get(key: key): Option[value] = ledger.stdlib.get(key)
+  inline def apply(key: key): value = ledger.stdlib(key)
+  inline def keySet: Set[key] = Set.of(ledger.stdlib.keySet)
+  inline def keys: Iterable[key] = ledger.stdlib.keys
+  inline def values: Iterable[value] = ledger.stdlib.values
+  inline def isEmpty: Boolean = ledger.stdlib.isEmpty
+  inline def nonEmpty: Boolean = ledger.stdlib.nonEmpty
+  inline def size: Int = ledger.stdlib.size
+  inline def iterator: Iterator[(key, value)] = ledger.stdlib.iterator
+  inline def toList: List[(key, value)] = List.of(ledger.stdlib.toList)
+  inline def toSeq: Seq[(key, value)] = ledger.stdlib.toSeq
+  inline def toMap: Map[key, value] = Map.of(ledger.stdlib)
+  inline def find(predicate: ((key, value)) => Boolean): Option[(key, value)] =
+    ledger.stdlib.find(predicate)
+
+  inline def forall(predicate: ((key, value)) => Boolean): Boolean = ledger.stdlib.forall(predicate)
+  inline def count(predicate: ((key, value)) => Boolean): Int = ledger.stdlib.count(predicate)
+
+  inline def updated[value2 >: value](key: key, value: value2): Ledger[key, value2] =
+    Ledger.of(ledger.stdlib.updated(key, value))
+
+  inline def removed(key: key): Ledger[key, value] = Ledger.of(ledger.stdlib.removed(key))
+
+  inline def concat[value2 >: value](other: Ledger[key, value2]): Ledger[key, value2] =
+    Ledger.of(ledger.stdlib.concat(other.stdlib))
+
+  inline def filterNot(predicate: ((key, value)) => Boolean): Ledger[key, value] =
+    Ledger.of(ledger.stdlib.filterNot(predicate))
+
+  inline def collect[result](lambda: PartialFunction[(key, value), result]): Iterable[result] =
+    ledger.stdlib.collect(lambda)
+
+  inline def mkString(sep: String): String = ledger.stdlib.mkString(sep)
 
 // MIGRATION SHIMS for the opaque `List`, following the same drain loop as `Set` and `Map`.
 // Notable omissions: `getOrElse`-style by-name defaults (cc boxer crash), `++`/`contains`

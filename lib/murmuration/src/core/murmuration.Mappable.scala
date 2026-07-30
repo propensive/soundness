@@ -99,6 +99,19 @@ object Mappable extends Mappable.Fallback:
       def map[value2](self: container, lambda: value => value2): Map[key, value2] =
         Map.of(self.stdlib.view.mapValues(lambda).toMap)
 
+  // Mapping over values must preserve entry order, so this builds through `VectorMap.from`
+  // rather than a view's unordered `toMap`.
+  given ledger: [key, value, container <: Ledger[key, value]]
+  =>  (container is Mappable { type Operand = value; type Result[value2] = Ledger[key, value2] }) =
+    new Mappable:
+      type Self = container
+      type Operand = value
+      type Result[value2] = Ledger[key, value2]
+      def map[value2](self: container, lambda: value => value2): Ledger[key, value2] =
+        Ledger.of:
+          scala.collection.immutable.VectorMap.from:
+            self.stdlib.iterator.map { (key, value) => key -> lambda(value) }
+
   trait Fallback:
     // Any raw `Iterable` (stdlib collections, ranges, …) maps to a `List`, as the old umbrella `map`
     // did. Lower priority than the alias instances above (companion-parent placement).

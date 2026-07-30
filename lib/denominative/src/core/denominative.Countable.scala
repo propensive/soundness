@@ -69,6 +69,10 @@ object Countable:
     def size(self: Map[key, element]): Int = self.stdlib.size
     override def nil(self: Map[key, element]): Boolean = self.stdlib.isEmpty
 
+  given ledger: [key, element] => Ledger[key, element] is Countable:
+    def size(self: Ledger[key, element]): Int = self.stdlib.size
+    override def nil(self: Ledger[key, element]): Boolean = self.stdlib.isEmpty
+
   given trieMap: [key, element] => TrieMap[key, element] is Countable:
     def size(self: TrieMap[key, element]): Int = self.size
     override def nil(self: TrieMap[key, element]): Boolean = self.isEmpty

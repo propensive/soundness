@@ -76,6 +76,9 @@ object Traversable extends Traversable2:
   given map: [key, value] => Map[key, value] is Traversable by (key, value) =
     _.stdlib.iterator
 
+  given ledger: [key, value] => Ledger[key, value] is Traversable by (key, value) =
+    _.stdlib.iterator
+
   // The frozen array, and any other readable reference: reading through a shared reference
   // is sound under separation checking (live writers are excluded wherever readers alias),
   // and inline re-elaboration freshens even statically-frozen references to `any.rd`, so
