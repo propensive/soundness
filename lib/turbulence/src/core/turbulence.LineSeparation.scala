@@ -32,6 +32,9 @@
                                                                                                   */
 package turbulence
 
+import proscenium.compat.*
+import rudiments.reverse
+
 import java.lang as jl
 
 import anticipation.*
@@ -78,7 +81,7 @@ object LineSeparation:
           // End-of-stream lines (the resolved `pending` may complete some, plus
           // the final unterminated line), built once and drained by `flush`.
           private var drained: Boolean = false
-          private var tail: scala.collection.immutable.List[Text] = Nil.stdlib
+          private var tail: List[Text] = Nil
 
           def regulation: Credit is Regulation = summon[Credit is Regulation]
 
@@ -208,7 +211,7 @@ object LineSeparation:
 
             if !drained then
               drained = true
-              var lines: scala.collection.immutable.List[Text] = Nil.stdlib
+              var lines: List[Text] = Nil
 
               // A dangling separator-initial char at end-of-stream resolves as
               // its bare single-char sequence.

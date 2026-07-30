@@ -37,6 +37,7 @@ import scala.caps
 import java.io as ji
 
 import soundness.*
+import proscenium.compat.*
 
 import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import threading.platformThreading
@@ -605,14 +606,14 @@ object Tests extends Suite(m"Turbulence tests"):
         val source = summon[ji.ByteArrayInputStream is Streamable by Data over Credit]
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         source.stream(input).pump(sink.intake(output))
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(output.toByteArray.nn).to(List)
+        Array.unsafeFrozen(output.toByteArray.nn).toList
       . assert(_ == payload.readable.to(List))
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(output.toByteArray.nn).to(List)
+        Array.unsafeFrozen(output.toByteArray.nn).toList
       . assert(_ == payload.readable.to(List))
 
       val original = t"The quick brown fox jumps over the lazy dog"*100

@@ -100,6 +100,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   // real but not trivial work to do.
   lazy val input: Data = Data.fill(4 << 20)(i => ((i*31 + (i >> 6)) & 0xff).toByte)
   lazy val inputArray: scala.Array[Byte] = input.asInstanceOf[scala.Array[Byte]]
+  // Kyo's `Stream.init` wants a stdlib `Seq`; a zero-copy `ArraySeq` keeps the
+  // comparison fair, so this deliberately stays a stdlib interop boundary.
   lazy val inputSeq: scala.collection.immutable.ArraySeq[Byte] =
     scala.collection.immutable.ArraySeq.unsafeWrapArray(inputArray)
   // The same 4 MB split into 64 KiB chunks, so aggregation/write loops iterate

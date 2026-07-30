@@ -40,6 +40,7 @@ import java.nio as jn
 import anticipation.*
 import contingency.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
@@ -180,7 +181,7 @@ object Sink:
       private val storage: addressable0.Storage =
         addressable0.allocate(block).asInstanceOf[addressable0.Storage]
       private var mark0: Int = 0
-      private var chunks: scala.collection.immutable.List[medium] = Nil.stdlib
+      private var chunks: List[medium] = Nil
 
       def demand: Credit = Credit(Long.MaxValue)
       protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
@@ -199,7 +200,7 @@ object Sink:
 
       update def finish(): Unit =
         drain()
-        write(target, chunks.reverse.to(Progression))
+        write(target, Progression.from(chunks.reverse.toSeq))
 
       private update def drain(): Unit =
         if mark0 > 0 then

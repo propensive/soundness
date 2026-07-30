@@ -62,7 +62,7 @@ object Cookie:
 
   object Value:
     given showable: Value is Showable = cookie =>
-      scala.collection.immutable.List
+      Iterable
         ( t"${cookie.name}=${cookie.value}",
           cookie.expiry.let { expiry => t"Max-Age=$expiry" },
           cookie.domain.let { domain => t"Domain=$domain" },

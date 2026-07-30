@@ -605,7 +605,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val gather = Gather()
           small.stream.via(Doubler()).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
-        . assert(_ == List.of((small.to[List]: List[Byte]).stdlib.flatMap { byte => scala.collection.immutable.List(byte, byte) }))
+        . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
         test(m"a duct translates downstream demand for its upstream"):
           val recorder = Recorder(small.stream)
@@ -627,7 +627,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           intake.put(small)
           intake.finish()
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
-        . assert(_ == List.of((small.to[List]: List[Byte]).stdlib.flatMap { byte => scala.collection.immutable.List(byte, byte) }))
+        . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
         test(m"duct flush emits terminal state on finish"):
           val gather = Gather()
@@ -769,7 +769,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val gather = Gather()
           exotic.stream.via(summon[CharEncoder]).pump(gather)
           scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
-        . assert(_ == scala.collection.immutable.ArraySeq.unsafeWrapArray(exotic.s.getBytes("UTF-8").nn).to(List))
+        . assert(_ == Array.unsafeFrozen(exotic.s.getBytes("UTF-8").nn).toList)
 
         // Malformed input — a stray continuation, an overlong lead, a
         // truncated sequence mid-stream and a bad continuation — must decode
@@ -869,7 +869,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"memoize reassembles a transformed pipeline"):
           small.stream.via(Doubler()).memoize.to[List]
-        . assert(_ == List.of((small.to[List]: List[Byte]).stdlib.flatMap { byte => scala.collection.immutable.List(byte, byte) }))
+        . assert(_ == (small.to[List]: List[Byte]).flatMap { byte => proscenium.List(byte, byte) })
 
         test(m"memoize drains a text stream into a single text value"):
           Stream(Iterator(t"ab", t"cd", t"e")).memoize.s

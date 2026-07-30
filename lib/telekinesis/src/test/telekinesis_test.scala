@@ -893,7 +893,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"protocol restriction is applied to parameters"):
         val acceptance = TlsAcceptance(versions = List(Trust.Version.Tls13))
         val (_, parameters) = acceptance.materialize()
-        scala.collection.immutable.ArraySeq.unsafeWrapArray(parameters.getProtocols.nn).to(List).map(_.nn.tt)
+        Array.unsafeFrozen(parameters.getProtocols.nn).toList.map(_.nn.tt)
       . assert(_ == List(t"TLSv1.3"))
 
       test(m"an acceptance bridges to a Tls carrying its policy"):

@@ -33,6 +33,7 @@
 package locomotion
 
 import soundness.*
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -81,10 +82,7 @@ case class Boxed[value](@field(1) value: value) derives CanEqual
 object Tests extends Suite(m"Locomotion Protobuf Tests"):
   def run(): Unit =
     def wire[value: Encodable in Protobuf](value: value): List[Int] =
-      List.of:
-        scala.collection.immutable.ArraySeq
-        . unsafeWrapArray(Array.unsafeJvm(value.in[Protobuf].encode))
-        . toList.map(_.toInt & 0xff)
+      value.in[Protobuf].encode.toList.map(_.toInt & 0xff)
 
     suite(m"Wire-format golden vectors"):
       test(m"a single varint field encodes to the canonical bytes"):
