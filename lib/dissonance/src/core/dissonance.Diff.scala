@@ -32,7 +32,6 @@
                                                                                                   */
 package dissonance
 
-import scala.collection.immutable as sci
 
 import anticipation.*
 import contingency.*
@@ -123,9 +122,6 @@ object Diff:
     def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
       Redraft.render(diff, context)
 
-    // The inner line list is assembled with stdlib members (the `:::` chain otherwise trips the
-    // opaque-`List` alias distinctness inside the umbrella `flatMap`) and wrapped once via
-    // `List.of` so the umbrella flatMap sees a `Traversable` opaque `List`.
     def serialize: Progression[Text] = diff.chunks.flatMap:
       case Chunk(left, right, dels, inss) =>
         def range(start: Int, end: Int): Text =
@@ -136,12 +132,12 @@ object Diff:
           else if inss.nil then s"${range(left + 1, left + dels.size)}d${right}".tt
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
-        val delSeq = dels.stdlib.map: del => Text("< "+del.value)
+        val delSeq = dels.map: del => Text("< "+del.value)
         val sep =
-          if inss.size > 0 && dels.size > 0 then sci.List(Text("---")) else sci.List()
-        val insSeq = inss.stdlib.map: ins => Text("> "+ins.value)
+          if inss.size > 0 && dels.size > 0 then List(Text("---")) else List[Text]()
+        val insSeq = inss.map: ins => Text("> "+ins.value)
 
-        List.of(command +: (delSeq ++ sep ++ insSeq))
+        List(command) ::: delSeq ::: sep ::: insSeq
 
 case class Diff[element](edits: Edit[element]*):
   def size: Int = edits.count:

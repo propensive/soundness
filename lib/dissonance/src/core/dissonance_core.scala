@@ -32,7 +32,7 @@
                                                                                                   */
 package dissonance
 
-import scala.collection.immutable as sci
+import proscenium.compat.*
 
 import anticipation.*
 import denominative.*
@@ -143,7 +143,7 @@ def diff[element]
     else position
 
   @tailrec
-  def trace(deletes: Int, inserts: Int, focus: sci.List[Int], rows: sci.List[Array[Int]^{}])
+  def trace(deletes: Int, inserts: Int, focus: List[Int], rows: List[Array[Int]^{}])
   :   Diff[element] =
 
     val delPos = if deletes == 0 then 0 else count(rows.head.readable(deletes - 1) + 1, inserts - deletes)
@@ -153,10 +153,10 @@ def diff[element]
     if best == left.length && (best - deletes + inserts) == right.length
     then Diff(backtrack(left.length - 1, deletes, rows, Nil)*)
     else if inserts > 0 then trace(deletes + 1, inserts - 1, best :: focus, rows)
-    else trace(0, deletes + 1, sci.Nil, Array.from((best :: focus).reverse) :: rows)
+    else trace(0, deletes + 1, Nil, Array.from(focus.stdlib.reverse :+ best) :: rows)
 
   @tailrec
-  def backtrack(position: Int, deletes: Int, rows: sci.List[Array[Int]^{}], edits: Edits): Edits =
+  def backtrack(position: Int, deletes: Int, rows: List[Array[Int]^{}], edits: Edits): Edits =
     val rightPosition = position + rows.length - deletes*2
     lazy val ins = rows.head.readable(deletes) - 1
     lazy val del = rows.head.readable(deletes - 1)
@@ -189,4 +189,4 @@ def diff[element]
           ( position - 1, deletes, rows,
           List.of(Par(position, rightPosition, left(position)) :: edits.stdlib) )
 
-  trace(0, 0, sci.Nil, sci.Nil)
+  trace(0, 0, Nil, Nil)

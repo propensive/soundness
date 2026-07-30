@@ -183,7 +183,7 @@ object Tests extends Suite(m"Caesura tests"):
           // key type arrives via the `soundness` export alias (a compiler quirk to investigate);
           // the cast is erasure-identical.
           val columns =
-            Map.of[Text, Int](scala.collection.immutable.Map(t"Greeting" -> 0, t"Addressee" -> 1))
+            Map(t"Greeting" -> 0, t"Addressee" -> 1)
             . asInstanceOf[Optional[Map[Text, Int]]]
           val expected = Sheet(Array.of(Dsv(Array.of(t"Hello", t"World"), columns)),
               dsvFormats.tsvWithHeaderFormat, Array.of(t"Greeting", t"Addressee"))

@@ -55,10 +55,10 @@ object Errors:
 
 case class Errors(errors: (Text, Error)*)(using Diagnostics)
 extends Error(218, 0)(Errors.format(errors.to(List))):
-  private lazy val errorMap: scala.collection.immutable.Map[Text, Error] = errors.to(scala.collection.immutable.Map)
+  private lazy val errorMap: Map[Text, Error] = Map.from(errors)
 
   @targetName("add")
   infix def + (focus: Text, error: Error): Errors = Errors((focus, error) +: errors*)
 
   def apply(focus: Text): Optional[Error] =
-    if errorMap.contains(focus) then errorMap(focus) else Unset
+    errorMap.get(focus).optional

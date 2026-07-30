@@ -65,13 +65,12 @@ object Validation:
 
 case class Validation(messages: List[(Pointer, Message)] = Nil)
 extends Error(59, 0)(Validation.text(messages)):
-  private lazy val map: scala.collection.immutable.Map[Pointer, Message] =
-    messages.stdlib.to(scala.collection.immutable.Map)
+  private lazy val map: Map[Pointer, Message] = messages.toMap
 
   @targetName("add")
   infix def + (pointer: Pointer, message: Message): Validation =
     Validation((pointer, message) :: messages)
 
   def apply(pointer: Pointer): Optional[Message] =
-    if map.contains(pointer) then map(pointer) else Unset
+    map.get(pointer).optional
   def text: Message = Validation.text(messages)

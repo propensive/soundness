@@ -531,7 +531,7 @@ def cli[bus <: Matchable](using executive: Executive)
           connection.close()
           Log.info(DaemonLogEvent.CloseConnection(pid))
 
-  application(using executives.directExecutive(using backstops.silentBackstop))(scala.collection.immutable.Nil):
+  application(using executives.directExecutive(using backstops.silentBackstop))(Nil.stdlib):
     import environments.javaEnvironment
     import termcaps.environmentTermcap
     import stdios.virtualMachineStdio
@@ -581,7 +581,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
           task(n"pid-watcher"):
             safely:
-              scala.collection.immutable.List[Path on Local](socketFile, buildFile, pidFile)
+              List[Path on Local](socketFile, buildFile, pidFile).stdlib
               . open[Watch](): watcher ?=>
                 watcher.stream.each:
                   case Delete(_, _) | Modify(_, _) =>

@@ -32,6 +32,8 @@
                                                                                                   */
 package embarcadero
 
+import proscenium.compat.*
+
 import anticipation.*
 import bitumen.*
 import contingency.*
@@ -108,10 +110,10 @@ case class Image
   // and the manifest.
   def blobs: List[(Text, Data)] =
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
-    List.of:
-      (configDescriptor.digest, configBytes) ::
-        layerBlobs.stdlib :::
-        scala.collection.immutable.List((manifestDescriptor.digest, manifestBytes))
+
+    List((configDescriptor.digest, configBytes))
+    ::: layerBlobs
+    ::: List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under
@@ -134,4 +136,4 @@ case class Image
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tarfile(List.of(scala.collection.immutable.List(layoutEntry, indexEntry) ++ blobEntries.stdlib))
+    Tarfile(List(layoutEntry, indexEntry) ::: blobEntries)

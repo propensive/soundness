@@ -64,9 +64,10 @@ extension (classpath: Classpath.type)
     else
       type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
 
-      val items: scala.collection.immutable.List[Entry] = entries.collect:
-        case directory: ClasspathEntry.Directory      => directory
-        case jar: ClasspathEntry.Jar                  => jar
-        case runtime: ClasspathEntry.JavaRuntime.type => runtime
+      val items: List[Entry] = List.of:
+        entries.collect:
+          case directory: ClasspathEntry.Directory      => directory
+          case jar: ClasspathEntry.Jar                  => jar
+          case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
-      LocalClasspath(items*)
+      LocalClasspath(items.stdlib*)
