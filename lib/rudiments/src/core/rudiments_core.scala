@@ -536,7 +536,7 @@ extension (bs: Long)
   def tib: Bytes = Bytes(bs*1024*1024*1024*1024)
 
 extension (data: Data)
-  def bytes: Bytes = Bytes(data.mutable(using Unsafe).length)
+  def bytes: Bytes = Bytes(data.length)
 
 
 

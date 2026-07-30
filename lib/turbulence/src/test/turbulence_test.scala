@@ -759,6 +759,18 @@ object Tests extends Suite(m"Turbulence tests"):
             true
       . assert(identity)
 
+      // `OutputStream.write` permits the caller to reuse its array afterwards, and the chunk
+      // is read only when the stream is consumed, so aliasing the caller's array would let a
+      // later write rewrite bytes already handed over.
+      test(m"a written array is copied, so caller reuse cannot corrupt the stream"):
+        val out = StreamOutputStream()
+        val bytes = scala.Array[Byte](1, 2, 3)
+        out.write(bytes)
+        bytes(0) = 99
+        out.close()
+        out.stream.read[Data].to[List]
+      . assert(_ == List(1.toByte, 2.toByte, 3.toByte))
+
 // A byte intake that gathers everything written to it, for exercising the
 // pump and cancellation paths.
 class Gather2() extends Intake[Data]:

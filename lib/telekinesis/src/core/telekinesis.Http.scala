@@ -151,8 +151,11 @@ object Http:
     type Payload = false
 
   object Status:
+    // `values` is the enum's cached array, so this is an alias of shared state rather than
+    // owned material -- but it is consumed here and now, into a `Map`, and nothing writes to
+    // an enum's `values`.
     private lazy val all: Map[Int, Status] =
-      Map.from(values.immutable(using Unsafe).readable.bi.map(_.code -> _))
+      Map.from(Array.unsafeFrozen(values).readable.bi.map(_.code -> _))
 
     def unapply(code: Int): Option[Status] = all.get(code)
 
