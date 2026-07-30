@@ -1441,8 +1441,8 @@ object Tests extends Suite(m"Facsimile tests"):
             val block = DataBuilder()
             var repeat = 0
             while repeat < 64 do
-              block.addAll(pw)
-              block.addAll(k)
+              block.addAll(Array.unsafeFrozen(pw))
+              block.addAll(Array.unsafeFrozen(k))
               repeat += 1
 
             val input = block.result().mutable(using Unsafe)

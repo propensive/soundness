@@ -225,7 +225,11 @@ private[facsimile] object Guard:
   // Revision-6 hash (algorithm 2.B): SHA-256 seeded, then rounds mixing SHA-256/384/512
   // selected by the running hash, until the 64th-plus round whose last byte is ≤ round−32.
   private def hash6(password: scala.Array[Byte], salt: Data, extra: Data): Data =
-    var k: Data = sha(256, password.immutable(using Unsafe) ++ salt ++ extra)
+    // `password` stays a JVM array in the signature because it is genuinely mutable -- the
+    // caller zeroes it -- but that happens strictly after this call returns, so a frozen view
+    // is valid for this extent and spares every read below its own laundering.
+    val pw = Array.unsafeFrozen(password)
+    var k: Data = sha(256, pw ++ salt ++ extra)
 
     var round = 0
     var done = false
@@ -235,14 +239,14 @@ private[facsimile] object Guard:
       var i = 0
 
       while i < 64 do
-        block.addAll(password)
-        block.addAll(k.mutable(using Unsafe))
-        if extra.length > 0 then block.addAll(extra.mutable(using Unsafe))
+        block.addAll(pw)
+        block.addAll(k)
+        if extra.length > 0 then block.addAll(extra)
         i += 1
 
       val input = block.result()
-      val key = k.take(16).mutable(using Unsafe)
-      val iv = k.slice(16, 32).mutable(using Unsafe)
+      val key = Array.unsafeJvm(k.take(16))
+      val iv = Array.unsafeJvm(k.slice(16, 32))
 
       // AES-128-CBC with no padding on block-aligned input; on the JDK cipher for the same
       // capture-checking reason as `unwrap6`.

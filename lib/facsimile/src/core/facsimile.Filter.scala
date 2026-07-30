@@ -197,7 +197,7 @@ private[facsimile] object Filter:
       // whatever it decoded before the bytes ran out, matching the eager inflater's
       // partial-on-truncation behaviour; corrupt data throws from the backend.
       chunks.each: chunk =>
-        builder.addAll(chunk.mutable(using Unsafe))
+        builder.addAll(chunk)
     catch case _: IllegalStateException => ()
 
     val result = builder.result()

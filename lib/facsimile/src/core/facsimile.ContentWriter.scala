@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import scala.caps
+
 import proscenium.compat.*
 
 import anticipation.*
@@ -69,8 +71,8 @@ private[facsimile] object ContentWriter:
       else safely(Decimal(value).text).or(t"0")
 
     def nums(values: Double*): Text = values.map(num).join(t" ")
-    def string(data: Data): Unit = builder.addAll(CosWriter.write(Cos.Chars(data)).mutable(using Unsafe))
-    def name(text: Text): Unit = builder.addAll(CosWriter.write(Cos.Name(text)).mutable(using Unsafe))
+    def string(data: Data): Unit = builder.addAll(CosWriter.write(Cos.Chars(data)))
+    def name(text: Text): Unit = builder.addAll(CosWriter.write(Cos.Name(text)))
     def matrix(m: PdfMatrix): Text = nums(m.a, m.b, m.c, m.d, m.e, m.f)
 
     operator match
@@ -164,9 +166,9 @@ private[facsimile] object ContentWriter:
 
       case InlineImage(parameters, data) =>
         out(t"BI ")
-        builder.addAll(CosWriter.dictionaryBytes(parameters).mutable(using Unsafe))
+        builder.addAll(CosWriter.dictionaryBytes(parameters))
         out(t" ID ")
-        builder.addAll(data.mutable(using Unsafe))
+        builder.addAll(data)
         out(t" EI\n")
 
       case MarkPoint(tag, Unset)    => name(tag); out(t" MP\n")
@@ -174,12 +176,12 @@ private[facsimile] object ContentWriter:
 
       case MarkPoint(tag, property: Cos) =>
         name(tag); out(t" ")
-        builder.addAll(CosWriter.write(property).mutable(using Unsafe))
+        builder.addAll(CosWriter.write(property))
         out(t" DP\n")
 
       case BeginMarked(tag, property: Cos) =>
         name(tag); out(t" ")
-        builder.addAll(CosWriter.write(property).mutable(using Unsafe))
+        builder.addAll(CosWriter.write(property))
         out(t" BDC\n")
 
       case EndMarked                => out(t"EMC\n")
@@ -192,7 +194,7 @@ private[facsimile] object ContentWriter:
 
       case Unrecognized(operator, operands) =>
         operands.each: operand =>
-          builder.addAll(CosWriter.write(operand).mutable(using Unsafe))
+          builder.addAll(CosWriter.write(operand))
           out(t" ")
 
         out(t"$operator\n")
@@ -216,11 +218,14 @@ private[facsimile] final class DataBuilder:
     target(size0) = byte
     size0 += 1
 
-  def addAll(bytes: scala.Array[Byte]): Unit =
+  // Reads its argument only, so it takes the opaque array through a shared-read reference:
+  // frozen `Data` and exclusive arrays both subsume into it, and callers need no laundering.
+  def addAll(bytes: Array[Byte]^{caps.any.rd}): Unit =
+    val count = bytes.length
     var index = 0
 
-    while index < bytes.length do
-      this += bytes(index)
+    while index < count do
+      this += bytes.readUnchecked(index)
       index += 1
 
   def result(): Data = java.util.Arrays.copyOf(storage, size0).nn.asInstanceOf[Data]

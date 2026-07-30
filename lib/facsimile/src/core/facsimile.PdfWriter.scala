@@ -54,7 +54,7 @@ private[facsimile] object PdfWriter:
     var length = 0L
 
     def raw(data: Data): Unit =
-      builder.addAll(data.mutable(using Unsafe))
+      builder.addAll(data)
       length += data.length
 
     def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
@@ -102,7 +102,7 @@ private[facsimile] object PdfWriter:
     var length = 0L
 
     def raw(data: Data): Unit =
-      builder.addAll(data.mutable(using Unsafe))
+      builder.addAll(data)
       length += data.length
 
     def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
