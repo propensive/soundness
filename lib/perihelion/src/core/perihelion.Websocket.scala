@@ -142,6 +142,8 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
       // not only once the whole message is in.
       def validUtf8(data: Data, whole: Boolean): Boolean =
         val decoder = java.nio.charset.StandardCharsets.UTF_8.nn.newDecoder().nn
+        // `wrap` yields a writable buffer, but the only operation on it is `decode`, which
+        // reads.
         val in = java.nio.ByteBuffer.wrap(Array.unsafeJvm(data)).nn
         val out = java.nio.CharBuffer.allocate(data.length + 1).nn
         !decoder.decode(in, out, whole).nn.isError
