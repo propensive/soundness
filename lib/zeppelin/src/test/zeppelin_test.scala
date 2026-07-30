@@ -82,7 +82,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       entryNames.each: entryName =>
         out.putNextEntry(juz.ZipEntry(entryName.s))
-        out.write(t"data".in[Data].mutable(using Unsafe))
+        out.write(Array.unsafeJvm(t"data".in[Data]))
         out.closeEntry()
 
       out.close()
@@ -104,7 +104,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       val zip = juz.ZipFile(ji.File(path.encode.s))
       try
         val entry = zip.getEntry(name.s).nn
-        zip.getInputStream(entry).nn.readAllBytes().nn.immutable(using Unsafe)
+        Array.unsafeFrozen(zip.getInputStream(entry).nn.readAllBytes().nn)
       finally zip.close()
 
     def jdkComment(path: Path on Linux): Optional[Text] =
@@ -117,7 +117,7 @@ object Tests extends Suite(m"Zeppelin tests"):
     def writeBytes(name: Text, data: Data): Path on Linux =
       val path = workDir/name
       val out = ji.FileOutputStream(ji.File(path.encode.s))
-      try out.write(data.mutable(using Unsafe)) finally out.close()
+      try out.write(Array.unsafeJvm(data)) finally out.close()
       path
 
     // The general-purpose bit flag of the first local file header.
@@ -478,8 +478,8 @@ object Tests extends Suite(m"Zeppelin tests"):
         val stub: Data = t"STUB-PREFIX-DATA".in[Data]
         val sfx = workDir/t"sfx.zip"
         val out = ji.FileOutputStream(ji.File(sfx.encode.s))
-        out.write(stub.mutable(using Unsafe))
-        out.write(inner.mutable(using Unsafe))
+        out.write(Array.unsafeJvm(stub))
+        out.write(Array.unsafeJvm(inner))
         out.close()
         val zip = Zipfile.read(sfx)
         (zip.prefix.lay(List())(_.readable.to(List)), zip.entries.map(_.read[Text]).stdlib.to(List))

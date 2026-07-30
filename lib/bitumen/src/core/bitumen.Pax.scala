@@ -70,16 +70,14 @@ object Pax:
         raise(TarError(TarError.Reason.BadPaxRecord(data)))
         pos = data.length
       else
-        val lengthBytes = new String(data.slice(pos, lengthEnd).mutable(using Unsafe), "ASCII").nn
-        val length = lengthBytes.toInt
+        val length = data.slice(pos, lengthEnd).ascii.s.toInt
 
         if length < 1 || pos + length > data.length || data(pos + length - 1) != '\n'.toByte
         then
           raise(TarError(TarError.Reason.BadPaxRecord(data)))
           pos = data.length
         else
-          val contentBytes = data.slice(lengthEnd + 1, pos + length - 1).mutable(using Unsafe)
-          val content: String = new String(contentBytes, "UTF-8").nn
+          val content: String = data.slice(lengthEnd + 1, pos + length - 1).utf8.s
           val eqIdx: Int = content.indexOf('=')
 
           if eqIdx < 0 then

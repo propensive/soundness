@@ -62,7 +62,7 @@ object Jar:
     def manifest: Map[Text, Text] =
       zipfile.entries.find(_.ref.encode == ManifestName).map: entry =>
         val bytes: Data = entry.contents.memoize
-        val text: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
+        val text: Text = bytes.utf8
         val unfolded = text.s.split("\r\n|\r|\n", -1).nn.map(_.nn)
         val main = unfolded.takeWhile(_.nonEmpty)
 

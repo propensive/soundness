@@ -260,18 +260,18 @@ object Zip:
 
   private[zeppelin] def crc32(data: Data): Int =
     val crc = juz.CRC32()
-    crc.update(data.mutable(using Unsafe))
+    crc.update(Array.unsafeJvm(data))
     crc.getValue.toInt
 
   // Raw RFC-1951 DEFLATE of a single buffer (the algorithm primitive, not the ZIP container).
   private[zeppelin] def deflate(data: Data, level: Int): Data =
     val deflater = juz.Deflater(level, true)
-    deflater.setInput(data.mutable(using Unsafe))
+    deflater.setInput(Array.unsafeJvm(data))
     deflater.finish()
     val buffer = new scala.Array[Byte](8192)
     val out = ji.ByteArrayOutputStream()
     while !deflater.finished() do out.write(buffer, 0, deflater.deflate(buffer))
     deflater.end()
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
 sealed trait Zip

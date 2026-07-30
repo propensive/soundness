@@ -156,7 +156,7 @@ extends caps.ExclusiveCapability:
     if remainder != 0 then write(out, Tarfile.zeroBlock.slice(0, 512 - remainder))
 
   private def write(out: ji.RandomAccessFile, chunk: Data): Unit =
-    try out.write(chunk.mutable(using Unsafe))
+    try out.write(Array.unsafeJvm(chunk))
     catch case error: ji.IOException =>
       abort(TarError(TarError.Reason.CannotWrite(error.getMessage.nn.tt)))
 

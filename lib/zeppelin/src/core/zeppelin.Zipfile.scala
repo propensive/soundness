@@ -123,7 +123,7 @@ object Zipfile:
             val count = channel.read(buffer, position)
             if count < 0 then eof = true else position += count
 
-          buffer.array.nn.immutable(using Unsafe)
+          Array.unsafeFrozen(buffer.array.nn)
         finally channel.close()
 
   // Positional reads against a channel held open for the lifetime of a `ZipHandle`'s scope —
@@ -142,7 +142,7 @@ object Zipfile:
           val count = channel.read(buffer, position)
           if count < 0 then eof = true else position += count
 
-        buffer.array.nn.immutable(using Unsafe)
+        Array.unsafeFrozen(buffer.array.nn)
 
   private[zeppelin] def parse(source: Expanse): Zipfile raises ZipError =
     val size = source.size
@@ -310,7 +310,7 @@ object Zipfile:
     Zipfile(List.of(builder.result()), comment, prefix)
 
   private def decodeText(bytes: Data): Text =
-    String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
+    bytes.utf8
 
   private def nameBytes(entry: Zip.Entry): Data =
     val encoded: Text = entry.ref.encode
