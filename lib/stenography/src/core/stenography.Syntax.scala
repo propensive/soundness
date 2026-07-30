@@ -43,7 +43,7 @@ import symbolism.*
 import vacuous.*
 
 object Syntax:
-  inline def name[typename <: AnyKind]: Text = ${stenography.internal.typename[typename]}
+  inline def name[designator <: AnyKind]: Text = ${stenography.internal.designator[designator]}
 
   val Space: Symbolic = Symbolic(" ")
   val Colon: Symbolic = Symbolic(": ")
@@ -99,9 +99,9 @@ object Syntax:
           case ValDef(name, meta, default) if name.startsWith("evidence$") =>
 
           apply(meta.tpe) match
-            case Infix(Simple(typename), "is", right)          => List(typename -> right)
-            case Application(Simple(typename), List(right), _) => List(typename -> right)
-            case _                                             => Nil
+            case Infix(Simple(designator), "is", right)          => List(designator -> right)
+            case Application(Simple(designator), List(right), _) => List(designator -> right)
+            case _                                               => Nil
 
       case _ =>
         Nil
@@ -194,7 +194,7 @@ object Syntax:
       case other =>
         Declaration(true, List(), apply(other))
 
-  def term(using Quotes, Bindings)(repr: quotes.reflect.TermRef): Typename = apply(repr) match
+  def term(using Quotes, Bindings)(repr: quotes.reflect.TermRef): Designator = apply(repr) match
     case Value(value) => value
     case _            => panic(m"expected a Value")
 
@@ -211,25 +211,24 @@ object Syntax:
       repr.absolve match
         case ThisType(ref) =>
           apply(ref) match
-            case Simple(Typename.Type(parent, name)) => Simple(Typename.Term(parent, name))
-            case syntax                              => syntax
+            case Simple(Designator.Type(parent, name)) => Simple(Designator.Term(parent, name))
+            case syntax                                => syntax
 
         case typeRef@TypeRef(NoPrefix(), name) =>
-          Simple(Typename.Top(name))
+          Simple(Designator.Top(name))
 
         case typeRef@TypeRef(prefix, name) =>
           val module = typeRef.typeSymbol.flags.is(Flags.Module)
           val name2 = if module then name.dropRight(1) else name
 
           if prefix.typeSymbol.flags.is(Flags.Package)
-          then Simple(Typename.Type(Typename(prefix.show.tt), name2))
+          then Simple(Designator.Type(Designator(prefix.show.tt), name2))
           else apply(prefix) match
-            case value@Value(typename) =>
-              if isPackage(name2) then value
-              else Simple(Typename.Type(typename, name2))
+            case value@Value(designator) =>
+              if isPackage(name2) then value else Simple(Designator.Type(designator, name2))
 
-            case simple@Simple(typename) =>
-              if isPackage(name2) then simple else Simple(Typename.Type(typename, name2))
+            case simple@Simple(designator) =>
+              if isPackage(name2) then simple else Simple(Designator.Type(designator, name2))
 
             case refined@Structural(base, members, defs) =>
               if members.defines(name) then members(name.tt) else Projection(refined, name.tt)
@@ -244,19 +243,19 @@ object Syntax:
               Primitive("<unknown>")
 
         case termRef@TermRef(NoPrefix(), name) =>
-          Value(Typename.Top(name))
+          Value(Designator.Top(name))
 
         case termRef@TermRef(ThisType(TypeRef(NoPrefix(), "<root>")), name) =>
-          Value(Typename.Top(name))
+          Value(Designator.Top(name))
 
         case termRef@TermRef(prefix, name) =>
           apply(prefix) match
-            case value@Value(typename) =>
+            case value@Value(designator) =>
               if repr.toString.contains("inline") then System.out.nn.println(name)
-              if isPackage(name) then value else Value(Typename.Term(typename, name))
+              if isPackage(name) then value else Value(Designator.Term(designator, name))
 
-            case simple@Simple(typename) =>
-              if isPackage(name) then simple else Value(Typename.Term(typename, name))
+            case simple@Simple(designator) =>
+              if isPackage(name) then simple else Value(Designator.Term(designator, name))
 
             case refined@Structural(base, members, defs) =>
               if members.defines(name) then members(name.tt) else Projection(refined, name.tt)
@@ -426,7 +425,7 @@ object Syntax:
           if retry then apply(repr.typeSymbol.typeRef, false) else Primitive("<unknown>")
 
 enum Syntax:
-  case Simple(typename: Typename)
+  case Simple(designator: Designator)
   case Symbolic(text: Text)
   case Primitive(text: Text)
   case Projection(base: Syntax, text: Text)
@@ -439,7 +438,7 @@ enum Syntax:
   case Named(isUsing: Boolean, name: Text, syntax: Syntax)
   case Sequence(style: '(' | '[' | '{', syntaxes: List[Syntax])
   case Declaration(method: Boolean, syntaxes: List[Syntax], result: Syntax)
-  case Value(typename: Typename)
+  case Value(designator: Designator)
   case Compound(syntaxes: List[Syntax])
   case Match(scrutinee: Syntax, cases: List[Syntax])
 
@@ -478,7 +477,7 @@ enum Syntax:
   def qualified: Text = text(using Imports.empty)
 
   def text(using imports: Imports): Text = this match
-    case Simple(typename)        => typename.text
+    case Simple(designator)      => designator.text
     case Symbolic(text)          => text
     case Projection(base, text)  => s"${base.text}#$text".tt
     case Primitive(text)         => text
@@ -488,7 +487,7 @@ enum Syntax:
     case Sequence('(', elements) => s"(${elements.map(_.text).mkString(", ")})".tt
     case Sequence('[', elements) => s"[${elements.map(_.text).mkString(", ")}]".tt
     case Sequence('{', elements) => s"{${elements.map(_.text).mkString(", ")}}".tt
-    case Value(typename)         => s"${typename.text}.type".tt
+    case Value(designator)       => s"${designator.text}.type".tt
     case Compound(syntaxes)      => syntaxes.map(_.text).mkString.tt
 
     case Match(scrutinee, cases) =>
@@ -499,7 +498,7 @@ enum Syntax:
 
     case Application(left, elements, infix) =>
       left match
-        case Simple(Typename.Type(parent, name)) if infix && imports.has(parent) =>
+        case Simple(Designator.Type(parent, name)) if infix && imports.has(parent) =>
           Infix(elements(0), name, elements(1)).text
 
         case _ =>

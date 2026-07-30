@@ -40,37 +40,37 @@ import gigantism.*
 object internal:
   import dotty.tools.dotc.*
 
-  def typename[typename <: AnyKind: Type]: Macro[Text] = Expr(name[typename])
+  def designator[designator <: AnyKind: Type]: Macro[Text] = Expr(name[designator])
 
-  def name[typename <: AnyKind: Type](using Quotes): Text =
+  def name[designator <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
-    name(TypeRepr.of[typename])
+    name(TypeRepr.of[designator])
 
   def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
     given Bindings = Bindings()
 
-    val outer: List[Typename] = quotes.absolve match
+    val outer: List[Designator] = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
 
         context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
-            Typename(root.show) :: statements.collect:
-              case ast.tpd.Import(name, _) => Typename(name.show)
+            Designator(root.show) :: statements.collect:
+              case ast.tpd.Import(name, _) => Designator(name.show)
 
           case _ =>
             Nil
 
       case _ => Nil
 
-    val imports: Set[Typename] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).to(Set)
+    val imports: Set[Designator] = metaprogramming.imports.map(_.term).map(Syntax.term(_)).to(Set)
 
     // Build the `direct` set by drilling into every wildcard import that's in
     // scope (including REPL-accumulated imports across earlier lines, captured
     // by `metaprogramming.imports`) and collecting type aliases carrying the
     // `Exported` flag. Those aliases' *target* types are reachable via just
     // their leaf in the current scope, so we render them that way.
-    val direct: Set[Typename] = quotes.absolve match
+    val direct: Set[Designator] = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
 
@@ -82,16 +82,16 @@ object internal:
 
         .toSet
 
-      case _ => Set.empty[Typename]
+      case _ => Set.empty[Designator]
 
     given Imports =
-      Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer, direct)
+      Imports(Set(Designator("scala"), Designator("scala.Predef")) ++ imports ++ outer, direct)
 
     Syntax(typeRepr).text
 
   private def exportedTargets(using Quotes, dotty.tools.dotc.core.Contexts.Context)
     ( rootSym: dotty.tools.dotc.core.Symbols.Symbol )
-  :   List[Typename] =
+  :   List[Designator] =
 
     import dotty.tools.dotc.core.{Flags, Types}
     import quotes.reflect.TypeRepr
@@ -109,8 +109,8 @@ object internal:
             // Add both forms so the same import path can shorten references
             // to either the type itself or its companion (e.g. `Textual` and
             // `Textual.foo` both resolve via `import soundness.*`).
-            case Syntax.Simple(typename) => List(typename, typename.companionObject)
-            case _                       => Nil
+            case Syntax.Simple(designator) => List(designator, designator.companionObject)
+            case _                         => Nil
 
         case _ =>
           Nil

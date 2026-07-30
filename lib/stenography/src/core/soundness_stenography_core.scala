@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export stenography.{Bindings, Imports, Syntax, Typename}
+export stenography.{Bindings, Imports, Syntax, Designator}

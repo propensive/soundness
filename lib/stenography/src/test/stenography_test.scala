@@ -45,16 +45,16 @@ import symbolism.*
 object Tests extends Suite(m"Stenography Tests"):
   def run(): Unit =
     test(m"Decode a term"):
-      Typename(t"immutable.List")
-    . assert(_ == Typename.Term(Typename.Top("immutable"), "List"))
+      Designator(t"immutable.List")
+    . assert(_ == Designator.Term(Designator.Top("immutable"), "List"))
 
     test(m"Decode a type of a term"):
-      Typename(t"immutable.List#Value")
-    . assert(_ == Typename.Term(Typename.Type(Typename.Top("immutable"), "List"), "Value"))
+      Designator(t"immutable.List#Value")
+    . assert(_ == Designator.Term(Designator.Type(Designator.Top("immutable"), "List"), "Value"))
 
     test(m"Decode a term of a term"):
-      Typename(t"immutable.List.Value")
-    . assert(_ == Typename.Term(Typename.Term(Typename.Top("immutable"), "List"), "Value"))
+      Designator(t"immutable.List.Value")
+    . assert(_ == Designator.Term(Designator.Term(Designator.Top("immutable"), "List"), "Value"))
 
     test(m"Show `Int`"):
       Syntax.name[Int]
