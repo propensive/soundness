@@ -65,3 +65,4 @@ final class Context
   lazy val definitions: List[DefnAnchor] = Definitions.extract(tree, source)
   lazy val soundnessExports: ExportInfo = SoundnessExports.extract(tree, source)
   lazy val anchors: Anchors.AnchorModel = Anchors.build(tree, source, text)
+  lazy val quoteSites: QuoteSites.Model = QuoteSites.extract(lines)

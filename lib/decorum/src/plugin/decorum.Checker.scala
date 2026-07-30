@@ -38,7 +38,6 @@ import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
 object Checker:
-  private val MaxColumns: Int = 100
 
   // Test-friendly entry point: parses `rawText` standalone via `Parsing.parse`
   // before delegating to the tree-aware overload. The plugin should call the
@@ -114,12 +113,6 @@ object Checker:
       val idx    = base.indexOf(prefix)
       if idx > 0 then Some(base.substring(0, idx).nn) else Some(moduleDir)
 
-  // One open `{` on the brace stack. `braceCol >= 0` means this opener
-  // is a multi-line quote/splice (`' {` or `$ {`) and the entry carries
-  // enough state to apply rule 473.2–473.6 when `}` closes; `braceCol
-  // == -1` is the sentinel for any other `{`.
-  private case class QuoteBrace(braceCol: Int, prefixCol: Int, openerLine: Int)
-
   private class State(val file: String, val expectedModule: Option[String]):
     var consecutiveBlanks:    Int                        = 0
     var annotationEndLines:   Set[Int]                   = Set.empty
@@ -161,13 +154,6 @@ object Checker:
     // first param block is on a single line, so the second clause `(
     // using ... )` on the next line is a continuation.
     var prevLineStartedDecl: Boolean                      = false
-    // Stack of currently-unclosed `{` braces. For a multi-line `' {` /
-    // `$ {` opener, the entry records the `{` column, the prefix
-    // (`'` / `$`) column, and the opener line; other braces use sentinel
-    // values (braceCol = -1). When the matching `}` closes, R44b checks
-    // closer column / aloneness against the recorded `{` position; and
-    // body lines while a quote entry is on top are checked for indent.
-    val quoteSpliceBraces:        mutable.Stack[QuoteBrace] = mutable.Stack.empty
     // Indent of the first line of the current `given` declaration whose
     // signature spans multiple lines, or -1 if we are not inside one. Set
     // when a line begins with `given` (after any modifiers) and reset when
@@ -191,7 +177,6 @@ object Checker:
 
     val leadingWs   = line.leadingWs
     val rest        = line.rest
-    val visibleLen  = line.visibleLen
     val firstReal   = line.firstReal
     val isBlank     = line.isBlank
     val leadingCols = line.leadingCols
@@ -208,14 +193,12 @@ object Checker:
     // them. The R560 layout rule governs the structure of the listed
     // interpolators instead.
     val isStringContinuation = isStringContent && leadingWs.isEmpty
-    if !isStringContinuation then checkR2LineLength(visibleLen, emit)
     // Skip R3 inside open `(...)` blocks: continuation rows inside parameter
     // lists align under names from the opener line and may need an odd
     // number of leading spaces (e.g. under `inline commensurable` at col 18).
     if !isStringContent && s.openParens == 0 then
       checkR3IndentWidth(isBlank, leadingCols, emit)
     if !isStringContinuation then checkR4TrailingWs(line.lexemes, emit)
-    checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
     checkR33HeavyBracketAnchor(s, leadingCols, isBlank, firstReal, rest, emit)
 
     if isBlank then
@@ -263,8 +246,6 @@ object Checker:
       s.prevLineStartedDecl = !hasTopLevelEq && (startsWithDecl || isContinuationOfDecl)
 
       s.prevLineIsTight = isTightExpression(line.lexemes)
-      trackQuoteSpliceBraces(s, line, lineNum, out)
-      checkInlineQuoteSplice(s.file, line.arr, line.cols, lineNum, out)
 
       // R32 anchor: a line that begins a `given` declaration (after any
       // modifiers) records its leading-cols as the anchor for arrow
@@ -335,205 +316,12 @@ object Checker:
         col += 1
       i += 1
 
-  private def checkR2LineLength(visibleLen: Int, emit: (Int, String, String) => Unit): Unit =
-    if visibleLen > MaxColumns then
-      emit
-        ( MaxColumns + 1, "230",
-          s"line exceeds 100 columns (is $visibleLen columns)" )
-
   private def checkR3IndentWidth
     ( isBlank: Boolean, leadingCols: Int, emit: (Int, String, String) => Unit )
   :   Unit =
 
     if !isBlank && leadingCols%2 != 0 then
       emit(1, "926", s"indent width $leadingCols is not a multiple of 2")
-
-  // Walk a line's tokens to maintain the quote/splice brace stack and to
-  // enforce the multi-line quote/splice layout (rule 473.2–473.6, see
-  // §5 "Macro quotes and splices" in doc/standards/syntax.md).
-  //
-  // A multi-line quote/splice is one where the matching `}` lives on a
-  // later line; we recognise the opener at `{` time by requiring `' {`
-  // or `$ {` to be the last semantic tokens of the line. For each such
-  // opener the rule expects:
-  //
-  //   (a) a single space between `'`/`$` and `{`        — 473.3
-  //   (b) the `' {` pair alone on its own line          — 473.4
-  //   (c) body lines indented to column `{`-col + 2     — 473.5
-  //   (d) `}` alone on its line at the column of `{`    — 473.2 / 473.6
-  //
-  // Inline quotes (`'{x}`, `${x}`) that open and close on the same
-  // source line aren't multi-line and aren't subject to these rules.
-  private def trackQuoteSpliceBraces
-    ( s:       State,
-      line:    Line,
-      lineNum: Int,
-      out:     mutable.ListBuffer[Violation] )
-  :   Unit =
-
-    val arr  = line.arr
-    val cols = line.cols
-    var i = 0
-    val firstSemantic = arr.indexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
-    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
-    val stack = s.quoteSpliceBraces
-    i = 0
-    while i < arr.length do
-      if arr(i).kind == Sort.Code then
-        val text = arr(i).text
-        if text == "{" then
-          val isLineEnd = i == lastSemantic
-          var j = i - 1
-          while j >= 0 && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do j -= 1
-          val precededByQuoteSplice =
-            j >= 0 && arr(j).kind == Sort.Code && (arr(j).text == "'" || arr(j).text == "$")
-          if isLineEnd && precededByQuoteSplice then
-            // (a) Exactly one space character between `'`/`$` and `{`.
-            val hasSingleSpace =
-              i - 1 >= 0 && arr(i - 1).kind == Sort.Space && arr(i - 1).text == " "
-                && (i - 2) == j
-            if !hasSingleSpace then
-              out +=
-                Violation
-                  ( s.file, lineNum, cols(i), "473.3",
-                    s"`${arr(j).text}` and `{` of a multi-line quote/splice must "
-                      +"be separated by exactly one space" )
-            // (b) Only enclosing opening brackets (`(`, `{`) may sit
-            // before `'`/`$` on the line. Anything else is a violation.
-            val badBefore =
-              (0 until j).exists: k =>
-                val t = arr(k)
-                t.kind != Sort.Space && t.kind != Sort.Comment
-                  && t.text != "(" && t.text != "{"
-            if badBefore then
-              out +=
-                Violation
-                  ( s.file, lineNum, cols(firstSemantic), "473.4",
-                    s"the `${arr(j).text} {` opener of a multi-line quote/splice "
-                      +"must be alone on its line (only enclosing `(` / `{` permitted)" )
-            stack.push(QuoteBrace(braceCol = cols(i), prefixCol = cols(j), openerLine = lineNum))
-          else
-            stack.push(QuoteBrace(braceCol = -1, prefixCol = -1, openerLine = lineNum))
-        else if text == "}" then
-          if stack.nonEmpty then
-            val opener = stack.pop()
-            if opener.braceCol >= 0 then
-              // (d-col) closer column matches `{`.
-              if cols(i) != opener.braceCol then
-                out +=
-                  Violation
-                    ( s.file, lineNum, cols(i), "473.2",
-                      s"closing `}` of a multi-line quote/splice at column ${cols(i)} "
-                        +s"does not align with its opening `{` at column ${opener.braceCol}" )
-              // (d-alone) Nothing semantic before `}` on the line; only
-              // enclosing closing brackets (`)`, `}`) may trail it — plus a
-              // trailing symbolic infix operator that is the last token on the
-              // line, which is an R616 operator continuation (`'{ … } ::` cons'd
-              // with an operand on the next line) and is governed by that rule.
-              val lastSemantic =
-                arr.lastIndexWhere(t => t.kind != Sort.Space && t.kind != Sort.Comment)
-              val semanticBefore = firstSemantic >= 0 && firstSemantic < i
-              val badAfter =
-                (i + 1 until arr.length).exists: k =>
-                  val t = arr(k)
-                  t.kind != Sort.Space && t.kind != Sort.Comment
-                    && t.text != ")" && t.text != "}" && t.text != "=>"
-                    && !(k == lastSemantic && isSymbolicOperator(t.text))
-              if semanticBefore || badAfter then
-                out +=
-                  Violation
-                    ( s.file, lineNum, cols(i), "473.6",
-                      "closing `}` of a multi-line quote/splice must be alone on its line "
-                        +"(only trailing `)` / `}` permitted)" )
-      i += 1
-
-  // SN-473.7: a quote/splice whose opener and closer sit on the same
-  // source line is "inline"; its contents must not be padded by a space
-  // immediately after the opener or immediately before the closer. Covers
-  // term quotes (`'{…}`), type quotes (`'[…]`), and term splices (`${…}`).
-  // Multi-line quote/splices are handled by 473.2–473.6.
-  private def checkInlineQuoteSplice
-    ( file:    String,
-      arr:     Array[Lexeme],
-      cols:    Array[Int],
-      lineNum: Int,
-      out:     mutable.ListBuffer[Violation] )
-  :   Unit =
-
-    var i = 0
-    while i < arr.length do
-      if arr(i).kind == Sort.Code then
-        val text = arr(i).text
-        if text == "{" || text == "[" then
-          var j = i - 1
-          while j >= 0 && arr(j).kind == Sort.Space do j -= 1
-          val prefix =
-            if j >= 0 && arr(j).kind == Sort.Code then arr(j).text else ""
-          val isQuoteOpener =
-            (text == "{" && (prefix == "'" || prefix == "$"))
-              || (text == "[" && prefix == "'")
-          if isQuoteOpener then
-            val closeText = if text == "{" then "}" else "]"
-            val otherOpen = text
-            var depth = 1
-            var k = i + 1
-            while k < arr.length && depth > 0 do
-              if arr(k).kind == Sort.Code then
-                val t = arr(k).text
-                if t == otherOpen then depth += 1
-                else if t == closeText then depth -= 1
-              if depth > 0 then k += 1
-            if depth == 0 && k < arr.length then
-              val afterOpen = i + 1
-              val beforeClose = k - 1
-              if afterOpen < k && arr(afterOpen).kind == Sort.Space
-                && arr(afterOpen).text.nonEmpty
-              then
-                out += Violation
-                  ( file, lineNum, cols(afterOpen), "473.7",
-                    s"no space is permitted directly after `$prefix$text` "
-                      +"in an inline quote/splice" )
-              if beforeClose > i && beforeClose != afterOpen
-                && arr(beforeClose).kind == Sort.Space
-                && arr(beforeClose).text.nonEmpty
-              then
-                out += Violation
-                  ( file, lineNum, cols(beforeClose), "473.7",
-                    s"no space is permitted directly before `$closeText` "
-                      +"in an inline quote/splice" )
-      i += 1
-
-  // (c) On lines inside an open multi-line quote/splice — neither the
-  // opener nor the closer — the first non-whitespace character must
-  // sit at column `{`+2 (the canonical body indent). Continuations and
-  // sub-expressions inside a body statement may indent further; only
-  // dedents below the canonical column are flagged. Lines that begin
-  // inside a multi-line string literal (Sort.Strs) or are comment-only
-  // don't count as body lines for this rule — their layout is governed
-  // by the surrounding string/comment, not by the quote's indent.
-  private def checkR44BodyIndent
-    ( s:           State,
-      lineNum:     Int,
-      isBlank:     Boolean,
-      leadingCols: Int,
-      firstReal:   Option[Lexeme],
-      emit:        (Int, String, String) => Unit )
-  :   Unit =
-
-    if isBlank then return
-    if s.quoteSpliceBraces.isEmpty then return
-    val top = s.quoteSpliceBraces.top
-    if top.braceCol < 0 then return
-    if lineNum == top.openerLine then return
-    if firstReal.exists{ t => t.kind == Sort.Strs || t.kind == Sort.Comment } then return
-    // The closer line is `}` alone (or with content) at column braceCol;
-    // its `}` is processed by `trackQuoteSpliceBraces`, not here.
-    if firstReal.exists(_.text == "}") && leadingCols + 1 == top.braceCol then return
-    if leadingCols < top.braceCol + 1 then
-      emit
-        ( leadingCols + 1, "473.5",
-          s"body of a multi-line quote/splice must be indented to column "
-            +s"${top.braceCol + 2} (found ${leadingCols + 1})" )
 
   private def checkR4TrailingWs
     ( line: IndexedSeq[Lexeme], emit: (Int, String, String) => Unit )
@@ -1351,7 +1139,7 @@ object Checker:
                 s"`${op.text}` cannot have more spacing than lower-precedence "
                   +"operators in the same expression" )
 
-  private def isSymbolicOperator(text: String): Boolean =
+  private[decorum] def isSymbolicOperator(text: String): Boolean =
     text.nonEmpty && text.forall: c =>
       c match
         case '+' | '-' | '*' | '/' | '%' | '&' | '|' | '^' | '~' => true

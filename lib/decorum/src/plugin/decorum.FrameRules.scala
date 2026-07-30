@@ -36,6 +36,35 @@ import scala.collection.mutable
 
 object FrameRules:
   private[decorum] val PackageLine: Int = 33
+  private val MaxColumns: Int = 100
+
+  // R2 (230): hard limit of 100 columns. Interior lines of multi-line
+  // triple-quoted strings are exempt: their text is string content, whose
+  // width is governed by R560 for the layout interpolators and is
+  // significant data for the rest.
+  object LineLength extends Rule:
+    def id: String = "230"
+    def principle: Principle = Principle.Frame
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line = ctx.lines(idx)
+
+        val isStringContinuation =
+          line.firstReal.exists(_.kind == Sort.Strs) && line.leadingWs.isEmpty
+
+        if !isStringContinuation && line.visibleLen > MaxColumns then
+          out +=
+            Violation
+              ( ctx.file, idx + 1, MaxColumns + 1, "230",
+                s"line exceeds 100 columns (is ${line.visibleLen} columns)" )
+
+        idx += 1
+
+      out.toList
 
   // R-799: the licence header occupies lines 1–32 of every file: line 1
   // opens the block comment with `/*` and line 32 closes it with `*/`.

@@ -68,4 +68,14 @@ object Rules:
         ProximityRules.ChunkSeparation,
         FindabilityRules.FileNaming, FindabilityRules.CompanionOrdering,
         FindabilityRules.SoundnessExportCompleteness,
-        FindabilityRules.ExtensionExportCompleteness )
+        FindabilityRules.ExtensionExportCompleteness,
+        // LineLength (230) fired at the top of the old per-line walk, before
+        // the quote/splice family — it must keep winning their one positional
+        // collision (a 101-column line inside an inline splice).
+        FrameRules.LineLength,
+        // QuoteSpliceLayout stays last: the 473.2–.7 family used to fire at
+        // the end of the per-line walk, after every registry rule, so any
+        // positional collision with an earlier rule (e.g. 616.1 with 473.5)
+        // must keep resolving in the earlier rule's favour — dotty's
+        // reporter keeps only the first diagnostic per position.
+        QuoteRules.QuoteSpliceLayout )
