@@ -75,7 +75,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def ty(name: Text): Syntax = Syntax.Type(name, Unset)
 
   // ── value-tokenizer helpers ──────────────────────────────────────────────
-  def vt(text: Text): scala.collection.immutable.List[ValueToken] = ValueTokenizer.tokens(text).stdlib
+  def vt(text: Text): List[ValueToken] = ValueTokenizer.tokens(text)
   val ws: ValueToken = ValueToken.Whitespace
   def num(n: Int): ValueToken = ValueToken.Number(n, true, n.toString.tt)
   def dim(n: Int, unit: Text): ValueToken = ValueToken.Dimension(n, unit, (n.toString+unit.s).tt)
@@ -410,10 +410,10 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == 663)
 
     suite(m"Value tokenizer"):
-      val rgbMid = scala.collection.immutable.List(num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma, ws, num(3))
-      val rgbTokens = ValueToken.Function(t"rgb") :: rgbMid ::: scala.collection.immutable.List(ValueToken.Close)
-      val calcMid = scala.collection.immutable.List(dim(1, t"px"), ws, ValueToken.Delim('+'), ws, dim(2, t"px"))
-      val calcTokens = ValueToken.Function(t"calc") :: calcMid ::: List(ValueToken.Close)
+      val rgbMid: List[ValueToken] = List(num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma, ws, num(3))
+      val rgbTokens: List[ValueToken] = ValueToken.Function(t"rgb") :: rgbMid ::: List(ValueToken.Close)
+      val calcMid: List[ValueToken] = List(dim(1, t"px"), ws, ValueToken.Delim('+'), ws, dim(2, t"px"))
+      val calcTokens: List[ValueToken] = ValueToken.Function(t"calc") :: calcMid ::: List(ValueToken.Close)
 
       test(m"an identifier"):
         vt(t"auto")

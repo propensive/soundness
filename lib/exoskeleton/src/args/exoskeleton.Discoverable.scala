@@ -39,7 +39,7 @@ import distillate.*
 import prepositional.*
 
 object Discoverable:
-  def noSuggestions[operand]: operand is Discoverable = _ => scala.collection.immutable.Nil
+  def noSuggestions[operand]: operand is Discoverable = _ => Nil.stdlib
 
   given enumerable: [value: {Enumerable, Identifiable}] => value is Discoverable = _ =>
     value.values.readable.toList

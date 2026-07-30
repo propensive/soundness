@@ -189,11 +189,11 @@ extends Cli:
                 val params = sh"$prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
                 sh"'${core.fit(width)} $aliasText -- $desc' $params"
 
-            val duplicateLine =
-              if !incomplete then scala.collection.immutable.List()
-              else scala.collection.immutable.List(sh"'' $prefix2 $suffix2 -S '' -- $core")
+            val duplicateLine: List[Command] =
+              if !incomplete then List()
+              else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
-            mainLine :: duplicateLine
+            List(mainLine) ::: duplicateLine
 
         List.of(title.stdlib ++ itemLines.stdlib).map(_.arguments.join(t"\u0000"))
 

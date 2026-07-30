@@ -58,7 +58,7 @@ trait CommonFormattable extends Formattable:
     val roleClass: Optional[Name[CssClass]] = role.let: role =>
       cssClass(role.show.lower)
 
-    ClassList(Set.of(scala.collection.immutable.Set(cssClass(accent.show.lower)) ++ roleClass.option))
+    ClassList(Set(cssClass(accent.show.lower)) ++ roleClass.option)
 
   def element(accent: Accent, role: Optional[Role], text: Text): Element of "code" =
     whatwg.Code(`class` = classes(accent, role))(text)

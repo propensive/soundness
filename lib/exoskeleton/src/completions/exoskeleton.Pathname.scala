@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -40,6 +42,7 @@ import galilei.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import symbolism.*
 import vacuous.*
@@ -92,7 +95,7 @@ object Pathname:
           workingDirectory.resolve(argument())
         val showAll = argument.tab.or(Prim) > Prim || prototype.name.starts(t".")
         val base: Optional[Path on Local] = if directory then prototype else prototype.parent
-        val children0 = base.lay(scala.collection.immutable.Nil)(_.children.stdlib.toList)
+        val children0 = base.let(base => List.of(base.children.stdlib.toList)).or(List[Path on Local]())
 
         val children =
           if directory then children0
@@ -102,8 +105,7 @@ object Pathname:
           val children2 =
             if !showAll then children.filter(!_.name.starts(t".")) else children
 
-          List.of:
-           children2.map: path =>
+          children2.map: path =>
             val directory = safely(path.entry() == galilei.Directory).or(false)
             val slash = if directory then t"/" else t""
 

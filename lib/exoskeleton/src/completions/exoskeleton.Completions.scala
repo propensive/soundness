@@ -34,6 +34,8 @@ package exoskeleton
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*
@@ -291,9 +293,7 @@ object Completions:
       this match
         case CommandNotOnPath(_)              => Nil
         case Shells(zsh, bash, fish, pwsh) =>
-          scala.collection.immutable.List(zsh, bash, fish, pwsh)
-          . map(_.pathname).collect { case text: Text => text } match
-              case texts => List.of(texts)
+          List(zsh, bash, fish, pwsh).map(_.pathname).collect { case text: Text => text }
 
 object CliEvent:
   given execEvent: CliEvent transcribes ExecEvent = CliEvent.Exec(_)

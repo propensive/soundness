@@ -167,10 +167,10 @@ object Pem:
 
 case class Pem(label: PemLabel, data: Data):
   def serialize: Text =
-    scala.collection.immutable.List
-      ( scala.collection.immutable.List(t"-----BEGIN $label-----"),
-        data.batched(48).map(_.serialize[Base64]).stdlib,
-        scala.collection.immutable.List(t"-----END $label-----") )
+    List
+      ( List(t"-----BEGIN $label-----"),
+        data.batched(48).map(_.serialize[Base64]),
+        List(t"-----END $label-----") )
 
     . flatten
     . join(t"\n")

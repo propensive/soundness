@@ -38,6 +38,7 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 package interpreters:
@@ -96,30 +97,32 @@ package interpreters:
           ( parameters = commandline.parameters.updated(current, List.of(arguments.stdlib.reverse)) )
 
       def postprocess(commandline: Commandline): Commandline =
-        val parameters2: Map[Argument, List[Argument]] = Map.from:
-          commandline.parameters.stdlib.toList.flatMap: (key, values) =>
+        val parameters2: Map[Argument, List[Argument]] =
+          commandline.parameters.toList.bind: (key, values) =>
             val flag = key.value
 
             if flag.starts(t"--") && flag.contains(t"=")
             then
               val key2 = key.copy(format = Argument.Format.EqualityPrefix)
               val value = key.copy(format = Argument.Format.EqualitySuffix)
-              scala.collection.immutable.List(key2 -> List.of(value :: values.stdlib))
+              List(key2 -> (List(value) ::: values))
             else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
             then
               if clustering then
                 val init =
-                  (0 until (flag.length - 2)).toList.map: index =>
-                    key.copy(format = Argument.Format.CharFlag(index.z)) -> Nil
+                  List.range(0, flag.length - 2).map: index =>
+                    key.copy(format = Argument.Format.CharFlag(index.z)) -> (Nil: List[Argument])
 
                 init :+ (key.copy(format = Argument.Format.CharFlag((flag.length - 2).z)), values)
               else
-                scala.collection.immutable.List:
+                List:
                   key.copy(format = Argument.Format.CharFlag(Prim)) ->
-                    List.of(key.copy(format = Argument.Format.FlagSuffix) :: values.stdlib)
+                    (List(key.copy(format = Argument.Format.FlagSuffix)) ::: values)
 
             else
-              scala.collection.immutable.List(key -> values)
+              List(key -> values)
+
+          . toMap
 
         val focus2 = current.let: current =>
           val focusCursor: Ordinal = current.cursor.or(current.value.length).z
