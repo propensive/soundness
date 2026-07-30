@@ -32,8 +32,6 @@
                                                                                                   */
 package escritoire
 
-import scala.collection.immutable.IndexedSeq
-
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
@@ -47,4 +45,4 @@ trait Columnar:
 
   def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
     ( using Text is Measurable, Hyphenation )
-  :   IndexedSeq[text]
+  :   Series[text]

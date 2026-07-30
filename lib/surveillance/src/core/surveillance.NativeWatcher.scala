@@ -80,6 +80,8 @@ object NativeWatcher extends Watcher:
           WatchService(watchService, pollLoop(watchService)).tap: service =>
             serviceValue = service
 
+  // Deliberately stdlib: `PathWatch` elements capture the spool, and capture-carrying
+  // elements do not flow through the opaque `Set` combinators (boxing).
   private val watches: scm.HashMap[jnf.WatchKey, scala.collection.immutable.Set[PathWatch]] =
     scm.HashMap()
 

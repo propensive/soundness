@@ -134,7 +134,7 @@ object apkLinkages:
           Zip.Entry(entry.ref, unsafely(entry.read[Data])).aligned(4)
 
         val unsignedPath = out / "unsigned.apk"
-        unsafely(Zipfile.write(unsignedPath)((manifestEntry :: dexZipEntries): scala.collection.immutable.List[Zip.Entry]))
+        unsafely(Zipfile.write(unsignedPath)(manifestEntry :: dexZipEntries))
         val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
 
         val signed =

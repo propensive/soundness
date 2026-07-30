@@ -112,7 +112,7 @@ object Bundler:
               !entry.directory && name != t"META-INF/MANIFEST.MF"
 
           case _ =>
-            scala.collection.immutable.Nil
+            Nil.stdlib
 
       entries.distinctBy(_.ref)
 

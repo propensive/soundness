@@ -32,8 +32,6 @@
                                                                                                   */
 package escritoire
 
-import scala.collection.immutable.IndexedSeq
-
 case class TableCell[text]
-  ( width: Int, span: Int, lines: IndexedSeq[text], minHeight: Int, textAlign: TextAlignment ):
-  def apply(line: Int): text = lines(line)
+  ( width: Int, span: Int, lines: Series[text], minHeight: Int, textAlign: TextAlignment ):
+  def apply(line: Int): text = lines.stdlib(line)

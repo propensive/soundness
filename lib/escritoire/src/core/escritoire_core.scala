@@ -133,7 +133,7 @@ package columnar:
 
     def fit[textual: Textual](lines: Array[textual]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[textual] =
+    :   Series[textual] =
 
       given measurable: Char is Measurable = _.toString.tt.metrics
       val hyphen = textual(t"-")
@@ -207,7 +207,7 @@ package columnar:
 
         recur(0, 0, 0, Nil)
 
-      lines.readable.to(IndexedSeq).bind(format(_).reverse)
+      Series.of(lines.readable.to(IndexedSeq).bind(format(_).reverse).toVector)
 
   object ParagraphOrBreak extends Columnar:
     def width[textual: Textual](lines: Array[textual]^{}, maxWidth: Int, slack: Double)
@@ -219,7 +219,7 @@ package columnar:
 
     def fit[textual: Textual](lines: Array[textual]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[textual] =
+    :   Series[textual] =
 
       given Char is Measurable = _.toString.tt.metrics
 
@@ -234,7 +234,7 @@ package columnar:
           (0 until count).each: index =>
             result = line.segment((width*index).z span width) :: result
 
-        result.stdlib.reverse.to(IndexedSeq)
+        Series.of(result.stdlib.reverse.toVector)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
@@ -246,11 +246,12 @@ package columnar:
 
     def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[text] =
+    :   Series[text] =
 
-      lines.readable.to(IndexedSeq).map: line =>
-        if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
-        else line
+      Series.of:
+        lines.readable.toVector.map: line =>
+          if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
+          else line
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
@@ -263,11 +264,12 @@ package columnar:
 
     def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[text] =
+    :   Series[text] =
 
-      lines.readable.to(IndexedSeq).map: line =>
-        if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
-        else line
+      Series.of:
+        lines.readable.toVector.map: line =>
+          if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
+          else line
 
   case class Collapsible(threshold: Double) extends Columnar:
     def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
@@ -279,6 +281,6 @@ package columnar:
 
     def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[text] =
+    :   Series[text] =
 
-      lines.readable.to(IndexedSeq)
+      Series.of(lines.readable.toVector)
