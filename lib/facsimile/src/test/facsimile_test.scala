@@ -58,22 +58,22 @@ object Tests extends Suite(m"Facsimile tests"):
 
     def textOf(cos: Cos): Text =
       cos.chars.let: bytes =>
-        String(bytes.mutable(using Unsafe), "UTF-8").tt
+        bytes.utf8
       . or(t"")
 
     def bytesOf(cos: Cos): scala.collection.immutable.List[Int] = cos.chars.let(v => (v.to[List]: List[Byte]).stdlib.map(_.toInt & 0xff)).or(scala.collection.immutable.List())
 
-    def data(values: Int*): Data = values.map(_.toByte).to(scala.Array).immutable(using Unsafe)
+    def data(values: Int*): Data = Array.from(values.map(_.toByte))
 
     def deflate(bytes: Data): Data =
       val deflater = juz.Deflater()
-      deflater.setInput(bytes.mutable(using Unsafe))
+      deflater.setInput(Array.unsafeJvm(bytes))
       deflater.finish()
       val buffer = new scala.Array[Byte](1024)
       val out = ji.ByteArrayOutputStream()
       while !deflater.finished do out.write(buffer, 0, deflater.deflate(buffer))
       deflater.end()
-      out.toByteArray.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(out.toByteArray.nn)
 
     def pad10(value: Long): Text =
       val digits = value.toString
@@ -107,11 +107,11 @@ object Tests extends Suite(m"Facsimile tests"):
     // Write `bytes` to a fresh temp file and return its path as Text; and read a file back.
     def tempPdf(bytes: Data): Text =
       val path = jnf.Files.createTempFile("facsimile", ".pdf").nn
-      jnf.Files.write(path, bytes.mutable(using Unsafe))
+      jnf.Files.write(path, Array.unsafeJvm(bytes))
       path.toString.tt
 
     def fileBytes(path: Text): Data =
-      jnf.Files.readAllBytes(jnf.Paths.get(path.s)).nn.immutable(using Unsafe)
+      Array.unsafeFrozen(jnf.Files.readAllBytes(jnf.Paths.get(path.s)).nn)
 
     // Big-endian byte assembly for the font fixture below.
     def big16(values: Int*): Data =
@@ -124,7 +124,7 @@ object Tests extends Suite(m"Facsimile tests"):
         values.flatMap: value =>
           Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
-    def utf16(text: Text): Data = text.s.getBytes("UTF-16BE").nn.immutable(using Unsafe)
+    def utf16(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-16BE").nn)
 
     // A minimal but real TrueType font: glyphs A and B with simple outlines and C a composite
     // of both, at 1000 units per em, carrying the bounding box (-50, -200, 1000, 800), an
@@ -172,7 +172,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       tables.each: (tag, table) =>
         val padding = (4 - table.length%4)%4
-        val entry = tag.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+        val entry = Array.unsafeFrozen(tag.s.getBytes("US-ASCII").nn)
         directory += entry ++ big32(0L, offset.toLong, table.length.toLong)
         parts += table ++ Array.fill[Byte](padding)(0)
         offset += table.length + padding
@@ -396,7 +396,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"Hello")
 
@@ -405,7 +405,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(document(catalog, body, t"5".in[Data])).open():
           pdf(2, 0) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"Hello")
 
@@ -417,7 +417,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"compressed content")
 
@@ -426,7 +426,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         // Find the base cross-reference offset from its own startxref value, then append an
         // updated object 1 and a new section chaining back through /Prev.
-        val baseText = String(base.mutable(using Unsafe), "ISO-8859-1")
+        val baseText = String(Array.unsafeJvm(base), "ISO-8859-1")
 
         val previous: Text = baseText.substring(baseText.lastIndexOf("startxref") + 10).nn
           . trim.nn.takeWhile(_.isDigit).tt
@@ -496,7 +496,7 @@ object Tests extends Suite(m"Facsimile tests"):
         PdfFile(path).open(Read & Write): doc ?=>
           doc.set(Cos.Ref(2, 0), Cos.Integral(7))
 
-        String(fileBytes(path).mutable(using Unsafe), "ISO-8859-1").nn.contains("/Prev")
+        String(Array.unsafeJvm(fileBytes(path)), "ISO-8859-1").nn.contains("/Prev")
       . assert(_ == true)
 
       test(m"an allocated object gets a fresh number and is readable after writing"):
@@ -930,7 +930,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"a document with no startxref is recovered by scanning"):
         // Truncate the cross-reference section and trailer entirely.
-        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val text = String(Array.unsafeJvm(recoverable), "ISO-8859-1")
         val truncated = text.substring(0, text.indexOf("xref")).nn.tt.in[Data]
 
         PdfFile(truncated).open():
@@ -938,7 +938,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == (1, Quantity[Points[1]](200.0)))
 
       test(m"the catalog is found when the trailer is gone"):
-        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val text = String(Array.unsafeJvm(recoverable), "ISO-8859-1")
         val truncated = text.substring(0, text.indexOf("xref")).nn.tt.in[Data]
 
         PdfFile(truncated).open():
@@ -946,7 +946,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == t"kept")
 
       test(m"a corrupt startxref offset falls back to scanning"):
-        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val text = String(Array.unsafeJvm(recoverable), "ISO-8859-1")
         val corrupt = text.replaceAll("startxref\\n\\d+", "startxref\n999999").nn.tt.in[Data]
 
         PdfFile(corrupt).open():
@@ -963,10 +963,10 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == Quantity[Points[1]](300.0))
 
       test(m"garbage between objects does not prevent recovery"):
-        val text = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val text = String(Array.unsafeJvm(recoverable), "ISO-8859-1")
         val messy = text.replace("endobj\n2 0 obj", "endobj\n%% junk %%\n2 0 obj").nn.tt.in[Data]
         val truncated =
-          String(messy.mutable(using Unsafe), "ISO-8859-1").nn
+          String(Array.unsafeJvm(messy), "ISO-8859-1").nn
           . pipe { s => s.substring(0, s.indexOf("xref")).nn.tt.in[Data] }
 
         PdfFile(truncated).open():
@@ -974,7 +974,7 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == 1)
 
       test(m"an incremental update's newer object wins during recovery"):
-        val full = String(recoverable.mutable(using Unsafe), "ISO-8859-1")
+        val full = String(Array.unsafeJvm(recoverable), "ISO-8859-1")
         val base = full.substring(0, full.indexOf("xref")).nn
 
         // Append a newer copy of object 1 with a changed note, then no valid xref.
@@ -1080,7 +1080,7 @@ object Tests extends Suite(m"Facsimile tests"):
               (element.asInstanceOf[Matchable]: @unchecked) match
                 case value: Double => value
                 case data          =>
-                  String(data.asInstanceOf[Data].mutable(using Unsafe), "UTF-8").tt
+                  data.asInstanceOf[Data].utf8
 
           case _ =>
             List()
@@ -1245,7 +1245,7 @@ object Tests extends Suite(m"Facsimile tests"):
           pdf(2, 0) match
             case body: Cos.Body =>
               scala.caps.unsafe.unsafeAssumeSeparate:
-                String(drain(pdf.spring(body)()).mutable(using Unsafe), "UTF-8").tt
+                drain(pdf.spring(body)()).utf8
 
             case _ =>
               t""
@@ -1281,8 +1281,8 @@ object Tests extends Suite(m"Facsimile tests"):
             case body: Cos.Body =>
               scala.caps.unsafe.unsafeAssumeSeparate:
                 val spring = pdf.spring(body)
-                val first = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
-                val second = String(drain(spring()).mutable(using Unsafe), "UTF-8").tt
+                val first = drain(spring()).utf8
+                val second = drain(spring()).utf8
                 (first, second)
 
             case _ =>
@@ -1316,14 +1316,14 @@ object Tests extends Suite(m"Facsimile tests"):
       // the sequence's reach capability, which leaks out of the method's capture scope.
       def md5(chunks: Data*): scala.Array[Byte] =
         val digest = js.MessageDigest.getInstance("MD5").nn
-        chunks.foreach { chunk => digest.update(chunk.mutable(using Unsafe)) }
+        chunks.foreach { chunk => digest.update(Array.unsafeJvm(chunk)) }
         digest.digest().nn
 
       // A test-side implementation of the standard security handler's *encryption* — the
       // inverse of the reader's `Guard`, and independently written — used to build encrypted
       // fixtures with an empty user password.
       def rc4(key: scala.Array[Byte], data: scala.Array[Byte]): scala.Array[Byte] =
-        Rc4(key.immutable(using Unsafe), data.immutable(using Unsafe)).mutable(using Unsafe)
+        Array.unsafeJvm(Rc4(Array.unsafeFrozen(key), Array.unsafeFrozen(data)))
 
       // A PURE array type (the Java `copyOf` fluid result adapts): reads of a suite-level
       // `rd`-charged array would otherwise be rejected inside the test closures.
@@ -1347,8 +1347,8 @@ object Tests extends Suite(m"Facsimile tests"):
         val ownerKey =
           def stir(hash: scala.Array[Byte], count: Int): scala.Array[Byte] =
             if count >= 50 then hash
-            else stir(md5(hash.take(keyBytes).immutable(using Unsafe)), count + 1)
-          val hash = md5(padding.immutable(using Unsafe))
+            else stir(md5(Array.unsafeFrozen(hash.take(keyBytes))), count + 1)
+          val hash = md5(Array.unsafeFrozen(padding))
           (if revision >= 3 then stir(hash, 0) else hash).take(keyBytes)
 
         // The block reads `ownerKey`, whose Unscoped root is conflated with the fresh
@@ -1365,9 +1365,9 @@ object Tests extends Suite(m"Facsimile tests"):
         val fileKey =
           def stir(hash: scala.Array[Byte], count: Int): scala.Array[Byte] =
             if count >= 50 then hash
-            else stir(md5(hash.take(keyBytes).immutable(using Unsafe)), count + 1)
-          val hash = md5(padding.immutable(using Unsafe), ownerEntry.immutable(using Unsafe),
-              permBytes.immutable(using Unsafe), id.immutable(using Unsafe))
+            else stir(md5(Array.unsafeFrozen(hash.take(keyBytes))), count + 1)
+          val hash = md5(Array.unsafeFrozen(padding), Array.unsafeFrozen(ownerEntry),
+              Array.unsafeFrozen(permBytes), Array.unsafeFrozen(id))
           (if revision >= 3 then stir(hash, 0) else hash).take(keyBytes)
 
         // As `ownerEntry`: `fileKey` is read, never mutated.
@@ -1376,14 +1376,14 @@ object Tests extends Suite(m"Facsimile tests"):
           else
             def stir(value: scala.Array[Byte], i: Int): scala.Array[Byte] =
               if i > 19 then value else stir(rc4(xor(fileKey, i), value), i + 1)
-            stir(rc4(fileKey, md5(padding.immutable(using Unsafe), id.immutable(using Unsafe))), 1)
+            stir(rc4(fileKey, md5(Array.unsafeFrozen(padding), Array.unsafeFrozen(id))), 1)
             ++ new scala.Array[Byte](16)
 
         def objectKey(number: Int, generation: Int): scala.Array[Byte] =
-          md5(fileKey.immutable(using Unsafe), scala.Array((number & 0xff).toByte,
+          md5(Array.unsafeFrozen(fileKey), Array.of((number & 0xff).toByte,
               ((number >> 8) & 0xff).toByte, ((number >> 16) & 0xff).toByte,
               (generation & 0xff).toByte,
-              ((generation >> 8) & 0xff).toByte).immutable(using Unsafe))
+              ((generation >> 8) & 0xff).toByte))
           . take((keyBytes + 5).min(16))
 
         def hex(bytes: scala.Array[Byte]): Text = hexOf(bytes)
@@ -1401,7 +1401,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Type /Catalog >>".in[Data],
             t"<< /Secret <${hex(secret)}> >>".in[Data],
             (t"<< /Length ${streamCipher.length} >>\nstream\n".in[Data]
-                ++ streamCipher.immutable(using Unsafe) ++ t"\nendstream".in[Data]) )
+                ++ Array.unsafeFrozen(streamCipher) ++ t"\nendstream".in[Data]) )
 
       // Assembles a document with an `/Encrypt` entry (object N+1) and an `/ID`.
       def buildEncrypted(encrypt: Text, bodies: Data*): Data =
@@ -1429,7 +1429,7 @@ object Tests extends Suite(m"Facsimile tests"):
       def aes256Document(password: Text): Data =
         def hash6(pw: scala.Array[Byte], salt: scala.Array[Byte]): scala.Array[Byte] =
           var k: scala.Array[Byte] = // placeholder, replaced below
-            md5(pw.immutable(using Unsafe), salt.immutable(using Unsafe))
+            md5(Array.unsafeFrozen(pw), Array.unsafeFrozen(salt))
           val sha256 = js.MessageDigest.getInstance("SHA-256").nn
           sha256.update(pw)
           sha256.update(salt)
@@ -1445,7 +1445,7 @@ object Tests extends Suite(m"Facsimile tests"):
               block.addAll(Array.unsafeFrozen(k))
               repeat += 1
 
-            val input = block.result().mutable(using Unsafe)
+            val input = Array.unsafeJvm(block.result())
             val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
             cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(k.take(16), "AES"),
                 jcs.IvParameterSpec(k.slice(16, 32)))
@@ -1506,7 +1506,7 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Type /Catalog >>".in[Data],
             (t"<< /Secret <${hex(secret)}> >>".in[Data]),
             (t"<< /Length ${streamCipher.length} >>\nstream\n".in[Data]
-                ++ streamCipher.immutable(using Unsafe) ++ t"\nendstream".in[Data]) )
+                ++ Array.unsafeFrozen(streamCipher) ++ t"\nendstream".in[Data]) )
 
       test(m"RC4 matches its known-answer vector"):
         Rc4(t"Key".in[Data], t"Plaintext".in[Data]).to[List].map(b => f"${b & 0xff}%02X").mkString.tt
@@ -1525,7 +1525,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"a revision-3 stream decrypts"):
         PdfFile(rc4Document(3)).open():
           pdf(3, 0) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"encrypted stream")
 
@@ -1542,7 +1542,7 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"an AES-256 stream decrypts"):
         PdfFile(aes256Document(t"open sesame")).open(Password(t"open sesame")):
           pdf(3, 0) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"encrypted stream")
 
@@ -1586,7 +1586,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(fileBytes(path)).open():
           pdf.resolved(pdf(1, 0)(t"Extra").or(Cos.Nil)) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"secret stream")
 
@@ -1806,7 +1806,7 @@ object Tests extends Suite(m"Facsimile tests"):
           ( attachment.name,
             attachment.filename,
             attachment.mediaType,
-            String(attachment.data.mutable(using Unsafe), "UTF-8").tt )
+            attachment.data.utf8 )
       . assert(_ == (t"notes.txt", t"notes.txt", t"text/plain", t"hello"))
 
       test(m"page labels follow the number-tree ranges"):
@@ -1829,15 +1829,11 @@ object Tests extends Suite(m"Facsimile tests"):
       . assert(_ == t"2")
 
       test(m"ASCII85Decode decodes a full group"):
-        String
-          ( Filter.decode(t"9jqo^~>".in[Data], List((Filter.Id.Ascii85, noParms)))
-            . mutable(using Unsafe), "UTF-8" ).tt
+        Filter.decode(t"9jqo^~>".in[Data], List((Filter.Id.Ascii85, noParms))).utf8
       . assert(_ == t"Man ")
 
       test(m"ASCII85Decode decodes a partial final group"):
-        String
-          ( Filter.decode(t"9jqo~>".in[Data], List((Filter.Id.Ascii85, noParms)))
-            . mutable(using Unsafe), "UTF-8" ).tt
+        Filter.decode(t"9jqo~>".in[Data], List((Filter.Id.Ascii85, noParms))).utf8
       . assert(_ == t"Man")
 
       test(m"the z shorthand is four zero bytes"):
@@ -1846,9 +1842,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
       test(m"LZWDecode decodes the specification's example"):
         val encoded = data(0x80, 0x0b, 0x60, 0x50, 0x22, 0x0c, 0x0c, 0x85, 0x01)
-        String
-          ( Filter.decode(encoded, List((Filter.Id.Lzw, noParms))).mutable(using Unsafe),
-            "UTF-8" ).tt
+        Filter.decode(encoded, List((Filter.Id.Lzw, noParms))).utf8
       . assert(_ == t"-----A---B")
 
       test(m"a wrong stream length falls back to the endstream keyword"):
@@ -1856,7 +1850,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"Hello")
 
@@ -1865,7 +1859,7 @@ object Tests extends Suite(m"Facsimile tests"):
 
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
-            case body: Cos.Body => String(pdf.payload(body).mutable(using Unsafe), "UTF-8").tt
+            case body: Cos.Body => pdf.payload(body).utf8
             case _              => t""
       . assert(_ == t"Hello")
 
@@ -1907,5 +1901,5 @@ object Tests extends Suite(m"Facsimile tests"):
             t"<< /Type /Metadata /Subtype /XML /Length 5 >>\nstream\n<xmp/\nendstream".in[Data] )
 
         PdfFile(doc).open():
-          pdf.xmp.let(bytes => String(bytes.mutable(using Unsafe), "UTF-8").tt)
+          pdf.xmp.let(bytes => bytes.utf8)
       . assert(_ == t"<xmp/")

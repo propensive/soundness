@@ -56,20 +56,23 @@ private[facsimile] object Predictor:
   private def tiff(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[PdfError]): Data =
     if bits != 8 then abort(PdfError(PdfError.Reason.CorruptStream(t"Predictor"))) else
       val rowLength = colors*columns
-      val out = data.mutable(using Unsafe).clone.nn
+      // The row decorrelation is undone in place, so the working copy is built exclusively
+      // and frozen once at the end rather than thawed out of `data`.
+      val out = Array[Byte](data.length)
+      out.copyFrom(data, 0, 0, data.length)
       var row = 0
 
-      while row*rowLength < out.length do
+      while row*rowLength < data.length do
         var i = row*rowLength + colors
-        val end = ((row + 1)*rowLength).min(out.length)
+        val end = ((row + 1)*rowLength).min(data.length)
 
         while i < end do
-          writable(out)(i) = (out(i) + out(i - colors)).toByte
+          out(i) = (out(i) + out(i - colors)).toByte
           i += 1
 
         row += 1
 
-      out.immutable(using Unsafe)
+      Array.freeze(out)
 
   private def png(data: Data, colors: Int, bits: Int, columns: Int)(using Tactic[PdfError]): Data =
     val bytesPerPixel = ((colors*bits + 7)/8).max(1)

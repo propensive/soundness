@@ -79,7 +79,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
     val out = target.asInstanceOf[scala.Array[Byte]]
 
     val data = result.or:
-      val transformed = transform(gathered.toArray.immutable(using Unsafe))
+      val transformed = transform(Array.unsafeFrozen(gathered.toArray))
       result = transformed
       transformed
 

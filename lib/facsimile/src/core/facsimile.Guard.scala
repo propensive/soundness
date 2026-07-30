@@ -158,7 +158,7 @@ private[facsimile] object Guard:
       else Array.empty[Byte]
 
     var hash: Data =
-      md5(padded(password).immutable(using Unsafe) ++ owner.take(32.min(owner.length)) ++
+      md5(Array.unsafeFrozen(padded(password)) ++ owner.take(32.min(owner.length)) ++
         permissionsBytes ++ id ++ metadataBytes)
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
@@ -215,10 +215,10 @@ private[facsimile] object Guard:
             val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
 
             cipher.init(jc.Cipher.DECRYPT_MODE,
-                jcs.SecretKeySpec(intermediate.mutable(using Unsafe), "AES"),
+                jcs.SecretKeySpec(Array.unsafeJvm(intermediate), "AES"),
                 jcs.IvParameterSpec(new scala.Array[Byte](16)))
 
-            cipher.doFinal(ue.take(32).mutable(using Unsafe)).nn.immutable(using Unsafe)
+            Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(ue.take(32))).nn)
           catch case _: Exception => Unset
       finally ju.Arrays.fill(passwordBytes, 0.toByte)
 
@@ -252,7 +252,8 @@ private[facsimile] object Guard:
       // capture-checking reason as `unwrap6`.
       val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
       cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(key, "AES"), jcs.IvParameterSpec(iv))
-      val e = cipher.doFinal(input.mutable(using Unsafe)).nn
+      // `doFinal` reads its input and returns a fresh array, which is only read below.
+      val e: Data = Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(input)).nn)
 
       var sum = 0
       i = 0
@@ -265,7 +266,7 @@ private[facsimile] object Guard:
         case 1 => 384
         case _ => 512
 
-      k = sha(bits, e.immutable(using Unsafe))
+      k = sha(bits, e)
       round += 1
 
       if round >= 64 && (e(e.length - 1) & 0xff) <= round - 32 then done = true
@@ -286,7 +287,7 @@ private[facsimile] object Guard:
     val out = new scala.Array[Byte](32)
     val count = 32.min(bytes.length)
     System.arraycopy(bytes, 0, out, 0, count)
-    System.arraycopy(padding.mutable(using Unsafe), 0, out, count, 32 - count)
+    System.arraycopy(Array.unsafeJvm(padding), 0, out, count, 32 - count)
     ju.Arrays.fill(bytes, 0.toByte)
     out
 
