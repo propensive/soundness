@@ -32,6 +32,8 @@
                                                                                                   */
 package decorum
 
+import dotty.tools.dotc.util.SourceFile
+
 // Shared linear-scan helpers for checks that track, line by line, whether
 // the previous code line left a declaration signature "in progress" — a
 // line that started with a declaration keyword or modifier (or continued
@@ -40,6 +42,67 @@ package decorum
 // .SignatureEqLast`, `AnchorRules.GivenArrowAlign`, `AnchorRules
 // .HeavyBracketAnchor` and the bracket-pair extraction in `Brackets`.
 object Scans:
+
+  // The shared token vocabulary: modifier keywords, declaration keywords
+  // and the words that can never be an operand of a binary operator.
+  // These sets were originally private to the per-line walk in `Checker`;
+  // they now serve the extractors (`Brackets`), the scan helpers below
+  // and several registry rules.
+  private[decorum] val ModifierWords: Set[String] =
+    Set
+      ( "private", "protected", "public", "final", "sealed", "abstract",
+        "implicit", "lazy", "override", "case", "inline", "transparent",
+        "infix", "open", "opaque", "erased", "tracked", "given", "into" )
+
+  private[decorum] val DeclKeywords: Set[String] =
+    Set("def", "val", "var", "type", "class", "trait", "object", "enum", "given")
+
+  private[decorum] val NonOperandWords: Set[String] =
+    Set
+      ( "case", "if", "then", "else", "do", "while", "for", "yield", "return",
+        "match", "with", "extends", "derives", "given", "using", "new", "throw",
+        "try", "catch", "finally", "import", "package", "def", "val", "var",
+        "lazy", "object", "class", "trait", "enum", "type", "private", "protected",
+        "public", "final", "sealed", "abstract", "implicit", "override", "inline",
+        "transparent", "infix", "open", "opaque", "erased", "tracked",
+        "is", "of", "in", "by", "to", "under", "on", "raises", "until" )
+
+  private[decorum] def isSymbolicOperator(text: String): Boolean =
+    text.nonEmpty && text.forall: c =>
+      c match
+        case '+' | '-' | '*' | '/' | '%' | '&' | '|' | '^' | '~' => true
+        case '<' | '>' | '=' | '!' | '?' | ':' | '@' | '#'       => true
+        case _                                                   => false
+
+  // Walk each line index `l` strictly between `endLine` and `startLine`
+  // (1-indexed) — those are the lines that lie *between* the two
+  // statements. If any is blank (whitespace only), there's a separator.
+  private[decorum] def hasBlankLineBetween
+    ( endLine: Int, startLine: Int, content: String, source: SourceFile )
+  :   Boolean =
+
+    var l = endLine + 1
+
+    while l < startLine do
+      val from = source.lineToOffset(l - 1)
+
+      val to =
+        if l < content.split('\n').length + 1
+        then source.lineToOffset(l).min(content.length)
+        else content.length
+
+      var i     = from
+      var blank = true
+
+      while blank && i < to do
+        val c = content.charAt(i)
+        if c != ' ' && c != '\t' && c != '\n' && c != '\r' then blank = false
+        i += 1
+
+      if blank then return true
+      l += 1
+
+    false
 
   // The declaration-signature facts of one line: whether it has a
   // top-level `=` (a completed declaration), whether it starts with a
@@ -70,7 +133,7 @@ object Scans:
 
     val startsWithDecl =
       sem.headOption.exists: t =>
-        Checker.DeclKeywords.contains(t.text) || Checker.ModifierWords.contains(t.text)
+        DeclKeywords.contains(t.text) || ModifierWords.contains(t.text)
 
     val continuesDecl =
       prevStartedDecl && sem.headOption.exists: t => t.text == "(" || t.text == "["

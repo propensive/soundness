@@ -191,7 +191,7 @@ object QuoteSites:
                   val t = arr(k)
                   t.kind != Sort.Space && t.kind != Sort.Comment &&
                     t.text != ")" && t.text != "}" && t.text != "=>" &&
-                    !(k == lastSemantic && Checker.isSymbolicOperator(t.text))
+                    !(k == lastSemantic && Scans.isSymbolicOperator(t.text))
 
               sites += Closer(lineNum, cols(i), opener.braceCol, semanticBefore, badAfter)
 

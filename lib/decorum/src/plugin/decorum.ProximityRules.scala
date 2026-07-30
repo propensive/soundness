@@ -67,7 +67,7 @@ object ProximityRules:
           val cur  = stmts(i)
           if (prev.isMultiLine || cur.isMultiLine)
           && cur.startLine > prev.endLine
-          && !Checker.hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
+          && !Scans.hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
           && !startsWithContinuationOperator(content, source, cur.startLine)
           && !endsWithContinuationOperator(content, source, prev.endLine, cur.startLine)
           then
@@ -206,3 +206,163 @@ object ProximityRules:
     private def isReturnTypeLine(rest: IndexedSeq[Lexeme]): Boolean =
       rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Sort.Space &&
         rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
+
+  // R6 (783): at most two consecutive blank lines. The third and every
+  // subsequent blank line in a run each fire once, exactly as the old
+  // walk's `consecutiveBlanks` counter did.
+  object BlankLineRun extends Rule:
+    def id: String = "783"
+    def principle: Principle = Principle.Proximity
+
+    def check(ctx: Context): List[Violation] =
+      val out    = mutable.ListBuffer[Violation]()
+      var blanks = 0
+      var idx    = 0
+
+      while idx < ctx.lines.length do
+        if ctx.lines(idx).isBlank then
+          blanks += 1
+
+          if blanks > 2 then
+            out += Violation(ctx.file, idx + 1, 1, "783", "more than two consecutive blank lines")
+        else
+          blanks = 0
+
+        idx += 1
+
+      out.toList
+
+  // R-551: an annotation must sit directly above the declaration it
+  // annotates. A blank line between them fires 551.2 (at the blank line,
+  // which also clears the pending annotation, so a run of blanks fires
+  // only once); an annotation that is never followed by another line at
+  // all — the end-of-file flush — fires 551.1 at the annotation's own
+  // line. `ctx.annotationEndLines` supplies the final line of every
+  // annotation from the tree, so multi-line annotations arm the check on
+  // their last line only.
+  object AnnotationAdjacency extends Rule:
+    def id: String = "551"
+    def principle: Principle = Principle.Proximity
+
+    def check(ctx: Context): List[Violation] =
+      val out                = mutable.ListBuffer[Violation]()
+      val annotationEndLines = ctx.annotationEndLines
+      var prevWasAnnotation  = false
+      var prevLineNum        = 0
+      var idx                = 0
+
+      while idx < ctx.lines.length do
+        val lineNum = idx + 1
+
+        if ctx.lines(idx).isBlank then
+          if prevWasAnnotation then
+            out +=
+              Violation
+                ( ctx.file, lineNum, 1, "551.2",
+                  "blank line is not permitted between an annotation and the declaration " +
+                    "it annotates" )
+
+            prevWasAnnotation = false
+        else
+          prevWasAnnotation = annotationEndLines.contains(lineNum)
+          prevLineNum = lineNum
+
+        idx += 1
+
+      if prevWasAnnotation then
+        out +=
+          Violation
+            ( ctx.file, prevLineNum, 1, "551.1", "annotation is not followed by a declaration" )
+
+      out.toList
+
+  // R11/R37 (529): comma spacing. No space is permitted before a comma
+  // (529.1) and exactly one space is required after it (529.2) — except
+  // when the extra spaces are part of a multi-row alignment column. A
+  // line's multi-space comma sites are deferred rather than fired when
+  // the alignment question is still open: the line "continues" an
+  // alignment iff one of its extra-space comma columns matches a column
+  // the previous line also had, and a deferral is likewise cancelled when
+  // the *next* line shares one of its columns. Deferred violations that
+  // are never cancelled — including any still pending at end of file —
+  // are flushed.
+  object CommaSpacing extends Rule:
+    def id: String = "529"
+    def principle: Principle = Principle.Proximity
+
+    def check(ctx: Context): List[Violation] =
+      val out               = mutable.ListBuffer[Violation]()
+      var prevAlignmentCols = Set[Int]()
+      var pending           = List[Violation]()
+      var idx               = 0
+
+      while idx < ctx.lines.length do
+        val lineNum = idx + 1
+        val line    = ctx.lines(idx)
+        val arr     = line.arr
+        val cols    = line.cols
+
+        val deferred      = mutable.ListBuffer[Violation]()
+        val alignmentCols = mutable.Set[Int]()
+
+        var i = 0
+
+        while i < arr.length do
+          if arr(i).text == "," && arr(i).kind == Sort.Code then
+            if i > 0 && arr(i - 1).kind == Sort.Space && arr(i - 1).text.length > 0 then
+              out +=
+                Violation
+                  ( ctx.file, lineNum, cols(i), "529.1", "no space is permitted before a comma" )
+
+            if i + 1 < arr.length then
+              val next = arr(i + 1)
+
+              if next.kind != Sort.Space then
+                out +=
+                  Violation
+                    ( ctx.file, lineNum, cols(i + 1), "529.2",
+                      "exactly one space is required after a comma" )
+              else if next.text != " " then
+                // Extra spaces after comma — possibly part of a multi-row
+                // alignment column. Record the column where the *next* token
+                // begins (i.e. the would-be-aligned column) and defer until
+                // we can confirm the previous line shared that column.
+                val nextTokCol = cols(i + 1) + next.text.length
+                alignmentCols += nextTokCol
+
+                if !next.text.startsWith("\n") then
+                  deferred +=
+                    Violation
+                      ( ctx.file, lineNum, cols(i + 1), "529.2",
+                        "exactly one space is required after a comma" )
+
+          i += 1
+
+        // The current line "continues" an alignment iff one of its
+        // multi-space comma sites lands at a column the previous line also
+        // had. Otherwise the extra spaces are unjustified — fire.
+        val continuesAlignment =
+          alignmentCols.nonEmpty && alignmentCols.exists(prevAlignmentCols.contains)
+
+        if continuesAlignment then pending = Nil
+        else
+          pending.foreach(out += _)
+          pending = Nil
+
+        if continuesAlignment then
+          // Both directions confirmed — drop current deferred too.
+          ()
+        else if alignmentCols.nonEmpty then
+          // Current line has extra-space commas but doesn't continue a known
+          // alignment run; defer in case the *next* line shares a column.
+          pending = deferred.toList
+        else
+          deferred.foreach(out += _)
+
+        if !line.isBlank then prevAlignmentCols = alignmentCols.toSet
+        else prevAlignmentCols = Set.empty
+
+        idx += 1
+
+      pending.foreach(out += _)
+      out.toList

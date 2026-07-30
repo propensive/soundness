@@ -319,7 +319,7 @@ object AnchorRules:
         // current `(`/`[` begins the right-hand operand of that operator —
         // an operator continuation governed by R616, not a heavy argument
         // block. Skip.
-        else if Checker.isSymbolicOperator(prevTok) then ()
+        else if Scans.isSymbolicOperator(prevTok) then ()
         // If the previous line opened a block, quote or splice (ending in
         // `{`), the current line is the first expression *inside* that
         // scope — a tuple or parenthesised value standing on its own, not
@@ -767,7 +767,7 @@ object AnchorRules:
       var i = 0
 
       while i < tokens.length && tokens(i).kind == Sort.Code &&
-        Checker.ModifierWords.contains(tokens(i).text) && tokens(i).text != "given"
+        Scans.ModifierWords.contains(tokens(i).text) && tokens(i).text != "given"
       do i += 1
 
       i

@@ -143,10 +143,10 @@ object Brackets:
         else if leadingCols <= prevCodeLineIndent then false
         else if prevTok == ")" || prevTok == "]" then true
         else if prevTok.isEmpty then false
-        else if Checker.ModifierWords.contains(prevTok) then true
+        else if Scans.ModifierWords.contains(prevTok) then true
         else
           val c = prevTok.head
-          (c.isLetter || c == '_' || c == '`') && !Checker.NonOperandWords.contains(prevTok)
+          (c.isLetter || c == '_' || c == '`') && !Scans.NonOperandWords.contains(prevTok)
 
       var currentFormalIndent = -1
       var i = 0

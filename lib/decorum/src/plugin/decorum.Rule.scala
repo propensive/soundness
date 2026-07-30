@@ -53,7 +53,13 @@ trait Rule:
 object Rules:
   val all: List[Rule] =
     List
-      ( FrameRules.LicenceFrame, FrameRules.PackageDeclaration, FrameRules.PackageBlank,
+      ( // RawTabs (135) leads the registry: the old raw pre-tokenizer scan
+        // ran in the preamble of `check`, before every other rule, so any
+        // positional collision with a later rule must keep resolving in its
+        // favour. (No such collision exists in the corpus — the tree is
+        // tab-free — but the historical order is preserved regardless.)
+        FrameRules.RawTabs,
+        FrameRules.LicenceFrame, FrameRules.PackageDeclaration, FrameRules.PackageBlank,
         FrameRules.ImportSeparation, FrameRules.ImportOrdering,
         AnchorRules.SequenceLayout, AnchorRules.DefinitionAnchors,
         // OperatorContinuation must precede ContinuationIndent: both can fire
@@ -73,6 +79,25 @@ object Rules:
         // the quote/splice family — it must keep winning their one positional
         // collision (a 101-column line inside an inline splice).
         FrameRules.LineLength,
+        // The former per-line-walk cluster, in its old within-line order:
+        // 926, 015, 783, then the `checkTokens` family (162, 376, 376.1,
+        // 013, in `checkTokens` call order), then 529. All of these fired
+        // after LineLength (230) at the top of `checkLine` and before the
+        // 444/163/140/677 block below. Two placement constraints carry
+        // evidence from the corpus:
+        //  - IndentWidth (926) must follow ProximityRules.ChunkSeparation:
+        //    both fire at monotonous.Alphabet:186:1, and SN-315 is the
+        //    surviving diagnostic in the baseline compile, so 315 must keep
+        //    winning — dotty's reporter keeps only the first diagnostic per
+        //    position.
+        //  - No other positional collision involves 926, 015, 783, 162,
+        //    376, 376.1, 013 or 529 anywhere in the corpus (checked over
+        //    the full parse-path oracle), so the remaining placements
+        //    simply preserve the old walk's within-line order.
+        FrameRules.IndentWidth, FrameRules.TrailingWhitespace,
+        ProximityRules.BlankLineRun, FrameRules.CommentShape,
+        BalanceRules.OperatorSpacing, BalanceRules.AssignmentSpacing,
+        BalanceRules.SymbolicMethodNames, ProximityRules.CommaSpacing,
         // These four fired towards the end of the old per-line walk (in this
         // order: 444, 163, 140, 677), after LineLength and before the
         // quote/splice family, so they sit between those two here. No
@@ -93,6 +118,12 @@ object Rules:
         // corpus.
         BalanceRules.FormalBlockSpacing, BalanceRules.CompactBracketSpacing,
         TabulationRules.UsingAlignment, AnchorRules.HeavyBracketAnchor,
+        // AnnotationAdjacency (551) fired at the very bottom of the old
+        // `checkLine` (the 551.2 blank-line check and the end-of-file 551.1
+        // flush both ran after every other per-line check), so it sits after
+        // the whole walk-era cluster; no positional collision involves 551
+        // in the corpus.
+        ProximityRules.AnnotationAdjacency,
         // QuoteSpliceLayout stays last: the 473.2–.7 family used to fire at
         // the end of the per-line walk, after every registry rule, so any
         // positional collision with an earlier rule (e.g. 616.1 with 473.5)

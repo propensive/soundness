@@ -177,7 +177,7 @@ object TabulationRules:
                   if i > 0 then
                     val prev = gens(i - 1)
                     if prev.line < gl.line - 1
-                    && Checker.hasBlankLineBetween(prev.line, gl.line, ctx.text, ctx.source)
+                    && Scans.hasBlankLineBetween(prev.line, gl.line, ctx.text, ctx.source)
                     then
                       out +=
                         Violation

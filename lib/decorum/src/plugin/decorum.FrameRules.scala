@@ -66,6 +66,165 @@ object FrameRules:
 
       out.toList
 
+  // R1 (135): no tab characters anywhere in the file. This is a raw
+  // pre-tokenizer scan: it walks `ctx.text` verbatim, character by
+  // character, exactly as the old preamble scan did before tokenization —
+  // so it also reaches tabs inside strings and comments, which the
+  // tokenized `ctx.lines` view would classify differently.
+  object RawTabs extends Rule:
+    def id: String = "135"
+    def principle: Principle = Principle.Frame
+
+    def check(ctx: Context): List[Violation] =
+      val out  = mutable.ListBuffer[Violation]()
+      val text = ctx.text
+      var line = 1
+      var col  = 1
+      var i    = 0
+
+      while i < text.length do
+        val ch = text.charAt(i)
+
+        if ch == '\t' then
+          out += Violation(ctx.file, line, col, "135", "tab character is not permitted; use spaces")
+
+        if ch == '\n' then
+          line += 1
+          col = 1
+        else
+          col += 1
+
+        i += 1
+
+      out.toList
+
+  // R3 (926): the leading indent of every code line must be an even
+  // number of columns. The rule suspends inside open `(...)` blocks:
+  // continuation rows inside parameter lists align under names from the
+  // opener line and may need an odd number of leading spaces (e.g. under
+  // `inline commensurable` at col 18). The suspension tracker is a
+  // rule-local copy of the walk's `openParens` counter rather than a view
+  // over `ctx.brackets`: the old counter paired only round parentheses
+  // (never `[`/`]`) and clamped its depth at zero at the end of every
+  // line, neither of which the bracket-pair table reproduces.
+  object IndentWidth extends Rule:
+    def id: String = "926"
+    def principle: Principle = Principle.Frame
+
+    def check(ctx: Context): List[Violation] =
+      val out        = mutable.ListBuffer[Violation]()
+      var openParens = 0
+      var idx        = 0
+
+      while idx < ctx.lines.length do
+        val line            = ctx.lines(idx)
+        val isStringContent = line.firstReal.exists(_.kind == Sort.Strs)
+
+        if !isStringContent && openParens == 0 && !line.isBlank && line.leadingCols%2 != 0 then
+          out +=
+            Violation
+              ( ctx.file, idx + 1, 1, "926",
+                s"indent width ${line.leadingCols} is not a multiple of 2" )
+
+        var depth = openParens
+        var i     = 0
+
+        while i < line.rest.length do
+          val t = line.rest(i)
+
+          if t.kind == Sort.Code then
+            if t.text == "(" then depth += 1
+            else if t.text == ")" then depth -= 1
+
+          i += 1
+
+        openParens = depth max 0
+        idx += 1
+
+      out.toList
+
+  // R4 (015): no trailing whitespace at the end of a line. Interior (and
+  // closing) lines of multi-line triple-quoted strings are exempt: they
+  // tokenize as a single `Strs` token with no leading `Space`, and their
+  // text is string content — significant for `sh`/raw strings, prose for
+  // the layout interpolators — so the rule must not fire on them.
+  // Whitespace-only lines (no non-space, non-comment token) don't count
+  // as trailing either.
+  object TrailingWhitespace extends Rule:
+    def id: String = "015"
+    def principle: Principle = Principle.Frame
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val line = ctx.lines(idx)
+
+        val isStringContinuation =
+          line.firstReal.exists(_.kind == Sort.Strs) && line.leadingWs.isEmpty
+
+        if !isStringContinuation then
+          line.lexemes.lastOption match
+            case Some(token) if token.kind == Sort.Space && token.text.length > 0 =>
+              val hasNonWs =
+                line.lexemes.exists: t =>
+                  t.kind != Sort.Space && t.kind != Sort.Comment
+
+              if hasNonWs then
+                val col = line.lexemes.iterator.map(_.text.length).sum - token.text.length + 1
+                out += Violation(ctx.file, idx + 1, col, "015", "line has trailing whitespace")
+
+            case _ =>
+              ()
+
+        idx += 1
+
+      out.toList
+
+  // R-162: block comments. `/** ... */` doc comments are never permitted
+  // (162.2 — documentation lives in `doc/` markdown), and `/* ... */`
+  // block comments are reserved for the license header on lines 1–32
+  // (162.1). The rule spans the Frame, Proximity and Findability
+  // principles; it lives here with the Frame family because its licence
+  // exemption is defined by the same fixed frame `LicenceFrame` enforces.
+  object CommentShape extends Rule:
+    def id: String = "162"
+    def principle: Principle = Principle.Frame
+
+    def check(ctx: Context): List[Violation] =
+      val out = mutable.ListBuffer[Violation]()
+      var idx = 0
+
+      while idx < ctx.lines.length do
+        val lineNum   = idx + 1
+        val line      = ctx.lines(idx)
+        val arr       = line.arr
+        val cols      = line.cols
+        val inLicense = lineNum >= 1 && lineNum <= 32
+        var i         = 0
+
+        while i < arr.length do
+          if arr(i).kind == Sort.Comment then
+            val text = arr(i).text
+
+            if text.startsWith("/**") then
+              out +=
+                Violation
+                  ( ctx.file, lineNum, cols(i), "162.2",
+                    "`/** ... */` block comments are not permitted; use `doc/` markdown instead" )
+            else if text.startsWith("/*") && !inLicense then
+              out +=
+                Violation
+                  ( ctx.file, lineNum, cols(i), "162.1",
+                    "`/* ... */` block comments are reserved for the license header (lines 1-32)" )
+
+          i += 1
+
+        idx += 1
+
+      out.toList
+
   // R-799: the licence header occupies lines 1–32 of every file: line 1
   // opens the block comment with `/*` and line 32 closes it with `*/`.
   object LicenceFrame extends Rule:

@@ -140,7 +140,7 @@ object Operators:
     Some(OpInfo(opLine, opCol, leftEndLine, anchorIndent, rightLine, rightCol, multiline))
 
   // True iff every character of `text` is a symbolic-operator character.
-  // Mirrors `Checker.isSymbolicOperator`; replicated here so each extractor
+  // Mirrors `Scans.isSymbolicOperator`; replicated here so each extractor
   // stays self-contained.
   private def isSymbolicOperator(text: String): Boolean =
     text.nonEmpty && text.forall: c =>
