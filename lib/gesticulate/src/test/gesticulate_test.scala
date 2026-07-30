@@ -51,9 +51,9 @@ object Tests extends Suite(m"Gesticulate tests"):
       def chunks(text: Text, size: Int): Progression[Data] =
         val data: Data = text.in[Data]
         def go(offset: Int): Progression[Data] =
-          if offset >= data.stdlib.length then Progression() else
-            val end = math.min(offset + size, data.stdlib.length)
-            Array.frozen(data.stdlib.slice(offset, end)) #:: go(end)
+          if offset >= data.readable.length then Progression() else
+            val end = math.min(offset + size, data.readable.length)
+            Array.frozen(data.readable.slice(offset, end)) #:: go(end)
         go(0)
 
       def bodyText(part: Part): Text = part.body.read[Data].utf8

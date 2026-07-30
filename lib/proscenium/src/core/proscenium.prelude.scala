@@ -54,9 +54,9 @@ export scala.{`&`, `|`, `<:<`, `=:=`}
 // Primitives and arrays.
 export scala.{Boolean, Byte, Char, Double, Float, Int, Long, Short}
 // `Array` is the blessed opaque alias (proscenium.Array, the separation-checked mutable
-// array) and `IArray` the blessed immutable opaque (proscenium.IArray); both are package
-// members here, so ambient without aliases. The raw stdlib forms stay reachable as
-// `scala.Array`/`scala.IArray` for the JDK-boundary and erasure-level code that needs them.
+// array), a package member here, so ambient without an alias; its frozen form is
+// `Array[element]^{}`. The raw stdlib forms stay reachable as `scala.Array`/`scala.IArray`
+// for the JDK-boundary and erasure-level code that needs them.
 
 // Core data types and their extractors.
 export scala.{Either, Left, None, Option, Right, Some}

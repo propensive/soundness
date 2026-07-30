@@ -69,12 +69,6 @@ object Convertible:
   =>  self is Convertible in Map to Map[key, value] =
     self => Map.from(traversable.traverse(self))
 
-  given iarray: [self]
-  =>  (traversable: self is Traversable)
-  =>  (tag: ClassTag[traversable.Operand])
-  =>  self is Convertible in IArray to IArray[traversable.Operand] =
-    self => IArray.from(traversable.traverse(self))(using tag)
-
   // `xs.to[Array]` yields the frozen form, `Array[element]^{}`: the built array is fresh,
   // so no writer survives its construction.
   given frozenArray: [self]

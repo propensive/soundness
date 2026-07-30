@@ -1074,11 +1074,13 @@ object Tests extends Suite(m"Facsimile tests"):
       test(m"TJ mixes strings and kerning adjustments"):
         operators(t"BT [(A) -500 (B)] TJ ET").stdlib match
           case List(_, PdfOperator.ShowTexts(elements), _) =>
-            elements.map:
-              case value: Double => value
-
-              case data: (Data @unchecked) =>
-                String(data.mutable(using Unsafe), "UTF-8").tt
+            // Via the stdlib list and a `Double`-first match: the frozen-array union member
+            // takes a reach capture under pattern binding that `Mappable` rejects.
+            elements.stdlib.map: element =>
+              (element.asInstanceOf[Matchable]: @unchecked) match
+                case value: Double => value
+                case data          =>
+                  String(data.asInstanceOf[Data].mutable(using Unsafe), "UTF-8").tt
 
           case _ =>
             List()

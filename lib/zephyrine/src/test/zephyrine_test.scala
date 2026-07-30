@@ -167,7 +167,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           producer.put(Data.fill(3)(_.toByte))
           producer.put(Data.fill(5)(i => (i + 10).toByte))
           producer.finish()
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await())).flatMap(_.stdlib.to(List))
+          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await())).flatMap(_.readable.to(List))
         . assert(_ == List[Byte](0, 1, 2, 10, 11, 12, 13, 14))
 
         test(m"Synchronous text collection joins puts"):
@@ -205,7 +205,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             i += 1
 
           producer.finish()
-          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await())).flatMap(_.stdlib.to(List))
+          unsafely(scala.caps.unsafe.unsafeAssumeSeparate(output.await())).flatMap(_.readable.to(List))
         . assert(_ == (0 until 10).map(_.toByte).to(List))
 
         test(m"Push chars (synchronous text)"):
@@ -463,7 +463,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"Cursor[Data] remainder from start equals full stream"):
           val blocks = Progression(Data(1, 2, 3), Data(4, 5), Data(6, 7))
           val cursor = Cursor[Data](blocks.iterator)
-          cursor.remainder.stdlib.map(_.stdlib).flatten.to(List)
+          cursor.remainder.stdlib.map(_.readable).flatten.to(List)
 
         . assert(_ == List[Byte](1, 2, 3, 4, 5, 6, 7))
 
@@ -471,7 +471,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val blocks = Progression(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
           val cursor = Cursor[Data](blocks.iterator)
           for i <- 0 until 3 do cursor.next()
-          cursor.remainder.stdlib.map(_.stdlib).flatten.to(List)
+          cursor.remainder.stdlib.map(_.readable).flatten.to(List)
 
         . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
@@ -479,7 +479,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val blocks = Progression(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
           val cursor = Cursor[Data](blocks.iterator)
           for i <- 0 until 3 do cursor.next()
-          cursor.hold(cursor.remainder.stdlib.map(_.stdlib).flatten.to(List))
+          cursor.hold(cursor.remainder.stdlib.map(_.readable).flatten.to(List))
 
         . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
@@ -634,7 +634,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           val intake = gather.accepting(Trailer())
           intake.put(Array.of[Byte](1, 2))
           intake.finish()
-          scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stdlib.to(List)
+          scala.caps.unsafe.unsafeAssumeSeparate(gather.data).readable.to(List)
         . assert(_ == List[Byte](1, 2, 99))
 
         test(m"duct flush emits terminal state at end of a pulled stream"):
@@ -876,7 +876,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == "abcde")
 
         test(m"take limits a stream to its first elements"):
-          small.stream.take(3).memoize.stdlib.to(List)
+          small.stream.take(3).memoize.readable.to(List)
         . assert(_ == List[Byte](1, 2, 3))
 
         test(m"take across chunk boundaries"):
@@ -976,7 +976,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"the lent cursor resumes at the boundary"):
           val cursor = Cursor(Data.fill(10)(_.toByte))
           scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize)
-          cursor.remainder.stdlib.to(List).flatMap(_.stdlib.to(List))
+          cursor.remainder.stdlib.to(List).flatMap(_.readable.to(List))
         . assert(_ == List[Byte](4, 5, 6, 7, 8, 9))
 
         test(m"streamOf without a length lends the whole remainder"):
@@ -992,7 +992,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"a lent sub-stream and the resumed cursor partition the input"):
           val cursor = Cursor(Iterator(Array.of[Byte](0, 1, 2), Array.of[Byte](3, 4, 5), Array.of[Byte](6.toByte)))
           val lent = scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 5).memoize.to[List])
-          val rest = cursor.remainder.stdlib.to(List).flatMap(_.stdlib.to(List))
+          val rest = cursor.remainder.stdlib.to(List).flatMap(_.readable.to(List))
           (lent, rest)
         . assert(_ == (List[Byte](0, 1, 2, 3, 4), List[Byte](5, 6)))
 

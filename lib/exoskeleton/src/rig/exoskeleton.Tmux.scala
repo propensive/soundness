@@ -109,7 +109,7 @@ object Tmux:
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter('\r')))
         var count = 0
 
-        while Tmux.screenshot().screen.filter(_ == t">").stdlib.length == 0 && count < 333 do
+        while Tmux.screenshot().screen.filter(_ == t">").readable.length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
         screenshot().screen.to[List].stdlib
@@ -129,7 +129,7 @@ object Tmux:
         enter(' ')
         enter(text)
         scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
-        screenshot().screen.filter(!_.starts(t"> ")).stdlib.toSeq.join(t"\n").trim
+        screenshot().screen.filter(!_.starts(t"> ")).readable.toSeq.join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
@@ -192,7 +192,7 @@ case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height
 extends Findable, caps.ExclusiveCapability
 
 case class Screenshot(screen: Array[Text]^{}, size: (Int, Int), cursor: (Ordinal, Ordinal)):
-  def apply(): Text = screen.stdlib.toSeq.join(t"\n")
+  def apply(): Text = screen.readable.toSeq.join(t"\n")
 
   def currentLine(decorate: Char => Text): Text =
     val line0 = screen.at(cursor(1)).or(t"")

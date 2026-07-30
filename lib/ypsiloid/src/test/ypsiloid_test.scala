@@ -816,7 +816,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         val shape: Shape = Shape.Circle(2.0)
         shape.in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
-            entries.stdlib.collectFirst:
+            entries.readable.collectFirst:
               case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
             . getOrElse("none")
           case _ => "none"
@@ -825,7 +825,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"@name renames a variant's `type` discriminator"):
         (YStatus.Active(5): YStatus).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
-            entries.stdlib.collectFirst:
+            entries.readable.collectFirst:
               case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
             . getOrElse("none")
           case _ => "none"

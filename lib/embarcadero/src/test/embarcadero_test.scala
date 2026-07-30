@@ -135,8 +135,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
     suite(m"OCI archive"):
       val entries    = Tarfile.read(image.archive.source[Data]).to(List).asInstanceOf[List[bitumen.Tar.Entry]]
       val names      = entries.map(_.entryName)
-      val layoutData = entries.collect:
-        case file: Tar.Entry.File if file.entryName == t"oci-layout" => file.data.memoize
+      // Explicit result type and reasserting cast: the collect lambda re-freshens the
+      // frozen chunk to an `any.rd` that leaks out of the partial function.
+      val layoutData = entries.collect[Data]:
+        case file: Tar.Entry.File if file.entryName == t"oci-layout" =>
+          file.data.memoize.asInstanceOf[Data]
 
       test(m"archive contains the oci-layout marker and index.json"):
         (names.has(t"oci-layout"), names.has(t"index.json"))

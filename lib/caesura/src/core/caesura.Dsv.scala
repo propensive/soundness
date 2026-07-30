@@ -79,6 +79,21 @@ trait Dsv2:
 object Dsv extends Dsv2:
   def apply(iterable: Iterable[Text]): Dsv =
     new Dsv(Array.from(iterable))
+
+  // Flattens the per-field cell arrays of a derived product row into one `Dsv`. A plain
+  // method rather than part of the inline derivation body: the fresh `any.rd` of the
+  // intermediate buffers must not be minted inside an inline expansion, where it leaks
+  // into the expansion site's capture sets.
+  private[caesura] def flatten(arrays: Array[Array[Text]^{}]^{caps.any.rd}): Dsv =
+    val raw = arrays.readable
+    val builder = scala.collection.immutable.List.newBuilder[Text]
+    var index = 0
+
+    while index < raw.length do
+      raw(index).readable.foreach(builder += _)
+      index += 1
+
+    Dsv(Array.from(builder.result()))
   def apply(text: Text*): Dsv = new Dsv(Array.from(text))
 
   // An absent cell (a short positional row, or a header column missing from the row) decodes
@@ -380,15 +395,7 @@ object Dsv extends Dsv2:
     :   derivation is Encodable in Dsv =
 
       value =>
-        val cells =
-          val arrays = fields(value):
-            [field] => field => contextual.encode(field).data
-
-          val builder = scala.collection.immutable.List.newBuilder[Text]
-          arrays.foreach { inner => inner.each(builder += _) }
-          Array.from(builder.result())
-
-        Dsv(cells)
+        Dsv.flatten(fields(value) { [field] => field => contextual.encode(field).data })
 
 case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
   def as[cell: Decodable in Dsv]: cell raises DsvError tracks CellRef = cell.decoded(this)

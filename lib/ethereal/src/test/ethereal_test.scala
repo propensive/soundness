@@ -493,7 +493,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               var attempts = 0
 
               while !found && attempts < 200 do
-                found = Tmux.screenshot().screen.filter(predicate).stdlib.length > 0
+                found = Tmux.screenshot().screen.filter(predicate).readable.length > 0
                 if !found then snooze(0.05*Second) yet (attempts += 1)
 
               found
@@ -559,7 +559,7 @@ object Tests extends Suite(m"Ethereal Tests"):
                   snooze(0.5*Second)
                   Tmux.enter(t"harrier")
                   snooze(0.5*Second)
-                  Tmux.screenshot().screen.filter(_.contains(t"harrier")).stdlib.length > 0
+                  Tmux.screenshot().screen.filter(_.contains(t"harrier")).readable.length > 0
 
             . assert(_ == false)
 

@@ -76,13 +76,6 @@ object Traversable extends Traversable2:
   given map: [key, value] => Map[key, value] is Traversable by (key, value) =
     _.stdlib.iterator
 
-  // `IArray` is not an `Iterable`, so the blanket instance cannot serve it; the immutable
-  // wrapper is allocation-free and the cast never escapes.
-  given iarray: [element] => IArray[element] is Traversable by element =
-    iarray =>
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(iarray.asInstanceOf[scala.Array[element]])
-      . iterator
-
   // The frozen array, and any other readable reference: reading through a shared reference
   // is sound under separation checking (live writers are excluded wherever readers alias),
   // and inline re-elaboration freshens even statically-frozen references to `any.rd`, so

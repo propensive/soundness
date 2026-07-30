@@ -57,10 +57,7 @@ object Inclusive extends Inclusive.Fallback:
     given iterable: [collection <: Iterable[?]] => collection is Inclusive by Element[collection] =
       (collection, value) => collection.exists(_ == value)
 
-  given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
-    (iarray, value) => iarray.stdlib.exists(_ == value)
-
-  // The frozen array, `Array[element]^{}`, likewise; distinct from the bare `scala.Array`
+  // The frozen array, `Array[element]^{}`; distinct from the bare `scala.Array`
   // instance below.
   given frozenArray: [element <: Matchable] => (Array[element]^{}) is Inclusive by element =
     (array, value) => array.readable.exists(_ == value)

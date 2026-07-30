@@ -107,7 +107,8 @@ object protointernal:
     // The cast happens on the `Expr`, outside the quote: any frozen-array-typed term inside
     // the quote picks up a fresh `any.rd` capability that cannot flow into `^{}`. The stdlib
     // `IArray` operand is immutable, so asserting the frozen form is sound.
-    '{scala.IArray.from(${Expr(bytes.stdlib)})}.asInstanceOf[Expr[Array[Byte]^{}]]
+    '{scala.IArray.from(${Expr(bytes.stdlib)}).asInstanceOf[Array[Byte]^{}]}
+    . asInstanceOf[Expr[Array[Byte]^{}]]
 
   def parseU64(digits: Expr[String]): Macro[Long] = digits.value match
     case None         => '{JLong.parseUnsignedLong($digits)}

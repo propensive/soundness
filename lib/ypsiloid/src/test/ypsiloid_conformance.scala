@@ -322,7 +322,7 @@ object Conformance:
     case Yaml.Ast.Str(s)       => Json.ast(Json.Ast(s.s))
 
     case Yaml.Ast.Sequence(items) =>
-      val converted: Array[Any]^{} =
+      val converted: Array[Any] =
         Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(items.asInstanceOf[scala.Array[Yaml.Ast]]).map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
       Json.ast(Json.Ast.arr(converted))
 
@@ -330,8 +330,8 @@ object Conformance:
       val pairs = entries.collect:
         case (Yaml.Ast.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
-      val keys: Array[String]^{} = Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._1))
-      val values: Array[Any]^{} = Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._2.asInstanceOf[Any]))
+      val keys: Array[String] = Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._1))
+      val values: Array[Any] = Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._2.asInstanceOf[Any]))
       Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =
@@ -354,15 +354,15 @@ object Conformance:
       // Render as a flat JSON array.
       nums.iterator.map(d => renderAny(d)).mkString("[", ",", "]")
 
-    case items: (Array[?]^{}) @unchecked =>
+    case items: (Array[?]) @unchecked =>
       // JSON objects and (mixed-type) arrays share the same
-      // `Array[Any]^{}` runtime representation in jacinta: even length is
+      // `Array[Any]` runtime representation in jacinta: even length is
       // an object (alternating key, value, …), odd length is an array
       // (the last slot may be a sentinel pad when the logical element
       // count is even). Objects are rendered with sorted keys so the
       // comparison is independent of source order, which JSON treats
       // as insignificant.
-      val arr = items.asInstanceOf[Array[Any]^{}]
+      val arr = items.asInstanceOf[Array[Any]]
       val n = arr.length
       if (n & 1) == 0 then
         val pairs = (0 until n/2).map: i =>

@@ -42,16 +42,6 @@ import anticipation.*
 import prepositional.*
 
 object Indexable:
-  given iarray: [element] => IArray[element] is Indexable:
-    type Self = IArray[element]
-    type Operand = Ordinal
-    type Result = element
-
-    def contains(array: IArray[element], index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < array.stdlib.length
-
-    def access(array: IArray[element], index: Ordinal): Result = array.stdlib(index.n0)
-
   // The frozen array, `Array[element]^{}`, likewise: the bounds-partial `readUnchecked` is
   // safe behind `contains`.
   given frozenArray: [element] => (Array[element]^{}) is Indexable:

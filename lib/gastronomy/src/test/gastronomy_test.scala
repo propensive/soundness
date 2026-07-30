@@ -197,8 +197,8 @@ object Tests extends Suite(m"Gastronomy tests"):
       // Feed the windowed `append` deliberately misaligned slices of a buffer with a
       // nonzero base offset, so block-boundary carry and offset arithmetic are exercised.
       def windowed(digestion: Digestion^): Text =
-        val array = new scala.Array[Byte](payload.stdlib.length + 13)
-        java.lang.System.arraycopy(payload.mutable(using Unsafe), 0, array, 13, payload.stdlib.length)
+        val array = new scala.Array[Byte](payload.readable.length + 13)
+        java.lang.System.arraycopy(payload.mutable(using Unsafe), 0, array, 13, payload.readable.length)
         var offset = 13
         var step = 1
 
@@ -246,7 +246,7 @@ object Tests extends Suite(m"Gastronomy tests"):
         windowed(JavaStdlibHashing.crc32.digestion())
       . assert(_ == whole(JavaStdlibHashing.crc32.digestion()))
 
-      val chunked: Progression[Data] = payload.stdlib.grouped(7777).map(Array.frozen(_)).to(Progression)
+      val chunked: Progression[Data] = payload.readable.grouped(7777).map(Array.frozen(_)).to(Progression)
 
       test(m"a chunked stream's checksum matches the whole-value digest"):
         chunked.checksum[Sha2[256]].serialize[Hex]

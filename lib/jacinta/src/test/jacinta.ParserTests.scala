@@ -247,7 +247,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d
-        case arr: (Array[?]^{}) @unchecked =>
+        case arr: Array[?] @unchecked =>
           val raw = arr.toList
           if (raw.length & 1) == 0 then
             // Object: alternating key/value
@@ -395,7 +395,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(identity)
 
       test(m"Hand-built boxed array of Longs equals a parsed number array"):
-        val elements: Array[Any]^{} = Array.of(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
+        val elements: Array[Any] = Array.of(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
         val handBuilt = Json.ast(Json.Ast.arr(elements))
         handBuilt == t"[1, 2, 3]".read[Json]
       . assert(identity)
@@ -411,7 +411,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       test(m"Even-length mixed array reports its user-visible length"):
         // [1, "x"] mixes a number and a string, so it must use the boxed
         // (parity-padded) form. The user-visible length is 2 even though
-        // the underlying IArray carries a sentinel pad to keep the length
+        // the underlying array carries a sentinel pad to keep the length
         // odd (and so distinguishable from an object).
         parseRaw(t"""[1, "x"]""").asInstanceOf[Json.Ast].arrayLength
       . assert(_ == 2)
@@ -437,7 +437,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         t"""[1016.865234375, "x"]""".read[Json].root.arrayElement(0).double
       . assert(_ == 1016.865234375)
 
-      // The purely-numeric (unboxed Array[Long]^{}) path was also already
+      // The purely-numeric (unboxed Array[Long]) path was also already
       // correct — guard it too.
       test(m"Unboxed fractional array element decodes to its scalar Double"):
         t"""[1016.865234375]""".read[Json].root.arrayElement(0).double

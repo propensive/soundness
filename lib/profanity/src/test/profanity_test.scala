@@ -122,7 +122,7 @@ object Tests extends Suite(m"Profanity Tests"):
           }
 
       def waitFor(text: Text, ms: Int = 5000)(using Tmux, Monitor, WorkingDirectory): Boolean =
-        def matches: Boolean = Tmux.screenshot().screen.stdlib.toList.exists(_.contains(text))
+        def matches: Boolean = Tmux.screenshot().screen.readable.toList.exists(_.contains(text))
         // Bound the wait against a wall-clock deadline rather than counting fixed
         // 50 ms iterations: each poll spawns a `tmux` screenshot subprocess whose
         // latency varies wildly under load, so an iteration count made the real
@@ -152,7 +152,7 @@ object Tests extends Suite(m"Profanity Tests"):
             // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
             // probe always burnt the full timeout before falling back to `GOT:`.
             waitFor(marker)
-            Tmux.screenshot().screen.stdlib.toSeq.join(t"\n")
+            Tmux.screenshot().screen.readable.toSeq.join(t"\n")
 
       launcher.sandbox:
         // Warmup run to spawn the daemon and avoid timing flake on the first real test
@@ -252,7 +252,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 // The third option ("third") must appear exactly once. If the renderer
                 // miscounts visual rows for the wrapped second option, the menu drifts
                 // on subsequent re-renders and stale copies of "third" pile up.
-                mid.screen.stdlib.toList.count(_.contains(t"third"))
+                mid.screen.readable.toList.count(_.contains(t"third"))
           . assert(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the

@@ -277,7 +277,10 @@ object internal:
     // Expr but that's a substantial amount of code; re-parsing once per
     // match-site invocation is cheap enough for the macro's purpose.
     val patternBytesExpr: Expr[Data] =
-      '{${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray}.asInstanceOf[Expr[Data]]
+      // In-quote cast so the expanded tree is `Data`-typed; the outer `Expr` cast erases
+      // the fresh `any.rd` the checker puts on any frozen-array-typed quote.
+      '{${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray.asInstanceOf[Data]}
+      . asInstanceOf[Expr[Data]]
 
     val markerExpr: Expr[Char] = Expr(Marker)
 

@@ -118,14 +118,14 @@ object Tests extends Suite(m"Anthology Tests"):
 
     test(m"The AXML encoder emits the binary-XML chunk header"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
-      List(axml.stdlib(0), axml.stdlib(1), axml.stdlib(2), axml.stdlib(3)).map(_.toInt & 0xff)
+      List(axml.readable(0), axml.readable(1), axml.readable(2), axml.readable(3)).map(_.toInt & 0xff)
     . assert(_ == List(0x03, 0x00, 0x08, 0x00))
 
     test(m"The AXML total-size field equals the encoded length"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
-      def u8(index: Int): Int = axml.stdlib(index).toInt & 0xff
+      def u8(index: Int): Int = axml.readable(index).toInt & 0xff
       val declared = u8(4) | (u8(5) << 8) | (u8(6) << 16) | (u8(7) << 24)
-      declared == axml.stdlib.length
+      declared == axml.readable.length
     . assert(_ == true)
 
     test(m"An APK linkage is not available without importing apkLinkages"):

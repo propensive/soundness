@@ -58,7 +58,7 @@ object Tests extends Suite(m"Proscenium Tests"):
 
     test(m"check that a classpath file is streamable"):
       cp"/scala/Option.class".read[Data]
-    . assert(_.stdlib.length > 0)
+    . assert(_.readable.length > 0)
 
     test(m"check that a nonexistent classpath file is an error"):
       demilitarize(cp"/missing.txt").map(_.message)

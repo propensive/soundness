@@ -46,7 +46,7 @@ object Tests extends Suite(m"Inimitable Tests"):
 
       test(m"Get bytes from UUID"):
         Uuid().bytes
-      . assert(_.stdlib.length == 16)
+      . assert(_.readable.length == 16)
 
       test(m"Parse a UUID at compiletime"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"

@@ -139,7 +139,7 @@ object internal:
         TypeBounds(root, root) )
 
   // The single ordered-collection element type of `repr`, if it is one (`List`,
-  // `Vector`, `Seq`, `Progression`, `Array`, `IArray`); `Set` is excluded as it has
+  // `Vector`, `Seq`, `Progression`, `Array`); `Set` is excluded as it has
   // no positional index.
   private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   :   Optional[quotes.reflect.TypeRepr] =

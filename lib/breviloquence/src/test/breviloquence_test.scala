@@ -64,7 +64,7 @@ enum Shape derives CanEqual:
 // exactly the degradation the suite exercises.
 case class Defaulted(x: Int, y: Int = 7) derives CanEqual
 case class Wide(seventeenCharacter: Int, y: Int) derives CanEqual
-case class Blob(data: Array[Byte]^{})
+case class Blob(data: Data)
 case class Nums(values: List[Int]) derives CanEqual
 case class Mixed(a: Double, b: Boolean, c: Text) derives CanEqual
 
@@ -75,16 +75,16 @@ enum CStatus derives CanEqual:
 
 given (CStatus is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
 
-private def hex(s: String): Array[Byte]^{} =
+private def hex(s: String): Data =
   val clean = s.filter(c => !c.isWhitespace)
   val out = new scala.Array[Byte](clean.length/2)
   var index = 0
   while index < out.length do
     out(index) = Integer.parseInt(clean.substring(index*2, index*2 + 2), 16).toByte
     index += 1
-  out.asInstanceOf[Array[Byte]^{}]
+  out.asInstanceOf[Data]
 
-private def hexOf(bytes: Array[Byte]^{}): String =
+private def hexOf(bytes: Data): String =
   val sb = new StringBuilder
   var index = 0
   while index < bytes.length do
@@ -171,7 +171,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == t"IETF")
 
       test(m"Parse byte string [01 02 03 04]"):
-        val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[Array[Byte]^{}]
+        val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[Data]
         bytes.toList
       . assert(_ == List[Byte](1, 2, 3, 4))
 
@@ -456,7 +456,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       given (Nums is Cbor.Parsable) = Inlinable.parsable[Nums]
       given (Mixed is Cbor.Parsable) = Inlinable.parsable[Mixed]
 
-      def encoded[value: Encodable in Cbor](value: value): Array[Byte]^{} =
+      def encoded[value: Encodable in Cbor](value: value): Data =
         Cbor.Ast.encodable.encoded(Cbor.unseal(value.in[Cbor]))
 
       test(m"a flat product reads directly from bytes"):
@@ -533,7 +533,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"trailing bytes are rejected as on the AST path"):
         val bytes = encoded(Point(3, 4))
-        val padded = Array.from(bytes.stdlib.to(List) :+ 0.toByte)
+        val padded = Array.from(bytes.readable.to(List) :+ 0.toByte)
         capture[CborError](padded.read[Point in Cbor]).reason match
           case CborError.Reason.Trailing(offset) => offset
           case _                                 => -1L

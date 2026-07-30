@@ -40,8 +40,6 @@ import anticipation.*
 import prepositional.*
 
 object Countable:
-  given iarray: [element] => IArray[element] is Countable = (iarray: IArray[element]) => iarray.stdlib.length
-
   // The frozen array, `Array[element]^{}`, likewise: `length` is O(1) and reads are sound
   // through any reference, so the instance is ungated.
   given frozenArray: [element] => (Array[element]^{}) is Countable =

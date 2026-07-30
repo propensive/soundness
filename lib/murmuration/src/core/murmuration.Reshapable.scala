@@ -74,10 +74,6 @@ object Reshapable extends Reshapable.Fallback:
   =>  Progression[element] is Reshapable.Stable by element2 to Progression[element2] =
     Progression.from(_)
 
-  given iarray: [element, element2: ClassTag]
-  =>  IArray[element] is Reshapable.Stable by element2 to IArray[element2] =
-    IArray.from(_)
-
   // The frozen array reshapes to a frozen array: the rebuilt array is fresh, so freezing
   // it is discharged by construction.
   given frozenArray: [element, element2: ClassTag]

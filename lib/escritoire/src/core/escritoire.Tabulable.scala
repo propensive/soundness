@@ -49,21 +49,26 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
     type Self = derivation
     def table(): Scaffold[derivation, Text] = Scaffold[derivation](columns*)
 
+  // Flattens the per-field column arrays; a plain method rather than part of the inline
+  // derivation body, so the fresh `any.rd` of the intermediates is not minted at the
+  // expansion site, where it would leak into the caller's capture sets.
+  private def joinColumns[derivation <: Product]
+    ( arrays: Array[Array[Column[derivation, Text]]^{}]^{scala.caps.any.rd} )
+  :   JoinTabulable[derivation] =
+
+    new JoinTabulable[derivation](Array.frozen(arrays.readable.map(_.readable).flatten))
+
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:
       case labels: TableRelabelling[derivation] => labels.relabelling()
       case _                                    => Map()
 
-    val columns0: scala.IArray[Column[derivation, Text]] =
+    joinColumns[derivation]:
       contexts[derivation]():
         [field] => tabulable =>
           tabulable.table().columns.map: element =>
             element.contramap(dereference).retitle:
               labels.stdlib.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
-
-      . readable.map(_.readable).flatten
-
-    new JoinTabulable[derivation](Array.frozen(columns0))
 
   given int: Int is Tabulable[Text] = () =>
     Scaffold[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))

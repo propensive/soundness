@@ -137,11 +137,9 @@ object Array:
         index += 1
 
     // One `copyFrom` for every readable source: frozen (`^{}`) and shared references both
-    // subsume into `^{caps.any.rd}`, and the `IArray` branch of the union keeps existing
-    // call sites compiling until `IArray` itself is retired -- an overload is impossible
-    // because the two source types share an erasure.
+    // subsume into `^{caps.any.rd}`.
     def copyFrom
-      ( source: IArray[element] | Array[element]^{caps.any.rd},
+      ( source: Array[element]^{caps.any.rd},
         sourceStart: Int,
         targetStart: Int,
         count: Int )

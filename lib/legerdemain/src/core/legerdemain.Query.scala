@@ -69,8 +69,11 @@ object Query extends Dynamic:
 
       value =>
         Query:
-          fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
-          . to[List]
+          // Via the stdlib view: inline re-elaboration freshens the frozen array, defeating
+          // both `to[List]` and the compat `toList`.
+          proscenium.List.of:
+              fields(value) { [field] => field => contextual.encoded(field).prefix(label) }
+              . readable.toList
           . flatMap(_.values)
 
   object DecodableDerivation extends ProductDerivation[[Type] =>> Type is Decodable in Query]:

@@ -190,7 +190,7 @@ object Tests extends Suite(m"Gossamer Tests"):
 
     suite(m"Text methods"):
       test(m"get bytes from text"):
-        t"hello".sysData.stdlib.to(List)
+        t"hello".sysData.readable.to(List)
 
       . assert(_ == List(104, 101, 108, 108, 111))
 

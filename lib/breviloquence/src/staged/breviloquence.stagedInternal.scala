@@ -362,7 +362,7 @@ object stagedInternal:
     else if tpe =:= TypeRepr.of[Boolean] then Some(Inlinable.boolean)
     else if tpe =:= TypeRepr.of[Text] then Some(Inlinable.text)
     else if tpe =:= TypeRepr.of[String] then Some(Inlinable.string)
-    else if tpe =:= TypeRepr.of[Array[Byte]^{}] then Some(Inlinable.byteString)
+    else if tpe =:= TypeRepr.of[Data] then Some(Inlinable.byteString)
     else if tpe =:= TypeRepr.of[Cbor] then Some(Inlinable.cbor)
     else None
 
@@ -690,7 +690,7 @@ object stagedInternal:
           Some('{ $parser.directString()(using $tactic).tt })
         else if tpe =:= TypeRepr.of[String] then
           Some('{ $parser.directString()(using $tactic) })
-        else if tpe =:= TypeRepr.of[Array[Byte]^{}] then
+        else if tpe =:= TypeRepr.of[Data] then
           Some('{ $parser.directBytes()(using $tactic) })
         else if tpe =:= TypeRepr.of[Cbor] then
           Some('{ Cbor.ast($parser.value()(using $tactic)) })
