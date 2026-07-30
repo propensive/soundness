@@ -104,6 +104,16 @@ object Array:
   def unapplySeq[element](array: Array[element]^{caps.any.rd}): Option[Seq[element]] =
     Some(array.asInstanceOf[scala.IArray[element]].toSeq)
 
+  // The JVM array behind a readable reference, for Java APIs that read but never write their
+  // array argument (`OutputStream.write`, `MessageDigest.update`, `SecretKeySpec`, and the
+  // rest of the JDK's byte-array surface). Nothing is asserted about *this* side -- a readable
+  // reference has no writer to lose -- so the whole assertion is about the callee, which a
+  // Java signature cannot express. Prefer it to an ambient `Unsafe`: the claim is then one
+  // greppable call, checkable against one Javadoc, rather than a capability that silently
+  // licenses every unsafe operation in its scope.
+  def unsafeJvm[element](array: Array[element]^{caps.any.rd}): scala.Array[element] =
+    array.asInstanceOf[scala.Array[element]]
+
   // Linear growth for accumulating builders: consumes the old buffer, so the idiom is
   // recursion threading the buffer through `consume` parameters -- a `var` cannot hold an
   // exclusive buffer.
