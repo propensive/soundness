@@ -61,7 +61,9 @@ object stagedInternal:
   inline def fieldInstance[fieldType]: fieldType is Tel.Parsing =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Tel.Parsable) => parsable
-      case _ => scala.compiletime.summonInline[fieldType is Tel.Field]
+
+      case _ =>
+        scala.compiletime.summonInline[fieldType is Tel.Field]
 
   // ── Expansion-time environment ─────────────────────────────────────────
 
@@ -264,7 +266,7 @@ object stagedInternal:
   // ladder works with the delegate so generator identities stay
   // recognizable.
   private def unwrap(instance: Inlinable): Inlinable = instance match
-    case derived: Inlinable.ForTel[?] => derived.delegate.asInstanceOf[Inlinable]
+    case derived: Inlinable.ForTel[?]  => derived.delegate.asInstanceOf[Inlinable]
     case other                         => other
 
   // The runtime tiers, resolved with a reflection-level implicit search at

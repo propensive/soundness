@@ -179,7 +179,9 @@ private[facsimile] object Xref:
       List.range(0, count).map: _ =>
         (lexer.next(), lexer.next()) match
           case (CosToken.Integral(number), CosToken.Integral(_)) => number.toInt
-          case _ => abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
+
+          case _ =>
+            abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
 
     . or(List())
 

@@ -347,7 +347,7 @@ object stagedInternal:
   // recognizable.
   private def unwrap(instance: Inlinable): Inlinable = instance match
     case derived: Inlinable.ForProtobuf[?] => derived.delegate.asInstanceOf[Inlinable]
-    case other                         => other
+    case other                             => other
 
   // An `Optional[inner]` field: `inner | Unset.type`. Handled by the
   // generator itself (an absent field reads as `Unset`; a present one as

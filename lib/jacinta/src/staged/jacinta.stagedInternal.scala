@@ -54,7 +54,9 @@ object stagedInternal:
   inline def fieldSeam[fieldType](reader: JsonReader): fieldType =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Json.Parsable) => parsable.parse(reader)
-      case _ => scala.compiletime.summonInline[fieldType is Json.Field].parse(reader)
+
+      case _ =>
+        scala.compiletime.summonInline[fieldType is Json.Field].parse(reader)
 
   // ── Expansion-time environment ─────────────────────────────────────────
 

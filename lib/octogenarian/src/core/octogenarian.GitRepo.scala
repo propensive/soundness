@@ -236,7 +236,7 @@ case class GitRepo(gitDir: Path on Linux):
       case r"committer $c(.*) $ts([0-9]+) $tz(.....)"  => committer = c
       case r"gpgsig $start(.*)"                        => signature = start :: indented()
       case r"    $line(.*)"                            => body = line :: body
-      case other                                      => ()
+      case other                                       => ()
 
     flush()
     commits.to(List)

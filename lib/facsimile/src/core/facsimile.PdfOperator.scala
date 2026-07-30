@@ -219,7 +219,7 @@ object PdfOperator:
       case "sh" => Shade(name(0))
 
       case "BI" => operands match
-        case List(Cos.Dictionary(entries), Cos.Chars(data)) => InlineImage(entries, data)
+        case List(Cos.Dictionary(entries), Cos.Chars(data))  => InlineImage(entries, data)
         case _                                               => malformed
 
       // Marked content (§14.6) and compatibility (§7.8.2)
