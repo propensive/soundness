@@ -79,5 +79,4 @@ extension (tarfile: Tarfile)
             Tactic[TarError] )
   :   Unit =
 
-    tarfile.entries.foreach: entry =>
-      TarFilesystem.applyEntry(root, entry)
+    tarfile.entries.foreach: entry => TarFilesystem.applyEntry(root, entry)

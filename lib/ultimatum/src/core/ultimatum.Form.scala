@@ -94,8 +94,7 @@ class Form
     focusLeaf = leaves.indices.collect:
       case i if leaves(i).isInstanceOf[Pane.Widget] => i
 
-    val stays = focused.lay(false): widget =>
-      focuses.indexWhere(_ eq widget) >= 0
+    val stays = focused.lay(false): widget => focuses.indexWhere(_ eq widget) >= 0
 
     if !stays then focused = if focuses.nil then Unset else focuses(0)
 

@@ -78,8 +78,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
     def number(digits: Int, value: Int = focus - '0'): Int = if digits == 1 then value else
       next()
 
-      if !digit then fail(Digit) yet 0
-      else number(digits - 1, value*10 + (focus - '0'))
+      if !digit then fail(Digit) yet 0 else number(digits - 1, value*10 + (focus - '0'))
 
     def fraction(value: Double = 0.0, part: Double = 0.1): Double =
       next()
@@ -216,7 +215,6 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
       case _ =>
         0.00.am.on(date).instant
-
 
     focus match
       case 'Z' | '\u0000' => instant

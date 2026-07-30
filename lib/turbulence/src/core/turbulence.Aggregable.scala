@@ -106,7 +106,6 @@ object Aggregable:
 
       builder.toString.tt
 
-
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
   =>  LazyList[element2] is Aggregable by element =
 

@@ -62,8 +62,7 @@ object GitRepo:
     unsafely(path.generic.as[Path on Linux]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
 
-      if (path / ".git").exists() then GitRepo((path / ".git"))
-      else GitRepo(path)
+      if (path / ".git").exists() then GitRepo((path / ".git")) else GitRepo(path)
 
 
 case class GitRepo(gitDir: Path on Linux):
@@ -236,7 +235,7 @@ case class GitRepo(gitDir: Path on Linux):
       case r"committer $c(.*) $ts([0-9]+) $tz(.....)"  => committer = c
       case r"gpgsig $start(.*)"                        => signature = start :: indented()
       case r"    $line(.*)"                            => body = line :: body
-      case other                                      => ()
+      case other                                       => ()
 
     flush()
     commits.to(List)

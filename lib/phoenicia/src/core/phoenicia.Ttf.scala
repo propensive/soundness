@@ -103,51 +103,36 @@ case class Ttf(data: Data):
   def head: HeadTable raises FontError =
     tables.at(TtfTag.Head).let: ref =>
       data.unpackFrom[HeadTable](ref.offset).tap: table =>
-        if table.magicNumber != 0x5f0f3cf5.bits
-        then raise(FontError(FontError.Reason.MagicNumber))
+        if table.magicNumber != 0x5f0f3cf5.bits then raise(FontError(FontError.Reason.MagicNumber))
 
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
 
   def cmap: CmapTable raises FontError =
-    tables.at(TtfTag.Cmap).let: ref =>
-      CmapTable(ref.offset)
-
+    tables.at(TtfTag.Cmap).let: ref => CmapTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Cmap)))
 
   def hhea: HheaTable raises FontError =
-    tables.at(TtfTag.Hhea).let: ref =>
-      data.unpackFrom[HheaTable](ref.offset)
-
+    tables.at(TtfTag.Hhea).let: ref => data.unpackFrom[HheaTable](ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hhea)))
 
   def hmtx: HmtxTable raises FontError =
-    tables.at(TtfTag.Hmtx).let: ref =>
-      HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
-
+    tables.at(TtfTag.Hmtx).let: ref => HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
 
   def maxp: MaxpTable raises FontError =
-    tables.at(TtfTag.Maxp).let: ref =>
-      MaxpTable(ref.offset)
-
+    tables.at(TtfTag.Maxp).let: ref => MaxpTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Maxp)))
 
   def post: PostTable raises FontError =
-    tables.at(TtfTag.Post).let: ref =>
-      PostTable(ref.offset)
-
+    tables.at(TtfTag.Post).let: ref => PostTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Post)))
 
   def os2: Os2Table raises FontError =
-    tables.at(OtfTag.Os2).let: ref =>
-      Os2Table(ref.offset)
-
+    tables.at(OtfTag.Os2).let: ref => Os2Table(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(OtfTag.Os2)))
 
   def name: NameTable raises FontError =
-    tables.at(TtfTag.Name).let: ref =>
-      NameTable(ref.offset)
-
+    tables.at(TtfTag.Name).let: ref => NameTable(ref.offset)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Name)))
 
   def loca: LocaTable raises FontError =
@@ -157,9 +142,7 @@ case class Ttf(data: Data):
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Loca)))
 
   def glyf: GlyfTable raises FontError =
-    tables.at(TtfTag.Glyf).let: ref =>
-      GlyfTable(ref.offset, loca)
-
+    tables.at(TtfTag.Glyf).let: ref => GlyfTable(ref.offset, loca)
     . lest(FontError(FontError.Reason.MissingTable(TtfTag.Glyf)))
 
   // A new font containing only the outlines needed to render the given characters — plus any

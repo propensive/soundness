@@ -118,8 +118,7 @@ package filesystemBackends:
         def covers(preopen: Text): Boolean =
           target == preopen || preopen == t"/" || target.starts(t"$preopen/")
 
-        val covering = preopens.filter: entry =>
-          covers(entry(1))
+        val covering = preopens.filter: entry => covers(entry(1))
 
         if covering.isEmpty then
           preopens.each(_(0).dispose())
@@ -127,8 +126,7 @@ package filesystemBackends:
         else
           val (descriptor, prefix) = covering.maxBy(_(1).length)
 
-          preopens.each: entry =>
-            if entry(0) != descriptor then entry(0).dispose()
+          preopens.each: entry => if entry(0) != descriptor then entry(0).dispose()
 
           val remainder =
             if target == prefix then t"."
@@ -164,8 +162,7 @@ package filesystemBackends:
           case _ => File
 
         def millis(time: Optional[(U64, U32)]): Optional[Long] =
-          time.let: time =>
-            time(0).bits.s64.long*1000L + time(1).bits.s32.int/1000000L
+          time.let: time => time(0).bits.s64.long*1000L + time(1).bits.s32.int/1000000L
 
         Stat
           ( entry,
@@ -280,8 +277,7 @@ package filesystemBackends:
         val content = open(source, List(OpenFlag.Read))(_.reader())
         val flags = List(OpenFlag.Write, OpenFlag.Create, OpenFlag.Truncate)
 
-        open(destination, flags): handle =>
-          handle.writer(content)
+        open(destination, flags): handle => handle.writer(content)
 
       def move
         ( source:      Path on Plane,
@@ -398,8 +394,7 @@ package filesystemBackends:
 
               val stream: Foreign of "output-stream" from Wit = streamHandle
 
-              data.each: chunk =>
-                stream.`blocking-write-and-flush`(chunk).invoke[Unit]
+              data.each: chunk => stream.`blocking-write-and-flush`(chunk).invoke[Unit]
 
               streamHandle.dispose()
 

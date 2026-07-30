@@ -148,9 +148,7 @@ object Completions:
               val dirNames = dirNamesCmd.exec[Text]().cut(t",").to(List)
 
               val dirs =
-                dirNames.filter(_.trim != t"").map: dir =>
-                  safely(dir.as[Path on Linux])
-
+                dirNames.filter(_.trim != t"").map: dir => safely(dir.as[Path on Linux])
                 . compact
 
               install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)

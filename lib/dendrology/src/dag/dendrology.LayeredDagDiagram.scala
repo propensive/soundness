@@ -95,8 +95,7 @@ object LayeredDagDiagram:
       val maxLevel: Int = level.values.max
 
       val byLevel: Series[Series[node]] =
-        (0 to maxLevel).to(Series).map: l =>
-          nodes.filter(level(_) == l)
+        (0 to maxLevel).to(Series).map: l => nodes.filter(level(_) == l)
 
       val state: scm.HashMap[Int, Lane[node]] = scm.HashMap()
       val layouts = scm.ListBuffer[Layout[node]]()
@@ -109,10 +108,7 @@ object LayeredDagDiagram:
         val continuing = state.toMap -- terminating.keys
 
         val incomingByNode: Map[node, Series[Int]] =
-          terminating
-            . groupBy(_._2.target)
-            . map: (n, m) =>
-                n -> m.keys.to(Series).sorted
+          terminating . groupBy(_._2.target) . map: (n, m) => n -> m.keys.to(Series).sorted
 
         val desired: Map[node, Int] = levelNodes.map: n =>
           val incoming = incomingByNode.getOrElse(n, Series.empty)
@@ -156,9 +152,7 @@ object LayeredDagDiagram:
 
       val width: Int =
         val cols = layouts.iterator.flatMap: lay =>
-          lay.state.keys.iterator ++
-            lay.nodeCol.values.iterator ++
-            lay.prevNodeCol.values.iterator
+          lay.state.keys.iterator ++ lay.nodeCol.values.iterator ++ lay.prevNodeCol.values.iterator
 
         cols.maxOption.fold(1)(_ + 1)
 
@@ -223,9 +217,7 @@ object LayeredDagDiagram:
     val nodeColSet = layout.nodeCol.values.to(Set)
 
     (0 until width).map: c =>
-      if nodeColSet(c) then Node
-      else if layout.continuing.contains(c) then Vertical
-      else Space
+      if nodeColSet(c) then Node else if layout.continuing.contains(c) then Vertical else Space
 
     . to(List)
 

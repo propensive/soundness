@@ -163,7 +163,6 @@ object Markup:
   def plain(text: Text): Text =
     if !marked(text) then text else parse(text).map(_.plain).join
 
-
 enum Markup:
   case Textual(text: Text)
 

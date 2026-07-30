@@ -597,7 +597,6 @@ private[pneumatic] final class InfCodes(z: Inflater, s: InfBlocks):
     ( bl: Int, bd: Int, tl: Array[Int], tlIndex: Int, td: Array[Int], tdIndex: Int )
   :   Int =
 
-
     var t = 0       // temporary pointer
     var tp = tl     // temporary pointer
     var tpIndex = 0 // temporary pointer
@@ -1114,8 +1113,7 @@ private[pneumatic] final class InfBlocks(z: Inflater, check: Boolean, w: Int):
           p = z.nextInIndex; n = z.availIn; b = bitb; k = bitk
           q = write; m = if q < read then read - q - 1 else end - q
 
-          if last == 0 then mode = Type
-          else mode = Dry
+          if last == 0 then mode = Type else mode = Dry
 
         case Dry =>
           write = q

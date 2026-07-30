@@ -237,7 +237,7 @@ object internal:
         val duration = (System.nanoTime - started)/1000000L
 
         report.info
-          (s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; "+
+          (s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; " +
             s"classes in $outputDir")
 
         reloaded match
@@ -288,7 +288,7 @@ object internal:
           val instanceExpr: Expr[fieldType is Inlinable] =
             Expr.summon[fieldType is Inlinable].getOrElse:
               report.errorAndAbort
-                (s"prescience: no Inlinable instance for field ${fields(index).name}: "+
+                (s"prescience: no Inlinable instance for field ${fields(index).name}: " +
                   fieldTypes(index).show)
 
           def runtimeCall: Term = '{ $instanceExpr.readRuntime($fieldExpr) }.asTerm

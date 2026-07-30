@@ -38,4 +38,3 @@ import prepositional.*
 export austronesian.internal.Pojo
 
 extension [entity: Encodable in Pojo](value: entity) inline def pojo: Pojo = entity.encoded(value)
-

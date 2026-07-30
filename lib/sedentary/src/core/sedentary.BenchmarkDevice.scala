@@ -81,11 +81,9 @@ class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
 
     val size = heap.or(t"1g")
 
-    val pin = cpus.lay(List[Text]()): n =>
-      List(t"taskset", t"-c", t"0-${n - 1}")
+    val pin = cpus.lay(List[Text]()): n => List(t"taskset", t"-c", t"0-${n - 1}")
 
-    val processors = cpus.lay(List[Text]()): n =>
-      List(t"-XX:ActiveProcessorCount=$n")
+    val processors = cpus.lay(List[Text]()): n => List(t"-XX:ActiveProcessorCount=$n")
 
     val command =
       sh"""
@@ -117,8 +115,7 @@ object LocalhostDevice extends BenchmarkDevice:
 
     val size = heap.or(t"1g")
 
-    val processors = cpus.lay(List[Text]()): n =>
-      List(t"-XX:ActiveProcessorCount=$n")
+    val processors = cpus.lay(List[Text]()): n => List(t"-XX:ActiveProcessorCount=$n")
 
     val opts = sh"-XX:+AlwaysPreTouch -Xms$size -Xmx$size -XX:CICompilerCount=2 -XX:+UseSerialGC"
     val cmd = sh"java $opts $processors -jar $path $input"

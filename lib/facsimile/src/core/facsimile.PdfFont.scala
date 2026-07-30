@@ -105,9 +105,9 @@ object PdfFont:
       val encodingValue = pdf.resolved(entries.at(t"Encoding").or(Cos.Nil))
 
       val encoding: Optional[IArray[Char]] = encodingValue match
-        case Cos.Name(name)          => encodingTable(name)
+        case Cos.Name(name)             => encodingTable(name)
         case dictionary: Cos.Dictionary => encodingTable(dictionary(t"BaseEncoding").let(_.name))
-        case _                       => Unset
+        case _                          => Unset
 
       val differences: Map[Int, Text] = encodingValue match
         case dictionary: Cos.Dictionary =>
@@ -121,8 +121,7 @@ object PdfFont:
                   code = value.toInt
 
                 case Cos.Name(name) =>
-                  builder += code ->
-                    PdfEncoding.glyph(name).lay(t"�")(_.toString.tt)
+                  builder += code -> PdfEncoding.glyph(name).lay(t"�")(_.toString.tt)
                   code += 1
 
                 case _ =>
@@ -138,8 +137,8 @@ object PdfFont:
           toUnicode, embedded, twoByte, descriptor )
 
       subtype.s match
-        case "Type1"   => Type1(common(false, Map(), defaultWidth))
-        case "MMType1" => MmType1(common(false, Map(), defaultWidth))
+        case "Type1"    => Type1(common(false, Map(), defaultWidth))
+        case "MMType1"  => MmType1(common(false, Map(), defaultWidth))
         case "TrueType" => TrueType(common(false, Map(), defaultWidth))
 
         case "Type3" =>

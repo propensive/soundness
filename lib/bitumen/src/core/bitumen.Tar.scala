@@ -228,7 +228,6 @@ object Tar:
         pax:      Map[Text, Text] = Map.empty )
     extends Entry(path, mode, user, group, mtime)
 
-
     def size: U32 = this match
       case file: File      => file.data.size.toInt.bits.u32
       case pax: Pax        => pax.records.length.bits.u32

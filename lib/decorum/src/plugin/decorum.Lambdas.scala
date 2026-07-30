@@ -78,8 +78,7 @@ object Lambdas:
     def walk(t: untpd.Tree): Unit =
       t match
         case a: untpd.Apply if a.args.length == 1 =>
-          directLambda(a.args.head).foreach: f =>
-            siteFor(f, a, content, source).foreach(out += _)
+          directLambda(a.args.head).foreach: f => siteFor(f, a, content, source).foreach(out += _)
 
         case _ => ()
       t.productIterator.foreach(descend(_, walk))
@@ -169,7 +168,6 @@ object Lambdas:
         name.startsWith("_$") && name.drop(2).forall(_.isDigit)
 
       case _ => false
-
 
   // Scan *backward* from `from` (the lambda's source start) past whitespace
   // and look at the first non-whitespace character. That character is the

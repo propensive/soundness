@@ -91,8 +91,7 @@ object Media:
 
   def parse(string: Text)(using Tactic[MediaTypeError]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
-      if ps == List("")
-      then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
+      if ps == List("") then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
 
       ps.map(_.cut(t"=", 2).to(List)).map: p => p(0).show -> p(1).show
 

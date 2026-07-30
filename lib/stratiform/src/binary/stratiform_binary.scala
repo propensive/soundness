@@ -39,7 +39,6 @@ import contingency.*
 import gastronomy.*, providers.soundnessProvider
 import prepositional.*
 
-
 // BinTEL §7 node encoding. Serialises a typed `Tel.Element` tree into
 // the binary form defined by `spec/bintel.md` — no magic number, no
 // schema signature; the output is exactly the document-root body
@@ -93,7 +92,6 @@ extension (element: Tel.Element)
 
   // BLAKE3 digest of this element's BinTEL body (§3 value hash).
   def valueHash(schema: Tels): Digest in Blake3 = element.bintel(schema).digest[Blake3]
-
 
 extension [value: Tel.Encodable](value: value)
   // Encode any value to BinTEL body bytes, deriving the schema from its type:

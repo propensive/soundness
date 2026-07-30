@@ -210,5 +210,4 @@ class Cose
     val externalAad = IArray.empty[Byte]
     val tbs = Cose.toBeSigned(contextString, protectedHeader, externalAad, payload)
 
-    recipients.exists: recipient =>
-      verifier.check(tbs, recipient.authentication, key)
+    recipients.exists: recipient => verifier.check(tbs, recipient.authentication, key)

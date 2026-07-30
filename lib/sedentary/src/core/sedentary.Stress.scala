@@ -55,7 +55,6 @@ import serpentine.*
 import superlunary.*
 import vacuous.*
 
-
 // A stress test: the memory/scaling counterpart of `Bench`. Where `Bench` times one operation
 // repeated serially on the calling thread, `Stress` runs the body concurrently on `concurrency`
 // platform threads for a fixed wall-clock window and measures memory behaviour over that
@@ -143,8 +142,7 @@ extends Rig:
       val bits = 63 - jl.Long.numberOfLeadingZeros(time)
 
       val index =
-        if bits < 4 then time.toInt
-        else (bits - 4)*16 + ((time >> (bits - 4)) & 15L).toInt + 16
+        if bits < 4 then time.toInt else (bits - 4)*16 + ((time >> (bits - 4)) & 15L).toInt + 16
 
       if index > 1023 then 1023 else index
 
@@ -341,8 +339,7 @@ extends Rig:
 
                 if index >= 1024 then index = 1023
 
-                if index < 16 then index.toLong
-                else (16L + (index - 16)%16) << ((index - 16)/16)
+                if index < 16 then index.toLong else (16L + (index - 16)%16) << ((index - 16)/16)
 
             // Compliant fraction in basis points: operations in buckets strictly below the
             // threshold's bucket completed within the threshold. -1 when there is no SLO.
@@ -390,8 +387,7 @@ extends Rig:
               if ok then
                 low = n
 
-                if n >= capN then phase = 2
-                else currentN = if n >= capN/2 then capN else n*2
+                if n >= capN then phase = 2 else currentN = if n >= capN/2 then capN else n*2
               else if low == 0 then
                 phase = 9
               else
@@ -459,5 +455,4 @@ extends Rig:
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input =>
-      unsafely(device.invoke(stage.target, input, heap, cpus))
+    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus))

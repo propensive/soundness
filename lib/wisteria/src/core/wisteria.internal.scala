@@ -247,7 +247,6 @@ object internal:
 
     Expr.ofList(labels)
 
-
   // Whether `tpe` is a sum: a sealed trait / enum with `children`. A `Variant & Parent`
   // intersection (a sum's variant) is the variant — a product. A singleton (case object /
   // parameterless enum case) has a *term* symbol whose *type* symbol widens to the sum, so the term
@@ -430,8 +429,7 @@ object internal:
     val reentrant = TypeRepr.of[Reentrant].appliedTo(instance)
 
     val elementGivens =
-      extraGivens.zipWithIndex.map: (tpe, index) =>
-        syntheticGiven("$wisteriaGiven$"+index, tpe)
+      extraGivens.zipWithIndex.map: (tpe, index) => syntheticGiven("$wisteriaGiven$"+index, tpe)
 
     val markers = syntheticGiven("$wisteriaReentrant", reentrant) :: elementGivens
 
@@ -528,8 +526,7 @@ object internal:
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
 
-              tpe.typeSymbol.children.foreach: child =>
-                visit(variantWith(child, tpe), false)
+              tpe.typeSymbol.children.foreach: child => visit(variantWith(child, tpe), false)
           else if isProductType(tpe) then
             // A path-carrier (a specialised spine type) is always derived; else probe as before.
             val carrier = refinementMember(tpe, "VRoot").isDefined
@@ -940,8 +937,7 @@ object internal:
   def variantLabels[derivation: Type]: Macro[List[Text]] =
     import quotes.reflect.*
 
-    val labels = TypeRepr.of[derivation].typeSymbol.children.map: child =>
-      '{${Expr(child.name)}.tt}
+    val labels = TypeRepr.of[derivation].typeSymbol.children.map: child => '{${Expr(child.name)}.tt}
 
     Expr.ofList(labels)
 

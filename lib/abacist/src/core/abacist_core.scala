@@ -51,4 +51,3 @@ type TimeSeconds = Quanta[Seconds[1]] in (Minutes[1], Hours[1])
 extension [units <: Measure](inline quantity: Quantity[units])
   inline def quanta[result]: result =
     ${abacist.internal.fromQuantity[units, result]('quantity)}
-

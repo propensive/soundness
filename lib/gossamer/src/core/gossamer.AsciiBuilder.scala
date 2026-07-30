@@ -39,8 +39,7 @@ import vacuous.*
 
 class AsciiBuilder(size: Optional[Int] = Unset) extends Builder[Ascii](size):
   private val buffer: scm.ArrayBuffer[Byte] =
-    scm.ArrayBuffer[Byte]().tap: buffer =>
-      size.let(buffer.sizeHint(_))
+    scm.ArrayBuffer[Byte]().tap: buffer => size.let(buffer.sizeHint(_))
 
   protected def put(ascii: Ascii): Unit = ascii.bytes.each(buffer.append(_))
   protected def putChar(char: Char): Unit = buffer.append(char.toByte)

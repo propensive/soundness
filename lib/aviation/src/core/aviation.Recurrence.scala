@@ -65,8 +65,7 @@ object Recurrence:
   =>  (Recurrence of point by span) is Encodable in Text =
 
     recurrence =>
-      val number = recurrence.repetitions.lay(t""): repetitions =>
-        repetitions.show
+      val number = recurrence.repetitions.lay(t""): repetitions => repetitions.show
 
       val period: Timespan = recurrence.period
       t"R$number/${recurrence.start.encode}/${period.encode}"

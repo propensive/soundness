@@ -95,7 +95,6 @@ object Matrix:
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
 
-
   given subtractable
   :   [ a,
         rows <: Int,
@@ -604,10 +603,8 @@ object Matrix:
     def eigenvalues(using ValueOf[n]): Optional[Vector[Double, n]] =
       matrix.eigensystem.let(_(0))
 
-
     def eigenvectors(using ValueOf[n]): Optional[Matrix[Double, n, n]] =
       matrix.eigensystem.let(_(1))
-
 
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: IArray[element] ):
@@ -626,7 +623,6 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     new Vector[element, columns](arr)
 
-
   def column(index: Int): Vector[element, rows] =
     val arr = IArray.build[Any](rows): array =>
       var i = 0
@@ -636,7 +632,6 @@ class Matrix[element, rows <: Int, columns <: Int]
         i += 1
 
     new Vector[element, rows](arr)
-
 
   def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
     val arr = IArray.build[element](rows*columns): array =>
@@ -776,10 +771,8 @@ class Matrix[element, rows <: Int, columns <: Int]
     ( using ClassTag[multiplication.Result] )
   :   Matrix[multiplication.Result, rows, columns] =
 
-
     val elements2 = IArray.build[multiplication.Result](elements.length): array =>
-      elements.indices.foreach: index =>
-        array(index) = elements(index)*right
+      elements.indices.foreach: index => array(index) = elements(index)*right
 
     new Matrix(rows, columns, elements2)
 
@@ -789,8 +782,7 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   Matrix[div.Result, rows, columns] =
 
     val elements2 = IArray.build[div.Result](elements.length): array =>
-      elements.indices.foreach: index =>
-        array(index) = elements(index)/right
+      elements.indices.foreach: index => array(index) = elements(index)/right
 
     new Matrix(rows, columns, elements2)
 

@@ -63,7 +63,6 @@ object Css:
     case Declaration(property: Text, value: Text)
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
-
   given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text over Credit = css =>
     val producer = Producer[Text](4096)
 
@@ -74,8 +73,7 @@ object Css:
     Stream(producer.iterator)
 
   given showable: Formatting => Css is Showable = css =>
-    Producer.collect[Text](): producer =>
-      write(css)(producer.put(_))
+    Producer.collect[Text](): producer => write(css)(producer.put(_))
 
   // Serializes a `Css` tree back to CSS text, driving `put` once per chunk. Shared by the
   // `Showable` (collect) and `Streamable` (lazy producer) instances above — they differ only in
@@ -109,8 +107,7 @@ object Css:
         put(t"@$name")
         if prelude != t"" then put(t" $prelude")
 
-        body.lay(put(t";")): nodes =>
-          block(nodes, indent)
+        body.lay(put(t";")): nodes => block(nodes, indent)
 
     var first = true
 
@@ -136,8 +133,7 @@ object Css:
   // Stylesheets concatenate their rule lists, so `css"a { … }" + css"b { … }"` is one
   // stylesheet of both rules.
   given addable: Css is Addable by Css to Css =
-    Addable: (left, right) =>
-      Css(left.rules ++ right.rules)
+    Addable: (left, right) => Css(left.rules ++ right.rules)
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
@@ -162,8 +158,7 @@ object Css:
     // Inline-style sets concatenate their property lists, so two `Css.Style`s (or two
     // bare `css"…"`s) join into one.
     given addable: Style is Addable by Style to Style =
-      Addable: (left, right) =>
-        Style.of(left.properties ++ right.properties)
+      Addable: (left, right) => Style.of(left.properties ++ right.properties)
 
   class Style private (val properties: List[(Text, Text)]):
     def text: Text = properties.map { (name, value) => t"$name: $value" }.join(t"; ")

@@ -32,7 +32,6 @@
                                                                                                   */
 package revolution
 
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -55,8 +54,7 @@ object Semver:
         case long: Long => long.show
 
       val prerelease =
-        if semver.prerelease.nil then t""
-        else t"-"+semver.prerelease.map(_.text).join(t".")
+        if semver.prerelease.nil then t"" else t"-"+semver.prerelease.map(_.text).join(t".")
 
       val build = if semver.build.nil then t"" else t"+"+semver.build.map(_.text).join(t".")
 
@@ -143,7 +141,6 @@ object Semver:
         left.minor < right.minor
     else
       left.major < right.major
-
 
 case class Semver
   ( major:      Long,

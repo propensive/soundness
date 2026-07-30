@@ -117,8 +117,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
 
           val file: Text =
             if location == null then t"unknown"
-            else location.getPath.nn.tt.pipe: path =>
-              names.at(path).or(path)
+            else location.getPath.nn.tt.pipe: path => names.at(path).or(path)
 
           val span: Optional[Span] =
             if location == null || location.getLine < 1 then Unset else

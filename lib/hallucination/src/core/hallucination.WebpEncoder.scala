@@ -69,8 +69,7 @@ private[hallucination] object WebpEncoder:
     val padded = frame.length + (frame.length & 1)
     val out = ji.ByteArrayOutputStream()
 
-    def fourcc(text: String): Unit = text.foreach: char =>
-      out.write(char.toInt)
+    def fourcc(text: String): Unit = text.foreach: char => out.write(char.toInt)
 
     def u32(value: Int): Unit =
       out.write(value & 0xff); out.write((value >>> 8) & 0xff)
@@ -221,8 +220,7 @@ private[hallucination] object WebpEncoder:
     run
 
   private def countRun(run: Int, freq1: Array[Int]): Unit =
-    if run <= 4 then freq1(256 + run - 1) += 1
-    else freq1(256 + lengthToSymbol(run)(0)) += 1
+    if run <= 4 then freq1(256 + run - 1) += 1 else freq1(256 + lengthToSymbol(run)(0)) += 1
 
   private def writeRun(writer: WebpBitWriter, run: Int, codes1: Array[Int], lengths1: Array[Int])
   :   Unit =

@@ -37,4 +37,3 @@ enum Sort:
 
 case class Lexeme(text: String, kind: Sort):
   def length: Int = text.length
-

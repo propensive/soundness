@@ -32,5 +32,4 @@
                                                                                                   */
 package escritoire
 
-
 case class TableSection[text](widths: IArray[Int], rows: LazyList[TableRow[text]])

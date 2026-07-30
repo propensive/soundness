@@ -32,7 +32,6 @@
                                                                                                   */
 package hieroglyph
 
-
 object Chars:
   val superscript: Char ~> Char =
     case '0' => '⁰'

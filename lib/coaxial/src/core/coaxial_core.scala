@@ -32,7 +32,6 @@
                                                                                                   */
 package coaxial
 
-
 import anticipation.*
 import contingency.*
 import parasite.*

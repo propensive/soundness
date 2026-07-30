@@ -49,8 +49,7 @@ object Grid:
   given printable: [text: {Textual, Printable as printable}] => (Text is Measurable)
   =>  Grid[text] is Printable =
 
-    (layout, termcap) =>
-      layout.render.map(printable.print(_, termcap)).join(t"\n")
+    (layout, termcap) => layout.render.map(printable.print(_, termcap)).join(t"\n")
 
 case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
   def render(using metrics: Text is Measurable, textual: text is Textual): LazyList[text] =
@@ -86,8 +85,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
           LazyList()
 
     def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): text =
-      val width = above.or(below).vouch.pipe: widths =>
-        widths.sum + style.cost(widths.length)
+      val width = above.or(below).vouch.pipe: widths => widths.sum + style.cost(widths.length)
 
       val ascenders =
         above.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())

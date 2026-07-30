@@ -210,8 +210,7 @@ class ProtobufParser(data: Data):
       case 2 =>
         val length = directVarint().toInt
 
-        if length < 0 || pos + length > boundary
-        then abort(ProtobufError(Reason.Truncated(pos)))
+        if length < 0 || pos + length > boundary then abort(ProtobufError(Reason.Truncated(pos)))
 
         boundary = pos + length
 

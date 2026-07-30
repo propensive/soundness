@@ -92,9 +92,7 @@ class GivensPhase() extends PluginPhase:
         traverseChildren(tree)
 
       private def eligibleGiven(symbol: Symbols.Symbol, tpe: Types.Type)(using Context): Boolean =
-        symbol.flags.is(Given)
-        && isStablyAccessible(symbol)
-        && tpe.baseClasses.contains(findable)
+        symbol.flags.is(Given) && isStablyAccessible(symbol) && tpe.baseClasses.contains(findable)
 
       private def eligibleSuite(symbol: Symbols.Symbol)(using Context): Boolean =
         suite.exists

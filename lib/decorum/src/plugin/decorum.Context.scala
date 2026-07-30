@@ -32,5 +32,39 @@
                                                                                                   */
 package decorum
 
-enum Phase:
-  case License, Package, AfterPackage, Imports, Body
+import dotty.tools.dotc.ast.untpd
+import dotty.tools.dotc.util.SourceFile
+
+// The per-file bundle of inputs and derived data shared by every check.
+// Construction is cheap; derived values are computed lazily, at most once
+// per file.
+final class Context
+  ( val file:              String,
+    val expectedModule:    Option[String],
+    val text:              String,
+    val tree:              untpd.Tree,
+    val source:            SourceFile,
+    val siblingTypes:      List[String],
+    val siblingExtensions: List[String],
+    val unexported:        Set[String] ):
+
+  lazy val tokenRows: IndexedSeq[IndexedSeq[Lexeme]] = Tokenizer.tokenize(text)
+  lazy val lines: IndexedSeq[Line] = tokenRows.map(Line(_))
+
+  lazy val imports: List[ImportInfo] = Imports.extract(tree, source)
+  lazy val packageInfo: Option[PackageInfo] = Packages.extract(tree, source)
+  lazy val annotationEndLines: Set[Int] = Annotations.collectEndLines(tree, source)
+  lazy val companions: CompanionDecls = Companions.extract(tree, source)
+  lazy val caseGroups: List[List[CaseInfo]] = Cases.extract(tree, source)
+  lazy val forGroups: List[List[GenLine]] = Comprehensions.extract(tree, source)
+  lazy val sequences: List[Sequence] = Sequences.extract(tree, source)
+  lazy val stmtGroups: List[StmtGroup] = Statements.extract(tree, source)
+  lazy val lambdaSites: List[Lambdas.LambdaSite] = Lambdas.extract(tree, source)
+  lazy val operatorSites: List[OpInfo] = Operators.extract(tree, source)
+  lazy val interpolations: List[InterpolationInfo] = Interpolations.extract(tree, source)
+  lazy val definitions: List[DefnAnchor] = Definitions.extract(tree, source)
+  lazy val soundnessExports: ExportInfo = SoundnessExports.extract(tree, source)
+  lazy val anchors: Anchors.AnchorModel = Anchors.build(tree, source, text)
+  lazy val quoteSites: QuoteSites.Model = QuoteSites.extract(lines)
+  lazy val necessity: List[Necessity.Site] = Necessity.extract(tree, source, text)
+  lazy val brackets: Brackets.Model = Brackets.extract(lines)

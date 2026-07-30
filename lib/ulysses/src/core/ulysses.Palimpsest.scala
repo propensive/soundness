@@ -139,8 +139,7 @@ case class Palimpsest(data: Data, length: Int):
                   xor_(hash, o)
                   val sub = recur(item + 1, hash :: matched)
 
-                  if sub.absent then xor_(hash, o)
-                  else found = sub
+                  if sub.absent then xor_(hash, o) else found = sub
 
                 found
 

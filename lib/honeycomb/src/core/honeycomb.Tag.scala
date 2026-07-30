@@ -212,7 +212,6 @@ object Tag:
       . over[Transport]
       . in[Form]
 
-
   class Void(label: Text, presets: Map[Text, Optional[Text]], boundary: Boolean)
   extends Tag(label, presets = presets, void = true, boundary = boundary):
     type Result = Element of Topic in Form

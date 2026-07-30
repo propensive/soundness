@@ -71,7 +71,6 @@ object embeddings:
             extracted
         }
 
-
 // The staging directories awaiting deletion at shutdown. A single shared hook drains them
 // sequentially: one hook per directory would have the JVM start them all concurrently at
 // exit, each walking a directory tree with open directory streams — enough, after a run

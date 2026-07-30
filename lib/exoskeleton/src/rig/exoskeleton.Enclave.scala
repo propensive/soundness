@@ -60,7 +60,6 @@ import workingDirectories.javaWorkingDirectory
 
 import filesystemBackends.virtualMachine
 
-
 object Enclave:
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
   // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).
@@ -87,8 +86,7 @@ object Enclave:
       block(using tool).also:
         sh"$path '{admin}' kill".exec[Exit]()
 
-        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item =>
-          safely(item.delete())
+        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item => safely(item.delete())
 
 
 case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)

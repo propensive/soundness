@@ -94,4 +94,3 @@ private[stratiform] def rebuild(origin: Tel, children: IArray[Tel.Block]): Tel =
 private[stratiform] def reKey(tel: Tel, keyword: Text): Tel.Compound = tel.subtree match
   case c: Tel.Compound => c.copy(keyword = keyword)
   case d: Tel.Document => Tel.Compound(keyword, IArray.empty, Unset, d.children)
-

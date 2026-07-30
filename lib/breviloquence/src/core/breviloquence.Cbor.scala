@@ -69,7 +69,6 @@ trait Cbor2:
       def encoded(value: value): Cbor =
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(ast(Ast(Unset)))
 
-
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( tactic: Tactic[CborError] )
   =>  ( decodable: => (inner is Decodable in Cbor)^ )
@@ -78,7 +77,6 @@ trait Cbor2:
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
     cbor => if cbor.root.unset then Unset else decodable.decoded(cbor)
-
 
   inline given decodable: [value] => value is Decodable in Cbor = summonFrom:
     case given (`value` is Decodable in Text) =>
@@ -101,7 +99,6 @@ trait Cbor2:
   inline given encodable: [value] => value is Encodable in Cbor = summonFrom:
     case given (`value` is Encodable in Text) => value => ast(Ast(value.encode.s))
     case given Reflection[`value`]            => EncodableDerivation.derived
-
 
   object DecodableDerivation extends Derivable[Decodable in Cbor]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -312,8 +309,7 @@ object Cbor extends Cbor2, Dynamic:
         if cbor.isInteger then
           val long = cbor.asInstanceOf[Long]
 
-          if long >= 0 then head(out, 0, long)
-          else head(out, 1, -1L - long)
+          if long >= 0 then head(out, 0, long) else head(out, 1, -1L - long)
 
         else if cbor.isFloat then
           out.push((0xE0 | 27).toByte)
@@ -362,8 +358,7 @@ object Cbor extends Cbor2, Dynamic:
             write(out, cbor.value(index))
             index += 1
 
-      Producer.collect[Data](): producer =>
-        write(producer, cbor)
+      Producer.collect[Data](): producer => write(producer, cbor)
 
     // Renders a CBOR node in the RFC 8949 §8 diagnostic notation. The whole rendering lives in this
     // instance so `.show` is the single route to diagnostic text.
@@ -688,12 +683,10 @@ object Cbor extends Cbor2, Dynamic:
 
         abort(CborError(reason))
 
-
   given option: [value: Decodable in Cbor] => Tactic[CborError]
   =>  Option[value] is Decodable in Cbor =
 
     cbor => if cbor.root.unset then None else Some(value.decoded(cbor))
-
 
   given optionEncodable: [value] => (encodable: value is Encodable in Cbor)
   =>  Option[value] is Encodable in Cbor =
@@ -705,7 +698,6 @@ object Cbor extends Cbor2, Dynamic:
       def encoded(value: Option[value]): Cbor = value match
         case None        => ast(Ast(Unset))
         case Some(value) => encodable.encode(value)
-
 
   given integralEncodable: [integral: Integral] => integral is Encodable in Cbor =
     int => ast(Ast(integral.toLong(int)))
@@ -721,7 +713,6 @@ object Cbor extends Cbor2, Dynamic:
   given bytesEncodable: IArray[Byte] is Encodable in Cbor = bytes => ast(Ast(bytes))
   given cborEncodable: Cbor is Encodable in Cbor = identity(_)
 
-
   // The collection instances below are honest capabilities: each retains its by-name
   // element codec (and, where present, a resolution-scoped `Tactic`), which share the
   // instance's given-resolution lifetime (every given that includes a tactic is a
@@ -731,18 +722,15 @@ object Cbor extends Cbor2, Dynamic:
   =>  ((list[element] is Encodable in Cbor)^) =
     values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
-
   given setEncodable: [set <: Set, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((set[element] is Encodable in Cbor)^) =
     values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
-
   given seriesEncodable: [series <: Series, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
   =>  ((series[element] is Encodable in Cbor)^) =
     values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
-
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[CborError] )
@@ -755,7 +743,6 @@ object Cbor extends Cbor2, Dynamic:
         value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
 
         builder.result()
-
 
   given mapDecodable: [key: Decodable in Text, element]
   =>  ( decodable: => (element is Decodable in Cbor)^ )
@@ -780,7 +767,6 @@ object Cbor extends Cbor2, Dynamic:
 
         map
 
-
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: element is Encodable in Cbor )
   =>  Map[key, element] is Encodable in Cbor =
@@ -789,7 +775,6 @@ object Cbor extends Cbor2, Dynamic:
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
       ast(Ast.map(IArray.from(keys.map{ k => k.encode.s }), values))
-
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Cbor)*): Cbor =
     val keys: IArray[Any] = IArray.from(elements.map(_(0): Any))
@@ -812,7 +797,6 @@ object Cbor extends Cbor2, Dynamic:
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Cbor =
     DiscriminantKey[value](label)
-
 
   private[breviloquence] object Parser:
 
@@ -1400,8 +1384,7 @@ object Cbor extends Cbor2, Dynamic:
           val byte = data(pos + 1 + position).toLong & 0xFF
           ascii |= byte.toInt
 
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
 
           position += 1
 

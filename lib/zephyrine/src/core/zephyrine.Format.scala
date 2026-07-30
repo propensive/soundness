@@ -46,8 +46,7 @@ object Format:
     // The line/column/offset fields stay internal to each parser; `span` is the
     // uniform location exposed through public error APIs. Implementors that track
     // a line and column override this with a `Line`-mode span.
-    def span: Span = offset.lay(Span.empty): start =>
-      Span.offset(start.z, length.or(0))
+    def span: Span = offset.lay(Span.empty): start => Span.offset(start.z, length.or(0))
 
   trait Issue:
     def describe: Message

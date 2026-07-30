@@ -89,22 +89,17 @@ object GithubActions:
   def debug(message: Text)(using Stdio): Unit =
     Out.println(t"::debug::${escape(message)}")
 
-
   def group(title: Text)(using Stdio): Unit =
     Out.println(t"::group::${escape(title)}")
 
-
   def endGroup()(using Stdio): Unit = Out.println(t"::endgroup::")
-
 
   inline def grouped[result](title: Text)(inline block: => result)(using Stdio): result =
     group(title)
     try block finally endGroup()
 
-
   private def escape(text: Text): Text =
     text.sub(t"%", t"%25").sub(t"\r", t"%0D").sub(t"\n", t"%0A")
-
 
   private def escapeProperty(text: Text): Text =
     escape(text).sub(t",", t"%2C").sub(t":", t"%3A")

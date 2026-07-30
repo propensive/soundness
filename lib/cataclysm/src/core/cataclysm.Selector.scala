@@ -144,8 +144,7 @@ object Simple:
     case PseudoArgument.Nth(a, b, of)   => t"(${nth(a, b)}${ofClause(of)})"
     case PseudoArgument.Raw(text)       => t"($text)"
 
-  private def ofClause(of: Optional[SelectorList]): Text = of.lay(t""): list =>
-    t" of ${list.show}"
+  private def ofClause(of: Optional[SelectorList]): Text = of.lay(t""): list => t" of ${list.show}"
 
   // Render an `An+B` micro-syntax, canonicalising `1n`→`n`, `-1n`→`-n` and `a==0`→`b`.
   private def nth(a: Int, b: Int): Text =
@@ -156,9 +155,7 @@ object Simple:
         case _  => t"${a}n"
 
       val offset =
-        if b == 0 then t""
-        else if b > 0 then t"+$b"
-        else t"-${-b}"
+        if b == 0 then t"" else if b > 0 then t"+$b" else t"-${-b}"
 
       t"$coefficient$offset"
 

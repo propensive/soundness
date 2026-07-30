@@ -57,9 +57,7 @@ object Watch:
       . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
 
     val directories: Map[jnf.Path, Text -> Boolean] =
-      pathGroups.view.mapValues: predicates =>
-        (value: Text) => predicates.exists(_(value))
-
+      pathGroups.view.mapValues: predicates => (value: Text) => predicates.exists(_(value))
       . to(Map)
 
     val spool: Relay[WatchEvent] = Relay()

@@ -184,4 +184,3 @@ private[pneumatic] object BrotliTables:
 
   val copyRangeLut: Array[Int] = Array(
     0, 8, 0, 8, 16, 0, 16, 8, 16)
-

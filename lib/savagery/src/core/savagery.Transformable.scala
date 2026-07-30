@@ -34,7 +34,6 @@ package savagery
 
 import prepositional.*
 
-
 object Transformable:
   def apply[value]
     // A pure function (`->`): the instance retains it, and a capturing conversion would make
@@ -59,7 +58,6 @@ object Transformable:
 
   given svg: Svg is Transformable =
     Transformable(_.transforms, (figure, ts) => figure.copy(transforms = ts))
-
 
 trait Transformable extends Typeclass:
   def transforms(self: Self): List[Transform]

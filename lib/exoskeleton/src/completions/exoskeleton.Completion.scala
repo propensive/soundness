@@ -106,7 +106,6 @@ extends Cli:
   override def explain(update: (Optional[Text] aka "prior") ?=> Optional[Text]): Unit =
     explanation = update(using explanation.aka["prior"])
 
-
   override def suggest
     ( argument: Argument,
       update:   (List[Suggestion] aka "prior") ?=> List[Suggestion],
@@ -119,7 +118,6 @@ extends Cli:
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 
       . sortBy(_.core)
-
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
@@ -146,9 +144,7 @@ extends Cli:
 
   def serialize: List[Text] =
     val items0 =
-      if cursorSuggestions.nil
-      then flagSuggestions(focusText.starts(t"--"))
-      else cursorSuggestions
+      if cursorSuggestions.nil then flagSuggestions(focusText.starts(t"--")) else cursorSuggestions
 
     val items = interpreter.focus(parameters).lay(items0): focus => items0.map(focus.wrap(_))
 
@@ -191,9 +187,7 @@ extends Cli:
         (title ++ itemLines).map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
-        items.filter(!_.hidden).flatMap: suggestion =>
-          (suggestion.text :: suggestion.aliases)
-
+        items.filter(!_.hidden).flatMap: suggestion => (suggestion.text :: suggestion.aliases)
         . filter(_.starts(focusText))
 
       case Shell.Fish | Shell.Powershell =>

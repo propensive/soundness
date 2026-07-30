@@ -61,7 +61,6 @@ object Elicitable extends Elicitable2:
     def widget(id: Text, label: Text, value: Text): Combobox =
       Combobox(id, enumerable.values.to(List).map(enumerable.name(_)), value)
 
-
   given reference: [entity <: Entity: {Listable, Showable, Referenceable}]
   =>  entity.Operand is Encodable in Text
   =>  Reference[entity] is Elicitable:

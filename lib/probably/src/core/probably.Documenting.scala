@@ -159,8 +159,7 @@ private[probably] object Documenting:
 
   private def cellDatum(entry: Entry, cell: Cell): Datum =
     entry.headline.lay(Datum.Mark(cellStatus(cell))): headline =>
-      run(cell).lay(Datum.Gap): run0 =>
-        metric(run0, headline).lay(Datum.Blank)(datum(headline, _))
+      run(cell).lay(Datum.Gap): run0 => metric(run0, headline).lay(Datum.Blank)(datum(headline, _))
 
   private def confidence(run: Run): Datum =
     val basisPoints = (metric(run, Metric.Confidence).or(0.0)*10000.0).toLong
@@ -178,8 +177,7 @@ private[probably] object Documenting:
 
   private def benchMetricColumns(sized: Boolean): List[Column] =
     val sizes =
-      if sized then List(Column(t"Size", numeric = true), Column(t"Rate", numeric = true))
-      else Nil
+      if sized then List(Column(t"Size", numeric = true), Column(t"Rate", numeric = true)) else Nil
 
     List
       ( Column(t"n", numeric = true),
@@ -267,8 +265,7 @@ private[probably] object Documenting:
       val cells = entry.cells.to(Map)
 
       val anchored: Optional[(Anchor, Run)] =
-        entry.anchor.let: anchor =>
-          cells.at(List(anchor.value)).let(run(_)).let(anchor -> _)
+        entry.anchor.let: anchor => cells.at(List(anchor.value)).let(run(_)).let(anchor -> _)
 
       val comparisonColumns = anchored.lay(Nil): (anchor, _) =>
         List(Column(t"×${anchor.value.text}", numeric = true))
@@ -447,8 +444,7 @@ private[probably] object Documenting:
     val columns = leadColumns ::: latencyColumns ::: sloColumns ::: tailColumns
 
     def optionalTime(run: Run, key: Metric): Datum =
-      metric(run, key).lay(Datum.Blank): value =>
-        Datum.Time(value.toLong)
+      metric(run, key).lay(Datum.Blank): value => Datum.Time(value.toLong)
 
     val rows = curves.flatMap: (entry, curve) =>
       curve.to(List).sortBy(_(0)).map: (n, run0) =>

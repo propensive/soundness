@@ -46,8 +46,7 @@ private[hallucination] object Quantization:
     if counts.size <= limit then
       val palette = IArray.from(counts.keys)
 
-      palette.indices.foreach: index =>
-        assignment(palette(index)) = index
+      palette.indices.foreach: index => assignment(palette(index)) = index
 
       (palette, assignment)
     else
@@ -94,8 +93,7 @@ private[hallucination] object Quantization:
 
           var total = 0L
 
-          sorted.foreach: color =>
-            total += counts(color)
+          sorted.foreach: color => total += counts(color)
 
           var cumulative = 0L
           var split = 0

@@ -104,7 +104,6 @@ object Subcompiler:
         val content = context.compilationUnit.source.content
         val focus = String(content.slice(position.start, position.end))
 
-
         val offset = position.point - position.start
         val ordinal = diagnostic.msg.errorId.ordinal
 
@@ -195,9 +194,7 @@ object Subcompiler:
                 else run(source, regions -- done, errors ::: newErrors)
 
               case error :: tail =>
-                regions.find: (start, end) =>
-                  error.point >= start && error.point <= end
-
+                regions.find: (start, end) => error.point >= start && error.point <= end
                 . match
                   case None =>
                     recompile(tail, done, source)

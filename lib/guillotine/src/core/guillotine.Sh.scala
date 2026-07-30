@@ -139,7 +139,6 @@ object Sh:
   given list: Insertion[Parameters, List[Text]] = xs => Parameters(xs*)
   given command: Insertion[Parameters, Command] = command => Parameters(command.arguments*)
 
-
   given parameterizable: [parameterizable: Parameterizable]
   =>  Insertion[Parameters, parameterizable] =
 

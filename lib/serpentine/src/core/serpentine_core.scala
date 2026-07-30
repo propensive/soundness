@@ -32,7 +32,5 @@
                                                                                                   */
 package serpentine
 
-
 export Path.`%`
 export Relative.{`^`, `?`}
-

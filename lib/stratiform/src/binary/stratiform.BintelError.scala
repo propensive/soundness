@@ -57,7 +57,6 @@ object BintelError:
       case BadSignatureLength =>
         m"the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)"
 
-
       case EmbeddedSignatureMismatch =>
         m"""
           the signature recomputed from the embedded schema body does not equal the carried

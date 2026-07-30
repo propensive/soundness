@@ -114,14 +114,11 @@ object Directories:
   private def isWindows(using system: System): Boolean =
     system(t"os.name").or(t"").lower.starts(t"windows")
 
-
   private def localAppDataText(using environment: Environment, system: System): Text =
     safely(Environment[Text](t"LOCALAPPDATA")).or(t"${homeText}\\AppData\\Local")
 
-
   private def roamingAppDataText(using environment: Environment, system: System): Text =
     safely(Environment[Text](t"APPDATA")).or(t"${homeText}\\AppData\\Roaming")
-
 
   private def programDataText(using environment: Environment): Text =
     safely(Environment[Text](t"PROGRAMDATA")).or(t"C:\\ProgramData")

@@ -76,19 +76,16 @@ object Cursor:
 
     given ordered: Ordering[Mark] = Ordering.Long
 
-
   object Offset:
     inline def apply(line: Ordinal, column: Ordinal): Offset =
       (line.n0.toLong << 32) | (column.n0.toLong & 0xffffffffL)
 
     given ordered: Ordering[Offset] = Ordering.Long
 
-
   extension (mark: Mark)
     inline def absolute: Long = mark
     private[zephyrine] inline def increment: Mark = mark + 1
     private[zephyrine] inline def decrement: Mark = mark - 1
-
 
   extension (offset: Offset)
     inline def line: Ordinal = (offset >> 32 & 0xffffffff).toInt.z
@@ -96,7 +93,6 @@ object Cursor:
     private[zephyrine] inline def toLong: Long = offset
 
   private[zephyrine] inline def offsetFromLong(long: Long): Offset = long
-
 
   // Default initial buffer size for streaming use; pre-filled buffers use the
   // exact size of the initial chunk.
@@ -319,7 +315,6 @@ object Cursor:
     @targetName("textBuffer")
     inline def buffer(using erased unsafe: Unsafe): Array[Char] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
-
 
 // `cap^` is the capture set of the `load` thunk: `{}` for an in-memory cursor (the loader is a
 // no-op), or the capabilities a streaming loader draws from (e.g. a socket). Tracking it as an
@@ -600,7 +595,6 @@ extends caps.Mutable:
       case _ =>
         ended = true
         LazyList.empty
-
 
   // ─── unsafe direct buffer access ──────────────────────────────────────────
   //

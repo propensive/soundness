@@ -60,4 +60,3 @@ object internal:
       def f: Float = affine(1, 2)
 
   opaque type Affine <: Matrix[Float, 3, 3] = Matrix[Float, 3, 3]
-

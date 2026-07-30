@@ -60,6 +60,5 @@ object Xyz:
 
       Srgb(red, green, blue)
 
-
 case class Xyz(x: Double, y: Double, z: Double) extends Color:
   type Form = Xyz

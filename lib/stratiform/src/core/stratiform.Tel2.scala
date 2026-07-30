@@ -357,16 +357,11 @@ trait Tel2 extends Tel3:
   // atom. These mirror jacinta.Json's primitive decoders but go through
   // the atom text rather than a JSON AST.
 
-
   given textDecodable: (tactic: Tactic[TelError]) => ((Text is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Str): tel =>
-      primitiveFault(tel, t"Text", t""): atom =>
-        atom
+    Tel.Decodable(() => Morphology.Str): tel => primitiveFault(tel, t"Text", t""): atom => atom
 
   given stringDecodable: (tactic: Tactic[TelError]) => ((String is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Str): tel =>
-      primitiveFault(tel, t"String", ""): atom =>
-        atom.s
+    Tel.Decodable(() => Morphology.Str): tel => primitiveFault(tel, t"String", ""): atom => atom.s
 
   given intDecodable: (tactic: Tactic[TelError]) => ((Int is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole): tel =>
@@ -429,8 +424,7 @@ trait Tel2 extends Tel3:
   =>  ( decodable: -> (inner is Tel.Decodable) )
   =>  value is Tel.Decodable =
     Tel.Decodable(() => Morphology.Opt(decodable.shape())): telVal =>
-      if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
-      else decodable.decoded(telVal)
+      if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset else decodable.decoded(telVal)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
   // Document-rooted Tel whose children are the elements' compounds; the product

@@ -48,4 +48,3 @@ transparent inline def singleton[kotlinType]: Any = ${KotlinFacade.singleton[kot
 // `import soundness.*` would resolve the collision by classpath order.
 transparent inline def enumEntry[kotlinType](inline name: String): Any =
   ${KotlinFacade.enumEntry[kotlinType]('name)}
-

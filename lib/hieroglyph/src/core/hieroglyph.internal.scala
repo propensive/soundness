@@ -50,13 +50,11 @@ object internal:
 
   given ordering: Ordering[CharRange] = Ordering.Long
 
-
   extension (range: CharRange)
     def from: Int = (range >> 32).toInt
 
     def to: Int = range.toInt
     def contains(char: Char): Boolean = char.toInt >= from && char.toInt <= to
-
 
   def encoding(contextExpr: Expr[StringContext]): Macro[Encoding] =
     import quotes.reflect.*
@@ -69,7 +67,7 @@ object internal:
       case Some(encoding) =>
         if !encoding.charset.isRegistered
         then report.warning(
-          s"hieroglyph: the encoding ${encoding.charset.displayName} is not an IANA-registered "+
+          s"hieroglyph: the encoding ${encoding.charset.displayName} is not an IANA-registered " +
             "encoding, and may not be universally available")
 
         val name = context.parts.head.toLowerCase.nn

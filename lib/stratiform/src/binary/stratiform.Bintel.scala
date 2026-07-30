@@ -44,7 +44,6 @@ import prepositional.*
 import ulysses.*
 import vacuous.*
 
-
 object Bintel:
 
   // §6 magic number: the 4 bytes that prefix every BinTEL document.
@@ -122,8 +121,7 @@ object Bintel:
   // the signature length pattern (B03), and leaves trailing-byte (B08)
   // detection to the caller (typically `Bintel.decode` over the body).
   def unframe(data: Data): Framed raises BintelError =
-    if data.length < magic.length
-    then abort(BintelError(BintelError.Reason.BadMagic))
+    if data.length < magic.length then abort(BintelError(BintelError.Reason.BadMagic))
 
     var i = 0
 
@@ -153,8 +151,7 @@ object Bintel:
 
     val sig = sigBytes.asInstanceOf[IArray[Byte]]
 
-    if !validSignatureLength(sig)
-    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    if !validSignatureLength(sig) then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
     Framed(sig, bodyBytes.asInstanceOf[IArray[Byte]])
 
@@ -211,8 +208,7 @@ object Bintel:
   def decodeDocumentSelfContained(data: Data): Document raises BintelError =
     import errorDiagnostics.emptyDiagnostics
 
-    if data.length < magicSelfContained.length
-    then abort(BintelError(BintelError.Reason.BadMagic))
+    if data.length < magicSelfContained.length then abort(BintelError(BintelError.Reason.BadMagic))
 
     var i = 0
 
@@ -355,8 +351,7 @@ object Bintel:
   private def readVarint(cursor: Cursor): Long raises BintelError =
     import errorDiagnostics.emptyDiagnostics
 
-    if cursor.offset >= cursor.data.length
-    then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+    if cursor.offset >= cursor.data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
 
     mitigate:
       case _: VarintError => BintelError(BintelError.Reason.VarintError)
@@ -433,8 +428,7 @@ object Bintel:
         Tel.Compound(kidx.let(flat(_)._1).or(Text("")), IArray.empty, Unset, IArray.empty)
 
   private def blocks(compounds: IArray[Tel.Compound]): IArray[Tel.Block] =
-    if compounds.nil then IArray.empty
-    else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
+    if compounds.nil then IArray.empty else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
 
   object Parsable:
     // The base of generated parsers: generated code is capture-erased, so

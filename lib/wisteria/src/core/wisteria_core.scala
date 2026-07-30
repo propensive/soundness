@@ -76,7 +76,6 @@ object arithmetic:
 
     AddableDerivation.derived[value]
 
-
   object SubtractableDerivation
   extends ProductDerivation[[value] =>> value is Subtractable by value to value]:
 
@@ -92,7 +91,6 @@ object arithmetic:
 
     SubtractableDerivation.derived[value]
 
-
   object MultiplicableDerivation
   extends ProductDerivation[[value] =>> value is Multiplicable by value to value]:
 
@@ -107,7 +105,6 @@ object arithmetic:
   =>  value is Multiplicable by value to value =
 
     MultiplicableDerivation.derived[value]
-
 
   object DivisibleDerivation
   extends ProductDerivation[[value] =>> value is Divisible by value to value]:

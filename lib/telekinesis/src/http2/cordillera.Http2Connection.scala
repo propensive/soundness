@@ -164,7 +164,6 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
   private def send(frame: Frame): Unit = outbound.put(frame)
 
-
   // Tear the connection down after an unrecoverable reader/writer failure: unblock a
   // pending handshake, end every open stream so awaiters of its headers/body/trailers
   // don't hang on a connection that can no longer make progress, and stop the outbound
@@ -195,8 +194,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
         val writer = daemon:
           duplex0.send(zephyrine.Stream(connectionPreface))
 
-          outbound0.stream.records.each: frame =>
-            duplex0.send(zephyrine.Stream(frame.serialize))
+          outbound0.stream.records.each: frame => duplex0.send(zephyrine.Stream(frame.serialize))
 
         val frameReaderRef: AnyRef = FrameReader(duplex0.source).asInstanceOf[AnyRef]
 
@@ -234,8 +232,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
     send(Frame.Headers(id, encoder.encode(headerBlock), endStream = noBody, endHeaders = true))
 
-    body.let: payload =>
-      send(Frame.Data(id, payload, endStream = true))
+    body.let: payload => send(Frame.Data(id, payload, endStream = true))
 
     stream
 
@@ -265,4 +262,3 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     reader.cancel()
     writer.cancel()
     duplex.close()
-

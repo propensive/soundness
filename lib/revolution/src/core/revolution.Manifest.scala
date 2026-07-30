@@ -59,14 +59,11 @@ object Manifest:
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:
-    entries.map: entry =>
-      (entry.key, entry.value)
-
+    entries.map: entry => (entry.key, entry.value)
     . to(Map)
 
   given addable: Manifest is Addable by ManifestEntry to Manifest = Addable: (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
-
 
   given subtractable: [key <: Label, attribute <: ManifestAttribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
@@ -83,8 +80,7 @@ case class Manifest(entries: Map[Text, Text]):
   def serialize: Data =
     val manifest = juj.Manifest()
 
-    entries.each: (key, value) =>
-      manifest.getMainAttributes.nn.putValue(key.s, value.s)
+    entries.each: (key, value) => manifest.getMainAttributes.nn.putValue(key.s, value.s)
 
     val out = ji.ByteArrayOutputStream()
     manifest.write(out)

@@ -139,8 +139,7 @@ object dexLinkages:
         builder.setMode(form.mode)
         builder.setOutput(outPath.resolve("main.dex.jar").nn, OutputMode.DexIndexed)
 
-        form.platform.let: platform =>
-          builder.addLibraryFiles(jnf.Paths.get(platform.encode.s))
+        form.platform.let: platform => builder.addLibraryFiles(jnf.Paths.get(platform.encode.s))
 
         D8.run(builder.build().nn)
         out / "main.dex.jar"

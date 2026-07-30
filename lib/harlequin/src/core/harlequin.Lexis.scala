@@ -111,8 +111,7 @@ object Lexis:
         if previous.lay(false)(indent <= _) then builder += Lexeme.Break
         previous = indent
 
-        line.foreach: token =>
-          lexeme(token).let(builder += _)
+        line.foreach: token => lexeme(token).let(builder += _)
 
     builder.result()
 

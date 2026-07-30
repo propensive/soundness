@@ -74,8 +74,7 @@ final class BintelParser private[stratiform] (input: Data):
   def directCount()(using Tactic[BintelError]): Int =
     val value = directVarint()
 
-    if value < 0 || value > Int.MaxValue
-    then abort(BintelError(BintelError.Reason.VarintError))
+    if value < 0 || value > Int.MaxValue then abort(BintelError(BintelError.Reason.VarintError))
 
     value.toInt
 
@@ -84,8 +83,7 @@ final class BintelParser private[stratiform] (input: Data):
   def directScalar()(using Tactic[BintelError]): String =
     val length = directCount()
 
-    if offset + length > data.length
-    then abort(BintelError(BintelError.Reason.ValueTruncated))
+    if offset + length > data.length then abort(BintelError(BintelError.Reason.ValueTruncated))
 
     val result = java.lang.String(data, offset, length, java.nio.charset.StandardCharsets.UTF_8)
     offset += length
@@ -95,8 +93,7 @@ final class BintelParser private[stratiform] (input: Data):
   def directSkipScalar()(using Tactic[BintelError]): Unit =
     val length = directCount()
 
-    if offset + length > data.length
-    then abort(BintelError(BintelError.Reason.ValueTruncated))
+    if offset + length > data.length then abort(BintelError(BintelError.Reason.ValueTruncated))
 
     offset += length
 

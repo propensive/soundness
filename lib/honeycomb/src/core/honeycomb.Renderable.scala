@@ -73,6 +73,5 @@ object Renderable:
         H4(stackTrace.message.html),
         Table(Tbody(rows*)) )
 
-
 trait Renderable extends Typeclass, Formal:
   def render(value: Self): Html of Form

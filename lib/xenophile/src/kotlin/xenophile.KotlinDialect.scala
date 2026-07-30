@@ -284,8 +284,7 @@ object KotlinDialect extends Dialect:
         Optional(JvmExtensionsKt.getSignature(function)).let: signature =>
           val parameters = function.getValueParameters.nn.asScala.to(List)
 
-          val types = parameters.map: parameter =>
-            foreignType(parameter.getType.nn)
+          val types = parameters.map: parameter => foreignType(parameter.getType.nn)
 
           val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
           val names = parameters.map(_.getName.nn.tt)
@@ -348,8 +347,7 @@ object KotlinDialect extends Dialect:
       Optional(JvmExtensionsKt.getSignature(constructor)).let: signature =>
         val parameters = constructor.getValueParameters.nn.asScala.to(List)
 
-        val types = parameters.map: parameter =>
-          foreignType(parameter.getType.nn)
+        val types = parameters.map: parameter => foreignType(parameter.getType.nn)
 
         val defaults = parameters.map(Attributes.getDeclaresDefaultValue(_))
         val names = parameters.map(_.getName.nn.tt)

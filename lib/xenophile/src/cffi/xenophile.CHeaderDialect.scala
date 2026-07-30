@@ -96,8 +96,7 @@ object CHeaderDialect extends Dialect:
   // names are mapped to the primitive of the same size (so the FFM layout stays correct). Widths
   // without a matching primitive (`int8_t`, `int16_t`, `short`) are left as-is.
   private def canonical(words: List[String]): Text =
-    val cleaned = words.filterNot: word =>
-      word == "unsigned" || word == "signed"
+    val cleaned = words.filterNot: word => word == "unsigned" || word == "signed"
 
     val name = if cleaned.isEmpty then t"int" else cleaned.mkString(" ").tt
 
@@ -180,8 +179,7 @@ object CHeaderDialect extends Dialect:
 
         val after = skipStatement(skipBraces(body, 1))
 
-        val updated = name.lay(typedefs): word =>
-          typedefs.updated(word, Foreign.Type.Named(t"int"))
+        val updated = name.lay(typedefs): word => typedefs.updated(word, Foreign.Type.Named(t"int"))
 
         declarations(after, structs, functions, updated)
 

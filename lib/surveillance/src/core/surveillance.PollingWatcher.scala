@@ -105,8 +105,7 @@ extends Watcher:
 
     val snapshots: scm.HashMap[jnf.Path, Map[Text, Entry]] = scm.HashMap()
 
-    directories.each: (directory, filter) =>
-      snapshots(directory) = scan(directory, filter)
+    directories.each: (directory, filter) => snapshots(directory) = scan(directory, filter)
 
     // Sealed per the pure-façade convention (D6), like `NativeWatcher`: the handle is held
     // only to keep the supervised poll task alive for the registration's lifetime.

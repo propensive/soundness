@@ -88,7 +88,6 @@ extends Findable:
 
     Out.print(e"\e[J")
 
-
   def run[result](test: Test[result]^): Trial[result] =
     mutex:
       val size = active.size

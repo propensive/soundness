@@ -69,7 +69,6 @@ object internal:
         val inclusion2 = Expr.summon[Inclusion[report, Verdict.Detail]].getOrElse:
           halt(m"Can't embed test details in ${Type.of[report].show}")
 
-
         def lift(predicate: Expr[Any]): Option[Expr[Any]] = predicate.asTerm match
           case Inlined(_, _, predicate) => lift(predicate.asExpr)
 

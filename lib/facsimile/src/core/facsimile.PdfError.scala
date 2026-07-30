@@ -105,7 +105,7 @@ object PdfError:
       m"an I/O operation failed: $detail"
 
     case Reason.WriteUnsupported =>
-      m"this document cannot be written (only an unencrypted, on-disk file with a valid "+
+      m"this document cannot be written (only an unencrypted, on-disk file with a valid " +
           m"cross-reference table can be edited in place)"
 
 case class PdfError(reason: PdfError.Reason)(using Diagnostics)

@@ -66,8 +66,7 @@ object Pcm:
 
         if count <= 0 then LazyList() else
           val chunk =
-            if count == buffer.length then buffer
-            else java.util.Arrays.copyOf(buffer, count).nn
+            if count == buffer.length then buffer else java.util.Arrays.copyOf(buffer, count).nn
 
           Audio.of[layout](line.getFormat.nn, chunk) #:: recur
 

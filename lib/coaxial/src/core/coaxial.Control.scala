@@ -62,5 +62,4 @@ object Control:
   case class Reply[+state](message: Data, state: Optional[state])
   extends Control[state], Interactive
 
-
 sealed trait Control[+state]

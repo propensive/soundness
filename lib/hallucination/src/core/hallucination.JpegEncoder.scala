@@ -85,8 +85,7 @@ private[hallucination] object JpegEncoder:
     val q = clamp(quality, 1, 100)
     val scale = if q < 50 then 5000/q else 200 - q*2
 
-    base.map: value =>
-      clamp((value*scale + 50)/100, 1, 255)
+    base.map: value => clamp((value*scale + 50)/100, 1, 255)
 
   // ITU-R BT.601 RGB-to-YCbCr, scaled by 2^16 (matching the encoder's fixed-point conversion).
   private def rgbToYcbcr(r: Int, g: Int, b: Int): (Int, Int, Int) =
@@ -213,8 +212,7 @@ private[hallucination] object JpegEncoder:
     marker(0xe0)
     u16(16)
 
-    "JFIF".foreach: char =>
-      u8(char.toInt)
+    "JFIF".foreach: char => u8(char.toInt)
 
     u8(0)
     u8(1); u8(2)  // version 1.02

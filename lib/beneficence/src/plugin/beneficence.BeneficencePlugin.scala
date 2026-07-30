@@ -38,7 +38,7 @@ class BeneficencePlugin() extends StandardPlugin:
   val name: String = "beneficence"
 
   override val description: String =
-    "records givens into META-INF/givens/<typeclass> and Probably suites into "+
+    "records givens into META-INF/givens/<typeclass> and Probably suites into " +
     "META-INF/services/probably.Suite"
 
   override def initialize(options: List[String])(using Context): List[PluginPhase] =

@@ -48,7 +48,6 @@ trait Receivable2:
     Receivable:
       body => content(body.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
-
 object Receivable extends Receivable2:
   // A named SAM rather than a function type: a function type may not take a
   // capability-typed (`^`) parameter (the `Spring` precedent), and SAM

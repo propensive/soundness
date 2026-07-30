@@ -113,7 +113,6 @@ extension [value](value: value)
 def test[report](name: Message)(using suite: Testable, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)
 
-
 // Declares a test with a stable moniker (a compile-time-checked Java identifier) alongside
 // its description. The moniker addresses the test in selections and charts, independently
 // of edits to the description.

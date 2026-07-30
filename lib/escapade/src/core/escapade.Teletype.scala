@@ -97,8 +97,7 @@ object Teletype:
     def map(text: Teletype)(lambda: Char => Char): Teletype =
       val array = text.plain.s.toCharArray.nn
 
-      array.indices.each: index =>
-        array(index) = lambda(array(index))
+      array.indices.each: index => array(index) = lambda(array(index))
 
       Teletype(new String(array).tt, text.styles, text.hyperlinks, text.insertions, text.boundaries)
 

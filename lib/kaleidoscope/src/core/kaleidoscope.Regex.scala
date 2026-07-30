@@ -73,7 +73,6 @@ object Regex:
 
     def unitary: Boolean = this == Exactly(1)
 
-
   case class Group
     ( start:      Int,
       end:        Int,
@@ -110,7 +109,6 @@ object Regex:
 
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
-
 
   def apply(parts: Seq[String])(using erased unsafe: Unsafe): Regex =
     strategies.throwUnsafely.give(parse(parts.to(List).map(_.tt)))

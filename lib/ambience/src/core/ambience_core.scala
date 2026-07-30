@@ -84,7 +84,6 @@ package temporaryDirectories:
     List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt)
     . or(panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set"))
 
-
 // Resolution goes through `Paths.Resolver` (ordinary implicit search) rather than an inline
 // `summonFrom`: the latter cannot be reduced when `temporaryDirectory`/`workingDirectory` is expanded
 // inside a staged quote (e.g. an ethereal daemon `cli` block printing the working directory).

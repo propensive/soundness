@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import vacuous.*
 
-
 // Composable edit DSL built atop the primitive Mutation.Op interpreter
 // (§22.5). A `Revision` is an ordered op-log; revisions compose with `++`
 // to form longer sequences and apply to a `Tel` value with `revision(tel)`
@@ -118,7 +117,6 @@ object Revision:
     Mutation.construct(keyword, atoms*)
 
   private def single(op: Mutation.Op): Revision = new Revision(IArray(op))
-
 
 case class Revision private[stratiform] (ops: IArray[Mutation.Op]):
   def ++ (next: Revision): Revision = new Revision(ops ++ next.ops)

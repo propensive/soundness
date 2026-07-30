@@ -110,8 +110,7 @@ object internal:
       val dLng = math.abs(left.longitude.radians - right.longitude.radians)
 
       val a =
-        math.pow(math.sin(dLat/2), 2) +
-          math.cos(lat0)*math.cos(lat1)*math.pow(math.sin(dLng/2), 2)
+        math.pow(math.sin(dLat/2), 2) + math.cos(lat0)*math.cos(lat1)*math.pow(math.sin(dLng/2), 2)
 
       Angle(2*math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 

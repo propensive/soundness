@@ -66,7 +66,6 @@ object internal:
 
       new Vector[element, size.type](array.immutable(using Unsafe))
 
-
     given addable
     :   [ value,
           size   <: Int,
@@ -94,7 +93,6 @@ object internal:
 
         new Vector[result, size](arr)
 
-
     given negatable: [value, size <: Int, vector <: Vector[value, size], result]
     =>  ( negatable: value is Negatable to result )
     =>  vector is Negatable:
@@ -102,7 +100,6 @@ object internal:
       type Result = Vector[result, size]
 
       def negate(operand: vector): Vector[result, size] = operand.map(negatable.negate(_))
-
 
     given subtractable
     :   [ value,
@@ -133,7 +130,6 @@ object internal:
 
         new Vector[result, size](arr)
 
-
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
     =>  Vector[element, size] is Showable =
 
@@ -149,7 +145,6 @@ object internal:
           val middle = items.tail.init.map: item => t"⎜ ${item.pad(width, Rtl)} ⎟"
 
           (top :: middle ::: bottom :: Nil).join(t"\n")
-
 
   extension [left](left: Vector[left, 3])
     def cross[right](right: Vector[right, 3])

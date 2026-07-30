@@ -67,7 +67,6 @@ object XmlSchema:
 
     def infer(parent: Tag, child: Tag) = Unset
 
-
 trait XmlSchema extends Findable:
   def freeform: Boolean = false
 

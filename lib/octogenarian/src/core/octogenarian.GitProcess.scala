@@ -32,7 +32,6 @@
                                                                                                   */
 package octogenarian
 
-
 class GitProcess[+result](val progress: Iterator[Progress])(closure: => result):
   lazy val result: result = closure
   def complete(): result = result

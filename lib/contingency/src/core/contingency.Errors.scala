@@ -43,9 +43,7 @@ import vacuous.*
 object Errors:
   private def format(errors: Seq[(Text, Error)]): Message =
     val joined =
-      errors.reverse.map: (focus, error) =>
-        s"${error.message.text} at $focus".tt
-
+      errors.reverse.map: (focus, error) => s"${error.message.text} at $focus".tt
       . mkString("; ")
       . tt
 

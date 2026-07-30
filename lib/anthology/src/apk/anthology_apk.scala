@@ -64,8 +64,7 @@ object apkOptions:
 
   // Adds a requested runtime permission (e.g. `android.permission.VIBRATE`).
   def permission(name: Text): Linker.Option[Artifact.Apk] =
-    apk: config =>
-      config.copy(permissions = config.permissions :+ name)
+    apk: config => config.copy(permissions = config.permissions :+ name)
 
   def keystore(path: Text, storePass: Text, alias: Text, keyPass: Text)
   :   Linker.Option[Artifact.Apk] =

@@ -61,7 +61,9 @@ object stagedInternal:
   inline def fieldInstance[fieldType]: fieldType is Tel.Parsing =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Tel.Parsable) => parsable
-      case _ => scala.compiletime.summonInline[fieldType is Tel.Field]
+
+      case _ =>
+        scala.compiletime.summonInline[fieldType is Tel.Field]
 
   // ── Expansion-time environment ─────────────────────────────────────────
 
@@ -209,8 +211,7 @@ object stagedInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -264,7 +265,7 @@ object stagedInternal:
   // ladder works with the delegate so generator identities stay
   // recognizable.
   private def unwrap(instance: Inlinable): Inlinable = instance match
-    case derived: Inlinable.ForTel[?] => derived.delegate.asInstanceOf[Inlinable]
+    case derived: Inlinable.ForTel[?]  => derived.delegate.asInstanceOf[Inlinable]
     case other                         => other
 
   // The runtime tiers, resolved with a reflection-level implicit search at
@@ -393,8 +394,7 @@ object stagedInternal:
   private def packedTelKeyword(name: String): Option[Long] =
     val length = name.length
 
-    val packs = length > 0 && length <= 8 &&
-      name.forall { char => char >= '!' && char <= '~' }
+    val packs = length > 0 && length <= 8 && name.forall { char => char >= '!' && char <= '~' }
 
     if !packs then None else
       var word = 0L
@@ -517,8 +517,8 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"stratiform: ${tpe.show} is not an inlinable product (a non-generic, top-level or "+
-          "object-nested case class with a single parameter list and no `@name` renames); "+
+        (s"stratiform: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
+          "object-nested case class with a single parameter list and no `@name` renames); " +
           "use `Tel.Parsable.staged` or `derived`")
 
     val classSymbol = tpe.classSymbol.get
@@ -934,8 +934,7 @@ object stagedInternal:
 
     cache.active += TypeRepr.of[sum].dealias.show
 
-    try sumBody0[sum](reader, indent, cache)
-    finally cache.active -= TypeRepr.of[sum].dealias.show
+    try sumBody0[sum](reader, indent, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
     (using Quotes)
@@ -945,7 +944,7 @@ object stagedInternal:
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"stratiform: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed "+
+        (s"stratiform: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed " +
           "type whose variants are all case classes without `@name` renames)")
 
     val arity = variants.length
@@ -1015,8 +1014,8 @@ object stagedInternal:
 
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
-        (s"stratiform: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, "+
-          "top-level or object-nested case class with a single parameter list and no `@name` "+
+        (s"stratiform: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
+          "top-level or object-nested case class with a single parameter list and no `@name` " +
           "renames); use `Tel.Parsable.staged` or `derived`")
 
     '{

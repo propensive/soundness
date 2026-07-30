@@ -71,8 +71,7 @@ object internal:
   private def stripPad(arr: IArray[Any]): IArray[Any] =
     val n = arr.length
 
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1)
-    else arr
+    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1) else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
@@ -85,7 +84,6 @@ object internal:
         part
 
     (cleaned, spreads)
-
 
   // Reuses `YamlPath`'s own `Decodable` for validation: the literal is decoded
   // at macro-expansion time and, if it fails, the `YamlPathError`'s offset is
@@ -397,8 +395,7 @@ object internal:
           '{Yaml.Ast.Null}
 
         case arr: IArray[Any] @unchecked =>
-          if (arr.length & 1) == 0 then serializeObject(arr)
-          else serializeArray(stripPad(arr))
+          if (arr.length & 1) == 0 then serializeObject(arr) else serializeArray(stripPad(arr))
 
         case other =>
           halt(m"unexpected YAML AST node ${other.toString.tt}")
@@ -458,26 +455,22 @@ object internal:
 
           case s: String =>
             ' {
-                $accept && $scrutinee.isString &&
-                  $scrutinee.asInstanceOf[String] == ${Expr(s)}
+                $accept && $scrutinee.isString && $scrutinee.asInstanceOf[String] == ${Expr(s)}
               }
 
           case b: Boolean =>
             ' {
-                $accept && $scrutinee.isBoolean &&
-                  $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
+                $accept && $scrutinee.isBoolean && $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
               }
 
           case l: Long =>
             ' {
-                $accept && $scrutinee.isLong &&
-                  $scrutinee.asInstanceOf[Long] == ${Expr(l)}
+                $accept && $scrutinee.isLong && $scrutinee.asInstanceOf[Long] == ${Expr(l)}
               }
 
           case d: Double =>
             ' {
-                $accept && $scrutinee.isDouble &&
-                  $scrutinee.asInstanceOf[Double] == ${Expr(d)}
+                $accept && $scrutinee.isDouble && $scrutinee.asInstanceOf[Double] == ${Expr(d)}
               }
 
           case null =>
@@ -581,8 +574,7 @@ object internal:
             var k = 0
 
             while k < pairs do
-              if arr(k*2) == MarkerString then c += 1
-              else c += countHolesIn(arr(k*2 + 1))
+              if arr(k*2) == MarkerString then c += 1 else c += countHolesIn(arr(k*2 + 1))
 
               k += 1
 

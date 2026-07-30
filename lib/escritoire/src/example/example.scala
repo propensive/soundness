@@ -109,7 +109,6 @@ def run(): Unit =
 
     Out.println(table2.tabulate(fruits).grid(100))
 
-
     case class Member(name: Text, handle: Text, age: Int)
 
     val pinkFloyd =

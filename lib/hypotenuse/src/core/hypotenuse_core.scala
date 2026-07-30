@@ -49,7 +49,6 @@ import vacuous.*
 
 export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
-
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${hypotenuse.protointernal.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${hypotenuse.protointernal.hex('context)}
@@ -59,8 +58,7 @@ extension [value](iterable: Iterable[value])
     if iterable.nil then Unset else
       var current = iterable.head
 
-      iterable.tail.each: element =>
-        if element < current then current = element
+      iterable.tail.each: element => if element < current then current = element
 
       current
 
@@ -85,8 +83,7 @@ extension [value](iterable: Iterable[value])
     if iterable.nil then Unset else
       var current = iterable.head
 
-      iterable.tail.each: element =>
-        if element > current then current = element
+      iterable.tail.each: element => if element > current then current = element
 
       current
 
@@ -119,8 +116,7 @@ extension [value](iterable: Iterable[value])
       var left: List[value] = Nil
       var right: List[value] = Nil
 
-      items.tail.each: item =>
-        if item < pivot then left ::= item else right ::= item
+      items.tail.each: item => if item < pivot then left ::= item else right ::= item
 
       if left.length == n then pivot
       else if left.length < n then recur(n - left.length - 1, right)
@@ -262,8 +258,7 @@ extension (double: Double)
   inline infix def %% (right: Double): Double =
     val remainder = double%right
 
-    if remainder != 0.0 && (remainder > 0.0) != (right > 0.0) then remainder + right
-    else remainder
+    if remainder != 0.0 && (remainder > 0.0) != (right > 0.0) then remainder + right else remainder
 
 extension (byte: Byte)
   @targetName("bitsByte")
@@ -575,16 +570,14 @@ package arithmeticOptions:
         else U64((Long(left.bits)/Long(right.bits)).bits)
 
       inline def divideS64(left: S64, right: S64): Wrap[S64]^ =
-        if right.long == 0 then abort(DivisionError())
-        else S64((left.long/right.long).bits)
+        if right.long == 0 then abort(DivisionError()) else S64((left.long/right.long).bits)
 
       inline def divideU32(left: U32, right: U32): Wrap[U32]^ =
         if right.long == 0 then abort(DivisionError())
         else U32((Int(left.bits)/Int(right.bits)).bits)
 
       inline def divideS32(left: S32, right: S32): Wrap[S32]^ =
-        if right.int == 0 then abort(DivisionError())
-        else S32((left.int/right.int).bits)
+        if right.int == 0 then abort(DivisionError()) else S32((left.int/right.int).bits)
 
       inline def divideU16(left: U16, right: U16): Wrap[U16]^ =
         if right.int == 0 then abort(DivisionError())
@@ -595,12 +588,10 @@ package arithmeticOptions:
         else S16((left.short/right.short).toShort.bits)
 
       inline def divideU8(left: U8, right: U8): Wrap[U8]^ =
-        if right.int == 0 then abort(DivisionError())
-        else U8((left.byte/right.byte).toByte.bits)
+        if right.int == 0 then abort(DivisionError()) else U8((left.byte/right.byte).toByte.bits)
 
       inline def divideS8(left: S8, right: S8): Wrap[S8]^ =
-        if right.int == 0 then abort(DivisionError())
-        else S8((left.byte/right.byte).toByte.bits)
+        if right.int == 0 then abort(DivisionError()) else S8((left.byte/right.byte).toByte.bits)
 
   object overflow:
     inline given unchecked: CheckOverflow:
@@ -635,9 +626,7 @@ package arithmeticOptions:
       inline def addS64(left: S64, right: S64): Wrap[S64]^ =
         val sum: Long = left.long + right.long
 
-        if ((left.long^sum) & (right.long^sum)) < 0L
-        then abort(OverflowError())
-        else S64(sum.bits)
+        if ((left.long^sum) & (right.long^sum)) < 0L then abort(OverflowError()) else S64(sum.bits)
 
       inline def addU32(left: U32, right: U32): Wrap[U32]^ =
         val result: B32 = (Int(left.bits) + Int(right.bits)).bits
@@ -649,9 +638,7 @@ package arithmeticOptions:
       inline def addS32(left: S32, right: S32): Wrap[S32]^ =
         val sum: Int = left.int + right.int
 
-        if ((left.int^sum) & (right.int^sum)) < 0
-        then abort(OverflowError())
-        else S32(sum.bits)
+        if ((left.int^sum) & (right.int^sum)) < 0 then abort(OverflowError()) else S32(sum.bits)
 
       inline def addU16(left: U16, right: U16): Wrap[U16]^ =
         val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
@@ -663,9 +650,7 @@ package arithmeticOptions:
       inline def addS16(left: S16, right: S16): Wrap[S16]^ =
         val sum: Short = (left.short + right.short).toShort
 
-        if ((left.short^sum) & (right.short^sum)) < 0
-        then abort(OverflowError())
-        else S16(sum.bits)
+        if ((left.short^sum) & (right.short^sum)) < 0 then abort(OverflowError()) else S16(sum.bits)
 
       inline def addU8(left: U8, right: U8): Wrap[U8]^ =
         val result: B8 = (left.short + right.short).toByte.bits
@@ -677,6 +662,4 @@ package arithmeticOptions:
       inline def addS8(left: S8, right: S8): Wrap[S8]^ =
         val sum: Byte = (left.short + right.short).toByte
 
-        if ((left.short^sum) & (right.short^sum)) < 0
-        then abort(OverflowError())
-        else S8(sum.bits)
+        if ((left.short^sum) & (right.short^sum)) < 0 then abort(OverflowError()) else S8(sum.bits)

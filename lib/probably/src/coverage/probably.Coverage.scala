@@ -88,8 +88,7 @@ object Coverage:
     val ids = BitSet()
 
     if !file.exists() then Set()
-    else Source.fromFile(file).getLines().to(LazyList).each: id =>
-      ids(id.toInt) = true
+    else Source.fromFile(file).getLines().to(LazyList).each: id => ids(id.toInt) = true
 
     ids.to(Set)
 

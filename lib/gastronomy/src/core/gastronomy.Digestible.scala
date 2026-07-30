@@ -53,7 +53,6 @@ object Digestible extends Derivable[Digestible]:
         int.digest(digestion, index)
         contextual.digest(digestion, variant)
 
-
   // The collection instances retain their by-name element digesters, which share each
   // instance's given-resolution lifetime. As in `Inspectable`, the by-name is bound as a
   // *pure thunk* before the SAM body — the narrowest form of the codec-thunk seal (see
@@ -68,13 +67,11 @@ object Digestible extends Derivable[Digestible]:
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (acc, value) => value.let(dig().digest(acc, _))
 
-
   given list: [list <: List, value] => (digestible: => value is Digestible)
   =>  list[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, list) => list.each(dig().digest(digestion, _))
-
 
   given set: [set <: Set, value] => (digestible: => value is Digestible)
   =>  set[value] is Digestible =
@@ -82,18 +79,15 @@ object Digestible extends Derivable[Digestible]:
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, set) => set.each(dig().digest(digestion, _))
 
-
   given series: [series <: Series, value] => (digestible: => value is Digestible)
   =>  series[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, series) => series.each(dig().digest(digestion, _))
 
-
   given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, iarray) => iarray.each(dig().digest(digestion, _))
-
 
   given map: [key, value] => (keyDigestible: => key is Digestible)
   =>  ( valueDigestible: => value is Digestible )
@@ -108,7 +102,6 @@ object Digestible extends Derivable[Digestible]:
       map.each: (key, value) =>
         digKey().digest(digestion, key)
         digValue().digest(digestion, value)
-
 
   given stream: [value] => (digestible: => value is Digestible) => LazyList[value] is Digestible =
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)

@@ -261,8 +261,7 @@ object WebIdlDialect extends Dialect:
     val (members, rest) = memberList(tokens, ListMap())
     val merged = idl.types.get(name).getOrElse(ListMap[Text, Prototype]()) ++ members
 
-    val parents = parent.lay(idl.parents): base =>
-      idl.parents.updated(name, base)
+    val parents = parent.lay(idl.parents): base => idl.parents.updated(name, base)
 
     (idl.copy(types = idl.types.updated(name, merged), parents = parents), rest)
 
@@ -384,8 +383,7 @@ object WebIdlDialect extends Dialect:
 
         mixedIn ++ own
 
-    idl.types.map: (name, _) =>
-      (name, collect(name, Set()))
+    idl.types.map: (name, _) => (name, collect(name, Set()))
 
   // Resolves every `typedef`/`enum` alias appearing in a type, transitively.
   private def resolve

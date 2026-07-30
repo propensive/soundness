@@ -60,7 +60,6 @@ object Designator:
 
     recur(Prim, Prim, Unset)
 
-
 enum Designator:
   case Top(name: Text)
   case Term(parent0: Designator, name: Text)

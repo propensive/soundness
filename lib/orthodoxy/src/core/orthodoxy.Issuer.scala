@@ -32,7 +32,6 @@
                                                                                                   */
 package orthodoxy
 
-
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -146,7 +145,6 @@ class Issuer
               val state2 = state.copy(access = Authorization(access, scopes, expiry, refresh))
 
               store(session) = state2
-
 
               Http.Response(new Redirect(state.redirect.show, false))
 

@@ -70,6 +70,14 @@ object Tests extends Suite(m"Decorum Tests"):
     val (tree, source) = Parsing.parse("<test>", stub(body))
     Annotations.unexported(tree)
 
+  def anchors(body: String): Anchors.AnchorModel =
+    val full = stub(body)
+    val (tree, source) = Parsing.parse("<test>", full)
+    Anchors.build(tree, source, full)
+
+  def anchorKinds(body: String, line: Int): List[Anchors.FrameKind] =
+    anchors(body).stackAt(line).map(_.kind)
+
   def run(): Unit =
     suite(m"Phase 1: Universal rules"):
 
@@ -91,6 +99,26 @@ object Tests extends Suite(m"Decorum Tests"):
 
       test(m"Three consecutive blank lines are rejected"):
         rules("val a = 1\n\n\n\nval b = 2\n")
+      . assert(_.contains("783"))
+
+      test(m"Two consecutive blank lines between plain statements are rejected"):
+        rules("val a = 1\n\n\nval b = 2\n")
+      . assert(_.contains("783"))
+
+      test(m"One blank line between plain statements is accepted"):
+        rules("val a = 1\n\nval b = 2\n")
+      . assert(r => !r.contains("783"))
+
+      test(m"Two blank lines before a heavy-signature definition are accepted"):
+        rules("val a = 1\n\n\ndef heavy(n: Int)\n:   Int =\n\n  n\n")
+      . assert(r => !r.contains("783"))
+
+      test(m"Two blank lines after a heavy-signature body are accepted"):
+        rules("def heavy(n: Int)\n:   Int =\n\n  n\n\n\nval a = 1\n")
+      . assert(r => !r.contains("783"))
+
+      test(m"Three blank lines around a heavy signature are still rejected"):
+        rules("val a = 1\n\n\n\ndef heavy(n: Int)\n:   Int =\n\n  n\n")
       . assert(_.contains("783"))
 
       test(m"Clean stub produces no universal-rule diagnostics"):
@@ -852,6 +880,26 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val x = a ++\n  b ++\n  c\n")
       . assert(r => !r.contains("616.1") && !r.contains("616.2"))
 
+      test(m"Colon-lambda inside an unclosed paren is never a 247 site"):
+        rules("val e =\n  f\n    ( g.let: p =>\n        h(p)\n\n      . or(k) )\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Trailing operator abutting its left operand is rejected"):
+        rules("val x = alpha ++\n  beta\nval y = gamma++\n  delta\n")
+      . assert(_.contains("616.3"))
+
+      test(m"Trailing operator with two spaces before it is rejected"):
+        rules("val x = alpha  ++\n  beta\n")
+      . assert(_.contains("616.3"))
+
+      test(m"Trailing operator with exactly one space is accepted"):
+        rules("val x = alpha ++\n  beta\n")
+      . assert(r => !r.contains("616.3"))
+
+      test(m"Tight infix stays legal when it fits on one line"):
+        rules("val x = alpha++beta\n")
+      . assert(r => !r.contains("616.3"))
+
       test(m"Operator beginning the continuation line is rejected"):
         rules("val x =\n  alpha\n  ++ beta\n")
       . assert(_.contains("616.1"))
@@ -1013,3 +1061,161 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"unannotated definitions are not collected"):
         extractedUnexported("object Foo\nextension (x: Int) def bar: Int = x\n")
       . assert(_ == Set())
+
+    suite(m"Phase 8: Anchor model"):
+
+      test(m"Def with indented rhs yields a DefnRhs frame"):
+        anchors("def foo(): Int =\n  1 + 1\n").innermostAt(36)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.DefnRhs, 35, 1, 3, 35, 36)))
+
+      test(m"Single-line def yields no frame"):
+        anchors("def foo(): Int = 1\n").frames
+      . assert(_ == Nil)
+
+      test(m"Class body yields a ColonBlock frame"):
+        anchors("class Foo:\n  val x: Int = 1\n").innermostAt(36)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.ColonBlock, 35, 1, 3, 35, 36)))
+
+      test(m"Nested class and method bodies nest correctly"):
+        anchorKinds("class Foo:\n  def bar(): Int =\n    42\n", 37)
+      . assert(_ == List(Anchors.FrameKind.ColonBlock, Anchors.FrameKind.DefnRhs))
+
+      test(m"Method frame inside a class covers only the method body"):
+        anchorKinds("class Foo:\n  def bar(): Int =\n    42\n", 36)
+      . assert(_ == List(Anchors.FrameKind.ColonBlock))
+
+      test(m"Match inside a def stacks a MatchBody over the DefnRhs"):
+        val src = "def foo(x: Int): Int =\n  x match\n    case 1 => 0\n    case _ => 1\n"
+        anchorKinds(src, 37)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs, Anchors.FrameKind.MatchBody))
+
+      test(m"Match frame is anchored on the match keyword's line"):
+        val src = "def foo(x: Int): Int =\n  x match\n    case 1 => 0\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.MatchBody, 36, 3, 5, 36, 37)))
+
+      test(m"Case body on a later line yields a LambdaBody frame"):
+        val src = "val r = 1 match\n  case 1 =>\n    2\n"
+        anchorKinds(src, 37)
+      . assert(_ == List(Anchors.FrameKind.MatchBody, Anchors.FrameKind.LambdaBody))
+
+      test(m"Lambda body under a colon-arg application is framed"):
+        val src = "def foo(xs: List[Int]): List[Int] =\n  xs.map: x =>\n    x + 1\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.LambdaBody, 36, 3, 5, 36, 37)))
+
+      test(m"Colon-arg lambda stacks over the enclosing DefnRhs"):
+        val src = "def foo(xs: List[Int]): List[Int] =\n  xs.map: x =>\n    x + 1\n"
+        anchorKinds(src, 37)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs, Anchors.FrameKind.LambdaBody))
+
+      test(m"Colon-block application yields a ColonBlock frame"):
+        anchors("def foo(): Int =\n  locally:\n    42\n").innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.ColonBlock, 36, 3, 5, 36, 37)))
+
+      test(m"Multi-line quote yields a QuoteSplice frame"):
+        val src = "def foo(): Int =\n  ' {\n    42\n  }\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.QuoteSplice, 36, 3, 5, 36, 38)))
+
+      test(m"Sibling defs close their scopes at the next sibling"):
+        val src = "def foo(): Int =\n  1\n\ndef bar(): Int =\n  2\n"
+        anchors(src).stackAt(38)
+      . assert(_ == Nil)
+
+      test(m"Second sibling def opens its own frame"):
+        val src = "def foo(): Int =\n  1\n\ndef bar(): Int =\n  2\n"
+        anchors(src).innermostAt(39)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.DefnRhs, 38, 1, 3, 38, 39)))
+
+      test(m"Blank line inside a scope keeps the frame open"):
+        val src = "def foo(): Int =\n  val x = 1\n\n  x\n"
+        anchors(src).stackAt(37).map(_.kind)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs))
+
+      test(m"Anchor extends leftward to the val keyword's column"):
+        val src = "object A:\n  val foo: Int = bar:\n    compute()\n"
+        anchors(src).innermostAt(37)
+      . assert(_ == Some(Anchors.Frame(Anchors.FrameKind.ColonBlock, 36, 3, 5, 36, 37)))
+
+      test(m"Chain opener yields a ChainCall frame"):
+        val src = "def foo(x: List[Int]): List[Int] =\n  x\n  . map: y =>\n      y + 1\n"
+        anchorKinds(src, 38)
+      . assert(_ == List(Anchors.FrameKind.DefnRhs, Anchors.FrameKind.ChainCall))
+
+    suite(m"Necessity (SN-247)"):
+
+      test(m"Broken if/then/else that fits on one line is rejected"):
+        rules("def f(a: Boolean): Int =\n  if a\n  then 1\n  else 2\n")
+      . assert(_.contains("247"))
+
+      test(m"247 message names the construct kind and width"):
+        violations("def f(a: Boolean): Int =\n  if a\n  then 1\n  else 2\n")
+          .filter(_.rule == "247").map(_.message)
+      . assert(_.exists { m => m.contains("if-expression") && m.contains("columns") })
+
+      test(m"Broken if that genuinely does not fit is accepted"):
+        rules
+          ( "def f(aLongConditionValue: Boolean): Int =\n"
+              +"  if aLongConditionValue\n"
+              +"  then firstAlternativeValue + secondAlternativeValueWithLongName\n"
+              +"  else thirdAlternativeValue + fourthAlternativeValueWithLongName\n" )
+      . assert(r => !r.contains("247"))
+
+      test(m"Multi-line infix chain that fits on one line is rejected"):
+        rules("val x = 1 +\n  2\n")
+      . assert(_.contains("247"))
+
+      test(m"Multi-line infix chain that does not fit is accepted"):
+        rules
+          ( "val veryLongValueName = firstOperandWithAnExtremelyLongName +\n"
+              +"  secondOperandWithAnEvenLongerNameThatOverflowsTheLimit\n" )
+      . assert(r => !r.contains("247"))
+
+      test(m"Brace lambda with its body on a later line is rejected"):
+        rules("val y = List(1).map { x =>\n  x + 1 }\n")
+      . assert(_.contains("247"))
+
+      test(m"Colon-arg lambda with a short body on a later line is rejected"):
+        rules("def f(xs: List[Int]): List[Int] =\n  xs.map: x =>\n    x + 1\n")
+      . assert(_.contains("247"))
+
+      test(m"Broken if containing a comment is accepted"):
+        rules("def f(a: Boolean): Int =\n  if a // choose\n  then 1\n  else 2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Broken if containing a colon-block line is accepted"):
+        rules("def f(a: Boolean): Int =\n  if a then bar:\n    1\n  else 2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Chain broken around a blank interior line is accepted"):
+        rules("val x = 1 +\n\n  2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Chain containing a multi-line string is accepted"):
+        rules("val s = a +\n  \"\"\"line1\nline2\"\"\"\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"If with a multi-statement then-block is accepted"):
+        rules("def f(a: Boolean): Int =\n  if a then\n    val b = 1\n    b + 1\n  else 2\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Broken while that fits on one line is rejected"):
+        rules("def f(): Unit =\n  while cond\n  do work()\n")
+      . assert(_.contains("247"))
+
+      test(m"For with single-line generators and broken yield is rejected"):
+        rules("val x =\n  for i <- List(1)\n  yield i\n")
+      . assert(_.contains("247"))
+
+      test(m"For whose generators span several lines is accepted"):
+        rules("val x =\n  for\n    i <- List(1)\n    j <- List(2)\n  yield i\n")
+      . assert(r => !r.contains("247"))
+
+      test(m"Broken try/finally that fits on one line is rejected"):
+        rules("def f(): Int =\n  try compute()\n  finally cleanup()\n")
+      . assert(_.contains("247"))
+
+      test(m"Broken try with a catch case is accepted"):
+        rules("def f(): Int =\n  try compute()\n  catch case e: Exception => 0\n")
+      . assert(r => !r.contains("247"))

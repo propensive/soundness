@@ -56,14 +56,12 @@ object Paths:
       // rep/DECISIONS.md). A capturing result here would flow into the inline
       // `workingDirectory`/`temporaryDirectory` resolver parameters, which must stay pure:
       // they are expanded inside staged quotes (ethereal daemon `cli` blocks).
-      caps.unsafe.unsafeAssumePure: value =>
-        Trusted(value).instantiate
+      caps.unsafe.unsafeAssumePure: value => Trusted(value).instantiate
 
   trait Resolver2:
     given fromText: [path] => (instantiable: (path is Instantiable across Paths from Text)^)
     =>  Resolver[path] =
       // Laundered pure as for `trusted` above.
-      caps.unsafe.unsafeAssumePure: value =>
-        value.instantiate
+      caps.unsafe.unsafeAssumePure: value => value.instantiate
 
 sealed trait Paths

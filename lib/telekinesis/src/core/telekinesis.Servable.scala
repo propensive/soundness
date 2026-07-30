@@ -57,7 +57,6 @@ object Servable:
 
       Http.Ok(headers, Http.Body.Flowing(() => content.stream.iterator.stream))
 
-
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
 
@@ -66,7 +65,6 @@ object Servable:
     Servable[response](mediaType): value =>
       Http.Body.Flowing: () =>
         response.generic(value)(1).stream
-
 
   given data: Data is Servable =
     Servable[Data](_ => media"application/octet-stream")(Http.Body.Fixed(_))

@@ -99,9 +99,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
         pendingWrap = false
 
         val clamped: Ordinal =
-          if x2 < Prim then Prim
-          else if x2 >= buffer2.width.z then (buffer2.width - 1).z
-          else x2
+          if x2 < Prim then Prim else if x2 >= buffer2.width.z then (buffer2.width - 1).z else x2
 
         index = (y.n0*buffer2.width + clamped.n0).z
 
@@ -109,9 +107,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
         pendingWrap = false
 
         val clamped: Ordinal =
-          if y2 < Prim then Prim
-          else if y2 >= buffer2.height.z then (buffer2.height - 1).z
-          else y2
+          if y2 < Prim then Prim else if y2 >= buffer2.height.z then (buffer2.height - 1).z else y2
 
         index = (clamped.n0*buffer2.width + x.n0).z
 
@@ -191,8 +187,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
       else if cursor.y.n0 < buffer2.height - 1 then cursor.y = cursor.y + 1
 
     def ri(): Unit =
-      if cursor.y == scrollTop then sd(1)
-      else if cursor.y > Prim then cursor.y = cursor.y - 1
+      if cursor.y == scrollTop then sd(1) else if cursor.y > Prim then cursor.y = cursor.y - 1
 
     def nel(): Unit =
       cursor.x = Prim
@@ -224,8 +219,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
           else
             val left = cursor.x - 1
 
-            if buffer2.isWideTrailing(left, cursor.y) && left > Prim then left - 1
-            else left
+            if buffer2.isWideTrailing(left, cursor.y) && left > Prim then left - 1 else left
 
         val current = buffer2.grapheme(targetX, cursor.y)
         val base = if current.text.nil then Grapheme(" ") else current
@@ -242,14 +236,11 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
 
         buffer2.set(cursor.x, cursor.y, grapheme, style, link)
 
-        if w == 2 then
-          buffer2.set(cursor.x + 1, cursor.y, Grapheme(""), style, link)
+        if w == 2 then buffer2.set(cursor.x + 1, cursor.y, Grapheme(""), style, link)
 
         lastGrapheme = grapheme
 
-        if cursor.x.n0 == buffer2.width - w then pendingWrap = true
-        else
-          cursor.x = cursor.x + w
+        if cursor.x.n0 == buffer2.width - w then pendingWrap = true else cursor.x = cursor.x + w
 
     def rep(n: Int): Unit =
       val count = if n == 0 then 1 else n
@@ -448,8 +439,7 @@ case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
         abort(PtyEscapeError(NonintegerSgrParameter(text)))
 
     def parseInts(text: Text): List[Int] =
-      if text.nil then Nil
-      else text.cut(t";").to(List).map(parseInt(_, 0))
+      if text.nil then Nil else text.cut(t";").to(List).map(parseInt(_, 0))
 
     def parsePair(text: Text, default: Int): (Int, Int) =
       if text.nil then (default, default) else

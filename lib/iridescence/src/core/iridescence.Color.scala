@@ -58,7 +58,6 @@ object Color:
   =>  Int is Multiplicable by color to Daub[topic] =
     Multiplicable: (parts, color) => Daub(parts, color.to[topic])
 
-
 // A `Color` is a pure value (it holds no capabilities), so it extends `Pure`; this keeps `this.type`
 // out of capture sets, which the `type Form >: this.type` self-bound requires its concrete
 // subtypes (`type Form = Srgb`, etc.) to satisfy.

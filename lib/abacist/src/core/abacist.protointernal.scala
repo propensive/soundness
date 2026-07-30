@@ -139,9 +139,7 @@ object protointernal extends anteprotointernal:
     :   quanta is Distributive by Long =
 
       distributive[quanta](_.components.map(_(1)).to(List)): (value, parts) =>
-        parts.zip(value.components.map(_(0))).map: (number, units) =>
-          t"$number $units"
-
+        parts.zip(value.components.map(_(0))).map: (number, units) => t"$number $units"
         . join(t", ")
 
     inline given distributive2: [base <: AnyUnit, form <: Divisions]
@@ -167,7 +165,6 @@ object protointernal extends anteprotointernal:
   extension [base <: AnyUnit, quanta <: Quanta[base]](count: quanta)
     def long: Long = count
 
-
   extension [base <: AnyUnit, quanta <: Quanta[base]](inline count: quanta)
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
 
@@ -181,7 +178,6 @@ object protointernal extends anteprotointernal:
 
     transparent inline def divide(inline multiplier: Double): Any =
       ${abacist.internal.multiplyQuanta('count, 'multiplier, true)}
-
 
     transparent inline def collapse(inline length: Int): Any =
       ${abacist.internal.collapse[quanta]('count, 'length)}

@@ -138,6 +138,5 @@ object Comprehensions:
       val opOffset = content.indexOf(opText, from)
 
       val opCol =
-        if opOffset < 0 || opOffset >= to then -1
-        else source.column(opOffset) + 1
+        if opOffset < 0 || opOffset >= to then -1 else source.column(opOffset) + 1
       Some(GenLine(line, startCol, opCol, isFilter = false))

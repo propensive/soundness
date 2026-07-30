@@ -56,7 +56,6 @@ import zephyrine.*
 
 import httpBackends.virtualMachine
 
-
 object JsonRpc:
   private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
 
@@ -150,5 +149,4 @@ trait JsonRpc extends Original:
   def outgoing: LazyList[Json] = LazyList.from(channel.stream.records)
 
   def stream: LazyList[Sse] =
-    LazyList.from(channel.stream.records).map: json =>
-      Sse(data = List(json.encode))
+    LazyList.from(channel.stream.records).map: json => Sse(data = List(json.encode))

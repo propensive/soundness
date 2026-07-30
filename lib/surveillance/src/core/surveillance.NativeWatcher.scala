@@ -72,8 +72,7 @@ object NativeWatcher extends Watcher:
     serviceMutex:
       serviceValue.or:
         jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
-          WatchService(watchService, pollLoop(watchService)).tap: service =>
-            serviceValue = service
+          WatchService(watchService, pollLoop(watchService)).tap: service => serviceValue = service
 
   private val watches: scm.HashMap[jnf.WatchKey, Set[PathWatch]] = scm.HashMap()
 
@@ -88,8 +87,7 @@ object NativeWatcher extends Watcher:
             val watches0 = watches
             watches0.at(key).or(Set())
 
-          key.pollEvents().nn.iterator.nn.asScala.each: event =>
-            pathWatches.each(_.put(event))
+          key.pollEvents().nn.iterator.nn.asScala.each: event => pathWatches.each(_.put(event))
 
           // `reset` returns `false` once the key is no longer valid (e.g. the watched
           // directory was deleted); drop it so the map doesn't retain dead keys.

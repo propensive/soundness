@@ -255,5 +255,4 @@ object protointernal:
       case _ =>
         halt(613, m"Could not access constraint")
 
-
     '{${Expr(name)}.asInstanceOf[Name[plane]]}

@@ -32,7 +32,6 @@
                                                                                                   */
 package gastronomy
 
-
 // A "concession" is a specific cryptographic weakness a caller must explicitly
 // accept (via a `crypto.permit…Crypto` import) before the corresponding algorithm,
 // key length or mode can be used. `Acceptable` is the absence of any weakness.

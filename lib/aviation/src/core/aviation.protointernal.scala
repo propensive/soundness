@@ -57,7 +57,6 @@ object protointernal:
   object Duration:
     def apply(millis: Long): Duration = Quantity(millis/1000.0)
 
-
     given generic: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Abstractable & Instantiable across Durations from Long to Long =
 
@@ -89,7 +88,6 @@ object protointernal:
 
     inline given underlying: [transport] => Underlying[Instant over transport, Long] = !!
 
-
     // Generic interop: an instant on any timeline abstracts to/from an epoch `Long` (the `Long` is
     // tagged with the transport, not reinterpreted — conversion between timelines is `.over`).
     given generic: [transport]
@@ -103,7 +101,6 @@ object protointernal:
         def apply(long: Long): Self = long.asInstanceOf[Self]
         def genericize(instant: Self): Long = raw(instant)
 
-
     inline given orderable: [transport] => (Instant over transport) is Orderable:
       inline def compare
         ( inline left:        Instant over transport,
@@ -116,7 +113,6 @@ object protointernal:
 
     given ordering: [transport] => Ordering[Instant over transport] =
       Ordering.Long.asInstanceOf[Ordering[Instant over transport]]
-
 
     // Arithmetic converts a `Duration` (seconds) to the timeline's own ticks via its `Resolution`,
     // so it works whatever the resolution (milliseconds for `Unix`/`Tai`, nanoseconds for
@@ -142,7 +138,6 @@ object protointernal:
     =>  (Instant over transport) is Subtractable by Quantity[units] to (Instant over transport) =
       Subtractable: (instant, duration) =>
         Instant.of(raw(instant) - ticks(duration.normalize.value, resolution.nanos))
-
 
   extension [transport](instant: Instant over transport)
     def long: Long = raw(instant)
@@ -182,7 +177,6 @@ object protointernal:
 
     def timestamp(using RomanCalendar, transport is Chronometry, Timezone): Timestamp =
       in(summon[Timezone]).timestamp
-
 
   extension (duration: Duration)
     def from[transport](instant: Instant over transport)(using resolution: transport is Resolution)

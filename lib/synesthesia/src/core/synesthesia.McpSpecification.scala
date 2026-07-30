@@ -40,7 +40,6 @@ object McpSpecification:
   inline given mcpSpecification: [server <: McpServer] => server is McpSpecification =
     ${synesthesia.internal.spec[server]}
 
-
 trait McpSpecification extends Typeclass:
   def tools(): List[Mcp.Tool]
   def resources(): List[Mcp.Resource]

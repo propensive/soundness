@@ -86,8 +86,7 @@ object Keystore:
       ( block: ((KeystoreHandle & Granting[grants])^) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write)
-      then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
+      if mode.atoms.contains(Write) then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
 
       val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 

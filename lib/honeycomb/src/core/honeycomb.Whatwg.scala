@@ -400,7 +400,6 @@ class Whatwg() extends Dom:
 
     insertable(parent).find(recur(_)).optional
 
-
   // Elements
 
   val A = Tag.transparent["a", "", Whatwg]()

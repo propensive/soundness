@@ -38,6 +38,5 @@ object internal:
   object Glyph:
     def apply(ttf: Ttf, id: Int): Glyph[ttf.type] = id
 
-
   extension [ttf <: Ttf & Singleton](glyph: Glyph[ttf])
     def id: Int = glyph

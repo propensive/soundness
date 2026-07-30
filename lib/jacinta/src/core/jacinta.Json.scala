@@ -129,10 +129,8 @@ trait Json2 extends Json3:
     val shape: () -> Morphology =
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
-
     Json.Encodable(shape): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
-
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
   =>  ( decodable: => (inner is Json.Decodable)^ )
@@ -154,7 +152,6 @@ trait Json2 extends Json3:
         // arrive here as `Unset`; a present `null` arrives as the `JsonNull`
         // sentinel.)
         if json.root.isAbsent || json.root.isNull then Unset else decodable.decoded(json)
-
 
   // An honest capability: the instance retains the resolution-scoped tactic
   // (every given that includes a tactic is a capability; Jon, 2026-07-12).
@@ -1352,7 +1349,6 @@ object Json extends Json2, Dynamic:
         recur(ast, 1)
         if formatting.trailingNewline then producer.put("\n")
 
-
     case class Position
       ( line:                Int,
         column:              Int,
@@ -1978,7 +1974,6 @@ object Json extends Json2, Dynamic:
 
     Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
 
-
   given ordinalOptical: [element] => Ordinal is Optical from Json onto Json =
     ordinal =>
       Optic: (origin, lambda) =>
@@ -2103,7 +2098,6 @@ object Json extends Json2, Dynamic:
 
         raise(JsonError(reason))
 
-
   // Direct-parsing primitives. Genuinely pure — no tactic and no seal: all
   // raising happens inside the `JsonReader`, through the tactic it carries.
   given booleanParsable: Boolean is Json.Parsable =
@@ -2158,10 +2152,8 @@ object Json extends Json2, Dynamic:
     val shape: () -> Morphology =
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(value.shape()))
 
-
     Json.Decodable(shape()): json =>
       if json.root.isAbsent then None else Some(value.decoded(json))
-
 
   given optionEncodable: [value] => (encodable: value is Json.Encodable)
   =>  Option[value] is Json.Encodable =
@@ -2171,11 +2163,9 @@ object Json extends Json2, Dynamic:
     val shape: () -> Morphology =
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
-
     Json.Encodable(shape):
       case None        => Json.ast(Json.Ast(Unset))
       case Some(value) => encodable.encode(value)
-
 
   given integralEncodable: [integral: Integral] => integral is Json.Encodable =
     Json.Encodable(() => Morphology.Whole): int => Json.ast(Json.Ast(integral.toLong(int)))
@@ -2206,7 +2196,6 @@ object Json extends Json2, Dynamic:
 
   given jsonEncodable: Json is Json.Encodable = Json.Encodable(() => Morphology.Any)(identity(_))
 
-
   given listEncodable: [list <: List, element] => (encodable: => (element is Json.Encodable))
   =>  list[element] is Json.Encodable =
 
@@ -2219,7 +2208,6 @@ object Json extends Json2, Dynamic:
 
       Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
-
 
   given setEncodable: [set <: Set, element] => (encodable: => (element is Json.Encodable))
   =>  set[element] is Json.Encodable =
@@ -2234,7 +2222,6 @@ object Json extends Json2, Dynamic:
       Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
-
   given seriesEncodable: [series <: Series, element] => (encodable: => (element is Json.Encodable))
   =>  series[element] is Json.Encodable =
 
@@ -2247,7 +2234,6 @@ object Json extends Json2, Dynamic:
 
       Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
-
 
   given array: [collection <: Iterable, element]
   =>  ( factory: Factory[element, collection[element]],
@@ -2285,7 +2271,6 @@ object Json extends Json2, Dynamic:
 
         builder.result()
 
-
   given map: [key: distillate.Decodable in Text, element]
   =>  ( decodable: => (element is Json.Decodable)^ )
   =>  Tactic[JsonError]
@@ -2317,7 +2302,6 @@ object Json extends Json2, Dynamic:
 
         acc
 
-
   given mapEncodable: [key: anticipation.Encodable in Text, element]
   =>  ( encodable: element is Json.Encodable )
   =>  Map[key, element] is Json.Encodable =
@@ -2327,12 +2311,10 @@ object Json extends Json2, Dynamic:
     val shape: () -> Morphology =
       caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
 
-
     Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
       Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)).asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))
-
 
   given jsonEncodableInText: Json is anticipation.Encodable in Text = json =>
     given Formatting = Formatting(Unset, false)
@@ -2351,7 +2333,6 @@ object Json extends Json2, Dynamic:
 
         def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
         override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
-
 
   // Direct parsing: when the value knows how to consume JSON tokens itself,
   // the AST is never materialized. Declared here (not in `Json2`, where the
@@ -2378,7 +2359,6 @@ object Json extends Json2, Dynamic:
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
           parseDirect(stream, parsable).asInstanceOf[value in Json]
 
-
   // Whole-`Data` direct read: when the entire content is already in hand,
   // parse it in place rather than wrapping it in a one-element stream —
   // the `Readable.dataData` precedent. Concrete in `Data`, so it beats the
@@ -2394,7 +2374,6 @@ object Json extends Json2, Dynamic:
 
   given showable: Formatting => Json is Showable = _.root.show
 
-
   given abstractable: (encoder: CharEncoder, formatting: Formatting)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
 
@@ -2405,7 +2384,6 @@ object Json extends Json2, Dynamic:
 
       def genericize(json: Json): HttpStreams.Content =
         (t"application/json; charset=${encoder.encoding.name}", HttpStreams.Body(json.show.in[Data]))
-
 
   // Laundered pure like the primitive codecs above; additionally, this instance is
   // summoned inside inline bodies that are expanded within staged quotes (superlunary's

@@ -75,8 +75,7 @@ object Rrule:
     ( using order: Ordering[point] )
   :   LazyList[point] =
 
-    val capped = until.lay(stream): limit =>
-      stream.takeWhile(!order.gt(_, limit))
+    val capped = until.lay(stream): limit => stream.takeWhile(!order.gt(_, limit))
 
     count.lay(capped)(capped.take)
 
@@ -89,8 +88,7 @@ object Rrule:
   private def code(weekday: Weekday): Text = weekdayCodes(weekday.ordinal)
 
   private def renderDay(entry: WeekdayOrdinal): Text =
-    entry.ordinal.lay(code(entry.weekday)): ordinal =>
-      t"$ordinal${code(entry.weekday)}"
+    entry.ordinal.lay(code(entry.weekday)): ordinal => t"$ordinal${code(entry.weekday)}"
 
   given encodable: [point: Encodable in Text] => Rrule[point] is Encodable in Text = rule =>
     def part(condition: Boolean, text: => Text): List[Text] = if condition then List(text) else Nil
@@ -311,8 +309,7 @@ object Rrule:
   private def months(start: Date, interval: Int)(using RomanCalendar): LazyList[(Int, Int)] =
     val first = yearOf(start)*12 + (monthOf(start) - 1)
 
-    LazyList.iterate(first)(_ + interval).map: n =>
-      (n/12, n%12 + 1)
+    LazyList.iterate(first)(_ + interval).map: n => (n/12, n%12 + 1)
 
   // The ascending week-start dates for `Weekly`, aligned to `weekStart`, stepping `interval` weeks.
   private def weeks(start: Date, rule: Rrule[?]): LazyList[Date] =

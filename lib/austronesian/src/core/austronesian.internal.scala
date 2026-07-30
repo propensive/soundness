@@ -105,7 +105,6 @@ object internal:
 
       iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
 
-
     given text2: Text is Decodable:
       type Form = Pojo
 
@@ -146,7 +145,6 @@ object internal:
 
       inline def decoded(value: Pojo): Boolean = value.asInstanceOf[Boolean]
 
-
     // The element decoder is taken by-name (not as a context bound) so that a type recursive
     // through a collection (`case class Tree(…, children: List[Tree])`) derives: wisteria's
     // `deriveGraph` recognises this single-by-name-element codec shape and ties the recursion
@@ -167,7 +165,6 @@ object internal:
 
         case other =>
           abort(PojoError())
-
 
     extension (pojo: Pojo)
       inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)

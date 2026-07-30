@@ -189,24 +189,19 @@ private[probably] object AnsiRenderer:
       val color = if pass then palette.pass else palette.fail
 
       val text1 =
-        if !pass then t"┳┳━━━┓ ┏┳━━━┳┓   ┳┳   ┳┳    "
-        else t"┳┳━━━┳┓  ┏┳━━━┳┓  ┏┳━━━┓  ┏┳━━━┓"
+        if !pass then t"┳┳━━━┓ ┏┳━━━┳┓   ┳┳   ┳┳    " else t"┳┳━━━┳┓  ┏┳━━━┳┓  ┏┳━━━┓  ┏┳━━━┓"
 
       val text2 =
-        if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    "
-        else t"┃┃   ┃┃  ┃┃   ┃┃  ┃┃      ┃┃    "
+        if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    " else t"┃┃   ┃┃  ┃┃   ┃┃  ┃┃      ┃┃    "
 
       val text3 =
-        if !pass then t"┃┣━━   ┃┣━━━┫┃   ┃┃   ┃┃    "
-        else t"┃┣━━━┻┛  ┃┣━━━┫┃  ┗┻━━┳┓  ┗┻━━┳┓"
+        if !pass then t"┃┣━━   ┃┣━━━┫┃   ┃┃   ┃┃    " else t"┃┣━━━┻┛  ┃┣━━━┫┃  ┗┻━━┳┓  ┗┻━━┳┓"
 
       val text4 =
-        if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    "
-        else t"┃┃       ┃┃   ┃┃      ┃┃      ┃┃"
+        if !pass then t"┃┃     ┃┃   ┃┃   ┃┃   ┃┃    " else t"┃┃       ┃┃   ┃┃      ┃┃      ┃┃"
 
       val text5 =
-        if !pass then t"┻┻     ┻┻   ┻┻   ┻┻   ┻┻━━━┛"
-        else t"┻┻       ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
+        if !pass then t"┻┻     ┻┻   ┻┻   ┻┻   ┻┻━━━┛" else t"┻┻       ┻┻   ┻┻  ┗━━━┻┛  ┗━━━┻┛"
 
       val width = if pass then 38 else 34
 
@@ -344,8 +339,7 @@ private[probably] object AnsiRenderer:
         Out.println(e"")
 
       case Block.Histogram(title, total, frames) =>
-        title.let: id =>
-          Out.println(e"$Bold(${Fg(palette.foreground)}(${id.name}))")
+        title.let: id => Out.println(e"$Bold(${Fg(palette.foreground)}(${id.name}))")
 
         val max = frames.map(_.samples).maxOption.getOrElse(0L)
         val stackPalette = summon[StackTrace.Palette]
@@ -353,12 +347,8 @@ private[probably] object AnsiRenderer:
         // The digression convention: packages in first-appearance order take the accent
         // colours cyclically, exactly as coloured stack traces do.
         val packages: Map[Text, Color in Srgb] =
-          frames.map: frame =>
-            StackTrace.Method(frame.className, frame.method).prefix
-
-          . distinct.zipWithIndex.map: (prefix, index) =>
-              prefix -> accent(index)
-
+          frames.map: frame => StackTrace.Method(frame.className, frame.method).prefix
+          . distinct.zipWithIndex.map: (prefix, index) => prefix -> accent(index)
           . to(Map)
 
         // The method column is leftmost and right-aligned against the bars, so the names
@@ -539,8 +529,7 @@ private[probably] object AnsiRenderer:
       def hitsText: Teletype =
         val main = e"${if hits == 0 then palette.subdued else palette.detail}($hits)"
 
-        if oldHits == 0 then main
-        else e"${palette.detail}(${oldHits.show.subscripts}) $main"
+        if oldHits == 0 then main else e"${palette.detail}(${oldHits.show.subscripts}) $main"
 
     val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
       val hitCount: Int =

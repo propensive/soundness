@@ -112,8 +112,7 @@ private[facsimile] object TextExtractor:
       // A large positive gap reads as a space the file never encoded.
       if gap > size*0.15 && !text.isEmpty && text.charAt(text.length - 1) != ' ' then
         text.append(' ')
-        lastX.let: end =>
-          lastX = end + gap
+        lastX.let: end => lastX = end + gap
 
     operators.each:
       case PdfOperator.Save                  => stack = ctm :: stack

@@ -74,8 +74,7 @@ object Xeq:
 
     val encoded: List[(Text, Text)] = payloads.map: payload =>
       val raw: Data =
-        if !payload.gzip then payload.bytes
-        else LazyList(payload.bytes).compress[Gzip].read[Data]
+        if !payload.gzip then payload.bytes else LazyList(payload.bytes).compress[Gzip].read[Data]
 
       payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
@@ -102,7 +101,6 @@ object Xeq:
     builder.add(t"#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
-
   def downloader(url: Text, hash: Text): Data =
     val template = cp"/ziggurat/xeq.tmpl".read[Text]
     val bat      = cp"/ziggurat/xeq-downloader.bat".read[Text]
@@ -124,7 +122,6 @@ object Xeq:
     builder.add(t"#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
-
   // The polyglot online launcher. Unlike `installer` (which embeds every bare stub), this
   // embeds only the application JAR — once, as the `data` payload, exactly as `installer`
   // does — plus an `assets:` table of `label=url|hash`. At runtime the launcher downloads
@@ -143,8 +140,7 @@ object Xeq:
     // same `index:`/`-----BEGIN CERTIFICATE-----` extraction logic decodes it.
     val content: Text = jar.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
-    val rows: List[Text] = entries.map: (label, url, hash) =>
-      t"$label=$url|$hash"
+    val rows: List[Text] = entries.map: (label, url, hash) => t"$label=$url|$hash"
 
     val builder = StringBuilder()
     builder.add(prefix)
@@ -159,13 +155,11 @@ object Xeq:
     builder.add(t"#>\n")
     builder.text.in[Data](using charEncoders.utf8Encoder)
 
-
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
       handle.write(LazyList(data))
 
     output.executable() = true
-
 
   private def installerMain(output: Text, stagingDir: Text): Unit = unsafely:
     val outputPath: Path on Linux = output.as[Path on Linux]
@@ -200,10 +194,8 @@ object Xeq:
 
     write(outputPath, installer(runnerPayloads ++ dataPayload.option))
 
-
   private def downloaderMain(output: Text, url: Text, hash: Text): Unit = unsafely:
     write(output.as[Path on Linux], downloader(url, hash))
-
 
   // Builds an online launcher from a JAR plus a runner manifest (`label<TAB>sha256` per
   // line, e.g. `etc/runners/<version>.tsv`). Each stub's download URL is `<baseUrl>/runner-
@@ -228,7 +220,6 @@ object Xeq:
             (label, t"$base$name", hash)
 
       write(outputPath, onlineLauncher(jarData, entries))
-
 
   def main(args: Array[String]): Unit =
     args.iterator.toList match

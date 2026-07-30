@@ -109,8 +109,7 @@ private[probably] object TerseRenderer:
 
   private def renderBlock(block: Block, columns: Int)(using Stdio): Unit = block match
     case Block.Table(title, tableColumns, rows) =>
-      title.let: id =>
-        Out.println(t"${id.id}  ${id.name.text}")
+      title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
       val tableColumns2 = tableColumns.zipWithIndex.map: (column, index) =>
         val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
@@ -141,8 +140,7 @@ private[probably] object TerseRenderer:
       Out.println(t"")
 
     case Block.Histogram(title, total, frames) =>
-      title.let: id =>
-        Out.println(t"${id.id}  ${id.name.text}")
+      title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
       val max = frames.map(_.samples).maxOption.getOrElse(0L)
 
@@ -166,8 +164,7 @@ private[probably] object TerseRenderer:
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
-    val failures = document.results.filter: row =>
-      failureStatuses.has(row.status)
+    val failures = document.results.filter: row => failureStatuses.has(row.status)
 
     if failures.nonEmpty then
       Out.println(t"")
@@ -215,8 +212,7 @@ private[probably] object TerseRenderer:
               Out.println(t"  ${Format.truncate(text)}")
 
             case Verdict.Detail.Captures(captures) =>
-              captures.each: (expr, value) =>
-                Out.println(t"  $expr = ${Format.truncate(value)}")
+              captures.each: (expr, value) => Out.println(t"  $expr = ${Format.truncate(value)}")
 
         Out.println(t"")
 

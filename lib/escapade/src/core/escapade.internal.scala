@@ -176,7 +176,6 @@ object internal:
 
     val Nowhere: CharSpan = CharSpan(Int.MaxValue, Int.MaxValue)
 
-
   extension (span: CharSpan)
     def start: Int = (span >> 32).toInt
 
@@ -191,7 +190,6 @@ object internal:
       if n <= start then CharSpan.Nowhere else if n >= end then span else CharSpan(start, n)
 
     def shift(n: Int): CharSpan = CharSpan(start + n, end + n)
-
 
   opaque type AnsiStyle = B64
 
@@ -226,7 +224,6 @@ object internal:
     val BgMask: B64 = B64.set(Background)
 
   import indexes.*
-
 
   extension (style: AnsiStyle)
     def setBold: Boolean = (style: B64).bit(SetBold)
@@ -369,7 +366,6 @@ object internal:
 
       if open then buffer.append('m')
 
-
     extension (style: StyleWord)
       inline def raw: Long = style
 
@@ -404,7 +400,6 @@ object internal:
       inline def withoutBit(bit: Long): StyleWord = style & ~bit
 
       inline def applyTransform(mask: Long, bits: Long): StyleWord = (style & ~mask) | bits
-
 
 case class Teletype2(plain: Text, ansi: IArray[escapade.internal.AnsiStyle]):
   import escapade.internal.AnsiStyle

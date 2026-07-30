@@ -60,7 +60,6 @@ class SseSource(capacity: Int):
       spool = Relay()
 
       if current - start - 1 > capacity then abort(SseError(SseError.Reason.CapacityExceeded)) else
-        ((start + 1) until current).map: index =>
-          spool.put(buffer(index%capacity))
+        ((start + 1) until current).map: index => spool.put(buffer(index%capacity))
 
     LazyList.from(spool.stream.records)

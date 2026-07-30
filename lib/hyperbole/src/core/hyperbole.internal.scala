@@ -109,7 +109,6 @@ object internal:
       def add(tag: Char, nodes2: Tree*): TastyTree =
         tastyTree.copy(nodes = tastyTree.nodes ::: nodes2.to(List).map(TastyTree.expand(tag, _)))
 
-
     object TastyTree:
       def apply
         ( tag:       Char,
@@ -520,7 +519,6 @@ object internal:
         case Inlined(_, _, value) => value.symbol
         case other                => other.symbol
 
-
   def introspect(using Quotes)(symbol: quotes.reflect.Symbol): Expr[TastySymbol] =
     serialize(tastySymbol(symbol))
 
@@ -643,14 +641,11 @@ object internal:
           t"Declarations"     -> symbol.declarations.sortBy(_.name).map(_.name.tt),
           t"Children"         -> symbol.children.sortBy(_.name).map(_.name.tt),
 
-          t"Parameters" ->
-            symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")")),
+          t"Parameters" -> symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")")),
 
-          t"All overridden symbols" ->
-            symbol.allOverriddenSymbols.map(_.name.tt).to(List),
+          t"All overridden symbols" -> symbol.allOverriddenSymbols.map(_.name.tt).to(List),
 
-          t"Primary constructor" ->
-            symbol.primaryConstructor.name.tt,
+          t"Primary constructor" -> symbol.primaryConstructor.name.tt,
 
           t"Case fields" ->
             symbol.caseFields.map: field =>
@@ -670,7 +665,6 @@ object internal:
             (if symbol.companionModule.exists then symbol.companionModule.fullName else t"") )
 
     TastySymbol(prefix, symbol.name, flags, properties, details)
-
 
   def serialize(symbol: TastySymbol): Macro[TastySymbol] =
     val flags = symbol.flags.map: (key, value) => '{(${Expr(key)}, ${Expr(value)})}

@@ -349,8 +349,7 @@ private def httpsExchange
       val authority: Text = if port == 443 then host.show else t"${host.show}:$port"
 
       // RFC 7540 §8.1.2.2: connection-specific headers must not appear in h2.
-      val headers2: List[Http.Header] = headers.filter: header =>
-        header.key.lower != t"connection"
+      val headers2: List[Http.Header] = headers.filter: header => header.key.lower != t"connection"
 
       val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
 

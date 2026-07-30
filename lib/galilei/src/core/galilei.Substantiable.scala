@@ -42,6 +42,5 @@ object Substantiable:
 
     path => backend.exists(path, true)
 
-
 trait Substantiable extends Typeclass:
   def existence(value: Self): Boolean

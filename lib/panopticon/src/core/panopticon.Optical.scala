@@ -59,9 +59,7 @@ object Optical:
         else origin
 
   given at: [key, element] => key is Optical from Map[key, element] onto element =
-    key =>
-      Optic: (origin, lambda) =>
-        origin.at(key).let(lambda).lay(origin)(origin.updated(key, _))
+    key => Optic: (origin, lambda) => origin.at(key).let(lambda).lay(origin)(origin.updated(key, _))
 
   // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
   // rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
@@ -71,16 +69,14 @@ object Optical:
       val predicate: key -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>
-        origin.map: (key, value) =>
-          if predicate(key) then (key, lambda(value)) else (key, value)
+        origin.map: (key, value) => if predicate(key) then (key, lambda(value)) else (key, value)
 
   given filter2: [element] => Filter[element] is Optical from List[element] onto element =
     filter =>
       val predicate: element -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>
-        origin.map: value =>
-          if predicate(value) then lambda(value) else value
+        origin.map: value => if predicate(value) then lambda(value) else value
 
 trait Optical:
   type Self

@@ -43,8 +43,7 @@ object TreeDiagram:
     by[node](node.children(_))(roots*)
 
   given printable: [node: Showable] => (style: TreeStyle[Text]) => TreeDiagram[node] is Printable =
-    (diagram, termcap) =>
-      (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
+    (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
   def by[node](getChildren: node => Seq[node])(roots: node*): TreeDiagram[node] =
     def recur(level: List[TreeTile], input: Seq[node]): LazyList[(List[TreeTile], node)] =

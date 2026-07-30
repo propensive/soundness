@@ -107,7 +107,6 @@ object internal:
 
             elements(index + 1)('{$expr && $expr2})
 
-
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
@@ -231,7 +230,6 @@ object internal:
           case fragment@Fragment(nodes*) =>
             val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
             '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
-
 
       val result: Expr[Extrapolation[Html]] =
         ' {
@@ -824,8 +822,7 @@ object internal:
         if isEmpty then attrs else
           var result: Attributes = attrs
 
-          others.foreach: k =>
-            result = result.removed(k)
+          others.foreach: k => result = result.removed(k)
 
           result
 

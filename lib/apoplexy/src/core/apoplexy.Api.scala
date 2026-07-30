@@ -87,8 +87,7 @@ object Api:
       if request.query.nil then t"${request.base}$substituted"
       else
         val parameters =
-          request.query.map: (key, value) =>
-            t"${key.urlEncode}=${value.urlEncode}"
+          request.query.map: (key, value) => t"${key.urlEncode}=${value.urlEncode}"
 
         t"${request.base}$substituted?${parameters.join(t"&")}"
 

@@ -44,8 +44,7 @@ import zephyrine.*
 
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster by Rgb =
-    Raster[Rgb](width, height): (x, y) =>
-      iridescence.pixel(pixel(x, y))
+    Raster[Rgb](width, height): (x, y) => iridescence.pixel(pixel(x, y))
 
   @annotation.targetName("applyLayout")
   inline def apply[layout <: Tuple](width: Int, height: Int)
@@ -58,32 +57,28 @@ object Raster:
       case _: Byte =>
         val buffer = new Array[Byte](width*height)
 
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y)).toByte
+        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y)).toByte
 
         make[layout](width, height, buffer, descriptor)
 
       case _: Short =>
         val buffer = new Array[Short](width*height)
 
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y)).toShort
+        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y)).toShort
 
         make[layout](width, height, buffer, descriptor)
 
       case _: Int =>
         val buffer = new Array[Int](width*height)
 
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y)).toInt
+        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y)).toInt
 
         make[layout](width, height, buffer, descriptor)
 
       case _: Long =>
         val buffer = new Array[Long](width*height)
 
-        fill(width, height): (x, y, index) =>
-          buffer(index) = Pixel.value(pixel(x, y))
+        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y))
 
         make[layout](width, height, buffer, descriptor)
 
@@ -165,12 +160,10 @@ object Raster:
     def width(raster: Raster): Int = raster.width
     def height(raster: Raster): Int = raster.height
 
-
   given aggregable: [format: Rasterizable as rasterizable] => (tactic: Tactic[RasterError])
   =>  ( ((Raster in format) is Aggregable by Data)^{tactic} ) =
 
     rasterizable.read(_)
-
 
   given aggregable2: (tactic: Tactic[RasterError])
   =>  ( (Raster is Aggregable by Data)^{tactic} ) = Raster(_)
@@ -199,8 +192,7 @@ extends Formal, Operable:
   def to[format: Rasterizable]: Raster in format = asInstanceOf[Raster in format]
 
   def crop(left: Int = 0, bottom: Int = 0, top: Int = 0, right: Int = 0): Raster =
-    remap(width - left - right, height - top - bottom): (x, y) =>
-      (x + left, y + top)
+    remap(width - left - right, height - top - bottom): (x, y) => (x + left, y + top)
 
   def flipX: Raster = remap(width, height): (x, y) => (width - 1 - x, y)
   def flipY: Raster = remap(width, height): (x, y) => (x, height - 1 - y)
@@ -224,32 +216,28 @@ extends Formal, Operable:
       case buffer: Array[Byte] =>
         val buffer2 = new Array[Byte](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
       case buffer: Array[Short] =>
         val buffer2 = new Array[Short](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
       case buffer: Array[Int] =>
         val buffer2 = new Array[Int](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
       case buffer: Array[Long] =>
         val buffer2 = new Array[Long](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 

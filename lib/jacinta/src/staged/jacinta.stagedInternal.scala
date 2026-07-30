@@ -54,7 +54,9 @@ object stagedInternal:
   inline def fieldSeam[fieldType](reader: JsonReader): fieldType =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Json.Parsable) => parsable.parse(reader)
-      case _ => scala.compiletime.summonInline[fieldType is Json.Field].parse(reader)
+
+      case _ =>
+        scala.compiletime.summonInline[fieldType is Json.Field].parse(reader)
 
   // ── Expansion-time environment ─────────────────────────────────────────
 
@@ -202,8 +204,7 @@ object stagedInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -453,8 +454,8 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"jacinta: ${tpe.show} is not an inlinable product (a non-generic, top-level or "+
-          "object-nested case class with a single parameter list and no `@name` renames); "+
+        (s"jacinta: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
+          "object-nested case class with a single parameter list and no `@name` renames); " +
           "use `Json.Parsable.staged` or `derived`")
 
     val classSymbol = tpe.classSymbol.get
@@ -468,8 +469,7 @@ object stagedInternal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 &&
-        name.forall { char => char >= ' ' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall { char => char >= ' ' && char < 127 }
 
       if !packs then None else
         var low = 0L
@@ -478,8 +478,7 @@ object stagedInternal:
 
         while position < length do
           val byte = name.charAt(position).toLong & 0xFF
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
           position += 1
 
         Some((low, high))
@@ -754,14 +753,14 @@ object stagedInternal:
 
     val root: Inlinable = resolve[value](cache).getOrElse:
       report.errorAndAbort
-        (s"jacinta: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not an "+
+        (s"jacinta: no Inlinable instance for ${TypeRepr.of[value].show}, and it is not an " +
           "inlinable product; use `Json.Parsable.staged` or `derived`")
 
     // A runtime-tier root would find the very given under definition — an
     // infinite self-call — or add nothing over the instance it wraps.
     if root.isInstanceOf[RuntimeInlinable[?]] then
       report.errorAndAbort
-        (s"jacinta: ${TypeRepr.of[value].show} has no generator of its own; use "+
+        (s"jacinta: ${TypeRepr.of[value].show} has no generator of its own; use " +
           "`Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`")
 
     val instance = root.asInstanceOf[Inlinable { type Self = value }]

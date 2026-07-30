@@ -203,8 +203,7 @@ object internal:
     def parseChain(body: Term, paramSym: Symbol): Option[(List[Step], Term, Boolean)] =
       matchUpdateDynamic(body) match
         case Some((receiver, name, leaf)) =>
-          gatherSteps(receiver, paramSym).map: prefix =>
-            (prefix :+ FieldStep(name), leaf, true)
+          gatherSteps(receiver, paramSym).map: prefix => (prefix :+ FieldStep(name), leaf, true)
 
         case None => matchUpdate(body) match
           case Some((receiver, opTerm, leaf)) if isSingleton(opTerm.tpe) =>
@@ -240,8 +239,7 @@ object internal:
     def toBranches(parsed: (List[Step], Term, Boolean)): Branch =
       val (steps, leaf, isCtxFn) = parsed
 
-      steps.foldRight[Branch](LeafB(leaf, isCtxFn)): (step, child) =>
-        StepB(step, List(child))
+      steps.foldRight[Branch](LeafB(leaf, isCtxFn)): (step, child) => StepB(step, List(child))
 
     def stepEq(a: Step, b: Step): Boolean = (a, b) match
       case (FieldStep(n1), FieldStep(n2))               => n1 == n2
@@ -308,7 +306,6 @@ object internal:
 
       if opts.forall(_.isDefined) then Some(opts.flatten) else None
 
-
     def coerce[T: Type](sourceTerm: Term): Expr[T] =
       val sourceTpe = sourceTerm.tpe.widen
 
@@ -364,8 +361,7 @@ object internal:
           else
             acc = nextExpr.asTerm
 
-        if defs.isEmpty then acc.asExprOf[T]
-        else Block(defs.toList, acc).asExprOf[T]
+        if defs.isEmpty then acc.asExprOf[T] else Block(defs.toList, acc).asExprOf[T]
 
     def lensConstructorLambdas(lensTerm: Term): Option[(Term, Term)] =
       def stripWrappers(t: Term): Term = t match
