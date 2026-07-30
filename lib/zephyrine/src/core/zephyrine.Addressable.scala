@@ -60,7 +60,7 @@ object Addressable:
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
 
     inline def build(target: ji.ByteArrayOutputStream): Data =
-      target.toByteArray.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(target.toByteArray.nn)
 
     inline def length(bytes: Data): Int = bytes.length
     inline def address(bytes: Data, index: Ordinal): Byte = bytes(index.n0)
@@ -70,7 +70,7 @@ object Addressable:
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
     :   Unit =
 
-      target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 + 1)
+      target.write(Array.unsafeJvm(source), start.n0, end.n0 - start.n0 + 1)
 
     inline def allocate(size: Int): scala.Array[Byte] = new scala.Array[Byte](size)
     inline def storageSize(storage: scala.Array[Byte]): Int = storage.length
@@ -90,7 +90,7 @@ object Addressable:
        len:     Int )
     :   Unit =
 
-      System.arraycopy(source.mutable(using Unsafe), srcOff, dest, destOff, len)
+      System.arraycopy(Array.unsafeJvm(source), srcOff, dest, destOff, len)
 
     inline def transfer
       ( src:     scala.Array[Byte],
@@ -101,7 +101,7 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     inline def materialize(storage: scala.Array[Byte], off: Int, len: Int): Data =
-      java.util.Arrays.copyOfRange(storage, off, off + len).nn.immutable(using Unsafe)
+      Array.unsafeFrozen(java.util.Arrays.copyOfRange(storage, off, off + len).nn)
 
     override inline def backing(value: Data): Optional[scala.Array[Byte]] =
       value.asInstanceOf[scala.Array[Byte]]
@@ -133,7 +133,7 @@ object Addressable:
     def blank(size: Int): scm.ArrayBuffer[element] = scm.ArrayBuffer[element]()
 
     def build(target: scm.ArrayBuffer[element]): Array[element]^{} =
-      target.toArray[element].immutable(using Unsafe)
+      Array.unsafeFrozen(target.toArray[element])
 
     def length(block: Array[element]^{}): Int = block.length
     def address(block: Array[element]^{}, index: Ordinal): element = block(index.n0)

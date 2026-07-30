@@ -480,7 +480,7 @@ extension [element](sequence: List[element])
     else List.of(recur(lambda(stdlib.head), stdlib.tail, sci.List(stdlib.head), sci.Nil).map(List.of(_)))
 
 extension (bytes: Data)
-  def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
+  def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(Array.unsafeJvm(bytes))
 
 extension [indexable: Indexable](value: indexable)
   inline def defines(index: indexable.Operand): Boolean = indexable.contains(value, index)
