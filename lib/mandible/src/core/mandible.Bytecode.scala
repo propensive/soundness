@@ -199,8 +199,7 @@ object Bytecode:
 
     def apply
       ( source: jlc.Instruction,
-        labels: scala.collection.immutable.Map[jlc.Label, Int] =
-          scala.collection.immutable.Map.empty )
+        labels: Map[jlc.Label, Int] = Map.empty )
     :   Opcode =
 
       source match
@@ -334,23 +333,28 @@ object Bytecode:
             case 20 => Ldc2W(text)
 
         case tswitch: jlci.TableSwitchInstruction =>
-          val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
+          val defaultLabel: jlc.Label = tswitch.defaultTarget.nn
+          val default = labels.at(defaultLabel).or(0)
 
           val targets = tswitch.cases.nn.to[List].map: c =>
-            labels.getOrElse(c.nn.target.nn, 0)
+            val label: jlc.Label = c.nn.target.nn
+            labels.at(label).or(0)
 
           Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
 
         case lswitch: jlci.LookupSwitchInstruction =>
-          val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
+          val defaultLabel: jlc.Label = lswitch.defaultTarget.nn
+          val default = labels.at(defaultLabel).or(0)
 
           val cases = lswitch.cases.nn.to[List].map: c =>
-            (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
+            val label: jlc.Label = c.nn.target.nn
+            (c.nn.caseValue, labels.at(label).or(0))
 
           Lookupswitch(default, cases)
 
         case branch: jlci.BranchInstruction =>
-          val target = labels.getOrElse(branch.target.nn, 0)
+          val targetLabel: jlc.Label = branch.target.nn
+          val target = labels.at(targetLabel).or(0)
 
           source.opcode.nn.bytecode.absolve match
             case 153 => Ifeq(target)
@@ -1303,6 +1307,9 @@ object Bytecode:
 
     def transform(stack0: List[Frame]): List[Frame] = List.of(transform0(stack0.stdlib))
 
+    // The stack simulation stays a stdlib-list interior behind the opaque
+    // `transform` bridge: chained cons expressions (`a :: b :: a :: rest`)
+    // mis-type against the opaque alias under an expected type.
     private def transform0(stack: scala.collection.immutable.List[Frame])
     :   scala.collection.immutable.List[Frame] =
       import scala.collection.immutable.{Nil, ::}
@@ -1503,13 +1510,13 @@ case class Bytecode
     expand(this, 0, t"")
     List.of(results.toList)
 
-  def effectivelyStaticCalls: Set[Int] = Set.of(effectivelyStaticCalls0)
+  def effectivelyStaticCalls: Set[Int] = effectivelyStaticCalls0
 
-  private def effectivelyStaticCalls0: scala.collection.immutable.Set[Int] =
+  private def effectivelyStaticCalls0: Set[Int] =
     import Bytecode.Opcode.*
     val byOffset = instructions.iterator.map{ i => i.offset -> i }.toMap
 
-    val priorStacks: scala.collection.immutable.Map[Int, List[Bytecode.Frame]] =
+    val priorStacks: Map[Int, List[Bytecode.Frame]] =
       var prev: Optional[List[Bytecode.Frame]] = Nil
       val builder = scala.collection.immutable.Map.newBuilder[Int, List[Bytecode.Frame]]
 
@@ -1517,7 +1524,7 @@ case class Bytecode
         prev.let(builder += instr.offset -> _)
         prev = instr.stack
 
-      builder.result()
+      Map.of(builder.result())
 
     instructions.iterator.flatMap: instr =>
       val (owner, descriptor) = instr.opcode match
@@ -1534,4 +1541,4 @@ case class Bytecode
           case Bytecode.Frame.L(name) if name == owner => Some(instr.offset)
           case _                                       => None
 
-    . toSet
+    . toSet.pipe(Set.of(_))

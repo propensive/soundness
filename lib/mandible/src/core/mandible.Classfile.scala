@@ -42,6 +42,7 @@ import fulminate.*
 import gossamer.*
 import hellenism.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
@@ -81,7 +82,7 @@ class Classfile(data: scala.IArray[Byte]):
 
       val elements = code.elementList.nn.to[List]
 
-      val labels: scala.collection.immutable.Map[jlc.Label, Int] =
+      val labels: Map[jlc.Label, Int] =
         val builder = scala.collection.immutable.Map.newBuilder[jlc.Label, Int]
         var offset = 0
 
@@ -90,21 +91,21 @@ class Classfile(data: scala.IArray[Byte]):
           case target: jlci.LabelTarget     => builder += target.label.nn -> offset
           case _                            => ()
 
-        builder.result()
+        Map.of(builder.result())
 
-      val stackMaps: scala.collection.immutable.Map[jlc.Label, List[Bytecode.Frame]] =
+      val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
         val attr =
           code.attributes.nn.iterator.nn.asScala.collectFirst:
             case smt: jlca.StackMapTableAttribute => smt
 
-        attr.fold(scala.collection.immutable.Map.empty): smt =>
+        attr.fold(Map.empty[jlc.Label, List[Bytecode.Frame]]): smt =>
           smt.entries.nn.to[List].map: entry =>
             val frames =
               List.of(entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse)
 
             entry.target.nn -> frames
 
-          . to[Map].stdlib
+          . to[Map]
 
       def recur
         ( todo:  List[jlc.CodeElement],
