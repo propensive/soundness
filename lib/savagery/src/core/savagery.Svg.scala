@@ -38,6 +38,7 @@ import denominative.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -105,18 +106,16 @@ extends Documentary:
           t"width"   -> width.show,
           t"height"  -> height.show )
 
-    val defsElement: scala.collection.immutable.List[Xml] =
-      if defs.nil then scala.collection.immutable.Nil
-      else scala.collection.immutable.List
-        (Element(t"defs", Attributes.empty, defs.stdlib.map(_.xml).nodes))
+    val defsElement: List[Xml] =
+      if defs.nil then Nil
+      else List(Element(t"defs", Attributes.empty, defs.stdlib.map(_.xml).nodes))
 
-    val figureNodes: scala.collection.immutable.List[Xml] =
-      if transforms.nil then figures.stdlib.map(_.xml)
+    val figureNodes: List[Xml] =
+      if transforms.nil then List.of(figures.stdlib.map(_.xml))
       else
         val groupAttrs =
           Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
-        scala.collection.immutable.List
-          (Element(t"g", Attributes.from(Map.of(groupAttrs.stdlib)), figures.stdlib.map(_.xml).nodes))
+        List(Element(t"g", Attributes.from(Map.of(groupAttrs.stdlib)), figures.stdlib.map(_.xml).nodes))
 
-    val children: Array[Node]^{} = (defsElement ++ figureNodes).nodes
+    val children: Array[Node]^{} = (defsElement ::: figureNodes).toSeq.nodes
     Element(t"svg", Attributes.from(Map.of(attrs.stdlib)), children)

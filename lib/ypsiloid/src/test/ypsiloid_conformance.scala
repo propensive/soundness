@@ -49,6 +49,7 @@ import java.io.IOException
 import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.*
 import scala.collection.immutable.{Map, Set}
+import proscenium.compat.*
 import scala.Predef
 
 import anticipation.Text
@@ -323,15 +324,15 @@ object Conformance:
 
     case Yaml.Ast.Sequence(items) =>
       val converted: Array[Any] =
-        Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(items.asInstanceOf[scala.Array[Yaml.Ast]]).map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
+        Array.from(items.toSeq.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
       Json.ast(Json.Ast.arr(converted))
 
     case Yaml.Ast.Mapping(entries) =>
       val pairs = entries.collect:
         case (Yaml.Ast.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
-      val keys: Array[String] = Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._1))
-      val values: Array[Any] = Array.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(pairs.asInstanceOf[scala.Array[(String, Json.Ast)]]).map(_._2.asInstanceOf[Any]))
+      val keys: Array[String] = Array.from(pairs.toSeq.map(_._1))
+      val values: Array[Any] = Array.from(pairs.toSeq.map(_._2.asInstanceOf[Any]))
       Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =

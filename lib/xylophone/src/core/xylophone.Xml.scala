@@ -35,7 +35,6 @@ package xylophone
 import scala.collection.immutable.Vector
 
 import scala.collection.immutable.Seq
-import scala.collection.immutable.IndexedSeq
 
 import scala.caps
 
@@ -1926,7 +1925,7 @@ object Xml extends Tag.Container
       ( xml:      Xml,
         data:     Array[Int]^{},
         offset:   Int,
-        segments: IndexedSeq[Text],
+        segments: Series[Text],
         i:        Int )
     :   Optional[Position] =
 
@@ -2053,7 +2052,7 @@ object Xml extends Tag.Container
 
       def locate(document: Document[Xml], path: XPath): Optional[Xml.Position] =
         document.metadata.positionIndex.let: index =>
-          Locator.walk(document.root, index.ints, 0, path.path.descent.toIndexedSeq, 0)
+          Locator.walk(document.root, index.ints, 0, Series.from(path.path.descent), 0)
 
       // XML has no distinct key positions, so there is nothing to locate by key.
       def locateKey(document: Document[Xml], path: XPath): Optional[Xml.Position] = Unset

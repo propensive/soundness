@@ -44,8 +44,8 @@ import guillotine.*
 import kaleidoscope.*
 import nomenclature.*
 import prepositional.*
-import scala.collection.immutable as sci
 
+import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import urticose.*
@@ -211,11 +211,11 @@ case class GitRepo(gitDir: Path on Linux):
 
     var hash:      Optional[GitHash] = Unset
     var tree:      Optional[GitHash] = Unset
-    var parents:   scala.collection.immutable.List[GitHash] = Nil.stdlib
+    var parents:   List[GitHash] = Nil
     var author:    Optional[Text]    = Unset
     var committer: Optional[Text]    = Unset
     var signature: List[Text]        = Nil
-    var body:      scala.collection.immutable.List[Text] = Nil.stdlib
+    var body:      List[Text] = Nil
 
     def flush(): Unit =
       if hash.present && tree.present && author.present && committer.present then unsafely:
@@ -223,11 +223,11 @@ case class GitRepo(gitDir: Path on Linux):
           Commit
             ( hash.vouch,
               tree.vouch,
-              List.of(parents.reverse),
+              parents.reverse,
               author.vouch,
               committer.vouch,
               parsePem(signature.join(t"\n")),
-              List.of(body.reverse) )
+              body.reverse )
 
     // A gpgsig block continues on the following one-space-indented lines.
     def indented(): List[Text] =
@@ -245,8 +245,8 @@ case class GitRepo(gitDir: Path on Linux):
 
       case r"commit $h(.{40})" =>
         flush()
-        hash = GitHash.unsafe(h); tree = Unset; parents = Nil.stdlib
-        author = Unset; committer = Unset; signature = Nil; body = Nil.stdlib
+        hash = GitHash.unsafe(h); tree = Unset; parents = Nil
+        author = Unset; committer = Unset; signature = Nil; body = Nil
 
       case r"tree $t(.{40})"                           => tree = GitHash.unsafe(t)
       case r"parent $p(.{40})"                         => parents = GitHash.unsafe(p) :: parents
@@ -390,22 +390,22 @@ case class GitRepo(gitDir: Path on Linux):
     // Each worktree block is separated by an empty line. Split, then keep
     // only the non-bare entries (a `bare` line indicates a bare worktree
     // entry, which has no working tree).
-    def blocks(remaining: sci.List[Text]): sci.List[sci.List[Text]] = remaining match
-      case sci.Nil => sci.Nil
+    def blocks(remaining: List[Text]): List[List[Text]] = remaining match
+      case Nil => Nil
 
       case _ =>
         val (block, rest) = remaining.span(_ != t"")
         block :: blocks(rest.dropWhile(_ == t""))
 
-    val worktrees = blocks(lines.stdlib).flatMap: block =>
-      val isBare = block.contains(t"bare")
+    val worktrees = blocks(lines).flatMap: block =>
+      val isBare = block.has(t"bare")
 
       block.collect:
         case r"worktree $path(.*)" if !isBare =>
           val pathOnLinux = unsafely(path.as[Path on Linux])
           Worktree(this, pathOnLinux)
 
-    List.of(worktrees)
+    worktrees
 
 
   def addWorktree

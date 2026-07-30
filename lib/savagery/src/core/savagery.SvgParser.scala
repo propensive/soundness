@@ -346,20 +346,20 @@ object SvgParser:
 
           if pos < s.length then pos += 1 // skip )
 
-          (name, args.toList) match
-            case ("translate", scala.collection.immutable.List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
-            case ("translate", scala.collection.immutable.List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
-            case ("scale", scala.collection.immutable.List(x))                 => xs += Transform.Scale(x, Unset)
-            case ("scale", scala.collection.immutable.List(x, y))              => xs += Transform.Scale(x, y)
-            case ("rotate", scala.collection.immutable.List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
+          (name, List.from(args)) match
+            case ("translate", List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
+            case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
+            case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
+            case ("scale", List(x, y))              => xs += Transform.Scale(x, y)
+            case ("rotate", List(angle))            => xs += Transform.Rotate(Angle.degrees(angle))
 
-            case ("skewX", scala.collection.immutable.List(angle)) =>
+            case ("skewX", List(angle)) =>
               xs += Transform.Skew(Angle.degrees(angle), Orientation.Horizontal)
 
-            case ("skewY", scala.collection.immutable.List(angle)) =>
+            case ("skewY", List(angle)) =>
               xs += Transform.Skew(Angle.degrees(angle), Orientation.Vertical)
 
-            case ("matrix", scala.collection.immutable.List(a, b, c, d, e, f)) =>
+            case ("matrix", List(a, b, c, d, e, f)) =>
               xs += Transform.Matrix(Affine(a, b, c, d, e, f))
 
             case _                                  => () // ignore unknown

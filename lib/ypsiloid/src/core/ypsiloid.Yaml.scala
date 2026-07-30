@@ -32,7 +32,6 @@
                                                                                                   */
 package ypsiloid
 
-import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Vector
 import proscenium.compat.*
 
@@ -1033,17 +1032,17 @@ object Yaml extends Yaml2, Dynamic:
 
       def locate(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
         value.positionIndex.let: posIndex =>
-          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, false)
+          walkIndex(value.root, posIndex.ints, 0, Series.from(path.path.descent), 0, false)
 
       def locateKey(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
         value.positionIndex.let: posIndex =>
-          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, true)
+          walkIndex(value.root, posIndex.ints, 0, Series.from(path.path.descent), 0, true)
 
   private def walkIndex
     ( ast:      Yaml.Ast,
       data:     Array[Int]^{},
       offset:   Int,
-      segments: IndexedSeq[Text],
+      segments: Series[Text],
       i:        Int,
       keyMode:  Boolean )
   :   Optional[Yaml.Ast.Position] =
@@ -1348,7 +1347,7 @@ object Yaml extends Yaml2, Dynamic:
         case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 0 =>
           // Mapping (even length, alternating keys and values flat).
           val n = xs.length / 2
-          var result = scala.collection.immutable.Map.empty[Text, value]
+          var result: Map[Text, value] = Map.empty
           var i = 0
 
           while i < n do
@@ -1370,7 +1369,7 @@ object Yaml extends Yaml2, Dynamic:
             result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
             i += 1
 
-          Map.of(result)
+          result
 
         case other =>
           raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
@@ -1440,7 +1439,7 @@ object Yaml extends Yaml2, Dynamic:
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: (element is Encodable in Yaml)^ )
   =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
-    val keys: scala.collection.immutable.List[key] = map.stdlib.keys.toList
+    val keys: List[key] = List.from(map.stdlib.keys)
     val arr = Array[Any](keys.size*2)
     var i = 0
 
