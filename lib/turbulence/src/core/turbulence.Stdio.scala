@@ -95,9 +95,10 @@ trait Stdio extends Io, Findable:
   // companion to `ready()`, for character-at-a-time consumers (a terminal).
   def readChar(): Int = reader.read()
 
-  def write(bytes: Data): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  // `PrintStream.write` reads the array it is handed, which its signature cannot say.
+  def write(bytes: Data): Unit = out.write(Array.unsafeJvm(bytes), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
-  def writeErr(bytes: Data): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def writeErr(bytes: Data): Unit = err.write(Array.unsafeJvm(bytes), 0, bytes.length)
   def printErr(text: Text): Unit = err.print(text.s)
   def read(array: scala.Array[Byte]): Int = in.read(array, 0, array.length)
   def read(array: scala.Array[Char]): Int = reader.read(array, 0, array.length)

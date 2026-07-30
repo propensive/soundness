@@ -81,7 +81,7 @@ package stdios:
       override def write(array: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
         if array != null && length > 0 then
           val slice = java.util.Arrays.copyOfRange(array, offset, offset + length).nn
-          send(error, slice.immutable(using Unsafe))
+          send(error, Array.unsafeFrozen(slice))
 
     // Reads block until at least one byte is available; a closed stream (the `Err` arm of
     // `blocking-read`'s result, raised by the decoder) is end-of-input.
@@ -107,7 +107,7 @@ package stdios:
           catch case error: WitError => -1
           finally handle.dispose()
 
-    def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
     new Stdio:
       val termcap: Termcap = termcap0

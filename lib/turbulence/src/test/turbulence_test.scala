@@ -600,7 +600,7 @@ object Tests extends Suite(m"Turbulence tests"):
       val payload: Data = Data.fill(10000)(_.toByte)
 
       test(m"input stream source flows to output stream sink"):
-        val input = ji.ByteArrayInputStream(payload.mutable(using Unsafe))
+        val input = ji.ByteArrayInputStream(Array.unsafeJvm(payload))
         val output = ji.ByteArrayOutputStream()
         val source = summon[ji.ByteArrayInputStream is Streamable by Data over Credit]
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]

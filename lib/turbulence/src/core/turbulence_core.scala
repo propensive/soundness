@@ -331,35 +331,49 @@ extension (stream: Progression[Data])
   def shred(mean: Double, variance: Double)(using Random): Progression[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
-    def newArray(): scala.Array[Byte]^ = new scala.Array[Byte](arbitrary[Double]().toInt.max(1))
+    // The size is drawn separately so that each fresh buffer can go straight into `recur`'s
+    // `consume` parameter: binding it to a `val` first would alias the exclusive reference.
+    def newSize(): Int = arbitrary[Double]().toInt.max(1)
+    def newArray(size: Int): Array[Byte]^ = Array[Byte](size)
 
-    def recur(stream: Progression[Data], sourcePos: Int, dest: scala.Array[Byte]^, destPos: Int)
+    // The buffer is threaded through `consume`, so each chunk emitted downstream is frozen
+    // by the one producer that could still have written to it.
+    def recur
+      ( stream:    Progression[Data],
+        sourcePos: Int,
+        consume dest: Array[Byte]^,
+        destSize:  Int,
+        destPos:   Int )
     :   Progression[Data] =
 
       stream match
         case source #:: more =>
           val ready = source.length - sourcePos
-          val free = dest.length - destPos
+          val free = destSize - destPos
 
           if ready < free then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, ready)
-            recur(more, 0, dest, destPos + ready)
+            dest.copyFrom(source, sourcePos, destPos, ready)
+            recur(more, 0, dest, destSize, destPos + ready)
           else if free < ready then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
+            dest.copyFrom(source, sourcePos, destPos, free)
+            val chunk = Array.freeze(dest)
+            val size = newSize()
+            chunk.asInstanceOf[Data] #:: recur(stream, sourcePos + free, newArray(size), size, 0)
           else // free == ready
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
+            dest.copyFrom(source, sourcePos, destPos, free)
+            val chunk = Array.freeze(dest)
+            val size = newSize()
+            chunk.asInstanceOf[Data] #:: recur(more, 0, newArray(size), size, 0)
 
         case _ =>
           if destPos == 0 then Progression()
           else
-            // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
             val out = Array[Byte](destPos)
-            jl.System.arraycopy(dest, 0, out.raw, 0, destPos)
+            out.copyFrom(Array.freeze(dest), 0, 0, destPos)
             Progression(Array.freeze(out).asInstanceOf[Data])
 
-    recur(stream, 0, newArray(), 0)
+    val size = newSize()
+    recur(stream, 0, newArray(size), size, 0)
 
   def take(bytes: Bytes): Progression[Data] =
     def recur(stream: Progression[Data], count: Bytes): Progression[Data] =
