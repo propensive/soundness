@@ -153,7 +153,7 @@ private[probably] object Documenting:
     case Nil      => Unset
 
   private def metric(run: Run, metric: Metric): Optional[Double] =
-    run.metrics.get(metric).getOrElse(Unset)
+    run.metrics.at(metric)
 
   // A metric's value as a semantic datum, formatted by dimension.
   private def datum(metric: Metric, value: Double): Datum = metric.dimension match
@@ -422,10 +422,10 @@ private[probably] object Documenting:
         List(Block.Sparkline(steps, series))
 
     val latencies =
-      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.contains(Metric.P50)))
+      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.defines(Metric.P50)))
 
     val slo =
-      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.contains(Metric.Compliance)))
+      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.defines(Metric.Compliance)))
 
     val latencyColumns =
       if latencies then

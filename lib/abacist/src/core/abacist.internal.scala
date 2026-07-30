@@ -37,6 +37,8 @@ import scala.collection.immutable.Seq
 import scala.collection.immutable.*
 import scala.quoted.*
 
+import proscenium.compat.*
+
 import anticipation.*
 import fulminate.*
 import gigantism.*
@@ -121,10 +123,10 @@ object internal:
 
 
   def describeQuanta[quanta: Type](count: Expr[quanta])
-  :   Macro[ListMap[Text, Long]] =
+  :   Macro[Ledger[Text, Long]] =
 
-    def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
-    :   Expr[ListMap[Text, Long]] =
+    def recur(slices: List[Multiplier], expr: Expr[Ledger[Text, Long]])
+    :   Expr[Ledger[Text, Long]] =
 
       slices match
         case Nil => expr
@@ -142,7 +144,7 @@ object internal:
                       ( ${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value ) )
                 } )
 
-    recur(multipliers[quanta], '{ListMap()})
+    recur(multipliers[quanta], '{Ledger()})
 
 
   def multiplyQuanta[quanta: Type]

@@ -118,14 +118,14 @@ object protointernal extends anteprotointernal:
     inline def showQuanta[base <: AnyUnit, quanta <: Quanta[base]]: quanta is Showable = summonFrom:
       case names: UnitsNames[quanta] =>
         count =>
-        val nonzeroComponents = count.components.filter(_(1) != 0)
+        val nonzeroComponents = count.components.stdlib.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
         val units = nonzeroUnits.stdlib.head :: nonzeroUnits.stdlib.tail.map(names.separator+_)
         units.weave(names.units().stdlib.takeRight(nonzeroUnits.stdlib.length)).mkString.tt
 
       case _ =>
         count =>
-        val nonzeroComponents = count.components.filter(_(1) != 0)
+        val nonzeroComponents = count.components.stdlib.filter(_(1) != 0)
         nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
     inline given showable: [base <: AnyUnit, form <: Divisions]
@@ -138,8 +138,8 @@ object protointernal extends anteprotointernal:
     inline def distributiveQuanta[base <: AnyUnit, quanta <: Quanta[base]]
     :   quanta is Distributive by Long =
 
-      distributive[quanta](_.components.map(_(1)).to(List)): (value, parts) =>
-        parts.zip(value.components.map(_(0))).map: (number, units) =>
+      distributive[quanta](_.components.stdlib.map(_(1)).to(List)): (value, parts) =>
+        parts.zip(value.components.stdlib.map(_(0))).map: (number, units) =>
           t"$number $units"
 
         . join(t", ")
@@ -174,7 +174,8 @@ object protointernal extends anteprotointernal:
       ${abacist.internal.get[quanta, unit[1]]('count)}
 
     transparent inline def quantity: Any = ${abacist.internal.toQuantity[quanta]('count)}
-    inline def components: ListMap[Text, Long] = ${abacist.internal.describeQuanta[quanta]('count)}
+    inline def components: Ledger[Text, Long] =
+      ${abacist.internal.describeQuanta[quanta]('count)}
 
     transparent inline def multiply(inline multiplier: Double): Any =
       ${abacist.internal.multiplyQuanta('count, 'multiplier, false)}

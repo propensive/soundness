@@ -56,7 +56,7 @@ object Run:
 // and any structural payload. In a capacity search, `sustained` marks the winning run.
 case class Run
   ( verdict:   Optional[Verdict]       = Unset,
-    metrics:   ListMap[Metric, Double] = ListMap(),
+    metrics:   Ledger[Metric, Double]  = Ledger(),
     details:   List[Verdict.Detail]    = Nil,
     payload:   Optional[Run.Payload]   = Unset,
     sustained: Boolean                 = false )
@@ -81,7 +81,7 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
   @scala.caps.unsafe.untrackedCaptures
   private var ticks0: Map[Axis.Spec, List[Value]] = Map()
   @scala.caps.unsafe.untrackedCaptures
-  private var cells0: ListMap[List[Value], Cell] = ListMap()
+  private var cells0: Ledger[List[Value], Cell] = Ledger()
 
   @scala.caps.unsafe.untrackedCaptures
   var headline: Optional[Metric] = Unset
@@ -89,7 +89,7 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
   var anchor: Optional[Anchor] = Unset
 
   def axes: List[Axis.Spec] = mutex(axes0)
-  def cells: List[(List[Value], Cell)] = mutex(cells0.to(List))
+  def cells: List[(List[Value], Cell)] = mutex(cells0.to[List])
 
   // Returns the cell at the given coordinates, creating it if absent. Appends any
   // not-yet-seen axes (emergent axes extend the axis list as their coordinates arrive) and

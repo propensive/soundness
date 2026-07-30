@@ -47,7 +47,7 @@ object Benchmark:
     :   Report =
 
       val metrics =
-        ListMap
+        Ledger
           ( Metric.Iterations -> benchmark.iterations.toDouble,
             Metric.Mean       -> benchmark.mean,
             Metric.Least      -> benchmark.min,

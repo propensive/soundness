@@ -54,7 +54,7 @@ object Report:
         verdict:     Verdict )
     :   Report =
 
-      val metrics = ListMap(Metric.Duration -> verdict.duration.toDouble)
+      val metrics = Ledger(Metric.Duration -> verdict.duration.toDouble)
       val report2 = report.record(testId, Entry.Kind.Check, coordinates, Run(verdict, metrics))
 
       verdict match
@@ -125,9 +125,9 @@ object Report:
 class TestsMap():
   private val mutex: Mutex = Mutex()
   @scala.caps.unsafe.untrackedCaptures
-  private var tests: ListMap[TestId, ReportLine] = ListMap()
+  private var tests: Ledger[TestId, ReportLine] = Ledger()
 
-  def list: List[(TestId, ReportLine)] = mutex(tests.to(List))
+  def list: List[(TestId, ReportLine)] = mutex(tests.to[List])
   def apply(testId: TestId): ReportLine = mutex(tests(testId))
 
   def update(testId: TestId, reportLine: ReportLine) = mutex:
