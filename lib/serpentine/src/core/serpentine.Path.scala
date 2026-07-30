@@ -34,7 +34,6 @@ package serpentine
 
 import scala.caps
 
-import scala.collection.immutable as sci
 
 import scala.compiletime.*
 
@@ -45,6 +44,7 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -265,14 +265,14 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   private[serpentine] def calculate(right: Path): Path =
     val difference = depth - right.depth
-    val left0 = descent.drop(difference).toList
-    val right0 = right.descent.drop(-difference).toList
+    val left0 = List.of(descent.drop(difference).toList)
+    val right0 = List.of(right.descent.drop(-difference).toList)
 
 
-    def recur(left: sci.List[Text], right: sci.List[Text], size: Int, count: Int)
+    def recur(left: List[Text], right: List[Text], size: Int, count: Int)
     :   Path on Plane =
 
-      if left.isEmpty then Path(root, List.of(left0.drop(size - count)))
+      if left.isEmpty then Path(root, left0.drop(size - count))
       else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
       else recur(left.tail, right.tail, size + 1, 0)
 

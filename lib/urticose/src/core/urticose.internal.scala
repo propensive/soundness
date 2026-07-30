@@ -34,7 +34,6 @@ package urticose
 
 import java.io as ji
 
-import scala.collection.immutable as sci
 
 import scala.compiletime.asMatchable
 import scala.quoted.*
@@ -48,6 +47,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -301,14 +301,14 @@ object internal:
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
     given showable: Ipv6 is Showable = ip =>
-      def unpack(long: Long, groups: sci.List[Int] = sci.Nil): sci.List[Int] =
+      def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
         if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
 
-      def hex(values: sci.List[Int]): Text =
+      def hex(values: List[Int]): Text =
         values.map(_.hex).join(t":")
 
-      val groups = unpack(ip.highBits) ++ unpack(ip.lowBits)
-      val (middleIndex, middleLength) = groups.longestTrain(_ == 0)
+      val groups = unpack(ip.highBits) ::: unpack(ip.lowBits)
+      val (middleIndex, middleLength) = groups.toSeq.longestTrain(_ == 0)
 
       if middleLength < 2 then hex(groups)
       else t"${hex(groups.take(middleIndex))}::${hex(groups.drop(middleIndex + middleLength))}"
@@ -332,20 +332,20 @@ object internal:
     private val zeroes: List[Text] = List.fill(8)(t"0")
 
     def parse(text: Text): Ipv6 raises IpAddressError =
-      val groups: sci.List[Text] = text.cut(t"::").stdlib match
-        case sci.List(left, right) =>
-          val leftGroups = left.cut(t":").stdlib.filter(_ != t"")
-          val rightGroups = right.cut(t":").stdlib.filter(_ != t"")
+      val groups: List[Text] = text.cut(t"::") match
+        case List(left, right) =>
+          val leftGroups = left.cut(t":").filter(_ != t"")
+          val rightGroups = right.cut(t":").filter(_ != t"")
 
           if leftGroups.length + rightGroups.length > 7
           then
             raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
 
-          leftGroups ++ sci.List.fill((8 - leftGroups.length - rightGroups.length))(t"0") ++
+          leftGroups ::: List.fill(8 - leftGroups.length - rightGroups.length)(t"0") :::
             rightGroups
 
-        case sci.List(whole) =>
-          val groups = whole.cut(t":").stdlib
+        case List(whole) =>
+          val groups = whole.cut(t":")
 
           if groups.length != 8
           then abort(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))
@@ -355,8 +355,8 @@ object internal:
           abort(IpAddressError(Ipv6MultipleDoubleColons))
 
       Ipv6
-        ( pack(List.of(groups.take(4).map(parseGroup))),
-          pack(List.of(groups.drop(4).map(parseGroup))) )
+        ( pack(groups.take(4).map(parseGroup)),
+          pack(groups.drop(4).map(parseGroup)) )
 
   case class Ipv6(highBits: Long, lowBits: Long)
 

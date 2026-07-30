@@ -86,7 +86,7 @@ package alphabets:
   private val crockfordAlternatives =
     Map.of:
       Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse.stdlib
-      ++ scala.collection.immutable.Map('o' -> 0, 'O' -> 0, 'i' -> 1, 'I' -> 1, 'L' -> 1)
+      ++ Iterable('o' -> 0, 'O' -> 0, 'i' -> 1, 'I' -> 1, 'L' -> 1)
 
   given base32Crockford: Alphabet[Base32] =
     Alphabet(t"0123456789ABCDEFGHJKMNPQRSTVWXYZ", false, crockfordAlternatives)
