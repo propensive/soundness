@@ -32,7 +32,7 @@
                                                                                                   */
 package savagery
 
-import scala.collection.immutable.SeqMap
+import scala.collection.immutable.VectorMap
 
 import anticipation.*
 import cataclysm.Css
@@ -55,7 +55,7 @@ extends Figure:
 
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
+    val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"x" -> position.x.show
     attrs += t"y" -> position.y.show
     attrs += t"width" -> width.show
@@ -77,7 +77,7 @@ extends Figure:
 
   def xml: Xml =
     val d: Text = List.of(ops.stdlib.reverse.map(_.encode)).join(t" ")
-    val attrs = SeqMap.newBuilder[Text, Text]
+    val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"d" -> d
     id.let: svgId => attrs += t"id" -> svgId.text
 
@@ -129,7 +129,7 @@ extends Figure:
 
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
+    val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"cx" -> center.x.show
     attrs += t"cy" -> center.y.show
 

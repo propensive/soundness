@@ -888,12 +888,12 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"extractor on tag body"):
           Form(Input(title = "text", disabled = true, style = t"testing"), "text").absolve match
             case h"""<form><input $atts>$more</form>""" => atts
-        . assert(_ == ListMap(t"style" -> t"testing", t"disabled" -> Unset, t"title" -> t"text"))
+        . assert(_ == Map(t"style" -> t"testing", t"disabled" -> Unset, t"title" -> t"text"))
 
         test(m"extractor on tag body with removals"):
           Form(Input(title = "text", disabled = true, style = t"testing"), "text").absolve match
             case h"""<form><input style=$style $atts>$more</form>""" => atts
-        . assert(_ == ListMap(t"disabled" -> Unset, t"title" -> t"text"))
+        . assert(_ == Map(t"disabled" -> Unset, t"title" -> t"text"))
 
         test(m"extractor on attribute"):
           Form(Input(title = "text", disabled = true, style = t"testing"), "text").absolve match

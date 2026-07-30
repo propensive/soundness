@@ -41,7 +41,7 @@ import scala.language.dynamics
 
 import java.lang as jl
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.VectorMap
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
@@ -777,8 +777,10 @@ object internal:
       def toMap: Map[Text, Optional[Text]] = Map.of:
         val a = storage(attrs)
 
-        if a.length == 0 then ListMap.empty else
-          val b = ListMap.newBuilder[Text, Optional[Text]]
+        // `VectorMap` (the `Ledger` substrate), so the wrapped `Map` still iterates its
+        // attributes in document order.
+        if a.length == 0 then VectorMap.empty else
+          val b = VectorMap.newBuilder[Text, Optional[Text]]
           var i = 0
 
           while i < a.length do

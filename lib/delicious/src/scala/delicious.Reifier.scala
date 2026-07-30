@@ -32,8 +32,6 @@
                                                                                                   */
 package delicious
 
-import scala.collection.immutable.ListMap
-
 import dotty.tools.dotc as dtd
 import dotty.tools.dotc.ast.tpd.TreeOps
 import dotty.tools.dotc.core.Contexts
@@ -71,8 +69,7 @@ object Reifier:
 
       else Unset
 
-    def entries(map: ListMap[Text, Syntax]): ListMap[Text, Syntax] =
-      map.map { (key, value) => key -> recur(value) }
+    def entries(map: Ledger[Text, Syntax]): Ledger[Text, Syntax] = map.map(recur)
 
     def recur(syntax: Syntax): Syntax = syntax match
       case Syntax.Primitive(text)          => replace(text).or(syntax)

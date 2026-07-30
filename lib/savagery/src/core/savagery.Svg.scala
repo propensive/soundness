@@ -32,8 +32,6 @@
                                                                                                   */
 package savagery
 
-import scala.collection.immutable.SeqMap
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -100,8 +98,8 @@ extends Documentary:
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
 
-    val attrs: SeqMap[Text, Text] =
-      SeqMap
+    val attrs: Ledger[Text, Text] =
+      Ledger
         ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
           t"viewBox" -> t"0 0 ${width.show} ${height.show}",
           t"width"   -> width.show,
@@ -116,9 +114,9 @@ extends Documentary:
       if transforms.nil then figures.stdlib.map(_.xml)
       else
         val groupAttrs =
-          SeqMap(t"transform" -> transforms.map(_.encode).join(t" "))
+          Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
         scala.collection.immutable.List
-          (Element(t"g", Attributes.from(Map.of(groupAttrs)), figures.stdlib.map(_.xml).nodes))
+          (Element(t"g", Attributes.from(Map.of(groupAttrs.stdlib)), figures.stdlib.map(_.xml).nodes))
 
     val children: Array[Node]^{} = (defsElement ++ figureNodes).nodes
-    Element(t"svg", Attributes.from(Map.of(attrs)), children)
+    Element(t"svg", Attributes.from(Map.of(attrs.stdlib)), children)

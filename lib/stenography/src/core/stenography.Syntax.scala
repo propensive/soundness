@@ -39,7 +39,6 @@ import proscenium.compat.*
 private def sciList[element](elements: element*): scala.collection.immutable.List[element] =
   scala.collection.immutable.List(elements*)
 
-import scala.collection.immutable.ListMap
 import scala.quoted.*
 
 import anticipation.*
@@ -359,7 +358,7 @@ object Syntax:
               case refined@Structural(base, members, defs) => refined
 
               case other =>
-                Structural(other, ListMap(), ListMap())
+                Structural(other, Ledger(), Ledger())
 
             signature(name, member) match
               case signature@Declaration(method, _, _) =>
@@ -440,7 +439,7 @@ enum Syntax:
   case Symbolic(text: Text)
   case Primitive(text: Text)
   case Projection(base: Syntax, text: Text)
-  case Structural(syntax: Syntax, types: ListMap[Text, Syntax], terms: ListMap[Text, Syntax])
+  case Structural(syntax: Syntax, types: Ledger[Text, Syntax], terms: Ledger[Text, Syntax])
   case Infix(left: Syntax, middle: Text, right: Syntax)
   case Prefix(middle: Text, right: Syntax)
   case Suffix(left: Syntax, suffix: Text)
@@ -516,8 +515,8 @@ enum Syntax:
           left.text+elements.map(_.text).mkString("[", ", ", "]").tt
 
     case Structural(base, members, defs) =>
-      val members2 = members.map: (name, syntax) => s"type $name = ${syntax.text}".tt
-      val defs2 = defs.map: (name, syntax) => s"def $name${syntax.text}".tt
+      val members2 = members.stdlib.map: (name, syntax) => s"type $name = ${syntax.text}".tt
+      val defs2 = defs.stdlib.map: (name, syntax) => s"def $name${syntax.text}".tt
       s"${base.text} { ${(members2 ++ defs2).mkString("; ")} }".tt
 
     case Infix(left: Syntax, middle, right: Syntax) =>
