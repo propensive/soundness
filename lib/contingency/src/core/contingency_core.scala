@@ -181,7 +181,7 @@ infix type raises [success, error <: Hazard] = Tactic[error]^ ?=> success
 // Fix candidates: give the match a default case, or use `tryNormalize`/`superTypeNormalized`
 // in place of `dealias`.
 infix type raising[success, errors] = errors match
-  case EmptyTuple.type => success
+  case scala.EmptyTuple.type => success
   case left *: right   => Tactic[left] ?=> raising[success, right]
   case _               => Tactic[errors] ?=> success
 
