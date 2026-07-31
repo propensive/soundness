@@ -32,7 +32,7 @@
                                                                                                   */
 package stenography
 
-import scala.Enumeration
+import scala.{caps, Enumeration}
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
@@ -331,7 +331,7 @@ object Tests extends Suite(m"Stenography Tests"):
     . assert(_ == t"Text^{}")
 
     test(m"Capture set on an applied type"):
-      Syntax.name[List[Text]^{alpha}]
+      Syntax.name[scala.collection.immutable.List[Text]^{alpha}]
     . assert(_ == t"collection.immutable.List[Text]^{alpha}")
 
     test(m"Capture set on a union type"):

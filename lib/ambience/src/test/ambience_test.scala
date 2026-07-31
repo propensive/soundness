@@ -41,11 +41,11 @@ case class FakePath(text: Text)
 given fakePath: FakePath is Instantiable across Paths from Text = FakePath(_)
 
 def fixedEnvironment(entries: (Text, Text)*): Environment =
-  val map = entries.to(Map)
+  val map = Map.from(entries)
   name => map.at(name)
 
 def fixedSystem(entries: (Text, Text)*): System =
-  val map = entries.to(Map)
+  val map = Map.from(entries)
   name => map.at(name)
 
 object Tests extends Suite(m"Ambience Tests"):

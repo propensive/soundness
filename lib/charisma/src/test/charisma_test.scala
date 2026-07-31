@@ -72,12 +72,12 @@ object Tests extends Suite(m"Charisma Tests"):
       . assert(_ == Unset)
 
       test(m"Every element's number matches its position"):
-        PeriodicTable.elements.indices.all: index =>
-          PeriodicTable.elements(index).number == index + 1
+        (0 until PeriodicTable.elements.length).all: index =>
+          PeriodicTable.elements.readUnchecked(index).number == index + 1
       . assert(_ == true)
 
       test(m"Every element has a distinct symbol"):
-        PeriodicTable.symbols.size
+        PeriodicTable.symbols.stdlib.size
       . assert(_ == 118)
 
       test(m"An element is shown as its symbol"):
@@ -199,25 +199,25 @@ object Tests extends Suite(m"Charisma Tests"):
       . assert(_ == t"Cl⁻(aq)")
 
       test(m"Physical states are rendered in parentheses"):
-        PhysicalState.values.to(List).map(_.show)
+        List.from(Array.unsafeFrozen(PhysicalState.values).readable).map(_.show)
       . assert(_ == List(t"(s)", t"(l)", t"(g)", t"(aq)"))
 
     suite(m"Chemical formula tests"):
       test(m"A molecule's formula has a single term"):
         (H[2]*O).formula.molecules
-      . assert(_ == ListMap((H[2]*O) -> 1))
+      . assert(_ == Ledger((H[2]*O) -> 1))
 
       test(m"Scaling a molecule gives a formula with a coefficient"):
         (H[2]*2).molecules
-      . assert(_ == ListMap(H[2] -> 2))
+      . assert(_ == Ledger(H[2] -> 2))
 
       test(m"Summing formulae collects both terms"):
         (H[2]*2 + O[2]).molecules
-      . assert(_ == ListMap(H[2] -> 2, O[2] -> 1))
+      . assert(_ == Ledger(H[2] -> 2, O[2] -> 1))
 
       test(m"Summing the same molecule twice adds its coefficients"):
         (H[2]*2 + H[2]*3).molecules
-      . assert(_ == ListMap(H[2] -> 5))
+      . assert(_ == Ledger(H[2] -> 5))
 
       test(m"A formula's atoms tally every molecule"):
         (H[2]*2 + O[2]).atoms
@@ -261,7 +261,7 @@ object Tests extends Suite(m"Charisma Tests"):
       . assert(_ == t"2H₂ + O₂ → 2H₂O")
 
       test(m"Reactions are rendered with distinct arrows"):
-        Reaction.values.to(List).map(_.show)
+        List.from(Array.unsafeFrozen(Reaction.values).readable).map(_.show)
       . assert(_ == List(t"→", t"⇄", t"⇋", t"↔", t"="))
 
       test(m"A resonance equation has a resonance reaction"):

@@ -33,13 +33,17 @@
 package caduceus
 
 import soundness.*
+import proscenium.compat.*
 
 import errorDiagnostics.stackTracesDiagnostics
 
 class TestCourier() extends Courier:
   type Result = Unit
 
+  // Test-mock capture: `Courier.send` is read-only, so this recorder cannot be `Mutable`.
+  @scala.caps.unsafe.untrackedCaptures
   var emails: List[Email] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   var envelopes: List[Envelope] = Nil
 
   def send(message: Document[Email]): Unit =
@@ -88,7 +92,7 @@ object Tests extends Suite(m"Caduceus tests"):
       . assert(_ == media"text/plain")
 
       test(m"Content with an inline is related multipart"):
-        val inline = Email.Inline(t"cid1", media"image/png", LazyList())
+        val inline = Email.Inline(t"cid1", media"image/png", Chain())
         Email.Content(Email.Body(t"hello"), inline).contentType
       . assert(_ == media"multipart/related")
 
@@ -97,7 +101,7 @@ object Tests extends Suite(m"Caduceus tests"):
       . assert(_ == media"text/plain")
 
       test(m"A message with an attachment is mixed multipart"):
-        val asset = Asset(t"report.txt", media"text/plain", LazyList())
+        val asset = Asset(t"report.txt", media"text/plain", Chain())
         Email.Message(Email.Content(Email.Body(t"hello")), List(asset)).contentType
       . assert(_ == media"multipart/mixed")
 
@@ -133,7 +137,7 @@ object Tests extends Suite(m"Caduceus tests"):
       . assert(_ == t"all good")
 
     suite(m"Attachment tests"):
-      val asset = Asset(t"report.txt", media"text/plain", LazyList())
+      val asset = Asset(t"report.txt", media"text/plain", Chain())
 
       test(m"An Asset attaches as itself"):
         Attachable.asset.attachment(asset)
@@ -144,7 +148,7 @@ object Tests extends Suite(m"Caduceus tests"):
       . assert(_ == List(asset))
 
       test(m"Attaching twice keeps both assets in order"):
-        val other = Asset(t"data.csv", media"text/csv", LazyList())
+        val other = Asset(t"data.csv", media"text/csv", Chain())
         Email(t"hello").attach(asset).attach(other).attachments.map(_.name)
       . assert(_ == List(t"report.txt", t"data.csv"))
 
@@ -154,7 +158,7 @@ object Tests extends Suite(m"Caduceus tests"):
 
       test(m"Contramap an Attachable onto another type"):
         val attachable = Attachable.asset.contramap[Report]: report =>
-          Asset(report.title, media"text/plain", LazyList())
+          Asset(report.title, media"text/plain", Chain())
 
         attachable.attachment(Report(t"Q3", t"all good")).name
       . assert(_ == t"Q3")
@@ -165,7 +169,7 @@ object Tests extends Suite(m"Caduceus tests"):
       . assert(_ == List(jack))
 
       test(m"A list of recipients is kept as it is"):
-        Envelope.many[EmailAddress](List(jack, jill))
+        Envelope.many[EmailAddress](soundness.List(jack, jill).asInstanceOf[soundness.List[soundness.EmailAddress]])
       . assert(_ == List(jack, jill))
 
       test(m"An empty list of recipients stays empty"):
@@ -197,7 +201,7 @@ object Tests extends Suite(m"Caduceus tests"):
       test(m"Sending records several recipients"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
-        t"hello".send(subject = t"Greetings", to = List(jill, jane))
+        t"hello".send(subject = t"Greetings", to = soundness.List(jill, jane).asInstanceOf[soundness.List[soundness.EmailAddress]])
         courier.envelopes.head.to
       . assert(_ == List(jill, jane))
 

@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import proscenium.compat.*
+
 import java.nio.file as jnf
 
 import scala.util.control as suc
@@ -86,12 +88,13 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
 
     // The name each source was given, keyed by the canonical path it was written to, so that a
     // diagnostic reads as if the compiler had seen the name rather than the scratch file.
-    val names: Map[Text, Text] = sources.map: (name, code) =>
-      val file = scratch.resolve(name.s).nn
-      jnf.Files.createDirectories(file.getParent.nn)
-      jnf.Files.writeString(file, code.s)
+    val names: Map[Text, Text] = Map.from:
+      sources.stdlib.map: (name, code) =>
+        val file = scratch.resolve(name.s).nn
+        jnf.Files.createDirectories(file.getParent.nn)
+        jnf.Files.writeString(file, code.s)
 
-      (file.toRealPath().nn.toString.tt, name)
+        (file.toRealPath().nn.toString.tt, name)
 
     val collector = new MessageCollector:
       def clear(): Unit = ()
@@ -145,7 +148,7 @@ case class Kotlinc[version <: Kotlinc.Versions](options: List[Kotlinc.Option[ver
         jnf.Files.createDirectories(jnf.Paths.get(out.generic.s))
         val compiler = K2JVMCompiler()
         val parsed = compiler.createArguments().nn
-        compiler.parseArguments(arguments.map(_.s).to(Array), parsed)
+        compiler.parseArguments(arguments.stdlib.map(_.s).toArray, parsed)
         val exit = compiler.exec(collector, Services.EMPTY.nn, parsed).nn
         val success = exit == ExitCode.OK
 

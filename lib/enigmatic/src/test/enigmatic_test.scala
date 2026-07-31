@@ -33,6 +33,7 @@
 package enigmatic
 
 import soundness.*
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
@@ -871,7 +872,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     suite(m"ASN.1 and DER"):
       // DER is canonical, so `encode` is the equality of record: the byte-carrying cases of `Asn1`
-      // are case classes over `IArray[Byte]`, whose synthesized `equals` compares arrays by
+      // are case classes over `Array[Byte]`, whose synthesized `equals` compares arrays by
       // identity. Every assertion below therefore compares hexadecimal encodings.
       def der(value: Asn1): Text = value.in[Der].data.serialize[Hex]
       def decode(hex: Text): Asn1 = Der(hex.deserialize[Hex]).as[Asn1]
@@ -901,9 +902,9 @@ object Tests extends Suite(m"Enigmatic tests"):
           t"02020100"))
 
       test(m"Octet strings and bit strings encode their content"):
-        List(der(Asn1.OctetString(IArray[Byte](1, 2, 3, 4, 5))),
-            der(Asn1.BitString(IArray[Byte](0x6e, 0x5d, 0xc0.toByte), 6)),
-            der(Asn1.BitString(IArray[Byte](), 0)))
+        List(der(Asn1.OctetString(Array.of[Byte](1, 2, 3, 4, 5))),
+            der(Asn1.BitString(Array.of[Byte](0x6e, 0x5d, 0xc0.toByte), 6)),
+            der(Asn1.BitString(Array.of[Byte](), 0)))
       . assert(_ == List(t"04050102030405", t"0304066E5DC0", t"030100"))
 
       test(m"Object identifiers combine their first two arcs"):
@@ -922,8 +923,8 @@ object Tests extends Suite(m"Enigmatic tests"):
           t"180F31393730303130313030303030305A"))
 
       test(m"A set's members are sorted by their encodings"):
-        val two = Asn1.OctetString(IArray[Byte](2.toByte))
-        val one = Asn1.OctetString(IArray[Byte](1.toByte))
+        val two = Asn1.OctetString(Array.of[Byte](2.toByte))
+        val one = Asn1.OctetString(Array.of[Byte](1.toByte))
 
         List(der(Asn1.Set(List(two, one))),
             der(Asn1.Set(List(Asn1.Integer(BigInt(256)), Asn1.Integer(BigInt(1))))))
@@ -931,7 +932,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Context tags encode explicitly, implicitly and in high-tag form"):
         List(der(Asn1.Tagged(0, true, Asn1.Integer(BigInt(2)))),
-            der(Asn1.Tagged(0, false, Asn1.OctetString(IArray[Byte](0xab.toByte)))),
+            der(Asn1.Tagged(0, false, Asn1.OctetString(Array.of[Byte](0xab.toByte)))),
             der(Asn1.Tagged(31, true, Asn1.Null)))
       . assert(_ == List(t"A003020102", t"8001AB", t"BF1F020500"))
 

@@ -379,7 +379,7 @@ object Tests extends Suite(m"Anthology Tests"):
         . assert(_ > 0)
 
         test(m"A Kotlin notice names the source it was given"):
-          failing.notices.map(_.file).to(List)
+          failing.notices.map(_.file).to[List]
         . assert(_ == List(t"demo/Broken.kt"))
 
   // Locates the Kotlin standard library on this suite's classpath, when the Kotlin compiler is
@@ -403,7 +403,7 @@ object Tests extends Suite(m"Anthology Tests"):
     val root = Paths.get(home, ".cache", "soundness", "proscala").nn
 
     if !Files.isDirectory(root) then Unset else
-      Files.list(root).nn.iterator.nn.asScala.to(List).sortBy(_.toString).reverse
+      Files.list(root).nn.iterator.nn.asScala.to(scala.List).sortBy(_.toString).reverse
       . map(_.resolve("lib").nn)
       . find { lib => Files.isDirectory(lib) && Files.exists(lib.resolve("scala3-library.jar")) }
       . getOrElse(Unset)
@@ -426,7 +426,7 @@ object Tests extends Suite(m"Anthology Tests"):
         && contents.exists(_.getFileName.nn.toString.startsWith("scalajs-library_2.13"))
 
       if !complete then Unset else
-        val globbed = Files.list(lib).nn.iterator.nn.asScala.to(List).filter: jar =>
+        val globbed = Files.list(lib).nn.iterator.nn.asScala.to(scala.List).filter: jar =>
           val name = jar.getFileName.nn.toString
           name.startsWith("scalajs-javalib") || name.startsWith("scalajs-library_2.13")
 

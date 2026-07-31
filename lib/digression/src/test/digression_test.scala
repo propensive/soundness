@@ -78,7 +78,7 @@ object Tests extends Suite(m"Digression Tests"):
       . assert(_.let(_.starts(t"digression.Tests")) == true)
 
       test(m"Frames are unresolved unless a resolver is imported"):
-        Exception("boom").stackTrace.frames.map(_.source).to(Set)
+        Exception("boom").stackTrace.frames.map(_.source).to[Set]
 
       . assert(_ == Set(Unset))
 
