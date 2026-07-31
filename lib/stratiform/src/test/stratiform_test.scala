@@ -1275,6 +1275,29 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _: Tel.Atom.Inline  => "inline"
       . assert(_ == "literal")
 
+      // A top-level literal atom's delimiter line is six spaces plus the
+      // delimiter (§15), and the parser strips a trailing CR before matching
+      // it, so `      ---\r` in the payload must count as a §22.2 collision.
+      val crCollision = t"before\n      ---\r\nafter\n"
+
+      test(m"A CR-terminated delimiter line in the payload extends the delimiter"):
+        val tel    = doc("note x\n")
+        val ptr    = Tel.Pointer.of(t"note")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
+        result.childCompounds.readable.head.atoms.readable.head match
+          case Tel.Atom.Literal(delimiter, _) => delimiter
+          case _                              => t""
+      . assert(_ == t"----")
+
+      test(m"A payload line of delimiter-then-CR survives a round-trip"):
+        val tel    = doc("note x\n")
+        val ptr    = Tel.Pointer.of(t"note")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
+        result.document.vouch.show.read[Tel].childCompounds.readable.head.atoms.readable.head match
+          case Tel.Atom.Literal(_, text) => text
+          case _                         => t""
+      . assert(_ == crCollision)
+
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
         val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
