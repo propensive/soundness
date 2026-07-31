@@ -79,10 +79,19 @@ private[facsimile] object Xref:
       val mergedEntries = sectionEntries ++ entries
       val mergedTrailer = sectionTrailer ++ trailer
 
-      sectionTrailer.at(t"Prev").let(_.long).lay(Xref(mergedEntries, mergedTrailer, head)): previous =>
-        recur(previous, mergedEntries, mergedTrailer, visited + offset)
+      sectionTrailer.at(t"Prev").let(_.long)
+      . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>
+          recur(previous, mergedEntries, mergedTrailer, visited + offset)
 
     recur(head, Map(), Map(), Set())
+
+  // Whether the section at `offset` is a cross-reference stream. The two forms are told apart
+  // exactly as `section` tells them apart: a classic table opens with the `xref` keyword, a
+  // stream with the object number of the indirect object holding it.
+  private def streamed(source: ByteSource, offset: Long): Boolean raises PdfError =
+    CosLexer(new Scan(source, offset)).next() match
+      case CosToken.Keyword(word) if word.s == "xref" => false
+      case _                                          => true
 
   // Recovers a cross-reference table from a damaged file by scanning for `N G obj` markers,
   // the latest offset of each object number winning (an incremental update's newer copy
@@ -377,5 +386,13 @@ private[facsimile] object Xref:
 // the anchor an incremental update chains its own `/Prev` to. It is `Unset` for a table
 // recovered by scanning, which has no valid section to chain to (so writing must rewrite in
 // full rather than append).
+// `streamed` records whether that newest section is a cross-reference STREAM rather than a
+// classic table. An update must be written in the same form as the section it chains to: `/Prev`
+// in a classic trailer is defined to address a classic section, and `/Prev` in a cross-reference
+// stream to address another stream (ISO 32000-1 §7.5.8.4). Chaining across the two forms produces
+// a file that tolerant readers absorb silently and strict ones — CoreGraphics among them — do not.
 private[facsimile] case class Xref
-  ( entries: Map[Int, Xref.Entry], trailer: Map[Text, Cos], startxref: Optional[Long] = Unset )
+  ( entries:   Map[Int, Xref.Entry],
+    trailer:   Map[Text, Cos],
+    startxref: Optional[Long] = Unset,
+    streamed:  Boolean        = false )

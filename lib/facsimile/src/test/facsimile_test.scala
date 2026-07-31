@@ -1023,6 +1023,48 @@ object Tests extends Suite(m"Facsimile tests"):
           textOf(pdf.resolved(pdf(1, 0)(t"Greeting").or(Cos.Nil)))
       . assert(_ == t"hi")
 
+      // An update must take the same form as the section it chains to: `/Prev` in a classic
+      // trailer addresses a classic section, and `/Prev` in a cross-reference stream addresses
+      // another stream (ISO 32000-1 §7.5.8.4). A classic update over a file whose newest section
+      // is a stream yields a chain that cannot be followed — which poppler and pdf.js absorb
+      // silently and CoreGraphics does not, so it is worth pinning here rather than leaving to a
+      // viewer to find.
+      def appended(source: Data): Text =
+        val path = tempPdf(source)
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.set(Cos.Ref(1, 0), Cos.Dictionary(Map(t"Type" -> Cos.Name(t"Catalog"))))
+
+        String(fileBytes(path).mutable(using Unsafe), "ISO-8859-1").nn.tt.skip(source.length)
+
+      test(m"an update over a cross-reference stream is itself a cross-reference stream"):
+        val tail = appended(xrefStreamDocument())
+        (tail.contains(t"/Type /XRef"), tail.contains(t"trailer"))
+      . assert(_ == (true, false))
+
+      test(m"an update over a classic table is still a classic table"):
+        val tail = appended(document(t"<< /Type /Catalog >>".in[Data]))
+        (tail.contains(t"trailer"), tail.contains(t"/Type /XRef"))
+      . assert(_ == (true, false))
+
+      // The edited object must be found in the new section, and an object compressed into the
+      // ORIGINAL file's object stream must still be found through the chain behind it — which is
+      // what a broken `/Prev` would sever.
+      test(m"an edit over a cross-reference stream keeps the objects behind it reachable"):
+        val path = tempPdf(xrefStreamDocument())
+
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.set
+           ( Cos.Ref(1, 0),
+             Cos.Dictionary
+              (Map(t"Type" -> Cos.Name(t"Catalog"), t"Answer" -> Cos.Ref(4, 0),
+                   t"Edited" -> Cos.Name(t"yes"))) )
+
+        PdfFile(fileBytes(path)).open[Pdf]():
+          ( pdf(1, 0)(t"Edited").or(Cos.Nil),
+            pdf.resolved(pdf(1, 0)(t"Answer").or(Cos.Nil)) )
+      . assert(_ == (Cos.Name(t"yes"), Cos.Integral(42)))
+
     // A one-page document with Helvetica as `/F1` and the given content stream.
     def contentPage(content: Text): Data =
       document
