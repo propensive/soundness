@@ -617,16 +617,20 @@ object Mutation:
     Text(delimiter)
 
   // True if `s` contains a line consisting of zero-or-more spaces followed
-  // exactly by `delimiter`.
+  // exactly by `delimiter`. A trailing CR is stripped before the comparison
+  // because the parser strips one too when recognising the closing delimiter
+  // line (§15); without that, a payload line of `<spaces><delimiter>CR` would
+  // pass this check yet close the atom early on re-parse.
   private def collidesWithDelimiterLine(s: String, delimiter: String): Boolean =
     var start = 0
     var found = false
 
     while !found && start <= s.length do
       val nl = s.indexOf('\n', start)
-      val end = if nl < 0 then s.length else nl
+      val lineEnd = if nl < 0 then s.length else nl
       var i = start
-      while i < end && s.charAt(i) == ' ' do i += 1
+      while i < lineEnd && s.charAt(i) == ' ' do i += 1
+      val end = if lineEnd > i && s.charAt(lineEnd - 1) == '\r' then lineEnd - 1 else lineEnd
       if s.substring(i, end).nn == delimiter then found = true
       start = if nl < 0 then s.length + 1 else nl + 1
 
