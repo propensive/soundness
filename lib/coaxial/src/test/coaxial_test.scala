@@ -61,7 +61,7 @@ object Tests extends Suite(m"Coaxial tests"):
     // go through `List[Byte]`.
     def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
     def bytes(data: Data): List[Byte] = data.to[List]
-    def joined(stream: Progression[Data]): List[Byte] =
+    def joined(stream: Chain[Data]): List[Byte] =
       List.of(stream.flatMap { d => d.toSeq }.stdlib.toList)
     def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to[List]
 
@@ -97,9 +97,9 @@ object Tests extends Suite(m"Coaxial tests"):
         drained(summon[Data is Transmissible].serialize(ascii(t"abc")))
       . assert(_ == bytes(ascii(t"abc")))
 
-      test(m"A Progression[Data] is transmitted unchanged"):
-        val stream = Progression(ascii(t"ab"), ascii(t"cd"))
-        drained(summon[Progression[Data] is Transmissible].serialize(stream))
+      test(m"A Chain[Data] is transmitted unchanged"):
+        val stream = Chain(ascii(t"ab"), ascii(t"cd"))
+        drained(summon[Chain[Data] is Transmissible].serialize(stream))
       . assert(_ == bytes(ascii(t"abcd")))
 
       test(m"Text is transmitted via its character encoding"):
@@ -224,7 +224,7 @@ object Tests extends Suite(m"Coaxial tests"):
           port.listen[Data](handler):
 
             // The `transmit` extension is overloaded on `Serviceable` (returns
-            // `Progression[Data]`) and `Routable` (returns `Unit`); since value-discarding
+            // `Chain[Data]`) and `Routable` (returns `Unit`); since value-discarding
             // makes any type conform to `Unit`, the `Routable` overload is not
             // reachable by ascription, so its given is exercised directly here.
             val routable = summon[UdpPort is Routable]

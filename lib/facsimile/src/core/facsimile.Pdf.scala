@@ -269,12 +269,12 @@ extends caps.ExclusiveCapability:
   // back to a page by reference.
   private[facsimile] def pageEntries
   ( using Tactic[PdfError] )
-  :   Series[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
+  :   Sequence[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
     var visited: Set[Int] = Set()
 
     def recur(node: Cos, number: Optional[Int], inherited: Page.Inherited)
-    :   Series[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
+    :   Sequence[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
 
       node match
         case Cos.Ref(reference, _) =>
@@ -288,14 +288,14 @@ extends caps.ExclusiveCapability:
           case t"Pages" =>
             val updated = inherited.update(entries)
 
-            resolved(entries.at(t"Kids").or(Cos.Nil)).elements.lay(Series()): kids =>
-              kids.to[Series].flatMap(recur(_, Unset, updated))
+            resolved(entries.at(t"Kids").or(Cos.Nil)).elements.lay(Sequence()): kids =>
+              kids.to[Sequence].flatMap(recur(_, Unset, updated))
 
           case _ =>
-            Series((number, entries, inherited))
+            Sequence((number, entries, inherited))
 
         case _ =>
-          Series()
+          Sequence()
 
     recur(catalog.at(t"Pages").or(Cos.Nil), Unset, Page.Inherited())
 
@@ -315,10 +315,10 @@ extends caps.ExclusiveCapability:
   // destinations that refer to pages by reference.
   private[facsimile] def pageNumbers(using Tactic[PdfError]): Map[Int, Ordinal] =
     pageEntries.zipWithIndex.flatMap: (entry, index) =>
-      entry(0).lay(Series()): number =>
-        Series(number -> index.z)
+      entry(0).lay(Sequence()): number =>
+        Sequence(number -> index.z)
 
-    . pipe { series => Map.from(series.stdlib) }
+    . pipe { sequence => Map.from(sequence.stdlib) }
 
   // Named destinations from both homes: the old-style `/Dests` dictionary and the
   // `/Names /Dests` name tree, still as raw COS values.

@@ -1263,11 +1263,11 @@ object Tel extends Tel2:
   // Parse a multi-document source (§6.1) into its sequence of documents.
   // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
   // by the collection Aggregable typeclasses; user code should prefer
-  // `bytes.read[List[Tel]]` or `bytes.read[Progression[Tel]]`.
+  // `bytes.read[List[Tel]]` or `bytes.read[Chain[Tel]]`.
   private[stratiform] def parseAll(bytes: Data): List[Tel] raises TelError =
     Tel.Parser.parseDocuments(bytes).map(Tel(_))
 
-  private[stratiform] def parseStream(bytes: Data): Progression[Tel] raises TelError =
+  private[stratiform] def parseStream(bytes: Data): Chain[Tel] raises TelError =
     Tel.Parser.parseStream(bytes).map(Tel(_))
 
   // ── Position tracking (editor / tooling support) ──────────────────────────
@@ -1373,11 +1373,11 @@ object Tel extends Tel2:
 
       def locate(value: Tel, path: TelPath): Optional[TelError.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, Series.from(path.keywords.stdlib), 0, false)
+          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.keywords.stdlib), 0, false)
 
       def locateKey(value: Tel, path: TelPath): Optional[TelError.Position] =
         value.positionIndex.let: index =>
-          walkIndex(value.subtree, index.ints, 0, Series.from(path.keywords.stdlib), 0, true)
+          walkIndex(value.subtree, index.ints, 0, Sequence.from(path.keywords.stdlib), 0, true)
 
   // Walk the packed `PositionIndex` alongside the AST, following `segments`
   // (a root-first keyword path) from the descriptor at `offset`. TEL has no
@@ -1388,7 +1388,7 @@ object Tel extends Tel2:
     ( node:     Tel.Subtree,
       data:     Array[Int]^{},
       offset:   Int,
-      segments: Series[Text],
+      segments: Sequence[Text],
       i:        Int,
       keyMode:  Boolean )
   :   Optional[TelError.Position] =
@@ -1406,8 +1406,8 @@ object Tel extends Tel2:
       if k < 0 then Unset
       else walkIndex(children(k), data, offset + data(offset + 5 + k), segments, i + 1, keyMode)
 
-  // Concatenate the chunks of a `Progression[Data]` source into a single byte array.
-  private[stratiform] def concatenate(source: Progression[Data]): Data =
+  // Concatenate the chunks of a `Chain[Data]` source into a single byte array.
+  private[stratiform] def concatenate(source: Chain[Data]): Data =
     import denominative.nil
 
     // A single in-memory block — the common case — is returned as-is
@@ -1423,7 +1423,7 @@ object Tel extends Tel2:
 
       acc
 
-  // `bytes.read[Tel]` for any Progression[Data] source: concatenates the
+  // `bytes.read[Tel]` for any Chain[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
@@ -1574,12 +1574,12 @@ object Tel extends Tel2:
     Tel.Parsable.iterable[scala.collection.immutable.Set, element](parsable)
     . asInstanceOf[set[element] is Tel.Parsable]
 
-  given seriesParsable: [series <: Series, element]
+  given seriesParsable: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[TelError] )
   =>  ( parsable: => (element is Tel.Parsable)^ )
-  =>  series[element] is Tel.Parsable =
+  =>  sequence[element] is Tel.Parsable =
     Tel.Parsable.iterable[Vector, element](parsable)
-    . asInstanceOf[series[element] is Tel.Parsable]
+    . asInstanceOf[sequence[element] is Tel.Parsable]
 
   // The direct read of a field type carried by a plain text codec — the
   // direct counterpart of `Tel2.decodable`'s `Decodable in Text` branch,
@@ -1596,19 +1596,19 @@ object Tel extends Tel2:
       override def parse(reader: TelReader^): value = codec.decoded(t"")
       override def absent()(using Tactic[TelError]): value = codec.decoded(t"")
 
-  // `source.read[List[Tel]]` / `read[Progression[Tel]]` for a multi-document source
-  // (§6.1). `List[Tel]` parses every document eagerly; `Progression[Tel]` parses
+  // `source.read[List[Tel]]` / `read[Chain[Tel]]` for a multi-document source
+  // (§6.1). `List[Tel]` parses every document eagerly; `Chain[Tel]` parses
   // them lazily on demand (the more specific instance wins over turbulence's
-  // generic `Progression` Aggregable, which would otherwise wrap the whole source as
+  // generic `Chain` Aggregable, which would otherwise wrap the whole source as
   // a single element).
   given listAggregable: (tactic: Tactic[TelError]) => ((List[Tel] is Aggregable by Data)^{tactic}) =
     source => parseAll(concatenate(source))
 
   given streamAggregable: (tactic: Tactic[TelError])
-  =>  ((Progression[Tel] is Aggregable by Data)^{tactic}) =
+  =>  ((Chain[Tel] is Aggregable by Data)^{tactic}) =
     source => parseStream(concatenate(source))
 
-  // `text.load[Tel]` for any Progression[Text] source: concatenates the
+  // `text.load[Tel]` for any Chain[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
   given loadable: (tactic: Tactic[TelError], buffering: Buffering)
@@ -1954,7 +1954,7 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), Unset)
       p.parseAllDocuments()
 
-    def parseStream(input: Data): Progression[Tel.Document] raises TelError =
+    def parseStream(input: Data): Chain[Tel.Document] raises TelError =
       import zephyrine.Lineation.untrackedData
       // A dedicated parser instance, not the shared per-thread cache: the lazy
       // tail parses later document(s) on demand and must own its parser state.
@@ -2854,13 +2854,13 @@ object Tel extends Tel2:
       buffer.to(List)
 
     // Lazy streaming parse: documents are parsed on demand as the returned
-    // `Progression` is forced. Mirrors turbulence's deferred `Streamable` readers,
+    // `Chain` is forced. Mirrors turbulence's deferred `Streamable` readers,
     // which likewise capture the error capability in the lazy tail; the consumer
     // must drive the stream within the `raises TelError` handler's scope. Uses a
     // dedicated parser instance (never the shared per-thread cache) so the
     // parser state survives across element demands.
     private update def documentStream(first: Boolean)
-    :   (Tactic[TelError]^) ?->{this} Progression[Tel.Document] =
+    :   (Tactic[TelError]^) ?->{this} Chain[Tel.Document] =
 
       if first then
         syncFrom()
@@ -2874,9 +2874,9 @@ object Tel extends Tel2:
         consumeSeparatorLine()
         doc #:: documentStream(first = false)
       else if documentIsEmpty(doc) then
-        Progression.empty
+        Chain.empty
       else
-        Progression(doc)
+        Chain(doc)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a

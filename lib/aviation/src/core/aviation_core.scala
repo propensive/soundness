@@ -588,24 +588,24 @@ extension (inline context: StringContext)
 
 // Combinators over any `Recurrent` (a `Recurrence`, an `Rrule`, …): its occurrence stream and ways
 // to bound it. `occurrences` is lazy and may be infinite — bound it with `until`/`within`/`take`.
-extension [series](series: series)(using recurrent: series is Recurrent)
-  def occurrences: Progression[recurrent.Topic] = recurrent.occurrences(series)
+extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
+  def occurrences: Chain[recurrent.Topic] = recurrent.occurrences(sequence)
 
   def until(limit: recurrent.Topic)(using order: Ordering[recurrent.Topic])
-  :   Progression[recurrent.Topic] =
+  :   Chain[recurrent.Topic] =
 
-    recurrent.occurrences(series).takeWhile(order.lt(_, limit))
+    recurrent.occurrences(sequence).takeWhile(order.lt(_, limit))
 
   def within(window: Period[recurrent.Topic])(using order: Ordering[recurrent.Topic])
-  :   Progression[recurrent.Topic] =
+  :   Chain[recurrent.Topic] =
 
-    recurrent.occurrences(series).dropWhile(order.lt(_, window.start))
+    recurrent.occurrences(sequence).dropWhile(order.lt(_, window.start))
       .takeWhile(order.lt(_, window.finish))
 
   def following(after: recurrent.Topic)(using order: Ordering[recurrent.Topic])
   :   Optional[recurrent.Topic] =
 
-    recurrent.occurrences(series).dropWhile(order.lteq(_, after)).headOption.getOrElse(Unset)
+    recurrent.occurrences(sequence).dropWhile(order.lteq(_, after)).headOption.getOrElse(Unset)
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 

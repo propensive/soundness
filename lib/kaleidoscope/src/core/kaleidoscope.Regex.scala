@@ -332,16 +332,16 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
     if matcher.find(start.n0) then Interval.zerary(matcher.start, matcher.end) else Unset
 
-  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): Progression[Interval] =
+  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): Chain[Interval] =
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
 
-    def recur(offset: Int): Progression[Interval] =
+    def recur(offset: Int): Chain[Interval] =
       if matcher.find(offset)
       then
         Interval.zerary(matcher.start, matcher.end) #::
           recur((if overlap then matcher.start else matcher.end) + 1)
       else
-        Progression()
+        Chain()
 
     recur(start.n0)
 

@@ -82,10 +82,10 @@ object Stratiform:
 
     import quotes.reflect.*
 
-    // The opaque prelude `List`/`Series` don't conform to `Seq`, so match their
+    // The opaque prelude `List`/`Sequence` don't conform to `Seq`, so match their
     // type constructors by symbol as well.
     val listSym = TypeRepr.of[proscenium.List[Any]].typeSymbol
-    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
 
     repr.dealias match
       case AppliedType(constructor, scala.collection.immutable.List(element))

@@ -73,9 +73,9 @@ object Rrule:
       bounded(civil(starting, rule).map(_.in(zone)), rule.until, rule.count)
 
   // Apply COUNT (take) and UNTIL (inclusive upper bound) to a generated, ascending stream.
-  private def bounded[point](stream: Progression[point], until: Optional[point], count: Optional[Int])
+  private def bounded[point](stream: Chain[point], until: Optional[point], count: Optional[Int])
     ( using order: Ordering[point] )
-  :   Progression[point] =
+  :   Chain[point] =
 
     val capped = until.lay(stream): limit =>
       stream.takeWhile(!order.gt(_, limit))
@@ -201,7 +201,7 @@ object Rrule:
   // The ascending stream of zoneless date-times. A sub-day frequency steps the clock and filters by
   // the `by*` limits; a date-level frequency expands the date stream and then the time-of-day via
   // `byHour`/`byMinute`/`bySecond` (defaulting to the start's time).
-  private def civil(start: Timestamp, rule: Rrule[?])(using RomanCalendar): Progression[Timestamp] =
+  private def civil(start: Timestamp, rule: Rrule[?])(using RomanCalendar): Chain[Timestamp] =
     rule.frequency match
       case Frequency.Hourly | Frequency.Minutely | Frequency.Secondly =>
         val step = rule.frequency match
@@ -209,7 +209,7 @@ object Rrule:
           case Frequency.Minutely => rule.interval*60
           case _                  => rule.interval
 
-        Progression.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
+        Chain.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
 
       case _ =>
         dates(start.date, rule).bind(expandTimes(_, start, rule).stdlib).dropWhile(_ < start)
@@ -274,10 +274,10 @@ object Rrule:
   // The ascending stream of dates matching the rule, starting at or after `start` (COUNT/UNTIL are
   // applied later, on the point stream). Each period is expanded independently and concatenated;
   // since periods are ascending and disjoint, the result is ascending.
-  private def dates(start: Date, rule: Rrule[?])(using calendar: RomanCalendar): Progression[Date] =
-    val raw: Progression[Date] = rule.frequency match
+  private def dates(start: Date, rule: Rrule[?])(using calendar: RomanCalendar): Chain[Date] =
+    val raw: Chain[Date] = rule.frequency match
       case Frequency.Yearly =>
-        Progression.iterate(yearOf(start))(_ + rule.interval).bind: year =>
+        Chain.iterate(yearOf(start))(_ + rule.interval).bind: year =>
           val candidates =
             if rule.byYearDay.nonEmpty then yearDayDates(year, rule)
             else if rule.byWeekNo.nonEmpty then weekNoDates(year, start, rule)
@@ -294,10 +294,10 @@ object Rrule:
           setPos(expandWeek(weekStart, start, rule), rule.bySetPos).stdlib
 
       case Frequency.Daily =>
-        Progression.iterate(start)(_.addDays(rule.interval)).filter(dailyMatch(_, rule))
+        Chain.iterate(start)(_.addDays(rule.interval)).filter(dailyMatch(_, rule))
 
       case _ =>
-        Progression.empty // sub-day frequencies not yet expanded
+        Chain.empty // sub-day frequencies not yet expanded
 
     raw.dropWhile(_.jdn < start.jdn)
 
@@ -309,16 +309,16 @@ object Rrule:
     else List(monthOf(start))
 
   // The ascending (year, month) periods for `Monthly`, stepping `interval` months from the start.
-  private def months(start: Date, interval: Int)(using RomanCalendar): Progression[(Int, Int)] =
+  private def months(start: Date, interval: Int)(using RomanCalendar): Chain[(Int, Int)] =
     val first = yearOf(start)*12 + (monthOf(start) - 1)
 
-    Progression.iterate(first)(_ + interval).map: n =>
+    Chain.iterate(first)(_ + interval).map: n =>
       (n/12, n%12 + 1)
 
   // The ascending week-start dates for `Weekly`, aligned to `weekStart`, stepping `interval` weeks.
-  private def weeks(start: Date, rule: Rrule[?]): Progression[Date] =
+  private def weeks(start: Date, rule: Rrule[?]): Chain[Date] =
     val offset = (start.weekday.ordinal - rule.weekStart.ordinal + 7)%7
-    Progression.iterate(start.addDays(-offset))(_.addDays(7*rule.interval))
+    Chain.iterate(start.addDays(-offset))(_.addDays(7*rule.interval))
 
   // The sorted, deduplicated candidate dates within one month, per the day-level rules.
   private def expandMonth(year: Int, month: Int, start: Date, rule: Rrule[?])(using RomanCalendar)
@@ -382,7 +382,7 @@ object Rrule:
 
     list(date(year, month, 1)).bind: first =>
       val offset = (weekday.ordinal - first.weekday.ordinal + 7)%7
-      Progression.iterate(first.addDays(offset))(_.addDays(7))
+      Chain.iterate(first.addDays(offset))(_.addDays(7))
         .takeWhile(monthOf(_) == month).stdlib.to(List)
 
   // The `ordinal`-th `weekday` of the month (positive from the start, negative from the end).

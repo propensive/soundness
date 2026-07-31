@@ -79,7 +79,7 @@ object Tests extends Suite(m"Chiaroscuro tests"):
                                    Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"),
                                        t"age"  -> Primitive(t"Int", t"29", 29)),
                                    Person(t"Bill", 29)),
-                     t"staff" -> Sequence(t"List", Nil, Nil)),
+                     t"staff" -> Decomposition.Sequence(t"List", Nil, Nil)),
                  Organization(t"Acme", Person(t"Bill", 29), Nil))
 
       test(m"Decompose a sequence"):
@@ -87,7 +87,7 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         list.decompose
 
       . assert:
-          _ == Sequence(t"List", List(Primitive(t"Char", t"a", 'a'),
+          _ == Decomposition.Sequence(t"List", List(Primitive(t"Char", t"a", 'a'),
                                       Primitive(t"Char", t"b", 'b')), List('a', 'b'))
 
       test(m"Decompose an optional value"):
@@ -123,13 +123,13 @@ object Tests extends Suite(m"Chiaroscuro tests"):
         val x: List[Any] = List(t"hello")
         x.decompose
 
-      . assert(_ == Sequence(t"List", List(Primitive(t"Any", t"hello", t"hello")), List(t"hello")))
+      . assert(_ == Decomposition.Sequence(t"List", List(Primitive(t"Any", t"hello", t"hello")), List(t"hello")))
 
       test(m"Decompose list of list of text"):
         val x: List[List[Text]] = List(List(t"hello"))
         x.decompose
 
-      . assert(_ == Sequence(t"List", List(Sequence(t"List", List(Primitive(t"Text", t"hello", t"hello")), List(t"hello"))), List(List(t"hello"))))
+      . assert(_ == Decomposition.Sequence(t"List", List(Decomposition.Sequence(t"List", List(Primitive(t"Text", t"hello", t"hello")), List(t"hello"))), List(List(t"hello"))))
 
 
       test(m"Structural comparison"):

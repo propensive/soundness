@@ -49,9 +49,9 @@ import proscenium.compat.*
 // from the arbitrarily-chunked response body, reusing `Framable.frames` exactly as
 // `LengthPrefix` does for the JSON-RPC stream framing.
 object GrpcFraming:
-  private def gzip(message: Data): Data = Gzip.compression.compress(Progression(message)).read[Data]
+  private def gzip(message: Data): Data = Gzip.compression.compress(Chain(message)).read[Data]
   private def gunzip(message: Data): Data =
-    Gzip.compression.decompress(Progression(message)).read[Data]
+    Gzip.compression.decompress(Chain(message)).read[Data]
 
   // Prefix one message for the wire, optionally gzip-compressing the payload.
   def encode(message: Data, compress: Boolean = false): Data =

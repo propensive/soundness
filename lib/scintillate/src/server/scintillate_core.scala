@@ -151,10 +151,10 @@ package webserverErrorPages:
 
   given standardErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     // Direct `Content`, not `.ascribe`: the inline re-elaboration freshens the chunk type.
-    Http.Response(Unfulfilled(Content(media"text/html", Progression[Data](prefix, postfix))))
+    Http.Response(Unfulfilled(Content(media"text/html", Chain[Data](prefix, postfix))))
 
   given stackTracesErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8Encoder
 
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
-    Http.Response(Unfulfilled(Content(media"text/html", Progression[Data](prefix, stack, postfix))))
+    Http.Response(Unfulfilled(Content(media"text/html", Chain[Data](prefix, stack, postfix))))

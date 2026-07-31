@@ -54,7 +54,7 @@ object Indexable:
 
     def access(array: Array[element]^{}, index: Ordinal): Result = array.readUnchecked(index.n0)
 
-  given sequence: [element] => IndexedSeq[element] is Indexable:
+  given indexedSeq: [element] => IndexedSeq[element] is Indexable:
     type Self = IndexedSeq[element]
     type Operand = Ordinal
     type Result = element
@@ -64,16 +64,16 @@ object Indexable:
 
     def access(sequence: IndexedSeq[element], index: Ordinal): Result = sequence(index.n0)
 
-  // Opaque `Series` is no longer an `IndexedSeq` subtype, so it needs its own instance.
-  given series: [element] => Series[element] is Indexable:
-    type Self = Series[element]
+  // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
+  given sequence: [element] => Sequence[element] is Indexable:
+    type Self = Sequence[element]
     type Operand = Ordinal
     type Result = element
 
-    def contains(series: Series[element], index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < series.stdlib.length
+    def contains(sequence: Sequence[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < sequence.stdlib.length
 
-    def access(series: Series[element], index: Ordinal): Result = series.stdlib(index.n0)
+    def access(sequence: Sequence[element], index: Ordinal): Result = sequence.stdlib(index.n0)
 
   // Opaque `List`: positional access is O(n), so the instance is gated behind `LinearAccessComplexity`.
   given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Indexable:

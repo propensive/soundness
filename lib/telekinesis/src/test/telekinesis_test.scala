@@ -117,10 +117,10 @@ object Tests extends Suite(m"Telekinesis tests"):
 
 
     suite(m"Response parsing"):
-      def chunks(text: Text, size: Int): Progression[Data] =
+      def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): Progression[Data] =
-          if offset >= data.length then Progression() else
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
@@ -303,10 +303,10 @@ object Tests extends Suite(m"Telekinesis tests"):
       . aspire()
 
     suite(m"Request parsing"):
-      def chunks(text: Text, size: Int): Progression[Data] =
+      def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): Progression[Data] =
-          if offset >= data.length then Progression() else
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
@@ -434,10 +434,10 @@ object Tests extends Suite(m"Telekinesis tests"):
         . assert(_ == t"NEXT")
 
     suite(m"Response serialization"):
-      def chunks(text: Text, size: Int): Progression[Data] =
+      def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): Progression[Data] =
-          if offset >= data.length then Progression() else
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
@@ -473,7 +473,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Streaming body is framed with chunked transfer-encoding"):
-        val body = Http.Body.Flowing(() => Stream(Progression(t"Hello".in[Data], t"World".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data]).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
@@ -483,7 +483,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           && text.ends(t"0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
-        val body = Http.Body.Flowing(() => Stream(Progression(t"ab".in[Data], t"".in[Data], t"cd".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data]).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))

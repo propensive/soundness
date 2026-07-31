@@ -131,7 +131,7 @@ object Unicode:
         else map.updated(range, width)
 
     @tailrec
-    def recur(stream: Progression[Text], map: TreeMap[CharRange, EaWidth])
+    def recur(stream: Chain[Text], map: TreeMap[CharRange, EaWidth])
     :   TreeMap[CharRange, EaWidth] =
       stream match
         case
@@ -153,6 +153,6 @@ object Unicode:
       . or(remoteUnicodeData("EastAsianWidth.txt".tt))
       . or(panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath"))
 
-    val stream = scala.io.Source.fromInputStream(in).getLines().map(Text(_)).to(Progression)
+    val stream = scala.io.Source.fromInputStream(in).getLines().map(Text(_)).to(Chain)
 
     recur(stream, TreeMap())

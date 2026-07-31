@@ -248,10 +248,10 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List(t"a,b", t"c,d"))
 
       // Decoded via `List` and rebuilt: the `Factory`-based collection decoders do not yet have
-      // instances for the opaque `Series` (a pending work item across the serialization modules).
-      test(m"Parse a flow sequence into a Series"):
-        t"[10, 20, 30]".read[Yaml].as[List[Int]].stdlib.pipe(Series.from(_))
-      . assert(_ == Series(10, 20, 30))
+      // instances for the opaque `Sequence` (a pending work item across the serialization modules).
+      test(m"Parse a flow sequence into a Sequence"):
+        t"[10, 20, 30]".read[Yaml].as[List[Int]].stdlib.pipe(Sequence.from(_))
+      . assert(_ == Sequence(10, 20, 30))
 
       test(m"Parse a flow sequence into a Set"):
         t"[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(Set.from(_))
@@ -583,7 +583,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"---\n42\n...".read[Yaml].as[Int]
       . assert(_ == 42)
 
-      test(m"Progression of three documents"):
+      test(m"Chain of three documents"):
         t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2, 3))
 
@@ -628,7 +628,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"".read[List[Yaml]].length
       . assert(_ == 0)
 
-      test(m"Progression of mixed-type documents"):
+      test(m"Chain of mixed-type documents"):
         t"---\nname: Alice\n---\n[1, 2, 3]".read[List[Yaml]].length
       . assert(_ == 2)
 
@@ -636,7 +636,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"42".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(42))
 
-      test(m"Progression with trailing end marker"):
+      test(m"Chain with trailing end marker"):
         t"1\n---\n2\n...".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2))
 

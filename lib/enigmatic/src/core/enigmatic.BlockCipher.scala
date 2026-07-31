@@ -70,32 +70,32 @@ extends Cipher, Encryption, Symmetric:
   // mirroring `turbulence.Compression`. The IV (if any) is emitted as the first
   // chunk; the `NoPadding` alignment check happens at end-of-stream, where the
   // total length is finally known.
-  def encryptStream(stream: Progression[Data], key: Data, vector: InitializationVector)
-  :   Progression[Data] =
+  def encryptStream(stream: Chain[Data], key: Data, vector: InitializationVector)
+  :   Chain[Data] =
     val blockSize = cipher.blockSize(transformation)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     val session = cipher.stream(transformation, key, iv)
-    val prefix: Progression[Data] = iv.lay(Progression())(Progression(_))
+    val prefix: Chain[Data] = iv.lay(Chain())(Chain(_))
 
-    def recur(stream: Progression[Data], total: Int): Progression[Data] = stream match
+    def recur(stream: Chain[Data], total: Int): Chain[Data] = stream match
       case head #:: tail =>
         val updated = session.update(head)
         val rest = recur(tail, total + head.length)
-        // `Progression.cons` (asInstanceOf-based) rather than `#::` here: the extension cons
+        // `Chain.cons` (asInstanceOf-based) rather than `#::` here: the extension cons
         // trips separation checking on the captured `rest`.
-        if updated.length > 0 then Progression.cons(updated, rest) else rest
+        if updated.length > 0 then Chain.cons(updated, rest) else rest
 
       case _ =>
         padding.verify(total, blockSize, mode.blockAligned)
         val last = session.finish()
-        if last.length > 0 then Progression(last) else Progression()
+        if last.length > 0 then Chain(last) else Chain()
 
     prefix #::: recur(stream, 0)
 
   // Kernel-native streaming encryption: the same session-driven
   // transformation as `encryptStream`, as a pipeline stage. The IV (if any)
   // is the stage's first output, and the `NoPadding` alignment check runs at
-  // end-of-stream, exactly as in the whole-value and `Progression` forms.
+  // end-of-stream, exactly as in the whole-value and `Chain` forms.
   def encrypt
     ( consume stream: (Stream[Data] over Credit)^, key: Data, vector: InitializationVector )
     ( using Buffering )

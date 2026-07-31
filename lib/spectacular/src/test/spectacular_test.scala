@@ -211,8 +211,8 @@ object Tests extends Suite(m"Spectacular Tests"):
         Inspectable.array[Int].text(java.util.Arrays.copyOf(scala.Array(1, 2, 3), 3).nn.asInstanceOf[scala.Array[Int]])
       . assert(_ == t"""⦋🅸₀1∣₁2∣₂3⦌""")
 
-      test(m"serialize Series of shorts"):
-        Series(1.toShort, 2.toShort, 3.toShort).inspect
+      test(m"serialize Sequence of shorts"):
+        Sequence(1.toShort, 2.toShort, 3.toShort).inspect
       . assert(_ == t"""⟨ 1.toShort 2.toShort 3.toShort ⟩""")
 
       test(m"serialize Array of Longs"):
@@ -286,15 +286,15 @@ object Tests extends Suite(m"Spectacular Tests"):
         Map(1 -> 2).inspect
       . assert(_ == t"{1 → 2}")
 
-      // Raw `Vector` is no longer `Series` (opaque) and matches no curated instance (the
+      // Raw `Vector` is no longer `Sequence` (opaque) and matches no curated instance (the
       // `IndexedSeq` instance's `Self` is invariant), so it falls back to the quoted
-      // `toString` rendering; `Series` itself renders as `⟨ 1 2 3 ⟩`.
+      // `toString` rendering; `Sequence` itself renders as `⟨ 1 2 3 ⟩`.
       test(m"serialize vector"):
         Vector(1, 2, 3).inspect
       . assert(_ == t"“Vector(1, 2, 3)”")
 
-      test(m"serialize series"):
-        Series(1, 2, 3).inspect
+      test(m"serialize sequence"):
+        Sequence(1, 2, 3).inspect
       . assert(_ == t"⟨ 1 2 3 ⟩")
 
       test(m"serialize empty list"):

@@ -69,7 +69,7 @@ object Redraft:
   private def payload(text: Text): Text =
     (if text.s.length >= 2 then text.s.substring(2).nn else "").tt
 
-  def parse(lines: Progression[Text]): Redraft =
+  def parse(lines: Chain[Text]): Redraft =
     val directives = lines.map: line =>
       val s = line.s
 
@@ -93,7 +93,7 @@ object Redraft:
 
   private def analyze
     ( directives: List[Directive],
-      original:   Series[Text],
+      original:   Sequence[Text],
       compare:    (Text, Text) -> Boolean )
   :   (List[Edit[Text]], List[Anomaly]) =
 
@@ -191,11 +191,11 @@ object Redraft:
     (edits.reverse, anomalies.sort(_.line))
 
   def render(diff: Diff[Text], context: Context): Redraft =
-    val original: Series[Text] = diff.edits.collect:
+    val original: Sequence[Text] = diff.edits.collect:
       case Par(_, _, value) => value.vouch
       case Del(_, value)    => value.vouch
 
-    . pipe(Series.from(_))
+    . pipe(Sequence.from(_))
 
     val full: List[Directive] = diff.edits.to(List).bind:
       case Par(_, _, value) => List(Directive.Keep(value.vouch))
@@ -238,7 +238,7 @@ object Redraft:
       case (directive, index) if !directive.isInstanceOf[Directive.Keep] || near(index) => directive
 
   private def minimize
-    ( directives: List[Directive], original: Series[Text], target: List[Text] )
+    ( directives: List[Directive], original: Sequence[Text], target: List[Text] )
   :   List[Directive] =
 
     val array = directives.stdlib.to(scala.Array)
@@ -269,9 +269,9 @@ object Redraft:
 
 
 case class Redraft(directives: Redraft.Directive*):
-  def serialize: Progression[Text] = directives.map(Redraft.render1).to(Progression)
+  def serialize: Chain[Text] = directives.map(Redraft.render1).to(Chain)
 
-  def resolve(original: Series[Text], compare: (Text, Text) -> Boolean = _ == _)
+  def resolve(original: Sequence[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   Diff[Text] raises RedraftError =
 
     val (edits, anomalies) = Redraft.analyze(directives.to(List), original, compare)
@@ -280,12 +280,12 @@ case class Redraft(directives: Redraft.Directive*):
       case anomaly :: _ => abort(RedraftError(anomaly.line, anomaly.text, anomaly.reason))
       case Nil          => Diff(edits*)
 
-  def verify(original: Series[Text], compare: (Text, Text) -> Boolean = _ == _)
+  def verify(original: Sequence[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   List[Redraft.Anomaly] =
 
     Redraft.analyze(directives.to(List), original, compare)(1)
 
-  def patch(original: Series[Text], compare: (Text, Text) -> Boolean = _ == _)
-  :   Progression[Text] raises RedraftError =
+  def patch(original: Sequence[Text], compare: (Text, Text) -> Boolean = _ == _)
+  :   Chain[Text] raises RedraftError =
 
     resolve(original, compare).patch(original.toList)

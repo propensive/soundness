@@ -89,7 +89,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"hello"
       script.create[File]()
       script.open[File](Write): handle ?=>
-        handle.write(Progression(bundleBytes))
+        handle.write(Chain(bundleBytes))
       script.executable() = true
       (dir, script)
 
@@ -123,7 +123,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"fetch"
       script.create[File]()
       script.open[File](Write): handle ?=>
-        handle.write(Progression(Xeq.onlineLauncher(jar, entries)))
+        handle.write(Chain(Xeq.onlineLauncher(jar, entries)))
       script.executable() = true
       script
 
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       bin.create[File]()
       val bytes = body.in[Data]
       bin.open[File](Write): handle ?=>
-        handle.write(Progression(bytes))
+        handle.write(Chain(bytes))
       (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
 
     suite(m"onlineLauncher()"):
@@ -225,7 +225,7 @@ object Tests extends Suite(m"Ziggurat tests"):
           ++ scala.Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
 
         file.create[File]()
-        file.open[File](Write) { h ?=> h.write(Progression(Array.unsafeFrozen(bytes): Data)) }
+        file.open[File](Write) { h ?=> h.write(Chain(Array.unsafeFrozen(bytes): Data)) }
 
       test(m"EmbedAll bundles the JAR once and every patched stub"):
         val dir: Path on Linux = tempDir()
@@ -233,7 +233,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open[File](Write) { h ?=> h.write(Progression(t"JARBYTES".in[Data])) }
+        jar.open[File](Write) { h ?=> h.write(Chain(t"JARBYTES".in[Data])) }
 
         val out: Path on Linux = dir/t"hello"
 
@@ -258,7 +258,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open[File](Write) { h ?=> h.write(Progression(t"JARBYTES".in[Data])) }
+        jar.open[File](Write) { h ?=> h.write(Chain(t"JARBYTES".in[Data])) }
 
         val out: Path on Linux = dir/t"hello"
         val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to[Map]
@@ -318,7 +318,7 @@ class Hello { static void Main() { System.Console.WriteLine("hello from windows-
 Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputType ConsoleApplication
 """
         compilePs.open[File](Write): handle ?=>
-          handle.write(Progression(psContent.in[Data]))
+          handle.write(Chain(psContent.in[Data]))
 
         val localExe: Path on Linux = workDir / t"hello.exe"
 
@@ -341,7 +341,7 @@ Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputTy
             val script = workDir / t"hello-${Uuid().show}.$extension"
             script.create[File]()
             script.open[File](Write): handle ?=>
-              handle.write(Progression(winBundle))
+              handle.write(Chain(winBundle))
             val remote = t"ziggurat-test-${Uuid().show}.$extension"
             sh"scp -q $script $host:$remote".exec[Exit]()
             remote

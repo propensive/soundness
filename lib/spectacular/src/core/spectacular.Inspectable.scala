@@ -138,8 +138,8 @@ object Inspectable extends Inspectable2:
       . mkString("{", ", ", "}").tt
 
 
-  given series: [element] => (inspectable: => element is Inspectable)
-  =>  Series[element] is Inspectable =
+  given sequence: [element] => (inspectable: => element is Inspectable)
+  =>  Sequence[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).stdlib.mkString("⟨ ", " ", " ⟩").tt
@@ -183,14 +183,14 @@ object Inspectable extends Inspectable2:
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
   given stream: [element] => (inspectable: => element is Inspectable)
-  =>  Progression[element] is Inspectable =
+  =>  Chain[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
 
     stream =>
-      def recur(stream: Progression[element], todo: Int): Text =
+      def recur(stream: Chain[element], todo: Int): Text =
         if todo <= 0 then "..?".tt
-        // The opaque `Progression`'s runtime `toString` still comes from the underlying
+        // The opaque `Chain`'s runtime `toString` still comes from the underlying
         // `sci.LazyList`, so the un-forced marker is spelt `LazyList(<not computed>)`.
         else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
         else if stream.nil then "⯁ ".tt

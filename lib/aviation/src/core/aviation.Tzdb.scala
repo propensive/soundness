@@ -61,7 +61,7 @@ object Tzdb:
         letters: Option[Text] )
 
     case Leap(year: Int, month: Month, day: Int, time: Time, addition: Boolean)
-    case Zone(area: Text, location: Option[Text], info: Series[ZoneInfo])
+    case Zone(area: Text, location: Option[Text], info: Sequence[ZoneInfo])
     case Link(from: Text, to: Text)
 
   case class ZoneInfo
@@ -76,18 +76,18 @@ object Tzdb:
   def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
     Log.fine(TimeEvent.ParseTzdb(name))
 
-    val lines: Progression[Text] =
+    val lines: Chain[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
 
       val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 
       Source.fromInputStream(stream2).getLines().map(Text(_)).map(_.cut(t"\t").stdlib.head.lower)
-      . to(Progression)
+      . to(Chain)
 
     parse(name, lines)
 
-  def parse(name: Text, lines: Progression[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
+  def parse(name: Text, lines: Chain[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
     def parseDuration(lineNo: Int, string: Text) = string.cut(t":") match
       case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
@@ -129,10 +129,10 @@ object Tzdb:
       case name :: rest =>
         name.cut(t"/", 2) match
           case area :: location :: Nil =>
-            Tzdb.Entry.Zone(area, Some(location), Series(parseZoneInfo(lineNo, rest)))
+            Tzdb.Entry.Zone(area, Some(location), Sequence(parseZoneInfo(lineNo, rest)))
 
           case simple :: Nil =>
-            Tzdb.Entry.Zone(simple, None, Series(parseZoneInfo(lineNo, rest)))
+            Tzdb.Entry.Zone(simple, None, Sequence(parseZoneInfo(lineNo, rest)))
 
           case _ =>
             abort(TzdbError(TzdbError.Reason.BadName(name), lineNo))
@@ -179,12 +179,12 @@ object Tzdb:
       case _                 => abort(TzdbError(TzdbError.Reason.UnexpectedLink, lineNo))
 
     def addToZone(lineNo: Int, arguments: List[Text], zone: Tzdb.Entry.Zone): Tzdb.Entry.Zone =
-      zone.copy(info = Series.of(zone.info.stdlib :+ parseZoneInfo(lineNo, arguments)))
+      zone.copy(info = Sequence.of(zone.info.stdlib :+ parseZoneInfo(lineNo, arguments)))
 
     @tailrec
     def recur
       ( lineNo:  Int,
-        lines:   Progression[Text],
+        lines:   Chain[Text],
         entries: List[Tzdb.Entry]        = Nil,
         zone:    Option[Tzdb.Entry.Zone] = None )
     :   List[Tzdb.Entry] =

@@ -61,19 +61,19 @@ object Pcm:
   class PcmInput[layout] private[cacophony] (line: jss.TargetDataLine, chunkBytes: Int)
   extends caps.ExclusiveCapability:
 
-    def stream: Progression[Audio across layout] =
-      def recur: Progression[Audio across layout] =
+    def stream: Chain[Audio across layout] =
+      def recur: Chain[Audio across layout] =
         val buffer: scala.Array[Byte] = new scala.Array[Byte](chunkBytes)
         val count = line.read(buffer, 0, buffer.length)
 
-        if count <= 0 then Progression() else
+        if count <= 0 then Chain() else
           val chunk =
             if count == buffer.length then buffer
             else java.util.Arrays.copyOf(buffer, count).nn
 
           Audio.of[layout](line.getFormat.nn, chunk) #:: recur
 
-      Progression.defer(recur)
+      Chain.defer(recur)
 
   class PcmOutput private[cacophony] (mixerInfo: jss.Mixer.Info, name: Text, chunkBytes: Int)
   extends caps.ExclusiveCapability:

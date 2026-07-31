@@ -214,7 +214,7 @@ object Contrastable:
 
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = Array.from:
-        dissonance.diff(Series.from(left.readable), Series.from(right.readable)).rdiff(_ == _, 10).changes.map:
+        dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable)).rdiff(_ == _, 10).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show

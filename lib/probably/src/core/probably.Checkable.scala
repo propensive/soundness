@@ -45,7 +45,7 @@ object Checkable:
 
 
   given stream: [left, right] => (left is Checkable against right)
-  =>  Progression[left] is Checkable against Progression[right] =
+  =>  Chain[left] is Checkable against Chain[right] =
 
     _.zip(_).all(_ === _)
 

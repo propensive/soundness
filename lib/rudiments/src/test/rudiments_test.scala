@@ -62,8 +62,8 @@ object Tests extends Suite(m"Rudiments Tests"):
         List(1, 2, 3).has(4)
       . assert(_ == false)
 
-      test(m"Series[Int] has is membership, not index validity"):
-        Series(10, 20, 30).has(2)
+      test(m"Sequence[Int] has is membership, not index validity"):
+        Sequence(10, 20, 30).has(2)
       . assert(_ == false)
 
       test(m"Range has is membership, not index validity"):
@@ -528,9 +528,9 @@ object Tests extends Suite(m"Rudiments Tests"):
         "aba".tt.to[Set]
       . assert(_ == Set('a', 'b'))
 
-      test(m"Text to Series of chars"):
-        "abc".tt.to[Series]
-      . assert(_ == Series('a', 'b', 'c'))
+      test(m"Text to Sequence of chars"):
+        "abc".tt.to[Sequence]
+      . assert(_ == Sequence('a', 'b', 'c'))
 
       test(m"Text to Text is the identity"):
         "abc".tt.to[Text]

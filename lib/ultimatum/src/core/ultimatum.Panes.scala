@@ -36,7 +36,7 @@ import scala.collection.immutable.Vector
 
 import scala.caps
 
-// A mutable, ordered container of child panes, backed by a `Series` for random
+// A mutable, ordered container of child panes, backed by a `Sequence` for random
 // access. Holding a reference to it lets the layout change while a `form` is
 // running: appending a pane, or inserting one before or after an existing pane,
 // re-tiles the running form. Mutations are picked up the next time the form
@@ -47,7 +47,7 @@ import scala.caps
 // one effectful field is the installed repaint callback.
 class Panes(initial: Pane*):
   // Internally a raw `Vector`: this is imperative container state, and the mutation operations
-  // (`patch`, `indexWhere`, `:+`) belong to the stdlib surface. The public API exposes `Series`.
+  // (`patch`, `indexWhere`, `:+`) belong to the stdlib surface. The public API exposes `Sequence`.
   @scala.caps.unsafe.untrackedCaptures
   private var vector: Vector[Pane] = initial.to(Vector)
 
@@ -66,7 +66,7 @@ class Panes(initial: Pane*):
   private[ultimatum] def bindWake(wake: () => Unit): Unit =
     onChange = caps.unsafe.unsafeAssumePure(wake)
 
-  def contents: Series[Pane] = Series.of(vector)
+  def contents: Sequence[Pane] = Sequence.of(vector)
   def size: Int = vector.length
   def apply(index: Int): Pane = vector(index)
 

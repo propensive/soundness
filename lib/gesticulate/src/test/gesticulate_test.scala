@@ -48,10 +48,10 @@ object Tests extends Suite(m"Gesticulate tests"):
       // "--<name>--\r\n". Tests are parameterised over a variety of block
       // sizes including very small ones to exercise cross-block detection.
 
-      def chunks(text: Text, size: Int): Progression[Data] =
+      def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): Progression[Data] =
-          if offset >= data.readable.length then Progression() else
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.readable.length then Chain() else
             val end = math.min(offset + size, data.readable.length)
             Array.frozen(data.readable.slice(offset, end)) #:: go(end)
         go(0)
@@ -110,12 +110,12 @@ object Tests extends Suite(m"Gesticulate tests"):
         test(m"Two parts: names at block size $blockSize"):
           Multipart.parse(chunks(twoParts, blockSize)).parts.map(_.name.or(t""))
 
-        . assert(_ == Progression(t"field1", t"field2"))
+        . assert(_ == Chain(t"field1", t"field2"))
 
         test(m"Two parts: bodies at block size $blockSize"):
           Multipart.parse(chunks(twoParts, blockSize)).parts.map(bodyText)
 
-        . assert(_ == Progression(t"value1", t"value2"))
+        . assert(_ == Chain(t"value1", t"value2"))
 
       test(m"Filename extraction"):
         Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.filename.or(t"")
@@ -167,7 +167,7 @@ object Tests extends Suite(m"Gesticulate tests"):
       . assert(_ == t"--xy not the boundary")
 
       test(m"Empty input throws"):
-        capture[MultipartError](Multipart.parse(Progression[Data]())).reason
+        capture[MultipartError](Multipart.parse(Chain[Data]())).reason
 
       . assert:
           case MultipartError.Reason.Expected(_) => true
@@ -175,14 +175,14 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       test(m"Non-dash leading byte throws Expected('-')"):
         val body = t"X--xyz\r\n\r\n\r\n--xyz--\r\n"
-        capture[MultipartError](Multipart.parse(Progression(body.in[Data]))).reason
+        capture[MultipartError](Multipart.parse(Chain(body.in[Data]))).reason
 
       . assert(_ == MultipartError.Reason.Expected('-'))
 
       test(m"Single-dash leading sequence throws Expected('-')"):
         val body =
           t"-xyz\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\nv\r\n-xyz--\r\n"
-        capture[MultipartError](Multipart.parse(Progression(body.in[Data]))).reason
+        capture[MultipartError](Multipart.parse(Chain(body.in[Data]))).reason
 
       . assert(_ == MultipartError.Reason.Expected('-'))
 

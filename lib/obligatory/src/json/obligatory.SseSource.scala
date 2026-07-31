@@ -57,7 +57,7 @@ class SseSource(capacity: Int):
     spool.put(sse)
     current += 1
 
-  def stream(start: Optional[Int] = Unset): Progression[Sse] raises SseError = mutex:
+  def stream(start: Optional[Int] = Unset): Chain[Sse] raises SseError = mutex:
     start.let: start =>
       spool.stop()
       spool = Relay()
@@ -66,4 +66,4 @@ class SseSource(capacity: Int):
         ((start + 1) until current).map: index =>
           spool.put(buffer(index%capacity))
 
-    Progression.from(spool.stream.records)
+    Chain.from(spool.stream.records)

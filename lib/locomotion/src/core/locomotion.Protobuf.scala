@@ -107,17 +107,17 @@ trait Protobuf2:
     listDecodable[scala.collection.immutable.Set, element]
     . asInstanceOf[(set[element] is Decodable in Protobuf)^]
 
-  given aliasSeriesEncodable: [series <: Series, element]
+  given aliasSeriesEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Protobuf)^ )
-  =>  ((series[element] is Encodable in Protobuf)^) =
+  =>  ((sequence[element] is Encodable in Protobuf)^) =
     listEncodable[Vector, element]
-    . asInstanceOf[(series[element] is Encodable in Protobuf)^]
+    . asInstanceOf[(sequence[element] is Encodable in Protobuf)^]
 
-  given aliasSeriesDecodable: [series <: Series, element]
+  given aliasSeriesDecodable: [sequence <: Sequence, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^ )
-  =>  ((series[element] is Decodable in Protobuf)^) =
+  =>  ((sequence[element] is Decodable in Protobuf)^) =
     listDecodable[Vector, element]
-    . asInstanceOf[(series[element] is Decodable in Protobuf)^]
+    . asInstanceOf[(sequence[element] is Decodable in Protobuf)^]
 
   given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[ProtobufError])
   =>  (((value in Protobuf) is Aggregable by Data)^{tactic}) =
@@ -299,7 +299,7 @@ object Protobuf extends Protobuf2:
     Producer.collect[Data](): producer =>
       lambda(ProtobufPrinter(producer))
 
-  // Progression a message's wire bytes incrementally (chunked); the producing code runs on a separate
+  // Chain a message's wire bytes incrementally (chunked); the producing code runs on a separate
   // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
   // their lengths must be known up front); this hands them out in bounded chunks.
   def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =
@@ -509,18 +509,18 @@ object Protobuf extends Protobuf2:
     packedDecodable[scala.collection.immutable.Set, element]
     . asInstanceOf[(set[element] is Decodable in Protobuf)^{tactic, caps.any}]
 
-  given packedSeriesEncodable: [series <: Series, element]
+  given packedSeriesEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Protobuf)^, packable: element is Packable )
-  =>  ((series[element] is Encodable in Protobuf)^) =
+  =>  ((sequence[element] is Encodable in Protobuf)^) =
     packedEncodable[Vector, element]
-    . asInstanceOf[(series[element] is Encodable in Protobuf)^]
+    . asInstanceOf[(sequence[element] is Encodable in Protobuf)^]
 
-  given packedSeriesDecodable: [series <: Series, element]
+  given packedSeriesDecodable: [sequence <: Sequence, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
   =>  ( tactic: Tactic[ProtobufError] )
-  =>  ((series[element] is Decodable in Protobuf)^{tactic, caps.any}) =
+  =>  ((sequence[element] is Decodable in Protobuf)^{tactic, caps.any}) =
     packedDecodable[Vector, element]
-    . asInstanceOf[(series[element] is Decodable in Protobuf)^{tactic, caps.any}]
+    . asInstanceOf[(sequence[element] is Decodable in Protobuf)^{tactic, caps.any}]
 
   // `Map[K, V]` encodes as a `repeated` message of map entries, each a two-field
   // message `{ key = 1; value = 2 }` — the proto3 map wire format.

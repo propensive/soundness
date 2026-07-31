@@ -41,30 +41,30 @@ import scala.collection.immutable as sci
 // conversion (for vararg splices and stdlib-boundary interop); operations live with their
 // typeclasses. The boundary functions cast (`asInstanceOf`): under capture checking an identity
 // ascription fails box adaptation when the element type captures.
-object Series:
+object Sequence:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
-  def of[element](vector: sci.Vector[element]): Series[element] =
-    vector.asInstanceOf[Series[element]]
+  def of[element](vector: sci.Vector[element]): Sequence[element] =
+    vector.asInstanceOf[Sequence[element]]
 
-  def apply[element](elements: element*): Series[element] = of(sci.Vector(elements*))
-  def empty[element]: Series[element] = of(sci.Vector.empty[element])
+  def apply[element](elements: element*): Sequence[element] = of(sci.Vector(elements*))
+  def empty[element]: Sequence[element] = of(sci.Vector.empty[element])
 
   // The parameter is capturing (`^`): iterators produced by the transforming operations capture
   // their lambdas, and a pure parameter type would reject them. It is consumed eagerly here.
-  def from[element](elements: IterableOnce[element]^): Series[element] =
+  def from[element](elements: IterableOnce[element]^): Sequence[element] =
     of(sci.Vector.from(elements))
 
-  def unapplySeq[element](series: Series[element]): Option[Seq[element]] = Some(series.stdlib)
+  def unapplySeq[element](sequence: Sequence[element]): Option[Seq[element]] = Some(sequence.stdlib)
 
-  // Deliberately NO `Conversion[Series[e], Seq[e]]`: with `implicitConversions` enabled
+  // Deliberately NO `Conversion[Sequence[e], Seq[e]]`: with `implicitConversions` enabled
   // globally, such a conversion applies at *member selection* too, silently re-exposing the
-  // entire partial `Seq` surface (`series.head` would compile again). Vararg splices work
-  // directly (`f(series*)`) via proscala's `spliceopaque` feature (3.9.0-RC1-p5+), which
+  // entire partial `Seq` surface (`sequence.head` would compile again). Vararg splices work
+  // directly (`f(sequence*)`) via proscala's `spliceopaque` feature (3.9.0-RC1-p5+), which
   // pierces an opaque alias over a Seq/Array at splice positions only; other `Seq`-boundary
-  // crossings use the explicit, greppable bridge (`series.stdlib`).
+  // crossings use the explicit, greppable bridge (`sequence.stdlib`).
 
-  extension [element](series: Series[element])
-    inline def stdlib: sci.Vector[element] = series.asInstanceOf[sci.Vector[element]]
+  extension [element](sequence: Sequence[element])
+    inline def stdlib: sci.Vector[element] = sequence.asInstanceOf[sci.Vector[element]]
 
-opaque type Series[+element] = sci.Vector[element]
+opaque type Sequence[+element] = sci.Vector[element]

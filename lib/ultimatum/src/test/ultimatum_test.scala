@@ -244,17 +244,17 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == t"b")
 
       test(m"a moved or resized cell is dirty"):
-        val before = Series(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
-        val after  = Series(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
+        val before = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        val after  = Sequence(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
         dirtyCells(before, after, Set())
       . assert(_ == Set(0, 1))
 
       test(m"an unchanged cell is not dirty"):
-        dirtyCells(Series(Rect(0, 0, 10, 1)), Series(Rect(0, 0, 10, 1)), Set())
+        dirtyCells(Sequence(Rect(0, 0, 10, 1)), Sequence(Rect(0, 0, 10, 1)), Set())
       . assert(_ == Set())
 
       test(m"a content-changed cell is dirty though its rectangle is unchanged"):
-        val rects = Series(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        val rects = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
         dirtyCells(rects, rects, Set(1))
       . assert(_ == Set(1))
 

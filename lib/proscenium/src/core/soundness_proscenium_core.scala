@@ -34,12 +34,12 @@ package soundness
 
 import scala.compiletime
 
-export proscenium.Series
+export proscenium.Sequence
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
 export proscenium.Set
 export proscenium.Map
-export proscenium.{List, Nil, `::`, Progression, `#::`}
+export proscenium.{List, Nil, `::`, Chain, `#::`}
 export scala.collection.immutable.{TreeMap, TreeSet}
 export scala.collection.concurrent.TrieMap
 

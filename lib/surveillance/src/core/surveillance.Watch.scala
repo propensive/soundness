@@ -80,7 +80,7 @@ object Watch:
 class Watch(spool: Relay[WatchEvent], registration: Watcher.Registration):
   // The legacy view of the event relay (the audited bridge): one lazy,
   // single-owner drain of the shared queue, as before.
-  def stream: Progression[WatchEvent] = Progression.from(spool.stream.records)
+  def stream: Chain[WatchEvent] = Chain.from(spool.stream.records)
 
   def unregister(): Unit =
     registration.cancel()

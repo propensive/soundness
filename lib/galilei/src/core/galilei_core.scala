@@ -74,7 +74,7 @@ package filesystemTraversal:
 
 extension [plane: Filesystem](path: Path on plane)
 
-  inline def children(using explorable: plane is Explorable): Progression[Path on plane] =
+  inline def children(using explorable: plane is Explorable): Chain[Path on plane] =
     explorable.children(path)
 
   // Write `content` to the file in its entirety as a single, direct operation: the whole file is
@@ -128,12 +128,12 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
-  :   Progression[Path on plane] raises IoError =
+  :   Chain[Path on plane] raises IoError =
 
     path.children.bind: child =>
       summon[TraversalOrder] match
         case TraversalOrder.PreOrder  => child #:: child.descendants
-        case TraversalOrder.PostOrder => child.descendants #::: Progression(child)
+        case TraversalOrder.PostOrder => child.descendants #::: Chain(child)
 
 
   def size()(using plane is Explorable, FilesystemBackend on plane): Bytes raises IoError =

@@ -47,7 +47,7 @@ import zephyrine.*
 
 // A target which can be opened as a push endpoint: the successor to
 // `Writable`, accepting writes incrementally through an `Intake` instead of
-// consuming a whole `Progression`. As with `Writable`, a write failure `raise`s
+// consuming a whole `Chain`. As with `Writable`, a write failure `raise`s
 // a typed `StreamError` through an `Emit` captured by the given — a writer
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
@@ -164,11 +164,11 @@ object Sink:
 
           mark0 = 0
 
-  // Adapts a whole-`Progression` writing function to the incremental `Intake`
+  // Adapts a whole-`Chain` writing function to the incremental `Intake`
   // protocol by accumulating chunks until `finish` — the basis of the
   // transitional `Writable` bridges below.
   def buffered[target, medium]
-    ( target: target, write: (target, Progression[medium]) => Unit )
+    ( target: target, write: (target, Chain[medium]) => Unit )
     ( using addressable0: medium is Addressable )
   :   (Intake[medium] over Credit)^{write, caps.any} =
 
@@ -200,7 +200,7 @@ object Sink:
 
       update def finish(): Unit =
         drain()
-        write(target, Progression.from(chunks.reverse.toSeq))
+        write(target, Chain.from(chunks.reverse.toSeq))
 
       private update def drain(): Unit =
         if mark0 > 0 then

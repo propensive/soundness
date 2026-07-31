@@ -36,7 +36,7 @@ package proscenium
 // proscenium's own definitions — is visible without an import. In particular, the bare
 // `scala.collection` aliases the `scala` package used to provide (`Seq`, `Vector`,
 // `IndexedSeq`, `Range`, …) are deliberately NOT re-exported: the opaque prelude collections
-// (`List`, `Set`, `Map`, `Series`) are the defaults, and stdlib collections at interop seams
+// (`List`, `Set`, `Map`, `Sequence`) are the defaults, and stdlib collections at interop seams
 // must announce themselves with an explicit `import scala.collection...`.
 //
 // `scala.caps`, `scala.math`, `scala.annotation`, `scala.util`, `scala.sys` and
@@ -86,8 +86,8 @@ export scala.NoSuchElementException
 // `Traversable`/`Reshapable` machinery. Concrete stdlib collections are not re-exported.
 export scala.{Iterable, Iterator}
 
-// `Progression` (and its lazy cons `#::`) is now the opaque alias defined in
-// `proscenium.Progression.scala`, so it is NOT re-exported from `scala` here.
+// `Chain` (and its lazy cons `#::`) is now the opaque alias defined in
+// `proscenium.Chain.scala`, so it is NOT re-exported from `scala` here.
 // TEMPORARY: `StringBuilder` is the mutable text-accumulation currency, pending its own review.
 export scala.StringBuilder
 

@@ -33,5 +33,5 @@
 package escritoire
 
 case class TableCell[text]
-  ( width: Int, span: Int, lines: Series[text], minHeight: Int, textAlign: TextAlignment ):
+  ( width: Int, span: Int, lines: Sequence[text], minHeight: Int, textAlign: TextAlignment ):
   def apply(line: Int): text = lines.stdlib(line)

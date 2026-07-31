@@ -237,7 +237,7 @@ object internal:
       lambda:  Expr[Scanner ?=> textual ~> value],
       textual: Expr[textual is Textual] )
     ( using Quotes )
-  :   Expr[Progression[value]] =
+  :   Expr[Chain[value]] =
 
     import quotes.reflect.*
 
@@ -267,8 +267,8 @@ object internal:
         ' {
             val input = $textual.text($text)
 
-            def step(from: Int): Progression[value] =
-              if from >= input.s.length then Progression() else
+            def step(from: Int): Chain[value] =
+              if from >= input.s.length then Chain() else
                 val scanner = Scanner(from)
 
                 $lambda(using scanner).lift($text) match
@@ -276,7 +276,7 @@ object internal:
                     head #:: step(scanner.matchEnd.or(input.s.length).max(from + 1))
 
                   case _ =>
-                    Progression()
+                    Chain()
 
             step($start.n0)
           }
@@ -326,8 +326,8 @@ object internal:
             val length = input.s.length
             val cases = ${Expr.ofList(closures)}
 
-            def step(from: Int): Progression[value] =
-              if from >= length then Progression() else
+            def step(from: Int): Chain[value] =
+              if from >= length then Chain() else
                 var best: Optional[(Int, Int, value)] = Unset
                 val it = cases.iterator
 
@@ -342,7 +342,7 @@ object internal:
 
                     case _ =>
 
-                best.lay(Progression()): triple =>
+                best.lay(Chain()): triple =>
                   triple(2) #:: step(triple(1).max(from + 1))
 
             step($start.n0)

@@ -187,7 +187,7 @@ object SchemaSignature:
 
     if bad then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
-    Palimpsest(Series.from(hashes.stdlib)).data
+    Palimpsest(Sequence.from(hashes.stdlib)).data
 
   // Decode a palimpsest schema signature against a library of candidate
   // component hashes. The cadence is recovered from the trailing byte

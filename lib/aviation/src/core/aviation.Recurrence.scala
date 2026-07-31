@@ -122,9 +122,9 @@ object Recurrence:
   given recurrent: [point, span] => (addable: point is Addable by span to point)
   =>  ( (Recurrence of point by span) is Recurrent { type Topic = point } ) =
 
-    series =>
-      val all = Progression.iterate(series.start)(addable.add(_, series.period))
-      series.repetitions.lay(all)(all.take(_))
+    sequence =>
+      val all = Chain.iterate(sequence.start)(addable.add(_, sequence.period))
+      sequence.repetitions.lay(all)(all.take(_))
 
 trait Recurrence extends Topical, Operable:
   def start: Topic

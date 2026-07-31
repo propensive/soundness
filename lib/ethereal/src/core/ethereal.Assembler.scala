@@ -148,7 +148,7 @@ object Assembler:
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     output.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
-      ( file.write(Progression(patched)) )
+      ( file.write(Chain(patched)) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
@@ -160,6 +160,6 @@ object Assembler:
     // dependent `Result` chain has the same root problem). The read is strict (`to(List)`)
     // so nothing reads the closed handle.
     val chunks = jarFile.open[File]()(List.from(file.reader().stdlib))
-    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Progression.from(chunks.stdlib)))
+    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Chain.from(chunks.stdlib)))
 
     if !isWindows then output.executable() = true

@@ -85,11 +85,11 @@ object Digestible extends Derivable[Digestible]:
     (digestion, set) => set.stdlib.each(dig().digest(digestion, _))
 
 
-  given series: [series <: Series, value] => (digestible: => value is Digestible)
-  =>  series[value] is Digestible =
+  given sequence: [sequence <: Sequence, value] => (digestible: => value is Digestible)
+  =>  sequence[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
-    (digestion, series) => series.stdlib.each(dig().digest(digestion, _))
+    (digestion, sequence) => sequence.stdlib.each(dig().digest(digestion, _))
 
 
   given iarray: [value] => (digestible: => value is Digestible) => (Array[value]^{}) is Digestible =
@@ -112,7 +112,7 @@ object Digestible extends Derivable[Digestible]:
         digValue().digest(digestion, value)
 
 
-  given stream: [value] => (digestible: => value is Digestible) => Progression[value] is Digestible =
+  given stream: [value] => (digestible: => value is Digestible) => Chain[value] is Digestible =
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, iterable) => iterable.each(dig().digest(digestion, _))
 

@@ -54,7 +54,7 @@ object Grid:
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
 case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
-  def render(using metrics: Text is Measurable, textual: text is Textual): Progression[text] =
+  def render(using metrics: Text is Measurable, textual: text is Textual): Chain[text] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
 
@@ -64,7 +64,7 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
     val midEdge =
       Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
 
-    def recur(widths: Array[Int]^{}, rows: Progression[TableRow[text]]): Progression[text] =
+    def recur(widths: Array[Int]^{}, rows: Chain[TableRow[text]]): Chain[text] =
       rows match
         case row #:: tail =>
           val lines = (0 until row.height).map: lineNumber =>
@@ -81,10 +81,10 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
 
             . join(leftEdge, midEdge, rightEdge)
 
-          lines.to(Progression) #::: recur(widths, tail)
+          lines.to(Chain) #::: recur(widths, tail)
 
         case _ =>
-          Progression()
+          Chain()
 
     def rule(above: Optional[Array[Int]^{}], below: Optional[Array[Int]^{}]): text =
       val width = above.or(below).vouch.pipe: widths =>
@@ -126,17 +126,17 @@ case class Grid[text](sections: List[TableSection[text]], style: TableStyle):
                 left   = horizontal.or(BoxLine.Blank) )
 
     val topLine =
-      if style.topLine.absent then Progression() else
-        Progression(rule(Unset, sections.stdlib.head.widths))
+      if style.topLine.absent then Chain() else
+        Chain(rule(Unset, sections.stdlib.head.widths))
 
     val midRule = rule(sections.stdlib.head.widths, sections.stdlib.head.widths)
 
     val bottomLine =
-      if style.bottomLine.absent then Progression() else
-        Progression(rule(sections.stdlib.head.widths, Unset))
+      if style.bottomLine.absent then Chain() else
+        Chain(rule(sections.stdlib.head.widths, Unset))
 
     val body =
-      sections.stdlib.to(Progression).bind: section =>
-        (midRule #:: recur(section.widths, section.rows)): Progression[text]
+      sections.stdlib.to(Chain).bind: section =>
+        (midRule #:: recur(section.widths, section.rows)): Chain[text]
 
     topLine #::: body.tail #::: bottomLine

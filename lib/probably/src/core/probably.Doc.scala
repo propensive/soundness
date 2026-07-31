@@ -59,7 +59,7 @@ private[probably] object Doc:
 
   case class Column(title: Text, numeric: Boolean = false)
 
-  // One series of a sparkline panel: block levels (1-8) per step, with cells beyond the
+  // One sequence of a sparkline panel: block levels (1-8) per step, with cells beyond the
   // sustained concurrency flagged for subdual, and the sustained (N, throughput) summary.
   case class Spark
     ( label:     Text,
@@ -70,7 +70,7 @@ private[probably] object Doc:
     // A table of cells; a biaxial entry renders as a crosstab: its second axis's values
     // become the columns and each cell holds only the headline datum.
     case Table(title: Optional[TestId], columns: List[Column], rows: List[List[Datum]])
-    case Sparkline(steps: List[Long], series: List[Spark])
+    case Sparkline(steps: List[Long], sequence: List[Spark])
     case Histogram(title: Optional[TestId], total: Long, frames: List[Hotspots.Frame])
 
   // A group of measurement blocks belonging to one suite, of one kind, rendered with a

@@ -134,7 +134,7 @@ private[hallucination] object PngCodec:
         // The frozen form keeps the `try` result free of the fresh read capability
         // a raw array result would carry.
         try
-          concatenate(Zlib.compression.decompress(Progression(deflated)))
+          concatenate(Zlib.compression.decompress(Chain(deflated)))
           . asInstanceOf[Array[Byte]^{}]
         catch case _: IllegalStateException => abort(RasterError(Png(), Reason.Truncated))
 
@@ -347,7 +347,7 @@ private[hallucination] object PngCodec:
       System.arraycopy(current, 0, previous, 0, rowBytes)
 
     val compressed =
-      concatenate(Zlib.compression.compress(Progression(Array.unsafeFrozen(raw))))
+      concatenate(Zlib.compression.compress(Chain(Array.unsafeFrozen(raw))))
 
     val output = ji.ByteArrayOutputStream()
     signature.foreach(output.write(_))
@@ -387,7 +387,7 @@ private[hallucination] object PngCodec:
     output.write((value >> 8)&0xff)
     output.write(value&0xff)
 
-  private def concatenate(stream: Progression[Data]): Data =
+  private def concatenate(stream: Chain[Data]): Data =
     val output = ji.ByteArrayOutputStream()
 
     stream.each: data =>

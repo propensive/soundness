@@ -47,9 +47,9 @@ object Diff:
   given aggregable: (tactic: Tactic[DiffError])
   =>  ((Diff[Text] is Aggregable by Text)^{tactic}) = parse(_)
 
-  private def parse(lines: Progression[Text]): Diff[Text] raises DiffError =
+  private def parse(lines: Chain[Text]): Diff[Text] raises DiffError =
     def recur
-      ( todo:          Progression[Text],
+      ( todo:          Chain[Text],
         line:          Int,
         edits:         List[Edit[Text]],
         position:      Int,
@@ -122,7 +122,7 @@ object Diff:
     def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
       Redraft.render(diff, context)
 
-    def serialize: Progression[Text] = diff.chunks.flatMap:
+    def serialize: Chain[Text] = diff.chunks.flatMap:
       case Chunk(left, right, dels, inss) =>
         def range(start: Int, end: Int): Text =
           s"$start${if start == end then "" else s",$end"}".tt
@@ -157,10 +157,10 @@ case class Diff[element](edits: Edit[element]*):
 
 
   def patch(sequence: List[element], update: (element, element) -> element = (left, right) => left)
-  :   Progression[element] =
+  :   Chain[element] =
 
-    def recur(todo: List[Edit[element]], sequence: List[element]): Progression[element] = todo match
-      case Nil                   => sequence.stdlib.to(Progression)
+    def recur(todo: List[Edit[element]], sequence: List[element]): Chain[element] = todo match
+      case Nil                   => sequence.stdlib.to(Chain)
       case Ins(_, value) :: tail => value #:: recur(tail, sequence)
       case Del(_, _) :: tail     => recur(tail, sequence.tail)
 
@@ -184,8 +184,8 @@ case class Diff[element](edits: Edit[element]*):
 
           (subs: List[Change[element]])
         else
-          val delsSeq = Series.from(dels.stdlib.map(_.value.vouch))
-          val inssSeq = Series.from(inss.stdlib.map(_.value))
+          val delsSeq = Sequence.from(dels.stdlib.map(_.value.vouch))
+          val inssSeq = Sequence.from(inss.stdlib.map(_.value))
 
           val subs = dissonance.diff(delsSeq, inssSeq, similar).edits.toList.map:
             case Del(index, _) => Del(dels(index).left, dels(index).value)
@@ -212,12 +212,12 @@ case class Diff[element](edits: Edit[element]*):
             ( xs.collect { case del: Del[element] => del },
               xs.collect { case ins: Ins[element] => ins } )
 
-  def chunks: Progression[Chunk[element]] =
+  def chunks: Chain[Chunk[element]] =
     def recur(todo: List[Edit[element]], position: Int, rightPosition: Int)
-    :   Progression[Chunk[element]] =
+    :   Chain[Chunk[element]] =
 
       todo match
-        case Nil                         => Progression()
+        case Nil                         => Chain()
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
 
         case _ =>

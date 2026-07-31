@@ -145,17 +145,17 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
           line.stop()
           line.close()
 
-      def stream: Progression[Audio across layout] =
-        def recur: Progression[Audio across layout] =
-          if stopped then Progression() else
+      def stream: Chain[Audio across layout] =
+        def recur: Chain[Audio across layout] =
+          if stopped then Chain() else
             val buf: scala.Array[Byte] = new scala.Array[Byte](chunkBytes)
             val n = line.read(buf, 0, buf.length)
 
-            if n <= 0 then Progression() else
+            if n <= 0 then Chain() else
               val chunk =
                 if n == buf.length then buf
                 else java.util.Arrays.copyOf(buf, n).nn
 
               Audio.of[layout](line.getFormat.nn, chunk) #:: recur
 
-        Progression.defer(recur)
+        Chain.defer(recur)

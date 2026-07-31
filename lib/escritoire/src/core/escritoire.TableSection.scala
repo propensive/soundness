@@ -33,4 +33,4 @@
 package escritoire
 
 
-case class TableSection[text](widths: Array[Int]^{}, rows: Progression[TableRow[text]])
+case class TableSection[text](widths: Array[Int]^{}, rows: Chain[TableRow[text]])

@@ -34,7 +34,7 @@ package proscenium
 import scala.collection.immutable as sci
 
 // The workhorse opaque collection alias: an immutable linked list backed by `sci.List`.
-// Same design as `Series`/`Set`/`Map`: members invisible, API via typeclasses, construction
+// Same design as `Sequence`/`Set`/`Map`: members invisible, API via typeclasses, construction
 // and the greppable `stdlib` bridge in the companion, casts at the boundary, and NO
 // `Conversion` to a stdlib supertype (member-selection would re-expose the partial surface).
 // Vararg splices (`f(list*)`) work directly via proscala's `spliceopaque` feature.

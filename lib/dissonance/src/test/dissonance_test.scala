@@ -46,101 +46,101 @@ object Tests extends Suite(m"Dissonance tests"):
   def run(): Unit =
     suite(m"Diff tests"):
       test(m"Empty lists"):
-        diff(Series[Char](), Series[Char]())
+        diff(Sequence[Char](), Sequence[Char]())
       . assert(_ == Diff())
 
       test(m"One element, equal"):
-        diff(Series('a'), Series('a'))
+        diff(Sequence('a'), Sequence('a'))
       . assert(_ == Diff(Par(0, 0, 'a')))
 
       test(m"Straight swap"):
-        diff(Series('a'), Series('A'))
+        diff(Sequence('a'), Sequence('A'))
       . assert(_ == Diff(Del(0, 'a'), Ins(0, 'A')))
 
       test(m"Two elements, equal"):
-        diff(Series('a', 'b'), Series('a', 'b'))
+        diff(Sequence('a', 'b'), Sequence('a', 'b'))
       . assert(_ == Diff(Par(0, 0, 'a'), Par(1, 1, 'b')))
 
       test(m"Insertion to empty list"):
-        diff(Series[Char](), Series('a'))
+        diff(Sequence[Char](), Sequence('a'))
       . assert(_ == Diff(Ins(0, 'a')))
 
       test(m"Deletion to become empty list"):
-        diff(Series.from(t"a".chars.readable), Series.from(t"".chars.readable))
+        diff(Sequence.from(t"a".chars.readable), Sequence.from(t"".chars.readable))
       . assert(_ == Diff(Del(0, 'a')))
 
       test(m"Prefix to short list"):
-        diff(Series.from(t"BC".chars.readable), Series.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"BC".chars.readable), Sequence.from(t"ABC".chars.readable))
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C')))
 
       test(m"Suffix to short list"):
-        diff(Series.from(t"AB".chars.readable), Series.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"AB".chars.readable), Sequence.from(t"ABC".chars.readable))
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Ins(2, 'C')))
 
       test(m"Insertion in middle of short list"):
-        diff(Series.from(t"AC".chars.readable), Series.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"AC".chars.readable), Sequence.from(t"ABC".chars.readable))
       . assert(_ == Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C')))
 
       test(m"Deletion from middle of short list"):
-        diff(Series.from(t"ABC".chars.readable), Series.from(t"AC".chars.readable))
+        diff(Sequence.from(t"ABC".chars.readable), Sequence.from(t"AC".chars.readable))
       . assert(_ == Diff(Par(0, 0, 'A'), Del(1, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from start of short list"):
-        diff(Series.from(t"ABC".chars.readable), Series.from(t"BC".chars.readable)).edits.to(List)
+        diff(Sequence.from(t"ABC".chars.readable), Sequence.from(t"BC".chars.readable)).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Par(1, 0, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from end of short list"):
-        diff(Series.from(t"ABC".chars.readable), Series.from(t"AB".chars.readable))
+        diff(Sequence.from(t"ABC".chars.readable), Sequence.from(t"AB".chars.readable))
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Del(2, 'C')))
 
       test(m"Multiple inner keeps"):
-        diff(Series.from(t"BCD".chars.readable), Series.from(t"ABC".chars.readable))
+        diff(Sequence.from(t"BCD".chars.readable), Sequence.from(t"ABC".chars.readable))
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C'), Del(2, 'D')))
 
       test(m"Example from blog"):
-        diff(Series.from(t"ABCABBA".chars.readable), Series.from(t"CBABAC".chars.readable)).edits.to(List)
+        diff(Sequence.from(t"ABCABBA".chars.readable), Sequence.from(t"CBABAC".chars.readable)).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Del(1, 'B'), Par(2, 0, 'C'), Ins(1, 'B'), Par(3, 2, 'A'),
           Par(4, 3, 'B'), Del(5, 'B'), Par(6, 4, 'A'), Ins(5, 'C')))
 
       test(m"Reversed example from blog"):
-        diff(Series.from(t"CBABAC".chars.readable), Series.from(t"ABCABBA".chars.readable)).edits.to(List)
+        diff(Sequence.from(t"CBABAC".chars.readable), Sequence.from(t"ABCABBA".chars.readable)).edits.to(List)
       . assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
           Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C')))
 
       test(m"Item swap"):
-        diff(Series.from(t"AB".chars.readable), Series.from(t"BA".chars.readable))
+        diff(Sequence.from(t"AB".chars.readable), Sequence.from(t"BA".chars.readable))
       . assert(_ == Diff(Del(0, 'A'), Par(1, 0, 'B'), Ins(1, 'A')))
 
       test(m"Item change"):
-        diff(Series.from(t"A".chars.readable), Series.from(t"C".chars.readable))
+        diff(Sequence.from(t"A".chars.readable), Sequence.from(t"C".chars.readable))
       . assert(_ == Diff(Del(0, 'A'), Ins(0, 'C')))
 
       test(m"Item change between values"):
-        diff(Series.from(t"NAN".chars.readable), Series.from(t"NCN".chars.readable))
+        diff(Sequence.from(t"NAN".chars.readable), Sequence.from(t"NCN".chars.readable))
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Ins(1, 'C'), Par(2, 2, 'N')))
 
       test(m"Item swap between values"):
-        diff(Series.from(t"NABN".chars.readable), Series.from(t"NBAN".chars.readable))
+        diff(Sequence.from(t"NABN".chars.readable), Sequence.from(t"NBAN".chars.readable))
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Par(2, 1, 'B'), Ins(2, 'A'), Par(3, 3, 'N')))
 
       test(m"Item swap interspersed with values"):
-        diff(Series.from(t"AZB".chars.readable), Series.from(t"BZA".chars.readable))
+        diff(Sequence.from(t"AZB".chars.readable), Sequence.from(t"BZA".chars.readable))
       . assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Par(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
 
       test(m"real-world example 1"):
-        diff(Series('a', 'b', 'c'), Series('A', 'b', 'C')).edits.to(List)
+        diff(Sequence('a', 'b', 'c'), Sequence('A', 'b', 'C')).edits.to(List)
       . assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Par(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).edits.to(List))
 
       test(m"real-world example 2"):
-        diff(Series(t"A", t"B"), Series(t"B", t"C", t"D"))
+        diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
       . assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
 
-    val start = proscenium.Series(t"foo", t"bar", t"baz")
-    val end = proscenium.Series(t"foo", t"quux", t"bop", t"baz")
+    val start = proscenium.Sequence(t"foo", t"bar", t"baz")
+    val end = proscenium.Sequence(t"foo", t"quux", t"bop", t"baz")
 
     suite(m"Diff parsing tests"):
-      val diffStream = proscenium.Progression(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
-      val reverseStream = proscenium.Progression(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
+      val diffStream = proscenium.Chain(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
+      val reverseStream = proscenium.Chain(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
 
       test(m"Parse a simple diff file"):
         diffStream.read[Diff[Text]]
@@ -163,15 +163,15 @@ object Tests extends Suite(m"Dissonance tests"):
       val reverseChanges = diff(end, start)
 
       test(m"Serialize a trivial diff"):
-        diff(Series(), Series(t"a")).serialize.stdlib.to(List)
+        diff(Sequence(), Sequence(t"a")).serialize.stdlib.to(List)
       . assert(_ == List(t"0a1", t"> a"))
 
       test(m"Serialize a trivial deletion diff"):
-        diff(Series(t"a", t"b", t"c", t"d"), Series(t"a", t"d")).serialize.stdlib.to(List)
+        diff(Sequence(t"a", t"b", t"c", t"d"), Sequence(t"a", t"d")).serialize.stdlib.to(List)
       . assert(_ == List(t"2,3d1", t"< b", t"< c"))
 
       test(m"Serialize another trivial diff"):
-        diff(Series(t"a"), Series()).serialize.stdlib.to(List)
+        diff(Sequence(t"a"), Sequence()).serialize.stdlib.to(List)
       . assert(_ == List(t"1d0", t"< a"))
 
       test(m"Serialize a simple diff"):
@@ -183,19 +183,19 @@ object Tests extends Suite(m"Dissonance tests"):
       . assert(_ == List(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar"))
 
       test(m"Experimental diff"):
-        diff(Series(t"one"), Series(t"two")).serialize.stdlib.to(List)
+        diff(Sequence(t"one"), Sequence(t"two")).serialize.stdlib.to(List)
       . assert(_ == List(t"1c1", t"< one", t"---", t"> two"))
 
       test(m"Experimental diff 2"):
-        diff(Series(t"zero", t"one"), Series(t"two")).serialize.stdlib.to(List)
+        diff(Sequence(t"zero", t"one"), Sequence(t"two")).serialize.stdlib.to(List)
       . assert(_ == List(t"1,2c1", t"< zero", t"< one", t"---", t"> two"))
 
       test(m"Experimental diff 3"):
-        diff(Series(t"zero", t"one"), Series(t"zero", t"two")).serialize.stdlib.to(List)
+        diff(Sequence(t"zero", t"one"), Sequence(t"zero", t"two")).serialize.stdlib.to(List)
       . assert(_ == List(t"2c2", t"< one", t"---", t"> two"))
 
-    val italian = Series(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
-    val spanish = Series(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
+    val italian = Sequence(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
+    val spanish = Sequence(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
 
     suite(m"Rdiff tests"):
       val italianToSpanish = test(m"Do a normal diff on Italian/Spanish numbers"):
@@ -257,21 +257,21 @@ object Tests extends Suite(m"Dissonance tests"):
         List(Prim, Sec, Ter).map(evolution(_).stdlib.mkString)
       . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
 
-    val source = Series(t"line1", t"line2", t"line3")
-    val dup = Series(t"a", t"b", t"a")
-    val list = Series(t"- alpha", t"- beta", t"- gamma")
+    val source = Sequence(t"line1", t"line2", t"line3")
+    val dup = Sequence(t"a", t"b", t"a")
+    val list = Sequence(t"- alpha", t"- beta", t"- gamma")
 
     suite(m"Redraft parsing tests"):
       val roundtrip =
-        Progression(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
+        Chain(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
 
       test(m"Parse a simple redraft"):
-        Redraft.parse(Progression(t"line1", t"- line2", t"+ new line 2a", t"line3"))
+        Redraft.parse(Chain(t"line1", t"- line2", t"+ new line 2a", t"line3"))
       . assert(_ == Redraft(D.Keep(t"line1"), D.Mark(t"line2", false), D.Mark(t"new line 2a", true),
           D.Keep(t"line3")))
 
       test(m"Parse forced and escaped directives"):
-        Redraft.parse(Progression(t"< forced", t"> add", t"\\- escaped"))
+        Redraft.parse(Chain(t"< forced", t"> add", t"\\- escaped"))
       . assert(_ == Redraft(D.Cut(t"forced"), D.Add(t"add"), D.Keep(t"- escaped")))
 
       test(m"Serialize round-trips through parse"):
@@ -280,84 +280,84 @@ object Tests extends Suite(m"Dissonance tests"):
 
     suite(m"Redraft application tests"):
       test(m"Apply a simple redraft"):
-        Redraft.parse(Progression(t"- line2", t"+ new line 2a")).patch(source).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"line1", t"new line 2a", t"line3"))
+        Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"line1", t"new line 2a", t"line3"))
 
       test(m"Omitted unchanged lines are skipped"):
-        Redraft.parse(Progression(t"- line2")).patch(source).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"line1", t"line3"))
+        Redraft.parse(Chain(t"- line2")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"line1", t"line3"))
 
       test(m"Insert before the first line"):
-        Redraft.parse(Progression(t"+ line0")).patch(source).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"line0", t"line1", t"line2", t"line3"))
+        Redraft.parse(Chain(t"+ line0")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Forced insert with the alternate marker"):
-        Redraft.parse(Progression(t"> line0")).patch(source).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"line0", t"line1", t"line2", t"line3"))
+        Redraft.parse(Chain(t"> line0")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Deletion anchored by context"):
-        Redraft.parse(Progression(t"b", t"- a")).patch(dup).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"a", t"b"))
+        Redraft.parse(Chain(t"b", t"- a")).patch(dup).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"a", t"b"))
 
       test(m"A verbatim marker line is kept as context"):
-        Redraft.parse(Progression(t"- alpha", t"< - beta", t"- gamma")).patch(list).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"- alpha", t"- gamma"))
+        Redraft.parse(Chain(t"- alpha", t"< - beta", t"- gamma")).patch(list).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"- alpha", t"- gamma"))
 
       test(m"Escaped context matches a literal marker line"):
-        Redraft.parse(Progression(t"\\- alpha")).patch(list).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"- alpha", t"- beta", t"- gamma"))
+        Redraft.parse(Chain(t"\\- alpha")).patch(list).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"- alpha", t"- beta", t"- gamma"))
 
       test(m"Delete a literal marker line with a doubled marker"):
-        Redraft.parse(Progression(t"- alpha", t"- - beta", t"- gamma")).patch(list).pipe(prog => Series.from(prog.stdlib))
-      . assert(_ == Series(t"- alpha", t"- gamma"))
+        Redraft.parse(Chain(t"- alpha", t"- - beta", t"- gamma")).patch(list).pipe(prog => Sequence.from(prog.stdlib))
+      . assert(_ == Sequence(t"- alpha", t"- gamma"))
 
     suite(m"Redraft ambiguity tests"):
       test(m"An under-anchored deletion is rejected"):
-        capture[RedraftError](Redraft.parse(Progression(t"- a")).patch(dup))
+        capture[RedraftError](Redraft.parse(Chain(t"- a")).patch(dup))
       . assert(_.reason == RedraftError.Reason.Unanchored)
 
       test(m"verify reports the under-anchored line"):
-        Redraft.parse(Progression(t"- a")).verify(dup)
+        Redraft.parse(Chain(t"- a")).verify(dup)
       . assert(_ == List(Redraft.Anomaly(0, t"a", RedraftError.Reason.Unanchored)))
 
       test(m"A non-matching context line is rejected"):
-        capture[RedraftError](Redraft.parse(Progression(t"absent", t"- line2")).patch(source))
+        capture[RedraftError](Redraft.parse(Chain(t"absent", t"- line2")).patch(source))
       . assert(_.reason == RedraftError.Reason.NoMatch)
 
     suite(m"Redraft rendering tests"):
-      val target = Series(t"line1", t"new", t"line3")
+      val target = Sequence(t"line1", t"new", t"line3")
 
       test(m"Render a minimal redraft, dropping all context"):
-        diff(source, Series(t"line1", t"new line 2a", t"line3")).redraft().serialize.stdlib.to(List)
+        diff(source, Sequence(t"line1", t"new line 2a", t"line3")).redraft().serialize.stdlib.to(List)
       . assert(_ == List(t"- line2", t"+ new line 2a"))
 
       test(m"Render minimal context to anchor an ambiguous deletion"):
-        diff(dup, Series(t"a", t"b")).redraft().serialize.stdlib.to(List)
+        diff(dup, Sequence(t"a", t"b")).redraft().serialize.stdlib.to(List)
       . assert(_ == List(t"b", t"- a"))
 
       test(m"A rendered redraft reproduces the target when applied"):
-        diff(source, target).redraft().patch(source).pipe(prog => Series.from(prog.stdlib))
+        diff(source, target).redraft().patch(source).pipe(prog => Sequence.from(prog.stdlib))
       . assert(_ == target)
 
     // suite(m"Casual diff tests"):
     //   test(m"Parse a simple casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to[Progression])
+    //     CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to[Chain])
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")))))
 
     //   test(m"Parse a slightly longer casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to[Progression])
+    //     CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to[Chain])
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")), Replace(Nil, List(t"removal"), Nil))))
 
     //   test(m"Parse a longer casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to[Progression])
+    //     CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to[Chain])
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(Nil, List(t"removal"), Nil))))
 
     //   test(m"Fail to parse a problematic casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to[Progression]))
+    //     capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to[Chain]))
     //   .assert(_ == CasualDiffError(CasualDiffError.Reason.BadLineStart(t" insert 1"), 3))
 
     // suite(m"Invariance tests"):
@@ -371,10 +371,10 @@ object Tests extends Suite(m"Dissonance tests"):
     //   def allPermutations(n: Int): List[List[Text]] =
     //     if n == 0 then Nil else permutations(n) ++ allPermutations(n - 1)
 
-    //   allPermutations(3).map(_.pipe(prog => Series.from(prog.stdlib))).each: perm1 =>
-    //     allPermutations(3).map(_.pipe(prog => Series.from(prog.stdlib))).each: perm2 =>
+    //   allPermutations(3).map(_.pipe(prog => Sequence.from(prog.stdlib))).each: perm1 =>
+    //     allPermutations(3).map(_.pipe(prog => Sequence.from(prog.stdlib))).each: perm2 =>
     //       import unsafeExceptions.canThrowAny
     //       val d = diff(perm1, perm2).casual
     //       test(m"Check differences"):
-    //         d.patch(perm1).pipe(prog => Series.from(prog.stdlib))
+    //         d.patch(perm1).pipe(prog => Sequence.from(prog.stdlib))
     //       . assert(_ == perm2)

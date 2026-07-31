@@ -1032,17 +1032,17 @@ object Yaml extends Yaml2, Dynamic:
 
       def locate(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
         value.positionIndex.let: posIndex =>
-          walkIndex(value.root, posIndex.ints, 0, Series.from(path.path.descent), 0, false)
+          walkIndex(value.root, posIndex.ints, 0, Sequence.from(path.path.descent), 0, false)
 
       def locateKey(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
         value.positionIndex.let: posIndex =>
-          walkIndex(value.root, posIndex.ints, 0, Series.from(path.path.descent), 0, true)
+          walkIndex(value.root, posIndex.ints, 0, Sequence.from(path.path.descent), 0, true)
 
   private def walkIndex
     ( ast:      Yaml.Ast,
       data:     Array[Int]^{},
       offset:   Int,
-      segments: Series[Text],
+      segments: Sequence[Text],
       i:        Int,
       keyMode:  Boolean )
   :   Optional[Yaml.Ast.Position] =
@@ -1292,13 +1292,13 @@ object Yaml extends Yaml2, Dynamic:
     iterable[scala.collection.immutable.Set, element]
     . asInstanceOf[(set[element] is Decodable in Yaml)^{tactic, caps.any}]
 
-  given seriesDecodable: [series <: Series, element]
+  given seriesDecodable: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[YamlError],
         foci:   Foci[Yaml.Focus] )
   =>  ( decodable: => (element is Decodable in Yaml)^ )
-  =>  ((series[element] is Decodable in Yaml)^{tactic, caps.any}) =
+  =>  ((sequence[element] is Decodable in Yaml)^{tactic, caps.any}) =
     iterable[Vector, element]
-    . asInstanceOf[(series[element] is Decodable in Yaml)^{tactic, caps.any}]
+    . asInstanceOf[(sequence[element] is Decodable in Yaml)^{tactic, caps.any}]
 
   given iterable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
@@ -1420,11 +1420,11 @@ object Yaml extends Yaml2, Dynamic:
     iterableEncodable[scala.collection.immutable.Set, element]
     . asInstanceOf[(set[element] is Encodable in Yaml)^]
 
-  given seriesAliasEncodable: [series <: Series, element]
+  given seriesAliasEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Yaml)^ )
-  =>  ((series[element] is Encodable in Yaml)^) =
+  =>  ((sequence[element] is Encodable in Yaml)^) =
     iterableEncodable[Vector, element]
-    . asInstanceOf[(series[element] is Encodable in Yaml)^]
+    . asInstanceOf[(sequence[element] is Encodable in Yaml)^]
 
   given iterableEncodable: [collection <: Iterable, element]
   =>  ( encodable: => (element is Encodable in Yaml)^ )
@@ -1626,7 +1626,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = Yaml
       type Operand = Text
 
-      def aggregate(stream: Progression[Text]): Yaml =
+      def aggregate(stream: Chain[Text]): Yaml =
         fromText(summon[Text is Aggregable by Text].aggregate(stream))
 
       override def accept(stream: (Stream[Text] over Credit)^): Yaml =
@@ -1643,7 +1643,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = Yaml
       type Operand = Data
 
-      def aggregate(stream: Progression[Data]): Yaml = fromStream(Stream(stream.stdlib.iterator))
+      def aggregate(stream: Chain[Data]): Yaml = fromStream(Stream(stream.stdlib.iterator))
 
       override def accept(stream: (Stream[Data] over Credit)^): Yaml =
         // See `aggregable` above.
@@ -1658,7 +1658,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = List[Yaml]
       type Operand = Text
 
-      def aggregate(stream: Progression[Text]): List[Yaml] =
+      def aggregate(stream: Chain[Text]): List[Yaml] =
         parseAll(summon[Text is Aggregable by Text].aggregate(stream))
 
       override def accept(stream: (Stream[Text] over Credit)^): List[Yaml] =
@@ -1686,7 +1686,7 @@ object Yaml extends Yaml2, Dynamic:
   given instantiable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
   =>  ((Yaml is Instantiable across HttpRequests from Text)^{tactic}) =
 
-    text => Progression(text).read[Yaml]
+    text => Chain(text).read[Yaml]
 
   // `source.read[Foo in Yaml]` shorthand for
   // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
@@ -1701,7 +1701,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = value in Yaml
       type Operand = Text
 
-      def aggregate(stream: Progression[Text]): value in Yaml =
+      def aggregate(stream: Chain[Text]): value in Yaml =
         fromText(summon[Text is Aggregable by Text].aggregate(stream))
         . as[value].asInstanceOf[value in Yaml]
 

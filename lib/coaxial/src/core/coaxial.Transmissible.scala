@@ -43,7 +43,7 @@ object Transmissible:
   // wildcard capture that cannot flow back into `^{}`.
   given bytes: Data is Transmissible = _.stream
 
-  given stream: [stream <: Progression[Data]] => stream is Transmissible = value =>
+  given stream: [stream <: Chain[Data]] => stream is Transmissible = value =>
     value.stdlib.iterator.stream
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =

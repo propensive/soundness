@@ -54,17 +54,17 @@ object Pty:
   def apply(width: Int, height: Int): Pty =
     Pty(Screen(width, height), PtyState(scrollBottom = (height - 1).z), Relay())
 
-  def stream(pty: Pty, in: Progression[Text]): Progression[Pty] raises PtyEscapeError = in match
+  def stream(pty: Pty, in: Chain[Text]): Chain[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
       val pty2 = pty.consume(head)
       pty2 #:: stream(pty2, tail)
 
     case _ =>
-      Progression()
+      Chain()
 
 case class Pty(buffer: Screen[Style], state: PtyState, output: Relay[Text]):
   // The legacy view of the reply relay (the audited bridge).
-  def stream: Progression[Text] = Progression.from(output.stream.records)
+  def stream: Chain[Text] = Chain.from(output.stream.records)
 
   def title: Text = state.title
   def cursor: Ordinal = state.cursor

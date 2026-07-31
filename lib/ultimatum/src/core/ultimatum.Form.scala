@@ -58,15 +58,15 @@ class Form
     debounce:     Long         = 0,
     scheduleWake: Long => Unit = _ => () ):
   @scala.caps.unsafe.untrackedCaptures
-  private var leaves: Series[Pane] = Series()
+  private var leaves: Sequence[Pane] = Sequence()
   @scala.caps.unsafe.untrackedCaptures
-  private var focuses: Series[Focus] = Series()
+  private var focuses: Sequence[Focus] = Sequence()
   @scala.caps.unsafe.untrackedCaptures
-  private var focusLeaf: Series[Int] = Series()
+  private var focusLeaf: Sequence[Int] = Sequence()
   @scala.caps.unsafe.untrackedCaptures
   private var focused: Optional[Focus] = Unset
   @scala.caps.unsafe.untrackedCaptures
-  private var rects: Series[Rect] = Series()
+  private var rects: Sequence[Rect] = Sequence()
   @scala.caps.unsafe.untrackedCaptures
   private var lastRedraw: Long = 0
   @scala.caps.unsafe.untrackedCaptures
@@ -102,10 +102,10 @@ class Form
   // if it still exists, else fall back to the first.
   private def rederive(): Unit =
     bind(pane)
-    leaves = Series.from(pane.leaves.stdlib)
+    leaves = Sequence.from(pane.leaves.stdlib)
     focuses = leaves.collect { case Pane.Widget(_, focus) => focus }
 
-    focusLeaf = Series.from:
+    focusLeaf = Sequence.from:
       (0 until leaves.length).collect:
         case i if leaves(i).isInstanceOf[Pane.Widget] => i
 
@@ -144,7 +144,7 @@ class Form
 
     project(pane)
 
-  private def solve(): Series[Rect] =
+  private def solve(): Sequence[Rect] =
     val frame = liveFrame
 
     val height = mode match
@@ -156,7 +156,7 @@ class Form
       case screen: ScreenRoot => screen.reframe()
       case _                  => ()
 
-    Series.from(frame.arrange(Rect(0, 0, root.width, height)).cells.stdlib)
+    Sequence.from(frame.arrange(Rect(0, 0, root.width, height)).cells.stdlib)
 
   private def paint(index: Int): Unit =
     val extent = FlowExtent(root, rects(index))
@@ -184,7 +184,7 @@ class Form
         case Mode.Fullscreen => root.clear()
         case Mode.Inline     => ()
 
-      rects = Series()
+      rects = Sequence()
 
     val updated = solve()
 
@@ -308,7 +308,7 @@ class Form
       // repaint clears the moved block (using the anchor reply, when one arrived).
       // The repaint is debounced until the drag pauses; typing is unaffected.
       case _: TerminalInfo.WindowSize =>
-        rects = Series()
+        rects = Sequence()
         resizePending = true
         requestResizeRefresh()
 

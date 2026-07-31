@@ -34,57 +34,57 @@ package proscenium
 import scala.collection.immutable as sci
 
 // The lazy, potentially-infinite opaque collection alias, backed by `sci.LazyList`. Same design
-// as `List`/`Series`/`Set`/`Map`: members invisible, API via typeclasses, construction and the
+// as `List`/`Sequence`/`Set`/`Map`: members invisible, API via typeclasses, construction and the
 // greppable `stdlib` bridge in the companion, casts at the boundary, no `Conversion` to a stdlib
 // supertype. The distinguishing constraint is LAZINESS: the `#::` cons keeps its tail operand
 // by-name, and the `#::` extractor is name-based and non-forcing (matching a head forces only the
 // first element, never the tail's contents).
-object Progression:
+object Chain:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing lambdas
   // crashes the capture checker's boxer (boxDeeply assertion), and streaming code is cc-heavy.
-  def of[element](lazyList: sci.LazyList[element]): Progression[element] =
-    lazyList.asInstanceOf[Progression[element]]
+  def of[element](lazyList: sci.LazyList[element]): Chain[element] =
+    lazyList.asInstanceOf[Chain[element]]
 
-  def apply[element](elements: element*): Progression[element] = of(sci.LazyList(elements*))
-  def empty[element]: Progression[element] = of(sci.LazyList.empty[element])
+  def apply[element](elements: element*): Chain[element] = of(sci.LazyList(elements*))
+  def empty[element]: Chain[element] = of(sci.LazyList.empty[element])
 
-  def from[element](elements: IterableOnce[element]^): Progression[element] =
+  def from[element](elements: IterableOnce[element]^): Chain[element] =
     of(sci.LazyList.from(elements))
 
   // `continually`/`iterate`/`unfold` build (potentially infinite) lazy streams; the generators
   // stay by-name so nothing is evaluated until forced.
-  def continually[element](element: => element): Progression[element] =
+  def continually[element](element: => element): Chain[element] =
     of(sci.LazyList.continually(element))
 
-  def iterate[element](start: => element)(next: element => element): Progression[element] =
+  def iterate[element](start: => element)(next: element => element): Chain[element] =
     of(sci.LazyList.iterate(start)(next))
 
   def unfold[state, element](init: state)(lambda: state => Option[(element, state)])
-  :   Progression[element] =
+  :   Chain[element] =
     of(sci.LazyList.unfold(init)(lambda))
 
-  def range[element: Integral](start: element, end: element): Progression[element] =
+  def range[element: Integral](start: element, end: element): Chain[element] =
     of(sci.LazyList.range(start, end))
 
   // The primitive lazy cons: the tail is by-name and stays unforced until demanded.
-  def cons[element](head: element, tail: => Progression[element]): Progression[element] =
+  def cons[element](head: element, tail: => Chain[element]): Chain[element] =
     of(sci.LazyList.cons(head, tail.stdlib))
 
-  def unapplySeq[element](lazyList: Progression[element]): Option[Seq[element]] = Some(lazyList.stdlib)
+  def unapplySeq[element](lazyList: Chain[element]): Option[Seq[element]] = Some(lazyList.stdlib)
 
-  // `.to[Progression]` support (see `List`): the conversion is on `Progression.type` only, so it cannot
-  // expose members of `Progression` values.
+  // `.to[Chain]` support (see `List`): the conversion is on `Chain.type` only, so it cannot
+  // expose members of `Chain` values.
   given factory: [element]
-        => Conversion[Progression.type, scala.collection.Factory[element, Progression[element]]] =
+        => Conversion[Chain.type, scala.collection.Factory[element, Chain[element]]] =
     _ =>
-      new scala.collection.Factory[element, Progression[element]]:
-        def fromSpecific(elements: IterableOnce[element]^): Progression[element] =
-          Progression.from(elements)
+      new scala.collection.Factory[element, Chain[element]]:
+        def fromSpecific(elements: IterableOnce[element]^): Chain[element] =
+          Chain.from(elements)
 
-        def newBuilder: scala.collection.mutable.Builder[element, Progression[element]] =
+        def newBuilder: scala.collection.mutable.Builder[element, Chain[element]] =
           sci.LazyList.newBuilder[element].mapResult(of(_))
 
-  extension [element](lazyList: Progression[element])
+  extension [element](lazyList: Chain[element])
     inline def stdlib: sci.LazyList[element] = lazyList.asInstanceOf[sci.LazyList[element]]
 
 // The lazy cons constructor. As with `List`'s `::`, right-associative extensions read in usage
@@ -93,14 +93,14 @@ object Progression:
 // stream stays lazy — `head #:: recur()` must not evaluate `recur()`.
 given lazyCons: Object with
   extension [element](head: element)
-    infix def #:: (tail: => Progression[element]): Progression[element] =
-      Progression.of(sci.LazyList.cons(head, tail.asInstanceOf[sci.LazyList[element]]))
+    infix def #:: (tail: => Chain[element]): Chain[element] =
+      Chain.of(sci.LazyList.cons(head, tail.asInstanceOf[sci.LazyList[element]]))
 
 // The lazy concatenation operator. Like `#::`, the receiver is the left operand (usage order)
 // and the suffix is by-name, so `prefix #::: suffix` does not force `suffix`.
-extension [element](prefix: Progression[element])
-  infix def #::: [element2 >: element](suffix: => Progression[element2]): Progression[element2] =
-    Progression.of:
+extension [element](prefix: Chain[element])
+  infix def #::: [element2 >: element](suffix: => Chain[element2]): Chain[element2] =
+    Chain.of:
       prefix.asInstanceOf[sci.LazyList[element]]
       . lazyAppendedAll(suffix.asInstanceOf[sci.LazyList[element2]])
 
@@ -112,8 +112,8 @@ object `#::`:
     def isEmpty: Boolean = lazyList.isEmpty
     def get: this.type = this
     def _1: element = lazyList.head
-    def _2: Progression[element] = Progression.of(lazyList.tail)
+    def _2: Chain[element] = Chain.of(lazyList.tail)
 
-  def unapply[element](lazyList: Progression[element]): ConsView[element] = ConsView(lazyList.stdlib)
+  def unapply[element](lazyList: Chain[element]): ConsView[element] = ConsView(lazyList.stdlib)
 
-opaque type Progression[+element] = sci.LazyList[element]
+opaque type Chain[+element] = sci.LazyList[element]

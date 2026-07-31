@@ -123,12 +123,12 @@ class Channel()(using masking: Masking, buffering: Buffering):
 // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
 // sends Close. Protocol violations raise `WebsocketError`.
 class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError], Masking):
-  def messages: Progression[Message] =
+  def messages: Chain[Message] =
     // Deferred: constructing a stream-backed `Cursor` performs its first
     // refill, which on a live connection blocks until bytes arrive. The
     // cursor is created only when the first message is forced, so a server
     // can send its `101` response (and a client its first frame) first.
-    Progression.defer:
+    Chain.defer:
       // A neutral reference with an inline accessor: the parsing defs below
       // close over the cursor, which a capability-typed binding would hide
       // from them under the statement rule.
@@ -153,7 +153,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
 
       // Extend a (new or in-progress) message by `data`, validating a text message
       // incrementally and emitting it once `fin` is seen.
-      def extend(text: Boolean, data: Data, fin: Boolean): Progression[Message] =
+      def extend(text: Boolean, data: Data, fin: Boolean): Chain[Message] =
         if text && !validUtf8(data, fin)
         then abort(WebsocketError(WebsocketError.Reason.InvalidText))
 
@@ -162,15 +162,15 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
       // A data frame arriving mid-message (a fragmented message is still open) is a
       // protocol violation, as is a continuation with nothing to continue.
       def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
-      :   Progression[Message] =
+      :   Chain[Message] =
 
         if partial.present then abort(WebsocketError(WebsocketError.Reason.BadFragmentation))
         else extend(text, data, fin)
 
-      def recur(partial: Optional[(Boolean, Data)]): Progression[Message] =
+      def recur(partial: Optional[(Boolean, Data)]): Chain[Message] =
         (Frame.parse(cursor): @unchecked) match
           case Unset =>
-            Progression()
+            Chain()
 
           case Frame.Ping(data) =>
             channel.enqueue(Frame.Pong(data).encode)
@@ -183,7 +183,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
             if !validUtf8(reason, true) then abort(WebsocketError(WebsocketError.Reason.InvalidText))
             channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
             channel.stop()
-            Progression()
+            Chain()
 
           case Frame.Text(fin, data)   => started(fin, true, data, partial)
           case Frame.Binary(fin, data) => started(fin, false, data, partial)
@@ -261,7 +261,7 @@ class Websocket[message, state]
           // the instance under construction.
           given Masking = Masking.Server
 
-          def loop(messages: Progression[Message], state: state): state =
+          def loop(messages: Chain[Message], state: state): state =
             messages.flow(channel0.stop() yet state):
               Log.fine(WebsocketEvent.Received(next.bytes.length))
 

@@ -62,17 +62,17 @@ object Reshapable extends Reshapable.Fallback:
   given set: [element, element2] => Set[element] is Reshapable by element2 to Set[element2] =
     Set.from(_)
 
-  given series: [element, element2]
-  =>  Series[element] is Reshapable.Stable by element2 to Series[element2] =
-    Series.from(_)
+  given sequence: [element, element2]
+  =>  Sequence[element] is Reshapable.Stable by element2 to Sequence[element2] =
+    Sequence.from(_)
 
   given indexedSeq: [element, element2]
   =>  IndexedSeq[element] is Reshapable.Stable by element2 to IndexedSeq[element2] =
     IndexedSeq.from(_)
 
   given lazyList: [element, element2]
-  =>  Progression[element] is Reshapable.Stable by element2 to Progression[element2] =
-    Progression.from(_)
+  =>  Chain[element] is Reshapable.Stable by element2 to Chain[element2] =
+    Chain.from(_)
 
   // The frozen array reshapes to a frozen array: the rebuilt array is fresh, so freezing
   // it is discharged by construction.

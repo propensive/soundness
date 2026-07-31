@@ -366,7 +366,7 @@ object stagedInternal:
     else if tpe =:= TypeRepr.of[Cbor] then Some(Inlinable.cbor)
     else None
 
-  // The opaque prelude `List`/`Set`/`Series` map to their underlying stdlib
+  // The opaque prelude `List`/`Set`/`Sequence` map to their underlying stdlib
   // collection (used to summon a `Factory`, since the opaque companion exposes
   // only a `Conversion`, not a direct instance).
   private def aliasCollectionUnderlying(using Quotes)(tpe: quotes.reflect.TypeRepr)
@@ -374,7 +374,7 @@ object stagedInternal:
     import quotes.reflect.*
     val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
     val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
-    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
 
     tpe.dealias match
       case AppliedType(constructor, List(element)) if constructor.typeSymbol == listSym =>
@@ -395,13 +395,13 @@ object stagedInternal:
     // not an array — it stays on the seam (the AST `mapDecodable`).
     val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
 
-    // The opaque prelude `List`/`Set`/`Series` don't conform to `Iterable`, so
+    // The opaque prelude `List`/`Set`/`Sequence` don't conform to `Iterable`, so
     // recognize their type constructors by symbol; each stages as an array
     // exactly like a stdlib collection (the element becomes the recursion
     // point, so `List[Tree]` inside `Tree` degrades `Tree`, not the whole list).
     val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
     val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
-    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
 
     val isAliasCollection = tpe match
       case AppliedType(constructor, _) =>

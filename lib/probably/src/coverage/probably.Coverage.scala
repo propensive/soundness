@@ -67,9 +67,9 @@ object Coverage:
 
   private def spec(dir: Text): Array[Juncture]^{} =
     val file = java.io.File(java.io.File(dir.s), "scoverage.coverage")
-    val lines = Source.fromFile(file).getLines().to(Progression).map(Text(_))
+    val lines = Source.fromFile(file).getLines().to(Chain).map(Text(_))
 
-    def recur(lines: Progression[Text], junctures: List[Juncture] = Nil): List[Juncture] =
+    def recur(lines: Chain[Text], junctures: List[Juncture] = Nil): List[Juncture] =
       lines match
         case
           ( As.Int(id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName #::
@@ -90,7 +90,7 @@ object Coverage:
     val ids = BitSet()
 
     if !file.exists() then Set()
-    else Source.fromFile(file).getLines().to(Progression).each: id =>
+    else Source.fromFile(file).getLines().to(Chain).each: id =>
       ids(id.toInt) = true
 
     Set.from(ids)

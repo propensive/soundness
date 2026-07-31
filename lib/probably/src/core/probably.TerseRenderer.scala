@@ -121,12 +121,12 @@ private[probably] object TerseRenderer:
       Scaffold[List[Datum]](tableColumns2*)
       . tabulate(rows).grid(columns).render.each(Out.println(_))
 
-    case Block.Sparkline(steps, series) =>
-      val labelWidth = series.stdlib.map(_.label.length).max
+    case Block.Sparkline(steps, sequence) =>
+      val labelWidth = sequence.stdlib.map(_.label.length).max
       val stepWidth = steps.stdlib.map(_.show.length).max + 2
       Out.println(t"  ${t"N".pad(labelWidth)}${steps.stdlib.map(_.show.pad(stepWidth, Rtl)).join}")
 
-      series.stdlib.foreach: spark =>
+      sequence.stdlib.foreach: spark =>
         val cells: Text =
           spark.cells.stdlib.map: cell =>
             cell.lay(t"·".pad(stepWidth, Rtl)): (level, _) =>

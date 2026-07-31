@@ -45,7 +45,7 @@ import prepositional.*
 // checking. Watching is pure observation, so no operation is grant-gated: the mode is
 // irrelevant, and `Read` (the default) describes it best.
 class WatchHandle private[surveillance] (watch: Watch) extends caps.ExclusiveCapability:
-  def stream: Progression[WatchEvent] = watch.stream
+  def stream: Chain[WatchEvent] = watch.stream
 
 // A named class rather than an anonymous given instance, for the reasons documented on
 // galilei's `FileOpenable`.

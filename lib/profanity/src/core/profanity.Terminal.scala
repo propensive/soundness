@@ -194,7 +194,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
   // A daemon body must be a pure context function, so everything it needs is bound to
   // block locals first: the untracked `Metrics` holder and `Spool` cross directly, the
   // capability-typed keyboard crosses as an `AnyRef` rim (the cordillera recipe), and the
-  // stdin stream is a `Progression`, which is not capture-tracked, so it crosses as a plain
+  // stdin stream is a `Chain`, which is not capture-tracked, so it crosses as a plain
   // value.
   val pumpInput: Daemon =
     val keyboard0: AnyRef = keyboard.asInstanceOf[AnyRef]
@@ -203,12 +203,12 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
     // The terminal reads chars one at a time from the same stdio reader the
     // `Lookahead` consults (the former element-typed `Streamable by Char`
     // instance, now private to its one user).
-    val chars: Progression[Char] =
-      def recur(): Progression[Char] = console.stdio.readChar() match
-        case -1  => Progression()
+    val chars: Chain[Char] =
+      def recur(): Chain[Char] = console.stdio.readChar() match
+        case -1  => Chain()
         case int => int.toChar #:: recur()
 
-      Progression.defer(recur())
+      Chain.defer(recur())
 
     contain:
       case _ => events0.stop(); Remedy.Accept

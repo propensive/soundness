@@ -47,4 +47,4 @@ case class Part
     headers:     Map[Text, Text],
     name:        Optional[Text],
     filename:    Optional[Text],
-    body:        Progression[Data] )
+    body:        Chain[Data] )

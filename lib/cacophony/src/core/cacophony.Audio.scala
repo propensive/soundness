@@ -101,7 +101,7 @@ object Audio:
       new Audio(format, data):
         type Domain = layout
 
-  private def writeAudio(audio: Audio, formatName: Text): Progression[Data] =
+  private def writeAudio(audio: Audio, formatName: Text): Chain[Data] =
     val ais = jss.AudioInputStream(ji.ByteArrayInputStream(audio.data), audio.format, audio.frames)
 
     val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == formatName.s).getOrElse:

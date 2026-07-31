@@ -318,7 +318,7 @@ object stagedInternal:
     else if tpe =:= TypeRepr.of[String] then Some(Inlinable.string)
     else None
 
-  // The opaque prelude `List`/`Set`/`Series` map to their underlying stdlib
+  // The opaque prelude `List`/`Set`/`Sequence` map to their underlying stdlib
   // collection (used to summon a `Factory`, since the opaque companion exposes
   // only a `Conversion`, not a direct instance).
   private[xylophone] def aliasCollectionUnderlying(using Quotes)
@@ -327,7 +327,7 @@ object stagedInternal:
     import quotes.reflect.*
     val listSym   = TypeRepr.of[proscenium.List[Any]].typeSymbol
     val setSym    = TypeRepr.of[proscenium.Set[Any]].typeSymbol
-    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
 
     tpe.dealias match
       case AppliedType(constructor, args) if constructor.typeSymbol == listSym =>

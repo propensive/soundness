@@ -201,8 +201,8 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 // rectangle and content are both unchanged is omitted, so it is left untouched on
 // screen — the basis of flicker-free redraw.
 def dirtyCells
-  ( previous: Series[Rect],
-    current:  Series[Rect],
+  ( previous: Sequence[Rect],
+    current:  Sequence[Rect],
     changed:  Set[Int] )
 :   Set[Int] =
 

@@ -109,7 +109,7 @@ object Sheet:
         type Self = Sheet
         type Operand = Text
 
-        def aggregate(text: Progression[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
+        def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
         override def accept(stream: (Stream[Text] over Credit)^): Sheet =
           // The non-consume `accept` crosses to the consuming parser as a
           // neutral reference; each accept delivers a single-use stream.

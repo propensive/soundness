@@ -46,15 +46,15 @@ object RecurrenceSet:
 
     set =>
       val excluded = set.exdates.stdlib.toSet
-      val streams = List.of(set.include.stdlib :+ Progression.from(set.rdates.stdlib.sorted))
+      val streams = List.of(set.include.stdlib :+ Chain.from(set.rdates.stdlib.sorted))
       dedup(merge(streams)).filterNot(excluded.contains)
 
   // Lazily merge ascending streams into one ascending stream (repeatedly emit the least head).
-  private def merge[point](streams: List[Progression[point]])(using order: Ordering[point])
-  :   Progression[point] =
+  private def merge[point](streams: List[Chain[point]])(using order: Ordering[point])
+  :   Chain[point] =
 
     streams.stdlib.filter(_.nonEmpty) match
-      case Nil => Progression.empty
+      case Nil => Chain.empty
 
       case nonEmpty =>
         val index = nonEmpty.indices.minBy(nonEmpty(_).head)
@@ -63,12 +63,12 @@ object RecurrenceSet:
         chosen.head #:: merge(List.of(nonEmpty.updated(index, chosen.tail)))
 
   // Drop duplicates from an ascending stream (equal values are adjacent).
-  private def dedup[point](stream: Progression[point])(using order: Ordering[point]): Progression[point] =
+  private def dedup[point](stream: Chain[point])(using order: Ordering[point]): Chain[point] =
     stream match
       case head #:: tail => head #:: dedup(tail.dropWhile(order.equiv(_, head)))
-      case _             => Progression.empty
+      case _             => Chain.empty
 
 case class RecurrenceSet[point]
-  ( include: List[Progression[point]] = Nil,
+  ( include: List[Chain[point]] = Nil,
     rdates:  List[point]           = Nil,
     exdates: List[point]           = Nil )

@@ -37,7 +37,7 @@ import soundness.*
 import proscenium.compat.*
 
 // The kernel `Stream.take`/`drop` are shadowed here by turbulence's legacy
-// `Progression[Data]` `take`/`drop` arriving through the `soundness.*` wildcard;
+// `Chain[Data]` `take`/`drop` arriving through the `soundness.*` wildcard;
 // the explicit imports restore the kernel versions under test.
 import zephyrine.{take, drop}
 
@@ -414,7 +414,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == "onetwot")
 
       suite(m"Cursor[Data] tests"):
-        def stream = Progression(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
+        def stream = Chain(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
         def byteCursor = Cursor[Data](stream.iterator)
 
         test(m"Cursor[Data] starts at first byte"):
@@ -461,14 +461,14 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == 15.toByte)
 
         test(m"Cursor[Data] remainder from start equals full stream"):
-          val blocks = Progression(Data(1, 2, 3), Data(4, 5), Data(6, 7))
+          val blocks = Chain(Data(1, 2, 3), Data(4, 5), Data(6, 7))
           val cursor = Cursor[Data](blocks.iterator)
           cursor.remainder.stdlib.map(_.readable).flatten.to(List)
 
         . assert(_ == List[Byte](1, 2, 3, 4, 5, 6, 7))
 
         test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
-          val blocks = Progression(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+          val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
           val cursor = Cursor[Data](blocks.iterator)
           for i <- 0 until 3 do cursor.next()
           cursor.remainder.stdlib.map(_.readable).flatten.to(List)
@@ -476,7 +476,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
         test(m"Cursor[Data] remainder inside hold still emits unconsumed tail"):
-          val blocks = Progression(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+          val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
           val cursor = Cursor[Data](blocks.iterator)
           for i <- 0 until 3 do cursor.next()
           cursor.hold(cursor.remainder.stdlib.map(_.readable).flatten.to(List))

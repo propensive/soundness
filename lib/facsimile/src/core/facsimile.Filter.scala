@@ -166,7 +166,7 @@ private[facsimile] object Filter:
     case _            => data
 
   private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
-    try Lzw.decompress(Progression(data), earlyChange(parms)).foldLeft(Array.empty[Byte])(_ ++ _)
+    try Lzw.decompress(Chain(data), earlyChange(parms)).foldLeft(Array.empty[Byte])(_ ++ _)
     catch case _: IllegalStateException =>
       abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
 
@@ -193,7 +193,7 @@ private[facsimile] object Filter:
 
     try
       val chunks =
-        if nowrap then Progression(data).decompress[Deflate] else Progression(data).decompress[Zlib]
+        if nowrap then Chain(data).decompress[Deflate] else Chain(data).decompress[Zlib]
 
       // Forcing the stream incrementally means a truncated (but valid-so-far) input keeps
       // whatever it decoded before the bytes ran out, matching the eager inflater's

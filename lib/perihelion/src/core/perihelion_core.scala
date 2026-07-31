@@ -261,7 +261,7 @@ given wsClient: ( online:            Online,
       val headerBytes =
         readHandshake(inboundRef.asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^])
 
-      val response: Http.Response = Http.Response.parse(Progression(headerBytes))
+      val response: Http.Response = Http.Response.parse(Chain(headerBytes))
 
       if response.status != Http.SwitchingProtocols then
         abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))

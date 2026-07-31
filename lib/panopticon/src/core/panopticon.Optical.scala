@@ -50,13 +50,13 @@ object Optical:
         if origin.length > ordinal.n0 then origin.updated(ordinal.n0, lambda(origin(ordinal.n0)))
         else origin
 
-  given ordinalSeries: [element] => Ordinal is Optical from Series[element] onto element =
+  given ordinalSeries: [element] => Ordinal is Optical from Sequence[element] onto element =
     ordinal =>
       Optic: (origin, lambda) =>
         val vector = origin.stdlib
 
         if vector.length > ordinal.n0
-        then Series.of(vector.updated(ordinal.n0, lambda(vector(ordinal.n0))))
+        then Sequence.of(vector.updated(ordinal.n0, lambda(vector(ordinal.n0))))
         else origin
 
   given at: [key, element] => key is Optical from Map[key, element] onto element =

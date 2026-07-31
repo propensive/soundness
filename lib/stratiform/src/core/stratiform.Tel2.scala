@@ -179,12 +179,12 @@ trait Tel2 extends Tel3:
     Tel.Field(Tel.Parsable.iterable[scala.collection.immutable.Set, element](field))
     . asInstanceOf[set[element] is Tel.Field]
 
-  given fieldSeries: [series <: Series, element]
+  given fieldSeries: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[TelError] )
   =>  ( field: => (element is Tel.Field)^ )
-  =>  series[element] is Tel.Field =
+  =>  sequence[element] is Tel.Field =
     Tel.Field(Tel.Parsable.iterable[Vector, element](field))
-    . asInstanceOf[series[element] is Tel.Field]
+    . asInstanceOf[sequence[element] is Tel.Field]
 
   // Element-wise `Tel.Field` for `Optional`, resolved during derivation:
   // the inner instance comes from the field fallback chain (by-name, so
@@ -483,8 +483,8 @@ trait Tel2 extends Tel3:
     Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values.stdlib)(using encodable)
 
-  given seriesEncodable: [series <: Series, element] => (encodable: -> (element is Tel.Encodable))
-  =>  series[element] is Tel.Encodable =
+  given seriesEncodable: [sequence <: Sequence, element] => (encodable: -> (element is Tel.Encodable))
+  =>  sequence[element] is Tel.Encodable =
     Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values.stdlib)(using encodable)
 
@@ -559,16 +559,16 @@ trait Tel2 extends Tel3:
 
         builder.result().asInstanceOf[set[element]]
 
-  given seriesDecodable: [series <: Series, element]
+  given seriesDecodable: [sequence <: Sequence, element]
   =>  ( element0: -> (element is Tel.Decodable) )
   =>  Tactic[TelError]
-  =>  series[element] is Tel.Decodable =
+  =>  sequence[element] is Tel.Decodable =
     new Tel.Decodable:
-      type Self = series[element]
+      type Self = sequence[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
 
-      def decoded(telVal: Tel): series[element] =
+      def decoded(telVal: Tel): sequence[element] =
         val builder = Vector.newBuilder[element]
 
         telVal.subtree.absolve match
@@ -579,9 +579,9 @@ trait Tel2 extends Tel3:
           case compound: Tel.Compound =>
             builder += element0.decoded(telVal)
 
-        builder.result().asInstanceOf[series[element]]
+        builder.result().asInstanceOf[sequence[element]]
 
-  // A `Map` encodes as a series of `entries` compounds, each carrying a `key`
+  // A `Map` encodes as a sequence of `entries` compounds, each carrying a `key`
   // and a `value` child field. As with other collections the product encoder
   // re-keys the wrapping compound with the field's label.
 

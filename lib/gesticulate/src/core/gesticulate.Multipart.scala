@@ -101,7 +101,7 @@ object Multipart:
       var i = 0
       while i < count && cursor.next() do i += 1
 
-    def body(): Progression[Data] = cursor.hold:
+    def body(): Chain[Data] = cursor.hold:
       val bodyStart = cursor.mark
       var bodyEnd: Optional[Cursor.Mark] = Unset
       var continue = true
@@ -132,11 +132,11 @@ object Multipart:
         // Position is at the body-ending '\r'. Skip past "\r\n<boundary>" which
         // is boundary.length + 2 bytes total.
         skipBytes(boundary.length + 2)
-        Progression(out)
+        Chain(out)
 
-      . or(Progression(cursor.grab(bodyStart, cursor.mark)))
+      . or(Chain(cursor.grab(bodyStart, cursor.mark)))
 
-    def parsePart(headers: Map[Text, Text], stream: Progression[Data])
+    def parsePart(headers: Map[Text, Text], stream: Chain[Data])
     :   Part =
       headers.get(t"Content-Disposition").optional.let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
@@ -169,12 +169,12 @@ object Multipart:
 
       . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
-    def parts(): Progression[Part] =
+    def parts(): Chain[Part] =
       val part = parsePart(headers(Nil), body())
 
       if cursor.finished then
         raise(expected('-'))
-        Progression()
+        Chain()
       else if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
@@ -188,14 +188,14 @@ object Multipart:
         cursor.expect('\r')(expected('\r'))
         cursor.expect('\n')(expected('\n'))
 
-        Progression(part)
+        Chain(part)
 
       else
         raise(expected('-'))
-        Progression()
+        Chain()
 
     Multipart(parts())
 
 
-case class Multipart(parts: Progression[Part]):
+case class Multipart(parts: Chain[Part]):
   def at(name: Text): Optional[Part] = parts.stdlib.find(_.name == name).getOrElse(Unset)

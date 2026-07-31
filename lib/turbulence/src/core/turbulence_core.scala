@@ -284,20 +284,20 @@ package lineSeparation:
     case "\n"      => linefeedLineSeparation
     case _: String => adaptiveLinefeedLineSeparation
 
-extension [element](stream: Progression[element])
-  def deduplicate: Progression[element] =
-    def recur(last: element, stream: Progression[element]): Progression[element] =
-      stream.flow(Progression()):
+extension [element](stream: Chain[element])
+  def deduplicate: Chain[element] =
+    def recur(last: element, stream: Chain[element]): Chain[element] =
+      stream.flow(Chain()):
         if last == next then recur(last, more) else next #:: recur(next, more)
 
-    stream.flow(Progression())(next #:: recur(next, more))
+    stream.flow(Chain())(next #:: recur(next, more))
 
 
   // `next`/`more` are bound with `aka`-label refinements; under capture checking the
   // labelled singleton type does not simplify away in every position (the aka-Tagged/
   // castbox class), so use sites strip it with `next.asInstanceOf[element]`.
   inline def flow[result](inline termination: => result)
-    ( inline proceed: (element aka "next", Progression[element] aka "more") ?=> result )
+    ( inline proceed: (element aka "next", Chain[element] aka "more") ?=> result )
   :   result =
 
     stream match
@@ -305,19 +305,19 @@ extension [element](stream: Progression[element])
       case _             => termination
 
 
-  def strict: Progression[element] = stream.stdlib.length yet stream
+  def strict: Chain[element] = stream.stdlib.length yet stream
 
-extension (obj: Progression.type)
+extension (obj: Chain.type)
   // Defers evaluation of `stream` until the result is forced. `empty.lazyAppendedAll(=> stream)`
   // keeps the by-name suffix unforced — equivalent to (and cheaper than) the old
   // `(dummy #:: stream).tail`, and it sidesteps the captured-by-name cons under cc.
-  def defer[element](stream: => Progression[element]): Progression[element] =
-    Progression().lazyAppendedAll(stream)
+  def defer[element](stream: => Chain[element]): Chain[element] =
+    Chain().lazyAppendedAll(stream)
 
 
-extension (stream: Progression[Data])
-  def discard(bytes: Bytes): Progression[Data] =
-    def recur(stream: Progression[Data], count: Bytes): Progression[Data] = stream.flow(Progression()):
+extension (stream: Chain[Data])
+  def discard(bytes: Bytes): Chain[Data] =
+    def recur(stream: Chain[Data], count: Bytes): Chain[Data] = stream.flow(Chain()):
       if next.bytes < count
       then recur(more, count - next.bytes)
       else
@@ -328,7 +328,7 @@ extension (stream: Progression[Data])
 
     recur(stream, bytes)
 
-  def shred(mean: Double, variance: Double)(using Random): Progression[Data] =
+  def shred(mean: Double, variance: Double)(using Random): Chain[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
     // The size is drawn separately so that each fresh buffer can go straight into `recur`'s
@@ -339,12 +339,12 @@ extension (stream: Progression[Data])
     // The buffer is threaded through `consume`, so each chunk emitted downstream is frozen
     // by the one producer that could still have written to it.
     def recur
-      ( stream:    Progression[Data],
+      ( stream:    Chain[Data],
         sourcePos: Int,
         consume dest: Array[Byte]^,
         destSize:  Int,
         destPos:   Int )
-    :   Progression[Data] =
+    :   Chain[Data] =
 
       stream match
         case source #:: more =>
@@ -366,28 +366,28 @@ extension (stream: Progression[Data])
             chunk.asInstanceOf[Data] #:: recur(more, 0, newArray(size), size, 0)
 
         case _ =>
-          if destPos == 0 then Progression()
+          if destPos == 0 then Chain()
           else
             val out = Array[Byte](destPos)
             out.copyFrom(Array.freeze(dest), 0, 0, destPos)
-            Progression(Array.freeze(out).asInstanceOf[Data])
+            Chain(Array.freeze(out).asInstanceOf[Data])
 
     val size = newSize()
     recur(stream, 0, newArray(size), size, 0)
 
-  def take(bytes: Bytes): Progression[Data] =
-    def recur(stream: Progression[Data], count: Bytes): Progression[Data] =
-      stream.flow(Progression()):
+  def take(bytes: Bytes): Chain[Data] =
+    def recur(stream: Chain[Data], count: Bytes): Chain[Data] =
+      stream.flow(Chain()):
         if next.bytes < count then
           val head: Data = next
           head #:: recur(more, count - next.bytes)
-        else Progression(next.take(count.long.toInt).asInstanceOf[Data])
+        else Chain(next.take(count.long.toInt).asInstanceOf[Data])
 
     recur(stream, bytes)
 
   def inputStream: ji.InputStream = new ji.InputStream:
     // A JDK adapter, not a capability class: its staging slots are untracked.
-    @caps.unsafe.untrackedCaptures private var current: Progression[Data] = stream
+    @caps.unsafe.untrackedCaptures private var current: Chain[Data] = stream
     @caps.unsafe.untrackedCaptures private var offset: Int = 0
     @caps.unsafe.untrackedCaptures private var focus: Data = Array.empty[Byte].asInstanceOf[Data]
 

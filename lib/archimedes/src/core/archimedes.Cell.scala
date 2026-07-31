@@ -82,14 +82,14 @@ object Cell:
   private def slice(cell: Cell, row: Int): Text =
     if row >= 0 && row < cell.height then cell.lines(row).text else spaces(cell.width).text
 
-  val empty: Cell = Cell(Series(Writing.empty), 0, 0)
+  val empty: Cell = Cell(Sequence(Writing.empty), 0, 0)
 
   def line(text: Text): Cell =
     val writing = Writing(text)
-    Cell(Series(writing), graphemeWidth(writing), 0)
+    Cell(Sequence(writing), graphemeWidth(writing), 0)
 
   def blank(width: Int, height: Int, baseline: Int): Cell =
-    Cell(Series.from(Iterator.fill(max(height, 1))(spaces(width))), max(width, 0), baseline)
+    Cell(Sequence.from(Iterator.fill(max(height, 1))(spaces(width))), max(width, 0), baseline)
 
   // Horizontal, baseline-aligned concatenation — the workhorse for `<mrow>`. Each
   // cell is framed with blank rows so every baseline lines up, then rows are joined.
@@ -102,7 +102,7 @@ object Cell:
       val framed = cells.stdlib.map(_.framed(ascent, descent))
       val height = ascent + descent + 1
 
-      val lines = Series.from:
+      val lines = Sequence.from:
         (0 until height).map: row =>
           Writing(List.of(framed.map { cell => cell.lines(row).text }).join)
 
@@ -117,7 +117,7 @@ object Cell:
   def superscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height
 
-    val lines = Series.from:
+    val lines = Sequence.from:
       (0 until height).map: row =>
         Writing(t"${slice(base, row - script.height)}${slice(script, row)}")
 
@@ -126,7 +126,7 @@ object Cell:
   def subscript(base: Cell, script: Cell): Cell =
     val height = base.height + script.height
 
-    val lines = Series.from:
+    val lines = Sequence.from:
       (0 until height).map: row =>
         Writing(t"${slice(base, row)}${slice(script, row - base.height)}")
 
@@ -137,7 +137,7 @@ object Cell:
     val height = superscript.height + base.height + subscript.height
     val middle = superscript.height + base.height
 
-    val lines = Series.from:
+    val lines = Sequence.from:
       (0 until height).map: row =>
         val left = slice(base, row - superscript.height)
 
@@ -178,24 +178,24 @@ object Cell:
     if inner.height > 1 then tallRadical(inner) else
       val overline = Writing(t"$Corner${repeat(Bar, inner.width).text}")
       val body = Writing(t"$Radical${inner.lines(0).text}")
-      Cell(Series(overline, body), inner.width + 1, 1)
+      Cell(Sequence(overline, body), inner.width + 1, 1)
 
   private def tallRadical(inner: Cell): Cell =
     val overline = Writing(t" $Corner${repeat(Bar, inner.width).text}")
 
-    val body = Series.from:
+    val body = Sequence.from:
       (0 until inner.height).map: row =>
         val foot = if row == inner.height - 1 then Tick else ' '
         Writing(t"$foot$Stem${inner.lines(row).text}")
 
-    Cell(Series(overline) ::: body, inner.width + 2, inner.baseline + 1)
+    Cell(Sequence(overline) ::: body, inner.width + 2, inner.baseline + 1)
 
   // An nth root always uses the tall sign so the `index` can sit one line above,
   // to the left of the corner.
   def root(base: Cell, index: Cell): Cell =
     val radicand = tallRadical(base)
 
-    val lines = Series.from:
+    val lines = Sequence.from:
       (0 until radicand.height).map: row =>
         val prefix = if row < index.height then index.lines(row).text else spaces(index.width).text
         Writing(t"$prefix${radicand.lines(row).text}")
@@ -211,7 +211,7 @@ object Cell:
   // single-line cell it degrades to the literal bracket character.
   def bracket(char: Char, height: Int, baseline: Int, opening: Boolean): Cell =
     if height <= 1 then line(char.toString.tt) else
-      val glyphs = Series.from:
+      val glyphs = Sequence.from:
         (0 until height).map: row =>
           Writing(bracketGlyph(char, row, height, baseline, opening).toString.tt)
 
@@ -250,7 +250,7 @@ object Cell:
     if height <= 1 then line(char.toString.tt) else
       val (strokes, circle) = integralShape(char)
 
-      val lines = Series.from:
+      val lines = Sequence.from:
         (0 until height).map: row =>
           val glyphs = (0 until strokes).map: column =>
             val glyph =
@@ -290,7 +290,7 @@ object Cell:
     val depth = max((height - 3)/2, 0)
     val width = depth + 3
 
-    val lines = Series.from:
+    val lines = Sequence.from:
       (0 until height).map: row =>
         if row == 0 then repeat('▁', width)
         else if row == height - 1 then repeat('▔', width) else
@@ -306,7 +306,7 @@ object Cell:
   private def product(height: Int): Cell =
     val width = 4
 
-    val lines = Series.from:
+    val lines = Sequence.from:
       (0 until height).map: row =>
         if row == 0 then Writing(t"┬${repeat(Bar, width - 2).text}┬")
         else Writing(t"$Stem${spaces(width - 2).text}$Stem")
@@ -372,7 +372,7 @@ object Cell:
     case node =>
       node.text.lay(row(node.contents))(line)
 
-case class Cell(lines: Series[Writing], width: Int, baseline: Int):
+case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
   def height: Int = lines.length
   def render: Text = lines.stdlib.map(_.text).join(t"\n")
 
@@ -397,4 +397,4 @@ case class Cell(lines: Series[Writing], width: Int, baseline: Int):
     val above = Cell.max(ascent - baseline, 0)
     val below = Cell.max(descent - (height - 1 - baseline), 0)
     val blank = Cell.spaces(width)
-    Cell(Series.from(Iterator.fill(above)(blank)) ::: lines ::: Series.from(Iterator.fill(below)(blank)), width, ascent)
+    Cell(Sequence.from(Iterator.fill(above)(blank)) ::: lines ::: Sequence.from(Iterator.fill(below)(blank)), width, ascent)

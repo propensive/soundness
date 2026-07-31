@@ -45,4 +45,4 @@ trait Columnar:
 
   def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
     ( using Text is Measurable, Hyphenation )
-  :   Series[text]
+  :   Sequence[text]

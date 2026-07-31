@@ -102,7 +102,7 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
       . map(_.message)
     . assert(_.exists(_.contains("is not included in the allowed capture set")))
 
-    // A lazily-encrypted stream may leave the block: the ciphertext `Progression` is
+    // A lazily-encrypted stream may leave the block: the ciphertext `Chain` is
     // pure (the key bytes are baked into the deferred JCE cipher, beyond the reach
     // of capture checking), which is why `encrypt`'s documentation says to drain
     // streams within the `uncloak` block. This is an executable record of that
@@ -111,7 +111,7 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         val ciphertext = key.uncloak:
-          Progression(t"Hello world".in[Data]).encrypt(InitializationVector.random)
+          Chain(t"Hello world".in[Data]).encrypt(InitializationVector.random)
     . assert(_ == Nil)
 
     test(m"a password's cleartext is available within uncloak"):

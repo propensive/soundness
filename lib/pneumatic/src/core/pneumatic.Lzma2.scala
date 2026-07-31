@@ -78,10 +78,10 @@ object Lzma2:
 
       XzStage(decompressorEngine(defaultDictSize))
 
-    override def compress(stream: Progression[Data]): Progression[Data] =
+    override def compress(stream: Chain[Data]): Chain[Data] =
       Xz.drive(compressorEngine(DefaultPreset), stream)
 
-    override def decompress(stream: Progression[Data]): Progression[Data] =
+    override def decompress(stream: Chain[Data]): Chain[Data] =
       Xz.drive(decompressorEngine(defaultDictSize), stream)
 
   // Compress raw LZMA2 with an explicit preset (0..9).
@@ -91,7 +91,7 @@ object Lzma2:
 
     XzStage(compressorEngine(preset))
 
-  def compress(stream: Progression[Data], preset: Int): Progression[Data] =
+  def compress(stream: Chain[Data], preset: Int): Chain[Data] =
     Xz.drive(compressorEngine(preset), stream)
 
   // Decompress raw LZMA2 with an explicit dictionary size — the size the producer used, as a raw
@@ -102,7 +102,7 @@ object Lzma2:
 
     XzStage(decompressorEngine(dictSize))
 
-  def decompress(stream: Progression[Data], dictSize: Int): Progression[Data] =
+  def decompress(stream: Chain[Data], dictSize: Int): Chain[Data] =
     Xz.drive(decompressorEngine(dictSize), stream)
 
 private enum Lzma2State:

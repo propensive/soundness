@@ -69,7 +69,7 @@ object Aggregable:
       val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
       gather(streamRef.asInstanceOf[(Stream[Data] over Credit)^])
 
-    def aggregate(source0: Progression[Data]): Data =
+    def aggregate(source0: Chain[Data]): Data =
       val size = source0.fold(0)(_ + _.length)
 
       var source = source0
@@ -96,7 +96,7 @@ object Aggregable:
       val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
       gather(streamRef.asInstanceOf[(Stream[Text] over Credit)^])
 
-    def aggregate(source0: Progression[Text]): Text =
+    def aggregate(source0: Chain[Text]): Text =
       var source = source0
 
       val builder = new StringBuilder()
@@ -109,21 +109,21 @@ object Aggregable:
 
 
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
-  =>  Progression[element2] is Aggregable by element =
+  =>  Chain[element2] is Aggregable by element =
 
-    element => Progression(aggregable.aggregate(element))
+    element => Chain(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
   // The capturing self type permits instances that capture (e.g. a resolution-scoped
   // tactic) while keeping the explicit self name the 3.9 SAM adaptation requires.
   aggregable: Aggregable^ =>
-  def aggregate(source: Progression[Operand]): Self
+  def aggregate(source: Chain[Operand]): Self
 
   // Consume a pull endpoint. The default materializes one chunk per refill
   // and delegates to the legacy `aggregate`; instances override it to build
   // directly from the stream's windows.
   def accept(stream: (Stream[Operand] over Credit)^): Self =
-    def recur(): Progression[Operand] =
+    def recur(): Chain[Operand] =
       stream.refill(Credit(Long.MaxValue)) match
         case count: Int =>
           val chunk =
@@ -133,9 +133,9 @@ trait Aggregable extends Typeclass, Operable:
           chunk #:: recur()
 
         case _ =>
-          Progression()
+          Chain()
 
-    aggregate(Progression.defer(recur()))
+    aggregate(Chain.defer(recur()))
 
   def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{this, lambda} = source =>
     lambda(aggregable.aggregate(source))

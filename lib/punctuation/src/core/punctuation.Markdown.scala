@@ -71,7 +71,7 @@ object Markdown:
       type Self = Markdown of Layout
       type Operand = Text
 
-      def aggregate(stream: Progression[Text]): Markdown of Layout = Parser.parse(stream.stdlib.iterator)
+      def aggregate(stream: Chain[Text]): Markdown of Layout = Parser.parse(stream.stdlib.iterator)
 
       override def accept(stream: (zephyrine.Stream[Text] over zephyrine.Credit)^)
       :   Markdown of Layout =

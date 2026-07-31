@@ -55,7 +55,7 @@ case class DaemonService[bus <: Matchable]
     cliInput:   Stdin,
     executable: Path on Local,
     deliver:    bus => Unit,
-    bus:        Progression[bus],
+    bus:        Chain[bus],
     script:     Text,
     startTime:  Long,
     helpThunk:  () => Optional[Help],

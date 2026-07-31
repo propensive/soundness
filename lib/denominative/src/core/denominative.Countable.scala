@@ -81,12 +81,12 @@ object Countable:
     def size(self: HashMap[key, element]): Int = self.size
     override def nil(self: HashMap[key, element]): Boolean = self.isEmpty
 
-  // `Progression#length` forces the whole stream (and diverges on infinite ones), so the
+  // `Chain#length` forces the whole stream (and diverges on infinite ones), so the
   // `Countable` instance is gated behind `UnboundedSizeComplexity`; the O(1) `nil` comes from the
   // ungated `Vacuiscible.lazyList` instead.
-  given lazyList: [element] => (complexity: UnboundedSizeComplexity) => Progression[element] is Countable:
-    def size(self: Progression[element]): Int = self.stdlib.length
-    override def nil(self: Progression[element]): Boolean = self.stdlib.isEmpty
+  given lazyList: [element] => (complexity: UnboundedSizeComplexity) => Chain[element] is Countable:
+    def size(self: Chain[element]): Int = self.stdlib.length
+    override def nil(self: Chain[element]): Boolean = self.stdlib.isEmpty
 
   given stringBuilder: StringBuilder is Countable:
     def size(self: StringBuilder): Int = self.length
@@ -101,10 +101,10 @@ object Countable:
     def size(self: IndexedSeq[element]): Int = self.length
     override def nil(self: IndexedSeq[element]): Boolean = self.isEmpty
 
-  // Opaque `Series` is no longer an `IndexedSeq` subtype, so it needs its own instance.
-  given series: [element] => Series[element] is Countable:
-    def size(self: Series[element]): Int = self.stdlib.length
-    override def nil(self: Series[element]): Boolean = self.stdlib.isEmpty
+  // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
+  given sequence: [element] => Sequence[element] is Countable:
+    def size(self: Sequence[element]): Int = self.stdlib.length
+    override def nil(self: Sequence[element]): Boolean = self.stdlib.isEmpty
 
   given text: Text is Countable:
     def size(self: Text): Int = self.s.length

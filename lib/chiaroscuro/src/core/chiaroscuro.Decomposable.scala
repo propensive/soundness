@@ -75,12 +75,12 @@ object Decomposable extends Decomposable2:
         Decomposition.Sequence(t"List", list.stdlib.map(decomposable.decomposition(_)), list)
 
 
-  given series: [element, collection <: Series[element]]
+  given sequence: [element, collection <: Sequence[element]]
   =>  ( decomposable: => element is Decomposable )
   =>  collection is Decomposable =
 
-    caps.unsafe.unsafeAssumePure: series =>
-        Decomposition.Sequence(t"Series", series.stdlib.map(decomposable.decomposition(_)), series)
+    caps.unsafe.unsafeAssumePure: sequence =>
+        Decomposition.Sequence(t"Sequence", sequence.stdlib.map(decomposable.decomposition(_)), sequence)
 
 
   given iarray: [element]

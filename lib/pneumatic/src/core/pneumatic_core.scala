@@ -70,9 +70,9 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
     stream.via(compression.decompressor()).asInstanceOf[(Stream[Data] over Credit)^]
 
-extension (stream: Progression[Data])
-  def compress[compression <: Compressor: Compression]: Progression[Data] =
+extension (stream: Chain[Data])
+  def compress[compression <: Compressor: Compression]: Chain[Data] =
     compression.compress(stream)
 
-  def decompress[compression <: Compressor: Compression]: Progression[Data] =
+  def decompress[compression <: Compressor: Compression]: Chain[Data] =
     compression.decompress(stream)

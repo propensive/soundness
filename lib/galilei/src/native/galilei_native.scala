@@ -153,12 +153,12 @@ package filesystemBackends:
         if dereference then jnf.Files.exists(javaPath(path))
         else jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
-      def children(path: Path on Plane)(using Tactic[IoError]): Progression[Text] =
+      def children(path: Path on Plane)(using Tactic[IoError]): Chain[Text] =
         protect(path, Operation.Read):
-          if !jnf.Files.isDirectory(javaPath(path)) then Progression()
+          if !jnf.Files.isDirectory(javaPath(path)) then Chain()
           else
             // `Files.list` holds the directory's file descriptor until the stream is
-            // closed — exhausting its iterator does not release it, and a `Progression` would
+            // closed — exhausting its iterator does not release it, and a `Chain` would
             // defer even that — so the names are materialized strictly and the stream
             // closed before returning. Left unclosed, each directory listed leaks a
             // descriptor until its stream is garbage-collected, which a low-allocation
@@ -167,7 +167,7 @@ package filesystemBackends:
             val stream = jnf.Files.list(javaPath(path)).nn
 
             try
-              Progression.from:
+              Chain.from:
                 stream.iterator().nn.asScala.map(_.getFileName.nn.toString.tt).toList
             finally stream.close()
 

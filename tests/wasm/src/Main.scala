@@ -69,7 +69,7 @@ object Main extends Run:
     val payload: Data = proscenium.Array.unsafeFrozen("wasm e2e probe".getBytes("UTF-8").nn)
 
     backend.open(file, proscenium.List(OpenFlag.Write, OpenFlag.Create)): handle =>
-      handle.writer(proscenium.Progression(payload))
+      handle.writer(proscenium.Chain(payload))
 
     val content: Text = backend.open(file, proscenium.List(OpenFlag.Read)): handle =>
       handle.reader().map(_.utf8).join

@@ -429,7 +429,7 @@ object Http:
 
       Head(method, version, host, target, headers)
 
-    def parse(stream: Progression[Data])(using Tactic[HttpRequestError]): Request^ =
+    def parse(stream: Chain[Data])(using Tactic[HttpRequestError]): Request^ =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
       val head = parseHead(cursor)
 
@@ -444,7 +444,7 @@ object Http:
     // The endpoint form: the request parses straight off the connection's pull
     // endpoint. The body spring lends the cursor's remainder as a SINGLE-OWNER
     // stream: each mint resumes from wherever the previous reader stopped, and
-    // explicit `memoize` replaces the Progression form's implicit caching.
+    // explicit `memoize` replaces the Chain form's implicit caching.
     def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[HttpRequestError])
     :   Request^ =
 
@@ -803,7 +803,7 @@ object Http:
       val chunks = bodyBytes
       Stream(Iterator(head.in[Data]) ++ chunks)
 
-    def parse(stream: Progression[Data], bodiless: Boolean = false)
+    def parse(stream: Chain[Data], bodiless: Boolean = false)
     :   Response raises HttpResponseError =
 
       parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator), bodiless)

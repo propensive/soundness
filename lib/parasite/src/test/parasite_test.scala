@@ -501,7 +501,7 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Race returns first completed result"):
           val gate = Promise[Unit]()
           val winner = Promise[Unit]()
-          val tasks = Series(
+          val tasks = Sequence(
             async { winner.await(); t"first" },
             async { gate.await(); t"second" },
             async { gate.await(); t"third" } )
@@ -612,11 +612,11 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Concurrent stream"):
         test(m"Concurrent on a complete stream returns same elements"):
-          Progression(1, 2, 3, 4, 5).concurrent.stdlib.to(List)
+          Chain(1, 2, 3, 4, 5).concurrent.stdlib.to(List)
         . assert(_ == List(1, 2, 3, 4, 5))
 
         test(m"Concurrent on empty stream is empty"):
-          Progression[Int]().concurrent.stdlib.to(List)
+          Chain[Int]().concurrent.stdlib.to(List)
         . assert(_ == List())
 
       suite(m"High contention"):
@@ -1002,7 +1002,7 @@ object Tests extends Suite(m"Parasite tests"):
           val later = async:
             snooze(1.0*Second)
             -1
-          val result = async(Series(ready, later).race()).await()
+          val result = async(Sequence(ready, later).race()).await()
           later.cancel()
           result
         . assert(_ == 99)
@@ -1101,7 +1101,7 @@ object Tests extends Suite(m"Parasite tests"):
       suite(m"Race extension"):
         test(m"Race propagates result of fastest"):
           val gate = Promise[Unit]()
-          val tasks = Series(
+          val tasks = Sequence(
             async:
               snooze(200.0*Milli(Second))
               t"slow",
@@ -1123,7 +1123,7 @@ object Tests extends Suite(m"Parasite tests"):
           val winner = async:
             winnerGate.await()
             t"winner"
-          val tasks = Series(winner, loser)
+          val tasks = Sequence(winner, loser)
           val raceTask = async(tasks.race())
           winnerGate.fulfill(())
           raceTask.await()
@@ -1238,7 +1238,7 @@ object Tests extends Suite(m"Parasite tests"):
       suite(m"Concurrent stream details"):
         test(m"Concurrent stream preserves head element with delays"):
           val gate = Promise[Unit]()
-          val stream: Progression[Int] = 1 #:: { gate.await(); 2 } #:: { 3 } #:: Progression.empty
+          val stream: Chain[Int] = 1 #:: { gate.await(); 2 } #:: { 3 } #:: Chain.empty
           val task = async(stream.concurrent.stdlib.head)
           gate.fulfill(())
           task.await()

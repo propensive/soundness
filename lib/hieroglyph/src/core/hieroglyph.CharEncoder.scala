@@ -61,7 +61,7 @@ extends Encodable, Findable:
   // stage through a `CharBuffer` — the mirror of `CharDecoder.decoded` — so
   // pairs carry whole across chunks; malformed and unmappable input is
   // replaced, matching `getBytes` on the whole-value path above.
-  def encoded(stream: Progression[Text]): Progression[Data] =
+  def encoded(stream: Chain[Text]): Chain[Data] =
     val encoder =
       encoding.charset.newEncoder().nn
       . onMalformedInput(jnc.CodingErrorAction.REPLACE).nn
@@ -70,7 +70,7 @@ extends Encodable, Findable:
     val in = jn.CharBuffer.allocate(4096).nn
     val out = jn.ByteBuffer.allocate(4096).nn
 
-    def recur(todo: Progression[Text], offset: Int = 0): Progression[Data] =
+    def recur(todo: Chain[Text], offset: Int = 0): Chain[Data] =
       val count = in.remaining
 
       if !todo.nil then
@@ -91,7 +91,7 @@ extends Encodable, Findable:
       in.compact()
 
       def continue =
-        if todo.nil && !status.isOverflow then Progression()
+        if todo.nil && !status.isOverflow then Chain()
         else if !todo.nil && count >= todo.head.s.length - offset then recur(todo.tail, 0)
         else recur(todo, offset + count)
 

@@ -50,7 +50,7 @@ import vacuous.*
 import zephyrine.{stream as _, *}
 
 // A value which can be opened as a pull endpoint: a demand-aware `Stream`
-// over a mutable buffer (formerly a `Progression`; the kernel shape was
+// over a mutable buffer (formerly a `Chain`; the kernel shape was
 // incubated as `Source`, which remains as an alias). Instances needing
 // buffers or error contexts capture them as contextual values of the given
 // (`Buffering`, `Tactic[StreamError]`), so the typeclass itself remains a
@@ -66,10 +66,10 @@ object Streamable:
 
   // Legacy views: a lazy list of chunks is a source, though its production is
   // beyond demand control; demand bounds only the exposure of each chunk.
-  given lazyListData: Progression[Data] is Streamable by Data over Credit = value =>
+  given lazyListData: Chain[Data] is Streamable by Data over Credit = value =>
     Stream(value.iterator)
 
-  given lazyListText: Progression[Text] is Streamable by Text over Credit = value =>
+  given lazyListText: Chain[Text] is Streamable by Text over Credit = value =>
     Stream(value.iterator)
 
   // The HTTP-body interchange protocol is itself a pull source, so a

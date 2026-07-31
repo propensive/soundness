@@ -749,9 +749,9 @@ object Cbor extends Cbor2, Dynamic:
     values => ast(Ast.array(Array.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
-  given seriesEncodable: [series <: Series, element]
+  given seriesEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Cbor)^ )
-  =>  ((series[element] is Encodable in Cbor)^{encodable}) =
+  =>  ((sequence[element] is Encodable in Cbor)^{encodable}) =
     values => ast(Ast.array(Array.from(values.stdlib.map(encodable.encoded(_).root))))
 
 
@@ -791,14 +791,14 @@ object Cbor extends Cbor2, Dynamic:
       value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
       builder.result().asInstanceOf[set[element]]
 
-  given seriesDecodable: [series <: Series, element]
+  given seriesDecodable: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[CborError] )
   =>  ( decodable: => (element is Decodable in Cbor)^ )
-  =>  ((series[element] is Decodable in Cbor)^{tactic, decodable}) =
+  =>  ((sequence[element] is Decodable in Cbor)^{tactic, decodable}) =
     value =>
       val builder = Vector.newBuilder[element]
       value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
-      builder.result().asInstanceOf[series[element]]
+      builder.result().asInstanceOf[sequence[element]]
 
   given mapDecodable: [key: Decodable in Text, element]
   =>  ( decodable: => (element is Decodable in Cbor)^ )

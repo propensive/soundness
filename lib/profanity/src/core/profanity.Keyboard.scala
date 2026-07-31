@@ -135,7 +135,7 @@ object Keyboard:
   // boundary (a fragmented SSH write), so it can be far shorter than the
   // 30ms every bare Escape formerly cost.
   trait Lookahead:
-    def sequenceFollows(rest: Progression[Char]): Boolean
+    def sequenceFollows(rest: Chain[Char]): Boolean
 
   object Lookahead:
     // For pre-materialized input (tests, replays): a non-empty tail follows.
@@ -151,7 +151,7 @@ object Keyboard:
   class Standard()(using lookahead: Lookahead) extends Keyboard:
     type Keypress = profanity.Keypress | TerminalInfo
 
-    def process(stream: Progression[Char]): Progression[Keypress] = stream match
+    def process(stream: Chain[Char]): Chain[Keypress] = stream match
       case '\u001b' #:: rest =>
         if !lookahead.sequenceFollows(rest) then Keypress.Escape #:: process(rest)
         else
@@ -228,7 +228,7 @@ object Keyboard:
                     Keypress.EscapeSeq(char, sequence*) #:: process(tail)
 
                   case _ =>
-                    Progression()
+                    Chain()
 
             case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
               val content = rest.takeWhile(_ != '\u001b').stdlib.mkString.tt
@@ -263,9 +263,9 @@ object Keyboard:
         Keypress.CharKey(other) #:: process(rest)
 
       case _ =>
-        Progression()
+        Chain()
 
 trait Keyboard:
   type Keypress
 
-  def process(stream: Progression[Char]): Progression[Keypress]
+  def process(stream: Chain[Char]): Chain[Keypress]

@@ -211,13 +211,13 @@ trait Json2 extends Json3:
     Json.Field(Json.Parsable.iterable[scala.collection.immutable.Set, element](field))
     . asInstanceOf[set[element] is Json.Field]
 
-  given fieldSeries: [series <: Series, element]
+  given fieldSeries: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[JsonError],
         foci:   Foci[Json.Focus] )
   =>  ( field: => (element is Json.Field)^ )
-  =>  series[element] is Json.Field =
+  =>  sequence[element] is Json.Field =
     Json.Field(Json.Parsable.iterable[Vector, element](field))
-    . asInstanceOf[series[element] is Json.Field]
+    . asInstanceOf[sequence[element] is Json.Field]
 
   given fieldMap: [key: distillate.Decodable in Text, element]
   =>  Tactic[JsonError]
@@ -247,7 +247,7 @@ trait Json2 extends Json3:
         type Self = value in Json
         type Operand = Data
 
-        def aggregate(bytes: Progression[Data]): value in Json =
+        def aggregate(bytes: Chain[Data]): value in Json =
           Json.readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
@@ -1226,7 +1226,7 @@ object Json extends Json2, Dynamic:
           type Self = Json.Ast
           type Operand = Data
 
-          def aggregate(source: Progression[Data]): Json.Ast = Json.Ast.parse(source.stdlib.iterator)
+          def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(source.stdlib.iterator)
           override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
             // See `readJson`: the non-consume `accept` signature crosses to the
             // consuming parser as a neutral reference.
@@ -2211,13 +2211,13 @@ object Json extends Json2, Dynamic:
     Json.Parsable.iterable[scala.collection.immutable.Set, element](parsable)
     . asInstanceOf[set[element] is Json.Parsable]
 
-  given seriesParsable: [series <: Series, element]
+  given seriesParsable: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[JsonError],
         foci:   Foci[Json.Focus] )
   =>  ( parsable: => (element is Json.Parsable)^ )
-  =>  series[element] is Json.Parsable =
+  =>  sequence[element] is Json.Parsable =
     Json.Parsable.iterable[Vector, element](parsable)
-    . asInstanceOf[series[element] is Json.Parsable]
+    . asInstanceOf[sequence[element] is Json.Parsable]
 
   given mapParsable: [key: distillate.Decodable in Text, element]
   =>  Tactic[JsonError]
@@ -2312,8 +2312,8 @@ object Json extends Json2, Dynamic:
         values => Json.ast(Json.Ast.arr(Array.from(values.stdlib.map(encodable.encoded(_).root)).asInstanceOf[Array[Any]^{}]))
 
 
-  given seriesEncodable: [series <: Series, element] => (encodable: => (element is Json.Encodable))
-  =>  series[element] is Json.Encodable =
+  given seriesEncodable: [sequence <: Sequence, element] => (encodable: => (element is Json.Encodable))
+  =>  sequence[element] is Json.Encodable =
 
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
@@ -2380,13 +2380,13 @@ object Json extends Json2, Dynamic:
     array[scala.collection.immutable.Set, element]
     . asInstanceOf[set[element] is Json.Decodable]
 
-  given seriesDecodable: [series <: Series, element]
+  given seriesDecodable: [sequence <: Sequence, element]
   =>  ( tactic: Tactic[JsonError],
         foci:   Foci[Json.Focus] )
   =>  ( decodable: => (element is Json.Decodable)^ )
-  =>  series[element] is Json.Decodable =
+  =>  sequence[element] is Json.Decodable =
     array[Vector, element]
-    . asInstanceOf[series[element] is Json.Decodable]
+    . asInstanceOf[sequence[element] is Json.Decodable]
 
   given map: [key: distillate.Decodable in Text, element]
   =>  ( decodable: => (element is Json.Decodable)^ )
@@ -2452,7 +2452,7 @@ object Json extends Json2, Dynamic:
         type Self = Json
         type Operand = Data
 
-        def aggregate(bytes: Progression[Data]): Json = readJson(bytes.iterator)
+        def aggregate(bytes: Chain[Data]): Json = readJson(bytes.iterator)
         override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
 
@@ -2471,7 +2471,7 @@ object Json extends Json2, Dynamic:
         type Self = value in Json
         type Operand = Data
 
-        def aggregate(bytes: Progression[Data]): value in Json =
+        def aggregate(bytes: Chain[Data]): value in Json =
           // A single in-memory block — the common case — skips the iterator
           // plumbing entirely.
           if !bytes.isEmpty && bytes.tail.isEmpty
@@ -2516,12 +2516,12 @@ object Json extends Json2, Dynamic:
   given decodable: (tactic: Tactic[ParseError])
   =>  Json is distillate.Decodable in Text =
     caps.unsafe.unsafeAssumePure:
-      text => Progression(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
+      text => Chain(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
 
   given instantiable: (tactic: Tactic[ParseError])
   =>  Json is Instantiable across HttpRequests from Text =
     caps.unsafe.unsafeAssumePure:
-      text => Progression(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
+      text => Chain(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: Array[String]^{} = Array.from(elements.map(_(0))).asInstanceOf[Array[String]^{}]

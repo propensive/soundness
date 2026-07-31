@@ -97,12 +97,12 @@ package keyboards:
   given rawKeyboard: Keyboard:
     type Keypress = Char
 
-    def process(stream: Progression[Char]): Progression[Keypress] = stream
+    def process(stream: Chain[Char]): Chain[Keypress] = stream
 
   given numericKeyboard: Keyboard:
     type Keypress = Int
 
-    def process(stream: Progression[Char]): Progression[Int] = stream.map(_.toInt)
+    def process(stream: Chain[Char]): Chain[Int] = stream.map(_.toInt)
 
   // Honestly tracked: the keyboard's escape-disambiguation timeout runs `async`, so the
   // instance retains the monitor.

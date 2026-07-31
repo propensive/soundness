@@ -285,11 +285,11 @@ object Xml extends Tag.Container
     collectionDecodable[scala.collection.immutable.Set, element]
     . asInstanceOf[set[element] is Decodable in Xml]
 
-  given seriesDecodable: [series <: Series, element]
+  given seriesDecodable: [sequence <: Sequence, element]
   =>  ( element0: => (element is Decodable in Xml)^ )
-  =>  series[element] is Decodable in Xml =
+  =>  sequence[element] is Decodable in Xml =
     collectionDecodable[Vector, element]
-    . asInstanceOf[series[element] is Decodable in Xml]
+    . asInstanceOf[sequence[element] is Decodable in Xml]
 
   // The mirror of `collectionDecodable`: a collection encodes to a `Fragment`
   // holding one node per element, which the product derivation (recognising
@@ -333,11 +333,11 @@ object Xml extends Tag.Container
     collectionEncodable[scala.collection.immutable.Set, element]
     . asInstanceOf[set[element] is Encodable in Xml]
 
-  given seriesEncodable: [series <: Series, element]
+  given seriesEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Xml)^ )
-  =>  series[element] is Encodable in Xml =
+  =>  sequence[element] is Encodable in Xml =
     collectionEncodable[Vector, element]
-    . asInstanceOf[series[element] is Encodable in Xml]
+    . asInstanceOf[sequence[element] is Encodable in Xml]
 
   // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
   // decoder when one exists (so any `Decodable in Text` value works as a
@@ -1301,11 +1301,11 @@ object Xml extends Tag.Container
     Xml.Field(Xml.Parsable.iterable[scala.collection.immutable.Set, element](field))
     . asInstanceOf[set[element] is Xml.Field]
 
-  given fieldSeries: [series <: Series, element]
+  given fieldSeries: [sequence <: Sequence, element]
   =>  ( field: => (element is Xml.Field)^ )
-  =>  series[element] is Xml.Field =
+  =>  sequence[element] is Xml.Field =
     Xml.Field(Xml.Parsable.iterable[Vector, element](field))
-    . asInstanceOf[series[element] is Xml.Field]
+    . asInstanceOf[sequence[element] is Xml.Field]
 
   // The direct read of a field type carried by a plain text codec — the
   // direct counterpart of the `decodable` blanket's `Decodable in Text`
@@ -1472,7 +1472,7 @@ object Xml extends Tag.Container
   given instantiable: (schema: XmlSchema) => (tactic: Tactic[ParseError])
   =>  ((Xml is Instantiable across HttpRequests from Text)^{tactic}) =
 
-    text => Progression(text).read[Xml]
+    text => Chain(text).read[Xml]
 
   // Direct parsing: when the value knows how to consume elements itself, the
   // `Xml` tree is never materialized. Declared here (not in `Xml2`, where the
@@ -1925,7 +1925,7 @@ object Xml extends Tag.Container
       ( xml:      Xml,
         data:     Array[Int]^{},
         offset:   Int,
-        segments: Series[Text],
+        segments: Sequence[Text],
         i:        Int )
     :   Optional[Position] =
 
@@ -2052,7 +2052,7 @@ object Xml extends Tag.Container
 
       def locate(document: Document[Xml], path: XPath): Optional[Xml.Position] =
         document.metadata.positionIndex.let: index =>
-          Locator.walk(document.root, index.ints, 0, Series.from(path.path.descent), 0)
+          Locator.walk(document.root, index.ints, 0, Sequence.from(path.path.descent), 0)
 
       // XML has no distinct key positions, so there is nothing to locate by key.
       def locateKey(document: Document[Xml], path: XPath): Optional[Xml.Position] = Unset

@@ -100,36 +100,36 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
     suite(m"Round-trips"):
       test(m"single int field"):
         scala.caps.unsafe.unsafeAssumeSeparate:
-          proscenium.Progression(Sample(150).in[Protobuf].encode).read[Sample in Protobuf]
+          proscenium.Chain(Sample(150).in[Protobuf].encode).read[Sample in Protobuf]
       . assert(_ == Sample(150))
 
       test(m"two int fields, one at its default"):
-        proscenium.Progression(Point(0, 5).in[Protobuf].encode).read[Point in Protobuf]
+        proscenium.Chain(Point(0, 5).in[Protobuf].encode).read[Point in Protobuf]
       . assert(_ == Point(0, 5))
 
       test(m"string and int fields"):
-        proscenium.Progression(Person(t"Alice", 30).in[Protobuf].encode).read[Person in Protobuf]
+        proscenium.Chain(Person(t"Alice", 30).in[Protobuf].encode).read[Person in Protobuf]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"read[Protobuf] then as[T] (two-step)"):
-        proscenium.Progression(Person(t"Alice", 30).in[Protobuf].encode).read[Protobuf].as[Person]
+        proscenium.Chain(Person(t"Alice", 30).in[Protobuf].encode).read[Protobuf].as[Person]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"nested message"):
-        proscenium.Progression(Wrapper(Point(3, 4), t"origin").in[Protobuf].encode).read[Wrapper in Protobuf]
+        proscenium.Chain(Wrapper(Point(3, 4), t"origin").in[Protobuf].encode).read[Wrapper in Protobuf]
       . assert(_ == Wrapper(Point(3, 4), t"origin"))
 
       test(m"sparse field numbers"):
-        proscenium.Progression(Sparse(9, t"x").in[Protobuf].encode).read[Sparse in Protobuf]
+        proscenium.Chain(Sparse(9, t"x").in[Protobuf].encode).read[Sparse in Protobuf]
       . assert(_ == Sparse(9, t"x"))
 
     suite(m"Repeated fields"):
       test(m"repeated strings round-trip in order"):
-        proscenium.Progression(Tags(List(t"a", t"b", t"c")).in[Protobuf].encode).read[Tags in Protobuf]
+        proscenium.Chain(Tags(List(t"a", t"b", t"c")).in[Protobuf].encode).read[Tags in Protobuf]
       . assert(_ == Tags(List(t"a", t"b", t"c")))
 
       test(m"repeated ints round-trip, keeping default elements"):
-        proscenium.Progression(Numbers(List(0, 1, 2)).in[Protobuf].encode).read[Numbers in Protobuf]
+        proscenium.Chain(Numbers(List(0, 1, 2)).in[Protobuf].encode).read[Numbers in Protobuf]
       . assert(_ == Numbers(List(0, 1, 2)))
 
       test(m"repeated ints are packed into one length-delimited field"):
@@ -139,7 +139,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"a packed field produced elsewhere decodes back to a List"):
         // The canonical packed encoding of [3, 270, 86942] (matches `protoc`).
         val packed = Array.of[Byte](0x0a, 0x06, 0x03, 0x8e.toByte, 0x02, 0x9e.toByte, 0xa7.toByte, 0x05)
-        proscenium.Progression(packed).read[Numbers in Protobuf]
+        proscenium.Chain(packed).read[Numbers in Protobuf]
       . assert(_ == Numbers(List(3, 270, 86942)))
 
       test(m"empty repeated field writes nothing"):
@@ -149,31 +149,31 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"a type recursive through a List round-trips"):
-        proscenium.Progression(tree.in[Protobuf].encode).read[Protobuf].as[Tree]
+        proscenium.Chain(tree.in[Protobuf].encode).read[Protobuf].as[Tree]
       . assert(_ == tree)
 
       test(m"a generic product over a recursive type stays structurally derived"):
-        proscenium.Progression(Boxed(tree).in[Protobuf].encode).read[Protobuf].as[Boxed[Tree]]
+        proscenium.Chain(Boxed(tree).in[Protobuf].encode).read[Protobuf].as[Boxed[Tree]]
       . assert(_ == Boxed(tree))
 
     suite(m"Optional presence"):
       test(m"a set optional round-trips"):
-        proscenium.Progression(MaybeName(t"set").in[Protobuf].encode).read[MaybeName in Protobuf]
+        proscenium.Chain(MaybeName(t"set").in[Protobuf].encode).read[MaybeName in Protobuf]
       . assert(_ == MaybeName(t"set"))
 
       test(m"an unset optional writes nothing and round-trips to Unset"):
-        proscenium.Progression(MaybeName(Unset).in[Protobuf].encode).read[MaybeName in Protobuf]
+        proscenium.Chain(MaybeName(Unset).in[Protobuf].encode).read[MaybeName in Protobuf]
       . assert(_ == MaybeName(Unset))
 
     suite(m"Sum types (oneof)"):
       test(m"the Circle variant round-trips"):
         val shape: Shape = Shape.Circle(5)
-        proscenium.Progression(shape.in[Protobuf].encode).read[Shape in Protobuf]
+        proscenium.Chain(shape.in[Protobuf].encode).read[Shape in Protobuf]
       . assert(_ == Shape.Circle(5))
 
       test(m"the Rectangle variant round-trips"):
         val shape: Shape = Shape.Rectangle(3, 4)
-        proscenium.Progression(shape.in[Protobuf].encode).read[Shape in Protobuf]
+        proscenium.Chain(shape.in[Protobuf].encode).read[Shape in Protobuf]
       . assert(_ == Shape.Rectangle(3, 4))
 
     suite(m"Field-number fallback"):
@@ -182,14 +182,14 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == List(0x08, 0x96))
 
       test(m"unannotated message round-trips"):
-        proscenium.Progression(Unnumbered(7, 9).in[Protobuf].encode).read[Unnumbered in Protobuf]
+        proscenium.Chain(Unnumbered(7, 9).in[Protobuf].encode).read[Unnumbered in Protobuf]
       . assert(_ == Unnumbered(7, 9))
 
     suite(m"Typed integer encodings"):
       val typed = Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits)
 
       test(m"all typed integers round-trip"):
-        proscenium.Progression(typed.in[Protobuf].encode).read[Typed in Protobuf]
+        proscenium.Chain(typed.in[Protobuf].encode).read[Typed in Protobuf]
       . assert(_ == typed)
 
       test(m"sint32 uses zig-zag (field 3, -1 ⇒ tag 0x18, 0x01)"):
@@ -203,12 +203,12 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
     suite(m"Maps"):
       test(m"a string→string map round-trips"):
         val labels = Labels(Map(t"a" -> t"1", t"b" -> t"2"))
-        proscenium.Progression(labels.in[Protobuf].encode).read[Labels in Protobuf]
+        proscenium.Chain(labels.in[Protobuf].encode).read[Labels in Protobuf]
       . assert(_ == Labels(Map(t"a" -> t"1", t"b" -> t"2")))
 
       test(m"a string→int map round-trips"):
         val counts = Counts(Map(t"x" -> 10, t"y" -> 20))
-        proscenium.Progression(counts.in[Protobuf].encode).read[Counts in Protobuf]
+        proscenium.Chain(counts.in[Protobuf].encode).read[Counts in Protobuf]
       . assert(_ == Counts(Map(t"x" -> 10, t"y" -> 20)))
 
       test(m"an empty map writes nothing"):
@@ -222,7 +222,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
     suite(m"Parse errors carry a byte offset"):
       def decode(bytes: Byte*): Sample raises ProtobufError =
         scala.caps.unsafe.unsafeAssumeSeparate:
-          proscenium.Progression(Array.from(bytes)).read[Sample in Protobuf]
+          proscenium.Chain(Array.from(bytes)).read[Sample in Protobuf]
 
       test(m"a truncated length-delimited payload reports the offset where data ran out"):
         // field 1, wire type Len, length 5, but only one payload byte present.
@@ -237,7 +237,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"a varint longer than ten bytes is malformed"):
         capture[ProtobufError]:
           scala.caps.unsafe.unsafeAssumeSeparate:
-            proscenium.Progression(Array.fill(11)(0x80.toByte)).read[Sample in Protobuf]
+            proscenium.Chain(Array.fill(11)(0x80.toByte)).read[Sample in Protobuf]
       . assert(_ == ProtobufError(ProtobufError.Reason.MalformedVarint(0)))
 
       test(m"a varint whose value overflows 64 bits is rejected"):

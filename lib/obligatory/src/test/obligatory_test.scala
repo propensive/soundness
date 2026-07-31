@@ -50,31 +50,31 @@ object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
       test(m"Unframe by carriage-return lines"):
-        Progression(t"one\rtwo\r", t"three").iterator.frames[CarriageReturn].to(List)
+        Chain(t"one\rtwo\r", t"three").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by carriage-return lines, without terminal line"):
-        Progression(t"one\rtwo", t"\rthree\r").iterator.frames[CarriageReturn].to(List)
+        Chain(t"one\rtwo", t"\rthree\r").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines"):
-        Progression(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
+        Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines, without terminal line"):
-        Progression(t"one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
+        Chain(t"one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines"):
-        Progression(t"""one\r\ntwo\r\nthree""").iterator.frames[CrLf].to(List)
+        Chain(t"""one\r\ntwo\r\nthree""").iterator.frames[CrLf].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines, without terminal line"):
-        Progression(t"""one\r\ntwo\r\nthree\r\n""").iterator.frames[CrLf].to(List)
+        Chain(t"""one\r\ntwo\r\nthree\r\n""").iterator.frames[CrLf].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Length-prefixed chunks"):
-        Progression(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
+        Chain(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
         . iterator
         . frames[LengthPrefix]
         . to(List)
@@ -128,17 +128,17 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"round-trip a single message"):
         val framed = GrpcFraming.encode(ascii(t"hello"))
-        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
+        Chain(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
         val framed = Array.frozen(GrpcFraming.encode(ascii(t"one")).readable ++ GrpcFraming.encode(ascii(t"two")).readable)
-        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
+        Chain(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
         val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
-        Progression(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
+        Chain(framed).iterator.frames[GrpcFraming].to(List).map(_.readable.to(List))
       . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):

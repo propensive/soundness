@@ -176,17 +176,17 @@ object Brotli:
 
       BrotliStage(BrotliDecoderEngine())
 
-    override def compress(stream: Progression[Data]): Progression[Data] =
+    override def compress(stream: Chain[Data]): Chain[Data] =
       drive(BrotliEncoderEngine(), stream)
 
-    override def decompress(stream: Progression[Data]): Progression[Data] =
+    override def decompress(stream: Chain[Data]): Chain[Data] =
       drive(BrotliDecoderEngine(), stream)
 
   // Drives an engine over a lazy stream chunk by chunk, then collects its finished tail. The
   // engine argument is by-name, so the (exclusive, mutable) engine is minted inside the deferred
   // block and never escapes it.
-  private def drive(engine0: => BrotliEngine^, stream: Progression[Data]): Progression[Data] =
-    def recur(engine: BrotliEngine^, stream: Progression[Data]): Progression[Data] = stream match
+  private def drive(engine0: => BrotliEngine^, stream: Chain[Data]): Chain[Data] =
+    def recur(engine: BrotliEngine^, stream: Chain[Data]): Chain[Data] = stream match
       case head #:: tail =>
         engine.accept(head, 0, head.length)
         recur(engine, tail)
@@ -194,8 +194,8 @@ object Brotli:
       case _ =>
         engine.finish()
         val data = engine.gather()
-        if data.length > 0 then Progression(data) else Progression.empty
+        if data.length > 0 then Chain(data) else Chain.empty
 
-    Progression.defer(recur(engine0, stream))
+    Chain.defer(recur(engine0, stream))
 
 sealed trait Brotli extends Compressor

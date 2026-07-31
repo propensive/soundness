@@ -177,9 +177,9 @@ trait Tels2:
       override def polarity: Tels.Polarity = Polarity.Loose
       override def repeatable: Tels.Polarity = Polarity.Loose
 
-  given series: [value: Schematic over Tels.Type] => Series[value] is TelSchematic over Tels.Type =
+  given sequence: [value: Schematic over Tels.Type] => Sequence[value] is TelSchematic over Tels.Type =
     new TelSchematic:
-      type Self = Series[value]
+      type Self = Sequence[value]
       type Transport = Tels.Type
       def schema(): Tels.Type = value.schema()
       override def polarity: Tels.Polarity = Polarity.Loose

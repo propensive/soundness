@@ -314,15 +314,15 @@ private[probably] object AnsiRenderer:
         Scaffold[List[Datum]](tableColumns2*)
         . tabulate(rows).grid(columns).render.each(Out.println(_))
 
-      case Block.Sparkline(steps, series) =>
-        val labelWidth = series.stdlib.map(_.label.length).max
+      case Block.Sparkline(steps, sequence) =>
+        val labelWidth = sequence.stdlib.map(_.label.length).max
         val stepWidth = steps.stdlib.map(_.show.length).max + 2
 
         Out.println:
           val headings = steps.stdlib.map(_.show.pad(stepWidth, Rtl)).join
           e"  ${Fg(palette.subdued)}(${t"N".pad(labelWidth)}$headings)"
 
-        series.zipWithIndex.each: (spark, index) =>
+        sequence.zipWithIndex.each: (spark, index) =>
           val color = accent(index)
 
           val cells: Teletype =

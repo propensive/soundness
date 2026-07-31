@@ -91,7 +91,7 @@ object Subtree:
       ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Read])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[IoError] )
-    :   Progression[Path on plane] =
+    :   Chain[Path on plane] =
       entriesResolved(handle.resolve(path)).map: child =>
         path.child(child.name)(using Unsafe)
 
@@ -126,7 +126,7 @@ object Subtree:
   def entriesResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under, tactic: Tactic[IoError] )
-  :   Progression[Path on under] =
+  :   Chain[Path on under] =
     path.children
 
   def removeResolved[under](path: Path on under)

@@ -190,6 +190,6 @@ object Packager:
   :   Unit raises IoError raises StreamError =
 
     output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
-      handle.write(Progression(data))
+      handle.write(Chain(data))
 
     output.executable() = true

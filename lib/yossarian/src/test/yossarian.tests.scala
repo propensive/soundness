@@ -287,7 +287,7 @@ object Tests extends Suite(m"Yossarian Tests"):
       List.of((0 until pty.buffer.height).toList.map(y => row(pty, y.z)))
 
     // Local Text helpers so we don't depend on extension-method imports that
-    // collide with Progression[Data] versions.
+    // collide with Chain[Data] versions.
     def take(text: Text, n: Int): Text = Text(text.s.substring(0, n).nn)
     def trim(text: Text): Text = Text(text.s.trim.nn)
     def head(text: Text): Char = text.s.charAt(0)

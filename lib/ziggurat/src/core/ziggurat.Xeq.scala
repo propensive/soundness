@@ -76,7 +76,7 @@ object Xeq:
     val encoded = payloads.stdlib.map: payload =>
       val raw: Data =
         if !payload.gzip then payload.bytes
-        else Progression(payload.bytes).compress[Gzip].read[Data]
+        else Chain(payload.bytes).compress[Gzip].read[Data]
 
       payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
@@ -163,7 +163,7 @@ object Xeq:
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File](CreateFlag.Parents, CreateFlag.Replace): handle ?=>
-      handle.write(Progression(data))
+      handle.write(Chain(data))
 
     output.executable() = true
 

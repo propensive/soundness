@@ -43,23 +43,23 @@ import denominative.*
 import rudiments.*
 
 object Permutation:
-  def bySize(n: Int): Progression[Permutation] = Progression.range[BigInt](0, Factorial(n)).map: i =>
+  def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
-  def apply(series: Series[Int]): Permutation raises PermutationError =
-    val sequence = series.stdlib
-    val array: scala.Array[Int]^ = new scala.Array(sequence.length)
+  def apply(sequence: Sequence[Int]): Permutation raises PermutationError =
+    val elements = sequence.stdlib
+    val array: scala.Array[Int]^ = new scala.Array(elements.length)
     val seen: BitSet = BitSet()
     var index = 0
 
-    while index < sequence.length do
-      val element = sequence(index)
+    while index < elements.length do
+      val element = elements(index)
       array(index) = element - seen.count(_ < element)
 
-      if element >= sequence.length || element < 0
+      if element >= elements.length || element < 0
       then
         raise
-          ( PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)) )
+          ( PermutationError(PermutationError.Reason.InvalidIndex(element, elements.length - 1)) )
 
       if seen.has(element)
       then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
@@ -119,4 +119,4 @@ case class Permutation(factoradic: Factoradic):
         case Nil          => false
     do ()
 
-    unsafely(Permutation(Series.from(array.iterator)))
+    unsafely(Permutation(Sequence.from(array.iterator)))

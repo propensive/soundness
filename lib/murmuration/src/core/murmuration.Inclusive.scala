@@ -62,9 +62,9 @@ object Inclusive extends Inclusive.Fallback:
   given frozenArray: [element <: Matchable] => (Array[element]^{}) is Inclusive by element =
     (array, value) => array.readable.exists(_ == value)
 
-  // Opaque `Series` is no longer an `Iterable` subtype, so it needs its own instance.
-  given series: [element] => Series[element] is Inclusive by element =
-    (series, value) => series.stdlib.exists(_ == value)
+  // Opaque `Sequence` is no longer an `Iterable` subtype, so it needs its own instance.
+  given sequence: [element] => Sequence[element] is Inclusive by element =
+    (sequence, value) => sequence.stdlib.exists(_ == value)
 
   // Opaque `Set` likewise.
   given set: [element] => Set[element] is Inclusive by element =

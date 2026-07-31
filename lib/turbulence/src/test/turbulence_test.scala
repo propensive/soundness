@@ -54,8 +54,8 @@ object Tests extends Suite(m"Turbulence tests"):
       given Seed = Seed(1L)
       import randomization.seededRandomization
       val data: Data = Data.fill(1000)(_.toByte)
-      val stream: Progression[Data] = Progression(data)
-      val shredded: Iterable[Progression[Data]] = stochastic:
+      val stream: Chain[Data] = Chain(data)
+      val shredded: Iterable[Chain[Data]] = stochastic:
         (0 until 100).map: index =>
           stream.shred(20.0, 10.0)
 
@@ -86,13 +86,13 @@ object Tests extends Suite(m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.in[Data].readable.grouped(bs).map(Array.frozen(_)).to(proscenium.Progression)
+          val stream = string.in[Data].readable.grouped(bs).map(Array.frozen(_)).to(proscenium.Chain)
           val result = stream.read[Text]
           result.in[Data].readable.length
         . assert(_ == string.in[Data].readable.length)
 
         test(m"roundtrip tests"):
-          val stream = string.in[Data].readable.grouped(bs).map(Array.frozen(_)).to(proscenium.Progression)
+          val stream = string.in[Data].readable.grouped(bs).map(Array.frozen(_)).to(proscenium.Chain)
           val result = stream.read[Text]
 
           result.s
@@ -103,7 +103,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val high = gothic.s.charAt(0).toString.tt
         val low = gothic.s.charAt(1).toString.tt
 
-        summon[CharEncoder].encoded(Progression(t"a", high, low, t"b"))
+        summon[CharEncoder].encoded(Chain(t"a", high, low, t"b"))
         . stdlib.to(List).map(_.readable).reduce(_ ++ _).to(List)
       . assert(_ == t"a𐍈b".in[Data].readable.to(List))
 
@@ -111,7 +111,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val string = "aë€𐍈z"
 
         val chunks =
-          (0 until string.length).map { index => string.charAt(index).toString.tt }.to(Progression)
+          (0 until string.length).map { index => string.charAt(index).toString.tt }.to(Chain)
 
         summon[CharDecoder].decoded(summon[CharEncoder].encoded(chunks))
         . stdlib.to(List).map(_.s).mkString
@@ -122,28 +122,28 @@ object Tests extends Suite(m"Turbulence tests"):
 
     object Ref:
       given textSource: Ref is Streamable by Text over Credit =
-        ref => Stream(Progression(t"abc", t"def").iterator)
+        ref => Stream(Chain(t"abc", t"def").iterator)
       given dataSource: Ref is Streamable by Data over Credit =
-        ref => Stream(Progression(t"abc".in[Data], t"def".in[Data]).iterator)
+        ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Streamable by Text over Credit = ref => Stream(Progression(t"abc", t"def").iterator)
+      given Ref2 is Streamable by Text over Credit = ref => Stream(Chain(t"abc", t"def").iterator)
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Streamable by Data over Credit = ref => Stream(Progression(t"abc".in[Data], t"def".in[Data]).iterator)
+      given Ref3 is Streamable by Data over Credit = ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref3()
 
     suite(m"Reading tests"):
-      test(m"Bridge Text source to Progression"):
+      test(m"Bridge Text source to Chain"):
         qbf.source[Text].toProgression.join
       . assert(_ == qbf)
 
-      test(m"Bridge Data source to Progression"):
+      test(m"Bridge Data source to Chain"):
         Array.frozen(qbf.source[Data].toProgression.stdlib.map(_.readable).reduce(_ ++ _)).to[List]
       . assert(_ == qbfData.to[List])
 
@@ -175,41 +175,41 @@ object Tests extends Suite(m"Turbulence tests"):
         Ref3().read[Data].to[List]
       . assert(_ == t"abcdef".in[Data].to[List])
 
-      test(m"Read Text as Progression[Text]"):
-        qbf.read[Progression[Text]].join
+      test(m"Read Text as Chain[Text]"):
+        qbf.read[Chain[Text]].join
       . assert(_ == qbf)
 
       test(m"Read Text as Data"):
         qbf.read[Data]
       . assert(_.to[List] == qbfData.to[List])
 
-      test(m"Read Text as Progression[Data]"):
-        qbf.read[Progression[Data]]
+      test(m"Read Text as Chain[Data]"):
+        qbf.read[Chain[Data]]
       . assert(stream => Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _)).to[List] == qbfData.to[List])
 
       test(m"Read Data as Text"):
         qbfData.read[Text].s
       . assert(_ == qbf.s)
 
-      test(m"Read Data as Progression[Text]"):
-        qbfData.read[Progression[Text]].join
+      test(m"Read Data as Chain[Text]"):
+        qbfData.read[Chain[Text]].join
       . assert(_ == qbf)
 
       test(m"Read Data as Data"):
         qbfData.read[Data]
       . assert(_.to[List] == qbfData.to[List])
 
-      test(m"Read Data as Progression[Data]"):
-        qbfData.read[Progression[Data]]
+      test(m"Read Data as Chain[Data]"):
+        qbfData.read[Chain[Data]]
       . assert(stream => Array.frozen(stream.stdlib.map(_.readable).reduce(_ ++ _)).to[List] == qbfData.to[List])
 
       // test(m"Read Text as Lines"):
-      //   qbf.read[Progression[Line]]
-      // .assert(_ == Progression(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
+      //   qbf.read[Chain[Line]]
+      // .assert(_ == Chain(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
 
       // test(m"Read Data as Lines"):
-      //   qbfData.read[Progression[Line]]
-      // .assert(_ == Progression(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
+      //   qbfData.read[Chain[Line]]
+      // .assert(_ == Chain(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
 
     suite(m"Writing tests"):
 
@@ -260,15 +260,15 @@ object Tests extends Suite(m"Turbulence tests"):
         store().s
       . assert(_ == qbf.s)
 
-      test(m"Write Progression[Text] with Text and Data instances"):
+      test(m"Write Chain[Text] with Text and Data instances"):
         val store = GeneralStore()
-        Progression(qbf).writeTo(store)
+        Chain(qbf).writeTo(store)
         store()
       . assert(_ == qbf)
 
-      test(m"Write Progression[Data] with Text and Data instances"):
+      test(m"Write Chain[Data] with Text and Data instances"):
         val store = GeneralStore()
-        Progression(qbfData).writeTo(store)
+        Chain(qbfData).writeTo(store)
         store()
       . assert(_ == qbf)
 
@@ -284,15 +284,15 @@ object Tests extends Suite(m"Turbulence tests"):
         store().s
       . assert(_ == qbf.s)
 
-      test(m"Write Progression[Text] with only Data instance"):
+      test(m"Write Chain[Text] with only Data instance"):
         val store = ByteStore()
-        Progression(qbf).writeTo(store)
+        Chain(qbf).writeTo(store)
         store()
       . assert(_ == qbf)
 
-      test(m"Write Progression[Data] with only Data instance"):
+      test(m"Write Chain[Data] with only Data instance"):
         val store = ByteStore()
-        Progression(qbfData).writeTo(store)
+        Chain(qbfData).writeTo(store)
         store()
       . assert(_ == qbf)
 
@@ -308,15 +308,15 @@ object Tests extends Suite(m"Turbulence tests"):
         store().s
       . assert(_ == qbf.s)
 
-      test(m"Write Progression[Text] with only Text instance"):
+      test(m"Write Chain[Text] with only Text instance"):
         val store = TextStore()
-        Progression(qbf).writeTo(store)
+        Chain(qbf).writeTo(store)
         store()
       . assert(_ == qbf)
 
-      test(m"Write Progression[Data] with only Text instance"):
+      test(m"Write Chain[Data] with only Text instance"):
         val store = TextStore()
-        Progression(qbfData).writeTo(store)
+        Chain(qbfData).writeTo(store)
         store()
       . assert(_ == qbf)
 
@@ -364,15 +364,15 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Progression[Text] with Text and Data instances"):
+      // test(m"Append Chain[Text] with Text and Data instances"):
       //   val store = GeneralStore()
-      //   Progression(qbf).appendTo(store)
+      //   Chain(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Progression[Data] with Text and Data instances"):
+      // test(m"Append Chain[Data] with Text and Data instances"):
       //   val store = GeneralStore()
-      //   Progression(qbfData).appendTo(store)
+      //   Chain(qbfData).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
@@ -388,15 +388,15 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Progression[Text] with only Data instance"):
+      // test(m"Append Chain[Text] with only Data instance"):
       //   val store = ByteStore()
-      //   Progression(qbf).appendTo(store)
+      //   Chain(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Progression[Data] with only Data instance"):
+      // test(m"Append Chain[Data] with only Data instance"):
       //   val store = ByteStore()
-      //   Progression(qbfData).appendTo(store)
+      //   Chain(qbfData).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
@@ -412,15 +412,15 @@ object Tests extends Suite(m"Turbulence tests"):
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Progression[Text] with only Text instance"):
+      // test(m"Append Chain[Text] with only Text instance"):
       //   val store = TextStore()
-      //   Progression(qbf).appendTo(store)
+      //   Chain(qbf).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
-      // test(m"Append Progression[Data] with only Text instance"):
+      // test(m"Append Chain[Data] with only Text instance"):
       //   val store = TextStore()
-      //   Progression(qbfData).appendTo(store)
+      //   Chain(qbfData).appendTo(store)
       //   store()
       // .assert(_ == qbf)
 
@@ -643,11 +643,11 @@ object Tests extends Suite(m"Turbulence tests"):
         stream.memoize.to[List]
       . assert(_ == payload.to[List])
 
-      test(m"a Progression is a Source through its native instance"):
+      test(m"a Chain is a Source through its native instance"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
-        val source = summon[Progression[Data] is Streamable by Data over Credit]
-        source.stream(Progression(payload, payload)).pump(sink.intake(output))
+        val source = summon[Chain[Data] is Streamable by Data over Credit]
+        source.stream(Chain(payload, payload)).pump(sink.intake(output))
         output.toByteArray.nn.length
       . assert(_ == payload.readable.length*2)
 

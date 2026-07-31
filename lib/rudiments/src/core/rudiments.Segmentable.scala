@@ -46,9 +46,9 @@ object Segmentable:
     (iarray: Array[element]^{}, interval: Interval) =>
       Array.frozen(iarray.readable.slice(interval.start.n0, interval.limit.n0))
 
-  // Opaque `Series` is no longer an `IndexedSeq` subtype, so it needs its own instance.
-  given series: [element] => Series[element] is Segmentable =
-    (series, interval) => Series.of(series.stdlib.slice(interval.start.n0, interval.limit.n0))
+  // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
+  given sequence: [element] => Sequence[element] is Segmentable =
+    (sequence, interval) => Sequence.of(sequence.stdlib.slice(interval.start.n0, interval.limit.n0))
 
   given list: [element] => List[element] is Segmentable =
     (list, interval) => List.of(list.stdlib.slice(interval.start.n0, interval.limit.n0))

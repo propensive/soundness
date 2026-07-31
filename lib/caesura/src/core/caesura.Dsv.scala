@@ -222,7 +222,7 @@ object Dsv extends Dsv2:
         type Self = value in Dsv
         type Operand = Text
 
-        def aggregate(text: Progression[Text]): value in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
           val reader =
@@ -239,7 +239,7 @@ object Dsv extends Dsv2:
         type Self = List[value] in Dsv
         type Operand = Text
 
-        def aggregate(text: Progression[Text]): List[value] in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Chain[Text]): List[value] in Dsv = accept(Stream(text.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
           val reader =

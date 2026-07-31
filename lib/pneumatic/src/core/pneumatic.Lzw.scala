@@ -56,10 +56,10 @@ object Lzw:
 
     LzwStage(LzwDecoder(earlyChange))
 
-  def compress(stream: Progression[Data], earlyChange: Boolean = true): Progression[Data] =
+  def compress(stream: Chain[Data], earlyChange: Boolean = true): Chain[Data] =
     drive(LzwEncoder(earlyChange), stream)
 
-  def decompress(stream: Progression[Data], earlyChange: Boolean = true): Progression[Data] =
+  def decompress(stream: Chain[Data], earlyChange: Boolean = true): Chain[Data] =
     drive(LzwDecoder(earlyChange), stream)
 
   given compression: Lzw is Compression:
@@ -75,14 +75,14 @@ object Lzw:
 
       LzwStage(LzwDecoder(true))
 
-    override def compress(stream: Progression[Data]): Progression[Data] = Lzw.compress(stream)
-    override def decompress(stream: Progression[Data]): Progression[Data] = Lzw.decompress(stream)
+    override def compress(stream: Chain[Data]): Chain[Data] = Lzw.compress(stream)
+    override def decompress(stream: Chain[Data]): Chain[Data] = Lzw.decompress(stream)
 
   // Drives an engine over a lazy stream chunk by chunk, emitting each chunk's output as it
   // is produced. The engine argument is by-name, so the (exclusive, mutable) engine is
   // minted inside the deferred block and threaded through the recursion.
-  private def drive(engine0: => LzwEngine^, stream: Progression[Data]): Progression[Data] =
-    def recur(engine: LzwEngine^, stream: Progression[Data]): Progression[Data] = stream match
+  private def drive(engine0: => LzwEngine^, stream: Chain[Data]): Chain[Data] =
+    def recur(engine: LzwEngine^, stream: Chain[Data]): Chain[Data] = stream match
       case head #:: tail =>
         engine.accept(head, 0, head.length)
         val data = engine.gather()
@@ -91,8 +91,8 @@ object Lzw:
       case _ =>
         engine.finish()
         val data = engine.gather()
-        if data.length > 0 then Progression(data) else Progression.empty
+        if data.length > 0 then Chain(data) else Chain.empty
 
-    Progression.defer(recur(engine0, stream))
+    Chain.defer(recur(engine0, stream))
 
 sealed trait Lzw extends Compressor

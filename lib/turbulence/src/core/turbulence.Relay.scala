@@ -60,20 +60,20 @@ class Relay[record]():
   def put(record: record): Unit = queue.put(record)
   def stop(): Unit = queue.put(Relay.Termination)
 
-  // The element-wise view: a lazy `Progression` draining the shared queue one
+  // The element-wise view: a lazy `Chain` draining the shared queue one
   // record at a time. Unlike `stream`, it needs no `Addressable` medium — so
   // it works for any record type, including an abstract one — at the cost of a
   // cons cell per record; use it for low-rate event delivery (logging, message
   // buses) where per-record batching would not pay. This is the direct
-  // successor to `Spool.stream`, laundering the endpoint into a pure Progression,
+  // successor to `Spool.stream`, laundering the endpoint into a pure Chain,
   // and the audited bridge until every consumer takes a windowed `stream`.
   @scala.annotation.nowarn("msg=match may not be exhaustive")
-  def lazyList: Progression[record] =
-    def pull(): Progression[record] = queue.take().nn match
-      case Relay.Termination => Progression()
+  def lazyList: Chain[record] =
+    def pull(): Chain[record] = queue.take().nn match
+      case Relay.Termination => Chain()
       case value             => value.asInstanceOf[record] #:: pull()
 
-    Progression().lazyAppendedAll(pull())
+    Chain().lazyAppendedAll(pull())
 
   // The pull endpoint over this relay's records: single-owner, drained by one
   // thread; create it once. Records arriving after `stop` are not delivered.

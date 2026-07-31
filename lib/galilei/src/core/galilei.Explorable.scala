@@ -53,4 +53,4 @@ object Explorable:
         unsafely(path.child(name))
 
 trait Explorable extends Typeclass:
-  def children(path: Path on Self): Progression[Path on Self]
+  def children(path: Path on Self): Chain[Path on Self]

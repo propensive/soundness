@@ -404,7 +404,7 @@ private[probably] object Documenting:
           curves.stdlib.flatMap(_(1).stdlib.values).map(metric(_, Metric.Throughput).or(0.0).toLong)
           . maxOption.getOrElse(0L).max(1L)
 
-        val series = curves.map: (entry, curve) =>
+        val sequence = curves.map: (entry, curve) =>
           val sustained: Optional[(Long, Long)] = curve.find(_(1).sustained) match
             case Some((n, run0)) => (n, metric(run0, Metric.Throughput).or(0.0).toLong)
             case None            => Unset
@@ -419,7 +419,7 @@ private[probably] object Documenting:
 
           Spark(entry.id.name.text, cells, sustained)
 
-        List(Block.Sparkline(steps, series))
+        List(Block.Sparkline(steps, sequence))
 
     val latencies =
       entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.defines(Metric.P50)))

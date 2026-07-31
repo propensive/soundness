@@ -123,9 +123,9 @@ object internal:
     =>  set[element] is Encodable in Pojo =
       list.asInstanceOf[set[element] is Encodable in Pojo]
 
-    given seriesEncodable: [series <: Series, element: Encodable in Pojo]
-    =>  series[element] is Encodable in Pojo =
-      list.asInstanceOf[series[element] is Encodable in Pojo]
+    given seriesEncodable: [sequence <: Sequence, element: Encodable in Pojo]
+    =>  sequence[element] is Encodable in Pojo =
+      list.asInstanceOf[sequence[element] is Encodable in Pojo]
 
 
     given text2: Text is Decodable:
@@ -204,12 +204,12 @@ object internal:
       collection[scala.collection.immutable.Set, element]
       . asInstanceOf[set[element] is Decodable in Pojo]
 
-    given seriesDecodable: [series <: Series, element]
+    given seriesDecodable: [sequence <: Sequence, element]
     =>  ( tactic: Tactic[PojoError] )
     =>  ( decodable: => element is Decodable in Pojo )
-    =>  series[element] is Decodable in Pojo =
+    =>  sequence[element] is Decodable in Pojo =
       collection[Vector, element]
-      . asInstanceOf[series[element] is Decodable in Pojo]
+      . asInstanceOf[sequence[element] is Decodable in Pojo]
 
 
     extension (pojo: Pojo)

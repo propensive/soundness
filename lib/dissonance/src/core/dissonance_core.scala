@@ -57,7 +57,7 @@ def evolve[element: ClassTag]
 
       case left :: right :: more =>
         val changes: List[Change[element]] =
-          val diff0 = diff(Series.from(left.stdlib), Series.from(right.stdlib))
+          val diff0 = diff(Sequence.from(left.stdlib), Sequence.from(right.stdlib))
           similar.lay(diff0.edits)(diff0.rdiff(_).changes).to(List)
 
 
@@ -74,7 +74,7 @@ def evolve[element: ClassTag]
             val right = Array.from(inserts.stdlib)
 
             val updates =
-              diff(Series.from(left.readable), Series.from(right.readable), _.value == _.value).edits.toList.map:
+              diff(Sequence.from(left.readable), Sequence.from(right.readable), _.value == _.value).edits.toList.map:
                 case Ins(_, value)    => value
                 case Del(index, _)    => left.readable(index)
                 case Par(index, _, _) => left.readable(index).add(iteration)
@@ -124,8 +124,8 @@ def evolve[element: ClassTag]
         Evolution(List.of(versions.stdlib.head.stdlib.map(Atom(_, Set(Prim))))) )
 
 def diff[element]
-  ( leftSeries:  Series[element],
-    rightSeries: Series[element],
+  ( leftSeries:  Sequence[element],
+    rightSeries: Sequence[element],
     compare:     (element, element) => Boolean = { (a: element, b: element) => a == b } )
 :   Diff[element] =
 

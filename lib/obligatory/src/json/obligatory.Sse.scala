@@ -51,10 +51,10 @@ import vacuous.*
 import zephyrine.*
 
 object Sse:
-  given servable: Progression[Sse] is Servable =
+  given servable: Chain[Sse] is Servable =
     import charEncoders.utf8Encoder
 
-    Servable[Progression[Sse]](_ => media"text/event-stream"): stream =>
+    Servable[Chain[Sse]](_ => media"text/event-stream"): stream =>
       Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).stdlib.iterator))
 
   given framable: Text is Framable by Sse = input =>

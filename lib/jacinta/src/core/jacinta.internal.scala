@@ -139,17 +139,17 @@ object internal:
         TypeBounds(root, root) )
 
   // The single ordered-collection element type of `repr`, if it is one (`List`,
-  // `Vector`, `Seq`, `Progression`, `Array`); `Set` is excluded as it has
+  // `Vector`, `Seq`, `Chain`, `Array`); `Set` is excluded as it has
   // no positional index.
   private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   :   Optional[quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
-    // The opaque prelude `List`/`Series` don't conform to `Seq`, so match their
+    // The opaque prelude `List`/`Sequence` don't conform to `Seq`, so match their
     // type constructors by symbol as well.
     val listSym = TypeRepr.of[proscenium.List[Any]].typeSymbol
-    val seriesSym = TypeRepr.of[proscenium.Series[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
 
     repr.dealias match
       case AppliedType(constructor, scala.collection.immutable.List(element))
@@ -819,7 +819,7 @@ object internal:
       val aliasCollectionSyms = Set
         ( TypeRepr.of[proscenium.List[Any]].typeSymbol,
           TypeRepr.of[proscenium.Set[Any]].typeSymbol,
-          TypeRepr.of[proscenium.Series[Any]].typeSymbol )
+          TypeRepr.of[proscenium.Sequence[Any]].typeSymbol )
 
       def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[Json.Ast]] = expr.absolve match
         case '{$value: tpe} =>

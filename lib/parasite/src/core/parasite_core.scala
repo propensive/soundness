@@ -183,12 +183,12 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
 
-extension [result](stream: Progression[result])
+extension [result](stream: Chain[result])
   def concurrent(using monitor: Monitor^, probate: Probate^)
-  :   (Tactic[AsyncError]^) ?->{monitor, probate} Progression[result] =
+  :   (Tactic[AsyncError]^) ?->{monitor, probate} Chain[result] =
     // The task is created and awaited under the same monitor; there is no aliased writer.
     if scala.caps.unsafe.unsafeAssumeSeparate(async(stream.nil).await())
-    then Progression() else stream.head #:: stream.tail.concurrent
+    then Chain() else stream.head #:: stream.tail.concurrent
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)

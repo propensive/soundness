@@ -228,12 +228,12 @@ extension [textual: Textual](text: textual)
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
 
-  def search(regex: Regex, overlap: Boolean = false): Progression[textual] =
+  def search(regex: Regex, overlap: Boolean = false): Chain[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
   inline def extract[value](inline start: Ordinal = Prim)
     ( inline lambda: Scanner ?=> textual ~> value )
-  :   Progression[value] =
+  :   Chain[value] =
 
     $ {
         gossamer.internal.extractMacro[textual, value]
@@ -589,9 +589,9 @@ extension [textual: {Joinable, Textual}](values: List[textual])
   def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
     values.stdlib.join(left, separator, penultimate, right)
 
-// Opaque `Progression` is not an `Iterable`, so it needs its own `join` block bridging via
+// Opaque `Chain` is not an `Iterable`, so it needs its own `join` block bridging via
 // `stdlib` (joining forces the whole stream, which is the caller's intent here).
-extension [textual: {Joinable, Textual}](values: Progression[textual])
+extension [textual: {Joinable, Textual}](values: Chain[textual])
   def join: textual = values.stdlib.join
   def join(separator: textual): textual = values.stdlib.join(separator)
 

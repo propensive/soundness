@@ -135,12 +135,12 @@ package filesystemBackends:
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
         jnf.Files.exists(javaPath(path), dereferenceOptions(dereference)*)
 
-      def children(path: Path on Plane)(using Tactic[IoError]): Progression[Text] =
+      def children(path: Path on Plane)(using Tactic[IoError]): Chain[Text] =
         protect(path, Operation.Read):
-          if !jnf.Files.isDirectory(javaPath(path)) then Progression()
+          if !jnf.Files.isDirectory(javaPath(path)) then Chain()
           else
             // `Files.list` holds the directory's file descriptor until the stream is
-            // closed — exhausting its iterator does not release it, and a `Progression` would
+            // closed — exhausting its iterator does not release it, and a `Chain` would
             // defer even that — so the names are materialized strictly and the stream
             // closed before returning. Left unclosed, each directory listed leaks a
             // descriptor until its stream is garbage-collected, which a low-allocation
@@ -152,7 +152,7 @@ package filesystemBackends:
               stream.iterator().nn.asScala
               . map(_.getFileName.nn.toString.tt)
               . toList
-              . to(Progression)
+              . to(Chain)
             finally stream.close()
 
       def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit =

@@ -404,7 +404,7 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == List(t"", t"one", t"two", t""))
 
-      test(m"Cut a series of empty Texts"):
+      test(m"Cut a sequence of empty Texts"):
         t",,,".cut(t",")
 
       . assert(_ == List(t"", t"", t"", t""))
@@ -1194,13 +1194,13 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == 4)
 
     suite(m"Regex extract"):
-      // TODO(progression-flip): the opaque `Progression` flip broke the inline `extract`
+      // TODO(chain-flip): the opaque `Chain` flip broke the inline `extract`
       // macro's `value` type-parameter inference. Callers used to fix `value` via the stdlib
-      // `LazyList#to(List)` on the result; opaque `Progression` has no back-propagating `to`,
+      // `LazyList#to(List)` on the result; opaque `Chain` has no back-propagating `to`,
       // and neither an explicit type argument nor a result ascription overrides the macro's
-      // `Progression[Nothing]` output. The macro needs to infer `value` from the case bodies
+      // `Chain[Nothing]` output. The macro needs to infer `value` from the case bodies
       // (LUB) and become `transparent inline`. Extraction itself is unaffected at runtime.
-      test(m"regex extraction — pending extract-macro fix for opaque Progression"):
+      test(m"regex extraction — pending extract-macro fix for opaque Chain"):
         ()
       . assert(_ == ())
 

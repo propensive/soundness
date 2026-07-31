@@ -78,7 +78,7 @@ object Tests extends Suite(m"Ulysses tests"):
 
     test(m"Encode a Palimpsest under the default Cadence"):
       given bibliography: Bibliography = Bibliography(numbers)
-      Palimpsest(Series.from((1 to 3).map(numbers(_)))).resolve
+      Palimpsest(Sequence.from((1 to 3).map(numbers(_)))).resolve
 
     . assert(_ == (1 to 3).map(numbers(_)))
 
@@ -87,6 +87,6 @@ object Tests extends Suite(m"Ulysses tests"):
     test(m"Round-trip a Palimpsest under an overridden Cadence"):
       given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
       given bibliography: Bibliography = Bibliography(letters)
-      Palimpsest(Series.from(letters.toSeq)).resolve
+      Palimpsest(Sequence.from(letters.toSeq)).resolve
 
     . assert(_ == letters)

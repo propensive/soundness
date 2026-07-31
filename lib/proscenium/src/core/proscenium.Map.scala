@@ -35,7 +35,7 @@ package proscenium
 import scala.collection.immutable as sci
 
 // The third opaque collection alias: an immutable map backed by `sci.Map`. Same design as
-// `Series` and `Set`: members invisible, API via typeclasses (`Indexable` provides `at`/`defines`/
+// `Sequence` and `Set`: members invisible, API via typeclasses (`Indexable` provides `at`/`defines`/
 // `confine`; `Traversable by (key, value)` the transforming surface), construction and the
 // greppable `stdlib` bridge in the companion, casts at the boundary, and deliberately NO
 // `Conversion` to a stdlib supertype.

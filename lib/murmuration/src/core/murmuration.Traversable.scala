@@ -60,12 +60,12 @@ object Traversable extends Traversable2:
   given list: [element, list <: List[element]] => list is Traversable by element =
     _.stdlib.iterator
 
-  // Opaque `Progression` likewise; `.stdlib.iterator` is lazy (pulls elements on demand).
-  given lazyList: [element, lazyList <: Progression[element]] => lazyList is Traversable by element =
+  // Opaque `Chain` likewise; `.stdlib.iterator` is lazy (pulls elements on demand).
+  given lazyList: [element, lazyList <: Chain[element]] => lazyList is Traversable by element =
     _.stdlib.iterator
 
-  // Opaque `Series` likewise; subtype-parametric for `Series[e] & Populated` receivers.
-  given series: [element, series <: Series[element]] => series is Traversable by element =
+  // Opaque `Sequence` likewise; subtype-parametric for `Sequence[e] & Populated` receivers.
+  given sequence: [element, sequence <: Sequence[element]] => sequence is Traversable by element =
     _.stdlib.iterator
 
   // Opaque `Set` likewise.

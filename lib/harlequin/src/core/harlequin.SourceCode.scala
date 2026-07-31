@@ -154,16 +154,16 @@ object SourceCode:
     val scanner =
       if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 
-    def untab(text: Text): Progression[Token] =
-      Progression(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
+    def untab(text: Text): Chain[Token] =
+      Chain(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
 
-    def hard(stream: Progression[Token]): Boolean = stream match
+    def hard(stream: Chain[Token]): Boolean = stream match
       case Token(_, Accent.Unparsed, _, _, _) #:: more                  => hard(more)
       case Token(text, Accent.Term, _, _, _) #:: more if soft.has(text) => hard(more)
       case Token(text, Accent.Keyword | Accent.Modifier, _, _, _) #:: _ => true
       case other                                                        => false
 
-    def soften(stream: Progression[Token]): Progression[Token] = stream match
+    def soften(stream: Chain[Token]): Chain[Token] = stream match
       case (Token(text@(t"using" | t"erased"), Accent.Term, _, _, _)) #:: more =>
         Token(text, Accent.Modifier) #:: soften(more)
 
@@ -175,19 +175,19 @@ object SourceCode:
         token #:: soften(more)
 
       case _ =>
-        Progression()
+        Chain()
 
-    def stream(lastEnd: Int = 0): Progression[Token] = scanner.token match
+    def stream(lastEnd: Int = 0): Chain[Token] = scanner.token match
       case Tokens.EOF => untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
 
-        val unparsed: Progression[Token] =
-          if lastEnd == start then Progression() else
+        val unparsed: Chain[Token] =
+          if lastEnd == start then Chain() else
             text.segment(lastEnd.z thru start.u)
             . cut(t"\n").stdlib
-            . to(Progression)
+            . to(Chain)
             . flatMap(untab(_).filter(_.length > 0))
             . init
 
@@ -202,10 +202,10 @@ object SourceCode:
         val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)
         val role: Optional[Role] = annotation.let(_.role)
 
-        val content: Progression[Token] =
-          if start == end then Progression() else
-            text.segment(start.z thru end.u).cut(t"\n").stdlib.to(Progression).flatMap: line =>
-              Progression(Token(line, tokenAccent, meta, role = role), Token.Newline)
+        val content: Chain[Token] =
+          if start == end then Chain() else
+            text.segment(start.z thru end.u).cut(t"\n").stdlib.to(Chain).flatMap: line =>
+              Chain(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
             . init
 

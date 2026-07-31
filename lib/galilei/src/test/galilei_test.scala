@@ -63,7 +63,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"A file opened for writing can be written and read back"):
         unsafely:
           dest.open[File](Write, OpenFlag.Create): handle ?=>
-            handle.write(Progression(t"Hello world".in[Data]))
+            handle.write(Chain(t"Hello world".in[Data]))
 
           dest.read[Text]
       . assert(_ == t"Hello world")
@@ -75,7 +75,7 @@ object Tests extends Suite(m"Galilei tests"):
       test(m"Opening an Eof appends to the file"):
         unsafely:
           Eof(dest).open(Write): handle ?=>
-            handle.write(Progression(t"!".in[Data]))
+            handle.write(Chain(t"!".in[Data]))
 
           dest.read[Text]
       . assert(_ == t"Hello world!")
@@ -224,7 +224,7 @@ object Tests extends Suite(m"Galilei tests"):
           val target: Path on Linux = base / "staged.txt"
 
           target.create[File](): handle ?=>
-            handle.write(Progression(t"payload".in[Data]))
+            handle.write(Chain(t"payload".in[Data]))
 
           target.read[Text]
       . assert(_ == t"payload")
@@ -236,7 +236,7 @@ object Tests extends Suite(m"Galilei tests"):
           capture[IoError]:
             scala.caps.unsafe.unsafeAssumeSeparate:
              target.create[File](): handle ?=>
-              handle.write(Progression(t"data".in[Data]))
+              handle.write(Chain(t"data".in[Data]))
               abort(IoError(target, IoError.Operation.Write, IoError.Reason.Unsupported))
 
           target.exists()

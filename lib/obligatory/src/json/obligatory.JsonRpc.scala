@@ -147,8 +147,8 @@ trait JsonRpc extends Original:
 
   // Each accessor drains the shared queue through a fresh single-owner view
   // (the audited bridge); use one or the other per instance, as before.
-  def outgoing: Progression[Json] = Progression.from(channel.stream.records)
+  def outgoing: Chain[Json] = Chain.from(channel.stream.records)
 
-  def stream: Progression[Sse] =
-    Progression.from(channel.stream.records).map: json =>
+  def stream: Chain[Sse] =
+    Chain.from(channel.stream.records).map: json =>
       Sse(data = List(json.encode))

@@ -635,6 +635,6 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
         val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
-        val restored = proscenium.Progression(container.in[Protobuf].encode).read[Container in Protobuf]
+        val restored = proscenium.Chain(container.in[Protobuf].encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Unix]
       . assert(_ == moment)

@@ -60,7 +60,7 @@ import GitError.Reason.*
 object Git:
   // Drop consecutive equal values from a single-pass iterator — git repeats a
   // progress percentage across many carriage-return updates. Replaces the
-  // Progression-only `deduplicate` combinator, matching its consecutive semantics.
+  // Chain-only `deduplicate` combinator, matching its consecutive semantics.
   private def distinctConsecutive(iterator: Iterator[Progress]): Iterator[Progress] =
     var previous: Optional[Progress] = Unset
 

@@ -188,7 +188,7 @@ package filesystemBackends:
           stat(path, dereference) yet true
         catch case error: Exception => false
 
-      def children(path: Path on Plane)(using Tactic[IoError]): Progression[Text] =
+      def children(path: Path on Plane)(using Tactic[IoError]): Chain[Text] =
         protect(path, Operation.Read):
           val (descriptor, relative) = resolve(path, Operation.Read)
           val directory: Foreign of "descriptor" from Wit = descriptor
@@ -214,7 +214,7 @@ package filesystemBackends:
                 if entry.absent then done = true else names = entry.vouch(1) :: names
 
               streamHandle.dispose()
-              names.stdlib.reverse.to(Progression)
+              names.stdlib.reverse.to(Chain)
             finally listing.dispose()
           finally descriptor.dispose()
 
@@ -377,7 +377,7 @@ package filesystemBackends:
 
             val target: Foreign of "descriptor" from Wit = opened
 
-            def read(): Progression[Data] =
+            def read(): Chain[Data] =
               val streamHandle =
                 target.`read-via-stream`(U64(0L.bits)).invoke[WitHandle of "input-stream"]
 
@@ -390,9 +390,9 @@ package filesystemBackends:
               catch case error: WitError => ()
 
               streamHandle.dispose()
-              chunks.stdlib.reverse.to(Progression)
+              chunks.stdlib.reverse.to(Chain)
 
-            def write(data: Progression[Data]): Unit =
+            def write(data: Chain[Data]): Unit =
               val streamHandle =
                 if flags.has(OpenFlag.Append)
                 then target.`append-via-stream`.invoke[WitHandle of "output-stream"]

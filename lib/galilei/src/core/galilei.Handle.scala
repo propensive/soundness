@@ -68,9 +68,9 @@ object Handle:
   // can fail under capture checking (given resolution widens the scoped capture to `{any}`);
   // the extensions summon typeclasses on the (non-scoped) source/result types instead.
   extension (handle: (Handle & Granting[Grant.Read])^)
-    def stream: Progression[Data] = handle.reader()
+    def stream: Chain[Data] = handle.reader()
 
-    def read[result](using readable: (Progression[Data] is Readable to result)^): result =
+    def read[result](using readable: (Chain[Data] is Readable to result)^): result =
       readable.read(handle.reader())
 
   extension (handle: (Handle & Granting[Grant.Write])^)
@@ -84,7 +84,7 @@ object Handle:
 // `reader`/`writer`; `FileOpenable` supplies channel-native endpoints, so file
 // I/O reads and writes directly through the streaming kernel's buffers.
 class Handle
-  ( val reader: () => Progression[Data], val writer: Progression[Data] => Unit )
+  ( val reader: () => Chain[Data], val writer: Chain[Data] => Unit )
   ( val source: Spring[Data]^ = () => Stream(reader().stdlib.iterator),
     val intake: () => Intake[Data] over Credit =
       () => Sink.buffered((), (_, stream) => writer(stream)) )

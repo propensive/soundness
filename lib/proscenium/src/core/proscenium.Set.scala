@@ -35,7 +35,7 @@ package proscenium
 import scala.collection.immutable as sci
 
 // The second opaque collection alias: an immutable set backed by `sci.Set`. Invariant, like the
-// stdlib's. Same design as `Series`: members invisible, API via typeclasses, construction and
+// stdlib's. Same design as `Sequence`: members invisible, API via typeclasses, construction and
 // the greppable `stdlib` bridge in the companion, casts at the boundary (capture checking
 // rejects identity ascriptions for capturing element types), and deliberately NO `Conversion`
 // to any stdlib supertype, which would re-expose the partial surface at member selection.

@@ -40,10 +40,10 @@ import proscenium.compat.*
 // One-shot gzip/gunzip for a whole `Data` block, over the pure-Scala DEFLATE implementation, and
 // therefore available on every platform.
 extension (bytes: Data)
-  def gzip: Data = concatenate(Gzip.compression.compress(Progression(bytes)))
-  def gunzip: Data = concatenate(Gzip.compression.decompress(Progression(bytes)))
+  def gzip: Data = concatenate(Gzip.compression.compress(Chain(bytes)))
+  def gunzip: Data = concatenate(Gzip.compression.decompress(Chain(bytes)))
 
-private def concatenate(stream: Progression[Data]): Data =
+private def concatenate(stream: Chain[Data]): Data =
   val chunks = List.from(stream.stdlib)
   var total = 0
 

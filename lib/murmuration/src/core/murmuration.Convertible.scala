@@ -53,17 +53,17 @@ object Convertible:
   =>  self is Convertible in Set to Set[traversable.Operand] =
     self => Set.from(traversable.traverse(self))
 
-  given series: [self] => (traversable: self is Traversable)
-  =>  self is Convertible in Series to Series[traversable.Operand] =
-    self => Series.from(traversable.traverse(self))
+  given sequence: [self] => (traversable: self is Traversable)
+  =>  self is Convertible in Sequence to Sequence[traversable.Operand] =
+    self => Sequence.from(traversable.traverse(self))
 
   given indexedSeq: [self] => (traversable: self is Traversable)
   =>  self is Convertible in IndexedSeq to IndexedSeq[traversable.Operand] =
     self => IndexedSeq.from(traversable.traverse(self))
 
   given lazyList: [self] => (traversable: self is Traversable)
-  =>  self is Convertible in Progression to Progression[traversable.Operand] =
-    self => Progression.from(traversable.traverse(self))
+  =>  self is Convertible in Chain to Chain[traversable.Operand] =
+    self => Chain.from(traversable.traverse(self))
 
   given map: [self, key, value] => (traversable: self is Traversable by (key, value))
   =>  self is Convertible in Map to Map[key, value] =

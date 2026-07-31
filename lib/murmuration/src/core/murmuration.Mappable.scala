@@ -69,24 +69,24 @@ object Mappable extends Mappable.Fallback:
       def map[element2](self: container, lambda: element => element2): Set[element2] =
         Set.of(self.stdlib.map(lambda))
 
-  given series: [element, container <: Series[element]]
-  =>  (container is Mappable { type Operand = element; type Result[element2] = Series[element2] }) =
+  given sequence: [element, container <: Sequence[element]]
+  =>  (container is Mappable { type Operand = element; type Result[element2] = Sequence[element2] }) =
     new Mappable:
       type Self = container
       type Operand = element
-      type Result[element2] = Series[element2]
-      def map[element2](self: container, lambda: element => element2): Series[element2] =
-        Series.of(self.stdlib.map(lambda))
+      type Result[element2] = Sequence[element2]
+      def map[element2](self: container, lambda: element => element2): Sequence[element2] =
+        Sequence.of(self.stdlib.map(lambda))
 
-  given progression: [element, container <: Progression[element]]
+  given chain: [element, container <: Chain[element]]
   =>  (container is Mappable
-         { type Operand = element; type Result[element2] = Progression[element2] }) =
+         { type Operand = element; type Result[element2] = Chain[element2] }) =
     new Mappable:
       type Self = container
       type Operand = element
-      type Result[element2] = Progression[element2]
-      def map[element2](self: container, lambda: element => element2): Progression[element2] =
-        Progression.of(self.stdlib.map(lambda))
+      type Result[element2] = Chain[element2]
+      def map[element2](self: container, lambda: element => element2): Chain[element2] =
+        Chain.of(self.stdlib.map(lambda))
 
   // A `Map` maps its *values*, preserving keys: `Operand` is the value type; `Result` re-
   // parameterizes the value, with `key` fixed by the receiver.

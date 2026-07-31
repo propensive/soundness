@@ -36,7 +36,7 @@ import prepositional.*
 
 // Emptiness alone, split from `Countable`: `nil` is O(1) for every collection, including those
 // (like `List`) whose `size` is O(n) and gated behind `LinearSizeComplexity`, and those (like
-// `Progression`) whose `size` may diverge and is gated behind `UnboundedSizeComplexity`. Types whose
+// `Chain`) whose `size` may diverge and is gated behind `UnboundedSizeComplexity`. Types whose
 // size is cheap implement `Countable`, which extends this trait; `nil`-only consumers should demand
 // only `Vacuiscible`.
 object Vacuiscible:
@@ -51,10 +51,10 @@ object Vacuiscible:
   given list: [element] => List[element] is Vacuiscible:
     def nil(self: List[element]): Boolean = self.stdlib.isEmpty
 
-  // `Progression`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
+  // `Chain`'s emptiness is O(1) — it forces only the first node — so, like `List`, it gets an
   // ungated instance here rather than reaching the `UnboundedSizeComplexity`-gated `Countable.lazyList`.
-  given lazyList: [element] => Progression[element] is Vacuiscible:
-    def nil(self: Progression[element]): Boolean = self.stdlib.isEmpty
+  given lazyList: [element] => Chain[element] is Vacuiscible:
+    def nil(self: Chain[element]): Boolean = self.stdlib.isEmpty
 
 trait Vacuiscible extends Typeclass.Pure:
   def nil(self: Self): Boolean

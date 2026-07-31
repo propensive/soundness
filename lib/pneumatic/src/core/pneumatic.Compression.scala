@@ -40,14 +40,14 @@ import zephyrine.*
 trait Compression:
   type Self <: Compressor
 
-  // The `Progression` forms, driven through the same ducts as the streaming
+  // The `Chain` forms, driven through the same ducts as the streaming
   // stages: adapt the chunk list to a pull endpoint, run it through the
   // format's duct, and materialize one output chunk per refill — no staging
   // buffer, and byte-for-byte agreement with the stream and whole-value forms.
-  def compress(stream: Progression[Data]): Progression[Data] =
+  def compress(stream: Chain[Data]): Chain[Data] =
     Stream(stream.iterator).via(compressor()).toProgression
 
-  def decompress(stream: Progression[Data]): Progression[Data] =
+  def decompress(stream: Chain[Data]): Chain[Data] =
     Stream(stream.iterator).via(decompressor()).toProgression
 
   // Streaming stages for the same transformations, applied with

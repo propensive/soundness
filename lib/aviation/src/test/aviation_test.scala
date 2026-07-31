@@ -2852,38 +2852,38 @@ object Tests extends Suite(m"Aviation Tests"):
           case _: TzdbError =>
 
       test(m"parses a single Rule line"):
-        val lines = Progression(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
+        val lines = Chain(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
         Tzdb.parse(t"inline", lines).headOption
       . matches:
           case Some(_: Tzdb.Entry.Rule) =>
 
       test(m"parses a single Link line"):
-        val lines = Progression(t"Link\tEurope/London\tEurope/Belfast")
+        val lines = Chain(t"Link\tEurope/London\tEurope/Belfast")
         Tzdb.parse(t"inline", lines).headOption
       . matches:
           case Some(_: Tzdb.Entry.Link) =>
 
       test(m"parses a leap line with normal-time"):
-        val lines = Progression(t"Leap\t1972\tJun\t30\t23:59:59\t+\tS")
+        val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:59\t+\tS")
         Tzdb.parse(t"inline", lines).headOption
       . matches:
           case Some(_: Tzdb.Entry.Leap) =>
 
       test(m"leap line with 60-second time raises TzdbError"):
-        val lines = Progression(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")
+        val lines = Chain(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
           case _: TzdbError =>
 
 
       test(m"unparseable Rule raises UnexpectedRule"):
-        val lines = Progression(t"Rule\tonly")
+        val lines = Chain(t"Rule\tonly")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
           case _: TzdbError =>
 
       test(m"unparseable Link raises UnexpectedLink"):
-        val lines = Progression(t"Link\tonly")
+        val lines = Chain(t"Link\tonly")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
           case _: TzdbError =>

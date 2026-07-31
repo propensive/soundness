@@ -36,7 +36,7 @@ import anticipation.*
 import prepositional.*
 
 // Order-reversal, unified across shapes so a single `reverse` extension serves both collections
-// (`List`/`Series`) and textual types (gossamer contributes a `Reversible` *instance* for `Textual`,
+// (`List`/`Sequence`) and textual types (gossamer contributes a `Reversible` *instance* for `Textual`,
 // not a competing extension — that is what keeps the name un-clashed at the `soundness` umbrella).
 // Instances are subtype-parametric (`container <: List[element]`) to match `& Populated` receivers
 // and the distinct `soundness.*` re-export aliases; `Result` is bound as an ordinary type parameter
@@ -50,12 +50,12 @@ object Reversible:
       type Result = List[element]
       def reverse(self: container): List[element] = List.of(self.stdlib.reverse)
 
-  given series: [element, container <: Series[element]]
-  =>  (container is Reversible { type Result = Series[element] }) =
+  given sequence: [element, container <: Sequence[element]]
+  =>  (container is Reversible { type Result = Sequence[element] }) =
     new Reversible:
       type Self = container
-      type Result = Series[element]
-      def reverse(self: container): Series[element] = Series.of(self.stdlib.reverse)
+      type Result = Sequence[element]
+      def reverse(self: container): Sequence[element] = Sequence.of(self.stdlib.reverse)
 
   // `Text`'s companion (in `anticipation`) cannot host this — it sits below both `Reversible` and
   // `Textual` — but `Reversible`'s own companion is in implicit scope for `Text is Reversible`, and

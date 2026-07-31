@@ -172,7 +172,7 @@ object Html extends Tag.Container
       type Self = Html of content
       type Operand = Text
 
-      def aggregate(input: Progression[Text]): Html of content =
+      def aggregate(input: Chain[Text]): Html of content =
         val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
         HtmlParser.fromIterator(input.stdlib.iterator, permissive = false).parseHtml(root).of[content]
 
@@ -187,7 +187,7 @@ object Html extends Tag.Container
       type Self = Html
       type Operand = Text
 
-      def aggregate(input: Progression[Text]): Html =
+      def aggregate(input: Chain[Text]): Html =
         HtmlParser.fromIterator(input.stdlib.iterator, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
@@ -229,7 +229,7 @@ object Html extends Tag.Container
       type Self = Html of content
       type Operand = Text
 
-      def aggregate(input: Progression[Text]): Html of content =
+      def aggregate(input: Chain[Text]): Html of content =
         given Tactic[ParseError] = lenientTactic
         val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
 
@@ -250,7 +250,7 @@ object Html extends Tag.Container
       type Self = Html
       type Operand = Text
 
-      def aggregate(input: Progression[Text]): Html =
+      def aggregate(input: Chain[Text]): Html =
         given Tactic[ParseError] = lenientTactic
 
         lenient(Fragment()):

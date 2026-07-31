@@ -106,8 +106,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     scala.collection.immutable.ArraySeq.unsafeWrapArray(inputArray)
   // The same 4 MB split into 64 KiB chunks, so aggregation/write loops iterate
   // (a single in-memory chunk would let `read[Data]` fold to an identity).
-  lazy val inputChunks: Progression[Data] =
-    Progression.from((0 until input.length by 65536).map: offset =>
+  lazy val inputChunks: Chain[Data] =
+    Chain.from((0 until input.length by 65536).map: offset =>
       input.slice(offset, (offset + 65536).min(input.length)))
   // The 4 MB split into four equal parts, one per source stream for fan-in.
   lazy val quarters: IndexedSeq[Data] =
@@ -673,14 +673,14 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
     // Example E: AES-256-CBC encrypt. Soundness `enigmatic` streaming encryption
-    // drives the JCE cipher over the legacy `Progression` view. ZIO/FS2/Kyo have no
+    // drives the JCE cipher over the legacy `Chain` view. ZIO/FS2/Kyo have no
     // native block cipher, so only the JDK reference is shown.
     suite(m"AES-256-CBC encrypt (4 MB)"):
       bench(m"Soundness  enigmatic encryptStream")
         ( target = 1*Second, operationSize = size ):
         '{
             turbulence.Benchmarks.aesKey.uncloak:
-              Progression(turbulence.Benchmarks.input).encrypt(InitializationVector.random)
+              Chain(turbulence.Benchmarks.input).encrypt(InitializationVector.random)
               . map(_.length.toLong).sum
         }
 

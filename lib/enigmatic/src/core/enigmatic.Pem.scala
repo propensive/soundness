@@ -80,13 +80,13 @@ object Pem:
   // chains) is skipped. An input with no blocks yields the empty list.
   private def parseAll[cap^](cursor: Cursor[Text, cap]^)
     ( using Diagnostics, Tactic[PemError] )
-  :   Progression[Pem] =
+  :   Chain[Pem] =
 
-    def recur(): Progression[Pem] = nextLine(cursor).lay(Progression()):
+    def recur(): Chain[Pem] = nextLine(cursor).lay(Chain()):
       case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" => block(cursor, label) #:: recur()
       case _                                                    => recur()
 
-    Progression.defer(recur())
+    Chain.defer(recur())
 
   // The body of a block, after its `BEGIN` line: base64 lines accumulate
   // (verbatim, as the legacy parser joined them) until an `END` boundary.
@@ -135,7 +135,7 @@ object Pem:
         type Self = Pem
         type Operand = Text
 
-        def aggregate(stream: Progression[Text]): Pem = parse(Cursor(stream.iterator))
+        def aggregate(stream: Chain[Text]): Pem = parse(Cursor(stream.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): Pem =
           // The non-consume `accept` crosses to the consuming factory as a
@@ -144,26 +144,26 @@ object Pem:
 
   // A certificate chain (or any multi-block document) as a lazy sequence of
   // its blocks.
-  given aggregableAll: (Diagnostics, Tactic[PemError]) => Progression[Pem] is Aggregable by Text =
+  given aggregableAll: (Diagnostics, Tactic[PemError]) => Chain[Pem] is Aggregable by Text =
     caps.unsafe.unsafeAssumePure:
       new Aggregable:
-        type Self = Progression[Pem]
+        type Self = Chain[Pem]
         type Operand = Text
 
-        def aggregate(stream: Progression[Text]): Progression[Pem] = parseAll(Cursor(stream.iterator))
+        def aggregate(stream: Chain[Text]): Chain[Pem] = parseAll(Cursor(stream.iterator))
 
-        override def accept(stream: (Stream[Text] over Credit)^): Progression[Pem] =
+        override def accept(stream: (Stream[Text] over Credit)^): Chain[Pem] =
           // See `aggregable` above.
           parseAll(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
   // The armored form, one line at a time: the `serialize` counterpart for
   // streaming consumers (each line carries its terminator).
   given streamable: Pem is Streamable by Text over Credit = pem =>
-    def groups(index: Int): Progression[Text] =
-      if index >= pem.data.length then Progression(t"-----END ${pem.label}-----\n")
+    def groups(index: Int): Chain[Text] =
+      if index >= pem.data.length then Chain(t"-----END ${pem.label}-----\n")
       else t"${pem.data.slice(index, index + 48).serialize[Base64]}\n" #:: groups(index + 48)
 
-    Stream((t"-----BEGIN ${pem.label}-----\n" #:: Progression.defer(groups(0))).iterator)
+    Stream((t"-----BEGIN ${pem.label}-----\n" #:: Chain.defer(groups(0))).iterator)
 
 case class Pem(label: PemLabel, data: Data):
   def serialize: Text =

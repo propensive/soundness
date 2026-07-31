@@ -47,7 +47,7 @@ sealed trait LinearSizeComplexity
 // which call it) — an O(n) walk to the requested index. `prim`/first stays free (O(1) head access).
 sealed trait LinearAccessComplexity
 
-// Computing the size of a lazy structure — `Progression.size` — which forces the whole stream and
+// Computing the size of a lazy structure — `Chain.size` — which forces the whole stream and
 // diverges on an infinite one: unbounded rather than merely linear.
 sealed trait UnboundedSizeComplexity
 
