@@ -133,28 +133,6 @@ private[facsimile] object PdfWriter:
     // anything is freed) into ascending consecutive subsections.
     val numbers = (changed ++ freed ++ (if freed.isEmpty then Nil else List(0))).distinct.sorted
 
-    ascii(t"xref\n")
-
-    subsections(numbers).each: (first, run) =>
-      ascii(t"$first ${run.length}\n")
-
-      run.each: number =>
-        if number == 0 then ascii(t"0000000000 65535 f \n")
-        else if pdf.freed.contains(number) then
-          val generation = pdf.xref.entries.at(number) match
-            case Xref.Entry.Direct(_, gen) => gen + 1
-            case _                         => 1
-
-          ascii(t"0000000000 ${pad5(generation)} f \n")
-        else
-          val generation = pdf.xref.entries.at(number) match
-            case Xref.Entry.Direct(_, gen) => gen
-            case _                         => 0
-
-          ascii(t"${pad10(offsets(number))} ${pad5(generation)} n \n")
-
-    val size = pdf.nextNumber
-
     // The trailer carries forward the original `/Root`, `/Info`, `/Encrypt` and `/ID`, with
     // any write-scope overrides (e.g. a newly-created `/Info`) taking precedence.
     val carried = List(t"Root", t"Info", t"Encrypt", t"ID").flatMap: key =>
@@ -162,7 +140,80 @@ private[facsimile] object PdfWriter:
 
     val entries = (carried.to(Map) ++ pdf.trailerOverrides).to(List)
 
-    ascii(t"trailer\n<< /Size $size")
+    // A file whose newest cross-reference section is a stream takes a stream for its update too.
+    // The two forms cannot be chained through `/Prev`, which is defined to address a section of
+    // the same kind (ISO 32000-1 §7.5.8.4); a file that mixes them is one some readers accept and
+    // others reject outright.
+    if pdf.xref.streamed
+    then streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries)
+    else
+      ascii(t"xref\n")
+
+      subsections(numbers).each: (first, run) =>
+        ascii(t"$first ${run.length}\n")
+
+        run.each: number =>
+          if number == 0 then ascii(t"0000000000 65535 f \n")
+          else if pdf.freed.contains(number) then
+            val generation = pdf.xref.entries.at(number) match
+              case Xref.Entry.Direct(_, gen) => gen + 1
+              case _                         => 1
+
+            ascii(t"0000000000 ${pad5(generation)} f \n")
+          else
+            val generation = pdf.xref.entries.at(number) match
+              case Xref.Entry.Direct(_, gen) => gen
+              case _                         => 0
+
+            ascii(t"${pad10(offsets(number))} ${pad5(generation)} n \n")
+
+      ascii(t"trailer\n<< /Size ${pdf.nextNumber}")
+
+      entries.each: (key, value) =>
+        ascii(t" /$key ")
+        appendObject(pdf, raw, ascii, value)
+
+      pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
+
+      ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
+
+    builder.result().immutable(using Unsafe)
+
+  // The update's cross-reference section as a cross-reference stream (ISO 32000-2 §7.5.8): an
+  // ordinary indirect object whose dictionary serves as the trailer and whose payload holds one
+  // fixed-width binary row per object.
+  //
+  // The stream is an object in its own right, so it occupies the next free number and appears in
+  // its own table. Rows are written uncompressed: a section covering a handful of changed objects
+  // is a few dozen bytes, and `/Filter` would cost more in dictionary than it saved in payload.
+  private def streamed
+    ( pdf:     Pdf,
+      raw:     Data => Unit,
+      ascii:   Text => Unit,
+      offset:  Long,
+      numbers: List[Int],
+      offsets: scala.collection.mutable.HashMap[Int, Long],
+      entries: List[(Text, Cos)] )
+  :   Unit raises PdfError =
+
+    val number = pdf.nextNumber
+    val rows = (numbers :+ number).distinct.sorted
+
+    // `/W [1 4 2]`: one byte of entry type, four of offset — enough for any file this side of
+    // 4 GB — and two of generation.
+    def field(value: Long, width: Int): Unit =
+      raw(IArray.tabulate(width) { index => (value >> 8*(width - 1 - index) & 0xff).toByte })
+
+    def row(kind: Int, second: Long, third: Int): Unit =
+      field(kind, 1)
+      field(second, 4)
+      field(third, 2)
+
+    val index = subsections(rows).flatMap((first, run) => List(first, run.length))
+
+    ascii(t"$number 0 obj\n<< /Type /XRef /Size ${number + 1} /W [1 4 2] /Index [")
+    ascii(index.map(_.toString.tt).join(t" "))
+    ascii(t"] /Length ${rows.length*7}")
 
     entries.each: (key, value) =>
       ascii(t" /$key ")
@@ -170,9 +221,25 @@ private[facsimile] object PdfWriter:
 
     pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
 
-    ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
+    ascii(t" >>\nstream\n")
 
-    builder.result().immutable(using Unsafe)
+    rows.each: entry =>
+      if entry == number then row(1, offset, 0)
+      else if entry == 0 then row(0, 0, 65535)
+      else if pdf.freed.contains(entry) then
+        val generation = pdf.xref.entries.at(entry) match
+          case Xref.Entry.Direct(_, gen) => gen + 1
+          case _                         => 1
+
+        row(0, 0, generation)
+      else
+        val generation = pdf.xref.entries.at(entry) match
+          case Xref.Entry.Direct(_, gen) => gen
+          case _                         => 0
+
+        row(1, offsets(entry), generation)
+
+    ascii(t"\nendstream\nendobj\nstartxref\n$offset\n%%EOF\n")
 
   private def appendObject
     ( pdf: Pdf, raw: Data => Unit, ascii: Text => Unit, cos: Cos,
