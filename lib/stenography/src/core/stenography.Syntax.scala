@@ -45,6 +45,22 @@ import vacuous.*
 object Syntax:
   inline def name[designator <: AnyKind]: Text = ${stenography.internal.designator[designator]}
 
+  // Capture sets survive into a macro's view of a type as ordinary annotations, since a macro
+  // runs long before the capture checker turns them into capturing types. `T^{a, b}` carries
+  // `@retains[a.type | b.type]`, `T^` carries `@retainsCap`, and an impure by-name type
+  // carries `@retainsByName`. The refinements a capability can have within a set — reach,
+  // read-only and classifier restriction — are annotations on the reference itself. These are
+  // compared by full name rather than by symbol so that a compiler version which does not
+  // define one of them cannot break the others.
+  private val Into = "scala.annotation.internal.$into"
+  private val Retains = "scala.annotation.retains"
+  private val RetainsCap = "scala.annotation.retainsCap"
+  private val Reach = "scala.annotation.internal.reachCapability"
+  private val ReadOnly = "scala.annotation.internal.readOnlyCapability"
+  private val Only = "scala.annotation.internal.onlyCapability"
+  private val RetainsByName = "scala.annotation.retainsByName"
+  private val CapSet = "scala.caps.CapSet"
+
   val Space: Symbolic = Symbolic(" ")
   val Colon: Symbolic = Symbolic(": ")
   val Comma: Symbolic = Symbolic(", ")
@@ -71,6 +87,103 @@ object Syntax:
 
     if raw.isEmpty then "self".tt else (raw.head.toLower.toString + raw.drop(1)).tt
 
+  // The elements of a `@retains[…]` capture set. Several capabilities are joined into a single
+  // type argument with `|`, and `Nothing` stands for the empty set.
+  private def retained(using Quotes)(annotation: quotes.reflect.TypeRepr)
+  :   List[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    def elements(repr: TypeRepr): List[TypeRepr] = repr.absolve match
+      case OrType(left, right) => elements(left) ++ elements(right)
+      case repr                => if repr.typeSymbol == defn.NothingClass then Nil else List(repr)
+
+    annotation.absolve match
+      case AppliedType(_, List(argument)) => elements(argument)
+      case _                              => Nil
+
+
+  // A single capability within a capture set. Unlike a singleton type in any other position, a
+  // capability is written without a `.type` suffix, and the roots are named as the compiler
+  // prints them rather than by their qualified paths.
+  private def captureRef(using Quotes, Bindings)(repr: quotes.reflect.TypeRepr): Syntax =
+    import quotes.reflect.*
+
+    def reference(repr: TypeRepr): Syntax =
+      val symbol = repr.termSymbol
+
+      if symbol.exists && symbol.owner.fullName == "scala.caps" then symbol.name match
+        case name@("any" | "fresh" | "cap") => Symbolic(name.tt)
+        case _                              => plain(repr)
+      else plain(repr)
+
+    def plain(repr: TypeRepr): Syntax = apply(repr) match
+      case Value(designator) => Simple(designator)
+      case syntax            => syntax
+
+    repr.absolve match
+      case AnnotatedType(tpe, annotation) =>
+        annotation.tpe.typeSymbol.fullName match
+          case Reach    => Suffix(captureRef(tpe), "*")
+          case ReadOnly => Suffix(captureRef(tpe), ".rd")
+
+          case Only => annotation.tpe.absolve match
+            case AppliedType(_, List(classifier)) =>
+              val only = List(Primitive(".only["), apply(classifier), Primitive("]"))
+              Compound(captureRef(tpe) :: only)
+
+            case _ =>
+              captureRef(tpe)
+
+          case _ =>
+            captureRef(tpe)
+
+      case repr =>
+        reference(repr)
+
+  // The capture set attached to one bound of a capture-set parameter, or `Unset` if the bound
+  // is trivial (a bare `CapSet`, or the universal set written `CapSet^`).
+  private def captureBound(using Quotes, Bindings)(repr: quotes.reflect.TypeRepr)
+  :   Optional[List[Syntax]] =
+
+    import quotes.reflect.*
+
+    repr.absolve match
+      case AnnotatedType(tpe, annotation) => annotation.tpe.typeSymbol.fullName match
+        case Retains    => retained(annotation.tpe).map(captureRef(_))
+        case RetainsCap => Unset
+        case _          => captureBound(tpe)
+
+      case _ =>
+        Unset
+
+  private def derivesFromCapSet(using Quotes)(repr: quotes.reflect.TypeRepr): Boolean =
+    import quotes.reflect.*
+
+    repr.absolve match
+      case AnnotatedType(tpe, _) => derivesFromCapSet(tpe)
+      case repr                  => repr.typeSymbol.fullName == CapSet
+
+  // A capture-set parameter, `C^`, is encoded as the bounds `>: CapSet <: CapSet^`. Rendering
+  // those bounds literally would expose the encoding, so show the parameter as it was written,
+  // with only whichever of its bounds are nontrivial.
+  private def captureVarBounds(using Quotes, Bindings)
+    ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
+  :   Optional[Syntax] =
+
+    if !derivesFromCapSet(lower) || !derivesFromCapSet(upper) then Unset else
+      // The bounds are written after the `^`, so they compose by concatenation rather than as
+      // infix operators, which would parenthesise the `^`.
+      def bound(operator: Text, refs: List[Syntax]): List[Syntax] =
+        List(Primitive(operator), Sequence('{', refs))
+
+      val lowered = captureBound(lower).lay(Nil): refs =>
+        if refs.nil then Nil else bound(" >: ", refs)
+
+      val uppered = captureBound(upper).lay(Nil)(bound(" <: ", _))
+
+      Compound(Capturing(sub, Unset) :: lowered ++ uppered)
+
 
   def typeBounds(using Quotes, Bindings)
     ( sub: Syntax, lower: quotes.reflect.TypeRepr, upper: quotes.reflect.TypeRepr )
@@ -78,12 +191,13 @@ object Syntax:
 
     import quotes.reflect.*
 
-    if lower == upper then apply(lower)
-    else if lower.typeSymbol == defn.NothingClass && upper.typeSymbol == defn.AnyClass
-    then sub
-    else if lower.typeSymbol == defn.NothingClass then Infix(sub, "<:", apply(upper))
-    else if upper.typeSymbol == defn.AnyClass then Infix(sub, ">:", apply(lower))
-    else Infix(Infix(sub, ">:", apply(lower)), "<:", apply(upper))
+    captureVarBounds(sub, lower, upper).or:
+      if lower == upper then apply(lower)
+      else if lower.typeSymbol == defn.NothingClass && upper.typeSymbol == defn.AnyClass
+      then sub
+      else if lower.typeSymbol == defn.NothingClass then Infix(sub, "<:", apply(upper))
+      else if upper.typeSymbol == defn.AnyClass then Infix(sub, ">:", apply(lower))
+      else Infix(Infix(sub, ">:", apply(lower)), "<:", apply(upper))
 
 
   def contextBounds(using Quotes, Bindings)(clauses: List[quotes.reflect.ParamClause])
@@ -192,6 +306,63 @@ object Syntax:
       case other =>
         Declaration(true, List(), apply(other))
 
+  // Render a method type as a function type. This is the shape a dependent function type takes
+  // inside its `apply` refinement, and the shape a polymorphic function type's body takes.
+  private def methodSyntax(using Quotes, Bindings)
+    ( method: quotes.reflect.MethodType, refs: List[Syntax], impure: Boolean )
+  :   Syntax =
+
+    import quotes.reflect.*
+
+    method.absolve match
+      case MethodType(names, types, result) =>
+        val unnamed = names.forall(_.startsWith("x$"))
+
+        val parameters =
+          if names.nil then Sequence('(', Nil)
+          else if unnamed && names.length == 1 then apply(types.head)
+          else if unnamed then Sequence('(', types.map(apply(_)))
+          else
+            Sequence
+              ( '(',
+                names.zip(types).map: (name, typ) =>
+                  Named(false, name, apply(typ)) )
+
+        Function(parameters, method.isContextual, impure, refs, apply(result))
+
+
+  // Render `repr` as a function type, or `Unset` if it is not one. `refs` is the capture set
+  // from an enclosing `@retains` annotation, and `universal` records whether that annotation
+  // was instead `@retainsCap`, which is how `A => B` reaches here once its `ImpureFunctionN`
+  // alias has been expanded.
+  private def functionSyntax(using Quotes)(using bindings: Bindings)
+    ( repr: quotes.reflect.TypeRepr, refs: List[Syntax], universal: Boolean )
+  :   Optional[Syntax] =
+
+    import quotes.reflect.*
+
+    // Without pure functions in scope at the use site, `A => B` is a bare `FunctionN` and
+    // there is no such thing as a pure function type to distinguish it from.
+    def impure(base: TypeRepr): Boolean =
+      universal || !bindings.pureFuns || base.typeSymbol.name.startsWith("Impure")
+
+    repr.absolve match
+      case typ@Refinement(base, "apply", method: MethodType) if typ.isFunctionType =>
+        methodSyntax(method, refs, impure(base))
+
+      case typ@AppliedType(base, arguments) if typ.isFunctionType =>
+        val parameters = arguments.init match
+          case List(one) => apply(one)
+          case many      => Sequence('(', many.map(apply(_)))
+
+        val result = apply(arguments.last)
+
+        Function(parameters, typ.isContextFunctionType, impure(base), refs, result)
+
+      case _ =>
+        Unset
+
+
   def term(using Quotes, Bindings)(repr: quotes.reflect.TermRef): Designator = apply(repr) match
     case Value(value) => value
     case _            => panic(m"expected a Value")
@@ -268,9 +439,26 @@ object Syntax:
               Primitive("<unknown>")
 
         case AnnotatedType(tpe, annotation) =>
-          if annotation.tpe.typeSymbol == Symbol.classSymbol("scala.annotation.internal.$into")
-          then Prefix("into", apply(tpe))
-          else apply(tpe)
+          annotation.tpe.typeSymbol.fullName match
+            case Into =>
+              Prefix("into", apply(tpe))
+
+            // A capture set on a function type belongs in its arrow, and anywhere else it is
+            // written after the type with a `^`.
+            case Retains =>
+              val refs = retained(annotation.tpe).map(captureRef(_))
+              functionSyntax(tpe, refs, false).or(Capturing(apply(tpe), refs))
+
+            case RetainsCap =>
+              functionSyntax(tpe, Nil, true).or(Capturing(apply(tpe), Unset))
+
+            case Reach | ReadOnly | Only =>
+              captureRef(repr)
+
+            // Every other annotation, including the markers the capture checker leaves on
+            // inferred and declared types, is invisible in the type's source form.
+            case _ =>
+              apply(tpe)
 
         case OrType(left, right) =>
           Infix(apply(left), "|", apply(right))
@@ -278,21 +466,23 @@ object Syntax:
         case AndType(left, right) =>
           Infix(apply(left), "&", apply(right))
 
+        // An impure by-name type, `=> T`, carries a `@retainsByName` annotation; without it the
+        // type is the pure by-name type, `-> T`.
         case ByNameType(tpe) =>
-          Prefix("=>", apply(tpe))
+          tpe.absolve match
+            case AnnotatedType(tpe, annotation)
+            if annotation.tpe.typeSymbol.fullName == RetainsByName =>
+              Prefix("=>", apply(tpe))
+
+            case _ =>
+              Prefix(if bindings.pureFuns then "->" else "=>", apply(tpe))
 
         case FlexibleType(tpe) =>
           Suffix(apply(tpe), "?")
 
         case typ@AppliedType(base, arguments0) =>
           if typ.isFunctionType then
-            val arguments = arguments0.init match
-              case List(one) => apply(one)
-              case many      => Sequence('(', many.map(apply(_)))
-
-            val arrow = if typ.isContextFunctionType then "?=>" else "=>"
-
-            Infix(arguments, arrow, apply(arguments0.last))
+            functionSyntax(typ, Nil, false).or(Primitive("<unknown>"))
           else if typ.typeSymbol == defn.RepeatedParamClass
           then
             Suffix(apply(arguments0.head), " *")
@@ -338,8 +528,10 @@ object Syntax:
             case ClassOfConstant(cls) =>
               Application(Primitive("classOf"), List(apply(cls)), false)
 
-        case Refinement(base, "apply", member) =>
-          apply(member)
+        // A dependent function type. Its purity is carried by the refined function class, not
+        // by the method type, so the two have to be rendered together.
+        case typ@Refinement(base, "apply", member) =>
+          functionSyntax(typ, Nil, false).or(apply(member))
 
         case Refinement(base, name, member) =>
           if name == "Self" then Infix(apply(member), "is", apply(base)) else
@@ -357,23 +549,8 @@ object Syntax:
         case TypeBounds(lower, upper) =>
           typeBounds(Symbolic("?"), lower, upper)
 
-        case method@MethodType(arguments0, types, result) =>
-          val unnamed = arguments0.forall(_.startsWith("x$"))
-
-          val arguments =
-            if arguments0.nil then Sequence('(', Nil)
-            else if unnamed then Sequence('(', types.map(apply(_)))
-            else
-              Sequence
-                ( '(',
-                  arguments0.zip(types).map: (member, typ) =>
-                    Named(false, member, apply(typ)) )
-
-          val arrow = if method.isContextual then "?=>" else "=>"
-
-          if unnamed && arguments0.length == 1
-          then Infix(apply(types.head), arrow, apply(result))
-          else Infix(arguments, arrow, apply(result))
+        case method: MethodType =>
+          methodSyntax(method, Nil, !bindings.pureFuns)
 
         case typ@PolyType(arguments0, types, result) =>
           val arguments = arguments0.zip(types).map:
@@ -440,24 +617,39 @@ enum Syntax:
   case Compound(syntaxes: List[Syntax])
   case Match(scrutinee: Syntax, cases: List[Syntax])
 
+  // A capture set of `Unset` is the universal one, written `T^`, as distinct from the empty
+  // one, written `T^{}`.
+  case Capturing(base: Syntax, refs: Optional[List[Syntax]])
+
+  // A function type, whose arrow records both whether the function is pure and, if it has been
+  // given one, its capture set.
+  case Function
+    ( parameters: Syntax,
+      contextual: Boolean,
+      impure:     Boolean,
+      refs:       List[Syntax],
+      result:     Syntax )
+
   def precedence: Int = this match
-    case Structural(_, _, _)  => 0
-    case Prefix(_, _)         => 0
-    case Named(_, _, _)       => 0
-    case Suffix(_, _)         => 0
-    case Match(_, _)          => 10
-    case Infix(_, "<:", _)    => 10
-    case Infix(_, ">:", _)    => 10
-    case Projection(_, _)     => 9
-    case Compound(_)          => 10
-    case Simple(_)            => 10
-    case Symbolic(_)          => 10
-    case Primitive(_)         => 10
-    case Application(_, _, _) => 10
-    case Selection(_, _)      => 10
-    case Sequence(_, _)       => 10
-    case Declaration(_, _, _) => 10
-    case Value(_)             => 10
+    case Structural(_, _, _)     => 0
+    case Prefix(_, _)            => 0
+    case Named(_, _, _)          => 0
+    case Suffix(_, _)            => 0
+    case Function(_, _, _, _, _) => 4
+    case Capturing(_, _)         => 9
+    case Match(_, _)             => 10
+    case Infix(_, "<:", _)       => 10
+    case Infix(_, ">:", _)       => 10
+    case Projection(_, _)        => 9
+    case Compound(_)             => 10
+    case Simple(_)               => 10
+    case Symbolic(_)             => 10
+    case Primitive(_)            => 10
+    case Application(_, _, _)    => 10
+    case Selection(_, _)         => 10
+    case Sequence(_, _)          => 10
+    case Declaration(_, _, _)    => 10
+    case Value(_)                => 10
 
     case Infix(_, middle, _) =>
       middle.s.head match
@@ -487,6 +679,23 @@ enum Syntax:
     case Sequence('{', elements) => s"{${elements.map(_.text).mkString(", ")}}".tt
     case Value(designator)       => s"${designator.text}.type".tt
     case Compound(syntaxes)      => syntaxes.map(_.text).mkString.tt
+
+    case Capturing(base, refs) =>
+      val base2 = if base.precedence < precedence then Sequence('(', List(base)) else base
+
+      refs.lay(s"${base2.text}^".tt): refs =>
+        s"${base2.text}^{${refs.map(_.text).mkString(", ")}}".tt
+
+    case Function(parameters, contextual, impure, refs, result) =>
+      // Function types are right-associative, so a function to the left of the arrow needs
+      // parentheses where one to the right does not.
+      val wrap = parameters.precedence <= precedence
+      val left = if wrap then Sequence('(', List(parameters)) else parameters
+      val right = if result.precedence < precedence then Sequence('(', List(result)) else result
+      val set = if refs.nil then "" else refs.map(_.text).mkString("{", ", ", "}")
+      val arrow = s"${if contextual then "?" else ""}${if impure then "=>" else "->"}$set"
+
+      s"${left.text} $arrow ${right.text}".tt
 
     case Match(scrutinee, cases) =>
       s"${scrutinee.text} match { ${cases.map(_.text).mkString("; ")} }".tt
