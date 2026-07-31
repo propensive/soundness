@@ -43,6 +43,7 @@ literal-atom-custom-delimiter
 literal-atom-delimiter-in-payload
 literal-atom-delimiter-partial-match
 literal-atom-empty-payload
+literal-atom-flush-delimiter-in-payload
 literal-atom-from-nested
 literal-atom-multiline-payload
 literal-atom-nested-compound
