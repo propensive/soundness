@@ -47,7 +47,15 @@ object internal:
     name(TypeRepr.of[designator])
 
   def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
-    given Bindings = Bindings()
+    // Whether `A => B` desugars to `ImpureFunctionN` at the use site, and hence whether a bare
+    // `FunctionN` should be rendered `->` or `=>`.
+    val pureFuns: Boolean = quotes.absolve match
+      case quotes: runtime.impl.QuotesImpl =>
+        try config.Feature.pureFunsEnabled(using quotes.ctx) catch case _: Exception => true
+
+      case _ => true
+
+    given Bindings = Bindings(pureFuns)
 
     val outer: List[Designator] = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>

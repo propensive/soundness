@@ -38,7 +38,12 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 
-final class Bindings:
+// `pureFuns` records whether the code the macro is expanding into has pure functions enabled
+// (which capture checking implies). It decides how a bare `FunctionN` is rendered: as `->`
+// when pure functions are on, and as `=>` when they are off, since `A => B` desugars to
+// `ImpureFunctionN` only in the former case. Without a compiler context to consult we assume
+// the pure-functions reading, so `->` and `=>` at least stay distinguishable.
+final class Bindings(val pureFuns: Boolean = true):
   private val names = IdentityHashMap[AnyRef, Text]()
   private val counters = scm.HashMap[Text, Int]()
   private[stenography] val cache = scm.HashMap[Any, Syntax]()

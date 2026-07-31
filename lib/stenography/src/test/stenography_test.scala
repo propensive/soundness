@@ -42,6 +42,11 @@ import probably.*
 import spectacular.*
 import symbolism.*
 
+// Capture sets are written in terms of capabilities, so the tests which render them need some
+// capabilities to name.
+trait Sensor extends caps.ExclusiveCapability
+trait Reader extends caps.SharedCapability, caps.Classifier
+
 object Tests extends Suite(m"Stenography Tests"):
   def run(): Unit =
     test(m"Decode a term"):
@@ -193,19 +198,19 @@ object Tests extends Suite(m"Stenography Tests"):
 
     test(m"Show polymorphic lambda"):
       Syntax.name[[field] => (x: field) -> Int]
-    . assert(_ == t"[field] => (x: field) => Int")
+    . assert(_ == t"[field] => (x: field) -> Int")
 
     test(m"Show polymorphic lambda with upper bound"):
       Syntax.name[[field <: String] => (x: field) -> Int]
-    . assert(_ == t"[field <: String] => (x: field) => Int")
+    . assert(_ == t"[field <: String] => (x: field) -> Int")
 
     test(m"Show polymorphic lambda with lower bound"):
       Syntax.name[[field >: String] => (x: field) -> Int]
-    . assert(_ == t"[field >: String] => (x: field) => Int")
+    . assert(_ == t"[field >: String] => (x: field) -> Int")
 
     test(m"Show polymorphic lambda with upper and lower bound"):
       Syntax.name[[field >: String <: AnyRef] => (x: field) -> Int]
-    . assert(_ == t"[field >: String <: AnyRef] => (x: field) => Int")
+    . assert(_ == t"[field >: String <: AnyRef] => (x: field) -> Int")
 
     test(m"By-name type"):
       Syntax.name[(=> Int) => Double]
@@ -279,10 +284,91 @@ object Tests extends Suite(m"Stenography Tests"):
       Syntax.name[[T] =>> Option[T]]
     . assert(_ == t"[T] =>> Option[T]")
 
-    // test(m"Pure function"):
-    //   Syntax.name[Int -> String]
-    // .assert(_ == t"Int -> String")
+    test(m"Pure function"):
+      Syntax.name[Int -> String]
+    . assert(_ == t"Int -> String")
+
+    test(m"Pure function returning a function"):
+      Syntax.name[Int -> Text -> String]
+    . assert(_ == t"Int -> Text -> String")
+
+    test(m"Pure function taking a function"):
+      Syntax.name[(Int -> Text) -> String]
+    . assert(_ == t"(Int -> Text) -> String")
+
+    test(m"Pure by-name type"):
+      Syntax.name[(-> Int) -> Double]
+    . assert(_ == t"(-> Int) -> Double")
 
     test(m"Dependent function type"):
       Syntax.name[(e: Enumeration) => e.Value]
     . assert(_ == t"(e: Enumeration) => e.Value")
+
+    test(m"Pure dependent function type"):
+      Syntax.name[(e: Enumeration) -> e.Value]
+    . assert(_ == t"(e: Enumeration) -> e.Value")
+
+    captures(new Sensor {}, new Sensor {}, Nil)
+
+  // The capabilities a capture set names have to be tracked references, so the tests which
+  // render capture sets take them as parameters rather than referring to globals.
+  def captures(alpha: Sensor, beta: Sensor, sensors: List[Sensor]): Unit =
+    test(m"Capture set with one capability"):
+      Syntax.name[Text^{alpha}]
+    . assert(_ == t"Text^{alpha}")
+
+    test(m"Capture set with two capabilities"):
+      Syntax.name[Text^{alpha, beta}]
+    . assert(_ == t"Text^{alpha, beta}")
+
+    test(m"Universal capture set"):
+      Syntax.name[Text^]
+    . assert(_ == t"Text^")
+
+    test(m"Empty capture set"):
+      Syntax.name[Text^{}]
+    . assert(_ == t"Text^{}")
+
+    test(m"Capture set on an applied type"):
+      Syntax.name[List[Text]^{alpha}]
+    . assert(_ == t"collection.immutable.List[Text]^{alpha}")
+
+    test(m"Capture set on a union type"):
+      Syntax.name[(Int | Text)^{alpha}]
+    . assert(_ == t"(Int | Text)^{alpha}")
+
+    test(m"Function capturing one capability"):
+      Syntax.name[Int ->{alpha} String]
+    . assert(_ == t"Int ->{alpha} String")
+
+    test(m"Function capturing two capabilities"):
+      Syntax.name[Int ->{alpha, beta} String]
+    . assert(_ == t"Int ->{alpha, beta} String")
+
+    test(m"Context function capturing a capability"):
+      Syntax.name[Int ?->{alpha} String]
+    . assert(_ == t"Int ?->{alpha} String")
+
+    test(m"Capture set of a capture-set type"):
+      Syntax.name[caps.CapSet^{alpha, beta}]
+    . assert(_ == t"caps.CapSet^{alpha, beta}")
+
+    test(m"Restricted capability in a capture set"):
+      Syntax.name[Text^{alpha.only[Reader]}]
+    . assert(_ == t"Text^{alpha.only[Reader]}")
+
+    test(m"Reach capability in a capture set"):
+      Syntax.name[Text^{sensors*}]
+    . assert(_ == t"Text^{sensors*}")
+
+    test(m"Universal capability in a capture set"):
+      Syntax.name[Text^{caps.any}]
+    . assert(_ == t"Text^{any}")
+
+    test(m"Capture-set type parameter"):
+      Syntax.name[[cap^] =>> Text^{cap}]
+    . assert(_ == t"[cap^] =>> Text^{cap}")
+
+    test(m"Bounded capture-set type parameter"):
+      Syntax.name[[cap^ >: {alpha}] =>> Text^{cap}]
+    . assert(_ == t"[cap^ >: {alpha}] =>> Text^{cap}")
