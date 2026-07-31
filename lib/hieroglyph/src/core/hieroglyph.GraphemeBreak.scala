@@ -32,6 +32,11 @@
                                                                                                   */
 package hieroglyph
 
+import proscenium.compat.*
+
+
+import scala.caps
+
 import java.io as ji
 
 import scala.collection.mutable.ArrayBuilder
@@ -66,7 +71,8 @@ object GraphemeBreak:
     ( in: ji.InputStream, classify: Text => Optional[Int] )
   :   List[Entry] =
 
-    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+    List.of:
+     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.${Hex(to)}([0-9A-Fa-f]+)\s*;\s*$name([A-Za-z_]+).*" =>
           classify(name).option.map(Entry(from, to, _))
@@ -103,7 +109,8 @@ object GraphemeBreak:
     val Linker: Int = 2
 
   private def parseIncbEntries(in: ji.InputStream): List[Entry] =
-    scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
+    List.of:
+     scala.io.Source.fromInputStream(in).getLines().toList.flatMap: line =>
       Text(line) match
         case r"${Hex(from)}([0-9A-Fa-f]+)\.\.$rest(.*)" => rest match
           case r"${Hex(to)}([0-9A-Fa-f]+)\s*;\s*InCB\s*;\s*$name([A-Za-z]+).*" =>
@@ -123,14 +130,14 @@ object GraphemeBreak:
     case "Linker"    => IncbValue.Linker
     case _           => Unset
 
-  private case class Tables(starts: IArray[Int], ends: IArray[Int], props: IArray[Byte])
+  private case class Tables(starts: Array[Int]^{}, ends: Array[Int]^{}, props: Array[Byte]^{})
 
   private def buildTables(entries: List[Entry]): Tables =
-    val sorted = entries.sortBy(_.start).toArray
+    val sorted = entries.stdlib.sortBy(_.start).toArray
     val count = sorted.length
-    val starts = new Array[Int](count)
-    val ends = new Array[Int](count)
-    val props = new Array[Byte](count)
+    val starts = Array[Int](count)
+    val ends = Array[Int](count)
+    val props = Array[Byte](count)
 
     var index = 0
 
@@ -140,10 +147,7 @@ object GraphemeBreak:
       props(index) = sorted(index).prop.toByte
       index += 1
 
-    Tables
-      ( starts.immutable(using Unsafe),
-        ends.immutable(using Unsafe),
-        props.immutable(using Unsafe) )
+    Tables(Array.freeze(starts), Array.freeze(ends), Array.freeze(props))
 
   private lazy val gbpTables: Tables =
     val in = loadResource(
@@ -188,23 +192,21 @@ object GraphemeBreak:
   def extendedPictographic(codepoint: Int): Boolean = lookup(extPictTables, codepoint) >= 0
   def incb(codepoint: Int): Int = lookup(incbTables, codepoint)
 
-  def boundaries(text: Text): IArray[Int] =
+  def boundaries(text: Text): Array[Int]^{} =
     import Property.*
 
     val s = text.s
     val n = s.length
 
-    // A pre-sized exclusive array rather than an `ArrayBuilder`: boundary count
+    // A pre-sized exclusive buffer rather than an `ArrayBuilder`: boundary count
     // is bounded by `n + 2`, and the stdlib builder's internal reads count as
     // uses the enclosing object would have to declare under separation checking.
-    val breaks: Array[Int]^ = new Array[Int](n + 2)
+    val breaks = Array[Int](n + 2)
     var size = 0
     breaks(size) = 0
     size += 1
 
-    if n == 0 then
-      val result: Array[Int]^ = new Array[Int](1)
-      caps.freeze(result).immutable(using Unsafe)
+    if n == 0 then Array.freeze(Array[Int](1))
     else
       var index = 0
       val firstCodepoint = Character.codePointAt(s, 0)
@@ -282,6 +284,7 @@ object GraphemeBreak:
 
       // Trimmed to the exact count, then frozen: the checked build-then-share
       // conversion.
-      val result: Array[Int]^ = new Array[Int](size)
-      System.arraycopy(breaks, 0, result, 0, size)
-      caps.freeze(result).immutable(using Unsafe)
+      val frozen = Array.freeze(breaks)
+      val result = Array[Int](size)
+      result.copyFrom(frozen, 0, 0, size)
+      Array.freeze(result)

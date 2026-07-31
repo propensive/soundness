@@ -32,8 +32,10 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.atomic as juca
@@ -47,8 +49,8 @@ import abstractables.instantAbstractable
 
 object Timeout:
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)(action: => Unit)
-    ( using Monitor^, Probate^ )
-  :   Timeout^ =
+    ( using monitor: Monitor^, probate: Probate^ )
+  :   Timeout^{action, monitor, probate} =
 
     val timeout = timeout0.generic/1_000_000L
 
@@ -63,13 +65,16 @@ object Timeout:
         expiry.set(Long.MinValue)
         action
 
-    new Timeout(timeout, process)
+    // As for `Task.apply`: the declared result tracks the retained capabilities; the
+    // instance's own fresh capability is laundered.
+    caps.unsafe.unsafeAssumePure(new Timeout(timeout, process))
 
 
 class Timeout private(duration: Long, makeProcess: juca.AtomicLong => Task[Unit])
 extends caps.ExclusiveCapability:
   private val expiry: juca.AtomicLong = juca.AtomicLong(jl.System.currentTimeMillis + duration)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var process: Task[Unit] = makeProcess(expiry)
 
   def alive: Boolean = expiry.get() != Long.MinValue

@@ -32,6 +32,8 @@
                                                                                                   */
 package embarcadero
 
+import proscenium.compat.*
+
 import anticipation.*
 import bitumen.*
 import contingency.*
@@ -41,6 +43,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import hypotenuse.*
 import prepositional.*
+import rudiments.map
 import serpentine.*
 import spectacular.*
 import turbulence.*
@@ -50,8 +53,10 @@ import wisteria.*
 object Image:
   // Anchored here so `data.open[Image]()` resolves with no import. Opening a filesystem
   // *path* as an image (`path.open[Image]`) lives in the JVM-only source set.
-  given dataOpenable: (Tactic[OciError], Tactic[TarError], Tactic[StreamError])
-  =>  ( ImageDataOpenable^ ) =
+  given dataOpenable
+  :   ( ociTactic: Tactic[OciError], tarTactic: Tactic[TarError],
+        streamTactic: Tactic[StreamError] )
+  =>  ( ImageDataOpenable^{ociTactic, tarTactic, streamTactic} ) =
     ImageDataOpenable()
 
   // Assembles an image from its layers and optional runtime configuration,
@@ -105,9 +110,10 @@ case class Image
   // and the manifest.
   def blobs: List[(Text, Data)] =
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
-    (configDescriptor.digest, configBytes) ::
-      layerBlobs :::
-      List((manifestDescriptor.digest, manifestBytes))
+
+    List((configDescriptor.digest, configBytes))
+    ::: layerBlobs
+    ::: List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under
@@ -126,8 +132,8 @@ case class Image
     val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)
 
-    val blobEntries = blobs.map: (digest, content) =>
+    val blobEntries: List[bitumen.Tar.Entry] = blobs.map: (digest, content) =>
       val hex = digest.s.stripPrefix("sha256:").tt
       entry(t"blobs/sha256/$hex", content)
 
-    Tarfile(layoutEntry :: indexEntry :: blobEntries)
+    Tarfile(List(layoutEntry, indexEntry) ::: blobEntries)

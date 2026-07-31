@@ -34,6 +34,8 @@ package probably
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+
 import anticipation.*
 import rudiments.*
 import vacuous.*
@@ -54,7 +56,7 @@ object Run:
 // and any structural payload. In a capacity search, `sustained` marks the winning run.
 case class Run
   ( verdict:   Optional[Verdict]       = Unset,
-    metrics:   ListMap[Metric, Double] = ListMap(),
+    metrics:   Ledger[Metric, Double]  = Ledger(),
     details:   List[Verdict.Detail]    = Nil,
     payload:   Optional[Run.Payload]   = Unset,
     sustained: Boolean                 = false )
@@ -74,24 +76,29 @@ final class Cell():
 // values without a cell are gaps, rendered as empty positions in a grid.
 final class Entry(val id: TestId, val kind: Entry.Kind):
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var axes0: List[Axis.Spec] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   private var ticks0: Map[Axis.Spec, List[Value]] = Map()
-  private var cells0: ListMap[List[Value], Cell] = ListMap()
+  @scala.caps.unsafe.untrackedCaptures
+  private var cells0: Ledger[List[Value], Cell] = Ledger()
 
+  @scala.caps.unsafe.untrackedCaptures
   var headline: Optional[Metric] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   var anchor: Optional[Anchor] = Unset
 
   def axes: List[Axis.Spec] = mutex(axes0)
-  def cells: List[(List[Value], Cell)] = mutex(cells0.to(List))
+  def cells: List[(List[Value], Cell)] = mutex(cells0.to[List])
 
   // Returns the cell at the given coordinates, creating it if absent. Appends any
   // not-yet-seen axes (emergent axes extend the axis list as their coordinates arrive) and
   // registers each axis's values in first-appearance order.
   def cell(coordinates: List[(Axis.Spec, Value)]): Cell = mutex:
     coordinates.each: (axis, value) =>
-      if !axes0.contains(axis) then axes0 = axes0 :+ axis
+      if !axes0.has(axis) then axes0 = axes0 :+ axis
       val seen = ticks0.at(axis).or(Nil)
-      if !seen.contains(value) then ticks0 = ticks0.updated(axis, seen :+ value)
+      if !seen.has(value) then ticks0 = ticks0.updated(axis, seen :+ value)
 
     val address = coordinates.map(_(1))
     if !cells0.defines(address) then cells0 = cells0.updated(address, Cell())
@@ -104,4 +111,4 @@ final class Entry(val id: TestId, val kind: Entry.Kind):
 
     axis.domain match
       case Axis.Domain.Discrete => seen
-      case _                    => seen.sortBy(_.numeric.or(0.0))
+      case _                    => List.of(seen.stdlib.sortBy(_.numeric.or(0.0)))

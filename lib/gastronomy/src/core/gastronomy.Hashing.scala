@@ -36,7 +36,7 @@ object Hashing:
   // One hash algorithm's implementation: a factory for a fresh incremental
   // `Digestion`.
   trait Function:
-    def digestion(): Digestion
+    def digestion(): Digestion^
 
   // The JDK provider supplies hashing whenever it has been selected with
   // `import providers.javaStdlibProvider`. Ambient here (in `Hashing`'s implicit

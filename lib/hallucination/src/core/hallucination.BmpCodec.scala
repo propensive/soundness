@@ -32,10 +32,11 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import Binary.*
 import RasterError.Reason
@@ -78,12 +79,13 @@ private[hallucination] object BmpCodec:
 
       val paletteOffset = 14 + headerSize + (if headerSize == 40 && compression == 3 then 12 else 0)
 
-      val palette: IArray[Int] =
-        if bitCount > 8 then IArray()
+      val palette: Array[Int]^{} =
+        if bitCount > 8 then Array.of()
         else
           val size = if colorCount == 0 then 1 << bitCount else colorCount
 
-          IArray.tabulate(size): index => u32le(data, paletteOffset + index*4)&0xffffff
+          Array.tabulate(size): index =>
+            u32le(data, paletteOffset + index*4)&0xffffff
 
       val rowSize = ((bitCount*width + 31)/32)*4
       val alpha = masks(3) != 0
@@ -142,28 +144,33 @@ private[hallucination] object BmpCodec:
   def encode(raster: Raster): Data =
     val rowSize = (raster.width*3 + 3)& -4
     val imageSize = rowSize*raster.height
-    val buffer = new Array[Byte](54 + imageSize)
+    // A raw exclusive array rather than a `Array`: the buffer-typed local's definition
+    // hides its own fresh capability, poisoning the helper calls below.
+    val buffer: scala.Array[Byte]^ = new scala.Array[Byte](54 + imageSize)
 
-    def put16(offset: Int, value: Int): Unit =
+    // The buffer is threaded as an exclusive parameter: a captured buffer would be
+    // read-only inside these helpers.
+    def put16(buffer: scala.Array[Byte]^, offset: Int, value: Int): Unit =
       buffer(offset) = value.toByte
       buffer(offset + 1) = (value >> 8).toByte
 
-    def put32(offset: Int, value: Int): Unit =
-      put16(offset, value&0xffff)
-      put16(offset + 2, value >>> 16)
+    def put32(buffer: scala.Array[Byte]^, offset: Int, value: Int): Unit =
+      put16(buffer, offset, value&0xffff)
+      put16(buffer, offset + 2, value >>> 16)
 
     buffer(0) = 'B'
     buffer(1) = 'M'
-    put32(2, buffer.length)
-    put32(10, 54)
-    put32(14, 40)
-    put32(18, raster.width)
-    put32(22, raster.height)
-    put16(26, 1)
-    put16(28, 24)
-    put32(34, imageSize)
-    put32(38, 2835)
-    put32(42, 2835)
+    val total = buffer.length
+    put32(buffer, 2, total)
+    put32(buffer, 10, 54)
+    put32(buffer, 14, 40)
+    put32(buffer, 18, raster.width)
+    put32(buffer, 22, raster.height)
+    put16(buffer, 26, 1)
+    put16(buffer, 28, 24)
+    put32(buffer, 34, imageSize)
+    put32(buffer, 38, 2835)
+    put32(buffer, 42, 2835)
 
     var y = 0
 
@@ -180,7 +187,10 @@ private[hallucination] object BmpCodec:
 
       y += 1
 
-    buffer.immutable(using Unsafe)
+    // Freshly allocated above and never aliased, so freezing it asserts nothing about a
+    // surviving writer -- but it must be spelt as an assertion because the buffer is a raw
+    // JVM array for the reason given at its definition.
+    Array.unsafeFrozen(buffer)
 
   private def pack(red: Int, green: Int, blue: Int): Long =
     red.toLong << 16 | green << 8 | blue

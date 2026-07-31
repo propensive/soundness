@@ -49,7 +49,7 @@ object Foreign extends prophesy.Completable:
   enum Expression:
     case Reference(name: Text)
     case Select(target: Expression, member: Text, owner: Text)
-    case Apply(target: Expression, arguments: List[Expression])
+    case Apply(target: Expression, arguments: scala.collection.immutable.List[Expression])
     case Index(target: Expression, index: Expression)
     case Literal(value: Any)
 
@@ -80,7 +80,7 @@ object Foreign extends prophesy.Completable:
 
     import quotes.reflect.*
 
-    val members = Xenophile.refinements(receiver)
+    val members = Map.of(Xenophile.refinements(receiver))
 
     members.at(t"Topic").lay(Nil): topicRepr =>
       members.at(t"Origin").lay(Nil): originRepr =>
@@ -88,7 +88,7 @@ object Foreign extends prophesy.Completable:
           (topicRepr.dealias, locusRepr.dealias) match
             case (ConstantType(StringConstant(topic)), ConstantType(StringConstant(locus))) =>
               Xenophile.definitions(originRepr, locus.tt).at(topic.tt).lay(Nil): prototypes =>
-                prototypes.to(List).sortBy(_(0).s).map: (name, prototype) =>
+                List.of(prototypes.stdlib.toList.sortBy(_(0).s)).map: (name, prototype) =>
                   val kind = prototype.parameters.lay(prophesy.Completion.Kind.Term): _ =>
                     prophesy.Completion.Kind.Method
 

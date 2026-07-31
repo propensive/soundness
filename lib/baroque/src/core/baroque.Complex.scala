@@ -32,13 +32,18 @@
                                                                                                   */
 package baroque
 
+import scala.{compiletime, math}
+
 import scala.annotation.*
+
+import proscenium.compat.*
 
 import geodesy.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import quantitative.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 

@@ -58,7 +58,8 @@ object Attributive:
   given double: Double is Attributive to Whatwg.Decimal = _ -> _.toString.tt
   given domId: (Name[DomId] is Attributive to Whatwg.Id) = _ -> _
   given cssClass: (Name[CssClass] is Attributive to Whatwg.CssClassList) = _ -> _
-  given classList: ClassList is Attributive to Whatwg.CssClassList = _ -> _.classes.join(t" ")
+  given classList: ClassList is Attributive to Whatwg.CssClassList =
+    _ -> _.classes.stdlib.join(t" ")
 
   given url: [url: Abstractable across Urls to Text] => url is Attributive to Whatwg.Url =
     (key, value) => (key, value.generic)

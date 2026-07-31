@@ -74,7 +74,7 @@ private[hallucination] object RasterBackend:
       if alpha then jai.BufferedImage.TYPE_INT_ARGB else jai.BufferedImage.TYPE_INT_RGB
 
     val image = jai.BufferedImage(raster.width, raster.height, imageType)
-    val argb = new Array[Int](raster.width*raster.height)
+    val argb = new scala.Array[Int](raster.width*raster.height)
 
     for index <- 0 until argb.length do
       val word = raster.word(index)
@@ -85,7 +85,7 @@ private[hallucination] object RasterBackend:
 
     val out = ji2.ByteArrayOutputStream()
     ji.ImageIO.write(image, format.name.s, out)
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   // Reads out the pixels in one bulk `getRGB`, as `Rgb` or `Rgba` according to the image's
   // colour model.

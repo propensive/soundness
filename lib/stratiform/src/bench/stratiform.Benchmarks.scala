@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.sys
+
 import scala.language.unsafeNulls
 import scala.quoted.*
 
@@ -90,14 +92,14 @@ object Benchmarks extends Suite(m"Stratiform parser benchmarks"):
     val stream = getClass.getResourceAsStream("/stratiform/" + name)
     if stream == null then sys.error("missing benchmark resource: " + name)
     val out = new _root_.java.io.ByteArrayOutputStream
-    val buf = new Array[Byte](8192)
+    val buf = new scala.Array[Byte](8192)
     var n = stream.read(buf)
     while n >= 0 do
       if n > 0 then out.write(buf, 0, n)
       n = stream.read(buf)
 
     stream.close()
-    out.toByteArray.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   // Load and parse a schema TEL document into a Tels via the
   // reconstructor — this is the schema the parser will use to drive

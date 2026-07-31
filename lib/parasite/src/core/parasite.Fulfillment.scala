@@ -32,7 +32,7 @@
                                                                                                   */
 package parasite
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 enum Fulfillment[+value]:
   case Initializing, Cancelled

@@ -41,10 +41,10 @@ case class Person(name: Text, age: Int)
 object Tests extends Suite(m"Escritoire tests"):
   val people: List[Person] = List(Person(t"Alice", 30), Person(t"Bob", 5))
 
-  def render[row](scaffold: Scaffold[row, Text], data: Seq[row], width: Int)
+  def render[row](scaffold: Scaffold[row, Text], data: List[row], width: Int)
      (using TableStyle, Attenuation^)
-  :   List[Text] =
-    scaffold.tabulate(data).grid(width).render.to(List)
+  :   scala.collection.immutable.List[Text] =
+    scaffold.tabulate(data).grid(width).render.stdlib.to(List)
 
   def run(): Unit =
     // ─── TextAlignment ──────────────────────────────────────────────────────
@@ -200,7 +200,7 @@ object Tests extends Suite(m"Escritoire tests"):
     test(m"A case class table is derived with capitalized field-name titles"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to(List)
+      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.stdlib.to(List)
     . assert:
         _ == List
           ( t"╭───────┬─────╮",
@@ -214,13 +214,13 @@ object Tests extends Suite(m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
-      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to(List).head
+      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.stdlib.to(List).head
     . assert(_ == t"╭───────────┬─────╮")
 
     test(m"A sequence of integers can be tabulated directly"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
-      List(1, 22, 333).tabulation.grid(20).render.to(List)
+      List(1, 22, 333).tabulation.grid(20).render.stdlib.to(List)
     . assert:
         _ == List
           ( t"╭─────╮",
@@ -237,12 +237,12 @@ object Tests extends Suite(m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.failAttenuation
       val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
-      safely(wide.tabulate(people).grid(5).render.to(List)).absent
+      safely(wide.tabulate(people).grid(5).render.stdlib.to(List)).absent
     . assert(_ == true)
 
     test(m"ignoreAttenuation renders without raising when the table is too wide"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       val wide = Scaffold[Person, Text](Column(t"Name", sizing = columnar.Fixed(20))(_.name))
-      safely(wide.tabulate(people).grid(5).render.to(List)).absent
+      safely(wide.tabulate(people).grid(5).render.stdlib.to(List)).absent
     . assert(_ == false)

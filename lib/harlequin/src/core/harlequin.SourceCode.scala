@@ -32,6 +32,10 @@
                                                                                                   */
 package harlequin
 
+import scala.annotation
+
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*
@@ -105,8 +109,9 @@ object SourceCode:
           val prefixLength = prefix.lay(0)(_.length)
           val replace = Span.offset((caret.n0 - prefixLength).z, prefixLength)
 
-          val items = words.to(List).sortBy(_.s).map: word =>
-            Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
+          val items = List.of:
+            words.stdlib.toList.sortBy(_.s).map: word =>
+              Completion(word, Completion.Kind.Keyword, Syntax.Symbolic(word))
 
           val binding =
             found.expectation == prophesy.KeywordPattern.Expectation.TermBinding ||
@@ -148,16 +153,16 @@ object SourceCode:
     val scanner =
       if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 
-    def untab(text: Text): LazyList[Token] =
-      LazyList(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
+    def untab(text: Text): Chain[Token] =
+      Chain(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
 
-    def hard(stream: LazyList[Token]): Boolean = stream match
+    def hard(stream: Chain[Token]): Boolean = stream match
       case Token(_, Accent.Unparsed, _, _, _) #:: more                  => hard(more)
       case Token(text, Accent.Term, _, _, _) #:: more if soft.has(text) => hard(more)
       case Token(text, Accent.Keyword | Accent.Modifier, _, _, _) #:: _ => true
       case other                                                        => false
 
-    def soften(stream: LazyList[Token]): LazyList[Token] = stream match
+    def soften(stream: Chain[Token]): Chain[Token] = stream match
       case (Token(text@(t"using" | t"erased"), Accent.Term, _, _, _)) #:: more =>
         Token(text, Accent.Modifier) #:: soften(more)
 
@@ -168,19 +173,19 @@ object SourceCode:
         token #:: soften(more)
 
       case _ =>
-        LazyList()
+        Chain()
 
-    def stream(lastEnd: Int = 0): LazyList[Token] = scanner.token match
+    def stream(lastEnd: Int = 0): Chain[Token] = scanner.token match
       case Tokens.EOF => untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
 
-        val unparsed: LazyList[Token] =
-          if lastEnd == start then LazyList() else
+        val unparsed: Chain[Token] =
+          if lastEnd == start then Chain() else
             text.segment(lastEnd.z thru start.u)
-            . cut(t"\n")
-            . to(LazyList)
+            . cut(t"\n").stdlib
+            . to(Chain)
             . flatMap(untab(_).filter(_.length > 0))
             . init
 
@@ -195,10 +200,10 @@ object SourceCode:
         val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)
         val role: Optional[Role] = annotation.let(_.role)
 
-        val content: LazyList[Token] =
-          if start == end then LazyList() else
-            text.segment(start.z thru end.u).cut(t"\n").to(LazyList).flatMap: line =>
-              LazyList(Token(line, tokenAccent, meta, role = role), Token.Newline)
+        val content: Chain[Token] =
+          if start == end then Chain() else
+            text.segment(start.z thru end.u).cut(t"\n").stdlib.to(Chain).flatMap: line =>
+              Chain(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
             . init
 
@@ -239,16 +244,17 @@ object SourceCode:
       case head :: tail =>
         coalesce(tail, head :: done)
 
-    val tokens: List[Token] = coalesce(soften(stream()).to(List))
+    val tokens: List[Token] = coalesce(List.from(soften(stream()).stdlib))
 
     // Give each token a `Line`-mode `Span` with its 0-based line and column,
     // accumulating token widths along each assembled line.
     val positioned = lines(tokens).reverse.zipWithIndex.map: (tokens, index) =>
-      tokens.zip(tokens.scanLeft(0)(_ + _.length)).map: (token, column) =>
+      tokens.stdlib.zip(tokens.stdlib.scanLeft(0)(_ + _.length)).map: (token, column) =>
         token.copy(span = Span.line(index.z, column.z, token.length))
 
     SourceCode
-      ( language, 1, IArray(positioned*), diagnostics = diagnostics, completions = completions )
+      ( language, 1, Array.of(positioned.map(List.of(_))*), diagnostics = diagnostics,
+        completions = completions )
 
   // The accent (colour category) and role (binding vs usage) resolved for a token span
   // from the parse tree.
@@ -297,18 +303,18 @@ object SourceCode:
         traversePattern(pattern)
 
       case Tuple(elements) =>
-        elements.foreach(traversePattern)
+        elements.each(traversePattern)
 
       case Alternative(alternatives) =>
-        alternatives.foreach(traversePattern)
+        alternatives.each(traversePattern)
 
       case Apply(function, arguments) =>
         traverse(function)
-        arguments.foreach(traversePattern)
+        arguments.each(traversePattern)
 
       case TypeApply(function, arguments) =>
         traverse(function)
-        arguments.foreach(traverse)
+        arguments.each(traverse)
 
       case NamedArg(_, pattern) =>
         traversePattern(pattern)
@@ -358,7 +364,7 @@ object SourceCode:
           traverse(expr)
 
         case tree: PatDef =>
-          tree.pats.foreach(traversePattern)
+          tree.pats.each(traversePattern)
           traverse(tree.tpt)
           traverse(tree.rhs)
 
@@ -389,7 +395,7 @@ object SourceCode:
     // in `Compiled` mode (later phases such as erasure would rewrite them).
     val (typerRun, _, typerDiagnostics) =
       frontend(text, scalac, cp): context =>
-        context.setSetting(context.settings.YstopAfter, List("typer"))
+        context.setSetting(context.settings.YstopAfter, scala.collection.immutable.List("typer"))
 
     val metaMap = collectTypes(typerRun)
 
@@ -409,7 +415,7 @@ object SourceCode:
     val diagnostics =
       if !full then typerDiagnostics else
         frontend(text, scalac, cp): context =>
-          context.setSetting(context.settings.YstopBefore, List("genBCode"))
+          context.setSetting(context.settings.YstopBefore, scala.collection.immutable.List("genBCode"))
 
         ._3
 
@@ -441,10 +447,16 @@ object SourceCode:
 
         // The trailing empty argument stops the driver from treating an argument
         // list with no source files as a request to print usage and bail out.
-        val arguments =
-          (t"-classpath" :: cp :: scalac.commandLineArguments ::: List(t"")).map(_.s).toArray
+        // The argument array crosses in through a Java-side copy: `toArray`'s result
+        // carries a read capability the pure formal rejects.
+        val args = java.util.ArrayList[String]()
 
-        setup(arguments, base).map(_(1)).get
+        (t"-classpath" :: cp :: scalac.commandLineArguments ::: List(t"")).each: argument =>
+          args.add(argument.s)
+          ()
+
+        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]], base)
+        . map(_(1)).get
 
     val base: Contexts.FreshContext = driver.context.fresh
     base.setReporter(reporter)
@@ -452,7 +464,7 @@ object SourceCode:
 
     val source = SourceFile.virtual("<highlighting>", text.s)
     val run = Scalac.compiler().newRun
-    run.compileSources(List(source))
+    run.compileSources(scala.collection.immutable.List(source))
 
     (run, context, collected.to(List))
 
@@ -499,7 +511,7 @@ object SourceCode:
           Completion
             ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
-      if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), items)
+      if items.isEmpty then Unset else Completions(Span.offset(offset.z, 0), List.of(items))
 
     catch case scala.util.control.NonFatal(_) => Unset
 
@@ -522,7 +534,7 @@ object SourceCode:
         Completion
           ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
-    Completions(Span.offset(offset.z, 0), items)
+    Completions(Span.offset(offset.z, 0), List.of(items))
 
   // Members reached through a `Dynamic` receiver are not symbols, so the interactive engine
   // cannot offer them; but the receiver's refined type often determines them fully (Xenophile's
@@ -557,7 +569,7 @@ object SourceCode:
 
       val (run, _, _) =
         frontend(truncated, scalac, cp): context =>
-          context.setSetting(context.settings.YstopAfter, List("typer"))
+          context.setSetting(context.settings.YstopAfter, List("typer").stdlib)
 
       val unit = run.units.head
 
@@ -670,14 +682,15 @@ object SourceCode:
 
         traverseChildren(tree)
 
-    run.units.foreach: unit => traverser.traverse(unit.tpdTree)
+    run.units.each: unit =>
+      traverser.traverse(unit.tpdTree)
 
-    types.to(Map)
+    Map.from(types)
 
 case class SourceCode
   ( language:    ProgrammingLanguage,
     offset:      Int,
-    lines:       IArray[List[Token]],
+    lines:       Array[List[Token]]^{},
     focus:       Optional[Span] = Unset,
     diagnostics: List[Diagnostic] = Nil,
     completions: Optional[Completions] = Unset ):

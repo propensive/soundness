@@ -38,6 +38,7 @@ import distillate.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -52,8 +53,6 @@ object Geolocation:
         case List(key, value) => (key, value)
         case Nil | List(_)    => abort(GeolocationError(MissingEquals))
         case _                => abort(GeolocationError(MultipleEquals))
-
-    . compact
 
   given decoder: (tactic: Tactic[GeolocationError])
   =>  ((Geolocation is Decodable in Text)^{tactic}) =
@@ -88,7 +87,7 @@ object Geolocation:
                   case params =>
                     (Unset, params)
 
-                Geolocation(location, altitude, crs, uncertainty, params.to(Map))
+                Geolocation(location, altitude, crs, uncertainty, Map.from(params.stdlib))
 
               case other =>
                 raise(GeolocationError(ExpectedSemicolon))

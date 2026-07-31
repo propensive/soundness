@@ -32,7 +32,7 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import prepositional.*
@@ -57,7 +57,7 @@ object Tag:
     ( presets: Attributes = Attributes.empty )
   :   Container of label over children in schema =
 
-    val admissible: Set[Text] = children.reification().map(_.tt).to(Set)
+    val admissible: Set[Text] = Set.from(children.reification().stdlib.map(_.tt))
 
     Container(valueOf[label].tt, presets, admissible)
     . of[label]
@@ -71,17 +71,17 @@ object Tag:
       admissible: Set[Text]  = Set() )
   extends Tag(label, presets, admissible):
 
-    type Result = Element & Xml.Populable of Topic over Transport in Form
+    type Result = Element & Xml.Vacuiscible of Topic over Transport in Form
 
     def node(attributes: Attributes): Result =
-      new Element(label, presets ++ attributes, IArray()) with Xml.Populable()
+      new Element(label, presets ++ attributes, Array.of()) with Xml.Vacuiscible()
       . of[Topic]
       . over[Transport]
       . in[Form]
 
 sealed abstract class Tag
   ( label: Text, val presets: Attributes = Attributes.empty, val admissible:  Set[Text] = Set() )
-extends Element(label, presets, IArray()), Formal, Dynamic:
+extends Element(label, presets, Array.of()), Formal, Dynamic:
   type Result <: Element
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (String, Any)*): Result =

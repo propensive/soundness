@@ -32,7 +32,7 @@
                                                                                                   */
 package parasite
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.util.concurrent.locks as jucl
 

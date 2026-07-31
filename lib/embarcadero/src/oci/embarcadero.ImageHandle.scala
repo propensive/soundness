@@ -32,6 +32,9 @@
                                                                                                   */
 package embarcadero
 
+import scala.caps
+import proscenium.compat.*
+
 import anticipation.*
 import aperture.*
 import bitumen.*
@@ -59,11 +62,11 @@ extends caps.ExclusiveCapability:
   // (for layers: compressed) chunks — undecoded and unverified.
   private def body(digest: Text)(using Tactic[OciError]): TarBody =
     if !digest.s.startsWith("sha256:")
-    then abort(OciError(OciError.Reason.UnsupportedDigest(digest.cut(t":").head)))
+    then abort(OciError(OciError.Reason.UnsupportedDigest(digest.cut(t":").stdlib.head)))
 
     val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
-    entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
+    entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
     . getOrElse(abort(OciError(OciError.Reason.MissingBlob(digest))))
 
   // The blob addressed by a canonical `sha256:<hex>` digest, as a stream of its stored
@@ -74,7 +77,7 @@ extends caps.ExclusiveCapability:
     body(digest).stream
 
   // The decoded top-level index, after validating the `oci-layout` marker.
-  def index: Index raises OciError =
+  def index(using Tactic[OciError]): Index =
     val layoutBytes = document(t"oci-layout", OciError.Reason.MissingLayout)
 
     val layout = decode(t"oci-layout"):
@@ -92,13 +95,13 @@ extends caps.ExclusiveCapability:
 
   // The index's first manifest, or the one a descriptor selects; the manifest blob is
   // digest-verified against its descriptor before decoding.
-  def manifest: Oci.Manifest raises OciError =
+  def manifest(using Tactic[OciError]): Oci.Manifest =
     val descriptor =
-      index.manifests.headOption.getOrElse(abort(OciError(OciError.Reason.NoManifest)))
+      index.manifests.stdlib.headOption.getOrElse(abort(OciError(OciError.Reason.NoManifest)))
 
     manifest(descriptor)
 
-  def manifest(descriptor: Descriptor): Oci.Manifest raises OciError =
+  def manifest(descriptor: Descriptor)(using Tactic[OciError]): Oci.Manifest =
     val bytes = verified(descriptor)
 
     decode(descriptor.digest):
@@ -106,9 +109,9 @@ extends caps.ExclusiveCapability:
       bytes.read[Json].as[Oci.Manifest]
 
   // The decoded image config for a manifest (by default, the first).
-  def imageConfig: ImageConfig raises OciError = imageConfig(manifest)
+  def imageConfig(using Tactic[OciError]): ImageConfig = imageConfig(manifest)
 
-  def imageConfig(manifest: Oci.Manifest): ImageConfig raises OciError =
+  def imageConfig(manifest: Oci.Manifest)(using Tactic[OciError]): ImageConfig =
     val bytes = verified(manifest.config)
 
     decode(manifest.config.digest):
@@ -124,13 +127,13 @@ extends caps.ExclusiveCapability:
   // A layer's content as the uncompressed tar byte stream, decompressing according to
   // the descriptor's media type; unrecognised types stream verbatim.
   def layer(descriptor: Descriptor)(using Tactic[OciError]): (Stream[Data] over Credit)^ =
-    if descriptor.mediaType.suffixes.contains(Media.Suffix.Gzip)
+    if descriptor.mediaType.suffixes.stdlib.contains(Media.Suffix.Gzip)
     then compressed(descriptor).decompress[Gzip]
     else compressed(descriptor)
 
   // A blob gathered eagerly and checked against its descriptor's digest and size — the
   // opt-in verified path, since checking a stream would force draining it.
-  def verified(descriptor: Descriptor): Data raises OciError =
+  def verified(descriptor: Descriptor)(using Tactic[OciError]): Data =
     val bytes = body(descriptor.digest).memoize
     val digest = sha256(bytes)
 
@@ -146,8 +149,8 @@ extends caps.ExclusiveCapability:
     bytes
 
   // The gathered bytes of a named top-level document (`oci-layout` or `index.json`).
-  private def document(name: Text, reason: OciError.Reason): Data raises OciError =
-    entries.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
+  private def document(name: Text, reason: OciError.Reason)(using Tactic[OciError]): Data =
+    entries.stdlib.collectFirst { case file: Tar.Entry.File if file.entryName == name => file.data }
     . getOrElse(abort(OciError(reason)))
     . memoize
 
@@ -155,7 +158,7 @@ extends caps.ExclusiveCapability:
   // thrown under the call site's `throwUnsafely` — to an `InvalidBlob` on the given
   // label. The decoder is derived under a throwing strategy because the derivation's
   // codec thunks cannot capture a scoped tactic capability.
-  private def decode[doc](label: Text)(body: => doc): doc raises OciError =
+  private def decode[doc](label: Text)(body: => doc)(using Tactic[OciError]): doc =
     try body catch case error: Error =>
       abort(OciError(OciError.Reason.InvalidBlob(label, error.message.text)))
 
@@ -178,5 +181,5 @@ extends Openable:
     ( block: ((ImageHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
-    block(using new ImageHandle(Tarfile.read(value.stream).to(List)) with Granting[grants] {})
+    if mode.atoms.stdlib.contains(Write) then abort(OciError(OciError.Reason.WriteUnsupported))
+    block(using new ImageHandle(Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]]) with Granting[grants] {})

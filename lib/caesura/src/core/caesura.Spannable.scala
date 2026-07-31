@@ -37,13 +37,14 @@ import distillate.*
 import prepositional.*
 import vacuous.*
 import wisteria.*
+import proscenium.compat.*
 
 object Spannable extends ProductDerivable[Spannable]:
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Spannable =
     () => contexts[derivation](): [field] => context => context.spans().sum
 
   given decoder: [decodable] => ((decodable is Decodable in Text)^) => decodable is Spannable =
-    () => IArray(1)
+    () => Array.of(1)
 
   // An `Optional[T]` field spans exactly as many cells as its inner type: a present value
   // occupies the inner span, and an absent (trailing/missing) value leaves those cells empty.
@@ -53,4 +54,4 @@ object Spannable extends ProductDerivable[Spannable]:
     () => spannable.spans()
 
 trait Spannable extends Typeclass:
-  def spans(): IArray[Int]
+  def spans(): Array[Int]^{}

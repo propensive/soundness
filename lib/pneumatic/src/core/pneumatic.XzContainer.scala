@@ -34,6 +34,10 @@ package pneumatic
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+import rudiments.*
+import vacuous.*
+
 // The `.xz` stream container: a 12-byte header (6-byte magic, 2-byte flags naming the check type, a
 // CRC-32 of the flags), then one or more blocks, then an index and a footer. Each block has a
 // self-describing header (its filter chain — here always the single LZMA2 filter, whose one
@@ -43,11 +47,13 @@ import scala.collection.mutable as scm
 // Decoding buffers the whole compressed stream, then walks the blocks. Only the single-LZMA2-filter
 // chain is understood; delta/BCJ filters and multi-filter chains are rejected.
 private[pneumatic] object XzContainer:
-  val magic: Array[Byte] = Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
+  val magic: Array[Byte]^{} =
+    Array.unsafeFrozen:
+      scala.Array(0xfd.toByte, '7', 'z', 'X', 'Z', 0x00)
   inline val Lzma2FilterId = 0x21
   inline val IndexIndicator = 0x00
 
-  private def readVli(buffer: Array[Byte], position: Int): (Long, Int) =
+  private def readVli(buffer: scala.Array[Byte], position: Int): (Long, Int) =
     var result = 0L
     var shift = 0
     var pos = position
@@ -64,7 +70,7 @@ private[pneumatic] object XzContainer:
     (result, pos)
 
   // Decode a complete `.xz` stream, appending its uncompressed bytes to `sink`.
-  def decode(buffer: Array[Byte], sink: scm.ArrayBuffer[Byte]): Unit =
+  def decode(buffer: scala.Array[Byte], sink: scm.ArrayBuffer[Byte]): Unit =
     if buffer.length < 12 then
       throw IllegalStateException("the XZ data is corrupt: truncated header")
 
@@ -120,8 +126,11 @@ private[pneumatic] object XzContainer:
       val blockDataStart = pos + headerSize
       val dictSize = Lzma2Options.byteToDictSize(dictSizeByte)
 
-      val decompressor = Lzma2Decompressor(dictSize)
-      decompressor.accept(buffer, blockDataStart, buffer.length - blockDataStart)
+      val decompressor: Lzma2Decompressor^ = Lzma2Decompressor(dictSize)
+      // `buffer` reaches `decode` from `BufferedEngine.transform`, which builds it fresh from
+      // its accumulated input, so nothing else holds it.
+      decompressor.accept
+       ( Array.unsafeFrozen(buffer), blockDataStart, buffer.length - blockDataStart )
       decompressor.finish()
 
       if !decompressor.ended then
@@ -135,12 +144,12 @@ private[pneumatic] object XzContainer:
 
       // Verify the block's integrity check over its uncompressed output.
       if checkSize > 0 then
-        val checker = XzCheck.checker(checkType)
-        val decoded = new Array[Byte](sink.length - blockOutputStart)
+        val checker: XzChecker^ = XzCheck.checker(checkType)
+        val decoded: scala.Array[Byte]^ = new scala.Array[Byte](sink.length - blockOutputStart)
         var d = 0
         while d < decoded.length do { decoded(d) = sink(blockOutputStart + d); d += 1 }
-        checker.update(decoded, 0, decoded.length)
-        val expected = checker.bytes
+        checker.absorb(decoded, 0, decoded.length)
+        val expected: scala.Array[Byte]^ = checker.bytes
         var c = 0
 
         while c < checkSize do
@@ -153,15 +162,15 @@ private[pneumatic] object XzContainer:
 
     // The index and stream footer that follow are not needed to reproduce the payload.
 
-  private def appendBytes(buffer: scm.ArrayBuffer[Byte], bytes: Array[Byte]): Unit =
+  private def appendBytes(buffer: scm.ArrayBuffer[Byte], bytes: scala.Array[Byte]): Unit =
     var i = 0
     while i < bytes.length do { buffer += bytes(i); i += 1 }
 
-  private def crc32Bytes(bytes: Array[Byte], offset: Int, length: Int): Array[Byte] =
+  private def crc32Bytes(bytes: scala.Array[Byte], offset: Int, length: Int): scala.Array[Byte] =
     val crc = Crc32()
     crc.update(bytes, offset, length)
     val value = crc.value
-    val out = new Array[Byte](4)
+    val out: scala.Array[Byte]^ = new scala.Array[Byte](4)
     var i = 0
     while i < 4 do { out(i) = ((value >>> (i*8)) & 0xff).toByte; i += 1 }
     out
@@ -175,10 +184,10 @@ private[pneumatic] object XzContainer:
 
     buffer += (v & 0x7f).toByte
 
-  private def blockHeader(dictSizeByte: Int): Array[Byte] =
+  private def blockHeader(dictSizeByte: Int): scala.Array[Byte] =
     // A 12-byte header: size byte, flags (one filter, no explicit sizes), the LZMA2 filter with its
     // one dictionary-size property byte, zero padding, then a CRC-32 over the first eight bytes.
-    val header = new Array[Byte](12)
+    val header: scala.Array[Byte]^ = new scala.Array[Byte](12)
     header(0) = 0x02 // (12 / 4) - 1
     header(1) = 0x00 // one filter, no compressed/uncompressed size fields
     header(2) = XzContainer.Lzma2FilterId.toByte
@@ -189,10 +198,10 @@ private[pneumatic] object XzContainer:
     header
 
   // The 12-byte stream header (magic, flags naming the check type, a CRC-32 of the flags).
-  def streamHeader(checkType: Int): Array[Byte] =
+  def streamHeader(checkType: Int): scala.Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()
-    appendBytes(out, magic)
-    val flags = Array[Byte](0x00, checkType.toByte)
+    appendBytes(out, magic.readable.to(scala.Array))
+    val flags = scala.Array[Byte](0x00, checkType.toByte)
     appendBytes(out, flags)
     appendBytes(out, crc32Bytes(flags, 0, 2))
     out.toArray
@@ -200,7 +209,7 @@ private[pneumatic] object XzContainer:
   // One complete block (header, LZMA2 payload, 4-byte-aligned padding, integrity check) for `data`,
   // paired with its unpadded size for the index. Used both whole-value and per-segment when
   // streaming, so each block bounds the compressor's working memory.
-  def block(data: Array[Byte], checkType: Int, options: Lzma2Options): (Array[Byte], Long) =
+  def block(data: scala.Array[Byte], checkType: Int, options: Lzma2Options): (scala.Array[Byte], Long) =
     val out = scm.ArrayBuffer[Byte]()
     val payload = Lzma2Compressor(data, options).compress()
     val header = blockHeader(Lzma2Options.dictSizeToByte(options.dictSize))
@@ -210,16 +219,16 @@ private[pneumatic] object XzContainer:
     var padding = (-payload.length) & 3
     while padding > 0 do { out += 0.toByte; padding -= 1 }
 
-    val checker = XzCheck.encoder(checkType)
-    checker.update(data, 0, data.length)
-    val checkBytes = checker.bytes
+    val checker: XzChecker^ = XzCheck.encoder(checkType)
+    checker.absorb(data, 0, data.length)
+    val checkBytes: scala.Array[Byte]^ = checker.bytes
     appendBytes(out, checkBytes)
 
     (out.toArray, (header.length + payload.length + checkBytes.length).toLong)
 
   // The index and stream footer that close a stream, given each block's (unpadded, uncompressed)
   // sizes in order.
-  def indexAndFooter(records: scm.ArrayBuffer[(Long, Long)], checkType: Int): Array[Byte] =
+  def indexAndFooter(records: scm.ArrayBuffer[(Long, Long)], checkType: Int): scala.Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()
 
     val index = scm.ArrayBuffer[Byte]()
@@ -236,7 +245,7 @@ private[pneumatic] object XzContainer:
     appendBytes(out, crc32Bytes(indexBody, 0, indexBody.length))
 
     val indexSize = indexBody.length + 4
-    val footer = new Array[Byte](12)
+    val footer: scala.Array[Byte]^ = new scala.Array[Byte](12)
     val backward = indexSize/4 - 1
     footer(4) = (backward & 0xff).toByte
     footer(5) = ((backward >>> 8) & 0xff).toByte
@@ -253,7 +262,7 @@ private[pneumatic] object XzContainer:
     out.toArray
 
   // Encode `data` as a complete single-block `.xz` stream (empty input yields a block-less stream).
-  def encode(data: Array[Byte], checkType: Int, options: Lzma2Options): Array[Byte] =
+  def encode(data: scala.Array[Byte], checkType: Int, options: Lzma2Options): scala.Array[Byte] =
     val out = scm.ArrayBuffer[Byte]()
     appendBytes(out, streamHeader(checkType))
     val records = scm.ArrayBuffer[(Long, Long)]()

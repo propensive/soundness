@@ -36,15 +36,16 @@ import anticipation.*
 import hieroglyph.*
 import rudiments.*
 import vacuous.*
+import proscenium.compat.*
 
 object Cos:
   // The code points at which PDFDocEncoding (ISO 32000-2 Annex D.7) differs from Latin-1:
   // typographic accents at 0x18–0x1F and publishing characters at 0x80–0x9F, with the euro
   // sign at 0xA0.
-  private val docEncodingLow: IArray[Char] = IArray
+  private val docEncodingLow: Array[Char]^{} = Array.of
     ( '˘', 'ˇ', 'ˆ', '˙', '˝', '˛', '˚', '˜' )
 
-  private val docEncodingHigh: IArray[Char] = IArray
+  private val docEncodingHigh: Array[Char]^{} = Array.of
     ( '•', '†', '‡', '…', '—', '–', 'ƒ', '⁄',
       '‹', '›', '−', '‰', '„', '“', '”', '‘',
       '’', '‚', '™', 'ﬁ', 'ﬂ', 'Ł', 'Œ', 'Š',
@@ -54,46 +55,46 @@ object Cos:
   // character fits, otherwise UTF-16BE with a byte-order mark, matching `decodeText`.
   private[facsimile] def encodeText(text: Text): Data =
     if text.s.forall(_ < 0x100) then
-      val bytes = new Array[Byte](text.s.length)
+      val bytes = Array[Byte](text.s.length)
       var i = 0
 
       while i < text.s.length do
         bytes(i) = text.s.charAt(i).toByte
         i += 1
 
-      bytes.immutable(using Unsafe)
+      Array.freeze(bytes)
     else
       val body = charEncoders.utf16BeEncoder.encoded(text)
-      val bytes = new Array[Byte](body.length + 2)
+      val bytes = Array[Byte](body.length + 2)
       bytes(0) = 0xfe.toByte
       bytes(1) = 0xff.toByte
-      System.arraycopy(body.mutable(using Unsafe), 0, bytes, 2, body.length)
-      bytes.immutable(using Unsafe)
+      bytes.copyFrom(body, 0, 2, body.length)
+      Array.freeze(bytes)
 
   // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
-    if bytes.length >= 2 && (bytes(0) & 0xff) == 0xfe && (bytes(1) & 0xff) == 0xff
+    if bytes.length >= 2 && (bytes.readable(0) & 0xff) == 0xfe && (bytes.readable(1) & 0xff) == 0xff
     then charDecoders.utf16BeDecoder.decoded(bytes.drop(2))
     else if bytes.length >= 3
-            && (bytes(0) & 0xff) == 0xef && (bytes(1) & 0xff) == 0xbb && (bytes(2) & 0xff) == 0xbf
+            && (bytes.readable(0) & 0xff) == 0xef && (bytes.readable(1) & 0xff) == 0xbb && (bytes.readable(2) & 0xff) == 0xbf
     then charDecoders.utf8Decoder.decoded(bytes.drop(3))
     else
-      val chars = new Array[Char](bytes.length)
+      val chars = Array[Char](bytes.length)
       var i = 0
 
       while i < bytes.length do
-        val byte = bytes(i) & 0xff
+        val byte = bytes.readable(i) & 0xff
 
         chars(i) =
-          if byte >= 0x18 && byte <= 0x1f then docEncodingLow(byte - 0x18)
-          else if byte >= 0x80 && byte <= 0x9f then docEncodingHigh(byte - 0x80)
+          if byte >= 0x18 && byte <= 0x1f then docEncodingLow.readable(byte - 0x18)
+          else if byte >= 0x80 && byte <= 0x9f then docEncodingHigh.readable(byte - 0x80)
           else if byte == 0xa0 then '€'
           else byte.toChar
 
         i += 1
 
-      String(chars).tt
+      String(chars.raw).tt
 
   extension (cos: Cos)
     def dictionary: Optional[Map[Text, Cos]] = cos match

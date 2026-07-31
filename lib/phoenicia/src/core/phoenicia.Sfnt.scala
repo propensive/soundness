@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+import proscenium.compat.*
 
 // Serialises a table set as an sfnt font file: the header, a directory sorted by tag, and the
 // tables themselves, four-byte aligned and zero-padded, with per-table checksums computed and
@@ -44,7 +45,7 @@ private[phoenicia] object Sfnt:
   def assemble(version: Data, tables: List[(Text, Data)]): Data =
     def padded(length: Int): Int = (length + 3)/4*4
 
-    val sorted = tables.sortBy(_(0).s)
+    val sorted = tables.stdlib.sortBy(_(0).s)
     val count = sorted.length
     val entrySelector = 31 - Integer.numberOfLeadingZeros(count)
     val searchRange = (1 << entrySelector)*16
@@ -52,7 +53,7 @@ private[phoenicia] object Sfnt:
 
     val total = tablesStart + sorted.sumBy: entry => padded(entry(1).length)
 
-    val buffer = new Array[Byte](total)
+    val buffer = Array[Byte](total)
 
     def putU16(position: Int, value: Int): Unit =
       buffer(position) = (value >> 8).toByte
@@ -98,7 +99,7 @@ private[phoenicia] object Sfnt:
 
       (0 until 4).each: position => buffer(directory + position) = tagBytes(position)
 
-      System.arraycopy(table.mutable(using Unsafe), 0, buffer, offset, table.length)
+      buffer.copyFrom(table, 0, offset, table.length)
       putU32(directory + 4, checksum(offset, table.length))
       putU32(directory + 8, offset.toLong)
       putU32(directory + 12, table.length.toLong)
@@ -109,4 +110,4 @@ private[phoenicia] object Sfnt:
     // is the spec's zero-adjusted one; the adjustment is then patched in afterwards.
     if headOffset >= 0 then putU32(headOffset + 8, (0xb1b0afbaL - checksum(0, total)) & 0xffffffffL)
 
-    buffer.immutable(using Unsafe)
+    Array.freeze(buffer)

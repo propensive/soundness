@@ -36,7 +36,7 @@ import vacuous.*
 
 case class RDiff[element](changes: Change[element]*):
   def flip: RDiff[Optional[element]] =
-    val changes2: Seq[Change[Optional[element]]] = changes.map:
+    val changes2 = changes.toList.map:
       case Par(left, right, value)                 => Par(right, left, value)
       case Del(left, value)                        => Ins(left, value)
       case Ins(right, value)                       => Del(right, value)

@@ -33,6 +33,7 @@
 package hyperbole
 
 import soundness.*
+import proscenium.compat.*
 
 import classloaders.threadContextClassloader
 import unsafeExceptions.canThrowAny

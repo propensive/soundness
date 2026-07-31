@@ -76,7 +76,7 @@ extends RequestServable:
       catch case NonFatal(exception) =>
         Log.fail(HttpServerEvent.ConnectionFailed(fulminate.Error(exception)))
 
-    def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
+    def startServer()(using Tactic[ServerError]): com.sun.net.httpserver.HttpServer =
       try
         val host = if local then "localhost" else "0.0.0.0"
         val httpServer = csnh.HttpServer.create(jn.InetSocketAddress(host, port), 0).nn

@@ -36,6 +36,8 @@ import java.lang as jl
 
 import soundness.*
 
+import proscenium.compat.*
+
 import classloaders.systemClassloader
 import environments.javaEnvironment
 import systems.javaSystem
@@ -120,7 +122,7 @@ object Tests extends Suite(m"Profanity Tests"):
           }
 
       def waitFor(text: Text, ms: Int = 5000)(using Tmux, Monitor, WorkingDirectory): Boolean =
-        def matches: Boolean = Tmux.screenshot().screen.toList.exists(_.contains(text))
+        def matches: Boolean = Tmux.screenshot().screen.readable.toList.exists(_.contains(text))
         // Bound the wait against a wall-clock deadline rather than counting fixed
         // 50 ms iterations: each poll spawns a `tmux` screenshot subprocess whose
         // latency varies wildly under load, so an iteration count made the real
@@ -137,17 +139,20 @@ object Tests extends Suite(m"Profanity Tests"):
         ( using Enclave.Tool, Monitor, WorkingDirectory, TemporaryDirectory )
       :   Text =
 
-        Bash.tmux():
-          val tool = summon[Enclave.Tool].command
-          Tmux.enter(tool, ' ', arg)
-          Tmux.enter('\r')
-          if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-          input
-          // Wait only for the marker this fixture actually prints. The `echo`
-          // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
-          // probe always burnt the full timeout before falling back to `GOT:`.
-          waitFor(marker)
-          Tmux.screenshot().screen.join(t"\n")
+        // Overlap false positive: the action closure mentions the enclosing
+        // tool capability alongside the fresh tmux session.
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          Bash.tmux():
+            val tool = summon[Enclave.Tool].command
+            Tmux.enter(tool, ' ', arg)
+            Tmux.enter('\r')
+            if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+            input
+            // Wait only for the marker this fixture actually prints. The `echo`
+            // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
+            // probe always burnt the full timeout before falling back to `GOT:`.
+            waitFor(marker)
+            Tmux.screenshot().screen.readable.toSeq.join(t"\n")
 
       launcher.sandbox:
         // Warmup run to spawn the daemon and avoid timing flake on the first real test
@@ -191,33 +196,39 @@ object Tests extends Suite(m"Profanity Tests"):
           // across the wrap boundary must clear the wrapped row and reposition the cursor.
 
           test(m"submits correct text after wrap and backspace"):
-            Bash.tmux(width = 20, height = 10):
-              val tool = summon[Enclave.Tool].command
-              Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
-              Tmux.enter('\r')
-              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-              Tmux.enter(t"X"*25)
-              Tmux.enter('', '', '', '', '')
-              Tmux.enter('\r')
-              waitFor(t"RESULT:")
-              Tmux.screenshot().screen.toList.join
+            // Overlap false positive: the action closure mentions the enclosing
+            // tool capability alongside the fresh tmux session.
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Bash.tmux(width = 20, height = 10):
+                val tool = summon[Enclave.Tool].command
+                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
+                Tmux.enter('\r')
+                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+                Tmux.enter(t"X"*25)
+                Tmux.enter('', '', '', '', '')
+                Tmux.enter('\r')
+                waitFor(t"RESULT:")
+                Tmux.screenshot().screen.toList.join
           . assert(_.contains(t"RESULT:${t"X"*20}"))
 
           test(m"backspace clears characters wrapped onto the next visual line"):
-            Bash.tmux(width = 20, height = 10):
-              val tool = summon[Enclave.Tool].command
-              Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
-              Tmux.enter('\r')
-              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-              Tmux.attend(Tmux.enter(t"X"*25))
-              delay(0.1*Second)
-              Tmux.attend:
-                Tmux.enter('', '', '', '', '')
-              delay(0.2*Second)
-              val mid = Tmux.screenshot()
-              Tmux.enter('\r')
-              waitFor(t"RESULT:")
-              mid.screen.toList.map(_.count(_ == 'X')).sum
+            // Overlap false positive: the action closure mentions the enclosing
+            // tool capability alongside the fresh tmux session.
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Bash.tmux(width = 20, height = 10):
+                val tool = summon[Enclave.Tool].command
+                Tmux.enter(tool, ' ', t"line-editor-sized 20 10")
+                Tmux.enter('\r')
+                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+                scala.caps.unsafe.unsafeAssumeSeparate(Tmux.attend(Tmux.enter(t"X"*25)))
+                delay(0.1*Second)
+                Tmux.attend:
+                  Tmux.enter('', '', '', '', '')
+                delay(0.2*Second)
+                val mid = Tmux.screenshot()
+                Tmux.enter('\r')
+                waitFor(t"RESULT:")
+                mid.screen.toList.map(_.count(_ == 'X')).sum
           . assert(_ == 20)
 
           // SelectMenu wrap-aware redraw: an option longer than the terminal width must
@@ -226,19 +237,22 @@ object Tests extends Suite(m"Profanity Tests"):
           // which is flaky under daemon-mode ESC timing) and confirm the wrapped option's
           // tail appears exactly once on screen.
           test(m"select-menu draws a wrapping option without ghost rows"):
-            Bash.tmux(width = 20, height = 12):
-              val tool = summon[Enclave.Tool].command
-              Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
-              Tmux.enter('\r')
-              if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
-              delay(0.3*Second)
-              val mid = Tmux.screenshot()
-              Tmux.enter('\r')
-              waitFor(t"RESULT:")
-              // The third option ("third") must appear exactly once. If the renderer
-              // miscounts visual rows for the wrapped second option, the menu drifts
-              // on subsequent re-renders and stale copies of "third" pile up.
-              mid.screen.toList.count(_.contains(t"third"))
+            // Overlap false positive: the action closure mentions the enclosing
+            // tool capability alongside the fresh tmux session.
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              Bash.tmux(width = 20, height = 12):
+                val tool = summon[Enclave.Tool].command
+                Tmux.enter(tool, ' ', t"select-menu-long-sized 20 12")
+                Tmux.enter('\r')
+                if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
+                delay(0.3*Second)
+                val mid = Tmux.screenshot()
+                Tmux.enter('\r')
+                waitFor(t"RESULT:")
+                // The third option ("third") must appear exactly once. If the renderer
+                // miscounts visual rows for the wrapped second option, the menu drifts
+                // on subsequent re-renders and stale copies of "third" pile up.
+                mid.screen.readable.toList.count(_.contains(t"third"))
           . assert(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the
@@ -388,7 +402,7 @@ object Tests extends Suite(m"Profanity Tests"):
                 case _            => editor
 
           completingEditor
-           ( LazyList(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+           ( Chain(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
                     Keypress.Enter).iterator,
              LineEditor() )
            (_(_))
@@ -397,35 +411,35 @@ object Tests extends Suite(m"Profanity Tests"):
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '1', '3', ';', '2', 'u')).head
+          Keyboard.Standard().process(Chain('', '[', '1', '3', ';', '2', 'u')).head
       . assert:
           case Keypress.Shift(Keypress.Enter) => true
           case _                              => false
 
       test(m"plain Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '1', '3', 'u')).head
+          Keyboard.Standard().process(Chain('', '[', '1', '3', 'u')).head
       . assert:
           case Keypress.Enter => true
           case _              => false
 
       test(m"Escape is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '2', '7', 'u')).head
+          Keyboard.Standard().process(Chain('', '[', '2', '7', 'u')).head
       . assert:
           case Keypress.Escape => true
           case _               => false
 
       test(m"Ctrl+C is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '9', '9', ';', '5', 'u')).head
+          Keyboard.Standard().process(Chain('', '[', '9', '9', ';', '5', 'u')).head
       . assert:
           case Keypress.Ctrl('C') => true
           case _                  => false
 
       test(m"a plain letter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '9', '7', 'u')).head
+          Keyboard.Standard().process(Chain('', '[', '9', '7', 'u')).head
       . assert:
           case Keypress.CharKey('a') => true
           case _                     => false
@@ -434,7 +448,7 @@ object Tests extends Suite(m"Profanity Tests"):
       // it as an anchor reply when the resize trap queued one.
       test(m"a plain CPR decodes to a WindowSize"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '1', '2', ';', '3', '4', 'R')).head
+          Keyboard.Standard().process(Chain('', '[', '1', '2', ';', '3', '4', 'R')).head
       . assert:
           case TerminalInfo.WindowSize(12, 34) => true
           case _                               => false
@@ -443,7 +457,7 @@ object Tests extends Suite(m"Profanity Tests"):
       test(m"a DECXCPR reply decodes to a CursorPosition"):
         supervise:
           Keyboard.Standard()
-          . process(LazyList('', '[', '?', '1', '2', ';', '3', '4', 'R'))
+          . process(Chain('', '[', '?', '1', '2', ';', '3', '4', 'R'))
           . head
       . assert:
           case TerminalInfo.CursorPosition(12, 34) => true
@@ -453,7 +467,7 @@ object Tests extends Suite(m"Profanity Tests"):
       test(m"a three-field DECXCPR reply decodes, dropping the page"):
         supervise:
           Keyboard.Standard()
-          . process(LazyList('', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
+          . process(Chain('', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
           . head
       . assert:
           case TerminalInfo.CursorPosition(12, 34) => true
@@ -461,7 +475,7 @@ object Tests extends Suite(m"Profanity Tests"):
 
       test(m"a malformed report is dropped and the stream continues"):
         supervise:
-          Keyboard.Standard().process(LazyList('', '[', '?', ';', 'R', 'z')).head
+          Keyboard.Standard().process(Chain('', '[', '?', ';', 'R', 'z')).head
       . assert:
           case Keypress.CharKey('z') => true
           case _                     => false
@@ -511,10 +525,10 @@ object Tests extends Suite(m"Profanity Tests"):
         test(m"SIGSYS is 31") (Signal.Sys.id)   .assert(_ == 31)
 
         test(m"every signal id is positive"):
-          Signal.values.toList.map(_.id).forall(_ > 0)
+          Array.unsafeFrozen(Signal.values).toList.map(_.id).forall(_ > 0)
         . assert(identity(_))
 
         test(m"signal ids are distinct"):
-          val ids = Signal.values.toList.map(_.id)
+          val ids = Array.unsafeFrozen(Signal.values).toList.map(_.id)
           ids.length == ids.distinct.length
         . assert(identity(_))

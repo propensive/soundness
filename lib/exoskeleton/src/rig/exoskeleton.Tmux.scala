@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import scala.caps
+
 import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
@@ -46,7 +48,7 @@ object Tmux:
       case ExecError(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
 
     . protect:
-        keypresses.each:
+        keypresses.foreach:
           case text: Text => sh"tmux send-keys -t ${tmux.id} '$text'".exec[Unit]()
           case char: Char => sh"tmux send-keys -t ${tmux.id} '$char'".exec[Unit]()
           case _          => panic(m"unreachable case")
@@ -75,7 +77,7 @@ object Tmux:
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
     . protect:
-        val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
+        val content = Array.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]().stdlib)
         val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
         val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()
         val x = cx.trim.as[Int].z
@@ -83,8 +85,11 @@ object Tmux:
 
         Screenshot(content, (tmux.width, tmux.height), (x, y))
 
-  def attend(using tmux: Tmux)[result](block: => result)(using Monitor, WorkingDirectory)
-  :   result raises TmuxError =
+  // Explicit `using` evidence instead of `raises` sugar: a context-function result would
+  // hide the parameters, which the separation checker rejects.
+  def attend(using tmux: Tmux)[result](block: => result)
+    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+  :   result =
 
     val init = screenshot().screen
 
@@ -94,24 +99,25 @@ object Tmux:
       while init === screenshot().screen && count < 60 do delay(0.01*Second) yet (count += 1)
 
 
-  def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)(using Monitor, WorkingDirectory)
-  :   Text raises TmuxError =
+  def completions(text: Text)(using tool: Enclave.Tool, tmux: Tmux)
+    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+  :   Text =
 
     tmux.shell match
       case Shell.Powershell =>
         enter(t"""_completions "$text"""")
-        attend(enter('\r'))
+        scala.caps.unsafe.unsafeAssumeSeparate(attend(enter('\r')))
         var count = 0
 
-        while Tmux.screenshot().screen.filter(_ == t">").length == 0 && count < 333 do
+        while Tmux.screenshot().screen.filter(_ == t">").readable.length == 0 && count < 333 do
           delay(0.03*Second)
           count += 1
-        screenshot().screen.to(List)
+        screenshot().screen.to[List].stdlib
           .filter(!_.starts(t">"))
           .map(_.trim)
           .filter(_.length > 0)
           .flatMap: line =>
-            line.cut(t"@@") match
+            line.cut(t"@@").stdlib match
               case List(name, desc) => List(t"$name  ($desc)")
               case List(name)       => List(name)
               case _                => Nil
@@ -122,14 +128,14 @@ object Tmux:
         enter(tool.command)
         enter(' ')
         enter(text)
-        attend(enter(Ht))
-        screenshot().screen.filter(!_.starts(t"> ")).join(t"\n").trim
+        scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
+        screenshot().screen.filter(!_.starts(t"> ")).readable.toSeq.join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")
     ( using tool: Enclave.Tool, tmux: Tmux )
-    ( using Monitor, WorkingDirectory )
-  :   Text raises TmuxError =
+    ( using Monitor, WorkingDirectory, Tactic[TmuxError] )
+  :   Text =
 
     enter(tool.command)
     enter(' ')
@@ -159,7 +165,7 @@ object Tmux:
             count += 1
 
       case _ =>
-        attend(enter(Ht))
+        scala.caps.unsafe.unsafeAssumeSeparate(attend(enter(Ht)))
 
     screenshot().currentLine(decorate).sub(t"> ${tool.command} ", t"")
 
@@ -184,8 +190,8 @@ extends Error(271, reason.number)(m"can't drive tmux: $reason")
 case class Tmux(id: Text, workingDirectory: WorkingDirectory, width: Int, height: Int, shell: Shell)
 extends Findable, caps.ExclusiveCapability
 
-case class Screenshot(screen: IArray[Text], size: (Int, Int), cursor: (Ordinal, Ordinal)):
-  def apply(): Text = screen.join("\n")
+case class Screenshot(screen: Array[Text]^{}, size: (Int, Int), cursor: (Ordinal, Ordinal)):
+  def apply(): Text = screen.readable.toSeq.join(t"\n")
 
   def currentLine(decorate: Char => Text): Text =
     val line0 = screen.at(cursor(1)).or(t"")

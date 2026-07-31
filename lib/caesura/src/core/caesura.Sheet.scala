@@ -32,6 +32,10 @@
                                                                                                   */
 package caesura
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.lang as jl
 import java.util as ju
 
@@ -74,18 +78,18 @@ object Sheet:
         val stream: (Stream[Data] over Credit)^ =
           dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
 
-        (mediaType, HttpStreams.Body(stream.toLazyList.iterator))
+        (mediaType, HttpStreams.Body(stream.toProgression.iterator))
 
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
 
-    def rows(value: Sheet): Seq[Dsv] =
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(value.rows.mutable(using Unsafe))
+    def rows(value: Sheet): List[Dsv] = value.rows.to[List]
 
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
-        dsv.columns.let(_.to(List)).or:
-          dsv.rows.prim.let: head => (1 to head.data.length).to(List).map(_.toString.tt)
+        dsv.columns.let(_.to[List]).or:
+          dsv.rows.prim.let: head =>
+            (1 to head.data.length).to(List).map(_.toString.tt)
 
         . or(Nil)
 
@@ -103,18 +107,18 @@ object Sheet:
         type Self = Sheet
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
+        def aggregate(text: Chain[Text]): Sheet = sheet(parseRows(Stream(text.iterator)))
         override def accept(stream: (Stream[Text] over Credit)^): Sheet =
           // The non-consume `accept` crosses to the consuming parser as a
           // neutral reference; each accept delivers a single-use stream.
           sheet(parseRows(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
         private def sheet(iterator: Iterator[Dsv]^): Sheet =
-          val rows = IArray.from(iterator)
+          val rows = Array.from(iterator)
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
           else Sheet(rows, format)
 
-  given showable: DsvFormat => Sheet is Showable = _.rows.to(List).map(_.show).join(t"\n")
+  given showable: DsvFormat => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.iterator.map(_.show+t"\n"))
 
@@ -248,9 +252,9 @@ object Sheet:
 
     private[caesura] def materialize(): Dsv =
       val n = cellsBuf.length
-      val arr = new Array[Text](n)
-      cellsBuf.copyToArray(arr)
-      Dsv(IArray.unsafeFromArray(arr), headings)
+      val arr = Array[Text](n)
+      cellsBuf.copyToArray(arr.raw)
+      Dsv(Array.freeze(arr), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
     // bulk-appending the run of regular characters in one operation, then
@@ -364,14 +368,14 @@ object Sheet:
     private[caesura] update def advanceData(): Boolean =
       if advance() then
         if isHeader && headings.absent then
-          val mapBuilder = Map.newBuilder[Text, Int]
+          val mapBuilder = scala.collection.immutable.Map.newBuilder[Text, Int]
           var i = 0
 
           while i < cellsBuf.length do
             mapBuilder += cellsBuf(i) -> i
             i += 1
 
-          headings = mapBuilder.result()
+          headings = Map.of(mapBuilder.result())
           advanceData()
         else true
       else false
@@ -384,17 +388,18 @@ object Sheet:
 // and indexable. The streaming counterpart is `stream.rows`, an
 // `Iterator[Dsv]` over a live pull endpoint, which never builds a `Sheet`.
 case class Sheet
-  ( rows:    IArray[Dsv],
+  ( rows:    Array[Dsv]^{},
     format:  Optional[DsvFormat]    = Unset,
-    columns: Optional[IArray[Text]] = Unset ):
+    columns: Optional[Array[Text]^{}] = Unset ):
 
   def as[value: Decodable in Dsv]: List[value] raises DsvError tracks CellRef =
-    rows.to(List).map(_.as[value])
+    rows.to[List].map(_.as[value])
 
   override def hashCode: Int =
-    (ju.Arrays.hashCode(rows.mutable(using Unsafe).asInstanceOf[Array[Object | Null]])*31
+    (ju.Arrays.hashCode(Array.unsafeJvm(rows).asInstanceOf[scala.Array[Object | Null]])*31
         + format.hashCode)*31
-    + columns.lay(-1): array => ju.Arrays.hashCode(array.mutable(using Unsafe))
+    + columns.lay(-1): array =>
+        ju.Arrays.hashCode(Array.unsafeJvm(array).asInstanceOf[scala.Array[Object | Null]])
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case dsv: Sheet =>

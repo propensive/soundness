@@ -32,6 +32,8 @@
                                                                                                   */
 package locomotion
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -44,6 +46,7 @@ import ProtobufError.Reason
 // fields — the structure the message decoder looks fields up in by number.
 @unexported
 class ProtobufParser(data: Data):
+  @scala.caps.unsafe.untrackedCaptures
   private var pos: Int = 0
 
   def atEnd: Boolean = pos >= data.length
@@ -57,7 +60,7 @@ class ProtobufParser(data: Data):
     while continue do
       if pos >= data.length then abort(ProtobufError(Reason.Truncated(pos)))
       if shift >= 70 then abort(ProtobufError(Reason.MalformedVarint(start)))
-      val byte = data(pos) & 0xff
+      val byte = data.readable(pos) & 0xff
       pos += 1
       // The 10th byte (shift == 63) may only contribute bit 63; any higher bit set
       // means the value does not fit in 64 bits.
@@ -74,7 +77,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 4 do
-      result |= (data(pos + i) & 0xff) << (i*8)
+      result |= (data.readable(pos + i) & 0xff) << (i*8)
       i += 1
 
     pos += 4
@@ -86,7 +89,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 8 do
-      result |= (data(pos + i).toLong & 0xff) << (i*8)
+      result |= (data.readable(pos + i).toLong & 0xff) << (i*8)
       i += 1
 
     pos += 8
@@ -122,7 +125,7 @@ class ProtobufParser(data: Data):
 
       accumulator.getOrElseUpdate(number, scm.ListBuffer()).addOne(value)
 
-    accumulator.view.mapValues(_.to(List)).to(Map)
+    Map.from(accumulator.view.mapValues(_.to(List)))
 
   // ── The direct rim ─────────────────────────────────────────────────────
   // Byte-level reads for direct parsing (`Protobuf.Parsable`), bounded by a
@@ -133,6 +136,7 @@ class ProtobufParser(data: Data):
   // window's end; `directEnterField`/`directLeaveField` bracket one field's
   // wire value per its tag's wire code, exactly as `fields()` slices it.
 
+  @scala.caps.unsafe.untrackedCaptures
   private var boundary: Int = data.length
 
   def directAtLimit: Boolean = pos >= boundary
@@ -154,7 +158,7 @@ class ProtobufParser(data: Data):
     while continue do
       if pos >= boundary then abort(ProtobufError(Reason.Truncated(pos)))
       if shift >= 70 then abort(ProtobufError(Reason.MalformedVarint(start)))
-      val byte = data(pos) & 0xff
+      val byte = data.readable(pos) & 0xff
       pos += 1
 
       if shift == 63 && (byte & 0x7f) > 1 then abort(ProtobufError(Reason.Overflow(start)))
@@ -170,7 +174,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 4 do
-      result |= (data(pos + i) & 0xff) << (i*8)
+      result |= (data.readable(pos + i) & 0xff) << (i*8)
       i += 1
 
     pos += 4
@@ -182,7 +186,7 @@ class ProtobufParser(data: Data):
     var i = 0
 
     while i < 8 do
-      result |= (data(pos + i).toLong & 0xff) << (i*8)
+      result |= (data.readable(pos + i).toLong & 0xff) << (i*8)
       i += 1
 
     pos += 8
@@ -264,7 +268,7 @@ class ProtobufParser(data: Data):
 
     val result =
       java.lang.String
-        ( data.asInstanceOf[Array[Byte]], pos, boundary - pos,
+        ( data.asInstanceOf[scala.Array[Byte]], pos, boundary - pos,
           java.nio.charset.StandardCharsets.UTF_8 )
 
     directLeaveField(saved)
@@ -294,7 +298,7 @@ class ProtobufParser(data: Data):
   def directStringWindow(): String =
     val result =
       java.lang.String
-        ( data.asInstanceOf[Array[Byte]], pos, boundary - pos,
+        ( data.asInstanceOf[scala.Array[Byte]], pos, boundary - pos,
           java.nio.charset.StandardCharsets.UTF_8 )
 
     pos = boundary
@@ -331,7 +335,7 @@ class ProtobufParser(data: Data):
   // concatenated scalar values) into one wire value per element. `wireType` is the
   // element encoding, supplied by the element's `Packable` instance.
   def packed(wireType: WireType): List[Protobuf] raises ProtobufError =
-    val builder = List.newBuilder[Protobuf]
+    val builder = scala.collection.immutable.List.newBuilder[Protobuf]
 
     while !atEnd do
       val value = wireType match
@@ -346,4 +350,4 @@ class ProtobufParser(data: Data):
 
       builder += value
 
-    builder.result()
+    List.of(builder.result())

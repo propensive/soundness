@@ -32,6 +32,10 @@
                                                                                                   */
 package stratiform
 
+import proscenium.compat.*
+
+import scala.sys
+
 import scala.language.unsafeNulls
 
 import anticipation.*
@@ -57,25 +61,25 @@ object Base256:
       "ƠơҢңƤƥΦƧƨΩΪΫάέήίưᾱβγδεζҷᾸικλμẽξοπӁӂÃτÅÆÇψωϊϋỌύώϏ" +
       "ÐǑǒǓÔϕӖϗῘÙῚӛӜӝÞӟàῡǢǣӤåæçǨῩӪӫìíӮӯðñỲỳôỵǶỷӸùῺûǼǽþǿ"
 
-  val alphabet: IArray[Char] =
-    val arr = new Array[Char](256)
+  val alphabet: Array[Char]^{} =
+    val arr = new scala.Array[Char](256)
     var i = 0
 
     while i < 256 do
       arr(i) = alphabetString.charAt(i)
       i += 1
 
-    arr.asInstanceOf[IArray[Char]]
+    arr.asInstanceOf[Array[Char]^{}]
 
-  private val membership: Array[Boolean] =
-    val table = new Array[Boolean](Char.MaxValue.toInt + 1)
+  private val membership: Array[Boolean]^{} =
+    val table = new scala.Array[Boolean](Char.MaxValue.toInt + 1)
     var i = 0
 
     while i < 256 do
       table(alphabet(i).toInt) = true
       i += 1
 
-    table
+    table.asInstanceOf[Array[Boolean]^{}]
 
   // Self-check the alphabet's defining property — every implementation
   // MUST verify it per §4. We do it at module load so a transcription
@@ -95,7 +99,7 @@ object Base256:
 
       i += 1
 
-    val seen = new Array[Boolean](Char.MaxValue.toInt + 1)
+    val seen = new scala.Array[Boolean](Char.MaxValue.toInt + 1)
     var j = 0
 
     while j < 256 do
@@ -122,14 +126,14 @@ object Base256:
   // rejected; their residue is taken as-is.
   def decode(text: Text): Data =
     val s = text.s
-    val out = new Array[Byte](s.length)
+    val out = new scala.Array[Byte](s.length)
     var i = 0
 
     while i < s.length do
       out(i) = (s.charAt(i).toInt % 256).toByte
       i += 1
 
-    out.asInstanceOf[IArray[Byte]]
+    out.asInstanceOf[Array[Byte]^{}]
 
   // Strict decode (§9). Verifies every input character is a member of
   // the alphabet; raises a `Base256Error` listing the first offending
@@ -137,7 +141,7 @@ object Base256:
   // identically to `decode`.
   def decodeStrict(text: Text): Data raises Base256Error =
     val s = text.s
-    val out = new Array[Byte](s.length)
+    val out = new scala.Array[Byte](s.length)
     var i = 0
 
     while i < s.length do
@@ -146,4 +150,4 @@ object Base256:
       out(i) = (c.toInt % 256).toByte
       i += 1
 
-    out.asInstanceOf[IArray[Byte]]
+    out.asInstanceOf[Array[Byte]^{}]

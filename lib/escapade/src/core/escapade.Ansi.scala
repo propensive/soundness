@@ -32,7 +32,11 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import scala.compiletime
+
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import scala.collection.mutable as scm
 
@@ -110,10 +114,19 @@ object Ansi extends Ansi2:
     val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
     val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap.empty
     val insertions: scm.TreeMap[Int, Text] = scm.TreeMap.empty
+    @scala.caps.unsafe.untrackedCaptures
     var last: Optional[Pending] = Unset
+
+    @scala.caps.unsafe.untrackedCaptures
     var stack: List[Frame] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
     var styleStack: List[TextStyle] = Nil
+
+    @scala.caps.unsafe.untrackedCaptures
     var currentStyle: TextStyle = TextStyle()
+
+    @scala.caps.unsafe.untrackedCaptures
     var linkArmed: Boolean = false
 
     def appendChar(char: Char): Unit =
@@ -146,7 +159,8 @@ object Ansi extends Ansi2:
 
       if triggerLink then linkArmed = false
 
-      if text.hyperlinks.nonEmpty then text.hyperlinks.each: (k, v) => hyperlinks(n + k) = v
+      if text.hyperlinks.nonEmpty then
+        text.hyperlinks.stdlib.each: (k, v) => hyperlinks(n + k) = v
 
       if text.insertions.nonEmpty then text.insertions.each: (k, v) => insertions(n + k) = v
 
@@ -294,13 +308,13 @@ object Ansi extends Ansi2:
       state.styles += tail
 
       val plainText = state.plain.toString.tt
-      val denseStyles = IArray.unsafeFromArray(state.styles.toArray)
+      val denseStyles = Array.unsafeFrozen(state.styles.toArray)
       val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
 
       Teletype
         ( plainText,
           newStyles,
-          state.hyperlinks.toMap,
+          Map.of(state.hyperlinks.toMap),
           state.insertions.to(TreeMap),
           newBoundaries )
 

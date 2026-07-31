@@ -32,7 +32,9 @@
                                                                                                   */
 package turbulence
 
-import language.adhocExtensions
+import scala.caps
+
+import scala.language.adhocExtensions
 
 import java.io as ji
 import java.lang as jl
@@ -45,6 +47,7 @@ import hieroglyph.*
 import hypotenuse.*
 import parasite.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -109,9 +112,9 @@ extension (consume stream: (Stream[Text] over Credit)^)
   // extensions from different modules shadow, not overload, under the flat
   // `soundness.*` re-export.)
   def delineate(using lineSeparation: LineSeparation, buffering: Buffering)
-  :   (Stream[IArray[Text]] over Credit)^ =
+  :   (Stream[Array[Text]^{}] over Credit)^ =
 
-    stream.via(lineSeparation).asInstanceOf[(Stream[IArray[Text]] over Credit)^]
+    stream.via(lineSeparation).asInstanceOf[(Stream[Array[Text]^{}] over Credit)^]
 
 extension (text: Text)
   // Split a whole `Text` into its lines through the SAME `LineSeparation`
@@ -119,7 +122,7 @@ extension (text: Text)
   // window (`Duct.feed`) — no stream endpoint, no credit machinery. One
   // implementation, two drivers.
   @targetName("delineateText")
-  def delineate(using lineSeparation: LineSeparation, buffering: Buffering): IArray[Text] =
+  def delineate(using lineSeparation: LineSeparation, buffering: Buffering): Array[Text]^{} =
     Duct.feed(text, LineSeparation.lines.duct(lineSeparation))
 
 extension (data: Data)
@@ -128,7 +131,7 @@ extension (data: Data)
   @targetName("delineateWholeData")
   def delineate
     ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
-  :   IArray[Text] =
+  :   Array[Text]^{} =
 
     decoder.decoded(data).delineate
 
@@ -138,7 +141,7 @@ extension (consume stream: (Stream[Data] over Credit)^)
   @targetName("delineateData")
   def delineate
     ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
-  :   (Stream[IArray[Text]] over Credit)^ =
+  :   (Stream[Array[Text]^{}] over Credit)^ =
 
     stream.via(decoder).asInstanceOf[(Stream[Text] over Credit)^].delineate
 
@@ -169,11 +172,11 @@ extension (consume stream: (Stream[Data] over Credit)^)
         val available = ensure()
 
         if available < 0 then -1 else
-          val byte = stream.window(using Unsafe).asInstanceOf[Array[Byte]](stream.start) & 0xff
+          val byte = stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]](stream.start) & 0xff
           stream.skip(1)
           byte
 
-      override def read(target: Array[Byte] | Null, offset: Int, length: Int): Int =
+      override def read(target: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
         if length == 0 then 0 else
           val available = ensure()
 
@@ -209,7 +212,7 @@ extension (body: HttpStreams.Body)
       type Transport = Credit
 
       private val block: Int = buffering.capacity(Substrate.Bytes)
-      private var chunk: Data = IArray.empty[Byte].asInstanceOf[Data]
+      private var chunk: Data = Array.empty[Byte].asInstanceOf[Data]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var ended: Boolean = false
@@ -280,19 +283,19 @@ package lineSeparation:
     case "\n"      => linefeedLineSeparation
     case _: String => adaptiveLinefeedLineSeparation
 
-extension [element](stream: LazyList[element])
-  def deduplicate: LazyList[element] =
-    def recur(last: element, stream: LazyList[element]): LazyList[element] =
-      stream.flow(LazyList()):
+extension [element](stream: Chain[element])
+  def deduplicate: Chain[element] =
+    def recur(last: element, stream: Chain[element]): Chain[element] =
+      stream.flow(Chain()):
         if last == next then recur(last, more) else next #:: recur(next, more)
 
-    stream.flow(LazyList())(next #:: recur(next, more))
+    stream.flow(Chain())(next #:: recur(next, more))
 
   // `next`/`more` are bound with `aka`-label refinements; under capture checking the
   // labelled singleton type does not simplify away in every position (the aka-Tagged/
   // castbox class), so use sites strip it with `next.asInstanceOf[element]`.
   inline def flow[result](inline termination: => result)
-    ( inline proceed: (element aka "next", LazyList[element] aka "more") ?=> result )
+    ( inline proceed: (element aka "next", Chain[element] aka "more") ?=> result )
   :   result =
 
     stream match
@@ -300,15 +303,19 @@ extension [element](stream: LazyList[element])
       case _             => termination
 
 
-  def strict: LazyList[element] = stream.length yet stream
+  def strict: Chain[element] = stream.stdlib.length yet stream
 
-extension (obj: LazyList.type)
-  def defer[element](stream: => LazyList[element]): LazyList[element] =
-    (null.asInstanceOf[element] #:: stream).tail
+extension (obj: Chain.type)
+  // Defers evaluation of `stream` until the result is forced. `empty.lazyAppendedAll(=> stream)`
+  // keeps the by-name suffix unforced — equivalent to (and cheaper than) the old
+  // `(dummy #:: stream).tail`, and it sidesteps the captured-by-name cons under cc.
+  def defer[element](stream: => Chain[element]): Chain[element] =
+    Chain().lazyAppendedAll(stream)
 
-extension (stream: LazyList[Data])
-  def discard(bytes: Bytes): LazyList[Data] =
-    def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] = stream.flow(LazyList()):
+
+extension (stream: Chain[Data])
+  def discard(bytes: Bytes): Chain[Data] =
+    def recur(stream: Chain[Data], count: Bytes): Chain[Data] = stream.flow(Chain()):
       if next.bytes < count
       then recur(more, count - next.bytes)
       else
@@ -319,54 +326,68 @@ extension (stream: LazyList[Data])
 
     recur(stream, bytes)
 
-  def shred(mean: Double, variance: Double)(using Random): LazyList[Data] =
+  def shred(mean: Double, variance: Double)(using Random): Chain[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
-    def newArray(): Array[Byte]^ = new Array[Byte](arbitrary[Double]().toInt.max(1))
+    // The size is drawn separately so that each fresh buffer can go straight into `recur`'s
+    // `consume` parameter: binding it to a `val` first would alias the exclusive reference.
+    def newSize(): Int = arbitrary[Double]().toInt.max(1)
+    def newArray(size: Int): Array[Byte]^ = Array[Byte](size)
 
-    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
-    :   LazyList[Data] =
+    // The buffer is threaded through `consume`, so each chunk emitted downstream is frozen
+    // by the one producer that could still have written to it.
+    def recur
+      ( stream:    Chain[Data],
+        sourcePos: Int,
+        consume dest: Array[Byte]^,
+        destSize:  Int,
+        destPos:   Int )
+    :   Chain[Data] =
 
       stream match
         case source #:: more =>
           val ready = source.length - sourcePos
-          val free = dest.length - destPos
+          val free = destSize - destPos
 
           if ready < free then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, ready)
-            recur(more, 0, dest, destPos + ready)
+            dest.copyFrom(source, sourcePos, destPos, ready)
+            recur(more, 0, dest, destSize, destPos + ready)
           else if free < ready then
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
+            dest.copyFrom(source, sourcePos, destPos, free)
+            val chunk = Array.freeze(dest)
+            val size = newSize()
+            chunk.asInstanceOf[Data] #:: recur(stream, sourcePos + free, newArray(size), size, 0)
           else // free == ready
-            jl.System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
+            dest.copyFrom(source, sourcePos, destPos, free)
+            val chunk = Array.freeze(dest)
+            val size = newSize()
+            chunk.asInstanceOf[Data] #:: recur(more, 0, newArray(size), size, 0)
 
         case _ =>
-          if destPos == 0 then LazyList()
+          if destPos == 0 then Chain()
           else
-            // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
-            val out = new Array[Byte](destPos)
-            jl.System.arraycopy(dest, 0, out, 0, destPos)
-            LazyList(out.immutable(using Unsafe).asInstanceOf[Data])
+            val out = Array[Byte](destPos)
+            out.copyFrom(Array.freeze(dest), 0, 0, destPos)
+            Chain(Array.freeze(out).asInstanceOf[Data])
 
-    recur(stream, 0, newArray(), 0)
+    val size = newSize()
+    recur(stream, 0, newArray(size), size, 0)
 
-  def take(bytes: Bytes): LazyList[Data] =
-    def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] =
-      stream.flow(LazyList()):
+  def take(bytes: Bytes): Chain[Data] =
+    def recur(stream: Chain[Data], count: Bytes): Chain[Data] =
+      stream.flow(Chain()):
         if next.bytes < count then
           val head: Data = next
           head #:: recur(more, count - next.bytes)
-        else LazyList(next.take(count.long.toInt).asInstanceOf[Data])
+        else Chain(next.take(count.long.toInt).asInstanceOf[Data])
 
     recur(stream, bytes)
 
   def inputStream: ji.InputStream = new ji.InputStream:
     // A JDK adapter, not a capability class: its staging slots are untracked.
-    @caps.unsafe.untrackedCaptures private var current: LazyList[Data] = stream
+    @caps.unsafe.untrackedCaptures private var current: Chain[Data] = stream
     @caps.unsafe.untrackedCaptures private var offset: Int = 0
-    @caps.unsafe.untrackedCaptures private var focus: Data = IArray.empty[Byte].asInstanceOf[Data]
+    @caps.unsafe.untrackedCaptures private var focus: Data = Array.empty[Byte].asInstanceOf[Data]
 
     override def available(): Int =
       val diff = focus.length - offset
@@ -383,7 +404,7 @@ extension (stream: LazyList[Data])
 
     def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
 
-    override def read(array: Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
+    override def read(array: scala.Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
       if length == 0 then 0 else
         val count = length.min(available())
 

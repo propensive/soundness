@@ -80,7 +80,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   // Generic field walk — the analog of `read[Protobuf]`. The accumulated
   // checksum is returned so the JIT cannot dead-code-eliminate the reads.
-  def walkWithProtobufJava(bytes: Array[Byte]): Long =
+  def walkWithProtobufJava(bytes: scala.Array[Byte]): Long =
     import com.google.protobuf.WireFormat
     val in = com.google.protobuf.CodedInputStream.newInstance(bytes).nn
     var checksum = 0L
@@ -100,7 +100,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // message, repeated nested messages, packed varints). The remaining corpora
   // (map entries, deep nesting) are omitted on the protobuf-java side because
   // hand-writing their wire format adds bulk without changing the picture.
-  def encodeSmallWithProtobufJava: Array[Byte] =
+  def encodeSmallWithProtobufJava: scala.Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(32)
     val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
     cos.writeInt64(1, 42L)
@@ -109,7 +109,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     cos.flush()
     out.toByteArray.nn
 
-  def encodeUsersWithProtobufJava: Array[Byte] =
+  def encodeUsersWithProtobufJava: scala.Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(8192)
     val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
     var index = 0
@@ -130,7 +130,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     cos.flush()
     out.toByteArray.nn
 
-  def encodeIntsWithProtobufJava: Array[Byte] =
+  def encodeIntsWithProtobufJava: scala.Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(4096)
     val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
     val body = new _root_.java.io.ByteArrayOutputStream(4096)
@@ -169,8 +169,8 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // Corpus 3: 500 log entries with six fields each — a larger throughput target
   // dominated by short strings and small integers.
   lazy val value3: Logs =
-    val levels   = IArray(t"info", t"debug", t"warn", t"error")
-    val services = IArray(t"auth", t"api", t"db", t"cache", t"worker")
+    val levels   = Array.of(t"info", t"debug", t"warn", t"error")
+    val services = Array.of(t"auth", t"api", t"db", t"cache", t"worker")
     Logs:
       List.tabulate(500): index =>
         LogEntry
@@ -188,7 +188,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // Corpus 5: a map with 50 string→string entries — exercises map-entry messages
   // (proto3 encodes maps as repeated key/value sub-messages).
   lazy val value5: Attributes =
-    Attributes((0 until 50).map(index => t"key$index" -> t"value$index").to(Map))
+    Attributes((0 until 50).map(index => t"key$index" -> t"value$index").to[Map])
 
   // Corpus 6: a message nested five levels deep — stresses nested encode/decode.
   lazy val value6: Deep1 =
@@ -203,12 +203,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   // Plain Array[Byte] views for protobuf-java (the cast is sound for read-only
   // consumers; CodedInputStream never mutates its input).
-  lazy val raw1: Array[Byte] = bytes1.asInstanceOf[Array[Byte]]
-  lazy val raw2: Array[Byte] = bytes2.asInstanceOf[Array[Byte]]
-  lazy val raw3: Array[Byte] = bytes3.asInstanceOf[Array[Byte]]
-  lazy val raw4: Array[Byte] = bytes4.asInstanceOf[Array[Byte]]
-  lazy val raw5: Array[Byte] = bytes5.asInstanceOf[Array[Byte]]
-  lazy val raw6: Array[Byte] = bytes6.asInstanceOf[Array[Byte]]
+  lazy val raw1: scala.Array[Byte] = bytes1.asInstanceOf[scala.Array[Byte]]
+  lazy val raw2: scala.Array[Byte] = bytes2.asInstanceOf[scala.Array[Byte]]
+  lazy val raw3: scala.Array[Byte] = bytes3.asInstanceOf[scala.Array[Byte]]
+  lazy val raw4: scala.Array[Byte] = bytes4.asInstanceOf[scala.Array[Byte]]
+  lazy val raw5: scala.Array[Byte] = bytes5.asInstanceOf[scala.Array[Byte]]
+  lazy val raw6: scala.Array[Byte] = bytes6.asInstanceOf[scala.Array[Byte]]
 
   // The benchmark bodies are staged and recompiled by superlunary, so the
   // contextual `Tactic[ProtobufError]` and the derived codec instances must be
@@ -216,12 +216,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // body. Each operation therefore goes through a fully-qualified helper method
   // the quote simply invokes.
 
-  def decodeSmall:      Small      = LazyList(bytes1).read[Small in Protobuf]
-  def decodeUsers:      Users      = LazyList(bytes2).read[Users in Protobuf]
-  def decodeLogs:       Logs       = LazyList(bytes3).read[Logs in Protobuf]
-  def decodeInts:       Ints       = LazyList(bytes4).read[Ints in Protobuf]
-  def decodeAttributes: Attributes = LazyList(bytes5).read[Attributes in Protobuf]
-  def decodeNested:     Deep1      = LazyList(bytes6).read[Deep1 in Protobuf]
+  def decodeSmall:      Small      = Chain(bytes1).read[Small in Protobuf]
+  def decodeUsers:      Users      = Chain(bytes2).read[Users in Protobuf]
+  def decodeLogs:       Logs       = Chain(bytes3).read[Logs in Protobuf]
+  def decodeInts:       Ints       = Chain(bytes4).read[Ints in Protobuf]
+  def decodeAttributes: Attributes = Chain(bytes5).read[Attributes in Protobuf]
+  def decodeNested:     Deep1      = Chain(bytes6).read[Deep1 in Protobuf]
 
   def encodeSmall:      Data = value1.in[Protobuf].encode
   def encodeUsers:      Data = value2.in[Protobuf].encode
@@ -244,7 +244,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
     // Decode. Each corpus is decoded two ways: Locomotion typed decode (the
     // headline figure and the `Min` baseline) and the protobuf-java field walk.
     // The Locomotion row measures the full public decode path
-    // (`LazyList(...).read[...]`), which re-aggregates the single-chunk stream into
+    // (`Chain(...).read[...]`), which re-aggregates the single-chunk stream into
     // strict bytes on each iteration before parsing.
     // -------------------------------------------------------------------------
 

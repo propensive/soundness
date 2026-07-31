@@ -32,11 +32,21 @@
                                                                                                   */
 package archimedes
 
+import scala.collection.immutable.Seq
+
+import scala.math
+
+// Deliberate stdlib opt-out, as in `Cell`.
+import scala.collection.immutable.{Map, Set}
+
 import scala.collection.mutable.ListBuffer
+
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 import Mathml.*
@@ -122,7 +132,7 @@ object Ergo:
     '⚙' -> Directive.Param(t"actiontype"))
 
   private def directive(char: Char): Optional[Directive] =
-    directives.collectFirst { case (glyph, entry) if glyph == char => entry }.optional
+    directives.stdlib.collectFirst { case (glyph, entry) if glyph == char => entry }.optional
 
   def parse(input: Text)(using Tactic[ErgoError]): Math =
     Parser(input.s, Iterator.empty).parseTop()
@@ -167,7 +177,7 @@ object Ergo:
   // Joins a juxtaposed run, inserting a space only where two tokens would
   // otherwise merge (letter+letter into one `<mi>`, or digit+digit into one `<mn>`).
   private def sequence(nodes: List[Mathml])(using Tactic[ErgoError]): Text =
-    val parts = nodes.map(emit(_, false)).filter(!_.s.isEmpty)
+    val parts = nodes.stdlib.map(emit(_, false)).filter(!_.s.isEmpty)
 
     parts.foldLeft(t""): (acc, next) =>
       if acc.s.isEmpty then next
@@ -183,7 +193,7 @@ object Ergo:
   private def finish(core: Text, attributes: List[(Text, Text)], asOperand: Boolean, safe: Boolean)
   :   Text =
 
-    if attributes.nonEmpty then t"${group(core)}${directivesFor(attributes)}"
+    if attributes.stdlib.nonEmpty then t"${group(core)}${directivesFor(attributes)}"
     else if asOperand && !safe then group(core)
     else core
 
@@ -229,7 +239,7 @@ object Ergo:
       val kept = accentless(accentless(attributes, under, t"accentunder"), over, t"accent")
       finish(t"${operand(base)}↓${operand(under)}↑${operand(over)}", kept, asOperand, false)
 
-    case other => abort(ErgoError(ErgoError.Reason.Unsupported(other.label)))
+    case other => scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unsupported(other.label))))
 
   // A `↑`/`↓` script that is a single `<mo>` re-acquires its accent on parsing, so
   // the corresponding accent attribute is implied and not emitted.
@@ -240,28 +250,35 @@ object Ergo:
       case _: Mo => true
       case _     => false
 
-    if accent then attributes.filter { pair => pair != (name, t"true") } else attributes
+    if accent then List.of(attributes.stdlib.filter { pair => pair != (name, t"true") }) else attributes
 
   private def serializeTable(table: Mtable)(using Tactic[ErgoError]): Text =
-    val rows: List[List[Text]] = table.contents.collect:
-      case Mtr(cells, _) => cells.map(cellText)
+    val rows: List[List[Text]] =
+      table.contents.collect:
+        case Mtr(cells, _) => cells.map(cellText)
 
-    if rows.length == 1 then t"${RowVec.toString.tt}(${rows.head.join})"
-    else if rows.forall(_.length == 1) then t"${ColVec.toString.tt}(${rows.map(_.head).join})"
-    else t"${Matrix.toString.tt}(${rows.map { cells => group(cells.join) }.join})"
+    if rows.length == 1 then
+      val row = rows.head.join
+      t"${RowVec.toString.tt}($row)"
+    else if rows.forall(_.length == 1) then
+      val column = rows.map(_.head).join
+      t"${ColVec.toString.tt}($column)"
+    else
+      val body = rows.map { cells => group(cells.join) }.join
+      t"${Matrix.toString.tt}($body)"
 
   private def cellText(node: Mathml)(using Tactic[ErgoError]): Text = node match
     case Mtd(contents, _) => group(sequence(contents))
     case other            => group(emit(other, false))
 
   private def directivesFor(attributes: List[(Text, Text)]): Text =
-    attributes.map { case (name, value) => directiveText(name, value) }
-    . collect { case text: Text => text }.join
+    List.of(attributes.stdlib.map { case (name, value) => directiveText(name, value) }
+    . collect { case text: Text => text }).join
 
   // Prefers a `Fixed` glyph matching both attribute and value (enums/booleans);
   // otherwise a `Param` glyph for the attribute, with the value in brackets.
   private def directiveText(name: Text, value: Text): Optional[Text] =
-    val matched = directives.collectFirst:
+    val matched = directives.stdlib.collectFirst:
       case (glyph, Directive.Fixed(n, v)) if n == name && v == value =>
         glyph.toString.tt
 
@@ -271,8 +288,11 @@ object Ergo:
     matched.optional
 
   private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[ErgoError]):
+    @scala.caps.unsafe.untrackedCaptures
     private var pos = 0
+    @scala.caps.unsafe.untrackedCaptures
     private var open = '('
+    @scala.caps.unsafe.untrackedCaptures
     private var close = ')'
 
     private def peek: Char = if pos < s.length then s.charAt(pos) else ' '
@@ -291,10 +311,11 @@ object Ergo:
     private def digit(c: Char): Boolean = Character.isDigit(c)
 
     def parseTop(): Math =
-      if s.isEmpty then abort(ErgoError(ErgoError.Reason.Empty))
+      if s.isEmpty then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Empty)))
       open = s.charAt(0)
 
-      if !pairs.contains(open) then abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt)))
+      if !pairs.contains(open)
+      then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.BadOpener(open.toString.tt))))
 
       close = pairs(open)
 
@@ -307,7 +328,7 @@ object Ergo:
       advance()
       val inner = parseSequence()
       skipSpaces()
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance()
       inner
 
@@ -370,7 +391,8 @@ object Ergo:
         case (u, o) =>
           val below = u.or(base)
           val above = o.or(base)
-          Munderover(base, below, above, accent(below, t"accentunder") ++ accent(above, t"accent"))
+          Munderover(base, below, above,
+            List.of(accent(below, t"accentunder").stdlib ++ accent(above, t"accent").stdlib))
 
       (sub, sup) match
         case (Unset, Unset) => limited
@@ -393,7 +415,7 @@ object Ergo:
         if depth > 0 then pos += 1
 
       val raw = s.substring(start, pos).nn.tt
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance() // close
       raw
 
@@ -417,21 +439,21 @@ object Ergo:
       applyAttributes(unit, attributes.to(List))
 
     private def applyAttributes(node: Mathml, extra: List[(Text, Text)]): Mathml =
-      if extra.isEmpty then node else node match
-        case n: Mi         => n.copy(attributes = n.attributes ++ extra)
-        case n: Mn         => n.copy(attributes = n.attributes ++ extra)
-        case n: Mo         => n.copy(attributes = n.attributes ++ extra)
-        case n: Mrow       => n.copy(attributes = n.attributes ++ extra)
-        case n: Mfrac      => n.copy(attributes = n.attributes ++ extra)
-        case n: Msqrt      => n.copy(attributes = n.attributes ++ extra)
-        case n: Mroot      => n.copy(attributes = n.attributes ++ extra)
-        case n: Msub       => n.copy(attributes = n.attributes ++ extra)
-        case n: Msup       => n.copy(attributes = n.attributes ++ extra)
-        case n: Msubsup    => n.copy(attributes = n.attributes ++ extra)
-        case n: Munder     => n.copy(attributes = n.attributes ++ extra)
-        case n: Mover      => n.copy(attributes = n.attributes ++ extra)
-        case n: Munderover => n.copy(attributes = n.attributes ++ extra)
-        case n: Mtable     => n.copy(attributes = n.attributes ++ extra)
+      if extra.stdlib.isEmpty then node else node match
+        case n: Mi         => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mn         => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mo         => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mrow       => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mfrac      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Msqrt      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mroot      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Msub       => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Msup       => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Msubsup    => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Munder     => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mover      => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Munderover => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
+        case n: Mtable     => n.copy(attributes = List.of(n.attributes.stdlib ++ extra.stdlib))
         case other         => Mrow(List(other), extra)
 
     private def parseUnit(): Mathml =
@@ -457,7 +479,7 @@ object Ergo:
 
         rooted(Mn(s.substring(start, pos).nn.tt))
       else if c == ' ' then
-        abort(ErgoError(ErgoError.Reason.UnexpectedEnd))
+        scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.UnexpectedEnd)))
       else
         // a content glyph, or an operator glyph degraded for want of an operand
         advance()
@@ -472,24 +494,24 @@ object Ergo:
     // introducer, returning the parsed child groups. A body with no nested
     // groups is treated as a single element (so `⋯(a)` is a one-cell vector).
     private def parseBody(introducer: Char): List[Mathml] =
-      if peek != open then abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt)))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt))))
       advance() // body open
       val items = ListBuffer[Mathml]()
       while peek == open do items += parseGroup()
       if items.isEmpty && peek != close then items += parseSequence()
       skipSpaces()
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance() // body close
       items.to(List)
 
     private def parseVector(row: Boolean): Mathml =
       val introducer = advance()
-      val tds = parseBody(introducer).map(Mtd(_))
+      val tds = parseBody(introducer).stdlib.map(Mtd(_))
       if row then Mtable(Mtr(tds*)) else Mtable(tds.map(Mtr(_))*)
 
     private def parseMatrix(): Mathml =
       val introducer = advance()
-      if peek != open then abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt)))
+      if peek != open then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt))))
       advance() // body open
       val rows = ListBuffer[Mathml]()
 
@@ -501,11 +523,11 @@ object Ergo:
         // A row group with no nested cell-groups is a single-cell row.
         if cells.isEmpty && peek != close then cells += parseSequence()
         skipSpaces()
-        if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+        if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
         advance() // row-group close
-        rows += Mtr(cells.to(List).map { cell => Mtd(cell) }*)
+        rows += Mtr(cells.toList.map { cell => Mtd(cell) }*)
 
       skipSpaces()
-      if peek != close then abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt)))
+      if peek != close then scala.caps.unsafe.unsafeAssumeSeparate(abort(ErgoError(ErgoError.Reason.Unclosed(close.toString.tt))))
       advance() // body close
       Mtable(rows.to(List)*)

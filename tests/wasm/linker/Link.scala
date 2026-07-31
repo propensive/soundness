@@ -16,7 +16,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 //
 // Arguments: <output-dir> <wit-dir> <wit-world> <classpath entries...>
 object Link:
-  def main(args: Array[String]): Unit =
+  def main(args: scala.Array[String]): Unit =
     val outDir = Paths.get(args(0)).nn
     val witDir = args(1)
     val witWorld = args(2)

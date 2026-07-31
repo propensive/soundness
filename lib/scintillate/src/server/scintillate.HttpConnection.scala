@@ -32,6 +32,9 @@
                                                                                                   */
 package scintillate
 
+import scala.caps
+import proscenium.compat.*
+
 import java.io as ji
 
 import com.sun.net.httpserver as csnh
@@ -74,11 +77,13 @@ object HttpConnection:
     val method = exchange.getRequestMethod.nn.show.as[Http.Method]
 
     val headers: List[Http.Header] =
-      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
-        pair.absolve match
-          case (key, values) => values.map: value => Http.Header(key, value.tt)
+      List.of:
+        exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.toList).flatMap: pair =>
+          pair.absolve match
+            case (key, values) => values.map: value =>
+              Http.Header(key, value.tt)
 
-      . to(List)
+        . toList
 
     val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 
@@ -137,7 +142,7 @@ object HttpConnection:
         response.body match
           case Http.Body.Fixed(data) =>
             try
-              responseBody.write(data.mutable(using Unsafe))
+              responseBody.write(Array.unsafeJvm(data))
               count += data.length
               responseBody.flush()
             catch case _: ji.IOException => abort(StreamError(count.b))
@@ -148,14 +153,15 @@ object HttpConnection:
             def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
               case size: Int =>
                 try
-                  val window = stream.window(using Unsafe).asInstanceOf[Array[Byte]]
+                  val window = stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]]
                   responseBody.write(window, stream.start, size)
                   count += size
                   responseBody.flush()
                 catch case _: ji.IOException => abort(StreamError(count.b))
 
                 stream.skip(size)
-                recur()
+                // Tail re-entry over the same single-owner stream.
+                scala.caps.unsafe.unsafeAssumeSeparate(recur())
 
               case _ => ()
 

@@ -37,6 +37,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*

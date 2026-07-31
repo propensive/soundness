@@ -32,7 +32,11 @@
                                                                                                   */
 package breviloquence
 
+import scala.math
+
 import soundness.*
+
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -60,7 +64,7 @@ enum Shape derives CanEqual:
 // exactly the degradation the suite exercises.
 case class Defaulted(x: Int, y: Int = 7) derives CanEqual
 case class Wide(seventeenCharacter: Int, y: Int) derives CanEqual
-case class Blob(data: IArray[Byte])
+case class Blob(data: Data)
 case class Nums(values: List[Int]) derives CanEqual
 case class Mixed(a: Double, b: Boolean, c: Text) derives CanEqual
 
@@ -71,16 +75,16 @@ enum CStatus derives CanEqual:
 
 given (CStatus is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
 
-private def hex(s: String): IArray[Byte] =
+private def hex(s: String): Data =
   val clean = s.filter(c => !c.isWhitespace)
-  val out = new Array[Byte](clean.length/2)
+  val out = new scala.Array[Byte](clean.length/2)
   var index = 0
   while index < out.length do
     out(index) = Integer.parseInt(clean.substring(index*2, index*2 + 2), 16).toByte
     index += 1
-  out.asInstanceOf[IArray[Byte]]
+  out.asInstanceOf[Data]
 
-private def hexOf(bytes: IArray[Byte]): String =
+private def hexOf(bytes: Data): String =
   val sb = new StringBuilder
   var index = 0
   while index < bytes.length do
@@ -167,7 +171,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == t"IETF")
 
       test(m"Parse byte string [01 02 03 04]"):
-        val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[IArray[Byte]]
+        val bytes = Cbor.ast(Cbor.Ast.parse(hex("4401020304"))).as[Data]
         bytes.toList
       . assert(_ == List[Byte](1, 2, 3, 4))
 
@@ -275,36 +279,36 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(identity)
 
     suite(m"Aggregable"):
-      test(m"Aggregate single-chunk LazyList[Data] to Cbor"):
+      test(m"Aggregate single-chunk Chain[Data] to Cbor"):
         val original = Point(3, 4)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        LazyList(bytes).read[Cbor].as[Point]
+        proscenium.Chain(bytes).read[Cbor].as[Point]
       . assert(_ == Point(3, 4))
 
-      test(m"Aggregate split-chunk LazyList[Data] to Cbor"):
+      test(m"Aggregate split-chunk Chain[Data] to Cbor"):
         val original = Person(t"Ada", 36)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         val half = bytes.length/2
-        LazyList(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
+        proscenium.Chain(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
       . assert(_ == Person(t"Ada", 36))
 
-      test(m"Aggregate single-chunk LazyList[Data] to Cbor.Ast"):
+      test(m"Aggregate single-chunk Chain[Data] to Cbor.Ast"):
         val original = Wrapper(List(1, 2, 3), t"hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        Cbor.ast(LazyList(bytes).read[Cbor.Ast]).as[Wrapper]
+        Cbor.ast(proscenium.Chain(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
         val original = Point(3, 4)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        LazyList(bytes).read[Point in Cbor]
+        proscenium.Chain(bytes).read[Point in Cbor]
       . assert(_ == Point(3, 4))
 
       test(m"`read[T in Cbor]` works for nested case classes"):
         val original = Wrapper(List(1, 2, 3), t"hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
-        LazyList(bytes).read[Wrapper in Cbor]
+        proscenium.Chain(bytes).read[Wrapper in Cbor]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"@name field renaming"):
@@ -452,7 +456,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       given (Nums is Cbor.Parsable) = Inlinable.parsable[Nums]
       given (Mixed is Cbor.Parsable) = Inlinable.parsable[Mixed]
 
-      def encoded[value: Encodable in Cbor](value: value): IArray[Byte] =
+      def encoded[value: Encodable in Cbor](value: value): Data =
         Cbor.Ast.encodable.encoded(Cbor.unseal(value.in[Cbor]))
 
       test(m"a flat product reads directly from bytes"):
@@ -472,7 +476,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
       test(m"a byte-string field reads in place"):
-        encoded(Blob(hex("01020304"))).read[Blob in Cbor].data.to(List)
+        encoded(Blob(hex("01020304"))).read[Blob in Cbor].data.to[List]
       . assert(_ == List[Byte](1, 2, 3, 4))
 
       test(m"an indefinite-length map parses to the same record"):
@@ -529,7 +533,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"trailing bytes are rejected as on the AST path"):
         val bytes = encoded(Point(3, 4))
-        val padded = IArray.from(bytes.to(List) :+ 0.toByte)
+        val padded = Array.from(bytes.readable.to(List) :+ 0.toByte)
         capture[CborError](padded.read[Point in Cbor]).reason match
           case CborError.Reason.Trailing(offset) => offset
           case _                                 => -1L
@@ -537,7 +541,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"the aggregable trigger routes a stream through the direct parser"):
         val bytes = encoded(Person(t"Ada", 36))
-        LazyList(bytes).read[Person in Cbor]
+        proscenium.Chain(bytes).read[Person in Cbor]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"a recursive type degrades its recursive field to the seam"):

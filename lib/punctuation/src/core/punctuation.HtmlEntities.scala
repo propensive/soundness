@@ -44,14 +44,15 @@ import turbulence.*
 // for named entities to be valid.
 private[punctuation] object HtmlEntities:
   private lazy val table: Map[String, String] =
-    val builder = Map.newBuilder[String, String]
+    val builder = scala.collection.immutable.Map.newBuilder[String, String]
     loadInto(cp"/honeycomb/entities-html4.tsv".read[Text].s, builder)
     loadInto(cp"/honeycomb/entities-extra.tsv".read[Text].s, builder)
-    builder.result()
+    Map.of(builder.result())
 
   private def loadInto
     ( tsv:     String,
-      builder: scala.collection.mutable.Builder[(String, String), Map[String, String]] )
+      builder: scala.collection.mutable.Builder
+                 [(String, String), scala.collection.immutable.Map[String, String]] )
   :   Unit =
 
     val lines = tsv.split("\n").nn
@@ -70,4 +71,4 @@ private[punctuation] object HtmlEntities:
 
   // Returns the decoded text for a named entity (without `&` or `;`), or
   // `null` if no such entity exists.
-  def lookup(name: String): String | Null = table.getOrElse(name, null)
+  def lookup(name: String): String | Null = table.stdlib.getOrElse(name, null)

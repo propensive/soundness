@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import proscenium.compat.*
+
 import denominative.*
 import profanity.*
 import rudiments.*
@@ -55,24 +57,36 @@ class Form
     throttle:     Long         = 0,
     debounce:     Long         = 0,
     scheduleWake: Long => Unit = _ => () ):
-  private var leaves: IndexedSeq[Pane] = IndexedSeq()
-  private var focuses: IndexedSeq[Focus] = IndexedSeq()
-  private var focusLeaf: IndexedSeq[Int] = IndexedSeq()
+  @scala.caps.unsafe.untrackedCaptures
+  private var leaves: Sequence[Pane] = Sequence()
+  @scala.caps.unsafe.untrackedCaptures
+  private var focuses: Sequence[Focus] = Sequence()
+  @scala.caps.unsafe.untrackedCaptures
+  private var focusLeaf: Sequence[Int] = Sequence()
+  @scala.caps.unsafe.untrackedCaptures
   private var focused: Optional[Focus] = Unset
-  private var rects: IndexedSeq[Rect] = IndexedSeq()
+  @scala.caps.unsafe.untrackedCaptures
+  private var rects: Sequence[Rect] = Sequence()
+  @scala.caps.unsafe.untrackedCaptures
   private var lastRedraw: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var lastWinch: Long = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var deferred: Optional[Set[Int]] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   private var wakePending: Boolean = false
+  @scala.caps.unsafe.untrackedCaptures
   private var resizePending: Boolean = false
 
   // The anchor reply (the parked cursor's position after the resize's reflow),
   // stashed when it decodes and handed to the inline root at the resize repaint;
   // dropped on every new WINCH so it can only describe the latest reflow.
+  @scala.caps.unsafe.untrackedCaptures
   private var anchor: Optional[(Int, Int)] = Unset
 
   // Whether the resize repaint has already been deferred once to await a late
   // anchor reply; a single grace keeps a reply-less terminal from stalling.
+  @scala.caps.unsafe.untrackedCaptures
   private var resizeGrace: Boolean = false
 
   // Bind every container to the wake function so a mutation requests a repaint.
@@ -88,15 +102,16 @@ class Form
   // if it still exists, else fall back to the first.
   private def rederive(): Unit =
     bind(pane)
-    leaves = pane.leaves.to(IndexedSeq)
+    leaves = Sequence.from(pane.leaves.stdlib)
     focuses = leaves.collect { case Pane.Widget(_, focus) => focus }
 
-    focusLeaf = leaves.indices.collect:
-      case i if leaves(i).isInstanceOf[Pane.Widget] => i
+    focusLeaf = Sequence.from:
+      (0 until leaves.length).collect:
+        case i if leaves(i).isInstanceOf[Pane.Widget] => i
 
     val stays = focused.lay(false): widget => focuses.indexWhere(_ eq widget) >= 0
 
-    if !stays then focused = if focuses.nil then Unset else focuses(0)
+    if !stays then focused = if focuses.isEmpty then Unset else focuses(0)
 
   private def focusIndex: Int = focused.lay(0): widget =>
     val index = focuses.indexWhere(_ eq widget)
@@ -111,7 +126,7 @@ class Form
 
     def project(node: Pane): Frame = node match
       case Pane.Branch(sizing, axis, panes) =>
-        Frame.Split(sizing, axis, panes.contents.map(project).to(List))
+        Frame.Split(sizing, axis, panes.contents.map(project).to[List])
 
       case Pane.Leaf(sizing, _) =>
         index += 1
@@ -128,7 +143,7 @@ class Form
 
     project(pane)
 
-  private def solve(): IndexedSeq[Rect] =
+  private def solve(): Sequence[Rect] =
     val frame = liveFrame
 
     val height = mode match
@@ -140,7 +155,7 @@ class Form
       case screen: ScreenRoot => screen.reframe()
       case _                  => ()
 
-    frame.arrange(Rect(0, 0, root.width, height)).cells.to(IndexedSeq)
+    Sequence.from(frame.arrange(Rect(0, 0, root.width, height)).cells.stdlib)
 
   private def paint(index: Int): Unit =
     val extent = FlowExtent(root, rects(index))
@@ -168,14 +183,14 @@ class Form
         case Mode.Fullscreen => root.clear()
         case Mode.Inline     => ()
 
-      rects = IndexedSeq()
+      rects = Sequence()
 
     val updated = solve()
 
     mode match
       case Mode.Inline =>
         rects = updated
-        rects.indices.each(paint(_))
+        (0 until rects.length).each(paint(_))
 
       case Mode.Fullscreen =>
         val dirty = dirtyCells(rects, updated, changed)
@@ -292,7 +307,7 @@ class Form
       // repaint clears the moved block (using the anchor reply, when one arrived).
       // The repaint is debounced until the drag pauses; typing is unaffected.
       case _: TerminalInfo.WindowSize =>
-        rects = IndexedSeq()
+        rects = Sequence()
         resizePending = true
         requestResizeRefresh()
 

@@ -32,6 +32,10 @@
                                                                                                   */
 package distillate
 
+import proscenium.compat.*
+
+import scala.reflect
+
 import scala.deriving.*
 
 import anticipation.*
@@ -45,9 +49,9 @@ object Enumerable:
 
 trait Enumerable:
   type Self <: reflect.Enum
-  private lazy val valuesMap: Map[Text, Self] = values.indexBy(_.toString.tt)
+  private lazy val valuesMap: Map[Text, Self] = values.readable.toSeq.indexBy(_.toString.tt)
   val name: Text
-  val values: IArray[Self]
+  val values: Array[Self]^{}
 
   def value(name: Text): Optional[Self] = valuesMap.at(name)
   def name(value: Self): Text = value.toString.tt

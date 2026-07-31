@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import java.nio.file as jnf
 
 import anticipation.*
@@ -64,8 +66,8 @@ private[bitumen] object TarFilesystem:
 
     path.entry() match
       case galilei.File =>
-        val bytes: Array[Byte] = jnf.Files.readAllBytes(path.javaPath).nn
-        Tar.Entry.File(ref, mode, user, group, mtime, TarBody(bytes.immutable(using Unsafe)))
+        val bytes = Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
+        Tar.Entry.File(ref, mode, user, group, mtime, TarBody(bytes))
 
       case galilei.Directory =>
         Tar.Entry.Directory(ref, mode, user, group, mtime)
@@ -101,7 +103,7 @@ private[bitumen] object TarFilesystem:
       case f: Tar.Entry.File =>
         val path = absolutize(root, f.path)
         jnf.Files.createDirectories(path.javaPath.getParent)
-        val bytes: Array[Byte] = f.data.memoize.mutable(using Unsafe)
+        val bytes: scala.Array[Byte] = Array.unsafeJvm(f.data.memoize)
         jnf.Files.write(path.javaPath, bytes)
         applyPermissions(path.javaPath, f.mode)
         applyTimestamps(path.javaPath, f.mtime)

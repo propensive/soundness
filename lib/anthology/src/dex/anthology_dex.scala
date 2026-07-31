@@ -101,21 +101,21 @@ object dexLinkages:
       // manifest of a hosting APK or the command line of `dalvikvm`, so entry points—like a
       // library JAR's—do not apply.
 
-      val roots: List[jnf.Path] =
+      val roots: scala.collection.immutable.List[jnf.Path] =
         jnf.Paths.get(compilation.out.encode.s).nn ::
-          compilation.classpath.entries.to(List).flatMap:
-            case ClasspathEntry.Directory(directory) => List(jnf.Paths.get(directory.s).nn)
-            case ClasspathEntry.Jar(jar)             => List(jnf.Paths.get(jar.s).nn)
-            case _                                   => Nil
+          compilation.classpath.entries.stdlib.flatMap:
+            case ClasspathEntry.Directory(directory) => scala.collection.immutable.List(jnf.Paths.get(directory.s).nn)
+            case ClasspathEntry.Jar(jar)             => scala.collection.immutable.List(jnf.Paths.get(jar.s).nn)
+            case _                                   => scala.collection.immutable.Nil
 
       val (archives, directories) = roots.partition(jnf.Files.isRegularFile(_))
 
       // D8 accepts archives wholesale but not directories, whose classfiles are enumerated
       // individually; `module-info` classfiles are not program code and are excluded.
-      val classfiles: List[jnf.Path] = directories.flatMap: directory =>
+      val classfiles: scala.collection.immutable.List[jnf.Path] = directories.flatMap: directory =>
         val walk = jnf.Files.walk(directory).nn
 
-        try walk.iterator.nn.asScala.to(List).filter: path =>
+        try walk.iterator.nn.asScala.toList.filter: path =>
           path.toString.endsWith(".class") && !path.toString.endsWith("module-info.class")
         finally walk.close()
 

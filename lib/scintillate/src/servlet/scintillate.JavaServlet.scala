@@ -34,6 +34,7 @@ package scintillate
 
 import java.io as ji
 import jakarta.servlet as js, js.http as jsh
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -70,8 +71,8 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
     val target = uri+query.let(t"?"+_).or(t"")
 
     val headers: List[Http.Header] =
-      request.getHeaderNames.nn.asScala.to(List).map: key =>
-        key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
+      request.getHeaderNames.nn.to[List].map: key =>
+        key.tt.lower -> request.getHeaders(key).nn.to[List].map(_.tt)
 
       . flatMap:
           case (key, values) => values.map(Http.Header(key, _))
@@ -110,7 +111,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
         response.body match
           case Http.Body.Fixed(data) =>
             servletResponse.addHeader("content-length", data.length.show.s)
-            out.write(data.mutable(using Unsafe))
+            out.write(Array.unsafeJvm(data))
 
           case Http.Body.Empty =>
             servletResponse.addHeader("content-length", "0")
@@ -125,7 +126,7 @@ open class JavaServlet(handle: HttpConnection => Http.Response) extends jsh.Http
 
             while draining do stream.refill(Credit(Long.MaxValue)) match
               case count: Int =>
-                out.write(stream.window(using Unsafe).asInstanceOf[Array[Byte]], stream.start, count)
+                out.write(stream.window(using Unsafe).asInstanceOf[scala.Array[Byte]], stream.start, count)
                 out.flush()
                 stream.skip(count)
 

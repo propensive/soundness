@@ -32,6 +32,9 @@
                                                                                                   */
 package locomotion
 
+import scala.caps
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.collection.mutable as scm
 import scala.quoted.*
 
@@ -158,8 +161,8 @@ object stagedInternal:
 
   private case class TypeShape(clazz: Class[?], arguments: List[TypeShape])
 
-  private val primitiveClasses: Map[String, Class[?]] =
-    Map
+  private val primitiveClasses: scala.collection.immutable.Map[String, Class[?]] =
+    scala.collection.immutable.Map
       ( "scala.Int"     -> classOf[Int],
         "scala.Long"    -> classOf[Long],
         "scala.Double"  -> classOf[Double],
@@ -616,7 +619,7 @@ object stagedInternal:
         case KDouble  => Expr(0.0)
         case KFloat   => Expr(0.0f)
         case KText    => '{ Text("") }
-        case KData    => '{ IArray.empty[Byte] }
+        case KData    => '{ Array.empty[Byte] }
 
       // One scalar field read, dispatching on the tag's wire code — the
       // parser handles the natural fast path and payload-window fallback.
@@ -639,7 +642,7 @@ object stagedInternal:
 
       // Per-field gathering state: a typed builder for `Gather` fields, a
       // wire-value buffer for `Seam` fields.
-      val builders: Map[Int, Symbol] =
+      val builders: scala.collection.immutable.Map[Int, Symbol] =
         List.range(0, arity).flatMap: index =>
           plans(index) match
             case Plan.Gather(_, elementType0) =>
@@ -655,7 +658,7 @@ object stagedInternal:
               None
         . toMap
 
-      val buffers: Map[Int, Symbol] =
+      val buffers: scala.collection.immutable.Map[Int, Symbol] =
         List.range(0, arity).flatMap: index =>
           plans(index) match
             case Plan.Seam =>
@@ -693,7 +696,7 @@ object stagedInternal:
       // Per-field local defs, shaped for the JIT: each field's read (or
       // per-occurrence append) is emitted once and *called* from its
       // dispatch arm.
-      val readDefs: Map[Int, Symbol] =
+      val readDefs: scala.collection.immutable.Map[Int, Symbol] =
         List.range(0, arity).flatMap: index =>
           plans(index) match
             case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
@@ -981,7 +984,7 @@ object stagedInternal:
                   ( Ref(slots(index)),
                     '{
                       if $seen then
-                        ${ seamDecode[fieldType]('{ Protobuf.Repeated($buffer.toList) }) }
+                        ${ seamDecode[fieldType]('{ Protobuf.Repeated(proscenium.List.of($buffer.toList)) }) }
                       else $absent
                     }.asTerm )
 
@@ -1031,7 +1034,7 @@ object stagedInternal:
               case KDouble  => Expr(0.0)
               case KFloat   => Expr(0.0f)
               case KText    => '{ Text("") }
-              case KData    => '{ IArray.empty[Byte] }
+              case KData    => '{ Array.empty[Byte] }
 
             case Plan.Nested(instance) =>
               instance.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)

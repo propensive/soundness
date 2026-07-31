@@ -32,8 +32,13 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 // A distinguished name: the X.501 structure that names a certificate's subject and issuer. Only
@@ -67,7 +72,7 @@ object Distinguished:
           name.commonName.let(attribute(CommonName, _)),
           name.email.let(attribute(Email, _, ia5 = true)) )
 
-    Asn1.Sequence(attributes.flatMap(_.option))
+    Asn1.Sequence(List.from(attributes.stdlib.compact))
 
   // `countryName` is a `PrintableString` by definition, and `emailAddress` an `IA5String`;
   // everything else is a `UTF8String`, which is what every modern profile prefers.

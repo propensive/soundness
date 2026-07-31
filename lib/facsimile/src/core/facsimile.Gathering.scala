@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import rudiments.*
 import vacuous.*
@@ -64,7 +66,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
       targetSpace: Int )
   :   Duct.Progress =
 
-    val bytes = source.asInstanceOf[Array[Byte]]
+    val bytes = source.asInstanceOf[scala.Array[Byte]]
     var i = 0
 
     while i < sourceLength do
@@ -74,10 +76,10 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
     Duct.Progress(sourceLength, 0)
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val out = target.asInstanceOf[Array[Byte]]
+    val out = target.asInstanceOf[scala.Array[Byte]]
 
     val data = result.or:
-      val transformed = transform(gathered.toArray.immutable(using Unsafe))
+      val transformed = transform(Array.unsafeFrozen(gathered.toArray))
       result = transformed
       transformed
 
@@ -85,7 +87,7 @@ private[facsimile] class Gathering(transform: Data => Data) extends Duct[Data, D
     var i = 0
 
     while i < count do
-      out(targetOffset + i) = data(delivered + i)
+      writable(out)(targetOffset + i) = data(delivered + i)
       i += 1
 
     delivered += count

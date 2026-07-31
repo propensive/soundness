@@ -44,8 +44,10 @@ import vacuous.*
 object Workload:
   // Anchored here so `container.open[Workload](...)` resolves with no import.
   given openable: (containerd: Containerd^, monitor: Monitor^)
-  =>  ( Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
-  =>  ( WorkloadOpenable^ ) =
+  =>  ( grpcTactic: Tactic[GrpcError], http2Tactic: Tactic[Http2Error],
+        asyncTactic: Tactic[AsyncError], protobufTactic: Tactic[ProtobufError] )
+  =>  ( WorkloadOpenable^{containerd, monitor, grpcTactic, http2Tactic, asyncTactic,
+        protobufTactic} ) =
     WorkloadOpenable()
 
 // A task's process state (`containerd.v1.types.Workload`, a subset): which container and

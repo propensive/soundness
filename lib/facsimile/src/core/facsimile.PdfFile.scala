@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import aperture.*
@@ -81,13 +83,15 @@ object PdfFile:
       case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be written"))
 
     . protect:
-        val target: Path on Local = workingDirectory[Path on Local].resolve(filename)
+        val target: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+          workingDirectory[Path on Local].resolve(filename)
 
-        if !flags.contains(CreateFlag.Replace) && target.exists()
+        if !flags.has(CreateFlag.Replace) && target.exists()
         then abort(PdfError(PdfError.Reason.Io(t"the file already exists")))
 
-        if flags.contains(CreateFlag.Parents) then
-          target.parent.let: parent => if !parent.exists() then parent.create[Directory]()
+        if flags.has(CreateFlag.Parents) then
+          target.parent.let: parent =>
+            if !parent.exists() then parent.create[Directory]()
 
         val part: Text = t".${target.name}.part"
         val temporary = target.peer(part)
@@ -114,7 +118,7 @@ object PdfFile:
       ( block: ((Pdf & Granting[grants])^) ?=> result )
     :   result =
 
-      value.openAs[grants, result](flags.prim, mode.atoms.contains(Write))(block)
+      value.openAs[grants, result](flags.prim, mode.atoms.has(Write))(block)
 
   // Opening a path or in-memory data directly as `Pdf`, without naming the `PdfFile` locator:
   // `path.open[Pdf]()`. (The form must be explicit for these targets, which are openable in
@@ -133,7 +137,7 @@ object PdfFile:
       ( block: ((Pdf & Granting[grants])^) ?=> result )
     :   result =
 
-      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.contains(Write))(block)
+      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.has(Write))(block)
 
   class PdfDataOpenable(using pdfError: Tactic[PdfError]) extends Openable:
     type Self = Data
@@ -146,11 +150,11 @@ object PdfFile:
       ( block: ((Pdf & Granting[grants])^) ?=> result )
     :   result =
 
-      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.contains(Write))(block)
+      PdfFile(value).openAs[grants, result](flags.prim, mode.atoms.has(Write))(block)
 
   // Anchored here so `pdfFile.open(...)` resolves — and, `PdfFile` having a unique instance,
   // infers the `Pdf` form — with no import.
-  given openable: Tactic[PdfError] => ( PdfOpenable^ ) = PdfOpenable()
+  given openable: (tactic: Tactic[PdfError]) => ( PdfOpenable^{tactic} ) = PdfOpenable()
 
   // Authoring a new document: `path.create[Pdf](): doc ?=> doc.appendPage(...)`. The block
   // edits a fresh, empty document — the same write surface as editing an existing one — and
@@ -190,7 +194,8 @@ class PdfFile private (origin: PdfFile.Origin):
   private[facsimile] def openAs[grants <: Grant, result]
     ( password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  :   result raises PdfError =
+  ( using Tactic[PdfError] )
+  :   result =
 
     origin match
       case Origin.InMemory(data) =>
@@ -205,7 +210,8 @@ class PdfFile private (origin: PdfFile.Origin):
           case IoError(_, _, _, _) => PdfError(PdfError.Reason.Io(t"the file could not be opened"))
 
         . protect:
-            val path: Path on Local = workingDirectory[Path on Local].resolve(filename)
+            val path: Path on Local = scala.caps.unsafe.unsafeAssumeSeparate:
+              workingDirectory[Path on Local].resolve(filename)
 
             if writable then
               path.open[Ram](Read & Write): ram ?=>
@@ -214,9 +220,13 @@ class PdfFile private (origin: PdfFile.Origin):
                 val source = ExpanseSource(ram.expanse, ram.size)
                 val (outcome, increment) = read[grants, result](source, password, true)(block)
 
-                increment.let: bytes =>
-                  ram.grow(source.size + bytes.length)
-                  ram(source.size) = bytes
+                // A `match`, not `.let`: the frozen member of the `Optional` union freshens
+                // under `let`'s type-variable instantiation.
+                increment.asInstanceOf[Matchable] match
+                  case bytes: (Array[Byte]^{}) @unchecked =>
+                    ram.grow(source.size + bytes.length)
+                    ram(source.size) = bytes
+                  case _ => ()
 
                 outcome
             else
@@ -233,7 +243,8 @@ class PdfFile private (origin: PdfFile.Origin):
   private def read[grants <: Grant, result]
     ( source: ByteSource, password: Optional[Password], writable: Boolean )
     ( block: ((Pdf & Granting[grants])^) ?=> result )
-  :   (result, Optional[Data]) raises PdfError =
+  ( using Tactic[PdfError] )
+  :   (result, Optional[Data]) =
 
     val version = Pdf.readVersion(source) // check the header before anything else is trusted
     val pdf = Pdf(source, Xref.load(source), version)

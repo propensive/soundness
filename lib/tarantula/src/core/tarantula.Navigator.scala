@@ -32,6 +32,8 @@
                                                                                                   */
 package tarantula
 
+import scala.caps
+
 import ambience.*
 import anticipation.*
 import guillotine.*
@@ -45,10 +47,11 @@ trait Navigator(name: Text):
   // reaches back to the defining `Navigator`, declared by the `uses` clause.
   case class Server(port: Int, value: Job[Label, Text]) extends caps.ExclusiveCapability
   uses Navigator.this:
-    def stop(): Unit logs ExecEvent logs HttpEvent = browser.stop(this)
+    def stop()(using (ExecEvent is Loggable)^, (HttpEvent is Loggable)^): Unit =
+      browser.stop(this)
 
   def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^
-  def stop(server: Server): Unit logs HttpEvent logs ExecEvent
+  def stop(server: Server)(using (HttpEvent is Loggable)^, (ExecEvent is Loggable)^): Unit
 
   // Explicit `using` evidence instead of stacked `logs` sugar: the fresh `Server` capability
   // bound in the body cannot cross the nested context-function results the sugar desugars to

@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric

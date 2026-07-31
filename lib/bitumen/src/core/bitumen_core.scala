@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import prepositional.*
 import serpentine.*
 

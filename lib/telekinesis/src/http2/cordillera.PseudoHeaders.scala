@@ -65,11 +65,11 @@ object PseudoHeaders:
 
     val regular = request.textHeaders.map: header => HpackEntry(header.key.lower, header.value)
 
-    pseudo ++ regular
+    List.of(pseudo.stdlib ++ regular.stdlib)
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
-  def response(headerBlock: List[HpackEntry], body: LazyList[Data])
+  def response(headerBlock: List[HpackEntry], body: Chain[Data])
   :   Http.Response raises Http2Error =
 
     var statusText: Optional[Text] = Unset
@@ -84,7 +84,7 @@ object PseudoHeaders:
     val status: Http.Status =
       Http.Status.unapply(code).optional.lest(Http2Error(Reason.Protocol(t"missing :status")))
 
-    status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body.iterator)))
+    status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body.stdlib.iterator)))
 
   // Reconstruct an `Http.Request` from a decoded request HEADERS block and the
   // body spring: `:method`/`:path` select the method and target, `:authority`
@@ -128,7 +128,10 @@ object PseudoHeaders:
     val forbidden: List[Text] =
       List(t"connection", t"keep-alive", t"transfer-encoding", t"upgrade", t"proxy-connection")
 
-    val regular = response.textHeaders.map: header => HpackEntry(header.key.lower, header.value)
-    . filter: entry => !forbidden.contains(entry.name)
+    val regular = response.textHeaders.map: header =>
+      HpackEntry(header.key.lower, header.value)
 
-    HpackEntry(t":status", response.status.code.show) :: regular
+    . filter: entry =>
+        !forbidden.has(entry.name)
+
+    List.of(HpackEntry(t":status", response.status.code.show) :: regular.stdlib)

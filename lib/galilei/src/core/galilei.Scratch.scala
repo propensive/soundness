@@ -91,7 +91,7 @@ object Scratch:
       finally wipe(child)
 
   given openable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem,
-        Tactic[IoError] )
-  =>  ( ScratchOpenable[filesystem, path]^ ) =
+  =>  ( backend: FilesystemBackend on filesystem,
+        tactic:  Tactic[IoError] )
+  =>  ( ScratchOpenable[filesystem, path]^{tactic} ) =
     ScratchOpenable[filesystem, path]

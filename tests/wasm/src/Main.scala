@@ -32,7 +32,7 @@ object Main extends Run:
     import anticipation.termcapDefinitions.basicTermcap
 
     val io = summon[Stdio]
-    val buffer = new Array[Byte](256)
+    val buffer = new scala.Array[Byte](256)
     val count = io.in.read(buffer, 0, buffer.length)
     val received = if count <= 0 then "<no input>" else new String(buffer, 0, count, "UTF-8").trim.nn
     io.print(("echo: " + received + "\n").tt)
@@ -62,16 +62,16 @@ object Main extends Run:
 
     val backend: FilesystemBackend on Linux = galilei.filesystemBackends.wasi[Linux]
 
-    def path(parts: Text*): Path on Linux = Path[Linux, Text, Tuple](t"/", parts.reverse)
+    def path(parts: Text*): Path on Linux = Path[Linux, Text, Tuple](t"/", proscenium.List(parts.reverse*))
 
     backend.createDirectory(path(t"work", t"sub"))
     val file = path(t"work", t"sub", t"probe.txt")
-    val payload: Data = "wasm e2e probe".getBytes("UTF-8").nn.immutable(using Unsafe)
+    val payload: Data = proscenium.Array.unsafeFrozen("wasm e2e probe".getBytes("UTF-8").nn)
 
-    backend.open(file, List(OpenFlag.Write, OpenFlag.Create)): handle =>
-      handle.writer(LazyList(payload))
+    backend.open(file, proscenium.List(OpenFlag.Write, OpenFlag.Create)): handle =>
+      handle.writer(proscenium.Chain(payload))
 
-    val content: Text = backend.open(file, List(OpenFlag.Read)): handle =>
+    val content: Text = backend.open(file, proscenium.List(OpenFlag.Read)): handle =>
       handle.reader().map(_.utf8).join
 
     System.out.nn.println("fs: " + content.s)
@@ -85,7 +85,7 @@ object Main extends Run:
     val backend = summon[SocketBackend]
     val endpoint = Endpoint("127.0.0.1".tt, Port.unsafe[Tcp](port))
 
-    val exchange = backend.dialTcp(endpoint, Unset, Nil)
+    val exchange = backend.dialTcp(endpoint, Unset, proscenium.Nil)
     System.out.nn.println("tcp: connected")
     backend.hangUp(exchange)
 
@@ -96,7 +96,7 @@ object Main extends Run:
 
     val url = environment.variable(t"URL").or(t"http://example.com/")
     val backend = summon[Http.Backend]
-    val response = backend.request(url, Http.Get, Nil, () => Stream(Iterator.empty[anticipation.Data]))
+    val response = backend.request(url, Http.Get, proscenium.Nil, () => Stream(Iterator.empty[anticipation.Data]))
     System.out.nn.println("http: " + response.status.code)
 
   @WitExport("wasi:cli/run@0.2.0", "run")

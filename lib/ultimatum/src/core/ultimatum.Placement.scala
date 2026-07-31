@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import rudiments.*
+
 // The result of solving a layout: a tree of rectangles mirroring the `Frame`
 // tree that produced it. `cells` lists the leaf rectangles in frame order (left
 // to right for files, top to bottom for ranks).
@@ -43,4 +45,4 @@ enum Placement:
 
   def cells: List[Rect] = this match
     case Cell(rect)         => List(rect)
-    case Split(_, children) => children.flatMap(_.cells)
+    case Split(_, children) => children.bind(_.cells)

@@ -45,7 +45,7 @@ object Default:
   given string: Default[String] = () => ""
   given list: [element] => Default[List[element]] = () => Nil
   given set: [element] => Default[Set[element]] = () => Set()
-  given series: [element] => Default[Series[element]] = () => Series()
+  given sequence: [element] => Default[Sequence[element]] = () => Sequence()
 
 // `scala.caps.Pure` directly (not `Typeclass.Pure`): `Default` is parameterized covariantly
 // rather than selected through a `Self` member, so the prepositional shape does not apply.

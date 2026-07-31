@@ -37,31 +37,34 @@ import rudiments.*
 import vacuous.*
 
 object Unpackable:
-  given iarray: [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
+  given iarray: [pack: Debufferable] => ClassTag[pack] => (Array[pack]^{}) is Unpackable:
     type Wrap[Type] = Int -> Type
 
     // The continuation records the (pure) backing data and start offset, and mints its own
-    // buffer per invocation, so it does not capture the caller's `Buffer` capability: the
+    // sextant per invocation, so it does not capture the caller's `Sextant` capability: the
     // arrow stays pure, and the caller's read position is unaffected by a later invocation.
-    def unpack(buffer: Buffer): Int -> IArray[pack] =
-      val bytes = buffer.bytes
-      val start = buffer.offset
+    def unpack(sextant: Sextant): Int -> Array[pack]^{} =
+      val bytes = sextant.bytes
+      val start = sextant.offset
 
       count =>
-        val local = Buffer(bytes, start)
-        val array = new Array[pack](count)
+        val local = Sextant(bytes, start)
+        val buffer = Array[pack](count)
+        var index = 0
 
-        array.indices.each: index => array(index) = pack.debuffer(local)
+        while index < count do
+          buffer(index) = pack.debuffer(local)
+          index += 1
 
-        array.immutable(using Unsafe)
+        Array.freeze(buffer)
 
   given debufferable: [pack: Debufferable] => pack is Unpackable:
     type Wrap[Type] = Type
 
-    def unpack(buffer: Buffer): pack = pack.debuffer(buffer)
+    def unpack(sextant: Sextant): pack = pack.debuffer(sextant)
 
 trait Unpackable extends Typeclass:
   type Wrap[_]
   type Result = Wrap[Self]
 
-  def unpack(buffer: Buffer): Wrap[Self]
+  def unpack(sextant: Sextant): Wrap[Self]

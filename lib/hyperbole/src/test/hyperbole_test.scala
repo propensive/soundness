@@ -36,6 +36,8 @@ import scala.annotation.*
 
 import soundness.*
 
+import scala.Predef.println
+
 object Tests extends Suite(m"Hyperbole Tests"):
   def run(): Unit =
     StackTests()

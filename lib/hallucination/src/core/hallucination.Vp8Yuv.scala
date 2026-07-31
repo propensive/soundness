@@ -36,8 +36,8 @@ package hallucination
 // has stride `bufferWidth` (the macroblock-padded width); chroma planes have stride
 // `bufferWidth/2`. `width`/`height` are the displayed dimensions.
 private[hallucination] final class Vp8Frame
-  ( val width: Int, val height: Int, val bufferWidth: Int, val luma: Array[Int],
-    val chromaU: Array[Int], val chromaV: Array[Int] )
+  ( val width: Int, val height: Int, val bufferWidth: Int, val luma: scala.Array[Int],
+    val chromaU: scala.Array[Int], val chromaV: scala.Array[Int] )
 
 // YUV→RGB conversion, ported from image-rs/image-webp (`src/lossy/yuv.rs`, MIT/Apache-2.0). This
 // uses simple (nearest-neighbour) chroma upsampling — each chroma sample covers a 2×2 luma block —
@@ -51,11 +51,11 @@ private[hallucination] object Vp8Yuv:
     if v < 0 then 0 else if v > 255 then 255 else v
 
   // Fills `rgb(index) = packed 0xRRGGBB` for the displayed image, one entry per pixel.
-  def toRgb(frame: Vp8Frame): Array[Int] =
+  def toRgb(frame: Vp8Frame): scala.Array[Int] =
     val width = frame.width
     val height = frame.height
     val chromaStride = frame.bufferWidth/2
-    val rgb = new Array[Int](width*height)
+    val rgb = new scala.Array[Int](width*height)
     var y = 0
 
     while y < height do

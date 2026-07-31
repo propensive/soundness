@@ -34,6 +34,9 @@ package hallucination
 
 import contingency.*
 import vacuous.*
+import proscenium.compat.*
+
+import scala.caps
 
 import RasterError.Reason
 
@@ -43,14 +46,15 @@ import RasterError.Reason
 private[hallucination] object WebpLossless:
   private val CodeLengthCodes: Int = 19
 
-  private val CodeLengthCodeOrder: Array[Int] =
-    Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+  private val CodeLengthCodeOrder: Array[Int]^{} =
+    scala.Array(17, 18, 0, 1, 2, 3, 4, 5, 16, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+    . asInstanceOf[Array[Int]^{}]
 
   private val HuffmanCodesPerMetaCode: Int = 5
-  private val AlphabetSize: Array[Int] = Array(256 + 24, 256, 256, 256, 40)
+  private val AlphabetSize: Array[Int]^{} = scala.Array(256 + 24, 256, 256, 256, 40).asInstanceOf[Array[Int]^{}]
 
   // (xoffset, yoffset) pairs, flattened, for short backward-reference distances.
-  private val DistanceMap: Array[Int] = Array(
+  private val DistanceMap: Array[Int]^{} = scala.Array(
     0, 1, 1, 0, 1, 1, -1, 1, 0, 2, 2, 0, 1, 2, -1, 2, 2, 1,
     -2, 1, 2, 2, -2, 2, 0, 3, 3, 0, 1, 3, -1, 3, 3, 1, -3, 1,
     2, 3, -2, 3, 3, 2, -3, 2, 0, 4, 4, 0, 1, 4, -1, 4, 4, 1,
@@ -64,31 +68,36 @@ private[hallucination] object WebpLossless:
     7, 3, -7, 3, 5, 6, -5, 6, 6, 5, -6, 5, 8, 0, 4, 7, -4, 7,
     7, 4, -7, 4, 8, 1, 8, 2, 6, 6, -6, 6, 8, 3, 5, 7, -5, 7,
     7, 5, -7, 5, 8, 4, 6, 7, -6, 7, 7, 6, -7, 6, 8, 5, 7, 7,
-    -7, 7, 8, 6, 8, 7)
+    -7, 7, 8, 6, 8, 7).asInstanceOf[Array[Int]^{}]
 
-  private final class Group(val trees: Array[WebpHuffman]):
+  private final class Group(val trees: Array[WebpHuffman]^{}):
     def allSingle: Boolean =
       trees(0).isSingleNode && trees(1).isSingleNode && trees(2).isSingleNode &&
         trees(3).isSingleNode
 
   private final class ColorCache(val bits: Int):
-    private val entries = new Array[Int](1 << bits)
-    def insert(argb: Int): Unit = entries((0x1e35a7bd*argb) >>> (32 - bits)) = argb
+    // Inserted into after construction, through the immutable `HuffmanInfo` holder, while the
+    // reader is the exclusive receiver: the same aliasing pattern as `Vp8Decoder`'s probability
+    // tables, so the entries stay untracked.
+    @scala.caps.unsafe.untrackedCaptures
+    private val entries: scala.Array[Int] = new scala.Array[Int](1 << bits)
+    def insert(argb: Int): Unit = writable(entries)((0x1e35a7bd*argb) >>> (32 - bits)) = argb
     def lookup(index: Int): Int = entries(index)
 
   private final class HuffmanInfo
-    ( val xsize: Int, val cache: Optional[ColorCache], val image: Array[Int], val bits: Int,
-      val mask: Int, val groups: Array[Group] ):
+    ( val xsize: Int, val cache: Optional[ColorCache],
+      val image: Array[Int]^{}, val bits: Int,
+      val mask: Int, val groups: Array[Group]^{} ):
 
     def huffIndex(x: Int, y: Int): Int =
       if bits == 0 then 0 else image((y >> bits)*xsize + (x >> bits))
 
-  private final class Transform(val kind: Int, val sizeBits: Int, val data: Array[Byte],
-      val tableSize: Int)
+  private final class Transform(val kind: Int, val sizeBits: Int,
+      val data: Array[Byte]^{}, val tableSize: Int)
 
   // Reads a full VP8L frame — its 5-byte header then the transformed image — returning the
   // dimensions and the un-transformed RGBA buffer.
-  def decode(reader: WebpBitReader): (Int, Int, Array[Byte]) raises RasterError =
+  def decode(reader: WebpBitReader^)(using Tactic[RasterError]): (Int, Int, scala.Array[Byte]) =
     val signature = reader.readBits(8)
 
     if signature != 0x2f then abort(RasterError(Webp(), Reason.BadSignature))
@@ -102,24 +111,25 @@ private[hallucination] object WebpLossless:
 
   // Decodes a VP8L stream whose dimensions are given externally (no 5-byte header), as used for
   // the lossless-compressed alpha plane of a lossy image. Returns the RGBA buffer.
-  def decodeRaw(reader: WebpBitReader, width: Int, height: Int): Array[Byte] raises RasterError =
+  def decodeRaw(reader: WebpBitReader^, width: Int, height: Int)(using Tactic[RasterError]): scala.Array[Byte] =
     Decoder(reader, width, height).run()
 
-  private final class Decoder(reader: WebpBitReader, width: Int, height: Int):
+  private final class Decoder(reader: WebpBitReader^, width: Int, height: Int)
+  extends caps.Mutable:
     // One optional transform slot per transform type; `order` is reverse-read order, which is the
     // order transforms must be un-applied in.
-    private val transforms = new Array[Transform](4)
+    private var transforms: scala.Array[Transform]^ = new scala.Array[Transform](4)
     private var order: List[Int] = Nil
 
-    def run(): Array[Byte] raises RasterError =
+    update def run()(using Tactic[RasterError]): scala.Array[Byte] =
       val transformedWidth = readTransforms()
-      val buffer = new Array[Byte](transformedWidth*height*4)
+      val buffer = new scala.Array[Byte](transformedWidth*height*4)
       decodeImageStream(transformedWidth, height, true, buffer, 0)
 
       var currentWidth = transformedWidth
       var image = buffer
 
-      for index <- order do
+      for index <- order.stdlib do
         val transform = transforms(index)
 
         transform.kind match
@@ -134,15 +144,17 @@ private[hallucination] object WebpLossless:
 
           case _ =>
             // Colour indexing restores the full (un-subsampled) width.
-            val full = new Array[Byte](width*height*4)
+            // Pure-typed (see `pureBytes`): an exclusive local would hide its allocation
+            // root from the reads below.
+            val full: scala.Array[Byte] = pureBytes(width*height*4)
             System.arraycopy(image, 0, full, 0, image.length.min(full.length))
             WebpTransform.colorIndexing(full, width, height, transform.tableSize, transform.data)
             currentWidth = width
-            image = full
+            image = writable(full)
 
       image
 
-    private def readTransforms(): Int raises RasterError =
+    private update def readTransforms()(using Tactic[RasterError]): Int =
       var xsize = width
 
       while reader.readBits(1) == 1 do
@@ -156,16 +168,16 @@ private[hallucination] object WebpLossless:
             val sizeBits = reader.readBits(3) + 2
             val blockWidth = WebpTransform.subsampleSize(xsize, sizeBits)
             val blockHeight = WebpTransform.subsampleSize(height, sizeBits)
-            val data = new Array[Byte](blockWidth*blockHeight*4)
+            val data = new scala.Array[Byte](blockWidth*blockHeight*4)
             decodeImageStream(blockWidth, blockHeight, false, data, 0)
-            Transform(kind, sizeBits, data, 0)
+            Transform(kind, sizeBits, data.asInstanceOf[Array[Byte]^{}], 0)
 
           case 2 =>
-            Transform(2, 0, new Array[Byte](0), 0)
+            Transform(2, 0, new scala.Array[Byte](0).asInstanceOf[Array[Byte]^{}], 0)
 
           case _ =>
             val tableSize = reader.readBits(8) + 1
-            val colorMap = new Array[Byte](tableSize*4)
+            val colorMap = new scala.Array[Byte](tableSize*4)
             decodeImageStream(tableSize, 1, false, colorMap, 0)
 
             // The palette is stored delta-coded across entries.
@@ -182,43 +194,45 @@ private[hallucination] object WebpLossless:
               else 0
 
             xsize = WebpTransform.subsampleSize(xsize, bits)
-            Transform(3, 0, colorMap, tableSize)
+            Transform(3, 0, colorMap.asInstanceOf[Array[Byte]^{}], tableSize)
 
       xsize
 
-    private def decodeImageStream
-      ( xsize: Int, ysize: Int, argb: Boolean, data: Array[Byte], offset: Int )
-    :   Unit raises RasterError =
+    private update def decodeImageStream
+      ( xsize: Int, ysize: Int, argb: Boolean, data: scala.Array[Byte], offset: Int )
+    ( using Tactic[RasterError] )
+    :   Unit =
 
       val cache = readColorCache()
       val info = readHuffmanCodes(argb, xsize, ysize, cache)
       decodeImageData(xsize, ysize, info, data, offset)
 
-    private def readColorCache(): Optional[ColorCache] raises RasterError =
+    private update def readColorCache()(using Tactic[RasterError]): Optional[ColorCache] =
       if reader.readBits(1) != 1 then Unset else
         val codeBits = reader.readBits(4)
 
         if codeBits < 1 || codeBits > 11 then abort(RasterError(Webp(), Reason.Bitstream))
         ColorCache(codeBits)
 
-    private def readHuffmanCodes
+    private update def readHuffmanCodes
       ( readMeta: Boolean, xsize: Int, ysize: Int, cache: Optional[ColorCache] )
-    :   HuffmanInfo raises RasterError =
+    ( using Tactic[RasterError] )
+    :   HuffmanInfo =
 
       var numGroups = 1
       var huffmanBits = 0
       var huffmanXsize = 1
-      var entropy = new Array[Int](0)
+      var entropy = new scala.Array[Int](0)
 
       if readMeta && reader.readBits(1) == 1 then
         huffmanBits = reader.readBits(3) + 2
         huffmanXsize = WebpTransform.subsampleSize(xsize, huffmanBits)
         val huffmanYsize = WebpTransform.subsampleSize(ysize, huffmanBits)
-        val data = new Array[Byte](huffmanXsize*huffmanYsize*4)
+        val data = new scala.Array[Byte](huffmanXsize*huffmanYsize*4)
         decodeImageStream(huffmanXsize, huffmanYsize, false, data, 0)
 
         // Each block's meta-Huffman index is packed into the top two bytes of its pixel.
-        entropy = new Array[Int](huffmanXsize*huffmanYsize)
+        entropy = new scala.Array[Int](huffmanXsize*huffmanYsize)
         var i = 0
 
         while i < entropy.length do
@@ -229,25 +243,28 @@ private[hallucination] object WebpLossless:
           i += 1
 
       val cacheBits = cache.let(_.bits).or(0)
-      val groups = new Array[Group](numGroups)
+      val groups = new scala.Array[Group](numGroups)
       var g = 0
 
       while g < numGroups do
-        val trees = new Array[WebpHuffman](HuffmanCodesPerMetaCode)
+        val trees = new scala.Array[WebpHuffman](HuffmanCodesPerMetaCode)
         var j = 0
 
         while j < HuffmanCodesPerMetaCode do
-          val alphabet = AlphabetSize(j) + (if j == 0 && cache.present then 1 << cacheBits else 0)
+          val alphabet = AlphabetSize.asInstanceOf[scala.Array[Int]](j) + (if j == 0 && cache.present then 1 << cacheBits else 0)
           trees(j) = readHuffmanCode(alphabet)
           j += 1
 
-        groups(g) = Group(trees)
+        groups(g) = Group(trees.asInstanceOf[Array[WebpHuffman]^{}])
         g += 1
 
       val mask = if huffmanBits == 0 then -1 else (1 << huffmanBits) - 1
-      HuffmanInfo(huffmanXsize, cache, entropy, huffmanBits, mask, groups)
 
-    private def readHuffmanCode(alphabetSize: Int): WebpHuffman raises RasterError =
+      HuffmanInfo
+        ( huffmanXsize, cache, entropy.asInstanceOf[Array[Int]^{}], huffmanBits, mask,
+          groups.asInstanceOf[Array[Group]^{}] )
+
+    private update def readHuffmanCode(alphabetSize: Int)(using Tactic[RasterError]): WebpHuffman =
       if reader.readBits(1) == 1 then
         // Simple code: one or two explicitly-listed symbols.
         val numSymbols = reader.readBits(1) + 1
@@ -262,19 +279,20 @@ private[hallucination] object WebpLossless:
           if one >= alphabetSize then abort(RasterError(Webp(), Reason.Bitstream))
           WebpHuffman.twoNode(zero, one)
       else
-        val codeLengthCodeLengths = new Array[Int](CodeLengthCodes)
+        val codeLengthCodeLengths = new scala.Array[Int](CodeLengthCodes)
         val numCodeLengths = 4 + reader.readBits(4)
         var i = 0
 
         while i < numCodeLengths do
-          codeLengthCodeLengths(CodeLengthCodeOrder(i)) = reader.readBits(3)
+          codeLengthCodeLengths(CodeLengthCodeOrder.asInstanceOf[scala.Array[Int]](i)) = reader.readBits(3)
           i += 1
 
         WebpHuffman.buildImplicit(readHuffmanCodeLengths(codeLengthCodeLengths, alphabetSize))
 
-    private def readHuffmanCodeLengths
-      ( codeLengthCodeLengths: Array[Int], numSymbols: Int )
-    :   Array[Int] raises RasterError =
+    private update def readHuffmanCodeLengths
+      ( codeLengthCodeLengths: scala.Array[Int], numSymbols: Int )
+    ( using Tactic[RasterError] )
+    :   scala.Array[Int] =
 
       val table = WebpHuffman.buildImplicit(codeLengthCodeLengths)
 
@@ -288,7 +306,7 @@ private[hallucination] object WebpLossless:
         else
           numSymbols
 
-      val lengths = new Array[Int](numSymbols)
+      val lengths = new scala.Array[Int](numSymbols)
       var prevLength = 8
       var symbol = 0
 
@@ -318,9 +336,10 @@ private[hallucination] object WebpLossless:
 
       lengths
 
-    private def decodeImageData
-      ( width: Int, height: Int, info: HuffmanInfo, data: Array[Byte], offset: Int )
-    :   Unit raises RasterError =
+    private update def decodeImageData
+      ( width: Int, height: Int, info: HuffmanInfo, data: scala.Array[Byte], offset: Int )
+    ( using Tactic[RasterError] )
+    :   Unit =
 
       val numValues = width*height
       var group = info.groups(info.huffIndex(0, 0))
@@ -382,8 +401,8 @@ private[hallucination] object WebpLossless:
             while i < length do
               val from = offset + (index - dist + i)*4
               val to = offset + (index + i)*4
-              data(to) = data(from); data(to + 1) = data(from + 1)
-              data(to + 2) = data(from + 2); data(to + 3) = data(from + 3)
+              writable(data)(to) = data(from); writable(data)(to + 1) = data(from + 1)
+              writable(data)(to + 2) = data(from + 2); writable(data)(to + 3) = data(from + 3)
               i += 1
 
             // A distance-1 run repeats the previous pixel, already in the cache at the same slot;
@@ -406,22 +425,22 @@ private[hallucination] object WebpLossless:
             index += 1
 
     private def store
-      ( data: Array[Byte], offset: Int, index: Int, red: Int, green: Int, blue: Int, alpha: Int )
+      ( data: scala.Array[Byte], offset: Int, index: Int, red: Int, green: Int, blue: Int, alpha: Int )
     :   Unit =
 
       val p = offset + index*4
-      data(p) = red.toByte; data(p + 1) = green.toByte
-      data(p + 2) = blue.toByte; data(p + 3) = alpha.toByte
+      writable(data)(p) = red.toByte; writable(data)(p + 1) = green.toByte
+      writable(data)(p + 2) = blue.toByte; writable(data)(p + 3) = alpha.toByte
 
-    private def writeArgb(data: Array[Byte], offset: Int, index: Int, argb: Int): Unit =
+    private def writeArgb(data: scala.Array[Byte], offset: Int, index: Int, argb: Int): Unit =
       val p = offset + index*4
-      data(p) = (argb >>> 16).toByte; data(p + 1) = (argb >>> 8).toByte
-      data(p + 2) = argb.toByte; data(p + 3) = (argb >>> 24).toByte
+      writable(data)(p) = (argb >>> 16).toByte; writable(data)(p + 1) = (argb >>> 8).toByte
+      writable(data)(p + 2) = argb.toByte; writable(data)(p + 3) = (argb >>> 24).toByte
 
     private def pack(red: Int, green: Int, blue: Int, alpha: Int): Int =
       ((red & 0xff) << 16) | ((green & 0xff) << 8) | (blue & 0xff) | ((alpha & 0xff) << 24)
 
-    private def copyDistance(prefix: Int): Int raises RasterError =
+    private update def copyDistance(prefix: Int)(using Tactic[RasterError]): Int =
       if prefix < 4 then prefix + 1 else
         val extraBits = (prefix - 2) >> 1
         val distOffset = (2 + (prefix & 1)) << extraBits
@@ -431,6 +450,7 @@ private[hallucination] object WebpLossless:
 
     private def planeCodeToDistance(xsize: Int, planeCode: Int): Int =
       if planeCode > 120 then planeCode - 120 else
-        val dist = DistanceMap((planeCode - 1)*2) + DistanceMap((planeCode - 1)*2 + 1)*xsize
+        val dist = DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2)
+            + DistanceMap.asInstanceOf[scala.Array[Int]]((planeCode - 1)*2 + 1)*xsize
 
         if dist < 1 then 1 else dist

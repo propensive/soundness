@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import proscenium.compat.*
+
 import java.io as ji
 
 import anticipation.*
@@ -61,16 +63,16 @@ object Stdio:
 
   object MuteOutputStream extends ji.OutputStream:
     def write(byte: Int): Unit = ()
-    override def write(array: Array[Byte] | Null): Unit = ()
-    override def write(array: Array[Byte] | Null, offset: Int, length: Int): Unit = ()
+    override def write(array: scala.Array[Byte] | Null): Unit = ()
+    override def write(array: scala.Array[Byte] | Null, offset: Int, length: Int): Unit = ()
     override def close(): Unit = ()
 
   lazy val MutePrintStream = ji.PrintStream(MuteOutputStream)
 
   object MuteInputStream extends ji.InputStream:
     def read(): Int = -1
-    override def read(array: Array[Byte] | Null): Int = 0
-    override def read(array: Array[Byte] | Null, offset: Int, length: Int): Int = 0
+    override def read(array: scala.Array[Byte] | Null): Int = 0
+    override def read(array: scala.Array[Byte] | Null, offset: Int, length: Int): Int = 0
     override def reset(): Unit = ()
     override def close(): Unit = ()
     override def available(): Int = 0
@@ -93,10 +95,11 @@ trait Stdio extends Io, Findable:
   // companion to `ready()`, for character-at-a-time consumers (a terminal).
   def readChar(): Int = reader.read()
 
-  def write(bytes: Data): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  // `PrintStream.write` reads the array it is handed, which its signature cannot say.
+  def write(bytes: Data): Unit = out.write(Array.unsafeJvm(bytes), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
-  def writeErr(bytes: Data): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
+  def writeErr(bytes: Data): Unit = err.write(Array.unsafeJvm(bytes), 0, bytes.length)
   def printErr(text: Text): Unit = err.print(text.s)
-  def read(array: Array[Byte]): Int = in.read(array, 0, array.length)
-  def read(array: Array[Char]): Int = reader.read(array, 0, array.length)
+  def read(array: scala.Array[Byte]): Int = in.read(array, 0, array.length)
+  def read(array: scala.Array[Char]): Int = reader.read(array, 0, array.length)
   def platform: Boolean = System.out == out && System.in == in && System.err == err

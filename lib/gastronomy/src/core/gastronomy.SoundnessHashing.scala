@@ -39,16 +39,16 @@ package gastronomy
 // Select it explicitly with `import providers.soundnessProvider`.
 object SoundnessHashing extends Hashing:
   def blake3: Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion = Blake3.digestion()
+    def digestion(): Digestion^ = Blake3.digestion()
 
   def md5: Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion = PureHashes.md5
+    def digestion(): Digestion^ = PureHashes.md5
 
   def sha1: Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion = PureHashes.sha1
+    def digestion(): Digestion^ = PureHashes.sha1
 
   def sha2(bits: Int): Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion = PureHashes.sha2(bits)
+    def digestion(): Digestion^ = PureHashes.sha2(bits)
 
   def crc32: Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion = PureHashes.crc32
+    def digestion(): Digestion^ = PureHashes.crc32

@@ -32,7 +32,9 @@
                                                                                                   */
 package guillotine
 
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.pureFunctions
 
 import java.io as ji
 import java.util.concurrent as juc
@@ -91,7 +93,7 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
   // Standard output as a record stream of its lines: UTF-8 through the duct
   // kernel, with adaptive line separation — matching the treatment of `\n`,
   // `\r\n` and `\r` by `BufferedReader.readLine`, which this replaces.
-  def lines()(using Tactic[StreamError]): (Stream[IArray[Text]] over Credit)^ =
+  def lines()(using Tactic[StreamError]): (Stream[Array[Text]^{}] over Credit)^ =
     import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
     import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
     stdout().delineate
@@ -110,21 +112,22 @@ extends Subprocess, ProcessRef, caps.ExclusiveCapability:
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
     ( using computable: (result is Computable)^ )
-  :   result raises AsyncError =
+  :   (Tactic[AsyncError]^) ?->{this, computable} result =
 
     if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
     then computable.compute(this)
     else contingency.abort(AsyncError(AsyncError.Reason.Timeout))
 
-  def exitStatus(): Exit logs ExecEvent = process.waitFor() match
+  // Real `using` clauses rather than the `logs` sugar, as for `Executable.exec`.
+  def exitStatus()(using (ExecEvent is Loggable)^): Exit = process.waitFor() match
     case 0     => Log.fine(ExecEvent.ProcessExit(pid, 0)); Exit.Ok
     case other => Log.warn(ExecEvent.ProcessExit(pid, other)); Exit.Fail(other)
 
-  def abort(): Unit logs ExecEvent =
+  def abort()(using (ExecEvent is Loggable)^): Unit =
     Log.info(ExecEvent.AbortProcess(pid))
     process.destroy()
 
-  def kill(): Unit logs ExecEvent =
+  def kill()(using (ExecEvent is Loggable)^): Unit =
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 

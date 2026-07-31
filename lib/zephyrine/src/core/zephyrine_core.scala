@@ -32,6 +32,9 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+import proscenium.compat.*
+
 import anticipation.*
 import fulminate.*
 import hieroglyph.*
@@ -95,7 +98,7 @@ package parsing:
 
 export Cursor.{Mark, Offset}
 
-// A stream of parsed records: each window is an `IArray` chunk of them (the boxed
+// A stream of parsed records: each window is a frozen-array chunk of them (the boxed
 // medium), so credit counts records and `Buffering` sizes stage buffers by
 // reference count. Records are immutable values, so they cross stage and thread
 // boundaries by reference; a record must not itself hold a live endpoint. This
@@ -104,7 +107,7 @@ export Cursor.{Mark, Offset}
 // collections. The record type is unbounded here — the `Addressable` given that
 // admits a record type governs at stream construction — but it must erase to a
 // reference type.
-type Records[record] = Stream[IArray[record]] over Credit
+type Records[record] = Stream[Array[record]^{}] over Credit
 
 extension [in, transport](consume stream: (Stream[in] over transport)^)
   // Pull-composition: a differently-typed `Stream` whose refills translate
@@ -164,10 +167,10 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 
 // ─── terminal operations and explicit replay ───────────────────────────────────────────
 //
-// The safe front-end replacing the LazyList views: pipeline stages compose with the
+// The safe front-end replacing the Chain views: pipeline stages compose with the
 // consume-typed `through`, and these terminal operations drain an exclusive endpoint
 // without exposing its window — each borrow is read, used and skipped before the next
-// refill. `memoize` is the explicit replacement for LazyList's implicit caching: it
+// refill. `memoize` is the explicit replacement for Chain's implicit caching: it
 // drains the stream once into an immutable value, which may then be shared freely.
 
 extension [medium](consume stream: (Stream[medium] over Credit)^)
@@ -191,7 +194,7 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
     try loop() finally stream.close()
 
   // Drain the stream into a single immutable value: the explicit, bounded replacement
-  // for a LazyList's implicit memoization. The result is frozen and freely shareable.
+  // for a Chain's implicit memoization. The result is frozen and freely shareable.
   def memoize(using buffering: Buffering): medium =
     val addressable = stream.addressable
     val target = addressable.blank(buffering.capacity(addressable.substrate))
@@ -242,18 +245,18 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // stream by other means) to release the upstream.
   def chunks(using buffering: Buffering): Iterator[medium]^ = chunkIterator(stream)
 
-  // The legacy view: a lazy `LazyList` of one materialized chunk per refill,
+  // The legacy view: a lazy `Chain` of one materialized chunk per refill,
   // strictly demand-driven — construction pulls nothing, and each forced cell
   // pulls at most one refill (the deferral `Cursor.remainder` documents). This
   // is the audited bridge for consumers not yet converted to the kernel:
-  // `LazyList` is pure, so it cannot carry the endpoint capability its cells
+  // `Chain` is pure, so it cannot carry the endpoint capability its cells
   // close over, and the ownership discipline is suspended beyond this point —
   // implicit memoization retains every forced chunk. Prefer the kernel
   // terminals above; never introduce new bridges elsewhere.
-  def toLazyList(using buffering: Buffering): LazyList[medium] =
+  def toProgression(using buffering: Buffering): Chain[medium] =
     val block = buffering.transfer(stream.addressable.substrate)
 
-    def recur(): LazyList[medium] = stream.refill(Credit(block)) match
+    def recur(): Chain[medium] = stream.refill(Credit(block)) match
       case count: Int =>
         val chunk =
           stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
@@ -263,11 +266,11 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
       case _ =>
         stream.close()
-        LazyList.empty
+        Chain.empty
 
-    LazyList.empty.lazyAppendedAll(recur())
+    Chain.empty.lazyAppendedAll(recur())
 
-extension [record](consume stream: (Stream[IArray[record]] over Credit)^)
+extension [record](consume stream: (Stream[Array[record]^{}] over Credit)^)
   // Element-wise access to a stream of records: a single-consumer iterator over
   // the records of successive windows, in order. The iterator owns the endpoint:
   // it closes the stream when it reports exhaustion, so a consumer must drain it
@@ -422,7 +425,7 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
         result
 
 private def recordIterator[record]
-  ( consume stream: (Stream[IArray[record]] over Credit)^ )
+  ( consume stream: (Stream[Array[record]^{}] over Credit)^ )
   ( using buffering: Buffering )
 :   Iterator[record]^ =
 
@@ -435,7 +438,7 @@ private def recordIterator[record]
       // A stdlib class cannot extend `Stateful`, so its state is untracked
       // (the `inputStream` adapter's precedent).
       @caps.unsafe.untrackedCaptures
-      private var storage: Array[AnyRef] = new Array[AnyRef](0)
+      private var storage: scala.Array[AnyRef] = new scala.Array[AnyRef](0)
       @caps.unsafe.untrackedCaptures
       private var index: Int = 0
       @caps.unsafe.untrackedCaptures
@@ -454,7 +457,7 @@ private def recordIterator[record]
 
         stream.refill(Credit(block)) match
           case count: Int =>
-            storage = stream.window(using Unsafe).asInstanceOf[Array[AnyRef]]
+            storage = stream.window(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
             index = stream.start
             limit = stream.start + count
             consumed = count

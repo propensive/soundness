@@ -32,6 +32,8 @@
                                                                                                   */
 package symbolism
 
+import scala.math
+
 import prepositional.*
 
 object Rootable:

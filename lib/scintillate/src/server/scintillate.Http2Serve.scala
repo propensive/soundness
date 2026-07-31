@@ -33,6 +33,7 @@
 package scintillate
 
 import java.io as ji
+import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*
@@ -98,44 +99,44 @@ object Http2Serve:
               // A `Trailer` header (RFC 7230 §4.4) names response headers to be
               // sent as HTTP/2 trailers — a trailing HEADERS block after the body
               // (e.g. gRPC's `grpc-status`) — rather than in the initial block.
-              val trailerNames: Set[Text] =
+              val trailerNames =
                 response.textHeaders
                   . filter(_.key.lower == t"trailer")
                   . flatMap(_.value.cut(t",").map(_.trim.lower))
-                  . to(Set)
+                  . stdlib.toSet
 
               val (trailerEntries, headEntries) =
-                PseudoHeaders.entries(response).partition: entry =>
-                  trailerNames.contains(entry.name)
+                PseudoHeaders.entries(response).stdlib.partition: entry =>
+                  trailerNames.has(entry.name)
 
               val trailing: Boolean = !trailerEntries.isEmpty
 
               def sendTrailers(): Unit =
-                if trailing then connection0.sendTrailers(streamId, trailerEntries)
+                if trailing then connection0.sendTrailers(streamId, List.of(trailerEntries))
 
               response.body match
                 case Http.Body.Empty =>
-                  connection0.sendHeaders(streamId, headEntries, endStream = !trailing)
+                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Fixed(data) =>
                   val headEnd = data.isEmpty && !trailing
-                  connection0.sendHeaders(streamId, headEntries, endStream = headEnd)
+                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = headEnd)
                   if !data.isEmpty then connection0.sendData(streamId, data, endStream = !trailing)
                   sendTrailers()
 
                 case Http.Body.Flowing(source) =>
-                  connection0.sendHeaders(streamId, headEntries, endStream = false)
+                  connection0.sendHeaders(streamId, List.of(headEntries), endStream = false)
 
                   source().sweep: (storage, start, size) =>
-                    val block = storage.asInstanceOf[Array[Byte]]
-                      . slice(start, start + size).immutable(using Unsafe)
+                    val window = storage.asInstanceOf[scala.Array[Byte]]
+                    val block = Array.unsafeFrozen(window.slice(start, start + size))
 
                     connection0.sendData(streamId, block, endStream = false)
 
                   // Trailers close the stream; otherwise an empty END_STREAM DATA.
                   if trailing then sendTrailers()
-                  else connection0.sendData(streamId, IArray.empty[Byte], endStream = true)
+                  else connection0.sendData(streamId, Array.empty[Byte], endStream = true)
 
           val connection1 = new HttpConnection(request, true, port, respond)
           connection1.respond(handler1(connection1.asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
@@ -144,26 +145,31 @@ object Http2Serve:
   // scope. `serve` (per-request) is the degenerate session that immediately
   // handles with no per-connection setup; `serveSession` lends the caller an
   // `Http2Session` so it can set up per-connection state first.
-  private def open(in: ji.InputStream, out: ji.OutputStream)(using Monitor)
-  :   (Http2ServerConnection^, Probate) =
+  private def open(in: ji.InputStream, out: ji.OutputStream)(using monitor: Monitor)
+  :   Http2ServerConnection^{monitor} =
+   // The connection is created and used under the same monitor; its fresh capability is
+   // laundered into the declared result.
+   scala.caps.unsafe.unsafeAssumePure:
 
-    // A local (pure) Probate rather than one captured from the accept daemon:
-    // capturing the caller's `Probate` capability would make this call — and so
-    // the accept-daemon body — impure.
-    import probates.cancelProbate
-    given Tactic[AsyncError] = strategies.throwUnsafely
-    given Tactic[StreamError] = strategies.throwUnsafely
-    val connection = Http2ServerConnection(StreamDuplex(in, out))
-    connection.start()
-    (connection, cancelProbate)
+     // A local (pure) Probate rather than one captured from the accept daemon:
+     // capturing the caller's `Probate` capability would make this call — and so
+     // the accept-daemon body — impure.
+     import probates.cancelProbate
+     given Tactic[AsyncError] = strategies.throwUnsafely
+     given Tactic[StreamError] = strategies.throwUnsafely
+     val connection = Http2ServerConnection(StreamDuplex(in, out))
+     connection.start()
+     connection
 
   def serve
     ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
     ( using Monitor, (HttpServerEvent is Loggable)^ )
   :   Unit =
 
-    val (connection, probate) = open(in, out)
-    runStreams(connection, handler.asInstanceOf[AnyRef], port)(using summon, probate)
+    val connection = open(in, out)
+    val probate: Probate = probates.cancelProbate
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      runStreams(connection, handler.asInstanceOf[AnyRef], port)(using summon, probate)
 
   // Serve one HTTP/2 connection as a session: `scope0` — the (rimmed) session
   // scope — runs once when the connection is established and may set up
@@ -177,16 +183,20 @@ object Http2Serve:
     ( using Monitor, (HttpServerEvent is Loggable)^ )
   :   Unit =
 
-    val (connection, probate) = open(in, out)
+    val connection = open(in, out)
+    val probate: Probate = probates.cancelProbate
 
-    val session: Http2Session^ = new Http2Session:
+    // The session retains only the per-connection state; no aliased writer.
+    val session: Http2Session^ = scala.caps.unsafe.unsafeAssumeSeparate:
+     new Http2Session:
       def handle(handler: (connection: HttpConnection) ?=> Http.Response^{connection}): Unit =
         // Rim the context-function handler to a neutral `AnyRef => AnyRef`, as
         // the accept loop does for the per-request path.
         val handler0: AnyRef =
           ((ref: AnyRef) => handler(using ref.asInstanceOf[HttpConnection])).asInstanceOf[AnyRef]
 
-        runStreams(connection, handler0, port)(using summon, probate)
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          runStreams(connection, handler0, port)(using summon, probate)
 
     scope0.asInstanceOf[AnyRef => Unit](session.asInstanceOf[AnyRef])
 
@@ -206,7 +216,8 @@ extends Duplex:
   def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)
 
   def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.sweep: (storage, start, size) => out.write(storage.asInstanceOf[Array[Byte]], start, size)
+    data.sweep: (storage, start, size) =>
+      out.write(storage.asInstanceOf[scala.Array[Byte]], start, size)
 
     out.flush()
 

@@ -32,6 +32,8 @@
                                                                                                   */
 package archimedes
 
+import scala.collection.immutable.Seq
+
 import scala.quoted.*
 
 import anticipation.*
@@ -78,10 +80,10 @@ object internal:
       import strategies.throwUnsafely
       import errorDiagnostics.emptyDiagnostics
 
-      try Ergo.interpolate(parts.map(_.tt), List.fill(atoms.length)(Mi(t"?")))
+      try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.stdlib.length)(Mi(t"?")).stdlib)
       catch case error: ErgoError =>
         halt(m"the ergo expression could not be parsed because ${error.reason}")
 
-    val partExprs: Expr[Seq[Text]] = Expr.ofSeq(parts.map { part => '{${Expr(part)}.tt} })
+    val partExprs: Expr[Seq[Text]] = Expr.ofSeq(parts.stdlib.map { part => '{${Expr(part)}.tt} })
 
-    '{Ergo.unsafeInterpolate($partExprs, ${Expr.ofSeq(atoms)})}
+    '{Ergo.unsafeInterpolate($partExprs, ${Expr.ofSeq(atoms.stdlib)})}

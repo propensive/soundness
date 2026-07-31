@@ -36,11 +36,11 @@ import anticipation.*
 
 extension (bytes: Data)
   def unpackFrom[data: Unpackable](offset: Int): data.Result =
-    data.unpack(Buffer(bytes, offset))
+    data.unpack(Sextant(bytes, offset))
 
-  def buffer[result](lambda: Buffer ?=> result): result = lambda(using Buffer(bytes))
+  def sextant[result](lambda: Sextant ?=> result): result = lambda(using Sextant(bytes))
 
-def unpack[value: Unpackable](using buffer: Buffer): value.Result =
-  value.unpack(buffer)
+def unpack[value: Unpackable](using sextant: Sextant): value.Result =
+  value.unpack(sextant)
 
 def byteWidth[data: Debufferable]: Int = data.width

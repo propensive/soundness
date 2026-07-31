@@ -43,18 +43,21 @@ import vacuous.*
 
 class SseSource(capacity: Int):
   private val mutex: Mutex = Mutex()
-  private val buffer: Array[Sse] = new Array(capacity)
+  @scala.caps.unsafe.untrackedCaptures
+  private val buffer: scala.Array[Sse] = new scala.Array(capacity)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var current: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var spool: Relay[Sse] = Relay()
 
   def put[entity: Encodable in Sse](value: entity): Unit = mutex:
     val sse = value.encode.copy(id = current.show)
-    buffer(current%capacity) = sse
+    buffer.asInstanceOf[scala.Array[Sse]^](current%capacity) = sse
     spool.put(sse)
     current += 1
 
-  def stream(start: Optional[Int] = Unset): LazyList[Sse] raises SseError = mutex:
+  def stream(start: Optional[Int] = Unset): Chain[Sse] raises SseError = mutex:
     start.let: start =>
       spool.stop()
       spool = Relay()
@@ -62,4 +65,4 @@ class SseSource(capacity: Int):
       if current - start - 1 > capacity then abort(SseError(SseError.Reason.CapacityExceeded)) else
         ((start + 1) until current).map: index => spool.put(buffer(index%capacity))
 
-    LazyList.from(spool.stream.records)
+    Chain.from(spool.stream.records)

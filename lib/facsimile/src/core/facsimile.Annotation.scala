@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -56,7 +58,8 @@ object Annotation:
   private[facsimile] def read
     ( value: Cos, pages: Map[Int, Ordinal], named: Text => Optional[Cos], scale: Double )
     ( using pdf: Pdf )
-  :   Optional[Annotation] raises PdfError =
+    ( using Tactic[PdfError] )
+  :   Optional[Annotation] =
 
     pdf.resolved(value) match
       case Cos.Dictionary(entries) =>

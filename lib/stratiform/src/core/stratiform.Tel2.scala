@@ -32,6 +32,12 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.immutable.Vector
+
+import scala.caps
+
+import proscenium.compat.*
+
 import scala.collection.Factory
 import scala.compiletime.*
 
@@ -156,6 +162,30 @@ trait Tel2 extends Tel3:
   =>  collection[element] is Tel.Field =
     Tel.Field(Tel.Parsable.iterable[collection, element](field))
 
+  // Alias counterparts: the opaque prelude collections do not conform to
+  // `Iterable`, so each gets its own instance built at the underlying stdlib
+  // type and cast (a no-op at erasure).
+  given fieldList: [list <: List, element]
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( field: => (element is Tel.Field)^ )
+  =>  list[element] is Tel.Field =
+    Tel.Field(Tel.Parsable.iterable[scala.collection.immutable.List, element](field))
+    . asInstanceOf[list[element] is Tel.Field]
+
+  given fieldSet: [set <: Set, element]
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( field: => (element is Tel.Field)^ )
+  =>  set[element] is Tel.Field =
+    Tel.Field(Tel.Parsable.iterable[scala.collection.immutable.Set, element](field))
+    . asInstanceOf[set[element] is Tel.Field]
+
+  given fieldSeries: [sequence <: Sequence, element]
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( field: => (element is Tel.Field)^ )
+  =>  sequence[element] is Tel.Field =
+    Tel.Field(Tel.Parsable.iterable[Vector, element](field))
+    . asInstanceOf[sequence[element] is Tel.Field]
+
   // Element-wise `Tel.Field` for `Optional`, resolved during derivation:
   // the inner instance comes from the field fallback chain (by-name, so
   // recursive types resolve, exactly like collections), and the wrapper's
@@ -201,7 +231,7 @@ trait Tel2 extends Tel3:
 
             contexts[derivation]():
               [field] => context =>
-                ( renames.getOrElse(label, Tel.camelToKebab(label.s)).s,
+                ( renames.at(label).or(Tel.camelToKebab(label.s)).s,
                   context: Tel.Parsing,
                   default[Optional[field]]: Any )
           },
@@ -229,7 +259,7 @@ trait Tel2 extends Tel3:
       Tel.Decodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to(List)
+          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
@@ -242,7 +272,7 @@ trait Tel2 extends Tel3:
 
               build[derivation]: [field] =>
                 ctx =>
-                  val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
+                  val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
 
                   // Tag every error registered while decoding this field with its
                   // keyword path, so that under a `validate[Tel.Focus]` boundary the
@@ -263,7 +293,7 @@ trait Tel2 extends Tel3:
                         Tel.make
                           ( Tel.Document
                             ( Unset, Unset, Tel.LineEndings.Lf,
-                             IArray(Tel.Block(IArray.empty, Unset, compounds, 0)) ) )
+                             Array.of(Tel.Block(Array.empty, Unset, compounds, 0)) ) )
                     else
                       val match0 = telVal.field(keyword)
 
@@ -283,8 +313,8 @@ trait Tel2 extends Tel3:
       // call, whose profile it dominated (map building plus generic-equality
       // lookups, per occurrence) — jacinta's map hoist.
       val labels: Map[Text, Text] =
-        variantLabels.map: label => Tel.camelToKebab(label.s) -> label
-        . to(Map)
+        Map.from:
+          variantLabels.stdlib.map: label => Tel.camelToKebab(label.s) -> label
 
       Tel.Decodable(() => Morphology.Any):
         telVal =>
@@ -292,7 +322,7 @@ trait Tel2 extends Tel3:
             provide[Tactic[TelError]]:
               provide[Tactic[VariantError]]:
                 val variant: Tel = Tel.make(telVal.childCompounds.head)
-                val variantKeyword: Text = labels.getOrElse(variant.keyword, variant.keyword)
+                val variantKeyword: Text = labels.at(variant.keyword).or(variant.keyword)
 
                 delegate(variantKeyword): [variant <: derivation] =>
                   ctx => ctx.decoded(variant)
@@ -304,7 +334,7 @@ trait Tel2 extends Tel3:
       Tel.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to(List)
+          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
 
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
@@ -318,7 +348,7 @@ trait Tel2 extends Tel3:
           fields(value): [field] =>
             fieldValue =>
               val encoded = contextual.encode(fieldValue)
-              val keyword = renames.getOrElse(label, Tel.camelToKebab(label.s))
+              val keyword = renames.at(label).or(Tel.camelToKebab(label.s))
 
               encoded.subtree match
                 case c: Tel.Compound =>
@@ -328,9 +358,11 @@ trait Tel2 extends Tel3:
                 // flatten them as repeated fields, each re-keyed to the field label
                 // (TEL's representation of a repeated field — see `#1291`).
                 case d: Tel.Document =>
-                  compounds ++= d.children.flatMap(_.compounds).map(_.copy(keyword = keyword))
+                  d.children.each: child =>
+                    child.compounds.each: compound =>
+                      compounds += compound.copy(keyword = keyword)
 
-          Tel.compound(t"", IArray.empty, IArray.from(compounds))
+          Tel.compound(t"", Array.empty, Array.from(compounds))
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Encodable =
       // A sum encodes as a document whose single child compound is the chosen variant,
@@ -348,7 +380,7 @@ trait Tel2 extends Tel3:
 
               contextual.encode(v).subtree match
                 case compound: Tel.Compound =>
-                  Tel.compound(t"", IArray.empty, IArray(compound.copy(keyword = keyword)))
+                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
 
                 case other =>
                   Tel.make(other)
@@ -438,17 +470,17 @@ trait Tel2 extends Tel3:
   given listEncodable: [list <: List, element] => (encodable: -> (element is Tel.Encodable))
   =>  list[element] is Tel.Encodable =
     Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values)(using encodable)
+      collectionDocument(values.stdlib)(using encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: -> (element is Tel.Encodable))
   =>  set[element] is Tel.Encodable =
     Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values)(using encodable)
+      collectionDocument(values.stdlib)(using encodable)
 
-  given seriesEncodable: [series <: Series, element] => (encodable: -> (element is Tel.Encodable))
-  =>  series[element] is Tel.Encodable =
+  given seriesEncodable: [sequence <: Sequence, element] => (encodable: -> (element is Tel.Encodable))
+  =>  sequence[element] is Tel.Encodable =
     Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values)(using encodable)
+      collectionDocument(values.stdlib)(using encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
@@ -465,7 +497,7 @@ trait Tel2 extends Tel3:
 
         telVal.subtree.absolve match
           case document: Tel.Document =>
-            document.children.flatMap(_.compounds).each: compound =>
+            document.children.bind(_.compounds).each: compound =>
               builder += element0.decoded(Tel.make(compound))
 
           case compound: Tel.Compound =>
@@ -473,20 +505,90 @@ trait Tel2 extends Tel3:
 
         builder.result()
 
-  // A `Map` encodes as a series of `entries` compounds, each carrying a `key`
+  // Alias counterparts: the opaque prelude collections do not conform to
+  // `Iterable`, so each decodes at the underlying stdlib type and casts. The
+  // loop is inlined (rather than delegating to a shared helper) so nothing
+  // captures `Tel2.this`, mirroring `collectionDecodable` above.
+  given listDecodable: [list <: List, element]
+  =>  ( element0: -> (element is Tel.Decodable) )
+  =>  Tactic[TelError]
+  =>  list[element] is Tel.Decodable =
+    new Tel.Decodable:
+      type Self = list[element]
+      def shape(): Morphology = Morphology.Arr(element0.shape())
+      override def repeatable: Boolean = true
+
+      def decoded(telVal: Tel): list[element] =
+        val builder = scala.collection.immutable.List.newBuilder[element]
+
+        telVal.subtree.absolve match
+          case document: Tel.Document =>
+            document.children.bind(_.compounds).each: compound =>
+              builder += element0.decoded(Tel.make(compound))
+
+          case compound: Tel.Compound =>
+            builder += element0.decoded(telVal)
+
+        builder.result().asInstanceOf[list[element]]
+
+  given setDecodable: [set <: Set, element]
+  =>  ( element0: -> (element is Tel.Decodable) )
+  =>  Tactic[TelError]
+  =>  set[element] is Tel.Decodable =
+    new Tel.Decodable:
+      type Self = set[element]
+      def shape(): Morphology = Morphology.Arr(element0.shape())
+      override def repeatable: Boolean = true
+
+      def decoded(telVal: Tel): set[element] =
+        val builder = scala.collection.immutable.Set.newBuilder[element]
+
+        telVal.subtree.absolve match
+          case document: Tel.Document =>
+            document.children.bind(_.compounds).each: compound =>
+              builder += element0.decoded(Tel.make(compound))
+
+          case compound: Tel.Compound =>
+            builder += element0.decoded(telVal)
+
+        builder.result().asInstanceOf[set[element]]
+
+  given seriesDecodable: [sequence <: Sequence, element]
+  =>  ( element0: -> (element is Tel.Decodable) )
+  =>  Tactic[TelError]
+  =>  sequence[element] is Tel.Decodable =
+    new Tel.Decodable:
+      type Self = sequence[element]
+      def shape(): Morphology = Morphology.Arr(element0.shape())
+      override def repeatable: Boolean = true
+
+      def decoded(telVal: Tel): sequence[element] =
+        val builder = Vector.newBuilder[element]
+
+        telVal.subtree.absolve match
+          case document: Tel.Document =>
+            document.children.bind(_.compounds).each: compound =>
+              builder += element0.decoded(Tel.make(compound))
+
+          case compound: Tel.Compound =>
+            builder += element0.decoded(telVal)
+
+        builder.result().asInstanceOf[sequence[element]]
+
+  // A `Map` encodes as a sequence of `entries` compounds, each carrying a `key`
   // and a `value` child field. As with other collections the product encoder
   // re-keys the wrapping compound with the field's label.
 
   given mapEncodable: [key: Tel.Encodable, value: Tel.Encodable]
   =>  Map[key, value] is Tel.Encodable =
     Tel.Encodable(() => Morphology.Dict(key.shape(), value.shape())): map =>
-      val entries = IArray.from:
-        map.map: (k, v) =>
+      val entries = Array.from:
+        map.stdlib.map: (k, v) =>
           val keyChild   = reKey(key.encoded(k), t"key")
           val valueChild = reKey(value.encoded(v), t"value")
-          reKey(Tel.compound(t"", IArray.empty, IArray(keyChild, valueChild)), t"entries")
+          reKey(Tel.compound(t"", Array.empty, Array.of(keyChild, valueChild)), t"entries")
 
-      Tel.compound(t"", IArray.empty, entries)
+      Tel.compound(t"", Array.empty, entries)
 
   given mapDecodable: [key: Tel.Decodable, value: Tel.Decodable] => Tactic[TelError]
   =>  Map[key, value] is Tel.Decodable =
@@ -503,19 +605,19 @@ trait Tel2 extends Tel3:
   // Helpers used by encoders to construct Tel values.
 
   def scalar(text: Text): Tel =
-    Tel.make(Tel.Compound(t"", IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty))
+    Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
   def compound
-    ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
+    ( keyword: Text, atoms: Array[Tel.Atom]^{}, compounds: Array[Tel.Compound]^{} )
   :   Tel =
 
     val children =
-      if compounds.nil then IArray.empty[Tel.Block]
-      else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
+      if compounds.nil then Array.empty[Tel.Block]
+      else Array.of(Tel.Block(Array.empty, Unset, compounds, 0))
 
     Tel.make(Tel.Compound(keyword, atoms, Unset, children))
 
-  def empty: Tel = Tel.make(Tel.Compound(t"", IArray.empty, Unset, IArray.empty))
+  def empty: Tel = Tel.make(Tel.Compound(t"", Array.empty, Unset, Array.empty))
 
 // `value.encode` (provided by the Encodable typeclass extension defined in
 // anticipation) is the idiomatic call site producing a Tel from any

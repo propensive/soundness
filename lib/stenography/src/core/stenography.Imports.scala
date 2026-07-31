@@ -32,9 +32,11 @@
                                                                                                   */
 package stenography
 
-object Imports:
-  val empty: Imports = Imports(Set(), Set())
+import scala.collection.immutable as sci
 
-case class Imports(designators: Set[Designator], direct: Set[Designator]):
+object Imports:
+  val empty: Imports = Imports(sci.Set(), sci.Set())
+
+case class Imports(designators: sci.Set[Designator], direct: sci.Set[Designator]):
   def has(designator: Designator): Boolean = designators.contains(designator)
   def hasDirect(designator: Designator): Boolean = direct.contains(designator)

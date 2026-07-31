@@ -37,6 +37,7 @@ import contingency.*
 import gossamer.*
 import vacuous.*
 import xylophone.*
+import proscenium.compat.*
 
 import honeycomb.Html
 
@@ -55,10 +56,10 @@ object MathmlReader:
     case element: honeycomb.Element =>
       if element.label == t"math" then element else searchNodes(element.children)
 
-    case fragment: honeycomb.Fragment => searchNodes(IArray.from(fragment.nodes))
+    case fragment: honeycomb.Fragment => searchNodes(Array.from(fragment.nodes))
     case _                            => Unset
 
-  private def searchNodes(nodes: IArray[honeycomb.Node]): Optional[honeycomb.Element] =
+  private def searchNodes(nodes: Array[honeycomb.Node]^{}): Optional[honeycomb.Element] =
     var result: Optional[honeycomb.Element] = Unset
     var index = 0
 
@@ -69,10 +70,10 @@ object MathmlReader:
     result
 
   private def toXmlElement(element: honeycomb.Element): Element =
-    val pairs: Seq[(Text, Text)] =
-      element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(Seq)
+    val pairs: List[(Text, Text)] =
+      element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
 
-    val nodes: IArray[Node] = element.children.map(toXmlNode)
+    val nodes: Array[Node]^{} = element.children.map(toXmlNode)
     Element(element.label, Attributes(pairs*), nodes)
 
   private def toXmlNode(node: honeycomb.Node): Node = node match

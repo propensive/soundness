@@ -32,6 +32,8 @@
                                                                                                   */
 package hyperbole
 
+import proscenium.compat.*
+
 import digression.*
 import hellenism.*
 import vacuous.*
@@ -53,7 +55,7 @@ extension (stackTrace: StackTrace)
         ( stackTrace.component,
           stackTrace.className,
           stackTrace.message,
-          stackTrace.frames.map(resolver.resolve),
+          List.of(stackTrace.frames.stdlib.map(resolver.resolve)),
           stackTrace.cause.let(recur) )
 
     recur(stackTrace)

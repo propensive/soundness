@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -47,19 +49,19 @@ private[facsimile] object PdfWriter:
   // A complete PDF file for a freshly-authored document: a header, every live object, one
   // cross-reference table and a trailer with no `/Prev`. Used by `create`, where there is no
   // original file to append to.
-  def full(pdf: Pdf): Data raises PdfError =
-    val builder = Array.newBuilder[Byte]
+  def full(pdf: Pdf)(using Tactic[PdfError]): Data =
+    val builder = DataBuilder()
     var length = 0L
 
     def raw(data: Data): Unit =
-      builder.addAll(data.mutable(using Unsafe))
+      builder.addAll(data)
       length += data.length
 
     def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
 
     // A binary comment after the header marks the file as containing binary data.
     ascii(t"%PDF-1.7\n")
-    raw(IArray[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
+    raw(Array.of[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
 
     val maxNumber = pdf.nextNumber - 1
     val offsets = scala.collection.mutable.HashMap[Int, Long]()
@@ -69,7 +71,8 @@ private[facsimile] object PdfWriter:
       if value != Cos.Nil && !pdf.freed.contains(number) then
         offsets(number) = length
         ascii(t"$number 0 obj\n")
-        appendObject(pdf, raw, ascii, value)
+        // The writer thunks share only this append pass's own accumulators.
+        scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
         ascii(t"\nendobj\n")
 
     val xrefOffset = length
@@ -82,23 +85,24 @@ private[facsimile] object PdfWriter:
 
     ascii(t"trailer\n<< /Size ${maxNumber + 1}")
 
-    List(t"Root", t"Info", t"ID").each: key =>
+    List(t"Root", t"Info", t"ID").each: (key: Text) =>
       pdf.trailerOverrides.at(key).or(pdf.trailer.at(key)).let: value =>
         ascii(t" /$key ")
-        appendObject(pdf, raw, ascii, value)
+        // The writer thunks share only this append pass's own accumulators.
+        scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
     ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
 
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
   // The bytes to append after `baseOffset` (the original file's length) to record the
   // overlay. Object offsets in the new section are absolute, so they include `baseOffset`.
-  def increment(pdf: Pdf, baseOffset: Long): Data raises PdfError =
-    val builder = Array.newBuilder[Byte]
+  def increment(pdf: Pdf, baseOffset: Long)(using Tactic[PdfError]): Data =
+    val builder = DataBuilder()
     var length = 0L
 
     def raw(data: Data): Unit =
-      builder.addAll(data.mutable(using Unsafe))
+      builder.addAll(data)
       length += data.length
 
     def ascii(text: Text): Unit = raw(charEncoders.iso88591Encoder.encoded(text))
@@ -106,10 +110,10 @@ private[facsimile] object PdfWriter:
     // A leading end-of-line guards against the original file not ending in one.
     ascii(t"\n")
 
-    val changed = pdf.overlay.keys.to(List).sorted
+    val changed = pdf.overlay.keys.to(scala.List).sorted
     val offsets = scala.collection.mutable.HashMap[Int, Long]()
 
-    changed.each: number =>
+    changed.each: (number: Int) =>
       offsets(number) = baseOffset + length
       val generation = pdf.xref.entries.at(number) match
         case Xref.Entry.Direct(_, gen) => gen
@@ -123,29 +127,33 @@ private[facsimile] object PdfWriter:
       val value = pdf.guard.lay(pdf.overlay(number)):
         guard => encryptStrings(pdf.overlay(number), guard, number, generation)
 
-      appendObject(pdf, raw, ascii, value, encryption)
+      // The writer thunks share only this append pass's own accumulators.
+      scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value, encryption))
       ascii(t"\nendobj\n")
 
     val xrefOffset = baseOffset + length
-    val freed = pdf.freed.to(List).sorted
+    val freed = pdf.freed.to(scala.List).sorted
 
     // Group the updated and freed object numbers (plus object 0, the free-list head, when
     // anything is freed) into ascending consecutive subsections.
-    val numbers = (changed ++ freed ++ (if freed.isEmpty then Nil else List(0))).distinct.sorted
+    val zero = if freed.isEmpty then scala.List[Int]() else scala.List(0)
+    val numbers = List.of((changed ::: freed ::: zero).distinct.sorted)
 
     // The trailer carries forward the original `/Root`, `/Info`, `/Encrypt` and `/ID`, with
     // any write-scope overrides (e.g. a newly-created `/Info`) taking precedence.
-    val carried = List(t"Root", t"Info", t"Encrypt", t"ID").flatMap: key =>
+    val carried = List(t"Root", t"Info", t"Encrypt", t"ID").bind: key =>
       pdf.trailer.at(key).let(value => List(key -> value)).or(Nil)
 
-    val entries = (carried.to(Map) ++ pdf.trailerOverrides).to(List)
+    val entries: List[(Text, Cos)] = List.of((carried.stdlib.toMap ++ pdf.trailerOverrides).toList)
 
     // A file whose newest cross-reference section is a stream takes a stream for its update too.
     // The two forms cannot be chained through `/Prev`, which is defined to address a section of
     // the same kind (ISO 32000-1 §7.5.8.4); a file that mixes them is one some readers accept and
     // others reject outright.
     if pdf.xref.streamed
-    then streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries)
+    // The writer thunks share only this append pass's own accumulators.
+    then scala.caps.unsafe.unsafeAssumeSeparate
+          ( streamed(pdf, raw, ascii, xrefOffset, numbers, offsets, entries) )
     else
       ascii(t"xref\n")
 
@@ -171,13 +179,13 @@ private[facsimile] object PdfWriter:
 
       entries.each: (key, value) =>
         ascii(t" /$key ")
-        appendObject(pdf, raw, ascii, value)
+        scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
       pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
 
       ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
 
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
   // The update's cross-reference section as a cross-reference stream (ISO 32000-2 §7.5.8): an
   // ordinary indirect object whose dictionary serves as the trailer and whose payload holds one
@@ -194,7 +202,8 @@ private[facsimile] object PdfWriter:
       numbers: List[Int],
       offsets: scala.collection.mutable.HashMap[Int, Long],
       entries: List[(Text, Cos)] )
-  :   Unit raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Unit =
 
     val number = pdf.nextNumber
     val rows = (numbers :+ number).distinct.sorted
@@ -202,7 +211,7 @@ private[facsimile] object PdfWriter:
     // `/W [1 4 2]`: one byte of entry type, four of offset — enough for any file this side of
     // 4 GB — and two of generation.
     def field(value: Long, width: Int): Unit =
-      raw(IArray.tabulate(width) { index => (value >> 8*(width - 1 - index) & 0xff).toByte })
+      raw(Array.tabulate(width) { index => (value >> 8*(width - 1 - index) & 0xff).toByte })
 
     def row(kind: Int, second: Long, third: Int): Unit =
       field(kind, 1)
@@ -217,7 +226,8 @@ private[facsimile] object PdfWriter:
 
     entries.each: (key, value) =>
       ascii(t" /$key ")
-      appendObject(pdf, raw, ascii, value)
+      // The writer thunks share only this append pass's own accumulators.
+      scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
     pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
 
@@ -244,7 +254,8 @@ private[facsimile] object PdfWriter:
   private def appendObject
     ( pdf: Pdf, raw: Data => Unit, ascii: Text => Unit, cos: Cos,
       encryption: Optional[(Guard, Int, Int)] = Unset )
-  :   Unit raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Unit =
 
     cos match
       case body: Cos.Body =>
@@ -274,10 +285,10 @@ private[facsimile] object PdfWriter:
         Cos.Sequence(elements.map(encryptStrings(_, guard, number, generation)))
 
       case Cos.Dictionary(entries) =>
-        Cos.Dictionary(entries.view.mapValues(encryptStrings(_, guard, number, generation)).toMap)
+        Cos.Dictionary(Map.of(entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap))
 
       case Cos.Body(entries, start) =>
-        Cos.Body(entries.view.mapValues(encryptStrings(_, guard, number, generation)).toMap, start)
+        Cos.Body(Map.of(entries.stdlib.view.mapValues(encryptStrings(_, guard, number, generation)).toMap), start)
 
       case other =>
         other
@@ -289,23 +300,23 @@ private[facsimile] object PdfWriter:
         Nil
 
       case head :: _ =>
-        val runs = List.newBuilder[(Int, List[Int])]
-        var run = List.newBuilder[Int]
+        val runs = scala.collection.immutable.List.newBuilder[(Int, List[Int])]
+        var run = scala.collection.immutable.List.newBuilder[Int]
         var first = head
         var previous = head - 1
 
         numbers.each: number =>
           if number == previous + 1 then run += number
           else
-            runs += ((first, run.result()))
-            run = List.newBuilder[Int]
+            runs += ((first, List.of(run.result())))
+            run = scala.collection.immutable.List.newBuilder[Int]
             run += number
             first = number
 
           previous = number
 
-        runs += ((first, run.result()))
-        runs.result()
+        runs += ((first, List.of(run.result())))
+        List.of(runs.result())
 
   private def pad10(value: Long): Text =
     val digits = value.toString

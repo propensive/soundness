@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import scala.annotation.targetName
 
 import anticipation.Data
@@ -40,6 +42,7 @@ import contingency.*
 import denominative.*
 import fulminate.{Diagnostics, Hazard}
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -308,13 +311,13 @@ object Cursor:
   // the next cursor operation that may compact or grow the buffer.
   extension [cap^](cursor: Cursor[Data, cap])
     @targetName("dataBuffer")
-    inline def buffer(using erased unsafe: Unsafe): Array[Byte] =
-      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
+    inline def buffer(using erased unsafe: Unsafe): scala.Array[Byte] =
+      cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Byte]]
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
-    inline def buffer(using erased unsafe: Unsafe): Array[Char] =
-      cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
+    inline def buffer(using erased unsafe: Unsafe): scala.Array[Char] =
+      cursor.unsafeBuffer(using Unsafe).asInstanceOf[scala.Array[Char]]
 
 // `cap^` is the capture set of the `load` thunk: `{}` for an in-memory cursor (the loader is a
 // no-op), or the capabilities a streaming loader draws from (e.g. a socket). Tracking it as an
@@ -388,8 +391,8 @@ extends caps.Mutable:
   // `ArrayDeque[Mark]`/`ArrayDeque[Offset]` avoids two `java.lang.Long` boxes
   // per `mark()` call — a meaningful saving on parser hot paths that mark
   // every token boundary.
-  private var marks:     Array[Long]^ = new Array[Long](16)
-  private var offsets:   Array[Long]^ = new Array[Long](16)
+  private var marks:     scala.Array[Long]^ = new scala.Array[Long](16)
+  private var offsets:   scala.Array[Long]^ = new scala.Array[Long](16)
   private var marksSize: Int = 0
 
   private var lineNo:   Ordinal = Prim
@@ -564,11 +567,11 @@ extends caps.Mutable:
   // interface dispatch that the abstract `Lineation` member would imply.
   inline def lineActive: Boolean = lineationActive
 
-  // LazyList of all unconsumed data from the current position onwards. Yields
+  // Chain of all unconsumed data from the current position onwards. Yields
   // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
   // then drains the loader, returning chunks as it goes. Caller-driven, so a
   // streaming consumer pays nothing until it pulls.
-  update def remainder: LazyList[data] =
+  update def remainder: Chain[data] =
     val tailLen = writeEnd - pos
 
     val tail: data =
@@ -585,16 +588,16 @@ extends caps.Mutable:
     // WebSocket upgrade, whose body is the post-handshake frame stream the peer
     // only sends after our `101`). `#::` keeps the non-empty branch lazy; the
     // empty branch must defer the call explicitly.
-    if tailLen > 0 then tail #:: loaderStream else LazyList.empty.lazyAppendedAll(loaderStream)
+    if tailLen > 0 then tail #:: loaderStream else Chain.empty.lazyAppendedAll(loaderStream)
 
-  private update def loaderStream: LazyList[data] =
-    if ended then LazyList.empty else load() match
+  private update def loaderStream: Chain[data] =
+    if ended then Chain.empty else load() match
       case chunk: data @unchecked =>
         if addressable.length(chunk) > 0 then chunk #:: loaderStream else loaderStream
 
       case _ =>
         ended = true
-        LazyList.empty
+        Chain.empty
 
   // ─── unsafe direct buffer access ──────────────────────────────────────────
   //
@@ -661,8 +664,8 @@ extends caps.Mutable:
 
     if marksSize >= cap then
       val newCap = cap*2
-      val nm = new Array[Long](newCap)
-      val no = new Array[Long](newCap)
+      val nm = new scala.Array[Long](newCap)
+      val no = new scala.Array[Long](newCap)
       System.arraycopy(marks, 0, nm, 0, marksSize)
       System.arraycopy(offsets, 0, no, 0, marksSize)
       marks   = nm

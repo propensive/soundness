@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import scala.caps
+
 import scala.annotation.*
 
 import adversaria.*
@@ -114,7 +116,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
     case Morphology.Obj(fields, required) =>
       JsonSchema.Object
-        ( properties = fields.map { (label, shape) => (label, reify(shape)) }.to(Map),
+        ( properties = fields.map { (label, shape) => (label, reify(shape)) }.to[Map],
           required   = required )
 
   // Marks a schema as optional (used both by the schema-only `Schematic` and by
@@ -176,9 +178,10 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     Json.Encodable(() => Morphology.Any):
       case JsonSchema.Ref(pointer, _, _) =>
         val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
+        // Qualified: `JsonSchema.Array` (this file's schema node) shadows the prelude `Array`.
         Json.ast(Json.Ast.obj
-          ( IArray("$ref"),
-            IArray(Json.Ast(ref)) ))
+          ( proscenium.Array.of("$ref"),
+            proscenium.Array.of[Any](Json.Ast(ref)) ))
 
       case other =>
         derivedEncodable.encoded(other)
@@ -286,11 +289,11 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
         val textList: List[Text] is Json.Decodable =
           caps.unsafe.unsafeAssumePure
-            (Json.array[List, Text](using summon, jsonError, summon)(using textDecodable0))
+            (Json.listDecodable[List, Text](using jsonError, summon)(using textDecodable0))
 
         val schemaList: List[JsonSchema] is Json.Decodable =
           caps.unsafe.unsafeAssumePure
-            (Json.array[List, JsonSchema](using summon, jsonError, summon)(using self))
+            (Json.listDecodable[List, JsonSchema](using jsonError, summon)(using self))
 
         val schemaMap: Map[Text, JsonSchema] is Json.Decodable =
           caps.unsafe.unsafeAssumePure
@@ -333,18 +336,18 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         contexts[derivation]():
           [field] => schema =>
             val schema2 = descriptions.at(label).lay(schema.schema()): memo =>
-              schema.schema().description = memo.map(_.description).join(t"\n")
+              schema.schema().description = memo.stdlib.map(_.description).join(t"\n")
 
             (label, schema2)
 
-        .to(Map)
+        .pipe(iarr => Map.from(iarr.readable))
 
       val required: List[Text] =
         contexts[derivation]():
           [field] => schema => label.unless(_ => schema.schema().optional)
 
-        . compact
-        . to(List)
+        . readable.compact
+        . to(proscenium.List)
 
       Object(properties = map, required = required)
 
@@ -359,9 +362,9 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         choices:
           [variant <: derivation] => schema =>
             descriptions.at(label).lay(schema.schema()): memo =>
-              schema.schema().description = memo.map(_.description).join(t"\n")
+              schema.schema().description = memo.stdlib.map(_.description).join(t"\n")
 
-        . to(List)
+        . to[List]
 
       JsonSchema.Object(oneOf = schemas, required = List("kind"))
 

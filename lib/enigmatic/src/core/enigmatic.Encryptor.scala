@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import anticipation.*
 
 class Encryptor[cipher] private[enigmatic] (private[enigmatic] val bytes: Data)

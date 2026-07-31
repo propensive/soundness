@@ -40,14 +40,18 @@ import zephyrine.*
 import vacuous.*
 
 class CompileProcess():
+  @scala.caps.unsafe.untrackedCaptures
   private[anthology] var continue: Boolean = true
 
   private val completion: Promise[CompileResult] = Promise()
   private val noticesSpool: Relay[Notice] = Relay()
   private val progressSpool: Relay[CompileProgress] = Relay()
 
+  @scala.caps.unsafe.untrackedCaptures
   private var compilation: Optional[Task[Unit]] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   private var errorCount: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var warningCount: Int = 0
 
   def put(notice: Notice): Unit =
@@ -64,7 +68,9 @@ class CompileProcess():
   def errors: Int = errorCount
   def warnings: Int = warningCount
 
-  def complete()(using Monitor): CompileResult raises AsyncError logs CompileEvent =
+  def complete()(using Monitor)
+    ( using Tactic[AsyncError], (CompileEvent is Loggable)^ )
+  :   CompileResult =
     try completion.await() finally
       safely(compilation.let(_.await()))
       safely(noticesSpool.stop())
@@ -75,5 +81,5 @@ class CompileProcess():
 
   // `lazy val`s deliberately share ONE memoizing view per relay, so several
   // observers may traverse the same stream (the one Spool-era replay use).
-  lazy val progress: LazyList[CompileProgress] = LazyList.from(progressSpool.stream.records)
-  lazy val notices: LazyList[Notice] = LazyList.from(noticesSpool.stream.records)
+  lazy val progress: Chain[CompileProgress] = Chain.from(progressSpool.stream.records)
+  lazy val notices: Chain[Notice] = Chain.from(noticesSpool.stream.records)

@@ -51,7 +51,7 @@ object KotlinRuntime:
 
   // The invocation handler behind a functional-interface proxy: `equals`/`hashCode`/`toString`
   // answer locally; everything else (the single abstract method) forwards to the lambda.
-  def forwarder(handler: (Array[Object | Null] | Null) => Object | Null)
+  def forwarder(handler: (scala.Array[Object | Null] | Null) => Object | Null)
   :   java.lang.reflect.InvocationHandler^{handler} =
 
     (proxy, method, arguments) =>
@@ -61,7 +61,7 @@ object KotlinRuntime:
         case "toString" => s"<function proxy>"
         case _          => handler(arguments)
 
-  def invokeDefault(owner: Class[?], name: String, arguments: Array[Any | Null]): Any | Null =
+  def invokeDefault(owner: Class[?], name: String, arguments: scala.Array[Any | Null]): Any | Null =
     val key = s"${owner.getName}#$name#${arguments.length}"
 
     val handle = handles.computeIfAbsent(key, _ =>
@@ -71,4 +71,8 @@ object KotlinRuntime:
       . map: method => jli.MethodHandles.lookup.nn.unreflect(method.nn).nn
       . getOrElse(throw IllegalStateException(s"xenophile: no $name bridge on ${owner.getName}")))
 
-    handle.nn.invokeWithArguments(arguments.toSeq*)
+    // The `java.util.List` overload, not the varargs one: an array splice cannot flow into
+    // the pure varargs formal under separation checking.
+    val argumentList = java.util.ArrayList[AnyRef]()
+    arguments.foreach { argument => argumentList.add(argument.asInstanceOf[AnyRef]); () }
+    handle.nn.invokeWithArguments(argumentList)

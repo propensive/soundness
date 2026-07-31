@@ -32,6 +32,8 @@
                                                                                                   */
 package vexillology
 
+import proscenium.compat.*
+
 import java.lang as jl
 
 import distillate.*
@@ -57,7 +59,7 @@ object internal:
 
       while (value != 0) do
         val position = jl.Long.numberOfTrailingZeros(value)
-        set += enumerable.values(position)
+        set += enumerable.values.readable(position)
         value &= value - 1
 
       set

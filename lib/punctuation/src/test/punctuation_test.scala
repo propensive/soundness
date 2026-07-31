@@ -34,6 +34,8 @@ package punctuation
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 
 import doms.html.whatwg
@@ -52,7 +54,7 @@ object Tests extends Suite(m"Punctuation tests"):
     cp"/punctuation/mdspec.json"
     . read[Json]
     . as[List[Testcase]]
-    . groupBy(_.section)
+    . group(_.section)
     . filter(_(0) != "HTML blocks")
     . each: (section, cases) =>
         suite(section.communicate):

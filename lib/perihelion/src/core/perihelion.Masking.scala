@@ -33,6 +33,7 @@
 package perihelion
 
 import java.security.SecureRandom
+import proscenium.compat.*
 
 import anticipation.*
 import rudiments.*
@@ -68,9 +69,9 @@ object Masking:
         case _   => 2
 
       val key: Data =
-        val bytes = new Array[Byte](4)
-        random.nextBytes(bytes)
-        bytes.immutable(using Unsafe)
+        val bytes = Array[Byte](4)
+        random.nextBytes(bytes.raw)
+        Array.freeze(bytes)
 
       val header: Data = Data.fill(headerLength): index =>
         if index == 1 then (frame(1).toInt | 0x80).toByte else frame(index)

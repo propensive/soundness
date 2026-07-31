@@ -46,7 +46,7 @@ object Watch:
   def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
   :   Watch raises WatchError =
 
-    val pathGroups: Map[jnf.Path, Iterable[Text -> Boolean]] =
+    val pathGroups =
       paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else
@@ -54,24 +54,24 @@ object Watch:
           val filename = javaPath.getFileName.nn.toString.tt
           (parent, (_: Text) == filename)
 
-      . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
+      . groupBy(_(0)).view.mapValues(_.map(_(1)))
 
-    val directories: Map[jnf.Path, Text -> Boolean] =
-      pathGroups.view.mapValues: predicates => (value: Text) => predicates.exists(_(value))
-      . to(Map)
+    val directories: Map[jnf.Path, Text -> Boolean] = Map.from:
+      pathGroups.mapValues: predicates =>
+        (value: Text) => predicates.exists(_(value))
 
     val spool: Relay[WatchEvent] = Relay()
 
     new Watch(spool, watcher.watch(directories, spool))
 
   given openable: [path: Abstractable across Paths to Text]
-  =>  ( Watcher, Tactic[WatchError] )
-  =>  ( WatchOpenable[path]^ ) =
+  =>  ( watcher: Watcher, tactic: Tactic[WatchError] )
+  =>  ( WatchOpenable[path]^{tactic} ) =
     WatchOpenable[path]
 
   given allOpenable: [path: Abstractable across Paths to Text, collection <: Iterable[path]]
-  =>  ( Watcher, Tactic[WatchError] )
-  =>  ( WatchAllOpenable[collection, path]^ ) =
+  =>  ( watcher: Watcher, tactic: Tactic[WatchError] )
+  =>  ( WatchAllOpenable[collection, path]^{tactic} ) =
     WatchAllOpenable[collection, path]
 
 // A `Watch` is the user-facing handle returned by registering one or more paths. Its `stream`
@@ -80,7 +80,7 @@ object Watch:
 class Watch(spool: Relay[WatchEvent], registration: Watcher.Registration):
   // The legacy view of the event relay (the audited bridge): one lazy,
   // single-owner drain of the shared queue, as before.
-  def stream: LazyList[WatchEvent] = LazyList.from(spool.stream.records)
+  def stream: Chain[WatchEvent] = Chain.from(spool.stream.records)
 
   def unregister(): Unit =
     registration.cancel()

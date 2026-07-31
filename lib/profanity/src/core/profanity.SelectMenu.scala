@@ -45,10 +45,11 @@ extends Question[item]:
   def apply(keypress: TerminalEvent): SelectMenu[item] =
     try
       keypress match
-        case Up   => copy(current = options(0 max options.indexOf(current) - 1))
-        case Down => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
-        case Home => copy(current = options.head)
-        case End  => copy(current = options.last)
+        case Up   => copy(current = options.stdlib(0 max options.stdlib.indexOf(current) - 1))
+        case Down =>
+          copy(current = options.stdlib(options.stdlib.size - 1 min options.stdlib.indexOf(current) + 1))
+        case Home => copy(current = options.stdlib.head)
+        case End  => copy(current = options.stdlib.last)
         case _    => this
 
     catch case e: RangeError => this
@@ -59,7 +60,8 @@ extends Question[item]:
             interaction:   Interaction[item, SelectMenu[item]] )
     [ result ]
     ( lambda: Interactivity[TerminalEvent] ?=> item => result )
-  :   result raises DismissError =
+    ( using Tactic[DismissError] )
+  :   result =
 
     val events = interactivity.eventIterator()
 

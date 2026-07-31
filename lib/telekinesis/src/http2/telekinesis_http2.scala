@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import scala.caps
+
 import java.io as ji
 import java.net as jn
 import javax.net.ssl as jns
@@ -80,7 +82,7 @@ extends Sessionable:
       val tcpPort: TcpPort = safely(Port[Tcp](port)).or(abort(ConnectError(Unknown)))
 
       val duplex: Duplex =
-        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values) catch
+        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
           case error: ji.IOException => abort(ConnectError(Unknown))
 
       try lambda(using HttpSession.Sequential(duplex)) finally duplex.close()
@@ -100,7 +102,10 @@ extends Sessionable:
             // The connection's reader/writer daemons live under a session-scoped
             // supervisor: nothing outlives the lambda.
             try
-              unsafely:
+              // The session's tactic and the lambda share only the session-scoped
+              // connection; no aliased writer.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+               unsafely:
                 supervise:
                   val connection = Http2Connection(duplex)
 

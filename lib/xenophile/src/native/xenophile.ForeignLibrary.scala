@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import proscenium.compat.*
+
 import java.lang.foreign.*
 import java.lang.invoke.MethodHandle
 
@@ -64,11 +66,15 @@ object ForeignLibrary:
     case _                             => ValueLayout.ADDRESS.nn
 
   def descriptor(signature: Prototype): FunctionDescriptor =
-    val parameters = signature.parameters.or(Nil).map(layout)
+    // One `appendArgumentLayouts` per parameter, rather than a single varargs splice: the
+    // capture checker rejects any array value at a Java varargs formal (which it types as a
+    // pure array), while per-element calls let the compiler build the tiny array itself.
+    val base = signature.result match
+      case Foreign.Type.Named(t"void") => FunctionDescriptor.ofVoid().nn
+      case result                      => FunctionDescriptor.of(layout(result)).nn
 
-    signature.result match
-      case Foreign.Type.Named(t"void") => FunctionDescriptor.ofVoid(parameters*).nn
-      case result                      => FunctionDescriptor.of(layout(result), parameters*).nn
+    signature.parameters.or(Nil).stdlib.foldLeft(base): (acc, parameter) =>
+      acc.appendArgumentLayouts(layout(parameter)).nn
 
   // Loads the first of `paths` that resolves as a symbol lookup bound to `arena`,
   // pairing it with the function signatures parsed from `header`.
@@ -80,27 +86,27 @@ object ForeignLibrary:
       case Nil =>
         throw IllegalArgumentException(t"no native library could be loaded from $paths".s)
 
-    val signatures = CHeaderDialect.parse(header).getOrElse(CHeaderDialect.library, Map())
+    val signatures = CHeaderDialect.parse(header).at(CHeaderDialect.library).or(Map[Text, Prototype]())
     new ForeignLibrary(attempt(paths), signatures)
 
   // The process-wide default lookup (the C standard library and already-loaded
   // images); useful for `libc` symbols without naming a library file.
   def system(header: Text): ForeignLibrary =
-    val signatures = CHeaderDialect.parse(header).getOrElse(CHeaderDialect.library, Map())
+    val signatures = CHeaderDialect.parse(header).at(CHeaderDialect.library).or(Map[Text, Prototype]())
     new ForeignLibrary(linker.defaultLookup.nn, signatures)
 
   // Copies bytes into freshly-allocated native memory in `arena`.
   def segment(bytes: Data)(using arena: Arena): MemorySegment =
-    val source = bytes.mutable(using Unsafe)
+    val source = Array.unsafeJvm(bytes)
     val target = arena.allocate(bytes.length.toLong).nn
     MemorySegment.copy(source, 0, target, ValueLayout.JAVA_BYTE, 0L, bytes.length)
     target
 
   // Reads `length` bytes back out of a native segment.
   def bytes(segment: MemorySegment, length: Int): Data =
-    val array = new Array[Byte](length)
-    MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0L, array, 0, length)
-    array.immutable(using Unsafe)
+    val array = Array[Byte](length)
+    MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0L, array.raw, 0, length)
+    Array.freeze(array)
 
   //── Process-wide symbol resolution, for the macro `invoke` (`PanamaInvoke`) ─────────────────
   // A statically-linked native binary resolves every C symbol from one flat namespace
@@ -141,7 +147,7 @@ object ForeignLibrary:
 
     val lookups: List[SymbolLookup] =
       import scala.jdk.CollectionConverters.ListHasAsScala
-      linker.defaultLookup.nn :: registered.asScala.to(List)
+      linker.defaultLookup.nn :: registered.to[List]
 
     linker.downcallHandle(search(lookups), descriptor).nn
 
@@ -155,6 +161,6 @@ class ForeignLibrary(lookup: SymbolLookup, signatures: Map[Text, Prototype]):
   // signature. Invoke it with `invokeWithArguments`, passing `MemorySegment`s for
   // pointer parameters and boxed primitives for the rest.
   def handle(function: Text): MethodHandle =
-    val signature = signatures.getOrElse(function, panic(m"no such foreign function: $function"))
+    val signature = signatures.at(function).or(panic(m"no such foreign function: $function"))
     val symbol = lookup.find(function.s).nn.orElseThrow().nn
     ForeignLibrary.linker.downcallHandle(symbol, ForeignLibrary.descriptor(signature)).nn

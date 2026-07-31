@@ -32,7 +32,10 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.{caps, compiletime}
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import java.lang as jl
 import java.util as ju
@@ -93,28 +96,28 @@ object Html extends Tag.Container
 
   def doctype: Doctype = Doctype(t"html")
 
-  extension (html: Seq[Html])
-    def nodes: IArray[Node] =
+  extension (html: List[Html])
+    def nodes: Array[Node]^{} =
       var count = 0
 
       for item <- html do item match
         case fragment: Fragment => count += fragment.nodes.length
         case _                  => count += 1
 
-      val array = new Array[Node](count)
+      val buffer = Array[Node](count)
 
       var index = 0
 
       for item <- html do item match
         case Fragment(nodes*) => for node <- nodes do
-          writable(array)(index) = node
+          buffer(index) = node
           index += 1
 
         case node: Node =>
-          writable(array)(index) = node
+          buffer(index) = node
           index += 1
 
-      array.immutable(using Unsafe)
+      Array.freeze(buffer)
 
   inline given interpolator: Html is Interpolable:
     type Result = Html
@@ -167,12 +170,12 @@ object Html extends Tag.Container
       type Self = Html of content
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html of content =
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
-        HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
+      def aggregate(input: Chain[Text]): Html of content =
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
+        HtmlParser.fromIterator(input.stdlib.iterator, permissive = false).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom, tactic: Tactic[ParseError])
@@ -182,8 +185,8 @@ object Html extends Tag.Container
       type Self = Html
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html =
-        HtmlParser.fromIterator(input.iterator, permissive = false)
+      def aggregate(input: Chain[Text]): Html =
+        HtmlParser.fromIterator(input.stdlib.iterator, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
       override def accept(stream: (Stream[Text] over Credit)^): Html =
@@ -223,16 +226,16 @@ object Html extends Tag.Container
       type Self = Html of content
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html of content =
+      def aggregate(input: Chain[Text]): Html of content =
         given Tactic[ParseError] = lenientTactic
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
 
         lenient(Fragment().of[content]):
-          HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
+          HtmlParser.fromIterator(input.stdlib.iterator, permissive = true).parseHtml(root).of[content]
 
       override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         given Tactic[ParseError] = lenientTactic
-        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        val root = Tag.root(Set.from(content.reify.stdlib.map(_.tt)))
 
         lenient(Fragment().of[content]):
           HtmlParser.fromStream(stream, permissive = true).parseHtml(root).of[content]
@@ -244,11 +247,11 @@ object Html extends Tag.Container
       type Self = Html
       type Operand = Text
 
-      def aggregate(input: LazyList[Text]): Html =
+      def aggregate(input: Chain[Text]): Html =
         given Tactic[ParseError] = lenientTactic
 
         lenient(Fragment()):
-          HtmlParser.fromIterator(input.iterator, permissive = true)
+          HtmlParser.fromIterator(input.stdlib.iterator, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
       override def accept(stream: (Stream[Text] over Credit)^): Html =
@@ -425,12 +428,12 @@ object Html extends Tag.Container
     t"a", t"b", t"big", t"code", t"em", t"font", t"i", t"nobr",
     t"s", t"small", t"strike", t"strong", t"tt", t"u" )
 
-  trait Populable:
+  trait Vacuiscible:
     node: Element =>
       def apply(children: Optional[Html of (? <: node.Transport)]*)
       :   Element of node.Topic in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.to(List).nodes, node.foreign):
           type Topic = node.Topic
           type Form = node.Form
 
@@ -440,7 +443,7 @@ object Html extends Tag.Container
       def apply[labels <: Label](children: Optional[Html of (? <: (labels | node.Transport))]*)
       :   Element of labels in node.Form =
 
-        new Element(node.label, node.attributes, children.compact.nodes, node.foreign):
+        new Element(node.label, node.attributes, children.compact.to(List).nodes, node.foreign):
           type Topic = labels
           type Form = node.Form
 
@@ -471,9 +474,9 @@ object Html extends Tag.Container
     value.render(_)
 
   given sequences: [nodal, html <: Html] => (conversion: Conversion[nodal, html])
-  =>  Conversion[Seq[nodal], Seq[html]] =
+  =>  Conversion[List[nodal], List[html]] =
 
-    (sequence: Seq[nodal]) =>
+    (sequence: List[nodal]) =>
       sequence.map(conversion(_))
 
   enum Issue extends Format.Issue:
@@ -569,16 +572,152 @@ object Html extends Tag.Container
   // O(1) — the per-byte tracking cost is small and avoids re-walking the
   // source on each error (which used to be O(n)).
 
-  // Exclusive write views over method-local growable arrays: a bare-typed local
-  // reads as `.rd` under separation checking, but a capability-typed binding
-  // would be hidden (by the statement rule) from the local defs that capture it.
-  // `writable` grants a write through a cast; `confined` erases a fresh grown
-  // array's capture as it replaces its confined predecessor.
-  private[honeycomb] inline def writable[element](array: Array[element]): Array[element]^ =
-    array.asInstanceOf[Array[element]^]
+  // Scratch state for a single `parseHtml0` run. The growable arrays live as fields of a
+  // `Mutable` class, written only through `update` methods on an exclusive instance (fresh per
+  // parse, passed to `parseHtml0` as a parameter) — mutation the separation checker can bless
+  // directly, where the previous closure-captured local arrays needed write-view casts (a
+  // bare-typed local reads as `.rd`, and a capability-typed binding would be hidden from the
+  // local defs that capture it).
+  private final class HtmlParseState() extends caps.Mutable:
+    // Node and open-tag stacks for the tree builder. `nodes` accumulates the children of the
+    // element currently being read (the trailing `count` entries belong to the innermost
+    // element); `stack` mirrors the open-element ancestry.
+    var nodes: scala.Array[Node]^ = new scala.Array(4)
+    var index: Int = 0
+    var stack: scala.Array[Tag]^ = new scala.Array(4)
+    var depth: Int = 0
+    // Shared scratch buffer for attribute accumulation (parser-lifetime).
+    // Stores key/value pairs interleaved as `[k0, v0, k1, v1, ...]`. Keys are
+    // never null; a null in a value slot encodes `Unset`. `attributes()`
+    // writes here, then snapshots the populated prefix into a freshly-sized
+    // `Array[String | Null]^{}` and wraps it as an opaque `Attributes`. Grows
+    // geometrically when filled.
+    var attrInterleaved: scala.Array[String | Null]^ = new scala.Array[String | Null](16)
+    // Pending formatting tags awaiting reconstruction (see WHATWG "active
+    // formatting elements"). Stored as parallel arrays of label/Attributes
+    // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
+    // O(N) (and allocates a `Tuple2` per append), and even though valid
+    // HTML rarely populates this list, malformed-input handling can append
+    // multiple entries at once. Capacity grows geometrically when filled.
+    var pendingFormattingLabels: scala.Array[Text]^ = new scala.Array[Text](4)
+    var pendingFormattingAttrs:  scala.Array[Attributes]^ = new scala.Array[Attributes](4)
+    var pendingFormattingSize: Int = 0
+    // Foster-parented children awaiting placement around the next `<table>`
+    // close. Stored as a pair of `Array[Node]` buffers (with size counters)
+    // rather than `List[Node]`s appended via `:+`: list `:+` is `O(N)`
+    // and the per-append cons cell + traversal-on-flush is wasted on a
+    // structure we always drain in arrival order.
+    var fosteredBefore: scala.Array[Node]^ = new scala.Array[Node](4)
+    var fosteredBeforeSize: Int = 0
+    var fosteredAfter: scala.Array[Node]^ = new scala.Array[Node](4)
+    var fosteredAfterSize: Int = 0
 
-  private[honeycomb] inline def confined[element](array: Array[element]^): Array[element] =
-    array.asInstanceOf[Array[element]]
+    def findAncestorIndex(label: Text): Int =
+      var i = 0
+      val end = depth - 1
+
+      while i < end do
+        if stack(i).label == label then return i
+        i += 1
+      -1
+
+    def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
+
+    update def append(node: Node): Unit =
+      if index >= nodes.length then
+        val nodes2 = new scala.Array[Node](nodes.length*2)
+        System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
+        nodes = nodes2
+
+      nodes(index) = node
+      index += 1
+
+    update def push(tag: Tag): Unit =
+      if depth >= stack.length then
+        val stack2 = new scala.Array[Tag](stack.length*2)
+        System.arraycopy(stack, 0, stack2, 0, stack.length)
+        stack = stack2
+
+      stack(depth) = tag
+      depth += 1
+
+    update def pop(): Unit = depth -= 1
+
+    // Snapshot the trailing `count` accumulated nodes into a frozen array and release them.
+    update def array(count: Int): Array[Node]^{} =
+      val result = Array[Node](count)
+      System.arraycopy(nodes, 0.max(index - count), result.raw, 0, count)
+      index -= count
+      Array.freeze(result)
+
+    // Grow-and-write one interleaved attribute pair at slot `n` (the caller counts).
+    update def attrAppend(n: Int, key: String | Null, value: String | Null): Unit =
+      if 2*n >= attrInterleaved.length then
+        val nu = new scala.Array[String | Null](attrInterleaved.length*2)
+        jl.System.arraycopy(attrInterleaved, 0, nu, 0, 2*n)
+        attrInterleaved = nu
+
+      attrInterleaved(2*n) = key
+      attrInterleaved(2*n + 1) = value
+
+    update def pushPendingFormatting(label: Text, attrs: Attributes): Unit =
+      if pendingFormattingSize >= pendingFormattingLabels.length then
+        val newCap = pendingFormattingLabels.length*2
+        val nl = new scala.Array[Text](newCap)
+        val na = new scala.Array[Attributes](newCap)
+        val sz = pendingFormattingSize
+        jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, sz)
+        jl.System.arraycopy(pendingFormattingAttrs, 0, na, 0, sz)
+        pendingFormattingLabels = nl
+        pendingFormattingAttrs  = na
+
+      pendingFormattingLabels(pendingFormattingSize) = label
+      pendingFormattingAttrs(pendingFormattingSize) = attrs
+      pendingFormattingSize += 1
+
+    update def resetPendingFormatting(): Unit = pendingFormattingSize = 0
+
+    // Array one foster-parented child: after the table if we're already inside table
+    // content, before it otherwise.
+    update def foster(node: Node, inTable: Boolean): Unit =
+      if inTable then
+        if fosteredAfterSize >= fosteredAfter.length then
+          val nu = new scala.Array[Node](fosteredAfter.length*2)
+          jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
+          fosteredAfter = nu
+
+        fosteredAfter(fosteredAfterSize) = node
+        fosteredAfterSize += 1
+      else
+        if fosteredBeforeSize >= fosteredBefore.length then
+          val nu = new scala.Array[Node](fosteredBefore.length*2)
+          jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
+          fosteredBefore = nu
+
+        fosteredBefore(fosteredBeforeSize) = node
+        fosteredBeforeSize += 1
+
+    // On `<table>` close: append the before-table fosterlings, the table itself, then the
+    // after-table fosterlings; returns how many fostered nodes were appended.
+    update def drainFostered(child: Node): Int =
+      val beforeAdded = fosteredBeforeSize
+      var i = 0
+
+      while i < fosteredBeforeSize do
+        append(fosteredBefore(i))
+        i += 1
+
+      fosteredBeforeSize = 0
+      append(child)
+      val afterAdded = fosteredAfterSize
+      i = 0
+
+      while i < fosteredAfterSize do
+        append(fosteredAfter(i))
+        i += 1
+
+      fosteredAfterSize = 0
+      beforeAdded + afterAdded
 
   private[honeycomb] object HtmlParser:
     // Use untracked lineation in the cursor: avoids a per-`advance` newline
@@ -644,7 +783,7 @@ object Html extends Tag.Container
     // not derive from a constructor parameter under the provenance rule — and
     // populated by `syncFrom()` at the top of `parseHtml`.
     @caps.unsafe.untrackedCaptures
-    private var bytes:  Array[Char] = new Array[Char](0)
+    private var bytes:  scala.Array[Char] = new scala.Array[Char](0)
     private var pos:    Int = 0
     private var bufEnd: Int = 0
 
@@ -791,9 +930,14 @@ object Html extends Tag.Container
       syncFrom()
       cursor.hold:
         heldToken = summon[Cursor.Held]
-        try parseHtml0(root, doctypes) finally heldToken = null
+        try parseHtml0(root, doctypes, HtmlParseState()) finally heldToken = null
 
-    update private def parseHtml0(root: Tag, doctypes: Boolean)(using Tactic[ParseError])
+    // The scratch state arrives as a parameter rather than a local binding: a local
+    // `HtmlParseState^` would be hidden (by the statement rule) from the nested defs
+    // that capture it, whereas a parameter capability may be captured freely.
+    private update def parseHtml0
+      ( root: Tag, doctypes: Boolean, state: HtmlParseState^ )
+      ( using Tactic[ParseError] )
     :   Html =
       val buffer: jl.StringBuilder = jl.StringBuilder()
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
@@ -804,70 +948,10 @@ object Html extends Tag.Container
       // `read`'s `Token.Open` / `Token.Empty` arms don't have to repeat the
       // lookup against `dom.elements(content)`.
       var openTag: Tag = root
-      // Shared scratch buffer for attribute accumulation (parser-lifetime).
-      // Stores key/value pairs interleaved as `[k0, v0, k1, v1, ...]`. Keys are
-      // never null; a null in a value slot encodes `Unset`. `attributes()`
-      // writes here, then snapshots the populated prefix into a freshly-sized
-      // `IArray[String | Null]` and wraps it as an opaque `Attributes`. Grows
-      // geometrically when filled.
-      var attrInterleaved: Array[String | Null] = new Array[String | Null](16)
-      var nodes: Array[Node] = new Array(4)
-      var index: Int = 0
-      var stack: Array[Tag] = new Array(4)
-      var depth: Int = 0
-      var fragment: IArray[Node] = IArray()
-      // Pending formatting tags awaiting reconstruction (see WHATWG "active
-      // formatting elements"). Stored as parallel arrays of label/Attributes
-      // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
-      // O(N) (and allocates a `Tuple2` per append), and even though valid
-      // HTML rarely populates this list, malformed-input handling can append
-      // multiple entries at once. Capacity grows geometrically when filled.
-      var pendingFormattingLabels: Array[Text] = new Array[Text](4)
-      var pendingFormattingAttrs:  Array[Attributes] = new Array[Attributes](4)
-      var pendingFormattingSize: Int = 0
+      var fragment: Array[Node]^{} = Array.of()
       var pendingAtDepth: Int = -1
-      // Foster-parented children awaiting placement around the next `<table>`
-      // close. Stored as a pair of `Array[Node]` buffers (with size counters)
-      // rather than `List[Node]`s appended via `:+`: list `:+` is `O(N)`
-      // and the per-append cons cell + traversal-on-flush is wasted on a
-      // structure we always drain in arrival order.
-      var fosteredBefore: Array[Node] = new Array[Node](4)
-      var fosteredBeforeSize: Int = 0
-      var fosteredAfter: Array[Node] = new Array[Node](4)
-      var fosteredAfterSize: Int = 0
       var inTableContent: Boolean = false
       var pendingFosterDescend: Boolean = false
-
-      def findAncestorIndex(label: Text): Int =
-        var i = 0
-        val end = depth - 1
-
-        while i < end do
-          if stack(i).label == label then return i
-          i += 1
-        -1
-
-      def stackContainsAncestor(label: Text): Boolean = findAncestorIndex(label) >= 0
-
-      def append(node: Node): Unit =
-        if index >= nodes.length then
-          val nodes2 = new Array[Node](nodes.length*2)
-          System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
-          nodes = confined(nodes2)
-
-        writable(nodes)(index) = node
-        index += 1
-
-      def push(tag: Tag): Unit =
-        if depth >= stack.length then
-          val stack2 = new Array[Tag](stack.length*2)
-          System.arraycopy(stack, 0, stack2, 0, stack.length)
-          stack = confined(stack2)
-
-        writable(stack)(depth) = tag
-        depth += 1
-
-      def pop(): Unit = depth -= 1
 
       def next(): Unit =
         advance()
@@ -1062,7 +1146,7 @@ object Html extends Tag.Container
       def attributes(tag: Text, foreign: Boolean): Attributes =
         // Append into the parser-shared interleaved scratch buffer (laid out
         // as `[k0, v0, k1, v1, ...]`); on close, snapshot the populated prefix
-        // into a freshly-sized `IArray[String | Null]` and wrap it as the
+        // into a freshly-sized `Array[String | Null]^{}` and wrap it as the
         // opaque `Attributes`. `Unset` values are encoded as `null` in the
         // array.
         //
@@ -1082,12 +1166,6 @@ object Html extends Tag.Container
         var done = false
         var hashOr = 0
 
-        inline def ensureCapacity(): Unit =
-          if 2*n >= attrInterleaved.length then
-            val nu = new Array[String | Null](attrInterleaved.length*2)
-            jl.System.arraycopy(attrInterleaved, 0, nu, 0, 2*n)
-            attrInterleaved = confined(nu)
-
         while !done do
           skip()
 
@@ -1098,9 +1176,7 @@ object Html extends Tag.Container
               callback.let(_(position.z, Hole.Tagbody))
               next()
               skip()
-              ensureCapacity()
-              writable(attrInterleaved)(2*n) = "\u0000"
-              writable(attrInterleaved)(2*n + 1) = null
+              state.attrAppend(n, "\u0000", null)
               n += 1
 
             case _ =>
@@ -1124,7 +1200,7 @@ object Html extends Tag.Container
                 var dup = 0
 
                 while dup < 2*n do
-                  if attrInterleaved(dup) == key2Str then
+                  if state.attrInterleaved(dup) == key2Str then
                     if permissive then
                       warn(DuplicateAttribute(key2))
                       isDuplicate = true
@@ -1149,16 +1225,14 @@ object Html extends Tag.Container
                     unquoted(begin()) // FIXME: Only alphanumeric characters
 
               if !isDuplicate then
-                ensureCapacity()
-                writable(attrInterleaved)(2*n) = key2Str
-                writable(attrInterleaved)(2*n + 1) = assignment.lay(null: String | Null)(_.s)
+                state.attrAppend(n, key2Str, assignment.lay(null: String | Null)(_.s))
                 n += 1
 
         if n == 0 then Attributes.empty
         else
-          val arr = new Array[String | Null](2*n)
-          jl.System.arraycopy(attrInterleaved, 0, arr, 0, 2*n)
-          Attributes.fromInterleaved(arr.immutable(using Unsafe))
+          val arr = Array[String | Null](2*n)
+          jl.System.arraycopy(state.attrInterleaved, 0, arr.raw, 0, 2*n)
+          Attributes.fromInterleaved(Array.freeze(arr))
 
       def entity(mark: Mark): Optional[Text] = lay(fail(ExpectedMore, mark)):
         case '#'   => next() yet numericEntity(mark)
@@ -1411,21 +1485,16 @@ object Html extends Tag.Container
 
       def finish(parent: Tag, map: Attributes, count: Int): Node =
         if parent != root then
-          if parent.autoclose then Element(parent.label, parent.attributes, array(count), false)
+          if parent.autoclose
+          then Element(parent.label, parent.attributes, state.array(count), false)
           else if permissive then
             warn(Incomplete(parent.label))
-            Element(parent.label, map, array(count), parent.foreign)
+            Element(parent.label, map, state.array(count), parent.foreign)
           else
             fail(Incomplete(parent.label))
         else
-          if count > 1 then fragment = array(count)
-          nodes(index - 1)
-
-      def array(count: Int): IArray[Node] =
-        val result = new Array[Node](count)
-        System.arraycopy(nodes, 0.max(index - count), result, 0, count)
-        index -= count
-        result.immutable(using Unsafe)
+          if count > 1 then fragment = state.array(count)
+          state.nodes(state.index - 1)
 
       def descend(parent: Tag, admissible: Set[Text], attrs: Attributes): Node =
         val admissible2 = if parent.transparent then admissible else parent.admissible
@@ -1435,13 +1504,14 @@ object Html extends Tag.Container
       def read(parent: Tag, admissible: Set[Text], map: Attributes, count: Int): Node =
 
         def admit(child: Text): Boolean =
-          parent.foreign || parent.admissible(child) || parent.transparent && admissible(child)
+          parent.foreign || parent.admissible.stdlib(child)
+          || parent.transparent && admissible.stdlib(child)
 
         lay(finish(parent, map, count)):
           case '\u0000' =>
             callback.let(_(position.z, Hole.Node(parent.label)))
             next()
-            append(TextNode("\u0000"))
+            state.append(TextNode("\u0000"))
             read(parent, admissible, map, count + 1)
 
           case '<' if parent.mode != Mode.Raw && parent.mode != Mode.Rcdata =>
@@ -1453,13 +1523,13 @@ object Html extends Tag.Container
               val mark = begin()
 
               inline def node(): Unit =
-                current = Element(content, extra, array(count), parent.foreign)
+                current = Element(content, extra, state.array(count), parent.foreign)
 
               inline def empty(): Unit =
-                current = Element(content, extra, caps.unsafe.unsafeAssumePure(IArray()), parent.foreign)
+                current = Element(content, extra, Array.of(), parent.foreign)
 
               inline def close(): Unit =
-                current = Element(parent.label, map, array(count), parent.foreign)
+                current = Element(parent.label, map, state.array(count), parent.foreign)
                 level = Level.Ascend
 
               inline def infer(inline tag: Tag): Unit =
@@ -1542,7 +1612,7 @@ object Html extends Tag.Container
                   else if focus.void then
                     empty()
                   else if (content == t"a" || content == t"nobr") &&
-                    (parent.label == content || stackContainsAncestor(content)) then
+                    (parent.label == content || state.stackContainsAncestor(content)) then
                     reset(mark)
                     close()
                   else
@@ -1564,25 +1634,10 @@ object Html extends Tag.Container
                     if parent.autoclose then
                       reset(mark)
                       close()
-                    else if stackContainsAncestor(content) then
+                    else if state.stackContainsAncestor(content) then
                       if formattingTags.has(parent.label) then
-                        pendingAtDepth = findAncestorIndex(content)
-
-                        if pendingFormattingSize >= pendingFormattingLabels.length then
-                          val newCap = pendingFormattingLabels.length*2
-                          val nl = new Array[Text](newCap)
-                          // Confined at birth: an exclusive-typed local would be
-                          // hidden from the arraycopy below.
-                          val na = confined(new Array[Attributes](newCap))
-                          val sz = pendingFormattingSize
-                          jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, sz)
-                          jl.System.arraycopy(pendingFormattingAttrs, 0, na, 0, sz)
-                          pendingFormattingLabels = confined(nl)
-                          pendingFormattingAttrs  = na
-
-                        writable(pendingFormattingLabels)(pendingFormattingSize) = parent.label
-                        writable(pendingFormattingAttrs)(pendingFormattingSize) = map
-                        pendingFormattingSize += 1
+                        pendingAtDepth = state.findAncestorIndex(content)
+                        state.pushPendingFormatting(parent.label, map)
 
                       reset(mark)
                       close()
@@ -1603,37 +1658,37 @@ object Html extends Tag.Container
                   else
                     advance()
                     level = Level.Ascend
-                    current = Element(content, map, array(count), parent.foreign)
+                    current = Element(content, map, state.array(count), parent.foreign)
 
             def reconstructPending(): Int =
-              if pendingFormattingSize == 0 || depth != pendingAtDepth then 0
+              if state.pendingFormattingSize == 0 || state.depth != pendingAtDepth then 0
               else if !more || lay(false)(_ == '<') then
-                pendingFormattingSize = 0
+                state.resetPendingFormatting()
                 pendingAtDepth = -1
                 0
               else
-                val pendingCount = pendingFormattingSize
-                pendingFormattingSize = 0
+                val pendingCount = state.pendingFormattingSize
+                state.resetPendingFormatting()
                 pendingAtDepth = -1
                 var added = 0
                 var i = 0
 
                 while i < pendingCount do
-                  val label = pendingFormattingLabels(i)
-                  val attrs = pendingFormattingAttrs(i)
+                  val label = state.pendingFormattingLabels(i)
+                  val attrs = state.pendingFormattingAttrs(i)
                   val cloneTag: Optional[Tag] = dom.elements(label)
 
                   if cloneTag.present then
                     val tag = cloneTag.vouch
-                    push(tag)
+                    state.push(tag)
                     val cloneChild = descend(tag, admissible, attrs)
-                    pop()
+                    state.pop()
 
                     cloneChild match
                       case Element(_, _, children, _) if children.length == 0 => ()
 
                       case _ =>
-                        append(cloneChild)
+                        state.append(cloneChild)
                         added += 1
 
                   i += 1
@@ -1648,61 +1703,29 @@ object Html extends Tag.Container
                 read(parent, admissible, map, count)
 
               case Level.Peer =>
-                append(current)
+                state.append(current)
                 val added = reconstructPending()
                 read(parent, admissible, map, count + 1 + added)
 
               case Level.Descend =>
-                push(focus)
+                state.push(focus)
                 val savedFosterFlag = pendingFosterDescend
                 pendingFosterDescend = false
                 if parent.isTable && !savedFosterFlag then inTableContent = true
                 val child = descend(focus, admissible, extra)
-                pop()
+                state.pop()
 
                 if savedFosterFlag then
-                  if inTableContent then
-                    if fosteredAfterSize >= fosteredAfter.length then
-                      val nu = new Array[Node](fosteredAfter.length*2)
-                      jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
-                      fosteredAfter = confined(nu)
-
-                    writable(fosteredAfter)(fosteredAfterSize) = child
-                    fosteredAfterSize += 1
-                  else
-                    if fosteredBeforeSize >= fosteredBefore.length then
-                      val nu = new Array[Node](fosteredBefore.length*2)
-                      jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
-                      fosteredBefore = confined(nu)
-
-                    writable(fosteredBefore)(fosteredBeforeSize) = child
-                    fosteredBeforeSize += 1
-
+                  state.foster(child, inTableContent)
                   val added = reconstructPending()
                   read(parent, admissible, map, count + added)
                 else if focus.isTable then
-                  val beforeAdded = fosteredBeforeSize
-                  var i = 0
-
-                  while i < fosteredBeforeSize do
-                    append(fosteredBefore(i))
-                    i += 1
-
-                  fosteredBeforeSize = 0
-                  append(child)
-                  val afterAdded = fosteredAfterSize
-                  i = 0
-
-                  while i < fosteredAfterSize do
-                    append(fosteredAfter(i))
-                    i += 1
-
-                  fosteredAfterSize = 0
+                  val fostered = state.drainFostered(child)
                   inTableContent = false
                   val added = reconstructPending()
-                  read(parent, admissible, map, count + 1 + beforeAdded + afterAdded + added)
+                  read(parent, admissible, map, count + 1 + fostered + added)
                 else
-                  append(child)
+                  state.append(child)
                   val added = reconstructPending()
                   read(parent, admissible, map, count + 1 + added)
 
@@ -1712,25 +1735,8 @@ object Html extends Tag.Container
                 val text = textual(begin(), Unset, true)
                 val trimmed = text.trim
 
-                if trimmed.length > 0 then
-                  val node = TextNode(trimmed)
-
-                  if inTableContent then
-                    if fosteredAfterSize >= fosteredAfter.length then
-                      val nu = new Array[Node](fosteredAfter.length*2)
-                      jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
-                      fosteredAfter = confined(nu)
-
-                    writable(fosteredAfter)(fosteredAfterSize) = node
-                    fosteredAfterSize += 1
-                  else
-                    if fosteredBeforeSize >= fosteredBefore.length then
-                      val nu = new Array[Node](fosteredBefore.length*2)
-                      jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
-                      fosteredBefore = confined(nu)
-
-                    writable(fosteredBefore)(fosteredBeforeSize) = node
-                    fosteredBeforeSize += 1
+                if trimmed.length > 0
+                then state.foster(TextNode(trimmed), inTableContent)
 
                 read(parent, admissible, map, count)
               else
@@ -1740,31 +1746,31 @@ object Html extends Tag.Container
               val text = textual(begin(), parent.label, false)
 
               if text.nil
-              then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)
+                  Array.of(TextNode(text)), parent.foreign)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
 
               if text.nil
-              then Element(parent.label, parent.attributes, IArray(), parent.foreign)
+              then Element(parent.label, parent.attributes, Array.of(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
-                  caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)
+                  Array.of(TextNode(text)), parent.foreign)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)
 
               if text.length == 0 then read(parent, admissible, map, count + 1)
-              else append(TextNode(text)) yet read(parent, admissible, map, count + 1)
+              else state.append(TextNode(text)) yet read(parent, admissible, map, count + 1)
 
       if !more then Fragment() else locally:
         skip()
 
         if !more then Fragment() else
-          append(root)
+          state.append(root)
           val head = read(root, root.admissible, Attributes.empty, 0)
           // Permissive recovery can drain the root with no surviving children
           // (e.g. input was all stray close tags), in which case `finish`
@@ -1835,18 +1841,18 @@ object Element:
   def foreign(label: Text, attributes: Attributes, children: Html of "#foreign"*)
   :   Element of "#foreign" =
 
-    Element(label, attributes, children.nodes, true).of["#foreign"]
+    Element(label, attributes, children.to(List).nodes, true).of["#foreign"]
 
   // Convenience for callers that still hold a Map.
   def foreign(label: Text, attributes: Map[Text, Optional[Text]], children: Html of "#foreign"*)
   :   Element of "#foreign" =
 
-    Element(label, Attributes.from(attributes), children.nodes, true).of["#foreign"]
+    Element(label, Attributes.from(attributes), children.to(List).nodes, true).of["#foreign"]
 
 case class Element
   ( label:      Text,
     attributes: Attributes,
-    children:   IArray[Node],
+    children:   Array[Node]^{},
     foreign:    Boolean )
 extends Node, Topical, Transportive, Dynamic:
   override def toString(): String = this.show.s
@@ -1859,11 +1865,11 @@ extends Node, Topical, Transportive, Dynamic:
     // element type; the per-element decorations defeat an outer seal.
     Fragment[tag.Topic]
       ( caps.unsafe.unsafeAssumePure
-          (children2.mutable(using Unsafe).asInstanceOf[Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
+          (Array.unsafeJvm(children2).asInstanceOf[scala.Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
     . in[tag.Form]
 
   def body: Fragment of Topic over Transport in Form =
-    Fragment[Topic](children.map(_.of[Topic]).asInstanceOf[IArray[Node of Topic]]*)
+    Fragment[Topic](children.map(_.of[Topic]).asInstanceOf[Array[Node of Topic]^{}]*)
     . over[Transport].in[Form]
 
   def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
@@ -1871,12 +1877,12 @@ extends Node, Topical, Transportive, Dynamic:
       case fragment: Fragment =>
         Element
           ( label, attributes,
-            (IArray.from(fragment.nodes).asInstanceOf[IArray[Node]] ++ children)
-            . asInstanceOf[IArray[Node]],
+            (Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] ++ children)
+            . asInstanceOf[Array[Node]^{}],
             foreign )
 
       case node: Node =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(node +: children), foreign)
+        Element(label, attributes, Array.frozen(node +: children.readable), foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1885,10 +1891,10 @@ extends Node, Topical, Transportive, Dynamic:
   def +^ (html: Html of Transport): Element of Topic over Transport in Form =
     (html: Html).match
       case fragment: Fragment =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(children ++ fragment.nodes), foreign)
+        Element(label, attributes, Array.frozen(children.readable ++ fragment.nodes), foreign)
 
       case node: Node =>
-        Element(label, attributes, caps.unsafe.unsafeAssumePure(children :+ node), foreign)
+        Element(label, attributes, children :+ node, foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1900,13 +1906,13 @@ extends Node, Topical, Transportive, Dynamic:
     case Element(label, attributes, children, foreign) =>
       label == this.label && attributes.equalsAttributes(this.attributes) &&
         foreign == this.foreign &&
-        ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
+        ju.Arrays.equals(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]], Array.unsafeJvm(this.children).asInstanceOf[scala.Array[Object | Null]])
 
     case _ =>
       false
 
   override def hashCode: Int =
-    ju.Arrays.hashCode(children.mutable(using Unsafe)) ^ attributes.hashAttributes ^ label.hashCode
+    ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^ attributes.hashAttributes ^ label.hashCode
 
   transparent inline def selectDynamic(name: Label): Any =
 
@@ -1957,7 +1963,7 @@ extends Node, Topical, Transportive, Dynamic:
 object Fragment:
   @targetName("make")
   def apply[topic <: Label](nodes: Html of (? <: topic)*): Fragment of topic =
-    new Fragment(nodes.nodes*).of[topic]
+    new Fragment(nodes.to(List).nodes*).of[topic]
 
 case class Fragment(nodes: Node*) extends Html:
   override def hashCode: Int = if nodes.length == 1 then nodes(0).hashCode else nodes.hashCode

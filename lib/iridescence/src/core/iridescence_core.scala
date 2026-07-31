@@ -32,6 +32,8 @@
                                                                                                   */
 package iridescence
 
+import scala.math
+
 import anticipation.*
 import prepositional.*
 

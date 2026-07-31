@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -67,7 +69,8 @@ object Tar:
 
   // Anchored here so `data.open[Tar](...)` resolves with no import. Opening a filesystem
   // *path* as TAR (`path.open[Tar]`) lives in `bitumen.jvm`, alongside the disk backend.
-  given dataOpenable: (Tactic[TarError], Tactic[StreamError]) => (TarDataOpenable^) =
+  given dataOpenable: (tarTactic: Tactic[TarError], streamTactic: Tactic[StreamError])
+  =>  (TarDataOpenable^{tarTactic, streamTactic}) =
     TarDataOpenable()
 
   object Entry:
@@ -116,7 +119,9 @@ object Tar:
     // zero-padded, without regard to the incoming chunk boundaries.
     private[bitumen] def blocks512(chunks: Iterator[Data]): Iterator[Data] =
       new Iterator[Data]:
-        private var chunk: Data = IArray.empty[Byte]
+        @scala.caps.unsafe.untrackedCaptures
+        private var chunk: Data = Array.empty[Byte]
+        @scala.caps.unsafe.untrackedCaptures
         private var offset: Int = 0
 
         // Establish a nonempty current chunk, or report exhaustion.
@@ -130,16 +135,16 @@ object Tar:
         def hasNext: Boolean = replenish()
 
         def next(): Data =
-          val block = new Array[Byte](512)
+          val block = Array[Byte](512)
           var position = 0
 
           while position < 512 && replenish() do
             val count = (chunk.length - offset).min(512 - position)
-            System.arraycopy(chunk.mutable(using Unsafe), offset, block, position, count)
+            block.copyFrom(chunk, offset, position, count)
             offset += count
             position += count
 
-          block.immutable(using Unsafe)
+          Array.freeze(block)
 
   enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File
@@ -240,7 +245,7 @@ object Tar:
       case pax: Pax        => Entry.blocks512(Iterator(pax.records))
 
       case long: GnuLong =>
-        Entry.blocks512(Iterator(long.content.in[Data] ++ IArray.fill[Byte](1)(0)))
+        Entry.blocks512(Iterator(long.content.in[Data] ++ Array.fill[Byte](1)(0)))
 
       case sparse: Sparse =>
         Entry.blocks512(sparse.data.chunks)
@@ -335,7 +340,7 @@ object Tar:
 
     def serialize: Iterator[Data] = this match
       case sparse: Sparse if sparse.segments.length > 4 =>
-        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.drop(4)) ++ dataBlocks
+        Iterator(header) ++ Entry.sparseExtensionBlocks(sparse.segments.drop(4)).stdlib ++ dataBlocks
 
       case _ =>
         Iterator(header) ++ dataBlocks

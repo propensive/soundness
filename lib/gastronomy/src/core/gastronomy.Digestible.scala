@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import scala.{caps, util}
+
 import java.lang as jl
 
 import anticipation.*
@@ -77,15 +79,17 @@ object Digestible extends Derivable[Digestible]:
   =>  set[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
-    (digestion, set) => set.each(dig().digest(digestion, _))
+    (digestion, set) => set.stdlib.each(dig().digest(digestion, _))
 
-  given series: [series <: Series, value] => (digestible: => value is Digestible)
-  =>  series[value] is Digestible =
+
+  given sequence: [sequence <: Sequence, value] => (digestible: => value is Digestible)
+  =>  sequence[value] is Digestible =
 
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
-    (digestion, series) => series.each(dig().digest(digestion, _))
+    (digestion, sequence) => sequence.stdlib.each(dig().digest(digestion, _))
 
-  given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =
+
+  given iarray: [value] => (digestible: => value is Digestible) => (Array[value]^{}) is Digestible =
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, iarray) => iarray.each(dig().digest(digestion, _))
 
@@ -99,33 +103,34 @@ object Digestible extends Derivable[Digestible]:
       caps.unsafe.unsafeAssumePure(() => valueDigestible)
 
     (digestion, map) =>
-      map.each: (key, value) =>
+      map.stdlib.each: (key, value) =>
         digKey().digest(digestion, key)
         digValue().digest(digestion, value)
 
-  given stream: [value] => (digestible: => value is Digestible) => LazyList[value] is Digestible =
+
+  given stream: [value] => (digestible: => value is Digestible) => Chain[value] is Digestible =
     val dig: () -> (value is Digestible) = caps.unsafe.unsafeAssumePure(() => digestible)
     (digestion, iterable) => iterable.each(dig().digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
-    digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
+    digestion.append(Array.unsafeFrozen((24 to 0 by -8).map(value >> _).map(_.toByte).toArray))
 
   given long: Long is Digestible = (digestion, value) =>
-    digestion.append((56 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
+    digestion.append(Array.unsafeFrozen((56 to 0 by -8).map(value >> _).map(_.toByte).toArray))
 
   given double: Double is Digestible = long.contramap(jl.Double.doubleToRawLongBits(_))
   given float: Float is Digestible = int.contramap(jl.Float.floatToRawIntBits(_))
 
   given boolean: Boolean is Digestible =
-    (digestion, boolean) => digestion.append(IArray(if boolean then 1.toByte else 0.toByte))
+    (digestion, boolean) => digestion.append(Array.of(if boolean then 1.toByte else 0.toByte))
 
-  given byte: Byte is Digestible = (digestion, byte) => digestion.append(IArray(byte))
+  given byte: Byte is Digestible = (digestion, byte) => digestion.append(Array.of(byte))
 
   given short: Short is Digestible =
-    (digestion, short) => digestion.append(IArray((short >> 8).toByte, short.toByte))
+    (digestion, short) => digestion.append(Array.of((short >> 8).toByte, short.toByte))
 
   given char: Char is Digestible =
-    (digestion, char) => digestion.append(IArray((char >> 8).toByte, char.toByte))
+    (digestion, char) => digestion.append(Array.of((char >> 8).toByte, char.toByte))
 
   given text: [text <: Text] => text is Digestible =
     (digestion, text) => digestion.append(text.in[Data](using charEncoders.utf8Encoder))
@@ -139,7 +144,9 @@ object Digestible extends Derivable[Digestible]:
 trait Digestible extends Typeclass.Pure:
   digestible: Digestible =>
 
-    def digest(digestion: Digestion, value: Self): Unit
+    // Exclusivity lives at the method level (`Digestion^`), not the instance: a
+    // `Digestible` is a pure value which may be handed any exclusive accumulator.
+    def digest(digestion: Digestion^, value: Self): Unit
 
   // Deviates from the impure-lambda combinator convention: a capturing `contramap` result
   // makes every SAM conversion to `Digestible` capture-tracked, which rejects the (sealed,
@@ -148,5 +155,5 @@ trait Digestible extends Typeclass.Pure:
   def contramap[self2](lambda: self2 -> Self): self2 is Digestible = new Digestible:
     type Self = self2
 
-    def digest(digestion: Digestion, value: Self): Unit =
+    def digest(digestion: Digestion^, value: Self): Unit =
       digestible.digest(digestion, lambda(value))

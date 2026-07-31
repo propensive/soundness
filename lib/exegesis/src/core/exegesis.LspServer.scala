@@ -33,6 +33,7 @@
 package exegesis
 
 import scala.collection.mutable as scm
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -71,6 +72,14 @@ object LspServer:
     def apply(server: Lsp): Json => Optional[Json] =
       import strategies.throwUnsafely
       JsonRpc.serve[LspLifecycle](server)
+
+  // Materialized here because the `JsonRpc.serve` macro's `Expr.summon` cannot
+  // expand jacinta's inline `encodable` given for the opaque `List` alias.
+  private given documentSymbolList: (List[Lsp.DocumentSymbol] is Encodable in Json) =
+    scala.compiletime.summonInline[List[Lsp.DocumentSymbol] is Encodable in Json]
+
+  private given selectionRangeList: (List[Lsp.SelectionRange] is Encodable in Json) =
+    scala.compiletime.summonInline[List[Lsp.SelectionRange] is Encodable in Json]
 
   private object languageRoute:
     def apply(server: Lsp): Json => Optional[Json] =
@@ -117,8 +126,8 @@ object LspServer:
           JsonRpc.methods[LspResolve]    -> resolveRoute(server) )
 
     json =>
-      safely(json.method.as[Text]).lay(routes.head._2(json)): method =>
-        routes.find(_._1.contains(method)) match
+      safely(json.method.as[Text]).lay(routes.stdlib.head._2(json)): method =>
+        routes.stdlib.find(_._1.has(method)) match
           case Some((_, dispatch)) => dispatch(json)
           case None                => Unset
 
@@ -265,9 +274,9 @@ trait LspServer() extends Lsp:
       contentChanges: List[TextDocumentContentChangeEvent] )
   :   Unit =
 
-    if contentChanges.nonEmpty then documents.at(textDocument.uri).let: current =>
+    if contentChanges.stdlib.nonEmpty then documents.at(textDocument.uri).let: current =>
       documents(textDocument.uri) =
-        current.copy(version = textDocument.version, text = contentChanges.last.text)
+        current.copy(version = textDocument.version, text = contentChanges.stdlib.last.text)
 
     onChange(textDocument, contentChanges)(using lsp)
 
@@ -522,14 +531,14 @@ trait LspServer() extends Lsp:
 
     // The writer drains the channel and frames each message onto stdout.
     val writer: Task[Unit] = async:
-      outgoing.iterator.each: json =>
+      outgoing.stdlib.iterator.each: json =>
         val body: Text = json.encode
         val payload: Data = body.in[Data]
         summon[Stdio].write(t"Content-Length: ${payload.length}\r\n\r\n".in[Data])
         summon[Stdio].write(payload)
         summon[Stdio].out.flush()
 
-    summon[Stdio].in.source[Data].toLazyList.iterator.frames[ContentLength].each: frame =>
+    summon[Stdio].in.source[Data].toProgression.stdlib.iterator.frames[ContentLength].each: frame =>
       try dispatch(frame.utf8.as[Json]).let(put)
       catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").in[Json])
 
@@ -538,13 +547,13 @@ trait LspServer() extends Lsp:
   // A runnable entry point: an `LspServer` object carries its own `main`, running as an
   // Ethereal resident daemon over the stdio JSON-RPC transport. `main` is a plain (non-inline)
   // method, so the object's static `main([Ljava/lang/String;)V` forwarder is a valid JVM entry
-  // point (`IArray[Text]` erases to `Array[String]`), and defining the server is enough to run
+  // point (`Array[Text]` erases to `Array[String]`), and defining the server is enough to run
   // it — no `@main`, and no `cli`/`execute`/`supervise` boilerplate. Ethereal's `cli` reads the
   // real invocation from the daemon environment, so the JVM `args` are unused; it also provides
   // the `-Dbuild.executable=<name>` native-launcher assembly path. To externalize the classpath
   // with Burdock (shipping a thin launcher rather than a fat JAR), override this in the server's
-  // own module with `override def main(args: IArray[Text]): Unit = externalize(super.main(args))`.
-  def main(args: IArray[Text]): Unit = cli:
+  // own module with `override def main(args: Array[Text]): Unit = externalize(super.main(args))`.
+  def main(args: Array[Text]): Unit = cli:
     execute:
       supervise(serve())
       Exit.Ok

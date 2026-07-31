@@ -70,10 +70,10 @@ extends DecimalConverter:
 
       @tailrec
       def write
-        ( chars: Array[Char], bcd: Long, index: Int, carry: Boolean, point: Int )
-      :   Array[Char] =
+        ( chars: scala.Array[Char]^, bcd: Long, index: Int, carry: Boolean, point: Int )
+      :   Unit =
 
-        if index < 0 then chars else
+        if index >= 0 then
           var digit = bcd & 15
           var carry2 = carry
 
@@ -87,7 +87,7 @@ extends DecimalConverter:
           write(chars, if index != point then (bcd >> 4) else bcd, index - 1, carry2, point)
 
       @tailrec
-      def recur(focus: Double, bcd: Long, index: Int): Array[Char] =
+      def recur(focus: Double, bcd: Long, index: Int): scala.Array[Char]^ =
         val digit = focus.toLong
         val next: Double = (focus - digit)*10
         val bcd2 = (bcd << 4) + focus.toLong
@@ -103,7 +103,7 @@ extends DecimalConverter:
                 exponentScale(exponentValue, 0)
 
           val fullLength = (if sign then 1 else 0) + (if point < length then 1 else 0) + length
-          val array = new Array[Char](fullLength + suffix)
+          val array = new scala.Array[Char](fullLength + suffix)
 
           if exponentiate then
             var index = 0
@@ -134,10 +134,12 @@ extends DecimalConverter:
               next >= 5,
               if sign then point + 1 else point )
 
+          array
+
         else
           recur(next, bcd2, index + 1)
 
-      val chars: Array[Char] = recur(norm, 0L, 1)
+      val chars: scala.Array[Char]^ = recur(norm, 0L, 1)
       if sign then chars(0) = (if negative then minusSign else plusSign.vouch)
 
       Text(new String(chars))

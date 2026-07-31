@@ -32,6 +32,8 @@
                                                                                                   */
 package harlequin
 
+import proscenium.compat.*
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -64,8 +66,8 @@ object Scala extends ProgrammingLanguage:
 
   override def postprocess(code: SourceCode, context: Optional[Context]): SourceCode =
     context match
-      case Context.Term => code.copy(lines = code.lines.init.tail)
-      case Context.Type => code.copy(lines = code.lines.tail)
+      case Context.Term => code.copy(lines = Array.frozen(code.lines.readable.init.tail))
+      case Context.Type => code.copy(lines = Array.frozen(code.lines.readable.tail))
       case _            => code
 
 object Java extends ProgrammingLanguage:

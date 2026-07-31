@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import scala.caps
+
 import soundness.*
 
 import ambience.systems.javaSystem
@@ -220,7 +222,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an enum entry is reachable by name, and usable as an argument"):
         val relaxed = make[kotlin.text.Regex]
-          ( t"[a-z]+", enumEntry[kotlin.text.RegexOption]("IGNORE_CASE") )
+          ( t"[a-z]+", xenophile.enumEntry[kotlin.text.RegexOption]("IGNORE_CASE") )
 
         val matches: Boolean = relaxed.matches(t"ABC")
         matches
@@ -228,7 +230,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an unknown enum entry lists the real ones"):
         demilitarize:
-          enumEntry[kotlin.text.RegexOption]("IGNORE_CAES")
+          xenophile.enumEntry[kotlin.text.RegexOption]("IGNORE_CAES")
         . map(_.message)
       . assert(_.exists(_.contains("IGNORE_CASE")))
 
@@ -327,7 +329,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"a Scala array bridges to a Java array parameter (element conversion)"):
         // The `E[]` constructor wants `CharSequence[]`; a Scala `Array[Text]` bridges to it.
-        val strings: Array[Text] = Array(t"a", t"bb")
+        val strings: scala.Array[Text] = scala.Array(t"a", t"bb")
         val list = make[java.util.concurrent.CopyOnWriteArrayList[CharSequence]](strings)
         list.size()
       . assert(_ == 2)
@@ -345,7 +347,8 @@ object Tests extends Suite(m"Xenophile tests"):
         // `setUncaughtExceptionHandler(UncaughtExceptionHandler)` reached as a `var`; the lambda's
         // `who`/`error` parameters are inferred. A package-private `uncaughtExceptionHandler(handler)`
         // method of the same name (JDK-internal) no longer shadows the generated setter.
-        thread.uncaughtExceptionHandler = ((who, error) => caught = true)
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          thread.uncaughtExceptionHandler = ((who, error) => caught = true)
         val installed = thread.getUncaughtExceptionHandler().k
         installed.uncaughtException(thread.k, RuntimeException("boom"))
         caught
@@ -378,14 +381,17 @@ object Tests extends Suite(m"Xenophile tests"):
         val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
         greeting.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"greet"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args) if args.length == 1 => m == t"greet"
           case _                                                                      => false
 
       test(m"a Foreign argument of the declared parameter type is accepted"):
         val linked: Foreign of "Foo" from Typescript = foo.link(foo.bar)
         linked.expr
       . assert:
-          case Foreign.Expression.Apply(_, List(Foreign.Expression.Select(_, b, _))) => b == t"bar"
+          case Foreign.Expression.Apply(_, args__) if args__.length == 1 =>
+            args__.head match
+              case Foreign.Expression.Select(_, b, _) => b == t"bar"
+              case _                                  => false
           case _                                                                      => false
 
     suite(m"Conversion of Scala values to Foreign"):
@@ -399,7 +405,10 @@ object Tests extends Suite(m"Xenophile tests"):
       test(m"a Scala argument is converted to a `Foreign` literal upon application"):
         foo.greet(t"hi").expr
       . assert:
-          case Foreign.Expression.Apply(_, List(Foreign.Expression.Literal(_))) => true
+          case Foreign.Expression.Apply(_, args__) if args__.length == 1 =>
+            args__.head match
+              case Foreign.Expression.Literal(_) => true
+              case _                             => false
           case _                                                                 => false
 
       test(m"an Optional value converts to a `Foreign` literal (optional instance)"):
@@ -476,7 +485,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val absolute: Foreign of "int" from Native = library.abs(5)
         absolute.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"abs"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"abs"
           case _                                                                      => false
 
       test(m"a function returning `const char*` has the C-string foreign type"):
@@ -495,14 +504,14 @@ object Tests extends Suite(m"Xenophile tests"):
         val counter: Foreign of "int" from Native = library.increment(1)
         counter.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"increment"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"increment"
           case _                                                                      => false
 
       test(m"a fixed-width `int32_t` is canonicalised to `int`"):
         val value: Foreign of "int" from Native = library.identity(42)
         value.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"identity"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"identity"
           case _                                                                      => false
 
       test(m"passing a C argument of the wrong foreign type is a compile error"):
@@ -523,7 +532,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val greeting: Foreign of "string" from Wit = api.greet(t"hi")
         greeting.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"greet"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"greet"
           case _                                                                      => false
 
       test(m"an `enum` is the unsigned discriminant sized to its cases"):
@@ -551,7 +560,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val found: Foreign of ("string" | "none") from Wit = api.lookup(t"k")
         found.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"lookup"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"lookup"
           case _                                                                      => false
 
       test(m"passing a WIT argument of the wrong foreign type is a compile error"):
@@ -560,7 +569,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
       test(m"an interface function is qualified with its package's module id"):
         val wit = t"package wasi:random@0.2.0; interface random { get-random-u64: func() -> u64; }"
-        WitDialect.parse(wit)(t"random")(t"get-random-u64").module.or(t"")
+        WitDialect.parse(wit).stdlib(t"random").stdlib(t"get-random-u64").module.or(t"")
       . assert(_ == t"wasi:random/random@0.2.0")
 
     suite(m"WebIDL (synthetic sample)"):
@@ -597,7 +606,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val described: Foreign of ("string" | "null") from WebIdl = shape.describe(t"the ")
         described.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) => m == t"describe"
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 => m == t"describe"
           case _                                                                      => false
 
       test(m"an `enum` reference resolves to `string`"):
@@ -683,7 +692,7 @@ object Tests extends Suite(m"Xenophile tests"):
 
         dispatched.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) =>
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 =>
             m == t"dispatchEvent"
 
           case _ =>
@@ -693,7 +702,7 @@ object Tests extends Suite(m"Xenophile tests"):
         val appended: Foreign of "Node" from WebIdlDom = node.appendChild(Foreign["Node", WebIdlDom])
         appended.expr
       . assert:
-          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), List(_)) =>
+          case Foreign.Expression.Apply(Foreign.Expression.Select(_, m, _), args__) if args__.length == 1 =>
             m == t"appendChild"
 
           case _ =>

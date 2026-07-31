@@ -32,7 +32,9 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.pureFunctions
 
 import beneficence.*
 import fulminate.*
@@ -40,7 +42,7 @@ import fulminate.*
 object Emit:
   // Builds an `Emit` whose `record` simply runs `handler` as a side-effect at the emit point — the
   // basis of `handle`, where each covered error type gets an `Emit` backed by its case body.
-  def apply[error <: Hazard](handler: error => Unit)(using diagnostics0: Diagnostics)
+  def apply[error <: Hazard](consume handler: error => Unit)(using diagnostics0: Diagnostics)
   :   Emit[error]^ =
 
     new Emit[error]:
@@ -68,6 +70,7 @@ trait Emit[-error <: Hazard] extends Findable, caps.ExclusiveCapability:
   def contramap[error2 <: Hazard](lambda: error2 => error)
   :   Emit[error2]^ =
 
-    new Emit[error2]:
-      def diagnostics: Diagnostics = emitter.diagnostics
-      def record(error: Diagnostics ?=> error2): Unit = emitter.record(lambda(error))
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      new Emit[error2]:
+        def diagnostics: Diagnostics = emitter.diagnostics
+        def record(error: Diagnostics ?=> error2): Unit = emitter.record(lambda(error))

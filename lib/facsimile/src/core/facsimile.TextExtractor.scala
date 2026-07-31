@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import quantitative.*
@@ -47,7 +49,7 @@ private[facsimile] object TextExtractor:
   def extract(operators: List[PdfOperator], fonts: Map[Text, PdfFont], scale: Double)
   :   (List[TextRun], Text) =
 
-    val runs = List.newBuilder[TextRun]
+    val runs = scala.collection.immutable.List.newBuilder[TextRun]
     val text = StringBuilder()
 
     var ctm = PdfMatrix.Identity
@@ -150,10 +152,17 @@ private[facsimile] object TextExtractor:
         font = fonts.at(name)
         size = points
 
-      case PdfOperator.ShowTexts(elements) => elements.each: element =>
-        (element: @unchecked) match
-          case adjustment: Double => kern(adjustment)
-          case bytes: Data        => show(bytes)
+      // Via `stdlib.foreach` and a `Double`-first match: the frozen-array union member
+      // takes a reach capture under pattern binding that `each`'s Traversable rejects.
+      // Guard-plus-cast, not a type-test pattern: binding a `ShowTexts` refines its
+      // frozen-array-union field with capture variables the checker cannot discharge.
+      case operator if operator.isInstanceOf[PdfOperator.ShowTexts] =>
+        operator.asInstanceOf[PdfOperator.ShowTexts].elements
+        . asInstanceOf[List[scala.IArray[Byte] | Double]] // pure view; same erasure
+        . stdlib.foreach: element =>
+          (element.asInstanceOf[Matchable]: @unchecked) match
+            case adjustment: Double => kern(adjustment)
+            case bytes              => show(bytes.asInstanceOf[Data])
 
       case PdfOperator.NextLineShow(bytes) =>
         offset(0, -leading)
@@ -168,4 +177,4 @@ private[facsimile] object TextExtractor:
       case _ =>
         ()
 
-    (runs.result(), text.toString.tt)
+    (List.of(runs.result()), text.toString.tt)

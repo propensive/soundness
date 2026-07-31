@@ -54,6 +54,7 @@ trait Focus:
 // wrapped rows its current value occupies, so an editor that grows past one line
 // pushes the rest of the layout down.
 class EditorField(initial: LineEditor = LineEditor()) extends Focus:
+  @scala.caps.unsafe.untrackedCaptures
   private var editor: LineEditor = initial
 
   def value: Text = editor.value
@@ -75,6 +76,7 @@ class EditorField(initial: LineEditor = LineEditor()) extends Focus:
 // A focusable wrapping a `SelectMenu`. Its intrinsic height is one row per
 // option.
 class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
+  @scala.caps.unsafe.untrackedCaptures
   private var menu: SelectMenu[item] = initial
 
   def value: item = menu.current
@@ -105,4 +107,4 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
 
   def handle(event: TerminalEvent): Unit = menu = menu.apply(event)
 
-  def measure(width: Int): (Int, Int) = (0, menu.options.length)
+  def measure(width: Int): (Int, Int) = (0, menu.options.stdlib.length)

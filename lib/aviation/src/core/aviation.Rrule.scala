@@ -38,6 +38,8 @@ import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
 import gossamer.*
 import prepositional.*
+import proscenium.compat.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -71,9 +73,9 @@ object Rrule:
       bounded(civil(starting, rule).map(_.in(zone)), rule.until, rule.count)
 
   // Apply COUNT (take) and UNTIL (inclusive upper bound) to a generated, ascending stream.
-  private def bounded[point](stream: LazyList[point], until: Optional[point], count: Optional[Int])
+  private def bounded[point](stream: Chain[point], until: Optional[point], count: Optional[Int])
     ( using order: Ordering[point] )
-  :   LazyList[point] =
+  :   Chain[point] =
 
     val capped = until.lay(stream): limit => stream.takeWhile(!order.gt(_, limit))
 
@@ -85,28 +87,29 @@ object Rrule:
 
   private val weekdayCodes: List[Text] = List(t"MO", t"TU", t"WE", t"TH", t"FR", t"SA", t"SU")
 
-  private def code(weekday: Weekday): Text = weekdayCodes(weekday.ordinal)
+  private def code(weekday: Weekday): Text = weekdayCodes.stdlib(weekday.ordinal)
 
   private def renderDay(entry: WeekdayOrdinal): Text =
     entry.ordinal.lay(code(entry.weekday)): ordinal => t"$ordinal${code(entry.weekday)}"
 
   given encodable: [point: Encodable in Text] => Rrule[point] is Encodable in Text = rule =>
-    def part(condition: Boolean, text: => Text): List[Text] = if condition then List(text) else Nil
+    def part(condition: Boolean, text: => Text): List[Text] =
+      if condition then List(text) else List()
 
     val parts =
-      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") ++
-        part(rule.interval != 1, t"INTERVAL=${rule.interval}") ++
-        part(rule.count.present, t"COUNT=${rule.count.vouch}") ++
-        part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") ++
-        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") ++
-        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") ++
-        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") ++
-        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") ++
-        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") ++
-        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") ++
-        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") ++
-        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") ++
-        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") ++
+      part(true, t"FREQ=${rule.frequency.toString.tt.upper}") :::
+        part(rule.interval != 1, t"INTERVAL=${rule.interval}") :::
+        part(rule.count.present, t"COUNT=${rule.count.vouch}") :::
+        part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") :::
+        part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") :::
+        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") :::
+        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") :::
+        part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") :::
+        part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") :::
+        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") :::
+        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") :::
+        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") :::
+        part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") :::
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
     parts.join(t";")
@@ -114,15 +117,13 @@ object Rrule:
   def parse[point: Decodable in Text](text: Text, start: point)(using Tactic[RruleError])
   :   Rrule[point] =
 
-    val fields: Map[Text, Text] =
-      text.cut(t";").flatMap: pair =>
+    val fields: Map[Text, Text] = Map.from:
+      text.cut(t";").stdlib.flatMap: pair =>
         pair.cut(t"=") match
-          case List(key, value) => List(key.upper -> value)
-          case _                => Nil
+          case List(key, value) => Some(key.upper -> value)
+          case _                => None
 
-      . to(Map)
-
-    def field(key: Text): Optional[Text] = fields.get(key).getOrElse(Unset)
+    def field(key: Text): Optional[Text] = fields.at(key)
 
     Rrule
       ( start,
@@ -132,7 +133,7 @@ object Rrule:
         field(t"UNTIL").lay(Unset)(_.as[point]),
         field(t"BYMONTH").lay(Nil)(ints(_, text).map { n => Month.fromOrdinal(n - 1) }),
         field(t"BYMONTHDAY").lay(Nil)(ints(_, text)),
-        field(t"BYDAY").lay(Nil) { value => value.cut(t",").to(List).map(dayOf(_, text)) },
+        field(t"BYDAY").lay(Nil) { value => value.cut(t",").map(dayOf(_, text)) },
         field(t"BYYEARDAY").lay(Nil)(ints(_, text)),
         field(t"BYWEEKNO").lay(Nil)(ints(_, text)),
         field(t"BYHOUR").lay(Nil)(ints(_, text)),
@@ -198,7 +199,7 @@ object Rrule:
   // The ascending stream of zoneless date-times. A sub-day frequency steps the clock and filters by
   // the `by*` limits; a date-level frequency expands the date stream and then the time-of-day via
   // `byHour`/`byMinute`/`bySecond` (defaulting to the start's time).
-  private def civil(start: Timestamp, rule: Rrule[?])(using RomanCalendar): LazyList[Timestamp] =
+  private def civil(start: Timestamp, rule: Rrule[?])(using RomanCalendar): Chain[Timestamp] =
     rule.frequency match
       case Frequency.Hourly | Frequency.Minutely | Frequency.Secondly =>
         val step = rule.frequency match
@@ -206,10 +207,10 @@ object Rrule:
           case Frequency.Minutely => rule.interval*60
           case _                  => rule.interval
 
-        LazyList.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
+        Chain.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
 
       case _ =>
-        dates(start.date, rule).flatMap(expandTimes(_, start, rule)).dropWhile(_ < start)
+        dates(start.date, rule).bind(expandTimes(_, start, rule).stdlib).dropWhile(_ < start)
 
   // Expand a date into the times-of-day the rule selects (the `byHour`/`byMinute`/`bySecond` cross
   // product, each defaulting to the start's component).
@@ -235,9 +236,9 @@ object Rrule:
 
   private def subDayMatch(timestamp: Timestamp, rule: Rrule[?])(using RomanCalendar): Boolean =
     dailyMatch(timestamp.date, rule) &&
-      (rule.byHour.isEmpty || rule.byHour.contains(timestamp.hour)) &&
-      (rule.byMinute.isEmpty || rule.byMinute.contains(timestamp.minute)) &&
-      (rule.bySecond.isEmpty || rule.bySecond.contains(timestamp.second))
+      (rule.byHour.isEmpty || rule.byHour.has(timestamp.hour)) &&
+      (rule.byMinute.isEmpty || rule.byMinute.has(timestamp.minute)) &&
+      (rule.bySecond.isEmpty || rule.bySecond.has(timestamp.second))
 
   // The date that is the `n`th day of `year` (negative counts back from the end).
   private def yearDay(year: Int, n: Int)(using calendar: RomanCalendar): Optional[Date] =
@@ -266,35 +267,35 @@ object Rrule:
         weekday <- weekdays
       yield safely(WeekDate(Year(year), week, weekday))
 
-    dates.flatMap(list).filter(monthAllowed(_, rule))
+    dates.bind(list).filter(monthAllowed(_, rule))
 
   // The ascending stream of dates matching the rule, starting at or after `start` (COUNT/UNTIL are
   // applied later, on the point stream). Each period is expanded independently and concatenated;
   // since periods are ascending and disjoint, the result is ascending.
-  private def dates(start: Date, rule: Rrule[?])(using calendar: RomanCalendar): LazyList[Date] =
-    val raw: LazyList[Date] = rule.frequency match
+  private def dates(start: Date, rule: Rrule[?])(using calendar: RomanCalendar): Chain[Date] =
+    val raw: Chain[Date] = rule.frequency match
       case Frequency.Yearly =>
-        LazyList.iterate(yearOf(start))(_ + rule.interval).flatMap: year =>
+        Chain.iterate(yearOf(start))(_ + rule.interval).bind: year =>
           val candidates =
             if rule.byYearDay.nonEmpty then yearDayDates(year, rule)
             else if rule.byWeekNo.nonEmpty then weekNoDates(year, start, rule)
-            else yearMonths(year, start, rule).flatMap(expandMonth(year, _, start, rule))
+            else yearMonths(year, start, rule).bind(expandMonth(year, _, start, rule))
 
-          setPos(candidates.distinct.sortBy(_.jdn), rule.bySetPos)
+          setPos(candidates.distinct.sort(_.jdn), rule.bySetPos).stdlib
 
       case Frequency.Monthly =>
-        months(start, rule.interval).flatMap: (year, month) =>
-          setPos(expandMonth(year, month, start, rule), rule.bySetPos)
+        months(start, rule.interval).bind: (year, month) =>
+          setPos(expandMonth(year, month, start, rule), rule.bySetPos).stdlib
 
       case Frequency.Weekly =>
-        weeks(start, rule).flatMap: weekStart =>
-          setPos(expandWeek(weekStart, start, rule), rule.bySetPos)
+        weeks(start, rule).bind: weekStart =>
+          setPos(expandWeek(weekStart, start, rule), rule.bySetPos).stdlib
 
       case Frequency.Daily =>
-        LazyList.iterate(start)(_.addDays(rule.interval)).filter(dailyMatch(_, rule))
+        Chain.iterate(start)(_.addDays(rule.interval)).filter(dailyMatch(_, rule))
 
       case _ =>
-        LazyList.empty // sub-day frequencies not yet expanded
+        Chain.empty // sub-day frequencies not yet expanded
 
     raw.dropWhile(_.jdn < start.jdn)
 
@@ -306,37 +307,38 @@ object Rrule:
     else List(monthOf(start))
 
   // The ascending (year, month) periods for `Monthly`, stepping `interval` months from the start.
-  private def months(start: Date, interval: Int)(using RomanCalendar): LazyList[(Int, Int)] =
+  private def months(start: Date, interval: Int)(using RomanCalendar): Chain[(Int, Int)] =
     val first = yearOf(start)*12 + (monthOf(start) - 1)
 
-    LazyList.iterate(first)(_ + interval).map: n => (n/12, n%12 + 1)
+    Chain.iterate(first)(_ + interval).map: n =>
+      (n/12, n%12 + 1)
 
   // The ascending week-start dates for `Weekly`, aligned to `weekStart`, stepping `interval` weeks.
-  private def weeks(start: Date, rule: Rrule[?]): LazyList[Date] =
+  private def weeks(start: Date, rule: Rrule[?]): Chain[Date] =
     val offset = (start.weekday.ordinal - rule.weekStart.ordinal + 7)%7
-    LazyList.iterate(start.addDays(-offset))(_.addDays(7*rule.interval))
+    Chain.iterate(start.addDays(-offset))(_.addDays(7*rule.interval))
 
   // The sorted, deduplicated candidate dates within one month, per the day-level rules.
   private def expandMonth(year: Int, month: Int, start: Date, rule: Rrule[?])(using RomanCalendar)
   :   List[Date] =
 
     val byDayDates: Optional[List[Date]] =
-      if rule.byDay.isEmpty then Unset else rule.byDay.flatMap: entry =>
+      if rule.byDay.isEmpty then Unset else rule.byDay.bind: (entry: WeekdayOrdinal) =>
         if entry.ordinal.absent then weekdaysOfMonth(year, month, entry.weekday)
         else list(nthWeekday(year, month, entry.weekday, entry.ordinal.vouch))
 
     val byMonthDayDates: Optional[List[Date]] =
-      if rule.byMonthDay.isEmpty then Unset else rule.byMonthDay.flatMap: day =>
+      if rule.byMonthDay.isEmpty then Unset else rule.byMonthDay.bind: (day: Int) =>
         list(monthDay(year, month, day))
 
     val candidates =
       if byDayDates.present && byMonthDayDates.present
-      then byDayDates.vouch.filter(byMonthDayDates.vouch.contains)
+      then byDayDates.vouch.filter(byMonthDayDates.vouch.has(_))
       else if byDayDates.present then byDayDates.vouch
       else if byMonthDayDates.present then byMonthDayDates.vouch
       else list(monthDay(year, month, dayOf(start)))
 
-    candidates.distinct.sortBy(_.jdn)
+    candidates.distinct.sort(_.jdn)
 
   // The candidate dates within one week (the 7 days from `weekStart`), per `byDay` (or the start's
   // weekday), filtered by `byMonth`.
@@ -346,15 +348,15 @@ object Rrule:
     val weekdays = if rule.byDay.nonEmpty then rule.byDay.map(_.weekday) else List(start.weekday)
 
     (0 to 6).to(List).map(weekStart.addDays(_)).filter: date =>
-      weekdays.contains(date.weekday) && monthAllowed(date, rule)
+      weekdays.has(date.weekday) && monthAllowed(date, rule)
 
   private def dailyMatch(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
     monthAllowed(date, rule) &&
       (rule.byMonthDay.isEmpty || rule.byMonthDay.exists(monthDayMatches(date, _))) &&
-      (rule.byDay.isEmpty || rule.byDay.map(_.weekday).contains(date.weekday))
+      (rule.byDay.isEmpty || rule.byDay.map(_.weekday).has(date.weekday))
 
   private def monthAllowed(date: Date, rule: Rrule[?])(using RomanCalendar): Boolean =
-    rule.byMonth.isEmpty || rule.byMonth.map(_.numerical).contains(monthOf(date))
+    rule.byMonth.isEmpty || rule.byMonth.map(_.numerical).has(monthOf(date))
 
   // ── calendar helpers ─────────────────────────────────────────────────────────────────────────
 
@@ -376,10 +378,10 @@ object Rrule:
   private def weekdaysOfMonth(year: Int, month: Int, weekday: Weekday)(using RomanCalendar)
   :   List[Date] =
 
-    list(date(year, month, 1)).flatMap: first =>
+    list(date(year, month, 1)).bind: first =>
       val offset = (weekday.ordinal - first.weekday.ordinal + 7)%7
-      LazyList.iterate(first.addDays(offset))(_.addDays(7))
-        .takeWhile(monthOf(_) == month).to(List)
+      Chain.iterate(first.addDays(offset))(_.addDays(7))
+        .takeWhile(monthOf(_) == month).stdlib.to(List)
 
   // The `ordinal`-th `weekday` of the month (positive from the start, negative from the end).
   private def nthWeekday(year: Int, month: Int, weekday: Weekday, ordinal: Int)(using RomanCalendar)
@@ -395,11 +397,11 @@ object Rrule:
     if positions.isEmpty then candidates else
       val count = candidates.length
 
-      val chosen = positions.flatMap: position =>
+      val chosen = positions.bind: (position: Int) =>
         val index = if position > 0 then position - 1 else count + position
         if index >= 0 && index < count then List(candidates(index)) else Nil
 
-      chosen.distinct.sortBy(_.jdn)
+      chosen.distinct.sort(_.jdn)
 
 case class Rrule[point]
   ( start:      point,

@@ -32,10 +32,13 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import galilei.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
@@ -46,13 +49,13 @@ import filesystemBackends.virtualMachine
 // Opening a filesystem path or building an archive from disk needs `bitumen.jvm`; re-exported
 // through `soundness.*`, so `path.open[Tar]` and `Tar.Entry(...)` resolve as before on the JVM.
 given tarPathOpenable: [path: Abstractable across Paths to Text]
-=>  ( Tactic[TarError], Tactic[StreamError] )
-=>  ( TarOpenable[path]^ ) =
+=>  ( tarTactic: Tactic[TarError], streamTactic: Tactic[StreamError] )
+=>  ( TarOpenable[path]^{tarTactic, streamTactic} ) =
   TarOpenable[path]
 
 given creatable: [path: Abstractable across Paths to Text]
-=>  Tactic[TarError]
-=>  ( TarBuilder.TarCreatable[path]^ ) =
+=>  (tactic: Tactic[TarError])
+=>  ( TarBuilder.TarCreatable[path]^{tactic} ) =
   TarBuilder.TarCreatable[path]
 
 extension (companion: Tarfile.type)
@@ -65,7 +68,7 @@ extension (companion: Tarfile.type)
             Tactic[TarError] )
   :   Tarfile =
 
-    val entries: List[Tar.Entry] = root.descendants.to(List).map: path =>
+    val entries: List[Tar.Entry] = root.descendants.to[List].map: path =>
       TarFilesystem.entryFor(root, path)
 
     Tarfile(entries)
@@ -79,4 +82,5 @@ extension (tarfile: Tarfile)
             Tactic[TarError] )
   :   Unit =
 
-    tarfile.entries.foreach: entry => TarFilesystem.applyEntry(root, entry)
+    tarfile.entries.each: entry =>
+      TarFilesystem.applyEntry(root, entry)

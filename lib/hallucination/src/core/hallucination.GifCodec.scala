@@ -33,11 +33,10 @@
 package hallucination
 
 import scala.collection.mutable as scm
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import Binary.*
 import RasterError.Reason
@@ -59,17 +58,17 @@ private[hallucination] object GifCodec:
 
       var position = 13
 
-      val global: IArray[Int] =
+      val global: Array[Int]^{} =
         if (packed&0x80) != 0 then
           val size = 2 << (packed&7)
           val table = readTable(data, position, size)
           position += size*3
           table
         else
-          IArray()
+          Array.of()
 
       var transparentIndex = -1
-      val screen = new Array[Long](width*height)
+      val screen = new scala.Array[Long](width*height)
 
       def skipBlocks(): Unit =
         while u8(data, position) != 0 do position += u8(data, position) + 1
@@ -98,7 +97,7 @@ private[hallucination] object GifCodec:
             val framePacked = u8(data, position + 9)
             position += 10
 
-            val palette: IArray[Int] =
+            val palette: Array[Int]^{} =
               if (framePacked&0x80) != 0 then
                 val size = 2 << (framePacked&7)
                 val table = readTable(data, position, size)
@@ -128,23 +127,31 @@ private[hallucination] object GifCodec:
             val pixels = frameWidth*frameHeight
 
             val indices =
-              GifLzw.decode(minimum, compressed.result().immutable(using Unsafe), pixels)
+              GifLzw.decode(minimum, Array.unsafeFrozen(compressed.result()), pixels)
 
             // Interlaced frames deliver their rows in four passes.
-            val rows: Array[Int] = new Array[Int](frameHeight)
+            val rows: scala.Array[Int]^ = new scala.Array[Int](frameHeight)
 
             if interlaced then
               var row = 0
+              var passes = List((0, 8), (4, 8), (2, 4), (1, 2)).stdlib
 
-              for (start, step) <- List((0, 8), (4, 8), (2, 4), (1, 2)) do
+              while passes.nonEmpty do
+                val (start, step) = passes.head
                 var y = start
 
                 while y < frameHeight do
                   rows(row) = y
                   row += 1
                   y += step
+
+                passes = passes.tail
             else
-              for y <- 0 until frameHeight do rows(y) = y
+              var y = 0
+
+              while y < frameHeight do
+                rows(y) = y
+                y += 1
 
             for row <- 0 until frameHeight do
               val y = top + rows(row)
@@ -170,8 +177,8 @@ private[hallucination] object GifCodec:
 
     catch case _: IndexOutOfBoundsException => abort(RasterError(Gif(), Reason.Truncated))
 
-  private def readTable(data: Data, position: Int, size: Int): IArray[Int] =
-    IArray.tabulate(size): index =>
+  private def readTable(data: Data, position: Int, size: Int): Array[Int]^{} =
+    Array.tabulate(size): index =>
       u8(data, position + index*3) << 16 |
         u8(data, position + index*3 + 1) << 8 |
         u8(data, position + index*3 + 2)
@@ -180,8 +187,8 @@ private[hallucination] object GifCodec:
     val width = raster.width
     val height = raster.height
     val counts = scm.HashMap[Int, Int]()
-    val opacity = new Array[Boolean](width*height)
-    val colors = new Array[Int](width*height)
+    val opacity = new scala.Array[Boolean](width*height)
+    val colors = new scala.Array[Int](width*height)
     var transparent = false
 
     for index <- 0 until width*height do
@@ -200,7 +207,7 @@ private[hallucination] object GifCodec:
     val (palette, assignment) = Quantization(counts, limit)
     val transparentIndex = palette.length
 
-    val indices = new Array[Byte](width*height)
+    val indices = new scala.Array[Byte](width*height)
 
     for index <- 0 until width*height do
       indices(index) =
@@ -267,4 +274,4 @@ private[hallucination] object GifCodec:
 
     write8(0)
     write8(0x3b)
-    output.result().immutable(using Unsafe)
+    Array.unsafeFrozen(output.result())

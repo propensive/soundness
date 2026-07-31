@@ -32,6 +32,8 @@
                                                                                                   */
 package escritoire
 
+import scala.collection.immutable.IndexedSeq
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -43,7 +45,7 @@ import rudiments.*
 import symbolism.*
 import vacuous.*
 
-extension [row](data: Seq[row])
+extension [row](data: List[row])
   def tabulation[text: Textual](using tabulable: row is Tabulable[text]): Tabulation[text] =
 
     tabulable.tabulate(data)
@@ -57,7 +59,7 @@ extension [value](value: value)
 // enclosing scope and these can stay package-level givens — accessing `failAttenuation` or
 // `ignoreAttenuation` then captures no capability (unlike a member of an `ExclusiveCapability` object).
 package columnAttenuation:
-  given failAttenuation: Tactic[TableError] => (Attenuation^) =
+  given failAttenuation: (tactic: Tactic[TableError]) => (Attenuation^{tactic}) =
     (minimum, available) => raise(TableError(minimum, available))
 
   given ignoreAttenuation: Attenuation = (minimum, available) => ()
@@ -77,18 +79,21 @@ package columnar:
   // Cumulative display width up to each char position; `widths(i)` is the width
   // of `text.plain.s.substring(0, i)`. `widths.length == text.plain.s.length + 1`.
   private def prefixWidths[textual: Textual](text: textual)(using Char is Measurable)
-  :   IArray[Int] =
+  :   Array[Int]^{} =
 
     val plain = text.plain.s
     val n = plain.length
-    val arr = new Array[Int](n + 1)
+    val buffer = Array[Int](n + 1)
+    var total = 0
     var i = 0
+    buffer(0) = 0
 
     while i < n do
-      arr(i + 1) = arr(i) + summon[Char is Measurable].width(plain.charAt(i))
+      total += summon[Char is Measurable].width(plain.charAt(i))
+      buffer(i + 1) = total
       i += 1
 
-    arr.immutable(using Unsafe)
+    Array.freeze(buffer)
 
   // Sum of char widths over `text.plain`.
   private def displayWidth[textual: Textual](text: textual)(using Text is Measurable): Int =
@@ -105,30 +110,30 @@ package columnar:
 
       while i < n do
         if plain.charAt(i) == ' ' then
-          val wordWidth = widths(i) - widths(lastStart)
+          val wordWidth = widths.readable(i) - widths.readable(lastStart)
           if wordWidth > max then max = wordWidth
           lastStart = i + 1
 
         i += 1
 
-      val tailWidth = widths(n) - widths(lastStart)
+      val tailWidth = widths.readable(n) - widths.readable(lastStart)
       if tailWidth > max then max = tailWidth
       max
 
-    def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
+    def width[textual: Textual](lines: Array[textual]^{}, maxWidth: Int, slack: Double)
       ( using Text is Measurable )
     :   Optional[Int] =
 
       // `Text is Measurable` (general derivation) is implied by `Char is Measurable`
       // in scope; longestWord needs the per-char measurer.
       given Char is Measurable = _.toString.tt.metrics
-      val longestLine = lines.map(displayWidth(_)).max
-      lines.map(longestWord(_)).max.max((slack*maxWidth).toInt).min(longestLine)
+      val longestLine = lines.readable.map(displayWidth(_)).max
+      lines.readable.map(longestWord(_)).max.max((slack*maxWidth).toInt).min(longestLine)
 
 
-    def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
+    def fit[textual: Textual](lines: Array[textual]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[textual] =
+    :   Sequence[textual] =
 
       given measurable: Char is Measurable = _.toString.tt.metrics
       val hyphen = textual(t"-")
@@ -160,9 +165,9 @@ package columnar:
           var best = -1
           var index = 0
 
-          while index < breaks.length do
-            val candidate = wordStart + breaks(index)
-            val w = widths(candidate) - widths(lineStart) + hyphenWidth
+          while index < breaks.readable.length do
+            val candidate = wordStart + breaks.readable(index)
+            val w = widths.readable(candidate) - widths.readable(lineStart) + hyphenWidth
             if w <= width then best = candidate
             index += 1
 
@@ -182,7 +187,7 @@ package columnar:
 
             if current == ' ' then recur(position + 1, lineStart, position, acc)
             else
-              val widthSoFar = widths(position + 1) - widths(lineStart)
+              val widthSoFar = widths.readable(position + 1) - widths.readable(lineStart)
 
               if widthSoFar > width then
                 val wordStart = if lastSpace > lineStart then lastSpace + 1 else lineStart
@@ -202,23 +207,23 @@ package columnar:
 
         recur(0, 0, 0, Nil)
 
-      lines.to(IndexedSeq).flatMap(format(_).reverse)
+      Sequence.of(lines.readable.to(IndexedSeq).bind(format(_).reverse).toVector)
 
   object ParagraphOrBreak extends Columnar:
-    def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
+    def width[textual: Textual](lines: Array[textual]^{}, maxWidth: Int, slack: Double)
       ( using Text is Measurable )
     :   Optional[Int] =
 
       (maxWidth*slack + 1).toInt.min(maxWidth)
 
 
-    def fit[textual: Textual](lines: IArray[textual], width: Int, textAlign: TextAlignment)
+    def fit[textual: Textual](lines: Array[textual]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[textual] =
+    :   Sequence[textual] =
 
       given Char is Measurable = _.toString.tt.metrics
 
-      if lines.map(Paragraph.longestWord(_)).max < width
+      if lines.readable.map(Paragraph.longestWord(_)).max < width
       then Paragraph.fit(lines, width, textAlign)
       else
         var result: List[textual] = Nil
@@ -228,51 +233,53 @@ package columnar:
 
           (0 until count).each: index => result = line.segment((width*index).z span width) :: result
 
-        result.reverse.to(Series)
+        Sequence.of(result.stdlib.reverse.toVector)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
-    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
+    def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
       ( using Text is Measurable )
     :   Optional[Int] =
 
       fixedWidth
 
 
-    def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
+    def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[text] =
+    :   Sequence[text] =
 
-      lines.to(IndexedSeq).map: line =>
-        if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
-        else line
+      Sequence.of:
+        lines.readable.toVector.map: line =>
+          if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
+          else line
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
-    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
+    def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
       ( using Text is Measurable )
     :   Optional[Int] =
 
-      val naturalWidth = lines.map(_.plain.metrics).max
+      val naturalWidth = lines.readable.map(_.plain.metrics).max
       (maxWidth*slack).toInt.min(naturalWidth)
 
 
-    def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
+    def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[text] =
+    :   Sequence[text] =
 
-      lines.to(IndexedSeq).map: line =>
-        if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
-        else line
+      Sequence.of:
+        lines.readable.toVector.map: line =>
+          if line.plain.metrics > width then line.keep(width - ellipsis.length)+text(ellipsis)
+          else line
 
   case class Collapsible(threshold: Double) extends Columnar:
-    def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
+    def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
       ( using Text is Measurable )
     :   Optional[Int] =
 
-      if slack > threshold then lines.map(_.plain.metrics).max else Unset
+      if slack > threshold then lines.readable.map(_.plain.metrics).max else Unset
 
 
-    def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
+    def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
       ( using Text is Measurable, Hyphenation )
-    :   IndexedSeq[text] =
+    :   Sequence[text] =
 
-      lines.to(IndexedSeq)
+      Sequence.of(lines.readable.toVector)

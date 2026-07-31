@@ -32,6 +32,10 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
+import scala.caps
+
 import java.io as ji
 import java.nio.file as jnf
 
@@ -59,7 +63,7 @@ class TarEntryWriter private[bitumen] (put0: Data => Unit) extends caps.Exclusiv
   def write[data: Streamable by Data over Credit as streamable](data: data)(using Buffering)
   :   Unit =
 
-    zephyrine.toLazyList(streamable.stream(data)).each(put0(_))
+    zephyrine.toProgression(streamable.stream(data)).foreach(put0(_))
 
 // The authoring handle provided by `path.create[Tar](flags*)`. TAR permits duplicate names
 // (later entries supersede on extraction), so nothing is checked at insert.
@@ -75,6 +79,7 @@ class TarBuilder private[bitumen]
   ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
   ( using Tactic[TarError] )
 extends caps.ExclusiveCapability:
+  @scala.caps.unsafe.untrackedCaptures
   private var stack: List[Tar.Entry] = Nil
 
   def insert(entry: Tar.Entry): Unit = sink.lay(stack ::= entry)(writeEntry(_, entry))
@@ -104,7 +109,7 @@ extends caps.ExclusiveCapability:
     sink.lay:
       val buffer = scm.ArrayBuffer[Data]()
       val outcome = block(using TarEntryWriter(buffer += _))
-      insert(Tar.Entry.File(name, mode, user, group, mtime, TarBody(buffer.to(Seq)*)))
+      insert(Tar.Entry.File(name, mode, user, group, mtime, TarBody(buffer.toSeq*)))
       outcome
 
     . apply: out =>
@@ -151,7 +156,7 @@ extends caps.ExclusiveCapability:
     if remainder != 0 then write(out, Tarfile.zeroBlock.slice(0, 512 - remainder))
 
   private def write(out: ji.RandomAccessFile, chunk: Data): Unit =
-    try out.write(chunk.mutable(using Unsafe))
+    try out.write(Array.unsafeJvm(chunk))
     catch case error: ji.IOException =>
       abort(TarError(TarError.Reason.CannotWrite(error.getMessage.nn.tt)))
 
@@ -178,11 +183,11 @@ object TarBuilder:
       ( block: ((TarBuilder & Granting[Grant.Read & Grant.Write])^) ?=> result )
     :   result =
 
-      val format = flags.collectFirst { case format: LongNameFormat => format }
+      val format = flags.stdlib.collectFirst { case format: LongNameFormat => format }
         . getOrElse(LongNameFormat.Pax)
 
-      val compression = flags.collectFirst { case flag: TarFlag => flag }
-      val createFlags = flags.collect { case flag: CreateFlag => flag }
+      val compression = flags.stdlib.collectFirst { case flag: TarFlag => flag }
+      val createFlags = flags.stdlib.collect { case flag: CreateFlag => flag }
 
       compression match
         case Some(tarFlag) =>
@@ -192,7 +197,7 @@ object TarBuilder:
           val outcome = block(using builder)
           val tarfile = builder.tarfile(format)
 
-          commit(value.generic, createFlags, tarFlag match
+          commit(value.generic, List.of(createFlags), tarFlag match
             case TarFlag.Gzip    => tarfile.gzip
             case TarFlag.Zlib    => tarfile.zlib
             case TarFlag.Deflate => tarfile.deflate)
@@ -206,11 +211,11 @@ object TarBuilder:
           val filename = value.generic
           val target = jnf.Path.of(filename.s).nn
 
-          if !createFlags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+          if !createFlags.has(CreateFlag.Replace) && jnf.Files.exists(target)
           then abort(TarError(TarError.Reason.AlreadyExists))
 
           try
-            if createFlags.contains(CreateFlag.Parents) then
+            if createFlags.has(CreateFlag.Parents) then
               Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
 
             val temporary =
@@ -248,11 +253,11 @@ object TarBuilder:
 
     val target = jnf.Path.of(filename.s).nn
 
-    if !flags.contains(CreateFlag.Replace) && jnf.Files.exists(target)
+    if !flags.has(CreateFlag.Replace) && jnf.Files.exists(target)
     then abort(TarError(TarError.Reason.AlreadyExists))
 
     try
-      if flags.contains(CreateFlag.Parents) then
+      if flags.has(CreateFlag.Parents) then
         Option(target.toAbsolutePath.nn.getParent).foreach(jnf.Files.createDirectories(_))
 
       val temporary = target.resolveSibling(t".${filename.s.split('/').nn.last.nn}.part".s).nn
@@ -262,7 +267,7 @@ object TarBuilder:
 
         try
           stream.sweep: (window, start, count) =>
-            out.write(window.asInstanceOf[Array[Byte]], start, count)
+            out.write(window.asInstanceOf[scala.Array[Byte]], start, count)
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

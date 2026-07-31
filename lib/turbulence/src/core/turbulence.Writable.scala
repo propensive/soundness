@@ -62,7 +62,7 @@ object Writable:
       (storage, start, count) =>
         if !failed then
           try
-            outputStream.write(storage.asInstanceOf[Array[Byte]], start, count)
+            outputStream.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
             total += count
           catch case error: ji.IOException => failed = true
 
@@ -117,13 +117,13 @@ object Writable:
   given chunked: [medium, writable]
   =>  (writable0: (writable is Writable by medium)^, addressable: medium is Addressable,
       buffering: Buffering)
-  =>  ((writable is Writable by IArray[medium])^{writable0}) =
+  =>  ((writable is Writable by (Array[medium]^{}))^{writable0}) =
 
     (target, stream) =>
       writable0.write
         ( target,
           Stream
-            (stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[IArray[medium]] over Credit)^]
+            (stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Array[medium]^{}] over Credit)^]
               . records) )
 
   given channel: (streamCut: Emit[StreamError], buffering: Buffering)
@@ -136,7 +136,7 @@ object Writable:
       stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].sweep:
         (storage, start, count) =>
           if !failed then
-            val buffer = jn.ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
+            val buffer = jn.ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count).nn
 
             try
               while buffer.hasRemaining do
@@ -151,7 +151,7 @@ object Writable:
 
 // A target which accepts a whole stream of `Operand` chunks and writes it to
 // completion: the stream parameter is a single-owner pull endpoint which the
-// writer drains (formerly a `LazyList`). `Sink` is the endpoint-minting
+// writer drains (formerly a `Chain`). `Sink` is the endpoint-minting
 // counterpart, for callers that push.
 trait Writable extends Typeclass, Operable:
   def write(target: Self, stream: (Stream[Operand] over Credit)^): Unit

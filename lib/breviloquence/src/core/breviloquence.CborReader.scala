@@ -32,6 +32,8 @@
                                                                                                   */
 package breviloquence
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import vacuous.*
@@ -87,7 +89,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   inline update def boolean(): Boolean = parser.directBoolean()(using tactic)
   update def text(): Text = parser.directString()(using tactic).tt
   update def string(): String = parser.directString()(using tactic)
-  update def byteString(): IArray[Byte] = parser.directBytes()(using tactic)
+  update def byteString(): Array[Byte]^{} = parser.directBytes()(using tactic)
 
   // ── Undefined handling: `hasUndefined` peeks without consuming, for
   // optional wrappers that map a wire `undefined` (0xF7) to an absent

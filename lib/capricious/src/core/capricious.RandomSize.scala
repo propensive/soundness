@@ -32,7 +32,7 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 trait RandomSize:
   def generate(random: Random): Int

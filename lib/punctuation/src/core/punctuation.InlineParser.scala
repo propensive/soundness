@@ -35,6 +35,7 @@ package punctuation
 import scala.collection.mutable
 
 import anticipation.*
+import rudiments.*
 import gossamer.*
 import vacuous.*
 
@@ -46,20 +47,26 @@ import vacuous.*
 //      `LinkData` / `ImageData` and process emphasis within it.
 //   2. After tokenization, run a final emphasis pass over any remaining
 //      delimiters outside successfully-matched links.
-// The resulting list is then converted to a `Seq[Prose]`.
+// The resulting list is then converted to a `List[Prose]`.
 
 private[punctuation] object InlineParser:
 
   // Must stay in sync with the `c match` cases in `parse` below: any character
   // handled there must also be flagged here, otherwise it'll be silently
   // batched as plain text.
-  private val Specials: Array[Boolean] =
-    val arr = new Array[Boolean](128)
-    "\\&`<\n*_[!]".foreach: c => arr(c.toInt) = true
-    arr
+  private val Specials: Array[Boolean]^{} =
+    val arr = Array[Boolean](128)
+    val special = "\\&`<\n*_[!]"
+    var i = 0
+
+    while i < special.length do
+      arr(special.charAt(i).toInt) = true
+      i += 1
+
+    Array.freeze(arr)
 
   private inline def isSpecial(inline c: Char): Boolean =
-    c < 128 && Specials(c.toInt)
+    c < 128 && Specials.readable(c.toInt)
 
   // Bracket stack entry. `node` is the BracketData node in the inline list
   // marking the `[` or `![`. `sourceStart` is the source position
@@ -70,9 +77,10 @@ private[punctuation] object InlineParser:
     ( val node:        InlineNode,
       val isImage:     Boolean,
       val sourceStart: Int,
+      @scala.caps.unsafe.untrackedCaptures
       var active:      Boolean = true )
 
-  def parse(text: Text, refs: LinkRefs): Seq[Prose] =
+  def parse(text: Text, refs: LinkRefs): List[Prose] =
     val s = text.s
     val n = s.length
 
@@ -278,12 +286,12 @@ private[punctuation] object InlineParser:
         // Replace bracket node with the link/image wrapper
         list.remove(entry.node)
 
-        if entry.isImage then list.append(ImageData(lm.dest, lm.title, children.toList))
+        if entry.isImage then list.append(ImageData(lm.dest, lm.title, List.of(children.toList)))
         else
-          list.append(LinkData(lm.dest, lm.title, children.toList))
+          list.append(LinkData(lm.dest, lm.title, List.of(children.toList)))
           // Deactivate any earlier `[` link markers (no nested links). Image
           // markers stay active — images can contain links.
-          brackets.foreach: b => if !b.isImage then b.active = false
+          brackets.each: b => if !b.isImage then b.active = false
 
         lm.end
 

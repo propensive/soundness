@@ -32,8 +32,11 @@
                                                                                                   */
 package wisteria
 
+import scala.collection.immutable as sci
 import scala.quoted.*
 import scala.reflect.ClassTag
+
+import proscenium.compat.*
 
 import anticipation.*
 import denominative.*
@@ -72,7 +75,7 @@ object internal:
       case Some((_, keys)) => keys.toList
       case None            => Nil
 
-    Expr.ofList(paths.map { k => '{${Expr(k)}.tt} })
+    '{List.of(${Expr.ofList(paths.stdlib.map { k => '{${Expr(k)}.tt} })})}
 
   // The override set for `root` and the typeclass `typeclassConstructor`: a reference to the
   // in-scope `root is Specific over typeclass` given and the dotted paths it overrides — or `None`
@@ -209,7 +212,7 @@ object internal:
     val accumulator = new TreeAccumulator[Unit]:
       def foldTree(state: Unit, tree: Tree)(owner: Symbol): Unit =
         tree match
-          case Apply(_, List(key, _)) => unwrap(key) match
+          case Apply(_, sci.List(key, _)) => unwrap(key) match
             case Literal(StringConstant(path)) => keys += path
             case _                             => ()
 
@@ -219,7 +222,7 @@ object internal:
         foldOverTree(state, tree)(owner)
 
     rhs.foreach(accumulator.foldTree((), _)(Symbol.spliceOwner))
-    keys.to(Set)
+    keys.pipe(Set.from(_))
 
   // A marker that `resolvableNonStructural` injects (as a synthetic `given`) into a probe's
   // implicit scope, so the derivation macro can detect that implicit search has re-entered it for
@@ -245,7 +248,7 @@ object internal:
       productType(TypeRepr.of[derivation]).typeSymbol.caseFields.map: field =>
         '{${Expr(field.name)}.tt}
 
-    Expr.ofList(labels)
+    '{List.of(${Expr.ofList(labels)})}
 
   // Whether `tpe` is a sum: a sealed trait / enum with `children`. A `Variant & Parent`
   // intersection (a sum's variant) is the variant — a product. A singleton (case object /
@@ -323,8 +326,9 @@ object internal:
 
     if owner.isNoSymbol then Nil
     else
-      (owner.methodMembers ++ owner.fieldMembers)
-        . filter(isWrapper(typeclassConstructor, _)).distinct
+      List.of:
+        (owner.methodMembers ++ owner.fieldMembers)
+          . filter(isWrapper(typeclassConstructor, _)).distinct
 
   // Resolves a field/variant instance via the real implicit search, ignoring the typeclass's
   // wrapper givens so it lands on a sibling synthetic given (a recursive/shared type), a codec, or
@@ -431,7 +435,9 @@ object internal:
     val elementGivens =
       extraGivens.zipWithIndex.map: (tpe, index) => syntheticGiven("$wisteriaGiven$"+index, tpe)
 
-    val markers = syntheticGiven("$wisteriaReentrant", reentrant) :: elementGivens
+    val markers =
+      syntheticGiven("$wisteriaReentrant", reentrant) ::
+        (elementGivens: List[dotc.core.Symbols.Symbol])
 
     val augmented = context.fresh.setScope(dotc.core.Scopes.newScopeWith(markers*))
 
@@ -459,7 +465,7 @@ object internal:
 
     import quotes.reflect.*
 
-    if self.asTerm.tpe.typeSymbol.methodMember("derivedOne").nil then
+    if self.asTerm.tpe.typeSymbol.methodMember("derivedOne").isEmpty then
       report.errorAndAbort("wisteria: the derivation defines no `derivedOne`")
 
     val typeclassConstructor = TypeRepr.of[typeclass]
@@ -470,7 +476,7 @@ object internal:
 
     def codecFunction(tpe: TypeRepr, args: List[TypeRepr]): TypeRepr =
       defn.FunctionClass(args.length, isContextual = true).typeRef
-        . appliedTo(args.map(instanceOf) :+ instanceOf(tpe))
+        . appliedTo(args.stdlib.map(instanceOf) :+ instanceOf(tpe))
 
     def isCodec(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
       args.nonEmpty &&
@@ -491,7 +497,7 @@ object internal:
     def codecProbe(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
       args.nonEmpty && inferWith(instanceOf(tpe), args.map(instanceOf)).let: tree =>
 
-        !isSentinel(tree) && !wrappers.contains(rootSymbol(tree))
+        !isSentinel(tree) && !wrappers.has(rootSymbol(tree))
 
       . or(false)
 
@@ -508,9 +514,9 @@ object internal:
         val tpe = raw.dealias
         val key = tpe.show
 
-        if !seen.contains(key) then
+        if !seen.has(key) then
           seen += key
-          val args = tpe.typeArgs
+          val args = List.of(tpe.typeArgs)
 
           // A codec is recognised by the fast `isCodec` (single contextual-function shape) or, for
           // codecs with extra capability parameters (decoders' `Factory`/`Tactic`/`Foci`), the
@@ -521,12 +527,13 @@ object internal:
           // never recurses into fields. A codec the probe still cannot recognise (e.g. `Map[K, V]`
           // whose key uses a different typeclass) is simply not made a sibling here; it resolves at
           // the field site.
-          if isCodec(tpe, args) || codecProbe(tpe, args) then args.foreach(visit(_, false))
+          if isCodec(tpe, args) || codecProbe(tpe, args) then args.each(visit(_, false))
           else if isSumType(tpe) then
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
 
-              tpe.typeSymbol.children.foreach: child => visit(variantWith(child, tpe), false)
+              tpe.typeSymbol.children.each: child =>
+                visit(variantWith(child, tpe), false)
           else if isProductType(tpe) then
             // A path-carrier (a specialised spine type) is always derived; else probe as before.
             val carrier = refinementMember(tpe, "VRoot").isDefined
@@ -541,13 +548,13 @@ object internal:
                 case Some((root, parentPath, _, keys)) =>
                   // Spine field → specialised carrier sibling; overridden leaf → no sibling (the
                   // value comes from the given's runtime map); else a shared default sibling.
-                  product.typeSymbol.caseFields.foreach: field =>
+                  product.typeSymbol.caseFields.each: field =>
                     val fieldType = product.memberType(field)
 
                     val childPath =
                       if parentPath.isEmpty then field.name else parentPath+"."+field.name
 
-                    if keys.contains(childPath) then
+                    if keys.has(childPath) then
                       ()
                     else if keys.exists(_.startsWith(childPath+".")) then
                       visit(carrierType(fieldType, root, childPath), false)
@@ -555,7 +562,7 @@ object internal:
                       visit(fieldType, false)
 
                 case None =>
-                  product.typeSymbol.caseFields.foreach: field =>
+                  product.typeSymbol.caseFields.each: field =>
                     visit(product.memberType(field), false)
           else tpe match
             // An alias like `Optional[P]` dealiases to a union (`Unset | P`) with no type
@@ -582,7 +589,7 @@ object internal:
 
       val owner = Symbol.spliceOwner
 
-      val bindings: List[(String, TypeRepr, Symbol)] =
+      val bindings0 =
         reachable.toList.zipWithIndex.map: (entry, index) =>
           val (key, tpe) = entry
           val flags = Flags.Given | Flags.Lazy
@@ -591,6 +598,8 @@ object internal:
             Symbol.newVal(owner, "wisteria$"+index, instanceOf(tpe), flags, Symbol.noSymbol)
 
           (key, tpe, symbol)
+
+      val bindings: List[(String, TypeRepr, Symbol)] = List.of(bindings0)
 
       val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
 
@@ -608,7 +617,7 @@ object internal:
         case Some(symbol) => Ref(symbol)
         case None         => resolveDirect(tpe)
 
-      val rootArgs = rootType.typeArgs
+      val rootArgs = List.of(rootType.typeArgs)
 
       val root: Term = symbolByKey.get(rootType.show) match
         case Some(symbol) => Ref(symbol)
@@ -617,11 +626,12 @@ object internal:
           if !isCodec(rootType, rootArgs) then resolveDirect(rootType)
           else Implicits.searchIgnoring(codecFunction(rootType, rootArgs))(wrappers*).absolve.match
             case success: ImplicitSearchSuccess =>
-              Select.unique(success.tree, "apply").appliedToArgs(rootArgs.map(elementInstance))
+              Select.unique(success.tree, "apply")
+              . appliedToArgs(rootArgs.stdlib.map(elementInstance))
 
             case failure: ImplicitSearchFailure => report.errorAndAbort(failure.explanation)
 
-      Block(definitions, root.changeOwner(owner)).asExprOf[typeclass[derivation]]
+      Block(definitions.stdlib, root.changeOwner(owner)).asExprOf[typeclass[derivation]]
 
     // If reached only as a re-entry probe (a `Reentrant` marker for this instance is in scope),
     // bail with the sentinel the prober detects — do not build the graph.
@@ -634,17 +644,23 @@ object internal:
         fullGraph
 
 
-  // Wraps a homogeneous list of field results into an `IArray`, summoning the `ClassTag` at the
-  // expansion site (where `result` is concrete).
-  private def immutableArray[result: Type](results: List[Expr[result]])(using Quotes)
-  :   Expr[IArray[result]] =
+  // Wraps a homogeneous list of field results into a frozen array, summoning the `ClassTag` at
+  // the expansion site (where `result` is concrete). The array is fresh and never written after
+  // construction, so the `unsafeFrozen` boundary cast is sound.
+  private def immutableArray[result: Type](results: sci.List[Expr[result]])(using Quotes)
+  :   Expr[Array[result]^{}] =
 
     import quotes.reflect.*
 
     val classTag = Expr.summon[ClassTag[result]].getOrElse:
       report.errorAndAbort("wisteria: no ClassTag available for the result type")
 
-    '{Array[result](${Varargs(results)}*)(using $classTag).immutable(using Unsafe)}
+    // Two casts: the in-quote `asInstanceOf` types the expanded TREE at the frozen form
+    // (transparent inline callers see the tree's type), while the outer `Expr` cast erases
+    // the fresh `any.rd` the checker puts on any frozen-array-typed quote. The array is
+    // fresh and never written after construction, so asserting the frozen form is sound.
+    '{scala.Array[result](${Varargs(results)}*)(using $classTag).asInstanceOf[Array[result]^{}]}
+    . asInstanceOf[Expr[Array[result]^{}]]
 
   // The derivation type may be an intersection `Variant & Parent` (when deriving a sum's
   // variant); resolve to the variant side. The parent of `Variant & Parent` is the sum, which has
@@ -688,7 +704,7 @@ object internal:
         case args =>
           Applied(TypeTree.ref(symbol), args.map { arg => TypeTree.of(using arg.asType) })
 
-      Select(New(typeTree), symbol.primaryConstructor).appliedToArgs(arguments)
+      Select(New(typeTree), symbol.primaryConstructor).appliedToArgs(arguments.stdlib)
 
 
   // Retypes the constructed plain product `Term` to `derivation`. When `derivation` is a carrier
@@ -705,7 +721,7 @@ object internal:
 
     if productType(derivationType) =:= derivationType then constructed.asExprOf[derivation]
     else
-      TypeApply(Select.unique(constructed, "asInstanceOf"), List(TypeTree.of[derivation]))
+      TypeApply(Select.unique(constructed, "asInstanceOf"), sci.List(TypeTree.of[derivation]))
       . asExprOf[derivation]
 
 
@@ -729,10 +745,10 @@ object internal:
 
     def reduce(term: Term): Term = Term.betaReduce(term).getOrElse(term)
 
-    val typeApplied = TypeApply(Select.unique(lambda, "apply"), List(TypeTree.of[field]))
-    val applied = reduce(Apply(typeApplied, List(value.asTerm)))
+    val typeApplied = TypeApply(Select.unique(lambda, "apply"), sci.List(TypeTree.of[field]))
+    val applied = reduce(Apply(typeApplied, sci.List(value.asTerm)))
 
-    reduce(Apply(Select.unique(applied, "apply"), contextArgs.map(_.asTerm)))
+    reduce(Apply(Select.unique(applied, "apply"), contextArgs.stdlib.map(_.asTerm)))
 
   // Produces the tuple of field values (each = `lambda` applied to that field with its instance,
   // default, label and index). This macro is mirror-free and does NOT construct — `build` does the
@@ -752,7 +768,7 @@ object internal:
     val lambdaTerm = lambda.asTerm
     val context = overrideContext(TypeRepr.of[typeclass], TypeRepr.of[derivation])
 
-    val arguments: List[Expr[Any]] = symbol.caseFields.zipWithIndex.map: (field, index) =>
+    val arguments = symbol.caseFields.zipWithIndex.map: (field, index) =>
       val fieldName = field.name
 
       tpe.memberType(field).asType.absolve match
@@ -773,7 +789,7 @@ object internal:
 
   def contextsProduct[typeclass[_]: Type, derivation: Type, result: Type]
     ( lambda: Expr[Any] )
-  :   Macro[IArray[result]] =
+  :   Macro[Array[result]^{}] =
 
     import quotes.reflect.*
 
@@ -781,7 +797,7 @@ object internal:
     val lambdaTerm = lambda.asTerm
     val context = overrideContext(TypeRepr.of[typeclass], TypeRepr.of[derivation])
 
-    val results: List[Expr[result]] = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
+    val results = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
       val fieldName = field.name
 
       tpe.memberType(field).asType.absolve match
@@ -808,7 +824,7 @@ object internal:
 
   def fieldsProduct[typeclass[_]: Type, derivation: Type, result: Type]
     ( product: Expr[derivation], lambda: Expr[Any] )
-  :   Macro[IArray[result]] =
+  :   Macro[Array[result]^{}] =
 
     import quotes.reflect.*
 
@@ -816,7 +832,7 @@ object internal:
     val lambdaTerm = lambda.asTerm
     val context = overrideContext(TypeRepr.of[typeclass], TypeRepr.of[derivation])
 
-    val results: List[Expr[result]] = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
+    val results = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
       val fieldName = field.name
 
       tpe.memberType(field).asType.absolve match
@@ -857,8 +873,8 @@ object internal:
     // `pure.apply[monadic](value)`
     def applyPure(monadic: TypeRepr, value: Term): Term =
       Apply
-        ( TypeApply(Select.unique(pureTerm, "apply"), List(TypeTree.of(using monadic.asType))),
-          List(value) )
+        ( TypeApply(Select.unique(pureTerm, "apply"), sci.List(TypeTree.of(using monadic.asType))),
+          sci.List(value) )
 
     // `bind.apply[input, output](monad)(function)` — the poly `apply` is curried, so the function
     // argument is applied to the returned `Function1` via its own `apply`.
@@ -866,17 +882,18 @@ object internal:
       val typed =
         TypeApply
           ( Select.unique(bindTerm, "apply"),
-            List(TypeTree.of(using input.asType), TypeTree.of(using output.asType)) )
+            sci.List(TypeTree.of(using input.asType), TypeTree.of(using output.asType)) )
 
-      Apply(Select.unique(Apply(typed, List(monad)), "apply"), List(function))
+      Apply(Select.unique(Apply(typed, sci.List(monad)), "apply"), sci.List(function))
 
     // Accumulate each field monadically into a (reversed) tuple, threading through `bind`:
     //   bind(acc) { tuple => bind(lambda[field](ctx)) { value => pure(value *: tuple) } }
     var accumulator: Term = applyPure(tupleType, '{EmptyTuple}.asTerm)
 
-    val tupleFunction = MethodType(List("tuple"))(_ => List(tupleType), _ => constructorTuple)
+    val tupleFunction =
+      MethodType(sci.List("tuple"))(_ => sci.List(tupleType), _ => constructorTuple)
 
-    symbol.caseFields.zipWithIndex.foreach: (field, index) =>
+    symbol.caseFields.zipWithIndex.each: (field, index) =>
       val fieldName = field.name
 
       tpe.memberType(field).asType.absolve match
@@ -884,7 +901,9 @@ object internal:
           val indexExpr = Expr(index)
           val nameExpr = Expr(fieldName)
           val fieldType = TypeRepr.of[field]
-          val valueFunction = MethodType(List("value"))(_ => List(fieldType), _ => constructorTuple)
+
+          val valueFunction =
+            MethodType(sci.List("value"))(_ => sci.List(fieldType), _ => constructorTuple)
 
           val outer = Lambda(Symbol.spliceOwner, tupleFunction, { (owner, parameters) =>
             val tupleRef = parameters.head.asInstanceOf[Term]
@@ -910,7 +929,8 @@ object internal:
 
     // Finally reverse the accumulated tuple and construct the product from its elements.
     val derivationFunction =
-      MethodType(List("tuple"))(_ => List(tupleType), _ => TypeRepr.of[constructor[derivation]])
+      val paramNames = sci.List("tuple")
+      MethodType(paramNames)(_ => sci.List(tupleType), _ => TypeRepr.of[constructor[derivation]])
 
     val product = productType(derivationType)
 
@@ -923,7 +943,8 @@ object internal:
           case '[field] => '{$reversed.productElement(${Expr(index)}).asInstanceOf[field]}.asTerm
 
       // Cast to `derivation` (possibly a carrier refinement) — see `castConstructed`.
-      val constructed = castConstructed[derivation](constructProduct[derivation](arguments)).asTerm
+      val constructed0 = constructProduct[derivation](List.of(arguments))
+      val constructed = castConstructed[derivation](constructed0).asTerm
       applyPure(derivationType, constructed).changeOwner(finalOwner)
     })
 
@@ -939,7 +960,7 @@ object internal:
 
     val labels = TypeRepr.of[derivation].typeSymbol.children.map: child => '{${Expr(child.name)}.tt}
 
-    Expr.ofList(labels)
+    '{List.of(${Expr.ofList(labels)})}
 
   // Resolves a field's typeclass instance via an inline `summonInline` at the use site. Deferring
   // resolution to the splice site (rather than `Expr.summon` here) is what lets a recursive or
@@ -966,7 +987,7 @@ object internal:
       case Some((root, parentPath, given_, keys)) =>
         val childPath = if parentPath.isEmpty then fieldName else parentPath+"."+fieldName
 
-        if keys.contains(childPath) then
+        if keys.has(childPath) then
           // Take the override's value from the given's runtime `instances` map (cast to the field's
           // type) — never re-splice its tree.
           val specific = given_.asExprOf[vicarious.Specific]
@@ -1002,7 +1023,7 @@ object internal:
     val reference = Ref(symbol).asExprOf[typeclass[field]]
     val applied = build(reference, '{$reference.aka["contextual"]})
 
-    Block(List(ValDef(symbol, Some(instance.asTerm))), applied)
+    Block(sci.List(ValDef(symbol, Some(instance.asTerm))), applied)
 
   def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
     import quotes.reflect.*

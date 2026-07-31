@@ -32,6 +32,8 @@
                                                                                                   */
 package superlunary
 
+import proscenium.compat.*
+
 import java.nio.file as jnf
 import java.util.function as juf
 
@@ -77,7 +79,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
     LocalClasspath(entries*)
 
   lazy val settings2: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
+    staging.Compiler.Settings.make(None, scalac.commandLineArguments.stdlib.map(_.s))
 
   lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
@@ -103,9 +105,11 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
       staging.withQuotes:
         ' {
-            (array: Array[Object]) =>
+            (array: scala.Array[Object]) =>
               $ {
-                  probe() = 'array
+                  // As with `incoming` below: launder the reach `.rd` capability off
+                  // the quoted array reference.
+                  probe() = ('array).asInstanceOf[Expr[scala.Array[Object]]]
                   body(using probe)
                 }
           }
@@ -114,20 +118,21 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
     val key: (Codepoint, Text) = (codepoint, fingerprint)
 
     val (target, function): (Target, juf.Function[Form, Form]) =
-      if cache.contains(key) then
+      if cache.stdlib.contains(key) then
         given staging.Compiler = compiler2
 
         // This is necessary to allocate references as a side effect
         staging.withQuotes:
           ' {
-              (array: Array[Object]) =>
+              (array: scala.Array[Object]) =>
                 $ {
-                    references() = 'array
+                    // As with `incoming` below.
+                    references() = ('array).asInstanceOf[Expr[scala.Array[Object]]]
                     body(using references)
                   }
             }
 
-        cache(key)
+        cache.stdlib(key)
 
       else
         val uuid = Uuid()
@@ -140,7 +145,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make
-            ( Some(out.encode.s), scalac.commandLineArguments.map(_.s) )
+            ( Some(out.encode.s), scalac.commandLineArguments.stdlib.map(_.s) )
 
         given compiler: staging.Compiler =
           staging.Compiler.make(classloader.java)(using settings)
@@ -151,18 +156,22 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                 // Bound once: splices read transported values from this array, so it must
                 // not be re-deserialized per evaluation — a spliced value inside a hot loop
                 // would otherwise decode the whole transport on every iteration.
-                val incoming: Array[Object] =
+                val incoming: scala.Array[Object] =
                   import strategies.throwUnsafely
                   stageable.deserialize(form)
 
                 stageable.serialize:
 
-                  val array = new Array[Object](1)
+                  val array = new scala.Array[Object](1)
 
                   array(0) =
                     stageable.embed[output]:
                       $ {
-                          references() = 'incoming
+                          // A quoted reference to the `incoming` val is charged that val's
+                          // reach `.rd` capability at inline expansion sites, which the pure
+                          // `Expr[Array[Object]]` slot cannot hold; the staged program never
+                          // mutates the array through this alias.
+                          references() = ('incoming).asInstanceOf[Expr[scala.Array[Object]]]
                           body(using references)
                         }
 
@@ -170,7 +179,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             }
 
         val target = stage(out)
-        cache = cache.updated(key, (target, function))
+        cache = Map.of(cache.stdlib.updated(key, (target, function)))
 
         (target, function)
 

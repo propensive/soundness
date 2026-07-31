@@ -60,7 +60,7 @@ object TextAlignment:
     def pad[text: Textual](text: text, width: Int, last: Boolean)(using Text is Measurable): text =
       if last then text+Textual(t" "*(width - text.plain.metrics))
       else
-        val words = text.cut(t" ")
+        val words = text.cut(t" ").stdlib
         val wordCount = words.length
         val spare = width - words.sumBy(_.plain.metrics)
 

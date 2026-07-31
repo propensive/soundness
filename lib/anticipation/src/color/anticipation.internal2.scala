@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import scala.caps
+
 object internal2:
   opaque type Chroma <: Matchable = Int
 

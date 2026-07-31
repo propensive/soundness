@@ -91,7 +91,18 @@ object Trust:
     val retained = current.split(",").nn.map(_.nn.trim.nn).filter: entry =>
       !versions.exists(_.id.s == entry)
 
-    js.Security.setProperty("jdk.tls.disabledAlgorithms", String.join(", ", retained*))
+    // A manual join: a Java varargs splice of an array value is rejected under separation
+    // checking (the formal is a pure array).
+    val joined = StringBuilder()
+
+    var index = 0
+
+    while index < retained.length do
+      if joined.nonEmpty then joined.append(", ")
+      joined.append(retained(index))
+      index += 1
+
+    js.Security.setProperty("jdk.tls.disabledAlgorithms", joined.toString)
 
 // Which certificate chains to trust beyond an intact, current chain to a
 // platform anchor.
@@ -116,13 +127,13 @@ object TlsAcceptance:
       val context =
         if acceptance == TlsAcceptance() then jns.SSLContext.getDefault.nn else
           val custom = jns.SSLContext.getInstance("TLS").nn
-          custom.init(null, Array(trustManager(acceptance)), null)
+          custom.init(null, scala.Array(trustManager(acceptance)), null)
           custom
 
       val parameters = context.getDefaultSSLParameters().nn
 
       if acceptance.versions != Nil then
-        parameters.setProtocols(acceptance.versions.map(_.id.s).toArray)
+        parameters.setProtocols(acceptance.versions.stdlib.map(_.id.s).toArray)
 
       if acceptance.trust.hostname
       then parameters.setEndpointIdentificationAlgorithm("HTTPS")
@@ -151,7 +162,7 @@ object TlsAcceptance:
         val store = js.KeyStore.getInstance(js.KeyStore.getDefaultType.nn).nn
         store.load(null, null)
 
-        anchors.zipWithIndex.each: (anchor, index) =>
+        anchors.stdlib.zipWithIndex.each: (anchor, index) =>
           store.setCertificateEntry(s"anchor-$index", anchor)
 
         store
@@ -219,17 +230,17 @@ object TlsAcceptance:
           case error: jsc.CertificateException =>
             if !tolerable(error) then throw error
 
-      def getAcceptedIssuers(): Array[jsc.X509Certificate | Null] | Null =
+      def getAcceptedIssuers(): scala.Array[jsc.X509Certificate | Null] | Null =
         platform.getAcceptedIssuers()
 
       def checkClientTrusted
-        ( chain: Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
+        ( chain: scala.Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
       :   Unit =
 
         platform.checkClientTrusted(chain, authType)
 
       def checkClientTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           socket:   java.net.Socket | Null )
       :   Unit =
@@ -237,7 +248,7 @@ object TlsAcceptance:
         platform.checkClientTrusted(chain, authType, socket)
 
       def checkClientTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           engine:   jns.SSLEngine | Null )
       :   Unit =
@@ -245,13 +256,13 @@ object TlsAcceptance:
         platform.checkClientTrusted(chain, authType, engine)
 
       def checkServerTrusted
-        ( chain: Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
+        ( chain: scala.Array[jsc.X509Certificate | Null] | Null, authType: String | Null )
       :   Unit =
 
         attempt(platform.checkServerTrusted(chain, authType))
 
       def checkServerTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           socket:   java.net.Socket | Null )
       :   Unit =
@@ -259,7 +270,7 @@ object TlsAcceptance:
         attempt(platform.checkServerTrusted(chain, authType, socket))
 
       def checkServerTrusted
-        ( chain:    Array[jsc.X509Certificate | Null] | Null,
+        ( chain:    scala.Array[jsc.X509Certificate | Null] | Null,
           authType: String | Null,
           engine:   jns.SSLEngine | Null )
       :   Unit =

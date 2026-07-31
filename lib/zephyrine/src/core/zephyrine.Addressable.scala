@@ -32,6 +32,10 @@
                                                                                                   */
 package zephyrine
 
+import proscenium.compat.*
+
+import scala.caps
+
 import java.io as ji
 import java.lang as jl
 
@@ -48,15 +52,15 @@ object Addressable:
   inline given bytes: Data is Addressable:
     type Operand = Byte
     type Target = ji.ByteArrayOutputStream
-    type Storage = Array[Byte]
+    type Storage = scala.Array[Byte]
 
-    val empty: Data = IArray.from(Nil)
+    val empty: Data = Array.from(Nil.stdlib)
 
     inline def substrate: Substrate = Substrate.Bytes
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
 
     inline def build(target: ji.ByteArrayOutputStream): Data =
-      target.toByteArray.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(target.toByteArray.nn)
 
     inline def length(bytes: Data): Int = bytes.length
     inline def address(bytes: Data, index: Ordinal): Byte = bytes(index.n0)
@@ -66,13 +70,13 @@ object Addressable:
     inline def clone(source: Data, start: Ordinal, end: Ordinal)(target: ji.ByteArrayOutputStream)
     :   Unit =
 
-      target.write(source.mutable(using Unsafe), start.n0, end.n0 - start.n0 + 1)
+      target.write(Array.unsafeJvm(source), start.n0, end.n0 - start.n0 + 1)
 
-    inline def allocate(size: Int): Array[Byte] = new Array[Byte](size)
-    inline def storageSize(storage: Array[Byte]): Int = storage.length
-    inline def storageAddress(storage: Array[Byte], index: Int): Byte = storage(index)
+    inline def allocate(size: Int): scala.Array[Byte] = new scala.Array[Byte](size)
+    inline def storageSize(storage: scala.Array[Byte]): Int = storage.length
+    inline def storageAddress(storage: scala.Array[Byte], index: Int): Byte = storage(index)
 
-    inline def storageUpdate(storage: Array[Byte]^, index: Int, operand: Byte): Unit =
+    inline def storageUpdate(storage: scala.Array[Byte]^, index: Int, operand: Byte): Unit =
       storage(index) = operand
 
     inline def append(target: ji.ByteArrayOutputStream, operand: Byte): Unit =
@@ -81,63 +85,63 @@ object Addressable:
     inline def copyChunk
       ( source:  Data,
        srcOff:  Int,
-       dest:    Array[Byte]^,
+       dest:    scala.Array[Byte]^,
        destOff: Int,
        len:     Int )
     :   Unit =
 
-      System.arraycopy(source.mutable(using Unsafe), srcOff, dest, destOff, len)
+      System.arraycopy(Array.unsafeJvm(source), srcOff, dest, destOff, len)
 
     inline def transfer
-      ( src:     Array[Byte],
+      ( src:     scala.Array[Byte],
        srcOff:  Int,
-       dest:    Array[Byte]^,
+       dest:    scala.Array[Byte]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
-    inline def materialize(storage: Array[Byte], off: Int, len: Int): Data =
-      java.util.Arrays.copyOfRange(storage, off, off + len).nn.immutable(using Unsafe)
+    inline def materialize(storage: scala.Array[Byte], off: Int, len: Int): Data =
+      Array.unsafeFrozen(java.util.Arrays.copyOfRange(storage, off, off + len).nn)
 
-    override inline def backing(value: Data): Optional[Array[Byte]] =
-      value.asInstanceOf[Array[Byte]]
+    override inline def backing(value: Data): Optional[scala.Array[Byte]] =
+      value.asInstanceOf[scala.Array[Byte]]
 
     inline def cloneStorage
-      (storage: Array[Byte], off: Int, len: Int)(target: ji.ByteArrayOutputStream)
+      (storage: scala.Array[Byte], off: Int, len: Int)(target: ji.ByteArrayOutputStream)
     :   Unit =
 
       target.write(storage, off, len)
 
 
   // Heap-object media: a chunk of records (parsed rows, JSON events) is an
-  // `IArray` of them, stored in an erased `Array[AnyRef]` — so credit is
+  // frozen array of them, stored in an erased `Array[AnyRef]` — so credit is
   // counted in records, and `Buffering` sizes these buffers by reference
   // count (`Substrate.Boxes`), since their memory usage isn't
   // deterministically bounded. Erasure means the medium's element type must
-  // be a reference type, and the `IArray`s this instance MATERIALIZES must be
-  // genuine `element[]`s (an `IArray[element]` value checkcasts to one at any
+  // be a reference type, and the frozen arrays this instance MATERIALIZES must be
+  // genuine `element[]`s (an `Array[element]^{}` value checkcasts to one at any
   // concretely-typed use site) — hence the `ClassTag`; only the working
   // storage is an erased `Array[AnyRef]`.
-  given boxed: [element <: AnyRef: ClassTag] => IArray[element] is Addressable:
+  given boxed: [element <: AnyRef: ClassTag] => (Array[element]^{}) is Addressable:
     type Operand = element
     type Target = scm.ArrayBuffer[element]
-    type Storage = Array[AnyRef]
+    type Storage = scala.Array[AnyRef]
 
-    val empty: IArray[element] = IArray.empty[element]
+    val empty: Array[element]^{} = Array.empty[element]
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[element] = scm.ArrayBuffer[element]()
 
-    def build(target: scm.ArrayBuffer[element]): IArray[element] =
-      target.toArray[element].immutable(using Unsafe)
+    def build(target: scm.ArrayBuffer[element]): Array[element]^{} =
+      Array.unsafeFrozen(target.toArray[element])
 
-    def length(block: IArray[element]): Int = block.length
-    def address(block: IArray[element], index: Ordinal): element = block(index.n0)
+    def length(block: Array[element]^{}): Int = block.length
+    def address(block: Array[element]^{}, index: Ordinal): element = block(index.n0)
 
-    def grab(block: IArray[element], start: Ordinal, end: Ordinal): IArray[element] =
+    def grab(block: Array[element]^{}, start: Ordinal, end: Ordinal): Array[element]^{} =
       block.slice(start.n0, end.n0)
 
-    def clone(source: IArray[element], start: Ordinal, end: Ordinal)
+    def clone(source: Array[element]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[element] )
     :   Unit =
 
@@ -147,42 +151,42 @@ object Addressable:
         target += source(index)
         index += 1
 
-    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
-    def storageSize(storage: Array[AnyRef]): Int = storage.length
+    def allocate(size: Int): scala.Array[AnyRef] = new scala.Array[AnyRef](size)
+    def storageSize(storage: scala.Array[AnyRef]): Int = storage.length
 
-    def storageAddress(storage: Array[AnyRef], index: Int): element =
+    def storageAddress(storage: scala.Array[AnyRef], index: Int): element =
       storage(index).asInstanceOf[element]
 
-    def storageUpdate(storage: Array[AnyRef]^, index: Int, operand: element): Unit =
+    def storageUpdate(storage: scala.Array[AnyRef]^, index: Int, operand: element): Unit =
       storage(index) = operand
 
     def append(target: scm.ArrayBuffer[element], operand: element): Unit = target += operand
 
     def copyChunk
-      ( source:  IArray[element],
+      ( source:  Array[element]^{},
        srcOff:  Int,
-       dest:    Array[AnyRef]^,
+       dest:    scala.Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit =
 
-      System.arraycopy(source.asInstanceOf[Array[AnyRef]], srcOff, dest, destOff, len)
+      System.arraycopy(source.asInstanceOf[scala.Array[AnyRef]], srcOff, dest, destOff, len)
 
     def transfer
-      ( src:     Array[AnyRef],
+      ( src:     scala.Array[AnyRef],
        srcOff:  Int,
-       dest:    Array[AnyRef]^,
+       dest:    scala.Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
-    def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[element] =
-      val array = new Array[element](len)
-      System.arraycopy(storage, off, array, 0, len)
-      array.immutable(using Unsafe)
+    def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): Array[element]^{} =
+      val array = Array[element](len)
+      System.arraycopy(storage, off, array.raw, 0, len)
+      Array.freeze(array)
 
     def cloneStorage
-      (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[element])
+      (storage: scala.Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[element])
     :   Unit =
 
       var index = off
@@ -195,40 +199,40 @@ object Addressable:
   // Chunks of `Text` records (lines, tokens): `Text` is opaquely
   // `String & caps.Pure`, not `<: AnyRef`, so the generic `boxed` instance
   // above does not admit it, and it gets the same treatment spelled out. The
-  // element bound on `boxed` is load-bearing (it keeps `IArray[Byte]` — the
+  // element bound on `boxed` is load-bearing (it keeps `Array[Byte]^{}` — the
   // transparent `Data` alias — from resolving ambiguously), so it cannot
   // simply be relaxed.
-  given texts: IArray[Text] is Addressable:
+  given texts: (Array[Text]^{}) is Addressable:
     type Operand = Text
     type Target = scm.ArrayBuffer[Text]
-    type Storage = Array[AnyRef]
+    type Storage = scala.Array[AnyRef]
 
-    // `IArray[Text]` erases to `String[]` (unlike `boxed`'s `Object[]`, whose
+    // `Array[Text]^{}` erases to `String[]` (unlike `boxed`'s `Object[]`, whose
     // element type is generic), so materialized chunks must really be
     // `String[]`s; the storage stays `Array[AnyRef]`, which `String[]` enters
     // covariantly.
-    val empty: IArray[Text] = new Array[String](0).asInstanceOf[IArray[Text]]
+    val empty: Array[Text]^{} = Array.freeze(Array[String](0)).asInstanceOf[Array[Text]^{}]
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[Text] = scm.ArrayBuffer[Text]()
 
-    def build(target: scm.ArrayBuffer[Text]): IArray[Text] =
-      val array = new Array[String](target.length)
+    def build(target: scm.ArrayBuffer[Text]): Array[Text]^{} =
+      val array = Array[String](target.length)
       var index = 0
 
       while index < target.length do
         array(index) = target(index).s
         index += 1
 
-      array.asInstanceOf[IArray[Text]]
+      Array.freeze(array).asInstanceOf[Array[Text]^{}]
 
-    def length(block: IArray[Text]): Int = block.length
-    def address(block: IArray[Text], index: Ordinal): Text = block(index.n0)
+    def length(block: Array[Text]^{}): Int = block.length
+    def address(block: Array[Text]^{}, index: Ordinal): Text = block(index.n0)
 
-    def grab(block: IArray[Text], start: Ordinal, end: Ordinal): IArray[Text] =
+    def grab(block: Array[Text]^{}, start: Ordinal, end: Ordinal): Array[Text]^{} =
       block.slice(start.n0, end.n0)
 
-    def clone(source: IArray[Text], start: Ordinal, end: Ordinal)
+    def clone(source: Array[Text]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[Text] )
     :   Unit =
 
@@ -238,42 +242,42 @@ object Addressable:
         target += source(index)
         index += 1
 
-    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
-    def storageSize(storage: Array[AnyRef]): Int = storage.length
+    def allocate(size: Int): scala.Array[AnyRef] = new scala.Array[AnyRef](size)
+    def storageSize(storage: scala.Array[AnyRef]): Int = storage.length
 
-    def storageAddress(storage: Array[AnyRef], index: Int): Text =
+    def storageAddress(storage: scala.Array[AnyRef], index: Int): Text =
       storage(index).asInstanceOf[Text]
 
-    def storageUpdate(storage: Array[AnyRef]^, index: Int, operand: Text): Unit =
+    def storageUpdate(storage: scala.Array[AnyRef]^, index: Int, operand: Text): Unit =
       storage(index) = operand.asInstanceOf[AnyRef]
 
     def append(target: scm.ArrayBuffer[Text], operand: Text): Unit = target += operand
 
     def copyChunk
-      ( source:  IArray[Text],
+      ( source:  Array[Text]^{},
        srcOff:  Int,
-       dest:    Array[AnyRef]^,
+       dest:    scala.Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit =
 
-      System.arraycopy(source.asInstanceOf[Array[AnyRef]], srcOff, dest, destOff, len)
+      System.arraycopy(source.asInstanceOf[scala.Array[AnyRef]], srcOff, dest, destOff, len)
 
     def transfer
-      ( src:     Array[AnyRef],
+      ( src:     scala.Array[AnyRef],
        srcOff:  Int,
-       dest:    Array[AnyRef]^,
+       dest:    scala.Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
-    def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[Text] =
-      val array = new Array[String](len)
-      System.arraycopy(storage, off, array, 0, len)
-      array.asInstanceOf[IArray[Text]]
+    def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): Array[Text]^{} =
+      val array = Array[String](len)
+      System.arraycopy(storage, off, array.raw, 0, len)
+      Array.freeze(array).asInstanceOf[Array[Text]^{}]
 
     def cloneStorage
-      (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Text])
+      (storage: scala.Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Text])
     :   Unit =
 
       var index = off
@@ -285,35 +289,35 @@ object Addressable:
 
   // Chunks of `Data` records (frames, messages): like `texts`, the element
   // type is concrete and not `<: AnyRef` (`Data` is transparently
-  // `IArray[Byte]`), so the generic `boxed` instance does not admit it, and
+  // `Array[Byte]^{}`), so the generic `boxed` instance does not admit it, and
   // materialized chunks must genuinely be `byte[][]`s.
-  given frames: IArray[Data] is Addressable:
+  given frames: (Array[Data]^{}) is Addressable:
     type Operand = Data
     type Target = scm.ArrayBuffer[Data]
-    type Storage = Array[AnyRef]
+    type Storage = scala.Array[AnyRef]
 
-    val empty: IArray[Data] = new Array[Array[Byte]](0).asInstanceOf[IArray[Data]]
+    val empty: Array[Data]^{} = Array.freeze(Array[Data](0))
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[Data] = scm.ArrayBuffer[Data]()
 
-    def build(target: scm.ArrayBuffer[Data]): IArray[Data] =
-      val array = new Array[Array[Byte]](target.length)
+    def build(target: scm.ArrayBuffer[Data]): Array[Data]^{} =
+      val array = Array[Data](target.length)
       var index = 0
 
       while index < target.length do
-        array(index) = target(index).asInstanceOf[Array[Byte]]
+        array(index) = target(index)
         index += 1
 
-      array.asInstanceOf[IArray[Data]]
+      Array.freeze(array)
 
-    def length(block: IArray[Data]): Int = block.length
-    def address(block: IArray[Data], index: Ordinal): Data = block(index.n0)
+    def length(block: Array[Data]^{}): Int = block.length
+    def address(block: Array[Data]^{}, index: Ordinal): Data = block(index.n0)
 
-    def grab(block: IArray[Data], start: Ordinal, end: Ordinal): IArray[Data] =
+    def grab(block: Array[Data]^{}, start: Ordinal, end: Ordinal): Array[Data]^{} =
       block.slice(start.n0, end.n0)
 
-    def clone(source: IArray[Data], start: Ordinal, end: Ordinal)
+    def clone(source: Array[Data]^{}, start: Ordinal, end: Ordinal)
       ( target: scm.ArrayBuffer[Data] )
     :   Unit =
 
@@ -323,42 +327,42 @@ object Addressable:
         target += source(index)
         index += 1
 
-    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
-    def storageSize(storage: Array[AnyRef]): Int = storage.length
+    def allocate(size: Int): scala.Array[AnyRef] = new scala.Array[AnyRef](size)
+    def storageSize(storage: scala.Array[AnyRef]): Int = storage.length
 
-    def storageAddress(storage: Array[AnyRef], index: Int): Data =
+    def storageAddress(storage: scala.Array[AnyRef], index: Int): Data =
       storage(index).asInstanceOf[Data]
 
-    def storageUpdate(storage: Array[AnyRef]^, index: Int, operand: Data): Unit =
+    def storageUpdate(storage: scala.Array[AnyRef]^, index: Int, operand: Data): Unit =
       storage(index) = operand.asInstanceOf[AnyRef]
 
     def append(target: scm.ArrayBuffer[Data], operand: Data): Unit = target += operand
 
     def copyChunk
-      ( source:  IArray[Data],
+      ( source:  Array[Data]^{},
        srcOff:  Int,
-       dest:    Array[AnyRef]^,
+       dest:    scala.Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit =
 
-      System.arraycopy(source.asInstanceOf[Array[AnyRef]], srcOff, dest, destOff, len)
+      System.arraycopy(source.asInstanceOf[scala.Array[AnyRef]], srcOff, dest, destOff, len)
 
     def transfer
-      ( src:     Array[AnyRef],
+      ( src:     scala.Array[AnyRef],
        srcOff:  Int,
-       dest:    Array[AnyRef]^,
+       dest:    scala.Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
-    def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[Data] =
-      val array = new Array[Array[Byte]](len)
-      System.arraycopy(storage, off, array, 0, len)
-      array.asInstanceOf[IArray[Data]]
+    def materialize(storage: scala.Array[AnyRef], off: Int, len: Int): Array[Data]^{} =
+      val array = Array[Data](len)
+      System.arraycopy(storage, off, array.raw, 0, len)
+      Array.freeze(array)
 
     def cloneStorage
-      (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Data])
+      (storage: scala.Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Data])
     :   Unit =
 
       var index = off
@@ -371,7 +375,7 @@ object Addressable:
   inline given text: Text is Addressable:
     type Operand = Char
     type Target = jl.StringBuilder
-    type Storage = Array[Char]
+    type Storage = scala.Array[Char]
 
     val empty: Text = ""
 
@@ -390,11 +394,11 @@ object Addressable:
 
       target.append(source.s, start.n0, end.n1)
 
-    inline def allocate(size: Int): Array[Char] = new Array[Char](size)
-    inline def storageSize(storage: Array[Char]): Int = storage.length
-    inline def storageAddress(storage: Array[Char], index: Int): Char = storage(index)
+    inline def allocate(size: Int): scala.Array[Char] = new scala.Array[Char](size)
+    inline def storageSize(storage: scala.Array[Char]): Int = storage.length
+    inline def storageAddress(storage: scala.Array[Char], index: Int): Char = storage(index)
 
-    inline def storageUpdate(storage: Array[Char]^, index: Int, operand: Char): Unit =
+    inline def storageUpdate(storage: scala.Array[Char]^, index: Int, operand: Char): Unit =
       storage(index) = operand
 
     inline def append(target: jl.StringBuilder, operand: Char): Unit = target.append(operand)
@@ -402,24 +406,24 @@ object Addressable:
     inline def copyChunk
       ( source:  Text,
        srcOff:  Int,
-       dest:    Array[Char]^,
+       dest:    scala.Array[Char]^,
        destOff: Int,
        len:     Int )
     :   Unit = source.s.getChars(srcOff, srcOff + len, dest, destOff)
 
     inline def transfer
-      ( src:     Array[Char],
+      ( src:     scala.Array[Char],
        srcOff:  Int,
-       dest:    Array[Char]^,
+       dest:    scala.Array[Char]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
-    inline def materialize(storage: Array[Char], off: Int, len: Int): Text =
+    inline def materialize(storage: scala.Array[Char], off: Int, len: Int): Text =
       String(storage, off, len).tt
 
     inline def cloneStorage
-      (storage: Array[Char], off: Int, len: Int)(target: jl.StringBuilder)
+      (storage: scala.Array[Char], off: Int, len: Int)(target: jl.StringBuilder)
     :   Unit =
 
       target.append(storage, off, len)

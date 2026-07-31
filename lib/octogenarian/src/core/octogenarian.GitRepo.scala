@@ -44,6 +44,8 @@ import guillotine.*
 import kaleidoscope.*
 import nomenclature.*
 import prepositional.*
+
+import proscenium.compat.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
@@ -70,7 +72,8 @@ case class GitRepo(gitDir: Path on Linux):
 
 
   def pushTags()(using Internet, GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions push --tags".exec[Exit]() match
       case Exit.Ok => ()
@@ -78,7 +81,8 @@ case class GitRepo(gitDir: Path on Linux):
 
 
   def push()(using Internet, Tactic[GitError], GitCommand, WorkingDirectory, Tactic[ExecError])
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions push".exec[Exit]() match
       case Exit.Ok => ()
@@ -88,7 +92,8 @@ case class GitRepo(gitDir: Path on Linux):
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
     ( using GitCommand, Internet, WorkingDirectory )
     ( using gitError: Tactic[GitError], exec: Tactic[ExecError] )
-  :   GitProcess[Unit] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   GitProcess[Unit] =
 
     val depthOption = depth.lay(sh""): depth => sh"--depth=$depth"
     val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
@@ -103,16 +108,20 @@ case class GitRepo(gitDir: Path on Linux):
   object config:
     def get[value: Decodable in Text](variable: Text)
       ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-    :   value logs GitEvent =
+    ( using (GitEvent is Loggable)^ )
+    :   value =
 
       sh"$git $repoOptions config --get $variable".exec[Text]().as[value]
 
-  def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
+  def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError])
+    ( using (GitEvent is Loggable)^ )
+  :   List[GitTag] =
     sh"$git $repoOptions tag".exec[Iterator[Text]]().to(List).map(GitTag.unsafe(_))
 
 
   def tag(name: GitTag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :   GitTag logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   GitTag =
 
     sh"$git $repoOptions tag $name".exec[Exit]() match
       case Exit.Ok => name
@@ -121,7 +130,8 @@ case class GitRepo(gitDir: Path on Linux):
 
   def deleteTag(name: GitTag)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions tag -d $name".exec[Exit]() match
       case Exit.Ok => ()
@@ -130,7 +140,8 @@ case class GitRepo(gitDir: Path on Linux):
 
   def deleteBranch(branch: GitBranch, force: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val flag = if force then sh"-D" else sh"-d"
 
@@ -141,7 +152,8 @@ case class GitRepo(gitDir: Path on Linux):
 
   def renameBranch(from: GitBranch, to: GitBranch, force: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val flag = if force then sh"-M" else sh"-m"
 
@@ -151,22 +163,26 @@ case class GitRepo(gitDir: Path on Linux):
 
 
   def remotes()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :   List[Remote] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   List[Remote] =
 
     val lines = sh"$git $repoOptions remote -v".exec[Iterator[Text]]()
 
     val grouped = lines.collect:
       case r"$name(\S+)\t$url(\S+) \($kind(fetch|push)\)" => (name, url, kind)
 
-    grouped.to(List).groupBy(_._1).to(List).map: (name, rows) =>
+    val remotes = grouped.to(List).stdlib.groupBy(_._1).toList.map: (name, rows) =>
       val fetch = rows.collectFirst { case (_, url, t"fetch") => url }.getOrElse(t"")
       val push  = rows.collectFirst { case (_, url, t"push")  => url }
       Remote(name, fetch, push.getOrElse(Unset))
 
+    List.of(remotes)
+
 
   def addRemote(name: Text, url: Text)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Remote logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Remote =
 
     sh"$git $repoOptions remote add $name $url".exec[Exit]() match
       case Exit.Ok => Remote(name, url)
@@ -175,7 +191,8 @@ case class GitRepo(gitDir: Path on Linux):
 
   def removeRemote(name: Text)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions remote remove $name".exec[Exit]() match
       case Exit.Ok => ()
@@ -184,7 +201,9 @@ case class GitRepo(gitDir: Path on Linux):
 
   private def parsePem(text: Text): Optional[Pem] = safely(text.read[Pem])
 
-  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Commit] logs GitEvent =
+  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError])
+    ( using (GitEvent is Loggable)^ )
+  :   List[Commit] =
     val lines =
       sh"$git $repoOptions log --format=raw --color=never".exec[Iterator[Text]]().buffered
 
@@ -192,11 +211,11 @@ case class GitRepo(gitDir: Path on Linux):
 
     var hash:      Optional[GitHash] = Unset
     var tree:      Optional[GitHash] = Unset
-    var parents:   List[GitHash]     = Nil
+    var parents:   List[GitHash] = Nil
     var author:    Optional[Text]    = Unset
     var committer: Optional[Text]    = Unset
     var signature: List[Text]        = Nil
-    var body:      List[Text]        = Nil
+    var body:      List[Text] = Nil
 
     def flush(): Unit =
       if hash.present && tree.present && author.present && committer.present then unsafely:
@@ -243,14 +262,16 @@ case class GitRepo(gitDir: Path on Linux):
 
   def diff(refA: Refspec, refB: Refspec)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   List[FileDiff] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   List[FileDiff] =
 
     Patch.parse(sh"$git $repoOptions diff --no-color $refA $refB".exec[Iterator[Text]]())
 
 
   def reflog(ref: Optional[Refspec] = Unset)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   List[ReflogEntry] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   List[ReflogEntry] =
 
     val refArg = ref.lay(sh""): ref => sh"$ref"
     val format = t"--format=%H %gd %ct %gs"
@@ -262,7 +283,8 @@ case class GitRepo(gitDir: Path on Linux):
 
 
   def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :   GitHash logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   GitHash =
 
     GitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]().trim)
 
@@ -270,7 +292,8 @@ case class GitRepo(gitDir: Path on Linux):
   object notes:
     def show(target: GitHash, ref: Path on GitRefs = GitRefs.defaultNotes)
       ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-    :   Optional[Text] logs GitEvent =
+    ( using (GitEvent is Loggable)^ )
+    :   Optional[Text] =
 
       val refArg = sh"--ref=${ref.encode}"
 
@@ -290,7 +313,8 @@ case class GitRepo(gitDir: Path on Linux):
       ( target: GitHash, body: Text, force: Boolean = false,
         ref:    Path on GitRefs = GitRefs.defaultNotes )
       ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-    :   Unit logs GitEvent =
+    ( using (GitEvent is Loggable)^ )
+    :   Unit =
 
       val refArg   = sh"--ref=${ref.encode}"
       val forceOpt = if force then sh"-f" else sh""
@@ -303,7 +327,8 @@ case class GitRepo(gitDir: Path on Linux):
     def append
       ( target: GitHash, body: Text, ref: Path on GitRefs = GitRefs.defaultNotes )
       ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-    :   Unit logs GitEvent =
+    ( using (GitEvent is Loggable)^ )
+    :   Unit =
 
       val refArg = sh"--ref=${ref.encode}"
 
@@ -316,7 +341,8 @@ case class GitRepo(gitDir: Path on Linux):
       ( target: GitHash, ignoreMissing: Boolean = false,
         ref:    Path on GitRefs = GitRefs.defaultNotes )
       ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-    :   Unit logs GitEvent =
+    ( using (GitEvent is Loggable)^ )
+    :   Unit =
 
       val refArg     = sh"--ref=${ref.encode}"
       val missingOpt = if ignoreMissing then sh"--ignore-missing" else sh""
@@ -328,7 +354,8 @@ case class GitRepo(gitDir: Path on Linux):
 
     def list(ref: Path on GitRefs = GitRefs.defaultNotes)
       ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-    :   List[(GitHash, GitHash)] logs GitEvent =
+    ( using (GitEvent is Loggable)^ )
+    :   List[(GitHash, GitHash)] =
 
       val refArg = sh"--ref=${ref.encode}"
 
@@ -342,7 +369,8 @@ case class GitRepo(gitDir: Path on Linux):
       ( from: GitHash, to: GitHash, force: Boolean = false,
         ref:  Path on GitRefs = GitRefs.defaultNotes )
       ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-    :   Unit logs GitEvent =
+    ( using (GitEvent is Loggable)^ )
+    :   Unit =
 
       val refArg   = sh"--ref=${ref.encode}"
       val forceOpt = if force then sh"-f" else sh""
@@ -354,7 +382,8 @@ case class GitRepo(gitDir: Path on Linux):
 
   // Lists every non-bare worktree attached to this object database.
   def worktrees()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :   List[Worktree] raises GitError logs GitEvent =
+  ( using Tactic[GitError], (GitEvent is Loggable)^ )
+  :   List[Worktree] =
 
     val lines = sh"$git $repoOptions worktree list --porcelain".exec[List[Text]]()
 
@@ -368,13 +397,15 @@ case class GitRepo(gitDir: Path on Linux):
         val (block, rest) = remaining.span(_ != t"")
         block :: blocks(rest.dropWhile(_ == t""))
 
-    blocks(lines).flatMap: block =>
-      val isBare = block.contains(t"bare")
+    val worktrees = blocks(lines).flatMap: block =>
+      val isBare = block.has(t"bare")
 
       block.collect:
         case r"worktree $path(.*)" if !isBare =>
           val pathOnLinux = unsafely(path.as[Path on Linux])
           Worktree(this, pathOnLinux)
+
+    worktrees
 
 
   def addWorktree
@@ -385,7 +416,8 @@ case class GitRepo(gitDir: Path on Linux):
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
             GitCommand )
-  :   Worktree raises NameError raises PathError logs GitEvent =
+  ( using Tactic[NameError], Tactic[PathError], (GitEvent is Loggable)^ )
+  :   Worktree =
 
     val targetPath: Path on Linux =
       try target.generic.as[Path on Linux]
@@ -400,7 +432,8 @@ case class GitRepo(gitDir: Path on Linux):
 
   def removeWorktree(worktree: Worktree, force: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     val forceOpt = if force then sh"--force" else sh""
 
@@ -411,7 +444,8 @@ case class GitRepo(gitDir: Path on Linux):
 
   def pruneWorktrees()
     ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
-  :   Unit logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   Unit =
 
     sh"$git $repoOptions worktree prune".exec[Exit]() match
       case Exit.Ok => ()

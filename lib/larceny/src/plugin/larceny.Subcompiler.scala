@@ -32,7 +32,7 @@
                                                                                                   */
 package larceny
 
-import language.adhocExtensions
+import scala.language.adhocExtensions
 
 import scala.collection.mutable as scm
 import scala.util.chaining.*
@@ -143,7 +143,9 @@ object Subcompiler:
       source:    String,
       regions:   Set[(Int, Int)],
       plugins:   List[String],
-      ccNew:     Boolean = false )
+      ccNew:     Boolean = false,
+      yimports:  List[String] = Nil,
+      noPredef:  Boolean = false )
   :   List[CompileError] =
 
     object driver extends Driver:
@@ -151,7 +153,10 @@ object Subcompiler:
         val context = initCtx.fresh
         val context2 = context.setSetting(context.settings.classpath, classpath)
         val ccOptions = if ccNew then List("-Ycc-new") else Nil
-        val args = Array[String]("") ++ ccOptions ++ plugins.map: p => s"-Xplugin:$p"
+        val importOptions =
+          (if yimports.isEmpty then Nil else List(s"-Yimports:${yimports.mkString(",")}"))
+          ++ (if noPredef then List("-Yno-predef") else Nil)
+        val args = scala.Array[String]("") ++ ccOptions ++ importOptions ++ plugins.map: p => s"-Xplugin:$p"
         setup(args, context2).map(_(1)).get
 
 

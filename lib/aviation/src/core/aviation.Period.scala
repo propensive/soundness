@@ -58,7 +58,7 @@ object Period:
           val next = current + length
 
           if !order.gt(next, current) || order.gt(next, period.finish)
-          then (if partial then Period(current, period.finish) :: acc else acc).reverse
+          then List.of((if partial then Period(current, period.finish) :: acc.stdlib else acc.stdlib).reverse)
           else recur(next, Period(current, next) :: acc)
 
       recur(period.start, Nil)
@@ -67,12 +67,12 @@ object Period:
     // before `finish` (half-open, so `finish` itself is excluded). Lazy, so `.take(n)` is cheap.
     def by[step](step: step)
       ( using addable: point is Addable by step to point, order: Ordering[point] )
-    :   LazyList[point] =
+    :   Chain[point] =
 
-      def recur(current: point): LazyList[point] =
-        if !order.lt(current, period.finish) then LazyList.empty else
+      def recur(current: point): Chain[point] =
+        if !order.lt(current, period.finish) then Chain.empty else
           val next = current + step
-          if !order.gt(next, current) then LazyList(current) else current #:: recur(next)
+          if !order.gt(next, current) then Chain(current) else current #:: recur(next)
 
       recur(period.start)
 

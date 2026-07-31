@@ -34,6 +34,8 @@ package rudiments
 
 import soundness.*
 
+import proscenium.compat.*
+
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Rudiments Tests"):
@@ -60,8 +62,8 @@ object Tests extends Suite(m"Rudiments Tests"):
         List(1, 2, 3).has(4)
       . assert(_ == false)
 
-      test(m"Series[Int] has is membership, not index validity"):
-        Series(10, 20, 30).has(2)
+      test(m"Sequence[Int] has is membership, not index validity"):
+        Sequence(10, 20, 30).has(2)
       . assert(_ == false)
 
       test(m"Range has is membership, not index validity"):
@@ -80,16 +82,17 @@ object Tests extends Suite(m"Rudiments Tests"):
         Set(1, 2, 3).has(4)
       . assert(_ == false)
 
-      test(m"IArray element membership"):
-        IArray(1, 2, 3).has(2)
+      test(m"frozen array element membership"):
+        Array.of(1, 2, 3).has(2)
       . assert(_ == true)
 
-      test(m"IArray missing element"):
-        IArray(1, 2, 3).has(4)
+      test(m"frozen array missing element"):
+        Array.of(1, 2, 3).has(4)
       . assert(_ == false)
 
       test(m"Array element membership"):
-        Array(1, 2, 3).has(2)
+        Inclusive.array[Int]
+          . has(java.util.Arrays.copyOf(scala.Array(1, 2, 3), 3).nn.asInstanceOf[scala.Array[Int]], 2)
       . assert(_ == true)
 
       test(m"Map key membership"):
@@ -100,9 +103,37 @@ object Tests extends Suite(m"Rudiments Tests"):
         Map(t"a" -> 1, t"b" -> 2).defines(t"c")
       . assert(_ == false)
 
+    suite(m"Mapping tests"):
+      // The `Map[…]`/`Set[…]` ascriptions are the established pattern for opaque-alias literals
+      // under `soundness.*` + `compat.*` (a bare literal in a receiver position mis-elaborates).
+      test(m"List map preserves shape"):
+        val xs: List[Int] = List(1, 2, 3)
+        xs.map(_ + 1)
+      . assert(_ == List(2, 3, 4))
+
+      test(m"Set map preserves shape"):
+        val xs: Set[Int] = Set(1, 2, 3)
+        xs.map(_ + 1)
+      . assert(_ == Set(2, 3, 4))
+
+      test(m"Map map transforms values, preserving keys"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.map(_ + 10)
+      . assert(_ == Map(t"a" -> 11, t"b" -> 12))
+
+      test(m"Map map operand is the value, not the pair"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.map(_*2)
+      . assert(_ == Map(t"a" -> 2, t"b" -> 4))
+
+      test(m"remap transforms entries pairwise into a Map"):
+        val m: Map[Text, Int] = Map(t"a" -> 1, t"b" -> 2)
+        m.remap { (key, value) => value -> key }
+      . assert(_ == Map(1 -> t"a", 2 -> t"b"))
+
     suite(m"Confined index tests"):
       val text = t"hello"
-      val array = IArray(10, 20, 30)
+      val array = Array.of(10, 20, 30)
 
       test(m"Plain `at` returns Optional"):
         text.at(Prim).vouch
@@ -210,12 +241,12 @@ object Tests extends Suite(m"Rudiments Tests"):
 
     suite(m"hex tests"):
       test(m"Specify some bytes"):
-        hex"bacdf1e9".to(List)
-      . assert(_ == Data(-70, -51, -15, -23).to(List))
+        hex"bacdf1e9".to[List]
+      . assert(_ == Data(-70, -51, -15, -23).to[List])
 
       test(m"Specify some bytes in uppercase with a space"):
-        hex"BACD F1E9".to(List)
-      . assert(_ == Data(-70, -51, -15, -23).to(List))
+        hex"BACD F1E9".to[List]
+      . assert(_ == Data(-70, -51, -15, -23).to[List])
 
       test(m"Non-even number of bytes"):
         demilitarize:
@@ -285,11 +316,11 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == Set((1, 1, 1), (2, 2, 2), (3, 3, 3)))
 
       test(m"Take a snapshot of an array"):
-        val array = Array[Int](1, 2, 3, 4, 5)
+        val array = scala.Array[Int](1, 2, 3, 4, 5)
         array(1) = 17
-        val snapshot: IArray[Int] = array.snapshot
+        val snapshot: Array[Int]^{} = array.snapshot
         array(1) = 42
-        snapshot.to(List)
+        snapshot.to[List]
       . assert(_ == List(1, 17, 3, 4, 5))
 
       test(m"Take Map#upsert as an insertion"):
@@ -484,3 +515,48 @@ object Tests extends Suite(m"Rudiments Tests"):
     //     def factorial(n: Int): Int = fix[Int] { i => if i <= 0 then 1 else i*recur(i - 1) } (n)
     //     factorial(4)
     //   .assert(_ == 24)
+
+    // While the collection aliases remain transparent, the stdlib member `to(Factory)` shadows
+    // the kind-polymorphic `to` for collection receivers, so `Text` (no such member) is the
+    // receiver these tests exercise; collection receivers activate as the aliases become opaque.
+    suite(m"Convertible tests"):
+      test(m"Text to List of chars"):
+        "abc".tt.to[List]
+      . assert(_ == List('a', 'b', 'c'))
+
+      test(m"Text to Set of chars deduplicates"):
+        "aba".tt.to[Set]
+      . assert(_ == Set('a', 'b'))
+
+      test(m"Text to Sequence of chars"):
+        "abc".tt.to[Sequence]
+      . assert(_ == Sequence('a', 'b', 'c'))
+
+      test(m"Text to Text is the identity"):
+        "abc".tt.to[Text]
+      . assert(_ == "abc".tt)
+
+      test(m"Result type of to[List] is inferred fully applied"):
+        val list: List[Char] = "xy".tt.to[List]
+        list.length
+      . assert(_ == 2)
+
+    suite(m"Vacuiscible tests"):
+      test(m"non-empty Text is not nil"):
+        "abc".tt.nil
+      . assert(_ == false)
+
+      test(m"empty Text is nil"):
+        "".tt.nil
+      . assert(_ == true)
+
+    suite(m"confine tests"):
+      test(m"confined Map key accesses bare value"):
+        val map = Map(1 -> "one".tt, 2 -> "two".tt)
+        map.confine(1).let(map.at(_))
+      . assert(_ == "one".tt)
+
+      test(m"absent Map key does not confine"):
+        val map = Map(1 -> "one".tt)
+        map.confine(9).let(map.at(_))
+      . assert(_ == Unset)

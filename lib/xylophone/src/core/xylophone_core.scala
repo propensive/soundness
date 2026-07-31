@@ -32,7 +32,9 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import scala.annotation.*
 import scala.collection.mutable as scm
@@ -57,9 +59,9 @@ extension (inline context: StringContext)
 // absent — so `xml.lens(_.book.title = …)` works. `ordinalOptical` and `eachOptical`
 // address the n-th, or every, child element of a node. All rebuild the element
 // immutably; non-element nodes (text, comments) are preserved in place.
-private def xmlNodes(xml: Xml): IArray[Node] = xml match
-  case Fragment(nodes*) => IArray.from(nodes)
-  case node: Node       => IArray(node)
+private def xmlNodes(xml: Xml): Array[Node]^{} = xml match
+  case Fragment(nodes*) => Array.from(nodes)
+  case node: Node       => Array.of(node)
 
 private def firstNode(xml: Xml, fallback: Node): Node =
   val nodes = xmlNodes(xml)
@@ -76,7 +78,7 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
     while i < children.length do
       children(i) match
         case element: Element if !done && element.label == name.tt =>
-          buffer ++= replacement
+          buffer ++= replacement.readable.toSeq
           done = true
 
         case other =>
@@ -84,8 +86,8 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
 
       i += 1
 
-    if !done then buffer ++= replacement
-    Element(label, attributes, IArray.from(buffer))
+    if !done then buffer ++= replacement.readable.toSeq
+    Element(label, attributes, Array.from(buffer))
 
   case Fragment(node: Element) =>
     Fragment(replaceNamedChild(node, name, value).asInstanceOf[Node])

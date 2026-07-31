@@ -32,6 +32,8 @@
                                                                                                   */
 package iridescence
 
+import scala.compiletime
+
 import soundness.*
 
 given Colorimetry = colorimetry.daylight
@@ -311,7 +313,7 @@ object Tests extends Suite(m"Iridescence tests"):
           import mixing.multiply
           1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)
         . map(_.message)
-      . assert(!_.nil)
+      . assert(!_.isEmpty)
 
     suite(m"Cielab manipulation"):
       test(m"delta to self is zero"):

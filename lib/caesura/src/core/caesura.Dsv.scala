@@ -32,7 +32,11 @@
                                                                                                   */
 package caesura
 
-import language.dynamics
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import scala.compiletime.*
 
@@ -74,8 +78,23 @@ trait Dsv2:
 
 object Dsv extends Dsv2:
   def apply(iterable: Iterable[Text]): Dsv =
-    new Dsv(IArray.from(iterable))
-  def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
+    new Dsv(Array.from(iterable))
+
+  // Flattens the per-field cell arrays of a derived product row into one `Dsv`. A plain
+  // method rather than part of the inline derivation body: the fresh `any.rd` of the
+  // intermediate buffers must not be minted inside an inline expansion, where it leaks
+  // into the expansion site's capture sets.
+  private[caesura] def flatten(arrays: Array[Array[Text]^{}]^{caps.any.rd}): Dsv =
+    val raw = arrays.readable
+    val builder = scala.collection.immutable.List.newBuilder[Text]
+    var index = 0
+
+    while index < raw.length do
+      raw(index).readable.foreach(builder += _)
+      index += 1
+
+    Dsv(Array.from(builder.result()))
+  def apply(text: Text*): Dsv = new Dsv(Array.from(text))
 
   // An absent cell (a short positional row, or a header column missing from the row) decodes
   // to `Unset`; a present cell — even an empty one — decodes its inner value. The product
@@ -168,7 +187,7 @@ object Dsv extends Dsv2:
     EncodableDerivation.derived[value]
 
   given showable: (format: DsvFormat) => Dsv is Showable = dsv =>
-    val cells = caps.unsafe.unsafeAssumePure:
+    val cells =
       dsv.data.map: cell =>
         val safe = !cell.contains(format.Quote) && !cell.contains(format.Delimiter) &&
           !cell.contains('\n') && !cell.contains('\r')
@@ -183,7 +202,7 @@ object Dsv extends Dsv2:
 
             append(format.quote)
 
-    cells.join(format.delimiter.show)
+    cells.readable.join(format.delimiter.show)
 
   // Direct-read entries, gated on an explicit `Dsv.Parsable` (they sit above
   // the AST-based `aggregableIn` in `Dsv2`, so opting in switches the path).
@@ -197,7 +216,7 @@ object Dsv extends Dsv2:
         type Self = value in Dsv
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): value in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
           val reader =
@@ -214,7 +233,7 @@ object Dsv extends Dsv2:
         type Self = List[value] in Dsv
         type Operand = Text
 
-        def aggregate(text: LazyList[Text]): List[value] in Dsv = accept(Stream(text.iterator))
+        def aggregate(text: Chain[Text]): List[value] in Dsv = accept(Stream(text.iterator))
 
         override def accept(stream: (Stream[Text] over Credit)^): List[value] in Dsv =
           val reader =
@@ -308,7 +327,7 @@ object Dsv extends Dsv2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   (derivation is Dsv.Field)^ =
 
-      val spans: IArray[Int] = Spannable.derived[derivation].spans()
+      val spans: Array[Int]^{} = Spannable.derived[derivation].spans()
       var total: Int = 0
       spans.foreach { span => total += span }
 
@@ -335,7 +354,7 @@ object Dsv extends Dsv2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   (derivation is Decodable in Dsv)^ =
 
-      val spans: IArray[Int] = Spannable.derived[derivation].spans()
+      val spans: Array[Int]^{} = Spannable.derived[derivation].spans()
 
       // `count` must be local to each decode call, not captured per instance: a derived
       // decoder for a type used in more than one field (e.g. two `Foo` fields) is deduplicated
@@ -356,7 +375,8 @@ object Dsv extends Dsv2:
                 // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
                 // position.
                 val row2 = row.columns.lay(Dsv(row.data.drop(count))): columns =>
-                  columns.at(label).lay(Dsv(IArray[Text]())): i => Dsv(row.data.drop(i))
+                  columns.at(label).lay(Dsv(Array.of[Text]())): i =>
+                    Dsv(row.data.drop(i))
 
                 count += spans(index)
 
@@ -368,21 +388,14 @@ object Dsv extends Dsv2:
     :   derivation is Encodable in Dsv =
 
       value =>
-        val cells =
-          fields(value):
-            [field] => field => contextual.encode(field).data
+        Dsv.flatten(fields(value) { [field] => field => contextual.encode(field).data })
 
-          . to(List)
-          . flatten
-
-        Dsv(cells)
-
-case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
+case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
   def as[cell: Decodable in Dsv]: cell raises DsvError tracks CellRef = cell.decoded(this)
 
-  def header: Optional[IArray[Text]] = columns.let: map =>
-    val columns = map.map(_.swap)
-    IArray.tabulate(columns.size)(columns(_))
+  def header: Optional[Array[Text]^{}] = columns.let: map =>
+    val columns = map.stdlib.map(_.swap)
+    Array.tabulate(columns.size)(columns(_))
 
 
   def selectDynamic[value](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)
@@ -394,7 +407,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
 
 
   def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =
-    columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
+    columns.let(_.at(field)).let { index => vacuous.at(data)(index) }.let(value.decoded(_))
 
   override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
 

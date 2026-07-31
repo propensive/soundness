@@ -49,7 +49,7 @@ package gitCommands:
   =>  (((Path on Linux) is Instantiable across Paths from Text)^)
   =>  GitCommand =
 
-    val path: Path on Linux = sh"which git"()
+    val path: Path on Linux = sh"which git".exec[Path on Linux]()
     GitCommand(path.encode)
 
 export octogenarian.internal.{GitTag, GitBranch, GitHash, Refspec}
@@ -85,7 +85,8 @@ extension (noteRef: NoteRef)
             gitErr:  Tactic[GitError],
             refErr:  Tactic[GitRefError],
             exec:    Tactic[ExecError] )
-  :   value logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   value =
 
     repo.notes.show(noteRef.target, noteRef.namespace)
     . lest(GitError(GitError.Reason.NoteNotFound))

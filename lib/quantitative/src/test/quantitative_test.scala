@@ -34,8 +34,10 @@ package quantitative
 
 import soundness.*
 
-import language.strictEquality
-import language.experimental.into
+import proscenium.compat.*
+
+import scala.language.strictEquality
+import scala.language.experimental.into
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
@@ -96,14 +98,14 @@ object Tests extends Suite(m"Quantitative Tests"):
         demilitarize:
           (20*Metre*Second)/(Metre*Second): Double
         .map(_.message)
-      . assert(_.nil)
+      . assert(_.isEmpty)
 
       test(m"Principal units are preferred"):
         demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
-      . assert(_.nil)
+      . assert(_.isEmpty)
 
       test(m"Non-principal units are not preferred"):
         demilitarize:
@@ -232,19 +234,19 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Explicit conversion tests"):
       test(m"Convert feet to metres"):
-        (3*Foot).to[Metres]
+        (3*Foot).convert[Metres]
       . assert(_ == 0.9144000000000001*Metre)
 
       test(m"Convert metres to feet"):
-        (3*Metre).to[Feet]
+        (3*Metre).convert[Feet]
       . assert(_ == 9.842519685039369*Foot)
 
       test(m"Convert m² to ft²"):
-        (π*Metre*Metre).to[Feet]
+        (π*Metre*Metre).convert[Feet]
       . assert(_ === 33.815821889033906*Foot*Foot +/- 0.000000001*Foot*Foot)
 
       test(m"Conversion to seconds does nothing"):
-        (3*Metre).to[Seconds]
+        (3*Metre).convert[Seconds]
       . assert(_ == 3*Metre)
 
     suite(m"Inequalities"):
@@ -368,11 +370,11 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == t"273.15")
 
       test(m"Convert Fahrenheit value to Kelvin"):
-        (Fahrenheit(0) - zero[Temperature]).to[Kelvins].show
+        (Fahrenheit(0) - zero[Temperature]).convert[Kelvins].show
       . assert(_ == t"255 K")
 
       test(m"Convert Fahrenheit value to Rankine"):
-        (Fahrenheit(100) - zero[Temperature]).to[Rankines].show
+        (Fahrenheit(100) - zero[Temperature]).convert[Rankines].show
       . assert(_ == t"560 °R")
 
       test(m"Convert Fahrenheit directly to Celsius"):
@@ -382,13 +384,13 @@ object Tests extends Suite(m"Quantitative Tests"):
 
       test(m"Add a Rankine quantity to a Temperature"):
         import temperatureScales.kelvinScale
-        // (9*Kelvin).to[Rankines] is 16.2 R, equivalent to 9 K
-        (zero[Temperature] + (9.0*Kelvin).to[Rankines]).show
+        // (9*Kelvin).convert[Rankines] is 16.2 R, equivalent to 9 K
+        (zero[Temperature] + (9.0*Kelvin).convert[Rankines]).show
       . assert(_ == t"9.00 K")
 
       test(m"Subtract a Rankine quantity from a Temperature"):
         import temperatureScales.kelvinScale
-        ((zero[Temperature] + 20.0*Kelvin) - (9.0*Kelvin).to[Rankines]).show
+        ((zero[Temperature] + 20.0*Kelvin) - (9.0*Kelvin).convert[Rankines]).show
       . assert(_ == t"11.0 K")
 
     suite(m"Aggregation tests"):
@@ -496,14 +498,14 @@ object Tests extends Suite(m"Quantitative Tests"):
       // the typeclass operation is inlined and don't count.
       def callsTypeclassOp(bytecode: Bytecode): Boolean =
         val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
             case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
             case _                                              => false
 
       def hasBoxing(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokestatic(owner, method, _) =>
               (owner.s.contains("Double") || owner.s.contains("BoxesRunTime"))
@@ -512,31 +514,31 @@ object Tests extends Suite(m"Quantitative Tests"):
               false
 
       def containsDneg(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dneg => true
             case _                    => false
 
       def containsDmul(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dmul => true
             case _                    => false
 
       def containsDdiv(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Ddiv => true
             case _                    => false
 
       def containsDadd(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dadd => true
             case _                    => false
 
       def containsDsub(bytecode: Bytecode): Boolean =
-        bytecode.instructions.exists: instruction =>
+        bytecode.instructions.stdlib.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dsub => true
             case _                    => false

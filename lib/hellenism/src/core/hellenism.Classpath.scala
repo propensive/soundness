@@ -32,6 +32,8 @@
                                                                                                   */
 package hellenism
 
+import scala.caps
+
 import java.net as jn
 import java.util as ju
 
@@ -102,10 +104,10 @@ object Classpath extends Root(t""):
   def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
     val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
 
-    val urls: Array[jn.URL | Null] =
-      Array.from(classpath.entries.flatMap:
-        case ClasspathEntry.JavaRuntime => Nil
-        case other                      => List(other.javaUrl))
+    val urls: scala.Array[jn.URL | Null] =
+      scala.Array.from(classpath.entries.stdlib.flatMap:
+        case ClasspathEntry.JavaRuntime => Nil.stdlib
+        case other                      => List(other.javaUrl).stdlib)
 
     val loader = jn.URLClassLoader(urls, parent)
     val seen = scala.collection.mutable.Set.empty[Class[?]]
@@ -115,15 +117,18 @@ object Classpath extends Root(t""):
       val provider0 = provider.nn
       if seen.add(provider0.`type`.nn) then result += provider0.get.nn
 
-    result.toSet
+    Set.from(result)
 
   // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
   // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so
   // does not spuriously capture it under capture checking.
-  private[hellenism] def delegatingClassloader(urls: Array[jn.URL | Null], parent: ClassLoader)
+  private[hellenism] def delegatingClassloader(urls: scala.Array[jn.URL | Null], parent: ClassLoader)
   :   jn.URLClassLoader =
 
-    new jn.URLClassLoader(urls, parent):
+    // The anonymous classloader's only capture is the read view of the freshly-built URL
+    // array, laundered here.
+    scala.caps.unsafe.unsafeAssumePure:
+     new jn.URLClassLoader(urls, parent):
       override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
         try findClass(name) catch case error: ClassNotFoundException =>
           super.loadClass(name, resolve)
@@ -131,18 +136,18 @@ object Classpath extends Root(t""):
 
 trait Classpath:
   def entries: List[ClasspathEntry]
-  private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
+  private def array: scala.Array[jn.URL | Null] = scala.Array.from(entries.stdlib.map(_.javaUrl))
 
   def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
     new Classloader(Classpath.delegatingClassloader(array, parent.java))
 
   def classloader: Classloader =
-    val urls = entries.flatMap:
-      case ClasspathEntry.JavaRuntime => Nil
-      case other                      => List(other.javaUrl)
+    val urls = entries.stdlib.flatMap:
+      case ClasspathEntry.JavaRuntime => Nil.stdlib
+      case other                      => List(other.javaUrl).stdlib
 
     new Classloader
-      ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
+      ( new jn.URLClassLoader(scala.Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
 
   inline def services[service]: Set[service] =
     Classpath.servicesFor[service](this, reflectClass[service])

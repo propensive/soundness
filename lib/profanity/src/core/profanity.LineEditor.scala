@@ -41,6 +41,7 @@ import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import rudiments.*
 import spectacular.*
 import vacuous.*
+import proscenium.compat.*
 
 object LineEditor:
   // Whether the editor is a single line (Enter submits) or accepts multiple lines.
@@ -61,7 +62,7 @@ object LineEditor:
     val metric:     Grapheme is Measurable = summon[Grapheme is Measurable]
     val string:     String                 = text.s
     val limit:      Int                    = position.min(string.length)
-    val boundaries: IArray[Int]            = Writing(text).boundaries
+    val boundaries: Array[Int]^{}            = Writing(text).boundaries
     var row:        Int                    = 0
     var column:     Int                    = 0
     var index:      Int                    = 0
@@ -121,9 +122,9 @@ extends Question[Text]:
 
   // The logical lines, their start offsets, and the index of the cursor's line.
   private def layout: (List[Text], List[Int], Int) =
-    val lines:  List[Text] = value.cut(t"\n").to(List)
-    val starts: List[Int]  = lines.scanLeft(0)(_ + _.length + 1).init
-    (lines, starts, starts.lastIndexWhere(_ <= position).max(0))
+    val lines  = value.cut(t"\n")
+    val starts = List.of(lines.stdlib.scanLeft(0)(_ + _.length + 1).init)
+    (lines, starts, starts.stdlib.lastIndexWhere(_ <= position).max(0))
 
   private def moveVertically(rows: Int): LineEditor =
     val (lines, starts, current) = layout
@@ -184,7 +185,8 @@ extends Question[Text]:
             interaction:   Interaction[Text, LineEditor] )
     [ result ]
     ( lambda: Interactivity[TerminalEvent] ?=> Text => result )
-  :   result raises DismissError =
+    ( using Tactic[DismissError] )
+  :   result =
 
     val events = interactivity.eventIterator()
 

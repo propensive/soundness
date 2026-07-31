@@ -32,7 +32,9 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.caps
+
+import scala.language.dynamics
 
 import java.net as jn
 
@@ -114,7 +116,7 @@ object HttpClient:
           val code = response.status.code
 
           if !isRedirect(code) || remaining <= 0 then response else
-            response.textHeaders.find(_.key.lower == t"location") match
+            response.textHeaders.stdlib.find(_.key.lower == t"location") match
               case None =>
                 response
 

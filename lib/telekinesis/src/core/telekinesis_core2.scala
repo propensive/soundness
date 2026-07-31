@@ -32,7 +32,9 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import scala.caps
+
+import scala.language.dynamics
 
 import anticipation.*
 import contingency.*

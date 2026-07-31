@@ -32,7 +32,9 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import proscenium.compat.*
+
+import scala.language.experimental.genericNumberLiterals
 
 import anticipation.*
 import hypotenuse.*

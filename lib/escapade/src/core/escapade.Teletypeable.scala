@@ -32,6 +32,9 @@
                                                                                                   */
 package escapade
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 import digression.*
 import escritoire.*
@@ -77,7 +80,7 @@ object Teletypeable:
           val fg = graphical.pixel(graphic, x, y)
           val bg = graphical.pixel(graphic, x, y + 1)
           val styled = TextStyle(fg, bg).styleWord
-          append(Teletype(t"▀", IArray(styled, 0L)))
+          append(Teletype(t"▀", Array.of(styled, 0L)))
 
         append(e"\n")
 
@@ -100,13 +103,14 @@ object Teletypeable:
         case Nil          => done.reverse
 
         case head :: tail =>
-          if seen.contains(head) then dedup(tail, seen, done)
+          if seen.has(head) then dedup(tail, seen, done)
           else dedup(tail, seen + head, head :: done)
 
     val packages: Map[Text, Color in Srgb] =
-      dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-      . zipWithIndex.map: (prefix, index) => prefix -> accent(index)
-      . to(Map)
+      Map.from:
+        dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil).stdlib
+        . zipWithIndex.map: (prefix, index) =>
+            prefix -> accent(index)
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${palette.message}($fullClass): ${stack.message}"
@@ -114,13 +118,14 @@ object Teletypeable:
     case class Row(frame: StackTrace.Frame, sameClass: Boolean, sameFile: Boolean)
 
     val rows: List[Row] =
-      stack.frames.foldLeft((List.empty[Row], t"", t"")):
-        case ((acc, lastClass, lastFile), frame) =>
-          val sameClass = frame.displayClass == lastClass
-          val sameFile = frame.file == lastFile
-          (Row(frame, sameClass, sameFile) :: acc, frame.displayClass, frame.file)
+      List.of:
+        stack.frames.fold((List.empty[Row].stdlib, t"", t"")):
+          case ((acc, lastClass, lastFile), frame) =>
+            val sameClass = frame.displayClass == lastClass
+            val sameFile = frame.file == lastFile
+            (Row(frame, sameClass, sameFile) :: acc, frame.displayClass, frame.file)
 
-      . _1.reverse
+        . _1.reverse
 
     // A frame the compiler generated—a bridge, a forwarder, an initializer—is rarely what the
     // reader is looking for, so it stays legible but recedes.
@@ -185,16 +190,17 @@ object Teletypeable:
 
     val grid = scaffold.tabulate(rows).grid(200)
     val dataOnly = grid.copy(sections = grid.sections.tail)
-    val tableLines = dataOnly.render.to(List)
+    val tableLines = List.from(dataOnly.render.stdlib)
 
-    val root = (init :: tableLines).join(e"\n")
+    val allLines = init :: (tableLines: List[Teletype])
+    val root = (allLines: Iterable[Teletype]).join(e"\n")
 
     stack.cause.lay(root): cause => e"$root\n${palette.message}(caused by:)\n$cause"
 
   given frame: (Text is Measurable) => (palette: StackTrace.Palette)
   =>  StackTrace.Frame is Teletypeable = frame =>
 
-    val className = e"${palette.method}(${frame.method.className.fit(40, Rtl)})"
+    val className = e"${palette.method}(${frame.displayClass.fit(40, Rtl)})"
     val method = e"${palette.method}(${frame.method.method.fit(40)})"
     val file = e"${palette.file}(${frame.file.fit(18, Rtl)})"
     val line = e"${palette.line}(${frame.line.let(_.show).or(t"?")})"

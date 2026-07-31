@@ -32,6 +32,8 @@
                                                                                                   */
 package octogenarian
 
+import scala.caps
+
 import scala.compiletime.*
 
 import ambience.*
@@ -58,12 +60,15 @@ import GitError.Reason.*
 object Git:
   // Drop consecutive equal values from a single-pass iterator — git repeats a
   // progress percentage across many carriage-return updates. Replaces the
-  // LazyList-only `deduplicate` combinator, matching its consecutive semantics.
+  // Chain-only `deduplicate` combinator, matching its consecutive semantics.
   private def distinctConsecutive(iterator: Iterator[Progress]): Iterator[Progress] =
     var previous: Optional[Progress] = Unset
 
-    iterator.filter: progress =>
-      (previous.absent || previous.vouch != progress).also { previous = progress }
+    // The filter closure privately owns `previous`; the deduplicated view is
+    // observationally pure.
+    caps.unsafe.unsafeAssumePure:
+      iterator.filter: progress =>
+        (previous.absent || previous.vouch != progress).also { previous = progress }
 
   def progress(process: Job[?, ?]): Iterator[Progress] =
     import hieroglyph.charDecoders.utf8Decoder, hieroglyph.textSanitizers.substituteSanitizer
@@ -72,7 +77,7 @@ object Git:
     // `delineate` splits on `\n`, `\r\n` and `\r`, so git's carriage-return
     // progress updates each become their own line — subsuming the old manual
     // `cut(r"[\n\r]")`. The stderr line iterator is laundered pure (exactly as
-    // the old `toLazyList` bridge did) so the progress iterator is a plain,
+    // the old `toProgression` bridge did) so the progress iterator is a plain,
     // single-owner value the fetching `Job` carries alongside its result.
     val stages = safely[StreamError]:
       val lines = caps.unsafe.unsafeAssumePure(process.stderr().delineate.records)
@@ -101,7 +106,8 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError] )
     ( using command: GitCommand )
-  :   Worktree raises NameError logs GitEvent =
+  ( using Tactic[NameError], (GitEvent is Loggable)^ )
+  :   Worktree =
 
     try
       throwErrors[PathError | IoError]:
@@ -124,7 +130,8 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError] )
     ( using command: GitCommand )
-  :   GitRepo raises NameError logs GitEvent =
+  ( using Tactic[NameError], (GitEvent is Loggable)^ )
+  :   GitRepo =
 
     try
       throwErrors[PathError | IoError]:
@@ -147,7 +154,8 @@ object Git:
             Tactic[GitError],
             Tactic[ExecError],
             WorkingDirectory )
-  :   GitProcess[Worktree] raises NameError logs GitEvent =
+  ( using Tactic[NameError], (GitEvent is Loggable)^ )
+  :   GitProcess[Worktree] =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -170,7 +178,8 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
             GitCommand )
-  :   GitProcess[Worktree] raises PathError raises NameError raises GitError logs GitEvent =
+  ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], (GitEvent is Loggable)^ )
+  :   GitProcess[Worktree] =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -192,7 +201,8 @@ object Git:
             ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
             GitCommand )
-  :   GitProcess[GitRepo] raises PathError raises NameError raises GitError logs GitEvent =
+  ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], (GitEvent is Loggable)^ )
+  :   GitProcess[GitRepo] =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -211,7 +221,8 @@ object Git:
     ( using gitError:         Tactic[GitError],
             exec:             Tactic[ExecError],
             workingDirectory: WorkingDirectory )
-  :   GitProcess[Worktree] raises NameError logs GitEvent =
+  ( using Tactic[NameError], (GitEvent is Loggable)^ )
+  :   GitProcess[Worktree] =
 
     val worktree = init(targetPath)
     val fetch = worktree.repo.fetch(1, source, commit)
@@ -235,7 +246,8 @@ object Git:
             Tactic[NameError],
             GitCommand )
     ( using gitError: Tactic[GitError] )
-  :   GitProcess[Worktree] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   GitProcess[Worktree] =
 
     val target: Path on Linux =
       try targetPath.generic.as[Path on Linux]
@@ -270,7 +282,8 @@ object Git:
             Tactic[NameError],
             GitCommand )
     ( using gitError: Tactic[GitError] )
-  :   GitProcess[GitRepo] logs GitEvent =
+  ( using (GitEvent is Loggable)^ )
+  :   GitProcess[GitRepo] =
 
     val target: Path on Linux =
       try targetPath.generic.as[Path on Linux]

@@ -32,13 +32,14 @@
                                                                                                   */
 package hieroglyph
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
 import beneficence.*
 import denominative.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 
@@ -57,25 +58,24 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
 
   def decoded(bytes: Data, omit: Boolean): Text =
     val buffer: StringBuilder = StringBuilder()
-    decoded(LazyList(bytes)).each: text => buffer.append(text.s)
+    decoded(Chain(bytes)).each: text => buffer.append(text.s)
     buffer.toString.tt
 
   def decoded(bytes: Data): Text = decoded(bytes, false)
 
-  def decoded(stream: LazyList[Data]): LazyList[Text] =
+  def decoded(stream: Chain[Data]): Chain[Text] =
     val decoder = encoding.charset.newDecoder().nn
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn
 
     // The stream stays `Data` (pure): mapping it to mutable arrays up front
     // would give every element a reach capability that leaks into `recur`. The
-    // buffer only reads from the chunk, so the mutable view is taken at the
-    // single `put` site, under `Unsafe`.
-    def recur(todo: LazyList[Data], offset: Int = 0, total: Int = 0): LazyList[Text] =
+    // JVM view is taken at the single `put` site, which only reads from it.
+    def recur(todo: Chain[Data], offset: Int = 0, total: Int = 0): Chain[Text] =
       val count = in.remaining
 
       if !todo.nil then
-        in.put(todo.head.mutable(using Unsafe), offset, in.remaining.min(todo.head.length - offset))
+        in.put(Array.unsafeJvm(todo.head), offset, in.remaining.min(todo.head.length - offset))
       in.flip()
 
       def decode(): jnc.CoderResult =
@@ -92,7 +92,7 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
       out.clear()
 
       def continue =
-        if todo.nil && !status.isOverflow then LazyList()
+        if todo.nil && !status.isOverflow then Chain()
         else if !todo.nil && count >= todo.head.length - offset
         then recur(todo.tail, 0, total + todo.head.length - offset)
         else recur(todo, offset + count, total + count)

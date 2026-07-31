@@ -33,6 +33,7 @@
 package telekinesis
 
 import scala.annotation.nowarn
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -87,7 +88,7 @@ package httpBackends:
         case List(host, path) => (host, t"/$path")
         case _                => (afterScheme, t"/")
 
-      def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+      def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
       // Request headers travel in a `fields` resource, whose ownership passes into the
       // `outgoing-request`, whose ownership in turn passes into `handle` — so neither is
@@ -95,7 +96,8 @@ package httpBackends:
       val fieldsHandle = Foreign["fields", Wit].constructor.invoke[WitHandle of "fields"]
       val fields: Foreign of "fields" from Wit = fieldsHandle
 
-      headers.each: header => fields.append(header.key, bytes(header.value)).invoke[Unit]
+      headers.each: (header: Http.Header) =>
+        fields.append(header.key, bytes(header.value)).invoke[Unit]
 
       // Applied calls need stable receivers with visible `Origin`s, so the argument conversions
       // can resolve their ecosystem; roots invoked with arguments are bound to `val`s first. (The
@@ -118,7 +120,7 @@ package httpBackends:
 
       // A method that carries a payload streams it through the request's `outgoing-body`, which
       // must then be `finish`ed (a static function) for the request to be complete.
-      val payload: Data = if method.payload then body().memoize else IArray.empty[Byte]
+      val payload: Data = if method.payload then body().memoize else Array.empty[Byte]
 
       val bodyHandles =
         if payload.isEmpty then Unset else
@@ -171,7 +173,7 @@ package httpBackends:
       val responseFields: Foreign of "fields" from Wit = headersHandle
 
       val textHeaders: List[Http.Header] =
-        responseFields.entries.invoke[List[(Text, Data)]].map: (key, value) =>
+        responseFields.entries.invoke[List[(Text, Data)]].map: (key: Text, value: Data) =>
           Http.Header(key, value.utf8)
 
       headersHandle.dispose()
@@ -193,7 +195,7 @@ package httpBackends:
       bodyHandle.dispose()
       responseHandle.dispose()
 
-      val content: Data = chunks.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+      val content: Data = chunks.stdlib.reverse.foldLeft(Array.empty[Byte])(_ ++ _)
       status(textHeaders, Http.Body.Fixed(content))
 
 // Serves HTTP from a Wasm Component: the bridge from `wasi:http/incoming-handler`'s exported
@@ -208,7 +210,7 @@ object WasiHttpServer:
     ( inline handler: Http.Request => Http.Response )
   :   Unit =
 
-    def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
     val requestHandle = new WitHandle(request).asInstanceOf[WitHandle of "incoming-request"]
     val incoming: Foreign of "incoming-request" from Wit = requestHandle
@@ -222,7 +224,7 @@ object WasiHttpServer:
     val requestFields: Foreign of "fields" from Wit = headersHandle
 
     val textHeaders: List[Http.Header] =
-      requestFields.entries.invoke[List[(Text, Data)]].map: (key, value) =>
+      requestFields.entries.invoke[List[(Text, Data)]].map: (key: Text, value: Data) =>
         Http.Header(key, value.utf8)
 
     headersHandle.dispose()
@@ -242,7 +244,7 @@ object WasiHttpServer:
     bodyHandle.dispose()
     requestHandle.dispose()
 
-    val content: Data = chunks.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+    val content: Data = chunks.stdlib.reverse.foldLeft(Array.empty[Byte])(_ ++ _)
 
     // The request's host is the server's own; a component behind `wasi:http` is not addressed by
     // hostname, so `Localhost` stands in (and avoids parsing the authority, which would reach the
@@ -263,7 +265,8 @@ object WasiHttpServer:
     val fieldsHandle = Foreign["fields", Wit].constructor.invoke[WitHandle of "fields"]
     val fields: Foreign of "fields" from Wit = fieldsHandle
 
-    response.textHeaders.each: header => fields.append(header.key, bytes(header.value)).invoke[Unit]
+    response.textHeaders.each: (header: Http.Header) =>
+      fields.append(header.key, bytes(header.value)).invoke[Unit]
 
     val outgoingResponse =
       Foreign["outgoing-response", Wit].asInstanceOf[Foreign of "outgoing-response" from Wit]
@@ -287,7 +290,7 @@ object WasiHttpServer:
 
     val payload: Data = response.body match
       case Http.Body.Fixed(data) => data
-      case Http.Body.Empty       => IArray.empty[Byte]
+      case Http.Body.Empty       => Array.empty[Byte]
       case body                  => body.stream.memoize
 
     val outBody: Foreign of "outgoing-body" from Wit = outBodyHandle

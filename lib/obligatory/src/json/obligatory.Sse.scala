@@ -32,6 +32,8 @@
                                                                                                   */
 package obligatory
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -49,29 +51,31 @@ import vacuous.*
 import zephyrine.*
 
 object Sse:
-  given servable: LazyList[Sse] is Servable =
+  given servable: Chain[Sse] is Servable =
     import charEncoders.utf8Encoder
 
-    Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
-      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).iterator))
+    Servable[Chain[Sse]](_ => media"text/event-stream"): stream =>
+      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).stdlib.iterator))
 
   given framable: Text is Framable by Sse = input =>
-    val cursor = Cursor(input)
+    // The frame reader owns its cursor exclusively for the whole parse.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+     val cursor = Cursor(input)
 
-    def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
-      if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand]) then
-        val end = cursor.mark
-        cursor.next()
+     def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
+       if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand]) then
+         val end = cursor.mark
+         cursor.next()
 
-        cursor.lay(cursor.grab(start, end)): char =>
-          if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
-      else if cursor.mark == start then
-        Unset
-      else
-        cursor.grab(start, cursor.mark)
+         cursor.lay(cursor.grab(start, end)): char =>
+           if char == Lf then cursor.next() yet cursor.grab(start, end) else frame(start)
+       else if cursor.mark == start then
+         Unset
+       else
+         cursor.grab(start, cursor.mark)
 
-    Framable.frames[Text]:
-      cursor.hold(frame(cursor.mark))
+     Framable.frames[Text]:
+       cursor.hold(frame(cursor.mark))
 
   given jsonEncodable: Json is Encodable in Sse =
     import formatting.compactJsonFormatting

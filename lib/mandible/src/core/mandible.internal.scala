@@ -60,6 +60,6 @@ object internal:
     ' {
         val classfile = Classfile(${Expr(classname)})(using $classloader)
 
-        classfile.let(_.methods.find(_.name == ${Expr(name.tt)}).getOrElse(Unset))
+        classfile.let(_.methods.stdlib.find(_.name == ${Expr(name.tt)}).getOrElse(Unset))
         . let(_.bytecode)
       }

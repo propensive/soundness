@@ -32,6 +32,9 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
+
 import anticipation.*
 import contingency.*
 import parasite.*

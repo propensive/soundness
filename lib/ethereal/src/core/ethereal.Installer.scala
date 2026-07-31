@@ -98,8 +98,8 @@ object Installer:
               % / "bin",
               % / "bin" )
 
-        paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
-          preferences.indexOf(directory) match
+        paths.filter(_.exists()).filter(_.writable()).sort: directory =>
+          preferences.stdlib.indexOf(directory) match
             case -1    => Int.MaxValue
             case index => index
 
@@ -108,7 +108,8 @@ object Installer:
     ( using service: DaemonService[?], environment: Environment )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  :   Result logs DaemonLogEvent raises InstallError =
+    ( using Tactic[InstallError], (DaemonLogEvent is Loggable)^ )
+  :   Result =
 
     import workingDirectories.javaWorkingDirectory
     import systems.javaSystem
@@ -148,7 +149,7 @@ object Installer:
               val stream = file.stream
 
               if prefixSize > 0.b
-              then file.write(stream.take(prefixSize) ++ stream.discard(fileSize - jarSize))
+              then file.write(stream.take(prefixSize) #::: stream.discard(fileSize - jarSize))
               else file.write(stream)
 
             file.executable() = true

@@ -32,24 +32,28 @@
                                                                                                   */
 package pneumatic
 
+import scala.caps
+
+import proscenium.compat.*
+
 // A little-endian (LSB-first) bit-stream writer, the mirror of the decoder's `BitReader`. Bits
 // accumulate into a 64-bit register and are flushed a byte at a time; `align` pads the current byte
 // with zero bits, after which `writeBytes` may append raw byte-aligned data.
-private[pneumatic] final class BrotliBitWriter:
-  private var out: Array[Byte] = new Array[Byte](256)
+private[pneumatic] final class BrotliBitWriter extends caps.Mutable:
+  private var out: scala.Array[Byte]^ = new scala.Array[Byte](256)
   private var size: Int = 0
   private var accumulator: Long = 0L
   private var bitCount: Int = 0
 
-  private def ensure(extra: Int): Unit =
+  private update def ensure(extra: Int): Unit =
     if size + extra > out.length then
       var grown = out.length
       while size + extra > grown do grown <<= 1
-      val fresh = new Array[Byte](grown)
+      val fresh: scala.Array[Byte]^ = new scala.Array[Byte](grown)
       System.arraycopy(out, 0, fresh, 0, size)
       out = fresh
 
-  def writeBits(value: Int, n: Int): Unit =
+  update def writeBits(value: Int, n: Int): Unit =
     accumulator |= (value.toLong & ((1L << n) - 1)) << bitCount
     bitCount += n
 
@@ -60,7 +64,7 @@ private[pneumatic] final class BrotliBitWriter:
       accumulator >>>= 8
       bitCount -= 8
 
-  def align(): Unit =
+  update def align(): Unit =
     if bitCount > 0 then
       ensure(1)
       out(size) = (accumulator & 0xff).toByte
@@ -68,13 +72,13 @@ private[pneumatic] final class BrotliBitWriter:
       accumulator = 0L
       bitCount = 0
 
-  def writeBytes(bytes: Array[Byte], offset: Int, length: Int): Unit =
+  update def writeBytes(bytes: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
     ensure(length)
     System.arraycopy(bytes, offset, out, size, length)
     size += length
 
-  def result(): Array[Byte] =
-    val array = new Array[Byte](size)
+  def result(): scala.Array[Byte] =
+    val array: scala.Array[Byte]^ = new scala.Array[Byte](size)
     System.arraycopy(out, 0, array, 0, size)
     array
 
@@ -98,20 +102,20 @@ private[pneumatic] object BrotliEncoder:
   private final val MaxChain = 64      // longest chain walk per position
   private final val NiceLength = 128   // stop searching at a match this good
 
-  def encode(input: Array[Byte], length: Int): Array[Byte] =
+  def encode(input: scala.Array[Byte], length: Int): scala.Array[Byte] =
     if length == 0 then
-      val writer = BrotliBitWriter()
+      val writer: BrotliBitWriter^ = BrotliBitWriter()
       writer.writeBits(0, 1) // WBITS = 16
       writer.writeBits(1, 1) // ISLAST = 1
       writer.writeBits(1, 1) // ISLASTEMPTY = 1
       writer.align()
       writer.result()
     else if length > MaxMetaBlock then
-      val storedWriter = BrotliBitWriter()
+      val storedWriter: BrotliBitWriter^ = BrotliBitWriter()
       storeAll(storedWriter, input, length)
       storedWriter.result()
     else
-      val writer = BrotliBitWriter()
+      val writer: BrotliBitWriter^ = BrotliBitWriter()
       compressBlock(writer, input, length)
       val compressed = writer.result()
 
@@ -120,7 +124,7 @@ private[pneumatic] object BrotliEncoder:
       // analytically, so the stored form is only materialized when it wins.
       if compressed.length < storedSize(length) then compressed
       else
-        val storedWriter = BrotliBitWriter()
+        val storedWriter: BrotliBitWriter^ = BrotliBitWriter()
         storeAll(storedWriter, input, length)
         storedWriter.result()
 
@@ -144,7 +148,7 @@ private[pneumatic] object BrotliEncoder:
     bits >>> 3
 
   // Fallback: frame the payload as uncompressed meta-blocks (see the class comment on RFC framing).
-  private def storeAll(writer: BrotliBitWriter, input: Array[Byte], length: Int): Unit =
+  private def storeAll(writer: BrotliBitWriter^, input: scala.Array[Byte], length: Int): Unit =
     writer.writeBits(0, 1) // WBITS = 16
     var pos = 0
 
@@ -173,9 +177,9 @@ private[pneumatic] object BrotliEncoder:
     while i < nBits do { retval = (retval << 1) | (v & 1); v >>= 1; i += 1 }
     retval
 
-  private def convertBitDepthsToSymbols(depth: Array[Byte], len: Int, bits: Array[Int]): Unit =
-    val blCount = new Array[Int](16)
-    val nextCode = new Array[Int](16)
+  private def convertBitDepthsToSymbols(depth: scala.Array[Byte], len: Int, bits: scala.Array[Int]^): Unit =
+    val blCount: scala.Array[Int]^ = new scala.Array[Int](16)
+    val nextCode: scala.Array[Int]^ = new scala.Array[Int](16)
     var i = 0
     while i < len do { blCount(depth(i) & 0xff) += 1; i += 1 }
     blCount(0) = 0
@@ -191,11 +195,11 @@ private[pneumatic] object BrotliEncoder:
       i += 1
 
   private def setDepth
-    ( p0: Int, total: Array[Int], left: Array[Int], right: Array[Int], depth: Array[Byte],
+    ( p0: Int, total: scala.Array[Int], left: scala.Array[Int], right: scala.Array[Int], depth: scala.Array[Byte]^,
       maxDepth: Int )
   :   Boolean =
 
-    val stack = new Array[Int](16)
+    val stack: scala.Array[Int]^ = new scala.Array[Int](16)
     var level = 0
     var p = p0
     stack(0) = -1
@@ -215,7 +219,7 @@ private[pneumatic] object BrotliEncoder:
     result == 1
 
   // Sort leaf nodes [0, n) least popular first, ties broken by larger value (reference comparator).
-  private def sortLeaves(total: Array[Int], right: Array[Int], n: Int): Unit =
+  private def sortLeaves(total: scala.Array[Int]^, right: scala.Array[Int]^, n: Int): Unit =
     var i = 1
 
     while i < n do
@@ -233,12 +237,12 @@ private[pneumatic] object BrotliEncoder:
       i += 1
 
   private def createHuffmanTree
-    ( data: Array[Int], length: Int, treeLimit: Int, depth: Array[Byte] )
+    ( data: scala.Array[Int], length: Int, treeLimit: Int, depth: scala.Array[Byte]^ )
   :   Unit =
 
-    val total = new Array[Int](2*length + 1)
-    val left = new Array[Int](2*length + 1)
-    val right = new Array[Int](2*length + 1)
+    val total: scala.Array[Int]^ = new scala.Array[Int](2*length + 1)
+    val left: scala.Array[Int]^ = new scala.Array[Int](2*length + 1)
+    val right: scala.Array[Int]^ = new scala.Array[Int](2*length + 1)
     var i = 0
     while i < length do { depth(i) = 0; i += 1 }
 
@@ -289,10 +293,11 @@ private[pneumatic] object BrotliEncoder:
         else countLimit <<= 1
 
   // --- Huffman-tree serialization (inverse of the decoder's readHuffmanCode) ---------------------
-  private val codeLengthCodeOrder: Array[Int] =
-    Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
+  private val codeLengthCodeOrder: Array[Int]^{} =
+    Array.unsafeFrozen:
+      scala.Array(1, 2, 3, 4, 0, 5, 17, 6, 16, 7, 8, 9, 10, 11, 12, 13, 14, 15)
 
-  private def writeCodeLengthCodeLength(writer: BrotliBitWriter, v: Int): Unit = v match
+  private def writeCodeLengthCodeLength(writer: BrotliBitWriter^, v: Int): Unit = v match
     case 0 => writer.writeBits(0, 2)
     case 1 => writer.writeBits(7, 4)
     case 2 => writer.writeBits(3, 3)
@@ -311,7 +316,7 @@ private[pneumatic] object BrotliEncoder:
   // writing the code-length symbol stream without run-length compression (valid, and negligible
   // overhead for large blocks).
   private def storeHuffmanTree
-    ( writer: BrotliBitWriter, depth: Array[Byte], codes: Array[Int], alphabetSize: Int )
+    ( writer: BrotliBitWriter^, depth: scala.Array[Byte]^, codes: scala.Array[Int], alphabetSize: Int )
   :   Unit =
 
     var used = 0
@@ -332,12 +337,12 @@ private[pneumatic] object BrotliEncoder:
       depth(onlySymbol) = 0
     else
       val streamLen = lastNonZero + 1
-      val histogram = new Array[Int](18)
+      val histogram: scala.Array[Int]^ = new scala.Array[Int](18)
       i = 0
       while i < streamLen do { histogram(depth(i) & 0xff) += 1; i += 1 }
-      val clcDepth = new Array[Byte](18)
+      val clcDepth: scala.Array[Byte]^ = new scala.Array[Byte](18)
       createHuffmanTree(histogram, 18, 5, clcDepth)
-      val clcCodes = new Array[Int](18)
+      val clcCodes: scala.Array[Int]^ = new scala.Array[Int](18)
       convertBitDepthsToSymbols(clcDepth, 18, clcCodes)
 
       // When a single code-length value dominates, its code-length-code has one symbol and the
@@ -367,7 +372,7 @@ private[pneumatic] object BrotliEncoder:
 
   // --- Length/distance prefix codes --------------------------------------------------------------
   // Scanning upward exits immediately for the common short lengths.
-  private def lengthCode(offsets: Array[Int], nbits: Array[Int], length: Int): Int =
+  private def lengthCode(offsets: Array[Int]^{}, nbits: Array[Int]^{}, length: Int): Int =
     var i = 0
     while i + 1 < offsets.length && offsets(i + 1) <= length do i += 1
     i
@@ -385,7 +390,7 @@ private[pneumatic] object BrotliEncoder:
     ((16 + j).toLong << 40) | (n.toLong << 32) | (extra.toLong & 0xffffffffL)
 
   // --- Compressed meta-block ---------------------------------------------------------------------
-  private def compressBlock(writer: BrotliBitWriter, input: Array[Byte], length: Int): Unit =
+  private def compressBlock(writer: BrotliBitWriter^, input: scala.Array[Byte], length: Int): Unit =
     val windowBits = if length <= (1 << 22) then 22 else 24
     val maxDistance = (1 << windowBits) - 16
 
@@ -393,28 +398,30 @@ private[pneumatic] object BrotliEncoder:
     // live in a ring of positions (like zlib's `prev` array), bounded by `RingSize`; entries that
     // alias across the ring appear as non-decreasing positions and terminate the walk. Commands
     // accumulate in growable parallel `Int` arrays (unboxed, unlike an `ArrayBuffer[Int]`).
-    val head = new Array[Int](HashSize)
+    val head: scala.Array[Int]^ = new scala.Array[Int](HashSize)
     var h = 0
     while h < HashSize do { head(h) = -1; h += 1 }
 
     val ringMask = RingSize - 1
-    val chain = new Array[Int](Math.min(length, RingSize))
+    val chain: scala.Array[Int]^ = new scala.Array[Int](Math.min(length, RingSize))
 
     var capacity = 1024
-    var cmdInsert = new Array[Int](capacity)
-    var cmdLitPos = new Array[Int](capacity)
-    var cmdCopy = new Array[Int](capacity)
-    var cmdDist = new Array[Int](capacity)
+    var cmdInsert = new scala.Array[Int](capacity)
+    var cmdLitPos = new scala.Array[Int](capacity)
+    var cmdCopy = new scala.Array[Int](capacity)
+    var cmdDist = new scala.Array[Int](capacity)
     var commands = 0
 
     def push(insert: Int, litPos: Int, copy: Int, dist: Int): Unit =
       if commands == capacity then
         capacity <<= 1
-        val ni = new Array[Int](capacity); System.arraycopy(cmdInsert, 0, ni, 0, commands)
-        val nl = new Array[Int](capacity); System.arraycopy(cmdLitPos, 0, nl, 0, commands)
-        val nc = new Array[Int](capacity); System.arraycopy(cmdCopy, 0, nc, 0, commands)
-        val nd = new Array[Int](capacity); System.arraycopy(cmdDist, 0, nd, 0, commands)
-        cmdInsert = ni; cmdLitPos = nl; cmdCopy = nc; cmdDist = nd
+        // The four scratch arrays are pairwise-distinct fresh allocations.
+        scala.caps.unsafe.unsafeAssumeSeparate:
+          val ni = new scala.Array[Int](capacity); System.arraycopy(cmdInsert, 0, ni, 0, commands)
+          val nl = new scala.Array[Int](capacity); System.arraycopy(cmdLitPos, 0, nl, 0, commands)
+          val nc = new scala.Array[Int](capacity); System.arraycopy(cmdCopy, 0, nc, 0, commands)
+          val nd = new scala.Array[Int](capacity); System.arraycopy(cmdDist, 0, nd, 0, commands)
+          cmdInsert = ni; cmdLitPos = nl; cmdCopy = nc; cmdDist = nd
 
       cmdInsert(commands) = insert
       cmdLitPos(commands) = litPos
@@ -485,9 +492,9 @@ private[pneumatic] object BrotliEncoder:
     if literalStart < length then push(length - literalStart, literalStart, 0, 0)
 
     // Histograms.
-    val litHist = new Array[Int](256)
-    val cmdHist = new Array[Int](704)
-    val distHist = new Array[Int](64)
+    val litHist: scala.Array[Int]^ = new scala.Array[Int](256)
+    val cmdHist: scala.Array[Int]^ = new scala.Array[Int](704)
+    val distHist: scala.Array[Int]^ = new scala.Array[Int](64)
     var c = 0
 
     while c < commands do
@@ -509,9 +516,9 @@ private[pneumatic] object BrotliEncoder:
     if isAllZero(litHist) then litHist(0) = 1
     if isAllZero(distHist) then distHist(0) = 1
 
-    val litDepth = new Array[Byte](256); val litCodes = new Array[Int](256)
-    val cmdDepth = new Array[Byte](704); val cmdCodes = new Array[Int](704)
-    val distDepth = new Array[Byte](64); val distCodes = new Array[Int](64)
+    val litDepth: scala.Array[Byte]^ = new scala.Array[Byte](256); val litCodes = new scala.Array[Int](256)
+    val cmdDepth: scala.Array[Byte]^ = new scala.Array[Byte](704); val cmdCodes = new scala.Array[Int](704)
+    val distDepth: scala.Array[Byte]^ = new scala.Array[Byte](64); val distCodes = new scala.Array[Int](64)
     createHuffmanTree(litHist, 256, 15, litDepth)
     convertBitDepthsToSymbols(litDepth, 256, litCodes)
     createHuffmanTree(cmdHist, 704, 15, cmdDepth)
@@ -576,15 +583,16 @@ private[pneumatic] object BrotliEncoder:
 
     writer.align()
 
-  private def isAllZero(histogram: Array[Int]): Boolean =
+  private def isAllZero(histogram: scala.Array[Int]): Boolean =
     var i = 0
     while i < histogram.length do { if histogram(i) != 0 then return false; i += 1 }
     true
 
   // Insert group and copy group determine the range index; see the decoder's command decoding.
-  private val rangeIndex: Array[Int] =
+  private val rangeIndex: Array[Int]^{} =
     // indexed by insGroup*3 + copGroup, giving the base range index (0..8)
-    Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
+    Array.unsafeFrozen:
+      scala.Array(0, 1, 4, 2, 3, 6, 5, 7, 8)
 
   private def commandCode(insertCode: Int, copyCode: Int): Int =
     val insGroup = insertCode / 8
@@ -592,7 +600,7 @@ private[pneumatic] object BrotliEncoder:
     val base = rangeIndex(insGroup*3 + copGroup)
     ((base + 2) << 6) | ((insertCode & 7) << 3) | (copyCode & 7)
 
-  private def writeWindowBits(writer: BrotliBitWriter, windowBits: Int): Unit =
+  private def writeWindowBits(writer: BrotliBitWriter^, windowBits: Int): Unit =
     if windowBits == 16 then writer.writeBits(0, 1)
     else if windowBits == 17 then
       writer.writeBits(1, 1); writer.writeBits(0, 3); writer.writeBits(0, 3)

@@ -33,11 +33,15 @@
 package hallucination
 
 import anticipation.*
+import proscenium.compat.*
+
+import scala.caps
 
 // The VP8 boolean entropy decoder (RFC 6386 §7). This is the canonical bit-exact algorithm; the
 // reference (image-rs/image-webp `src/lossy/arithmetic_decoder.rs`) uses a faster but equivalent
 // chunked implementation. Reads past the end of the partition yield zero bytes, as libwebp allows.
-private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
+private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int)
+extends caps.Mutable:
   private var position = start
   private var value = ((byte(start) << 8) | byte(start + 1))
   private var range = 255
@@ -45,9 +49,9 @@ private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
 
   locally { position = start + 2 }
 
-  private inline def byte(index: Int): Int = if index < end then data(index) & 0xff else 0
+  private inline def byte(index: Int): Int = if index < end then data.readable(index) & 0xff else 0
 
-  def bool(probability: Int): Boolean =
+  update def bool(probability: Int): Boolean =
     val split = 1 + (((range - 1)*probability) >> 8)
     val bigSplit = split << 8
 
@@ -72,9 +76,9 @@ private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
 
     result
 
-  def flag: Boolean = bool(128)
+  update def flag: Boolean = bool(128)
 
-  def literal(bits: Int): Int =
+  update def literal(bits: Int): Int =
     var value = 0
     var i = 0
 
@@ -85,7 +89,7 @@ private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
     value
 
   // An optional signed value: a flag, then (if set) an `bits`-wide magnitude and a sign.
-  def optionalSigned(bits: Int): Int =
+  update def optionalSigned(bits: Int): Int =
     if !flag then 0 else
       val magnitude = literal(bits)
 
@@ -94,7 +98,7 @@ private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
   // Walks a token tree: `tree` holds branch targets in sibling pairs (positive = next node index
   // ×2, non-positive = negated leaf value); `probs`/`probOffset` give the per-node probability.
   // `startPosition` seeds the walk (2 skips the first decision — used after a zero coefficient).
-  def tree(tree: Array[Int], probs: Array[Int], probOffset: Int, startPosition: Int): Int =
+  update def tree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, startPosition: Int): Int =
     var position = startPosition
 
     while
@@ -106,5 +110,5 @@ private[hallucination] final class Vp8Bool(data: Data, start: Int, end: Int):
 
     -position
 
-  def tree(tree: Array[Int], probs: Array[Int], probOffset: Int): Int =
+  update def tree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int): Int =
     this.tree(tree, probs, probOffset, 0)

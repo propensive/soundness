@@ -107,31 +107,31 @@ object Unicode:
       . or(remoteUnicodeData("UnicodeData.txt".tt))
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
-    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
-      case hex :: name :: _ if !name.nn.startsWith("<") =>
-        val hexInt = Integer.parseInt(hex, 16)
+    Map.from:
+      scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
+        case hex :: name :: _ if !name.nn.startsWith("<") =>
+          val hexInt = Integer.parseInt(hex, 16)
 
-        if hexInt < 65536 then List((name.nn.tt, hexInt.toChar))
-        else List((name.nn.tt, new String(Character.toChars(hexInt)).tt))
+          if hexInt < 65536 then List((name.nn.tt, hexInt.toChar)).stdlib
+          else List((name.nn.tt, new String(Character.toChars(hexInt)).tt)).stdlib
 
-      case _ =>
-        Nil
+        case _ =>
+          Nil.stdlib
 
-    . to(Map)
-
-  lazy val unicodeNames: Map[Char | Text, Text] = unicodeData.map: (key, value) =>
-    value -> key.s.split(" ").nn.iterator.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
+  lazy val unicodeNames: Map[Char | Text, Text] = Map.from:
+    unicodeData.stdlib.map: (key, value) =>
+      value -> key.s.split(" ").nn.iterator.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
 
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])
       def append(range: CharRange, width: EaWidth): TreeMap[CharRange, EaWidth] =
-        if map.nil then map.updated(range, width)
+        if map.isEmpty then map.updated(range, width)
         else if map.lastKey.to == (range.from - 1) && map(map.lastKey) == width
         then map.removed(map.lastKey).updated(CharRange(map.lastKey.from, range.to), width)
         else map.updated(range, width)
 
     @tailrec
-    def recur(stream: LazyList[Text], map: TreeMap[CharRange, EaWidth])
+    def recur(stream: Chain[Text], map: TreeMap[CharRange, EaWidth])
     :   TreeMap[CharRange, EaWidth] =
       stream match
         case
@@ -153,6 +153,6 @@ object Unicode:
       . or(remoteUnicodeData("EastAsianWidth.txt".tt))
       . or(panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath"))
 
-    val stream = scala.io.Source.fromInputStream(in).getLines().map(Text(_)).to(LazyList)
+    val stream = scala.io.Source.fromInputStream(in).getLines().map(Text(_)).to(Chain)
 
     recur(stream, TreeMap())

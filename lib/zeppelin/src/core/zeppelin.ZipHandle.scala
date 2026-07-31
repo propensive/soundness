@@ -32,6 +32,10 @@
                                                                                                   */
 package zeppelin
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -73,7 +77,7 @@ extends Openable:
     ( block: (ZipHandle & Granting[grants]) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
 
     val channel =
       jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
@@ -96,5 +100,5 @@ class ZipDataOpenable(using Tactic[ZipError]) extends Openable:
     ( block: (ZipHandle & Granting[grants]) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(ZipError(ZipError.Reason.WriteUnsupported))
     block(using new ZipHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})

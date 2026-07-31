@@ -33,6 +33,7 @@
 package delicious
 
 import anticipation.*
+import rudiments.*
 import gossamer.*
 import stenography.*
 import vacuous.*

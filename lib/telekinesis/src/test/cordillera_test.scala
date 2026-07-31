@@ -34,18 +34,20 @@ package cordillera
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import Http2.*
 
 object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
   def run(): Unit =
     def bytes(hex: Text): Data =
-      IArray.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))
+      Array.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))
 
     def hex(data: Data): Text =
-      data.to(List).map(b => String.format("%02x", (b & 0xff): Integer).nn).mkString.tt
+      data.to[List].map(b => String.format("%02x", java.lang.Integer.valueOf(b & 0xff)).nn).mkString.tt
 
-    def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
+    def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
 
     suite(m"Huffman (RFC 7541 Appendix C)"):
       // C.4.1: "www.example.com" → Huffman
@@ -54,8 +56,8 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == t"f1e3c2e5f23a6ba0ab90f4ff")
 
       test(m"decode www.example.com"):
-        Huffman.decode(bytes(t"f1e3c2e5f23a6ba0ab90f4ff")).to(List)
-      . assert(_ == ascii(t"www.example.com").to(List))
+        Huffman.decode(bytes(t"f1e3c2e5f23a6ba0ab90f4ff")).to[List]
+      . assert(_ == ascii(t"www.example.com").to[List])
 
       // C.4.2: "no-cache"
       test(m"encode no-cache"):
@@ -63,8 +65,8 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == t"a8eb10649cbf")
 
       test(m"decode no-cache"):
-        Huffman.decode(bytes(t"a8eb10649cbf")).to(List)
-      . assert(_ == ascii(t"no-cache").to(List))
+        Huffman.decode(bytes(t"a8eb10649cbf")).to[List]
+      . assert(_ == ascii(t"no-cache").to[List])
 
       // C.4.3: "custom-key" and "custom-value"
       test(m"encode custom-key"):
@@ -85,17 +87,17 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == t"aec3771a4b")
 
       test(m"decode private"):
-        Huffman.decode(bytes(t"aec3771a4b")).to(List)
-      . assert(_ == ascii(t"private").to(List))
+        Huffman.decode(bytes(t"aec3771a4b")).to[List]
+      . assert(_ == ascii(t"private").to[List])
 
       test(m"round-trip a long date string"):
         val date = ascii(t"Mon, 21 Oct 2013 20:13:21 GMT")
-        Huffman.decode(Huffman.encode(date)).to(List) == date.to(List)
+        Huffman.decode(Huffman.encode(date)).to[List] == date.to[List]
       . assert(_ == true)
 
       test(m"round-trip all 256 byte values"):
-        val every = IArray.from((0 until 256).map(_.toByte))
-        Huffman.decode(Huffman.encode(every)).to(List) == every.to(List)
+        val every = Array.from((0 until 256).map(_.toByte))
+        Huffman.decode(Huffman.encode(every)).to[List] == every.to[List]
       . assert(_ == true)
 
     suite(m"HPACK decode (RFC 7541 Appendix C.3 — without Huffman)"):
@@ -148,7 +150,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
       test(m"a request's pseudo-headers + headers survive a round-trip"):
         val encoded = Hpack().encode(headers)
-        Hpack().decode(encoded).map(e => (e.name, e.value))
+        Hpack().decode(encoded).stdlib.map(e => (e.name, e.value))
       . assert(_ == headers.map(e => (e.name, e.value)))
 
     suite(m"Frame codec — golden bytes"):
@@ -184,14 +186,14 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
       test(m"DATA round-trips with payload and END_STREAM"):
         roundTrip(Frame.Data(7, ascii(t"hello"), endStream = true)) match
-          case Frame.Data(id, p, end) => (id, p.to(List), end) == (7, ascii(t"hello").to(List), true)
+          case Frame.Data(id, p, end) => (id, p.to[List], end) == (7, ascii(t"hello").to[List], true)
           case _                      => false
       . assert(_ == true)
 
       test(m"HEADERS round-trips its block + flags"):
         roundTrip(Frame.Headers(1, ascii(t"block"), endStream = false, endHeaders = true)) match
-          case Frame.Headers(id, b, es, eh) => (id, b.to(List), es, eh)
-              == (1, ascii(t"block").to(List), false, true)
+          case Frame.Headers(id, b, es, eh) => (id, b.to[List], es, eh)
+              == (1, ascii(t"block").to[List], false, true)
           case _                            => false
       . assert(_ == true)
 
@@ -209,7 +211,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
         // length=5: padLength byte (0x02) + "hi" + 2 pad bytes; PADDED flag = 0x08
         val padded = bytes(t"0000050008000000030268690000")
         Frame.decode(padded, 0)(0) match
-          case Frame.Data(_, p, _) => p.to(List) == ascii(t"hi").to(List)
+          case Frame.Data(_, p, _) => p.to[List] == ascii(t"hi").to[List]
           case _                   => false
       . assert(_ == true)
 
@@ -277,9 +279,9 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
               t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
 
           val (stream, response) = connection.fetch(request, t"http", t"unix")
-          val bodyText = ascii(t"pong").to(List) == response.body.stream.memoize.to(List)
+          val bodyText = ascii(t"pong").to[List] == response.body.stream.memoize.to[List]
           val statusCode = response.status.code
-          val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
+          val grpcStatus = stream.trailers.await().stdlib.find(_.name == t"grpc-status").map(_.value)
           server.cancel()
           (statusCode, bodyText, grpcStatus.getOrElse(t"?"))
       . assert(_ == (200, true, t"0"))
@@ -340,9 +342,10 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendData(stream.id, response.body.stream.memoize, true)
 
           val client = Http2Connection(clientSide)
-          val serverStarted = async(server.start())
+          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
-          serverStarted.await()
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            serverStarted.await()
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/hello", Nil,
               () => Http.emptyBody())
@@ -378,9 +381,10 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendTrailers(stream.id, List(HpackEntry(t"grpc-status", t"0")))
 
           val client = Http2Connection(clientSide)
-          val serverStarted = async(server.start())
+          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
-          serverStarted.await()
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            serverStarted.await()
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/call", Nil,
               () => Stream(ascii(t"ping")))
@@ -421,7 +425,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           // A body well over the 65535-byte connection window, so the server
           // must split DATA frames and wait for the client's WINDOW_UPDATEs.
           val size = 200000
-          val payload: Data = IArray.tabulate(size)(i => (i%256).toByte)
+          val payload: Data = Array.tabulate(size)(i => (i%256).toByte)
           val payloadRef: AnyRef = payload.asInstanceOf[AnyRef]
 
           daemon:
@@ -436,9 +440,10 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
                   server0.sendData(stream.id, body, endStream = true)
 
           val client = Http2Connection(clientSide)
-          val serverStarted = async(server.start())
+          val serverStarted = scala.caps.unsafe.unsafeAssumeSeparate(async(server.start()))
           client.start()
-          serverStarted.await()
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            serverStarted.await()
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/big", Nil,
               () => Http.emptyBody())
@@ -447,7 +452,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val received = response.body.stream.memoize
           client.close()
           server.close()
-          (received.length, received.to(List) == payload.to(List))
+          (received.length, received.to[List] == payload.to[List])
 
       . assert(_ == (200000, true))
 
@@ -474,6 +479,6 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
             val (_, second) = connection.fetch(request, t"http", t"loopback")
 
             List(first, second).count: response =>
-              ascii(t"pong").to(List) == response.body.stream.memoize.to(List)
+              ascii(t"pong").to[List] == response.body.stream.memoize.to[List]
 
       . assert(_ == 2)

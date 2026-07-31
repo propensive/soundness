@@ -32,6 +32,8 @@
                                                                                                   */
 package distillate
 
+import scala.reflect
+
 import scala.quoted.*
 
 import anticipation.*
@@ -49,7 +51,7 @@ object internal:
           type Self = enumeration
           val name: Text = ${Expr(TypeRepr.of[enumeration].show)}.tt
 
-          val values: IArray[enumeration] =
+          val values: Array[enumeration]^{} =
             $ {
                 companion.absolve match
                   case '{$companion: companion} =>
@@ -59,8 +61,8 @@ object internal:
                       . getOrElse:
                           halt(m"enum ${TypeRepr.of[enumeration].show} is not a simple choice")
 
-                    companion.asTerm.select(ref).asExprOf[Array[enumeration]]
+                    companion.asTerm.select(ref).asExprOf[scala.Array[enumeration]]
               }
 
-            . asInstanceOf[IArray[enumeration]]
+            . asInstanceOf[Array[enumeration]^{}]
       }

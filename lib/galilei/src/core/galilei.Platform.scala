@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
 import java.nio.file as jnf
 
 import anticipation.*
@@ -68,7 +70,7 @@ object Platform:
   =>  (((Path on plane) is Readable to result)^{readable, tactic}) =
     path =>
       val bytes: Data = path.protect(Operation.Read):
-        jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
+        Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
 
       readable.read(bytes)
 
@@ -76,42 +78,42 @@ object Platform:
   // companion) so that it is anchored by the *path* type: `path.open[File](...)` resolves with
   // no import, and while `File` is a path's only form, `path.open(...)` can infer it.
   given openable: [filesystem: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem,
-        Tactic[IoError] )
-  =>  ( FileOpenable[filesystem, path]^ ) =
+  =>  ( backend: FilesystemBackend on filesystem,
+        tactic:  Tactic[IoError] )
+  =>  ( FileOpenable[filesystem, path]^{tactic} ) =
     FileOpenable[filesystem, path]
 
   // The `Openable` instance for the `Directory` form: anchored here for the same reason as
   // the `File` instance above. With both in scope, a bare `path.open(...)` is ambiguous, and
   // the form must be stated: `path.open[File](...)` or `path.open[Directory](...)`.
   given directoryOpenable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem,
-        Tactic[IoError] )
-  =>  ( DirectoryOpenable[filesystem, path]^ ) =
+  =>  ( backend: FilesystemBackend on filesystem,
+        tactic:  Tactic[IoError] )
+  =>  ( DirectoryOpenable[filesystem, path]^{tactic} ) =
     DirectoryOpenable[filesystem, path]
 
   // The `Creatable` instances for filesystem entries, anchored here for the same reason as
   // the `Openable` instances above: resolvable, with the form inferred where unique, from
   // any `Path on <platform>` with no import.
   given directoryCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem,
-        Tactic[IoError],
-        (IoEvent is Loggable)^ )
-  =>  ( Creation.DirectoryCreatable[filesystem, path]^ ) =
+  =>  ( backend:  FilesystemBackend on filesystem,
+        tactic:   Tactic[IoError],
+        loggable: (IoEvent is Loggable)^ )
+  =>  ( Creation.DirectoryCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.DirectoryCreatable[filesystem, path]
 
   given fileCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem,
-        Tactic[IoError],
-        (IoEvent is Loggable)^ )
-  =>  ( Creation.FileCreatable[filesystem, path]^ ) =
+  =>  ( backend:  FilesystemBackend on filesystem,
+        tactic:   Tactic[IoError],
+        loggable: (IoEvent is Loggable)^ )
+  =>  ( Creation.FileCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.FileCreatable[filesystem, path]
 
   given fifoCreatable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
-  =>  ( FilesystemBackend on filesystem,
-        Tactic[IoError],
-        (IoEvent is Loggable)^ )
-  =>  ( Creation.FifoCreatable[filesystem, path]^ ) =
+  =>  ( backend:  FilesystemBackend on filesystem,
+        tactic:   Tactic[IoError],
+        loggable: (IoEvent is Loggable)^ )
+  =>  ( Creation.FifoCreatable[filesystem, path]^{tactic, loggable} ) =
     Creation.FifoCreatable[filesystem, path]
 
   // Opening `Eof(path)` opens the file's content for appending: the instance prepends the

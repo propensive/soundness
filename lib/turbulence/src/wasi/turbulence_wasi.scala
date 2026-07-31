@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import proscenium.compat.*
+
 import java.io as ji
 
 import scala.annotation.nowarn
@@ -74,21 +76,21 @@ package stdios:
     // Byte-level writes follow the same path. (The `PrintStream`s exist for `Stdio`'s API;
     // `print`/`printErr` below bypass them, sending the text's UTF-8 bytes directly.)
     def wasiStream(error: Boolean): ji.OutputStream = new ji.OutputStream:
-      def write(byte: Int): Unit = write(Array[Byte](byte.toByte), 0, 1)
+      def write(byte: Int): Unit = write(scala.Array[Byte](byte.toByte), 0, 1)
 
-      override def write(array: Array[Byte] | Null, offset: Int, length: Int): Unit =
+      override def write(array: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
         if array != null && length > 0 then
           val slice = java.util.Arrays.copyOfRange(array, offset, offset + length).nn
-          send(error, slice.immutable(using Unsafe))
+          send(error, Array.unsafeFrozen(slice))
 
     // Reads block until at least one byte is available; a closed stream (the `Err` arm of
     // `blocking-read`'s result, raised by the decoder) is end-of-input.
     def wasiInput(): ji.InputStream = new ji.InputStream:
       def read(): Int =
-        val array = new Array[Byte](1)
+        val array = new scala.Array[Byte](1)
         if read(array, 0, 1) == -1 then -1 else array(0) & 0xff
 
-      override def read(array: Array[Byte] | Null, offset: Int, length: Int): Int =
+      override def read(array: scala.Array[Byte] | Null, offset: Int, length: Int): Int =
         if array == null || length == 0 then 0 else
           val handle = Foreign["stdin", Wit].`get-stdin`.invoke[WitHandle of "input-stream"]
           val stream: Foreign of "input-stream" from Wit = handle
@@ -105,7 +107,7 @@ package stdios:
           catch case error: WitError => -1
           finally handle.dispose()
 
-    def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
     new Stdio:
       val termcap: Termcap = termcap0

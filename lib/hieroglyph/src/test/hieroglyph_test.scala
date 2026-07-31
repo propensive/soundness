@@ -36,6 +36,8 @@ import java.lang as jl
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
@@ -48,7 +50,7 @@ extends Error(m"${items.length} decoding issues"):
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =
     val japanese = t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
-    val japaneseData = japanese.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    val japaneseData = Array.unsafeFrozen(japanese.s.getBytes("UTF-8").nn)
 
     suite(m"Character widths"):
       test(m"Check narrow character width"):
@@ -73,7 +75,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skipSanitizer
-          charDecoders.utf8Decoder.decoded(japaneseData.grouped(chunk).to(LazyList)).join
+          charDecoders.utf8Decoder.decoded(japaneseData.readable.grouped(chunk).map(Array.frozen(_)).to(Chain)).join
         . assert(_ == japanese)
 
       val badUtf8 = Data(45, -62, 49, 48)
@@ -96,7 +98,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       test(m"Ensure that decoding is finished"):
         import textSanitizers.strictSanitizer
         given CharEncoder = enc"UTF-8".encoder
-        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(t"café".in[Data].dropRight(1)))
+        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(Array.frozen(t"café".in[Data].readable.dropRight(1))))
       . assert(_ == CharDecodeError(4, enc"UTF-8"))
 
     suite(m"Accruing decode errors"):
@@ -206,23 +208,23 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
     suite(m"Grapheme cluster boundaries"):
       test(m"empty string yields single sentinel"):
-        GraphemeBreak.boundaries(t"").to(List)
+        GraphemeBreak.boundaries(t"").to[List]
       . assert(_ == List(0))
 
       test(m"ASCII string boundaries"):
-        GraphemeBreak.boundaries(t"abc").to(List)
+        GraphemeBreak.boundaries(t"abc").to[List]
       . assert(_ == List(0, 1, 2, 3))
 
       test(m"CR LF stays one cluster"):
-        GraphemeBreak.boundaries(t"a\r\nb").to(List)
+        GraphemeBreak.boundaries(t"a\r\nb").to[List]
       . assert(_ == List(0, 1, 3, 4))
 
       test(m"combining diaeresis joins with space"):
-        GraphemeBreak.boundaries(Text(" ̈ ")).to(List)
+        GraphemeBreak.boundaries(Text(" ̈ ")).to[List]
       . assert(_ == List(0, 2, 3))
 
       test(m"two regional indicators form one flag"):
-        GraphemeBreak.boundaries(Text("🇬🇧🇫🇷")).to(List).size
+        GraphemeBreak.boundaries(Text("🇬🇧🇫🇷")).to[List].size
       . assert(_ == 3)
 
       // UAX #29 conformance against the official GraphemeBreakTest.txt fixture.
@@ -233,7 +235,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
         var failures: List[(Int, String)] = Nil
 
-        lines.zipWithIndex.foreach: (rawLine, idx) =>
+        lines.zipWithIndex.each: (rawLine, idx) =>
           val withoutComment =
             if rawLine.indexOf('#') >= 0 then rawLine.substring(0, rawLine.indexOf('#')).nn
             else rawLine
@@ -241,7 +243,8 @@ object Tests extends Suite(m"Hieroglyph tests"):
           val trimmed = withoutComment.trim.nn
 
           if trimmed.nonEmpty then
-            val tokens: List[String] = trimmed.split("\\s+").nn.to(List).map(_.nn)
+            val tokens: List[String] =
+              Array.unsafeFrozen(trimmed.split("\\s+").nn).toList.map(_.nn)
             val sb = jl.StringBuilder()
             val expected = scala.collection.mutable.ArrayBuffer[Int]()
 
@@ -251,7 +254,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
               case hex => sb.appendCodePoint(Integer.parseInt(hex, 16))
 
             val input = sb.toString.nn.tt
-            val actual = GraphemeBreak.boundaries(input).to(List)
+            val actual = GraphemeBreak.boundaries(input).to[List]
 
             if actual != expected.to(List) then failures = (idx + 1, rawLine) :: failures
 

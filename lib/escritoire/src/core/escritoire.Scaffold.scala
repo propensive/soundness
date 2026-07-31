@@ -32,8 +32,12 @@
                                                                                                   */
 package escritoire
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
+import rudiments.*
+import vacuous.*
 
 object Scaffold:
   @targetName("make")
@@ -46,17 +50,23 @@ object Scaffold:
 case class Scaffold[row, text: {ClassTag, Textual as textual}](columns0: Column[row, text]*):
   scaffold =>
 
-    val columns: IArray[Column[row, text]] = IArray.from(columns0)
+    val columns: Array[Column[row, text]]^{} = Array.from(columns0)
 
-    val titles: Seq[IArray[IArray[text]]] =
-      Seq(IArray.from(columns.map { column => IArray.from(column.title.cut(t"\n")) }))
+    // The element types are explicit: inference re-freshens the nested frozen arrays to
+    // `any.rd`, which cannot flow back into the declared `^{}`.
+    val titles: List[Array[Array[text]^{}]^{}] =
+      List:
+        Array.from[Array[text]^{}]:
+          columns0.map { column => Array.from[text](column.title.cut(t"\n").stdlib) }
 
-    def tabulate(data: Seq[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
+    def tabulate(data: List[row]): Tabulation[text] { type Row = row } = new Tabulation[text]:
       type Row = row
 
-      val columns: IArray[Column[Row, text]] = scaffold.columns
-      val titles: Seq[IArray[IArray[text]]] = scaffold.titles
-      val dataLength: Int = data.length
+      val columns: Array[Column[Row, text]]^{} = scaffold.columns
+      val titles: List[Array[Array[text]^{}]^{}] = scaffold.titles
+      val dataLength: Int = data.stdlib.length
 
-      val rows: Seq[IArray[IArray[text]]] =
-        data.map: row => columns.map: column => IArray.from(column.get(row).lines)
+      val rows: List[Array[Array[text]^{}]^{}] =
+        data.map: row =>
+          columns.map[Array[text]^{}]: column =>
+            Array.from[text](column.get(row).lines.stdlib)

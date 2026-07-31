@@ -34,6 +34,11 @@ package sedentary
 
 import java.lang as jl
 
+import scala.math
+import scala.reflect
+
+import proscenium.compat.*
+
 import galilei.*
 import scala.quoted.*
 
@@ -154,13 +159,13 @@ object Bench:
 
         var rate: Double = d.toDouble/count
         count = math.max(1L, (${Expr(batch)}/rate).toLong)
-        val result = new Array[Long](${Expr(iterations)} + 1)
+        val result = new scala.Array[Long](${Expr(iterations)} + 1)
 
         // Warmup / calibration: run `warmups` full-count batches, adjusting
         // count run-by-run so it converges on the batch target, then pick the
         // final count from the median of all observed rates so a single
         // GC-affected run can't bias the measurement count.
-        val rates = new Array[Double](${Expr(warmups)})
+        val rates = new scala.Array[Double](${Expr(warmups)})
         var c = 0
 
         while c < ${Expr(warmups)} do
@@ -203,8 +208,8 @@ object Bench:
       operationSize: Optional[OperationSize] )
   :   Benchmark =
 
-    val sample: Long = results0(0)
-    val results = results0.drop(1)
+    val sample: Long = results0.stdlib(0)
+    val results = results0.stdlib.drop(1)
     val total = results.sum
     val count = sample*runs
     val sampleMean0 = results.map(_.toDouble/sample).mean
@@ -299,12 +304,12 @@ object Bench:
         index += 1
 
       anchor.let: anchorValue =>
-        values.find(_ == anchorValue).foreach: value =>
+        values.stdlib.find(_ == anchorValue).foreach: value =>
           anchors.include
             ( runner.report, testId, Nil, Anchor(axis.spec, axis.point(value), comparison) )
 
     inline def over[value <: reflect.Enum: Enumerable, report]
-      ( companion: { def values: Array[value] } )
+      ( companion: { def values: scala.Array[value] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (value ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -377,7 +382,7 @@ object Bench:
                   Anchor(second.spec, second.point(value), comparison) )
 
     inline def over[left <: reflect.Enum: Enumerable, right, report]
-      ( first: { def values: Array[left] }, second: Axis[right] )
+      ( first: { def values: scala.Array[left] }, second: Axis[right] )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -390,7 +395,7 @@ object Bench:
       over(Axis(first), second)(body)
 
     inline def over[left, right <: reflect.Enum: Enumerable, report]
-      ( first: Axis[left], second: { def values: Array[right] } )
+      ( first: Axis[left], second: { def values: scala.Array[right] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],
@@ -403,7 +408,7 @@ object Bench:
       over(first, Axis(second))(body)
 
     inline def over[left <: reflect.Enum: Enumerable, right <: reflect.Enum: Enumerable, report]
-      ( first: { def values: Array[left] }, second: { def values: Array[right] } )
+      ( first: { def values: scala.Array[left] }, second: { def values: scala.Array[right] } )
       ( inline body: (References over Json) ?=> Quotes ?=> (((left, right)) ~> Expr[Any]) )
       ( using System, TemporaryDirectory, Stageable over Json in Text )
       ( using runner:    Runner[report],

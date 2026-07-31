@@ -32,6 +32,9 @@
                                                                                                   */
 package dendrology
 
+// Deliberate stdlib opt-out, as in the diagram implementations.
+import scala.collection.immutable.{Map, Set}
+
 import anticipation.*
 import gossamer.*
 import gossamer.Textual.concatenable
@@ -65,7 +68,7 @@ extends LaneDagStyle[line]:
       label:  Optional[line] )
   :   line =
 
-    val parts: List[line] = tiles.zip(widths).zipWithIndex.map:
+    val parts = tiles.stdlib.zip(widths.stdlib).zipWithIndex.map:
       case ((Node, w), i) =>
         val g = glyphs.getOrElse(i, line(node))
         val gw = width(g)

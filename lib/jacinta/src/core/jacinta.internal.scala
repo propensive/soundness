@@ -32,6 +32,13 @@
                                                                                                   */
 package jacinta
 
+import scala.collection.immutable.Seq
+import scala.collection.immutable.IndexedSeq
+
+import scala.{annotation, caps}
+
+import proscenium.compat.*
+
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -103,8 +110,13 @@ object internal:
   // (`DynamicJsonEnabler`-gated) runtime access, exactly as before.
 
   // Every `type X = …` member of a (possibly nested) refinement, by name.
+  private def armsFor(using Quotes)(arms: List[quotes.reflect.CaseDef], fallthrough: quotes.reflect.CaseDef)
+  :   scala.collection.immutable.List[quotes.reflect.CaseDef] =
+
+    arms.stdlib :+ fallthrough
+
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :   Map[Text, quotes.reflect.TypeRepr] =
+  :   scala.collection.immutable.Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -112,7 +124,7 @@ object internal:
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
-      case _                                           => Map()
+      case _                                           => scala.collection.immutable.Map()
 
   // Builds the refined type `Json of <position> from <root>`.
   private def jsonType(using quotes: Quotes)
@@ -127,16 +139,22 @@ object internal:
         TypeBounds(root, root) )
 
   // The single ordered-collection element type of `repr`, if it is one (`List`,
-  // `Vector`, `Seq`, `LazyList`, `Array`, `IArray`); `Set` is excluded as it has
+  // `Vector`, `Seq`, `Chain`, `Array`); `Set` is excluded as it has
   // no positional index.
   private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
   :   Optional[quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
+    // The opaque prelude `List`/`Sequence` don't conform to `Seq`, so match their
+    // type constructors by symbol as well.
+    val listSym = TypeRepr.of[proscenium.List[Any]].typeSymbol
+    val seriesSym = TypeRepr.of[proscenium.Sequence[Any]].typeSymbol
+
     repr.dealias match
-      case AppliedType(constructor, List(element))
-      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass =>
+      case AppliedType(constructor, scala.collection.immutable.List(element))
+      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass
+      || constructor.typeSymbol == listSym || constructor.typeSymbol == seriesSym =>
         element
 
       case _ =>
@@ -147,7 +165,7 @@ object internal:
   :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
-    val members = refinements(self.asTerm.tpe.widen)
+    val members = Map.of(refinements(self.asTerm.tpe.widen))
 
     members.at(t"Topic").let: position => (position, members.at(t"Origin").or(position))
 
@@ -258,7 +276,11 @@ object internal:
       case _ =>
         plain
 
-  opaque type Bcd = Array[Double]
+  // Represented as the stdlib's immutable array (pure by construction): the frozen
+  // `Array[Double]^{}` form gives every `Bcd`-typed result a fresh `any.rd` capability,
+  // which `unsafeAssumePure` call sites downstream cannot launder (it rejects read-only
+  // references).
+  opaque type Bcd = scala.IArray[Double]
 
   object Bcd:
     // Header masks for the raw-bits layout. Data words use all 64 bits.
@@ -284,7 +306,8 @@ object internal:
       fromRawBits(sign | (count.toLong & MantissaMask))
 
     // Internal: wrap a freshly-built header+data array as a `Bcd`.
-    private[jacinta] inline def wrap(arr: Array[Double]): Bcd = arr
+    private[jacinta] inline def wrap(arr: scala.Array[Double]): Bcd =
+      Array.unsafeFrozen(arr).readable
 
     // Single-Long BCD encoding for arrays of numbers — see `Array[Long]` as
     // a `Json.Ast` array variant. One number per Long:
@@ -428,10 +451,10 @@ object internal:
     // `Bcd.Builder` allocation and the `seedFromLong` re-walk; the layout
     // is fixed (1 header + 1 data word).
     private[jacinta] def fromContent15(content: Long, negative: Boolean): Bcd =
-      val arr = new Array[Double](2)
+      val arr = new scala.Array[Double](2)
       arr(0) = packHeaderDouble(negative, 15)
       arr(1) = packDataDouble(content)
-      arr
+      Array.unsafeFrozen(arr).readable
 
     // Build a `Bcd` from a `BigDecimal`. Goes via `toPlainString` so the result
     // matches the in-AST representation a parser would produce for the same
@@ -485,7 +508,7 @@ object internal:
     // at a time as it overflows the in-Long fast path. Keeps a growing
     // `Array[Double]` of completed words and a current 52-bit nibble buffer.
     final class Builder extends caps.Mutable:
-      private var data: Array[Double]^ = new Array[Double](2)
+      private var data: scala.Array[Double]^ = new scala.Array[Double](2)
       private var wordIdx: Int = 0
       private var word: Long = 0L   // raw nibble buffer; packed into a Double on commit
       private var inWord: Int = 0
@@ -531,16 +554,16 @@ object internal:
       // committed right-justified in its data slot.
       def finish(negative: Boolean): Bcd =
         val totalDataDoubles = if inWord > 0 then wordIdx + 1 else wordIdx
-        val arr = new Array[Double](1 + totalDataDoubles)
+        val arr = new scala.Array[Double](1 + totalDataDoubles)
         arr(0) = packHeaderDouble(negative, nibbles)
         System.arraycopy(data, 0, arr, 1, wordIdx)
         if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
-        arr
+        Array.unsafeFrozen(arr).readable
 
       private update def ensureCapacity(needed: Int): Unit =
         if needed > data.length then
           val newSize = (data.length * 2).max(needed)
-          val newData = new Array[Double](newSize)
+          val newData = new scala.Array[Double](newSize)
           System.arraycopy(data, 0, newData, 0, wordIdx)
           data = newData
 
@@ -614,7 +637,7 @@ object internal:
   // Strip the trailing sentinel pad (if present) from a parity-padded
   // heterogeneous array literal read at compile time, returning just the
   // user-visible elements.
-  private def arrayElements(arr: IArray[Any]): IArray[Any] =
+  private def arrayElements(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
     if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.take(n - 1) else arr
@@ -677,7 +700,7 @@ object internal:
 
     val (parts2, spreads) = preprocess(parts)
     val source: String = parts2.mkString(MarkerString)
-    val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[IArray[Byte]]
+    val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
 
     // Map a parser char-offset (within the joined input) back to a source-file
     // Position. The cleaned parts (parts2) are what the parser sees; the
@@ -709,7 +732,7 @@ object internal:
 
         ((parserPart, effectiveStart, srcSkip), mapping)
 
-      . toIndexedSeq
+      . stdlib.toIndexedSeq
 
     def translateOffset(parserOff: Int, len: Int): Position =
       var acc = 0
@@ -776,26 +799,42 @@ object internal:
                 ( m"a value of ${TypeRepr.of[tpe].show} is not Encodable in Text",
                   expr.asTerm.underlyingArgument.pos )
 
-      def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[Json.Ast]] = expr.absolve match
-        case '{$value: tpe} => Type.of[tpe] match
-          case '[Iterable[t]] =>
-            Expr.summon[(? >: t) is Encodable in Json] match
-              case Some('{$enc: Encodable}) =>
-                ' {
-                    $value.asInstanceOf[Iterable[t]].iterator
-                    . map($enc.encode(_).root)
-                    . to(Iterable)
-                  }
-
-              case _ =>
-                halt
-                  ( m"the elements of ${TypeRepr.of[tpe].show} are not Encodable in Json",
-                    expr.asTerm.underlyingArgument.pos )
+      def spreadIterable[t: Type](value: Expr[Iterable[t]], tpe: TypeRepr, pos: Position)
+      :   Expr[Iterable[Json.Ast]] =
+        Expr.summon[(? >: t) is Encodable in Json] match
+          case Some('{$enc: Encodable}) =>
+            '{$value.iterator.map($enc.encode(_).root).to(Iterable)}
 
           case _ =>
-            halt
-              ( m"a `*`-spread requires an Iterable, but got ${TypeRepr.of[tpe].show}",
-                expr.asTerm.underlyingArgument.pos )
+            halt(m"the elements of ${tpe.show} are not Encodable in Json", pos)
+
+      // The opaque prelude collections are not `Iterable`, but each erases to a
+      // stdlib collection that is, so a run-time cast to `Iterable` is sound.
+      // Detect them by their type-constructor symbol (a quote pattern can't see
+      // through the opaque alias).
+      val aliasCollectionSyms = Set
+        ( TypeRepr.of[proscenium.List[Any]].typeSymbol,
+          TypeRepr.of[proscenium.Set[Any]].typeSymbol,
+          TypeRepr.of[proscenium.Sequence[Any]].typeSymbol )
+
+      def encodeArraySpread(expr: Expr[Any]): Expr[Iterable[Json.Ast]] = expr.absolve match
+        case '{$value: tpe} =>
+          val pos = expr.asTerm.underlyingArgument.pos
+          // `tpe` is the spliced value's singleton type (`xs.type`); widen it to
+          // the collection type before inspecting the constructor.
+          TypeRepr.of[tpe].widen.dealias match
+            case AppliedType(constructor, scala.collection.immutable.List(element))
+            if aliasCollectionSyms.has(constructor.typeSymbol) =>
+              element.asType.absolve match
+                case '[t] =>
+                  spreadIterable[t]('{$value.asInstanceOf[Iterable[t]]}, TypeRepr.of[tpe], pos)
+
+            case _ => Type.of[tpe] match
+              case '[Iterable[t]] =>
+                spreadIterable[t]('{$value.asInstanceOf[Iterable[t]]}, TypeRepr.of[tpe], pos)
+
+              case _ =>
+                halt(m"a `*`-spread requires an Iterable, but got ${TypeRepr.of[tpe].show}", pos)
 
       def encodeObjectRest(expr: Expr[Any]): Expr[Iterable[(String, Json.Ast)]] =
         expr.absolve match
@@ -819,7 +858,7 @@ object internal:
       def serializeString(s: String): Expr[Json.Ast] =
         if !hasMarker(s) then '{Json.Ast(${Expr(s)})}
         else
-          val parts: Array[String | Null] = s.split(MarkerString, -1).nn
+          val parts: scala.Array[String | Null] = s.split(MarkerString, -1).nn
           var resultExpr: Expr[String] = Expr(parts(0).nn)
           var i = 1
 
@@ -831,15 +870,15 @@ object internal:
 
           '{Json.Ast($resultExpr)}
 
-      def serializeArray(elements: IArray[Any]): Expr[Json.Ast] =
+      def serializeArray(elements: Array[Any]^{}): Expr[Json.Ast] =
         val n = elements.length
 
         val indexed = elements.zipWithIndex
 
-        val pieces: List[Expr[Iterable[Json.Ast]]] = indexed.toList.map: (elem, idx) =>
+        val pieces = indexed.toList.map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
-                if spreads.contains(holeIndex) then
+                if spreads.has(holeIndex) then
                   if idx != n - 1 then halt:
                     m"a `*`-spread is only allowed as the last element of an array"
 
@@ -853,14 +892,15 @@ object internal:
                 '{Iterable($v)}
 
         ' {
-            val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[Json.Ast])(_ ++ _)
-            Json.Ast.arr(IArray.from(all).asInstanceOf[IArray[Any]])
+            val all = ${Expr.ofList(pieces.stdlib)}
+            . foldLeft(scala.collection.immutable.List.empty[Json.Ast])(_ ++ _)
+            Json.Ast.arr(Array.from(all).asInstanceOf[Array[Any]^{}])
           }
 
-      def serializeObject(node: IArray[Any]): Expr[Json.Ast] =
+      def serializeObject(node: Array[Any]^{}): Expr[Json.Ast] =
         val n = node.length/2
 
-        val pieces: List[Expr[Iterable[(String, Json.Ast)]]] =
+        val pieces =
           (0 until n).toList.map: i =>
             val k = node(i*2).asInstanceOf[String]
             val v = node(i*2 + 1)
@@ -883,16 +923,17 @@ object internal:
 
         ' {
             val all =
-              ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Json.Ast)])(_ ++ _)
+              ${Expr.ofList(pieces)}
+              . foldLeft(scala.collection.immutable.List.empty[(String, Json.Ast)])(_ ++ _)
 
-            val keysArr: IArray[String] = IArray.from(all.map(_(0)))
-            val valuesArr: IArray[Json.Ast] = IArray.from(all.map(_(1)))
-            Json.Ast.obj(keysArr, valuesArr.asInstanceOf[IArray[Any]])
+            val keysArr: Array[String]^{} = Array.from(all.map(_(0)))
+            val valuesArr: Array[Json.Ast]^{} = Array.from(all.map(_(1)))
+            Json.Ast.obj(keysArr, valuesArr.asInstanceOf[Array[Any]^{}])
           }
 
       def serialize(node: Any): Expr[Json.Ast] = node.asMatchable match
         case Unset =>
-          if spreads.contains(holeIndex) then halt:
+          if spreads.has(holeIndex) then halt:
             m"a `*`-spread is only allowed as the last element of an array"
 
           encodeValue(consumeHole())
@@ -914,7 +955,7 @@ object internal:
         case d: Double =>
           '{Json.Ast(${Expr(d)})}
 
-        case bcd: Array[Double] @unchecked =>
+        case bcd: scala.Array[Double] @unchecked =>
           // High-precision BCD value parsed at compile time. Reconstruct it
           // at runtime from its canonical text form so the literal stays
           // independent of the parser's internal nibble layout.
@@ -930,17 +971,17 @@ object internal:
         case null =>
           '{Json.Ast(Json.JsonNull)}
 
-        case bcds: Array[Long] @unchecked =>
+        case bcds: scala.Array[Long] @unchecked =>
           // Number-only array literal (BCD-Long packed).
           val seq: Expr[Seq[Long]] = Expr(bcds.toSeq)
           '{Json.Ast.bcdArr($seq.toArray)}
 
-        case smalls: Array[Int] @unchecked =>
+        case smalls: scala.Array[Int] @unchecked =>
           // Number-only array literal (small-BCD packed).
           val seq: Expr[Seq[Int]] = Expr(smalls.toSeq)
           '{Json.Ast.smallBcdArr($seq.toArray)}
 
-        case arr: IArray[Any] @unchecked =>
+        case arr: (Array[Any]^{}) @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
           if (arr.length & 1) == 0 then serializeObject(arr) else serializeArray(arrayElements(arr))
 
@@ -967,14 +1008,14 @@ object internal:
     abortive:
       val (parts2, spreads) = preprocess(parts)
       val source: String = parts2.mkString(MarkerString)
-      val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[IArray[Byte]]
+      val data: Array[Byte]^{} = Array.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[Array[Byte]^{}]
       val ast: Json.Ast = Json.Ast.parse(data, true)
 
       var nextHole: Int = 0
       var types: List[TypeRepr] = Nil
 
       def descend
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          pattern: Any,
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
@@ -985,7 +1026,7 @@ object internal:
             // Value-position hole: capture scrutinee as Json
             val idx = nextHole
 
-            if spreads.contains(idx) then halt:
+            if spreads.has(idx) then halt:
               m"a `*`-spread is only allowed as the last element of an array"
 
             nextHole += 1
@@ -1020,7 +1061,7 @@ object internal:
                 $accept && $scrutinee.isDouble && $scrutinee.asInstanceOf[Double] == ${Expr(d)}
               }
 
-          case bcd: Array[Long] @unchecked =>
+          case bcd: scala.Array[Long] @unchecked =>
             // High-precision BCD literal in the extractor pattern. We
             // compare the scrutinee's BCD against the same literal text
             // form, going via `BigDecimal` so a parsed `Bcd("1.0")` matches
@@ -1035,26 +1076,26 @@ object internal:
           case null =>
             '{$accept && $scrutinee.isNull}
 
-          case nums: Array[Double] @unchecked =>
+          case nums: scala.Array[Double] @unchecked =>
             // Number-only array literal in the pattern: descend by treating
-            // each Double as an element. Synthesise an `IArray[Any]` of
+            // each Double as an element. Synthesise an `Array[Any]^{}` of
             // unpacked element literals (Long for whole-valued, Double
             // otherwise) so the existing `descendArray` element comparison
             // reuses the numeric-equality cases above.
             val n = nums.length
 
-            val elements0 = IArray.tabulate(n): i =>
+            val elements0 = Array.tabulate[Any](n): i =>
               val d = nums(i)
 
               if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
               then d.toLong
               else d
 
-            val elements: IArray[Any] = elements0
+            val elements: Array[Any]^{} = elements0
 
             descendArray(array, elements, scrutinee, accept)
 
-          case arr: IArray[Any] @unchecked =>
+          case arr: (Array[Any]^{}) @unchecked =>
             // Heterogeneous array or object, distinguished by parity.
             if (arr.length & 1) == 0 then descendObject(array, arr, scrutinee, accept)
             else descendArray(array, arrayElements(arr), scrutinee, accept)
@@ -1063,8 +1104,8 @@ object internal:
             halt(m"unexpected JSON AST node ${other.toString.tt}")
 
       def descendArray
-        ( array: Expr[Array[Any]],
-         elements: IArray[Any],
+        ( array: Expr[scala.Array[Any]],
+         elements: Array[Any]^{},
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
@@ -1074,7 +1115,7 @@ object internal:
 
         val tailSpread: Boolean =
           n > 0 && (elements(n - 1).asMatchable match
-            case Unset => spreads.contains(nextHole + countHolesInPrefix(elements, n - 1))
+            case Unset => spreads.has(nextHole + countHolesInPrefix(elements, n - 1))
             case _     => false)
 
         val prefixLen = if tailSpread then n - 1 else n
@@ -1107,7 +1148,7 @@ object internal:
                 $combined && {
                   val total = $scrutinee.arrayLength
                   val tailLen = total - ${Expr(prefixLen)}
-                  val tail = new Array[Any](tailLen)
+                  val tail = new scala.Array[Any](tailLen)
                   var k = 0
 
                   while k < tailLen do
@@ -1115,7 +1156,7 @@ object internal:
                     k += 1
 
                   $array(${Expr(idx)}) =
-                    Json.ast(Json.Ast.arr(tail.asInstanceOf[IArray[Any]]))
+                    Json.ast(Json.Ast.arr(tail.asInstanceOf[Array[Any]^{}]))
 
                   true
                 }
@@ -1123,7 +1164,7 @@ object internal:
 
         combined
 
-      def countHolesInPrefix(elements: IArray[Any], upTo: Int): Int =
+      def countHolesInPrefix(elements: Array[Any]^{}, upTo: Int): Int =
         var count = 0
         var i = 0
 
@@ -1147,11 +1188,11 @@ object internal:
 
           c
 
-        case _: Array[Double] @unchecked =>
+        case _: scala.Array[Double] @unchecked =>
           // Number-only array literal — never contains holes.
           0
 
-        case arr: IArray[Any] @unchecked =>
+        case arr: (Array[Any]^{}) @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
           if (arr.length & 1) == 0 then
             // Object: alternating key/value. A `MarkerString` key marks an
@@ -1182,15 +1223,15 @@ object internal:
           0
 
       def descendObject
-        ( array: Expr[Array[Any]],
-         node: IArray[Any],
+        ( array: Expr[scala.Array[Any]],
+         node: Array[Any]^{},
          scrutinee: Expr[Json.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
 
         val pairs = node.length/2
 
-        val literalKeys: List[String] =
+        val literalKeys =
           (0 until pairs).toList.collect:
             case i if node(i*2).asInstanceOf[String] != MarkerString =>
               node(i*2).asInstanceOf[String]
@@ -1212,7 +1253,7 @@ object internal:
                       keysSet += $scrutinee.objectKey(k)
                       k += 1
 
-                    ${Expr(literalKeys)}.forall(keysSet.contains)
+                    ${Expr(literalKeys)}.forall(keysSet.has(_))
                   }
               }
           else
@@ -1229,7 +1270,7 @@ object internal:
                         keysSet += $scrutinee.objectKey(k)
                         k += 1
 
-                      ${Expr(literalKeys)}.forall(keysSet.contains)
+                      ${Expr(literalKeys)}.forall(keysSet.has(_))
                     }
                   }
               }
@@ -1266,7 +1307,7 @@ object internal:
                       j += 1
 
                     $array(${Expr(idx)}) =
-                      Json.ast(Json.Ast.obj(IArray.from(keysBuf), IArray.from(valsBuf)))
+                      Json.ast(Json.Ast.obj(Array.from(keysBuf), Array.from(valsBuf)))
 
                     true
                   }
@@ -1298,7 +1339,7 @@ object internal:
 
       val result: Expr[Extrapolation[Json]] =
         ' {
-            val extracts = new Array[Any](${Expr(numberOfHoles)})
+            val extracts = new scala.Array[Any](${Expr(numberOfHoles)})
 
             val matches: Boolean =
               ${descend('extracts, ast, '{$scrutinee.root}, '{true})}
@@ -1322,7 +1363,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
-          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
+          AppliedType(defn.TupleClass(types.stdlib.length).info.typeSymbol.typeRef, types.stdlib.reverse)
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>
@@ -1375,8 +1416,8 @@ object internal:
 
     val fields = classSymbol.caseFields
     val arity = fields.length
-    val fieldNames: List[String] = fields.map(_.name)
-    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+    val fieldNames = fields.map(_.name)
+    val fieldTypes = fields.map { field => tpe.memberType(field).dealias }
 
     def kindOf(fieldType: TypeRepr): StagedKind =
       if fieldType =:= TypeRepr.of[Int] then IntK
@@ -1388,7 +1429,7 @@ object internal:
       else if fieldType =:= TypeRepr.of[String] then StringK
       else InstanceK
 
-    val kinds: List[StagedKind] = fieldTypes.map(kindOf)
+    val kinds = fieldTypes.map(kindOf)
 
     // Keys compile to literal packed-word comparisons when no `@name`
     // annotation can rename them (renames resolve at runtime, so annotated
@@ -1447,10 +1488,10 @@ object internal:
       ( reader:    Expr[JsonReader],
         foci:      Expr[Foci[Json.Focus]],
         tactic:    Expr[Tactic[JsonError]],
-        keys:      Expr[IArray[String]],
+        keys:      Expr[Array[String]^{}],
         table:     Expr[Json.KeyTable],
-        instances: Expr[IArray[Json.Field | Null]],
-        fallbacks: Expr[IArray[Any]] )
+        instances: Expr[Array[Json.Field | Null]^{}],
+        fallbacks: Expr[Array[Any]^{}] )
     :   Expr[value] =
 
       val owner = Symbol.spliceOwner
@@ -1493,8 +1534,9 @@ object internal:
 
         val rhs =
           Block
-            ( List(Assign(Ref(slots(index)), read),
-                Assign(Ref(seens(index)), Literal(BooleanConstant(true)))),
+            ( scala.collection.immutable.List
+                ( Assign(Ref(slots(index)), read),
+                  Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
               Literal(UnitConstant()) )
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
@@ -1538,33 +1580,33 @@ object internal:
             If
               ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
                 '{ $reader.keyIndex($table) }.asTerm,
-                Block(List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(0)) )
+                Block(scala.collection.immutable.List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(0)) )
 
           val step: Term =
             Block
-              ( List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
+              ( scala.collection.immutable.List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
                 If
                   ( '{ $wordRef == JsonReader.KeyEnd }.asTerm,
                     Assign(Ref(run), Literal(BooleanConstant(false))),
                     Block
-                      ( List(ValDef(found, Some(resolve))),
+                      ( scala.collection.immutable.List(ValDef(found, Some(resolve))),
                         If
                           ( '{ ${Ref(found).asExprOf[Int]} == Json.KeyTable.End }.asTerm,
                             Assign(Ref(run), Literal(BooleanConstant(false))),
-                            Match(Ref(found), arms :+ fallthrough) ) ) ) )
+                            Match(Ref(found), armsFor(arms, fallthrough)) ) ) ) )
 
           List
             ( ValDef(run, Some(Literal(BooleanConstant(true)))),
               While(Ref(run), step) )
         else
           val next: Term = '{ $reader.keyIndex($table) }.asTerm
-          val dispatch = Match(Ref(cursor), arms :+ fallthrough)
+          val dispatch = Match(Ref(cursor), armsFor(arms, fallthrough))
 
           List
             ( ValDef(cursor, Some(next)),
               While
                 ( '{ ${Ref(cursor).asExprOf[Int]} != Json.KeyTable.End }.asTerm,
-                  Block(List(dispatch), Assign(Ref(cursor), next)) ) )
+                  Block(scala.collection.immutable.List(dispatch), Assign(Ref(cursor), next)) ) )
 
       // Fields whose keys never arrived: the declared default, else the
       // field's absent value (`Unset`/`None` for optional shapes, an
@@ -1597,7 +1639,7 @@ object internal:
       val construct: Term =
         val typeArguments = tpe match
           case AppliedType(_, arguments) => arguments
-          case _                         => Nil
+          case _                         => Nil.stdlib
 
         val newTerm = Select(New(Inferred(tpe)), ctor)
 
@@ -1605,7 +1647,7 @@ object internal:
           if typeArguments.isEmpty then newTerm
           else TypeApply(newTerm, typeArguments.map { argument => Inferred(argument) })
 
-        Apply(applied, slots.map { slot => Ref(slot) })
+        Apply(applied, slots.stdlib.map { slot => Ref(slot) })
 
       Block
         ( '{ $reader.openObject() }.asTerm :: slotDefs ::: seenDefs ::: loop ::: absents,
@@ -1627,16 +1669,17 @@ object internal:
       // generated parser captures the resolution-scoped tactic and foci.
       // The instance and default arrays are single lazy vals, so recursive
       // self-references stay deferred until the first parse.
-      caps.unsafe.unsafeAssumePure:
+      caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
         val foci: Foci[Json.Focus] = $fociExpr
         val tactic: Tactic[JsonError] = $tacticExpr
 
-        val keys: IArray[String] =
-          Json.Parsable.wireKeys(IArray[String](${Varargs(nameExprs)}*), $renames)
+        val keys: Array[String]^{} =
+          Json.Parsable.wireKeys(Array.of[String](${Varargs[String](nameExprs)}*), $renames)
 
         val table: Json.KeyTable = Json.KeyTable(keys)
-        lazy val instances: IArray[Json.Field | Null] = IArray(${Varargs(instanceExprs)}*)
-        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs(fallbackExprs)}*)
+        lazy val instances: Array[Json.Field | Null]^{} =
+          Array.of[Json.Field | Null](${Varargs[Json.Field | Null](instanceExprs.stdlib)}*)
+        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs[Any](fallbackExprs.stdlib)}*)
 
         new Json.Parsable:
           type Self = value
@@ -1689,8 +1732,8 @@ object internal:
         ("jacinta: staged sum parsing requires every variant to be a case class; singleton " +
           "variants use `Json.Parsable.derived`")
 
-    val variantTypes: List[TypeRepr] = children.map(_.typeRef)
-    val variantNames: List[String] = children.map(_.name)
+    val variantTypes: scala.collection.immutable.List[TypeRepr] = children.map(_.typeRef)
+    val variantNames: scala.collection.immutable.List[String] = children.map(_.name)
     val arity = children.length
 
     def summonVariant(index: Int): Expr[Json.Field] =
@@ -1717,8 +1760,8 @@ object internal:
         reader:       Expr[JsonReader],
         wire:         Expr[Text],
         wireString:   Expr[String],
-        variants:     Expr[IArray[Json.Field]],
-        wireVariants: Expr[IArray[String]] )
+        variants:     Expr[Array[Json.Field]^{}],
+        wireVariants: Expr[Array[String]^{}] )
     :   Expr[value] =
 
       if index == arity then
@@ -1738,14 +1781,15 @@ object internal:
       // Sealed per the codec-thunk pattern, like the derived instances: the
       // variant instances may capture resolution-scoped tactics. The variant
       // array is a single lazy val, so recursive references stay deferred.
-      caps.unsafe.unsafeAssumePure:
+      caps.unsafe.unsafeAssumePure[value is Json.Parsable]:
         val discriminable: value is Discriminable in Json = $discriminableExpr
         val tagField: Text = Json.Parsable.discriminantField(discriminable)
 
-        val wireVariants: IArray[String] =
-          Json.Parsable.wireKeys(IArray[String](${Varargs(nameExprs)}*), $renames)
+        val wireVariants: Array[String]^{} =
+          Json.Parsable.wireKeys(Array.of[String](${Varargs[String](nameExprs)}*), $renames)
 
-        lazy val variants: IArray[Json.Field] = IArray(${Varargs(variantExprs)}*)
+        lazy val variants: Array[Json.Field]^{} =
+          Array.of[Json.Field](${Varargs[Json.Field](variantExprs.stdlib)}*)
 
         new Json.Parsable:
           type Self = value

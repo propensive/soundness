@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -42,11 +45,12 @@ import vacuous.*
 // locator and parsing stops there. `references` is disabled for content streams, where `R`
 // is illegal and could otherwise misread three numeric operands.
 private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
+  @scala.caps.unsafe.untrackedCaptures
   private var pushback: List[CosToken] = List()
 
   def offset: Long = lexer.offset
 
-  private def advance(): CosToken raises PdfError = pushback match
+  private def advance()(using Tactic[PdfError]): CosToken = pushback match
     case head :: tail =>
       pushback = tail
       head
@@ -56,19 +60,19 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
 
   private def replace(token: CosToken): Unit = pushback = token :: pushback
 
-  def value(): Cos raises PdfError = interpret(advance())
+  def value()(using Tactic[PdfError]): Cos = interpret(advance())
 
   // Parses `N G obj <content> endobj`, returning the header numbers — the caller checks them
   // against the cross-reference entry it followed — and a `Cos.Body` if the content is a
   // stream dictionary. The payload itself is never traversed: every object is located through
   // the cross-reference table, so parsing stops at the `stream` keyword.
-  def indirect(): (Int, Int, Cos) raises PdfError =
+  def indirect()(using Tactic[PdfError]): (Int, Int, Cos) =
     val number = integral(t"an object number")
     val generation = integral(t"a generation number")
     expect(CosToken.Keyword(t"obj"), t"the keyword 'obj'")
     (number, generation, content())
 
-  private def integral(expected: Text): Int raises PdfError =
+  private def integral(expected: Text)(using Tactic[PdfError]): Int =
     val position = offset
 
     advance() match
@@ -78,7 +82,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
       case _ =>
         abort(PdfError(PdfError.Reason.Unparseable(position, expected)))
 
-  private def content(): Cos raises PdfError =
+  private def content()(using Tactic[PdfError]): Cos =
     val content = value()
 
     advance() match
@@ -102,8 +106,8 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
   // One content-stream instruction: operand values followed by an operator keyword, or
   // `Unset` at the end of the stream. Operands left dangling by a truncated stream are
   // dropped, matching viewer behaviour.
-  private[facsimile] def instruction(): Optional[(List[Cos], Text)] raises PdfError =
-    val operands = List.newBuilder[Cos]
+  private[facsimile] def instruction()(using Tactic[PdfError]): Optional[(List[Cos], Text)] =
+    val operands = scala.collection.immutable.List.newBuilder[Cos]
 
     def recur(): Optional[(List[Cos], Text)] = advance() match
       case CosToken.End =>
@@ -123,7 +127,7 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           recur()
 
         case _ =>
-          (operands.result(), word)
+          (List.of(operands.result()), word)
 
       case token =>
         operands += interpret(token)
@@ -131,11 +135,11 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
 
     recur()
 
-  private def expect(token: CosToken, expected: Text): Unit raises PdfError =
+  private def expect(token: CosToken, expected: Text)(using Tactic[PdfError]): Unit =
     val position = offset
     if advance() != token then abort(PdfError(PdfError.Reason.Unparseable(position, expected)))
 
-  private def interpret(token: CosToken): Cos raises PdfError = token match
+  private def interpret(token: CosToken)(using Tactic[PdfError]): Cos = token match
     case CosToken.Integral(first) =>
       // `N G R` is an indirect reference: two-token lookahead distinguishes it from a run of
       // numbers, with mismatches pushed back rather than lost.
@@ -169,8 +173,8 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
     case _ =>
       abort(PdfError(PdfError.Reason.Unparseable(offset, t"an object")))
 
-  private def sequence(): Cos raises PdfError =
-    val elements = List.newBuilder[Cos]
+  private def sequence()(using Tactic[PdfError]): Cos =
+    val elements = scala.collection.immutable.List.newBuilder[Cos]
 
     while
       advance() match
@@ -185,10 +189,10 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           true
     do ()
 
-    Cos.Sequence(elements.result())
+    Cos.Sequence(List.of(elements.result()))
 
-  private def dictionary(): Cos raises PdfError =
-    val entries = Map.newBuilder[Text, Cos]
+  private def dictionary()(using Tactic[PdfError]): Cos =
+    val entries = scala.collection.immutable.Map.newBuilder[Text, Cos]
 
     while
       advance() match
@@ -206,4 +210,4 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
           abort(PdfError(PdfError.Reason.Unparseable(offset, t"a name key")))
     do ()
 
-    Cos.Dictionary(entries.result())
+    Cos.Dictionary(Map.of(entries.result()))

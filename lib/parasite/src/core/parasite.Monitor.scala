@@ -32,7 +32,9 @@
                                                                                                   */
 package parasite
 
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.util.concurrent.atomic as juca
@@ -69,10 +71,13 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   // `Worker`, with the `^` dropped at the `addWorker`/`remove` boundary. This is the single capture
   // escape in the supervision core; sound here because the registry is private bookkeeping that
   // never leaks a worker's captures outward, and a worker's lifetime is bounded by this very scope.
-  protected[parasite] val workersRef: juca.AtomicReference[Set[Worker^{}]] =
-    juca.AtomicReference[Set[Worker^{}]](Set())
+  protected[parasite] val workersRef
+  :   juca.AtomicReference[scala.collection.immutable.Set[Worker^{}]] =
+    juca.AtomicReference[scala.collection.immutable.Set[Worker^{}]](
+      scala.collection.immutable.Set())
 
-  protected[parasite] def workers: Set[Worker^{}] = workersRef.get().nn
+  protected[parasite] def workers: scala.collection.immutable.Set[Worker^{}] =
+    workersRef.get().nn
 
   // The casts are for the Scala.js pipeline, which infers the updated set's element type with
   // the argument's reach capabilities attached (widening the worker's fields to `any`), where
@@ -80,14 +85,14 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   // type spells the pipeline's widened element type. (Compiler divergence.)
   protected[parasite] def addWorker(worker: Worker^): Unit =
     val worker0: Worker^{} = caps.unsafe.unsafeAssumePure(worker)
-    workersRef.updateAndGet(_.nn.incl(worker0).asInstanceOf[Set[Worker^{}]])
+    workersRef.updateAndGet(_.nn.incl(worker0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
 
   protected[parasite] def remove(monitor: Worker^): Unit =
     val monitor0: Worker^{} = caps.unsafe.unsafeAssumePure(monitor)
-    workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[Set[Worker^{}]])
+    workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
 
   def name: Optional[Name[Async]]
-  def chain: Optional[Chain]
+  def chain: List[Codepoint]
   def stack: Text
   def daemon: Boolean
   def attend()(using Monitor^): Unit = promise.attend()
@@ -162,7 +167,7 @@ trait ThreadSupervisor extends Supervisor:
 class Root(val supervisor: Supervisor) extends Monitor:
   type Result = Unit
 
-  def chain: Optional[Chain] = Unset
+  def chain: List[Codepoint] = List()
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
   def name: Optional[Name[Async]] = supervisor.name
@@ -174,7 +179,7 @@ object PlatformSupervisor extends ThreadSupervisor:
   def name: Name[Async] = n"platform"
 
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    val runnable: Runnable^ = () => block
+    val runnable: Runnable^{block} = () => block
 
     Strand.Threaded:
       new Thread(runnable).tap: thread =>
@@ -186,6 +191,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   private val state: juca.AtomicReference[Fulfillment[Result]] =
     juca.AtomicReference(Fulfillment.Initializing)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var relents: Int = 1
 
   private val startTime: Long = jl.System.currentTimeMillis
@@ -193,7 +199,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
   parent.addWorker(this)
 
-  def chain: Chain = Chain(frame, parent.chain)
+  def chain: List[Codepoint] = frame :: parent.chain
   def evaluate(worker: Worker): Result
   def supervisor: Supervisor = parent.supervisor
   def apply(): Optional[Result] = promise()
@@ -229,14 +235,14 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     if supervisor.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using Monitor^, Probate^)
-  :   (Task[result2] emits AsyncError)^ =
+  def map[result2](lambda: Result => result2)(using monitor: Monitor^, probate: Probate^)
+  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate} =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using Monitor^, Probate^)
-  :   (Task[result2] emits AsyncError)^ =
+  def bind[result2](lambda: Result => Task[result2])(using monitor: Monitor^, probate: Probate^)
+  :   (Task[result2] emits AsyncError)^{this, lambda, monitor, probate} =
 
     async(lambda(join()).join())
 
@@ -286,15 +292,15 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // guarantees everything a join would. (A trailing unbounded `strand.join()` would also defeat
   // the timed variants' deadline.)
   def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
-    ( using Monitor^ )
-  :   Result raises AsyncError =
+    ( using monitor: Monitor^ )
+  :   (Tactic[AsyncError]^) ?->{this, monitor} Result =
 
     promise.attend(duration)
     if !promise.ready then abort(AsyncError(Reason.Timeout))
     result()
 
 
-  def join()(using Monitor^): Result raises AsyncError =
+  def join()(using monitor: Monitor^): (Tactic[AsyncError]^) ?->{this, monitor} Result =
     promise.attend()
     result()
 

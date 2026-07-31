@@ -58,7 +58,7 @@ object Tests extends Suite(m"Hellenism Tests"):
 
     test(m"check that a classpath file is streamable"):
       cp"/scala/Option.class".read[Data]
-    . assert(_.length > 0)
+    . assert(_.readable.length > 0)
 
     test(m"check that a nonexistent classpath file is an error"):
       demilitarize(cp"/missing.txt").map(_.message)
@@ -71,5 +71,5 @@ object Tests extends Suite(m"Hellenism Tests"):
     test(m"load services from META-INF/services"):
       import systems.javaSystem
       val classpath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
-      classpath.services[TestService].map(_.name)
+      Set.from(classpath.services[TestService].stdlib.map(_.name))
     . assert(_ == Set(t"A", t"B"))

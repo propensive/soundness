@@ -32,7 +32,9 @@
                                                                                                   */
 package kaleidoscope
 
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.language.experimental.pureFunctions
 
 import java.util.regex as jur
 
@@ -40,6 +42,7 @@ import scala.collection.concurrent.TrieMap
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import denominative.*
 import rudiments.*
 import vacuous.*
@@ -85,7 +88,8 @@ object Regex:
       singleChar: Boolean     = false ):
 
     def outerStart: Int = if singleChar && !charClass then start else (start - 1).max(0)
-    def allGroups: List[Regex.Group] = groups.flatMap: group => group :: group.allGroups
+    def allGroups: List[Regex.Group] = groups.bind: group =>
+      (group :: group.allGroups): List[Regex.Group]
     def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
     def charMatcher: Boolean = charClass || singleChar
 
@@ -110,8 +114,10 @@ object Regex:
         if quantifier.unitary then (index2, s"($groupName$subpattern)".tt)
         else (index2, s"($groupName($subpattern)${quantifier.serialize}${greed.serialize})".tt)
 
-  def apply(parts: Seq[String])(using erased unsafe: Unsafe): Regex =
-    strategies.throwUnsafely.give(parse(parts.to(List).map(_.tt)))
+
+  def apply(parts: List[String])(using erased unsafe: Unsafe): Regex =
+    given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
+    parse(parts.map(_.tt))
 
   def apply(text: Text): Regex raises RegexError = parse(List(text))
 
@@ -314,7 +320,8 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
   lazy val capturePattern: Text =
     Regex.makePattern(pattern, groups, 0, "".tt, pattern.s.length, 0)(1)
 
-  def allGroups: List[Regex.Group] = groups.flatMap: group => group :: group.allGroups
+  def allGroups: List[Regex.Group] = groups.bind: group =>
+    (group :: group.allGroups): List[Regex.Group]
   def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
 
   private[kaleidoscope] lazy val javaPattern: jur.Pattern =
@@ -324,16 +331,16 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
     if matcher.find(start.n0) then Interval.zerary(matcher.start, matcher.end) else Unset
 
-  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): LazyList[Interval] =
+  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): Chain[Interval] =
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
 
-    def recur(offset: Int): LazyList[Interval] =
+    def recur(offset: Int): Chain[Interval] =
       if matcher.find(offset)
       then
         Interval.zerary(matcher.start, matcher.end) #::
           recur((if overlap then matcher.start else matcher.end) + 1)
       else
-        LazyList()
+        Chain()
 
     recur(start.n0)
 
@@ -341,7 +348,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
 
   def matchGroups(text: Text)(using scanner: Scanner)
-  :   Option[IArray[List[Text | Char] | Optional[Text | Char]]] =
+  :   Option[Array[List[Text | Char] | Optional[Text | Char]]^{}] =
 
     val matcher: jur.Matcher = javaPattern.matcher(text.s).nn
 
@@ -396,7 +403,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
         if !matcher.find(index) then None else
           scanner.nextStart = matcher.start + 1
           scanner.matchEnd = matcher.end
-          Some(IArray.from(recur(captureGroups, Nil, 0).reverse))
+          Some(Array.frozen(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))
 
       case _ =>
-        if !matcher.matches then None else Some(IArray.from(recur(captureGroups, Nil, 0).reverse))
+        if !matcher.matches then None else Some(Array.frozen(scala.IArray.from(recur(captureGroups, Nil, 0).stdlib.reverse)))

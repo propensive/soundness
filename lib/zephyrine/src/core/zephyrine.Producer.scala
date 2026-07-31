@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import scala.caps
+
 import java.util.concurrent as juc
 
 import anticipation.Data

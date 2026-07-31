@@ -48,11 +48,11 @@ object Hash:
       type Form = algorithm
       val name: Text = name0
       val hmacName: Text = hmacName0
-      def initialize(): Digestion = function.digestion()
+      def initialize(): Digestion^ = function.digestion()
 
 trait Hash extends Findable:
   type Form <: Algorithm
 
   def name: Text
   def hmacName: Text
-  def initialize(): Digestion
+  def initialize(): Digestion^

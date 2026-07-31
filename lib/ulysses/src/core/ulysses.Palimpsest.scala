@@ -32,6 +32,8 @@
                                                                                                   */
 package ulysses
 
+import proscenium.compat.*
+
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -41,15 +43,15 @@ object Palimpsest:
   // §3 encoding. Build a body of length `cadence.bodyLength(n)`, XOR each
   // hash in at offset `cadence.offset(i)`, then append the trailing byte
   // adjusted so the XOR-fold of every output byte equals the cadence byte.
-  def apply(hashes: IndexedSeq[Data])(using cadence: Cadence): Palimpsest =
-    if hashes.nil then panic(m"palimpsest requires at least one hash")
+  def apply(hashes: Sequence[Data])(using cadence: Cadence): Palimpsest =
+    if hashes.isEmpty then panic(m"palimpsest requires at least one hash")
 
     if !hashes.forall(_.length == cadence.hashSize)
     then panic(m"all hashes must have length ${cadence.hashSize}")
 
     val n        = hashes.length
     val bodyLen  = cadence.bodyLength(n)
-    val body     = new Array[Byte](bodyLen)
+    val body     = Array[Byte](bodyLen)
     val hashSize = cadence.hashSize
 
     var i = 0
@@ -72,11 +74,11 @@ object Palimpsest:
       xor = xor ^ (body(k) & 0xff)
       k += 1
 
-    val out = new Array[Byte](bodyLen + 1)
-    System.arraycopy(body, 0, out, 0, bodyLen)
+    val out = Array[Byte](bodyLen + 1)
+    out.copyFrom(body, 0, 0, bodyLen)
     out(bodyLen) = (xor ^ (cadence.byte & 0xff)).toByte
 
-    Palimpsest(out.asInstanceOf[IArray[Byte]], n)
+    Palimpsest(Array.freeze(out), n)
 
 case class Palimpsest(data: Data, length: Int):
   // §4 decoding. Recover the cadence byte from the XOR-fold, derive `n`
@@ -103,17 +105,19 @@ case class Palimpsest(data: Data, length: Int):
 
         cadence.hashCount(bodyLen).let: n =>
           if n != length then Unset else
-            val body: Array[Byte] = new Array[Byte](bodyLen)
-            System.arraycopy(data.asInstanceOf[Array[Byte]], 0, body, 0, bodyLen)
+            // The scratch array is threaded through the nested defs as an exclusive (`^`)
+            // parameter: a captured array would be read-only inside them.
+            val body0: scala.Array[Byte]^ = new scala.Array[Byte](bodyLen)
+            System.arraycopy(data.asInstanceOf[scala.Array[Byte]], 0, body0, 0, bodyLen)
 
-            def xor_(hash: Data, offset: Int): Unit =
+            def xor_(body: scala.Array[Byte]^, hash: Data, offset: Int): Unit =
               var j = 0
 
               while j < cadence.hashSize do
                 body(offset + j) = (body(offset + j) ^ hash(j)).toByte
                 j += 1
 
-            def recur(item: Int, matched: List[Data]): Optional[List[Data]] =
+            def recur(body: scala.Array[Byte]^, item: Int, matched: List[Data]): Optional[List[Data]] =
               if item == n then
                 var allZero = true
                 var k       = 0
@@ -122,25 +126,26 @@ case class Palimpsest(data: Data, length: Int):
                   if body(k) != 0.toByte then allZero = false
                   k += 1
 
-                if allZero then matched.reverse else Unset
+                if allZero then List.of(matched.stdlib.reverse) else Unset
               else
                 val o         = cadence.offset(item)
                 val prefixLen = if item == 0 then cadence.initial else cadence.regular
-                val prefix    = new Array[Byte](prefixLen)
-                System.arraycopy(body, o, prefix, 0, prefixLen)
+                val prefix    = Array[Byte](prefixLen)
+                System.arraycopy(body, o, prefix.raw, 0, prefixLen)
 
                 val candidates =
-                  bibliography.lookup(prefix.asInstanceOf[IArray[Byte]]).iterator
+                  bibliography.lookup(Array.freeze(prefix)).iterator
 
                 var found: Optional[List[Data]] = Unset
 
                 while found.absent && candidates.hasNext do
                   val hash = candidates.next()
-                  xor_(hash, o)
-                  val sub = recur(item + 1, hash :: matched)
+                  xor_(body, hash, o)
+                  val sub = recur(body, item + 1, hash :: matched)
 
-                  if sub.absent then xor_(hash, o) else found = sub
+                  if sub.absent then xor_(body, hash, o)
+                  else found = sub
 
                 found
 
-            recur(0, Nil)
+            recur(body0, 0, Nil)

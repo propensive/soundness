@@ -70,7 +70,7 @@ class SketchActivity extends Activity:
 
     color.setOnClickListener: view =>
       // A Scala `Array[Text]` now bridges to the `CharSequence[]` parameter.
-      val names: Array[Text] = palette.map(_(0)).toArray
+      val names: scala.Array[Text] = palette.map(_(0)).toArray
       make[AlertDialog.Builder](this)
       . setTitle(t"Choose a colour")
       . setItems(names, (dialog: android.content.DialogInterface, which: Int) => {

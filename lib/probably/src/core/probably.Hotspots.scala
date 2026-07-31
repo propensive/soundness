@@ -48,7 +48,7 @@ object Hotspots:
           Entry.Kind.Profile,
           coordinates,
           Run
-            ( metrics = ListMap(Metric.Samples -> hotspots.total.toDouble),
+            ( metrics = Ledger(Metric.Samples -> hotspots.total.toDouble),
               payload = Run.Payload.Frames(hotspots) ),
           Metric.Samples )
 

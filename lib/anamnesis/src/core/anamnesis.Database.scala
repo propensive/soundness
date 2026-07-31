@@ -32,6 +32,8 @@
                                                                                                   */
 package anamnesis
 
+import proscenium.compat.*
+
 import beneficence.*
 import contingency.*
 import prepositional.*
@@ -48,6 +50,7 @@ object Database:
 class Database(size: Int) extends Findable:
   import Database.Relation
 
+  @scala.caps.unsafe.untrackedCaptures
   private var nextId: Int = 1
 
   def allocate[ref](): Ref of ref in this.type =
@@ -59,11 +62,15 @@ class Database(size: Int) extends Findable:
   type Has[relation <: Relation[?, ?]] = relation <:< AllRelations
 
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var references: Map[Any, Ref] = Map()
+  @scala.caps.unsafe.untrackedCaptures
   private var dereferences: Map[Ref, Any] = Map()
 
-  private val relations: Array[Map[Ref, Set[Ref]]] = Array.fill(size)(Map())
-  private val corelations: Array[Map[Ref, Ref]] = Array.fill(size)(Map())
+  @scala.caps.unsafe.untrackedCaptures
+  private val relations: scala.Array[Map[Ref, Set[Ref]]] = scala.Array.fill(size)(Map())
+  @scala.caps.unsafe.untrackedCaptures
+  private val corelations: scala.Array[Map[Ref, Ref]] = scala.Array.fill(size)(Map())
 
   def dereference[ref](ref: Ref of ref): ref = dereferences(ref).asInstanceOf[ref]
 
@@ -119,6 +126,6 @@ class Database(size: Int) extends Findable:
     val relation2: Map[Ref, Set[Ref]] =
       relation.updated(left, relation.at(left).let(_ - right).or(Set()))
 
-    val corelation2 = corelation - right
+    val corelation2 = corelation.removed(right)
     relations(relationIndex) = relation2
     corelations(relationIndex) = corelation2

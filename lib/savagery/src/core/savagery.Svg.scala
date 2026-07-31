@@ -32,14 +32,14 @@
                                                                                                   */
 package savagery
 
-import scala.collection.immutable.SeqMap
-
 import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import proscenium.compat.*
+import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
@@ -96,22 +96,23 @@ extends Documentary:
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
 
-    val attrs: SeqMap[Text, Text] =
-      SeqMap
+    val attrs: Ledger[Text, Text] =
+      Ledger
         ( t"xmlns"   -> t"http://www.w3.org/2000/svg",
           t"viewBox" -> t"0 0 ${width.show} ${height.show}",
           t"width"   -> width.show,
           t"height"  -> height.show )
 
-    val defsElement: Seq[Xml] =
+    val defsElement: List[Xml] =
       if defs.nil then Nil
-      else Seq(Element(t"defs", Attributes.empty, defs.map(_.xml).toSeq.nodes))
+      else List(Element(t"defs", Attributes.empty, defs.stdlib.map(_.xml).nodes))
 
-    val figureNodes: Seq[Xml] =
-      if transforms.nil then figures.map(_.xml)
+    val figureNodes: List[Xml] =
+      if transforms.nil then List.of(figures.stdlib.map(_.xml))
       else
-        val groupAttrs = SeqMap(t"transform" -> transforms.map(_.encode).join(t" "))
-        Seq(Element(t"g", Attributes.from(groupAttrs), figures.map(_.xml).toSeq.nodes))
+        val groupAttrs =
+          Ledger(t"transform" -> transforms.map(_.encode).join(t" "))
+        List(Element(t"g", Attributes.from(Map.of(groupAttrs.stdlib)), figures.stdlib.map(_.xml).nodes))
 
-    val children: IArray[Node] = (defsElement ++ figureNodes).nodes
-    Element(t"svg", Attributes.from(attrs), children)
+    val children: Array[Node]^{} = (defsElement ::: figureNodes).toSeq.nodes
+    Element(t"svg", Attributes.from(Map.of(attrs.stdlib)), children)

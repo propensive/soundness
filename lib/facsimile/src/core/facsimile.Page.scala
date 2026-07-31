@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -72,22 +74,22 @@ class Page private[facsimile]
   def dictionary: Map[Text, Cos] = entries
 
   // 1 default user-space unit is `userUnit`/72 inch; `/UserUnit` is not inheritable.
-  def userUnit: Double raises PdfError =
+  def userUnit(using Tactic[PdfError]): Double =
     entries.at(t"UserUnit").let(pdf.resolved(_).double).or(1.0)
 
-  def mediaBox: PdfRect raises PdfError =
+  def mediaBox(using Tactic[PdfError]): PdfRect =
     box(entries.at(t"MediaBox").or(inherited.mediaBox))
     . or(abort(PdfError(PdfError.Reason.MissingEntry(t"MediaBox"))))
 
-  def cropBox: PdfRect raises PdfError =
+  def cropBox(using Tactic[PdfError]): PdfRect =
     box(entries.at(t"CropBox").or(inherited.cropBox)).or(mediaBox)
 
   // The bleed, trim and art boxes are not inheritable and default to the crop box.
-  def bleedBox: PdfRect raises PdfError = box(entries.at(t"BleedBox")).or(cropBox)
-  def trimBox: PdfRect raises PdfError = box(entries.at(t"TrimBox")).or(cropBox)
-  def artBox: PdfRect raises PdfError = box(entries.at(t"ArtBox")).or(cropBox)
+  def bleedBox(using Tactic[PdfError]): PdfRect = box(entries.at(t"BleedBox")).or(cropBox)
+  def trimBox(using Tactic[PdfError]): PdfRect = box(entries.at(t"TrimBox")).or(cropBox)
+  def artBox(using Tactic[PdfError]): PdfRect = box(entries.at(t"ArtBox")).or(cropBox)
 
-  def rotation: Page.Rotation raises PdfError =
+  def rotation(using Tactic[PdfError]): Page.Rotation =
     val degrees = entries.at(t"Rotate").or(inherited.rotate).let(pdf.resolved(_).long).or(0L)
 
     ((degrees%360 + 360)%360) match
@@ -98,28 +100,29 @@ class Page private[facsimile]
 
   // The page's displayed size: the crop box, with its axes exchanged when the page is
   // rotated a quarter-turn either way.
-  def width: Quantity[Points[1]] raises PdfError = rotation match
+  def width(using Tactic[PdfError]): Quantity[Points[1]] = rotation match
     case Page.Rotation.Quarter | Page.Rotation.ThreeQuarters => cropBox.height
     case _                                                   => cropBox.width
 
-  def height: Quantity[Points[1]] raises PdfError = rotation match
+  def height(using Tactic[PdfError]): Quantity[Points[1]] = rotation match
     case Page.Rotation.Quarter | Page.Rotation.ThreeQuarters => cropBox.width
     case _                                                   => cropBox.height
 
   // The page's fonts, keyed by resource name — the names `Tf` refers to.
-  def fonts: Map[Text, PdfFont] raises PdfError =
+  def fonts(using Tactic[PdfError]): Map[Text, PdfFont] =
     val resources = pdf.resolved(entries.at(t"Resources").or(inherited.resources).or(Cos.Nil))
       . dictionary.or(Map[Text, Cos]())
 
     pdf.resolved(resources.at(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
-    . to(List).flatMap: (name, value) =>
-        PdfFont.read(pdf.resolved(value))(using pdf).lay(List()): font => List(name -> font)
+    . toList.bind: (name, value) =>
+        PdfFont.read(pdf.resolved(value))(using pdf).lay(List[(Text, PdfFont)]()): font =>
+          List(name -> font)
 
-    . to(Map)
+    . toMap
 
   // The page's content: its `/Contents` streams decoded and concatenated, which the
   // specification requires to be treated as a single stream, with whitespace between.
-  def content: Data raises PdfError =
+  def content(using Tactic[PdfError]): Data =
     val streams = pdf.resolved(entries.at(t"Contents").or(Cos.Nil)) match
       case body: Cos.Body =>
         List(body)
@@ -134,24 +137,24 @@ class Page private[facsimile]
         List()
 
     streams.map(pdf.payload(_)) match
-      case List()       => IArray.empty[Byte]
+      case List()       => Array.empty[Byte]
       case List(single) => single
-      case many         => many.reduce(_ ++ IArray(0x0a.toByte) ++ _)
+      case many         => many.reduce(_ ++ Array.of(0x0a.toByte) ++ _)
 
-  def operators: List[PdfOperator] raises PdfError =
+  def operators(using Tactic[PdfError]): List[PdfOperator] =
     ContentTokens.read(content).map(PdfOperator.read(_))
 
   // Every show-text operation, decoded and positioned in points.
-  def runs: List[TextRun] raises PdfError =
+  def runs(using Tactic[PdfError]): List[TextRun] =
     TextExtractor.extract(operators, fonts, userUnit)(0)
 
   // The page's plain text, in content order: spaces bridge gaps on a baseline, newlines mark
   // baseline movement — the fidelity of `pdftotext -raw`; layout-aware ordering can come
   // later as an additive option.
-  def text: Text raises PdfError =
+  def text(using Tactic[PdfError]): Text =
     TextExtractor.extract(operators, fonts, userUnit)(1)
 
-  def annotations: List[Annotation] raises PdfError =
+  def annotations(using Tactic[PdfError]): List[Annotation] =
     val pages = pdf.pageNumbers
     val named = pdf.rawDestinations
     val scale = userUnit
@@ -160,5 +163,5 @@ class Page private[facsimile]
       items.flatMap: item =>
         Annotation.read(item, pages, named.at(_), scale)(using pdf).lay(List())(List(_))
 
-  private def box(value: Optional[Cos]): Optional[PdfRect] raises PdfError =
+  private def box(value: Optional[Cos])(using Tactic[PdfError]): Optional[PdfRect] =
     value.let(PdfRect.read(_, userUnit)(using pdf))

@@ -34,6 +34,8 @@ package fulminate
 
 import soundness.*
 
+import proscenium.compat.*
+
 object Tests extends Suite(m"Fulminate Tests"):
   def run(): Unit =
     suite(m"Existing behaviour"):

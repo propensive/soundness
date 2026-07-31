@@ -53,9 +53,13 @@ case class NewNote(text: Text)
 // A test `Http.Backend` that captures the request it is given and replies with a
 // canned response, so `.call` can be exercised without any network access.
 class Recorder(canned: () => Http.Response) extends Http.Backend:
+  @scala.caps.unsafe.untrackedCaptures
   var lastUrl:     Optional[Text]        = Unset
+  @scala.caps.unsafe.untrackedCaptures
   var lastMethod:  Optional[Http.Method] = Unset
-  var lastBody:    Optional[IArray[Byte]] = Unset
+  @scala.caps.unsafe.untrackedCaptures
+  var lastBody:    Optional[Array[Byte]^{}] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   var lastHeaders: List[Http.Header]     = Nil
 
   def request
@@ -67,7 +71,7 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
     lastMethod = method
     lastHeaders = headers
     val data = body().memoize
-    lastBody = if data.isEmpty then Unset else data
+    lastBody = if data.readable.isEmpty then Unset else data
     canned()
 
 object ApiTests extends Suite(m"Api client tests"):

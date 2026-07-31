@@ -36,6 +36,7 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import proscenium.compat.*
 
 object Imprintable:
   // Emit each grapheme of `text` paired with one uniform `style`.

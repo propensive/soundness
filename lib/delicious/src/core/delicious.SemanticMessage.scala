@@ -34,6 +34,7 @@ package delicious
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 
 object SemanticMessage:
   /** Does the text contain semantic-diagnostic markers? */
@@ -45,8 +46,8 @@ case class SemanticMessage(markup: List[Markup]):
   def plain: Text = markup.map(_.plain).join
 
   def types: List[Markup.Typed] =
-    def recur(nodes: List[Markup]): List[Markup.Typed] = nodes.flatMap:
-      case node@Markup.Typed(_, _, _, children) => node :: recur(children)
+    def recur(nodes: List[Markup]): List[Markup.Typed] = nodes.bind:
+      case node@Markup.Typed(_, _, _, children) => (node :: recur(children)): List[Markup.Typed]
       case Markup.Textual(_)                    => Nil
       case Markup.Symbolic(_, _, _, children)   => recur(children)
       case Markup.Named(_, _, children)         => recur(children)

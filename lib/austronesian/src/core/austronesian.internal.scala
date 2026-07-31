@@ -32,6 +32,10 @@
                                                                                                   */
 package austronesian
 
+import scala.collection.immutable.Vector
+
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -42,17 +46,19 @@ import wisteria.*
 
 object internal:
   opaque type Pojo <: Object =
-    Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
+    scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
       java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float | java.lang.Double
 
   object Pojo extends Pojo2:
     def apply
-      ( pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
+      ( pojo: scala.Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
         java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float |
         java.lang.Double )
     :   Pojo =
 
-      pojo
+      // The union's array member drags a read capability through the opaque alias;
+      // laundered (the cast is a no-op at erasure).
+      pojo.asInstanceOf[Pojo]
 
 
     given text: Text is Encodable:
@@ -103,7 +109,23 @@ object internal:
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
-      iterable => Array.from[Object](iterable.map(_.encode.asInstanceOf[Object]))
+      iterable =>
+        scala.Array.from[Object](iterable.map(_.encode.asInstanceOf[Object])).asInstanceOf[Pojo]
+
+    // Alias counterparts of `list`/`collection`: the opaque prelude collections
+    // do not conform to `Iterable`, so each gets its own instance built at the
+    // underlying stdlib type and cast (a no-op at erasure).
+    given listEncodable: [list <: List, element: Encodable in Pojo]
+    =>  list[element] is Encodable in Pojo =
+      list.asInstanceOf[list[element] is Encodable in Pojo]
+
+    given setEncodable: [set <: Set, element: Encodable in Pojo]
+    =>  set[element] is Encodable in Pojo =
+      list.asInstanceOf[set[element] is Encodable in Pojo]
+
+    given seriesEncodable: [sequence <: Sequence, element: Encodable in Pojo]
+    =>  sequence[element] is Encodable in Pojo =
+      list.asInstanceOf[sequence[element] is Encodable in Pojo]
 
     given text2: Text is Decodable:
       type Form = Pojo
@@ -158,13 +180,35 @@ object internal:
       // The by-name element codec and resolution-scoped tactic share this instance's
       // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
       caps.unsafe.unsafeAssumePure:
-        case array: Array[Pojo @unchecked] =>
+        case array: scala.Array[Pojo @unchecked] =>
           factory.newBuilder.pipe: builder =>
             array.iterator.each(builder += decodable.decoded(_))
             builder.result()
 
         case other =>
           abort(PojoError())
+
+    given listDecodable: [list <: List, element]
+    =>  ( tactic: Tactic[PojoError] )
+    =>  ( decodable: => element is Decodable in Pojo )
+    =>  list[element] is Decodable in Pojo =
+      collection[scala.collection.immutable.List, element]
+      . asInstanceOf[list[element] is Decodable in Pojo]
+
+    given setDecodable: [set <: Set, element]
+    =>  ( tactic: Tactic[PojoError] )
+    =>  ( decodable: => element is Decodable in Pojo )
+    =>  set[element] is Decodable in Pojo =
+      collection[scala.collection.immutable.Set, element]
+      . asInstanceOf[set[element] is Decodable in Pojo]
+
+    given seriesDecodable: [sequence <: Sequence, element]
+    =>  ( tactic: Tactic[PojoError] )
+    =>  ( decodable: => element is Decodable in Pojo )
+    =>  sequence[element] is Decodable in Pojo =
+      collection[Vector, element]
+      . asInstanceOf[sequence[element] is Decodable in Pojo]
+
 
     extension (pojo: Pojo)
       inline def as[entity: Decodable in Pojo]: entity = entity.decoded(pojo)
@@ -174,9 +218,9 @@ object internal:
       type Contrast = Pojo
 
       def check(left: Pojo, right: Pojo): Boolean = left match
-        case left: Array[?] =>
+        case left: scala.Array[?] =>
           right match
-            case right: Array[?] =>
+            case right: scala.Array[?] =>
               left.length == right.length && left.indices.forall: index =>
                 left(index) match
                   case left: Pojo @unchecked => right(index) match

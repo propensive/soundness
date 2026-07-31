@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -42,33 +44,35 @@ import vacuous.*
 // leaves carry sorted `/Names` or `/Nums` pair arrays. Both flatten to their in-order pairs,
 // with reference cycles guarded.
 private[facsimile] object Trees:
-  def names(root: Cos)(using Pdf): List[(Text, Cos)] raises PdfError =
-    pairs(root, t"Names", Set()).flatMap: (key, value) =>
+  def names(root: Cos)(using Pdf)(using Tactic[PdfError]): List[(Text, Cos)] =
+    pairs(root, t"Names", Set()).bind: (key, value) =>
       key.text.let(text => List((text, value))).or(List())
 
-  def numbers(root: Cos)(using Pdf): List[(Long, Cos)] raises PdfError =
-    pairs(root, t"Nums", Set()).flatMap: (key, value) =>
+  def numbers(root: Cos)(using Pdf)(using Tactic[PdfError]): List[(Long, Cos)] =
+    pairs(root, t"Nums", Set()).bind: (key, value) =>
       key.long.let(number => List((number, value))).or(List())
 
   private def pairs(node: Cos, key: Text, visited: Set[Int])(using pdf: Pdf)
-  :   List[(Cos, Cos)] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   List[(Cos, Cos)] =
 
     node match
       case Cos.Ref(number, _) =>
-        if visited.contains(number) then List()
+        if visited.has(number) then List()
         else pairs(pdf.resolved(node), key, visited + number)
 
       case Cos.Dictionary(entries) =>
         entries.at(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
-          kids.flatMap(pairs(_, key, visited))
+          kids.bind(pairs(_, key, visited))
 
       case _ =>
         List()
 
   private def leaf(entries: Map[Text, Cos], key: Text)(using pdf: Pdf)
-  :   List[(Cos, Cos)] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   List[(Cos, Cos)] =
 
     pdf.resolved(entries.at(key).or(Cos.Nil)).elements.lay(List()): elements =>
-      elements.grouped(2).to(List).flatMap:
+      elements.batched(2).bind:
         case List(key, value) => List((pdf.resolved(key), value))
         case _                => List()

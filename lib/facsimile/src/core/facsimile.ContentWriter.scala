@@ -32,6 +32,10 @@
                                                                                                   */
 package facsimile
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -45,15 +49,16 @@ import vacuous.*
 // `PdfOperator.read`: each instruction is its operands followed by its operator, one per
 // line. Numbers are written as plain decimals; show-text operands are re-escaped literal
 // strings; names re-escape through the same rules as the object writer.
+// The `uses` clause licenses the ArrayBuilder reads inside `write`.
 private[facsimile] object ContentWriter:
   import PdfOperator.*
 
   def write(operators: List[PdfOperator]): Data =
-    val builder = Array.newBuilder[Byte]
+    val builder = DataBuilder()
     operators.each { operator => line(builder, operator) }
-    builder.result().immutable(using Unsafe)
+    builder.result()
 
-  private def line(builder: scala.collection.mutable.ArrayBuilder[Byte], operator: PdfOperator)
+  private def line(builder: DataBuilder, operator: PdfOperator)
   :   Unit =
 
     def out(text: Text): Unit =
@@ -66,8 +71,8 @@ private[facsimile] object ContentWriter:
       else safely(Decimal(value).text).or(t"0")
 
     def nums(values: Double*): Text = values.map(num).join(t" ")
-    def string(data: Data): Unit = builder.addAll(CosWriter.write(Cos.Chars(data)).mutable(using Unsafe))
-    def name(text: Text): Unit = builder.addAll(CosWriter.write(Cos.Name(text)).mutable(using Unsafe))
+    def string(data: Data): Unit = builder.addAll(CosWriter.write(Cos.Chars(data)))
+    def name(text: Text): Unit = builder.addAll(CosWriter.write(Cos.Name(text)))
     def matrix(m: PdfMatrix): Text = nums(m.a, m.b, m.c, m.d, m.e, m.f)
 
     operator match
@@ -128,9 +133,12 @@ private[facsimile] object ContentWriter:
       case ShowTexts(elements) =>
         out(t"[")
 
-        elements.each:
-          case data: Data   => string(data)
-          case gap: Double  => out(t"${num(gap)}")
+        // Via `stdlib.foreach` and a `Double`-first match: the frozen-array union member
+        // takes a reach capture under pattern binding that `each`'s Traversable rejects.
+        elements.stdlib.foreach: element =>
+          (element.asInstanceOf[Matchable]: @unchecked) match
+            case gap: Double => out(t"${num(gap)}")
+            case data        => string(data.asInstanceOf[Data])
 
         out(t"] TJ\n")
 
@@ -158,9 +166,9 @@ private[facsimile] object ContentWriter:
 
       case InlineImage(parameters, data) =>
         out(t"BI ")
-        builder.addAll(CosWriter.dictionaryBytes(parameters).mutable(using Unsafe))
+        builder.addAll(CosWriter.dictionaryBytes(parameters))
         out(t" ID ")
-        builder.addAll(data.mutable(using Unsafe))
+        builder.addAll(data)
         out(t" EI\n")
 
       case MarkPoint(tag, Unset)    => name(tag); out(t" MP\n")
@@ -168,12 +176,12 @@ private[facsimile] object ContentWriter:
 
       case MarkPoint(tag, property: Cos) =>
         name(tag); out(t" ")
-        builder.addAll(CosWriter.write(property).mutable(using Unsafe))
+        builder.addAll(CosWriter.write(property))
         out(t" DP\n")
 
       case BeginMarked(tag, property: Cos) =>
         name(tag); out(t" ")
-        builder.addAll(CosWriter.write(property).mutable(using Unsafe))
+        builder.addAll(CosWriter.write(property))
         out(t" BDC\n")
 
       case EndMarked                => out(t"EMC\n")
@@ -186,7 +194,49 @@ private[facsimile] object ContentWriter:
 
       case Unrecognized(operator, operands) =>
         operands.each: operand =>
-          builder.addAll(CosWriter.write(operand).mutable(using Unsafe))
+          builder.addAll(CosWriter.write(operand))
           out(t" ")
 
         out(t"$operator\n")
+
+// A minimal growable byte accumulator replacing `DataBuilder()`, whose `result()`
+// is charged a read of the universal capability under uses checking (the `cordillera.ByteBuf`
+// pattern: untracked storage, exclusive view for writes, Java-side copies for growth/freeze).
+private[facsimile] final class DataBuilder:
+  @scala.caps.unsafe.untrackedCaptures
+  private var storage: scala.Array[Byte] = new scala.Array[Byte](64)
+
+  @scala.caps.unsafe.untrackedCaptures
+  private var size0: Int = 0
+
+  private inline def target: scala.Array[Byte]^ = storage.asInstanceOf[scala.Array[Byte]^]
+
+  def += (byte: Byte): Unit =
+    if size0 >= storage.length
+    then storage = java.util.Arrays.copyOf(storage, storage.length*2).nn.asInstanceOf[scala.Array[Byte]]
+
+    target(size0) = byte
+    size0 += 1
+
+  // Reads its argument only, so it takes the opaque array through a shared-read reference:
+  // frozen `Data` and exclusive arrays both subsume into it, and callers need no laundering.
+  def addAll(bytes: Array[Byte]^{caps.any.rd}): Unit =
+    val count = bytes.length
+    var index = 0
+
+    while index < count do
+      this += bytes.readUnchecked(index)
+      index += 1
+
+  def result(): Data = java.util.Arrays.copyOf(storage, size0).nn.asInstanceOf[Data]
+
+// An exclusive, writable view of an array reached through a read-only path (an untracked
+// field, or a closure capture): update sites route through this rebind, as in pneumatic's
+// `writable`.
+private[facsimile] def writable[element](array: scala.Array[element]): scala.Array[element]^ =
+  array.asInstanceOf[scala.Array[element]]
+
+// A freshly-allocated array with a PURE type (the Java `copyOf` result adapts), as
+// hallucination's `pureBytes`: writes route through `writable`.
+private[facsimile] def pureByteArray(size: Int): scala.Array[Byte] =
+  java.util.Arrays.copyOf(new scala.Array[Byte](0), size).nn

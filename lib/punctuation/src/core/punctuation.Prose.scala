@@ -46,7 +46,7 @@ enum Prose extends Markdown.Node:
   case Image(destination: Text, title: Optional[Text], prose: Prose*)
   case HtmlInline(html: Text)
 
-  def children: Seq[Prose] = this match
-    case Link(_, _, prose*)  => prose
-    case Image(_, _, prose*) => prose
+  def children: List[Prose] = this match
+    case Link(_, _, prose*)  => List.of(prose.toList)
+    case Image(_, _, prose*) => List.of(prose.toList)
     case _                   => Nil

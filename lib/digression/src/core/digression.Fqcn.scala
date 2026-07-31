@@ -32,10 +32,13 @@
                                                                                                   */
 package digression
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
+import vacuous.*
 
 object Fqcn:
   def valid(char: Char): Boolean =
@@ -43,9 +46,9 @@ object Fqcn:
       char == '_' || char == '$'
 
   def apply(name: Text): Fqcn raises FqcnError =
-    val parts = IArray.from(name.s.split("\\.").nn.iterator.map(_.nn))
+    val parts = Array.frozen(scala.IArray.from(name.s.split("\\.").nn.iterator.map(_.nn)))
 
-    parts.foreach: part =>
+    parts.each: part =>
       if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))
 
       if digression.internal.javaKeywords.has(part)
@@ -61,7 +64,18 @@ object Fqcn:
 
   given encodable: Fqcn is Encodable in Text = _.text
 
-class Fqcn(val parts: IArray[Text]):
-  def text: Text = parts.mkString(".").tt
+  private[digression] def join(parts: Array[Text]^{}, count: Int): Text =
+    val builder = StringBuilder()
+
+    var index = 0
+    while index < count do
+      if index > 0 then builder.append(".")
+      builder.append(parts(index).s)
+      index += 1
+
+    builder.toString.tt
+
+class Fqcn(val parts: Array[Text]^{}):
+  def text: Text = Fqcn.join(parts, parts.length)
   def className: Text = parts.last
-  def packageName: Text = parts.init.mkString(".").tt
+  def packageName: Text = Fqcn.join(parts, parts.length - 1)

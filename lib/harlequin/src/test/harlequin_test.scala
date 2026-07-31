@@ -36,6 +36,8 @@ import scala.language.dynamics
 
 import soundness.*
 
+import proscenium.compat.*
+
 import ambience.systems.javaSystem
 
 // A `Dynamic` type with a `Completable` companion, exercising the dynamic-completions route: its
@@ -49,7 +51,7 @@ object Creature extends Completable:
 
     import quotes.reflect.*
 
-    List(t"habitat", t"diet").map: name =>
+    proscenium.List(t"habitat", t"diet").map: name =>
       prophesy.Completion(name, prophesy.Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
 
 trait Creature extends Dynamic:
@@ -65,21 +67,21 @@ object Tests extends Suite(m"Harlequin Tests"):
         case _                          => Unset
 
     test(m"tokenized highlighting attaches no type metadata"):
-      Scala.highlight(snippet).lines.to(List).flatten.flatMap(_.meta.option)
+      Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
     .assert(_ == Nil)
 
     test(m"each token carries its line and column position"):
-      val tokens = Scala.highlight(t"val n =\n  List").lines.to(List).flatten
+      val tokens = Scala.highlight(t"val n =\n  List").lines.to[List].stdlib.flatMap(_.stdlib)
 
       tokens.map: token =>
         (token.text, token.span.startLine.lay(-1)(_.n0), token.span.startColumn.lay(-1)(_.n0))
-    .assert(_.contains((t"List", 1, 2)))
+    .assert(_.has((t"List", 1, 2)))
 
     // The binding/usage tagging runs on the parser output alone, so it is
     // exercised by the tokenized (no-typer) path. `tagOf` reads the accent and role (as
     // their rendered names) of the first token whose text matches.
     def tagOf(source: Text, word: Text): (Text, Text) =
-      Scala.highlight(source).lines.to(List).flatten.find(_.text == word) match
+      Scala.highlight(source).lines.to[List].stdlib.flatMap(_.stdlib).find(_.text == word) match
         case Some(token) => (token.accent.show, token.role.lay(t"")(_.show))
         case None        => (t"", t"")
 
@@ -122,8 +124,8 @@ object Tests extends Suite(m"Harlequin Tests"):
       given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
-      typeOf(Scala.highlight(snippet).lines.to(List).flatten, t"xs").or(t"")
-    .assert { rendered => rendered.contains(t"List") && rendered.contains(t"Int") }
+      typeOf(List.of(Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib)), t"xs").or(t"")
+    .assert { rendered => rendered.subsumes(t"List") && rendered.subsumes(t"Int") }
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -148,7 +150,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       val source = t"val x: Li"
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
-    .assert(_.contains(t"List"))
+    .assert(_.has(t"List"))
 
     test(m"a type application completes in-scope types"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -157,7 +159,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       val source = t"val x = collection.mutable.Map[Li"
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
-    .assert(_.contains(t"List"))
+    .assert(_.has(t"List"))
 
     test(m"a bare term position completes in-scope names"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -166,7 +168,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       val source = t"val x = Li"
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
-    .assert(_.contains(t"List"))
+    .assert(_.has(t"List"))
 
     test(m"completions at a member selection include the type's methods"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -174,8 +176,8 @@ object Tests extends Suite(m"Harlequin Tests"):
       import highlighting.typecheckedScala
 
       val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
-      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
-    .assert(_.contains(t"map"))
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name)).stdlib
+    .assert(_.has(t"map"))
 
     test(m"a Dynamic receiver completes through its Completable companion"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -186,7 +188,7 @@ object Tests extends Suite(m"Harlequin Tests"):
         t"val creature: harlequin.Creature = new harlequin.Creature {}\nval x = creature.ha"
 
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
-    .assert(_.contains(t"habitat"))
+    .assert(_.has(t"habitat"))
 
     test(m"dynamic completions are filtered by the partial member name"):
       given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
@@ -197,7 +199,7 @@ object Tests extends Suite(m"Harlequin Tests"):
         t"val creature: harlequin.Creature = new harlequin.Creature {}\nval x = creature.ha"
 
       Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
-    .assert(!_.contains(t"diet"))
+    .assert(!_.has(t"diet"))
 
     // Keyword completions come from prophesy's curated pattern tree over the reversed lexeme
     // context at the caret; tokenized depth suffices, so no compiler givens are needed.
@@ -216,7 +218,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       test(m"transparent offers inline and trait"):
         keywordsAt(t"transparent ")
-      . assert { words => words.contains(t"inline") && words.contains(t"trait") }
+      . assert { words => words.has(t"inline") && words.has(t"trait") }
 
       test(m"transparent inline unambiguously offers definitions"):
         keywordsAt(t"transparent inline ")
@@ -224,16 +226,16 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       test(m"a definition's parameter list offers using"):
         keywordsAt(t"def f(")
-      . assert(_.contains(t"using"))
+      . assert(_.has(t"using"))
 
       test(m"a call's argument list offers expressions, not definitions"):
         val words = keywordsAt(t"foo(")
-        (words.contains(t"new"), words.contains(t"val"))
+        (words.has(t"new"), words.has(t"val"))
       . assert(_ == (true, false))
 
       test(m"a member selection offers no statement keywords"):
         keywordsAt(t"foo.")
-      . assert(!_.contains(t"val"))
+      . assert(!_.has(t"val"))
 
       test(m"a fresh binding position suppresses all completions"):
         Scala.highlight(t"val ", caret = t"val ".length.z).completions.let(_.items.length)
@@ -245,15 +247,15 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       test(m"an indented continuation after = is an expression position"):
         keywordsAt(t"val x =\n  ")
-      . assert(_.contains(t"new"))
+      . assert(_.has(t"new"))
 
       test(m"a value on the same line offers match"):
         keywordsAt(t"xs ")
-      . assert(_.contains(t"match"))
+      . assert(_.has(t"match"))
 
       test(m"an if condition is followed by then"):
         keywordsAt(t"if x ")
-      . assert(_.contains(t"then"))
+      . assert(_.has(t"then"))
 
       test(m"match is followed by case"):
         keywordsAt(t"xs match ")
@@ -277,4 +279,4 @@ object Tests extends Suite(m"Harlequin Tests"):
 
       test(m"an operator continues an expression"):
         keywordsAt(t"val x = 1 + ")
-      . assert { words => words.contains(t"new") && !words.contains(t"val") }
+      . assert { words => words.has(t"new") && !words.has(t"val") }

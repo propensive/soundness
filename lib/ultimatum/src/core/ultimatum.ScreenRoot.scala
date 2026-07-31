@@ -44,7 +44,9 @@ object ScreenRoot:
   // resize is reflected the next time the layout is solved) and writing through its
   // `Stdio`. The size thunks retain the terminal, so the root honestly captures it.
   def apply(terminal: Terminal): ScreenRoot^{terminal} =
-    new ScreenRoot(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
+    // Both thunks only read the same terminal's dimensions; no aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      new ScreenRoot(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
 
   def apply(width: Int, height: Int)(using Stdio): ScreenRoot =
     new ScreenRoot(() => width, () => height)

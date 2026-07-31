@@ -32,7 +32,11 @@
                                                                                                   */
 package xenophile
 
-import scala.collection.immutable.ListMap
+// Deliberate stdlib opt-out for `Map`: this dialect's parsing accumulators are map-algebraic
+// throughout; the single `parse` boundary re-wraps as the opaque `Map` (erasure-identical cast).
+import scala.collection.immutable.Map
+
+import proscenium.compat.*
 
 import anticipation.*
 import gossamer.*
@@ -61,7 +65,10 @@ object WebIdlDialect extends Dialect:
       includes: Map[Text, List[Text]],
       typedefs: Map[Text, Foreign.Type] )
 
-  def parse(source: Text): Map[Text, Map[Text, Prototype]] =
+  def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
+    parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
+
+  private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     val idl = items(tokenize(source.s), Idl(Map(), Map(), Map(), Map()))
 
     resolve(flatten(idl), idl.typedefs)
@@ -86,7 +93,9 @@ object WebIdlDialect extends Dialect:
 
     def ident(char: Char): Boolean = char.isLetterOrDigit || char == '_'
 
-    def recur(index: Int, current: String, tokens: List[String]): List[String] =
+    def recur(index: Int, current: String, tokens: scala.collection.immutable.List[String])
+    :   scala.collection.immutable.List[String] =
+
       val flushed = if current.isEmpty then tokens else current :: tokens
 
       if index >= source.length then flushed.reverse else
@@ -110,7 +119,7 @@ object WebIdlDialect extends Dialect:
         else
           recur(index + 1, "", char.toString :: flushed)
 
-    recur(0, "", Nil)
+    List.of(recur(0, "", Nil.stdlib))
 
   // Parses a WebIDL type, including a trailing `?` (nullable, read as the union `T | null`).
   private def typeOf(tokens: List[String]): (Foreign.Type, List[String]) =
@@ -159,8 +168,8 @@ object WebIdlDialect extends Dialect:
 
     rest match
       case "or" :: more => union(more, member :: acc)
-      case ")" :: more  => (Foreign.Type.Union((member :: acc).reverse), more)
-      case _            => (Foreign.Type.Union((member :: acc).reverse), skipTo(rest, t")"))
+      case ")" :: more  => (Foreign.Type.Union(List.of((member :: acc).reverse)), more)
+      case _            => (Foreign.Type.Union(List.of((member :: acc).reverse)), skipTo(rest, t")"))
 
   private def typeArguments(tokens: List[String], acc: List[Foreign.Type])
   :   (List[Foreign.Type], List[String]) =
@@ -174,7 +183,7 @@ object WebIdlDialect extends Dialect:
 
         rest match
           case "," :: more => typeArguments(more, arg :: acc)
-          case ">" :: more => ((arg :: acc).reverse, more)
+          case ">" :: more => (List.of((arg :: acc).reverse), more)
           case _           => (acc.reverse, skipTo(rest, t">"))
 
   // Walks the top-level declarations. `interface`/`dictionary`/`namespace`/`interface mixin` become
@@ -258,8 +267,8 @@ object WebIdlDialect extends Dialect:
   private def body(tokens: List[String], name: Text, parent: Optional[Text], idl: Idl)
   :   (Idl, List[String]) =
 
-    val (members, rest) = memberList(tokens, ListMap())
-    val merged = idl.types.get(name).getOrElse(ListMap[Text, Prototype]()) ++ members
+    val (members, rest) = memberList(tokens, Ledger())
+    val merged = idl.types.get(name).optional.lay(members.stdlib)(_ ++ members.stdlib)
 
     val parents = parent.lay(idl.parents): base => idl.parents.updated(name, base)
 
@@ -270,8 +279,8 @@ object WebIdlDialect extends Dialect:
   // (`getter`, `setter`, `iterable`, `constructor`, …), `[extended attributes]` and stray `;` are
   // skipped. A bare `Type name;` (a dictionary member) is read as a field; `Type name(args);` as a
   // method.
-  private def memberList(tokens: List[String], members: Map[Text, Prototype])
-  :   (Map[Text, Prototype], List[String]) =
+  private def memberList(tokens: List[String], members: Ledger[Text, Prototype])
+  :   (Ledger[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -359,8 +368,8 @@ object WebIdlDialect extends Dialect:
 
             after match
               case "," :: tail => params(tail, kind :: acc)
-              case ")" :: tail => ((kind :: acc).reverse, tail)
-              case _           => ((kind :: acc).reverse, skipTo(after, t")"))
+              case ")" :: tail => (List.of((kind :: acc).reverse), tail)
+              case _           => (List.of((kind :: acc).reverse), skipTo(after, t")"))
 
           case Nil =>
             (acc.reverse, Nil)
@@ -369,16 +378,20 @@ object WebIdlDialect extends Dialect:
   // mixin, then its own (so a type's own members override inherited ones of the same name). A
   // visited set guards against cycles.
   private def flatten(idl: Idl): Map[Text, Map[Text, Prototype]] =
+    // An empty `Ledger`'s underlying map: as the left operand of the `++`-merges below, its
+    // factory keeps the flattened members insertion-ordered.
+    val empty = Ledger.empty[Text, Prototype].stdlib
+
     def collect(name: Text, visiting: Set[Text]): Map[Text, Prototype] =
-      if visiting.contains(name) then idl.types.get(name).getOrElse(ListMap())
+      if visiting.has(name) then idl.types.get(name).getOrElse(empty)
       else
         val visiting2 = visiting + name
-        val own = idl.types.get(name).getOrElse(ListMap[Text, Prototype]())
+        val own = idl.types.get(name).getOrElse(empty)
 
-        val inherited = idl.parents.at(name).lay(ListMap[Text, Prototype]()): base =>
+        val inherited = idl.parents.get(name).optional.lay(empty): base =>
           collect(base, visiting2)
 
-        val mixedIn = idl.includes.get(name).getOrElse(Nil).foldLeft(inherited): (acc, mixin) =>
+        val mixedIn = idl.includes.get(name).getOrElse(Nil).fold(inherited): (acc, mixin) =>
           acc ++ collect(mixin, visiting2)
 
         mixedIn ++ own
@@ -392,7 +405,7 @@ object WebIdlDialect extends Dialect:
 
     def expand(foreign: Foreign.Type): Foreign.Type = foreign match
       case Foreign.Type.Named(name) =>
-        typedefs.at(name).lay(foreign)(expand)
+        typedefs.get(name).optional.lay(foreign)(expand)
 
       case Foreign.Type.Union(members) =>
         Foreign.Type.Union(members.map(expand))

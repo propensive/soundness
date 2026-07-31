@@ -48,7 +48,7 @@ object Stageable:
     type Transport = Json
     type Form = Text
 
-    inline def deserialize(text: Text | Null): Array[Object] =
+    inline def deserialize(text: Text | Null): scala.Array[Object] =
       provide[Tactic[RemoteError]]:
         given RemoteError mitigates JsonError =
           error => RemoteError(RemoteError.Reason.Deserialization)
@@ -59,10 +59,11 @@ object Stageable:
         // `Json.decodable` is named explicitly rather than left to `provide`'s deferred
         // search: this inline body expands inside staged programs, where the search is
         // sensitive to sibling expansions and can land on an inapplicable derivation.
-        Array.from(text.nn.as[Json](using Json.decodable).as[List[Json]])
+        scala.Array.from(text.nn.as[Json](using Json.decodable).as[List[Json]].stdlib)
 
-    inline def serialize(value: Array[Object]): Text =
-      value.iterator.to(List).map(_.asInstanceOf[Json]).in[Json].encode
+    inline def serialize(value: scala.Array[Object]): Text =
+      val roots = Array.from(value.iterator.map { obj => Json.unseal(obj.asInstanceOf[Json]) })
+      Json.ast(Json.Ast.arr(roots.asInstanceOf[Array[Any]])).encode
 
     inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.in[Json])
 
@@ -72,12 +73,12 @@ object Stageable:
 
   given pojo: Stageable:
     type Transport = Pojo
-    type Form = Array[Pojo]
+    type Form = scala.Array[Pojo]
 
-    inline def deserialize(value: Array[Pojo] | Null): Array[Object] =
-      value.asInstanceOf[Array[Object]]
+    inline def deserialize(value: scala.Array[Pojo] | Null): scala.Array[Object] =
+      value.asInstanceOf[scala.Array[Object]]
 
-    inline def serialize(value: Array[Object]): Array[Pojo] = value.asInstanceOf[Array[Pojo]]
+    inline def serialize(value: scala.Array[Object]): scala.Array[Pojo] = value.asInstanceOf[scala.Array[Pojo]]
 
     inline def embed[entity](value: entity): Pojo =
       infer[entity is Encodable in Pojo].encoded(value)
@@ -89,6 +90,6 @@ trait Stageable extends Transportive, Formal:
   type Transport <: Object
 
   inline def embed[entity](value: entity): Transport
-  inline def serialize(values: Array[Object]): Form
-  inline def deserialize(value: Form | Null): Array[Object]
+  inline def serialize(values: scala.Array[Object]): Form
+  inline def deserialize(value: Form | Null): scala.Array[Object]
   inline def extract[entity](value: Transport): entity

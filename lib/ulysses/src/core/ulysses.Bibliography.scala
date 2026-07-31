@@ -34,12 +34,14 @@ package ulysses
 
 import anticipation.*
 import beneficence.*
+import proscenium.compat.*
 
 object Bibliography:
   def apply(data: Iterable[Data]): Bibliography =
-    new Bibliography(IArray.from(data))
+    // Explicit element type: inference freshens the frozen inner arrays to `any.rd`.
+    new Bibliography(Array.from[Data](data))
 
-case class Bibliography(hashes: IArray[Data]) extends Findable:
+case class Bibliography(hashes: Array[Data]^{}) extends Findable:
   // Return every library hash whose leading bytes equal `prefix`. The
   // palimpsest §4 decoder calls this with `k_i`-byte prefixes at step 0
   // and `k_r`-byte prefixes thereafter. A linear scan is adequate for the

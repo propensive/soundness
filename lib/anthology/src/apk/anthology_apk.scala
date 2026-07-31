@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import proscenium.compat.*
+
 import java.nio.file as jnf
 
 import scala.util.control as suc
@@ -102,7 +104,7 @@ object apkLinkages:
         val dexOptionList = List(dexOptions.minApi(form.minApi), dexOptions.mode.release)
         val dexArchive = Linker[Artifact.Dex](dexOptionList).link(compilation, dexDir)
 
-        val dexEntries = unsafely(Zipfile.read(dexArchive).entries.to(List)).filter: entry =>
+        val dexEntries = unsafely(Zipfile.read(dexArchive).entries).stdlib.filter: entry =>
           entry.ref.encode.ends(t".dex")
 
         // The binary manifest, built from the configuration and the launcher activity.
@@ -135,11 +137,11 @@ object apkLinkages:
         val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
 
         val signed =
-          ApkSigner.sign(unsigned.immutable(using Unsafe), form.keystore, form.storePass,
+          ApkSigner.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
               form.alias, form.keyPass)
 
         val apkPath = out / "app.apk"
-        jnf.Files.write(jnf.Paths.get(apkPath.encode.s), signed.mutable(using Unsafe))
+        jnf.Files.write(jnf.Paths.get(apkPath.encode.s), Array.unsafeJvm(signed))
         apkPath
 
       catch case suc.NonFatal(error) =>

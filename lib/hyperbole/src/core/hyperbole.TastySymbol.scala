@@ -44,21 +44,21 @@ object TastySymbol:
     symbol =>
 
       val flags =
-        symbol.flags.map: (flag, on) =>
+        symbol.flags.stdlib.map: (flag, on) =>
           if on then e"${Bg(palette.flagOff)}(${Fg(palette.black)}(·${flag}·))"
           else e"${Fg(palette.flagOff)}($flag)"
 
         . join(e" ")
 
       val properties =
-        symbol.properties.map: (property, on) =>
+        symbol.properties.stdlib.map: (property, on) =>
           if on then e"${Bg(palette.propertyOn)}(${Fg(palette.black)}(·${property}·))"
           else e"${palette.propertyOff}($property)"
 
         . join(e" ")
 
       val details =
-        symbol.details.map: detail =>
+        symbol.details.stdlib.map: detail =>
           detail.absolve match
             case (key, value: Text) =>
               key -> e"${Fg(palette.outline)}($value)"
@@ -74,7 +74,7 @@ object TastySymbol:
         ( Column(e"$Bold(Property)", textAlign = TextAlignment.Right)(_(0)),
           Column(e"$Bold(Value)", sizing = columnar.ParagraphOrBreak)(_(1)) )
 
-      . tabulate(name :: (t"Flags", flags) :: (t"Properties", properties) :: details)
+      . tabulate(List.of(name :: (t"Flags", flags) :: (t"Properties", properties) :: details.stdlib))
       . grid(120)
       . render
       . join(e"\n")

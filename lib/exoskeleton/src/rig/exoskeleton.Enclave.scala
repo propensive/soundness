@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import scala.caps
+
 import ambience.*
 import anthology.*
 import anticipation.*
@@ -76,8 +78,11 @@ object Enclave:
       safely(promise.await())
 
   case class Launcher(path: Path on Linux):
+    // Explicit `using` evidence instead of `raises` sugar: a context-function result would
+    // hide the `block` parameter, which the separation checker rejects.
     def sandbox[result](block: (tool: Tool) ?=> result)
-    :   result raises ExecError raises NumberError raises PathError =
+      ( using Tactic[ExecError], Tactic[NumberError], Tactic[PathError] )
+    :   result =
 
       val completionScripts = sh"$path '{admin}' install".exec[Text]()
       val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.as[Int])
@@ -86,7 +91,8 @@ object Enclave:
       block(using tool).also:
         sh"$path '{admin}' kill".exec[Exit]()
 
-        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item => safely(item.delete())
+        completionScripts.trim.lines.stdlib.map(_.as[Path on Linux]).foreach: (item: Path on Linux) =>
+          safely(item.delete())
 
 
 case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)

@@ -32,7 +32,9 @@
                                                                                                   */
 package vicarious
 
-import language.dynamics
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import beneficence.Findable
 

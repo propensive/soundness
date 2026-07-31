@@ -32,7 +32,9 @@
                                                                                                   */
 package capricious
 
-import language.experimental.genericNumberLiterals
+import scala.caps
+
+import scala.language.experimental.genericNumberLiterals
 
 import hypotenuse.*
 import prepositional.*
@@ -54,7 +56,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
     caps.unsafe.unsafeAssumePure:
       random =>
-        given random0: Random = random
+        given random0: (Random^{random}) = random
         List.fill(size.generate(random))(randomizable.randomize(random))
 
   given set: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
@@ -64,18 +66,18 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
     // lifetime (the codec-thunk seal pattern; see rep/DECISIONS.md).
     caps.unsafe.unsafeAssumePure:
       random =>
-        given random0: Random = random
-        Set.fill(size.generate(random))(randomizable.randomize(random))
+        given random0: (Random^{random}) = random
+        Set.from(List.fill(size.generate(random))(randomizable.randomize(random)).stdlib)
 
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
   =>  ( size: RandomSize )
-  =>  IArray[element] is Randomizable =
+  =>  (Array[element]^{}) is Randomizable =
 
     // Laundered pure, as for `list` above.
     caps.unsafe.unsafeAssumePure:
       random =>
-        given random0: Random = random
-        IArray.fill(size.generate(random))(randomizable.randomize(random))
+        given random0: (Random^{random}) = random
+        Array.fill(size.generate(random))(randomizable.randomize(random))
 
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
@@ -86,7 +88,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
 
   inline def disjunction[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):
-      val labels = variantLabels
+      val labels = variantLabels.stdlib
 
       delegate(labels(random.long().abs.toInt%labels.length)):
         [variant <: derivation] => _.randomize(summon[Random])

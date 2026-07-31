@@ -45,7 +45,7 @@ object TelPath:
   val Root: TelPath = TelPath(Nil)
 
   given encodable: TelPath is Encodable in Text = path =>
-    if path.keywords.isEmpty then t"#" else t"#/${path.keywords.join(t"/")}"
+    if path.keywords.stdlib.isEmpty then t"#" else t"#/${path.keywords.join(t"/")}"
 
 case class TelPath(keywords: List[Text]) derives CanEqual:
   // Push a keyword onto the root (front) of the path. The product derivation's

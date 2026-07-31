@@ -32,6 +32,9 @@
                                                                                                   */
 package cordillera
 
+import scala.caps
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -45,7 +48,7 @@ case class HpackEntry(name: Text, value: Text):
 
 object HpackTable:
   // The 61-entry static table (RFC 7541, Appendix A). Index 1 is element 0 here.
-  val static: IArray[HpackEntry] = IArray[HpackEntry](
+  val static: Array[HpackEntry]^{} = Array.of[HpackEntry](
     HpackEntry(t":authority", t""),
     HpackEntry(t":method", t"GET"),
     HpackEntry(t":method", t"POST"),

@@ -33,6 +33,7 @@
 package octogenarian
 
 import anticipation.*
+import rudiments.*
 import dissonance.*
 import gossamer.*
 import kaleidoscope.*
@@ -57,7 +58,7 @@ object Patch:
 
   // Flattens every hunk's edits into a single Dissonance Diff[Text].
   def asDiff(file: FileDiff): Diff[Text] =
-    Diff(file.hunks.flatMap(_.edits)*)
+    Diff(file.hunks.stdlib.flatMap(_.edits.stdlib)*)
 
   private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
     case List(start)        => (start.s.toInt, 1)
@@ -144,7 +145,7 @@ object Patch:
       case _ =>
         state  // unrecognized header outside a hunk (e.g. `index ...`)
 
-    val finalState = body.foldLeft(initial)(step).closeHunk()
+    val finalState = body.stdlib.foldLeft(initial)(step).closeHunk()
 
     FileDiff
       ( finalState.oldPath,

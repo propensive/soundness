@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -51,10 +53,10 @@ object PdfFont:
     ( baseFont:     Text,
       standard:     Optional[Standard],
       firstChar:    Int,
-      widths:       IArray[Double],
+      widths:       Array[Double]^{},
       cidWidths:    Map[Int, Double],
       defaultWidth: Double,
-      encoding:     Optional[IArray[Char]],
+      encoding:     Optional[Array[Char]^{}],
       differences:  Map[Int, Text],
       toUnicode:    Optional[CharMap],
       embedded:     Optional[Ttf],
@@ -63,7 +65,7 @@ object PdfFont:
 
   // Builds a font from its dictionary; anything unrecognizable is `Unset` rather than an
   // error, since fonts are consulted opportunistically during extraction.
-  private[facsimile] def read(value: Cos)(using pdf: Pdf): Optional[PdfFont] raises PdfError =
+  private[facsimile] def read(value: Cos)(using pdf: Pdf)(using Tactic[PdfError]): Optional[PdfFont] =
     value.dictionary.let: entries =>
       val subtype = entries.at(t"Subtype").let(pdf.resolved(_).name).or(t"")
       val baseFont = entries.at(t"BaseFont").let(pdf.resolved(_).name).or(t"")
@@ -75,9 +77,9 @@ object PdfFont:
       val defaultWidth = descriptor.at(t"MissingWidth").let(pdf.resolved(_).double).or(0.0)
       val firstChar = entries.at(t"FirstChar").let(pdf.resolved(_).long).or(0L).toInt
 
-      val widths: IArray[Double] =
-        pdf.resolved(entries.at(t"Widths").or(Cos.Nil)).elements.lay(IArray.empty[Double]):
-          elements => IArray.from(elements.map(pdf.resolved(_).double.or(0.0)))
+      val widths: Array[Double]^{} =
+        pdf.resolved(entries.at(t"Widths").or(Cos.Nil)).elements.lay(Array.empty[Double]):
+          elements => Array.from(elements.stdlib.map(pdf.resolved(_).double.or(0.0)))
 
       val embedded: Optional[Ttf] =
         val program = descriptor.at(t"FontFile2").or:
@@ -96,16 +98,18 @@ object PdfFont:
           case _              => Unset
 
       // The `/Encoding` entry: a base name, or a dictionary of a base name plus differences.
-      def encodingTable(name: Optional[Text]): Optional[IArray[Char]] = name.let:
-        case t"WinAnsiEncoding"  => PdfEncoding.winAnsi
-        case t"MacRomanEncoding" => PdfEncoding.macRoman
-        case t"StandardEncoding" => PdfEncoding.standard
+      // A `match`, not `.let`: the frozen member of the `Optional` union freshens under
+      // `let`'s type-variable instantiation.
+      def encodingTable(name: Optional[Text]): Optional[Array[Char]^{}] = name.asInstanceOf[Matchable] match
+        case t"WinAnsiEncoding"  => PdfEncoding.winAnsi: Array[Char]^{}
+        case t"MacRomanEncoding" => PdfEncoding.macRoman: Array[Char]^{}
+        case t"StandardEncoding" => PdfEncoding.standard: Array[Char]^{}
         case _                   => Unset
 
       val encodingValue = pdf.resolved(entries.at(t"Encoding").or(Cos.Nil))
 
-      val encoding: Optional[IArray[Char]] = encodingValue match
-        case Cos.Name(name)             => encodingTable(name)
+      val encoding: Optional[Array[Char]^{}] = encodingValue match
+        case Cos.Name(name)          => encodingTable(name)
         case dictionary: Cos.Dictionary => encodingTable(dictionary(t"BaseEncoding").let(_.name))
         case _                          => Unset
 
@@ -114,7 +118,7 @@ object PdfFont:
           pdf.resolved(dictionary(t"Differences").or(Cos.Nil)).elements.lay(Map[Int, Text]()):
             elements =>
               var code = 0
-              val builder = Map.newBuilder[Int, Text]
+              val builder = scala.collection.immutable.Map.newBuilder[Int, Text]
 
               elements.each:
                 case Cos.Integral(value) =>
@@ -127,7 +131,7 @@ object PdfFont:
                 case _ =>
                   ()
 
-              builder.result()
+              Map.of(builder.result())
 
         case _ =>
           Map()
@@ -149,7 +153,7 @@ object PdfFont:
                   case _                      => PdfMatrix(0.001, 0, 0, 0.001, 0, 0)
 
           // Type 3 widths are in glyph space; normalize them to thousandths of an em.
-          val scaled = IArray.from(widths.map(_*matrix.a*1000))
+          val scaled = Array.frozen(widths.readable.map(_*matrix.a*1000))
           Type3(matrix, common(false, Map(), defaultWidth).copy(widths = scaled))
 
         case "Type0" =>
@@ -173,7 +177,7 @@ object PdfFont:
 
           Type0:
             Common
-              ( baseFont, standard, 0, IArray.empty[Double], cidWidths, defaultCid, encoding,
+              ( baseFont, standard, 0, Array.empty[Double], cidWidths, defaultCid, encoding,
                 differences, toUnicode, cidEmbedded, twoByte = true, cidDescriptor )
 
         case _ =>
@@ -182,14 +186,15 @@ object PdfFont:
   // `/W` (ISO 32000-2 §9.7.4.3): `start [w w ...]` lists consecutive widths; `start end w`
   // spans a range.
   private def cidWidthArray(value: Optional[Cos])(using pdf: Pdf)
-  :   Map[Int, Double] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Map[Int, Double] =
 
     pdf.resolved(value.or(Cos.Nil)).elements.lay(Map[Int, Double]()): elements =>
-      val builder = Map.newBuilder[Int, Double]
+      val builder = scala.collection.immutable.Map.newBuilder[Int, Double]
 
       def recur(elements: List[Cos]): Unit = elements match
         case Cos.Integral(start) :: Cos.Sequence(widths) :: rest =>
-          widths.zipWithIndex.each: (width, index) =>
+          widths.stdlib.zipWithIndex.each: (width, index) =>
             pdf.resolved(width).double.let(builder += (start.toInt + index) -> _)
 
           recur(rest)
@@ -208,7 +213,7 @@ object PdfFont:
           ()
 
       recur(elements.map(pdf.resolved(_)))
-      builder.result()
+      Map.of(builder.result())
 
 // A font as a page's resources declare it (ISO 32000-2 §9): a pure, fully-materialized
 // value. Embedded TrueType and OpenType programs surface as phoenicia `Ttf`s; `decode`
@@ -256,7 +261,7 @@ enum PdfFont:
     if common.twoByte then
       List.range(0, string.length/2).map: index =>
         ((string(index*2) & 0xff) << 8) | (string(index*2 + 1) & 0xff)
-    else string.to(List).map(_.toInt & 0xff)
+    else string.to[List].map(_.toInt & 0xff)
 
   def decode(string: Data): Text =
     val builder = StringBuilder()

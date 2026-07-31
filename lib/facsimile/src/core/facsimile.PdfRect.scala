@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 import contingency.*
 import quantitative.*
@@ -43,7 +46,8 @@ object PdfRect:
   // here to lower-left and upper-right (ISO 32000-2 §7.9.5). `scale` carries `/UserUnit`,
   // converting user-space units to points.
   private[facsimile] def read(cos: Cos, scale: Double)(using pdf: Pdf)
-  :   Optional[PdfRect] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Optional[PdfRect] =
 
     pdf.resolved(cos).elements.let: elements =>
       if elements.length != 4 then Unset else

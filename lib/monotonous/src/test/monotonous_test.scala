@@ -41,12 +41,12 @@ given Seed = Seed(1L)
 
 object Tests extends Suite(m"Monotonous tests"):
 
-  val numbers = IArray[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
-  val numberList = numbers.to(List)
+  val numbers = Array.of[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
+  val numberList = numbers.to[List]
 
-  val allNumbers = IArray.from((0 to 18).map(_.toByte))
+  val allNumbers = Array.from((0 to 18).map(_.toByte))
 
-  val stream = LazyList(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
+  val stream = Chain(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
       Data(11, 12, 13, 14, 15), Data(16, 17, 18, 19, 20, 21), Data(22, 23, 24, 25, 26, 27, 28))
 
   def run(): Unit = stochastic:
@@ -61,24 +61,24 @@ object Tests extends Suite(m"Monotonous tests"):
       // `Text.deserialize` produces. Strides not aligned to the group size
       // exercise the carry at every intra-group offset.
       def chunks(text: Text, size: Int): (Stream[Text] over Credit)^ =
-        Stream(text.s.grouped(size).map(_.tt).to(LazyList).iterator)
+        Stream(text.s.grouped(size).map(_.tt).to(Chain).iterator)
 
       val base64Text = allNumbers.serialize[Base64]
       val hexText = allNumbers.serialize[Hex]
       val base32Text = allNumbers.serialize[Base32]
-      val expected = allNumbers.to(List)
+      val expected = allNumbers.to[List]
 
       for size <- List(1, 2, 3, 5, 7, 11) do
         test(m"BASE64 streamed at stride $size equals whole"):
-          chunks(base64Text, size).deserialize[Base64].memoize.to(List)
+          chunks(base64Text, size).deserialize[Base64].memoize.to[List]
         . assert(_ == expected)
 
         test(m"Hex streamed at stride $size equals whole"):
-          chunks(hexText, size).deserialize[Hex].memoize.to(List)
+          chunks(hexText, size).deserialize[Hex].memoize.to[List]
         . assert(_ == expected)
 
         test(m"BASE32 streamed at stride $size equals whole"):
-          chunks(base32Text, size).deserialize[Base32].memoize.to(List)
+          chunks(base32Text, size).deserialize[Base32].memoize.to[List]
         . assert(_ == expected)
 
     test(m"Serialize to Binary"):
@@ -110,52 +110,52 @@ object Tests extends Suite(m"Monotonous tests"):
 
     test(m"Deserialize from Binary"):
       import alphabets.binaryStandard
-      t"000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111".deserialize[Binary].to(List)
+      t"000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111".deserialize[Binary].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from Octal"):
       import alphabets.octalStandard
-      t"00000402007016024030037477377377".deserialize[Octal].to(List)
+      t"00000402007016024030037477377377".deserialize[Octal].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from Hex"):
       import alphabets.hexLowerCase
-      t"0001020383828180fcfdfeff".deserialize[Hex].to(List)
+      t"0001020383828180fcfdfeff".deserialize[Hex].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from BASE32"):
       import alphabets.base32UpperCase
-      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
+      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == numberList)
 
     test(m"Deserialize from BASE64"):
       import alphabets.base64Standard
-      t"AAECA4OCgYD8/f7/".deserialize[Base64].to(List)
+      t"AAECA4OCgYD8/f7/".deserialize[Base64].to[List]
     . assert(_ == numberList)
 
     test(m"Tolerant BASE32"):
       import alphabets.base32LowerCase
-      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
+      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == numberList)
 
     test(m"Intolerant BASE32"):
       capture[SerializationError]:
         import alphabets.base32StrictLowerCase
-        t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
+        t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == SerializationError(0, 'A'))
 
     test(m"Bad character offset"):
       capture[SerializationError]:
         import alphabets.base32LowerCase
-        t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to(List)
+        t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to[List]
     . assert(_ == SerializationError(7, '?'))
 
     given Seed = Seed(1L)
 
     stochastic:
       for i <- 1 to 100 do
-        val arb = arbitrary[IArray[Byte]]()
-        val arbList = arb.to(List)
+        val arb = arbitrary[Array[Byte]^{}]()
+        val arbList = arb.to[List]
 
         locally:
           import alphabets.given
@@ -163,7 +163,7 @@ object Tests extends Suite(m"Monotonous tests"):
               base64Imap, base64Yui, base64Radix64, base64Bcrypt, base64Sasl) do
             test(m"Roundtrip BASE64 tests"):
               given Alphabet[Base64] = alphabet
-              arb.serialize[Base64].deserialize[Base64].to(List)
+              arb.serialize[Base64].deserialize[Base64].to[List]
             . assert(_ == arbList)
 
         locally:
@@ -174,7 +174,7 @@ object Tests extends Suite(m"Monotonous tests"):
               base32Crockford) do
             test(m"Roundtrip BASE32 tests"):
               given Alphabet[Base32] = alphabet
-              arb.serialize[Base32].deserialize[Base32].to(List)
+              arb.serialize[Base32].deserialize[Base32].to[List]
             . assert(_ == arbList)
 
         locally:
@@ -183,22 +183,22 @@ object Tests extends Suite(m"Monotonous tests"):
               hexLowerCase, hexBioctal) do
             test(m"Roundtrip Hex tests"):
               given Alphabet[Hex] = alphabet
-              arb.serialize[Hex].deserialize[Hex].to(List)
+              arb.serialize[Hex].deserialize[Hex].to[List]
             . assert(_ == arbList)
 
         test(m"Roundtrip Octal tests"):
           import alphabets.octalStandard
-          arb.serialize[Octal].deserialize[Octal].to(List)
+          arb.serialize[Octal].deserialize[Octal].to[List]
         . assert(_ == arbList)
 
         test(m"Roundtrip Quaternary tests"):
           import alphabets.quaternaryDnaNucleotide
-          arb.serialize[Quaternary].deserialize[Quaternary].to(List)
+          arb.serialize[Quaternary].deserialize[Quaternary].to[List]
         . assert(_ == arbList)
 
         test(m"Roundtrip Binary tests"):
           import alphabets.binaryStandard
-          arb.serialize[Binary].deserialize[Binary].to(List)
+          arb.serialize[Binary].deserialize[Binary].to[List]
         . assert(_ == arbList)
 
     suite(m"Streaming serialization tests"):
@@ -212,8 +212,8 @@ object Tests extends Suite(m"Monotonous tests"):
       . assert(_ == payload.serialize[Hex])
 
       test(m"hex duct deserializes a text stream"):
-        Drain.data(payload.serialize[Hex].stream.via(summon[Alphabet[Hex]])).to(List)
-      . assert(_ == payload.to(List))
+        Drain.data(payload.serialize[Hex].stream.via(summon[Alphabet[Hex]])).to[List]
+      . assert(_ == payload.to[List])
 
       test(m"base64 duct emits padding at end of stream"):
         Drain.text(Stream(Data(1, 2, 3, 4)).via(summon[Alphabet[Base64]]))
@@ -221,8 +221,8 @@ object Tests extends Suite(m"Monotonous tests"):
 
       test(m"base64 duct roundtrips through both directions"):
         val text = Drain.text(payload.stream.via(summon[Alphabet[Base64]]))
-        Drain.data(text.stream.via(summon[Alphabet[Base64]])).to(List)
-      . assert(_ == payload.to(List))
+        Drain.data(text.stream.via(summon[Alphabet[Base64]])).to[List]
+      . assert(_ == payload.to[List])
 
       // Multi-window payloads whose lengths straddle group and window
       // boundaries, exercising the unrolled fast path, its cross-window carry
@@ -236,8 +236,8 @@ object Tests extends Suite(m"Monotonous tests"):
 
         test(m"base64 duct roundtrips a multi-window payload ($size bytes)"):
           val text = Drain.text(large.stream.via(summon[Alphabet[Base64]]))
-          Drain.data(text.stream.via(summon[Alphabet[Base64]])).to(List)
-        . assert(_ == large.to(List))
+          Drain.data(text.stream.via(summon[Alphabet[Base64]])).to[List]
+        . assert(_ == large.to[List])
 
 // Drains a duct-composed pull endpoint, for the streaming serialization
 // tests.
@@ -247,7 +247,7 @@ object Drain:
 
     def recur(): Unit = stream.refill(Credit(credit)) match
       case count: Int =>
-        val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+        val window = unsafely(stream.window).asInstanceOf[scala.Array[Char]]
         builder.append(String(window, stream.start, count))
         stream.skip(count)
         recur()
@@ -262,7 +262,7 @@ object Drain:
 
     def recur(): Unit = stream.refill(Credit(credit)) match
       case count: Int =>
-        val window = unsafely(stream.window).asInstanceOf[Array[Byte]]
+        val window = unsafely(stream.window).asInstanceOf[scala.Array[Byte]]
         target.write(window, stream.start, count)
         stream.skip(count)
         recur()
@@ -270,4 +270,4 @@ object Drain:
       case _ => ()
 
     recur()
-    target.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(target.toByteArray.nn)

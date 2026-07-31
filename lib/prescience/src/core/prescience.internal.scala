@@ -32,6 +32,7 @@
                                                                                                   */
 package prescience
 
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import prepositional.*
@@ -226,7 +227,7 @@ object internal:
         val reloaded: Any =
           try
             val url = java.io.File(outputDir).toURI.nn.toURL.nn
-            val loader = java.net.URLClassLoader(Array(url), macroClassloader)
+            val loader = java.net.URLClassLoader(scala.Array(url), macroClassloader)
             val generated = loader.loadClass("Generated$Code$From$Quoted").nn
             val instance = generated.getConstructor().nn.newInstance()
             generated.getMethod("apply").nn.invoke(instance)
@@ -280,7 +281,7 @@ object internal:
     val arity = fields.length
     val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
 
-    def readField(index: Int, parts: Expr[Array[String]]): Term =
+    def readField(index: Int, parts: Expr[scala.Array[String]]): Term =
       fieldTypes(index).asType match
         case '[fieldType] =>
           val fieldExpr: Expr[String] = '{ $parts(${Expr(index)}) }
@@ -304,11 +305,11 @@ object internal:
                   case None           => runtimeCall
               else runtimeCall
 
-    def construct(parts: Expr[Array[String]]): Expr[value] =
+    def construct(parts: Expr[scala.Array[String]]): Expr[value] =
       Apply(Select(New(Inferred(tpe)), ctor), List.range(0, arity).map(readField(_, parts)))
       . asExprOf[value]
 
     '{
-      val parts: Array[String] = $input.split(",").nn.map(_.nn)
+      val parts: scala.Array[String] = $input.split(",").nn.map(_.nn)
       ${ construct('parts) }
     }

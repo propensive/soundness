@@ -32,6 +32,8 @@
                                                                                                   */
 package surveillance
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -43,7 +45,7 @@ import prepositional.*
 // checking. Watching is pure observation, so no operation is grant-gated: the mode is
 // irrelevant, and `Read` (the default) describes it best.
 class WatchHandle private[surveillance] (watch: Watch) extends caps.ExclusiveCapability:
-  def stream: LazyList[WatchEvent] = watch.stream
+  def stream: Chain[WatchEvent] = watch.stream
 
 // A named class rather than an anonymous given instance, for the reasons documented on
 // galilei's `FileOpenable`.
@@ -61,8 +63,9 @@ extends Openable:
     ( block: ((WatchHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    val watch = Watch(List(value))
-    try block(using new WatchHandle(watch) with Granting[grants] {}) finally watch.unregister()
+    val watch = Watch(List(value).stdlib)
+    try block(using new WatchHandle(watch) with Granting[grants] {})
+    finally watch.unregister()
 
 // Watching several paths at once: `List(a, b, c).open[Watch]()`, with one event stream
 // multiplexing all of them, exactly as `Watch` itself works. Parameterized over the concrete

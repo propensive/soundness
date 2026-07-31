@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
 import java.io as ji
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -60,7 +62,9 @@ package filesystemBackends:
 
       // Maps `java.nio`'s failure exceptions onto the common `Reason` vocabulary, as informatively
       // as their types (and, for `FileSystemException`, their `getReason` texts) permit.
-      private def protect[result](path: Path on Plane, operation: Operation)(block: => result)
+      // Inline, as the core `Path.protect`: the thunk must not cross a checked boundary.
+      private inline def protect[result](path: Path on Plane, operation: Operation)
+        (inline block: result)
         ( using Tactic[IoError] )
       :   result =
 
@@ -102,10 +106,15 @@ package filesystemBackends:
 
       def stat(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Stat =
         protect(path, Operation.Metadata):
-          val options = dereferenceOptions(dereference)
-
+          // Individual-argument varargs calls, never an array splice: under the Scala Native
+          // javalib the varargs formals are pure Scala arrays, which no array value can
+          // satisfy under separation checking.
           val attributes =
-            jnf.Files.readAttributes(javaPath(path), classOf[jnfa.BasicFileAttributes], options*)
+            ( if dereference
+              then jnf.Files.readAttributes(javaPath(path), classOf[jnfa.BasicFileAttributes])
+              else jnf.Files.readAttributes
+                     ( javaPath(path), classOf[jnfa.BasicFileAttributes],
+                       jnf.LinkOption.NOFOLLOW_LINKS ) )
             . nn
 
           val entry: Entry =
@@ -113,7 +122,11 @@ package filesystemBackends:
             else if attributes.isRegularFile then File
             else if attributes.isDirectory then Directory
             else
-              try jnf.Files.getAttribute(javaPath(path), "unix:mode", options*).nn.absolve match
+              try
+                ( if dereference then jnf.Files.getAttribute(javaPath(path), "unix:mode")
+                  else jnf.Files.getAttribute
+                         (javaPath(path), "unix:mode", jnf.LinkOption.NOFOLLOW_LINKS) )
+                . nn.absolve match
                 case mode: Int => (mode & 61440) match
                   case  4096 => Fifo
                   case  8192 => CharDevice
@@ -137,14 +150,15 @@ package filesystemBackends:
               created )
 
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
-        jnf.Files.exists(javaPath(path), dereferenceOptions(dereference)*)
+        if dereference then jnf.Files.exists(javaPath(path))
+        else jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)
 
-      def children(path: Path on Plane)(using Tactic[IoError]): LazyList[Text] =
+      def children(path: Path on Plane)(using Tactic[IoError]): Chain[Text] =
         protect(path, Operation.Read):
-          if !jnf.Files.isDirectory(javaPath(path)) then LazyList()
+          if !jnf.Files.isDirectory(javaPath(path)) then Chain()
           else
             // `Files.list` holds the directory's file descriptor until the stream is
-            // closed — exhausting its iterator does not release it, and a `LazyList` would
+            // closed — exhausting its iterator does not release it, and a `Chain` would
             // defer even that — so the names are materialized strictly and the stream
             // closed before returning. Left unclosed, each directory listed leaks a
             // descriptor until its stream is garbage-collected, which a low-allocation
@@ -153,10 +167,8 @@ package filesystemBackends:
             val stream = jnf.Files.list(javaPath(path)).nn
 
             try
-              stream.iterator().nn.asScala
-              . map(_.getFileName.nn.toString.tt)
-              . to(List)
-              . to(LazyList)
+              Chain.from:
+                stream.iterator().nn.asScala.map(_.getFileName.nn.toString.tt).toList
             finally stream.close()
 
       def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit =
@@ -190,7 +202,10 @@ package filesystemBackends:
       :   Unit =
 
         protect(source, Operation.Copy):
-          jnf.Files.copy(javaPath(source), javaPath(destination), dereferenceOptions(dereference)*)
+          if dereference then jnf.Files.copy(javaPath(source), javaPath(destination))
+          else
+            jnf.Files.copy
+              (javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS)
 
       def move
         ( source:      Path on Plane,
@@ -201,10 +216,22 @@ package filesystemBackends:
       :   Unit =
 
         protect(source, Operation.Move):
-          val atomically = if atomic then List(jnf.StandardCopyOption.ATOMIC_MOVE) else Nil
-          val options: List[jnf.CopyOption] = dereferenceOptions(dereference) ++ atomically
+          // Individual-argument varargs, per option combination (see `stat`).
+          (dereference, atomic) match
+            case (true, false) => jnf.Files.move(javaPath(source), javaPath(destination))
 
-          jnf.Files.move(javaPath(source), javaPath(destination), options*)
+            case (true, true) =>
+              jnf.Files.move
+                (javaPath(source), javaPath(destination), jnf.StandardCopyOption.ATOMIC_MOVE)
+
+            case (false, false) =>
+              jnf.Files.move
+                (javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS)
+
+            case (false, true) =>
+              jnf.Files.move
+                ( javaPath(source), javaPath(destination), jnf.LinkOption.NOFOLLOW_LINKS,
+                  jnf.StandardCopyOption.ATOMIC_MOVE )
 
       def touch(path: Path on Plane)(using Tactic[IoError]): Unit =
         protect(path, Operation.Metadata):
@@ -222,7 +249,9 @@ package filesystemBackends:
 
       def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Int =
         protect(path, Operation.Metadata):
-          jnf.Files.getAttribute(javaPath(path), "unix:nlink", dereferenceOptions(dereference)*)
+          ( if dereference then jnf.Files.getAttribute(javaPath(path), "unix:nlink")
+            else jnf.Files.getAttribute
+                   (javaPath(path), "unix:nlink", jnf.LinkOption.NOFOLLOW_LINKS) )
           . nn.absolve match
             case count: Int => count
 
@@ -250,7 +279,7 @@ package filesystemBackends:
         ( using Tactic[IoError] )
       :   result =
 
-        val options: List[jnf.OpenOption] = flags.map:
+        val options: scala.collection.immutable.List[jnf.OpenOption] = flags.stdlib.map:
           case OpenFlag.Read      => jnf.StandardOpenOption.READ
           case OpenFlag.Write     => jnf.StandardOpenOption.WRITE
           case OpenFlag.Append    => jnf.StandardOpenOption.APPEND
@@ -270,7 +299,11 @@ package filesystemBackends:
           else options
 
         val channel =
-          protect(path, Operation.Open)(jnc.FileChannel.open(javaPath(path), options2*).nn)
+          // The `Set` overload (with no trailing attributes): under the Scala Native javalib
+          // the varargs formal is a pure Scala array, which no array value can satisfy.
+          val optionSet = java.util.HashSet[jnf.OpenOption]()
+          options2.foreach { option => optionSet.add(option); () }
+          protect(path, Operation.Open)(jnc.FileChannel.open(javaPath(path), optionSet).nn)
 
         try
           // The `source`/`intake` closures capture the `FileChannel` capability, which native's
@@ -278,9 +311,11 @@ package filesystemBackends:
           // closure. The channel is genuinely scoped — closed in the `finally` after `lambda`
           // returns — so the capture is asserted safe with `unsafeAssumePure`.
           lambda:
+           // The channel is this handle's single owner (see the comment above).
+           scala.caps.unsafe.unsafeAssumeSeparate:
             Handle
-              ( () => unsafely(zephyrine.toLazyList(Streamable.channel.stream(channel))),
-                data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.iterator))) )
+              ( () => unsafely(zephyrine.toProgression(Streamable.channel.stream(channel))),
+                data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data.stdlib.iterator))) )
               ( () => unsafely(caps.unsafe.unsafeAssumePure(Streamable.channel.stream(channel))),
                 () => unsafely(caps.unsafe.unsafeAssumePure(Sink.channel.intake(channel))) )
         finally channel.close()

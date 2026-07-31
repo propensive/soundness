@@ -32,8 +32,10 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.caps
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.util.concurrent.atomic as juca
 
@@ -44,7 +46,8 @@ object Fault:
   // them and never lets them escape, so they are laundered to pure `Fault -> Unit` for storage
   // rather than making the registry (and everything that touches it) capture-tracked.
   private object Handler extends Thread.UncaughtExceptionHandler:
-    val tasks: juca.AtomicReference[Set[Fault -> Unit]] = juca.AtomicReference(Set())
+    val tasks: juca.AtomicReference[scala.collection.immutable.Set[Fault -> Unit]] =
+      juca.AtomicReference(scala.collection.immutable.Set())
 
     def uncaughtException(thread: Thread | Null, throwable: Throwable | Null): Unit =
       val fault: Fault = Fault(thread.nn, Error(throwable.nn))

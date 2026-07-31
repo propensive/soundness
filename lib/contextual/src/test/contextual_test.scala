@@ -34,13 +34,21 @@ package contextual
 
 import soundness.*
 
+import proscenium.List.stdlib
+
+import scala.compiletime
+
 case class Slug(text: Text)
 
 object Slug:
+  // The assembly runs on the stdlib view of the parts: `join` is ambiguous on the opaque `List`
+  // (both the `List` and the `Iterable` overload in `gossamer` match it), and the opaque `::`
+  // does not survive separation checking here.
   def assemble(parts: List[Any], insertions: List[Any]): Text =
-    val head = parts.head.toString.tt
+    val values = parts.stdlib
+    val head = values.head.toString.tt
 
-    val rest = parts.tail.zip(insertions).map: (part, insertion) =>
+    val rest = values.tail.zip(insertions.stdlib).map: (part, insertion) =>
       insertion.toString.tt+part.toString.tt
 
     (head :: rest).join
@@ -50,13 +58,14 @@ object Slug:
                             (inline insertions: Any*)
     :   Slug =
 
-      Slug(assemble(compiletime.constValueTuple[parts].toList.reverse, insertions.to(List)))
+      Slug(assemble(List.of(compiletime.constValueTuple[parts].toList.reverse),
+                    insertions.to(List)))
 
   given extrapolable: Slug is Extrapolable:
     transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Slug)
     :   Extrapolation[Slug] =
 
-      scrutinee.text == assemble(compiletime.constValueTuple[parts].toList.reverse, Nil)
+      scrutinee.text == assemble(List.of(compiletime.constValueTuple[parts].toList.reverse), Nil)
 
 case class Parts(values: List[Text])
 
@@ -66,7 +75,7 @@ object Parts:
                             (inline insertions: Any*)
     :   Parts =
 
-      Parts(Parts.texts(compiletime.constValueTuple[parts].toList))
+      Parts(Parts.texts(List.of(compiletime.constValueTuple[parts].toList)))
 
   def texts(values: List[Any]): List[Text] = values.map(_.toString.tt)
 

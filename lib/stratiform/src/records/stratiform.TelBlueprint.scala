@@ -38,6 +38,7 @@ import gossamer.*
 import polyvinyl.*
 import prepositional.*
 import vacuous.*
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 
@@ -150,7 +151,7 @@ object TelBlueprint:
 
       i += 1
 
-    builder.toMap
+    Map.of(builder.toMap)
 
   // Map a single Tels.Field to its polyvinyl Member representation.
   // Scalar / Flag / Reference types are translated to a Value member

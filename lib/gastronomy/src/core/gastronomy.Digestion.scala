@@ -32,20 +32,26 @@
                                                                                                   */
 package gastronomy
 
+import scala.caps
+
 import anticipation.*
 import rudiments.*
 import vacuous.*
 
 // An incremental hash computation: feed bytes with `append`, then read the result
-// with `digest`. Implementations are supplied by `Hashing` providers.
-trait Digestion:
-  def append(bytes: Data): Unit
+// with `digest`. Implementations are supplied by `Hashing` providers. A `Digestion`
+// is honestly mutable: each `append` updates its interior state, so the mutators are
+// `update` methods and fresh instances are exclusive (`Digestion^`).
+trait Digestion extends caps.Mutable:
+  update def append(bytes: Data): Unit
 
   // The windowed form: hash `count` bytes of `array` from `start`, so a streaming
   // consumer can feed a reusable window without snapshotting it — hashing consumes
   // its input synchronously and never retains it. The default copies the window;
   // providers that can consume a slice in place override it.
-  def append(array: Array[Byte], start: Int, count: Int): Unit =
-    append(array.slice(start, start + count).immutable(using Unsafe))
+  update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
+    val copy = Array[Byte](count)
+    copy.copyFrom(array, start, 0, count)
+    append(Array.freeze(copy))
 
-  def digest(): Data
+  update def digest(): Data

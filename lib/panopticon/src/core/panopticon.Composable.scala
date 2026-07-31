@@ -42,8 +42,10 @@ object Composable:
     type Operand = Optic from operand onto target
     type Result = Optic from origin onto target
 
-    def composition(left: Self^, right: Operand^): Result^ =
-      Optic[Any, origin, target]: (origin, lambda) => left.modify(origin)(right.modify(_)(lambda))
+    def composition(left: Self^, right: Operand^): Result^{left, right} =
+      Optic[Any, origin, target]: (origin, lambda) =>
+        left.modify(origin)(right.modify(_)(lambda))
+
 
   given lenses: [origin, target, target2]
   =>  ( (Lens from origin onto target) is Composable by (Lens from target onto target2) to
@@ -52,10 +54,13 @@ object Composable:
     type Operand = Lens from target onto target2
     type Result = Lens from origin onto target2
 
-    def composition(left: Self^, right: Operand^): Result^ =
-      Lens[Any, origin, target2]
-        ( { origin => right(left(origin)) },
-          { (origin, value) => left(origin) = right(left(origin)) = value } )
+    def composition(left: Self^, right: Operand^): Result^{left, right} =
+      // `get` and `set` only read `left` and `right`; the separation checker cannot see
+      // that sharing them across the two closures is harmless.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+        Lens[Any, origin, target2]
+          ( { origin => right(left(origin)) },
+            { (origin, value) => left(origin) = right(left(origin)) = value } )
 
 // `composition` accepts capturing operands and yields a capturing result (`Result^`): composing a
 // fallible (capturing) optic yields a capturing optic. The fallibility *requirement* is enforced
@@ -65,4 +70,4 @@ trait Composable:
   type Operand
   type Result
 
-  def composition(left: Self^, right: Operand^): Result^
+  def composition(left: Self^, right: Operand^): Result^{left, right}

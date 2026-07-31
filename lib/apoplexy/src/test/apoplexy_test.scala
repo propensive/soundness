@@ -33,6 +33,8 @@
 package apoplexy
 
 import soundness.*
+
+import proscenium.compat.*
 import apoplexy.OpenApi.*
 
 import errorDiagnostics.emptyDiagnostics

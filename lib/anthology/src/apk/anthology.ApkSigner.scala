@@ -32,6 +32,10 @@
                                                                                                   */
 package anthology
 
+import scala.math
+
+import proscenium.compat.*
+
 import java.io as ji
 import java.security as js
 import java.security.cert as jsc
@@ -58,22 +62,23 @@ object ApkSigner:
   private val magic:             Text = t"APK Sig Block 42"
 
   private def u32(value: Long): Data =
-    IArray((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
+    Array.of((value & 0xff).toByte, ((value >> 8) & 0xff).toByte, ((value >> 16) & 0xff).toByte,
         ((value >> 24) & 0xff).toByte)
 
   private def u64(value: Long): Data =
-    IArray.range(0, 8).map: i => ((value >> (i*8)) & 0xff).toByte
+    Array.range(0, 8).map: i =>
+      ((value >> (i*8)) & 0xff).toByte
 
   private def concat(parts: Data*): Data =
     val total = parts.map(_.length).sum
-    val array = new Array[Byte](total)
+    val buffer = Array[Byte](total)
     var offset = 0
 
     parts.foreach: part =>
-      System.arraycopy(part.mutable(using Unsafe), 0, array, offset, part.length)
+      buffer.copyFrom(part, 0, offset, part.length)
       offset += part.length
 
-    array.immutable(using Unsafe)
+    Array.freeze(buffer)
 
   private def sha256(data: Data): Data = data.digest[Sha2[256]].data
 
@@ -94,19 +99,19 @@ object ApkSigner:
   // Splits a byte range into 1 MiB chunks and returns each chunk's content digest, prefixed
   // per the v2 scheme (0xa5, then the chunk length).
   private def chunkDigests(data: Data, from: Int, until: Int): List[Data] =
-    val builder = List.newBuilder[Data]
+    val builder = scala.collection.immutable.List.newBuilder[Data]
     var offset = from
 
     while offset < until do
       val end = math.min(offset + chunkSize, until)
       val length = end - offset
-      val chunk = new Array[Byte](length)
-      System.arraycopy(data.mutable(using Unsafe), offset, chunk, 0, length)
-      val prefixed = concat(IArray(0xa5.toByte), u32(length.toLong), chunk.immutable(using Unsafe))
+      val chunk = Array[Byte](length)
+      chunk.copyFrom(data, offset, 0, length)
+      val prefixed = concat(Array.of(0xa5.toByte), u32(length.toLong), Array.freeze(chunk))
       builder += sha256(prefixed)
       offset = end
 
-    builder.result()
+    List.of(builder.result())
 
   // Signs the finished, unsigned APK bytes with the RSA key and certificate loaded from the
   // keystore, returning the signed APK.
@@ -121,8 +126,8 @@ object ApkSigner:
 
     val privateKey = store.getKey(alias.s, keyPass.s.toCharArray).nn.asInstanceOf[js.PrivateKey]
     val certificate = store.getCertificate(alias.s).nn.asInstanceOf[jsc.X509Certificate]
-    val certificateDer = certificate.getEncoded.nn.immutable(using Unsafe)
-    val publicKeyDer = certificate.getPublicKey.nn.getEncoded.nn.immutable(using Unsafe)
+    val certificateDer = Array.unsafeFrozen(certificate.getEncoded.nn)
+    val publicKeyDer = Array.unsafeFrozen(certificate.getPublicKey.nn.getEncoded.nn)
 
     val eocdOffset = endOfCentralDirectory(unsigned)
     val cdOffset = readU32(unsigned, eocdOffset + 16).toInt
@@ -131,12 +136,12 @@ object ApkSigner:
     // end-of-central-directory record. The unsigned EOCD already points at `cdOffset` — which is
     // exactly where the signing block will begin — so it is digested as-is.
     val digests =
-      chunkDigests(unsigned, 0, cdOffset) ++
-        chunkDigests(unsigned, cdOffset, eocdOffset) ++
+      chunkDigests(unsigned, 0, cdOffset) :::
+        chunkDigests(unsigned, cdOffset, eocdOffset) :::
         chunkDigests(unsigned, eocdOffset, unsigned.length)
 
     val count = digests.length
-    val topLevel = sha256(concat(IArray(0x5a.toByte), u32(count.toLong), concat(digests*)))
+    val topLevel = sha256(concat(Array.of(0x5a.toByte), u32(count.toLong), concat(digests*)))
 
     // signed data: digests, certificates, additional attributes (none).
     val digestRecord = concat(u32(signAlgorithm), u32(topLevel.length.toLong), topLevel)
@@ -147,8 +152,8 @@ object ApkSigner:
 
     val signature = js.Signature.getInstance("SHA256withRSA").nn
     signature.initSign(privateKey)
-    signature.update(signedData.mutable(using Unsafe))
-    val signatureData = signature.sign.nn.immutable(using Unsafe)
+    signature.update(Array.unsafeJvm(signedData))
+    val signatureData = Array.unsafeFrozen(signature.sign.nn)
 
     // signer: signed data, signatures, public key.
     val signatureRecord =
@@ -165,22 +170,26 @@ object ApkSigner:
     // The ID-value pair, then the signing block framing (size, pair, size again, magic).
     val pair = concat(u64((4 + v2Block.length).toLong), u32(v2BlockId), v2Block)
     val blockLength = pair.length + 8 + 16
-    val magicBytes = magic.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+    val magicBytes = Array.unsafeFrozen(magic.s.getBytes("US-ASCII").nn)
     val signingBlock = concat(u64(blockLength.toLong), pair, u64(blockLength.toLong), magicBytes)
 
     // The final file: entries, signing block, central directory, and the EOCD with its
     // central-directory offset advanced past the inserted block.
     val section1 = slice(unsigned, 0, cdOffset)
     val centralDirectory = slice(unsigned, cdOffset, eocdOffset)
-    val eocd = slice(unsigned, eocdOffset, unsigned.length).mutable(using Unsafe)
     val newCdOffset = cdOffset + signingBlock.length
     val patch = u32(newCdOffset.toLong)
+
+    // The EOCD is copied out so its central-directory offset can be patched, so the buffer is
+    // built exclusively here rather than laundered out of a frozen `slice`.
+    val eocd = Array[Byte](unsigned.length - eocdOffset)
+    eocd.copyFrom(unsigned, eocdOffset, 0, eocd.length)
     for i <- 0 until 4 do eocd(16 + i) = patch(i)
 
-    concat(section1, signingBlock, centralDirectory, eocd.immutable(using Unsafe))
+    concat(section1, signingBlock, centralDirectory, Array.freeze(eocd))
 
   private def slice(data: Data, from: Int, until: Int): Data =
     val length = until - from
-    val array = new Array[Byte](length)
-    System.arraycopy(data.mutable(using Unsafe), from, array, 0, length)
-    array.immutable(using Unsafe)
+    val buffer = Array[Byte](length)
+    buffer.copyFrom(data, from, 0, length)
+    Array.freeze(buffer)

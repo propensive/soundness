@@ -32,6 +32,8 @@
                                                                                                   */
 package fulminate
 
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import anticipation.*

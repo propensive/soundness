@@ -32,17 +32,24 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+import proscenium.compat.*
+
 import java.io as ji
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
+
+import scala.caps
 
 // The VP8 boolean entropy encoder (RFC 6386 §7), ported from image-rs/image-webp
 // (`src/lossy/arithmetic_encoder.rs`, MIT/Apache-2.0) — the inverse of `Vp8Bool`.
-private[hallucination] final class Vp8BoolEncoder:
+private[hallucination] final class Vp8BoolEncoder extends caps.Mutable:
   private val out = ji.ByteArrayOutputStream()
-  private val buffer = scala.collection.mutable.ArrayBuffer[Int]()
+
+  private val buffer: scala.collection.mutable.ArrayBuffer[Int] =
+    scala.collection.mutable.ArrayBuffer[Int]()
+
   private var bottom = 0
   private var range = 255
   private var bitCount = 24
@@ -59,9 +66,9 @@ private[hallucination] final class Vp8BoolEncoder:
       else
         i -= 1
 
-  def writeFlag(flag: Boolean): Unit = writeBool(flag, 128)
+  update def writeFlag(flag: Boolean): Unit = writeBool(flag, 128)
 
-  def writeBool(bit: Boolean, probability: Int): Unit =
+  update def writeBool(bit: Boolean, probability: Int): Unit =
     val split = 1 + (((range - 1)*probability) >> 8)
 
     if bit then
@@ -82,14 +89,14 @@ private[hallucination] final class Vp8BoolEncoder:
         bottom &= (1 << 24) - 1
         bitCount = 8
 
-  def writeLiteral(bits: Int, value: Int): Unit =
+  update def writeLiteral(bits: Int, value: Int): Unit =
     var bit = bits - 1
 
     while bit >= 0 do
       writeBool(((1 << bit) & value) != 0, 128)
       bit -= 1
 
-  def writeOptionalSigned(bits: Int, value: Optional[Int]): Unit =
+  update def writeOptionalSigned(bits: Int, value: Optional[Int]): Unit =
     writeFlag(value.present)
 
     value.let: v =>
@@ -97,10 +104,11 @@ private[hallucination] final class Vp8BoolEncoder:
       writeFlag(v >= 0)
 
   // Encodes a tree value: locate the leaf `−value`, then emit the root-to-leaf bits.
-  def writeTree(tree: Array[Int], probs: Array[Int], probOffset: Int, value: Int): Unit =
+  update def writeTree(tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int): Unit =
     writeTree(tree, probs, probOffset, value, 0)
 
-  def writeTree(tree: Array[Int], probs: Array[Int], probOffset: Int, value: Int, startIndex: Int)
+  update def writeTree
+    ( tree: scala.Array[Int], probs: scala.Array[Int], probOffset: Int, value: Int, startIndex: Int )
   :   Unit =
 
     var current = indexOf(tree, -value)
@@ -127,14 +135,14 @@ private[hallucination] final class Vp8BoolEncoder:
       writeBool(bits(i)(0), bits(i)(1))
       i -= 1
 
-  private def indexOf(tree: Array[Int], value: Int): Int =
+  private def indexOf(tree: scala.Array[Int], value: Int): Int =
     var i = 0
 
     while tree(i) != value do i += 1
     i
 
   // Flushes the pending bits and returns the encoded bytes.
-  def bytes: Data =
+  update def bytes: Data =
     if (bottom & (1 << (32 - bitCount))) != 0 then addOneToOutput()
     var v = bottom.toLong & 0xffffffffL
     v <<= (bitCount & 0x7)
@@ -152,4 +160,4 @@ private[hallucination] final class Vp8BoolEncoder:
       c -= 1
 
     buffer.foreach(out.write(_))
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)

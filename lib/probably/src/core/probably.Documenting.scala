@@ -32,6 +32,10 @@
                                                                                                   */
 package probably
 
+import scala.math
+
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import rudiments.*
@@ -46,11 +50,11 @@ private[probably] object Documenting:
 
   def document(report: Report): Document =
     val results = summaries(report.lines)
-    val counts = results.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
+    val counts = results.stdlib.groupBy(_.status).view.mapValues(_.size).toMap - Status.Suite
 
     val passed: Int =
       List(Status.Pass, Status.Bench, Status.Stress, Status.Profile)
-      . map(counts.getOrElse(_, 0)).sum
+      . stdlib.map(counts.getOrElse(_, 0)).sum
 
     val aspirePassed: Int = counts.getOrElse(Status.AspirePass, 0)
     val aspireFailed: Int = counts.getOrElse(Status.AspireFail, 0)
@@ -61,8 +65,10 @@ private[probably] object Documenting:
       List(Entry.Kind.Check, Entry.Kind.Bench, Entry.Kind.Stress, Entry.Kind.Profile)
       . flatMap(suiteGroups(report.lines, _))
 
-    val failures = report.details.to(List).sortBy(_(0).timestamp).map: (id, buffer) =>
-      (id, buffer.to(List))
+    val failures = List.of:
+      report.details.toList.sortBy(_(0).timestamp).map:
+        (pair: (TestId, scala.collection.mutable.ArrayBuffer[Verdict.Detail])) =>
+          (pair(0), pair(1).to(List))
 
     Document
       ( results,
@@ -75,7 +81,7 @@ private[probably] object Documenting:
   // aggregated across all its cells into a single status and duration statistics.
   private def summaries(line: ReportLine): List[SummaryRow] = line match
     case ReportLine.Suite(suite, tests) =>
-      val rest = tests.list.sortBy(_(0).timestamp).flatMap: (_, line) => summaries(line)
+      val rest: List[SummaryRow] = List.of(tests.list.stdlib.sortBy(_(0).timestamp).flatMap { (_, line) => summaries(line).stdlib })
 
       if suite.absent then rest
       else SummaryRow(Status.Suite, suite.option.get.id, 0, 0L, 0L, 0L) :: rest
@@ -86,12 +92,12 @@ private[probably] object Documenting:
       case Entry.Kind.Profile => List(SummaryRow(Status.Profile, entry.id, 0, 0L, 0L, 0L))
 
       case Entry.Kind.Check =>
-        val verdicts = entry.cells.flatMap(_(1).runs).flatMap(_.verdict.option)
+        val verdicts = entry.cells.stdlib.flatMap(_(1).runs.stdlib).flatMap(_.verdict.option)
 
         if verdicts.isEmpty then Nil else
           val durations = verdicts.map(_.duration)
           val avg = durations.sum/durations.length
-          val status = verdictStatus(verdicts)
+          val status = verdictStatus(List.of(verdicts))
 
           List(SummaryRow(status, entry.id, verdicts.length, durations.min, durations.max, avg))
 
@@ -107,12 +113,12 @@ private[probably] object Documenting:
     else Status.Mixed
 
   private def cellStatus(cell: Cell): Status =
-    verdictStatus(cell.runs.flatMap(_.verdict.option))
+    verdictStatus(List.of(cell.runs.stdlib.flatMap(_.verdict.option)))
 
   // Measurement entries group by their immediate suite, one `Group` per suite and kind, in
   // declaration order; nested suites follow their parents.
   private def suiteGroups(line: ReportLine.Suite, kind: Entry.Kind): List[Group] =
-    val children = line.tests.list.sortBy(_(0).timestamp)
+    val children = List.of(line.tests.list.stdlib.sortBy(_(0).timestamp))
 
     val entries = children.flatMap: (_, child) =>
       child.absolve match
@@ -147,7 +153,7 @@ private[probably] object Documenting:
     case Nil      => Unset
 
   private def metric(run: Run, metric: Metric): Optional[Double] =
-    run.metrics.get(metric).getOrElse(Unset)
+    run.metrics.at(metric)
 
   // A metric's value as a semantic datum, formatted by dimension.
   private def datum(metric: Metric, value: Double): Datum = metric.dimension match
@@ -204,21 +210,21 @@ private[probably] object Documenting:
     val (plain, axial) = entries.partition(_.axes.isEmpty)
 
     val sized = entries.exists: entry =>
-      entry.cells.flatMap(_(1).runs).exists: run0 =>
+      entry.cells.stdlib.flatMap(_(1).runs.stdlib).exists: run0 =>
         run0.payload.option.exists:
           case Run.Payload.Sizing(_, _) => true
           case _                        => false
 
     val table =
       if plain.isEmpty then Nil else
-        val rows =
-          plain.flatMap: entry =>
-            entry.cells.take(1).flatMap: (_, cell) =>
+        val rows = List.of:
+          plain.stdlib.flatMap: entry =>
+            entry.cells.stdlib.take(1).flatMap: (_, cell) =>
               run(cell).option.map: run0 =>
                 val lead = List(Datum.Hash(entry.id.id), Datum.Title(entry.id.name, 0))
                 (metric(run0, Metric.Throughput).or(0.0), lead ::: benchMetricCells(run0, sized))
 
-          . sortBy(-_(0)).map(_(1))
+          . sortBy(-_(0)).map(x => (x(1)): List[Datum])
 
         List(Block.Table
           ( Unset,
@@ -262,7 +268,7 @@ private[probably] object Documenting:
   // more, as a flat listing of coordinates and headlines.
   private def axialBench(entry: Entry, sized: Boolean): List[Block] = entry.axes match
     case axis :: Nil =>
-      val cells = entry.cells.to(Map)
+      val cells = entry.cells.to[Map]
 
       val anchored: Optional[(Anchor, Run)] =
         entry.anchor.let: anchor => cells.at(List(anchor.value)).let(run(_)).let(anchor -> _)
@@ -270,13 +276,14 @@ private[probably] object Documenting:
       val comparisonColumns = anchored.lay(Nil): (anchor, _) =>
         List(Column(t"×${anchor.value.text}", numeric = true))
 
-      val rows = entry.values(axis).flatMap: value =>
-        cells.at(List(value)).option.flatMap: cell =>
-          run(cell).option.map: run0 =>
-            val comparison = anchored.lay(Nil): (anchor, anchorRun) =>
-              List(relative(anchor, anchorRun, run0))
+      val rows = List.of:
+        entry.values(axis).stdlib.flatMap: value =>
+          cells.at(List(value)).option.flatMap: cell =>
+            run(cell).option.map: run0 =>
+              val comparison = anchored.lay(Nil): (anchor, anchorRun) =>
+                List(relative(anchor, anchorRun, run0))
 
-            Datum.Str(value.text) :: benchMetricCells(run0, sized) ::: comparison
+              (Datum.Str(value.text) :: benchMetricCells(run0, sized) ::: comparison): List[Datum]
 
       List(Block.Table
         ( entry.id,
@@ -299,15 +306,16 @@ private[probably] object Documenting:
   // axes render as a grid of statuses with gaps at undefined combinations.
   private def axialCheck(entry: Entry): Block = entry.axes match
     case axis :: Nil =>
-      val cells = entry.cells.to(Map)
+      val cells = entry.cells.to[Map]
 
-      val rows = entry.values(axis).flatMap: value =>
-        cells.at(List(value)).option.map: cell =>
-          val durations = cell.runs.flatMap(_.verdict.option).map(_.duration)
-          val avg = if durations.isEmpty then 0L else durations.sum/durations.length
-          val time = if avg == 0L then Datum.Blank else Datum.Time(avg)
+      val rows = List.of:
+        entry.values(axis).stdlib.flatMap: value =>
+          cells.at(List(value)).option.map: cell =>
+            val durations = cell.runs.stdlib.flatMap(_.verdict.option).map(_.duration)
+            val avg = if durations.isEmpty then 0L else durations.sum/durations.length
+            val time = if avg == 0L then Datum.Blank else Datum.Time(avg)
 
-          List(Datum.Str(value.text), Datum.Mark(cellStatus(cell)), time)
+            List(Datum.Str(value.text), Datum.Mark(cellStatus(cell)), time)
 
       Block.Table
         ( entry.id,
@@ -328,12 +336,13 @@ private[probably] object Documenting:
   // The biaxial grid: the first axis's values are rows, the second's are columns, and each
   // cell holds only the headline datum; absent combinations render as gaps.
   private def crosstab(entry: Entry, first: Axis.Spec, second: Axis.Spec): Block =
-    val cells = entry.cells.to(Map)
+    val cells = entry.cells.to[Map]
     val columnValues = entry.values(second)
 
     val rows = entry.values(first).map: row =>
-      Datum.Str(row.text) :: columnValues.map: column =>
+      val cellsRow: List[Datum] = columnValues.map: column =>
         cells.at(List(row, column)).lay(Datum.Gap)(cellDatum(entry, _))
+      (Datum.Str(row.text) :: cellsRow): List[Datum]
 
     val columns = Column(first.label) :: columnValues.map: value =>
       Column(value.text, numeric = true)
@@ -346,18 +355,19 @@ private[probably] object Documenting:
   :   Optional[Block] =
 
     entry.anchor.let: anchor =>
-      val cells = entry.cells.to(Map)
+      val cells = entry.cells.to[Map]
       val onFirst = anchor.axis == first
       if !onFirst && anchor.axis != second then Unset else
         val columnValues = entry.values(second)
 
         val rows = entry.values(first).map: row =>
-          Datum.Str(row.text) :: columnValues.map: column =>
+          val cellsRow: List[Datum] = columnValues.map: column =>
             val anchorAddress = if onFirst then List(anchor.value, column) else List(row, anchor.value)
 
             cells.at(List(row, column)).let(run(_)).lay(Datum.Gap): run0 =>
               cells.at(anchorAddress).let(run(_)).lay(Datum.Blank): anchorRun =>
                 relative(anchor, anchorRun, run0)
+          (Datum.Str(row.text) :: cellsRow): List[Datum]
 
         val columns = Column(t"×${anchor.value.text}") :: columnValues.map: value =>
           Column(value.text, numeric = true)
@@ -370,28 +380,28 @@ private[probably] object Documenting:
     val curves: List[(Entry, Map[Long, Run])] = entries.map: entry =>
       val index = entry.axes.indexWhere(_.label == t"N")
 
-      val points = entry.cells.flatMap: (address, cell) =>
+      val points = entry.cells.stdlib.flatMap: (address, cell) =>
         run(cell).option.flatMap: run0 =>
           if index < 0 then None else address(index).numeric.option.map(_.toLong -> run0)
 
-      entry -> points.to(Map)
+      entry -> Map.of(points.toMap)
 
     val steps: List[Long] =
-      val all = curves.flatMap(_(1).keys)
+      val all = curves.stdlib.flatMap(_(1).stdlib.keys)
 
       val shared =
-        if curves.length < 2 then all.distinct
-        else all.groupBy(identity).filter(_(1).length > 1).keys.to(List)
+        if curves.stdlib.length < 2 then all.distinct
+        else all.groupBy(identity).filter(_(1).length > 1).keys.toList
 
-      (if shared.length > 1 then shared else all.distinct).sorted
+      List.of((if shared.length > 1 then shared else all.distinct).sorted)
 
     val sparkline =
       if steps.length < 2 then Nil else
         val peak =
-          curves.flatMap(_(1).values).map(metric(_, Metric.Throughput).or(0.0).toLong)
+          curves.stdlib.flatMap(_(1).stdlib.values).map(metric(_, Metric.Throughput).or(0.0).toLong)
           . maxOption.getOrElse(0L).max(1L)
 
-        val series = curves.map: (entry, curve) =>
+        val sequence = curves.map: (entry, curve) =>
           val sustained: Optional[(Long, Long)] = curve.find(_(1).sustained) match
             case Some((n, run0)) => (n, metric(run0, Metric.Throughput).or(0.0).toLong)
             case None            => Unset
@@ -406,13 +416,13 @@ private[probably] object Documenting:
 
           Spark(entry.id.name.text, cells, sustained)
 
-        List(Block.Sparkline(steps, series))
+        List(Block.Sparkline(steps, sequence))
 
     val latencies =
-      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.contains(Metric.P50)))
+      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.defines(Metric.P50)))
 
     val slo =
-      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.contains(Metric.Compliance)))
+      entries.exists(_.cells.flatMap(_(1).runs).exists(_.metrics.defines(Metric.Compliance)))
 
     val latencyColumns =
       if latencies then
@@ -446,39 +456,40 @@ private[probably] object Documenting:
     def optionalTime(run: Run, key: Metric): Datum =
       metric(run, key).lay(Datum.Blank): value => Datum.Time(value.toLong)
 
-    val rows = curves.flatMap: (entry, curve) =>
-      curve.to(List).sortBy(_(0)).map: (n, run0) =>
-        val latencyCells =
-          if latencies then
-            List
-              ( optionalTime(run0, Metric.P50),
-                optionalTime(run0, Metric.P99),
-                optionalTime(run0, Metric.P999) )
-          else
-            Nil
+    val rows = List.of:
+      curves.stdlib.flatMap: (entry, curve) =>
+        curve.stdlib.toList.sortBy(_(0)).map: (n, run0) =>
+            val latencyCells =
+              if latencies then
+                List
+                  ( optionalTime(run0, Metric.P50),
+                    optionalTime(run0, Metric.P99),
+                    optionalTime(run0, Metric.P999) )
+              else
+                Nil
 
-        val sloCells =
-          if slo
-          then List(metric(run0, Metric.Compliance).lay(Datum.Blank)(Datum.Percent(_)))
-          else Nil
+            val sloCells =
+              if slo
+              then List(metric(run0, Metric.Compliance).lay(Datum.Blank)(Datum.Percent(_)))
+              else Nil
 
-        val lead =
-          List
-            ( Datum.Hash(entry.id.id),
-              Datum.Title(entry.id.name, 0),
-              Datum.Num(n),
-              Datum.Num(metric(run0, Metric.Operations).or(0.0).toLong),
-              rate(run0),
-              Datum.Memory(metric(run0, Metric.Allocation).or(0.0).toLong) )
+            val lead =
+              List
+                ( Datum.Hash(entry.id.id),
+                  Datum.Title(entry.id.name, 0),
+                  Datum.Num(n),
+                  Datum.Num(metric(run0, Metric.Operations).or(0.0).toLong),
+                  rate(run0),
+                  Datum.Memory(metric(run0, Metric.Allocation).or(0.0).toLong) )
 
-        val tail =
-          List
-            ( Datum.Memory(metric(run0, Metric.PeakHeap).or(0.0).toLong),
-              Datum.Memory(metric(run0, Metric.Retained).or(0.0).toLong),
-              Datum.Num(metric(run0, Metric.GcCount).or(0.0).toLong),
-              Datum.Time(metric(run0, Metric.GcTime).or(0.0).toLong) )
+            val tail =
+              List
+                ( Datum.Memory(metric(run0, Metric.PeakHeap).or(0.0).toLong),
+                  Datum.Memory(metric(run0, Metric.Retained).or(0.0).toLong),
+                  Datum.Num(metric(run0, Metric.GcCount).or(0.0).toLong),
+                  Datum.Time(metric(run0, Metric.GcTime).or(0.0).toLong) )
 
-        lead ::: latencyCells ::: sloCells ::: tail
+            lead ::: latencyCells ::: sloCells ::: tail
 
     sparkline ::: List(Block.Table(Unset, columns, rows))
 

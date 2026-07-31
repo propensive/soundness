@@ -161,8 +161,8 @@ object Benchmarks extends Suite(m"Honeycomb benchmarks"):
     sb.append("<table><thead><tr><th>Timestamp</th><th>Level</th>")
     sb.append("<th>Service</th><th>Request</th><th>User</th><th>Message</th>")
     sb.append("</tr></thead><tbody>")
-    val levels = Array("info", "debug", "warn", "error")
-    val services = Array("auth", "api", "db", "cache", "worker")
+    val levels = scala.Array("info", "debug", "warn", "error")
+    val services = scala.Array("auth", "api", "db", "cache", "worker")
     var i = 0
     while i < 500 do
       val ts = 1700000000L + i

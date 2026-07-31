@@ -33,6 +33,7 @@
 package aviation
 
 import java.time as jt
+import proscenium.compat.*
 
 import abacist.*
 import anticipation.*
@@ -170,7 +171,7 @@ object timestampInternal:
     given dateDecoder: Tactic[TimeError] => Date is Decodable in Text = value =>
       import calendars.gregorianCalendar
 
-      value.cut(t"-").to(List) match
+      value.cut(t"-") match
         case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
           Date(Year(year), Month(month), Day(day))
 
@@ -227,7 +228,7 @@ object timestampInternal:
           else
             val next = current.addDays(count)
             val holidays = summon[Holidays].between(current, next)
-            val weekends = Weekday.all.to(List).filter(_.weekend)
+            val weekends = Weekday.all.toList.filter(_.weekend)
             val weekendDays = weekends.map(Weekday.count(current, next, _)).sum
             val weekdayHolidays = holidays.filter(!_.date.weekend).length
             val skipped = weekdayHolidays + weekendDays
@@ -248,7 +249,7 @@ object timestampInternal:
           else
             val previous = current.addDays(-count)
             val holidays = summon[Holidays].between(previous, current)
-            val weekends = Weekday.all.to(List).filter(_.weekend)
+            val weekends = Weekday.all.toList.filter(_.weekend)
             val weekendDays = weekends.map(Weekday.count(previous, current, _)).sum
             val weekdayHolidays = holidays.filter(!_.date.weekend).length
             val skipped = weekdayHolidays + weekendDays

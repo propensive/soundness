@@ -42,6 +42,7 @@ import monotonous.*
 import monotonous.alphabets.hexLowerCase
 import prepositional.*
 import spectacular.*
+import proscenium.compat.*
 
 // Renders the canonical OCI digest string (`sha256:<lowercase-hex>`) for a block
 // of bytes. OCI descriptors and `diff_id`s both use this form.

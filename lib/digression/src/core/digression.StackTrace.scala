@@ -36,6 +36,7 @@ import anticipation.*
 import fulminate.*
 import iridescence.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
@@ -368,7 +369,7 @@ object StackTrace:
       rewritten
 
   def apply(exception: Throwable)(using resolver: Resolver): StackTrace =
-    val frames = List(exception.getStackTrace.nn.map(_.nn)*).map: frame =>
+    val frames = List.from(exception.getStackTrace.nn.iterator.map(_.nn)).map: frame =>
       val jvmClass = frame.getClassName.nn
       val jvmMethod = frame.getMethodName.nn
 
@@ -384,7 +385,8 @@ object StackTrace:
 
     val cause = Option(exception.getCause)
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
-    val fullClass: List[Text] = List(fullClassName.s.split("\\.").nn.map(_.nn).map(Text(_))*)
+    val fullClass: List[Text] =
+      List.from(fullClassName.s.split("\\.").nn.iterator.map { part => Text(part.nn) })
     val className: Text = fullClass.last
 
     val component: Text =
@@ -398,14 +400,14 @@ object StackTrace:
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).optional)
 
   given communicable: StackTrace is Communicable = stack =>
-    val methodWidth = stack.frames.map(_.displayMethod.s.length).maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.displayClass.s.length).maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
+    val methodWidth = stack.frames.map(_.displayMethod.s.length).stdlib.maxOption.getOrElse(0)
+    val classWidth = stack.frames.map(_.displayClass.s.length).stdlib.maxOption.getOrElse(0)
+    val fileWidth = stack.frames.map(_.file.s.length).stdlib.maxOption.getOrElse(0)
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
     val nbsp = "\u00a0".tt
 
-    val root = stack.frames.fuse(init):
+    val root = stack.frames.stdlib.fuse(init):
       val obj = next.method.className.s.endsWith("#")
       val drop = if next.source.absent && obj then 1 else 0
       val file = (nbsp*(fileWidth - next.file.s.length))+next.file

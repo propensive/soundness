@@ -32,7 +32,7 @@
                                                                                                   */
 package contextual
 
-import language.dynamics
+import scala.language.dynamics
 
 import prepositional.*
 

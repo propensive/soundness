@@ -32,7 +32,7 @@
                                                                                                   */
 package panopticon
 
-import language.dynamics
+import scala.language.dynamics
 
 import scala.quoted.*
 
@@ -70,7 +70,7 @@ object Optic:
 
     Optic[Prim.type, List[element], element]: (origin, lambda) =>
       origin match
-        case head :: tail => lambda(head) :: tail
+        case head :: tail => List.of(lambda(head) :: tail.stdlib)
         case Nil          => Nil
 
 // `Optic` extends `Findable` (not the pure `Typeclass`): an optic that wraps a fallible transform
@@ -89,13 +89,13 @@ trait Optic extends Findable, Dynamic:
   // trait idiom). The result is a capturing `Optic^`; fallibility is still tracked precisely because
   // the fallible optic given itself demands a `Tactic` to be summoned where it is used.
   private def andThen[next](following: (Optic from Target onto next)^)
-  :   (Optic from Origin onto next)^ =
+  :   (Optic from Origin onto next)^{this, following} =
 
     Optic[Any, Origin, next]: (origin, lambda) => this.modify(origin)(following.modify(_)(lambda))
 
 
   def selectDynamic(name: Label)(using lens: name.type is Optic from Target)
-  :   (Optic from Origin onto lens.Target)^ =
+  :   (Optic from Origin onto lens.Target)^{this} =
 
     andThen(lens)
 
@@ -104,7 +104,7 @@ trait Optic extends Findable, Dynamic:
     [ source ]
     ( value: (lens.Target aka "prior") ?=> source )
     ( using coercible: source is Coercible to lens.Target )
-  :   Origin => Origin =
+  :   Origin ->{this, value} Origin =
 
     andThen(lens).modify(_): prior => coercible.coerce(value(using prior.aka["prior"]))
 
@@ -112,7 +112,7 @@ trait Optic extends Findable, Dynamic:
   def update[source, target](traversal: Any, value: source)
     ( using optical:  (? >: traversal.type) is Optical from Target onto target,
             coercible: source is Coercible to target )
-  :   Origin => Origin =
+  :   Origin ->{this} Origin =
 
     andThen(optical.optic(traversal)).modify(_): _ => coercible.coerce(value)
 
@@ -121,13 +121,13 @@ trait Optic extends Findable, Dynamic:
     [ target, traversal ]
     ( traversal: traversal )
     ( using optical: (? >: traversal.type) is Optical from operand onto target )
-  :   (Optic from Origin onto target)^ =
+  :   (Optic from Origin onto target)^{this} =
 
     andThen(lens).andThen(optical.optic(traversal))
 
 
   def apply[target, optic](traversal: optic)
     ( using optical: (? >: traversal.type) is Optical from Target onto target )
-  :   (Optic from Origin onto target)^ =
+  :   (Optic from Origin onto target)^{this} =
 
     andThen(optical.optic(traversal))

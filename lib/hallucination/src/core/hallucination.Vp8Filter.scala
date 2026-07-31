@@ -32,6 +32,8 @@
                                                                                                   */
 package hallucination
 
+import scala.math
+
 // The VP8 loop filter, ported from image-rs/image-webp (`src/lossy/loop_filter.rs`,
 // MIT/Apache-2.0), per RFC 6386 §15. Buffers hold samples as `Int` in 0–255. Horizontal filters
 // act on eight consecutive samples `pixels(base + 0..7)` spanning a vertical edge; vertical
@@ -45,7 +47,7 @@ private[hallucination] object Vp8Filter:
   private inline def diff(a: Int, b: Int): Int = math.abs(a - b)
 
   // Adjusts the two middle samples of an edge; returns the primary adjustment `a`.
-  private def commonAdjust(useOuter: Boolean, p: Array[Int], p1i: Int, p0i: Int, q0i: Int, q1i: Int)
+  private def commonAdjust(useOuter: Boolean, p: scala.Array[Int], p1i: Int, p0i: Int, q0i: Int, q1i: Int)
   :   Int =
 
     val p1 = signed(p(p1i)); val p0 = signed(p(p0i))
@@ -55,8 +57,8 @@ private[hallucination] object Vp8Filter:
     val b = clamp(a0 + 3) >> 3
     val a = clamp(a0 + 4) >> 3
 
-    p(q0i) = unsigned(q0 - a)
-    p(p0i) = unsigned(p0 + b)
+    writable(p)(q0i) = unsigned(q0 - a)
+    writable(p)(p0i) = unsigned(p0 + b)
     a
 
   private inline def simpleThreshold(limit: Int, p0: Int, q0: Int, p1: Int, q1: Int): Boolean =
@@ -73,20 +75,20 @@ private[hallucination] object Vp8Filter:
 
   // Horizontal filters (vertical edge, eight consecutive samples at `base`).
 
-  def simpleSegmentHorizontal(edge: Int, p: Array[Int], base: Int): Unit =
+  def simpleSegmentHorizontal(edge: Int, p: scala.Array[Int], base: Int): Unit =
     if simpleThreshold(edge, p(base + 3), p(base + 4), p(base + 2), p(base + 5))
     then commonAdjust(true, p, base + 2, base + 3, base + 4, base + 5)
 
-  def subblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: Array[Int], base: Int): Unit =
+  def subblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: scala.Array[Int], base: Int): Unit =
     if shouldFilter(interior, edge, k => p(base + k)) then
       val hv = highVariance(hev, p(base + 2), p(base + 3), p(base + 4), p(base + 5))
       val a = (commonAdjust(hv, p, base + 2, base + 3, base + 4, base + 5) + 1) >> 1
 
       if !hv then
-        p(base + 5) = unsigned(signed(p(base + 5)) - a)
-        p(base + 2) = unsigned(signed(p(base + 2)) + a)
+        writable(p)(base + 5) = unsigned(signed(p(base + 5)) - a)
+        writable(p)(base + 2) = unsigned(signed(p(base + 2)) + a)
 
-  def macroblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: Array[Int], base: Int)
+  def macroblockFilterHorizontal(hev: Int, interior: Int, edge: Int, p: scala.Array[Int], base: Int)
   :   Unit =
 
     if shouldFilter(interior, edge, k => p(base + k)) then
@@ -95,22 +97,22 @@ private[hallucination] object Vp8Filter:
         val q0 = signed(p(base + 4)); val q1 = signed(p(base + 5)); val q2 = signed(p(base + 6))
         val w = clamp(clamp(p1 - q1) + 3*(q0 - p0))
         val a1 = clamp((27*w + 63) >> 7)
-        p(base + 4) = unsigned(q0 - a1); p(base + 3) = unsigned(p0 + a1)
+        writable(p)(base + 4) = unsigned(q0 - a1); writable(p)(base + 3) = unsigned(p0 + a1)
         val a2 = clamp((18*w + 63) >> 7)
-        p(base + 5) = unsigned(q1 - a2); p(base + 2) = unsigned(p1 + a2)
+        writable(p)(base + 5) = unsigned(q1 - a2); writable(p)(base + 2) = unsigned(p1 + a2)
         val a3 = clamp((9*w + 63) >> 7)
-        p(base + 6) = unsigned(q2 - a3); p(base + 1) = unsigned(p2 + a3)
+        writable(p)(base + 6) = unsigned(q2 - a3); writable(p)(base + 1) = unsigned(p2 + a3)
       else
         commonAdjust(true, p, base + 2, base + 3, base + 4, base + 5)
 
   // Vertical filters (horizontal edge, eight samples down a column at `point`, spacing `stride`).
 
-  def simpleSegmentVertical(edge: Int, p: Array[Int], point: Int, stride: Int): Unit =
+  def simpleSegmentVertical(edge: Int, p: scala.Array[Int], point: Int, stride: Int): Unit =
     if simpleThreshold(edge, p(point - stride), p(point), p(point - 2*stride), p(point + stride))
     then commonAdjust(true, p, point - 2*stride, point - stride, point, point + stride)
 
   def subblockFilterVertical
-    ( hev: Int, interior: Int, edge: Int, p: Array[Int], point: Int, stride: Int )
+    ( hev: Int, interior: Int, edge: Int, p: scala.Array[Int], point: Int, stride: Int )
   :   Unit =
 
     if shouldFilter(interior, edge, k => p(point + (k - 4)*stride)) then
@@ -121,11 +123,11 @@ private[hallucination] object Vp8Filter:
         (commonAdjust(hv, p, point - 2*stride, point - stride, point, point + stride) + 1) >> 1
 
       if !hv then
-        p(point + stride) = unsigned(signed(p(point + stride)) - a)
-        p(point - 2*stride) = unsigned(signed(p(point - 2*stride)) + a)
+        writable(p)(point + stride) = unsigned(signed(p(point + stride)) - a)
+        writable(p)(point - 2*stride) = unsigned(signed(p(point - 2*stride)) + a)
 
   def macroblockFilterVertical
-    ( hev: Int, interior: Int, edge: Int, p: Array[Int], point: Int, stride: Int )
+    ( hev: Int, interior: Int, edge: Int, p: scala.Array[Int], point: Int, stride: Int )
   :   Unit =
 
     if shouldFilter(interior, edge, k => p(point + (k - 4)*stride)) then
@@ -138,10 +140,10 @@ private[hallucination] object Vp8Filter:
         val q1 = signed(p(point + stride)); val q2 = signed(p(point + 2*stride))
         val w = clamp(clamp(p1 - q1) + 3*(q0 - p0))
         val a1 = clamp((27*w + 63) >> 7)
-        p(point) = unsigned(q0 - a1); p(point - stride) = unsigned(p0 + a1)
+        writable(p)(point) = unsigned(q0 - a1); writable(p)(point - stride) = unsigned(p0 + a1)
         val a2 = clamp((18*w + 63) >> 7)
-        p(point + stride) = unsigned(q1 - a2); p(point - 2*stride) = unsigned(p1 + a2)
+        writable(p)(point + stride) = unsigned(q1 - a2); writable(p)(point - 2*stride) = unsigned(p1 + a2)
         val a3 = clamp((9*w + 63) >> 7)
-        p(point + 2*stride) = unsigned(q2 - a3); p(point - 3*stride) = unsigned(p2 + a3)
+        writable(p)(point + 2*stride) = unsigned(q2 - a3); writable(p)(point - 3*stride) = unsigned(p2 + a3)
       else
         commonAdjust(true, p, point - 2*stride, point - stride, point, point + stride)

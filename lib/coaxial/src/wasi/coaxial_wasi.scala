@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import scala.annotation.nowarn
 
 import anticipation.*
@@ -139,7 +141,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private var chunk: Array[Byte] = new Array[Byte](0)
+        private var chunk: Array[Byte]^{} = Array.empty[Byte]
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -161,7 +163,7 @@ package socketBackends:
               try
                 val want = if capacity < granted then capacity else granted
                 val data = stream.`blocking-read`(U64(want.toLong.bits)).invoke[Data]
-                chunk = data.mutable(using Unsafe)
+                chunk = data
                 start0 = 0
                 limit0 = chunk.length
                 if limit0 == 0 then refill(demand) else limit0
@@ -177,8 +179,8 @@ package socketBackends:
       val stream: Foreign of "output-stream" from Wit = outputHandle
 
       input.sweep: (storage, start, count) =>
-        val slice = storage.asInstanceOf[Array[Byte]].slice(start, start + count).nn
-        stream.`blocking-write-and-flush`(slice.immutable(using Unsafe)).invoke[Unit]
+        val slice = storage.asInstanceOf[scala.Array[Byte]].slice(start, start + count).nn
+        stream.`blocking-write-and-flush`(Array.unsafeFrozen(slice)).invoke[Unit]
 
     // Presents a connected socket's stream halves as a `Duplex`: `source` reads, `send` writes,
     // `close` drops both streams and the socket.
@@ -251,7 +253,7 @@ package socketBackends:
     def dialDomain(address: DomainSocket, options: List[SocketOption]): WasiExchange =
       unsafely(abort(ConnectionError(ConnectionError.Reason.Accept)))
 
-    def request(exchange: WasiExchange, input: (Stream[Data] over Credit)^): Unit =
+    def request(exchange: WasiExchange, consume input: (Stream[Data] over Credit)^): Unit =
       drain(exchange.output, input)
       exchange.output.dispose()
 
@@ -282,4 +284,4 @@ package socketBackends:
     def routeUdpPort(port: UdpPort, interface: Optional[MacAddress], options: List[SocketOption]): Unit =
       ()
 
-    def dispatch(courier: Unit, input: (Stream[Data] over Credit)^): Unit = ()
+    def dispatch(courier: Unit, consume input: (Stream[Data] over Credit)^): Unit = ()

@@ -33,6 +33,7 @@
 package enigmatic
 
 import soundness.*
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
@@ -119,7 +120,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     test(m"Encode to Binary"):
       import alphabets.binaryStandard
-      IArray[Byte](1, 2, 3, 4).serialize[Binary]
+      Array.of[Byte](1, 2, 3, 4).serialize[Binary]
     . assert(_ == t"00000001000000100000001100000100")
 
     test(m"Extract PEM message type"):
@@ -156,11 +157,11 @@ object Tests extends Suite(m"Enigmatic tests"):
       val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
       val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
       val stream = chain.s.grouped(11).map(_.tt).stream
-      summon[LazyList[Pem] is Aggregable by Text].accept(stream).map(_.label).to(List)
+      summon[Chain[Pem] is Aggregable by Text].accept(stream).map(_.label).stdlib.to(List)
     . assert(_ == List.fill(3)(PemLabel.Proprietary(t"EXAMPLE")))
 
     test(m"PEM chain of an input without blocks is empty"):
-      summon[LazyList[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).to(List)
+      summon[Chain[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).stdlib.to(List)
     . assert(_ == List())
 
     test(m"PEM streams its armored form"):
@@ -228,8 +229,8 @@ object Tests extends Suite(m"Enigmatic tests"):
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
-        t"Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to(List)
-    . assert(_ == t"Hello world".in[Data].to(List))
+        t"Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to[List]
+    . assert(_ == t"Hello world".in[Data].to[List])
 
     test(m"one-byte-chunk streams roundtrip through stream encrypt and decrypt"):
       import blockCipherMode.cbc, blockCipherPadding.pkcs7
@@ -237,26 +238,26 @@ object Tests extends Suite(m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
-        val encrypted = plain.grouped(1).iterator.stream.encrypt(InitializationVector.random)
-        encrypted.memoize.grouped(1).iterator.stream.decrypt.memoize.to(List)
-    . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to(List))
+        val encrypted = plain.readable.grouped(1).map(Array.frozen(_)).iterator.stream.encrypt(InitializationVector.random)
+        encrypted.memoize.readable.grouped(1).map(Array.frozen(_)).iterator.stream.decrypt.memoize.to[List]
+    . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
     test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
       key.uncloak:
         t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
-        . stream.decrypt.memoize.to(List)
-    . assert(_ == t"Hello world".in[Data].to(List))
+        . stream.decrypt.memoize.to[List]
+    . assert(_ == t"Hello world".in[Data].to[List])
 
-    test(m"legacy LazyList encryption survives one-byte chunks"):
+    test(m"legacy Chain encryption survives one-byte chunks"):
       import blockCipherMode.cbc, blockCipherPadding.pkcs7
       import charEncoders.utf8Encoder
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]
-        val chunks = plain.grouped(1).map { chunk => chunk }.to(LazyList)
-        chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
+        val chunks = plain.readable.grouped(1).map { chunk => Array.frozen(chunk) }.to(Chain)
+        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
@@ -294,7 +295,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       // resulting all-zero IV makes CBC encryption repeatable, demonstrating that
       // the provider seam (and its random source) is injectable.
       given Crypto:
-        def random: Crypto.Random = size => IArray.fill[Byte](size)(0.toByte)
+        def random: Crypto.Random = size => Array.fill[Byte](size)(0.toByte)
         def aes: Crypto.SymmetricCipher = JavaStdlibCrypto.aes
         def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
         def hmac(algorithm: Text): Crypto.Mac = JavaStdlibCrypto.hmac(algorithm)
@@ -375,8 +376,8 @@ object Tests extends Suite(m"Enigmatic tests"):
     test(m"Streaming encryption round-trips via one-shot decryption"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
-        val chunks = LazyList(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-        chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
+        val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
+        Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
     . assert(_ == t"Hello, streaming world!")
 
     test(m"Streaming and one-shot encryption agree for a fixed IV"):
@@ -384,7 +385,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.uncloak:
         val streamed =
-          LazyList(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).reduce(_ ++ _)
+          Array.frozen(Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data]).encrypt(iv).stdlib.map(_.readable).reduce(_ ++ _))
 
         streamed.serialize[Hex] == t"Hello, streaming world!".in[Data].encrypt(iv).serialize[Hex]
     . assert(_ == true)
@@ -437,7 +438,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Cose envelope is tagged with CBOR tag 17 (Mac0)"):
         val wire = Cose(payload, key).bytes
-        wire(0).toInt & 0xFF
+        wire.readable(0).toInt & 0xFF
       . assert(_ == 0xD1)   // major type 6 (tag) | tag value 17 = 0xC0 | 17 = 0xD1
 
       test(m"Verification fails with the wrong key"):
@@ -449,10 +450,12 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Verification fails after tampering the wire bytes"):
         val wire = Cose(payload, key).bytes
-        val tampered = wire.mutable(using Unsafe)
+        val tampered = Array[Byte](wire.length)
+        tampered.copyFrom(wire, 0, 0, wire.length)
         // Flip a bit in the MAC tag near the end of the envelope.
-        tampered(tampered.length - 5) = (tampered(tampered.length - 5) ^ 0xFF.toByte).toByte
-        tampered.immutable(using Unsafe).verify[Cose](key)
+        val index = wire.length - 5
+        tampered(index) = (tampered(index) ^ 0xFF.toByte).toByte
+        Array.freeze(tampered).verify[Cose](key)
       . assert(!_)
 
     suite(m"OpenSSL provider (libcrypto via xenophile FFM)"):
@@ -462,7 +465,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       val key32: Data = t"a-32-byte-key-for-aes-256-cbc!!!".in[Data]
 
       test(m"RAND_bytes returns the requested number of bytes"):
-        OpensslCrypto.random.bytes(32).length
+        OpensslCrypto.random.bytes(32).readable.length
       . assert(_ == 32)
 
       test(m"HMAC-SHA256 agrees with the JDK provider"):
@@ -513,8 +516,8 @@ object Tests extends Suite(m"Enigmatic tests"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.uncloak:
-          val chunks = LazyList(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
-          chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
+          val chunks = Chain(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
+          Array.frozen(chunks.encrypt(InitializationVector.random).stdlib.map(_.readable).reduce(_ ++ _)).decrypt.as[Text]
       . assert(_ == t"Hello, streaming world!")
 
     suite(m"Keystores"):
@@ -523,16 +526,16 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       given (Text is Abstractable across Paths to Text) = identity(_)
 
-      def createKeystore(password: Array[Char] | Null): Text =
+      def createKeystore(password: scala.Array[Char] | Null): Text =
         val path = t"/tmp/enigmatic-keystore-${java.util.UUID.randomUUID.nn.toString}.p12"
         val keystore = js.KeyStore.getInstance("PKCS12").nn
         keystore.load(null, null)
         val out = ji.FileOutputStream(path.s)
-        try keystore.store(out, if password == null then Array.empty[Char] else password)
+        try keystore.store(out, if password == null then scala.Array.empty[Char] else password)
         finally out.close()
         path
 
-      val guarded = createKeystore(Array('s', 'e', 's', 'a', 'm', 'e'))
+      val guarded = createKeystore(scala.Array('s', 'e', 's', 'a', 'm', 'e'))
 
       test(m"An empty keystore opens with the right password"):
         guarded.open[Keystore](Password(t"sesame")):
@@ -604,7 +607,7 @@ object Tests extends Suite(m"Enigmatic tests"):
       . assert(_ == t"hunter2")
 
       test(m"constructing a password from chars zeroes the input array"):
-        val chars = Array('h', 'u', 'n', 't', 'e', 'r', '2')
+        val chars = scala.Array('h', 'u', 'n', 't', 'e', 'r', '2')
         val password = Password(chars)
         (chars.forall(_ == '\u0000'), password.uncloak(String(cleartext.chars).tt))
       . assert(_ == (true, t"hunter2"))
@@ -869,7 +872,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
     suite(m"ASN.1 and DER"):
       // DER is canonical, so `encode` is the equality of record: the byte-carrying cases of `Asn1`
-      // are case classes over `IArray[Byte]`, whose synthesized `equals` compares arrays by
+      // are case classes over `Array[Byte]`, whose synthesized `equals` compares arrays by
       // identity. Every assertion below therefore compares hexadecimal encodings.
       def der(value: Asn1): Text = value.in[Der].data.serialize[Hex]
       def decode(hex: Text): Asn1 = Der(hex.deserialize[Hex]).as[Asn1]
@@ -899,9 +902,9 @@ object Tests extends Suite(m"Enigmatic tests"):
           t"02020100"))
 
       test(m"Octet strings and bit strings encode their content"):
-        List(der(Asn1.OctetString(IArray[Byte](1, 2, 3, 4, 5))),
-            der(Asn1.BitString(IArray[Byte](0x6e, 0x5d, 0xc0.toByte), 6)),
-            der(Asn1.BitString(IArray[Byte](), 0)))
+        List(der(Asn1.OctetString(Array.of[Byte](1, 2, 3, 4, 5))),
+            der(Asn1.BitString(Array.of[Byte](0x6e, 0x5d, 0xc0.toByte), 6)),
+            der(Asn1.BitString(Array.of[Byte](), 0)))
       . assert(_ == List(t"04050102030405", t"0304066E5DC0", t"030100"))
 
       test(m"Object identifiers combine their first two arcs"):
@@ -920,8 +923,8 @@ object Tests extends Suite(m"Enigmatic tests"):
           t"180F31393730303130313030303030305A"))
 
       test(m"A set's members are sorted by their encodings"):
-        val two = Asn1.OctetString(IArray[Byte](2.toByte))
-        val one = Asn1.OctetString(IArray[Byte](1.toByte))
+        val two = Asn1.OctetString(Array.of[Byte](2.toByte))
+        val one = Asn1.OctetString(Array.of[Byte](1.toByte))
 
         List(der(Asn1.Set(List(two, one))),
             der(Asn1.Set(List(Asn1.Integer(BigInt(256)), Asn1.Integer(BigInt(1))))))
@@ -929,7 +932,7 @@ object Tests extends Suite(m"Enigmatic tests"):
 
       test(m"Context tags encode explicitly, implicitly and in high-tag form"):
         List(der(Asn1.Tagged(0, true, Asn1.Integer(BigInt(2)))),
-            der(Asn1.Tagged(0, false, Asn1.OctetString(IArray[Byte](0xab.toByte)))),
+            der(Asn1.Tagged(0, false, Asn1.OctetString(Array.of[Byte](0xab.toByte)))),
             der(Asn1.Tagged(31, true, Asn1.Null)))
       . assert(_ == List(t"A003020102", t"8001AB", t"BF1F020500"))
 

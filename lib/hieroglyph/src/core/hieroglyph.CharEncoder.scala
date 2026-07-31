@@ -32,6 +32,8 @@
                                                                                                   */
 package hieroglyph
 
+import proscenium.compat.*
+
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
@@ -51,7 +53,7 @@ extends Encodable, Findable:
   type Self = Text
   type Form = Data
 
-  def encoded(text: Text): Data = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
+  def encoded(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(encoding.name.s).nn)
 
   // Chunk boundaries are not character boundaries: a surrogate pair may be
   // split across two chunks, so encoding each chunk independently (as this
@@ -59,7 +61,7 @@ extends Encodable, Findable:
   // stage through a `CharBuffer` — the mirror of `CharDecoder.decoded` — so
   // pairs carry whole across chunks; malformed and unmappable input is
   // replaced, matching `getBytes` on the whole-value path above.
-  def encoded(stream: LazyList[Text]): LazyList[Data] =
+  def encoded(stream: Chain[Text]): Chain[Data] =
     val encoder =
       encoding.charset.newEncoder().nn
       . onMalformedInput(jnc.CodingErrorAction.REPLACE).nn
@@ -68,7 +70,7 @@ extends Encodable, Findable:
     val in = jn.CharBuffer.allocate(4096).nn
     val out = jn.ByteBuffer.allocate(4096).nn
 
-    def recur(todo: LazyList[Text], offset: Int = 0): LazyList[Data] =
+    def recur(todo: Chain[Text], offset: Int = 0): Chain[Data] =
       val count = in.remaining
 
       if !todo.nil then in.put(todo.head.s, offset, offset + count.min(todo.head.s.length - offset))
@@ -81,14 +83,14 @@ extends Encodable, Findable:
       if todo.nil && !status.isOverflow then encoder.flush(out)
 
       out.flip()
-      val array = new Array[Byte](out.remaining)
-      out.get(array)
-      val data: Data = array.immutable(using Unsafe)
+      val array = Array[Byte](out.remaining)
+      out.get(array.raw)
+      val data: Data = Array.freeze(array)
       out.clear()
       in.compact()
 
       def continue =
-        if todo.nil && !status.isOverflow then LazyList()
+        if todo.nil && !status.isOverflow then Chain()
         else if !todo.nil && count >= todo.head.s.length - offset then recur(todo.tail, 0)
         else recur(todo, offset + count)
 

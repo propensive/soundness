@@ -32,12 +32,13 @@
                                                                                                   */
 package savagery
 
-import scala.collection.immutable.SeqMap
+import scala.collection.immutable.VectorMap
 
 import anticipation.*
 import cataclysm.Css
 import geodesy.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 import xylophone.*
@@ -54,15 +55,16 @@ extends Figure:
 
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
+    val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"x" -> position.x.show
     attrs += t"y" -> position.y.show
     attrs += t"width" -> width.show
     attrs += t"height" -> height.show
 
-    if transforms.nonEmpty then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.stdlib.nonEmpty
+    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
+    Element(t"rect", Attributes.from(Map.of(attrs.result())), Array.of())
 
 case class Outline
   ( ops:        List[Stroke]       = Nil,
@@ -74,15 +76,16 @@ extends Figure:
   import Stroke.*
 
   def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
-    val attrs = SeqMap.newBuilder[Text, Text]
+    val d: Text = List.of(ops.stdlib.reverse.map(_.encode)).join(t" ")
+    val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"d" -> d
     id.let: svgId => attrs += t"id" -> svgId.text
 
-    if transforms.nonEmpty then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.stdlib.nonEmpty
+    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
     style.let: css => attrs += t"style" -> css.text
-    Element(t"path", Attributes.from(attrs.result()), IArray())
+    Element(t"path", Attributes.from(Map.of(attrs.result())), Array.of())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
   def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
@@ -126,7 +129,7 @@ extends Figure:
 
   def xml: Xml =
     given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
+    val attrs = VectorMap.newBuilder[Text, Text]
     attrs += t"cx" -> center.x.show
     attrs += t"cy" -> center.y.show
 
@@ -135,6 +138,7 @@ extends Figure:
       attrs += t"rx" -> xRadius.show
       attrs += t"ry" -> yRadius.show
 
-    if transforms.nonEmpty then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+    if transforms.stdlib.nonEmpty
+    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+    Element(if circle then t"circle" else t"ellipse", Attributes.from(Map.of(attrs.result())), Array.of())

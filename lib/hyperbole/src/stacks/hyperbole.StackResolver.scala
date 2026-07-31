@@ -32,6 +32,8 @@
                                                                                                   */
 package hyperbole
 
+import proscenium.compat.*
+
 import scala.collection.mutable
 
 import anticipation.*
@@ -146,7 +148,7 @@ class StackResolver(using classloader: Classloader) extends StackTrace.Resolver:
         case index  => load(name.substring(0, index).nn)
 
   private def sourceLine(path: Text, line: Int): Optional[Text] =
-    lines(path).let(_.lift(line - 1).optional.let(_.trim))
+    lines(path).let(_.stdlib.lift(line - 1).optional.let(_.trim))
 
   // The path TASTy records is the path the file was compiled from, which need not exist where the
   // code now runs; when it does not, the frame simply keeps everything but its line of source.

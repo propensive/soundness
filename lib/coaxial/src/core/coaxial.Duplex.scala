@@ -89,7 +89,7 @@ trait Duplex:
       type Transport = Credit
 
       private val block: Int = buffering.capacity(Substrate.Bytes)
-      private val storage: Array[Byte] = new Array[Byte](block)
+      private val storage: scala.Array[Byte] = new scala.Array[Byte](block)
       private var mark0: Int = 0
 
       def demand: Credit = Credit(Long.MaxValue)
@@ -112,5 +112,5 @@ trait Duplex:
 
       private update def drain(): Unit =
         if mark0 > 0 then
-          send(Stream(storage.slice(0, mark0).nn.immutable(using Unsafe)))
+          send(Stream(Array.unsafeFrozen(storage.slice(0, mark0).nn)))
           mark0 = 0
