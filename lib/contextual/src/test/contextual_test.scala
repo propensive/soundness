@@ -32,8 +32,6 @@
                                                                                                   */
 package contextual
 
-package contextual
-
 import soundness.*
 
 // DISABLED BY THE COLLECTIONS MERGE, NOT YET DIAGNOSED.
