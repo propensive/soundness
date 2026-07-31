@@ -36,10 +36,10 @@ import contingency.*, strategies.throwUnsafely
 import gossamer.t
 
 object TimingMain:
-  def time(label: String, payload: IArray[Byte], iterations: Int)
-    ( parse: IArray[Byte] => Any ): Unit =
+  def time(label: String, payload: Array[Byte]^{}, iterations: Int)
+    ( parse: Array[Byte]^{} => Any ): Unit =
 
-    val raw = payload.asInstanceOf[Array[Byte]]
+    val raw = payload.asInstanceOf[scala.Array[Byte]]
 
     // Warmup
     var w = 0
@@ -60,7 +60,7 @@ object TimingMain:
     println:
       f"$label%-40s ${nsPerOp}%9.1f ns/op  ${opsPerSec.toLong}%14d ops/s  ${mbPerSec}%8.1f MB/s"
 
-  def main(args: Array[String]): Unit =
+  def main(args: scala.Array[String]): Unit =
     val iterations =
       if args.length > 0 then args(0).toInt else 1_000_000
 
@@ -71,24 +71,24 @@ object TimingMain:
       f"${"Corpus 1: small object (3 fields)"}%-40s   payload=${Benchmarks.cborBytes1.length} bytes"
     time("  Breviloquence", Benchmarks.cborBytes1, iterations)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes1, iterations): bytes =>
-      Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])
+      Benchmarks.parseWithJackson(bytes.asInstanceOf[scala.Array[Byte]])
     time("  borer", Benchmarks.cborBytes1, iterations): bytes =>
-      Benchmarks.parseWithBorer(bytes.asInstanceOf[Array[Byte]])
+      Benchmarks.parseWithBorer(bytes.asInstanceOf[scala.Array[Byte]])
     println()
 
     println(f"${"Corpus 2: 100 user records"}%-40s   payload=${Benchmarks.cborBytes2.length} bytes")
     time("  Breviloquence", Benchmarks.cborBytes2, iterations/10)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes2, iterations/10): bytes =>
-      Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])
+      Benchmarks.parseWithJackson(bytes.asInstanceOf[scala.Array[Byte]])
     time("  borer", Benchmarks.cborBytes2, iterations/10): bytes =>
-      Benchmarks.parseWithBorer(bytes.asInstanceOf[Array[Byte]])
+      Benchmarks.parseWithBorer(bytes.asInstanceOf[scala.Array[Byte]])
     println()
 
     println:
       f"${"Corpus 4: 1000 small integers"}%-40s   payload=${Benchmarks.cborBytes4.length} bytes"
     time("  Breviloquence", Benchmarks.cborBytes4, iterations/10)(Cbor.Ast.parse)
     time("  Jackson", Benchmarks.cborBytes4, iterations/10): bytes =>
-      Benchmarks.parseWithJackson(bytes.asInstanceOf[Array[Byte]])
+      Benchmarks.parseWithJackson(bytes.asInstanceOf[scala.Array[Byte]])
     time("  borer", Benchmarks.cborBytes4, iterations/10): bytes =>
-      Benchmarks.parseWithBorer(bytes.asInstanceOf[Array[Byte]])
+      Benchmarks.parseWithBorer(bytes.asInstanceOf[scala.Array[Byte]])
     println()

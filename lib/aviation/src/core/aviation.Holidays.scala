@@ -32,7 +32,7 @@
                                                                                                   */
 package aviation
 
-import scala.collection.immutable.*
+import scala.collection.immutable.SortedMap
 
 import rudiments.*
 import vacuous.*

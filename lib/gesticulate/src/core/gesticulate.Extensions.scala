@@ -32,11 +32,15 @@
                                                                                                   */
 package gesticulate
 
+import proscenium.compat.*
+
 import anticipation.*
+import rudiments.*
+import vacuous.*
 import gossamer.*
 
 object Extensions:
-  def guess(ext: Text): MediaType = mediaTypes.getOrElse(ext, media"application/octet-stream")
+  def guess(ext: Text): MediaType = mediaTypes.at(ext).or(media"application/octet-stream")
 
   val mediaTypes: Map[Text, MediaType] =
     Map

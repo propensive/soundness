@@ -32,6 +32,8 @@
                                                                                                   */
 package xenophile
 
+import proscenium.compat.*
+
 import java.lang.foreign.*
 
 import anticipation.*
@@ -53,7 +55,7 @@ object ForeignBuffer:
     val buffer = apply(data.length)
 
     MemorySegment.copy
-      ( data.mutable(using Unsafe), 0, buffer.segment, ValueLayout.JAVA_BYTE, 0L, data.length )
+      ( Array.unsafeJvm(data), 0, buffer.segment, ValueLayout.JAVA_BYTE, 0L, data.length )
 
     buffer
 

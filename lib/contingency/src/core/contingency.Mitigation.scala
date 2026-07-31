@@ -32,7 +32,7 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 // Captures a `mitigate` handler: cases that map each covered error type to a *replacement error* of
 // another type. `mitigate { case FooError(n) => BarError(n) }.protect { … }` runs the block and

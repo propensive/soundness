@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
+import proscenium.compat.*
 
 import CborError.{Primitive, Reason}
 
@@ -57,18 +58,18 @@ extension (cbor: Cbor.Ast)
 
   // Byte strings have runtime class `[B`; arrays/maps have `[Ljava/lang/Object;`.
   @unexported
-  inline def isByteString: Boolean = cbor.isInstanceOf[Array[Byte]]
+  inline def isByteString: Boolean = cbor.isInstanceOf[scala.Array[Byte]]
 
   // Maps and arrays share the `Array[AnyRef]` runtime layout. Maps have an
   // even-length backing array; arrays are odd-length (with sentinel padding
   // when the logical element count is even).
   @unexported
   inline def isMap: Boolean =
-    cbor.isInstanceOf[Array[AnyRef]] && (cbor.asInstanceOf[Array[?]].length & 1) == 0
+    cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 0
 
   @unexported
   inline def isArray: Boolean =
-    cbor.isInstanceOf[Array[AnyRef]] && (cbor.asInstanceOf[Array[?]].length & 1) == 1
+    cbor.isInstanceOf[scala.Array[AnyRef]] && (cbor.asInstanceOf[scala.Array[?]].length & 1) == 1
 
   @unexported
   def primitive: Primitive =
@@ -93,16 +94,16 @@ extension (cbor: Cbor.Ast)
   inline def entries: Int = Cbor.Ast.size(cbor)
 
   @unexported
-  def element(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index)
+  def element(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index)
 
   @unexported
-  inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index*2)
+  inline def key(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2)
   @unexported
-  inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[IArray[Cbor.Ast]](index*2 + 1)
+  inline def value(index: Int): Cbor.Ast = cbor.asInstanceOf[Array[Cbor.Ast]^{}].readable(index*2 + 1)
 
   @unexported
   def index(key: String): Int =
-    val array = cbor.asInstanceOf[IArray[Any]]
+    val array = cbor.asInstanceOf[Array[Any]^{}]
     val count = array.length
     var index = 0
 
@@ -128,9 +129,9 @@ extension (cbor: Cbor.Ast)
     if isTextString then cbor.asInstanceOf[String] else expected(Primitive.TextString) yet ""
 
   @unexported
-  def byteString: IArray[Byte] raises CborError =
-    if isByteString then cbor.asInstanceOf[IArray[Byte]]
-    else expected(Primitive.ByteString) yet IArray.empty[Byte]
+  def byteString: Array[Byte]^{} raises CborError =
+    if isByteString then cbor.asInstanceOf[Array[Byte]^{}]
+    else expected(Primitive.ByteString) yet Array.empty[Byte]
 
   @unexported
   def boolean: Boolean raises CborError =
@@ -142,12 +143,12 @@ extension (cbor: Cbor.Ast)
     else expected(Primitive.Tag) yet Cbor.Tag(0L, vacuous.Unset)
 
   @unexported
-  def array: IArray[Cbor.Ast] raises CborError =
+  def array: Array[Cbor.Ast]^{} raises CborError =
     if isArray then
-      val full = cbor.asInstanceOf[IArray[Cbor.Ast]]
+      val full = cbor.asInstanceOf[Array[Cbor.Ast]^{}]
       val count = elements
 
-      if count == full.length then full else IArray.tabulate(count)(full(_))
+      if count == full.length then full else Array.tabulate(count)(full.readable(_))
     else
       expected(Primitive.Array)
-      IArray.empty[Cbor.Ast]
+      Array.empty[Cbor.Ast]

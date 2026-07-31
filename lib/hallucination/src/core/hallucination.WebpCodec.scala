@@ -33,11 +33,10 @@
 package hallucination
 
 import java.io as ji
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import Binary.*
 import RasterError.Reason
@@ -70,9 +69,9 @@ private[hallucination] object WebpCodec:
     fourcc("WEBP")
     fourcc("VP8 ")
     u32(frame.length)
-    out.write(frame.mutable(using Unsafe))
+    out.write(Array.unsafeJvm(frame))
     if (frame.length & 1) == 1 then out.write(0)
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
   def decode(data: Data): Raster raises RasterError =
     try
@@ -111,10 +110,10 @@ private[hallucination] object WebpCodec:
     Raster.build(frame.width, frame.height, Descriptor.rgb)(rgb(_).toLong & 0xffffff)
 
   // Builds an RGBA raster from the decoded, un-transformed byte buffer (in RGBA order).
-  private def raster(width: Int, height: Int, rgba: Array[Byte]): Raster =
+  private def raster(width: Int, height: Int, rgba: scala.Array[Byte]): Raster =
     Raster.build(width, height, Descriptor.rgba): index =>
       (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
         (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
 
   private def fourcc(data: Data, offset: Int): String =
-    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn
+    String(scala.Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn

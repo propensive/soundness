@@ -34,6 +34,7 @@ package enigmatic
 
 import java.security as js, js.spec as jss, js.interfaces as jsi
 import javax.crypto as jc, javax.crypto.spec.*
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -50,9 +51,9 @@ import vacuous.*
 object JavaStdlibCrypto extends Crypto:
   def random: Crypto.Random = new Crypto.Random:
     def bytes(size: Int): Data =
-      val output = new Array[Byte](size)
-      js.SecureRandom().nextBytes(output)
-      output.immutable(using Unsafe)
+      val output = Array[Byte](size)
+      js.SecureRandom().nextBytes(output.raw)
+      Array.freeze(output)
 
   def aes:       Crypto.SymmetricCipher = symmetric(t"AES")
   def des:       Crypto.SymmetricCipher = symmetric(t"DES")
@@ -63,8 +64,8 @@ object JavaStdlibCrypto extends Crypto:
   def hmac(algorithm: Text): Crypto.Mac = new Crypto.Mac:
     def mac(key: Data, data: Data): Data =
       val mac = jc.Mac.getInstance(algorithm.s).nn
-      mac.init(SecretKeySpec(key.to(Array), algorithm.s))
-      mac.doFinal(data.to(Array)).nn.immutable(using Unsafe)
+      mac.init(SecretKeySpec(key.readable.to(scala.Array), algorithm.s))
+      Array.unsafeFrozen(mac.doFinal(data.readable.to(scala.Array)).nn)
 
   def rsa: Crypto.PublicKeyCipher = new Crypto.PublicKeyCipher:
     private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
@@ -72,34 +73,36 @@ object JavaStdlibCrypto extends Crypto:
 
     def encrypt(input: Data, publicKey: Data): Data =
       val instance = cipher()
-      val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.mutable(using Unsafe)))
+      // Both key specs and `Cipher.doFinal` copy the array they are handed; `doFinal` and
+      // `getEncoded` return a fresh one.
+      val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey)))
       instance.init(jc.Cipher.ENCRYPT_MODE, key)
-      instance.doFinal(input.mutable(using Unsafe)).nn.immutable(using Unsafe)
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(input)).nn)
 
     def decrypt(input: Data, privateKey: Data): Data =
       val instance = cipher()
 
       val key =
-        keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.mutable(using Unsafe)))
+        keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey)))
 
       instance.init(jc.Cipher.DECRYPT_MODE, key)
-      instance.doFinal(input.mutable(using Unsafe)).nn.immutable(using Unsafe)
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(input)).nn)
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("RSA").nn
       generator.initialize(bits)
-      generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn)
 
     def privateToPublic(privateKey: Data): Data =
       val javaKey =
-        keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.mutable(using Unsafe))).nn
+        keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey))).nn
 
       val key = javaKey match
         case key: jsi.RSAPrivateCrtKey => key
         case key: js.PrivateKey        => panic(m"unexpected private key type")
 
       val spec = jss.RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
-      keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(keyFactory().generatePublic(spec).nn.getEncoded.nn)
 
   def rsaSignature(digest: Text): Crypto.SignatureScheme =
     new Signatory(t"${digest}withRSA", t"RSA"):
@@ -193,17 +196,17 @@ object JavaStdlibCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = instance()
-      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.to(Array))))
-      sig.update(data.to(Array))
+      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey))))
+      sig.update(Array.unsafeJvm(data))
 
       sig.sign().nn.immutable(using Unsafe)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = instance()
-      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.to(Array))))
-      sig.update(data.to(Array))
+      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))))
+      sig.update(Array.unsafeJvm(data))
 
-      sig.verify(signature0.to(Array))
+      sig.verify(Array.unsafeJvm(signature0))
 
   def dsa: Crypto.SignatureScheme = new Crypto.SignatureScheme:
     private def signature(): js.Signature = js.Signature.getInstance("DSA").nn
@@ -211,37 +214,38 @@ object JavaStdlibCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = signature()
-      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.to(Array))))
-      sig.update(data.to(Array))
-      sig.sign().nn.immutable(using Unsafe)
+      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array))))
+      sig.update(data.readable.to(scala.Array))
+      Array.unsafeFrozen(sig.sign().nn)
 
     def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
       val sig = signature()
-      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.to(Array))))
-      sig.update(data.to(Array))
-      sig.verify(signature0.to(Array))
+      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(publicKey.readable.to(scala.Array))))
+      sig.update(data.readable.to(scala.Array))
+      sig.verify(signature0.readable.to(scala.Array))
 
     def generateKeyPair(bits: Int): Data =
       val generator = js.KeyPairGenerator.getInstance("DSA").nn
       generator.initialize(bits, js.SecureRandom())
-      generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn)
 
     def privateToPublic(privateKey: Data): Data =
-      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.to(Array))).nn match
+      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.readable.to(scala.Array))).nn match
         case key: jsi.DSAPrivateKey => key
         case key: js.PrivateKey     => panic(m"unexpected private key type")
 
       val params = key.getParams.nn
       val y = params.getG.nn.modPow(key.getX, params.getP)
       val spec = jss.DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
-      keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(keyFactory().generatePublic(spec).nn.getEncoded.nn)
 
   // Shared implementation for all JCE block ciphers; `algorithm` is the bare key
   // algorithm (e.g. `t"AES"`), used for `SecretKeySpec` and `KeyGenerator`, while
   // the full `transformation` (e.g. `t"AES/CBC/PKCS5Padding"`) drives the cipher.
   private def symmetric(algorithm: Text): Crypto.SymmetricCipher = new Crypto.SymmetricCipher:
+    // `SecretKeySpec` copies the key material it is given.
     private def makeKey(key: Data): SecretKeySpec =
-      SecretKeySpec(key.mutable(using Unsafe), algorithm.s)
+      SecretKeySpec(Array.unsafeJvm(key), algorithm.s)
 
     def blockSize(transformation: Text): Int =
       jc.Cipher.getInstance(transformation.s).nn.getBlockSize
@@ -249,31 +253,33 @@ object JavaStdlibCrypto extends Crypto:
     def generateKey(bits: Int): Data =
       val keyGen = jc.KeyGenerator.getInstance(algorithm.s).nn
       keyGen.init(bits)
-      keyGen.generateKey().nn.getEncoded.nn.immutable(using Unsafe)
+      Array.unsafeFrozen(keyGen.generateKey().nn.getEncoded.nn)
 
     def encrypt(transformation: Text, key: Data, iv: Optional[Data], data: Data): Data =
       val cipher = jc.Cipher.getInstance(transformation.s).nn
 
       iv.lay:
         cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
-        cipher.doFinal(data.mutable(using Unsafe)).nn.immutable(using Unsafe)
+        Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(data)).nn)
 
       .apply: iv =>
-        val ivBytes = iv.mutable(using Unsafe)
+        // `IvParameterSpec` copies the IV, and `++` builds a fresh array from both operands.
+        val ivBytes = Array.unsafeJvm(iv)
         cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(ivBytes))
-        (ivBytes ++ cipher.doFinal(data.mutable(using Unsafe)).nn).immutable(using Unsafe)
+        Array.unsafeFrozen(ivBytes ++ cipher.doFinal(Array.unsafeJvm(data)).nn)
 
     def decrypt(transformation: Text, key: Data, ivSize: Optional[Int], data: Data): Data =
       val cipher = jc.Cipher.getInstance(transformation.s).nn
-      val input = data.mutable(using Unsafe)
+      // `doFinal` reads its input, and `take`/`drop` copy, so one view serves the whole method.
+      val input = Array.unsafeJvm(data)
 
       ivSize.lay:
         cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key))
-        cipher.doFinal(input).nn.immutable(using Unsafe)
+        Array.unsafeFrozen(cipher.doFinal(input).nn)
 
       .apply: size =>
         cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key), IvParameterSpec(input.take(size)))
-        cipher.doFinal(input.drop(size)).nn.immutable(using Unsafe)
+        Array.unsafeFrozen(cipher.doFinal(input.drop(size)).nn)
 
     def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
       session(transformation, key, iv, jc.Cipher.ENCRYPT_MODE)
@@ -287,14 +293,14 @@ object JavaStdlibCrypto extends Crypto:
       val cipher = jc.Cipher.getInstance(transformation.s).nn
 
       iv.lay(cipher.init(opmode, makeKey(key))): iv =>
-        cipher.init(opmode, makeKey(key), IvParameterSpec(iv.mutable(using Unsafe)))
+        cipher.init(opmode, makeKey(key), IvParameterSpec(Array.unsafeJvm(iv)))
 
       new CipherSession:
         def update(chunk: Data): Data =
           // `Cipher.update` returns null when a block cipher has buffered the
-          // whole input pending a complete block.
-          cipher.update(chunk.mutable(using Unsafe)) match
-            case null              => Data()
-            case out: Array[Byte]  => out.immutable(using Unsafe)
+          // whole input pending a complete block, and a fresh array otherwise.
+          cipher.update(Array.unsafeJvm(chunk)) match
+            case null                   => Data()
+            case out: scala.Array[Byte] => Array.unsafeFrozen(out)
 
-        def finish(): Data = cipher.doFinal().nn.immutable(using Unsafe)
+        def finish(): Data = Array.unsafeFrozen(cipher.doFinal().nn)

@@ -33,11 +33,10 @@
 package hallucination
 
 import scala.collection.mutable as scm
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import RasterError.Reason
 
@@ -48,13 +47,13 @@ import RasterError.Reason
 private[hallucination] object GifLzw:
   // Decodes to one palette index per pixel; `length` bounds the output (trailing data beyond
   // the frame's pixel count is ignored, as decoders conventionally do).
-  def decode(minimum: Int, data: Data, length: Int): Array[Byte] raises RasterError =
+  def decode(minimum: Int, data: Data, length: Int): scala.Array[Byte] raises RasterError =
     val clear = 1 << minimum
     val end = clear + 1
-    val prefix = new Array[Int](4096)
-    val suffix = new Array[Byte](4096)
-    val stack = new Array[Byte](4096)
-    val output = new Array[Byte](length)
+    val prefix = new scala.Array[Int](4096)
+    val suffix = new scala.Array[Byte](4096)
+    val stack = new scala.Array[Byte](4096)
+    val output = new scala.Array[Byte](length)
 
     for index <- 0 until clear do suffix(index) = index.toByte
 
@@ -126,7 +125,7 @@ private[hallucination] object GifLzw:
 
   // Encodes palette indices, including the initial `clear` and final `end` codes; the caller
   // divides the result into GIF data sub-blocks.
-  def encode(minimum: Int, indices: Array[Byte]): Data =
+  def encode(minimum: Int, indices: scala.Array[Byte]): Data =
     val clear = 1 << minimum
     val end = clear + 1
     val dictionary = scm.HashMap[Int, Int]()
@@ -179,4 +178,4 @@ private[hallucination] object GifLzw:
     write(end)
     if bits > 0 then output += (accumulator&0xff).toByte
 
-    output.result().immutable(using Unsafe)
+    Array.unsafeFrozen(output.result())

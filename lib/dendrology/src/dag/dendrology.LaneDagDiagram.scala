@@ -32,6 +32,12 @@
                                                                                                   */
 package dendrology
 
+import scala.collection.immutable.Vector
+
+// Deliberate stdlib opt-out: these internals consume acyclicity's `Dag`, whose set algebra
+// remains on the stdlib `Set` for now.
+import scala.collection.immutable.{List, Map, Nil, Set, ::}
+
 import scala.collection.mutable as scm
 
 import acyclicity.*
@@ -47,14 +53,24 @@ object LaneDagDiagram:
   private case class Lane[node](source: node, target: node, col: Int)
 
   private final class Cell:
+    @scala.caps.unsafe.untrackedCaptures
     var top: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var down: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var left: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var right: Boolean = false
 
     // Distinguish pure crossings (where a horizontal lane passes over a continuing
     // vertical lane without sharing a node) from real junctions where lanes meet.
+    @scala.caps.unsafe.untrackedCaptures
     var verticalPassThrough: Boolean = false
+
+    @scala.caps.unsafe.untrackedCaptures
     var horizontalPassThrough: Boolean = false
 
     def tile: DagTile =
@@ -75,19 +91,23 @@ object LaneDagDiagram:
         case _                            => Space
 
   def apply[node](dag: Dag[node]): LaneDagDiagram[node] raises DagError =
-    val nodes: Series[node] = dag.sorted.to(Series)
+    val nodes: Vector[node] = dag.sorted.to(Vector)
     val total: Int = nodes.length
 
     if total == 0 then LaneDagDiagram(Nil) else
       val rowOf: Map[node, Int] = nodes.zipWithIndex.to(Map)
       val forward: Map[node, Set[node]] = dag.invert.edgeMap
 
-      val nodeCol: Array[Int] = new Array[Int](total)
-      val laneState: Array[Map[Int, Lane[node]]] = Array.fill(total + 1)(Map.empty[Int, Lane[node]])
-      val started: Array[Series[Lane[node]]] = Array.fill(total)(Series.empty[Lane[node]])
-      val directOut: Array[Boolean] = new Array[Boolean](total)
+      val nodeCol: scala.Array[Int]^ = new scala.Array[Int](total)
 
-      for r <- 0 until total do
+      val laneState: scala.Array[Map[Int, Lane[node]]]^ =
+        scala.Array.fill(total + 1)(Map.empty[Int, Lane[node]])
+
+      val started: scala.Array[Vector[Lane[node]]]^ = scala.Array.fill(total)(Vector.empty[Lane[node]])
+      val directOut: scala.Array[Boolean]^ = new scala.Array[Boolean](total)
+      var r = 0
+
+      while r < total do
         val current = nodes(r)
         val state = laneState(r)
         val terminating = state.filter: (_, lane) => lane.target == current
@@ -105,9 +125,9 @@ object LaneDagDiagram:
         nodeCol(r) = chosenCol
 
         val nextNode: Optional[node] = if r + 1 < total then nodes(r + 1) else Unset
-        val targets: Series[node] = forward.getOrElse(current, Set.empty).to(Series).sortBy(rowOf)
+        val targets: Vector[node] = forward.getOrElse(current, Set.empty).to(Vector).sortBy(rowOf)
 
-        val (directs, indirects) = nextNode.lay((Series.empty[node], targets)): nx =>
+        val (directs, indirects) = nextNode.lay((Vector.empty[node], targets)): nx =>
           targets.partition(_ == nx)
 
         directOut(r) = directs.nonEmpty
@@ -121,6 +141,7 @@ object LaneDagDiagram:
 
         started(r) = newLanes
         laneState(r + 1) = continuing ++ newLanes.map: lane => lane.col -> lane
+        r += 1
 
       val width: Int =
         val colsUsed = laneState.flatMap(_.keys) ++ nodeCol
@@ -162,7 +183,7 @@ object LaneDagDiagram:
 
   private def connectorRow[node]
     ( state:        Map[Int, Lane[node]],
-      justStarted:  Series[Lane[node]],
+      justStarted:  Vector[Lane[node]],
       prevNodeCol:  Int,
       curNodeCol:   Int,
       directEdge:   Boolean,
@@ -170,7 +191,7 @@ object LaneDagDiagram:
       width:        Int )
   :   List[DagTile] =
 
-    val cells = Array.fill(width)(LaneDagDiagram.Cell())
+    val cells = scala.Array.fill(width)(LaneDagDiagram.Cell())
     val startedCols = justStarted.iterator.map(_.col).to(Set)
 
     def drawBend(topEntry: Int, bottomExit: Int, continuing: Boolean): Unit =
@@ -249,7 +270,7 @@ object LaneDagDiagram:
   :   List[Int] =
 
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
-    val widths = Array.fill(maxCol)(2)
+    val widths = scala.Array.fill(maxCol)(2)
 
     rows.foreach: (tiles, optNode) =>
       if optNode.present then
@@ -266,7 +287,8 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
 
   def render[line](label: node => line)(using style: LaneDagStyle[line]): List[line] =
     val widths = LaneDagDiagram.defaultWidths(lines.iterator.map(_(0)))
-    lines.map: (tiles, node) => style.serialize(tiles, Map.empty, widths, node.let(label))
+    lines.map: (tiles, node) =>
+      style.serialize(proscenium.List.of(tiles), Map.empty, proscenium.List.of(widths), node.let(label))
 
   def render[line](glyph: node => line, label: node => line)(using style: LaneDagStyle[line])
   :   List[line] =
@@ -279,7 +301,8 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
       val glyphs: Map[Int, line] =
         if nodeIdx < 0 then Map.empty else node.let{ n => Map(nodeIdx -> glyph(n)) }.or(Map.empty)
 
-      style.serialize(tiles, glyphs, widths, node.let(label))
+      style.serialize
+        ( proscenium.List.of(tiles), glyphs, proscenium.List.of(widths), node.let(label) )
 
   def compact: LaneDagDiagram[node] = LaneDagDiagram(lines.filter(LaneDagDiagram.keepRow))
 

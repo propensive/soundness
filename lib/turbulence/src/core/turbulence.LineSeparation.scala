@@ -32,6 +32,9 @@
                                                                                                   */
 package turbulence
 
+import proscenium.compat.*
+import rudiments.reverse
+
 import java.lang as jl
 
 import anticipation.*
@@ -54,18 +57,18 @@ object LineSeparation:
   //
   // A separator-free input grows `partial` without bound — the inherent
   // exposure of any line reader; cap upstream if the input is adversarial.
-  given lines: Ductile.Of[LineSeparation, Text, IArray[Text], Credit, Credit] =
+  given lines: Ductile.Of[LineSeparation, Text, Array[Text]^{}, Credit, Credit] =
     new Ductile:
       type Self = LineSeparation
       type Operand = Text
-      type Result = IArray[Text]
+      type Result = Array[Text]^{}
       type Transport = Credit
       type Upstream = Credit
 
       def duct(consume stage: LineSeparation^)(using Buffering)
-      :   (Duct[Text, IArray[Text]] { type Transport = Credit; type Upstream = Credit })^ =
+      :   (Duct[Text, Array[Text]^{}] { type Transport = Credit; type Upstream = Credit })^ =
 
-        new Duct[Text, IArray[Text]]:
+        new Duct[Text, Array[Text]^{}]:
           type Transport = Credit
           type Upstream = Credit
 
@@ -118,7 +121,7 @@ object LineSeparation:
 
           // Deliver the staged lines into the target window at `at`, returning
           // how many were written. The caller guarantees two free slots.
-          private update def deliver(slots: Array[AnyRef]^, at: Int): Int =
+          private update def deliver(slots: scala.Array[AnyRef]^, at: Int): Int =
             var written: Int = 0
 
             if emitted > 0 then
@@ -142,7 +145,7 @@ object LineSeparation:
               targetSpace: Int )
           :   Duct.Progress =
 
-            val chars = source.asInstanceOf[Array[Char]]
+            val chars = source.asInstanceOf[scala.Array[Char]]
             var consumed: Int = 0
             var produced: Int = 0
 
@@ -161,7 +164,7 @@ object LineSeparation:
                   if char == '\n' then { consumed += 1; act(stage.crlf) }
                   else act(stage.cr)
 
-                produced += deliver(target.asInstanceOf[Array[AnyRef]^], targetOffset + produced)
+                produced += deliver(target.asInstanceOf[scala.Array[AnyRef]^], targetOffset + produced)
               else
                 val char = chars(sourceOffset + consumed)
 
@@ -174,7 +177,7 @@ object LineSeparation:
                     else act(stage.lf)
 
                     produced +=
-                      deliver(target.asInstanceOf[Array[AnyRef]^], targetOffset + produced)
+                      deliver(target.asInstanceOf[scala.Array[AnyRef]^], targetOffset + produced)
                   else pending = 10
                 else if char == '\r' then
                   consumed += 1
@@ -185,7 +188,7 @@ object LineSeparation:
                     else act(stage.cr)
 
                     produced +=
-                      deliver(target.asInstanceOf[Array[AnyRef]^], targetOffset + produced)
+                      deliver(target.asInstanceOf[scala.Array[AnyRef]^], targetOffset + produced)
                   else pending = 13
                 else
                   // Bulk-append the run of ordinary chars up to the next
@@ -228,8 +231,8 @@ object LineSeparation:
 
             var count: Int = 0
 
-            while count < targetSpace && tail != Nil do
-              target.asInstanceOf[Array[AnyRef]^](targetOffset + count) =
+            while count < targetSpace && tail.nonEmpty do
+              target.asInstanceOf[scala.Array[AnyRef]^](targetOffset + count) =
                 tail.head.asInstanceOf[AnyRef]
 
               tail = tail.tail

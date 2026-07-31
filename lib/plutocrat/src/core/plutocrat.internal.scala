@@ -79,14 +79,16 @@ object internal:
   extension (isin: Isin)
     private[internal] def payload: Text =
 
-      val chars: Array[Char] = new Array(9)
+      val chars: scala.Array[Char]^ = new scala.Array(9)
 
       var numeric = 0L
+      var index = 2
 
-      for index <- 2 until 11 do
+      while index < 11 do
         val char = (isin >>> (60 - index*6)) & 0b111111
         numeric = numeric*10 + char
         chars(index - 2) = (char + '0').toChar
+        index += 1
 
       String(chars).tt
 
@@ -207,7 +209,7 @@ object internal:
       val c2: Char = (((money >> 54) & 0b00011111) + 'A').toChar
       val c3: Char = (((money >> 49) & 0b00011111) + 'A').toChar
 
-      new String(Array(c1, c2, c3)).tt
+      new String(scala.Array(c1, c2, c3)).tt
 
     def value: Long = (money << 15) >> 15
 

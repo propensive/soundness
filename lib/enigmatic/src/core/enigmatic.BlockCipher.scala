@@ -32,10 +32,13 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import gossamer.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
@@ -67,32 +70,34 @@ extends Cipher, Encryption, Symmetric:
   // mirroring `turbulence.Compression`. The IV (if any) is emitted as the first
   // chunk; the `NoPadding` alignment check happens at end-of-stream, where the
   // total length is finally known.
-  def encryptStream(stream: LazyList[Data], key: Data, vector: InitializationVector)
-  :   LazyList[Data] =
+  def encryptStream(stream: Chain[Data], key: Data, vector: InitializationVector)
+  :   Chain[Data] =
     val blockSize = cipher.blockSize(transformation)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     val session = cipher.stream(transformation, key, iv)
-    val prefix: LazyList[Data] = iv.lay(LazyList())(LazyList(_))
+    val prefix: Chain[Data] = iv.lay(Chain())(Chain(_))
 
-    def recur(stream: LazyList[Data], total: Int): LazyList[Data] = stream match
+    def recur(stream: Chain[Data], total: Int): Chain[Data] = stream match
       case head #:: tail =>
         val updated = session.update(head)
         val rest = recur(tail, total + head.length)
-        if updated.length > 0 then updated #:: rest else rest
+        // `Chain.cons` (asInstanceOf-based) rather than `#::` here: the extension cons
+        // trips separation checking on the captured `rest`.
+        if updated.length > 0 then Chain.cons(updated, rest) else rest
 
       case _ =>
         padding.verify(total, blockSize, mode.blockAligned)
         val last = session.finish()
-        if last.length > 0 then LazyList(last) else LazyList()
+        if last.length > 0 then Chain(last) else Chain()
 
     prefix #::: recur(stream, 0)
 
   // Kernel-native streaming encryption: the same session-driven
   // transformation as `encryptStream`, as a pipeline stage. The IV (if any)
   // is the stage's first output, and the `NoPadding` alignment check runs at
-  // end-of-stream, exactly as in the whole-value and `LazyList` forms.
+  // end-of-stream, exactly as in the whole-value and `Chain` forms.
   def encrypt
-    ( stream: (Stream[Data] over Credit)^, key: Data, vector: InitializationVector )
+    ( consume stream: (Stream[Data] over Credit)^, key: Data, vector: InitializationVector )
     ( using Buffering )
   :   (Stream[Data] over Credit)^ =
 
@@ -109,16 +114,25 @@ extends Cipher, Encryption, Symmetric:
   // end-of-stream — the provider buffers the whole message internally — so
   // streaming decryption of AEAD input bounds no memory; it is offered for
   // API uniformity only.
-  def decrypt(stream: (Stream[Data] over Credit)^, key: Data)
+  def decrypt(consume stream: (Stream[Data] over Credit)^, key: Data)
     (using buffering: Buffering, tactic: Tactic[CryptoError])
   :   (Stream[Data] over Credit)^ =
 
     val ivSize = if mode.usesIv then cipher.blockSize(transformation) else 0
 
-    val start: Data => CipherSession = iv =>
-      cipher.decryptStream(transformation, key, if mode.usesIv then iv else Unset)
+    // Locals rather than field accesses inside the lambda: a `start` that captured `this`
+    // would poison the consumed `DecipherDuct` argument below.
+    val cipher0 = cipher
+    val transformation0 = transformation
+    val usesIv = mode.usesIv
 
-    stream.via(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
+    val start: Data => CipherSession = iv =>
+      cipher0.decryptStream(transformation0, key, if usesIv then iv else Unset)
+
+    // The duct retains the ambient tactic, which the `consume` formal cannot see is not an
+    // aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      stream.via(DecipherDuct(start, ivSize, tactic)).asInstanceOf[(Stream[Data] over Credit)^]
 
   def decrypt(bytes: Data, key: Data): Data =
     val ivSize: Optional[Int] = if mode.usesIv then cipher.blockSize(transformation) else Unset
@@ -148,11 +162,11 @@ extends Duct[Data, Data]:
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
 
-  private update def deliver(target: Array[Byte], targetOffset: Int, targetSpace: Int): Int =
+  private update def deliver(target: scala.Array[Byte], targetOffset: Int, targetSpace: Int): Int =
     val count = targetSpace.min(pending.length - offset)
 
     if count > 0 then
-      System.arraycopy(pending.mutable(using Unsafe), offset, target, targetOffset, count)
+      System.arraycopy(Array.unsafeJvm(pending), offset, target, targetOffset, count)
       offset += count
 
     count
@@ -166,7 +180,7 @@ extends Duct[Data, Data]:
       targetSpace: Int )
   :   Duct.Progress =
 
-    val bytes = target.asInstanceOf[Array[Byte]]
+    val bytes = target.asInstanceOf[scala.Array[Byte]]
 
     if offset < pending.length then Duct.Progress(0, deliver(bytes, targetOffset, targetSpace))
     else
@@ -177,7 +191,7 @@ extends Duct[Data, Data]:
       Duct.Progress(sourceLength, deliver(bytes, targetOffset, targetSpace))
 
   override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
-    val bytes = target.asInstanceOf[Array[Byte]]
+    val bytes = target.asInstanceOf[scala.Array[Byte]]
 
     if offset < pending.length then deliver(bytes, targetOffset, targetSpace)
     else if !finished then
@@ -207,7 +221,7 @@ extends Duct[Data, Data]:
     case null         => Unset
     case text: String => text.tt
 
-  private val header: Array[Byte] = new Array[Byte](ivSize)
+  private val header: scala.Array[Byte] = new scala.Array[Byte](ivSize)
   private var headerFilled: Int = 0
 
   // Untracked, cast-erased: the inner duct is reached only through this
@@ -216,7 +230,7 @@ extends Duct[Data, Data]:
   private var inner: CipherDuct | Null = null
 
   private update def begin(): CipherDuct =
-    CipherDuct(start(header.take(headerFilled).immutable(using Unsafe)), Unset, _ => ())
+    CipherDuct(start(Array.unsafeFrozen(header.take(headerFilled))), Unset, _ => ())
 
   def regulation: Credit is Regulation = summon[Credit is Regulation]
   def translate(demand: Credit): Credit = demand
@@ -244,7 +258,7 @@ extends Duct[Data, Data]:
 
       case null =>
         val take = sourceLength.min(ivSize - headerFilled)
-        System.arraycopy(source.asInstanceOf[Array[Byte]], sourceOffset, header, headerFilled, take)
+        System.arraycopy(source.asInstanceOf[scala.Array[Byte]], sourceOffset, header, headerFilled, take)
         headerFilled += take
         if headerFilled == ivSize then inner = begin().asInstanceOf[CipherDuct]
         Duct.Progress(take, 0)
@@ -258,10 +272,14 @@ extends Duct[Data, Data]:
           // referenced from this platform-neutral file. (`canThrowAny` only relicenses the
           // rethrow of the exceptions this handler does not match.)
           import unsafeExceptions.canThrowAny
+          // The aborts are assumed separate: the error message closes over this duct only to
+          // render the detail text; there is no aliased writer.
           if securityException(error, "javax.crypto.BadPaddingException")
-          then tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+          then scala.caps.unsafe.unsafeAssumeSeparate:
+            tactic.abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
           else if securityException(error, "javax.crypto.IllegalBlockSizeException")
-          then tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+          then scala.caps.unsafe.unsafeAssumeSeparate:
+            tactic.abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
           else throw error
 
       case null =>

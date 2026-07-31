@@ -38,5 +38,7 @@ import vacuous.*
 object Scanner:
   given default: (erased dummy: DummyImplicit) => Scanner = Scanner(Unset)
 
-class Scanner(var nextStart: Optional[Int] = Unset, var matchEnd: Optional[Int] = Unset)
+class Scanner
+  ( @scala.caps.unsafe.untrackedCaptures var nextStart: Optional[Int] = Unset,
+    @scala.caps.unsafe.untrackedCaptures var matchEnd:  Optional[Int] = Unset )
 extends Findable

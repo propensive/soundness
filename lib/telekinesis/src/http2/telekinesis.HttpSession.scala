@@ -32,6 +32,9 @@
                                                                                                   */
 package telekinesis
 
+import scala.caps
+import proscenium.compat.*
+
 import java.io as ji
 import java.net as jn
 import javax.net.ssl as jns

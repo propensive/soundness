@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import scala.caps
+
 import anticipation.*
 import distillate.*
 import fulminate.*
@@ -59,7 +61,7 @@ object Cookie:
 
   object Value:
     given showable: Value is Showable = cookie =>
-      List
+      Iterable
         ( t"${cookie.name}=${cookie.value}",
           cookie.expiry.let { expiry => t"Max-Age=$expiry" },
           cookie.domain.let { domain => t"Domain=$domain" },
@@ -82,7 +84,7 @@ object Cookie:
         response.status(header :: response.textHeaders, body)
 
     given decodable: List[Cookie.Value] is Decodable in Text = value =>
-      value.cut(t"; ").flatMap:
+      value.cut(t"; ").bind:
         _.cut(t"=", 2) match
           case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
           case _                => Nil

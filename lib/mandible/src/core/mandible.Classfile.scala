@@ -42,28 +42,35 @@ import fulminate.*
 import gossamer.*
 import hellenism.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
 
 object Classfile:
-  given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data])
+  given aggregable: Classfile is Aggregable by Data = stream => new Classfile(stream.read[Data].readable)
 
   def apply(name: Text)(using classloader: Classloader): Optional[Classfile] =
-    classloader(name).let(new Classfile(_))
+    // Cast to the pure stdlib view (same erasure): the frozen member of the `Optional`
+    // union freshens to an `any.rd` the enclosing object cannot admit.
+    classloader(name).asInstanceOf[Optional[scala.IArray[Byte]]].let(new Classfile(_))
 
   def apply[classtype: ClassTag](using classloader: Classloader): Optional[Classfile] =
     val cls = classtype.runtimeClass
     val name = t"${cls.getName().nn.replace('.', '/').nn}.class"
-    classloader(name).let(new Classfile(_))
+    // Cast to the pure stdlib view (same erasure): the frozen member of the `Optional`
+    // union freshens to an `any.rd` the enclosing object cannot admit.
+    classloader(name).asInstanceOf[Optional[scala.IArray[Byte]]].let(new Classfile(_))
 
-class Classfile(data: Data):
+// `data` is the stdlib immutable array, not the frozen `Data`: a frozen-array constructor
+// field would make `Classfile` itself a capability. Conversion happens in the companion.
+class Classfile(data: scala.IArray[Byte]):
   val sourceFile: Optional[Text] =
-    model.attributes.nn.iterator.nn.asScala.to(List).collect:
+    model.attributes.nn.to[List].stdlib.collect:
       case attribute: jlca.SourceFileAttribute =>
         attribute.sourceFile().nn.stringValue.nn.tt
 
-    . prim
+    . headOption.getOrElse(Unset)
 
   class Method(model: jlc.MethodModel):
     def name: Text = model.methodName.nn.toString.tt
@@ -73,32 +80,32 @@ class Classfile(data: Data):
         case attr: jlca.CodeAttribute => attr
         case _                        => panic(m"code attribute not present")
 
-      val elements = code.elementList.nn.asScala.to(List)
+      val elements = code.elementList.nn.to[List]
 
       val labels: Map[jlc.Label, Int] =
-        val builder = Map.newBuilder[jlc.Label, Int]
+        val builder = scala.collection.immutable.Map.newBuilder[jlc.Label, Int]
         var offset = 0
 
-        elements.foreach:
+        elements.each:
           case instr: jlc.Instruction       => offset += instr.sizeInBytes
           case target: jlci.LabelTarget     => builder += target.label.nn -> offset
           case _                            => ()
 
-        builder.result()
+        Map.of(builder.result())
 
       val stackMaps: Map[jlc.Label, List[Bytecode.Frame]] =
         val attr =
           code.attributes.nn.iterator.nn.asScala.collectFirst:
             case smt: jlca.StackMapTableAttribute => smt
 
-        attr.fold(Map.empty): smt =>
-          smt.entries.nn.asScala.iterator.map: entry =>
+        attr.fold(Map.empty[jlc.Label, List[Bytecode.Frame]]): smt =>
+          smt.entries.nn.to[List].map: entry =>
             val frames =
-              entry.stack.nn.asScala.toList.map(Bytecode.Frame.fromVerificationType).reverse
+              List.of(entry.stack.nn.to[List].stdlib.map(Bytecode.Frame.fromVerificationType).reverse)
 
             entry.target.nn -> frames
 
-          . toMap
+          . to[Map]
 
       def recur
         ( todo:  List[jlc.CodeElement],
@@ -144,5 +151,6 @@ class Classfile(data: Data):
 
       Bytecode(sourceFile, instructions, code.maxStack, code.maxLocals)
 
-  private lazy val model: jlc.ClassModel = jlc.ClassFile.of().nn.parse(unsafely(data.mutable)).nn
-  lazy val methods: List[Method] = model.methods.nn.asScala.to(List).map(Method(_))
+  private lazy val model: jlc.ClassModel =
+    jlc.ClassFile.of().nn.parse(data.asInstanceOf[scala.Array[Byte]]).nn
+  lazy val methods: List[Method] = model.methods.nn.to[List].map(Method(_))

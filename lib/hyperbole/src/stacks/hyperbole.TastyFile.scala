@@ -44,7 +44,10 @@ object TastyFile:
   // back to what the stack trace already said, never failing.
   def apply(data: Data): Optional[TastyFile] =
     try
-      val unpickler = TastyUnpickler(data.mutable(using Unsafe))
+      val bytes = new scala.Array[Byte](data.length)
+      System.arraycopy(Array.unsafeJvm(data), 0, bytes, 0, data.length)
+      // The compiler's unpickler takes a pure array; `bytes` is freshly allocated just above.
+      val unpickler = TastyUnpickler(scala.caps.unsafe.unsafeAssumePure(bytes))
       val positions = unpickler.unpickle(stacksInternal.PositionSection())
 
       positions.map: positions =>
@@ -69,5 +72,6 @@ case class TastyFile(path: Optional[Text], definitions: List[TastyDefinition]):
   // pickled with an empty extent at whatever position was to hand, and so cannot be innermost
   // anything; they sort last, to be reached only when a frame really is one of them.
   def covering(line: Int): List[TastyDefinition] =
-    definitions.filter(_.covers(line)).sortBy: definition =>
-      (if definition.span == 0 then 1 else 0, definition.span)
+    List.of:
+      definitions.stdlib.filter(_.covers(line)).sortBy: definition =>
+        (if definition.span == 0 then 1 else 0, definition.span)

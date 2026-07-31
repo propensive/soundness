@@ -32,6 +32,8 @@
                                                                                                   */
 package crossparse
 
+import scala.sys
+
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import breviloquence.*

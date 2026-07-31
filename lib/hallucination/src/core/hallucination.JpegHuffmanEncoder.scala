@@ -32,20 +32,19 @@
                                                                                                   */
 package hallucination
 
+import proscenium.compat.*
+
 // Huffman encoding tables, ported from jpeg-encoder's `huffman.rs` (Apache-2.0/MIT). A table maps
 // each byte symbol to a (bit-length, code) pair; the code-length list and value list are also
 // retained for writing the DHT segment. Both the standard Annex K tables and per-image optimized
 // tables (Annex K.2) are supported.
 private[hallucination] final class JpegEncodeTable
-  ( val lengths: Array[Int],
-    val values:  Array[Int] ):
+  ( val lengths: Array[Int]^{}, val values: Array[Int]^{} ):
 
-  // The per-symbol (size, code) lookup, from the canonical code assignment (Figures C.1–C.3).
-  val sizeOf: Array[Int] = new Array[Int](256)
-  val codeOf: Array[Int] = new Array[Int](256)
-
-  locally:
-    val sizes = new Array[Int](256)
+  // The per-symbol (size, code) lookup, from the canonical code assignment (Figures C.1–C.3),
+  // built into fresh arrays and frozen zero-copy.
+  val (sizeOf, codeOf) =
+    val sizes = new scala.Array[Int](256)
     var k = 0
     var i = 0
 
@@ -59,7 +58,7 @@ private[hallucination] final class JpegEncodeTable
 
       i += 1
 
-    val codes = new Array[Int](256)
+    val codes = new scala.Array[Int](256)
     var code = 0
     var currentSize = if k > 0 then sizes(0) else 0
     var index = 0
@@ -73,22 +72,26 @@ private[hallucination] final class JpegEncodeTable
       code += 1
       index += 1
 
+    val sizeOf0 = new scala.Array[Int](256)
+    val codeOf0 = new scala.Array[Int](256)
     i = 0
 
     while i < values.length do
-      sizeOf(values(i)) = sizes(i)
-      codeOf(values(i)) = codes(i)
+      sizeOf0(values(i)) = sizes(i)
+      codeOf0(values(i)) = codes(i)
       i += 1
 
+    (sizeOf0.asInstanceOf[Array[Int]^{}], codeOf0.asInstanceOf[Array[Int]^{}])
+
 private[hallucination] object JpegHuffmanEncoder:
-  private val LumaDcLengths = Array(0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0)
-  private val LumaDcValues = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
-  private val ChromaDcLengths = Array(0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
-  private val ChromaDcValues = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+  private val LumaDcLengths: Array[Int]^{} = Array.of(0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0)
+  private val LumaDcValues: Array[Int]^{} = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
+  private val ChromaDcLengths: Array[Int]^{} = Array.of(0, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0)
+  private val ChromaDcValues: Array[Int]^{} = Array.of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11)
 
-  private val LumaAcLengths = Array(0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 0x7d)
+  private val LumaAcLengths: Array[Int]^{} = Array.of(0, 2, 1, 3, 3, 2, 4, 3, 5, 5, 4, 4, 0, 0, 1, 0x7d)
 
-  private val LumaAcValues = Array(
+  private val LumaAcValues: Array[Int]^{} = Array.of(
     0x01, 0x02, 0x03, 0x00, 0x04, 0x11, 0x05, 0x12, 0x21, 0x31, 0x41, 0x06, 0x13, 0x51, 0x61, 0x07,
     0x22, 0x71, 0x14, 0x32, 0x81, 0x91, 0xa1, 0x08, 0x23, 0x42, 0xb1, 0xc1, 0x15, 0x52, 0xd1, 0xf0,
     0x24, 0x33, 0x62, 0x72, 0x82, 0x09, 0x0a, 0x16, 0x17, 0x18, 0x19, 0x1a, 0x25, 0x26, 0x27, 0x28,
@@ -101,9 +104,9 @@ private[hallucination] object JpegHuffmanEncoder:
     0xe3, 0xe4, 0xe5, 0xe6, 0xe7, 0xe8, 0xe9, 0xea, 0xf1, 0xf2, 0xf3, 0xf4, 0xf5, 0xf6, 0xf7, 0xf8,
     0xf9, 0xfa)
 
-  private val ChromaAcLengths = Array(0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 0x77)
+  private val ChromaAcLengths: Array[Int]^{} = Array.of(0, 2, 1, 2, 4, 4, 3, 4, 7, 5, 4, 4, 0, 1, 2, 0x77)
 
-  private val ChromaAcValues = Array(
+  private val ChromaAcValues: Array[Int]^{} = Array.of(
     0x00, 0x01, 0x02, 0x03, 0x11, 0x04, 0x05, 0x21, 0x31, 0x06, 0x12, 0x41, 0x51, 0x07, 0x61, 0x71,
     0x13, 0x22, 0x32, 0x81, 0x08, 0x14, 0x42, 0x91, 0xa1, 0xb1, 0xc1, 0x09, 0x23, 0x33, 0x52, 0xf0,
     0x15, 0x62, 0x72, 0xd1, 0x0a, 0x16, 0x24, 0x34, 0xe1, 0x25, 0xf1, 0x17, 0x18, 0x19, 0x1a, 0x26,
@@ -136,10 +139,10 @@ private[hallucination] object JpegHuffmanEncoder:
 
   // Builds an image-optimized table from symbol frequencies (Annex K.2, Figures K.1–K.4). `freq`
   // has 257 entries; index 256 is a reserved sentinel guaranteeing a spare longest code.
-  def newOptimized(freq0: Array[Int]): JpegEncodeTable =
+  def newOptimized(freq0: scala.Array[Int]): JpegEncodeTable =
     val freq = freq0.clone()
-    val others = Array.fill(257)(-1)
-    val codesize = new Array[Int](257)
+    val others = scala.Array.fill(257)(-1)
+    val codesize = new scala.Array[Int](257)
     var running = true
 
     // Figure K.1: combine the two least-frequent symbols repeatedly, tracking merged chains.
@@ -180,7 +183,7 @@ private[hallucination] object JpegHuffmanEncoder:
             codesize(w2) += 1
 
     // Figure K.2: count codes of each length.
-    val bits = new Array[Int](33)
+    val bits = new scala.Array[Int](33)
     var i = 0
 
     while i < 257 do
@@ -205,7 +208,7 @@ private[hallucination] object JpegHuffmanEncoder:
     bits(length) -= 1
 
     // Figure K.4: sort the symbols by increasing code length.
-    val huffval = new Array[Int](256)
+    val huffval = new scala.Array[Int](256)
     var k = 0
     var size = 1
 
@@ -218,8 +221,10 @@ private[hallucination] object JpegHuffmanEncoder:
 
       size += 1
 
-    val lengths = new Array[Int](16)
+    val lengths = new scala.Array[Int](16)
     i = 0
     while i < 16 do { lengths(i) = bits(i + 1); i += 1 }
 
-    JpegEncodeTable(lengths, huffval.slice(0, k))
+    // The freshly-built length and value arrays are frozen zero-copy.
+    JpegEncodeTable
+      ( lengths.asInstanceOf[Array[Int]^{}], huffval.slice(0, k).asInstanceOf[Array[Int]^{}] )

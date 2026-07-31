@@ -33,6 +33,7 @@
 package hallucination
 
 import anticipation.*
+import proscenium.compat.*
 
 // Bounds-unchecked primitive readers shared by the pure codecs; out-of-range reads throw and
 // are translated to `RasterError(..., Truncated)` at each codec's boundary.

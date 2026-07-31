@@ -32,6 +32,8 @@
                                                                                                   */
 package vicarious
 
+import scala.collection.immutable.{List, Nil, ::}
+
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -62,7 +64,7 @@ object internal:
 
     ' {
         given classTag0: ClassTag[value] = $classTag
-        Catalog(IArray(${Varargs(values)}*))
+        Catalog(Array.of(${Varargs(values)}*))
       }
 
 

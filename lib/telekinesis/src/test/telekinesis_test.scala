@@ -32,7 +32,11 @@
                                                                                                   */
 package telekinesis
 
+import scala.math
+
 import soundness.*
+
+import proscenium.compat.*
 
 import errorDiagnostics.stackTracesDiagnostics
 import logging.silentLogging
@@ -113,10 +117,10 @@ object Tests extends Suite(m"Telekinesis tests"):
 
 
     suite(m"Response parsing"):
-      def chunks(text: Text, size: Int): LazyList[Data] =
+      def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): LazyList[Data] =
-          if offset >= data.length then LazyList() else
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
@@ -299,10 +303,10 @@ object Tests extends Suite(m"Telekinesis tests"):
       . aspire()
 
     suite(m"Request parsing"):
-      def chunks(text: Text, size: Int): LazyList[Data] =
+      def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): LazyList[Data] =
-          if offset >= data.length then LazyList() else
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
@@ -397,37 +401,43 @@ object Tests extends Suite(m"Telekinesis tests"):
       for blockSize <- blockSizes do
         test(m"fixedBody reads exactly N bytes at block size $blockSize"):
           val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
-          Http.Request.fixedBody(cursor, 5).memoize.utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.fixedBody(cursor, 5).memoize.utf8
 
         . assert(_ == t"hello")
 
         test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
           val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
-          Http.Request.fixedBody(cursor, 5).memoize
-          cursor.remainder.read[Data].utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.fixedBody(cursor, 5).memoize
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            cursor.remainder.read[Data].utf8
 
         . assert(_ == t" world")
 
         test(m"chunkedBody decodes chunks at block size $blockSize"):
           val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
           val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
-          Http.Request.chunkedBody(cursor).memoize.utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.chunkedBody(cursor).memoize.utf8
 
         . assert(_ == t"hello world")
 
         test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
           val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
           val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
-          Http.Request.chunkedBody(cursor).memoize
-          cursor.remainder.read[Data].utf8
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Http.Request.chunkedBody(cursor).memoize
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            cursor.remainder.read[Data].utf8
 
         . assert(_ == t"NEXT")
 
     suite(m"Response serialization"):
-      def chunks(text: Text, size: Int): LazyList[Data] =
+      def chunks(text: Text, size: Int): Chain[Data] =
         val data: Data = text.in[Data]
-        def go(offset: Int): LazyList[Data] =
-          if offset >= data.length then LazyList() else
+        def go(offset: Int): Chain[Data] =
+          if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
             data.slice(offset, end) #:: go(end)
         go(0)
@@ -463,7 +473,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Streaming body is framed with chunked transfer-encoding"):
-        val body = Http.Body.Flowing(() => Stream(LazyList(t"Hello".in[Data], t"World".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data]).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
@@ -473,7 +483,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           && text.ends(t"0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
-        val body = Http.Body.Flowing(() => Stream(LazyList(t"ab".in[Data], t"".in[Data], t"cd".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data]).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
@@ -629,7 +639,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       // A client that trusts any certificate, so the self-signed one is accepted.
       val trustManager = new javax.net.ssl.X509TrustManager:
-        type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+        type Certs = scala.Array[java.security.cert.X509Certificate | Null] | Null
         def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
         def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
         def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
@@ -687,7 +697,7 @@ object Tests extends Suite(m"Telekinesis tests"):
             val out = socket.getOutputStream.nn
 
             def write(frame: Frame): Unit =
-              out.write(frame.serialize.mutable(using Unsafe))
+              out.write(Array.unsafeJvm(frame.serialize))
               out.flush()
 
             write(Frame.Settings(Nil, ack = false))
@@ -883,7 +893,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       test(m"protocol restriction is applied to parameters"):
         val acceptance = TlsAcceptance(versions = List(Trust.Version.Tls13))
         val (_, parameters) = acceptance.materialize()
-        parameters.getProtocols.nn.to(List).map(_.nn.tt)
+        Array.unsafeFrozen(parameters.getProtocols.nn).toList.map(_.nn.tt)
       . assert(_ == List(t"TLSv1.3"))
 
       test(m"an acceptance bridges to a Tls carrying its policy"):

@@ -32,7 +32,7 @@
                                                                                                   */
 package contingency
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import scala.language.unsafeNulls
 import scala.quoted.*
@@ -54,7 +54,7 @@ package strategies:
   =>  (tactic: Tactic[error]^)
   =>  ( Tactic[error2]^ ) =
 
-    tactic.contramap(error2.mitigate(_))
+    scala.caps.unsafe.unsafeAssumeSeparate(tactic.contramap(error2.mitigate(_)))
 
   // Like `ThrowTactic`, these ambient strategies are `caps.Unscoped`: they capture no scoped
   // capability (they throw or terminate in place), so a use-site instantiation may flow into the
@@ -181,7 +181,7 @@ infix type raises [success, error <: Hazard] = Tactic[error]^ ?=> success
 // Fix candidates: give the match a default case, or use `tryNormalize`/`superTypeNormalized`
 // in place of `dealias`.
 infix type raising[success, errors] = errors match
-  case EmptyTuple.type => success
+  case scala.EmptyTuple.type => success
   case left *: right   => Tactic[left] ?=> raising[success, right]
   case _               => Tactic[errors] ?=> success
 

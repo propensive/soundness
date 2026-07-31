@@ -32,8 +32,8 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 object Shutdown:
   private val instance: Shutdown = Shutdown()
@@ -42,7 +42,7 @@ object Shutdown:
     type Target = Os.type
 
     def register(value: Os.type, action: Shutdown => Unit): () => Unit =
-      val runnable: Runnable^ = () => action(instance)
+      val runnable: Runnable^{action} = () => action(instance)
       val thread: Thread = Thread(runnable)
       Runtime.getRuntime.nn.addShutdownHook(thread)
 

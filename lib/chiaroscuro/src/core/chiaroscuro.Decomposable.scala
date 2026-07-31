@@ -32,6 +32,9 @@
                                                                                                   */
 package chiaroscuro
 
+import scala.caps
+import proscenium.compat.*
+
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -68,22 +71,25 @@ object Decomposable extends Decomposable2:
   =>  collection is Decomposable =
 
     caps.unsafe.unsafeAssumePure: list =>
-        Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
+        Decomposition.Sequence(t"List", list.stdlib.map(decomposable.decomposition(_)), list)
 
-  given series: [element, collection <: Series[element]]
+
+  given sequence: [element, collection <: Sequence[element]]
   =>  ( decomposable: => element is Decomposable )
   =>  collection is Decomposable =
 
-    caps.unsafe.unsafeAssumePure: series =>
-        Decomposition.Sequence(t"Series", series.map(decomposable.decomposition(_)).to(List), series)
+    caps.unsafe.unsafeAssumePure: sequence =>
+        Decomposition.Sequence(t"Sequence", sequence.stdlib.map(decomposable.decomposition(_)), sequence)
 
   given iarray: [element]
   =>  ( decomposable: => element is Decomposable )
-  =>  IArray[element] is Decomposable =
+  =>  (Array[element]^{}) is Decomposable =
 
     caps.unsafe.unsafeAssumePure: iarray =>
         Decomposition.Sequence
-          ( t"IArray", iarray.map(decomposable.decomposition(_)).to(List), iarray )
+          ( t"Array",
+            iarray.toSeq.map(decomposable.decomposition(_)),
+            iarray )
 
 trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition
@@ -125,7 +131,7 @@ trait Decomposable2 extends Decomposable3:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Decomposable =
       value =>
         val map =
-          fields(value) { [field] => field => label -> contextual.decomposition(field) }.to(Map)
+          Map.from((fields(value) { [field] => field => label -> contextual.decomposition(field) }).readable)
 
         Decomposition.Product(typeName, map, value)
 

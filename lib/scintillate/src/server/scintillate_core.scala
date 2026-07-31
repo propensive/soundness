@@ -32,6 +32,8 @@
                                                                                                   */
 package scintillate
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import digression.*
@@ -110,7 +112,8 @@ def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.tex
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
   ( using connection: HttpConnection )
-:   Http.Response raises AuthError =
+  ( using Tactic[AuthError] )
+:   Http.Response =
 
   connection.headers.authorization match
     case List(Auth.Basic(username, password)) =>
@@ -137,10 +140,11 @@ package webserverErrorPages:
   private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
 
   given standardErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
-    Http.Response(Unfulfilled(LazyList(prefix, postfix).ascribe(media"text/html")))
+    // Direct `Content`, not `.ascribe`: the inline re-elaboration freshens the chunk type.
+    Http.Response(Unfulfilled(Content(media"text/html", Chain[Data](prefix, postfix))))
 
   given stackTracesErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8Encoder
 
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
-    Http.Response(Unfulfilled(LazyList(prefix, stack, postfix).ascribe(media"text/html")))
+    Http.Response(Unfulfilled(Content(media"text/html", Chain[Data](prefix, stack, postfix))))

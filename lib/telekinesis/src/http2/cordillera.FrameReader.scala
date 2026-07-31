@@ -32,6 +32,9 @@
                                                                                                   */
 package cordillera
 
+import scala.caps
+import proscenium.compat.*
+
 import anticipation.{Data as Bytes, *}
 import contingency.*
 import gossamer.*
@@ -66,7 +69,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // Untracked: the reassembly buffer is reached only through this (exclusive)
   // reader, and every `slice` copies out of it.
   @caps.unsafe.untrackedCaptures
-  private var buffer: Array[Byte] = new Array(0)
+  private var buffer: scala.Array[Byte] = new scala.Array(0)
   private var pos: Int = 0
 
   // Ensure at least `n` unread bytes are buffered; false if the stream ends first.
@@ -77,13 +80,13 @@ extends caps.ExclusiveCapability, caps.Stateful:
       case count: Int =>
         if count > 0 then
           val remaining = buffer.length - pos
-          val grown = new Array[Byte](remaining + count)
+          val grown = new scala.Array[Byte](remaining + count)
           System.arraycopy(buffer, pos, grown, 0, remaining)
           System.arraycopy(input.window(using Unsafe), input.start, grown, remaining, count)
           input.skip(count)
           // The cast erases the fresh array's capture: it is confined to this
           // (exclusive) reader from here on.
-          buffer = grown.asInstanceOf[Array[Byte]]
+          buffer = grown.asInstanceOf[scala.Array[Byte]]
           pos = 0
 
       case _ =>
@@ -92,10 +95,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
     buffer.length - pos >= n
 
   private update def slice(n: Int): Bytes =
-    val out = new Array[Byte](n)
-    System.arraycopy(buffer, pos, out, 0, n)
+    val out = Array[Byte](n)
+    System.arraycopy(buffer, pos, out.raw, 0, n)
     pos += n
-    out.immutable(using Unsafe)
+    Array.freeze(out)
 
   // Consume and validate the given connection preface (RFC 7540 §3.5) ahead of
   // the first frame — the server role's first read on a new connection. A

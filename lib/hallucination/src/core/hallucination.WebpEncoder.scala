@@ -33,10 +33,9 @@
 package hallucination
 
 import java.io as ji
+import proscenium.compat.*
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 // The VP8L lossless encoder, ported from image-rs/image-webp (`src/lossless/encoder/mod.rs`,
 // MIT/Apache-2.0). It uses a fixed strategy — the subtract-green and (top/left) predictor
@@ -49,7 +48,7 @@ private[hallucination] object WebpEncoder:
     val alpha = raster.descriptor.hasAlpha
 
     // Expand the raster to an RGBA byte buffer.
-    val pixels = new Array[Byte](width*height*4)
+    val pixels = new scala.Array[Byte](width*height*4)
     var i = 0
 
     while i < width*height do
@@ -80,12 +79,12 @@ private[hallucination] object WebpEncoder:
     fourcc("WEBP")
     fourcc("VP8L")
     u32(frame.length)
-    out.write(frame.mutable(using Unsafe))
+    out.write(Array.unsafeJvm(frame))
 
     if (frame.length & 1) == 1 then out.write(0)
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
-  private def encodeFrame(pixels: Array[Byte], width: Int, height: Int, alpha: Boolean): Data =
+  private def encodeFrame(pixels: scala.Array[Byte], width: Int, height: Int, alpha: Boolean): Data =
     val writer = WebpBitWriter()
 
     // Header: signature, dimensions, alpha flag, version.
@@ -117,8 +116,8 @@ private[hallucination] object WebpEncoder:
     var i = 0
 
     while i < pixels.length do
-      pixels(i) = (pixels(i) - pixels(i + 1)).toByte
-      pixels(i + 2) = (pixels(i + 2) - pixels(i + 1)).toByte
+      writable(pixels)(i) = (pixels(i) - pixels(i + 1)).toByte
+      writable(pixels)(i + 2) = (pixels(i + 2) - pixels(i + 1)).toByte
       i += 4
 
     // Forward predictor: subtract the pixel above (rows ≥ 1), the pixel to the left (row 0), and
@@ -130,7 +129,7 @@ private[hallucination] object WebpEncoder:
       var j = 0
 
       while j < stride do
-        pixels(y*stride + j) = (pixels(y*stride + j) - pixels((y - 1)*stride + j)).toByte
+        writable(pixels)(y*stride + j) = (pixels(y*stride + j) - pixels((y - 1)*stride + j)).toByte
         j += 1
 
       y -= 1
@@ -138,17 +137,17 @@ private[hallucination] object WebpEncoder:
     var k = stride - 1
 
     while k >= 4 do
-      pixels(k) = (pixels(k) - pixels(k - 4)).toByte
+      writable(pixels)(k) = (pixels(k) - pixels(k - 4)).toByte
       k -= 1
 
-    pixels(3) = (pixels(3) - 255.toByte).toByte
+    writable(pixels)(3) = (pixels(3) - 255.toByte).toByte
 
     // Count symbol frequencies (with run-length compression of repeated pixels), then build and
     // write the codes.
-    val freq0 = new Array[Int](256)
-    val freq1 = new Array[Int](280)
-    val freq2 = new Array[Int](256)
-    val freq3 = new Array[Int](256)
+    val freq0 = new scala.Array[Int](256)
+    val freq1 = new scala.Array[Int](280)
+    val freq2 = new scala.Array[Int](256)
+    val freq3 = new scala.Array[Int](256)
 
     if !alpha then freq3(0) = 1
 
@@ -166,10 +165,10 @@ private[hallucination] object WebpEncoder:
       if run > 0 then countRun(run, freq1)
       p += 1 + run
 
-    val lengths0 = new Array[Int](256); val codes0 = new Array[Int](256)
-    val lengths1 = new Array[Int](280); val codes1 = new Array[Int](280)
-    val lengths2 = new Array[Int](256); val codes2 = new Array[Int](256)
-    val lengths3 = new Array[Int](256); val codes3 = new Array[Int](256)
+    val lengths0 = new scala.Array[Int](256); val codes0 = new scala.Array[Int](256)
+    val lengths1 = new scala.Array[Int](280); val codes1 = new scala.Array[Int](280)
+    val lengths2 = new scala.Array[Int](256); val codes2 = new scala.Array[Int](256)
+    val lengths3 = new scala.Array[Int](256); val codes3 = new scala.Array[Int](256)
 
     WebpHuffmanEncoder.writeTree(writer, freq1, lengths1, codes1)
     WebpHuffmanEncoder.writeTree(writer, freq0, lengths0, codes0)
@@ -206,23 +205,24 @@ private[hallucination] object WebpEncoder:
 
     writer.bytes
 
-  private inline def u(data: Array[Byte], index: Int): Int = data(index) & 0xff
+  private inline def u(data: scala.Array[Byte], index: Int): Int = data(index) & 0xff
 
-  private def pixelsEqual(data: Array[Byte], a: Int, b: Int): Boolean =
+  private def pixelsEqual(data: scala.Array[Byte], a: Int, b: Int): Boolean =
     data(a*4) == data(b*4) && data(a*4 + 1) == data(b*4 + 1) &&
       data(a*4 + 2) == data(b*4 + 2) && data(a*4 + 3) == data(b*4 + 3)
 
   // The number of pixels immediately after `p` that equal it, capped at 4096.
-  private def runLength(data: Array[Byte], p: Int, count: Int): Int =
+  private def runLength(data: scala.Array[Byte], p: Int, count: Int): Int =
     var run = 0
 
     while run < 4096 && p + 1 + run < count && pixelsEqual(data, p, p + 1 + run) do run += 1
     run
 
-  private def countRun(run: Int, freq1: Array[Int]): Unit =
-    if run <= 4 then freq1(256 + run - 1) += 1 else freq1(256 + lengthToSymbol(run)(0)) += 1
+  private def countRun(run: Int, freq1: scala.Array[Int]): Unit =
+    if run <= 4 then writable(freq1)(256 + run - 1) += 1
+    else writable(freq1)(256 + lengthToSymbol(run)(0)) += 1
 
-  private def writeRun(writer: WebpBitWriter, run: Int, codes1: Array[Int], lengths1: Array[Int])
+  private def writeRun(writer: WebpBitWriter^, run: Int, codes1: scala.Array[Int], lengths1: scala.Array[Int])
   :   Unit =
 
     if run <= 4 then

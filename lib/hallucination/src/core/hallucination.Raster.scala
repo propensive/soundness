@@ -33,6 +33,8 @@
 package hallucination
 
 import scala.compiletime.*
+import scala.annotation.targetName
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -44,43 +46,24 @@ import zephyrine.*
 
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster by Rgb =
-    Raster[Rgb](width, height): (x, y) => iridescence.pixel(pixel(x, y))
+    // Routed through `build` (whose writes are already exclusive) rather than the inline
+    // layout `apply`, whose expanded closure write the separation checker rejects here.
+    build(width, height, Descriptor.of[Rgb]): index =>
+      Pixel.value(iridescence.pixel(pixel(index%width, index/width)))
+    . asInstanceOf[Raster by Rgb]
 
-  @annotation.targetName("applyLayout")
+  @targetName("applyLayout")
   inline def apply[layout <: Tuple](width: Int, height: Int)
     ( pixel: (Int, Int) => Pixel[layout] )
   :   Raster by layout =
 
     val descriptor = Descriptor.of[layout]
 
-    inline erasedValue[Channel.Storage[layout]] match
-      case _: Byte =>
-        val buffer = new Array[Byte](width*height)
-
-        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y)).toByte
-
-        make[layout](width, height, buffer, descriptor)
-
-      case _: Short =>
-        val buffer = new Array[Short](width*height)
-
-        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y)).toShort
-
-        make[layout](width, height, buffer, descriptor)
-
-      case _: Int =>
-        val buffer = new Array[Int](width*height)
-
-        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y)).toInt
-
-        make[layout](width, height, buffer, descriptor)
-
-      case _: Long =>
-        val buffer = new Array[Long](width*height)
-
-        fill(width, height): (x, y, index) => buffer(index) = Pixel.value(pixel(x, y))
-
-        make[layout](width, height, buffer, descriptor)
+    // Routed through `build` (which selects the storage primitive from the descriptor at
+    // runtime) rather than closure writes into a per-storage array: an expanded closure
+    // write is rejected by the separation checker at each inline site.
+    build(width, height, descriptor) { index => Pixel.value(pixel(index%width, index/width)) }
+    . asInstanceOf[Raster by layout]
 
   def apply[streamable: Streamable by Data over zephyrine.Credit](input: streamable)
   :   Raster raises RasterError =
@@ -102,7 +85,7 @@ object Raster:
       y += 1
 
   private[hallucination] def make[layout <: Tuple]
-    ( width: Int, height: Int, buffer: Array[?], descriptor: Descriptor )
+    ( width: Int, height: Int, buffer: scala.Array[?], descriptor: Descriptor )
   :   Raster by layout =
 
     new Raster(width, height, buffer, descriptor).asInstanceOf[Raster by layout]
@@ -114,25 +97,37 @@ object Raster:
 
     val length = width*height
 
-    val buffer: Array[?] = descriptor.storageBits match
+    val buffer: scala.Array[?] = descriptor.storageBits match
       case 8 =>
-        val buffer = new Array[Byte](length)
-        for index <- 0 until length do buffer(index) = pixel(index).toByte
+        val buffer = new scala.Array[Byte](length)
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index).toByte
+          index += 1
         buffer
 
       case 16 =>
-        val buffer = new Array[Short](length)
-        for index <- 0 until length do buffer(index) = pixel(index).toShort
+        val buffer = new scala.Array[Short](length)
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index).toShort
+          index += 1
         buffer
 
       case 32 =>
-        val buffer = new Array[Int](length)
-        for index <- 0 until length do buffer(index) = pixel(index).toInt
+        val buffer = new scala.Array[Int](length)
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index).toInt
+          index += 1
         buffer
 
       case _ =>
-        val buffer = new Array[Long](length)
-        for index <- 0 until length do buffer(index) = pixel(index)
+        val buffer = new scala.Array[Long](length)
+        var index = 0
+        while index < length do
+          writable(buffer)(index) = pixel(index)
+          index += 1
         buffer
 
     new Raster(width, height, buffer, descriptor)
@@ -153,7 +148,7 @@ object Raster:
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(image.source[Data].toLazyList.iterator))
+      (format.mediaType.basic, HttpStreams.Body(image.source[Data].toProgression.stdlib.iterator))
 
   given graphical: Raster is Graphical:
     def pixel(raster: Raster, x: Int, y: Int): Chroma = raster(x, y)
@@ -175,7 +170,9 @@ object Raster:
 class Raster private[hallucination]
   ( val width:  Int,
     val height: Int,
-    private[hallucination] val buffer: Array[?],
+    // Not frozen: a `Write`-granted `CanvasHandle` mutates the buffer in place, so it is
+    // untracked instead, keeping the class type free of a capture variable.
+    @scala.caps.unsafe.untrackedCaptures private[hallucination] val buffer: scala.Array[?],
     val descriptor: Descriptor )
 extends Formal, Operable:
   type Operand <: Tuple
@@ -183,10 +180,10 @@ extends Formal, Operable:
   def apply(x: Int, y: Int): Chroma = descriptor.chroma(word(y*width + x))
 
   private[hallucination] def word(index: Int): Long = buffer.asMatchable match
-    case buffer: Array[Byte]  => buffer(index)&0xffL
-    case buffer: Array[Short] => buffer(index)&0xffffL
-    case buffer: Array[Int]   => buffer(index)&0xffffffffL
-    case buffer: Array[Long]  => buffer(index)
+    case buffer: scala.Array[Byte]  => buffer(index)&0xffL
+    case buffer: scala.Array[Short] => buffer(index)&0xffffL
+    case buffer: scala.Array[Int]   => buffer(index)&0xffffffffL
+    case buffer: scala.Array[Long]  => buffer(index)
     case _                    => panic(m"raster buffer has an unexpected element type")
 
   def to[format: Rasterizable]: Raster in format = asInstanceOf[Raster in format]
@@ -213,29 +210,29 @@ extends Formal, Operable:
       y2*width + x2
 
     buffer.asMatchable match
-      case buffer: Array[Byte] =>
-        val buffer2 = new Array[Byte](width2*height2)
+      case buffer: scala.Array[Byte] =>
+        val buffer2 = new scala.Array[Byte](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
-      case buffer: Array[Short] =>
-        val buffer2 = new Array[Short](width2*height2)
+      case buffer: scala.Array[Short] =>
+        val buffer2 = new scala.Array[Short](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
-      case buffer: Array[Int] =>
-        val buffer2 = new Array[Int](width2*height2)
+      case buffer: scala.Array[Int] =>
+        val buffer2 = new scala.Array[Int](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
-      case buffer: Array[Long] =>
-        val buffer2 = new Array[Long](width2*height2)
+      case buffer: scala.Array[Long] =>
+        val buffer2 = new scala.Array[Long](width2*height2)
 
         Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 

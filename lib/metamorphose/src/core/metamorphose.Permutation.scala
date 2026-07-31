@@ -32,6 +32,8 @@
                                                                                                   */
 package metamorphose
 
+import proscenium.compat.*
+
 import scala.annotation.*
 import scala.collection.mutable.BitSet
 
@@ -41,26 +43,29 @@ import denominative.*
 import rudiments.*
 
 object Permutation:
-  def bySize(n: Int): LazyList[Permutation] = LazyList.range[BigInt](0, Factorial(n)).map: i =>
+  def bySize(n: Int): Chain[Permutation] = Chain.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
-  def apply(sequence: IndexedSeq[Int]): Permutation raises PermutationError =
-    val array: Array[Int] = new Array(sequence.length)
+  def apply(sequence: Sequence[Int]): Permutation raises PermutationError =
+    val elements = sequence.stdlib
+    val array: scala.Array[Int]^ = new scala.Array(elements.length)
     val seen: BitSet = BitSet()
+    var index = 0
 
-    for index <- sequence.indices do
-      val element = sequence(index)
+    while index < elements.length do
+      val element = elements(index)
       array(index) = element - seen.count(_ < element)
 
-      if element >= sequence.length || element < 0
+      if element >= elements.length || element < 0
       then
         raise
-          ( PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)) )
+          ( PermutationError(PermutationError.Reason.InvalidIndex(element, elements.length - 1)) )
 
       if seen.has(element)
       then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
 
       seen(element) = true
+      index += 1
 
     Permutation(Factoradic(array.iterator.to(List)))
 
@@ -102,14 +107,16 @@ case class Permutation(factoradic: Factoradic):
 
   def inverse: Permutation = if lehmer.nil then this else
     val length = lehmer.length
-    val array: Array[Int] = new Array(lehmer.length)
+    val array: scala.Array[Int]^ = new scala.Array(lehmer.length)
+    var index = 0
+    var sequence: List[Int] = expansion
 
-    def recur(index: Int, sequence: List[Int]): Permutation = sequence match
-      case head :: tail =>
-        array(head) = index
-        recur(index + 1, tail)
+    while sequence match
+        case head :: tail => array(head) = index
+                             index += 1
+                             sequence = tail
+                             true
+        case Nil          => false
+    do ()
 
-      case Nil =>
-        unsafely(Permutation(IArray.from(array.iterator)))
-
-    recur(0, expansion)
+    unsafely(Permutation(Sequence.from(array.iterator)))

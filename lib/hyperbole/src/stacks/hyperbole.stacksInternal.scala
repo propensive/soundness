@@ -55,17 +55,17 @@ private[hyperbole] object stacksInternal:
   // The line table pickled at the head of the positions section: the length of every line of the
   // source file. It is what makes the character offsets in that section resolvable to line
   // numbers without the source file itself being available.
-  class Lines(sizes: Array[Int]):
-    private val starts: Array[Int] =
-      val array = new Array[Int](sizes.length + 1)
+  class Lines(sizes: Array[Int]^{}):
+    private val starts: Array[Int]^{} =
+      val array = new scala.Array[Int](sizes.length + 1)
       var index = 0
 
       while index < sizes.length do
         // The `+ 1` accounts for the line terminator, which the pickled size excludes.
-        array(index + 1) = array(index) + 0.max(sizes(index)) + 1
+        array(index + 1) = array(index) + 0.max(sizes.readUnchecked(index)) + 1
         index += 1
 
-      array
+      Array.unsafeFrozen(array)
 
     def count: Int = sizes.length
 
@@ -76,7 +76,7 @@ private[hyperbole] object stacksInternal:
 
       while min < max do
         val mid = (min + max + 1)/2
-        if starts(mid) <= offset then min = mid else max = mid - 1
+        if starts.readUnchecked(mid) <= offset then min = mid else max = mid - 1
 
       min + 1
 
@@ -86,7 +86,7 @@ private[hyperbole] object stacksInternal:
     def unpickle(reader: TastyReader, nameAtRef: TastyUnpickler.NameTable): Positions =
       import reader.*
       val count = readNat()
-      val sizes = new Array[Int](count)
+      val sizes = new scala.Array[Int](count)
       var index = 0
 
       while index < count do
@@ -113,7 +113,7 @@ private[hyperbole] object stacksInternal:
           if (header & 1) != 0 then readInt()
           spans(address) = (start, end)
 
-      Positions(Lines(sizes), spans.to(Map))
+      Positions(Lines(Array.unsafeFrozen(sizes)), Map.from(spans))
 
   class AttributeSection extends TastyUnpickler.SectionUnpickler[Optional[Text]](AttributesSection):
     def unpickle(reader: TastyReader, nameAtRef: TastyUnpickler.NameTable): Optional[Text] =
@@ -154,7 +154,7 @@ private[hyperbole] object stacksInternal:
       def record(address: Int, tag: Int, name: Text, owners: List[Text], extension: Boolean)
       :   Unit =
 
-        positions.spans.get(address).foreach: (start, end) =>
+        positions.spans.stdlib.get(address).foreach: (start, end) =>
           val kind = tag match
             case TYPEDEF                   => Kind.Class
             case VALDEF                    => Kind.Value

@@ -32,6 +32,8 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+
 import anticipation.*
 import contingency.*
 import prepositional.*
@@ -108,10 +110,10 @@ trait SocketBackend:
 
   // Stream the request out, half-closing the output side; then read the response as a fresh
   // single-use pull endpoint whose refill blocks until data arrives or the peer half-closes.
-  def request(exchange: Exchange, input: (Stream[Data] over Credit)^): Unit
+  def request(exchange: Exchange, consume input: (Stream[Data] over Credit)^): Unit
 
-  def response(exchange: Exchange)(using Buffering, Tactic[StreamError])
-  :   (Stream[Data] over Credit)^{caps.any}
+  def response(exchange: Exchange)(using buffering: Buffering, tactic: Tactic[StreamError])
+  :   (Stream[Data] over Credit)^{tactic, caps.any}
 
   def hangUp(exchange: Exchange): Unit
 
@@ -136,4 +138,4 @@ trait SocketBackend:
   :   Courier
 
   // Dispatch the stream as a single datagram to the courier's destination.
-  def dispatch(courier: Courier, input: (Stream[Data] over Credit)^): Unit
+  def dispatch(courier: Courier, consume input: (Stream[Data] over Credit)^): Unit

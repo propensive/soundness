@@ -32,6 +32,10 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
+import scala.caps
+
 import anticipation.*
 import prepositional.*
 import rudiments.*
@@ -61,8 +65,9 @@ object TarBody:
 // it retains: a body's memoized chunks are reclaimed with its entry.
 class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
   private val memo: scala.collection.mutable.ArrayBuffer[Data] =
-    scala.collection.mutable.ArrayBuffer.from(initial)
+    scala.collection.mutable.ArrayBuffer.from(initial.stdlib)
 
+  @scala.caps.unsafe.untrackedCaptures
   private var exhausted: Boolean = false
 
   // Extend the memo by one chunk, or record exhaustion.
@@ -89,6 +94,7 @@ class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
   // The body's chunks, replayed from the start; unread chunks pull from the
   // producer as the iterator advances.
   def chunks: Iterator[Data] = new Iterator[Data]:
+    @scala.caps.unsafe.untrackedCaptures
     private var index: Int = 0
 
     def hasNext: Boolean = index < memo.length || fetch()
@@ -106,11 +112,11 @@ class TarBody private (initial: List[Data], pull: () -> Optional[Data]):
     drain()
 
     if memo.length == 1 then memo(0) else
-      val whole = new Array[Byte](size.toInt)
+      val whole = Array[Byte](size.toInt)
       var offset = 0
 
       memo.each: chunk =>
-        System.arraycopy(chunk.mutable(using Unsafe), 0, whole, offset, chunk.length)
+        whole.copyFrom(chunk, 0, offset, chunk.length)
         offset += chunk.length
 
-      whole.immutable(using Unsafe)
+      Array.freeze(whole)

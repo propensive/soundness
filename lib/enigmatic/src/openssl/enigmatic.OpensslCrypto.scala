@@ -38,6 +38,7 @@ import gossamer.*
 import prepositional.*
 import vacuous.*
 import xenophile.*
+import proscenium.compat.*
 
 // A `Crypto` provider backed by OpenSSL's `libcrypto`, called through xenophile's typed C
 // navigation: the prototypes in `/enigmatic/openssl.h` are parsed by `CHeaderDialect` at compile
@@ -140,7 +141,7 @@ object OpensslCrypto extends Crypto:
     ( context: Pointer, transformation: Text, key: Data, iv: Optional[Data], encrypting: Boolean )
   :   Unit =
 
-    val parts = transformation.cut(t"/")
+    val parts = transformation.cut(t"/").stdlib
     val cipher0 = cipher(opensslCipher(parts(0), parts(1), key.length))
     val keyBuffer = ForeignBuffer(key)
     val ivBuffer = iv.let(ForeignBuffer(_))
@@ -233,7 +234,7 @@ object OpensslCrypto extends Crypto:
 
       val context = newContext()
       initialise(context, transformation, key, iv, encrypting)
-      val parts = transformation.cut(t"/")
+      val parts = transformation.cut(t"/").stdlib
       val block = if parts(0) == t"AES" then 16 else 8
 
       new CipherSession:
@@ -252,7 +253,7 @@ object OpensslCrypto extends Crypto:
 
     try
       initialise(context, transformation, key, iv, encrypting)
-      val parts = transformation.cut(t"/")
+      val parts = transformation.cut(t"/").stdlib
       val block = if parts(0) == t"AES" then 16 else 8
       update(context, data, block, encrypting) ++ finish(context, block, encrypting)
     finally freeContext(context)

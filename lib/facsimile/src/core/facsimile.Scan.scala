@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 
 private[facsimile] object Scan:
@@ -43,8 +46,11 @@ private[facsimile] object Scan:
 // input abstraction for the lexer. Refills its window on demand, so lexemes spanning chunk
 // boundaries need no special handling; `-1` signals the end of the source.
 private[facsimile] class Scan(source: ByteSource, start: Long):
+  @scala.caps.unsafe.untrackedCaptures
   private var base: Long = start
-  private var chunk: Data = IArray.empty[Byte]
+  @scala.caps.unsafe.untrackedCaptures
+  private var chunk: Data = Array.empty[Byte]
+  @scala.caps.unsafe.untrackedCaptures
   private var cursor: Int = 0
 
   def offset: Long = base + cursor
@@ -56,7 +62,7 @@ private[facsimile] class Scan(source: ByteSource, start: Long):
       val absolute = offset
       val length = (source.size - absolute).min(count.max(Scan.chunkSize).toLong).toInt
 
-      chunk = if length <= 0 then IArray.empty[Byte] else source.read(absolute, length)
+      chunk = if length <= 0 then Array.empty[Byte] else source.read(absolute, length)
       base = absolute
       cursor = 0
 
@@ -77,13 +83,13 @@ private[facsimile] class Scan(source: ByteSource, start: Long):
     if count > 0 then
       if cursor + count <= chunk.length then cursor += count.toInt else
         base = offset + count
-        chunk = IArray.empty[Byte]
+        chunk = Array.empty[Byte]
         cursor = 0
 
   // An exact-range binary read from the current position, advancing past it: stream payloads
   // and other raw sections are consumed without passing through the lexical window.
   def read(length: Int): Data =
-    if length <= 0 then IArray.empty[Byte]
+    if length <= 0 then Array.empty[Byte]
     else if cursor + length <= chunk.length then
       val data = chunk.slice(cursor, cursor + length)
       cursor += length
@@ -91,6 +97,6 @@ private[facsimile] class Scan(source: ByteSource, start: Long):
     else
       val data = source.read(offset, length)
       base = offset + data.length
-      chunk = IArray.empty[Byte]
+      chunk = Array.empty[Byte]
       cursor = 0
       data

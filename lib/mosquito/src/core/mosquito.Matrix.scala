@@ -32,6 +32,10 @@
                                                                                                   */
 package mosquito
 
+import proscenium.compat.*
+
+import scala.math
+
 import scala.compiletime.*
 import scala.compiletime.ops.int.-
 
@@ -52,7 +56,7 @@ object Matrix:
       val textElements = matrix.elements.map(_.show)
       val sizes = textElements.map(_.length)
 
-      val columnWidths: IArray[Int] = IArray.from:
+      val columnWidths: Array[Int]^{} = Array.from:
         (0 until matrix.columns).map: column =>
           sizes:
             column + matrix.columns*(0 until matrix.rows).maxBy: row =>
@@ -86,7 +90,7 @@ object Matrix:
     def add(left: left, right: right): Matrix[result, rows, columns] =
       val length = left.elements.length
 
-      val arr = IArray.build[result](length): array =>
+      val arr = Array.build[result](length): array =>
         var i = 0
 
         while i < length do
@@ -112,7 +116,7 @@ object Matrix:
     def subtract(left: left, right: right): Matrix[result, rows, columns] =
       val length = left.elements.length
 
-      val arr = IArray.build[result](length): array =>
+      val arr = Array.build[result](length): array =>
         var i = 0
 
         while i < length do
@@ -133,7 +137,7 @@ object Matrix:
     val one = unital.one
     val zero = zeroic.zero
 
-    val arr = IArray.build[element](size*size): array =>
+    val arr = Array.build[element](size*size): array =>
       var i = 0
 
       while i < size do
@@ -159,7 +163,7 @@ object Matrix:
     val colsValue = valueOf[columnCount]
     val zero = zeroic.zero
 
-    val arr = IArray.build[element](rowsValue*colsValue): array =>
+    val arr = Array.build[element](rowsValue*colsValue): array =>
       var i = 0
 
       while i < rowsValue*colsValue do
@@ -194,7 +198,7 @@ object Matrix:
     new Matrix[element, Rows, Columns]
       ( rowCount,
         columnCount,
-        IArray.build[element](columnCount*rowCount): array =>
+        Array.build[element](columnCount*rowCount): array =>
           for
             row    <- 0 until rowCount
             column <- 0 until columnCount
@@ -205,7 +209,7 @@ object Matrix:
 
 
   private def laplaceExpansion[element]
-    ( elements:      IArray[element],
+    ( elements:      Array[element]^{},
       dimension:     Int,
       rowMask:       Long,
       columnMask:    Long,
@@ -313,8 +317,8 @@ object Matrix:
 
       val size = matrix.rows
       val zero = zeroic.zero
-      val a: Array[element] = matrix.elements.mutable(using Unsafe).clone()
-      val b: Array[element] = new Array[element](size)
+      val a: scala.Array[element]^ = Array.unsafeJvm(matrix.elements).clone()
+      val b: scala.Array[element]^ = new scala.Array[element](size)
       var copyIndex = 0
 
       while copyIndex < size do
@@ -365,7 +369,7 @@ object Matrix:
 
       if singular then Unset
       else
-        val x: Array[element] = new Array[element](size)
+        val x: scala.Array[element]^ = new scala.Array[element](size)
         var i = size - 1
 
         while i >= 0 do
@@ -379,7 +383,7 @@ object Matrix:
           x(i) = sum/a(size*i + i)
           i -= 1
 
-        val vectorData = IArray.build[Any](size): array =>
+        val vectorData = Array.build[Any](size): array =>
           var k = 0
 
           while k < size do
@@ -401,11 +405,11 @@ object Matrix:
       val dimension = matrix.rows
       val elements = matrix.elements
 
-      if dimension == 1 then new Matrix[element, n, n](1, 1, IArray(unital.one))
+      if dimension == 1 then new Matrix[element, n, n](1, 1, Array.of(unital.one))
       else
         val fullMask: Long = (1L << dimension) - 1L
 
-        val resultElements = IArray.build[element](dimension*dimension): array =>
+        val resultElements = Array.build[element](dimension*dimension): array =>
           var outputRow = 0
 
           while outputRow < dimension do
@@ -447,9 +451,9 @@ object Matrix:
       if determinantValue == zeroic.zero then Unset
       else if dimension == 1 then
         val one: element = elements(0)/elements(0)
-        new Matrix[element, n, n](1, 1, IArray(one/elements(0)))
+        new Matrix[element, n, n](1, 1, Array.of(one/elements(0)))
       else
-        val resultElements = IArray.build[element](dimension*dimension): array =>
+        val resultElements = Array.build[element](dimension*dimension): array =>
           var outputRow = 0
 
           while outputRow < dimension do
@@ -498,8 +502,8 @@ object Matrix:
 
       if !symmetric then Unset
       else
-        val mat: Array[Double] = matrix.elements.mutable(using Unsafe).clone()
-        val vec: Array[Double] = new Array[Double](dimension*dimension)
+        val mat: scala.Array[Double]^ = Array.unsafeJvm(matrix.elements).clone()
+        val vec: scala.Array[Double]^ = new scala.Array[Double](dimension*dimension)
         var diagIndex = 0
 
         while diagIndex < dimension do
@@ -581,14 +585,14 @@ object Matrix:
 
         if !converged then Unset
         else
-          val eigvalArr = IArray.build[Any](dimension): array =>
+          val eigvalArr = Array.build[Any](dimension): array =>
             var i = 0
 
             while i < dimension do
               array(i) = mat(dimension*i + i)
               i += 1
 
-          val eigvecArr = IArray.build[Double](dimension*dimension): array =>
+          val eigvecArr = Array.build[Double](dimension*dimension): array =>
             var i = 0
 
             while i < dimension*dimension do
@@ -607,14 +611,14 @@ object Matrix:
       matrix.eigensystem.let(_(1))
 
 class Matrix[element, rows <: Int, columns <: Int]
-  ( val rows: Int, val columns: Int, val elements: IArray[element] ):
+  ( val rows: Int, val columns: Int, val elements: Array[element]^{} ):
 
   def apply(row: Int, column: Int): element = elements(columns*row + column)
 
   def row(index: Int): Vector[element, columns] =
     val cols = columns
 
-    val arr = IArray.build[Any](cols): array =>
+    val arr = Array.build[Any](cols): array =>
       var i = 0
 
       while i < cols do
@@ -624,7 +628,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     new Vector[element, columns](arr)
 
   def column(index: Int): Vector[element, rows] =
-    val arr = IArray.build[Any](rows): array =>
+    val arr = Array.build[Any](rows): array =>
       var i = 0
 
       while i < rows do
@@ -634,7 +638,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     new Vector[element, rows](arr)
 
   def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
-    val arr = IArray.build[element](rows*columns): array =>
+    val arr = Array.build[element](rows*columns): array =>
       var row = 0
 
       while row < rows do
@@ -655,7 +659,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     val newRows = rows - 1
     val newCols = columns - 1
 
-    val arr = IArray.build[element](newRows*newCols): array =>
+    val arr = Array.build[element](newRows*newCols): array =>
       var r = 0
 
       while r < newRows do
@@ -700,7 +704,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     val r = rows
     val c = columns
     val zero = zeroic.zero
-    val a: Array[element] = elements.mutable(using Unsafe).clone()
+    val a: scala.Array[element]^ = Array.unsafeJvm(elements).clone()
 
     var rankCount = 0
     var col = 0
@@ -743,13 +747,25 @@ class Matrix[element, rows <: Int, columns <: Int]
     rankCount
 
   override def equals(right: Any): Boolean = right.asMatchable match
-    case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
+    // The cast fixes the wildcard element type only: `sameElements` compares via `equals`,
+    // which is safe across element types.
+    case matrix: Matrix[?, ?, ?] =>
+      elements.sameElements(matrix.elements.asInstanceOf[Array[element]^{}])
     case _                       => false
 
   override def hashCode: Int =
-    scala.util.hashing.MurmurHash3.arrayHash(elements.mutable(using Unsafe))
+    // Inlined `MurmurHash3.arrayHash`: `arrayHash` demands a pure `Array`, which the
+    // capture-checked frozen form cannot supply without an unsafe cast.
+    var hash = scala.util.hashing.MurmurHash3.arraySeed
+    var index = 0
 
-  // `elements.inspect` derives an `Inspectable` for `IArray[element]` element-wise; under capture
+    while index < elements.length do
+      hash = scala.util.hashing.MurmurHash3.mix(hash, elements(index).##)
+      index += 1
+
+    scala.util.hashing.MurmurHash3.finalizeHash(hash, elements.length)
+
+  // `elements.inspect` derives an `Inspectable` for `Array[element]^{}` element-wise; under capture
   // checking in the Scala.js pipeline the derivation leaks the element's capture into the
   // generated `text` override, so `toString` (debug output only) builds the string from the
   // elements' own `toString`.
@@ -771,8 +787,10 @@ class Matrix[element, rows <: Int, columns <: Int]
     ( using ClassTag[multiplication.Result] )
   :   Matrix[multiplication.Result, rows, columns] =
 
-    val elements2 = IArray.build[multiplication.Result](elements.length): array =>
-      elements.indices.foreach: index => array(index) = elements(index)*right
+
+    val elements2 = Array.build[multiplication.Result](elements.length): array =>
+      elements.indices.each: index =>
+        array(index) = elements(index)*right
 
     new Matrix(rows, columns, elements2)
 
@@ -781,8 +799,9 @@ class Matrix[element, rows <: Int, columns <: Int]
   def / [right](right: right)(using div: element is Divisible by right)(using ClassTag[div.Result])
   :   Matrix[div.Result, rows, columns] =
 
-    val elements2 = IArray.build[div.Result](elements.length): array =>
-      elements.indices.foreach: index => array(index) = elements(index)/right
+    val elements2 = Array.build[div.Result](elements.length): array =>
+      elements.indices.each: index =>
+        array(index) = elements(index)/right
 
     new Matrix(rows, columns, elements2)
 
@@ -801,7 +820,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     val columns2 = valueOf[rightColumns]
     val inner = valueOf[columns]
 
-    val elements = IArray.build[multiplication.Result](rows*columns2): array =>
+    val elements = Array.build[multiplication.Result](rows*columns2): array =>
       var row = 0
 
       while row < rows do
@@ -834,7 +853,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     val inner = valueOf[columns]
 
-    val arr = IArray.build[Any](rows): array =>
+    val arr = Array.build[Any](rows): array =>
       var row = 0
 
       while row < rows do

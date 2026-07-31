@@ -32,6 +32,9 @@
                                                                                                   */
 package coaxial
 
+import scala.caps
+import proscenium.compat.*
+
 import java.io as ji
 import java.net as jn
 import java.nio.ByteBuffer
@@ -87,7 +90,7 @@ package socketBackends:
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](capacity)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
         private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
         private var start0: Int = 0
         private var limit0: Int = 0
@@ -184,7 +187,7 @@ package socketBackends:
       socket
 
     def receive(socket: jn.DatagramSocket): Packet raises ConnectionError =
-      val array = new Array[Byte](1472)
+      val array = new scala.Array[Byte](1472)
       val packet = jn.DatagramPacket(array, 1472)
 
       try socket.receive(packet)
@@ -194,18 +197,18 @@ package socketBackends:
 
       val ip = address.getAddress.nn.absolve match
         case ip: jn.Inet4Address =>
-          val bytes: Array[Byte] = ip.getAddress.nn
+          val bytes: scala.Array[Byte] = ip.getAddress.nn
           Ipv4(bytes(0), bytes(1), bytes(2), bytes(3))
 
         case ip: jn.Inet6Address =>
-          val bytes: Array[Byte] = ip.getAddress.nn
+          val bytes: scala.Array[Byte] = ip.getAddress.nn
 
           Ipv6
-            ( Long(bytes.take(8).immutable(using Unsafe)),
-              Long(bytes.drop(8).immutable(using Unsafe)) )
+            ( Long(Array.unsafeFrozen(bytes.take(8))),
+              Long(Array.unsafeFrozen(bytes.drop(8))) )
 
       Packet
-        ( array.take(packet.getLength).immutable(using Unsafe),
+        ( Array.unsafeFrozen(array.take(packet.getLength)),
           ip,
           Port.unsafe[Udp](address.getPort) )
 
@@ -215,31 +218,31 @@ package socketBackends:
       val ip: jn.InetAddress = sender.absolve match
         case ip: (Ipv4 @unchecked) =>
           val array =
-            Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
+            scala.Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
 
           jn.InetAddress.getByAddress(array).nn
 
         case ip: Ipv6 =>
-          val array: Array[Byte]^ =
+          val array: scala.Array[Byte]^ =
             val high = ip.highBits.bits.bytes
-            val bytes = new Array[Byte](16)
+            val bytes = new scala.Array[Byte](16)
             var index = 0
 
             while index < 8 do
-              bytes(index) = high(index)
+              bytes(index) = high.readable(index)
               index += 1
 
             val low = ip.lowBits.bits.bytes
 
             while index < 16 do
-              bytes(index) = low(index - 8)
+              bytes(index) = low.readable(index - 8)
               index += 1
 
             bytes
 
           jn.InetAddress.getByAddress(array).nn
 
-      val packet = jn.DatagramPacket(data.mutable(using Unsafe), data.length, ip, port.number)
+      val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
 
       try socket.send(packet)
       catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
@@ -280,22 +283,23 @@ package socketBackends:
       channel.configureBlocking(false)
       ClientExchange.Domain(channel)
 
-    def request(exchange: ClientExchange, input: (Stream[Data] over Credit)^): Unit = exchange match
+    def request(exchange: ClientExchange, consume input: (Stream[Data] over Credit)^): Unit =
+      exchange match
       case ClientExchange.Tcp(socket) =>
         val out = socket.getOutputStream.nn
 
         input.sweep: (storage, start, count) =>
-          out.write(storage.asInstanceOf[Array[Byte]], start, count)
+          out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
           out.flush()
 
       case ClientExchange.Domain(channel) =>
         input.sweep: (storage, start, count) =>
-          channel.write(ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count))
+          channel.write(ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count))
 
         channel.shutdownOutput()
 
-    def response(exchange: ClientExchange)(using Buffering, Tactic[StreamError])
-    :   (Stream[Data] over Credit)^{caps.any} =
+    def response(exchange: ClientExchange)(using buffering: Buffering, tactic: Tactic[StreamError])
+    :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
       exchange match
         case ClientExchange.Tcp(socket) =>
@@ -360,11 +364,11 @@ package socketBackends:
 
       UdpCourier(jn.InetAddress.getLocalHost.nn, port.number, socket)
 
-    def dispatch(courier: UdpCourier, input: (Stream[Data] over Credit)^): Unit =
+    def dispatch(courier: UdpCourier, consume input: (Stream[Data] over Credit)^): Unit =
       val bytes = input.memoize
 
       val packet =
-        jn.DatagramPacket(bytes.mutable(using Unsafe), bytes.length, courier.address, courier.port)
+        jn.DatagramPacket(Array.unsafeJvm(bytes), bytes.length, courier.address, courier.port)
 
       courier.socket.send(packet)
 
@@ -436,8 +440,8 @@ private[coaxial] def configure(socket: jn.DatagramSocket, options: List[SocketOp
 
 // Resolves a `MacAddress` to the local network interface whose hardware address matches, if any.
 private[coaxial] def interfaceFor(mac: MacAddress): Optional[jn.NetworkInterface] =
-  val target: Array[Byte] =
-    Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
+  val target: scala.Array[Byte] =
+    scala.Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
 
   def recur(interfaces: ju.Enumeration[jn.NetworkInterface]): Optional[jn.NetworkInterface] =
     if !interfaces.hasMoreElements then Unset else
@@ -481,7 +485,7 @@ private[coaxial] def streamsDuplex
         type Transport = Credit
 
         private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](capacity)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
         private var start0: Int = 0
         private var limit0: Int = 0
         private var ended: Boolean = false
@@ -515,7 +519,7 @@ private[coaxial] def streamsDuplex
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
       data.sweep: (storage, start, count) =>
-        out.write(storage.asInstanceOf[Array[Byte]], start, count)
+        out.write(storage.asInstanceOf[scala.Array[Byte]], start, count)
         out.flush()
 
     def close(): Unit = shutdown()
@@ -525,7 +529,7 @@ private[coaxial] def streamsDuplex
 private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
   def send(consume data: (Stream[Data] over Credit)^): Unit =
     data.sweep: (storage, start, count) =>
-      val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
+      val out = ByteBuffer.wrap(storage.asInstanceOf[scala.Array[Byte]], start, count).nn
       while out.hasRemaining do socketChannel.write(out)
 
   def close(): Unit = socketChannel.close()
@@ -536,7 +540,7 @@ private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = n
       type Transport = Credit
 
       private val capacity: Int = buffering.capacity(Substrate.Bytes)
-      private val storage: Array[Byte] = new Array[Byte](capacity)
+      private val storage: scala.Array[Byte] = new scala.Array[Byte](capacity)
       private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
       private var start0: Int = 0
       private var limit0: Int = 0

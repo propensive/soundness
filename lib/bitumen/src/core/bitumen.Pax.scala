@@ -32,6 +32,8 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -47,10 +49,10 @@ object Pax:
     (total.toString+" "+key.s+"="+value.s+"\n").tt.in[Data]
 
   def records(pairs: Iterable[(Text, Text)]): Data =
-    pairs.foldLeft(IArray.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
+    pairs.foldLeft(Array.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))
 
   def parse(data: Data): Map[Text, Text] raises TarError =
-    val builder = Map.newBuilder[Text, Text]
+    val builder = scala.collection.immutable.Map.newBuilder[Text, Text]
     var pos = 0
 
     while pos < data.length do
@@ -66,16 +68,14 @@ object Pax:
         raise(TarError(TarError.Reason.BadPaxRecord(data)))
         pos = data.length
       else
-        val lengthBytes = new String(data.slice(pos, lengthEnd).mutable(using Unsafe), "ASCII").nn
-        val length = lengthBytes.toInt
+        val length = data.slice(pos, lengthEnd).ascii.s.toInt
 
         if length < 1 || pos + length > data.length || data(pos + length - 1) != '\n'.toByte
         then
           raise(TarError(TarError.Reason.BadPaxRecord(data)))
           pos = data.length
         else
-          val contentBytes = data.slice(lengthEnd + 1, pos + length - 1).mutable(using Unsafe)
-          val content: String = new String(contentBytes, "UTF-8").nn
+          val content: String = data.slice(lengthEnd + 1, pos + length - 1).utf8.s
           val eqIdx: Int = content.indexOf('=')
 
           if eqIdx < 0 then
@@ -85,7 +85,7 @@ object Pax:
             builder += ((content.substring(0, eqIdx).nn.tt, content.substring(eqIdx + 1).nn.tt))
             pos = pos + length
 
-    builder.result()
+    Map.of(builder.result())
 
   private def computeLength(payloadLen: Int): Int =
     var n = 1

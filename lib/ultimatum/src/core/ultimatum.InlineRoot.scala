@@ -50,8 +50,10 @@ object InlineRoot:
     ( using anchoring: InlineAnchoring, growth: InlineGrowth, shrink: InlineShrink )
   :   InlineRoot^{terminal} =
 
-    new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)
-      ( using terminal.stdio, anchoring, growth, shrink )
+    // Both thunks only read the same terminal's dimensions; no aliased writer.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+      new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)
+        ( using terminal.stdio, anchoring, growth, shrink )
 
   def apply(width: Int, height: Int)
     ( using Stdio, InlineAnchoring, InlineGrowth, InlineShrink )
@@ -81,27 +83,34 @@ class InlineRoot(widthFn: () => Int, heightFn: () => Int)
           growth:    InlineGrowth,
           shrink:    InlineShrink )
 extends GridSurface(widthFn(), 0):
+  @scala.caps.unsafe.untrackedCaptures
   private var presentedRows: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var presentedColumns: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var presentedTop: Int = 1
 
   // For `Inline` anchoring: the row offset (from the block's top) at which the cursor was
   // left after the last frame, so the next frame can rise back to the top relatively.
+  @scala.caps.unsafe.untrackedCaptures
   private var flowCursorRow: Int = 0
 
   // Start top-anchored only when the policy pins the block from the first frame;
   // `TopAfterResize` starts bottom-docked and flips on the first `invalidate`.
+  @scala.caps.unsafe.untrackedCaptures
   private var topAnchored: Boolean = anchoring match
     case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
     case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
     case InlineAnchoring.Inline                                        => false
 
+  @scala.caps.unsafe.untrackedCaptures
   private var started: Boolean = false
 
   // Where the terminal reported the parked cursor cell after the last resize's reflow
   // (1-based screen coordinates), stashed by the driver from the anchor query's reply
   // and consumed by the next resized present — so a stale anchor can never inform a
   // later resize it didn't measure.
+  @scala.caps.unsafe.untrackedCaptures
   private var anchorCell: Optional[(Int, Int)] = Unset
 
   // Stash the anchor reply for the next resized present. A reflowing terminal keeps

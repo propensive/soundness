@@ -40,8 +40,8 @@ import vacuous.*
 
 private[polysyllabic] object TexPatterns:
   case class File
-    ( patterns:   IArray[Text],
-      exceptions: IArray[Text],
+    ( patterns:   Array[Text]^{},
+      exceptions: Array[Text]^{},
       leftMin:    Int,
       rightMin:   Int )
 
@@ -51,7 +51,7 @@ private[polysyllabic] object TexPatterns:
   // is always one longer than the letter count. `.`-anchored patterns keep the
   // `.` as a sentinel letter in the key (the algorithm pads its input the same
   // way).
-  def parsePattern(raw: Text): (Text, IArray[Byte]) =
+  def parsePattern(raw: Text): (Text, Array[Byte]^{}) =
     val s = raw.s
     val n = s.length
     var letterCount = 0
@@ -61,7 +61,7 @@ private[polysyllabic] object TexPatterns:
       if !Character.isDigit(s.charAt(i)) then letterCount += 1
       i += 1
 
-    val scores = new Array[Byte](letterCount + 1)
+    val scores = Array[Byte](letterCount + 1)
     val letters = new java.lang.StringBuilder(letterCount)
     var letterIndex = 0
     i = 0
@@ -76,23 +76,31 @@ private[polysyllabic] object TexPatterns:
 
       i += 1
 
-    (letters.toString.tt, scores.immutable(using Unsafe))
+    (letters.toString.tt, Array.freeze(scores))
 
   // Decode one TeX exception entry. `as-so-ciate` ↦ (`associate`, [2, 4]).
   // The break offsets count letter positions in the dehyphenated word.
-  def parseException(raw: Text): (Text, IArray[Int]) =
+  def parseException(raw: Text): (Text, Array[Int]^{}) =
     val s = raw.s
     val n = s.length
     val letters = new java.lang.StringBuilder(n)
-    val breaks = ArrayBuilder.make[Int]
+    val breaks = Array[Int](n)
+    var count = 0
     var i = 0
 
     while i < n do
       val c = s.charAt(i)
-      if c == '-' then breaks += letters.length else letters.append(c)
+
+      if c == '-' then
+        breaks(count) = letters.length
+        count += 1
+      else letters.append(c)
+
       i += 1
 
-    (letters.toString.tt, breaks.result().immutable(using Unsafe))
+    val exact = Array[Int](count)
+    exact.copyFrom(breaks, 0, 0, count)
+    (letters.toString.tt, Array.freeze(exact))
 
   // Strip `%`-to-end-of-line comments from a TeX file. Backslash-escaped
   // percents are not used in hyphenation pattern files, so a naive scan
@@ -115,18 +123,18 @@ private[polysyllabic] object TexPatterns:
 
   // Find `\directive{ … }` and return the whitespace-separated tokens of its
   // body. Returns an empty array if the directive is absent.
-  private def block(content: String, directive: String): IArray[Text] =
+  private def block(content: String, directive: String): Array[Text]^{} =
     val marker = directive + "{"
     val start = content.indexOf(marker)
 
-    if start < 0 then IArray.empty[Text] else
+    if start < 0 then Array.empty[Text] else
       val bodyStart = start + marker.length
       val bodyEnd = content.indexOf('}', bodyStart)
 
-      if bodyEnd < 0 then IArray.empty[Text] else
+      if bodyEnd < 0 then Array.empty[Text] else
         val body = content.substring(bodyStart, bodyEnd).nn
         val tokens = body.split("\\s+").nn.iterator.map(_.nn).filter(_.length > 0).map(_.tt)
-        IArray.from(tokens)
+        Array.from(tokens)
 
   // Look for `\directive=N` or `\directive N`, returning N if found.
   private def intValue(content: String, directive: String): Optional[Int] =

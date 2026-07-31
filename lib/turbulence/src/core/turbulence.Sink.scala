@@ -32,19 +32,22 @@
                                                                                                   */
 package turbulence
 
+import scala.caps
+
 import java.io as ji
 import java.nio as jn
 
 import anticipation.*
 import contingency.*
 import prepositional.*
+import proscenium.compat.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
 
 // A target which can be opened as a push endpoint: the successor to
 // `Writable`, accepting writes incrementally through an `Intake` instead of
-// consuming a whole `LazyList`. As with `Writable`, a write failure `raise`s
+// consuming a whole `Chain`. As with `Writable`, a write failure `raise`s
 // a typed `StreamError` through an `Emit` captured by the given — a writer
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
@@ -61,7 +64,7 @@ object Sink:
         type Transport = Credit
 
         private val block: Int = summon[Buffering].capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](block)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](block)
         private var mark0: Int = 0
         private var total: Long = 0
         private var broken: Boolean = false
@@ -116,7 +119,7 @@ object Sink:
         type Transport = Credit
 
         private val block: Int = summon[Buffering].capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](block)
+        private val storage: scala.Array[Byte] = new scala.Array[Byte](block)
         private var mark0: Int = 0
         private var total: Long = 0
         private var broken: Boolean = false
@@ -161,11 +164,11 @@ object Sink:
 
           mark0 = 0
 
-  // Adapts a whole-`LazyList` writing function to the incremental `Intake`
+  // Adapts a whole-`Chain` writing function to the incremental `Intake`
   // protocol by accumulating chunks until `finish` — the basis of the
   // transitional `Writable` bridges below.
   def buffered[target, medium]
-    ( target: target, write: (target, LazyList[medium]) => Unit )
+    ( target: target, write: (target, Chain[medium]) => Unit )
     ( using addressable0: medium is Addressable )
   :   (Intake[medium] over Credit)^{write, caps.any} =
 
@@ -197,7 +200,7 @@ object Sink:
 
       update def finish(): Unit =
         drain()
-        write(target, chunks.reverse.to(LazyList))
+        write(target, Chain.from(chunks.reverse.toSeq))
 
       private update def drain(): Unit =
         if mark0 > 0 then

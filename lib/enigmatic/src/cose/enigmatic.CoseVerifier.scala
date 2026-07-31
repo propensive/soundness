@@ -66,7 +66,7 @@ object CoseVerifier:
 
       def check(toBeSigned: Data, authentication: Data, key: SymmetricKey[cipher]): Boolean =
         key.secret.uncloak: bytes =>
-          algorithm.verify(toBeSigned, authentication, bytes.immutable(using Unsafe))
+          algorithm.verify(toBeSigned, authentication, Array.unsafeFrozen(bytes))
 
 trait CoseVerifier:
   type Self

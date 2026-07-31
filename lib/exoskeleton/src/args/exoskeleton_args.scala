@@ -32,10 +32,13 @@
                                                                                                   */
 package exoskeleton
 
+import proscenium.compat.*
+
 import anticipation.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 package interpreters:
@@ -89,42 +92,42 @@ package interpreters:
         commandline: Commandline )
     :   Commandline =
 
-      def push(): Commandline = current.lay(Commandline(arguments.reverse)): current =>
+      def push(): Commandline = current.lay(Commandline(List.of(arguments.stdlib.reverse))): current =>
         commandline.copy
-          ( parameters = commandline.parameters.updated(current, arguments.reverse) )
+          ( parameters = commandline.parameters.updated(current, List.of(arguments.stdlib.reverse)) )
 
       def postprocess(commandline: Commandline): Commandline =
         val parameters2: Map[Argument, List[Argument]] =
-          commandline.parameters.to(List).flatMap: (key, values) =>
+          commandline.parameters.toList.bind: (key, values) =>
             val flag = key.value
 
             if flag.starts(t"--") && flag.contains(t"=")
             then
               val key2 = key.copy(format = Argument.Format.EqualityPrefix)
               val value = key.copy(format = Argument.Format.EqualitySuffix)
-              List(key2 -> (value :: values))
+              List(key2 -> (List(value) ::: values))
             else if flag.starts(t"-") && !flag.starts(t"--") && flag.length > 2
             then
               if clustering then
                 val init =
-                  (0 until (flag.length - 2)).to(List).map: index =>
-                    key.copy(format = Argument.Format.CharFlag(index.z)) -> Nil
+                  List.range(0, flag.length - 2).map: index =>
+                    key.copy(format = Argument.Format.CharFlag(index.z)) -> (Nil: List[Argument])
 
                 init :+ (key.copy(format = Argument.Format.CharFlag((flag.length - 2).z)), values)
               else
                 List:
                   key.copy(format = Argument.Format.CharFlag(Prim)) ->
-                    (key.copy(format = Argument.Format.FlagSuffix) :: values)
+                    (List(key.copy(format = Argument.Format.FlagSuffix)) ::: values)
 
             else
               List(key -> values)
 
-          . to(Map)
+          . toMap
 
         val focus2 = current.let: current =>
           val focusCursor: Ordinal = current.cursor.or(current.value.length).z
 
-          (parameters2.keySet ++ parameters2.values.flatten).find: argument =>
+          (parameters2.stdlib.keySet ++ parameters2.stdlib.values.flatMap(_.stdlib)).find: argument =>
             current.position == argument.position && argument.contains(focusCursor)
 
           . optional

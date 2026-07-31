@@ -32,7 +32,10 @@
                                                                                                   */
 package prophesy
 
+import proscenium.compat.*
+
 import anticipation.*
+import rudiments.*
 import vacuous.*
 
 object KeywordPattern:
@@ -72,7 +75,7 @@ object KeywordPattern:
         case Lexeme.Typal | Lexeme.Close(Lexeme.Bracket.Square) => true
         case _                                                  => false
 
-      case AnyOf(lexemes) => lexemes.contains(lexeme)
+      case AnyOf(lexemes) => lexemes.has(lexeme)
       case Any            => true
 
   // What the grammar expects at the caret beyond (or instead of) keywords: a fresh term or

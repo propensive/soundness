@@ -52,7 +52,9 @@ object InlineCanvas:
 // column, which is what keeps the widget anchored to the prompt rather than the
 // top-left of the screen.
 class InlineCanvas(val width: Int, val height: Int)(using Stdio) extends Canvas:
+  @scala.caps.unsafe.untrackedCaptures
   private var row: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   private var column: Int = 0
 
   def move(column2: Ordinal, row2: Ordinal): Unit =

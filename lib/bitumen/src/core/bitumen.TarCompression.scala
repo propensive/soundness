@@ -32,4 +32,6 @@
                                                                                                   */
 package bitumen
 
+import proscenium.compat.*
+
 object TarCompression

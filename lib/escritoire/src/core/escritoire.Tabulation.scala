@@ -32,7 +32,11 @@
                                                                                                   */
 package escritoire
 
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.collection.immutable.IndexedSeq
+
+import scala.language.experimental.pureFunctions
 
 import scala.collection.immutable as sci
 
@@ -54,9 +58,9 @@ object Tabulation:
 abstract class Tabulation[text: ClassTag]():
   type Row
 
-  def columns: IArray[Column[Row, text]]
-  def titles: Seq[IArray[IArray[text]]]
-  def rows: Seq[IArray[IArray[text]]]
+  def columns: Array[Column[Row, text]]^{}
+  def titles: List[Array[Array[text]^{}]^{}]
+  def rows: List[Array[Array[text]^{}]^{}]
   def dataLength: Int
 
 
@@ -65,13 +69,13 @@ abstract class Tabulation[text: ClassTag]():
     ( using attenuation: Attenuation^, hyphenation: polysyllabic.Hyphenation )
   :   Grid[text] =
 
-    case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
-      lazy val include: sci.BitSet = indices.to(sci.BitSet)
+    case class Layout(slack: Double, indices: Array[Int]^{}, widths: Array[Int]^{}, totalWidth: Int):
+      lazy val include: sci.BitSet = indices.readable.to(sci.BitSet)
 
-      lazy val columnWidths: IArray[(Int, Column[Row, text], Int)] = IArray.from:
-        indices.indices.map: index =>
-          val columnIndex = indices(index)
-          (columnIndex, columns(columnIndex), widths(index))
+      lazy val columnWidths: Array[(Int, Column[Row, text], Int)]^{} = Array.from:
+        indices.readable.indices.map: index =>
+          val columnIndex = indices.readable(index)
+          (columnIndex, columns.readable(columnIndex), widths.readable(index))
 
     def bisect(include: Int => Boolean): (Layout, Layout) =
       def shrink(slack: Double): Layout =
@@ -81,13 +85,13 @@ abstract class Tabulation[text: ClassTag]():
               if !include(index) then 0 else rows.map: cells =>
                 columns(index).sizing.width[text](cells(index), width, slack).or(0)
 
-              . maxOption.getOrElse(0)
+              . stdlib.maxOption.getOrElse(0)
 
             val titleMax =
               if !include(index) then 0 else titles.map: cells =>
                 columns(index).sizing.width[text](cells(index), width, slack).or(0)
 
-              . maxOption.getOrElse(0)
+              . stdlib.maxOption.getOrElse(0)
 
             dataMax.max(titleMax).puncture(0)
 
@@ -96,7 +100,7 @@ abstract class Tabulation[text: ClassTag]():
 
         val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
 
-        Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
+        Layout(slack, Array.from(indices), Array.from(widths.compact), totalWidth)
 
       def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
         if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)
@@ -115,13 +119,13 @@ abstract class Tabulation[text: ClassTag]():
     // We may be able to increase the slack in some of the remaining columns
     if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
 
-    def lines(data: Seq[IArray[IArray[text]]]): LazyList[TableRow[text]] =
-      data.to(LazyList).map: cells =>
+    def lines(data: List[Array[Array[text]^{}]^{}]): Chain[TableRow[text]] =
+      data.stdlib.to(Chain).map: cells =>
         val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
           val lines = column.sizing.fit(cells(index), width, column.textAlign)
           TableCell(width, 1, lines, lines.length, column.textAlign)
 
-        val height = tableCells.maxBy(_.minHeight).minHeight
+        val height = tableCells.readable.maxBy(_.minHeight).minHeight
 
         TableRow(tableCells, false, height)
 

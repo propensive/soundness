@@ -32,7 +32,11 @@
                                                                                                   */
 package jacinta
 
+import scala.math
+
 import soundness.*
+
+import proscenium.compat.*
 
 import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
@@ -78,15 +82,15 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         . filter(_.name.starts(t"y_"))
         . map: file =>
             (file.name, file.read[Data])
-        . to(List)
+        . stdlib.to(List)
 
     val negativeCases: List[(Text, Data)] =
       tests.children
         . filter(_.name.starts(t"n_"))
-        . filter { file => !deeplyNested.contains(file.name) }
+        . filter { file => !deeplyNested.has(file.name) }
         . map: file =>
             (file.name, file.read[Data])
-        . to(List)
+        . stdlib.to(List)
 
     suite(m"Positive tests"):
       positiveCases.each: (name, data) =>
@@ -197,7 +201,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         sizes.iterator.flatMap: size =>
           if offset >= bytes.length then None else
             val end = math.min(offset + size, bytes.length)
-            val slice: Data = IArray.from(bytes.slice(offset, end))
+            val slice: Data = Array.unsafeFrozen(bytes.slice(offset, end))
             offset = end
             Some(slice)
 
@@ -234,16 +238,16 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == Json.Ast(42L))
 
     suite(m"Hole-mode parsing"):
-      def bytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+      def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
 
       def shape(node: Any): Any = node.asMatchable match
-        case nums: Array[Double] @unchecked =>
+        case nums: scala.Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
-          nums.toList.map: d =>
+          Array.unsafeFrozen(nums).toList.map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d
-        case arr: IArray[?] @unchecked =>
+        case arr: Array[?] @unchecked =>
           val raw = arr.toList
           if (raw.length & 1) == 0 then
             // Object: alternating key/value
@@ -293,7 +297,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
           case ParseError(_, _, _) => true
 
     suite(m"Position ranges"):
-      def asBytes(text: Text): Data = IArray.from(text.s.getBytes("UTF-8").nn)
+      def asBytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-8").nn)
       def position(input: Text): Json.Ast.Position =
         capture[ParseError](Json.Ast.parse(asBytes(input)))
         . position.asInstanceOf[Json.Ast.Position]
@@ -310,13 +314,13 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(_ == (1: Int))
 
     suite(m"Number-only arrays"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(Array.unsafeFrozen(text.s.getBytes("UTF-8").nn))
 
-      test(m"Pure integer array uses the unboxed small-BCD Array[Int] form"):
+      test(m"Pure integer array uses the unboxed small-BCD scala.Array[Int] form"):
         parseRaw(t"[1, 2, 3]").getClass.getName
       . assert(_ == "[I")
 
-      test(m"Array with an 8-nibble number widens to the Array[Long] form"):
+      test(m"Array with an 8-nibble number widens to the scala.Array[Long] form"):
         parseRaw(t"[12345678, 2]").getClass.getName
       . assert(_ == "[J")
 
@@ -380,7 +384,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         raw.asInstanceOf[Json.Ast].isArray && !raw.asInstanceOf[Json.Ast].isNumberArray
       . assert(identity)
 
-      test(m"14-nibble integer stays in the unboxed Array[Long] form"):
+      test(m"14-nibble integer stays in the unboxed scala.Array[Long] form"):
         val raw = parseRaw(t"[1, 12345678901234]")
         raw.getClass.getName
       . assert(_ == "[J")
@@ -391,13 +395,13 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       . assert(identity)
 
       test(m"Hand-built boxed array of Longs equals a parsed number array"):
-        val elements: IArray[Any] = IArray(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
+        val elements: Array[Any] = Array.of(Json.Ast(1L), Json.Ast(2L), Json.Ast(3L))
         val handBuilt = Json.ast(Json.Ast.arr(elements))
         handBuilt == t"[1, 2, 3]".read[Json]
       . assert(identity)
 
     suite(m"Boxed-array storage"):
-      def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
+      def parseRaw(text: Text): Any = Json.Ast.parse(Array.unsafeFrozen(text.s.getBytes("UTF-8").nn))
 
       test(m"Empty array round-trips via the printer"):
         given Json.Formatting = Json.Formatting(Unset, false)
@@ -407,7 +411,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       test(m"Even-length mixed array reports its user-visible length"):
         // [1, "x"] mixes a number and a string, so it must use the boxed
         // (parity-padded) form. The user-visible length is 2 even though
-        // the underlying IArray carries a sentinel pad to keep the length
+        // the underlying array carries a sentinel pad to keep the length
         // odd (and so distinguishable from an object).
         parseRaw(t"""[1, "x"]""").asInstanceOf[Json.Ast].arrayLength
       . assert(_ == 2)
@@ -433,7 +437,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
         t"""[1016.865234375, "x"]""".read[Json].root.arrayElement(0).double
       . assert(_ == 1016.865234375)
 
-      // The purely-numeric (unboxed IArray[Long]) path was also already
+      // The purely-numeric (unboxed Array[Long]) path was also already
       // correct — guard it too.
       test(m"Unboxed fractional array element decodes to its scalar Double"):
         t"""[1016.865234375]""".read[Json].root.arrayElement(0).double

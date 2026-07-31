@@ -32,6 +32,9 @@
                                                                                                   */
 package gastronomy
 
+import scala.{caps, math}
+import proscenium.compat.*
+
 import java.nio.charset.StandardCharsets
 
 import scala.reflect.Selectable.reflectiveSelectable
@@ -40,8 +43,6 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
 object Blake3:
   private final val OutLen   = 32
@@ -57,15 +58,20 @@ object Blake3:
   private final val DeriveKeyContext  = 32
   private final val DeriveKeyMaterial = 64
 
-  private final val Iv: Array[Int] =
-    Array
-      ( 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+  private final val Iv: Array[Int]^{} =
+    scala.Array      ( 0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
         0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19 )
 
-  private final val MsgPermutation: Array[Int] =
-    Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8)
+    . asInstanceOf[Array[Int]^{}]
 
-  private def mix(state: Array[Int], a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
+  // `Hasher` clones the words it is given before it does anything else, so handing it the
+  // shared frozen `Iv` as a JVM array asserts only that the clone does not write.
+  private def ivWords: scala.Array[Int] = Array.unsafeJvm(Iv)
+
+  private final val MsgPermutation: Array[Int]^{} =
+    scala.Array(2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8).asInstanceOf[Array[Int]^{}]
+
+  private def mix(state: scala.Array[Int]^, a: Int, b: Int, c: Int, d: Int, mx: Int, my: Int): Unit =
     state(a) = state(a) + state(b) + mx
     state(d) = Integer.rotateRight(state(d) ^ state(a), 16)
     state(c) = state(c) + state(d)
@@ -75,7 +81,7 @@ object Blake3:
     state(c) = state(c) + state(d)
     state(b) = Integer.rotateRight(state(b) ^ state(c), 7)
 
-  private def round(state: Array[Int], m: Array[Int]): Unit =
+  private def round(state: scala.Array[Int]^, m: scala.Array[Int]): Unit =
     // SIMD: these four column mixes operate on disjoint quadruples of state and would be
     //       issued as a single 4-lane vector instruction by an SSE/NEON backend.
     mix(state, 0, 4,  8, 12, m(0), m(1))
@@ -88,25 +94,25 @@ object Blake3:
     mix(state, 2, 7,  8, 13, m(12), m(13))
     mix(state, 3, 4,  9, 14, m(14), m(15))
 
-  private def permute(m: Array[Int]): Unit =
-    val out = new Array[Int](16)
+  private def permute(m: scala.Array[Int]^): Unit =
+    val out = Array[Int](16)
     var i = 0
 
     while i < 16 do
       out(i) = m(MsgPermutation(i))
       i += 1
 
-    System.arraycopy(out, 0, m, 0, 16)
+    System.arraycopy(out.raw, 0, m, 0, 16)
 
   private def compress
-    ( chainingValue: Array[Int],
-      blockWords:    Array[Int],
+    ( chainingValue: scala.Array[Int],
+      blockWords:    scala.Array[Int],
       counter:       Long,
       blockLen:      Int,
       flags:         Int )
-  :   Array[Int] =
+  :   scala.Array[Int]^ =
 
-    val state = new Array[Int](16)
+    val state: scala.Array[Int]^ = new scala.Array[Int](16)
     System.arraycopy(chainingValue, 0, state, 0, 8)
     state(8)  = Iv(0); state(9)  = Iv(1); state(10) = Iv(2); state(11) = Iv(3)
     state(12) = counter.toInt
@@ -114,7 +120,7 @@ object Blake3:
     state(14) = blockLen
     state(15) = flags
 
-    val block = blockWords.clone()
+    val block: scala.Array[Int]^ = blockWords.clone()
 
     round(state, block); permute(block)
     round(state, block); permute(block)
@@ -133,7 +139,7 @@ object Blake3:
 
     state
 
-  private def wordsFromBytes(bytes: Array[Byte], offset: Int, words: Array[Int]): Unit =
+  private def wordsFromBytes(bytes: scala.Array[Byte], offset: Int, words: scala.Array[Int]^): Unit =
     var i = 0
 
     while i < words.length do
@@ -148,20 +154,20 @@ object Blake3:
       i += 1
 
   private final class Output
-    ( val inputChainingValue: Array[Int],
-      val blockWords:         Array[Int],
+    ( val inputChainingValue: scala.Array[Int],
+      val blockWords:         scala.Array[Int],
       val counter:            Long,
       val blockLen:           Int,
       val flags:              Int ):
 
-    def chainingValue(): Array[Int] =
+    def chainingValue(): scala.Array[Int] =
       val out = compress(inputChainingValue, blockWords, counter, blockLen, flags)
-      val cv = new Array[Int](8)
+      val cv = new scala.Array[Int](8)
       System.arraycopy(out, 0, cv, 0, 8)
       cv
 
-    def rootOutputBytes(outLen: Int): Array[Byte] =
-      val result = new Array[Byte](outLen)
+    def rootOutputBytes(outLen: Int): Array[Byte]^{} =
+      val result = Array[Byte](outLen)
       var blockCounter = 0L
       var pos = 0
 
@@ -179,35 +185,41 @@ object Blake3:
         pos += take
         blockCounter += 1
 
-      result
+      Array.freeze(result)
 
   private def parentOutput
-    ( leftCv: Array[Int], rightCv: Array[Int], keyWords: Array[Int], flags: Int )
+    ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
   :   Output =
 
-    val blockWords = new Array[Int](16)
+    val blockWords = new scala.Array[Int](16)
     System.arraycopy(leftCv, 0, blockWords, 0, 8)
     System.arraycopy(rightCv, 0, blockWords, 8, 8)
-    Output(keyWords.clone(), blockWords, 0L, BlockLen, ParentFlag | flags)
+    // The freshly-constructed Output only holds fresh or private arrays.
+    scala.caps.unsafe.unsafeAssumePure
+      ( Output(keyWords.clone(), blockWords, 0L, BlockLen, ParentFlag | flags) )
 
   private def parentCv
-    ( leftCv: Array[Int], rightCv: Array[Int], keyWords: Array[Int], flags: Int )
-  :   Array[Int] =
+    ( leftCv: scala.Array[Int], rightCv: scala.Array[Int], keyWords: scala.Array[Int], flags: Int )
+  :   scala.Array[Int] =
 
     parentOutput(leftCv, rightCv, keyWords, flags).chainingValue()
 
-  private final class ChunkState(keyWordsInit: Array[Int], var chunkCounter: Long, val flags: Int):
-    val chainingValue:    Array[Int]  = keyWordsInit.clone()
-    val block:            Array[Byte] = new Array[Byte](BlockLen)
-    var blockLen:         Int         = 0
-    var blocksCompressed: Int         = 0
+  private final class ChunkState(keyWordsInit: scala.Array[Int], var chunkCounter: Long, val flags: Int)
+  extends caps.Mutable:
+    private var chainingValue: scala.Array[Int]^  = keyWordsInit.clone()
+    private var block:         scala.Array[Byte]^ = new scala.Array[Byte](BlockLen)
+
+    var blockLen:         Int = 0
+    var blocksCompressed: Int = 0
 
     def len: Int = BlockLen*blocksCompressed + blockLen
 
     private def startFlag: Int = if blocksCompressed == 0 then ChunkStart else 0
 
-    def update(input: Array[Byte], start: Int, end: Int): Unit =
-      val blockWords = new Array[Int](16)
+    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
+      // The window is copied out of, never into, so one named JVM view covers the whole call.
+      val source = Array.unsafeJvm(input)
+      val blockWords = new scala.Array[Int](16)
       var pos = start
 
       while pos < end do
@@ -224,36 +236,38 @@ object Blake3:
 
         val want = BlockLen - blockLen
         val take = math.min(want, end - pos)
-        System.arraycopy(input, pos, block, blockLen, take)
+        System.arraycopy(source, pos, block, blockLen, take)
         blockLen += take
         pos += take
 
     def output(): Output =
-      val blockWords = new Array[Int](16)
+      val blockWords = new scala.Array[Int](16)
       wordsFromBytes(block, 0, blockWords)
 
-      Output
-        ( chainingValue.clone(),
-          blockWords,
-          chunkCounter,
-          blockLen,
-          flags | startFlag | ChunkEnd )
+      // The freshly-constructed Output only holds fresh or private arrays.
+      scala.caps.unsafe.unsafeAssumePure
+        ( Output
+            ( chainingValue.clone(),
+              blockWords,
+              chunkCounter,
+              blockLen,
+              flags | startFlag | ChunkEnd ) )
 
-  private final class Hasher(keyWordsInit: Array[Int], val flags: Int):
-    private val keyWords:   Array[Int]        = keyWordsInit.clone()
-    private var chunkState: ChunkState        = ChunkState(keyWords, 0L, flags)
-    private val cvStack:    Array[Array[Int]] = new Array[Array[Int]](54)
-    private var cvStackLen: Int               = 0
+  private final class Hasher(keyWordsInit: scala.Array[Int], val flags: Int) extends caps.Mutable:
+    private val keyWords: scala.Array[Int] = keyWordsInit.clone()
+    private var chunkState: ChunkState^ = ChunkState(keyWords, 0L, flags)
+    private var cvStack: scala.Array[scala.Array[Int]]^ = new scala.Array[scala.Array[Int]](54)
+    private var cvStackLen: Int = 0
 
-    private def pushStack(cv: Array[Int]): Unit =
+    private update def pushStack(cv: scala.Array[Int]): Unit =
       cvStack(cvStackLen) = cv
       cvStackLen += 1
 
-    private def popStack(): Array[Int] =
+    private update def popStack(): scala.Array[Int] =
       cvStackLen -= 1
       cvStack(cvStackLen)
 
-    private def addChunkCv(initialCv: Array[Int], initialTotal: Long): Unit =
+    private update def addChunkCv(initialCv: scala.Array[Int], initialTotal: Long): Unit =
       var cv = initialCv
       var totalChunks = initialTotal
 
@@ -263,10 +277,9 @@ object Blake3:
 
       pushStack(cv)
 
-    def update(data: IArray[Byte]): Unit =
-      update(data.mutable(using Unsafe), 0, data.length)
+    update def update(data: Array[Byte]^{}): Unit = update(data, 0, data.length)
 
-    def update(input: Array[Byte], start: Int, end: Int): Unit =
+    update def update(input: Array[Byte]^{caps.any.rd}, start: Int, end: Int): Unit =
       // SIMD: AVX2 / AVX-512 backends process 4 / 8 / 16 chunks at a time here using interleaved
       //       state; the scalar path below handles one chunk per iteration.
       var pos = start
@@ -283,7 +296,7 @@ object Blake3:
         chunkState.update(input, pos, pos + take)
         pos += take
 
-    def complete(outLen: Int): IArray[Byte] =
+    update def complete(outLen: Int): Array[Byte]^{} =
       var current = chunkState.output()
       var i = cvStackLen
 
@@ -291,47 +304,48 @@ object Blake3:
         i -= 1
         current = parentOutput(cvStack(i), current.chainingValue(), keyWords, flags)
 
-      current.rootOutputBytes(outLen).immutable(using Unsafe)
+      current.rootOutputBytes(outLen)
 
   given hash: (hashing: Hashing { def blake3: Hashing.Function }) => Hash in Blake3 =
     Hash(t"BLAKE3", t"HMAC-BLAKE3", hashing.blake3)
 
   // The pure-Scala BLAKE3 `Digestion`, used by the Soundness hashing provider.
-  def digestion(): Digestion = new Digestion:
-    private val hasher: Hasher = Hasher(Iv, 0)
-    def append(bytes: Data): Unit = hasher.update(bytes)
+  def digestion(): Digestion^ = new Digestion:
+    private var hasher: Hasher^ = Hasher(ivWords, 0)
+    update def append(bytes: Data): Unit = hasher.update(bytes)
 
-    override def append(array: Array[Byte], start: Int, count: Int): Unit =
+    override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
       hasher.update(array, start, start + count)
 
-    def digest(): Data = hasher.complete(OutLen)
+    update def digest(): Data = hasher.complete(OutLen)
 
-  def hashOf(input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
-    val hasher = Hasher(Iv, 0)
+  def hashOf(input: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
+    val hasher: Hasher^ = Hasher(ivWords, 0)
     hasher.update(input)
     hasher.complete(length)
 
-  def keyedHash(key: IArray[Byte], input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
-    if key.length != KeyLen then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
+  def keyedHash(key: Array[Byte]^{}, input: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
+    if key.length != KeyLen
+    then panic(m"BLAKE3 key must be $KeyLen bytes (got ${key.length})")
 
-    val keyBytes = key.mutable(using Unsafe)
-    val keyWords = new Array[Int](8)
-    wordsFromBytes(keyBytes, 0, keyWords)
+    val keyWords = new scala.Array[Int](8)
+    // `wordsFromBytes` only reads its bytes.
+    wordsFromBytes(Array.unsafeJvm(key), 0, keyWords)
 
-    val hasher = Hasher(keyWords, KeyedHashFlag)
+    val hasher: Hasher^ = Hasher(keyWords, KeyedHashFlag)
     hasher.update(input)
     hasher.complete(length)
 
-  def deriveKey(context: Text, material: IArray[Byte], length: Int = OutLen): IArray[Byte] =
-    val ctxBytes: Array[Byte] = context.s.getBytes(StandardCharsets.UTF_8).nn
-    val ctxHasher = Hasher(Iv, DeriveKeyContext)
-    ctxHasher.update(ctxBytes.immutable(using Unsafe))
+  def deriveKey(context: Text, material: Array[Byte]^{}, length: Int = OutLen): Array[Byte]^{} =
+    val ctxBytes = Array.unsafeFrozen(context.s.getBytes(StandardCharsets.UTF_8).nn)
+    val ctxHasher: Hasher^ = Hasher(ivWords, DeriveKeyContext)
+    ctxHasher.update(ctxBytes)
 
-    val ctxKey = ctxHasher.complete(KeyLen).mutable(using Unsafe)
-    val ctxKeyWords = new Array[Int](8)
-    wordsFromBytes(ctxKey, 0, ctxKeyWords)
+    val ctxKey = ctxHasher.complete(KeyLen)
+    val ctxKeyWords = new scala.Array[Int](8)
+    wordsFromBytes(Array.unsafeJvm(ctxKey), 0, ctxKeyWords)
 
-    val matHasher = Hasher(ctxKeyWords, DeriveKeyMaterial)
+    val matHasher: Hasher^ = Hasher(ctxKeyWords, DeriveKeyMaterial)
     matHasher.update(material)
     matHasher.complete(length)
 

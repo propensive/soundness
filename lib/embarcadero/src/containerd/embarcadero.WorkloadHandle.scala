@@ -32,6 +32,10 @@
                                                                                                   */
 package embarcadero
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -39,6 +43,7 @@ import cordillera.*
 import locomotion.*
 import obligatory.*
 import parasite.*
+import rudiments.*
 
 // Grants particular to container workloads, in the deliberately-open `Grant` hierarchy:
 // `Run` means the task is started when opened, and confers awaiting its exit; `Signal`
@@ -111,7 +116,7 @@ extends Openable:
 
     try
       val response = containerd.createTask(created.id, flags)
-      val started = mode.atoms.contains(Run)
+      val started = mode.atoms.has(Run)
       val pid = if started then containerd.startTask(created.id) else response.pid
 
       try block(using new WorkloadHandle(containerd, created.id, pid) with Granting[grants] {})
@@ -120,8 +125,8 @@ extends Openable:
         // or error. SIGKILL, because scope end is unconditional; a started task is then
         // reaped before deletion, since containerd refuses to delete an unreaped task.
         if started then
-          safely(containerd.killTask(created.id, 9, all = true))
-          safely(containerd.waitTask(created.id))
+          scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.killTask(created.id, 9, all = true)))
+          scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.waitTask(created.id)))
 
-        safely(containerd.deleteTask(created.id))
-    finally safely(containerd.deleteContainer(created.id))
+        scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.deleteTask(created.id)))
+    finally scala.caps.unsafe.unsafeAssumeSeparate(safely(containerd.deleteContainer(created.id)))

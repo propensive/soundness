@@ -34,8 +34,11 @@ package cordillera
 
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
+import proscenium.compat.*
 
 import scala.collection.concurrent as scc
+import scala.math
+import scala.caps
 
 import anticipation.{Data as Bytes, *}
 import coaxial.*
@@ -108,7 +111,7 @@ object Http2ServerConnection:
           // Adopt the peer's advertised initial per-stream send window; applies
           // to streams opened after this point (existing streams are not
           // retroactively adjusted — a deliberate simplification).
-          settings.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
+          settings.stdlib.find(_.id == SettingId.InitialWindowSize.id).foreach: setting =>
             conn.peerInitialWindow.set(setting.value.toInt)
 
           conn.send(Frame.Settings(Nil, ack = true))
@@ -220,10 +223,12 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
     accepted.stop()
 
   private val (writer, reader) =
-    contain:
+    // As `Http2Connection`: no aliased writer between containment and body.
+    scala.caps.unsafe.unsafeAssumeSeparate:
+     contain:
       case _ => tearDown(); Remedy.Accept
 
-    . protect:
+     . protect:
         // Everything the fibers touch is bound to locals (or neutral carriers)
         // before they spawn: a daemon body may not capture the instance under
         // construction, and its context function must stay pure.
@@ -315,7 +320,7 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
     send(Frame.Headers(streamId, encoder.encode(entries), endStream = true, endHeaders = true))
 
   def close(): Unit =
-    send(Frame.GoAway(0, ErrorCode.NoError.code, IArray.empty[Byte]))
+    send(Frame.GoAway(0, ErrorCode.NoError.code, Array.empty[Byte]))
     outbound.stop()
     accepted.stop()
     reader.cancel()

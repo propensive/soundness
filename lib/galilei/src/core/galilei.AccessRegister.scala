@@ -32,9 +32,12 @@
                                                                                                   */
 package galilei
 
+import proscenium.compat.*
+
 import anticipation.*
 import aperture.*
 import gossamer.*
+import rudiments.*
 
 // The process-global register of open directory scopes, acquired when a directory is opened
 // and released when its scope ends. Conflicts are detected on the real (symlink-resolved)
@@ -48,6 +51,7 @@ import gossamer.*
 object AccessRegister:
   private case class Registration(real: Text, atoms: Set[Mode])
 
+  @scala.caps.unsafe.untrackedCaptures
   private var registrations: List[Registration] = Nil
 
   // The filesystem root would defeat the `+ "/"` prefix test, so it is normalized to empty.
@@ -59,9 +63,9 @@ object AccessRegister:
   def acquire(real: Text, atoms: Set[Mode]): Boolean = synchronized:
     val real2 = normalize(real)
 
-    val conflict = registrations.exists: registration =>
+    val conflict = registrations.stdlib.exists: registration =>
       overlapping(real2, registration.real)
-        && (atoms.contains(Exclusive) || registration.atoms.contains(Exclusive))
+        && (atoms.has(Exclusive) || registration.atoms.has(Exclusive))
 
     if conflict then false else
       registrations ::= Registration(real2, atoms)

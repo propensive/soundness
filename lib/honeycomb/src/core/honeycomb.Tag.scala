@@ -32,7 +32,11 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
+import scala.caps
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import anticipation.*
 import fulminate.*
@@ -52,7 +56,7 @@ object Tag:
             case element@Element(tag.label, _, _, _) => lambda(element)
             case other                               => other
 
-          new Element(label, attributes, caps.unsafe.unsafeAssumePure(children2), boundary)
+          new Element(label, attributes, children2, boundary)
           . asInstanceOf[html]
 
         case other =>
@@ -89,7 +93,7 @@ object Tag:
       boundary:   Boolean                   = false )
   :   Container of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.pipe(x => Set.from(x.stdlib.map(_.tt)))
 
     Container
       ( valueOf[label].tt, autoclose, mode, presets, admissible, insertable, false, boundary )
@@ -103,7 +107,7 @@ object Tag:
     ( presets: Map[Text, Optional[Text]] = Map(), boundary: Boolean = false )
   :   Transparent of label over children in dom =
 
-    val admissible: Set[Text] = children.reify.map(_.tt).to(Set)
+    val admissible: Set[Text] = children.reify.pipe(x => Set.from(x.stdlib.map(_.tt)))
 
     transparent(valueOf[label].tt, admissible, presets, boundary = boundary)
     . of[label]
@@ -134,14 +138,14 @@ object Tag:
       boundary:   Boolean                   = false )
   extends Tag
     ( label, autoclose, mode, presets, admissible, insertable, foreign, false, false, boundary ):
-    type Result = Element & Html.Populable of Topic over Transport in Form
+    type Result = Element & Html.Vacuiscible of Topic over Transport in Form
 
     def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
       ( using attribution: Attribution of (? >: className) )
     :   Element of Topic over Transport in Form =
 
-      val nodes = children.compact.nodes
+      val nodes = children.compact.to(List).nodes
 
       val presets2 =
         if attribution.attribute == t"" then presets
@@ -158,8 +162,8 @@ object Tag:
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
-      with Html.Populable()
+      new Element(label, Attributes.from(presets) ++ attributes, Array.of(), foreign)
+      with Html.Vacuiscible()
       . of[Topic]
       . over[Transport]
       . in[Form]
@@ -201,12 +205,12 @@ object Tag:
 
           presets.updated(attribution.attribute, value)
 
-      val nodes: IArray[Node] = children.compact.nodes
+      val nodes: Array[Node]^{} = children.compact.to(List).nodes
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
 
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, Array.of(), foreign)
       with Html.Transparent()
       . of[Topic]
       . over[Transport]
@@ -219,7 +223,7 @@ object Tag:
     def node(attributes: Attributes): Result =
       new Element
         ( label, Attributes.from(presets) ++ attributes,
-          IArray(), this.foreign )
+          Array.of(), this.foreign )
       . of[Topic]
       . in[Form]
 
@@ -234,9 +238,9 @@ abstract class Tag
     val void:        Boolean                   = false,
     val transparent: Boolean                   = false,
     val boundary:    Boolean                   = false )
-// The empty-children `IArray()` is sealed: a fresh `IArray` in the parent
+// The empty-children `Array.of()` is sealed: a fresh frozen array in the parent
 // constructor call would otherwise decorate `Tag`'s self type, which must stay
-extends Element(label, Attributes.from(presets), IArray(), foreign),
+extends Element(label, Attributes.from(presets), Array.of(), foreign),
   Formal, Dynamic, caps.Pure:
   type Result <: Element
 

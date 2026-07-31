@@ -32,6 +32,10 @@
                                                                                                   */
 package fulminate
 
+import scala.caps
+
+import proscenium.compat.*
+
 import anticipation.*
 
 // The domain of raisable values: any pure exception. `Error` is pure by
@@ -62,7 +66,8 @@ extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.
   def this(message: Message, cause: Throwable | Null = null)(using Diagnostics) =
     this(0, 0)(message, cause)
 
-  def fullClass: List[Text] = List(getClass.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
+  def fullClass: List[Text] =
+    List.from(getClass.getName.nn.split("\\.").nn.iterator.map { part => Text(part.nn) })
   def className: Text = fullClass.last
   def component: Text = fullClass.head
 

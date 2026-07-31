@@ -42,4 +42,4 @@ trait Secret:
   // Lends the secret to the block as a MUTABLE byte array, materialized from wherever the
   // cloak stores it. The array is zeroed in a `finally` when the block exits, normally or
   // abruptly, so it must not escape the block.
-  def uncloak[result](block: Array[Byte] => result): result
+  def uncloak[result](block: scala.Array[Byte] => result): result

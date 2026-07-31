@@ -91,8 +91,9 @@ object Subtree:
       ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Read])^ )
       ( using filesystem: handle.Under is Filesystem )
       ( using backend: FilesystemBackend on handle.Under, tactic: Tactic[IoError] )
-    :   LazyList[Path on plane] =
-      entriesResolved(handle.resolve(path)).map: child => path.child(child.name)(using Unsafe)
+    :   Chain[Path on plane] =
+      entriesResolved(handle.resolve(path)).map: child =>
+        path.child(child.name)(using Unsafe)
 
     transparent inline def remove()
       ( using handle: ((DirectoryHandle { type Plane = plane }) & Granting[Grant.Write])^ )
@@ -120,12 +121,12 @@ object Subtree:
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under )
   :   Boolean =
-    path.exists()
+    galilei.exists(path)()
 
   def entriesResolved[under](path: Path on under)
     ( using filesystem: under is Filesystem )
     ( using backend: FilesystemBackend on under, tactic: Tactic[IoError] )
-  :   LazyList[Path on under] =
+  :   Chain[Path on under] =
     path.children
 
   def removeResolved[under](path: Path on under)

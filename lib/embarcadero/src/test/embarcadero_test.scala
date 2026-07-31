@@ -34,6 +34,8 @@ package embarcadero
 
 import soundness.*
 
+import proscenium.compat.*
+
 import providers.javaStdlibProvider
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
@@ -55,7 +57,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
     
     val layerTar = Tarfile(List(fileEntry(t"hello.txt", t"hello world\n")))
     val layer    = Layer(layerTar)
-    val image    = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
+    val image    = Image(List(layer), config = ContainerConfig(Cmd = proscenium.List(t"/bin/sh")))
 
     suite(m"Layer digests"):
       val raw = layerTar.source[Data].memoize
@@ -131,27 +133,30 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tarfile.read(image.archive.source[Data]).to(List)
+      val entries    = Tarfile.read(image.archive.source[Data]).to(List).asInstanceOf[List[bitumen.Tar.Entry]]
       val names      = entries.map(_.entryName)
-      val layoutData = entries.collect:
-        case file: Tar.Entry.File if file.entryName == t"oci-layout" => file.data.memoize
+      // Explicit result type and reasserting cast: the collect lambda re-freshens the
+      // frozen chunk to an `any.rd` that leaks out of the partial function.
+      val layoutData = entries.collect[Data]:
+        case file: Tar.Entry.File if file.entryName == t"oci-layout" =>
+          file.data.memoize.asInstanceOf[Data]
 
       test(m"archive contains the oci-layout marker and index.json"):
-        (names.contains(t"oci-layout"), names.contains(t"index.json"))
+        (names.has(t"oci-layout"), names.has(t"index.json"))
       . assert(_ == (true, true))
 
       test(m"archive contains one blob per config, layer and manifest"):
-        names.count(_.s.startsWith("blobs/sha256/"))
+        names.stdlib.count(_.s.startsWith("blobs/sha256/"))
       . assert(_ == 3)
 
       test(m"the layer blob is stored under its digest path"):
         val hex = layer.digest.s.stripPrefix("sha256:")
-        names.map(_.s).contains("blobs/sha256/"+hex)
+        names.stdlib.map(_.s).contains("blobs/sha256/"+hex)
       . assert(_ == true)
 
       test(m"oci-layout declares image layout version 1.0.0"):
-        layoutData.map(bytes => bytes.to(List))
-      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".in[Data].to(List)))
+        layoutData.map(bytes => bytes.to[List])
+      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".in[Data].to[List]))
 
     suite(m"Opening an image archive"):
       val archiveData = image.archive.source[Data].memoize
@@ -183,16 +188,16 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.imageConfig)
 
       test(m"a layer's stored blob streams verbatim"):
-        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to(List) }
-      . assert(_ == layer.blob.to(List))
+        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.head).memoize.to[List] }
+      . assert(_ == layer.blob.to[List])
 
       test(m"a layer decompresses to the original tar bytes"):
-        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.head).memoize.to(List) }
-      . assert(_ == layer.raw.to(List))
+        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.head).memoize.to[List] }
+      . assert(_ == layer.raw.to[List])
 
       test(m"verified gathers a blob and confirms its digest and size"):
-        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head).to(List) }
-      . assert(_ == layer.blob.to(List))
+        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.head).to[List] }
+      . assert(_ == layer.blob.to[List])
 
       test(m"index JSON round-trips through jacinta"):
         image.index.in[Json].as[Index]
@@ -273,7 +278,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
-                  fields.find(_.name == t"containerd-namespace").each: entry =>
+                  fields.stdlib.find(_.name == t"containerd-namespace").foreach: entry =>
                     namespace.offer(entry.value)
 
                   val status = hpack.encode(List(HpackEntry(t":status", t"200"),
@@ -299,8 +304,9 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val containerd = Containerd(endpoint, t"example")
-          val response = containerd.version()
-          (response.version, response.revision, namespace.await())
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            val response = containerd.version()
+            (response.version, response.revision, namespace.await())
       . assert(_ == (t"1.7.0", t"deadbeef", t"example"))
 
       test(m"containers() decodes a repeated, labelled list"):
@@ -320,7 +326,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val containerd = Containerd(endpoint, t"example")
-          containerd.containers().map(container => (container.id, container.labels))
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            containerd.containers().map(container => (container.id, container.labels))
       . assert(_ == List((t"alpha", Map(t"tier" -> t"db")), (t"beta", Map())))
 
       test(m"container(id) decodes a nested Container response"):
@@ -339,8 +346,9 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          val container = Containerd(endpoint, t"example").container(t"gamma")
-          (container.id, container.labels, container.image)
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            val container = Containerd(endpoint, t"example").container(t"gamma")
+            (container.id, container.labels, container.image)
       . assert(_ == (t"gamma", Map(t"x" -> t"y"), t"img:1"))
 
       test(m"namespaces() decodes the namespace list"):
@@ -359,7 +367,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          Containerd(endpoint, t"example").namespaces().map(ns => (ns.name, ns.labels))
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Containerd(endpoint, t"example").namespaces().map(ns => (ns.name, ns.labels))
       . assert(_ == List((t"default", Map()), (t"k8s.io", Map(t"managed" -> t"true"))))
 
       test(m"images() decodes a list with nested descriptors and labels"):
@@ -382,8 +391,9 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
 
-          Containerd(endpoint, t"example").images().map: image =>
-            (image.name, image.labels, image.target.digest, image.target.size)
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Containerd(endpoint, t"example").images().map: image =>
+              (image.name, image.labels, image.target.digest, image.target.size)
       . assert(_ == List((t"docker.io/library/alpine:latest", Map(t"arch" -> t"amd64"),
           t"sha256:abc", 1234L)))
 
@@ -394,7 +404,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val container = Container(t"web", image = t"img:1",
               runtime = Runtime(t"io.containerd.runc.v2"),
-              spec = AnyMessage(t"oci-spec", t"hello".in[Data]))
+              spec = AnyMessage(t"oci-spec", AnyMessage.Payload(t"hello".in[Data])))
 
           val body = GrpcFraming.encode(CreateContainerResponse(container).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
@@ -404,9 +414,10 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          val created = Containerd(endpoint, t"example").createContainer(container)
-          (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to(List))
-      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to(List)))
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            val created = Containerd(endpoint, t"example").createContainer(container)
+            (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.data.to[List])
+      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to[List]))
 
       test(m"createTask sends rootfs mounts and returns the task pid"):
         supervise:
@@ -421,7 +432,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
-          Containerd(endpoint, t"example").createTask(t"web", rootfs).pid
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Containerd(endpoint, t"example").createTask(t"web", rootfs).pid
       . assert(_ == 4321)
 
       test(m"tasks() decodes processes and maps the status code to ProcessStatus"):
@@ -440,7 +452,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))
       . assert(_ == List((t"web", 4321, ProcessStatus.Running)))
 
     suite(m"workload lifecycle over a gRPC loopback"):
@@ -500,12 +513,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
                   serverSide.send(zephyrine.Stream(Frame.Headers(id, status, false, true).serialize))
 
-                  if failures.contains(path) then
+                  if failures.has(path) then
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"3")))
                     serverSide.send(zephyrine.Stream(Frame.Headers(id, trailer, true, true).serialize))
                   else
                     val body =
-                      responses.getOrElse(path, GrpcFraming.encode(Empty().in[Protobuf].encode))
+                      responses.at(path).or(GrpcFraming.encode(Empty().in[Protobuf].encode))
 
                     val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
                     serverSide.send(zephyrine.Stream(Frame.Data(id, body, false).serialize))
@@ -537,10 +550,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          given containerd: (Containerd^) = Containerd(endpoint, t"example")
-          val spec = Container(t"web", image = t"img:1")
-          val pid = spec.open[Workload]() { workload ?=> workload.pid }
-          (pid, calls.synchronized(calls.to(List)))
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            given containerd: (Containerd^) = Containerd(endpoint, t"example")
+            val spec = Container(t"web", image = t"img:1")
+            val pid = spec.open[Workload]() { workload ?=> workload.pid }
+            (pid, calls.synchronized(calls.to(List)))
       . assert(_ == (4321, List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Delete", t"$containersService/Delete")))
 
@@ -555,13 +569,14 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          given containerd: (Containerd^) = Containerd(endpoint, t"example")
-          val spec = Container(t"web", image = t"img:1")
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            given containerd: (Containerd^) = Containerd(endpoint, t"example")
+            val spec = Container(t"web", image = t"img:1")
 
-          val (pid, exit) = spec.open[Workload](Read & Run & Signal): workload ?=>
-            (workload.pid, workload.await().exitStatus)
+            val (pid, exit) = spec.open[Workload](Read & embarcadero.Run & Signal): workload ?=>
+              (workload.pid, workload.await().exitStatus)
 
-          (pid, exit, calls.synchronized(calls.to(List)))
+            (pid, exit, calls.synchronized(calls.to(List)))
       . assert(_ == (5678, 7, List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Start", t"$tasksService/Wait", t"$tasksService/Kill",
           t"$tasksService/Wait", t"$tasksService/Delete", t"$containersService/Delete")))
@@ -577,16 +592,17 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          given containerd: (Containerd^) = Containerd(endpoint, t"example")
-          val spec = Container(t"web", image = t"img:1")
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            given containerd: (Containerd^) = Containerd(endpoint, t"example")
+            val spec = Container(t"web", image = t"img:1")
 
-          val outcome =
-            try
-              spec.open[Workload](Read & Run) { workload ?=> throw java.lang.IllegalStateException() }
-              t"returned"
-            catch case _: java.lang.IllegalStateException => t"escaped"
+            val outcome =
+              try
+                spec.open[Workload](Read & embarcadero.Run) { workload ?=> throw java.lang.IllegalStateException() }
+                t"returned"
+              catch case _: java.lang.IllegalStateException => t"escaped"
 
-          (outcome, calls.synchronized(calls.to(List)))
+            (outcome, calls.synchronized(calls.to(List)))
       . assert(_ == (t"escaped", List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Start", t"$tasksService/Kill", t"$tasksService/Wait",
           t"$tasksService/Delete", t"$containersService/Delete")))
@@ -602,10 +618,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
-          given containerd: (Containerd^) = Containerd(endpoint, t"example")
-          val spec = Container(t"web", image = t"img:1")
-          val result = safely(spec.open[Workload]() { workload ?=> () })
-          (result.absent, calls.synchronized(calls.to(List)))
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            given containerd: (Containerd^) = Containerd(endpoint, t"example")
+            val spec = Container(t"web", image = t"img:1")
+            val result = safely(spec.open[Workload]() { workload ?=> () })
+            (result.absent, calls.synchronized(calls.to(List)))
       . assert(_ == (true, List(t"$containersService/Create")))
 
     suite(m"containerd timestamps via the generic time abstraction"):
@@ -618,6 +635,6 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
         val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
-        val restored = LazyList(container.in[Protobuf].encode).read[Container in Protobuf]
+        val restored = proscenium.Chain(container.in[Protobuf].encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Unix]
       . assert(_ == moment)

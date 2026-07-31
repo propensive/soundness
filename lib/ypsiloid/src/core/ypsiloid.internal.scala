@@ -32,6 +32,11 @@
                                                                                                   */
 package ypsiloid
 
+import scala.collection.immutable.Seq
+import scala.collection.immutable.IndexedSeq
+
+import proscenium.compat.*
+
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -68,7 +73,7 @@ object internal:
 
   private def hasMarker(s: String): Boolean = s.contains(MarkerString)
 
-  private def stripPad(arr: IArray[Any]): IArray[Any] =
+  private def stripPad(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
     if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1) else arr
@@ -171,7 +176,7 @@ object internal:
       case _               => Unset
 
     val perPart: IndexedSeq[((String, Int, Int), Int -> Int)] =
-      parts.zip(parts2).zip(partOrigins).map: pair =>
+      parts.stdlib.zip(parts2.stdlib).zip(partOrigins.stdlib).map: pair =>
         val ((origPart, parserPart), (srcStart, _)) = pair
         val srcSkip = origPart.length - parserPart.length
         val effectiveStart = srcStart + srcSkip
@@ -295,7 +300,7 @@ object internal:
       def serializeString(s: String): Expr[Yaml.Ast] =
         if !hasMarker(s) then '{Yaml.Ast(${Expr(s)})}
         else
-          val parts: Array[String | Null] = s.split(MarkerString, -1).nn
+          val parts: scala.Array[String | Null] = s.split(MarkerString, -1).nn
           var resultExpr: Expr[String] = Expr(parts(0).nn)
           var i = 1
 
@@ -307,11 +312,11 @@ object internal:
 
           '{Yaml.Ast(${resultExpr})}
 
-      def serializeArray(elements: IArray[Any]): Expr[Yaml.Ast] =
+      def serializeArray(elements: Array[Any]^{}): Expr[Yaml.Ast] =
         val n = elements.length
 
-        val pieces: List[Expr[Iterable[Yaml.Ast]]] = elements.zipWithIndex.toList.map:
-          (elem, idx) =>
+        val pieces: scala.collection.immutable.List[Expr[Iterable[Yaml.Ast]]] =
+          elements.readable.zipWithIndex.toList.map: (elem, idx) =>
             elem.asMatchable match
               case s: String if s == MarkerString =>
                 if spreads.has(holeIndex) then
@@ -328,14 +333,14 @@ object internal:
                 '{Iterable($v)}
 
         ' {
-            val all = ${Expr.ofList(pieces)}.foldLeft(List.empty[Yaml.Ast])(_ ++ _)
-            Yaml.Ast.Sequence(IArray.from(all))
+            val all = ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[Yaml.Ast])(_ ++ _)
+            Yaml.Ast.Sequence(Array.from(all))
           }
 
-      def serializeObject(node: IArray[Any]): Expr[Yaml.Ast] =
+      def serializeObject(node: Array[Any]^{}): Expr[Yaml.Ast] =
         val n = node.length/2
 
-        val pieces: List[Expr[Iterable[(String, Yaml.Ast)]]] =
+        val pieces: scala.collection.immutable.List[Expr[Iterable[(String, Yaml.Ast)]]] =
           (0 until n).toList.map: i =>
             val k = node(i*2).asInstanceOf[String]
             val v = node(i*2 + 1)
@@ -359,17 +364,17 @@ object internal:
 
         ' {
             val all =
-              ${Expr.ofList(pieces)}.foldLeft(List.empty[(String, Yaml.Ast)])(_ ++ _)
+              ${Expr.ofList(pieces)}.foldLeft(scala.collection.immutable.List.empty[(String, Yaml.Ast)])(_ ++ _)
 
-            val arr = new Array[Any](all.length*2)
+            val arr = new scala.Array[Any](all.length*2)
             var k = 0
 
-            all.foreach: pair =>
+            all.each: pair =>
               arr(k*2)     = Yaml.Ast.Str(pair(0).tt).asInstanceOf[Any]
               arr(k*2 + 1) = pair(1).asInstanceOf[Any]
               k += 1
 
-            Yaml.Ast.mapFromAnyArray(arr)
+            Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[Array[Any]^{}])
           }
 
       def serialize(node: Any): Expr[Yaml.Ast] = node.asMatchable match
@@ -394,8 +399,9 @@ object internal:
         case null =>
           '{Yaml.Ast.Null}
 
-        case arr: IArray[Any] @unchecked =>
-          if (arr.length & 1) == 0 then serializeObject(arr) else serializeArray(stripPad(arr))
+        case arr: (Array[Any]^{}) @unchecked =>
+          if (arr.length & 1) == 0 then serializeObject(arr)
+          else serializeArray(stripPad(arr))
 
         case other =>
           halt(m"unexpected YAML AST node ${other.toString.tt}")
@@ -429,7 +435,7 @@ object internal:
       var types: List[TypeRepr] = Nil
 
       def descend
-        ( array: Expr[Array[Any]],
+        ( array: Expr[scala.Array[Any]],
          pattern: Any,
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )
@@ -476,7 +482,7 @@ object internal:
           case null =>
             '{$accept && $scrutinee.isNull}
 
-          case arr: IArray[Any] @unchecked =>
+          case arr: (Array[Any]^{}) @unchecked =>
             if (arr.length & 1) == 0 then descendObject(array, arr, scrutinee, accept)
             else descendArray(array, stripPad(arr), scrutinee, accept)
 
@@ -484,8 +490,8 @@ object internal:
             halt(m"unexpected YAML AST node ${other.toString.tt}")
 
       def descendArray
-        ( array: Expr[Array[Any]],
-         elements: IArray[Any],
+        ( array: Expr[scala.Array[Any]],
+         elements: Array[Any]^{},
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
@@ -526,21 +532,22 @@ object internal:
                 $combined && {
                   val total = $scrutinee.arrayLength
                   val tailLen = total - ${Expr(prefixLen)}
-                  val tail = new Array[Any](tailLen)
+                  val tail = new scala.Array[Any](tailLen)
                   var k = 0
 
                   while k < tailLen do
                     tail(k) = $scrutinee.arrayElement(${Expr(prefixLen)} + k).asInstanceOf[Any]
                     k += 1
 
-                  $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.seqFromAnyArray(tail))
+                  $array(${Expr(idx)}) =
+                    Yaml.ast(Yaml.Ast.seqFromAnyArray(tail.asInstanceOf[Array[Any]^{}]))
                   true
                 }
               }
 
         combined
 
-      def countHolesInPrefix(elements: IArray[Any], upTo: Int): Int =
+      def countHolesInPrefix(elements: Array[Any]^{}, upTo: Int): Int =
         var count = 0
         var i = 0
 
@@ -567,7 +574,7 @@ object internal:
 
           c
 
-        case arr: IArray[Any] @unchecked =>
+        case arr: (Array[Any]^{}) @unchecked =>
           if (arr.length & 1) == 0 then
             val pairs = arr.length/2
             var c = 0
@@ -593,15 +600,15 @@ object internal:
         case _ => 0
 
       def descendObject
-        ( array: Expr[Array[Any]],
-         node: IArray[Any],
+        ( array: Expr[scala.Array[Any]],
+         node: Array[Any]^{},
          scrutinee: Expr[Yaml.Ast],
          accept: Expr[Boolean] )
       :   Expr[Boolean] =
 
         val pairs = node.length/2
 
-        val literalKeys: List[String] =
+        val literalKeys: scala.collection.immutable.List[String] =
           (0 until pairs).toList.collect:
             case i if node(i*2).asInstanceOf[String] != MarkerString =>
               node(i*2).asInstanceOf[String]
@@ -622,7 +629,7 @@ object internal:
                       keysSet += $scrutinee.objectKey(k)
                       k += 1
 
-                    ${Expr(literalKeys)}.forall(keysSet.contains)
+                    ${Expr(literalKeys)}.forall(keysSet.has(_))
                   }
               }
           else
@@ -639,7 +646,7 @@ object internal:
                         keysSet += $scrutinee.objectKey(k)
                         k += 1
 
-                      ${Expr(literalKeys)}.forall(keysSet.contains)
+                      ${Expr(literalKeys)}.forall(keysSet.has(_))
                     }
                   }
               }
@@ -675,7 +682,7 @@ object internal:
 
                       j += 1
 
-                    val arr = new Array[Any](keysBuf.length*2)
+                    val arr = new scala.Array[Any](keysBuf.length*2)
                     var m = 0
 
                     while m < keysBuf.length do
@@ -683,7 +690,8 @@ object internal:
                       arr(m*2 + 1) = valsBuf(m)
                       m += 1
 
-                    $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
+                    $array(${Expr(idx)}) =
+                      Yaml.ast(Yaml.Ast.mapFromAnyArray(arr.asInstanceOf[Array[Any]^{}]))
                     true
                   }
                 }
@@ -714,7 +722,7 @@ object internal:
 
       val result: Expr[Extrapolation[Yaml]] =
         ' {
-            val extracts = new Array[Any](${Expr(numberOfHoles)})
+            val extracts = new scala.Array[Any](${Expr(numberOfHoles)})
 
             val matches: Boolean =
               ${descend('extracts, ast, '{Yaml.unseal($scrutinee)}, '{true})}
@@ -738,7 +746,7 @@ object internal:
               '{$result.asInstanceOf[Option[result]]}
 
         case _ =>
-          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
+          AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.stdlib.reverse)
           . asType
           . absolve match
             case '[type result <: Tuple; result] =>

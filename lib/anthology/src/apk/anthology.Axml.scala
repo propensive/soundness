@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -83,11 +85,11 @@ object Axml:
     private val indices: scm.LinkedHashMap[Text, Int] = scm.LinkedHashMap()
     def intern(string: Text): Int = indices.getOrElseUpdate(string, indices.size)
     def count: Int = indices.size
-    def ordered: List[Text] = indices.toList.sortBy(_(1)).map(_(0))
+    def ordered: List[Text] = List.of(indices.toList.sortBy(_(1)).map(_(0)))
 
   // A growable little-endian byte buffer with the back-patching the chunked format needs: chunk
   // sizes and the total file size are only known after their contents are written.
-  private class Buffer:
+  private class Accumulator:
     private val bytes: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
     def position: Int = bytes.length
 
@@ -106,7 +108,7 @@ object Axml:
       bytes(at + 3) = ((value >> 24) & 0xff).toByte
 
     def align4(): Unit = while position%4 != 0 do u8(0)
-    def data: Data = bytes.toArray.immutable(using Unsafe)
+    def data: Data = Array.unsafeFrozen(bytes.toArray)
 
   def encode(root: Element): Data =
     val strings = Strings()
@@ -116,12 +118,13 @@ object Axml:
     val resourceMap: scm.LinkedHashMap[Text, Int] = scm.LinkedHashMap()
 
     def collectResources(element: Element): Unit =
-      for attribute <- element.attributes do attribute.resourceId.let: id =>
-        if !resourceMap.contains(attribute.name) then
-          resourceMap(attribute.name) = id
-          strings.intern(attribute.name)
+      element.attributes.stdlib.foreach: attribute =>
+        attribute.resourceId.let: id =>
+          if !resourceMap.contains(attribute.name) then
+            resourceMap(attribute.name) = id
+            strings.intern(attribute.name)
 
-      for child <- element.children do collectResources(child)
+      element.children.stdlib.foreach(collectResources(_))
 
     collectResources(root)
 
@@ -133,15 +136,15 @@ object Axml:
     def collectStrings(element: Element): Unit =
       strings.intern(element.name)
 
-      for attribute <- element.attributes do
+      element.attributes.stdlib.foreach: attribute =>
         strings.intern(attribute.name)
         attribute.value.only { case Value.Str(text) => strings.intern(text) }
 
-      for child <- element.children do collectStrings(child)
+      element.children.stdlib.foreach(collectStrings(_))
 
     collectStrings(root)
 
-    val out = Buffer()
+    val out = new Accumulator()
 
     // The XML chunk header; its total-size field is patched once the file is complete.
     out.u16(0x0003)
@@ -150,7 +153,7 @@ object Axml:
     out.u32(0)
 
     writeStringPool(out, strings.ordered)
-    writeResourceMap(out, resourceMap.values.to(List))
+    writeResourceMap(out, List.of(resourceMap.values.toList))
 
     val android = strings.intern(androidUri)
     val prefix = strings.intern(androidPrefix)
@@ -172,7 +175,7 @@ object Axml:
 
   // A namespace or resource-map-free node chunk with a 16-byte header (type, header size, chunk
   // size, line number, comment); `body` writes the remainder and the size is patched in.
-  private def startChunk(out: Buffer, chunkType: Int)(body: => Unit): Unit =
+  private def startChunk(out: Accumulator, chunkType: Int)(body: => Unit): Unit =
     out.u16(chunkType)
     out.u16(0x0010)
     val sizeAt = out.position
@@ -182,7 +185,7 @@ object Axml:
     body
     out.patchU32(sizeAt, (out.position - sizeAt + 4).toLong)
 
-  private def writeElement(out: Buffer, element: Element, strings: Axml.Strings): Unit =
+  private def writeElement(out: Accumulator, element: Element, strings: Axml.Strings): Unit =
     startChunk(out, 0x0102):
       out.u32(noRef)                       // element namespace (none)
       out.u32(strings.intern(element.name))
@@ -193,7 +196,7 @@ object Axml:
       out.u16(0)                           // class attribute index (none)
       out.u16(0)                           // style attribute index (none)
 
-      element.attributes.each: attribute =>
+      element.attributes.stdlib.foreach: attribute =>
         out.u32(attribute.namespace.let(strings.intern(_)).or(noRef.toInt).toLong)
         out.u32(strings.intern(attribute.name))
 
@@ -221,7 +224,7 @@ object Axml:
       out.u32(noRef)
       out.u32(strings.intern(element.name))
 
-  private def writeStringPool(out: Buffer, entries: List[Text]): Unit =
+  private def writeStringPool(out: Accumulator, entries: List[Text]): Unit =
     out.u16(0x0001)
     out.u16(0x001c)
     val sizeAt = out.position
@@ -235,9 +238,9 @@ object Axml:
 
     // The string data, assembled separately so each entry's offset (from the data start) is
     // known before the offset table is written.
-    val data = Buffer()
+    val data = new Accumulator()
 
-    val offsets = entries.map: entry =>
+    val offsets = entries.stdlib.map: entry =>
       val offset = data.position
       val chars = entry.s
       data.u16(chars.length)
@@ -252,7 +255,7 @@ object Axml:
     out.align4()
     out.patchU32(sizeAt, (out.position - sizeAt + 4).toLong)
 
-  private def writeResourceMap(out: Buffer, ids: List[Int]): Unit =
+  private def writeResourceMap(out: Accumulator, ids: List[Int]): Unit =
     if ids.nonEmpty then
       out.u16(0x0180)
       out.u16(0x0008)

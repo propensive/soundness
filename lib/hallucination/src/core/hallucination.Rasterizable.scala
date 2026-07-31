@@ -37,6 +37,7 @@ import contingency.*
 import gesticulate.*
 import prepositional.*
 import turbulence.*
+import proscenium.compat.*
 
 // A raster image format. Decoding and encoding are delegated to `RasterBackend`, which has one
 // implementation per platform: `javax.imageio` on the JVM, and pure-Scala codecs everywhere else

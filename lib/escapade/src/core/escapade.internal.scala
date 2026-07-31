@@ -32,8 +32,12 @@
                                                                                                   */
 package escapade
 
-import language.experimental.pureFunctions
+import scala.collection.immutable.Seq
+import proscenium.compat.*
 
+import scala.language.experimental.pureFunctions
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 import scala.reflect.*
 
@@ -401,7 +405,8 @@ object internal:
 
       inline def applyTransform(mask: Long, bits: Long): StyleWord = (style & ~mask) | bits
 
-case class Teletype2(plain: Text, ansi: IArray[escapade.internal.AnsiStyle]):
+
+case class Teletype2(plain: Text, ansi: Array[escapade.internal.AnsiStyle]^{}):
   import escapade.internal.AnsiStyle
 
   @targetName("concat")

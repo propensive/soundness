@@ -32,6 +32,9 @@
                                                                                                   */
 package dendrology
 
+import scala.collection.immutable.Vector
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.reflect.*
 
 import acyclicity.*
@@ -42,26 +45,34 @@ import spectacular.*
 
 object DagDiagram:
   def apply[node](dag: Dag[node]): DagDiagram[node] raises DagError =
-    val nodes = dag.sorted.to(Series)
-    val indexes: Map[node, Int] = nodes.zipWithIndex.to(Map)
+    val nodes = dag.sorted.to(Vector)
+    val indexes: scala.collection.immutable.Map[node, Int] = nodes.zipWithIndex.toMap
 
-    val layout: Array[Array[Int]] = Array.from:
-      nodes.indices.map: i => Array.range(0, i).map(_ => 0)
+    // A flat exclusive scratch array rather than a nested `Array[Array[Int]]`: writing
+    // through an element read of a nested array is rejected by separation checking.
+    val n = nodes.length
+    val layout: scala.Array[Int]^ = new scala.Array[Int](n*n)
+    var rest = dag.edges.to(List)
 
-    dag.edges.map: (source, destination) =>
+    while rest.nonEmpty do
+      val (source, destination) = rest.head
       val si = indexes(source)
       val di = indexes(destination)
 
-      layout(si)(di) |= 1
+      layout(si*n + di) |= 1
+      var i = di + 1
 
-      for i <- (di + 1) until si do
-        layout(i)(di) |= 2
-        layout(si)(i) |= 4
+      while i < si do
+        layout(i*n + di) |= 2
+        layout(si*n + i) |= 4
+        i += 1
+
+      rest = rest.tail
 
     DagDiagram:
-      layout.iterator.to(List).map: row =>
-        val tiles = row.iterator.to(List).map(DagTile.fromOrdinal)
-        (tiles, nodes(row.length))
+      List.tabulate(n): row =>
+        val tiles = List.tabulate(row) { col => DagTile.fromOrdinal(layout(row*n + col)) }
+        (tiles, nodes(row))
 
   given printable: [node: Showable] => (style: DagStyle[Text]) => DagDiagram[node] is Printable =
     (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
@@ -70,7 +81,7 @@ case class DagDiagram[node](lines: List[(List[DagTile], node)]):
   val size: Int = lines.length
 
   def render[line](line: node => line)(using style: DagStyle[line]): List[line] =
-    lines.map: (tiles, node) => style.serialize(tiles, line(node))
+    lines.map: (tiles, node) => style.serialize(proscenium.List.of(tiles), line(node))
 
   def nodes: List[node] = lines.map(_(1))
   def tiles: List[List[DagTile]] = lines.map(_(0))

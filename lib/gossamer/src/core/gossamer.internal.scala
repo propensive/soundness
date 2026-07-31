@@ -32,6 +32,11 @@
                                                                                                   */
 package gossamer
 
+import proscenium.compat.*
+
+import scala.collection.immutable.Seq
+
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -92,11 +97,19 @@ object internal:
       i += 1
 
     if normalize then
+      // A manual join, not `String.join(_, array*)`: a Java varargs splice of an array value
+      // is rejected under separation checking (the formal is a pure array).
       ' {
-          val array =
-            $concatExpr.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+          val parts = $concatExpr.split("\\n\\s*\\n").nn
+          val builder = new java.lang.StringBuilder()
+          var index = 0
 
-          anticipation.Text(String.join("\n", array*).nn)
+          while index < parts.length do
+            if index > 0 then builder.append('\n')
+            builder.append(parts(index).nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
+            index += 1
+
+          anticipation.Text(builder.toString)
         }
     else
       '{anticipation.Text($concatExpr)}
@@ -109,7 +122,11 @@ object internal:
     textInterpolator(context, insertions, normalize = true)
 
   object opaques:
-    opaque type Ascii = anticipation.Data
+    // Represented as the stdlib's immutable array, not `Data` (the frozen `Array[Byte]^{}`):
+    // dealiasing the mutable-classified opaque inside this file gives `Ascii`-typed fields a
+    // fresh `any.rd` capability, forcing enclosing objects to extend `Capability`. The stdlib
+    // `IArray` is pure by construction; `Data` conversions happen at the `bytes`/`apply` edge.
+    opaque type Ascii = scala.IArray[Byte]
     opaque type Grapheme = String
 
     object Grapheme:
@@ -146,29 +163,33 @@ object internal:
         def chars: Int = grapheme.length
 
     object Ascii:
-      def apply(bytes: Data): Ascii = bytes
+      def apply(bytes: Data): Ascii = bytes.readable
 
       given showable: Ascii is Showable =
-        ascii => String(ascii.mutable(using Unsafe), "ASCII").nn.tt
+        // Read-only use of the underlying JVM array: the `String` constructor copies.
+        ascii => String(ascii.asInstanceOf[scala.Array[Byte]], "ASCII").nn.tt
 
       given concatenable: Ascii is Concatenable:
         type Operand = Ascii
         def concat(left: Ascii, right: Ascii): Ascii = textual.concat(left, right)
 
-      extension (ascii: Ascii) def bytes: Data = ascii
+      extension (ascii: Ascii) def bytes: Data = Array.frozen(ascii)
 
       given textual: Ascii is Textual:
         type Result = Byte
         type Show[value] = value is Showable
 
-        val empty: Ascii = IArray.from[Byte](Nil)
-        val classTag: ClassTag[Ascii] = summon[ClassTag[Ascii]]
+        val empty: Ascii = scala.IArray.empty[Byte]
 
-        def apply(text: Text): Ascii = text.sysData
-        def single(operand: Byte): Ascii = IArray(operand)
+        // The erasure of the opaque alias is the underlying JVM array, so the `ClassTag` is
+        // the element tag's array form; synthesis cannot see through the stdlib's opaque.
+        val classTag: ClassTag[Ascii] = summon[ClassTag[Byte]].wrap.asInstanceOf[ClassTag[Ascii]]
+
+        def apply(text: Text): Ascii = text.sysData.readable
+        def single(operand: Byte): Ascii = scala.IArray(operand)
         def fromChar(char: Char): Byte = char.toByte
         def length(ascii: Ascii): Int = ascii.size
-        def text(ascii: Ascii): Text = String(ascii.mutable(using Unsafe), "ASCII").nn.tt
+        def text(ascii: Ascii): Text = String(ascii.asInstanceOf[scala.Array[Byte]], "ASCII").nn.tt
         def access(ascii: Ascii, index: Ordinal): Byte = ascii(index.n0)
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
         def size(ascii: Ascii): Int = ascii.length
@@ -176,9 +197,10 @@ object internal:
         def map(ascii: Ascii)(lambda: Byte => Byte): Ascii = ascii.map(lambda)
 
         def concat(left: Ascii, right: Ascii): Ascii =
-          IArray.build[Byte](left.length + right.length): array =>
-            array.place(left, Prim)
-            array.place(right, left.length.z)
+          Array.build[Byte](left.length + right.length): array =>
+            array.place(Array.frozen(left), Prim)
+            array.place(Array.frozen(right), left.length.z)
+          . readable
 
         def indexOf(ascii: Ascii, sub: Text, start: Ordinal): Optional[Ordinal] =
           ascii.indexOfSlice(apply(sub)).puncture(-1).let(_.z)
@@ -194,11 +216,11 @@ object internal:
       case Varargs(parts) => parts.to(List)
 
     val staticParts: List[Expr[Ascii]] = context.value.get.parts.to(List).map: part =>
-      val bytes: IArray[Expr[Byte]] = part.tt.chars.map: char =>
+      val bytes: Array[Expr[Byte]]^{} = part.tt.chars.map: char =>
         if char >= 128 then halt(824, m"$char is not a valid ASCII character")
         Expr[Byte](char.toByte)
 
-      '{Ascii(Data(${Varargs(bytes)}*))}
+      '{Ascii(Data(${Varargs(bytes.readable.toSeq)}*))}
 
     def recur(first: List[Expr[Ascii]], second: List[Expr[Ascii]], expr: Expr[Ascii]): Expr[Ascii] =
       first match
@@ -214,7 +236,7 @@ object internal:
       lambda:  Expr[Scanner ?=> textual ~> value],
       textual: Expr[textual is Textual] )
     ( using Quotes )
-  :   Expr[LazyList[value]] =
+  :   Expr[Chain[value]] =
 
     import quotes.reflect.*
 
@@ -244,8 +266,8 @@ object internal:
         ' {
             val input = $textual.text($text)
 
-            def step(from: Int): LazyList[value] =
-              if from >= input.s.length then LazyList() else
+            def step(from: Int): Chain[value] =
+              if from >= input.s.length then Chain() else
                 val scanner = Scanner(from)
 
                 $lambda(using scanner).lift($text) match
@@ -253,7 +275,7 @@ object internal:
                     head #:: step(scanner.matchEnd.or(input.s.length).max(from + 1))
 
                   case _ =>
-                    LazyList()
+                    Chain()
 
             step($start.n0)
           }
@@ -303,8 +325,8 @@ object internal:
             val length = input.s.length
             val cases = ${Expr.ofList(closures)}
 
-            def step(from: Int): LazyList[value] =
-              if from >= length then LazyList() else
+            def step(from: Int): Chain[value] =
+              if from >= length then Chain() else
                 var best: Optional[(Int, Int, value)] = Unset
                 val it = cases.iterator
 
@@ -317,7 +339,8 @@ object internal:
 
                     case _ =>
 
-                best.lay(LazyList()): triple => triple(2) #:: step(triple(1).max(from + 1))
+                best.lay(Chain()): triple =>
+                  triple(2) #:: step(triple(1).max(from + 1))
 
             step($start.n0)
           }

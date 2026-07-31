@@ -46,7 +46,7 @@ object Parser:
   // per stream), retaining only the AST and each paragraph's deferred raw
   // text. The result is necessarily a whole tree: link-reference definitions
   // may follow their uses, so nothing is final until end of input.
-  def parse(stream: (Stream[Text] over Credit)^)(using Buffering): Markdown of Layout =
+  def parse(consume stream: (Stream[Text] over Credit)^)(using Buffering): Markdown of Layout =
     BlockParser().parse(Cursor(stream))
 
   def parse(iterator: Iterator[Text]^): Markdown of Layout =

@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import java.nio as jn
 import java.nio.charset as jnc
 import java.util as ju
@@ -49,9 +51,9 @@ object Password:
 
   // From mutable chars: encodes to UTF-8, then zeroes both the input array and the
   // intermediate encoding buffer, leaving the cloaked copy as the only cleartext.
-  def apply(cleartext: Array[Char])(using cloak: Cloak^): Password^{cloak} =
+  def apply(cleartext: scala.Array[Char])(using cloak: Cloak^): Password^{cloak} =
     val buffer = jnc.StandardCharsets.UTF_8.nn.encode(jn.CharBuffer.wrap(cleartext)).nn
-    val bytes = new Array[Byte](buffer.remaining)
+    val bytes = new scala.Array[Byte](buffer.remaining)
     buffer.get(bytes)
     if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, 0.toByte)
     ju.Arrays.fill(cleartext, '\u0000')
@@ -70,17 +72,20 @@ class Password private[enigmatic] (private[enigmatic] val secret: Secret^):
   def uncloak[result](block: Cleartext^ ?=> result): result =
     secret.uncloak: bytes =>
       val buffer = jnc.StandardCharsets.UTF_8.nn.decode(jn.ByteBuffer.wrap(bytes)).nn
-      val chars = new Array[Char](buffer.remaining)
+      val chars = new scala.Array[Char](buffer.remaining)
       buffer.get(chars)
       if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, '\u0000')
-      try block(using Cleartext(chars)) finally ju.Arrays.fill(chars, '\u0000')
+      try block(using Cleartext(chars.asInstanceOf[Array[Char]^{}]))
+      finally ju.Arrays.fill(chars, '\u0000')
 
 // The scoped view of a password's cleartext, lent within `uncloak` as a mutable char array,
 // zeroed when the block exits. A `SharedCapability`, freely aliasable within the block but
 // not beyond it. There is deliberately no `Text` accessor: an immutable `String` copy of the
 // cleartext could be neither confined to the block nor zeroed after it.
-class Cleartext private[enigmatic] (private val secret: Array[Char]) extends caps.SharedCapability:
-  def chars: Array[Char] = secret
+// The chars are held as the frozen form (a bare mutable `Array` field would violate this
+// shared capability's classifier); `chars` re-exposes the mutable view for zeroing.
+class Cleartext private[enigmatic] (private val secret: Array[Char]^{}) extends caps.SharedCapability:
+  def chars: scala.Array[Char] = secret.asInstanceOf[scala.Array[Char]]
 
 // The cleartext lent within an `uncloak` block, reached contextually: `cleartext.chars` rather
 // than `summon[Cleartext].chars`, following the same idiom as parasite's `monitor`.

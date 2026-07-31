@@ -37,6 +37,7 @@ import java.net as jn
 import java.net.http as jnh
 import java.util.concurrent as juc
 import javax.net.ssl as jns
+import proscenium.compat.*
 
 import anticipation.*
 import coaxial.*
@@ -136,8 +137,8 @@ private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tact
   val status: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
     abort(ConnectError(ConnectError.Reason.Unknown))
 
-  val headers: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-    (key, values) => values.asScala.map: value => Http.Header(key.tt, value.tt)
+  val headers: List[Http.Header] = response.headers.nn.map().nn.to[List].bind:
+    (key, values) => values.to[List].map: value => Http.Header(key.tt, value.tt)
 
   val body = Http.Body.Flowing: () =>
     unsafely:
@@ -239,7 +240,7 @@ private def plaintextExchange
   val httpRequest = Http.Request(method, 1.1, host, target, headers, body)
 
   def connect(): Duplex =
-    try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values) catch
+    try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, List.of(options.values)) catch
       case error: jn.UnknownHostException => abort(ConnectError(Dns))
 
       case error: jn.ConnectException =>

@@ -32,7 +32,11 @@
                                                                                                   */
 package phoenicia
 
+import scala.collection.immutable.Seq
+
 import soundness.*
+
+import proscenium.compat.*
 
 import strategies.throwUnsafely
 
@@ -40,15 +44,15 @@ object Tests extends Suite(m"Phoenicia Tests"):
 
   // Big-endian byte assembly for hand-built font fixtures.
   def u16(values: Int*): Data =
-    IArray.from(values.flatMap { value => Seq((value >> 8).toByte, value.toByte) })
+    Array.from(values.flatMap { value => Seq((value >> 8).toByte, value.toByte) })
 
   def u32(values: Long*): Data =
-    IArray.from:
+    Array.from:
       values.flatMap: value =>
         Seq((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
-  def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn)
-  def utf16(text: Text): Data = IArray.from(text.s.getBytes("UTF-16BE").nn)
+  def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
+  def utf16(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("UTF-16BE").nn)
 
   // Assembles tables into an sfnt container: the header, a table directory, then the tables
   // themselves, four-byte aligned. Checksums are left zero: the parser does not verify them.
@@ -59,14 +63,14 @@ object Tests extends Suite(m"Phoenicia Tests"):
     val header = u32(0x00010000L) ++ u16(count, searchRange, entrySelector, count*16 - searchRange)
 
     var offset = 12 + count*16
-    val directory = List.newBuilder[Data]
-    val body = List.newBuilder[Data]
+    val directory = scala.collection.immutable.List.newBuilder[Data]
+    val body = scala.collection.immutable.List.newBuilder[Data]
 
     tables.each: (tag, table) =>
       val padding = if table.length%4 == 0 then 0 else 4 - table.length%4
-      val tagBytes = IArray.from(tag.s.getBytes("US-ASCII").nn)
+      val tagBytes = Array.unsafeFrozen(tag.s.getBytes("US-ASCII").nn)
       directory += tagBytes ++ u32(0L, offset.toLong, table.length.toLong)
-      body += table ++ IArray.fill[Byte](padding)(0)
+      body += table ++ Array.fill[Byte](padding)(0)
       offset += table.length + padding
 
     Ttf(header ++ directory.result().reduce(_ ++ _) ++ body.result().reduce(_ ++ _))
@@ -150,9 +154,9 @@ object Tests extends Suite(m"Phoenicia Tests"):
   val cmapFormat4: Data = u16(0, 1) ++ u16(3, 1) ++ u32(12L) ++ format4Subtable
 
   val cmapFormat0: Data =
-    val glyphIds = Array.fill[Byte](256)(0)
+    val glyphIds = scala.Array.fill[Byte](256)(0)
     glyphIds(0x41) = 7
-    u16(0, 1) ++ u16(1, 0) ++ u32(12L) ++ u16(0, 262, 0) ++ glyphIds.immutable(using Unsafe)
+    u16(0, 1) ++ u16(1, 0) ++ u32(12L) ++ u16(0, 262, 0) ++ Array.unsafeFrozen(glyphIds)
 
   val cmapFormat6: Data =
     u16(0, 1) ++ u16(1, 0) ++ u32(12L)
@@ -297,8 +301,8 @@ object Tests extends Suite(m"Phoenicia Tests"):
       . assert(_ == 4)
 
       test(m"Retained glyphs keep their outlines byte-for-byte"):
-        ttf.subset(Set('A')).glyf(1).bytes.to(List)
-      . assert(_ == glyph1.to(List))
+        ttf.subset(Set('A')).glyf(1).bytes.to[List]
+      . assert(_ == glyph1.to[List])
 
       test(m"Unused glyphs lose their outlines"):
         (ttf.subset(Set('A')).glyf(2).empty, ttf.subset(Set('A')).glyf(3).empty)

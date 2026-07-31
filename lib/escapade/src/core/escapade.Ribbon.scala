@@ -35,14 +35,15 @@ package escapade
 import anticipation.*
 import denominative.*
 import gossamer.*
+import proscenium.compat.*
 
 object Ribbon:
   def apply[color: Chromatic](colors: color*): Ribbon = Ribbon(colors.map(Bg(_))*)
 
 case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
-    if colors.nil then parts.join(e" ") else
-      val array = IArray.from(colors.zip(parts))
+    if colors.isEmpty then parts.join(e" ") else
+      val array = Array.from(colors.zip(parts))
 
       array.indices.map: index =>
         val (background, text) = array(index)

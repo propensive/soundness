@@ -33,6 +33,7 @@
 package facsimile
 
 import anticipation.*
+import proscenium.compat.*
 
 // A random-access view of the bytes backing a PDF file, as zephyrine's shared `Expanse`. A
 // read past the end of the source yields fewer bytes than requested, never padding.
@@ -50,5 +51,5 @@ private[facsimile] class DataSource(data: Data) extends ByteSource:
 private[facsimile] class ExpanseSource(expanse: zephyrine.Expanse, val size: Long)
 extends ByteSource:
   def read(offset: Long, length: Int): Data =
-    if length <= 0 || offset >= size then IArray.empty[Byte]
+    if length <= 0 || offset >= size then Array.empty[Byte]
     else expanse.read(offset, length.min((size - offset).toInt))

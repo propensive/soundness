@@ -34,6 +34,8 @@ package delicious
 
 import scala.collection.mutable
 
+import proscenium.compat.*
+
 import anticipation.*
 import gossamer.*
 import rudiments.*
@@ -77,9 +79,10 @@ object Markup:
 
     kind.s match
       case "type" =>
-        val placeholders = attrs.filter(_(0) == t"p").flatMap { (_, value) =>
-          Placeholder.decode(value).option
-        }
+        val placeholders =
+          List.of(attrs.filter(_(0) == t"p").stdlib.flatMap { (_, value) =>
+            Placeholder.decode(value).option
+          })
 
         Typed(attr(t"tasty"), placeholders, style, children)
 
@@ -105,7 +108,7 @@ object Markup:
           text.clear()
 
     val root = Frame(t"", Nil)
-    var stack = List(root)
+    var stack: List[Frame^] = List(root)
     var index = 0
 
     while index < input.length do
@@ -151,10 +154,13 @@ object Markup:
 
     // splice the children of any unterminated markers into their parents
     while stack.tail.nonEmpty do
-      val top :: (parent :: _) = stack: @unchecked
-      top.flush()
-      parent.children ++= top.children
-      stack = stack.tail
+      stack match
+        case top :: (parent :: _) =>
+          top.flush()
+          parent.children ++= top.children
+          stack = stack.tail
+
+        case _ => ()
 
     root.flush()
     root.children.to(List)

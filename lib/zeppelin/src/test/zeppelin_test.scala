@@ -34,6 +34,8 @@ package zeppelin
 
 import soundness.*
 
+import proscenium.compat.*
+
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import filesystemOptions.createNonexistentParents.enabled
@@ -68,7 +70,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
     def bytesOf(path: Path on Linux): Data = path.read[Data]
 
-    def readEntries(path: Path on Linux): List[Zip.Entry] = Zipfile.read(path).entries.to(List)
+    def readEntries(path: Path on Linux): List[Zip.Entry] = Zipfile.read(path).entries.stdlib.to(List)
 
     def names(entries: List[Zip.Entry]): List[Text] = entries.map(_.ref.encode)
 
@@ -78,9 +80,9 @@ object Tests extends Suite(m"Zeppelin tests"):
       val path = workDir/name
       val out = juz.ZipOutputStream(ji.FileOutputStream(ji.File(path.encode.s)))
 
-      entryNames.foreach: entryName =>
+      entryNames.each: entryName =>
         out.putNextEntry(juz.ZipEntry(entryName.s))
-        out.write(t"data".in[Data].mutable(using Unsafe))
+        out.write(Array.unsafeJvm(t"data".in[Data]))
         out.closeEntry()
 
       out.close()
@@ -92,17 +94,17 @@ object Tests extends Suite(m"Zeppelin tests"):
       val zip = juz.ZipFile(ji.File(path.encode.s))
 
       try
-        val builder = List.newBuilder[Text]
+        val builder = scala.collection.immutable.List.newBuilder[Text]
         val iterator = zip.entries().nn
         while iterator.hasMoreElements do builder += iterator.nextElement().nn.getName.nn.tt
-        builder.result()
+        List.of(builder.result())
       finally zip.close()
 
     def jdkContent(path: Path on Linux, name: Text): Data =
       val zip = juz.ZipFile(ji.File(path.encode.s))
       try
         val entry = zip.getEntry(name.s).nn
-        zip.getInputStream(entry).nn.readAllBytes().nn.immutable(using Unsafe)
+        Array.unsafeFrozen(zip.getInputStream(entry).nn.readAllBytes().nn)
       finally zip.close()
 
     def jdkComment(path: Path on Linux): Optional[Text] =
@@ -115,7 +117,7 @@ object Tests extends Suite(m"Zeppelin tests"):
     def writeBytes(name: Text, data: Data): Path on Linux =
       val path = workDir/name
       val out = ji.FileOutputStream(ji.File(path.encode.s))
-      try out.write(data.mutable(using Unsafe)) finally out.close()
+      try out.write(Array.unsafeJvm(data)) finally out.close()
       path
 
     // The general-purpose bit flag of the first local file header.
@@ -172,13 +174,13 @@ object Tests extends Suite(m"Zeppelin tests"):
         given Zip.Compression = Zip.Compression.Stored
         val stored = Zip.Entry(zipRef(t"hello.txt"), t"Hello world".in[Data]).aligned(4)
         val path = writeZip(t"aligned2.zip", stored)
-        jdkContent(path, t"hello.txt").to(List)
-      . assert(_ == t"Hello world".in[Data].to(List))
+        jdkContent(path, t"hello.txt").to[List]
+      . assert(_ == t"Hello world".in[Data].to[List])
 
     suite(m"Writing ZIP archives"):
       test(m"single-entry archive begins with the ZIP local-header magic"):
         bytesOf(writeZip(t"one.zip", entry(t"hello.txt", t"Hello world")))
-          .slice(0, 4).to(List).map(_.toInt & 0xff)
+          .slice(0, 4).to[List].map(_.toInt & 0xff)
       . assert(_ == List(0x50, 0x4b, 0x03, 0x04))
 
       test(m"single entry is visible to the JDK ZIP reader"):
@@ -187,8 +189,8 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"the JDK reader sees the original content"):
         val path = writeZip(t"content.zip", entry(t"hello.txt", t"Hello world"))
-        jdkContent(path, t"hello.txt").to(List)
-      . assert(_ == t"Hello world".in[Data].to(List))
+        jdkContent(path, t"hello.txt").to[List]
+      . assert(_ == t"Hello world".in[Data].to[List])
 
       test(m"multiple entries preserve insertion order"):
         jdkNames(writeZip(t"many.zip", entry(t"a.txt", t"A"), entry(t"b.txt", t"B"),
@@ -248,11 +250,11 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == 0)
 
       test(m"reads back binary (non-text) content unchanged"):
-        val payload: Data = IArray.tabulate(512)(i => (i%256).toByte)
+        val payload: Data = Array.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         Zipfile.write(path)(List(Zip.Entry(zipRef(t"blob"), payload)))
-        readEntries(path).head.read[Data].to(List)
-      . assert(_ == IArray.tabulate(512)(i => (i%256).toByte).to(List))
+        readEntries(path).head.read[Data].to[List]
+      . assert(_ == Array.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
         readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).head.read[Text]
@@ -279,7 +281,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"an archive opened as Zip lists its entries"):
         archive.open[Zip]():
-          zip.entries.to(List).map(_.ref.encode)
+          zip.entries.stdlib.to(List).map(_.ref.encode)
       . assert(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"entry content resolves within the scope"):
@@ -289,7 +291,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"in-memory data opens as Zip"):
         bytesOf(archive).open[Zip]():
-          zip.entries.to(List).map(_.ref.encode)
+          zip.entries.stdlib.to(List).map(_.ref.encode)
       . assert(_ == List(t"a.txt", t"b/c.txt"))
 
       test(m"opening for writing is refused"):
@@ -316,7 +318,7 @@ object Tests extends Suite(m"Zeppelin tests"):
 
       test(m"A JAR handle still lists entries like a Zip"):
         jarArchive.open[Jar]():
-          zip.entries.to(List).map(_.ref.encode).to(Set)
+          Set.from(zip.entries.stdlib.to(List).map(_.ref.encode))
       . assert(_ == Set(t"META-INF/MANIFEST.MF", t"com/example/Main.class"))
 
       test(m"An archive without a manifest has no attributes"):
@@ -333,13 +335,13 @@ object Tests extends Suite(m"Zeppelin tests"):
           builder.insert(zipRef(t"b.txt"), t"beta")
 
         target.open[Zip]():
-          zip.entries.to(List).map { entry => (entry.ref.encode, entry.read[Text]) }
+          zip.entries.stdlib.to(List).map { entry => (entry.ref.encode, entry.read[Text]) }
       . assert(_ == List((t"a.txt", t"alpha"), (t"b.txt", t"beta")))
 
       test(m"A discarded builder writes a valid empty archive"):
         val target = workDir/t"empty-created.zip"
         target.create[Zip]()
-        target.open[Zip]()(zip.entries.length)
+        target.open[Zip]()(zip.entries.stdlib.length)
       . assert(_ == 0)
 
       test(m"A duplicate entry fails at the offending insert"):
@@ -435,35 +437,35 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == 66000)
 
       test(m"the native reader counts all entries in a ZIP64 archive"):
-        Zipfile.read(path).entries.length
+        Zipfile.read(path).entries.stdlib.length
       . assert(_ == 66000)
 
     suite(m"Binary prefix"):
-      val prefix: Data = IArray.tabulate(64)(i => (i*7).toByte)
+      val prefix: Data = Array.tabulate(64)(i => (i*7).toByte)
 
       test(m"a binary prefix round-trips"):
         val path = workDir/t"prefixed.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")))
-        Zipfile.read(path).prefix.lay(Nil)(_.to(List))
-      . assert(_ == prefix.to(List))
+        Zipfile.read(path).prefix.lay(Nil)(_.to[List])
+      . assert(_ == prefix.to[List])
 
       test(m"entries in a prefixed archive remain readable"):
         val path = workDir/t"prefixed2.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")))
-        Zipfile.read(path).entries.map(_.read[Text]).to(List)
+        Zipfile.read(path).entries.map(_.read[Text]).stdlib.to(List)
       . assert(_ == List(t"alpha", t"beta"))
 
       test(m"the prefix precedes the first local header"):
         val path = workDir/t"prefixed3.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
-        bytesOf(path).slice(0, 64).to(List)
-      . assert(_ == prefix.to(List))
+        bytesOf(path).slice(0, 64).to[List]
+      . assert(_ == prefix.to[List])
 
       test(m"the JDK reader reads a prefixed archive"):
         val path = workDir/t"prefixed4.zip"
         Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
-        jdkContent(path, t"a.txt").to(List)
-      . assert(_ == t"alpha".in[Data].to(List))
+        jdkContent(path, t"a.txt").to[List]
+      . assert(_ == t"alpha".in[Data].to[List])
 
       test(m"an archive with no prefix reports no prefix"):
         Zipfile.read(writeZip(t"noprefix.zip", entry(t"a.txt", t"x"))).prefix
@@ -476,9 +478,9 @@ object Tests extends Suite(m"Zeppelin tests"):
         val stub: Data = t"STUB-PREFIX-DATA".in[Data]
         val sfx = workDir/t"sfx.zip"
         val out = ji.FileOutputStream(ji.File(sfx.encode.s))
-        out.write(stub.mutable(using Unsafe))
-        out.write(inner.mutable(using Unsafe))
+        out.write(Array.unsafeJvm(stub))
+        out.write(Array.unsafeJvm(inner))
         out.close()
         val zip = Zipfile.read(sfx)
-        (zip.prefix.lay(Nil)(_.to(List)), zip.entries.map(_.read[Text]).to(List))
-      . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to(List), List(t"data", t"data")))
+        (zip.prefix.lay(List())(_.readable.to(List)), zip.entries.map(_.read[Text]).stdlib.to(List))
+      . assert(_ == (t"STUB-PREFIX-DATA".in[Data].to[List], List(t"data", t"data")))

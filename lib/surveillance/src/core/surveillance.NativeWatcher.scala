@@ -32,6 +32,10 @@
                                                                                                   */
 package surveillance
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.io as ji
 import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
@@ -66,7 +70,8 @@ object NativeWatcher extends Watcher:
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()
-  @volatile private var serviceValue: Optional[WatchService] = Unset
+  @volatile @scala.caps.unsafe.untrackedCaptures
+  private var serviceValue: Optional[WatchService] = Unset
 
   private def service: WatchService = serviceValue.or:
     serviceMutex:
@@ -74,7 +79,10 @@ object NativeWatcher extends Watcher:
         jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
           WatchService(watchService, pollLoop(watchService)).tap: service => serviceValue = service
 
-  private val watches: scm.HashMap[jnf.WatchKey, Set[PathWatch]] = scm.HashMap()
+  // Deliberately stdlib: `PathWatch` elements capture the spool, and capture-carrying
+  // elements do not flow through the opaque `Set` combinators (boxing).
+  private val watches: scm.HashMap[jnf.WatchKey, scala.collection.immutable.Set[PathWatch]] =
+    scm.HashMap()
 
   private def pollLoop(service: jnf.WatchService): Loop = loop:
     try
@@ -85,9 +93,10 @@ object NativeWatcher extends Watcher:
           // unify under capture checking.
           val pathWatches = watchesMutex:
             val watches0 = watches
-            watches0.at(key).or(Set())
+            watches0.at(key).or(scala.collection.immutable.Set())
 
-          key.pollEvents().nn.iterator.nn.asScala.each: event => pathWatches.each(_.put(event))
+          key.pollEvents().nn.iterator.nn.each: event =>
+            pathWatches.each(_.put(event))
 
           // `reset` returns `false` once the key is no longer valid (e.g. the watched
           // directory was deleted); drop it so the map doesn't retain dead keys.
@@ -110,17 +119,17 @@ object NativeWatcher extends Watcher:
   def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
-    val pathWatches: Set[PathWatch] = watchesMutex:
+    val pathWatches: scala.collection.immutable.Set[PathWatch] = watchesMutex:
       val watches0 = watches
 
-      directories.map:
+      directories.stdlib.map:
         case (directory, filter) =>
           val key = registerKey(directory)
 
           new PathWatch(key, directory, spool, filter).tap: pathWatch =>
-            watches0(key) = watches0.at(key).or(Set()) + pathWatch
+            watches0(key) = watches0.at(key).or(scala.collection.immutable.Set()) + pathWatch
 
-      . to(Set)
+      . toSet
 
     Registration(pathWatches)
 
@@ -154,13 +163,14 @@ object NativeWatcher extends Watcher:
 
             catch case error: Exception => ()
 
-  private class Registration(pathWatches: Set[PathWatch]) extends Watcher.Registration:
+  private class Registration(pathWatches: scala.collection.immutable.Set[PathWatch])
+  extends Watcher.Registration:
     def cancel(): Unit =
       watchesMutex:
         pathWatches.each: pathWatch =>
-          watches(pathWatch.key) = watches.at(pathWatch.key).or(Set()) - pathWatch
+          watches(pathWatch.key) = watches.at(pathWatch.key).or(scala.collection.immutable.Set()) - pathWatch
 
-          if watches.at(pathWatch.key).or(Set()).nil then
+          if watches.at(pathWatch.key).or(scala.collection.immutable.Set()).isEmpty then
             pathWatch.key.cancel()
             watches.remove(pathWatch.key)
 

@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import java.util as ju
 
 import scala.compiletime.*
@@ -60,7 +62,7 @@ object Der:
 
 final class Der(val data: Data):
   override def equals(that: Any): Boolean = that.asMatchable match
-    case der: Der => data.sameElements(der.data)
+    case der: Der => data.readable.sameElements(der.data.readable)
     case _        => false
 
-  override def hashCode: Int = ju.Arrays.hashCode(data.mutable(using Unsafe): Array[Byte])
+  override def hashCode: Int = ju.Arrays.hashCode(Array.unsafeJvm(data))

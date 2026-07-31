@@ -34,8 +34,12 @@ package probably
 
 import java.lang as jl
 
+import proscenium.compat.*
+
 import ambience.{System as _, *}, environments.javaEnvironment
+import anticipation.*
 import escapade.*
+import gossamer.*
 import iridescence.*
 import rudiments.*
 import turbulence.*
@@ -51,8 +55,11 @@ object Runner:
 class Runner[report](selection: Selection = Selection.all)(using reporter: Reporter[report])
 extends Findable:
   private val mutex: Mutex = Mutex()
+  @scala.caps.unsafe.untrackedCaptures
   private var active: List[TestId] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   private var listed0: List[(TestId, Entry.Kind)] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   private var admitted0: Int = 0
   private val silent: Boolean = Ci.claudeCode || Ci()
 
@@ -83,8 +90,9 @@ extends Findable:
   def redraw(size: Int): Unit = if !silent then
     if size > 0 then Out.print(e"\e[${size}A\r\e[2K")
 
-    active.reverse.each: test =>
-      Out.println(e"> ${WebColors.CadetBlue}(${test.id})${" "*(test.depth*2)}${test.name}\e[K")
+    active.stdlib.reverse.foreach: test =>
+      val indent: Text = " ".repeat(test.depth*2).nn.tt
+      Out.println(e"> ${WebColors.CadetBlue}(${test.id})$indent${test.name}\e[K")
 
     Out.print(e"\e[J")
 
@@ -103,7 +111,7 @@ extends Findable:
       val result: result = test.action(context)
       val ns: Long = System.nanoTime - ns0
 
-      Trial.Returns(result, ns, context.captured.to(Map)).also:
+      Trial.Returns(result, ns, Map.of(context.captured.toMap)).also:
         mutex:
           val size = active.size
           active = active.filter(_ != test.id)
@@ -116,7 +124,7 @@ extends Findable:
         given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw error
 
-      Trial.Throws(lazyException, ns, context.captured.to(Map)).also:
+      Trial.Throws(lazyException, ns, Map.of(context.captured.toMap)).also:
         mutex:
           val size = active.size
           active = active.filter(_ != test.id)
@@ -142,7 +150,7 @@ extends Findable:
       redraw(size)
 
   def terminate(error: Throwable): Unit = mutex:
-    reporter.fail(report, error, active.to(Set))
+    reporter.fail(report, error, active.to[Set])
     reporter.complete(report)
 
   def complete(): Unit =

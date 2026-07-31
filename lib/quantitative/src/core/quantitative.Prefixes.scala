@@ -32,6 +32,8 @@
                                                                                                   */
 package quantitative
 
+import scala.math
+
 import prepositional.*
 
 object Prefixes:

@@ -32,8 +32,12 @@
                                                                                                   */
 package hypotenuse
 
-import language.experimental.genericNumberLiterals
-import language.experimental.into
+import scala.math
+
+import proscenium.compat.*
+
+import scala.language.experimental.genericNumberLiterals
+import scala.language.experimental.into
 
 import java.lang.{Integer as JInt, Long as JLong, Double as JDouble, Float as JFloat}
 
@@ -51,7 +55,7 @@ export hypotenuse.internal.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, 
 
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${hypotenuse.protointernal.bin('context)}
-  transparent inline def hex(): IArray[Byte] = ${hypotenuse.protointernal.hex('context)}
+  transparent inline def hex(): Array[Byte]^{} = ${hypotenuse.protointernal.hex('context)}
 
 extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
@@ -420,21 +424,21 @@ extension (shortObject: Short.type)
   def apply(bits: B16): Short = bits.asInstanceOf[Short]
 
   @unexported
-  def apply(bytes: IArray[Byte]): Short = (((bytes(0) & 0xFF) << 8) | (bytes(1) & 0xff)).toShort
+  def apply(bytes: Array[Byte]^{}): Short = (((bytes.readable(0) & 0xFF) << 8) | (bytes.readable(1) & 0xff)).toShort
 
 extension (intObject: Int.type)
   @unexported
   def apply(bits: B32): Int = bits.asInstanceOf[Int]
 
   @unexported
-  def apply(bytes: IArray[Byte]): Int =
-    var int: Int = (bytes(0) & 0xFF).toInt
+  def apply(bytes: Array[Byte]^{}): Int =
+    var int: Int = (bytes.readable(0) & 0xFF).toInt
     int <<= 8
-    int |= (bytes(1) & 0xFF).toInt
+    int |= (bytes.readable(1) & 0xFF).toInt
     int <<= 8
-    int |= (bytes(2) & 0xFF).toInt
+    int |= (bytes.readable(2) & 0xFF).toInt
     int <<= 8
-    int |= (bytes(3) & 0xFF).toInt
+    int |= (bytes.readable(3) & 0xFF).toInt
 
     int
 
@@ -443,22 +447,22 @@ extension (longObject: Long.type)
   def apply(bits: B64): Long = bits.asInstanceOf[Long]
 
   @unexported
-  def apply(bytes: IArray[Byte]): Long =
-    var long: Long = (bytes(0) & 0xFF).toLong
+  def apply(bytes: Array[Byte]^{}): Long =
+    var long: Long = (bytes.readable(0) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(1) & 0xFF).toLong
+    long |= (bytes.readable(1) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(2) & 0xFF).toLong
+    long |= (bytes.readable(2) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(3) & 0xFF).toLong
+    long |= (bytes.readable(3) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(4) & 0xFF).toLong
+    long |= (bytes.readable(4) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(5) & 0xFF).toLong
+    long |= (bytes.readable(5) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(6) & 0xFF).toLong
+    long |= (bytes.readable(6) & 0xFF).toLong
     long <<= 8
-    long |= (bytes(7) & 0xFF).toLong
+    long |= (bytes.readable(7) & 0xFF).toLong
 
     long
 

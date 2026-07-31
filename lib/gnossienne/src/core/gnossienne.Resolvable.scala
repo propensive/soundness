@@ -32,6 +32,8 @@
                                                                                                   */
 package gnossienne
 
+import proscenium.compat.*
+
 import scala.annotation.*
 
 import adversaria.*

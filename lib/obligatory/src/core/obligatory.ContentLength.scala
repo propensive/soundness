@@ -118,7 +118,9 @@ object ContentLength:
               if matches && digits then length = value
 
           if length < 0 then abort(FrameError(FrameError.Reason.MalformedLength))
-          cursor.take(fail())(length)
+          // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
+          // the cast reasserts the frozen form, which `take` already guarantees.
+          cursor.take(fail())(length).asInstanceOf[Data]
 
       val framed = Framable.frames[Data](frame())
       framed.asInstanceOf[Iterator[Data]^{input, this}]

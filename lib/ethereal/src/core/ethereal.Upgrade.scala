@@ -104,7 +104,8 @@ object Upgrade:
         pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)
         val pendingPath: Path on Linux = pendingDir/t".pending"
 
-        pendingPath.open[File](Write, OpenFlag.Create): file ?=> file.write(LazyList(bytes))
+        pendingPath.open[File](Write, OpenFlag.Create): file ?=>
+          file.write(Chain(bytes))
 
         val launcher: Text = System.properties.ethereal.script[Text]()
 

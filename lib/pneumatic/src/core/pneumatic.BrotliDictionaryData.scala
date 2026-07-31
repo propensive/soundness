@@ -1757,4 +1757,5 @@ PGxpPjxhIGhyZWY9Imh0dHA6Ly93d3cuIHR5cGU9J3RleHQvamF2YXNjcmlwdCc+0LTQtdGP0YLQtdC7
 4KS44KSV4KWN4KSw4KS/4KSv4KSk4KS+
   """
 
-  val data: Array[Byte] = ju.Base64.getMimeDecoder.nn.decode(chunk0 + chunk1 + chunk2 + chunk3).nn
+  val data: Array[Byte]^{} =
+    Array.unsafeFrozen(ju.Base64.getMimeDecoder.nn.decode(chunk0 + chunk1 + chunk2 + chunk3).nn)

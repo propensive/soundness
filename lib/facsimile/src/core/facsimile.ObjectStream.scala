@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -42,7 +44,7 @@ import vacuous.*
 // into one compressed stream. The header is a table of `number offset` pairs; each object is
 // parsed on demand from the decoded payload.
 private[facsimile] object ObjectStream:
-  def apply(data: Data, first: Int, count: Int): ObjectStream raises PdfError =
+  def apply(data: Data, first: Int, count: Int)(using Tactic[PdfError]): ObjectStream =
     val lexer = CosLexer(Scan(data))
     var offsets = Map[Int, Int]()
 
@@ -56,7 +58,7 @@ private[facsimile] object ObjectStream:
     new ObjectStream(data, first, offsets)
 
 private[facsimile] class ObjectStream(data: Data, first: Int, offsets: Map[Int, Int]):
-  def apply(number: Int): Optional[Cos] raises PdfError = offsets.at(number).let: offset =>
+  def apply(number: Int)(using Tactic[PdfError]): Optional[Cos] = offsets.at(number).let: offset =>
     val scan = Scan(data)
     scan.skip(first.toLong + offset)
     CosParser(CosLexer(scan)).value()

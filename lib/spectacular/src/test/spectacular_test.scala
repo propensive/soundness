@@ -32,6 +32,8 @@
                                                                                                   */
 package spectacular
 
+import scala.collection.immutable.Vector
+
 import soundness.*
 
 case class Person(name: Text, age: Int)
@@ -199,27 +201,30 @@ object Tests extends Suite(m"Spectacular Tests"):
       . assert(_ == t"""{t"one", t"two", t"three"}""")
 
       test(m"serialize Array of strings"):
-        Array(t"one", t"two", t"three").inspect
+        Inspectable.array[Text].text:
+          java.util.Arrays
+          . copyOf(scala.Array(t"one", t"two", t"three").asInstanceOf[scala.Array[AnyRef | Null]], 3)
+          . nn.asInstanceOf[scala.Array[Text]]
       . assert(_ == t"""⦋🅻₀t"one"∣₁t"two"∣₂t"three"⦌""")
 
       test(m"serialize Array of ints"):
-        Array(1, 2, 3).inspect
+        Inspectable.array[Int].text(java.util.Arrays.copyOf(scala.Array(1, 2, 3), 3).nn.asInstanceOf[scala.Array[Int]])
       . assert(_ == t"""⦋🅸₀1∣₁2∣₂3⦌""")
 
-      test(m"serialize Series of shorts"):
-        Series(1.toShort, 2.toShort, 3.toShort).inspect
+      test(m"serialize Sequence of shorts"):
+        Sequence(1.toShort, 2.toShort, 3.toShort).inspect
       . assert(_ == t"""⟨ 1.toShort 2.toShort 3.toShort ⟩""")
 
       test(m"serialize Array of Longs"):
-        Array(1L, 2L, 3L).inspect
+        Inspectable.array[Long].text(java.util.Arrays.copyOf(scala.Array(1L, 2L, 3L), 3).nn.asInstanceOf[scala.Array[Long]])
       . assert(_ == t"""⦋🅹₀1L∣₁2L∣₂3L⦌""")
 
-      test(m"serialize IArray of booleans"):
-        IArray(true, false, true).inspect
+      test(m"serialize frozen array of booleans"):
+        Array.of(true, false, true).inspect
       . assert(_ == t"""🆉⁅₀true╱₁false╱₂true⁆""")
 
-      test(m"serialize IArray of strings"):
-        IArray(t"one", t"two", t"three").inspect
+      test(m"serialize frozen array of strings"):
+        Array.of(t"one", t"two", t"three").inspect
       . assert(_ == t"""🅻⁅₀t"one"╱₁t"two"╱₂t"three"⁆""")
 
     suite(m"Derivation tests"):
@@ -281,8 +286,15 @@ object Tests extends Suite(m"Spectacular Tests"):
         Map(1 -> 2).inspect
       . assert(_ == t"{1 → 2}")
 
+      // Raw `Vector` is no longer `Sequence` (opaque) and matches no curated instance (the
+      // `IndexedSeq` instance's `Self` is invariant), so it falls back to the quoted
+      // `toString` rendering; `Sequence` itself renders as `⟨ 1 2 3 ⟩`.
       test(m"serialize vector"):
         Vector(1, 2, 3).inspect
+      . assert(_ == t"“Vector(1, 2, 3)”")
+
+      test(m"serialize sequence"):
+        Sequence(1, 2, 3).inspect
       . assert(_ == t"⟨ 1 2 3 ⟩")
 
       test(m"serialize empty list"):

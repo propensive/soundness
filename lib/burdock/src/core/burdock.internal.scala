@@ -70,7 +70,7 @@ object internal:
   private def writeResource(outputDir: jnf.Path, hashes: List[String]): Unit =
     val metaInf: jnf.Path = outputDir.resolve("META-INF").nn
     jnf.Files.createDirectories(metaInf)
-    val content: String = hashes.mkString("\n")
+    val content: String = hashes.stdlib.mkString("\n")
     jnf.Files.write(metaInf.resolve("burdock.deps").nn, content.getBytes("UTF-8").nn)
 
   // Runs at compile time, in the compiler JVM: pure java.* so it needs nothing from the
@@ -80,8 +80,8 @@ object internal:
     val cacheDir: jnf.Path = jnf.Paths.get(home, ".cache", "burdock").nn
     jnf.Files.createDirectories(cacheDir)
 
-    val entries: Array[String | Null] = classpath.split(java.io.File.pathSeparator).nn
-    val hashes = List.newBuilder[String]
+    val entries: scala.Array[String | Null] = classpath.split(java.io.File.pathSeparator).nn
+    val hashes = scala.collection.immutable.List.newBuilder[String]
     var i = 0
 
     while i < entries.length do
@@ -90,8 +90,8 @@ object internal:
       val path: jnf.Path = jnf.Paths.get(entry).nn
 
       if entry.endsWith(".jar") && jnf.Files.isRegularFile(path) then
-        val bytes: Array[Byte] = jnf.Files.readAllBytes(path).nn
-        val digest: Array[Byte] = js.MessageDigest.getInstance("SHA-256").nn.digest(bytes).nn
+        val bytes: scala.Array[Byte] = jnf.Files.readAllBytes(path).nn
+        val digest: scala.Array[Byte] = js.MessageDigest.getInstance("SHA-256").nn.digest(bytes).nn
         val hex: String = ju.HexFormat.of().nn.formatHex(digest).nn
         val target: jnf.Path = cacheDir.resolve(hex+".jar").nn
 
@@ -101,4 +101,4 @@ object internal:
 
         hashes += hex
 
-    hashes.result()
+    List.of(hashes.result())

@@ -69,12 +69,12 @@ private[probably] object Format:
     t"${basisPoints/100}.${(basisPoints%100).show.pad(2, Rtl, '0')}"
 
   // A histogram bar of `samples` scaled against `max` over a 40-cell span: full blocks
-  // with a final fractional character from the eighth-block series. Any nonzero count
+  // with a final fractional character from the eighth-block sequence. Any nonzero count
   // shows at least the thinnest bar.
   def bar(samples: Long, max: Long): Text =
     val eighths = (if max == 0L then 0L else samples*320L/max).max(if samples > 0L then 1L else 0L)
     val partial = List(t"", t"▏", t"▎", t"▍", t"▌", t"▋", t"▊", t"▉")
-    t"█"*(eighths/8L).toInt + partial((eighths%8L).toInt)
+    t"█"*(eighths/8L).toInt + partial.stdlib((eighths%8L).toInt)
 
   val sparkBlocks: List[Text] = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
 

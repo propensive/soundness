@@ -42,6 +42,7 @@ import prepositional.*
 import punctuation.*
 import spectacular.*
 import vacuous.*
+import proscenium.compat.*
 
 import doms.html.whatwg, whatwg.*
 
@@ -63,6 +64,6 @@ trait CommonFormattable extends Formattable:
 
   protected def postprocess(source: SourceCode): Html of Flow =
     val code = source.lines.map: line =>
-      Span.line(line.map { case Token(text, accent, _, _, role) => element(accent, role, text) }*)
+      Span.line(line.stdlib.map { case Token(text, accent, _, _, role) => element(accent, role, text) }*)
 
     Fragment(Div.amok(Pre(code*)))

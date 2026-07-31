@@ -64,8 +64,9 @@ case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detai
 // a runner downloaded from a URL rather than read from the classpath.
 object Assembler:
   // v2 ETHRCFG layout — keep in sync with lib/ethereal/src/runner/src/config.rs.
-  val MagicMarker: Array[Byte] =
-    Array[Byte]('E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
+  @scala.caps.unsafe.untrackedCaptures
+  val MagicMarker: scala.Array[Byte] =
+    scala.Array[Byte]('E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
                 'C'.toByte, 'F'.toByte, 'G'.toByte, 2.toByte)
 
   val PublicKeyLength: Int = 1312   // ML-DSA-44 public key size
@@ -81,9 +82,10 @@ object Assembler:
       javaPreferred: Int,
       jdk:           Boolean,
       publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
-  :   Data raises AssemblyError =
+    ( using Tactic[AssemblyError] )
+  :   Data =
 
-    val bytes: Array[Byte] = IArray.genericWrapArray(runner).toArray
+    val bytes: scala.Array[Byte] = runner.readable.toArray
 
     val magicOffset: Int =
       var found: Int = -1
@@ -106,7 +108,7 @@ object Assembler:
       found
 
     val configOffset: Int = magicOffset + MagicMarker.length
-    val keyBytes: Array[Byte] = IArray.genericWrapArray(publicKey).toArray
+    val keyBytes: scala.Array[Byte] = publicKey.readable.toArray
 
     // Write the 24-byte metadata region.
     val metaBuf = jnio.ByteBuffer.wrap(bytes, configOffset, 24).nn
@@ -122,7 +124,7 @@ object Assembler:
     // later by the signer when shipped as an upgrade.
     jl.System.arraycopy(keyBytes, 0, bytes, configOffset + 24, PublicKeyLength)
 
-    IArray.from(bytes.iterator): IArray[Byte]
+    Array.from(bytes.iterator): Array[Byte]^{}
 
 
   def assemble
@@ -146,7 +148,7 @@ object Assembler:
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     output.open[File](Write, OpenFlag.Create, OpenFlag.Truncate)
-      ( file.write(LazyList(patched)) )
+      ( file.write(Chain(patched)) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
@@ -157,7 +159,7 @@ object Assembler:
     // unify with it), and a direct append-mode open rather than `Eof` (whose two-evidence
     // dependent `Result` chain has the same root problem). The read is strict (`to(List)`)
     // so nothing reads the closed handle.
-    val chunks = jarFile.open[File]()(file.reader().to(List))
-    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(LazyList.from(chunks)))
+    val chunks = jarFile.open[File]()(List.from(file.reader().stdlib))
+    output.open[File](Write, OpenFlag.Create, OpenFlag.Append)(file.write(Chain.from(chunks.stdlib)))
 
     if !isWindows then output.executable() = true

@@ -38,6 +38,8 @@ object Loop:
 
 class Loop(iteration: () => Unit):
   private val mutex: Mutex = Mutex()
+
+  @scala.caps.unsafe.untrackedCaptures
   private var state: Loop.State = Loop.State.Active
 
   def stop(): Unit = mutex:

@@ -32,6 +32,10 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.nio as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
@@ -75,12 +79,12 @@ object Ram:
     // Public: called from the grant-gated transparent-inline operations below, where a
     // `private` member's inline-accessor bridge would fail capture checking.
     def readFrom(offset: Long, length: Int): Data =
-      val array = new Array[Byte](length)
-      buffer.get(offset.toInt, array)
-      array.immutable(using Unsafe)
+      val array = Array[Byte](length)
+      buffer.get(offset.toInt, array.raw)
+      Array.freeze(array)
 
     def writeTo(offset: Long, data: Data): Unit =
-      buffer.put(offset.toInt, data.mutable(using Unsafe), 0, data.length)
+      buffer.put(offset.toInt, Array.unsafeJvm(data), 0, data.length)
 
     // Extends the mapped file to `newSize` and remaps, so subsequent positional writes can
     // address the grown region — the growth that a fixed up-front mapping otherwise forbids.
@@ -89,7 +93,7 @@ object Ram:
     def growTo(newSize: Long): Unit =
       if newSize > currentSize then
         buffer.force()
-        channel.write(jn.ByteBuffer.wrap(Array[Byte](0)).nn, newSize - 1)
+        channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, newSize - 1)
         buffer = channel.map(mapMode, 0, newSize).nn
         currentSize = newSize
 
@@ -124,11 +128,11 @@ object Ram:
       ( block: (RamHandle & Granting[grants]) ?=> result )
     :   result =
 
-      val writable = mode.atoms.contains(Write) || mode.atoms.contains(Exclusive)
+      val writable = mode.atoms.has(Write) || mode.atoms.has(Exclusive)
 
-      val options: Seq[jnf.StandardOpenOption] =
-        if writable then Seq(jnf.StandardOpenOption.READ, jnf.StandardOpenOption.WRITE)
-        else Seq(jnf.StandardOpenOption.READ)
+      val options: List[jnf.StandardOpenOption] =
+        if writable then List(jnf.StandardOpenOption.READ, jnf.StandardOpenOption.WRITE)
+        else List(jnf.StandardOpenOption.READ)
 
       value.protect(Operation.Open):
         val channel = jnc.FileChannel.open(value.javaPath, options*).nn
@@ -141,7 +145,7 @@ object Ram:
           if size > Int.MaxValue then abort(IoError(value, Operation.Open, Reason.Unsupported))
 
           val lock =
-            if mode.atoms.contains(Exclusive) then
+            if mode.atoms.has(Exclusive) then
               try Option(channel.tryLock()) catch
                 case _: jnc.OverlappingFileLockException => None
             else Some(null)
@@ -149,7 +153,7 @@ object Ram:
           if lock.isEmpty then abort(IoError(value, Operation.Open, Reason.Busy))
 
           try
-            val write = mode.atoms.contains(Write)
+            val write = mode.atoms.has(Write)
             val handle = new RamHandle(channel, write, size) with Granting[grants] {}
             try block(using handle) finally if write then handle.flush()
           finally lock.foreach { held => if held != null then held.release() }
@@ -202,7 +206,7 @@ object Ram:
         try
           try
             // Extend the new, empty file to its mapped size by writing its final byte.
-            channel.write(jn.ByteBuffer.wrap(Array[Byte](0)).nn, size - 1)
+            channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, size - 1)
 
             val handle = new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
             try block(using handle) finally handle.flush()

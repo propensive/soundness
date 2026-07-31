@@ -32,7 +32,11 @@
                                                                                                   */
 package scintillate
 
+import scala.caps
+
 import soundness.*
+
+import proscenium.compat.*
 
 import logging.silentLogging
 import strategies.throwUnsafely
@@ -225,7 +229,8 @@ object Tests extends Suite(m"Scintillate tests"):
           // boundary seals the monitor the async producer captures (its return
           // type is an unadorned `Http.Response`); this is what lets a real
           // honeycomb page compile through `.handle`.
-          val server = SocketServer(port).handle:
+          val server = scala.caps.unsafe.unsafeAssumeSeparate:
+           SocketServer(port).handle:
             caps.unsafe.unsafeAssumePure:
               Http.Response(Http.Ok):
                 Http.Body.Flowing: () =>
@@ -325,7 +330,7 @@ object Tests extends Suite(m"Scintillate tests"):
 
           // A client that trusts any certificate, so the self-signed one is accepted.
           val trustManager = new javax.net.ssl.X509TrustManager:
-            type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+            type Certs = scala.Array[java.security.cert.X509Certificate | Null] | Null
 
             def getAcceptedIssuers: Certs =
               scala.Array.empty[java.security.cert.X509Certificate | Null]
@@ -373,7 +378,7 @@ object Tests extends Suite(m"Scintillate tests"):
         // A client SSL context that trusts any certificate.
         def trustAllContext(): javax.net.ssl.SSLContext =
           val trustManager = new javax.net.ssl.X509TrustManager:
-            type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+            type Certs = scala.Array[java.security.cert.X509Certificate | Null] | Null
             def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
             def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
             def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
@@ -505,7 +510,7 @@ object Tests extends Suite(m"Scintillate tests"):
 
         while iteration < 1000 do
           val length = next()%80
-          val bytes = new Array[Byte](length)
+          val bytes = new scala.Array[Byte](length)
           var i = 0
 
           while i < length do
@@ -539,7 +544,7 @@ object Tests extends Suite(m"Scintillate tests"):
       . assert(_.contains(t"431"))
 
       test(m"A streaming response to HTTP/1.0 is close-delimited, not chunked"):
-        val body = Http.Body.Flowing(() => Stream(LazyList(t"Hello".in[Data], t"World".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data]).iterator))
         inProcess(Http.Response(Http.Ok)(body), t"GET / HTTP/1.0\r\nHost: x\r\n\r\n")
 
       . assert: response =>

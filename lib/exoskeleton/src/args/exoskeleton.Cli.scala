@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import scala.caps
+
 import java.util.concurrent.atomic as juca
 
 import ambience.*
@@ -47,7 +49,9 @@ import symbolism.*
 import vacuous.*
 
 object Cli:
+  @scala.caps.unsafe.untrackedCaptures
   private var messages: List[Text] = Nil
+  @scala.caps.unsafe.untrackedCaptures
   private var trigger: Promise[Unit] = Promise()
 
   def prepare(): Unit =
@@ -67,8 +71,9 @@ object Cli:
       tab:           Optional[Ordinal] = Unset )
   :   List[Argument] =
 
-    textArguments.to(List).padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
-      Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
+    List.of:
+      textArguments.toList.padTo(focus.let(_ + 1).or(0), t"").zipWithIndex.map: (text, index) =>
+        Argument(index, text, if focus == index then position else Unset, tab, Argument.Format.Full)
 
 
 // A `Cli` is a *capability*: it carries the live stdio, signal-dispatch and completion state of
@@ -92,7 +97,7 @@ trait Cli extends Console, caps.ExclusiveCapability:
     ( handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse] )
   :   Unit =
 
-    signalHandlers.updateAndGet(handler :: _.nn)
+    signalHandlers.updateAndGet(list => List.of(handler :: list.nn.stdlib))
 
 
   def dispatchSignal(signal: UnixSignal | WindowsSignal): SignalResponse =

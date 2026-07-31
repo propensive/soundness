@@ -34,32 +34,35 @@ package pneumatic
 
 import java.util.zip as juz
 
+import scala.caps
+
 // The JVM backend for the `Deflate`/`Gzip`/`Zlib` formats: thin adapters over `java.util.zip`,
 // whose native zlib and CRC-32 intrinsics outperform any pure implementation. The pure-Scala
 // engines in `core` remain compiled (and tested) on the JVM; they are simply not selected here.
 private[pneumatic] object FlateBackend:
-  def deflater(level: Int, nowrap: Boolean): DeflateEngine = JavaDeflateEngine(level, nowrap)
-  def inflater(nowrap: Boolean): InflateEngine = JavaInflateEngine(nowrap)
+  def deflater(level: Int, nowrap: Boolean): DeflateEngine^ = JavaDeflateEngine(level, nowrap)
+  def inflater(nowrap: Boolean): InflateEngine^ = JavaInflateEngine(nowrap)
   def crc32(): FlateChecksum = JavaCrc32()
 
 private final class JavaDeflateEngine(level: Int, nowrap: Boolean) extends DeflateEngine:
   private val deflater: juz.Deflater = juz.Deflater(level, nowrap)
 
-  def setInput(buffer: Array[Byte]): Unit = deflater.setInput(buffer)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit =
+    deflater.setInput(buffer.asInstanceOf[scala.Array[Byte]])
 
-  def setInput(buffer: Array[Byte], offset: Int, length: Int): Unit =
-    deflater.setInput(buffer, offset, length)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+    deflater.setInput(buffer.asInstanceOf[scala.Array[Byte]], offset, length)
 
-  def deflate(target: Array[Byte], offset: Int, space: Int): Int =
-    deflater.deflate(target, offset, space)
+  update def deflate(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
+    deflater.deflate(target.asInstanceOf[scala.Array[Byte]], offset, space)
 
-  def deflate(target: Array[Byte], offset: Int, space: Int, flush: Int): Int =
+  update def deflate(target: scala.Array[Byte]^, offset: Int, space: Int, flush: Int): Int =
     val flushMode =
       if flush == Flate.ZSyncFlush then juz.Deflater.SYNC_FLUSH else juz.Deflater.NO_FLUSH
 
-    deflater.deflate(target, offset, space, flushMode)
+    deflater.deflate(target.asInstanceOf[scala.Array[Byte]], offset, space, flushMode)
 
-  def finish(): Unit = deflater.finish()
+  update def finish(): Unit = deflater.finish()
   def finished: Boolean = deflater.finished
   def getBytesRead: Long = deflater.getBytesRead
   def end(): Unit = deflater.end()
@@ -67,15 +70,16 @@ private final class JavaDeflateEngine(level: Int, nowrap: Boolean) extends Defla
 private final class JavaInflateEngine(nowrap: Boolean) extends InflateEngine:
   private val inflater: juz.Inflater = juz.Inflater(nowrap)
 
-  def setInput(buffer: Array[Byte]): Unit = inflater.setInput(buffer)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}): Unit =
+    inflater.setInput(buffer.asInstanceOf[scala.Array[Byte]])
 
-  def setInput(buffer: Array[Byte], offset: Int, length: Int): Unit =
-    inflater.setInput(buffer, offset, length)
+  update def setInput(buffer: scala.Array[Byte]^{caps.any.rd}, offset: Int, length: Int): Unit =
+    inflater.setInput(buffer.asInstanceOf[scala.Array[Byte]], offset, length)
 
-  def inflate(target: Array[Byte]): Int = inflate(target, 0, target.length)
+  update def inflate(target: scala.Array[Byte]^): Int = inflate(target, 0, target.length)
 
-  def inflate(target: Array[Byte], offset: Int, space: Int): Int =
-    try inflater.inflate(target, offset, space)
+  update def inflate(target: scala.Array[Byte]^, offset: Int, space: Int): Int =
+    try inflater.inflate(target.asInstanceOf[scala.Array[Byte]], offset, space)
     catch case error: juz.DataFormatException => throw IllegalStateException(error)
 
   def getRemaining: Int = inflater.getRemaining
@@ -85,6 +89,8 @@ private final class JavaInflateEngine(nowrap: Boolean) extends InflateEngine:
 private final class JavaCrc32 extends FlateChecksum:
   private val crc: juz.CRC32 = juz.CRC32()
 
-  def update(buffer: Array[Byte], index: Int, length: Int): Unit = crc.update(buffer, index, length)
+  def update(buffer: scala.Array[Byte]^{caps.any.rd}, index: Int, length: Int): Unit =
+    crc.update(buffer.asInstanceOf[scala.Array[Byte]], index, length)
+
   def reset(): Unit = crc.reset()
   def value: Long = crc.getValue

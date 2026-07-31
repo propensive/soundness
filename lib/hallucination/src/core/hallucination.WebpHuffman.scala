@@ -33,6 +33,7 @@
 package hallucination
 
 import contingency.*
+import proscenium.compat.*
 import vacuous.*
 
 import RasterError.Reason
@@ -54,9 +55,9 @@ private[hallucination] object WebpHuffman:
       (codeword0 & (bit - 1)) | bit
 
   // Builds a tree from per-symbol code lengths (0 meaning "absent").
-  def buildImplicit(codeLengths: Array[Int]): WebpHuffman raises RasterError =
+  def buildImplicit(codeLengths: scala.Array[Int])(using Tactic[RasterError]): WebpHuffman =
     var numSymbols = 0
-    val histogram = new Array[Int](MaxAllowedCodeLength + 1)
+    val histogram = new scala.Array[Int](MaxAllowedCodeLength + 1)
     var index = 0
 
     while index < codeLengths.length do
@@ -78,7 +79,7 @@ private[hallucination] object WebpHuffman:
 
       // The starting sorted-order offset for each code length, and a validity check that the codes
       // fill the code space exactly.
-      val offsets = new Array[Int](16)
+      val offsets = new scala.Array[Int](16)
       var codespaceUsed = 0
       offsets(1) = histogram(0)
       var length = 1
@@ -94,11 +95,11 @@ private[hallucination] object WebpHuffman:
 
       val tableBits = maxLength.min(MaxTableBits)
       val tableSize = 1 << tableBits
-      val primaryTable = new Array[Int](tableSize)
+      val primaryTable = new scala.Array[Int](tableSize)
 
       // Sort the symbols by code length.
       val nextByLength = offsets.clone()
-      val sortedSymbols = new Array[Int](codeLengths.length)
+      val sortedSymbols = new scala.Array[Int](codeLengths.length)
       var symbol = 0
 
       while symbol < codeLengths.length do
@@ -132,7 +133,9 @@ private[hallucination] object WebpHuffman:
         plen += 1
 
       // Populate the secondary table for codes longer than the primary table.
-      var secondaryTable = new Array[Int](0)
+      // Pure-typed (see `pureBytes`): the grow/extend reassignments in the loop below
+      // could not consume an exclusively-typed array.
+      var secondaryTable: scala.Array[Int] = pureCopyRange(empty.asInstanceOf[scala.Array[Int]], 0, 0)
 
       if maxLength > primaryTableBits then
         var subtableStart = 0
@@ -150,7 +153,7 @@ private[hallucination] object WebpHuffman:
               primaryTable(subtablePrefix) = (slen << 12) | subtableStart
               secondaryTable = grow(secondaryTable, subtableStart + subtableSize)
 
-            secondaryTable(subtableStart + (codeword >>> primaryTableBits)) =
+            writable(secondaryTable)(subtableStart + (codeword >>> primaryTableBits)) =
               (sortedSymbols(sorted) << 4) | slen
 
             sorted += 1
@@ -163,39 +166,43 @@ private[hallucination] object WebpHuffman:
 
           slen += 1
 
-      WebpHuffman(single = -1, (tableSize - 1), primaryTable, secondaryTable)
+      // Both tables are freshly built (or fresh pure-typed copies), so freezing is zero-copy.
+      WebpHuffman
+        ( single = -1, (tableSize - 1), primaryTable.asInstanceOf[Array[Int]^{}],
+          secondaryTable.asInstanceOf[Array[Int]^{}] )
 
-  private val empty: Array[Int] = new Array[Int](0)
+  private val empty: Array[Int]^{} = new scala.Array[Int](0).asInstanceOf[Array[Int]^{}]
 
   def single(symbol: Int): WebpHuffman = WebpHuffman(symbol, 0, empty, empty)
 
   def twoNode(zero: Int, one: Int): WebpHuffman =
-    WebpHuffman(-1, 0x1, Array((1 << 12) | zero, (1 << 12) | one), new Array[Int](0))
+    WebpHuffman(-1, 0x1, scala.Array((1 << 12) | zero, (1 << 12) | one).asInstanceOf[Array[Int]^{}], empty)
 
   private def numberOfTrailingZeros(value: Int): Int =
     java.lang.Integer.numberOfTrailingZeros(value)
 
-  private def grow(array: Array[Int], size: Int): Array[Int] =
-    if array.length >= size then array else
-      val grown = new Array[Int](size)
-      System.arraycopy(array, 0, grown, 0, array.length)
-      grown
+  private def grow(array: scala.Array[Int], size: Int): scala.Array[Int] =
+    if array.length >= size then array
+    else java.util.Arrays.copyOf(array, size).nn
 
   // Appends a copy of `array[from..]` to `array` (Rust's `extend_from_within`).
-  private def extendFromWithin(array: Array[Int], from: Int): Array[Int] =
+  // Appends via a Java-side copy, whose fluid result adapts to the pure result type.
+  private def extendFromWithin(array: scala.Array[Int], from: Int): scala.Array[Int] =
     val tail = array.length - from
-    val grown = new Array[Int](array.length + tail)
-    System.arraycopy(array, 0, grown, 0, array.length)
+    val grown = java.util.Arrays.copyOf(array, array.length + tail).nn
     System.arraycopy(array, from, grown, array.length, tail)
     grown
 
 // A `single` symbol >= 0 marks a one-symbol tree; otherwise the primary/secondary tables decode.
+// Immutable after construction: the factories above freeze the freshly-built tables.
 private[hallucination] final class WebpHuffman
-  ( val single: Int, tableMask: Int, primaryTable: Array[Int], secondaryTable: Array[Int] ):
+  ( val single: Int, tableMask: Int,
+    primaryTable:   Array[Int]^{},
+    secondaryTable: Array[Int]^{} ):
 
   def isSingleNode: Boolean = single >= 0
 
-  def readSymbol(reader: WebpBitReader): Int raises RasterError =
+  def readSymbol(reader: WebpBitReader^)(using Tactic[RasterError]): Int =
     if single >= 0 then single else
       val value = reader.peekFull.toInt & 0xffff
       val entry = primaryTable(value & tableMask)
@@ -212,7 +219,7 @@ private[hallucination] final class WebpHuffman
         secondaryEntry >>> 4
 
   // Peeks the next symbol if it needs only a primary-table lookup, returning (codeLength, symbol).
-  def peekSymbol(reader: WebpBitReader): Optional[(Int, Int)] =
+  def peekSymbol(reader: WebpBitReader^): Optional[(Int, Int)] =
     if single >= 0 then (0, single) else
       val value = reader.peekFull.toInt & 0xffff
       val entry = primaryTable(value & tableMask)

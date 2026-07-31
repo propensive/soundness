@@ -32,5 +32,5 @@
                                                                                                   */
 package escritoire
 
-case class TableRow[text](cells: IArray[TableCell[text]], title: Boolean, height: Int):
-  def apply(column: Int): TableCell[text] = cells(column)
+case class TableRow[text](cells: Array[TableCell[text]]^{}, title: Boolean, height: Int):
+  def apply(column: Int): TableCell[text] = cells.readable(column)

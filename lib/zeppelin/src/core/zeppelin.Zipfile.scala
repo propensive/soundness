@@ -32,6 +32,10 @@
                                                                                                   */
 package zeppelin
 
+import proscenium.compat.*
+
+import scala.math
+
 import java.io as ji
 import java.nio as jn
 import java.nio.channels as jnc
@@ -68,7 +72,7 @@ object Zipfile:
     val out = ji.FileOutputStream(ji.File(path.generic.s))
 
     try Zipfile(entries.to(List), Unset, prefix).serialize.sweep: (window, start, count) =>
-      out.write(window.asInstanceOf[Array[Byte]], start, count)
+      out.write(window.asInstanceOf[scala.Array[Byte]], start, count)
     finally out.close()
 
     Log.info(ZipEvent.Wrote(path.generic, entries.size))
@@ -105,7 +109,7 @@ object Zipfile:
       try channel.size finally channel.close()
 
     def read(offset: Long, length: Int): Data =
-      if length == 0 then IArray.empty[Byte] else
+      if length == 0 then Array.empty[Byte] else
         val channel = open()
 
         try
@@ -117,7 +121,7 @@ object Zipfile:
             val count = channel.read(buffer, position)
             if count < 0 then eof = true else position += count
 
-          buffer.array.nn.immutable(using Unsafe)
+          Array.unsafeFrozen(buffer.array.nn)
         finally channel.close()
 
   // Positional reads against a channel held open for the lifetime of a `ZipHandle`'s scope —
@@ -127,7 +131,7 @@ object Zipfile:
     def size: Long = channel.size
 
     def read(offset: Long, length: Int): Data =
-      if length == 0 then IArray.empty[Byte] else
+      if length == 0 then Array.empty[Byte] else
         val buffer = jn.ByteBuffer.allocate(length).nn
         var position = offset
         var eof = false
@@ -136,7 +140,7 @@ object Zipfile:
           val count = channel.read(buffer, position)
           if count < 0 then eof = true else position += count
 
-        buffer.array.nn.immutable(using Unsafe)
+        Array.unsafeFrozen(buffer.array.nn)
 
   private[zeppelin] def parse(source: Expanse): Zipfile raises ZipError =
     val size = source.size
@@ -172,7 +176,7 @@ object Zipfile:
           // prepended prefix has shifted it, fall back to its physical position.
           val atRecorded =
             if recorded >= 0 && recorded + 56 <= size then source.read(recorded, 56)
-            else IArray.empty[Byte]
+            else Array.empty[Byte]
 
           val recordOffset =
             if atRecorded.length == 56 &&
@@ -198,7 +202,7 @@ object Zipfile:
     val prefixDelta = cdActualStart - cdOffset
 
     val central = source.read(cdActualStart, cdSize.toInt)
-    val builder = List.newBuilder[Zip.Entry]
+    val builder = scala.collection.immutable.List.newBuilder[Zip.Entry]
     var p = 0
     var count = 0L
     var earliestEntry = Long.MaxValue
@@ -300,10 +304,10 @@ object Zipfile:
     val prefix: Optional[Data] =
       if prefixSize > 0 then source.read(0, prefixSize.toInt) else Unset
 
-    Zipfile(builder.result(), comment, prefix)
+    Zipfile(List.of(builder.result()), comment, prefix)
 
   private def decodeText(bytes: Data): Text =
-    String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
+    bytes.utf8
 
   private def nameBytes(entry: Zip.Entry): Data =
     val encoded: Text = entry.ref.encode
@@ -333,7 +337,7 @@ object Zipfile:
     val zip64 = entry.uncompressedSize > u32Max || entry.compressedSize > u32Max
 
     val extra: Data =
-      if !zip64 then IArray.empty[Byte] else Data.build(20): array =>
+      if !zip64 then Array.empty[Byte] else Data.build(20): array =>
         Zip.putU16(array, 0, 1)
         Zip.putU16(array, 2, 16)
         Zip.putU64(array, 4, entry.uncompressedSize)
@@ -366,12 +370,12 @@ object Zipfile:
     val zip64 = needUncompressed || needCompressed || needOffset
 
     val extra: Data =
-      if !zip64 then IArray.empty[Byte] else
-        val fields = List.newBuilder[Long]
+      if !zip64 then Array.empty[Byte] else
+        val fields = scala.collection.immutable.List.newBuilder[Long]
         if needUncompressed then fields += entry.uncompressedSize
         if needCompressed then fields += entry.compressedSize
         if needOffset then fields += localOffset
-        val values = fields.result()
+        val values = List.of(fields.result())
 
         Data.build(4 + values.length*8): array =>
           Zip.putU16(array, 0, 1)
@@ -382,7 +386,7 @@ object Zipfile:
             Zip.putU64(array, offset, value)
             offset += 8
 
-    val commentBytes: Data = entry.comment.lay(IArray.empty[Byte])(textBytes)
+    val commentBytes: Data = entry.comment.lay(Array.empty[Byte])(textBytes)
     val version = if zip64 then 45 else 20
 
     Data.build(46 + name.length + extra.length + commentBytes.length): array =>
@@ -417,7 +421,7 @@ object Zipfile:
   :   List[Data] =
 
     val zip64 = entryCount > u16Max.toLong || cdSize > u32Max || cdStart > u32Max
-    val commentBytes: Data = comment.lay(IArray.empty[Byte])(textBytes)
+    val commentBytes: Data = comment.lay(Array.empty[Byte])(textBytes)
 
     val eocd: Data = Data.build(22 + commentBytes.length): array =>
       Zip.putU32(array, 0, Zip.eocdSig.toLong & 0xffffffffL)
@@ -461,9 +465,9 @@ case class Zipfile
   def serialize: Stream[Data] over Credit =
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
-    val prefixBytes: Data = prefix.or(IArray.empty[Byte])
+    val prefixBytes: Data = prefix.or(Array.empty[Byte])
     var offset = prefixBytes.length.toLong
-    val builder = List.newBuilder[(Zip.Entry, Data, Data, Long)]
+    val builder = scala.collection.immutable.List.newBuilder[(Zip.Entry, Data, Data, Long)]
 
     entries.foreach: entry =>
       val name = Zipfile.nameBytes(entry)
@@ -472,10 +476,10 @@ case class Zipfile
       builder += ((entry, name, header, offset))
       offset += header.length + entry.compressedSize
 
-    val records = builder.result()
+    val records = List.of(builder.result())
     val cdStart = offset
     val central = records.map: (entry, name, _, off) => Zipfile.centralHeader(entry, name, off)
-    val cdSize = central.foldLeft(0L)(_ + _.length)
+    val cdSize = central.stdlib.foldLeft(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
 
     val prefixIterator: Iterator[Data] =

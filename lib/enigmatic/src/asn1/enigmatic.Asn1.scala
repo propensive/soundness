@@ -32,6 +32,8 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import java.nio.charset as jnc
 
 import scala.collection.mutable as scm
@@ -139,10 +141,10 @@ object Asn1:
 
   // The content octets of a value: everything after its identifier and length.
   private def contentOf(value: Asn1): Data = value match
-    case Asn1.Boolean(boolean)      => IArray[Byte](if boolean then 0xff.toByte else 0.toByte)
+    case Asn1.Boolean(boolean)      => Array.of[Byte](if boolean then 0xff.toByte else 0.toByte)
     case Asn1.Integer(integer)      => integer.toByteArray.immutable(using Unsafe)
     case Asn1.OctetString(bytes)    => bytes
-    case Asn1.Null                  => IArray[Byte]()
+    case Asn1.Null                  => Array.of[Byte]()
     case Asn1.Utf8String(text)      => utf8(text)
     case Asn1.PrintableString(text) => utf8(text)
     case Asn1.Ia5String(text)       => utf8(text)
@@ -168,7 +170,7 @@ object Asn1:
     case Asn1.Set(elements) =>
       // DER orders the members of a `SET` by their encodings, shorter-first when one is a prefix
       // of the other (X.690 §11.6, treating the shorter as zero-padded).
-      val rendered = elements.map(render(_)).sortWith(precedes(_, _))
+      val rendered = elements.map(render(_)).stdlib.sortWith(precedes(_, _))
 
       Producer.collect[Data](): out =>
         rendered.foreach: element =>
@@ -183,7 +185,7 @@ object Asn1:
     var difference = 0
 
     while difference == 0 && index < left.length && index < right.length do
-      difference = (left(index) & 0xff) - (right(index) & 0xff)
+      difference = (left.readUnchecked(index) & 0xff) - (right.readUnchecked(index) & 0xff)
       index += 1
 
     if difference != 0 then difference < 0 else left.length <= right.length
@@ -323,8 +325,8 @@ object Asn1:
   // A strict DER reader: every construct that BER allows but DER forbids — indefinite lengths,
   // overlong lengths and tags, non-minimal integers, constructed strings, unordered sets — is an
   // error, so that whatever this accepts re-encodes to the bytes it was read from.
-  final class Parser private[enigmatic] (input: Data):
-    private[enigmatic] val data: Array[Byte] = input.asInstanceOf[Array[Byte]]
+  final class Parser private[enigmatic] (input: Data) extends caps.Mutable:
+    private[enigmatic] val data: Data = input
 
     // Exposed to the `parse` entry point only, so that it can detect trailing bytes.
     var offset: Int = 0
@@ -332,16 +334,18 @@ object Asn1:
     private inline def need(count: Int, limit: Int): Unit raises Asn1Error =
       if limit - offset < count then abort(Asn1Error(Reason.Truncated(offset.toLong)))
 
-    private inline def readByte(): Int = (data(offset) & 0xff).also(offset += 1)
+    private inline update def readByte(): Int = (data.readUnchecked(offset) & 0xff).also(offset += 1)
 
-    private def readBytes(end: Int): Data =
-      val result = new Array[Byte](end - offset)
-      System.arraycopy(data, offset, result, 0, end - offset)
+    private update def readRaw(end: Int): scala.Array[Byte] =
+      val result = new scala.Array[Byte](end - offset)
+      System.arraycopy(Array.unsafeJvm(data), offset, result, 0, end - offset)
       offset = end
 
-      result.immutable(using Unsafe)
+      result
 
-    def value(limit: Int): Asn1 raises Asn1Error =
+    private update def readBytes(end: Int): Data = Array.unsafeFrozen(readRaw(end))
+
+    update def value(limit: Int)(using Tactic[Asn1Error]): Asn1 =
       val start = offset
       need(1, limit)
       val head = readByte()
@@ -357,9 +361,10 @@ object Asn1:
       else if scan(offset, end) == end then Asn1.Tagged(tag, true, value(end))
       else Asn1.Unknown(tagClass, tag, true, readBytes(end))
 
-    private def universal
+    private update def universal
       ( start: Int, end: Int, tag: Int, constructed: scala.Boolean, size: Int )
-    :   Asn1 raises Asn1Error =
+      ( using Tactic[Asn1Error] )
+    :   Asn1 =
 
       inline def primitive(): Unit =
         if constructed then abort(Asn1Error(Reason.NotPrimitive(start.toLong, tag)))
@@ -384,13 +389,13 @@ object Asn1:
           if size == 0 then abort(Asn1Error(Reason.EmptyInteger(start.toLong)))
 
           if size > 1 then
-            val first = data(offset) & 0xff
-            val second = data(offset + 1) & 0xff
+            val first = data.readUnchecked(offset) & 0xff
+            val second = data.readUnchecked(offset + 1) & 0xff
 
             if (first == 0x00 && (second & 0x80) == 0) || (first == 0xff && (second & 0x80) != 0)
             then abort(Asn1Error(Reason.NonMinimalInteger(start.toLong)))
 
-          Asn1.Integer(BigInt(readBytes(end).mutable(using Unsafe)))
+          Asn1.Integer(BigInt(new java.math.BigInteger(Array.unsafeJvm(readBytes(end)))))
 
         case BitStringTag =>
           primitive()
@@ -400,7 +405,7 @@ object Asn1:
           if unusedBits > 7 || (size == 1 && unusedBits != 0)
           then abort(Asn1Error(Reason.BadUnusedBits(start.toLong, unusedBits)))
 
-          if unusedBits > 0 && (data(end - 1) & ((1 << unusedBits) - 1)) != 0
+          if unusedBits > 0 && (data.readUnchecked(end - 1) & ((1 << unusedBits) - 1)) != 0
           then abort(Asn1Error(Reason.BadUnusedBits(start.toLong, unusedBits)))
 
           Asn1.BitString(readBytes(end), unusedBits)
@@ -448,13 +453,13 @@ object Asn1:
 
         case _ => Asn1.Unknown(Universal, tag, constructed, readBytes(end))
 
-    private def elements(end: Int): List[Asn1] raises Asn1Error =
+    private update def elements(end: Int)(using Tactic[Asn1Error]): List[Asn1] =
       val builder = scm.ListBuffer[Asn1]()
       while offset < end do builder += value(end)
 
       builder.to(List)
 
-    private def members(end: Int): List[Asn1] raises Asn1Error =
+    private update def members(end: Int)(using Tactic[Asn1Error]): List[Asn1] =
       val builder = scm.ListBuffer[Asn1]()
       var previous = -1
       var previousEnd = -1
@@ -471,29 +476,29 @@ object Asn1:
 
       builder.to(List)
 
-    private def ordered(from: Int, until: Int, from2: Int, until2: Int): scala.Boolean =
+    private update def ordered(from: Int, until: Int, from2: Int, until2: Int): scala.Boolean =
       val leftSize = until - from
       val rightSize = until2 - from2
       var index = 0
       var difference = 0
 
       while difference == 0 && index < leftSize && index < rightSize do
-        difference = (data(from + index) & 0xff) - (data(from2 + index) & 0xff)
+        difference = (data.readUnchecked(from + index) & 0xff) - (data.readUnchecked(from2 + index) & 0xff)
         index += 1
 
       if difference != 0 then difference < 0 else leftSize <= rightSize
 
-    private def text(end: Int): Text =
+    private update def text(end: Int): Text =
       val size = end - offset
-      val result = new String(data, offset, size, jnc.StandardCharsets.UTF_8)
+      val result = new String(Array.unsafeJvm(data), offset, size, jnc.StandardCharsets.UTF_8)
       offset = end
 
       result.tt
 
-    private def readTag(limit: Int): Int raises Asn1Error =
+    private update def readTag(limit: Int)(using Tactic[Asn1Error]): Int =
       val start = offset
       need(1, limit)
-      if (data(offset) & 0xff) == 0x80 then abort(Asn1Error(Reason.NonMinimalTag(start.toLong)))
+      if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1Error(Reason.NonMinimalTag(start.toLong)))
       var result = 0
       var reading = true
 
@@ -509,7 +514,7 @@ object Asn1:
 
       result
 
-    private def readLength(limit: Int): Int raises Asn1Error =
+    private update def readLength(limit: Int)(using Tactic[Asn1Error]): Int =
       val start = offset
       need(1, limit)
       val first = readByte()
@@ -535,14 +540,14 @@ object Asn1:
 
         result.toInt
 
-    private def objectId(start: Int, end: Int): List[Int] raises Asn1Error =
+    private update def objectId(start: Int, end: Int)(using Tactic[Asn1Error]): List[Int] =
       if offset >= end then abort(Asn1Error(Reason.BadOid(start.toLong)))
       val builder = scm.ListBuffer[Int]()
       var first = true
 
       while offset < end do
         val subidentifier = offset
-        if (data(offset) & 0xff) == 0x80 then abort(Asn1Error(Reason.BadOid(subidentifier.toLong)))
+        if (data.readUnchecked(offset) & 0xff) == 0x80 then abort(Asn1Error(Reason.BadOid(subidentifier.toLong)))
         var accumulated = 0
         var reading = true
 
@@ -574,15 +579,15 @@ object Asn1:
     // DER admits exactly one form for each of the two time types: `YYMMDDHHMMSSZ` and
     // `YYYYMMDDHHMMSSZ`, with no fractional seconds and no offset from UTC. `UTCTime`'s two-digit
     // year runs from 1950 to 2049 (RFC 5280 §4.1.2.5.1).
-    private def timestamp(start: Int, end: Int, generalized: scala.Boolean)
-    :   Long raises Asn1Error =
+    private update def timestamp(start: Int, end: Int, generalized: scala.Boolean)(using Tactic[Asn1Error])
+    :   Long =
 
       val size = end - offset
       val expected = if generalized then 15 else 13
       if size != expected then abort(Asn1Error(Reason.BadTime(start.toLong)))
 
       def digit(index: Int): Int =
-        val byte = data(offset + index) & 0xff
+        val byte = data.readUnchecked(offset + index) & 0xff
         if byte < '0' || byte > '9' then abort(Asn1Error(Reason.BadTime(start.toLong)))
 
         byte - '0'
@@ -597,7 +602,7 @@ object Asn1:
 
         result
 
-      if (data(end - 1) & 0xff) != 'Z' then abort(Asn1Error(Reason.BadTime(start.toLong)))
+      if (data.readUnchecked(end - 1) & 0xff) != 'Z' then abort(Asn1Error(Reason.BadTime(start.toLong)))
 
       val year =
         if generalized then number(0, 4)
@@ -624,12 +629,12 @@ object Asn1:
     // `limit` do not hold one. Used to decide whether a constructed context tag is an explicit
     // wrapper (exactly one value) or opaque content; it inspects structure only, and never raises,
     // because failing this test is an ordinary outcome rather than an error.
-    private def scan(from: Int, limit: Int): Int = boundary:
+    private update def scan(from: Int, limit: Int): Int = boundary:
       var position = from
 
       def next(): Int =
         if position >= limit then break(-1)
-        val byte = data(position) & 0xff
+        val byte = data.readUnchecked(position) & 0xff
         position += 1
 
         byte

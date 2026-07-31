@@ -32,6 +32,11 @@
                                                                                                   */
 package stratiform
 
+import murmuration.*
+import proscenium.compat.*
+
+import scala.math
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -108,12 +113,13 @@ object Mutation:
 
     Tel.make(transform(tel.subtree, pointerOf(op).steps, 0, op, sigil))
 
-  def apply(tel: Tel, ops: Seq[Op]): Tel raises MutationError =
+  def apply(tel: Tel, ops: List[Op]): Tel raises MutationError =
     var current = tel
+    val ops2 = ops.stdlib
     var i = 0
 
-    while i < ops.length do
-      current = apply(current, ops(i))
+    while i < ops2.length do
+      current = apply(current, ops2(i))
       i += 1
 
     current
@@ -127,7 +133,7 @@ object Mutation:
   // op against the named child.
   private def transform
     ( subtree:  Tel.Subtree,
-      steps:    IArray[Tel.Pointer.Step],
+      steps:    Array[Tel.Pointer.Step]^{},
       idx:      Int,
       op:       Op,
       sigil:    Char )
@@ -176,7 +182,7 @@ object Mutation:
 
         rewrap(subtree, subtree.children.updated(blockIdx, updatedBlock))
 
-  private def rewrap(subtree: Tel.Subtree, children: IArray[Tel.Block]): Tel.Subtree =
+  private def rewrap(subtree: Tel.Subtree, children: Array[Tel.Block]^{}): Tel.Subtree =
     subtree match
       case d: Tel.Document => d.copy(children = children)
       case c: Tel.Compound => c.copy(children = children)
@@ -185,7 +191,7 @@ object Mutation:
   // `step.keyword`. `step.index` defaults to 0 — i.e. "the first match".
   // Counting walks all blocks in order so siblings with the same keyword
   // spread across multiple blocks remain addressable.
-  private def findTarget(blocks: IArray[Tel.Block], step: Tel.Pointer.Step)
+  private def findTarget(blocks: Array[Tel.Block]^{}, step: Tel.Pointer.Step)
   :   (Int, Int) raises MutationError =
 
     val want = step.index.or(0)
@@ -222,34 +228,34 @@ object Mutation:
 
     val target = block.compounds(localIdx)
 
-    val replacement: IArray[Tel.Compound] = op match
+    val replacement: Array[Tel.Compound]^{} = op match
       case Op.UpdateAtom(_, atomIndex, text) =>
-        IArray(updateAtomAt(target, atomIndex, text, sigil))
+        Array.of(updateAtomAt(target, atomIndex, text, sigil))
 
       case Op.Delete(_) =>
-        IArray.empty
+        Array.empty
 
       case Op.Replace(_, compound) =>
-        IArray(compound)
+        Array.of(compound)
 
       case Op.AttachRemark(_, text) =>
-        IArray(target.copy(remark = text))
+        Array.of(target.copy(remark = text))
 
       case Op.RemoveRemark(_) =>
         if target.remark.absent then abort(MutationError(Reason.RemarkAbsent))
-        IArray(target.copy(remark = Unset))
+        Array.of(target.copy(remark = Unset))
 
       case Op.InsertBefore(_, compound) =>
-        IArray(compound, target)
+        Array.of(compound, target)
 
       case Op.InsertAfter(_, compound) =>
-        IArray(target, compound)
+        Array.of(target, compound)
 
       case Op.SetFlag(_, keyword) =>
         val present = target.children.flatMap(_.compounds).exists(_.keyword == keyword)
         if present then abort(MutationError(Reason.FlagAlreadySet))
-        val flag = Tel.Compound(keyword, IArray.empty, Unset, IArray.empty)
-        IArray(target.copy(children = appendCompound(target.children, flag)))
+        val flag = Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+        Array.of(target.copy(children = appendCompound(target.children, flag)))
 
       case Op.UnsetFlag(_, keyword) =>
         val present = target.children.flatMap(_.compounds).exists(_.keyword == keyword)
@@ -258,7 +264,7 @@ object Mutation:
         val updated = target.children.map: b =>
           b.copy(compounds = b.compounds.filterNot(_.keyword == keyword))
 
-        IArray(target.copy(children = updated))
+        Array.of(target.copy(children = updated))
 
       case Op.Insert(_, _) | Op.ReorderWithinGroup(_, _, _, _) | Op.ReorderGroups(_, _, _)
         | Op.ResizeTabulation(_, _) =>
@@ -306,11 +312,11 @@ object Mutation:
   // Append `compound` to the last block of `blocks`. If `blocks` is empty
   // a fresh block is created. Trailing blank lines on the existing last
   // block are preserved.
-  private def appendCompound(blocks: IArray[Tel.Block], compound: Tel.Compound)
-  :   IArray[Tel.Block] =
+  private def appendCompound(blocks: Array[Tel.Block]^{}, compound: Tel.Compound)
+  :   Array[Tel.Block]^{} =
 
     if blocks.length == 0
-    then IArray(Tel.Block(IArray.empty, Unset, IArray(compound), 0))
+    then Array.of(Tel.Block(Array.empty, Unset, Array.of(compound), 0))
     else
       val lastIdx = blocks.length - 1
       val last = blocks(lastIdx)
@@ -322,8 +328,8 @@ object Mutation:
   // at occurrence `oldIndex` to occurrence `newIndex` and rewrite the
   // affected blocks. Compounds with other keywords stay in place.
   private def reorderWithinGroup
-    ( blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int )
-  :   IArray[Tel.Block] raises MutationError =
+    ( blocks: Array[Tel.Block]^{}, keyword: Text, oldIndex: Int, newIndex: Int )
+  :   Array[Tel.Block]^{} raises MutationError =
 
     val positions = scala.collection.mutable.ArrayBuffer.empty[(Int, Int)]
     var b = 0
@@ -360,7 +366,7 @@ object Mutation:
       newGroup.insert(newIndex, movedCompound)
 
       // Write the reordered group back into the original slots.
-      val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
+      val out = scala.collection.mutable.ArrayBuffer.from(blocks.readable)
       var j = 0
 
       while j < positions.length do
@@ -369,20 +375,20 @@ object Mutation:
         out(bIdx) = block.copy(compounds = block.compounds.updated(cIdx, newGroup(j)))
         j += 1
 
-      IArray.from(out)
+      Array.from(out)
 
   // §22.2 `reorder-groups`. Verify both keyword groups are contiguous
   // in `blocks` (else E309 violation), then swap their relative
   // order. Each group's compounds and surrounding block boundaries
   // are preserved.
   private def reorderGroups
-    ( blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text )
-  :   IArray[Tel.Block] raises MutationError =
+    ( blocks: Array[Tel.Block]^{}, firstKeyword: Text, secondKeyword: Text )
+  :   Array[Tel.Block]^{} raises MutationError =
 
     // A "group" here is the contiguous run of compounds with a given
     // keyword. We rebuild the children block list with the two groups
     // swapped in member position.
-    val compoundsByBlock = blocks.map(_.compounds)
+    val compoundsByBlock = blocks.map[Array[Tel.Compound]^{}](_.compounds)
 
     // Walk all compounds in flat order, recording for each compound
     // its absolute index and whether it belongs to a tracked group.
@@ -432,12 +438,12 @@ object Mutation:
 
         while bi < blocks.length do
           val sz = compoundsByBlock(bi).length
-          val cs = IArray.from(reordered.slice(p, p + sz))
+          val cs = Array.from(reordered.slice(p, p + sz))
           out += blocks(bi).copy(compounds = cs)
           p += sz
           bi += 1
 
-        IArray.from(out)
+        Array.from(out)
 
       case _ =>
         // Either group not present — nothing to reorder. Spec says
@@ -451,8 +457,8 @@ object Mutation:
   // column its full width plus exactly two spaces of inter-column gap.
   // All existing row content is re-padded with spaces so atom
   // positions align with the new column starts.
-  private def resizeTabulation(blocks: IArray[Tel.Block], blockIndex: Int)
-  :   IArray[Tel.Block] raises MutationError =
+  private def resizeTabulation(blocks: Array[Tel.Block]^{}, blockIndex: Int)
+  :   Array[Tel.Block]^{} raises MutationError =
 
     if blockIndex < 0 || blockIndex >= blocks.length
     then abort(MutationError(Reason.PointerNotFound))
@@ -468,7 +474,7 @@ object Mutation:
 
       def textWidth(text: Text): Int = text.s.length
 
-      val widths = new Array[Int](n)
+      val widths = new scala.Array[Int](n)
       var col = 0
 
       while col < n do
@@ -496,7 +502,7 @@ object Mutation:
       // Minimal-offsets algorithm:
       //   markerOffsets[0] = w_0 + 2
       //   markerOffsets[i] = markerOffsets[i-1] + 1 + w_i + 2
-      val newOffsets = new Array[Int](n)
+      val newOffsets = new scala.Array[Int](n)
       newOffsets(0) = widths(0) + 2
       var i = 1
 
@@ -528,7 +534,7 @@ object Mutation:
 
       blocks.updated(blockIndex,
         block.copy
-         ( tabulation = Tel.Tabulation(newOffsets.asInstanceOf[IArray[Int]], tab.headings),
+         ( tabulation = Tel.Tabulation(newOffsets.asInstanceOf[Array[Int]^{}], tab.headings),
            compounds  = newCompounds ))
 
     .or(blocks)
@@ -541,9 +547,9 @@ object Mutation:
   // empty values are dropped. The canonical sigil is `#`.
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
     val atomNodes =
-      IArray.from(atoms.collect { case value if value.s.nonEmpty => chooseAtomForm(value, '#') })
+      Array.from(atoms.collect { case value if value.s.nonEmpty => chooseAtomForm(value, '#') })
 
-    Tel.Compound(keyword, atomNodes, Unset, IArray.empty)
+    Tel.Compound(keyword, atomNodes, Unset, Array.empty)
 
   // §22.3 atom-form escalation: the first form in inline -> source ->
   // literal whose §22.2 safety predicate the value satisfies.

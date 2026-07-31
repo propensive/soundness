@@ -37,4 +37,5 @@ import contingency.*
 import serpentine.*
 
 trait CreateNonexistentParents extends Planar:
-  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType raises IoError
+  def apply[ResultType](path: Path on Plane)(operation: => ResultType)
+  :   (Tactic[IoError]^) ?->{operation} ResultType

@@ -35,6 +35,7 @@ package punctuation
 import scala.collection.mutable
 
 import anticipation.*
+import rudiments.*
 import vacuous.*
 
 // Working representation for inline parsing. The inline parser builds a
@@ -72,17 +73,25 @@ final class BracketData(val isImage: Boolean) extends InlineData
 // algorithm consumes characters from the run.
 final class DelimData
   ( val char: Char,
+    @scala.caps.unsafe.untrackedCaptures
     var length: Int,
     val canOpen: Boolean,
     val canClose: Boolean )
 extends InlineData
 
-final class InlineNode(var data: InlineData):
+@scala.caps.unsafe.untrackedCaptures
+@scala.caps.unsafe.untrackedCaptures
+@scala.caps.unsafe.untrackedCaptures
+final class InlineNode(@scala.caps.unsafe.untrackedCaptures var data: InlineData):
+  @scala.caps.unsafe.untrackedCaptures
   var prev: InlineNode | Null = null
+  @scala.caps.unsafe.untrackedCaptures
   var next: InlineNode | Null = null
 
 final class InlineList:
+  @scala.caps.unsafe.untrackedCaptures
   var first: InlineNode | Null = null
+  @scala.caps.unsafe.untrackedCaptures
   var last:  InlineNode | Null = null
 
   def append(data: InlineData): InlineNode =
@@ -107,6 +116,7 @@ final class InlineList:
     node.next = null
 
   def iterator: Iterator[InlineNode] = new Iterator[InlineNode]:
+    @scala.caps.unsafe.untrackedCaptures
     var cur: InlineNode | Null = first
     def hasNext: Boolean = cur != null
 
@@ -184,7 +194,7 @@ private[punctuation] object EmphasisProcessor:
     var current: InlineNode | Null =
       if stackBottom == null then list.first else stackBottom.next
 
-    val openersBottom = new Array[InlineNode | Null](12)
+    val openersBottom = new scala.Array[InlineNode | Null](12)
 
     if stackBottom != null then
 
@@ -233,8 +243,8 @@ private[punctuation] object EmphasisProcessor:
                     cursor = nx
 
                   val wrapper =
-                    if strong then InlineNode(StrongData(children.toList))
-                    else InlineNode(EmphasisData(children.toList))
+                    if strong then InlineNode(StrongData(List.of(children.toList)))
+                    else InlineNode(EmphasisData(List.of(children.toList)))
 
                   list.insertAfter(openerNode, wrapper)
 
@@ -270,9 +280,9 @@ private[punctuation] object EmphasisProcessor:
 
         case _ => current = curNode.next
 
-  // Convert the (post-emphasis) inline list to a Seq[Prose] for embedding
+  // Convert the (post-emphasis) inline list to a List[Prose] for embedding
   // in a Layout.Paragraph or Layout.Heading.
-  def toProse(list: InlineList): Seq[Prose] =
+  def toProse(list: InlineList): List[Prose] =
     val builder = mutable.ListBuffer[Prose]()
     var cur: InlineNode | Null = list.first
 
@@ -281,7 +291,7 @@ private[punctuation] object EmphasisProcessor:
       appendProse(cur, builder)
       cur = cur.next
 
-    builder.toSeq
+    List.of(builder.toList)
 
   private def appendProse(node: InlineNode, builder: mutable.ListBuffer[Prose]): Unit =
     node.data match
@@ -300,7 +310,7 @@ private[punctuation] object EmphasisProcessor:
   private def appendUnmatchedDelim(d: DelimData, builder: mutable.ListBuffer[Prose]): Unit =
     if d.length > 0 then builder += Prose.Textual(Text(d.char.toString.repeat(d.length).nn))
 
-  private def childProse(children: List[InlineNode]): Seq[Prose] =
+  private def childProse(children: List[InlineNode]): List[Prose] =
     val builder = mutable.ListBuffer[Prose]()
-    children.foreach(appendProse(_, builder))
-    builder.toSeq
+    children.each(appendProse(_, builder))
+    List.of(builder.toList)

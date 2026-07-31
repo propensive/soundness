@@ -32,6 +32,8 @@
                                                                                                   */
 package metamorphose
 
+import proscenium.compat.*
+
 import scala.annotation.*
 
 import contingency.*
@@ -56,7 +58,7 @@ case class Factoradic(number: BigInt):
     @tailrec
     def recur(current: BigInt, sequence: List[BigInt], result: List[Int]): List[Int] =
       sequence match
-        case Nil => result.reverse
+        case Nil => List.of(result.stdlib.reverse)
 
         case head :: tail =>
           val next = (current/head).toInt

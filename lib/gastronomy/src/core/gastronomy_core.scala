@@ -32,6 +32,8 @@
                                                                                                   */
 package gastronomy
 
+import scala.caps
+
 import anticipation.*
 import prepositional.*
 import turbulence.*
@@ -152,7 +154,7 @@ extension [source: Streamable by Data over Credit](source: source)
 
     val digester = Digester: digestion =>
       source.source[Data].sweep: (storage, start, count) =>
-        digestion.append(storage.asInstanceOf[Array[Byte]], start, count)
+        digestion.append(storage.asInstanceOf[Array[Byte]^{caps.any.rd}], start, count)
 
     digester.apply
 

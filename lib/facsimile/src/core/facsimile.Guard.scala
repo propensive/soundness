@@ -37,6 +37,7 @@ import java.nio.charset as jnc
 import java.util as ju
 import javax.crypto as jc
 import javax.crypto.spec as jcs
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -66,11 +67,10 @@ private[facsimile] object Guard:
     case Identity
 
   // The 32-byte padding string prepended to short passwords (algorithm 2).
-  private val padding: Array[Byte] = Array
-    ( 0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56, 0xff, 0xfa,
+  private val padding: Data = scala.Array    ( 0x28, 0xbf, 0x4e, 0x5e, 0x4e, 0x75, 0x8a, 0x41, 0x64, 0x00, 0x4e, 0x56, 0xff, 0xfa,
       0x01, 0x08, 0x2e, 0x2e, 0x00, 0xb6, 0xd0, 0x68, 0x3e, 0x80, 0x2f, 0x0c, 0xa9, 0xfe,
       0x64, 0x53, 0x69, 0x7a )
-    . map(_.toByte)
+    . map(_.toByte).asInstanceOf[Data]
 
   // MD5 (weak, hence the permit) and SHA-2 digests through gastronomy's cross-platform
   // hashing. The PDF security algorithms hash the concatenation of their parts, which is
@@ -84,8 +84,9 @@ private[facsimile] object Guard:
 
   // The password arrives as a mutable char array — as lent by `Password.uncloak` — never as
   // an immutable string, so the transient encodings derived from it here can all be zeroed.
-  def apply(encrypt: Map[Text, Cos], id: Data, password: Array[Char])(using pdf: Pdf)
-  :   Guard raises PdfError =
+  def apply(encrypt: Map[Text, Cos], id: Data, password: scala.Array[Char])(using pdf: Pdf)
+  ( using Tactic[PdfError] )
+  :   Guard =
 
     val filter = encrypt.at(t"Filter").let(pdf.resolved(_).name).or(t"")
     if filter != t"Standard" then abort(PdfError(PdfError.Reason.UnsupportedEncryption(0)))
@@ -94,8 +95,8 @@ private[facsimile] object Guard:
     val revision = encrypt.at(t"R").let(pdf.resolved(_).long).or(0L).toInt
     val length = encrypt.at(t"Length").let(pdf.resolved(_).long).or(40L).toInt
     val permissions = encrypt.at(t"P").let(pdf.resolved(_).long).or(0L).toInt
-    val owner = encrypt.at(t"O").let(pdf.resolved(_).chars).or(IArray.empty[Byte])
-    val user = encrypt.at(t"U").let(pdf.resolved(_).chars).or(IArray.empty[Byte])
+    val owner = encrypt.at(t"O").let(pdf.resolved(_).chars).or(Array.empty[Byte])
+    val user = encrypt.at(t"U").let(pdf.resolved(_).chars).or(Array.empty[Byte])
 
     val encryptMetadata =
       encrypt.at(t"EncryptMetadata").let(pdf.resolved(_).truth).or(true)
@@ -124,7 +125,7 @@ private[facsimile] object Guard:
       // Revisions 5–6 (AES-256): the file key is unwrapped from `/UE` with a key derived
       // from the password, and neither object number nor generation enters the per-object
       // key.
-      val ue = encrypt.at(t"UE").let(pdf.resolved(_).chars).or(IArray.empty[Byte])
+      val ue = encrypt.at(t"UE").let(pdf.resolved(_).chars).or(Array.empty[Byte])
 
       val fileKey = unwrap6(password, user, ue)
         . or(abort(PdfError(PdfError.Reason.BadPassword)))
@@ -143,21 +144,21 @@ private[facsimile] object Guard:
 
   // Algorithm 2: the file encryption key for revisions 2–4.
   private def deriveKey
-    ( password: Array[Char], owner: Data, permissions: Int, id: Data, keyBytes: Int,
+    ( password: scala.Array[Char], owner: Data, permissions: Int, id: Data, keyBytes: Int,
       revision: Int, encryptMetadata: Boolean )
   :   Data =
 
-    val permissionsBytes: Data = IArray((permissions & 0xff).toByte,
+    val permissionsBytes: Data = Array.of((permissions & 0xff).toByte,
         ((permissions >> 8) & 0xff).toByte, ((permissions >> 16) & 0xff).toByte,
         ((permissions >> 24) & 0xff).toByte)
 
     val metadataBytes: Data =
       if revision >= 4 && !encryptMetadata
-      then IArray(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte)
-      else IArray.empty[Byte]
+      then Array.of(0xff.toByte, 0xff.toByte, 0xff.toByte, 0xff.toByte)
+      else Array.empty[Byte]
 
     var hash: Data =
-      md5(padded(password).immutable(using Unsafe) ++ owner.take(32.min(owner.length)) ++
+      md5(Array.unsafeFrozen(padded(password)) ++ owner.take(32.min(owner.length)) ++
         permissionsBytes ++ id ++ metadataBytes)
 
     // Revision 3+: 50 further MD5 rounds over the first `keyBytes` bytes.
@@ -174,9 +175,9 @@ private[facsimile] object Guard:
   private def validate(fileKey: Data, user: Data, id: Data, revision: Int, keyBytes: Int)
   :   Boolean =
 
-    if revision == 2 then Rc4(fileKey, padding.immutable(using Unsafe)).to(List) == user.to(List)
+    if revision == 2 then Rc4(fileKey, padding).to[List] == user.to[List]
     else
-      var value: Data = md5(padding.immutable(using Unsafe) ++ id)
+      var value: Data = md5(padding ++ id)
 
       value = Rc4(fileKey, value)
 
@@ -188,22 +189,22 @@ private[facsimile] object Guard:
         i += 1
 
       // Only the first 16 bytes are meaningful; the rest of `/U` is arbitrary padding.
-      value.take(16).to(List) == user.take(16).to(List)
+      value.take(16).to[List] == user.take(16).to[List]
 
   // Algorithms 2.A/8 (revision 6): validate the user password against `/U`, then unwrap the
   // file key from `/UE` with the intermediate key, using AES-256-CBC with a zero IV and no
   // padding.
-  private def unwrap6(password: Array[Char], user: Data, ue: Data): Optional[Data] =
+  private def unwrap6(password: scala.Array[Char], user: Data, ue: Data): Optional[Data] =
     if user.length < 48 || ue.length < 32 then Unset else
       val passwordBytes = encoded(password, jnc.StandardCharsets.UTF_8.nn)
       val salt = user.slice(32, 40)
       val keySalt = user.slice(40, 48)
 
       try
-        if hash6(passwordBytes, salt, IArray.empty[Byte]).to(List) != user.take(32).to(List)
+        if hash6(passwordBytes, salt, Array.empty[Byte]).to[List] != user.take(32).to[List]
         then Unset
         else
-          val intermediate = hash6(passwordBytes, keySalt, IArray.empty[Byte])
+          val intermediate = hash6(passwordBytes, keySalt, Array.empty[Byte])
 
           // AES-256-CBC with a zero IV and no padding. This stays on the JDK cipher:
           // enigmatic's `NoPadding` given captures a `Tactic[CryptoError]`, and the only
@@ -214,40 +215,45 @@ private[facsimile] object Guard:
             val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
 
             cipher.init(jc.Cipher.DECRYPT_MODE,
-                jcs.SecretKeySpec(intermediate.mutable(using Unsafe), "AES"),
-                jcs.IvParameterSpec(new Array[Byte](16)))
+                jcs.SecretKeySpec(Array.unsafeJvm(intermediate), "AES"),
+                jcs.IvParameterSpec(new scala.Array[Byte](16)))
 
-            cipher.doFinal(ue.take(32).mutable(using Unsafe)).nn.immutable(using Unsafe)
+            Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(ue.take(32))).nn)
           catch case _: Exception => Unset
       finally ju.Arrays.fill(passwordBytes, 0.toByte)
 
   // Revision-6 hash (algorithm 2.B): SHA-256 seeded, then rounds mixing SHA-256/384/512
   // selected by the running hash, until the 64th-plus round whose last byte is ≤ round−32.
-  private def hash6(password: Array[Byte], salt: Data, extra: Data): Data =
-    var k: Data = sha(256, password.immutable(using Unsafe) ++ salt ++ extra)
+  private def hash6(password: scala.Array[Byte], salt: Data, extra: Data): Data =
+    // `password` stays a JVM array in the signature because it is genuinely mutable -- the
+    // caller zeroes it -- but that happens strictly after this call returns, so a frozen view
+    // is valid for this extent and spares every read below its own laundering.
+    val pw = Array.unsafeFrozen(password)
+    var k: Data = sha(256, pw ++ salt ++ extra)
 
     var round = 0
     var done = false
 
     while !done do
-      val block = Array.newBuilder[Byte]
+      val block = DataBuilder()
       var i = 0
 
       while i < 64 do
-        block.addAll(password)
-        block.addAll(k.mutable(using Unsafe))
-        if extra.length > 0 then block.addAll(extra.mutable(using Unsafe))
+        block.addAll(pw)
+        block.addAll(k)
+        if extra.length > 0 then block.addAll(extra)
         i += 1
 
       val input = block.result()
-      val key = k.take(16).mutable(using Unsafe)
-      val iv = k.slice(16, 32).mutable(using Unsafe)
+      val key = Array.unsafeJvm(k.take(16))
+      val iv = Array.unsafeJvm(k.slice(16, 32))
 
       // AES-128-CBC with no padding on block-aligned input; on the JDK cipher for the same
       // capture-checking reason as `unwrap6`.
       val cipher = jc.Cipher.getInstance("AES/CBC/NoPadding").nn
       cipher.init(jc.Cipher.ENCRYPT_MODE, jcs.SecretKeySpec(key, "AES"), jcs.IvParameterSpec(iv))
-      val e = cipher.doFinal(input).nn
+      // `doFinal` reads its input and returns a fresh array, which is only read below.
+      val e: Data = Array.unsafeFrozen(cipher.doFinal(Array.unsafeJvm(input)).nn)
 
       var sum = 0
       i = 0
@@ -260,7 +266,7 @@ private[facsimile] object Guard:
         case 1 => 384
         case _ => 512
 
-      k = sha(bits, e.immutable(using Unsafe))
+      k = sha(bits, e)
       round += 1
 
       if round >= 64 && (e(e.length - 1) & 0xff) <= round - 32 then done = true
@@ -269,19 +275,19 @@ private[facsimile] object Guard:
 
   // Encodes the password chars to a mutable byte array, zeroing the encoder's intermediate
   // buffer; callers zero the result once the derived key is computed.
-  private def encoded(password: Array[Char], charset: jnc.Charset): Array[Byte] =
+  private def encoded(password: scala.Array[Char], charset: jnc.Charset): scala.Array[Byte] =
     val buffer = charset.encode(jn.CharBuffer.wrap(password)).nn
-    val bytes = new Array[Byte](buffer.remaining)
+    val bytes = new scala.Array[Byte](buffer.remaining)
     buffer.get(bytes)
     if buffer.hasArray then ju.Arrays.fill(buffer.array.nn, 0.toByte)
     bytes
 
-  private def padded(password: Array[Char]): Array[Byte] =
+  private def padded(password: scala.Array[Char]): scala.Array[Byte] =
     val bytes = encoded(password, jnc.StandardCharsets.ISO_8859_1.nn)
-    val out = new Array[Byte](32)
+    val out = new scala.Array[Byte](32)
     val count = 32.min(bytes.length)
     System.arraycopy(bytes, 0, out, 0, count)
-    System.arraycopy(padding, 0, out, count, 32 - count)
+    System.arraycopy(Array.unsafeJvm(padding), 0, out, count, 32 - count)
     ju.Arrays.fill(bytes, 0.toByte)
     out
 
@@ -294,12 +300,12 @@ private[facsimile] class Guard
   // Algorithm 1: the per-object key. For revision 6 the file key is used directly.
   private def objectKey(number: Int, generation: Int, aes: Boolean): Data =
     if revision >= 5 then fileKey else
-      val numbering: Data = IArray((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
+      val numbering: Data = Array.of((number & 0xff).toByte, ((number >> 8) & 0xff).toByte,
           ((number >> 16) & 0xff).toByte, (generation & 0xff).toByte,
           ((generation >> 8) & 0xff).toByte)
 
       // the "sAlT" constant
-      val salt: Data = if aes then IArray[Byte](0x73, 0x41, 0x6c, 0x54) else IArray.empty[Byte]
+      val salt: Data = if aes then Array.of[Byte](0x73, 0x41, 0x6c, 0x54) else Array.empty[Byte]
 
       Guard.md5(fileKey ++ numbering ++ salt).take((fileKey.length + 5).min(16))
 
@@ -350,8 +356,8 @@ private[facsimile] class Guard
   // AESV2/V3 layout: a 16-byte initialization vector prefixes the ciphertext, which enigmatic
   // reads back off the front; `Pkcs7` strips the padding. Any failure yields empty bytes.
   private def aesCbc[bits <: 128 | 256: ValueOf](key: Data, bytes: Data): Data =
-    if bytes.length <= 16 then IArray.empty[Byte] else
+    if bytes.length <= 16 then Array.empty[Byte] else
       val symmetricKey = SymmetricKey[Aes[bits] over Cbc against Pkcs7](key)
 
       safely(symmetricKey.uncloak(bytes.decrypt[Data, Aes[bits] over Cbc against Pkcs7]))
-      . or(IArray.empty[Byte])
+      . or(Array.empty[Byte])

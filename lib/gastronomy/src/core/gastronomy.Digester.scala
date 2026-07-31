@@ -33,13 +33,14 @@
 package gastronomy
 
 import prepositional.*
-import rudiments.*
 
-case class Digester(run: Digestion -> Unit):
+// A composable sequence of digest steps over an exclusive accumulator: `run` is a
+// pure function which receives the fresh `Digestion^` when `apply` creates it.
+case class Digester(run: Digestion^ -> Unit):
   def apply[algorithm <: Algorithm](using hash: Hash in algorithm): Digest in algorithm =
-    hash.initialize().pipe: accumulator =>
-      run(accumulator)
-      Digest[algorithm](accumulator.digest())
+    val accumulator: Digestion^ = hash.initialize()
+    run(accumulator)
+    Digest[algorithm](accumulator.digest())
 
   def digest[digestible: Digestible](value: digestible): Digester = Digester: accumulator =>
     run(accumulator)

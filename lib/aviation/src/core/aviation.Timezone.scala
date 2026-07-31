@@ -45,7 +45,7 @@ import rudiments.*
 
 object Timezone:
   private val ids: Set[Text] =
-    ju.TimeZone.getAvailableIDs.nn.iterator.map(_.nn).map(Text(_)).to(Set)
+    Set.from(ju.TimeZone.getAvailableIDs.nn.iterator.map(_.nn).map(Text(_)))
 
   def apply(name: Text): Timezone raises TimezoneError = name.as[Timezone]
 

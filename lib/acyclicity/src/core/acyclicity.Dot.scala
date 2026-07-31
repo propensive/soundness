@@ -36,6 +36,8 @@ import anticipation.*
 import denominative.*
 import gossamer.*
 import nomenclature.*
+import scala.collection.immutable.List
+
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -68,7 +70,7 @@ object Dot:
     case Assignment(id: Name[DotId], id2: Name[DotId])
     case Subgraph(id: Option[Name[DotId]], statements: Statement*)
 
-  def serialize(tokens: LazyList[Text]): Text = Text.build:
+  def serialize(tokens: List[Text]): Text = Text.build:
     var level: Int = 0
     var end: Boolean = true
 
@@ -94,51 +96,51 @@ object Dot:
       case t";" => newline()
       case word => whitespace(); append(word)
 
-  private def tokenize(graph: Dot | Target | Statement | Property): LazyList[Text] = graph match
-    case Property(key, value) => LazyList(t"$key=\"$value\"")
+  private def tokenize(graph: Dot | Target | Statement | Property): List[Text] = graph match
+    case Property(key, value) => List(t"$key=\"$value\"")
 
     case Target(directed, dest, link) =>
       val operator = if directed then t"->" else t"--"
 
       val destTokens = (dest: @unchecked) match
         case subgraph: Statement.Subgraph => tokenize(subgraph)
-        case id: Text                     => LazyList(t"\"$id\"")
+        case id: Text                     => List(t"\"$id\"")
 
-      operator #:: destTokens #::: link.to(LazyList).flatMap(tokenize(_)) #::: LazyList(t";")
+      operator :: destTokens ::: link.to(List).flatMap(tokenize(_)) ::: List(t";")
 
     case Statement.Node(id, attrs*) =>
-      t"\"${id: Text}\"" #:: (if attrs.nil then LazyList() else (LazyList(t"[") #:::
-        attrs.to(LazyList).flatMap(tokenize(_) :+ t",").init #::: LazyList(t"]"))) #:::
-        LazyList(t";")
+      t"\"${id: Text}\"" :: (if attrs.isEmpty then List() else (List(t"[") :::
+        attrs.to(List).flatMap(tokenize(_) :+ t",").init ::: List(t"]"))) :::
+        List(t";")
 
     case Statement.Edge(id, rhs, attrs*) =>
-      LazyList(t"\"${id: Text}\"") #::: tokenize(rhs)
+      List(t"\"${id: Text}\"") ::: tokenize(rhs)
 
     case Statement.Assignment(id, id2) =>
-      LazyList(t"\"${id: Text}\"", t"=", t"\"${id2: Text}\"", t";")
+      List(t"\"${id: Text}\"", t"=", t"\"${id2: Text}\"", t";")
 
     case Statement.Subgraph(id, statements*) =>
-      t"subgraph" #:: id.to(LazyList).map { name => name: Text } #:::
-        t"{" #::
-        statements.to(LazyList).flatMap(tokenize(_)) #:::
-        LazyList(t"}")
+      t"subgraph" :: id.to(List).map { name => name: Text } :::
+        t"{" ::
+        statements.to(List).flatMap(tokenize(_)) :::
+        List(t"}")
 
     case Dot.Graph(id, strict, statements*) =>
-      LazyList(
-        if strict then LazyList(t"strict") else LazyList(),
-        LazyList(t"graph"),
-        id.to(LazyList).map { name => name: Text }, LazyList(t"{"),
-        statements.flatMap(tokenize(_)), LazyList(t"}")
+      List(
+        if strict then List(t"strict") else List(),
+        List(t"graph"),
+        id.to(List).map { name => name: Text }, List(t"{"),
+        statements.flatMap(tokenize(_)), List(t"}")
       ).flatten
 
     case Dot.Digraph(id, strict, statements*) =>
-      LazyList(
-        if strict then LazyList(t"strict") else LazyList(),
-        LazyList(t"digraph"),
-        id.to(LazyList).map { name => name: Text },
-        LazyList(t"{"),
+      List(
+        if strict then List(t"strict") else List(),
+        List(t"digraph"),
+        id.to(List).map { name => name: Text },
+        List(t"{"),
         statements.flatMap(tokenize(_)),
-        LazyList(t"}")
+        List(t"}")
       ).flatten
 
 enum Dot:

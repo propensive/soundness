@@ -34,6 +34,8 @@ package xylophone
 
 import soundness.*
 
+import proscenium.compat.*
+
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import threading.virtualThreading
@@ -54,10 +56,10 @@ case class Pixel(x: Int, y: Int, color: ColorVal)
 object Tests extends Suite(m"Xylophone tests"):
 
   def elem(label: Text, children: Node*): Element =
-    Element(label, Attributes.empty, IArray.from(children))
+    Element(label, Attributes.empty, Array.from(children))
 
   def elem(label: Text, attrs: Map[Text, Text], children: Node*): Element =
-    Element(label, Attributes.from(attrs), IArray.from(children))
+    Element(label, Attributes.from(attrs), Array.from(children))
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
@@ -856,7 +858,7 @@ object Tests extends Suite(m"Xylophone tests"):
       test(m"emit indents a document and adds the header and trailing newlines"):
         import formatting.indentedXmlFormatting
         val document = Document[Xml](elem(t"a", elem(t"b")), Header(t"1.0", Unset, Unset))
-        supervise(Xml.emit(document).to(List).join)
+        supervise(List.from(Xml.emit(document)).mkString.tt)
       . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
 
 

@@ -38,6 +38,7 @@ import gesticulate.*
 import pneumatic.*
 import turbulence.*
 import zephyrine.*
+import proscenium.compat.*
 
 // A single image layer, built from a `bitumen.Tarfile`. A layer carries two distinct
 // digests: the `diff_id` is the SHA-256 of the *uncompressed* tar (recorded in the

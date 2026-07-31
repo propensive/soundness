@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import proscenium.compat.*
+
 import java.lang as jl
 
 import ambience.*, environments.javaEnvironment
@@ -91,6 +93,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       jl.System.out.nn.println(StackTrace(error).teletype.render)
       ???
 
+  @scala.caps.unsafe.untrackedCaptures
   var runner0: Runner[Report] = makeRunner(Selection.all)
 
   // An alias given is memoized on first use, which is safe here only because `main`
@@ -110,8 +113,8 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
     runner0 = runner
     runner.suite(testableView, run())
 
-  final def main(arguments: IArray[Text]): Unit =
-    val selection = Selection.parse(arguments.to(List))
+  final def main(arguments: Array[Text]^{}): Unit =
+    val selection = Selection.parse(arguments.to[List])
     if !arguments.isEmpty then runner0 = makeRunner(selection)
 
     if selection.listOnly then

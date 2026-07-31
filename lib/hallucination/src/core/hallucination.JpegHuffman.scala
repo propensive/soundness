@@ -33,6 +33,9 @@
 package hallucination
 
 import contingency.*
+import proscenium.compat.*
+
+import scala.caps
 
 import RasterError.Reason
 
@@ -49,8 +52,10 @@ private[hallucination] object JpegHuffman:
     if value < threshold then value + (-1 << count) + 1 else value
 
 private[hallucination] object JpegHuffmanTable:
-  def apply(counts: Array[Int], values: Array[Int], ac: Boolean)
-  :   JpegHuffmanTable raises RasterError =
+  // A real `using` clause rather than the `raises` sugar: a context-function result would
+  // hide the array parameters, which the separation checker rejects.
+  def apply(counts: scala.Array[Int], values: scala.Array[Int], ac: Boolean)(using Tactic[RasterError])
+  :   JpegHuffmanTable =
 
     val lutBits = JpegHuffman.LutBits
 
@@ -59,7 +64,7 @@ private[hallucination] object JpegHuffmanTable:
     var index = 0
     while index < 16 do { totalSize += counts(index); index += 1 }
 
-    val huffsize = new Array[Int](totalSize)
+    val huffsize = new scala.Array[Int](totalSize)
     var position = 0
     index = 0
 
@@ -73,7 +78,7 @@ private[hallucination] object JpegHuffmanTable:
 
       index += 1
 
-    val huffcode = new Array[Int](totalSize)
+    val huffcode = new scala.Array[Int](totalSize)
     var code = 0
     var codeSize = if totalSize > 0 then huffsize(0) else 0
     index = 0
@@ -86,8 +91,8 @@ private[hallucination] object JpegHuffmanTable:
       index += 1
 
     // Section F.2.2.3, Figure F.15: delta[i] = VALPTR(i) - MINCODE(i); maxcode[i] = MAXCODE(i).
-    val delta = new Array[Int](16)
-    val maxcode = Array.fill(16)(-1)
+    val delta = new scala.Array[Int](16)
+    val maxcode = scala.Array.fill(16)(-1)
     var j = 0
     index = 0
 
@@ -100,8 +105,8 @@ private[hallucination] object JpegHuffmanTable:
       index += 1
 
     // The primary lookup table: every code no longer than `lutBits` maps its prefix to a value.
-    val lutValue = new Array[Int](1 << lutBits)
-    val lutSize = new Array[Int](1 << lutBits)
+    val lutValue = new scala.Array[Int](1 << lutBits)
+    val lutSize = new scala.Array[Int](1 << lutBits)
     index = 0
 
     while index < totalSize do
@@ -121,8 +126,8 @@ private[hallucination] object JpegHuffmanTable:
 
     // For AC tables, a secondary table decoding both the value and its magnitude extension for
     // small coefficients (Section F.2.2.2).
-    val acValue = if ac then new Array[Int](1 << lutBits) else new Array[Int](0)
-    val acRunSize = if ac then new Array[Int](1 << lutBits) else new Array[Int](0)
+    val acValue = if ac then new scala.Array[Int](1 << lutBits) else new scala.Array[Int](0)
+    val acRunSize = if ac then new scala.Array[Int](1 << lutBits) else new scala.Array[Int](0)
 
     if ac then
       index = 0
@@ -140,21 +145,28 @@ private[hallucination] object JpegHuffmanTable:
 
         index += 1
 
-    new JpegHuffmanTable(values, delta, maxcode, lutValue, lutSize, acValue, acRunSize)
+    // The freshly-built arrays are frozen zero-copy; `values` is likewise freshly built by
+    // `parseDht` and never written after this call.
+    new JpegHuffmanTable
+      ( values.asInstanceOf[Array[Int]^{}], delta.asInstanceOf[Array[Int]^{}],
+        maxcode.asInstanceOf[Array[Int]^{}], lutValue.asInstanceOf[Array[Int]^{}],
+        lutSize.asInstanceOf[Array[Int]^{}], acValue.asInstanceOf[Array[Int]^{}],
+        acRunSize.asInstanceOf[Array[Int]^{}] )
 
+// Immutable after construction: the factory above freezes the freshly-built tables.
 private[hallucination] final class JpegHuffmanTable
-  ( val values:    Array[Int],
-    val delta:     Array[Int],
-    val maxcode:   Array[Int],
-    val lutValue:  Array[Int],
-    val lutSize:   Array[Int],
-    val acValue:   Array[Int],
-    val acRunSize: Array[Int] ):
+  ( val values:    Array[Int]^{},
+    val delta:     Array[Int]^{},
+    val maxcode:   Array[Int]^{},
+    val lutValue:  Array[Int]^{},
+    val lutSize:   Array[Int]^{},
+    val acValue:   Array[Int]^{},
+    val acRunSize: Array[Int]^{} ):
 
   // `acValue` and `acRunSize` are empty for DC tables.
   def hasAcLut: Boolean = acRunSize.length > 0
 
-private[hallucination] final class JpegHuffmanDecoder:
+private[hallucination] final class JpegHuffmanDecoder extends caps.Mutable:
   private var bits: Long = 0L
   private var numBits: Int = 0
   private var marker: Int = -1
@@ -164,7 +176,8 @@ private[hallucination] final class JpegHuffmanDecoder:
   var fastAcRun: Int = 0
 
   // Section F.2.2.3, Figure F.16.
-  def decode(reader: JpegReader, table: JpegHuffmanTable): Int raises RasterError =
+  update def decode(reader: JpegReader^, table: JpegHuffmanTable)(using Tactic[RasterError])
+  :   Int =
     if numBits < 16 then readBits(reader)
 
     val lookup = peekBits(JpegHuffman.LutBits)
@@ -191,7 +204,9 @@ private[hallucination] final class JpegHuffmanDecoder:
 
   // Decodes a small AC coefficient in one step, if the combined table has an entry; returns true
   // and sets `fastAcValue`/`fastAcRun` when it does.
-  def decodeFastAc(reader: JpegReader, table: JpegHuffmanTable): Boolean raises RasterError =
+  update def decodeFastAc(reader: JpegReader^, table: JpegHuffmanTable)
+    ( using Tactic[RasterError] )
+  :   Boolean =
     if !table.hasAcLut then false else
       if numBits < JpegHuffman.LutBits then readBits(reader)
       val lookup = peekBits(JpegHuffman.LutBits)
@@ -203,21 +218,21 @@ private[hallucination] final class JpegHuffmanDecoder:
         consumeBits(runSize & 0x0f)
         true
 
-  def getBits(reader: JpegReader, count: Int): Int raises RasterError =
+  update def getBits(reader: JpegReader^, count: Int)(using Tactic[RasterError]): Int =
     if count == 0 then 0 else
       if numBits < count then readBits(reader)
       val value = peekBits(count)
       consumeBits(count)
       value
 
-  def receiveExtend(reader: JpegReader, count: Int): Int raises RasterError =
+  update def receiveExtend(reader: JpegReader^, count: Int)(using Tactic[RasterError]): Int =
     JpegHuffman.extend(getBits(reader, count), count)
 
-  def reset(): Unit =
+  update def reset(): Unit =
     bits = 0L
     numBits = 0
 
-  def takeMarker(reader: JpegReader): Int raises RasterError =
+  update def takeMarker(reader: JpegReader^)(using Tactic[RasterError]): Int =
     readBits(reader)
     val result = marker
     marker = -1
@@ -226,11 +241,11 @@ private[hallucination] final class JpegHuffmanDecoder:
   private def peekBits(count: Int): Int =
     if count == 0 then 0 else ((bits >>> (64 - count)) & ((1L << count) - 1)).toInt
 
-  private def consumeBits(count: Int): Unit =
+  private update def consumeBits(count: Int): Unit =
     bits <<= count
     numBits -= count
 
-  private def readBits(reader: JpegReader): Unit raises RasterError =
+  private update def readBits(reader: JpegReader^)(using Tactic[RasterError]): Unit =
     while numBits <= 56 do
       val byte = if marker != -1 then 0 else reader.u8()
 

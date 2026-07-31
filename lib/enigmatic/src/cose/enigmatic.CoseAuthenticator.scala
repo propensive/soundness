@@ -56,7 +56,8 @@ object CoseAuthenticator:
       def cborTag:       Long   = CoseTag.Sign1
 
       def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
-        key.secret.uncloak: bytes => algorithm.sign(toBeSigned, bytes.immutable(using Unsafe))
+        key.secret.uncloak: bytes =>
+          algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
   given symmetric: [cipher <: Cipher & Symmetric & Signing]
   =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
@@ -70,7 +71,8 @@ object CoseAuthenticator:
       def cborTag:       Long   = CoseTag.Mac0
 
       def authenticate(toBeSigned: Data, key: SymmetricKey[cipher]): Data =
-        key.secret.uncloak: bytes => algorithm.sign(toBeSigned, bytes.immutable(using Unsafe))
+        key.secret.uncloak: bytes =>
+          algorithm.sign(toBeSigned, Array.unsafeFrozen(bytes))
 
 trait CoseAuthenticator:
   type Self

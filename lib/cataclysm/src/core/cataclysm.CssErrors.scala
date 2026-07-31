@@ -38,5 +38,5 @@ import fulminate.*
 // `read[Css]` collects all errors rather than stopping at the first, raising
 // this once at the end (or returning the `Css` if there were none).
 case class CssErrors(errors: List[CssError])(using Diagnostics)
-extends Error(m"the CSS contained ${errors.length} errors"):
-  def + (error: CssError): CssErrors = CssErrors(errors :+ error)
+extends Error(m"the CSS contained ${errors.stdlib.length} errors"):
+  def + (error: CssError): CssErrors = CssErrors(List.of(errors.stdlib :+ error))

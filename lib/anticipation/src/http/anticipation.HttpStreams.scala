@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import proscenium.compat.*
+
 object HttpStreams:
   // A minimal demand-aware pull protocol for HTTP message bodies: each call
   // to `next` produces at most `limit` bytes as one chunk, or `null` at the
@@ -42,10 +44,11 @@ object HttpStreams:
     val empty: Body = limit => null
 
     // A whole-value body, delivered in `limit`-bounded slices.
-    def apply(data: IArray[Byte]): Body = new Body:
+    def apply(data: Array[Byte]^{}): Body = new Body:
+      @scala.caps.unsafe.untrackedCaptures
       private var position: Int = 0
 
-      def next(limit: Int): IArray[Byte] | Null =
+      def next(limit: Int): Array[Byte]^{} | Null =
         if position >= data.length then null else
           val end = data.length.min(position + limit)
           val chunk = data.slice(position, end)
@@ -54,11 +57,11 @@ object HttpStreams:
 
     // A chunked body from a legacy iterator; `limit` cannot bound the
     // chunks' own sizes.
-    def apply(chunks: Iterator[IArray[Byte]]): Body = limit =>
+    def apply(chunks: Iterator[Array[Byte]^{}]): Body = limit =>
       if chunks.hasNext then chunks.next() else null
 
   trait Body:
-    def next(limit: Int): IArray[Byte] | Null
+    def next(limit: Int): Array[Byte]^{} | Null
 
   type Content = (Text, Body)
 

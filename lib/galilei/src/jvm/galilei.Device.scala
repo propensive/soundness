@@ -32,7 +32,7 @@
                                                                                                   */
 package galilei
 
-import language.experimental.pureFunctions
+import scala.language.experimental.pureFunctions
 
 import ambience.*
 import anticipation.*

@@ -34,6 +34,7 @@ package zeppelin
 
 import java.io as ji
 import java.util.zip as juz
+import proscenium.compat.*
 
 import anticipation.*
 import contingency.*
@@ -204,17 +205,17 @@ object Zip:
   private[zeppelin] val zip64LocatorSig:  Int = 0x07064b50
 
   // Little-endian writers into a mutable array.
-  private[zeppelin] def putU16(array: Array[Byte], offset: Int, value: Int): Unit =
+  private[zeppelin] def putU16(array: scala.Array[Byte], offset: Int, value: Int): Unit =
     array(offset) = (value & 0xff).toByte
     array(offset + 1) = ((value >> 8) & 0xff).toByte
 
-  private[zeppelin] def putU32(array: Array[Byte], offset: Int, value: Long): Unit =
+  private[zeppelin] def putU32(array: scala.Array[Byte], offset: Int, value: Long): Unit =
     array(offset) = (value & 0xff).toByte
     array(offset + 1) = ((value >> 8) & 0xff).toByte
     array(offset + 2) = ((value >> 16) & 0xff).toByte
     array(offset + 3) = ((value >> 24) & 0xff).toByte
 
-  private[zeppelin] def putU64(array: Array[Byte], offset: Int, value: Long): Unit =
+  private[zeppelin] def putU64(array: scala.Array[Byte], offset: Int, value: Long): Unit =
     var i = 0
 
     while i < 8 do
@@ -258,18 +259,18 @@ object Zip:
 
   private[zeppelin] def crc32(data: Data): Int =
     val crc = juz.CRC32()
-    crc.update(data.mutable(using Unsafe))
+    crc.update(Array.unsafeJvm(data))
     crc.getValue.toInt
 
   // Raw RFC-1951 DEFLATE of a single buffer (the algorithm primitive, not the ZIP container).
   private[zeppelin] def deflate(data: Data, level: Int): Data =
     val deflater = juz.Deflater(level, true)
-    deflater.setInput(data.mutable(using Unsafe))
+    deflater.setInput(Array.unsafeJvm(data))
     deflater.finish()
-    val buffer = new Array[Byte](8192)
+    val buffer = new scala.Array[Byte](8192)
     val out = ji.ByteArrayOutputStream()
     while !deflater.finished() do out.write(buffer, 0, deflater.deflate(buffer))
     deflater.end()
-    out.toByteArray.nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray.nn)
 
 sealed trait Zip

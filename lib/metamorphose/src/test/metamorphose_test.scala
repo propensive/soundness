@@ -32,7 +32,7 @@
                                                                                                   */
 package metamorphose
 
-import language.experimental.genericNumberLiterals
+import scala.language.experimental.genericNumberLiterals
 
 import soundness.*
 
@@ -95,46 +95,46 @@ object Tests extends Suite(m"Metamorphose tests"):
 
     suite(m"Factoradic decoding"):
       test(m"Check distinctness of factoradic expansions"):
-        (0 to 1000).map(Factoradic(_).expand).to(Set).size
+        (0 to 1000).map(Factoradic(_).expand).toSet.size
       . assert(_ == 1001)
 
     suite(m"Permutations"):
       test(m"Construct an identity permutation"):
-        Permutation(Series(0, 1, 2, 3, 4, 5))
+        Permutation(Sequence(0, 1, 2, 3, 4, 5))
       . assert(_ == Permutation(Factoradic(0)))
 
       test(m"Construct a reversal permutation"):
-        Permutation(Series(5, 4, 3, 2, 1, 0))
+        Permutation(Sequence(5, 4, 3, 2, 1, 0))
       . assert(_ == Permutation(Factoradic(719)))
 
       test(m"Reverse a list of numbers"):
-        Permutation(Series(5, 4, 3, 2, 1, 0))(List("one", "two", "three", "four", "five", "six"))
+        Permutation(Sequence(5, 4, 3, 2, 1, 0))(List("one", "two", "three", "four", "five", "six"))
       . assert(_ == List("six", "five", "four", "three", "two", "one"))
 
       test(m"Reorder a list of numbers"):
-        Permutation(Series(3, 1, 4, 2, 0, 5))(List("zero", "one", "two", "three", "four", "five"))
+        Permutation(Sequence(3, 1, 4, 2, 0, 5))(List("zero", "one", "two", "three", "four", "five"))
       . assert(_ == List("three", "one", "four", "two", "zero", "five"))
 
       test(m"Check duplicate indexes are caught"):
-        capture[PermutationError](Permutation(Series(3, 1, 4, 2, 3, 5)))
+        capture[PermutationError](Permutation(Sequence(3, 1, 4, 2, 3, 5)))
       . assert(_ == PermutationError(PermutationError.Reason.DuplicateIndex(3, 4)))
 
       test(m"Check negative indexes are caught"):
-        capture[PermutationError](Permutation(Series(3, 1, 4, 2, -3, 5)))
+        capture[PermutationError](Permutation(Sequence(3, 1, 4, 2, -3, 5)))
       . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(-3, 5)))
 
       test(m"Check high indexes are caught"):
-        capture[PermutationError](Permutation(Series(3, 1, 4, 6, 0, 5)))
+        capture[PermutationError](Permutation(Sequence(3, 1, 4, 6, 0, 5)))
       . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(6, 5)))
 
       test(m"Check input is long enough"):
-        val permutation = Permutation(Series(3, 1, 4, 2, 0, 5))
+        val permutation = Permutation(Sequence(3, 1, 4, 2, 0, 5))
         capture[PermutationError](permutation(List(1, 2, 3)))
       . assert(_ == PermutationError(PermutationError.Reason.TooShort(3, 6)))
 
       test(m"Check uniqueness of permutations"):
         val list = List("one", "two", "three", "four", "five", "six", "seven")
-        Permutation.bySize(7).map(_(list)).to(Set).size
+        Permutation.bySize(7).map(_(list)).stdlib.toSet.size
       . assert(_ == 5040)
 
       Permutation.bySize(6).each: permutation =>
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Metamorphose tests"):
         . assert(_ == list)
 
 
-      val indices = Series(6, 2, 1, 0, 3, 5, 4)
+      val indices = Sequence(6, 2, 1, 0, 3, 5, 4)
       val permutation = Permutation(indices)
       for i <- 0 to 6 do
         test(m"Apply permutation indexwise"):

@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -56,16 +58,19 @@ object Handle:
     . pump(handle.intake().asInstanceOf[AnyRef].asInstanceOf[(Intake[Data] over Credit)^])
 
   given sink: [handle <: (Handle & Granting[Grant.Write])^]
-  =>  handle is Sink by Data over Credit = _.intake()
+  =>  handle is Sink by Data over Credit =
+    // The intake crosses through an `AnyRef` rim, as `pump` above: it belongs to the
+    // single-owner handle it is minted from.
+    handle => handle.intake().asInstanceOf[AnyRef].asInstanceOf[(Intake[Data] over Credit)^]
 
   // The `read`/`write` operations are direct extensions as well as `Streamable`/`Writable`
   // typeclass givens, because summoning a typeclass on a *scoped* capability's refined type
   // can fail under capture checking (given resolution widens the scoped capture to `{any}`);
   // the extensions summon typeclasses on the (non-scoped) source/result types instead.
   extension (handle: (Handle & Granting[Grant.Read])^)
-    def stream: LazyList[Data] = handle.reader()
+    def stream: Chain[Data] = handle.reader()
 
-    def read[result](using readable: (LazyList[Data] is Readable to result)^): result =
+    def read[result](using readable: (Chain[Data] is Readable to result)^): result =
       readable.read(handle.reader())
 
   extension (handle: (Handle & Granting[Grant.Write])^)
@@ -79,8 +84,8 @@ object Handle:
 // `reader`/`writer`; `FileOpenable` supplies channel-native endpoints, so file
 // I/O reads and writes directly through the streaming kernel's buffers.
 class Handle
-  ( val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit )
-  ( val source: Spring[Data]^ = () => Stream(reader().iterator),
+  ( val reader: () => Chain[Data], val writer: Chain[Data] => Unit )
+  ( val source: Spring[Data]^ = () => Stream(reader().stdlib.iterator),
     val intake: () => Intake[Data] over Credit =
       () => Sink.buffered((), (_, stream) => writer(stream)) )
 extends caps.ExclusiveCapability

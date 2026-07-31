@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import scala.math
+
 import anticipation.*
 import vacuous.*
 
@@ -45,7 +47,7 @@ object Benchmark:
     :   Report =
 
       val metrics =
-        ListMap
+        Ledger
           ( Metric.Iterations -> benchmark.iterations.toDouble,
             Metric.Mean       -> benchmark.mean,
             Metric.Least      -> benchmark.min,

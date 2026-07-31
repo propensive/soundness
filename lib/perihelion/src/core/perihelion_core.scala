@@ -32,6 +32,9 @@
                                                                                                   */
 package perihelion
 
+import scala.{caps, compiletime}
+import proscenium.compat.*
+
 import java.security.SecureRandom
 
 import anticipation.*
@@ -224,9 +227,9 @@ given wsClient: ( online:            Online,
       // RFC 6455 §4.1: a fresh 16-byte nonce, Base64-encoded, is the `Sec-WebSocket-Key`;
       // the server's `Sec-WebSocket-Accept` must echo `base64(sha1(key ++ magic))`.
       val nonce: Data =
-        val bytes = new Array[Byte](16)
-        SecureRandom().nextBytes(bytes)
-        bytes.immutable(using Unsafe)
+        val bytes = Array[Byte](16)
+        SecureRandom().nextBytes(bytes.raw)
+        Array.freeze(bytes)
 
       val key: Text = nonce.serialize[Base64]
 
@@ -258,7 +261,7 @@ given wsClient: ( online:            Online,
       val headerBytes =
         readHandshake(inboundRef.asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^])
 
-      val response: Http.Response = Http.Response.parse(LazyList(headerBytes))
+      val response: Http.Response = Http.Response.parse(Chain(headerBytes))
 
       if response.status != Http.SwitchingProtocols then
         abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))
@@ -290,7 +293,7 @@ given wsClient: ( online:            Online,
         . messages.map(_.bytes)
 
       // One reassembled message per refill window: chunk boundaries frame messages.
-      zephyrine.Stream(messages.iterator)
+      zephyrine.Stream(messages.stdlib.iterator)
 
     def transmit
       ( connection: WsConnection,

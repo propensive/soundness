@@ -35,7 +35,7 @@ package superlunary
 import vacuous.*
 
 object Executor2:
-  def main(input: Array[String]): Unit =
+  def main(input: scala.Array[String]): Unit =
     val cls = Class.forName("Generated$Code$From$Quoted").nn
     val instance = cls.getDeclaredConstructor().nn.newInstance().nn
     val method = cls.getMethod("apply").nn

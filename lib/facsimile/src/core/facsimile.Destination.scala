@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -62,7 +64,8 @@ object Destination:
       named: Text => Optional[Cos],
       following: Boolean = false )
     ( using pdf: Pdf )
-  :   Optional[Destination] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   Optional[Destination] =
 
     pdf.resolved(value) match
       case Cos.Sequence(target :: Cos.Name(kind) :: rest) =>
@@ -72,7 +75,7 @@ object Destination:
           case _                   => Unset
 
         def dimension(index: Int): Optional[Double] =
-          if index < rest.length then pdf.resolved(rest(index)).double else Unset
+          if index < rest.stdlib.length then pdf.resolved(rest.stdlib(index)).double else Unset
 
         page.let: page =>
           kind.s match

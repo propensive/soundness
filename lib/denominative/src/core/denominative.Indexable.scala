@@ -30,25 +30,94 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package denominative
+
+import scala.collection.immutable.IndexedSeq
+
+import scala.language.experimental.pureFunctions
+
+import scala.collection.mutable as scm
 
 import anticipation.*
 import prepositional.*
 
-// A type that can be traversed as a lazy sequence of its elements (its `Operand`,
-// bound with `by` — e.g. `List[Int] is Traversable by Int`). It is the basis for
-// element-oriented operations like `where` that need to visit elements in order
-// and short-circuit; `traverse` returns a `LazyList` (lazy) so callers only force
-// as much as they consume.
-object Traversable:
-  given iterable: [element, collection <: Iterable[element]]
-  =>  collection is Traversable by element =
-    _.to(LazyList)
+object Indexable:
+  // The frozen array, `Array[element]^{}`, likewise: the bounds-partial `readUnchecked` is
+  // safe behind `contains`.
+  given frozenArray: [element] => (Array[element]^{}) is Indexable:
+    type Self = Array[element]^{}
+    type Operand = Ordinal
+    type Result = element
 
-  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own instance;
-  // placing it here (the typeclass companion) keeps it in implicit scope for
-  // `Text is Traversable` without an explicit `import`, unlike a top-level given.
-  given text: Text is Traversable by Char = text => LazyList(text.s.toCharArray.nn*)
+    def contains(array: Array[element]^{}, index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < array.length
 
-trait Traversable extends Typeclass.Pure, Operable:
-  def traverse(self: Self): LazyList[Operand]
+    def access(array: Array[element]^{}, index: Ordinal): Result = array.readUnchecked(index.n0)
+
+  given indexedSeq: [element] => IndexedSeq[element] is Indexable:
+    type Self = IndexedSeq[element]
+    type Operand = Ordinal
+    type Result = element
+
+    def contains(sequence: IndexedSeq[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < sequence.length
+
+    def access(sequence: IndexedSeq[element], index: Ordinal): Result = sequence(index.n0)
+
+  // Opaque `Sequence` is no longer an `IndexedSeq` subtype, so it needs its own instance.
+  given sequence: [element] => Sequence[element] is Indexable:
+    type Self = Sequence[element]
+    type Operand = Ordinal
+    type Result = element
+
+    def contains(sequence: Sequence[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < sequence.stdlib.length
+
+    def access(sequence: Sequence[element], index: Ordinal): Result = sequence.stdlib(index.n0)
+
+  // Opaque `List`: positional access is O(n), so the instance is gated behind `LinearAccessComplexity`.
+  given list: [element] => (complexity: LinearAccessComplexity) => List[element] is Indexable:
+    type Self = List[element]
+    type Operand = Ordinal
+    type Result = element
+
+    def contains(list: List[element], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < list.stdlib.length
+
+    def access(list: List[element], index: Ordinal): Result = list.stdlib(index.n0)
+
+  given text: [element] => Text is Indexable:
+    type Self = Text
+    type Operand = Ordinal
+    type Result = Char
+
+    def contains(text: Text, index: Ordinal): Boolean = index.n0 >= 0 && index.n0 < text.s.length
+    def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
+
+  given map: [key, value] => Map[key, value] is Indexable:
+    type Self = Map[key, value]
+    type Operand = key
+    type Result = value
+
+    def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
+    def access(value: Self, index: key): value = value.stdlib(index)
+
+  given ledger: [key, value] => Ledger[key, value] is Indexable:
+    type Self = Ledger[key, value]
+    type Operand = key
+    type Result = value
+
+    def contains(value: Self, index: key): Boolean = value.stdlib.contains(index)
+    def access(value: Self, index: key): value = value.stdlib(index)
+
+  given hashMap: [key, value] => scm.HashMap[key, value] is Indexable:
+    type Self = scm.HashMap[key, value]
+    type Operand = key
+    type Result = value
+
+    def contains(value: Self, index: key): Boolean = value.contains(index)
+    def access(value: Self, index: key): value = value(index)
+
+trait Indexable extends Typeclass.Pure, Operable, Resultant:
+  def contains(value: Self, index: Operand): Boolean
+  def access(value: Self, index: Operand): Result

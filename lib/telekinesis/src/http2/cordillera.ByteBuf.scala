@@ -32,6 +32,9 @@
                                                                                                   */
 package cordillera
 
+import scala.caps
+import proscenium.compat.*
+
 import anticipation.{Data as Bytes, *}
 import prepositional.*
 import vacuous.*
@@ -45,11 +48,11 @@ private[cordillera] class ByteBuf(initial: Int = 32)
 extends caps.ExclusiveCapability, caps.Stateful:
   // Untracked: reached only through this (exclusive) buffer, and `data` copies out.
   @caps.unsafe.untrackedCaptures
-  private var storage: Array[Byte] = new Array[Byte](initial.max(8))
+  private var storage: scala.Array[Byte] = new scala.Array[Byte](initial.max(8))
   private var size0: Int = 0
 
   // An exclusive view for writes: the untracked field reads as read-only.
-  private inline def target: Array[Byte]^ = storage.asInstanceOf[Array[Byte]^]
+  private inline def target: scala.Array[Byte]^ = storage.asInstanceOf[scala.Array[Byte]^]
 
   def size: Int = size0
 
@@ -57,10 +60,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
     if size0 + extra > storage.length then
       var capacity = storage.length*2
       while size0 + extra > capacity do capacity *= 2
-      val grown = new Array[Byte](capacity)
+      val grown = new scala.Array[Byte](capacity)
       System.arraycopy(storage, 0, grown, 0, size0)
       // The cast erases the fresh array's capture: it is confined to this buffer.
-      storage = grown.asInstanceOf[Array[Byte]]
+      storage = grown.asInstanceOf[scala.Array[Byte]]
 
   update def add(byte: Byte): Unit =
     ensure(1)
@@ -69,11 +72,10 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   update def addAll(bytes: Bytes): Unit =
     ensure(bytes.length)
-    System.arraycopy(bytes.mutable(using Unsafe), 0, target, size0, bytes.length)
+    System.arraycopy(Array.unsafeJvm(bytes), 0, target, size0, bytes.length)
     size0 += bytes.length
 
   def data: Bytes =
-    val out = new Array[Byte](size0)
-    System.arraycopy(storage, 0, out, 0, size0)
-    // Sealed: a fresh copy no alias can reach is immutable.
-    caps.unsafe.unsafeAssumePure(out.immutable(using Unsafe))
+    val out = Array[Byte](size0)
+    System.arraycopy(storage, 0, out.raw, 0, size0)
+    Array.freeze(out)

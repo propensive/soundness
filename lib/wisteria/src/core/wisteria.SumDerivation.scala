@@ -68,7 +68,7 @@ object SumDerivation:
     protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
     :   List[Text] =
 
-      constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+      List.of(constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
 
 
     // A value-less fold over every variant of the sum — the sum analogue of `contexts` — yielding
@@ -81,13 +81,13 @@ object SumDerivation:
                         ->  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
-    :   IArray[result] =
+    :   Array[result]^{} =
 
       type Labels = reflection.MirroredElemLabels
       type Variants = reflection.MirroredElemTypes
 
       provide[ClassTag[result]]:
-        val array = new Array[result](valueOf[Tuple.Size[Variants]])
+        val array = new scala.Array[result](valueOf[Tuple.Size[Variants]])
 
         choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
           [variant <: derivation] => context ?=> array(index) = lambda[variant](context)

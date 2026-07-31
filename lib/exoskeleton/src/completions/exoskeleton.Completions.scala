@@ -34,6 +34,8 @@ package exoskeleton
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*
@@ -107,7 +109,8 @@ object Completions:
 
 
   def ensure(force: Boolean = false)(using Entrypoint^, WorkingDirectory, Diagnostics)
-  :   List[Text] logs CliEvent =
+  ( using (CliEvent is Loggable)^ )
+  :   List[Text] =
 
     if force then safely(effectful(install(force))).let(_.paths).or(Nil)
     else
@@ -124,7 +127,9 @@ object Completions:
 
   def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
     ( using WorkingDirectory, Diagnostics )
-  :   Installation raises InstallError logs CliEvent =
+  ( using (CliEvent is Loggable)^ )
+  ( using Tactic[InstallError] )
+  :   Installation =
 
     mitigate:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
@@ -133,7 +138,8 @@ object Completions:
 
     . protect:
         val scriptPath: Optional[Path on Local] =
-          safely(sh"sh -c 'command -v ${entrypoint.script}'".exec[Path on Local]())
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            safely(sh"sh -c 'command -v ${entrypoint.script}'".exec[Path on Local]())
 
         val command: Text = entrypoint.script
 
@@ -145,13 +151,15 @@ object Completions:
             then Installation.InstallResult.ShellNotInstalled(Shell.Zsh)
             else
               val dirNamesCmd = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'"
-              val dirNames = dirNamesCmd.exec[Text]().cut(t",").to(List)
+              val dirNames = dirNamesCmd.exec[Text]().cut(t",")
 
               val dirs =
-                dirNames.filter(_.trim != t"").map: dir => safely(dir.as[Path on Linux])
+                dirNames.stdlib.filter(_.trim != t"").map: dir =>
+                  safely(dir.as[Path on Linux])
+
                 . compact
 
-              install(Shell.Zsh, command, Name[Linux](t"_$command"), dirs)
+              install(Shell.Zsh, command, Name[Linux](t"_$command"), List.of(dirs))
 
           val bash: Installation.InstallResult =
             if sh"sh -c 'command -v bash'".exec[Exit]() != Exit.Ok
@@ -162,7 +170,7 @@ object Completions:
                   command,
                   Name[Linux](command),
                   List
-                    ( Xdg.dataDirs[Path on Linux].last/"bash-completion"/"completions",
+                    ( Xdg.dataDirs[Path on Linux].stdlib.last/"bash-completion"/"completions",
                       Xdg.dataHome[Path on Linux]/"bash-completion"/"completions" ) )
 
           val fish: Installation.InstallResult =
@@ -174,14 +182,15 @@ object Completions:
                   command,
                   Name[Linux](t"$command.fish"),
                   List
-                    ( Xdg.dataDirs[Path on Linux].last/"fish"/"vendor_completions.d",
+                    ( Xdg.dataDirs[Path on Linux].stdlib.last/"fish"/"vendor_completions.d",
                       Xdg.configHome[Path on Linux]/"fish"/"completions" ) )
 
           val powershell: Installation.InstallResult =
             if sh"sh -c 'command -v pwsh'".exec[Exit]() != Exit.Ok
             then Installation.InstallResult.ShellNotInstalled(Shell.Powershell)
             else safely:
-              val profile = sh"pwsh -NoProfile -Command 'echo $$PROFILE'".exec[Path on Linux]()
+              val profile = scala.caps.unsafe.unsafeAssumeSeparate:
+                sh"pwsh -NoProfile -Command 'echo $$PROFILE'".exec[Path on Linux]()
               val marker = t"# $command tab-completions"
 
               if profile.exists() && profile.read[Text].contains(marker)
@@ -198,7 +207,9 @@ object Completions:
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
     ( using erased effectful: Effectful )
     ( using Diagnostics )
-  :   Installation.InstallResult raises InstallError logs CliEvent =
+  ( using (CliEvent is Loggable)^ )
+  ( using Tactic[InstallError] )
+  :   Installation.InstallResult =
 
     mitigate:
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
@@ -281,7 +292,8 @@ object Completions:
     def paths: List[Text] =
       this match
         case CommandNotOnPath(_)              => Nil
-        case Shells(zsh, bash, fish, pwsh)    => List(zsh, bash, fish, pwsh).map(_.pathname).compact
+        case Shells(zsh, bash, fish, pwsh) =>
+          List(zsh, bash, fish, pwsh).map(_.pathname).collect { case text: Text => text }
 
 object CliEvent:
   given execEvent: CliEvent transcribes ExecEvent = CliEvent.Exec(_)

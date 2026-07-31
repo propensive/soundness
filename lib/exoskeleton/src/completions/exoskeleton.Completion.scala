@@ -32,6 +32,8 @@
                                                                                                   */
 package exoskeleton
 
+import proscenium.compat.*
+
 import scala.collection.mutable as scm
 
 import ambience.*
@@ -45,6 +47,7 @@ import hypotenuse.*
 import spectacular.*
 import symbolism.*
 import turbulence.*
+import rudiments.*
 import vacuous.*
 
 case class Completion
@@ -66,7 +69,9 @@ extends Cli:
   val flags: scm.HashMap[Flag, Discoverable] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag] = scm.HashSet()
 
+  @scala.caps.unsafe.untrackedCaptures
   var explanation: Optional[Text] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   var cursorSuggestions: List[Suggestion] = Nil
 
   def proceed: Boolean = true
@@ -75,7 +80,8 @@ extends Cli:
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand] =
 
-    given cli: Cli = this
+    // An alias of `this` with its precise capture, not a fresh capability.
+    given cli: (Cli^{this}) = this
     interpreter.read(parameters, flag)
 
 
@@ -117,14 +123,14 @@ extends Cli:
         if suggestion.expanded then suggestion
         else suggestion.copy(core = prefix+suggestion.core+suffix, expanded = true)
 
-      . sortBy(_.core)
+      . sort(_.core)
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
-    (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
+    (flags.keySet -- seenFlags).to(List).bind: flag =>
       val allFlags = (flag.name :: flag.aliases)
 
       if longOnly then
-        allFlags.collect { case text: Text => text }.match
+        List.of(allFlags.collect { case text: Text => text }).match
           case main :: aliases =>
             List
               ( Suggestion
@@ -156,7 +162,7 @@ extends Cli:
         lazy val width = items.map(_.core.length).max
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
 
-        val itemLines: List[Command] = items.flatMap:
+        val itemLines: List[Command] = items.bind:
           case Suggestion(core0, description, hidden, incomplete, aliases, prefix, suffix, _) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val shortFlag = focusText.starts(t"-") && !focusText.starts(t"--")
@@ -179,26 +185,31 @@ extends Cli:
                 val params = sh"$prefix2 $suffix2 -l -d desc $hiddenParam -- $core"
                 sh"'${core.fit(width)} $aliasText -- $desc' $params"
 
-            val duplicateLine =
-              if !incomplete then List() else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
+            val duplicateLine: List[Command] =
+              if !incomplete then List()
+              else List(sh"'' $prefix2 $suffix2 -S '' -- $core")
 
-            mainLine :: duplicateLine
+            List(mainLine) ::: duplicateLine
 
-        (title ++ itemLines).map(_.arguments.join(t"\u0000"))
+        List.of(title.stdlib ++ itemLines.stdlib).map(_.arguments.join(t"\u0000"))
 
       case Shell.Bash =>
-        items.filter(!_.hidden).flatMap: suggestion => (suggestion.text :: suggestion.aliases)
+        items.filter(!_.hidden).bind: suggestion =>
+          (suggestion.text :: suggestion.aliases): List[Text]
+
         . filter(_.starts(focusText))
 
       case Shell.Fish | Shell.Powershell =>
-        items.flatMap:
+        items.bind:
           case suggestion@Suggestion(core, description, hidden, incomplete, aliases, _, _, _) =>
             if hidden then Nil else
-              val mainLines = (suggestion.text :: aliases).map: text =>
+              val mainLines = (suggestion.text :: aliases.stdlib).map: text =>
                 description.absolve match
                   case Unset                 => t"$text"
                   case description: Text     => t"$text\t$description"
                   case description: Teletype => t"$text\t${description.plain}"
 
-              if !incomplete then mainLines
-              else mainLines ++ (suggestion.text :: aliases).map: text => t"$text "
+              if !incomplete then List.of(mainLines)
+              else
+                List.of:
+                  mainLines ++ (suggestion.text :: aliases.stdlib).map { text => t"$text " }

@@ -32,6 +32,10 @@
                                                                                                   */
 package escritoire
 
+import proscenium.compat.*
+
+import scala.compiletime
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
@@ -40,26 +44,31 @@ import vacuous.*
 import wisteria.*
 
 object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
-  class JoinTabulable[derivation <: Product](columns: IArray[Column[derivation, Text]])
+  class JoinTabulable[derivation <: Product](columns: Array[Column[derivation, Text]]^{})
   extends Tabulable[Text]:
     type Self = derivation
     def table(): Scaffold[derivation, Text] = Scaffold[derivation](columns*)
+
+  // Flattens the per-field column arrays; a plain method rather than part of the inline
+  // derivation body, so the fresh `any.rd` of the intermediates is not minted at the
+  // expansion site, where it would leak into the caller's capture sets.
+  private def joinColumns[derivation <: Product]
+    ( arrays: Array[Array[Column[derivation, Text]]^{}]^{scala.caps.any.rd} )
+  :   JoinTabulable[derivation] =
+
+    new JoinTabulable[derivation](Array.frozen(arrays.readable.map(_.readable).flatten))
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Tabulable[Text] =
     val labels: Map[Text, Text] = compiletime.summonFrom:
       case labels: TableRelabelling[derivation] => labels.relabelling()
       case _                                    => Map()
 
-    val columns: IArray[Column[derivation, Text]] =
+    joinColumns[derivation]:
       contexts[derivation]():
         [field] => tabulable =>
           tabulable.table().columns.map: element =>
             element.contramap(dereference).retitle:
-              labels.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
-
-      . flatten
-
-    new JoinTabulable[derivation](columns)
+              labels.stdlib.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
 
   given int: Int is Tabulable[Text] = () =>
     Scaffold[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
@@ -74,4 +83,4 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
 trait Tabulable[text] extends Typeclass:
   def table(): Scaffold[Self, text]
   private lazy val tableValue: Scaffold[Self, text] = table()
-  def tabulate(data: Seq[Self]): Tabulation[text] = tableValue.tabulate(data)
+  def tabulate(data: List[Self]): Tabulation[text] = tableValue.tabulate(data)

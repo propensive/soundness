@@ -30,13 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package parasite
+package vacuous
 
-import language.experimental.pureFunctions
+import scala.caps
 
-import scala.annotation.*
-
-import digression.*
-import vacuous.*
-
-case class Chain(codepoint: Codepoint, parent: Optional[Chain])
+// `Array` (the separation-checked opaque) lives in `proscenium`, beneath this module; this
+// file adds its total read, `at`, which `proscenium` cannot define because `Optional`
+// lives here. Built on the bounds-partial `readUnchecked`, which exists for this layering.
+extension [element](array: Array[element]^{caps.any.rd})
+  def at(index: Int): Optional[element] =
+    if index >= 0 && index < array.length then array.readUnchecked(index) else Unset

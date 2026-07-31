@@ -32,7 +32,7 @@
                                                                                                   */
 package ambience
 
-import language.dynamics
+import scala.language.dynamics
 
 import anticipation.*
 import beneficence.*
@@ -56,7 +56,8 @@ object Environment extends Dynamic:
   :   variable =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
-      abort(EnvironmentError(reader.defaultName))
+      // The error message reads only the reader's name; no aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate(abort(EnvironmentError(reader.defaultName)))
 
 trait Environment extends Findable:
   def variable(name: Text): Optional[Text]

@@ -53,11 +53,10 @@ object ForeignBuffer:
 
   def apply(data: Data): ForeignBuffer =
     val buffer = apply(data.length)
-    val array = data.mutable(using Unsafe)
     var index = 0
 
-    while index < array.length do
-      buffer.memory(index) = array(index)
+    while index < data.length do
+      buffer.memory(index) = data.readUnchecked(index)
       index += 1
 
     buffer
@@ -66,14 +65,14 @@ class ForeignBuffer(private[xenophile] val memory: Ptr[Byte], val size: Int):
   def pointer: Pointer = Pointer(Intrinsics.castRawPtrToLong(toRawPtr(memory)))
 
   def data(length: Int): Data =
-    val array = new Array[Byte](length)
+    val array = Array[Byte](length)
     var index = 0
 
     while index < length do
       array(index) = memory(index)
       index += 1
 
-    array.immutable(using Unsafe)
+    Array.freeze(array)
 
   def int: Int = !memory.asInstanceOf[Ptr[Int]]
   def free(): Unit = stdlib.free(memory)

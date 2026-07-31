@@ -69,7 +69,9 @@ object LengthPrefix:
       val framed =
         Framable.frames[Data]:
           length.let: length =>
-            cursor.take(fail())(length)
+            // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
+            // the cast reasserts the frozen form, which `take` already guarantees.
+            cursor.take(fail())(length).asInstanceOf[Data]
 
       framed.asInstanceOf[Iterator[Data]^{input, this}]
 

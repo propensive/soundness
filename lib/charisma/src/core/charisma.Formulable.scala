@@ -32,15 +32,18 @@
                                                                                                   */
 package charisma
 
+import proscenium.compat.*
+
 import rudiments.*
+import vacuous.*
 
 trait Formulable:
   def formula: ChemicalFormula
 
   @targetName("plus")
   infix def + (formulable: Formulable): ChemicalFormula = ChemicalFormula:
-    formulable.formula.molecules.fuse(formula.molecules):
-      state.updated(next(0), formula.molecules.getOrElse(next(0), 0) + next(1))
+    formulable.formula.molecules.stdlib.fuse(formula.molecules):
+      state.updated(next(0), formula.molecules.at(next(0)).or(0) + next(1))
 
   @targetName("netForward")
   infix def --> (rhs: Formulable): ChemicalEquation =

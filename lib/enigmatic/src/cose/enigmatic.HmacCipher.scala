@@ -36,6 +36,7 @@ import anticipation.*
 import enigmatic.*
 import gastronomy.*
 import prepositional.*
+import proscenium.compat.*
 
 // Adapter that exposes HMAC as a `Cipher & Signing & Symmetric`, so that
 // `SymmetricKey[HmacCipher[Sha2[256]]]` plugs into the existing

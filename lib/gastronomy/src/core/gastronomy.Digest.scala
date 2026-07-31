@@ -33,15 +33,14 @@
 package gastronomy
 
 import java.util as ju
+import proscenium.compat.*
 
 import scala.compiletime.*
 
 import anticipation.*
 import monotonous.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
-import vacuous.*
 
 object Digest:
   def apply[hash <: Algorithm](data: Data): Digest in hash = new Digest(data):
@@ -59,4 +58,4 @@ class Digest(val data: Data):
     case digest: Digest => data.sameElements(digest.data)
     case _              => false
 
-  override def hashCode: Int = ju.Arrays.hashCode(data.mutable(using Unsafe): Array[Byte])
+  override def hashCode: Int = ju.Arrays.hashCode(Array.unsafeJvm(data))

@@ -32,8 +32,10 @@
                                                                                                   */
 package panopticon
 
+import proscenium.compat.*
+
 import prepositional.*
 
 object Each:
   given optical: [element] => Each.type is Optical from List[element] onto element =
-    each => Optic[Each.type, List[element], element](_.map(_))
+    each => Optic[Each.type, List[element], element]((origin, lambda) => List.of(origin.stdlib.map(lambda)))

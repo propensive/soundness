@@ -34,10 +34,11 @@ package ulysses
 
 import fulminate.*
 import vacuous.*
+import proscenium.compat.*
 
 object Cadence:
   // §2.1 hash-size table — `s` indexes byte lengths.
-  val hashSizes: IArray[Int] = IArray(8, 10, 12, 16, 20, 24, 28, 32, 48, 64)
+  val hashSizes: Array[Int]^{} = Array.of(8, 10, 12, 16, 20, 24, 28, 32, 48, 64)
 
   // Default user choice: 96-bit hash, 4-byte initial cadence, 1-byte regular cadence.
   given default: Cadence = Cadence(initial = 4, regular = 1, hashSize = 12)

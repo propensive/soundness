@@ -60,14 +60,15 @@ import filesystemBackends.virtualMachine
 
 def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using TemporaryDirectory)
   ( using classloader: Classloader )
-:   Bytecode raises BytecodeError =
+  ( using Tactic[BytecodeError] )
+:   Bytecode =
 
   val uuid = Uuid()
   val out: Path on Linux = unsafely(temporaryDirectory/uuid)
   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
   val settings: staging.Compiler.Settings =
-    staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+    staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.stdlib.map(_.s))
 
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
@@ -79,8 +80,8 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
       val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
       val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
       staging.run(code)
-      val classfile: Classfile = new Classfile(file.read[Data])
-      classfile.methods.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
+      val classfile: Classfile = new Classfile(file.read[Data].readable)
+      classfile.methods.stdlib.find(_.name == t"_code$$1").map(_.bytecode).get.vouch.embed(codepoint)
 
 
 type BytecodePalette = Palette:

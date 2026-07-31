@@ -40,6 +40,7 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 import pneumatic.*
+import proscenium.compat.*
 
 // gRPC's length-prefixed message framing (the same wire shape for every codec):
 // each message is a 1-byte compression flag, a 4-byte big-endian length, then that
@@ -48,9 +49,9 @@ import pneumatic.*
 // from the arbitrarily-chunked response body, reusing `Framable.frames` exactly as
 // `LengthPrefix` does for the JSON-RPC stream framing.
 object GrpcFraming:
-  private def gzip(message: Data): Data = Gzip.compression.compress(LazyList(message)).read[Data]
+  private def gzip(message: Data): Data = Gzip.compression.compress(Chain(message)).read[Data]
   private def gunzip(message: Data): Data =
-    Gzip.compression.decompress(LazyList(message)).read[Data]
+    Gzip.compression.decompress(Chain(message)).read[Data]
 
   // Prefix one message for the wire, optionally gzip-compressing the payload.
   def encode(message: Data, compress: Boolean = false): Data =
@@ -58,7 +59,7 @@ object GrpcFraming:
     val length = payload.length
 
     val header: Data =
-      IArray
+      Array.of
         ( (if compress then 1 else 0).toByte,
           (length >>> 24).toByte,
           (length >>> 16).toByte,
@@ -97,7 +98,9 @@ object GrpcFraming:
 
     Framable.frames[Data]:
       header.let: (compressed, length) =>
-        val payload = cursor.take(truncated())(length)
+        // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk;
+        // the cast reasserts the frozen form, which `take` already guarantees.
+        val payload = cursor.take(truncated())(length).asInstanceOf[Data]
         if compressed then gunzip(payload) else payload
 
 sealed trait GrpcFraming

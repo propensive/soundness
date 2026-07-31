@@ -118,14 +118,14 @@ object Tests extends Suite(m"Anthology Tests"):
 
     test(m"The AXML encoder emits the binary-XML chunk header"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
-      List(axml(0), axml(1), axml(2), axml(3)).map(_.toInt & 0xff)
+      List(axml.readable(0), axml.readable(1), axml.readable(2), axml.readable(3)).map(_.toInt & 0xff)
     . assert(_ == List(0x03, 0x00, 0x08, 0x00))
 
     test(m"The AXML total-size field equals the encoded length"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
-      def u8(index: Int): Int = axml(index).toInt & 0xff
+      def u8(index: Int): Int = axml.readable(index).toInt & 0xff
       val declared = u8(4) | (u8(5) << 8) | (u8(6) << 16) | (u8(7) << 24)
-      declared == axml.length
+      declared == axml.readable.length
     . assert(_ == true)
 
     test(m"An APK linkage is not available without importing apkLinkages"):
@@ -217,7 +217,7 @@ object Tests extends Suite(m"Anthology Tests"):
     // the Scala.js runtime JARs) can be found.
     val source: Text =
       t"""|object Main:
-          |  def main(args: Array[String]): Unit = println("hello")
+          |  def main(args: scala.Array[String]): Unit = println("hello")
           |""".s.stripMargin.tt
 
     sjsClasspath().let: classpath =>
@@ -379,7 +379,7 @@ object Tests extends Suite(m"Anthology Tests"):
         . assert(_ > 0)
 
         test(m"A Kotlin notice names the source it was given"):
-          failing.notices.map(_.file).to(List)
+          failing.notices.map(_.file).to[List]
         . assert(_ == List(t"demo/Broken.kt"))
 
   // Locates the Kotlin standard library on this suite's classpath, when the Kotlin compiler is
@@ -403,7 +403,7 @@ object Tests extends Suite(m"Anthology Tests"):
     val root = Paths.get(home, ".cache", "soundness", "proscala").nn
 
     if !Files.isDirectory(root) then Unset else
-      Files.list(root).nn.iterator.nn.asScala.to(List).sortBy(_.toString).reverse
+      Files.list(root).nn.iterator.nn.asScala.to(scala.List).sortBy(_.toString).reverse
       . map(_.resolve("lib").nn)
       . find { lib => Files.isDirectory(lib) && Files.exists(lib.resolve("scala3-library.jar")) }
       . getOrElse(Unset)
@@ -421,16 +421,16 @@ object Tests extends Suite(m"Anthology Tests"):
       def contents = Files.list(lib).nn.iterator.nn.asScala
 
       val complete =
-        fixed.forall { name => Files.exists(lib.resolve(name.s)) }
+        fixed.stdlib.forall { name => Files.exists(lib.resolve(name.s)) }
         && contents.exists(_.getFileName.nn.toString.startsWith("scalajs-javalib"))
         && contents.exists(_.getFileName.nn.toString.startsWith("scalajs-library_2.13"))
 
       if !complete then Unset else
-        val globbed = Files.list(lib).nn.iterator.nn.asScala.to(List).filter: jar =>
+        val globbed = Files.list(lib).nn.iterator.nn.asScala.to(scala.List).filter: jar =>
           val name = jar.getFileName.nn.toString
           name.startsWith("scalajs-javalib") || name.startsWith("scalajs-library_2.13")
 
-        val jars = fixed.map { name => lib.resolve(name.s).nn } ++ globbed
+        val jars = fixed.stdlib.map { name => lib.resolve(name.s).nn } ++ globbed
         LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
 
   // Yields the Scala Native compiler plugin and the runtime JARs a native compilation needs
@@ -457,9 +457,9 @@ object Tests extends Suite(m"Anthology Tests"):
     proscalaLibrary().let: proscala =>
       caches
       . map(_.resolve("https/repo1.maven.org/maven2/org/scala-native").nn)
-      . find { base => artifacts.forall { jar => Files.exists(base.resolve(jar.s)) } }
+      . find { base => artifacts.stdlib.forall { jar => Files.exists(base.resolve(jar.s)) } }
       . map: base =>
-          val jars = artifacts.map { jar => base.resolve(jar.s).nn }
+          val jars = artifacts.stdlib.map { jar => base.resolve(jar.s).nn }
           val stdlib = List("scala-library.jar", "scala3-library.jar").map(proscala.resolve(_).nn)
           val plugin = unsafely(jars.head.toString.tt.as[soundness.Path on Linux])
 

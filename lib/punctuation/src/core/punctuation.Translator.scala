@@ -38,5 +38,5 @@ import prepositional.*
 import doms.html.whatwg, whatwg.*
 
 trait Translator:
-  def translate(nodes: Seq[Markdown]): Seq[Html of Flow]
-  def phrasing(node: Markdown of Prose): Seq[Html of Phrasing]
+  def translate(nodes: List[Markdown]): List[Html of Flow]
+  def phrasing(node: Markdown of Prose): List[Html of Phrasing]

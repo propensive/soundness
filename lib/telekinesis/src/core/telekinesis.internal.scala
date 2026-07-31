@@ -32,6 +32,11 @@
                                                                                                   */
 package telekinesis
 
+import scala.collection.immutable.Seq
+import scala.collection.`+:`
+
+import scala.caps
+
 import scala.quoted.*
 
 import anticipation.*
@@ -39,6 +44,7 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import urticose.*
 import vacuous.*
@@ -108,7 +114,7 @@ object internal:
         unnamed[valueType](value, tail)
 
       case Seq() =>
-        (method, status, Expr.ofList(done.reverse))
+        (method, status, Expr.ofList(done.stdlib.reverse))
 
 
   def submit[target: Type, payload: Type]
@@ -195,7 +201,7 @@ object internal:
 
   def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Protoresponse | Http.Response] =
     headers.absolve.match
-      case Varargs(exprs) => exprs.to(List).only:
+      case Varargs(exprs) => List.of(exprs.toList).only:
         case '{$value: valueType} :: Nil =>
           Expr.summon[(? >: valueType) is Servable].map: servable => '{$servable.serve($value)}
           . optional
@@ -203,10 +209,10 @@ object internal:
     . or:
         headers.absolve match
           case Varargs(exprs) =>
-            val (_, status, headers2) = expand(exprs.to(List))
+            val (_, status, headers2) = expand(exprs)
 
             val status2: Expr[Optional[Http.Status]] = (status: @unchecked) match
               case Unset                   => '{Unset}
               case expr: Expr[Http.Status] => expr
 
-            '{Http.Response.Protoresponse($status2, $headers2)}
+            '{Http.Response.Protoresponse($status2, List.of($headers2.toList))}

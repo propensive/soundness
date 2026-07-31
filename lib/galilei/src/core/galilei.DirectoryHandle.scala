@@ -32,6 +32,8 @@
                                                                                                   */
 package galilei
 
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -60,7 +62,7 @@ trait DirectoryHandle extends caps.ExclusiveCapability:
   // checks, which cannot see grants after erasure.
   val atoms: Set[Mode]
 
-  def base: Path on Plane = Path[Plane, EmptyTuple.type, EmptyTuple](t"", Nil)
+  def base: Path on Plane = Path[Plane, scala.EmptyTuple.type, EmptyTuple](t"", Nil)
 
   // A method rather than an extension: generic `/` extensions (e.g. symbolism's) are lexically
   // visible at use sites and would be tried first, failing without falling through.

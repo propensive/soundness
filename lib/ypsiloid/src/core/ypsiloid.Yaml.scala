@@ -32,7 +32,12 @@
                                                                                                   */
 package ypsiloid
 
-import language.dynamics
+import scala.collection.immutable.Vector
+import proscenium.compat.*
+
+import scala.caps
+
+import scala.language.dynamics
 
 import scala.collection.Factory
 import scala.collection.mutable as scm
@@ -79,7 +84,7 @@ trait Yaml2:
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( tactic: Tactic[YamlError] )
   =>  ( decodable: => (inner is Decodable in Yaml)^ )
-  =>  ((value is Decodable in Yaml)^{tactic, caps.any}) =
+  =>  ((value is Decodable in Yaml)^{tactic, decodable}) =
     // An honest capability: the instance retains the resolution-scoped tactic and
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
@@ -130,9 +135,9 @@ trait Yaml2:
       ( using ProductReflection[derivation], Foci[Yaml.Focus], Tactic[YamlError] )
     :   derivation =
 
-            val arr: IArray[Any] | Null = yaml.root.asMatchable match
-              case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
-                xs.asInstanceOf[IArray[Any]]
+            val arr: Array[Any]^{} | Null = yaml.root.asMatchable match
+              case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 0 =>
+                xs.asInstanceOf[Array[Any]^{}]
 
               case _ => null
 
@@ -167,7 +172,7 @@ trait Yaml2:
                   buildWith[derivation](null)
 
     private inline def buildWith[derivation <: Product: ProductReflection]
-      ( arr: IArray[Any] | Null )
+      ( arr: Array[Any]^{} | Null )
       ( using Foci[Yaml.Focus], Tactic[YamlError] )
     :   derivation =
 
@@ -231,12 +236,12 @@ trait Yaml2:
             // `@name[Yaml]` / bare `@name` variant renames: map the serialized
             // discriminator back to the variant name before delegating.
             val variantNames: Map[Text, Text] =
-              variantRelabelling[derivation, Yaml].map: (variant, wire) => wire -> variant
+              variantRelabelling[derivation, Yaml].remap: (variant, wire) => wire -> variant
 
             val resolved: Optional[Text] =
               discriminable.discriminate(yaml).let: wire =>
-                val discriminant = variantNames.getOrElse(wire, wire)
-                if labels.contains(discriminant) then discriminant else Unset
+                val discriminant = variantNames.at(wire).or(wire)
+                if labels.has(discriminant) then discriminant else Unset
 
             resolved.let: discriminant =>
               delegate(discriminant): [variant <: derivation] =>
@@ -276,7 +281,7 @@ trait Yaml2:
                   entries += Yaml.Ast.Str(key).asInstanceOf[Any]
                   entries += encoded.asInstanceOf[Any]
 
-          Yaml.ast(Yaml.Ast.mapFromAnyArray(entries.toArray))
+          Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.from(entries)))
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml = value =>
       val discriminable = infer[derivation is Discriminable in Yaml]
@@ -287,7 +292,7 @@ trait Yaml2:
 
       variant(value): [variant <: derivation] =>
         value =>
-          discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+          discriminable.rewrite(variantNames.at(label).or(label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
   // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
@@ -303,13 +308,13 @@ object Yaml extends Yaml2, Dynamic:
   // (absent): both would otherwise be the JVM `null` and collide in `Ast`.
   case object YamlNull
   type YamlNull      = YamlNull.type
-  type YamlSequence  = IArray[Any]
-  type YamlMapping   = IArray[Any]
+  type YamlSequence  = Array[Any]^{}
+  type YamlMapping   = Array[Any]^{}
 
   // The parser representation of a YAML value. Modelled on Jacinta's
   // `Json.Ast`: an opaque union over the primitive JVM types so that
   // primitive values are stored without case-class wrapping. Sequences
-  // and mappings are both stored as `IArray[Any]`, distinguished by
+  // and mappings are both stored as `Array[Any]^{}`, distinguished by
   // length parity:
   //
   //   - mapping: even length (alternating key/value);
@@ -321,7 +326,7 @@ object Yaml extends Yaml2, Dynamic:
   // (e.g. a missing field in a case-class derivation).
   // A phantom `caps.Pure` upper bound keeps capture checking from stamping spurious capture sets on
   // YAML values (which are always immutable). `Matchable` is *not* in the bound: one member,
-  // `YamlSequence`/`YamlMapping = IArray[Any]`, is not statically `<: Matchable`, which would make
+  // `YamlSequence`/`YamlMapping = Array[Any]^{}`, is not statically `<: Matchable`, which would make
   // the bound conflict; `.asMatchable` still works (it is universal).
   opaque type Ast <: caps.Pure =
     (YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping |
@@ -340,18 +345,20 @@ object Yaml extends Yaml2, Dynamic:
   enum Tracking:
     case On, Off
 
-  // A flat `IArray[Int]` of position descriptors, produced alongside the AST
+  // A flat `Array[Int]^{}` of position descriptors, produced alongside the AST
   // when a `Yaml` is parsed with `Tracking.On`. All internal offsets are
   // stored relative to the start of the containing descriptor, so any slice
   // taken at a descriptor boundary is itself a valid `PositionIndex` —
   // mirrors `jacinta.Json.PositionIndex`.
-  opaque type PositionIndex = IArray[Int]
+  // Represented as the stdlib's immutable array (pure by construction): the frozen
+  // `Array[Int]^{}` form makes every `PositionIndex`-holding field carry a fresh `any.rd`.
+  opaque type PositionIndex = scala.IArray[Int]
 
   object PositionIndex:
-    private[ypsiloid] def apply(data: IArray[Int]): PositionIndex = data
+    private[ypsiloid] def apply(data: Array[Int]^{}): PositionIndex = data.readable
 
   extension (positionIndex: PositionIndex)
-    private[ypsiloid] def ints: IArray[Int] = positionIndex
+    private[ypsiloid] def ints: Array[Int]^{} = Array.frozen(positionIndex)
 
   // The focus carried by `Yaml#as[T]` — a YAML-pointer path plus an
   // optional source position. The position is populated lazily by
@@ -650,7 +657,7 @@ object Yaml extends Yaml2, Dynamic:
       inline final val Greater:       62  = 62
 
     // Sentinel object used to pad an array whose user-visible length is
-    // even so the underlying `IArray[Any]` is always odd-length and can be
+    // even so the underlying `Array[Any]^{}` is always odd-length and can be
     // distinguished from a mapping (always even-length).
     private[ypsiloid] val arrayPad: AnyRef = new Object
 
@@ -660,14 +667,14 @@ object Yaml extends Yaml2, Dynamic:
     // spurious capture sets on YAML values, which are always immutable). The pure tag is erased, so
     // every constructor casts its plain underlying value through `make`.
     private inline def make
-      ( value: Long | Double | Bcd | Boolean | String | IArray[Any] | YamlNull.type | Unset )
+      ( value: Long | Double | Bcd | Boolean | String | Array[Any]^{} | YamlNull.type | Unset )
     :   Yaml.Ast =
 
       value.asInstanceOf[Yaml.Ast]
 
     inline def apply
       ( value:
-        Long | Double | Bcd | Boolean | String | IArray[Any] | YamlNull.type | Unset )
+        Long | Double | Bcd | Boolean | String | Array[Any]^{} | YamlNull.type | Unset )
     :   Yaml.Ast =
 
       make(value)
@@ -680,24 +687,24 @@ object Yaml extends Yaml2, Dynamic:
     inline def BcdValue(value: Bcd): Yaml.Ast = make(value)
     inline def Str(value: Text): Yaml.Ast = make(value.s)
 
-    // Wrap an `IArray[Yaml.Ast]` of items as a sequence node. If the count
+    // Wrap an `Array[Yaml.Ast]^{}` of items as a sequence node. If the count
     // is even, append the `arrayPad` sentinel so the final node has odd
     // length.
-    def Sequence(items: IArray[Yaml.Ast]): Yaml.Ast =
+    def Sequence(items: Array[Yaml.Ast]^{}): Yaml.Ast =
       val n = items.length
 
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
-        val padded = new Array[Any](n + 1)
-        System.arraycopy(items.asInstanceOf[Array[Any]], 0, padded, 0, n)
+        val padded = Array[Any](n + 1)
+        padded.copyFrom(items.asInstanceOf[Array[Any]^{}], 0, 0, n)
         padded(n) = arrayPad
-        padded.asInstanceOf[Yaml.Ast]
+        Array.freeze(padded).asInstanceOf[Yaml.Ast]
 
     // Wrap parallel keys/values as a mapping node, flattened to alternating
     // `[k0, v0, k1, v1, ...]`. The result has even length.
-    def Mapping(entries: IArray[(Yaml.Ast, Yaml.Ast)]): Yaml.Ast =
+    def Mapping(entries: Array[(Yaml.Ast, Yaml.Ast)]^{}): Yaml.Ast =
       val n = entries.length
-      val arr = new Array[Any](n*2)
+      val arr = Array[Any](n*2)
       var i = 0
 
       while i < n do
@@ -706,39 +713,41 @@ object Yaml extends Yaml2, Dynamic:
         arr(i*2 + 1) = v.asInstanceOf[Any]
         i += 1
 
-      arr.asInstanceOf[Yaml.Ast]
+      Array.freeze(arr).asInstanceOf[Yaml.Ast]
 
-    // Build a sequence directly from a raw `Array[Any]` of items (no
-    // copy if the length is already odd; pad once otherwise). The parser
-    // uses this to avoid the `Array.map` step.
-    private[ypsiloid] def seqFromAnyArray(items: Array[Any]): Yaml.Ast =
+    // Build a sequence directly from an `Array[Any]^{}` of items whose
+    // ownership the caller yields (no copy if the length is already odd;
+    // pad once otherwise). The parser uses this to avoid the `.map` step.
+    private[ypsiloid] def seqFromAnyArray(items: Array[Any]^{caps.any.rd}): Yaml.Ast =
       val n = items.length
 
       if (n & 1) == 1 then items.asInstanceOf[Yaml.Ast]
       else
-        val padded = new Array[Any](n + 1)
-        System.arraycopy(items, 0, padded, 0, n)
+        val padded = Array[Any](n + 1)
+        padded.copyFrom(items, 0, 0, n)
         padded(n) = arrayPad
-        padded.asInstanceOf[Yaml.Ast]
+        Array.freeze(padded).asInstanceOf[Yaml.Ast]
 
-    // Build a mapping directly from a flat `Array[Any]` of alternating
+    // Build a mapping directly from a flat `Array[Any]^{}` of alternating
     // key/value entries. Length must be even.
-    private[ypsiloid] def mapFromAnyArray(entries: Array[Any]): Yaml.Ast =
-      entries.asInstanceOf[Yaml.Ast]
+    private[ypsiloid] def mapFromAnyArray(entries: Array[Any]^{caps.any.rd}): Yaml.Ast =
+      // Via `AnyRef`: casting the frozen parameter to the pure `Ast` union directly makes
+      // the checker demand `^{}` of the parameter reference, which carries `entries.rd`.
+      entries.asInstanceOf[AnyRef].asInstanceOf[Yaml.Ast]
 
     // ── Inspection ──────────────────────────────────────────────────────────
 
     // The user-visible length of a sequence (excludes the pad sentinel).
-    def sequenceLength(arr: IArray[Any]): Int =
+    def sequenceLength(arr: Array[Any]^{}): Int =
       val n = arr.length
       if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
 
     // The number of (key, value) pairs in a mapping.
-    def mappingSize(arr: IArray[Any]): Int = arr.length / 2
+    def mappingSize(arr: Array[Any]^{}): Int = arr.length / 2
 
     // Apply `body(item)` to each user-visible item of a sequence, skipping
     // the pad sentinel. Hot-path iterator used by collection decoders.
-    inline def foreachItem(arr: IArray[Any])(inline body: Yaml.Ast => Unit): Unit =
+    inline def foreachItem(arr: Array[Any]^{})(inline body: Yaml.Ast => Unit): Unit =
       val n = sequenceLength(arr)
       var i = 0
 
@@ -748,7 +757,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Apply `body(key, value)` to each entry of a mapping. Used by Map/case-
     // class decoders.
-    inline def foreachEntry(arr: IArray[Any])(inline body: (Yaml.Ast, Yaml.Ast) => Unit): Unit =
+    inline def foreachEntry(arr: Array[Any]^{})(inline body: (Yaml.Ast, Yaml.Ast) => Unit): Unit =
       val n = arr.length
       var i = 0
 
@@ -780,7 +789,7 @@ object Yaml extends Yaml2, Dynamic:
     // value that overflowed `Long`/`Double` precision during parsing.
     object BcdValue:
       def unapply(ast: Yaml.Ast): Option[Bcd] = ast match
-        case b: Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
+        case b: scala.Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
         case _                           => None
 
     object Str:
@@ -789,35 +798,35 @@ object Yaml extends Yaml2, Dynamic:
         case _         => None
 
     object Sequence:
-      def unapply(ast: Yaml.Ast): Option[IArray[Yaml.Ast]] = ast match
-        case xs: IArray[?] @unchecked
-          if xs.isInstanceOf[Array[AnyRef]] && ((xs.length & 1) == 1 || xs.length == 1) =>
+      def unapply(ast: Yaml.Ast): Option[Array[Yaml.Ast]^{}] = ast match
+        case xs: (Array[?]^{}) @unchecked
+          if xs.isInstanceOf[scala.Array[AnyRef]] && ((xs.length & 1) == 1 || xs.length == 1) =>
           // Strip the sentinel if present.
           val n = xs.length
 
           if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq arrayPad) then
-            val out = new Array[Any](n - 1)
-            System.arraycopy(xs.asInstanceOf[Array[Any]], 0, out, 0, n - 1)
-            Some(out.asInstanceOf[IArray[Yaml.Ast]])
+            val out = Array[Any](n - 1)
+            out.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, n - 1)
+            Some(Array.freeze(out).asInstanceOf[Array[Yaml.Ast]^{}])
           else
-            Some(xs.asInstanceOf[IArray[Yaml.Ast]])
+            Some(xs.asInstanceOf[Array[Yaml.Ast]^{}])
 
         case _ => None
 
     object Mapping:
-      def unapply(ast: Yaml.Ast): Option[IArray[(Yaml.Ast, Yaml.Ast)]] = ast match
-        case xs: IArray[?] @unchecked
-          if xs.isInstanceOf[Array[AnyRef]] && (xs.length & 1) == 0 =>
+      def unapply(ast: Yaml.Ast): Option[Array[(Yaml.Ast, Yaml.Ast)]^{}] = ast match
+        case xs: (Array[?]^{}) @unchecked
+          if xs.isInstanceOf[scala.Array[AnyRef]] && (xs.length & 1) == 0 =>
           val n = xs.length / 2
 
-          Some(IArray.tabulate(n): i =>
+          Some(Array.tabulate(n): i =>
             (xs(i*2).asInstanceOf[Yaml.Ast], xs(i*2 + 1).asInstanceOf[Yaml.Ast]))
 
         case _ => None
 
     // ── Deep equality ───────────────────────────────────────────────────────
     // Used by `Yaml.equals`/`hashCode` and by tests that compare two parsed
-    // ASTs structurally. Walks `IArray[Any]` recursively so different array
+    // ASTs structurally. Walks `Array[Any]^{}` recursively so different array
     // instances with the same content compare equal.
 
     def deepEquals(left: Yaml.Ast, right: Yaml.Ast): Boolean =
@@ -831,22 +840,22 @@ object Yaml extends Yaml2, Dynamic:
         // Cross-shape numeric comparisons: a `Bcd` may be equal in value
         // to a `Long`, `Double`, or another `Bcd`, when their canonical
         // BigDecimal projections compare equal.
-        case (a: Array[Double] @unchecked, b: Array[Double] @unchecked) =>
+        case (a: scala.Array[Double] @unchecked, b: scala.Array[Double] @unchecked) =>
           a.asInstanceOf[Bcd].toBigDecimal == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Array[Double] @unchecked, b: Long) =>
+        case (a: scala.Array[Double] @unchecked, b: Long) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
 
-        case (a: Array[Double] @unchecked, b: Double) =>
+        case (a: scala.Array[Double] @unchecked, b: Double) =>
           a.asInstanceOf[Bcd].toBigDecimal == BigDecimal(b)
 
-        case (a: Long, b: Array[Double] @unchecked) =>
+        case (a: Long, b: scala.Array[Double] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Double, b: Array[Double] @unchecked) =>
+        case (a: Double, b: scala.Array[Double] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
 
-        case (a: Array[AnyRef] @unchecked, b: Array[AnyRef] @unchecked) =>
+        case (a: scala.Array[AnyRef] @unchecked, b: scala.Array[AnyRef] @unchecked) =>
           a.length == b.length && {
             var i = 0
             var equal = true
@@ -873,12 +882,12 @@ object Yaml extends Yaml2, Dynamic:
       case d: Double     => d.hashCode
       case s: String     => s.hashCode
 
-      case b: Array[Double] @unchecked =>
+      case b: scala.Array[Double] @unchecked =>
         // Hash via the BigDecimal projection so a `Bcd` whose value equals
         // a numeric `Long`/`Double` literal has a consistent hash.
         b.asInstanceOf[Bcd].toBigDecimal.hashCode
 
-      case xs: Array[AnyRef] @unchecked =>
+      case xs: scala.Array[AnyRef] @unchecked =>
         var h = xs.length
         var i = 0
 
@@ -905,40 +914,42 @@ object Yaml extends Yaml2, Dynamic:
       inline def isNull:    Boolean = yaml.asInstanceOf[AnyRef] eq Yaml.YamlNull
       inline def isLong:    Boolean = yaml.isInstanceOf[Long]
       inline def isDouble:  Boolean = yaml.isInstanceOf[Double]
-      inline def isBcd:     Boolean = yaml.isInstanceOf[Array[Double]]
+      inline def isBcd:     Boolean = yaml.isInstanceOf[scala.Array[Double]]
       inline def isNumber:  Boolean = isLong || isDouble || isBcd
       inline def isString:  Boolean = yaml.isInstanceOf[String]
       inline def isBoolean: Boolean = yaml.isInstanceOf[Boolean]
 
       inline def isObject: Boolean =
-        yaml.isInstanceOf[Array[AnyRef]] && (yaml.asInstanceOf[Array[?]].length & 1) == 0
+        yaml.isInstanceOf[scala.Array[AnyRef]] &&
+          (yaml.asInstanceOf[scala.Array[?]].length & 1) == 0
 
       inline def isArray: Boolean =
-        yaml.isInstanceOf[Array[AnyRef]] && (yaml.asInstanceOf[Array[?]].length & 1) == 1
+        yaml.isInstanceOf[scala.Array[AnyRef]] &&
+          (yaml.asInstanceOf[scala.Array[?]].length & 1) == 1
 
       private def expected(yamlPrimitive: YamlPrimitive)(using Tactic[YamlError]): Unit =
         raise:
           YamlError(if isAbsent then Reason.Absent else Reason.NotType(primitive, yamlPrimitive))
 
-      inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[IArray[Any]])
+      inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[Array[Any]^{}])
 
       inline def arrayElement(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[IArray[Yaml.Ast]](index)
+        yaml.asInstanceOf[Array[Yaml.Ast]^{}](index)
 
-      inline def objectSize: Int = yaml.asInstanceOf[IArray[Any]].length/2
+      inline def objectSize: Int = yaml.asInstanceOf[Array[Any]^{}].length/2
 
       inline def objectKey(index: Int): String =
-        yaml.asInstanceOf[IArray[Any]](index*2).asInstanceOf[String]
+        yaml.asInstanceOf[Array[Any]^{}](index*2).asInstanceOf[String]
 
       inline def objectValue(index: Int): Yaml.Ast =
-        yaml.asInstanceOf[IArray[Any]](index*2 + 1).asInstanceOf[Yaml.Ast]
+        yaml.asInstanceOf[Array[Any]^{}](index*2 + 1).asInstanceOf[Yaml.Ast]
 
       // Linear scan for a key — returns the pair-indexed position (i.e.
       // `objectKey(result)` retrieves the key, `objectValue(result)` the
       // value) or `-1` if the key is absent. Only string-typed keys match.
       def objectIndexOf(key: String): Int =
         if !isObject then -1 else
-          val arr = yaml.asInstanceOf[Array[?]]
+          val arr = yaml.asInstanceOf[scala.Array[?]]
           val len = arr.length
           var i = 0
           var hit = -1
@@ -952,29 +963,30 @@ object Yaml extends Yaml2, Dynamic:
 
           hit
 
-      def array(using Tactic[YamlError]): IArray[Yaml.Ast] =
+      def array(using Tactic[YamlError]): Array[Yaml.Ast]^{} =
         if isArray then
-          val full = yaml.asInstanceOf[IArray[Yaml.Ast]]
+          val full = yaml.asInstanceOf[Array[Yaml.Ast]^{}]
           val n = arrayLength
 
-          if n == full.length then full else IArray.tabulate(n)(full(_))
+          if n == full.length then full
+          else Array.tabulate(n)(full(_))
         else
-          expected(YamlPrimitive.Sequence) yet IArray[Yaml.Ast]()
+          expected(YamlPrimitive.Sequence) yet Array.of[Yaml.Ast]()
 
       def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
         case value: Double                   => value
         case value: Long                     => value.toDouble
-        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
         case _                               => expected(YamlPrimitive.Decimal) yet 0.0
 
       def long(using Tactic[YamlError]): Long = yaml.asInstanceOf[Matchable] match
         case value: Long                     => value
         case value: Double                   => value.toLong
-        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
         case _                               => expected(YamlPrimitive.Integer) yet 0L
 
       def bcd(using Tactic[YamlError]): jacinta.Bcd = yaml.asInstanceOf[Matchable] match
-        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd]
+        case value: scala.Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd]
         case value: Long                     => jacinta.Bcd(BigDecimal(value))
         case value: Double                   => jacinta.Bcd(BigDecimal(value))
 
@@ -1015,17 +1027,17 @@ object Yaml extends Yaml2, Dynamic:
 
       def locate(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
         value.positionIndex.let: posIndex =>
-          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, false)
+          walkIndex(value.root, posIndex.ints, 0, Sequence.from(path.path.descent), 0, false)
 
       def locateKey(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
         value.positionIndex.let: posIndex =>
-          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, true)
+          walkIndex(value.root, posIndex.ints, 0, Sequence.from(path.path.descent), 0, true)
 
   private def walkIndex
     ( ast:      Yaml.Ast,
-      data:     IArray[Int],
+      data:     Array[Int]^{},
       offset:   Int,
-      segments: IndexedSeq[Text],
+      segments: Sequence[Text],
       i:        Int,
       keyMode:  Boolean )
   :   Optional[Yaml.Ast.Position] =
@@ -1091,7 +1103,7 @@ object Yaml extends Yaml2, Dynamic:
   // desugars to `applyDynamicNamed("make")(("name", …), ("age", …))`.
   // Mirrors `Json.applyDynamicNamed`.
   def applyDynamicNamed(methodName: "make")(elements: (String, Yaml)*): Yaml =
-    val arr = new Array[Any](elements.length*2)
+    val arr = Array[Any](elements.length*2)
     var i = 0
 
     while i < elements.length do
@@ -1099,7 +1111,7 @@ object Yaml extends Yaml2, Dynamic:
       arr(i*2 + 1) = elements(i)(1).root.asInstanceOf[Any]
       i += 1
 
-    Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
+    Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))
 
   given yaml: Yaml is Decodable in Yaml = identity(_)
   given yamlEncodable: Yaml is Encodable in Yaml = identity(_)
@@ -1119,7 +1131,7 @@ object Yaml extends Yaml2, Dynamic:
         val n = origin.root.arrayLength
 
         if n <= ordinal.n0 then origin else Yaml.ast:
-          val updated = new Array[Any](n)
+          val updated = Array[Any](n)
           var i = 0
 
           while i < n do
@@ -1130,7 +1142,7 @@ object Yaml extends Yaml2, Dynamic:
 
             i += 1
 
-          Yaml.Ast.seqFromAnyArray(updated)
+          Yaml.Ast.seqFromAnyArray(Array.freeze(updated))
       else
         origin
 
@@ -1142,14 +1154,14 @@ object Yaml extends Yaml2, Dynamic:
         val n = origin.root.arrayLength
 
         Yaml.ast:
-          val updated = new Array[Any](n)
+          val updated = Array[Any](n)
           var i = 0
 
           while i < n do
             updated(i) = lambda(Yaml.ast(origin.root.arrayElement(i))).root
             i += 1
 
-          Yaml.Ast.seqFromAnyArray(updated)
+          Yaml.Ast.seqFromAnyArray(Array.freeze(updated))
       else
         origin
 
@@ -1164,7 +1176,7 @@ object Yaml extends Yaml2, Dynamic:
         val n = origin.root.arrayLength
 
         Yaml.ast:
-          val updated = new Array[Any](n)
+          val updated = Array[Any](n)
           var i = 0
 
           while i < n do
@@ -1172,7 +1184,7 @@ object Yaml extends Yaml2, Dynamic:
             updated(i) = (if predicate(element) then lambda(element) else element).root
             i += 1
 
-          Yaml.Ast.seqFromAnyArray(updated)
+          Yaml.Ast.seqFromAnyArray(Array.freeze(updated))
       else
         origin
 
@@ -1255,16 +1267,43 @@ object Yaml extends Yaml2, Dynamic:
   =>  ((Unit is Decodable in Yaml)^{tactic}) = yaml =>
     if yaml.root.isNull then () else primitiveFault(yaml, YamlPrimitive.Null, ())
 
+  // Alias counterparts of `iterable`/`iterableEncodable`: the opaque prelude
+  // collections do not conform to `Iterable`, so each alias gets its own
+  // instance, built at the underlying stdlib type and cast (a no-op at erasure).
+  given listDecodable: [list <: List, element]
+  =>  ( tactic: Tactic[YamlError],
+        foci:   Foci[Yaml.Focus] )
+  =>  ( decodable: => (element is Decodable in Yaml)^ )
+  =>  ((list[element] is Decodable in Yaml)^{tactic, caps.any}) =
+    iterable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Decodable in Yaml)^{tactic, caps.any}]
+
+  given setDecodable: [set <: Set, element]
+  =>  ( tactic: Tactic[YamlError],
+        foci:   Foci[Yaml.Focus] )
+  =>  ( decodable: => (element is Decodable in Yaml)^ )
+  =>  ((set[element] is Decodable in Yaml)^{tactic, caps.any}) =
+    iterable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Decodable in Yaml)^{tactic, caps.any}]
+
+  given seriesDecodable: [sequence <: Sequence, element]
+  =>  ( tactic: Tactic[YamlError],
+        foci:   Foci[Yaml.Focus] )
+  =>  ( decodable: => (element is Decodable in Yaml)^ )
+  =>  ((sequence[element] is Decodable in Yaml)^{tactic, caps.any}) =
+    iterable[Vector, element]
+    . asInstanceOf[(sequence[element] is Decodable in Yaml)^{tactic, caps.any}]
+
   given iterable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
         tactic:    Tactic[YamlError],
         foci:      Foci[Yaml.Focus] )
   =>  ( decodable: => (element is Decodable in Yaml)^ )
-  =>  ((collection[element] is Decodable in Yaml)^{tactic, caps.any}) =
+  =>  ((collection[element] is Decodable in Yaml)^{tactic, decodable}) =
     // An honest capability, as `optional` above.
     yaml =>
       yaml.root.asMatchable match
-        case xs: IArray[?] @unchecked if (xs.length & 1) == 1 =>
+        case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 1 =>
           // Sequence (odd length, possibly with a trailing pad sentinel).
           val n = xs.length
 
@@ -1298,10 +1337,10 @@ object Yaml extends Yaml2, Dynamic:
     // An honest capability, as `optional` above.
     yaml =>
       yaml.root.asMatchable match
-        case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+        case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 0 =>
           // Mapping (even length, alternating keys and values flat).
           val n = xs.length / 2
-          var result = Map.empty[Text, value]
+          var result: Map[Text, value] = Map.empty
           var i = 0
 
           while i < n do
@@ -1359,28 +1398,47 @@ object Yaml extends Yaml2, Dynamic:
   given booleanEncodable: Boolean is Encodable in Yaml = boolean => Yaml.ast(Yaml.Ast(boolean))
   given unitEncodable: Unit is Encodable in Yaml = _ => Yaml.ast(Yaml.Ast.Null)
 
+
+  given listEncodable: [list <: List, element]
+  =>  ( encodable: => (element is Encodable in Yaml)^ )
+  =>  ((list[element] is Encodable in Yaml)^) =
+    iterableEncodable[scala.collection.immutable.List, element]
+    . asInstanceOf[(list[element] is Encodable in Yaml)^]
+
+  given setAliasEncodable: [set <: Set, element]
+  =>  ( encodable: => (element is Encodable in Yaml)^ )
+  =>  ((set[element] is Encodable in Yaml)^) =
+    iterableEncodable[scala.collection.immutable.Set, element]
+    . asInstanceOf[(set[element] is Encodable in Yaml)^]
+
+  given seriesAliasEncodable: [sequence <: Sequence, element]
+  =>  ( encodable: => (element is Encodable in Yaml)^ )
+  =>  ((sequence[element] is Encodable in Yaml)^) =
+    iterableEncodable[Vector, element]
+    . asInstanceOf[(sequence[element] is Encodable in Yaml)^]
+
   given iterableEncodable: [collection <: Iterable, element]
   =>  ( encodable: => (element is Encodable in Yaml)^ )
-  =>  ((collection[element] is Encodable in Yaml)^) =
+  =>  ((collection[element] is Encodable in Yaml)^{encodable}) =
     // An honest capability: the instance retains the by-name element codec (every
     // given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
-      val items = IArray.from(values.map(encodable.encode(_).root))
+      val items = Array.from(values.map(encodable.encode(_).root))
       Yaml.ast(Yaml.Ast.Sequence(items))
 
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: (element is Encodable in Yaml)^ )
   =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
-    val keys: List[key] = map.keys.to(List)
-    val arr = new Array[Any](keys.size*2)
+    val keys: List[key] = List.from(map.stdlib.keys)
+    val arr = Array[Any](keys.size*2)
     var i = 0
 
-    keys.foreach: k =>
+    keys.each: k =>
       arr(i*2) = Yaml.Ast.Str(k.encode).asInstanceOf[Any]
-      arr(i*2 + 1) = encodable.encode(map(k)).root.asInstanceOf[Any]
+      arr(i*2 + 1) = encodable.encode(map.stdlib(k)).root.asInstanceOf[Any]
       i += 1
 
-    Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
+    Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))
 
   // ── Discriminator support for sum-type derivation ───────────────────────
 
@@ -1395,7 +1453,7 @@ object Yaml extends Yaml2, Dynamic:
 
       def discriminate(yaml: Yaml): Optional[Text] =
         yaml.root.asMatchable match
-          case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+          case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 0 =>
             var i = 0
             var result: Optional[Text] = Unset
 
@@ -1416,7 +1474,7 @@ object Yaml extends Yaml2, Dynamic:
 
       def rewrite(kind: Text, yaml: Yaml): Yaml =
         yaml.root.asMatchable match
-          case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+          case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 0 =>
             // Replace existing entry if present, else append.
             var existing = -1
             var i = 0
@@ -1430,31 +1488,29 @@ object Yaml extends Yaml2, Dynamic:
 
             val out =
               if existing >= 0 then
-                val arr = new Array[Any](xs.length)
-                System.arraycopy(xs.asInstanceOf[Array[Any]], 0, arr, 0, xs.length)
+                val arr = Array[Any](xs.length)
+                arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
                 arr(existing + 1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
-                arr
+                Array.freeze(arr)
               else
-                val arr = new Array[Any](xs.length + 2)
-                System.arraycopy(xs.asInstanceOf[Array[Any]], 0, arr, 0, xs.length)
+                val arr = Array[Any](xs.length + 2)
+                arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, xs.length)
                 arr(xs.length)     = Yaml.Ast.Str(label).asInstanceOf[Any]
                 arr(xs.length + 1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
-                arr
+                Array.freeze(arr)
 
             Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
 
           case _ =>
             // Not a mapping — wrap in a one-entry mapping.
-            val arr =
-              Array[Any]
-                ( Yaml.Ast.Str(label).asInstanceOf[Any],
-                  Yaml.Ast.Str(kind).asInstanceOf[Any] )
-
-            Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
+            val arr = Array[Any](2)
+            arr(0) = Yaml.Ast.Str(label).asInstanceOf[Any]
+            arr(1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
+            Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))
 
       def variant(yaml: Yaml): Yaml =
         yaml.root.asMatchable match
-          case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+          case xs: (Array[?]^{}) @unchecked if (xs.length & 1) == 0 =>
             var existing = -1
             var i = 0
 
@@ -1467,17 +1523,16 @@ object Yaml extends Yaml2, Dynamic:
 
             if existing < 0 then yaml
             else
-              val arr = new Array[Any](xs.length - 2)
-              System.arraycopy(xs.asInstanceOf[Array[Any]], 0, arr, 0, existing)
+              val arr = Array[Any](xs.length - 2)
+              arr.copyFrom(xs.asInstanceOf[Array[Any]^{}], 0, 0, existing)
 
-              System.arraycopy
-                ( xs.asInstanceOf[Array[Any]],
+              arr.copyFrom
+                ( xs.asInstanceOf[Array[Any]^{}],
                   existing + 2,
-                  arr,
                   existing,
                   xs.length - existing - 2 )
 
-              Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
+              Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))
 
           case _ => yaml
 
@@ -1523,7 +1578,7 @@ object Yaml extends Yaml2, Dynamic:
   // Parse a byte pull-endpoint under the ambient tracking mode: the parser's
   // cursor refills straight from the stream, so the input is never
   // concatenated or copied through `getBytes`.
-  private def fromStream(stream: (Stream[Data] over Credit)^)
+  private def fromStream(consume stream: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], Yaml.Tracking, Buffering )
   :   Yaml =
 
@@ -1535,7 +1590,7 @@ object Yaml extends Yaml2, Dynamic:
       case Yaml.Tracking.Off =>
         Yaml(Yaml.Parser.parse(stream))
 
-  private def fromStreamAll(stream: (Stream[Data] over Credit)^)
+  private def fromStreamAll(consume stream: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], Yaml.Tracking, Buffering )
   :   List[Yaml] =
 
@@ -1549,7 +1604,7 @@ object Yaml extends Yaml2, Dynamic:
 
   // The parser is UTF-8-byte-based, so a character stream transcodes through
   // the UTF-8 encoder duct — windowed, not whole-document.
-  private def utf8Stream(stream: (Stream[Text] over Credit)^)(using Buffering)
+  private def utf8Stream(consume stream: (Stream[Text] over Credit)^)(using Buffering)
   :   (Stream[Data] over Credit)^ =
     stream.via(hieroglyph.charEncoders.utf8Encoder).asInstanceOf[(Stream[Data] over Credit)^]
 
@@ -1559,7 +1614,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = Yaml
       type Operand = Text
 
-      def aggregate(stream: LazyList[Text]): Yaml =
+      def aggregate(stream: Chain[Text]): Yaml =
         fromText(summon[Text is Aggregable by Text].aggregate(stream))
 
       override def accept(stream: (Stream[Text] over Credit)^): Yaml =
@@ -1576,7 +1631,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = Yaml
       type Operand = Data
 
-      def aggregate(stream: LazyList[Data]): Yaml = fromStream(Stream(stream.iterator))
+      def aggregate(stream: Chain[Data]): Yaml = fromStream(Stream(stream.stdlib.iterator))
 
       override def accept(stream: (Stream[Data] over Credit)^): Yaml =
         // See `aggregable` above.
@@ -1591,7 +1646,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = List[Yaml]
       type Operand = Text
 
-      def aggregate(stream: LazyList[Text]): List[Yaml] =
+      def aggregate(stream: Chain[Text]): List[Yaml] =
         parseAll(summon[Text is Aggregable by Text].aggregate(stream))
 
       override def accept(stream: (Stream[Text] over Credit)^): List[Yaml] =
@@ -1619,7 +1674,7 @@ object Yaml extends Yaml2, Dynamic:
   given instantiable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
   =>  ((Yaml is Instantiable across HttpRequests from Text)^{tactic}) =
 
-    text => LazyList(text).read[Yaml]
+    text => Chain(text).read[Yaml]
 
   // `source.read[Foo in Yaml]` shorthand for
   // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
@@ -1634,7 +1689,7 @@ object Yaml extends Yaml2, Dynamic:
       type Self = value in Yaml
       type Operand = Text
 
-      def aggregate(stream: LazyList[Text]): value in Yaml =
+      def aggregate(stream: Chain[Text]): value in Yaml =
         fromText(summon[Text is Aggregable by Text].aggregate(stream))
         . as[value].asInstanceOf[value in Yaml]
 
@@ -1651,10 +1706,10 @@ object Yaml extends Yaml2, Dynamic:
       case _: Double                    => YamlPrimitive.Decimal
       // High-precision BCD numbers report as `Decimal`. The AST-level
       // distinction (`isBcd`) remains available for callers that care.
-      case _: Array[Double] @unchecked  => YamlPrimitive.Decimal
+      case _: scala.Array[Double] @unchecked  => YamlPrimitive.Decimal
       case _: String                    => YamlPrimitive.Str
 
-      case xs: Array[AnyRef] @unchecked =>
+      case xs: scala.Array[AnyRef] @unchecked =>
         if (xs.length & 1) == 0 then YamlPrimitive.Mapping else YamlPrimitive.Sequence
 
       case _ => YamlPrimitive.Null
@@ -1700,13 +1755,14 @@ object Yaml extends Yaml2, Dynamic:
     // concatenated into a single `Text` or copied through `getBytes`. (The
     // whole-parse `holding:` still accumulates the document once in the
     // cursor's own buffer; narrowing the holds is a separate campaign.)
-    def parse(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering): Yaml.Ast =
+    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    :   Yaml.Ast =
       val parser = borrow()
       parser.tracking = false
       parser.resetStream(input)
       parser.parse()
 
-    def parseAll(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    def parseAll(consume input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
     :   List[Yaml.Ast] =
 
       val parser = borrow()
@@ -1714,8 +1770,9 @@ object Yaml extends Yaml2, Dynamic:
       parser.resetStream(input)
       parser.parseAll()
 
-    def parseTracked(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
-    :   (Yaml.Ast, IArray[Int]) =
+    def parseTracked(consume input: (Stream[Data] over Credit)^)
+      ( using Tactic[ParseError], Buffering )
+    :   (Yaml.Ast, Array[Int]^{}) =
 
       val parser = borrow()
       parser.tracking = true
@@ -1723,11 +1780,14 @@ object Yaml extends Yaml2, Dynamic:
       try
         parser.resetStream(input)
         val ast = parser.parse()
-        (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+        // The index array is finished and never written again; assumed separate for the
+        // wrap into the frozen form.
+        (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
       finally parser.tracking = false
 
-    def parseAllTracked(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
-    :   List[(Yaml.Ast, IArray[Int])] =
+    def parseAllTracked(consume input: (Stream[Data] over Credit)^)
+      ( using Tactic[ParseError], Buffering )
+    :   List[(Yaml.Ast, Array[Int]^{})] =
 
       val parser = borrow()
       parser.tracking = true
@@ -1737,31 +1797,35 @@ object Yaml extends Yaml2, Dynamic:
         parser.parseAllTracked()
       finally parser.tracking = false
 
-    // Tracked entry points — produce the AST plus a flat `IArray[Int]`
+    // Tracked entry points — produce the AST plus a flat `Array[Int]^{}`
     // descriptor index. Used by the tracking-aware `Decodable`/`Aggregable`
     // givens in `object Yaml` when `Yaml.Tracking.On` is in scope.
-    def parseTracked(input: Text)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
+    def parseTracked(input: Text)(using Tactic[ParseError]): (Yaml.Ast, Array[Int]^{}) =
       val parser = borrow()
       parser.tracking = true
 
       try
         parser.resetText(input)
         val ast = parser.parse()
-        (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+        // The index array is finished and never written again; assumed separate for the
+        // wrap into the frozen form.
+        (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
       finally parser.tracking = false
 
-    def parseTracked(input: Data)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
+    def parseTracked(input: Data)(using Tactic[ParseError]): (Yaml.Ast, Array[Int]^{}) =
       val parser = borrow()
       parser.tracking = true
 
       try
         parser.resetData(input)
         val ast = parser.parse()
-        (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+        // The index array is finished and never written again; assumed separate for the
+        // wrap into the frozen form.
+        (ast, parser.rootIndex.asInstanceOf[Array[Int]^{}])
       finally parser.tracking = false
 
     def parseAllTracked(input: Text)(using Tactic[ParseError])
-    :   List[(Yaml.Ast, IArray[Int])] =
+    :   List[(Yaml.Ast, Array[Int]^{})] =
 
       val parser = borrow()
       parser.tracking = true
@@ -1772,7 +1836,7 @@ object Yaml extends Yaml2, Dynamic:
       finally parser.tracking = false
 
     def parseAllTracked(input: Data)(using Tactic[ParseError])
-    :   List[(Yaml.Ast, IArray[Int])] =
+    :   List[(Yaml.Ast, Array[Int]^{})] =
 
       val parser = borrow()
       parser.tracking = true
@@ -1784,7 +1848,7 @@ object Yaml extends Yaml2, Dynamic:
 
   // Holds an exclusive cursor in a field, so the parser is itself a capability
   // (fresh per instance; one per thread via the pool).
-  private[ypsiloid] final class Parser extends caps.ExclusiveCapability:
+  private[ypsiloid] final class Parser extends caps.ExclusiveCapability, caps.Mutable:
     import scala.annotation.{switch, tailrec}
     import scala.collection.mutable.ArrayBuffer
     import Yaml.Ast.Byte.*
@@ -1794,11 +1858,20 @@ object Yaml extends Yaml2, Dynamic:
     // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
     // hold them in registers across hot byte loops. Sync to the cursor
     // before mark/slice/refill operations and refresh after.
-    private var cursor:    Cursor[Data, {}]^    = null.asInstanceOf[Cursor[Data, {}]^]
+    // Held as an `AnyRef` field with an exclusive-view accessor (the `TelReader.parser0`
+    // pattern): a typed capability field poisons every later access to this parser.
+    @scala.caps.unsafe.untrackedCaptures
+    private var cursor1: AnyRef = null.asInstanceOf[AnyRef]
+
+    private inline def cursor: Cursor[Data, {}]^ = cursor1.asInstanceOf[Cursor[Data, {}]^]
     private var heldToken: Cursor.Held | Null = null
-    private var bytes:     Array[Byte]       = null.asInstanceOf[Array[Byte]]
-    private var pos:       Int               = 0
-    private var bufEnd:    Int               = 0
+    // `AnyRef` field + accessor, as `cursor1` above.
+    @scala.caps.unsafe.untrackedCaptures
+    private var bytes1: AnyRef = null.asInstanceOf[AnyRef]
+
+    private inline def bytes: scala.Array[Byte]^ = bytes1.asInstanceOf[scala.Array[Byte]^]
+    var pos:       Int               = 0
+    var bufEnd:    Int               = 0
 
     // When true, the cursor is built with a line-feed-tracking `Lineation`
     // so `cursor.line` / `cursor.column` reflect real source coordinates,
@@ -1809,7 +1882,10 @@ object Yaml extends Yaml2, Dynamic:
 
     // Finalised root-level position index produced by the previous `parse()`
     // call when `tracking` was on. Reset to `null` at the start of every parse.
-    protected[ypsiloid] var rootIndex: Array[Int] | Null = null
+    // `AnyRef` field, as `cursor1` above: an `Array[Int] | Null` field type is unclassified
+    // under the class's `Mutable` classification.
+    @scala.caps.unsafe.untrackedCaptures
+    protected[ypsiloid] var rootIndex: AnyRef | Null = null
 
     // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
     // have been brought up to date. The hot-loop `syncTo()` bypasses the
@@ -1817,17 +1893,19 @@ object Yaml extends Yaml2, Dynamic:
     // keeps track of how far ahead `cursor.pos` has been pushed and
     // catches lineation up here only at tracking-mode capture points and
     // before any refill discards consumed bytes.
-    private var lineationPos: Int = 0
+    var lineationPos: Int = 0
 
-    // Pool of `IArray[Int]` buffers shared between sibling composite
+    // Pool of `Array[Int]^{}` buffers shared between sibling composite
     // descriptors during a tracked parse. Mirrors the `bufferPool` below
     // but with `Int` payload — used by `parseBlockSequenceTracked`,
     // `parseBlockMappingFromFirstKeyTracked`, `parseFlowSequenceTracked`,
     // `parseFlowMappingTracked`.
-    private var indexBufferId: Int = -1
+    var indexBufferId: Int = -1
     private val indexBufferPool: ArrayBuffer[ArrayBuffer[Int]] = ArrayBuffer.empty
 
-    private inline def acquireIndexBuffer(): ArrayBuffer[Int] =
+    // Not `inline`: inline expansion propagates a refinement whose fresh reach capabilities
+    // differ per call site, which the capture checker rejects.
+    private update def acquireIndexBuffer(): ArrayBuffer[Int] =
       indexBufferId += 1
 
       if indexBufferPool.length <= indexBufferId then
@@ -1839,7 +1917,7 @@ object Yaml extends Yaml2, Dynamic:
         b.clear()
         b
 
-    private inline def releaseIndexBuffer(): Unit = indexBufferId -= 1
+    private update inline def releaseIndexBuffer(): Unit = indexBufferId -= 1
 
     // Anchor table — names map to fully-parsed Yaml.Ast values.
     private val anchors = scala.collection.mutable.Map.empty[String, Yaml.Ast]
@@ -1853,13 +1931,18 @@ object Yaml extends Yaml2, Dynamic:
     // Resizable char buffer shared across string-building calls (for
     // quoted-string unescape and UTF-8 decoded plain scalars). Mirrors
     // Jacinta's `chars`/`stringCursor` to avoid per-string allocation.
-    private var arraySize: Int        = 64
-    private var chars:     Array[Char] = new Array(arraySize)
-    private var stringCursor: Int     = 0
+    var arraySize: Int        = 64
+    // `AnyRef` field + accessor, as `cursor1` above.
+    @scala.caps.unsafe.untrackedCaptures
+    private var chars1: AnyRef = (new scala.Array[Char](64)).asInstanceOf[AnyRef]
+
+    private inline def chars: scala.Array[Char]^ = chars1.asInstanceOf[scala.Array[Char]^]
+    private inline def charsTarget: scala.Array[Char]^ = chars1.asInstanceOf[scala.Array[Char]^]
+    var stringCursor: Int     = 0
 
     // Pool of buffer instances for nested sequences/mappings so we can
     // collect items without allocating an `ArrayBuffer` per recursion.
-    private var bufferId: Int = -1
+    var bufferId: Int = -1
     private val bufferPool: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty
 
     // Out-parameters for `consumeNodePrefixes` and `readPlainScalarText` —
@@ -1878,24 +1961,24 @@ object Yaml extends Yaml2, Dynamic:
     // parseBlockMappingFromFirstKey. -1 means the parent is the document.
     private var blockParentIndent: Int = -1
 
-    def resetText(input: Text): Unit =
-      val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+    update def resetText(input: Text): Unit =
+      val data: Data = Array.unsafeFrozen(input.s.getBytes("UTF-8").nn)
       val cursor0 = makeCursor(data)
-      cursor = cursor0
+      cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()
 
-    def resetData(input: Data): Unit =
+    update def resetData(input: Data): Unit =
       val cursor0 = makeCursor(input)
-      cursor = cursor0
+      cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()
 
     // As `resetData`, over a pull endpoint: the cursor refills from the
     // stream (single-copy, credit-bounded) instead of borrowing a preset
     // block. The stream is adopted by the cursor — single ownership passes
     // with the call, by the `accept` convention.
-    def resetStream(input: (Stream[Data] over Credit)^)(using Buffering): Unit =
+    update def resetStream(consume input: (Stream[Data] over Credit)^)(using Buffering): Unit =
       val cursor0 = makeStreamCursor(input)
-      cursor = cursor0
+      cursor1 = cursor0.asInstanceOf[AnyRef]
       resetParserState()
 
     // Build a `Cursor[Data, {}]` with the appropriate `Lineation`. The two
@@ -1903,18 +1986,21 @@ object Yaml extends Yaml2, Dynamic:
     // `Data` and bringing both into scope at the same time would render
     // `Cursor[Data, {}]` constructor resolution ambiguous. Local-import-per-
     // branch is the workaround established by jacinta #1147.
-    private def makeCursor(input: Data): Cursor[Data, {}]^ =
+    private update def makeCursor(input: Data): Cursor[Data, {}]^ =
       if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
       else Lineation.untrackedData.give(Cursor[Data](input))
 
     // As `makeCursor`, over a pull endpoint (see the mutually-exclusive
     // `Lineation` note above).
-    private def makeStreamCursor(input: (Stream[Data] over Credit)^)(using Buffering)
+    private update def makeStreamCursor(consume input: (Stream[Data] over Credit)^)(using Buffering)
     :   Cursor[Data, {}]^ =
-      if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
-      else Lineation.untrackedData.give(Cursor[Data](input))
+      // The stream's single ownership passes with this call (the `accept` convention); the
+      // `give` closure is the only remaining reference.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+        if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
+        else Lineation.untrackedData.give(Cursor[Data](input))
 
-    private def resetParserState(): Unit =
+    private update def resetParserState(): Unit =
       syncFrom()
       stringCursor = 0
       bufferId = -1
@@ -1943,7 +2029,7 @@ object Yaml extends Yaml2, Dynamic:
     // Stays zero-branch on the hot path; tracking-mode callers separately
     // invoke `reconcileLineation()` when they need accurate
     // `cursor.line` / `cursor.column`.
-    private inline def syncTo(): Unit =
+    private update inline def syncTo(): Unit =
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
     // Refresh the parser's snapshot from the cursor. Required after any
@@ -1951,8 +2037,8 @@ object Yaml extends Yaml2, Dynamic:
     // read position, or the write end. Re-anchors `lineationPos` because
     // a refill may have compacted the buffer (bytes 0..old-pos are
     // discarded; subsequent walks would read different data).
-    private inline def syncFrom(): Unit =
-      bytes  = cursor.buffer(using Unsafe)
+    private update inline def syncFrom(): Unit =
+      bytes1 = cursor.buffer(using Unsafe).asInstanceOf[AnyRef]
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
       lineationPos = pos
@@ -1964,37 +2050,39 @@ object Yaml extends Yaml2, Dynamic:
     // `cursor.pos` via `unsafeAdvanceBy` (which bypasses lineation), so
     // captured `cursor.line` / `cursor.column` would stay at their initial
     // values and every descriptor would read `(1, 1)`.
-    private def reconcileLineation(): Unit =
-      val end = cursor.unsafePos(using Unsafe)
+    private update def reconcileLineation(): Unit =
+      // Bookkeeping over this parser's own cursor; there is no aliased writer.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       val end = cursor.unsafePos(using Unsafe)
 
-      if lineationPos < end then
-        var i = lineationPos
-        var newlines = 0
-        var lastNewlineAt = -1
+       if lineationPos < end then
+         var i = lineationPos
+         var newlines = 0
+         var lastNewlineAt = -1
 
-        while i < end do
-          if bytes(i) == Newline then
-            newlines += 1
-            lastNewlineAt = i
+         while i < end do
+           if bytes(i) == Newline then
+             newlines += 1
+             lastNewlineAt = i
 
-          i += 1
+           i += 1
 
-        if newlines > 0 then
-          cursor.unsafeBumpLine(newlines)(using Unsafe)
-          cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
-        else
-          cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
+         if newlines > 0 then
+           cursor.unsafeBumpLine(newlines)(using Unsafe)
+           cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
+         else
+           cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
 
-        lineationPos = end
+         lineationPos = end
 
-    private inline def more: Boolean = pos < bufEnd || moreSlow()
+    private update inline def more: Boolean = pos < bufEnd || moreSlow()
 
     // Refill the parser's snapshot from the cursor. In tracking mode,
     // reconcile lineation before the cursor compacts the buffer (otherwise
     // the now-discarded bytes can no longer be walked for newlines), and
     // resync afterwards even if no more data was produced so that any
     // post-refill position reads see the new buffer scale.
-    private def moreSlow(): Boolean =
+    update def moreSlow(): Boolean =
       syncTo()
       if tracking then reconcileLineation()
 
@@ -2008,7 +2096,7 @@ object Yaml extends Yaml2, Dynamic:
     // back; `ends(i)` is the position in `scratch` immediately after the
     // i-th child / entry, so the i-th child's size is
     // `ends(i) - ends(i-1)`. Mirrors `JsonParser.emitCompositeDescriptor`.
-    private def emitCompositeDescriptor
+    private update def emitCompositeDescriptor
       ( indexOut:    ArrayBuffer[Int],
         scratch:     ArrayBuffer[Int],
         ends:        ArrayBuffer[Int],
@@ -2041,7 +2129,7 @@ object Yaml extends Yaml2, Dynamic:
 
     private inline def peek: Byte = bytes(pos)
 
-    private inline def advance(): Unit = pos += 1
+    private update inline def advance(): Unit = pos += 1
 
     // ── Errors ──────────────────────────────────────────────────────────────
 
@@ -2050,7 +2138,7 @@ object Yaml extends Yaml2, Dynamic:
     // `offset` carries the absolute byte position (from the cursor) so
     // compile-time consumers (e.g. the `y"…"` interpolator macro) can
     // map errors to source-file positions without re-scanning.
-    private def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
+    private update def errorAt(issue: Issue)(using Tactic[ParseError]): Nothing =
       syncTo()
       val line = cursor.line.n0
       val column = cursor.column.n0
@@ -2059,19 +2147,19 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Position / mark plumbing ────────────────────────────────────────────
 
-    private inline def begin(): Cursor.Mark =
+    private update inline def begin(): Cursor.Mark =
       syncTo()
       cursor.mark(using heldToken.nn)
 
-    private inline def slice(start: Cursor.Mark): String =
+    private update inline def slice(start: Cursor.Mark): String =
       syncTo()
       val end = cursor.mark(using heldToken.nn)
 
       cursor.slice(start, end): (storage, off, len) =>
-        val arr = storage.asInstanceOf[Array[Byte]]
+        val arr = storage.asInstanceOf[scala.Array[Byte]]
         new String(arr, off, len, java.nio.charset.StandardCharsets.UTF_8)
 
-    private inline def holding[result](inline action: => result): result =
+    private update inline def holding[result](inline action: => result): result =
       syncTo()
 
       cursor.hold:
@@ -2080,35 +2168,36 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── String buffer (per-instance, reused) ────────────────────────────────
 
-    private inline def resetString(): Unit = stringCursor = 0
+    private update inline def resetString(): Unit = stringCursor = 0
 
     // Single-char fast path: one bounds check, doubling on growth. Matches
     // Jacinta's `appendChar` shape so the JIT can keep `stringCursor` and
     // the buffer reference in registers across a hot loop.
-    private inline def appendChar(char: Char): Unit =
+    private update inline def appendChar(char: Char): Unit =
       if stringCursor == arraySize then
         arraySize *= 2
-        val newArr = new Array[Char](arraySize)
+        val newArr = new scala.Array[Char](arraySize)
         System.arraycopy(chars, 0, newArr, 0, stringCursor)
-        chars = newArr
+        chars1 = newArr.asInstanceOf[AnyRef]
 
-      chars(stringCursor) = char
+      charsTarget(stringCursor) = char
       stringCursor += 1
 
     // Multi-char append (used for variable-length escapes / surrogate pairs).
-    private inline def ensureSpace(n: Int): Unit =
+    private update inline def ensureSpace(n: Int): Unit =
       while stringCursor + n > arraySize do arraySize *= 2
 
       if chars.length < arraySize then
-        val newArr = new Array[Char](arraySize)
+        val newArr = new scala.Array[Char](arraySize)
         System.arraycopy(chars, 0, newArr, 0, stringCursor)
-        chars = newArr
+        chars1 = newArr.asInstanceOf[AnyRef]
 
     private inline def getStringText(): Text = String(chars, 0, stringCursor).tt
 
-    // ── Buffer pool for sequences/mappings ──────────────────────────────────
+    // ── Array pool for sequences/mappings ──────────────────────────────────
 
-    private inline def acquireBuffer(): ArrayBuffer[Any] =
+    // Not `inline`, as `acquireIndexBuffer` above.
+    private update def acquireBuffer(): ArrayBuffer[Any] =
       bufferId += 1
 
       if bufferPool.length <= bufferId then
@@ -2120,11 +2209,11 @@ object Yaml extends Yaml2, Dynamic:
         b.clear()
         b
 
-    private inline def releaseBuffer(): Unit = bufferId -= 1
+    private update inline def releaseBuffer(): Unit = bufferId -= 1
 
     // ── Top-level parse ─────────────────────────────────────────────────────
 
-    def parse()(using Tactic[ParseError]): Yaml.Ast = holding:
+    update def parse()(using Tactic[ParseError]): Yaml.Ast = holding:
       skipBom()
       skipBlankAndCommentLines()
       val sawDirectives = parseDirectivesIfAny()
@@ -2143,7 +2232,7 @@ object Yaml extends Yaml2, Dynamic:
         if tracking then
           val rootBuf = acquireIndexBuffer()
           emitNullHere(rootBuf)
-          rootIndex = rootBuf.toArray
+          rootIndex = rootBuf.toArray.asInstanceOf[AnyRef]
           releaseIndexBuffer()
 
         Yaml.Ast.Null
@@ -2154,7 +2243,7 @@ object Yaml extends Yaml2, Dynamic:
           if tracking then
             val rootBuf = acquireIndexBuffer()
             emitNullHere(rootBuf)
-            rootIndex = rootBuf.toArray
+            rootIndex = rootBuf.toArray.asInstanceOf[AnyRef]
             releaseIndexBuffer()
 
           Yaml.Ast.Null
@@ -2163,7 +2252,7 @@ object Yaml extends Yaml2, Dynamic:
             if tracking then
               val rootBuf = acquireIndexBuffer()
               val n = parseNodeTracked(indent, rootBuf)
-              rootIndex = rootBuf.toArray
+              rootIndex = rootBuf.toArray.asInstanceOf[AnyRef]
               releaseIndexBuffer()
               n
             else
@@ -2173,7 +2262,7 @@ object Yaml extends Yaml2, Dynamic:
           consumeOptionalDocumentEnd()
           node
 
-    def parseAll()(using Tactic[ParseError]): List[Yaml.Ast] = holding:
+    update def parseAll()(using Tactic[ParseError]): List[Yaml.Ast] = holding:
       val docs = scala.collection.mutable.ArrayBuffer[Yaml.Ast]()
       skipBom()
 
@@ -2251,16 +2340,16 @@ object Yaml extends Yaml2, Dynamic:
             lastDocEndedWithFooter = consumeOptionalDocumentEnd()
             firstDoc = false
 
-      docs.toList
+      List.of(docs.toList)
 
     // Tracked variant of `parseAll`: parses every document like `parseAll`
     // but also captures a per-document `PositionIndex` for the
     // tracking-aware `Yaml.parseAll` companion entry.
-    def parseAllTracked()(using Tactic[ParseError])
-    :   List[(Yaml.Ast, IArray[Int])] =
+    update def parseAllTracked()(using Tactic[ParseError])
+    :   List[(Yaml.Ast, Array[Int]^{})] =
 
       holding:
-        val docs = scala.collection.mutable.ArrayBuffer[(Yaml.Ast, IArray[Int])]()
+        val docs = scala.collection.mutable.ArrayBuffer[(Yaml.Ast, Array[Int]^{})]()
         skipBom()
 
         var continue = true
@@ -2294,7 +2383,7 @@ object Yaml extends Yaml2, Dynamic:
             if explicitStart then
               val rootBuf = acquireIndexBuffer()
               emitNullHere(rootBuf)
-              docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+              docs.append((Yaml.Ast.Null, Array.unsafeFrozen(rootBuf.toArray)))
               releaseIndexBuffer()
 
             continue = false
@@ -2302,7 +2391,7 @@ object Yaml extends Yaml2, Dynamic:
             if explicitStart then
               val rootBuf = acquireIndexBuffer()
               emitNullHere(rootBuf)
-              docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+              docs.append((Yaml.Ast.Null, Array.unsafeFrozen(rootBuf.toArray)))
               releaseIndexBuffer()
 
             lastDocEndedWithFooter = consumeOptionalDocumentEnd()
@@ -2314,7 +2403,7 @@ object Yaml extends Yaml2, Dynamic:
               if explicitStart then
                 val rootBuf = acquireIndexBuffer()
                 emitNullHere(rootBuf)
-                docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+                docs.append((Yaml.Ast.Null, Array.unsafeFrozen(rootBuf.toArray)))
                 releaseIndexBuffer()
 
               lastDocEndedWithFooter = consumeOptionalDocumentEnd()
@@ -2331,7 +2420,7 @@ object Yaml extends Yaml2, Dynamic:
 
               val rootBuf = acquireIndexBuffer()
               val node = parseNodeTracked(indent, rootBuf)
-              val ints = IArray.unsafeFromArray(rootBuf.toArray)
+              val ints = Array.unsafeFrozen(rootBuf.toArray)
               releaseIndexBuffer()
               docStartLineEnd = savedDocStart
               docs.append((node, ints))
@@ -2339,7 +2428,7 @@ object Yaml extends Yaml2, Dynamic:
               lastDocEndedWithFooter = consumeOptionalDocumentEnd()
               firstDoc = false
 
-        docs.toList
+        List.of(docs.toList)
 
     // Consume `---` if at the current position. Returns true if consumed.
     // Per spec the marker requires either a following line-boundary
@@ -2347,7 +2436,7 @@ object Yaml extends Yaml2, Dynamic:
     // four dashes, not a marker. After consumption we eat any inline
     // whitespace immediately following but leave the rest of the line
     // (including any same-line node body) to the caller.
-    private def consumeOptionalDocumentStart(): Boolean =
+    private update def consumeOptionalDocumentStart(): Boolean =
       if isDocumentMarker(Minus) then
         pos += 3
         while more && (peek == Space || peek == Tab) do advance()
@@ -2358,7 +2447,7 @@ object Yaml extends Yaml2, Dynamic:
     // Consume `...` if at the current position; only inline whitespace
     // and an optional comment may follow on the same line — anything
     // else is an error per spec.
-    private def consumeOptionalDocumentEnd()(using Tactic[ParseError]): Boolean =
+    private update def consumeOptionalDocumentEnd()(using Tactic[ParseError]): Boolean =
       if isDocumentMarker(Period) then
         pos += 3
         while more && (peek == Space || peek == Tab) do advance()
@@ -2377,7 +2466,7 @@ object Yaml extends Yaml2, Dynamic:
     // spec only `%YAML <version>` and `%TAG <handle> <prefix>` are
     // recognised; the YAML directive must appear at most once per
     // document, with a single major.minor version argument.
-    private def parseDirectivesIfAny()(using Tactic[ParseError]): Boolean =
+    private update def parseDirectivesIfAny()(using Tactic[ParseError]): Boolean =
       var sawAny = false
       var sawYaml = false
 
@@ -2403,13 +2492,13 @@ object Yaml extends Yaml2, Dynamic:
             if sawYaml then errorAt(Issue.DuplicateYamlDirective)
             sawYaml = true
             if argText.isEmpty then errorAt(Issue.YamlDirectiveRequiresVersion)
-            val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
+            val parts = argText.split("\\s+").nn.asInstanceOf[scala.Array[String]]
             if parts.length != 1 then errorAt(Issue.YamlDirectiveTooManyArguments)
 
             if !parts(0).matches("\\d+\\.\\d+") then errorAt(Issue.YamlDirectiveInvalidVersion)
 
           case "TAG" =>
-            val parts = argText.split("\\s+").nn.asInstanceOf[Array[String]]
+            val parts = argText.split("\\s+").nn.asInstanceOf[scala.Array[String]]
             if parts.length != 2 then errorAt(Issue.TagDirectiveRequiresHandleAndPrefix)
             tagHandles(parts(0)) = parts(1)
 
@@ -2425,7 +2514,7 @@ object Yaml extends Yaml2, Dynamic:
     // single comparison; a stream-fed cursor advances through a held mark to
     // force refills (the hold extends the buffer instead of compacting, and
     // `cue` restores both the position and the lineation coordinates).
-    private def buffered(n: Int): Unit =
+    private update def buffered(n: Int): Unit =
       if bufEnd - pos < n then
         syncTo()
         if tracking then reconcileLineation()
@@ -2450,7 +2539,7 @@ object Yaml extends Yaml2, Dynamic:
     // not consume. The four-byte lookahead must be buffered first: a
     // stream-fed cursor may hold fewer, and an unbuffered `---` would
     // otherwise parse as a plain scalar.
-    private def isDocumentMarker(b: Byte): Boolean =
+    private update def isDocumentMarker(b: Byte): Boolean =
       buffered(4)
 
       pos + 2 < bufEnd && bytes(pos) == b && bytes(pos+1) == b && bytes(pos+2) == b &&
@@ -2459,11 +2548,11 @@ object Yaml extends Yaml2, Dynamic:
             nb == Newline || nb == Space || nb == Tab || nb == Return
           })
 
-    private inline def atDocumentBoundary: Boolean =
+    private update inline def atDocumentBoundary: Boolean =
       isDocumentMarker(Minus) || isDocumentMarker(Period)
 
     // Skip an optional UTF-8 BOM (EF BB BF) at the start of input.
-    private def skipBom(): Unit =
+    private update def skipBom(): Unit =
       syncTo()
 
       cursor.hold:
@@ -2481,13 +2570,13 @@ object Yaml extends Yaml2, Dynamic:
     // ── Whitespace / comment / directive skipping ───────────────────────────
 
     // Skip horizontal whitespace (spaces, tabs) but not newlines.
-    private inline def skipSpaces(): Unit =
+    private update def skipSpaces(): Unit =
       while more && (peek == Space || peek == Tab) do advance()
 
     // Skip horizontal whitespace, newlines, and `# comment` lines. Also
     // consumes any `%YAML`/`%TAG` directive lines (we don't honour them
     // semantically yet, just step over them).
-    private def skipWhitespaceAndCommentsAndDirectives(): Unit =
+    private update def skipWhitespaceAndCommentsAndDirectives(): Unit =
       var continue = true
 
       while continue && more do
@@ -2502,14 +2591,14 @@ object Yaml extends Yaml2, Dynamic:
           continue = false
 
     // Try to consume three of `b` in a row. Returns true on success.
-    private def tryConsume3(b: Byte): Boolean =
+    private update def tryConsume3(b: Byte): Boolean =
       if pos + 2 < bufEnd && bytes(pos) == b && bytes(pos + 1) == b && bytes(pos + 2) == b then
         pos += 3
         true
       else
         false
 
-    private inline def skipUntilNewline(): Unit =
+    private update def skipUntilNewline(): Unit =
       while more && peek != Newline do advance()
 
     // ── Node parsing ────────────────────────────────────────────────────────
@@ -2517,12 +2606,12 @@ object Yaml extends Yaml2, Dynamic:
     // Parse a single YAML node at the given context indent. Caller has
     // ensured we're positioned at the first byte of the node (after any
     // leading whitespace).
-    private def parseNode(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseNode(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
       skipSpaces()
 
       if !more then Yaml.Ast.Null else parseNodeHere(indent)
 
-    private def parseNodeHere(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseNodeHere(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
       // `prefixesConsumed` and `lastNodeHadAnchor` are parser-wide fields
       // but "did THIS call apply its own prefixes / anchor?" is per-call.
       // Recursive parses (e.g. parseMappingValue inside parseBlock-
@@ -2641,7 +2730,7 @@ object Yaml extends Yaml2, Dynamic:
     // at the first non-prefix byte (without crossing newlines, so the caller
     // can detect a bare-prefix-with-block). Writes results to `prefixAnchor`,
     // `prefixTag`, `prefixHeadByte` to avoid per-call Tuple3 allocation.
-    private def consumeNodePrefixes()(using Tactic[ParseError]): Unit =
+    private update def consumeNodePrefixes()(using Tactic[ParseError]): Unit =
       var anchorName = t""
       var tagText = t""
       var done = false
@@ -2697,13 +2786,13 @@ object Yaml extends Yaml2, Dynamic:
     // arrives at a newline (or start-of-input). Used to detect cases
     // like `key\n  : value` in flow context, where `:` is on its own
     // line — disallowed for an implicit-key construct.
-    private def newlineImmediatelyPrecedes(at: Int): Boolean =
+    private update def newlineImmediatelyPrecedes(at: Int): Boolean =
       var j = at - 1
       while j >= 0 && (bytes(j) == Space || bytes(j) == Tab) do j -= 1
       j >= 0 && bytes(j) == Newline
 
     // Read an identifier-like word (anchor or alias name).
-    private def readWord(): Text =
+    private update def readWord(): Text =
       val mk = begin()
 
       while
@@ -2715,7 +2804,7 @@ object Yaml extends Yaml2, Dynamic:
 
       slice(mk).tt
 
-    private def parseAlias()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseAlias()(using Tactic[ParseError]): Yaml.Ast =
       val name = readWord()
 
       anchors.get(name.s) match
@@ -2724,7 +2813,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // After a newline within a block context, advance past blank/comment
     // lines and through the leading indent of the next content line.
-    private def skipBlanksAndIndent(): Unit =
+    private update def skipBlanksAndIndent(): Unit =
       var done = false
       while !done && more do
         // skip leading spaces
@@ -2755,7 +2844,7 @@ object Yaml extends Yaml2, Dynamic:
     //  - flow-collection terminator (`,`, `]`, `}`) → caller is a flow
     //    context that will consume the terminator;
     // anything else is an error per spec.
-    private def maybeBlockMappingFromQuotedKey
+    private update def maybeBlockMappingFromQuotedKey
       ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
@@ -2840,10 +2929,10 @@ object Yaml extends Yaml2, Dynamic:
     // restriction lifts naturally.
     private var docStartLineEnd: Int = -1
 
-    private inline def onDocStartLine: Boolean =
+    private update inline def onDocStartLine: Boolean =
       docStartLineEnd >= 0 && pos <= docStartLineEnd
 
-    private def parsePlainOrBlockMapping
+    private update def parsePlainOrBlockMapping
       ( indent: Int, headTag: Text = t"", headAnchor: Text = t"" )
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
@@ -2876,7 +2965,7 @@ object Yaml extends Yaml2, Dynamic:
     // Read a plain scalar at the current position. Sets `sawMappingColon`
     // to true if a `: ` (or `:` at line-end) at the same line level was
     // seen so the caller knows this is the key of a block mapping.
-    private def readPlainScalarText(indent: Int)
+    private update def readPlainScalarText(indent: Int)
       ( using Tactic[ParseError] )
     :   Text =
 
@@ -2910,7 +2999,7 @@ object Yaml extends Yaml2, Dynamic:
     // Read one line of a plain scalar (until newline or terminator), pushing
     // characters into `chars`. Returns Mapping if a `:` (followed by space
     // or newline) was found at the top level on this line.
-    private def readPlainScalarLine()(using Tactic[ParseError]): PlainOutcome =
+    private update def readPlainScalarLine()(using Tactic[ParseError]): PlainOutcome =
       var lineStart = stringCursor
 
       while more do
@@ -2933,7 +3022,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -2987,7 +3076,7 @@ object Yaml extends Yaml2, Dynamic:
     // content line must be indented strictly more than the *parent
     // collection*; for top-level plain scalars the parent is the document
     // (indent -1), so any indent (including 0) is accepted.
-    private def attemptPlainContinuation(scalarIndent: Int): Boolean =
+    private update def attemptPlainContinuation(scalarIndent: Int): Boolean =
       if !more || peek != Newline then return false
       val savedPos = pos
       val savedString = stringCursor
@@ -3048,7 +3137,7 @@ object Yaml extends Yaml2, Dynamic:
 
       findContent()
 
-    private inline def appendByteAsChar(b: Byte): Unit =
+    private update def appendByteAsChar(b: Byte): Unit =
       if (b & 0x80) == 0 then appendChar((b & 0xFF).toChar)
       else
         // Multi-byte UTF-8: decode in place.
@@ -3056,7 +3145,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Decode a UTF-8 sequence whose lead byte is at the current cursor
     // position and append the resulting char(s).
-    private def decodeUtf8AndAppend(lead: Byte): Unit =
+    private update def decodeUtf8AndAppend(lead: Byte): Unit =
       val u = lead & 0xFF
 
       if (u & 0xE0) == 0xC0 then
@@ -3089,14 +3178,14 @@ object Yaml extends Yaml2, Dynamic:
         appendChar('?')
 
     // Trim trailing space/tab from the produced text.
-    private def trimEndWhitespace(text: Text): Text =
+    private update def trimEndWhitespace(text: Text): Text =
       val s = text.s
       var n = s.length
       while n > 0 && (s.charAt(n - 1) == ' ' || s.charAt(n - 1) == '\t') do n -= 1
       if n == s.length then text else s.substring(0, n).nn.tt
 
     // Resolve a plain-scalar string into a Yaml.Ast primitive.
-    private def resolvePlainScalar(text: Text): Yaml.Ast =
+    private update def resolvePlainScalar(text: Text): Yaml.Ast =
       val s = text.s
 
       if s.isEmpty then Yaml.Ast.Null
@@ -3123,7 +3212,7 @@ object Yaml extends Yaml2, Dynamic:
     // Returns null when the string does not represent a YAML 1.2 integer
     // we want to recognise (avoids `Option`/exception overhead on the
     // common reject path during plain-scalar resolution).
-    private def parsePlainIntegerOrNull(s: String): Yaml.Ast | Null =
+    private update def parsePlainIntegerOrNull(s: String): Yaml.Ast | Null =
       val len = s.length
       if len == 0 then return null
       var i = 0
@@ -3188,7 +3277,7 @@ object Yaml extends Yaml2, Dynamic:
 
       Yaml.Ast.Integer(if negative then -acc else acc)
 
-    private def parseRadix(s: String, start: Int, radix: Int, negative: Boolean)
+    private update def parseRadix(s: String, start: Int, radix: Int, negative: Boolean)
     :   Yaml.Ast | Null =
 
       val len = s.length
@@ -3215,7 +3304,7 @@ object Yaml extends Yaml2, Dynamic:
     // strings: must contain at least one digit, only `[-+0-9.eE]`, ≤1
     // `.`, ≤1 `e`/`E`, and the `e`/`E` (if present) must be followed by
     // an optional sign and at least one digit.
-    private def parsePlainDecimalOrNull(s: String): Yaml.Ast | Null =
+    private update def parsePlainDecimalOrNull(s: String): Yaml.Ast | Null =
       val len = s.length
       if len == 0 then return null
 
@@ -3273,7 +3362,7 @@ object Yaml extends Yaml2, Dynamic:
           Yaml.Ast.Decimal(d)
       catch case _: NumberFormatException => null
 
-    private def countSignificantDigits(s: String): Int =
+    private update def countSignificantDigits(s: String): Int =
       var count = 0
       var seenNonZero = false
       var i = 0
@@ -3293,7 +3382,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Quoted strings ──────────────────────────────────────────────────────
 
-    private def parseDoubleQuoted()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseDoubleQuoted()(using Tactic[ParseError]): Yaml.Ast =
       resetString()
       lastScalarSpannedLines = false
       var done = false
@@ -3316,7 +3405,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3340,7 +3429,7 @@ object Yaml extends Yaml2, Dynamic:
 
       Yaml.Ast.Str(getStringText())
 
-    private def consumeDoubleQuotedEscape()(using Tactic[ParseError]): Unit =
+    private update def consumeDoubleQuotedEscape()(using Tactic[ParseError]): Unit =
       val b = peek
       advance()
 
@@ -3388,7 +3477,7 @@ object Yaml extends Yaml2, Dynamic:
         case _ =>
           errorAt(Issue.InvalidEscapeSequence)
 
-    private def readHex(count: Int)(using Tactic[ParseError]): Int =
+    private update def readHex(count: Int)(using Tactic[ParseError]): Int =
       var acc = 0
       var i = 0
 
@@ -3408,7 +3497,7 @@ object Yaml extends Yaml2, Dynamic:
 
       acc
 
-    private def parseSingleQuoted()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseSingleQuoted()(using Tactic[ParseError]): Yaml.Ast =
       resetString()
       lastScalarSpannedLines = false
       var done = false
@@ -3431,7 +3520,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3463,7 +3552,7 @@ object Yaml extends Yaml2, Dynamic:
     // (per spec 6.5). When the continuation reaches a non-whitespace
     // byte, its leading-space count must exceed the parent collection's
     // indent — otherwise the quoted scalar is mis-indented.
-    private def consumeMultilineFold()(using Tactic[ParseError]): Unit =
+    private update def consumeMultilineFold()(using Tactic[ParseError]): Unit =
       while
         stringCursor > 0 && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t')
       do stringCursor -= 1
@@ -3503,7 +3592,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // ── Flow types ──────────────────────────────────────────────────────────
 
-    private def parseFlowSequence()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowSequence()(using Tactic[ParseError]): Yaml.Ast =
       val buf = acquireBuffer()
       var done = false
 
@@ -3581,7 +3670,7 @@ object Yaml extends Yaml2, Dynamic:
       releaseBuffer()
       result
 
-    private def parseFlowMapping()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowMapping()(using Tactic[ParseError]): Yaml.Ast =
       val buf = acquireBuffer()
       var done = false
 
@@ -3652,26 +3741,26 @@ object Yaml extends Yaml2, Dynamic:
     // `Array[Any]`, padding with `arrayPad` if the count is even so the
     // result has odd length (the parity that distinguishes sequences from
     // mappings).
-    private def sealSequence(buf: ArrayBuffer[Any]): Yaml.Ast =
+    private update def sealSequence(buf: ArrayBuffer[Any]): Yaml.Ast =
       val n = buf.length
 
       if (n & 1) == 1 then
-        val arr = new Array[Any](n)
-        buf.copyToArray(arr)
-        arr.asInstanceOf[Yaml.Ast]
+        val arr = Array[Any](n)
+        buf.copyToArray(arr.raw)
+        Array.freeze(arr).asInstanceOf[Yaml.Ast]
       else
-        val arr = new Array[Any](n + 1)
-        buf.copyToArray(arr)
+        val arr = Array[Any](n + 1)
+        buf.copyToArray(arr.raw)
         arr(n) = Yaml.Ast.arrayPad
-        arr.asInstanceOf[Yaml.Ast]
+        Array.freeze(arr).asInstanceOf[Yaml.Ast]
 
     // The buffer was filled with alternating key/value items, so the count
     // is already even; copy directly into a flat `Array[Any]`.
-    private def sealMapping(buf: ArrayBuffer[Any]): Yaml.Ast =
+    private update def sealMapping(buf: ArrayBuffer[Any]): Yaml.Ast =
       val n = buf.length
-      val arr = new Array[Any](n)
-      buf.copyToArray(arr)
-      arr.asInstanceOf[Yaml.Ast]
+      val arr = Array[Any](n)
+      buf.copyToArray(arr.raw)
+      Array.freeze(arr).asInstanceOf[Yaml.Ast]
 
     // Within a flow context, whitespace and newlines are insignificant
     // separators; comments still apply but require leading whitespace
@@ -3679,7 +3768,7 @@ object Yaml extends Yaml2, Dynamic:
     // and `]#c` after a flow close is an error). Newlines also flip
     // `lastScalarSpannedLines` so multi-line flow collections used as
     // implicit keys can be rejected without a separate scan.
-    private def skipFlowWhitespace()(using Tactic[ParseError]): Unit =
+    private update def skipFlowWhitespace()(using Tactic[ParseError]): Unit =
       var continue = true
 
       while continue && more do
@@ -3720,7 +3809,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // A node within a flow context — same dispatch as parseNodeHere but
     // with flow-specific scalar termination.
-    private def parseFlowNode()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowNode()(using Tactic[ParseError]): Yaml.Ast =
       skipFlowWhitespace()
 
       if !more then Yaml.Ast.Null
@@ -3771,7 +3860,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Plain scalar within a flow context: terminates on `,`, `]`, `}`,
     // `:`+space, newline, or hash-comment.
-    private def parseFlowPlainScalar()(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseFlowPlainScalar()(using Tactic[ParseError]): Yaml.Ast =
       // Plain scalars in flow context cannot start with `-`, `?` or
       // `:` followed by a flow-context indicator (space, tab, comma,
       // `]`, `}`, newline, EOF). Per spec these combinations are
@@ -3811,7 +3900,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -3849,7 +3938,7 @@ object Yaml extends Yaml2, Dynamic:
     // scalar starting with `-` (e.g. negative number) or a block sequence
     // marker. The disambiguation is the byte after `-`: if space/tab/
     // newline/EOF, it's a sequence marker.
-    private def parseMinus(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseMinus(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
       val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
 
       if
@@ -3880,7 +3969,7 @@ object Yaml extends Yaml2, Dynamic:
     // Column (0-indexed) of the current cursor position within its
     // source line. Used to anchor a block-sequence iteration when the
     // first dash isn't at the caller's `indent`.
-    private def currentColumn(): Int =
+    private update def currentColumn(): Int =
       var j = pos - 1
       while j >= 0 && bytes(j) != Newline do j -= 1
       pos - j - 1
@@ -3889,7 +3978,7 @@ object Yaml extends Yaml2, Dynamic:
     // end-of-input, this is an explicit-key indicator: set up a block
     // mapping at `indent`, read the first pair, then iterate. `?foo` (no
     // separator) is just a plain scalar starting with `?`.
-    private def parseQuestion(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseQuestion(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
       if isExplicitKeyIndicator then
         val buf = acquireBuffer()
         val savedParentIndent = blockParentIndent
@@ -3909,7 +3998,7 @@ object Yaml extends Yaml2, Dynamic:
     // first pair has been added) and parseBlockMappingFromExplicitKey.
     // Walks subsequent block-mapping pairs at `indent`, supporting both
     // explicit (`? key`) and implicit (`key:`) keys.
-    private def iterateBlockMapping
+    private update def iterateBlockMapping
       ( buf: scala.collection.mutable.ArrayBuffer[Any], indent: Int )
       ( using Tactic[ParseError] )
     :   Unit =
@@ -3993,7 +4082,7 @@ object Yaml extends Yaml2, Dynamic:
           buf += keyAst
           buf += value
 
-    private def parseBlockSequence(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    private update def parseBlockSequence(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
       val buf = acquireBuffer()
       val savedParentIndent = blockParentIndent
       blockParentIndent = indent
@@ -4067,7 +4156,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // From the start of the current line, count leading spaces. Returns the
     // count and leaves the cursor positioned at the first non-space byte.
-    private def consumeLeadingSpaces(): Int =
+    private update def consumeLeadingSpaces(): Int =
       var n = 0
 
       while more && peek == Space do
@@ -4081,7 +4170,7 @@ object Yaml extends Yaml2, Dynamic:
     // the start of the first non-skip line (before any leading
     // whitespace), so the caller can measure that line's indent via
     // consumeLeadingSpaces.
-    private def skipBlankAndCommentLines(): Unit =
+    private update def skipBlankAndCommentLines(): Unit =
       var continue = true
 
       while continue && more do
@@ -4105,7 +4194,7 @@ object Yaml extends Yaml2, Dynamic:
     // Called when we've already read the first key (plain or quoted) and
     // are positioned at the `:` following it. Parse the rest of the
     // block mapping at `indent`. Subsequent keys may also be quoted.
-    private def parseBlockMappingFromFirstKey
+    private update def parseBlockMappingFromFirstKey
       ( firstKey: Yaml.Ast, indent: Int )
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
@@ -4127,7 +4216,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // True when the cursor is at a `?` indicator that introduces an
     // explicit mapping key (followed by space/tab/newline/EOF).
-    private inline def isExplicitKeyIndicator: Boolean =
+    private update def isExplicitKeyIndicator: Boolean =
       more && peek == Question && {
         val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
         nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
@@ -4137,7 +4226,7 @@ object Yaml extends Yaml2, Dynamic:
     // at `?`. The key may be on the same line as `?` or on a subsequent
     // indented line; the matching `:` value indicator must appear at the
     // mapping's indent and may be absent (yielding a Null value).
-    private def readExplicitPair(indent: Int)(using Tactic[ParseError])
+    private update def readExplicitPair(indent: Int)(using Tactic[ParseError])
     :   (Yaml.Ast, Yaml.Ast) =
 
       advance() // ?
@@ -4195,7 +4284,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Parse the value side of a `key: VALUE` entry. Either inline (after
     // the colon, on the same line) or a block on the next indented lines.
-    private def parseMappingValue
+    private update def parseMappingValue
       ( parentIndent: Int, isExplicitValue: Boolean = false )
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
@@ -4241,7 +4330,7 @@ object Yaml extends Yaml2, Dynamic:
     // or out-of-scope). Same-indent block sequence => the sequence is
     // the value (spec 8.2.2). More-indented => a regular nested node.
     // Rewinds to lineStart on Null so the outer scope re-reads the line.
-    private inline def pickValueOrNull
+    private update def pickValueOrNull
       ( parentIndent: Int, childIndent: Int, lineStart: Int )
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
@@ -4258,7 +4347,7 @@ object Yaml extends Yaml2, Dynamic:
       inInlineMappingValue = savedInline
       result
 
-    private inline def pickValueOrNullBody
+    private update def pickValueOrNullBody
       ( parentIndent: Int, childIndent: Int, lineStart: Int )
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
@@ -4289,7 +4378,7 @@ object Yaml extends Yaml2, Dynamic:
     private enum BlockLineType:
       case None, Blank, Regular, MoreIndented
 
-    private def parseBlockScalar(literal: Boolean)
+    private update def parseBlockScalar(literal: Boolean)
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
 
@@ -4480,7 +4569,7 @@ object Yaml extends Yaml2, Dynamic:
     // Read the non-newline content of the current line into the chars
     // buffer. Bulk-copies printable ASCII via the fast prefix loop and
     // falls back to per-byte handling for tabs and UTF-8 lead bytes.
-    private def readBlockScalarLineContent(): Unit =
+    private update def readBlockScalarLineContent(): Unit =
       var done = false
 
       while !done do
@@ -4493,7 +4582,7 @@ object Yaml extends Yaml2, Dynamic:
           var k = 0
 
           while k < runLen do
-            chars(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
+            charsTarget(stringCursor + k) = (bytes(runStart + k) & 0xFF).toChar
             k += 1
 
           stringCursor += runLen
@@ -4509,7 +4598,7 @@ object Yaml extends Yaml2, Dynamic:
     // declared via a `%TAG` directive in the current document. The primary
     // (`!`) and secondary (`!!`) handles are built-in. Verbatim tags
     // (`!<URI>`) skip resolution entirely.
-    private def validateTagHandle(tagText: Text)(using Tactic[ParseError]): Unit =
+    private update def validateTagHandle(tagText: Text)(using Tactic[ParseError]): Unit =
       val s = tagText.s
 
       if s.length >= 2 && s.charAt(0) == '!' && s.charAt(1) != '<' then
@@ -4521,7 +4610,7 @@ object Yaml extends Yaml2, Dynamic:
           if handle != "!!" && !tagHandles.defines(handle) then
             errorAt(Issue.UndefinedTagHandle(handle.tt))
 
-    private def applyTag(tag: Text, value: Yaml.Ast)(using Tactic[ParseError])
+    private update def applyTag(tag: Text, value: Yaml.Ast)(using Tactic[ParseError])
     :   Yaml.Ast =
 
       tag.s match
@@ -4601,7 +4690,7 @@ object Yaml extends Yaml2, Dynamic:
     // Emit a 4-int primitive descriptor at the current cursor position.
     // `startMark` is the absolute byte offset captured at the start of
     // the scalar; the cursor is expected to be at its end.
-    private inline def emitPrimitiveDescriptor
+    private update inline def emitPrimitiveDescriptor
       ( indexOut: ArrayBuffer[Int], startLine: Int, startColumn: Int, startMark: Long )
     :   Unit =
 
@@ -4612,19 +4701,19 @@ object Yaml extends Yaml2, Dynamic:
       indexOut += startColumn
       indexOut += length
 
-    private inline def captureLineColumn(): (Int, Int) =
+    private update inline def captureLineColumn(): (Int, Int) =
       syncTo()
       reconcileLineation()
       (cursor.line.n1, cursor.column.n1)
 
-    private inline def currentMark(): Long =
+    private update inline def currentMark(): Long =
       syncTo()
       cursor.position.n0.toLong
 
     // Emit a 4-int Null descriptor (zero length) at the current cursor
     // position. Used when a node resolves to `Null` without consuming any
     // bytes (empty inline value, missing explicit-pair value, etc.).
-    private inline def emitNullHere(indexOut: ArrayBuffer[Int]): Unit =
+    private update inline def emitNullHere(indexOut: ArrayBuffer[Int]): Unit =
       syncTo()
       reconcileLineation()
       indexOut += 4
@@ -4632,7 +4721,7 @@ object Yaml extends Yaml2, Dynamic:
       indexOut += cursor.column.n1
       indexOut += 0
 
-    private def parseNodeTracked(indent: Int, indexOut: ArrayBuffer[Int])
+    private update def parseNodeTracked(indent: Int, indexOut: ArrayBuffer[Int])
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
 
@@ -4644,7 +4733,7 @@ object Yaml extends Yaml2, Dynamic:
       else
         parseNodeHereTracked(indent, indexOut)
 
-    private def parseNodeHereTracked(indent: Int, indexOut: ArrayBuffer[Int])
+    private update def parseNodeHereTracked(indent: Int, indexOut: ArrayBuffer[Int])
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
 
@@ -4804,7 +4893,7 @@ object Yaml extends Yaml2, Dynamic:
     // `prefixesConsumed` state — when true, an inner block-mapping
     // transition already applied the head's tag/anchor to the key, so
     // we don't re-apply them.
-    private def finishNodeHere
+    private update def finishNodeHere
       ( savedPrefixesConsumed: Boolean,
         savedLastNodeHadAnchor: Boolean,
         anchorName: Text,
@@ -4837,7 +4926,7 @@ object Yaml extends Yaml2, Dynamic:
     // mapping transition is rare in this position — we route to the
     // untracked block-mapping helper if it does occur (acceptable for
     // PR 1; PR-2/3 can revisit if needed).
-    private def maybeBlockMappingFromQuotedKeyAfterComposite
+    private update def maybeBlockMappingFromQuotedKeyAfterComposite
       ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text )
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
@@ -4850,7 +4939,7 @@ object Yaml extends Yaml2, Dynamic:
     // descriptor becomes the composite mapping descriptor (spanning from
     // the scalar's start to the mapping's end). Otherwise emit a 4-int
     // primitive descriptor for the scalar alone.
-    private def maybeBlockMappingFromQuotedKeyTracked
+    private update def maybeBlockMappingFromQuotedKeyTracked
       ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
@@ -4920,7 +5009,7 @@ object Yaml extends Yaml2, Dynamic:
     // position is `startLine`/`startColumn`/`startMark`. Either emits a
     // 4-int primitive (plain scalar resolves to a primitive) or a
     // composite mapping descriptor (transitions into a block mapping).
-    private def parsePlainOrBlockMappingTracked
+    private update def parsePlainOrBlockMappingTracked
       ( indent: Int, headTag: Text, headAnchor: Text,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
@@ -4959,7 +5048,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Tracked variant of `parseBlockSequence`. Emits a composite
     // descriptor with one child descriptor per item.
-    private def parseBlockSequenceTracked
+    private update def parseBlockSequenceTracked
       ( indent: Int,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
@@ -5050,7 +5139,7 @@ object Yaml extends Yaml2, Dynamic:
     // via `firstKeyLine`/`firstKeyColumn`/`firstKeyLength`. Subsequent
     // keys are parsed by `iterateBlockMappingTracked` which captures
     // their positions as it goes.
-    private def parseBlockMappingFromFirstKeyTracked
+    private update def parseBlockMappingFromFirstKeyTracked
       ( firstKey: Yaml.Ast,
         firstKeyLine: Int, firstKeyColumn: Int, firstKeyLength: Int,
         indent: Int,
@@ -5090,7 +5179,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked variant of `iterateBlockMapping`. Appends entry descriptors
     // to `scratch` and entry-end offsets to `ends` for each key/value
     // pair iterated.
-    private def iterateBlockMappingTracked
+    private update def iterateBlockMappingTracked
       ( buf: scala.collection.mutable.ArrayBuffer[Any],
         scratch: ArrayBuffer[Int], ends: ArrayBuffer[Int],
         indent: Int )
@@ -5193,7 +5282,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Tracked variant of `parseFlowSequence`. Emits a composite
     // descriptor with one child descriptor per flow entry.
-    private def parseFlowSequenceTracked
+    private update def parseFlowSequenceTracked
       ( indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[ParseError] )
@@ -5359,7 +5448,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Tracked variant of `parseFlowMapping`. Emits a composite mapping
     // descriptor with one entry per flow-mapping pair.
-    private def parseFlowMappingTracked
+    private update def parseFlowMappingTracked
       ( indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[ParseError] )
@@ -5457,7 +5546,7 @@ object Yaml extends Yaml2, Dynamic:
     // and emits a primitive descriptor for scalar/alias cases or a
     // composite descriptor (via the *Tracked composite variants) for
     // flow sequences/mappings.
-    private def parseFlowNodeTracked(indexOut: ArrayBuffer[Int])
+    private update def parseFlowNodeTracked(indexOut: ArrayBuffer[Int])
       ( using Tactic[ParseError] )
     :   Yaml.Ast =
 
@@ -5540,7 +5629,7 @@ object Yaml extends Yaml2, Dynamic:
     // block mapping (emitting a composite descriptor) or delegates to
     // `parsePlainOrBlockMappingTracked` for the plain-scalar starting
     // with `?` case.
-    private def parseQuestionTracked
+    private update def parseQuestionTracked
       ( indent: Int,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
@@ -5572,7 +5661,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked variant of `parseMinus`. Either parses a block sequence
     // (emitting a composite descriptor) or delegates to
     // `parsePlainOrBlockMappingTracked` for the plain-scalar case.
-    private def parseMinusTracked
+    private update def parseMinusTracked
       ( indent: Int,
         indexOut: ArrayBuffer[Int],
         startLine: Int, startColumn: Int, startMark: Long )
@@ -5601,7 +5690,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Tracked variant of `readExplicitPair`. Appends the key's position
     // descriptor (3 ints) plus the value's descriptor to `scratch`.
-    private def readExplicitPairTracked
+    private update def readExplicitPairTracked
       ( indent: Int, scratch: ArrayBuffer[Int] )
       ( using Tactic[ParseError] )
     :   (Yaml.Ast, Yaml.Ast) =
@@ -5710,7 +5799,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Helper: read the size (slot 0) of the descriptor that ends at
     // `scratch.length`. Returns 0 if scratch is empty or malformed.
-    private inline def keyDescriptorSize(scratch: ArrayBuffer[Int]): Int =
+    private update inline def keyDescriptorSize(scratch: ArrayBuffer[Int]): Int =
       // The most-recently-appended descriptor's first int is its size.
       // We don't track its start directly here, so reconstruct from the
       // typical 4-int primitive shape — callers only use this for the
@@ -5739,7 +5828,7 @@ object Yaml extends Yaml2, Dynamic:
         0
 
     // Peek the current line's leading-space count without changing pos.
-    private inline def consumeLeadingSpacesPeek(): Int =
+    private update inline def consumeLeadingSpacesPeek(): Int =
       var n = 0
       var p = pos
       while p < bufEnd && bytes(p) == Space do { n += 1; p += 1 }
@@ -5748,7 +5837,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked variant of `parseMappingValue`. The caller has just appended
     // the key's 3-int header to `scratch`; this method appends the value's
     // descriptor.
-    private def parseMappingValueTracked
+    private update def parseMappingValueTracked
       ( parentIndent: Int,
         scratch: ArrayBuffer[Int],
         isExplicitValue: Boolean = false )
@@ -5790,7 +5879,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked variant of `pickValueOrNull`. Either calls
     // `parseNodeHereTracked` (which emits a descriptor) or emits a
     // Null primitive at the rewound position.
-    private def pickValueOrNullTracked
+    private update def pickValueOrNullTracked
       ( parentIndent: Int, childIndent: Int, lineStart: Int,
         indexOut: ArrayBuffer[Int] )
       ( using Tactic[ParseError] )
@@ -5887,7 +5976,7 @@ extends Dynamic derives CanEqual:
       raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Sequence)))
 
     val n = root.arrayLength
-    val updated = new Array[Any](n)
+    val updated = Array[Any](n)
     var i = 0
 
     while i < n do
@@ -5897,7 +5986,7 @@ extends Dynamic derives CanEqual:
 
       i += 1
 
-    Yaml.ast(Yaml.Ast.seqFromAnyArray(updated))
+    Yaml.ast(Yaml.Ast.seqFromAnyArray(Array.freeze(updated)))
 
   // `yaml.foo = newValue` — replaces `foo` if present, or appends a new
   // entry. `yaml.foo = Unset` deletes the entry.
@@ -5919,46 +6008,39 @@ extends Dynamic derives CanEqual:
       raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Mapping)))
       this
     else
-      val arr = root.asInstanceOf[IArray[Any]]
+      val arr = root.asInstanceOf[Array[Any]^{}]
       val len = arr.length
 
       root.objectIndexOf(field) match
         case -1 =>
-          val out = new Array[Any](len + 2)
-          System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+          val out = Array[Any](len + 2)
+          out.copyFrom(arr, 0, 0, len)
           out(len)     = field
           out(len + 1) = value.root.asInstanceOf[Any]
-          Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
+          Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
         case index =>
-          val out = new Array[Any](len)
-          System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, len)
+          val out = Array[Any](len)
+          out.copyFrom(arr, 0, 0, len)
           out(index*2 + 1) = value.root.asInstanceOf[Any]
-          Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
+          Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
   private[ypsiloid] def delete(field: String): Yaml raises YamlError =
     if !root.isObject then
       raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Mapping)))
       this
     else
-      val arr = root.asInstanceOf[IArray[Any]]
+      val arr = root.asInstanceOf[Array[Any]^{}]
       val len = arr.length
 
       root.objectIndexOf(field) match
         case -1 => this
 
         case index =>
-          val out = new Array[Any](len - 2)
-          System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
-
-          System.arraycopy
-            ( arr.asInstanceOf[Array[Any]],
-              index*2 + 2,
-              out,
-              index*2,
-              len - index*2 - 2 )
-
-          Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
+          val out = Array[Any](len - 2)
+          out.copyFrom(arr, 0, 0, index*2)
+          out.copyFrom(arr, index*2 + 2, index*2, len - index*2 - 2)
+          Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(out)))
 
   override def hashCode: Int = Yaml.Ast.deepHash(root)
 

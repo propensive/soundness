@@ -53,18 +53,20 @@ object Cloak:
 trait Cloak:
   // Copies `bytes` into strategy-specific storage and ZEROES the input array before
   // returning, so the caller's copy of the cleartext does not linger.
-  def cloak(bytes: Array[Byte]): Secret^{this}
+  def cloak(bytes: scala.Array[Byte]): Secret^{this}
 
 // Cleartext on the heap, as a private byte array. The weakest strategy — the material is
 // visible in a heap dump for the secret's lifetime — but portable and pure: heap-cloaked
 // secrets have empty capture sets, so they can be stored and returned without tracking.
 // Selected as `cloaks.cloakHeap`.
 private[enigmatic] object HeapCloak extends Cloak:
-  def cloak(bytes: Array[Byte]): Secret =
+  def cloak(bytes: scala.Array[Byte]): Secret =
     val copy = bytes.clone
     ju.Arrays.fill(bytes, 0.toByte)
 
-    new Secret:
-      def uncloak[result](block: Array[Byte] => result): result =
-        val cleartext = copy.clone
-        try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)
+    // The secret's only capture is its own private copy of the bytes, laundered here.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Secret:
+        def uncloak[result](block: scala.Array[Byte] => result): result =
+          val cleartext = copy.clone
+          try block(cleartext) finally ju.Arrays.fill(cleartext, 0.toByte)

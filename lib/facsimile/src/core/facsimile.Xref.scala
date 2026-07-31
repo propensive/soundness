@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -49,18 +51,22 @@ private[facsimile] object Xref:
   // Later (older) sections never override earlier entries, and the newest trailer's values
   // take precedence. When the cross-reference machinery is missing or corrupt — as it
   // frequently is in the wild — the whole file is scanned for objects instead (`rebuild`).
-  def load(source: ByteSource): Xref raises PdfError =
+  def load(source: ByteSource)(using Tactic[PdfError]): Xref =
     // Any structural failure in the cross-reference machinery drops through to a full-file
     // scan for objects.
     safely(strict(source)).or(rebuild(source))
 
-  private def strict(source: ByteSource): Xref raises PdfError =
+  private def strict(source: ByteSource)(using Tactic[PdfError]): Xref =
     val head = startxref(source)
 
-    def recur(offset: Long, entries: Map[Int, Entry], trailer: Map[Text, Cos], visited: Set[Long])
+    def recur
+      ( offset:  Long,
+        entries: Map[Int, Entry],
+        trailer: Map[Text, Cos],
+        visited: Set[Long] )
     :   Xref =
 
-      if visited.contains(offset) || offset < 0 || offset >= source.size
+      if visited.has(offset) || offset < 0 || offset >= source.size
       then abort(PdfError(PdfError.Reason.MalformedXref(offset)))
 
       val (classicEntries, sectionTrailer) = section(source, offset)
@@ -73,11 +79,12 @@ private[facsimile] object Xref:
         hybrid =>
           val (hybridEntries, _) = stream(source, hybrid)
 
-          hybridEntries ++ classicEntries.filter: (number, entry) =>
-            entry != Entry.Free || !hybridEntries.contains(number)
+          Map.of:
+            hybridEntries.stdlib ++ classicEntries.stdlib.filter: (number, entry) =>
+              entry != Entry.Free || !hybridEntries.defines(number)
 
-      val mergedEntries = sectionEntries ++ entries
-      val mergedTrailer = sectionTrailer ++ trailer
+      val mergedEntries = Map.of(sectionEntries.stdlib ++ entries.stdlib)
+      val mergedTrailer = Map.of(sectionTrailer.stdlib ++ trailer.stdlib)
 
       sectionTrailer.at(t"Prev").let(_.long)
       . lay(Xref(mergedEntries, mergedTrailer, head, streamed(source, head))): previous =>
@@ -98,9 +105,9 @@ private[facsimile] object Xref:
   // appears later in the file). Object streams found this way are expanded to their compressed
   // members. The trailer is the last `trailer` dictionary if any, else synthesized by finding
   // the catalog among the recovered objects.
-  private[facsimile] def rebuild(source: ByteSource): Xref raises PdfError =
+  private[facsimile] def rebuild(source: ByteSource)(using Tactic[PdfError]): Xref =
     var entries = Map[Int, Entry]()
-    val objectStreams = List.newBuilder[Int]
+    val objectStreams = scala.collection.immutable.List.newBuilder[Int]
     val size = source.size
     val chunkSize = 65536
     val overlap = 32 // long enough to hold "NNNNNN GGGGG obj" split across a chunk boundary
@@ -129,7 +136,7 @@ private[facsimile] object Xref:
     // unless a direct copy of that member was already recovered (a later direct object wins).
     val direct = entries
 
-    direct.foreach: (container, entry) =>
+    direct.stdlib.each: (container, entry) =>
       entry match
         case Entry.Direct(offset, _) =>
           safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
@@ -137,7 +144,7 @@ private[facsimile] object Xref:
               case body @ Cos.Body(dictionary, _)
               if dictionary.at(t"Type").let(_.name) == t"ObjStm" =>
                 objStmMembers(source, body).each: number =>
-                  if !direct.contains(number)
+                  if !direct.defines(number)
                   then entries = entries.updated(number, Entry.Compressed(container, 0))
 
               case _ =>
@@ -197,18 +204,18 @@ private[facsimile] object Xref:
   // synthesized around the catalog found among the recovered objects.
   private def recoverTrailer(source: ByteSource, entries: Map[Int, Entry]): Map[Text, Cos] =
     lastTrailer(source).or:
-      entries.view.flatMap: (number, entry) =>
+      entries.stdlib.view.flatMap: (number, entry) =>
         entry match
           case Entry.Direct(offset, generation) =>
             safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (_, _, content) =>
               content.dictionary.let(_.at(t"Type")).let(_.name) match
-                case t"Catalog" => List(number -> generation)
-                case _          => List()
+                case t"Catalog" => Some(number -> generation)
+                case _          => None
 
-            . or(List())
+            . or(None)
 
           case _ =>
-            List()
+            None
 
       . headOption.map: (number, generation) => Map(t"Root" -> Cos.Ref(number, generation))
       . getOrElse(Map())
@@ -229,7 +236,7 @@ private[facsimile] object Xref:
         lexer.next() // the `trailer` keyword
         CosParser(lexer).value().dictionary.or(abort(PdfError(PdfError.Reason.Truncated)))
 
-  private def startxref(source: ByteSource): Long raises PdfError =
+  private def startxref(source: ByteSource)(using Tactic[PdfError]): Long =
     val windowSize = source.size.min(2048L).toInt
     val windowStart = source.size - windowSize
     val window = source.read(windowStart, windowSize)
@@ -254,7 +261,8 @@ private[facsimile] object Xref:
     j == marker.length
 
   private def section(source: ByteSource, offset: Long)
-  :   (Map[Int, Entry], Map[Text, Cos]) raises PdfError =
+  ( using Tactic[PdfError] )
+  :   (Map[Int, Entry], Map[Text, Cos]) =
 
     val lexer = CosLexer(new Scan(source, offset))
 
@@ -272,7 +280,8 @@ private[facsimile] object Xref:
   // dictionary. Entries are lexed rather than sliced at fixed widths, which also tolerates
   // the widespread 19-byte-line variant.
   private def classic(lexer: CosLexer, offset: Long)
-  :   (Map[Int, Entry], Map[Text, Cos]) raises PdfError =
+  ( using Tactic[PdfError] )
+  :   (Map[Int, Entry], Map[Text, Cos]) =
 
     var entries = Map[Int, Entry]()
 
@@ -313,7 +322,8 @@ private[facsimile] object Xref:
   // its decoded payload holds binary rows of `/W`-specified field widths. Everything needed
   // here — `/Length`, `/W`, `/Index`, `/Size`, filters — is required by the spec to be direct.
   private def stream(source: ByteSource, offset: Long)
-  :   (Map[Int, Entry], Map[Text, Cos]) raises PdfError =
+  ( using Tactic[PdfError] )
+  :   (Map[Int, Entry], Map[Text, Cos]) =
 
     val parser = CosParser(CosLexer(new Scan(source, offset)))
 

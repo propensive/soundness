@@ -51,7 +51,8 @@ trait Audible extends Typeclass:
 
     def read[input: Streamable by Data over Credit](source: input)
     :   Audio in Self raises AudioError =
-      val rawBytes: Array[Byte] = source.read[Data].mutable(using Unsafe)
+      // `ByteArrayInputStream` only reads the array it wraps.
+      val rawBytes: scala.Array[Byte] = Array.unsafeJvm(source.read[Data])
 
       val fileFormat: jss.AudioFileFormat =
         try jss.AudioSystem.getAudioFileFormat(ji.ByteArrayInputStream(rawBytes)).nn
@@ -89,8 +90,12 @@ trait Audible extends Typeclass:
           try jss.AudioSystem.getAudioInputStream(target, raw).nn
           catch case _: IllegalArgumentException => abort(AudioError(this))
 
-      val pcmBytes: Array[Byte] = pcm.readAllBytes.nn
+      val readBytes = pcm.readAllBytes.nn
       val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
       pcm.close()
 
-      new Audio(pcmFormat, pcmBytes) { type Form = audible.Self }
+      // The audio privately owns its sample array; the inline Java-side copy adapts to the
+      // pure base class (a named array value would charge its read capability against it).
+      scala.caps.unsafe.unsafeAssumePure:
+        new Audio(pcmFormat, java.util.Arrays.copyOf(readBytes, readBytes.length).nn):
+          type Form = audible.Self

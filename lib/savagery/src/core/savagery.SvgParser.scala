@@ -51,13 +51,14 @@ object SvgParser:
     case e: Element => e.label
     case _          => t"<unknown>"
 
-  def findSvg(nodes: Seq[Node])(using Tactic[SvgError]): Element =
-    nodes.collectFirst { case e: Element if e.label == t"svg" => e }.getOrElse:
+
+  def findSvg(nodes: List[Node])(using Tactic[SvgError]): Element =
+    nodes.stdlib.collectFirst { case e: Element if e.label == t"svg" => e }.getOrElse:
       abort(SvgError(SvgError.Reason.NotAnSvg(t"<missing>")))
 
   def rootElement(xml: Xml)(using Tactic[SvgError]): Element = xml match
     case e: Element if e.label == t"svg" => e
-    case Fragment(nodes*)                => findSvg(nodes)
+    case Fragment(nodes*)                => findSvg(nodes.to(List))
 
     case other =>
       abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
@@ -89,7 +90,7 @@ object SvgParser:
         ()
 
     walk(elem)
-    Svg(width, height, defs.toList, figures.toList)
+    Svg(width, height, List.of(defs.toList), List.of(figures.toList))
 
   private def decodeFigure(elem: Element)(using Tactic[SvgError]): Optional[Figure] =
     elem.label match
@@ -141,8 +142,10 @@ object SvgParser:
 
     val id = elem.attributes.at(t"id").let(SvgId(_)).or(SvgId(t""))
 
-    val stops: Seq[Stop[Color in Srgb]] = elem.children.toSeq.collect:
-      case e: Element if e.label == t"stop" => decodeStop(e)
+    val stops: List[Stop[Color in Srgb]] =
+      List.of:
+        elem.children.readable.toList.collect:
+          case e: Element if e.label == t"stop" => decodeStop(e)
 
     LinearGradient(id, stops*)
 
@@ -276,7 +279,7 @@ object SvgParser:
 
       skipWs()
 
-    ops.toList
+    List.of(ops.toList)
 
   // Transform list parser. Recognises translate/scale/rotate/skewX/skewY/matrix.
   // Unknown function names are silently skipped.
@@ -333,7 +336,7 @@ object SvgParser:
 
           if pos < s.length then pos += 1 // skip )
 
-          (name, args.toList) match
+          (name, List.from(args)) match
             case ("translate", List(dx, dy))        => xs += Transform.Translate(Delta(dx, dy))
             case ("translate", List(dx))            => xs += Transform.Translate(Delta(dx, 0.0f))
             case ("scale", List(x))                 => xs += Transform.Scale(x, Unset)
@@ -353,7 +356,7 @@ object SvgParser:
         else
           if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
 
-    xs.toList
+    List.of(xs.toList)
 
   // Color parser: handles #rgb, #rrggbb, rgb(r,g,b), and a few named colours.
   private def parseColor(c: Text)(using Tactic[SvgError]): Color in Srgb =

@@ -32,6 +32,10 @@
                                                                                                   */
 package gossamer
 
+import proscenium.compat.*
+
+import scala.collection.immutable.IndexedSeq
+
 import java.lang as jl
 
 import scala.reflect.*
@@ -46,7 +50,7 @@ import vacuous.*
 object Writing:
   def apply(text: Text): Writing = new Writing(text, GraphemeBreak.boundaries(text))
 
-  val empty: Writing = new Writing(Text(""), IArray(0))
+  val empty: Writing = new Writing(Text(""), Array.of(0))
 
   given showable: Writing is Showable = _.text
 
@@ -63,10 +67,10 @@ object Writing:
     val boundaries = writing.boundaries
     var total = 0
     var i = 0
-    val n = boundaries.length - 1
+    val n = boundaries.readable.length - 1
 
     while i < n do
-      total += graphemeM.width(Grapheme(s.substring(boundaries(i), boundaries(i + 1)).nn))
+      total += graphemeM.width(Grapheme(s.substring(boundaries.readable(i), boundaries.readable(i + 1)).nn))
       i += 1
 
     total
@@ -81,17 +85,17 @@ object Writing:
     def apply(text: Text): Writing = Writing(text)
     def single(operand: Grapheme): Writing = Writing(operand.text)
     def fromChar(char: Char): Grapheme = Grapheme(char.toString)
-    def length(writing: Writing): Int = writing.boundaries.length - 1
-    def size(writing: Writing): Int = writing.boundaries.length - 1
+    def length(writing: Writing): Int = writing.boundaries.readable.length - 1
+    def size(writing: Writing): Int = writing.boundaries.readable.length - 1
     def text(writing: Writing): Text = writing.text
 
     def map(writing: Writing)(lambda: Grapheme => Grapheme): Writing =
       val builder = jl.StringBuilder()
-      val n = writing.boundaries.length - 1
+      val n = writing.boundaries.readable.length - 1
       var i = 0
 
       while i < n do
-        val piece = writing.text.s.substring(writing.boundaries(i), writing.boundaries(i + 1)).nn
+        val piece = writing.text.s.substring(writing.boundaries.readable(i), writing.boundaries.readable(i + 1)).nn
         builder.append(lambda(Grapheme(piece)).text.s)
         i += 1
 
@@ -105,7 +109,7 @@ object Writing:
         writing.text.s.substring(writing.boundaries(index.n0), writing.boundaries(index.n0 + 1)).nn
 
     def indexOf(writing: Writing, sub: Text, start: Ordinal): Optional[Ordinal] =
-      val charStart = writing.boundaries(start.n0.min(writing.boundaries.length - 1))
+      val charStart = writing.boundaries(start.n0.min(writing.boundaries.readable.length - 1))
       val foundChar = writing.text.s.indexOf(sub.s, charStart)
 
       if foundChar < 0 then Unset else
@@ -118,19 +122,19 @@ object Writing:
       val limit = length(writing)
       val s = interval.start.n0.max(0).min(limit)
       val e = interval.limit.n0.max(s).min(limit)
-      val slice = writing.text.s.substring(writing.boundaries(s), writing.boundaries(e)).nn
+      val slice = writing.text.s.substring(writing.boundaries.readable(s), writing.boundaries.readable(e)).nn
       Writing(slice.tt)
 
   extension (writing: Writing)
     def graphemes: IndexedSeq[Grapheme] =
-      val n = writing.boundaries.length - 1
+      val n = writing.boundaries.readable.length - 1
 
       IndexedSeq.tabulate(n): i =>
-        Grapheme(writing.text.s.substring(writing.boundaries(i), writing.boundaries(i + 1)).nn)
+        Grapheme(writing.text.s.substring(writing.boundaries.readable(i), writing.boundaries.readable(i + 1)).nn)
 
-    def graphemeCount: Int = writing.boundaries.length - 1
+    def graphemeCount: Int = writing.boundaries.readable.length - 1
 
-case class Writing(text: Text, boundaries: IArray[Int])
+case class Writing(text: Text, boundaries: Array[Int]^{})
 
 class WritingBuilder(size: Optional[Int] = Unset) extends Builder[Writing](size):
   private val builder: jl.StringBuilder = size.lay(jl.StringBuilder())(jl.StringBuilder(_))

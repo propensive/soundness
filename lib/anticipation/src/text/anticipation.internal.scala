@@ -32,6 +32,8 @@
                                                                                                   */
 package anticipation
 
+import scala.caps
+
 import scala.compiletime.*
 import scala.quoted.*
 import scala.reflect.*
@@ -48,8 +50,8 @@ object internal:
     private inline def make(string: String): Text = string.asInstanceOf[Text]
 
     def apply(string: String): Text = make(string)
-    def apply(chars: IArray[Char]): Text = make(String(chars.asInstanceOf[Array[Char]]))
-    def apply(bytes: IArray[Byte]): Text = make(String(bytes.asInstanceOf[Array[Byte]], "ASCII"))
+    def apply(chars: Array[Char]^{}): Text = make(String(chars.asInstanceOf[scala.Array[Char]]))
+    def apply(bytes: Array[Byte]^{}): Text = make(String(bytes.asInstanceOf[scala.Array[Byte]], "ASCII"))
 
     extension (text: Text) inline def s: String = text.asInstanceOf[String]
 

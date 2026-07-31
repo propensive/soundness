@@ -57,7 +57,7 @@ object Tests extends Suite(m"Camouflage tests"):
       cache(1)(t"un")
     . assert(_ == t"one")
 
-    test(m"LRU eviction after series of accesses"):
+    test(m"LRU eviction after sequence of accesses"):
       val cache = LruCache[Int, Text](4)
       cache(1)(t"one")
       cache(2)(t"two")

@@ -32,6 +32,8 @@
                                                                                                   */
 package gesticulate
 
+import proscenium.compat.*
+
 import scala.reflect.*
 
 import anticipation.*
@@ -74,7 +76,7 @@ object Multipart:
       if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
-        list.to(Map)
+        list.toMap
 
       else
         val key: Text = cursor.hold:
@@ -92,13 +94,14 @@ object Multipart:
 
         cursor.next()
         cursor.expect('\n')(expected('\n'))
-        headers((key, value) :: list)
+        // A tail-recursive re-entry over the same single-owner cursor; no aliased writer.
+        scala.caps.unsafe.unsafeAssumeSeparate(headers((key, value) :: list))
 
     inline def skipBytes(count: Int): Unit =
       var i = 0
       while i < count && cursor.next() do i += 1
 
-    def body(): LazyList[Data] = cursor.hold:
+    def body(): Chain[Data] = cursor.hold:
       val bodyStart = cursor.mark
       var bodyEnd: Optional[Cursor.Mark] = Unset
       var continue = true
@@ -129,12 +132,13 @@ object Multipart:
         // Position is at the body-ending '\r'. Skip past "\r\n<boundary>" which
         // is boundary.length + 2 bytes total.
         skipBytes(boundary.length + 2)
-        LazyList(out)
+        Chain(out)
 
-      . or(LazyList(cursor.grab(bodyStart, cursor.mark)))
+      . or(Chain(cursor.grab(bodyStart, cursor.mark)))
 
-    def parsePart(headers: Map[Text, Text], stream: LazyList[Data]): Part =
-      headers.at(t"Content-Disposition").let: disposition =>
+    def parsePart(headers: Map[Text, Text], stream: Chain[Data])
+    :   Part =
+      headers.get(t"Content-Disposition").optional.let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
 
         val params: Map[Text, Text] =
@@ -148,7 +152,7 @@ object Multipart:
               case _ =>
                 abort(MultipartError(Reason.BadDisposition))
 
-          . to(Map)
+          . toMap
 
         val dispositionValue = parts.prim match
           case t"inline"     => Multipart.Disposition.Inline
@@ -158,24 +162,25 @@ object Multipart:
           case _ =>
             abort(MultipartError(Reason.BadDisposition))
 
-        val filename = params.at(t"filename")
-        val name = params.at(t"name")
+        val filename = params.get(t"filename").optional
+        val name = params.get(t"name").optional
 
         Part(dispositionValue, headers, name, filename, stream)
 
       . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
-    def parts(): LazyList[Part] =
+    def parts(): Chain[Part] =
       val part = parsePart(headers(Nil), body())
 
       if cursor.finished then
         raise(expected('-'))
-        LazyList()
+        Chain()
       else if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
 
-        part #:: { part.body.strict; parts() }
+        // Lazy continuation over the same single-owner cursor; no aliased writer.
+        scala.caps.unsafe.unsafeAssumeSeparate(part #:: { part.body.strict; parts() })
 
       else if cursor.peek == '-' then
         cursor.next()
@@ -183,14 +188,14 @@ object Multipart:
         cursor.expect('\r')(expected('\r'))
         cursor.expect('\n')(expected('\n'))
 
-        LazyList(part)
+        Chain(part)
 
       else
         raise(expected('-'))
-        LazyList()
+        Chain()
 
     Multipart(parts())
 
 
-case class Multipart(parts: LazyList[Part]):
-  def at(name: Text): Optional[Part] = parts.find(_.name == name).getOrElse(Unset)
+case class Multipart(parts: Chain[Part]):
+  def at(name: Text): Optional[Part] = parts.stdlib.find(_.name == name).getOrElse(Unset)

@@ -40,7 +40,9 @@ import scala.io.*
 import anticipation.*
 import distillate.*
 import gossamer.*
+import proscenium.compat.*
 import rudiments.*
+import vacuous.*
 
 object Coverage:
   def apply(): Option[Coverage] = currentDir.map: dir =>
@@ -48,26 +50,26 @@ object Coverage:
     val hits = measurements(currentFile)
     val dirFile = File(dir.s)
 
-    if !dirFile.exists() then Coverage(dir, IArray(), Set(), Set())
+    if !dirFile.exists() then Coverage(dir, Array.of(), Set(), Set())
     else
       val otherFiles =
-        Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).toList).getOrElse(Nil)
+        Option(dirFile.listFiles).map(_.nn).map(_.iterator.map(_.nn).toList).getOrElse(Nil.stdlib)
 
       val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
 
-      val allHits: Set[Int] = measurementFiles.iterator.flatMap(measurements(_)).to(Set)
-      val oldHits: Set[Int] = allHits -- hits
+      val allHits: Set[Int] = Set.from(measurementFiles.iterator.flatMap(measurements(_).stdlib))
+      val oldHits: Set[Int] = Set.of(allHits.stdlib -- hits.stdlib)
 
       Coverage(dir, spec(dir), oldHits, hits)
 
   private def currentDir: Option[Text] =
     Option(System.getProperty("scalac.coverage")).map(_.nn).map(Text(_))
 
-  private def spec(dir: Text): IArray[Juncture] =
+  private def spec(dir: Text): Array[Juncture]^{} =
     val file = java.io.File(java.io.File(dir.s), "scoverage.coverage")
-    val lines = Source.fromFile(file).getLines().to(LazyList).map(Text(_))
+    val lines = Source.fromFile(file).getLines().to(Chain).map(Text(_))
 
-    def recur(lines: LazyList[Text], junctures: List[Juncture] = Nil): List[Juncture] =
+    def recur(lines: Chain[Text], junctures: List[Juncture] = Nil): List[Juncture] =
       lines match
         case
           ( As.Int(id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName #::
@@ -75,28 +77,29 @@ object Coverage:
             As.Boolean(branch) #:: _ #:: As.Boolean(ignored) #:: tail ) =>
 
           val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
-              symbolName, treeName, branch, ignored, tail.takeWhile(!_.starts(t"\f")).to(List))
+              symbolName, treeName, branch, ignored, List.from(tail.takeWhile(!_.starts(t"\f")).stdlib))
 
           recur(tail.dropWhile(!_.starts(t"\f")).tail, juncture :: junctures)
 
         case _ =>
           junctures.reverse
 
-    IArray.from(recur(lines.dropWhile(_.starts(t"#"))))
+    Array.from(recur(lines.dropWhile(_.starts(t"#"))).stdlib)
 
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
 
     if !file.exists() then Set()
-    else Source.fromFile(file).getLines().to(LazyList).each: id => ids(id.toInt) = true
+    else Source.fromFile(file).getLines().to(Chain).each: id =>
+      ids(id.toInt) = true
 
-    ids.to(Set)
+    Set.from(ids)
 
-case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
+case class Coverage(path: Text, spec: Array[Juncture]^{}, oldHits: Set[Int], hits: Set[Int]):
   lazy val structure: Map[Text, List[Surface]] =
-    val index: Int = spec.lastIndexWhere(_.id == 0)
+    val index: Int = spec.readable.lastIndexWhere(_.id == 0)
 
-    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
-      path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
-
-    . to(Map)
+    Map.from:
+      spec.toSeq
+      . toList.drop(index).groupBy(_.path).map: (path, junctures) =>
+        path -> Surface.collapse(List.of(junctures.sortBy(-_.end).sortBy(_.start)), Nil)

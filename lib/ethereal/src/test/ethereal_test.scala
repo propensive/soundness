@@ -57,9 +57,9 @@ object Tests extends Suite(m"Ethereal Tests"):
       // over from an earlier run) never collide on process names, state
       // directories, or `pkill`/`killall` targets — a collision corrupts the
       // daemon handshake and makes these tests flaky under load.
-      val name:        Text = t"e${Uuid().text.cut(t"-").head}"
-      val upgradeName: Text = t"u${Uuid().text.cut(t"-").head}"
-      val selfuName:   Text = t"s${Uuid().text.cut(t"-").head}"
+      val name:        Text = t"e${Uuid().text.cut(t"-").stdlib.head}"
+      val upgradeName: Text = t"u${Uuid().text.cut(t"-").stdlib.head}"
+      val selfuName:   Text = t"s${Uuid().text.cut(t"-").stdlib.head}"
 
       safely(sh"pkill $name".exec[Exit]())
       snooze(0.1*Second)
@@ -493,7 +493,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               var attempts = 0
 
               while !found && attempts < 200 do
-                found = Tmux.screenshot().screen.filter(predicate).length > 0
+                found = Tmux.screenshot().screen.filter(predicate).readable.length > 0
                 if !found then snooze(0.05*Second) yet (attempts += 1)
 
               found
@@ -501,53 +501,65 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"typed characters are echoed in a cooked block"):
               sh"$tool echo probe".exec[Unit]()
 
-              Shell.Bash.tmux():
-                Tmux.enter(t"$command cooked")
-                Tmux.enter('\r')
-                snooze(0.5*Second)
-                Tmux.enter(t"kestrel")
-                awaitScreen(_.contains(t"kestrel"))
+              // Overlap false positive: the action closure mentions the enclosing
+              // tool/command capabilities alongside the fresh tmux session.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command cooked")
+                  Tmux.enter('\r')
+                  snooze(0.5*Second)
+                  Tmux.enter(t"kestrel")
+                  awaitScreen(_.contains(t"kestrel"))
 
             . assert(_ == true)
 
             test(m"a cooked line is delivered to the application"):
               sh"$tool echo probe".exec[Unit]()
 
-              Shell.Bash.tmux():
-                Tmux.enter(t"$command cooked")
-                Tmux.enter('\r')
-                snooze(0.5*Second)
-                Tmux.enter(t"osprey")
-                Tmux.enter('\r')
-                awaitScreen(_.contains(t"[osprey]"))
+              // Overlap false positive: the action closure mentions the enclosing
+              // tool/command capabilities alongside the fresh tmux session.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command cooked")
+                  Tmux.enter('\r')
+                  snooze(0.5*Second)
+                  Tmux.enter(t"osprey")
+                  Tmux.enter('\r')
+                  awaitScreen(_.contains(t"[osprey]"))
 
             . assert(_ == true)
 
             test(m"backspace edits the line rather than reaching the application"):
               sh"$tool echo probe".exec[Unit]()
 
-              Shell.Bash.tmux():
-                Tmux.enter(t"$command cooked")
-                Tmux.enter('\r')
-                snooze(0.5*Second)
-                Tmux.enter(t"merlix")
-                Tmux.enter(t"BSpace")
-                Tmux.enter(t"n")
-                Tmux.enter('\r')
-                awaitScreen(_.contains(t"[merlin]"))
+              // Overlap false positive: the action closure mentions the enclosing
+              // tool/command capabilities alongside the fresh tmux session.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command cooked")
+                  Tmux.enter('\r')
+                  snooze(0.5*Second)
+                  Tmux.enter(t"merlix")
+                  Tmux.enter(t"BSpace")
+                  Tmux.enter(t"n")
+                  Tmux.enter('\r')
+                  awaitScreen(_.contains(t"[merlin]"))
 
             . assert(_ == true)
 
             test(m"a command without a cooked block still gets raw, unechoed input"):
               sh"$tool echo probe".exec[Unit]()
 
-              Shell.Bash.tmux():
-                Tmux.enter(t"$command cat")
-                Tmux.enter('\r')
-                snooze(0.5*Second)
-                Tmux.enter(t"harrier")
-                snooze(0.5*Second)
-                Tmux.screenshot().screen.filter(_.contains(t"harrier")).length > 0
+              // Overlap false positive: the action closure mentions the enclosing
+              // tool/command capabilities alongside the fresh tmux session.
+              scala.caps.unsafe.unsafeAssumeSeparate:
+                Shell.Bash.tmux():
+                  Tmux.enter(t"$command cat")
+                  Tmux.enter('\r')
+                  snooze(0.5*Second)
+                  Tmux.enter(t"harrier")
+                  snooze(0.5*Second)
+                  Tmux.screenshot().screen.filter(_.contains(t"harrier")).readable.length > 0
 
             . assert(_ == false)
 
@@ -558,7 +570,7 @@ object Tests extends Suite(m"Ethereal Tests"):
               sh"$tool".exec[Unit]()
               val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim
               val parent = sh"ps -p $jvmPid -o ppid=".exec[Text]().trim
-              sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").last
+              sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").stdlib.last
 
             . assert(_ == name)
 

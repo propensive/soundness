@@ -33,6 +33,7 @@
 package ulysses
 
 import soundness.*
+import proscenium.compat.*
 
 import providers.soundnessProvider
 import Blake3.hash   // a concrete `Hash in Blake3` in scope, so BloomFilter infers BLAKE3
@@ -72,12 +73,12 @@ object Tests extends Suite(m"Ulysses tests"):
 
     . assert { b => b.hits(t"hello") && b.hits(t"world") }
 
-    val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map(_.digest[Blake3].data.slice(0, 12))
+    val numbers = List(t"one", t"two", t"three", t"four", t"five", t"six", t"seven", t"eight", t"9", t"10", t"11", t"12", t"13", t"14", t"15", t"16").map { n => Array.frozen(n.digest[Blake3].data.readable.slice(0, 12)) }
     val numbers2 = (1 to 20).map(_.toString.tt.digest[Blake3].data)
 
     test(m"Encode a Palimpsest under the default Cadence"):
       given bibliography: Bibliography = Bibliography(numbers)
-      Palimpsest((1 to 3).map(numbers(_))).resolve
+      Palimpsest(Sequence.from((1 to 3).map(numbers(_)))).resolve
 
     . assert(_ == (1 to 3).map(numbers(_)))
 
@@ -86,6 +87,6 @@ object Tests extends Suite(m"Ulysses tests"):
     test(m"Round-trip a Palimpsest under an overridden Cadence"):
       given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
       given bibliography: Bibliography = Bibliography(letters)
-      Palimpsest(letters.toIndexedSeq).resolve
+      Palimpsest(Sequence.from(letters.toSeq)).resolve
 
     . assert(_ == letters)

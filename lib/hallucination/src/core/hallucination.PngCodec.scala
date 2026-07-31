@@ -33,14 +33,15 @@
 package hallucination
 
 import java.io as ji
+import proscenium.compat.*
 
 import scala.collection.mutable as scm
+import scala.math
 
 import anticipation.*
 import contingency.*
 import pneumatic.*
 import rudiments.*
-import vacuous.*
 
 import Binary.*
 import RasterError.Reason
@@ -52,7 +53,7 @@ import RasterError.Reason
 // the raster's layout has it — choosing each scanline's filter by the minimum-sum-of-absolute-
 // differences heuristic.
 private[hallucination] object PngCodec:
-  private val signature: IArray[Int] = IArray(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+  private val signature: Array[Int]^{} = Array.of(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
 
   def decode(data: Data): Raster raises RasterError =
     try
@@ -67,14 +68,15 @@ private[hallucination] object PngCodec:
       var depth = 0
       var colorType = 0
       var interlace = 0
-      var palette: IArray[Int] = IArray()
-      var transparency: IArray[Int] = IArray()
+      var palette: Array[Int]^{} = Array.of()
+      var transparency: Array[Int]^{} = Array.of()
       val idat = scm.ArrayBuilder.ofByte()
       var finished = false
 
       while !finished do
         val length = u32be(data, position)
-        val chunkType = new String(data.slice(position + 4, position + 8).mutable(using Unsafe))
+        // `slice` yields a fresh array and `String`'s constructor copies it.
+        val chunkType = new String(Array.unsafeJvm(data.slice(position + 4, position + 8)))
         val body = data.slice(position + 8, position + 8 + length)
 
         val storedCrc = u32be(data, position + 8 + length)
@@ -91,9 +93,9 @@ private[hallucination] object PngCodec:
             interlace = u8(data, position + 20)
 
             val legal = colorType match
-              case 0 => List(1, 2, 4, 8, 16).contains(depth)
+              case 0 => List(1, 2, 4, 8, 16).has(depth)
               case 2 => depth == 8 || depth == 16
-              case 3 => List(1, 2, 4, 8).contains(depth)
+              case 3 => List(1, 2, 4, 8).has(depth)
               case 4 => depth == 8 || depth == 16
               case 6 => depth == 8 || depth == 16
               case _ => false
@@ -105,16 +107,17 @@ private[hallucination] object PngCodec:
             if !supported then abort(RasterError(Png(), Reason.UnsupportedVariant))
 
           case "PLTE" =>
-            palette = IArray.tabulate(length/3): index =>
+            palette = Array.tabulate(length/3): index =>
               u8(data, position + 8 + index*3) << 16 |
                 u8(data, position + 9 + index*3) << 8 |
                 u8(data, position + 10 + index*3)
 
           case "tRNS" =>
-            transparency = IArray.tabulate(length): index => u8(data, position + 8 + index)
+            transparency = Array.tabulate(length): index =>
+              u8(data, position + 8 + index)
 
           case "IDAT" =>
-            idat.addAll(body.mutable(using Unsafe), 0, length)
+            idat.addAll(Array.unsafeJvm(body), 0, length)
 
           case "IEND" =>
             finished = true
@@ -124,10 +127,14 @@ private[hallucination] object PngCodec:
 
         position += length + 12
 
-      val inflated: Array[Byte] =
-        val deflated = idat.result().immutable(using Unsafe)
+      val inflated: Array[Byte]^{} =
+        val deflated = Array.unsafeFrozen(idat.result())
 
-        try concatenate(Zlib.compression.decompress(LazyList(deflated)))
+        // The frozen form keeps the `try` result free of the fresh read capability
+        // a raw array result would carry.
+        try
+          concatenate(Zlib.compression.decompress(Chain(deflated)))
+          . asInstanceOf[Array[Byte]^{}]
         catch case _: IllegalStateException => abort(RasterError(Png(), Reason.Truncated))
 
       val channels = colorType match
@@ -145,7 +152,7 @@ private[hallucination] object PngCodec:
         if transparency.length < index*2 + 2 then -1
         else transparency(index*2) << 8 | transparency(index*2 + 1)
 
-      val words = new Array[Long](width*height)
+      val words = new scala.Array[Long](width*height)
 
       // Decodes one (possibly interlaced) pass, whose scanlines are `passWidth` pixels wide,
       // placing pixel (x, y) of the pass at `locate(x, y)` in the image.
@@ -155,8 +162,9 @@ private[hallucination] object PngCodec:
         if passWidth == 0 || passHeight == 0 then offset else
           val rowBytes = (passWidth*channels*depth + 7)/8
           val unit = ((channels*depth + 7)/8).max(1)
-          var previous = new Array[Byte](rowBytes)
-          var current = new Array[Byte](rowBytes)
+          // Pure-typed rows (see `pureBytes`): writes route through `writable`.
+          var previous: scala.Array[Byte] = pureBytes(rowBytes)
+          var current: scala.Array[Byte] = pureBytes(rowBytes)
           var position = offset
 
           def sample(x: Int, channel: Int): Int =
@@ -199,7 +207,7 @@ private[hallucination] object PngCodec:
 
                 case _ => abort(RasterError(Png(), Reason.UnsupportedVariant))
 
-              current(index) = defiltered.toByte
+              writable(current)(index) = defiltered.toByte
 
             position += rowBytes
 
@@ -257,7 +265,7 @@ private[hallucination] object PngCodec:
         val passes = List((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4),
                           (1, 0, 2, 2), (0, 1, 1, 2))
 
-        passes.foldLeft(0):
+        passes.fold(0):
           case (offset, (startX, startY, stepX, stepY)) =>
             val passWidth = (width - startX + stepX - 1)/stepX
             val passHeight = (height - startY + stepY - 1)/stepY
@@ -278,11 +286,11 @@ private[hallucination] object PngCodec:
     val alpha = raster.descriptor.hasAlpha
     val channels = if alpha then 4 else 3
     val rowBytes = width*channels
-    val raw = new Array[Byte]((rowBytes + 1)*height)
-    var previous = new Array[Byte](rowBytes)
-    val current = new Array[Byte](rowBytes)
-    val filtered = new Array[Byte](rowBytes)
-    val best = new Array[Byte](rowBytes)
+    val raw = new scala.Array[Byte]((rowBytes + 1)*height)
+    var previous = new scala.Array[Byte](rowBytes)
+    val current = new scala.Array[Byte](rowBytes)
+    val filtered = new scala.Array[Byte](rowBytes)
+    val best = new scala.Array[Byte](rowBytes)
 
     for y <- 0 until height do
       for x <- 0 until width do
@@ -337,21 +345,21 @@ private[hallucination] object PngCodec:
       System.arraycopy(current, 0, previous, 0, rowBytes)
 
     val compressed =
-      concatenate(Zlib.compression.compress(LazyList(raw.immutable(using Unsafe))))
+      concatenate(Zlib.compression.compress(Chain(Array.unsafeFrozen(raw))))
 
     val output = ji.ByteArrayOutputStream()
     signature.foreach(output.write(_))
 
-    def chunk(chunkType: String, body: Array[Byte]): Unit =
+    // Takes the frozen form: every chunk body outlives the call (the CRC reads it after the
+    // stream has), and `OutputStream.write` only reads the array it is given.
+    def chunk(chunkType: String, body: Data): Unit =
       writeInt(output, body.length)
       val typeBytes = chunkType.getBytes("UTF-8").nn
       output.write(typeBytes)
-      output.write(body)
+      output.write(Array.unsafeJvm(body))
+      writeInt(output, Crc32.checksum(Array.unsafeFrozen(typeBytes), body))
 
-      writeInt(output, Crc32.checksum(typeBytes.immutable(using Unsafe),
-                                      body.immutable(using Unsafe)))
-
-    val header = new Array[Byte](13)
+    val header = Array[Byte](13)
     header(0) = (width >> 24).toByte
     header(1) = (width >> 16).toByte
     header(2) = (width >> 8).toByte
@@ -363,10 +371,10 @@ private[hallucination] object PngCodec:
     header(8) = 8
     header(9) = if alpha then 6 else 2
 
-    chunk("IHDR", header)
+    chunk("IHDR", Array.freeze(header))
     chunk("IDAT", compressed)
-    chunk("IEND", new Array[Byte](0))
-    output.toByteArray.nn.immutable(using Unsafe)
+    chunk("IEND", Array.of[Byte]())
+    Array.unsafeFrozen(output.toByteArray.nn)
 
   private def pack(red: Int, green: Int, blue: Int, alpha: Int): Long =
     red.toLong << 24 | green << 16 | blue << 8 | alpha
@@ -377,9 +385,10 @@ private[hallucination] object PngCodec:
     output.write((value >> 8)&0xff)
     output.write(value&0xff)
 
-  private def concatenate(stream: LazyList[Data]): Array[Byte] =
+  private def concatenate(stream: Chain[Data]): Data =
     val output = ji.ByteArrayOutputStream()
 
-    stream.foreach: data => output.write(data.mutable(using Unsafe))
+    stream.each: data =>
+      output.write(Array.unsafeJvm(data))
 
-    output.toByteArray.nn
+    Array.unsafeFrozen(output.toByteArray.nn)

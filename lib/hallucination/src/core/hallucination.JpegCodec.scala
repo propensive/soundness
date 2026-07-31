@@ -35,8 +35,11 @@ package hallucination
 import anticipation.*
 import contingency.*
 import vacuous.*
+import proscenium.compat.*
 
 import RasterError.Reason
+
+import scala.caps
 
 // A pure-Scala JPEG decoder, ported from image-rs/jpeg-decoder (MIT/Apache-2.0). It handles
 // baseline and progressive Huffman-coded DCT images with 1, 3 or 4 components (grayscale, YCbCr /
@@ -50,7 +53,7 @@ private[hallucination] object JpegCodec:
       (data(2) & 0xff) == 0xff
 
   def decode(data: Data): Raster raises RasterError =
-    try JpegDecoder(data).decode()
+    try JpegDecoder(data.readable).decode()
     catch case _: (IndexOutOfBoundsException | NegativeArraySizeException) =>
       abort(RasterError(Jpeg(), Reason.Truncated))
 
@@ -78,15 +81,18 @@ private[hallucination] object JpegColorConvert:
       clamp(y - Cb2G*cb - Cr2G*cr),
       clamp(y + Cb2B*cb) )
 
-private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterError]):
-  private val reader = JpegReader(data, 0)
+// The `Tactic` is threaded through each method rather than captured by the class: a captured
+// tactic capability is not admitted by `Mutable`'s self capture set.
+// `data` is the stdlib immutable array: see the `JpegReader` comment.
+private[hallucination] final class JpegDecoder(data: scala.IArray[Byte]) extends caps.Mutable:
+  private var reader: JpegReader^ = JpegReader(data, 0)
 
   private var frame: Optional[JpegFrame] = Unset
-  private val dcTables: Array[Optional[JpegHuffmanTable]] = Array(Unset, Unset, Unset, Unset)
-  private val acTables: Array[Optional[JpegHuffmanTable]] = Array(Unset, Unset, Unset, Unset)
+  private var dcTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
+  private var acTables: scala.Array[Optional[JpegHuffmanTable]]^ = scala.Array(Unset, Unset, Unset, Unset)
 
   // Quantization tables in natural (un-zigzagged) order, indexed by destination identifier.
-  private val quantTables: Array[Optional[Array[Int]]] = Array(Unset, Unset, Unset, Unset)
+  private var quantTables: scala.Array[Optional[scala.Array[Int]]]^ = scala.Array(Unset, Unset, Unset, Unset)
 
   private var restartInterval = 0
   private var adobeTransform: Optional[Int] = Unset
@@ -94,11 +100,16 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
 
   // One coefficient plane per frame component (`blockWidth*blockHeight*64` entries), accumulated
   // across all scans.
-  private var coefficients: Array[Array[Int]] = Array()
+  // `AnyRef` field + exclusive-view accessor: a typed nested-array field's element types
+  // are elaborated with fresh read capabilities that nothing can satisfy.
+  private var coefficients0: AnyRef = (new scala.Array[scala.Array[Int]](0)).asInstanceOf[AnyRef]
+
+  private inline def coefficients: scala.Array[scala.Array[Int]] =
+    coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]]
 
   // The zig-zag scan order: `Unzigzag(k)` is the natural (row-major) block index of the k-th
   // coefficient in the bitstream.
-  private val Unzigzag: Array[Int] = Array(
+  private val Unzigzag: Array[Int]^{} = scala.Array(
     0, 1, 8, 16, 9, 2, 3, 10,
     17, 24, 32, 25, 18, 11, 4, 5,
     12, 19, 26, 33, 40, 48, 41, 34,
@@ -106,11 +117,12 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
     35, 42, 49, 56, 57, 50, 43, 36,
     29, 22, 15, 23, 30, 37, 44, 51,
     58, 59, 52, 45, 38, 31, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63)
+    53, 60, 61, 54, 47, 55, 62, 63).asInstanceOf[Array[Int]^{}]
 
-  private def bad(): Nothing = abort(RasterError(Jpeg(), Reason.Bitstream))
+  private def bad()(using Tactic[RasterError]): Nothing =
+    abort(RasterError(Jpeg(), Reason.Bitstream))
 
-  def decode(): Raster =
+  update def decode()(using Tactic[RasterError]): Raster =
     if reader.u8() != 0xff || reader.u8() != JpegMarker.Soi then bad()
 
     var previousMarker = JpegMarker.Soi
@@ -128,10 +140,21 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
       if JpegMarker.isSof(marker) then
         if frame.present then abort(RasterError(Jpeg(), Reason.UnsupportedVariant))
         val parsed = JpegParser.parseSof(reader, marker)
-        frame = parsed
+        // The freshly-parsed frame has no other alias; laundered so the loop-consumption
+        // check does not reject the assignment.
+        frame = parsed.asInstanceOf[AnyRef].asInstanceOf[Optional[JpegFrame]]
 
-        coefficients = parsed.components.map: component =>
-          new Array[Int](component.blockWidth*component.blockHeight*64)
+        // Built with an explicit loop: `map` to a fresh nested array trips ClassTag
+        // synthesis under capture checking.
+        val planes = new scala.Array[scala.Array[Int]](parsed.components.length)
+        var index = 0
+
+        while index < planes.length do
+          val component = parsed.components(index)
+          planes(index) = new scala.Array[Int](component.blockWidth*component.blockHeight*64)
+          index += 1
+
+        coefficients0 = planes.asInstanceOf[AnyRef]
 
       else if marker == JpegMarker.Sos then
         val current = frame.lay(bad())(identity)
@@ -177,7 +200,7 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
     render(frame.lay(bad())(identity))
 
   // Skips extraneous bytes and fill bytes to the next marker, returning its code.
-  private def readMarker(): Int =
+  private update def readMarker(): Int =
     var marker = 0
 
     while marker == 0 do
@@ -188,20 +211,21 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
 
     marker
 
-  private def loadQuantizationTables(): Unit =
-    val tables = JpegParser.parseDqt(reader)
+  private update def loadQuantizationTables()(using Tactic[RasterError]): Unit =
+    // A pure view of the parser's freshly-built result, for the `Optional` reads below.
+    val tables = JpegParser.parseDqt(reader).asInstanceOf[scala.Array[Optional[scala.Array[Int]]]]
     var index = 0
 
     while index < 4 do
       tables(index).let: table =>
-        val natural = new Array[Int](64)
+        val natural = new scala.Array[Int](64)
         var j = 0
         while j < 64 do { natural(Unzigzag(j)) = table(j); j += 1 }
         quantTables(index) = natural
 
       index += 1
 
-  private def loadHuffmanTables(): Unit =
+  private update def loadHuffmanTables()(using Tactic[RasterError]): Unit =
     val baseline = frame.lay(false)(_.isBaseline)
     val (dc, ac) = JpegParser.parseDht(reader, baseline)
     var index = 0
@@ -213,7 +237,8 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
 
   // Decodes one scan's entropy-coded data into the coefficient planes; returns the marker that
   // terminated it (or -1).
-  private def decodeScan(frame: JpegFrame, scan: JpegScan): Int =
+  private update def decodeScan(frame: JpegFrame, scan: JpegScan)(using Tactic[RasterError])
+  :   Int =
     val count = scan.componentIndices.length
     val components = scan.componentIndices.map(frame.components(_))
     var check = 0
@@ -238,13 +263,13 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
 
     val isInterleaved = count > 1
     val huffman = JpegHuffmanDecoder()
-    val dcPredictors = new Array[Int](count)
-    val eobRun = new Array[Int](1)
+    val dcPredictors = new scala.Array[Int](count)
+    val eobRun = new scala.Array[Int](1)
     var mcusLeftUntilRestart = restartInterval
     var expectedRst = 0
 
-    val mcuHoriz = new Array[Int](count)
-    val mcuVert = new Array[Int](count)
+    val mcuHoriz = new scala.Array[Int](count)
+    val mcuVert = new scala.Array[Int](count)
     var index = 0
 
     while index < count do
@@ -280,7 +305,9 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
             while i < count do
               val component = components(i)
               val globalIndex = scan.componentIndices(i)
-              val plane = coefficients(globalIndex)
+              // An exclusive view of this decoder's own plane, for the writes below.
+              val planes0 = coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]]
+              val plane = writable[Int](planes0(globalIndex))
               var vPos = 0
 
               while vPos < mcuVert(i) do
@@ -318,18 +345,19 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
     marker
 
   // Section F.2.2: decodes the coefficients of one block on the first pass over its spectral band.
-  private def decodeBlock
-    ( huffman:       JpegHuffmanDecoder,
-      coeff:         Array[Int],
+  private update def decodeBlock
+    ( huffman:       JpegHuffmanDecoder^,
+      coeff:         scala.Array[Int],
       base:          Int,
       dcTableIndex:  Int,
       acTableIndex:  Int,
       spectralStart: Int,
       spectralEnd:   Int,
       successiveLow: Int,
-      eobRun:        Array[Int],
-      dcPredictors:  Array[Int],
+      eobRun:        scala.Array[Int],
+      dcPredictors:  scala.Array[Int],
       predIndex:     Int )
+    ( using Tactic[RasterError] )
   :   Unit =
 
     if spectralStart == 0 then
@@ -340,12 +368,12 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
         else if value <= 11 then huffman.receiveExtend(reader, value)
         else bad()
 
-      dcPredictors(predIndex) = dcPredictors(predIndex) + diff
-      coeff(base) = dcPredictors(predIndex) << successiveLow
+      writable(dcPredictors)(predIndex) = dcPredictors(predIndex) + diff
+      writable(coeff)(base) = dcPredictors(predIndex) << successiveLow
 
     var index = spectralStart.max(1)
 
-    if index < spectralEnd && eobRun(0) > 0 then eobRun(0) -= 1
+    if index < spectralEnd && eobRun(0) > 0 then writable(eobRun)(0) -= 1
     else if index < spectralEnd then
       val acTable = acTables(acTableIndex).vouch
       var continue = true
@@ -355,7 +383,7 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
           index += huffman.fastAcRun
 
           if index >= spectralEnd then continue = false else
-            coeff(base + Unzigzag(index)) = huffman.fastAcValue << successiveLow
+            writable(coeff)(base + Unzigzag(index)) = huffman.fastAcValue << successiveLow
             index += 1
         else
           val byte = huffman.decode(reader, acTable)
@@ -365,37 +393,38 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
           if s == 0 then
             if r == 15 then index += 16
             else
-              eobRun(0) = (1 << r) - 1
-              if r > 0 then eobRun(0) += huffman.getBits(reader, r)
+              writable(eobRun)(0) = (1 << r) - 1
+              if r > 0 then writable(eobRun)(0) += huffman.getBits(reader, r)
               continue = false
           else
             index += r
 
             if index >= spectralEnd then continue = false else
-              coeff(base + Unzigzag(index)) = huffman.receiveExtend(reader, s) << successiveLow
+              writable(coeff)(base + Unzigzag(index)) = huffman.receiveExtend(reader, s) << successiveLow
               index += 1
 
   // Section G.1.2: refines coefficients on later (successive-approximation) passes.
-  private def decodeBlockRefine
-    ( huffman:       JpegHuffmanDecoder,
-      coeff:         Array[Int],
+  private update def decodeBlockRefine
+    ( huffman:       JpegHuffmanDecoder^,
+      coeff:         scala.Array[Int],
       base:          Int,
       acTableIndex:  Int,
       spectralStart: Int,
       spectralEnd:   Int,
       successiveLow: Int,
-      eobRun:        Array[Int] )
+      eobRun:        scala.Array[Int] )
+    ( using Tactic[RasterError] )
   :   Unit =
 
     val bit = 1 << successiveLow
 
     if spectralStart == 0 then
-      if huffman.getBits(reader, 1) == 1 then coeff(base) |= bit
+      if huffman.getBits(reader, 1) == 1 then writable(coeff)(base) |= bit
     else
       val acTable = acTables(acTableIndex).vouch
 
       if eobRun(0) > 0 then
-        eobRun(0) -= 1
+        writable(eobRun)(0) -= 1
         refineNonZeroes(huffman, coeff, base, acTable, spectralStart, spectralEnd, 64, bit)
       else
         var index = spectralStart
@@ -409,8 +438,8 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
 
           if s == 0 then
             if r != 15 then
-              eobRun(0) = (1 << r) - 1
-              if r > 0 then eobRun(0) += huffman.getBits(reader, r)
+              writable(eobRun)(0) = (1 << r) - 1
+              if r > 0 then writable(eobRun)(0) += huffman.getBits(reader, r)
               zeroRun = 64
           else if s == 1 then
             value = if huffman.getBits(reader, 1) == 1 then bit else -bit
@@ -418,20 +447,21 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
             bad()
 
           index = refineNonZeroes(huffman, coeff, base, acTable, index, spectralEnd, zeroRun, bit)
-          if value != 0 then coeff(base + Unzigzag(index)) = value
+          if value != 0 then writable(coeff)(base + Unzigzag(index)) = value
           index += 1
 
   // Section G.1.2.3: advances through the band, refining already-nonzero coefficients by one bit,
   // until `zrl` zero coefficients have been skipped; returns the index reached.
-  private def refineNonZeroes
-    ( huffman:     JpegHuffmanDecoder,
-      coeff:       Array[Int],
+  private update def refineNonZeroes
+    ( huffman:     JpegHuffmanDecoder^,
+      coeff:       scala.Array[Int],
       base:        Int,
       acTable:     JpegHuffmanTable,
       start:       Int,
       end:         Int,
       zrl:         Int,
       bit:         Int )
+    ( using Tactic[RasterError] )
   :   Int =
 
     var zeroRun = zrl
@@ -449,7 +479,8 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
         else
           zeroRun -= 1
       else if huffman.getBits(reader, 1) == 1 && (coeff(position) & bit) == 0 then
-        if coeff(position) > 0 then coeff(position) += bit else coeff(position) -= bit
+        if coeff(position) > 0 then writable(coeff)(position) += bit
+        else writable(coeff)(position) -= bit
 
       if !settled then index += 1
 
@@ -457,12 +488,12 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
 
   // Dequantizes and inverse-transforms every coefficient plane, then assembles the interleaved,
   // colour-converted image and wraps it as a `Raster`.
-  private def render(frame: JpegFrame): Raster =
-    val planes = new Array[Array[Byte]](frame.components.length)
+  private update def render(frame: JpegFrame)(using Tactic[RasterError]): Raster =
+    val planes = new scala.Array[scala.Array[Byte]](frame.components.length)
     var index = 0
 
     while index < frame.components.length do
-      planes(index) = renderPlane(frame.components(index), coefficients(index))
+      planes(index) = renderPlane(frame.components(index), coefficients0.asInstanceOf[scala.Array[scala.Array[Int]]](index))
       index += 1
 
     val width = frame.imageWidth
@@ -472,10 +503,10 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
     then grayscaleRaster(frame.components(0), planes(0), width, height)
     else colorRaster(frame, planes, width, height)
 
-  private def renderPlane(component: JpegComponent, coeff: Array[Int]): Array[Byte] =
+  private update def renderPlane(component: JpegComponent, coeff: scala.Array[Int]): scala.Array[Byte] =
     val quant = quantTables(component.quantizationTableIndex).vouch
     val stride = component.blockWidth*8
-    val plane = new Array[Byte](stride*component.blockHeight*8)
+    val plane = new scala.Array[Byte](stride*component.blockHeight*8)
     var blockY = 0
 
     while blockY < component.blockHeight do
@@ -490,7 +521,7 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
 
     plane
 
-  private def grayscaleRaster(component: JpegComponent, plane: Array[Byte], width: Int, height: Int)
+  private def grayscaleRaster(component: JpegComponent, plane: scala.Array[Byte], width: Int, height: Int)
   :   Raster =
 
     val stride = component.blockWidth*8
@@ -502,14 +533,15 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
       (luma << 16) | (luma << 8) | luma
 
   private def colorRaster
-    ( frame: JpegFrame, planes: Array[Array[Byte]], width: Int, height: Int )
+    ( frame: JpegFrame, planes: scala.Array[scala.Array[Byte]], width: Int, height: Int )
+    ( using Tactic[RasterError] )
   :   Raster =
 
     val transform = determineColorTransform(frame)
     val upsampler = JpegUpsampler(frame.components, width, height)
     val convert = chooseColorConvert(frame.components.length, transform)
-    val rgb = new Array[Byte](width*height*3)
-    val row = new Array[Byte](width*3)
+    val rgb = new scala.Array[Byte](width*height*3)
+    val row = new scala.Array[Byte](width*3)
 
     var y = 0
 
@@ -521,38 +553,42 @@ private[hallucination] final class JpegDecoder(data: Data)(using Tactic[RasterEr
     Raster.build(width, height, Descriptor.rgb): pixel =>
       (rgb(pixel*3) & 0xffL) << 16 | (rgb(pixel*3 + 1) & 0xffL) << 8 | (rgb(pixel*3 + 2) & 0xffL)
 
-  private def chooseColorConvert(count: Int, transform: JpegColor)
-  :   (Array[Array[Byte]], Array[Byte]) => Unit =
+  // A named single-method interface, not a function type: a nested-array parameter of a
+  // function type is elaborated with fresh element capabilities that leak on every read.
+  private def chooseColorConvert(count: Int, transform: JpegColor): JpegColorConverter =
+    new JpegColorConverter:
+      def convert(buffers0: AnyRef, output: scala.Array[Byte]): Unit =
+        inline def buffers(index: Int): scala.Array[Byte] =
+          buffers0.asInstanceOf[scala.Array[scala.Array[Byte]]](index)
 
-    (buffers, output) =>
-      val width = output.length/3
-      var x = 0
+        val width = output.length/3
+        var x = 0
 
-      while x < width do
-        val a0 = buffers(0)(x) & 0xff
-        val a1 = buffers(1)(x) & 0xff
-        val a2 = buffers(2)(x) & 0xff
+        while x < width do
+          val a0 = buffers(0)(x) & 0xff
+          val a1 = buffers(1)(x) & 0xff
+          val a2 = buffers(2)(x) & 0xff
 
-        val (r, g, b) = transform match
-          case JpegColor.Rgb   => (a0, a1, a2)
-          case JpegColor.YCbCr => JpegColorConvert.ycbcrToRgb(a0, a1, a2)
+          val (r, g, b) = transform match
+            case JpegColor.Rgb   => (a0, a1, a2)
+            case JpegColor.YCbCr => JpegColorConvert.ycbcrToRgb(a0, a1, a2)
 
-          case JpegColor.Cmyk =>
-            val k = buffers(3)(x) & 0xff
-            (a0*k/255, a1*k/255, a2*k/255)
+            case JpegColor.Cmyk =>
+              val k = buffers(3)(x) & 0xff
+              (a0*k/255, a1*k/255, a2*k/255)
 
-          case JpegColor.Ycck =>
-            val k = buffers(3)(x) & 0xff
-            val (yr, yg, yb) = JpegColorConvert.ycbcrToRgb(a0, a1, a2)
-            (yr*k/255, yg*k/255, yb*k/255)
+            case JpegColor.Ycck =>
+              val k = buffers(3)(x) & 0xff
+              val (yr, yg, yb) = JpegColorConvert.ycbcrToRgb(a0, a1, a2)
+              (yr*k/255, yg*k/255, yb*k/255)
 
-          case _ =>
-            (a0, a0, a0)
+            case _ =>
+              (a0, a0, a0)
 
-        output(x*3) = r.toByte
-        output(x*3 + 1) = g.toByte
-        output(x*3 + 2) = b.toByte
-        x += 1
+          writable(output)(x*3) = r.toByte
+          writable(output)(x*3 + 1) = g.toByte
+          writable(output)(x*3 + 2) = b.toByte
+          x += 1
 
   // Section on colour determination, following the reference (and the heuristics described at
   // entropymine.wordpress.com/2018/10/22/how-is-a-jpeg-images-color-type-determined).

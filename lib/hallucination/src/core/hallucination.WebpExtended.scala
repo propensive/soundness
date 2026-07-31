@@ -35,6 +35,9 @@ package hallucination
 import anticipation.*
 import contingency.*
 import vacuous.*
+import proscenium.compat.*
+
+import scala.caps
 
 import Binary.*
 import RasterError.Reason
@@ -44,8 +47,11 @@ import RasterError.Reason
 // optionally lossless-compressed) and, for animations, decodes and composites the first frame.
 private[hallucination] object WebpExtended:
   private final class Chunks
-    ( var alph: Optional[(Int, Int)], var vp8: Optional[(Int, Int)],
-      var vp8l: Optional[(Int, Int)], var anmf: Optional[(Int, Int)] )
+    ( var alph: Optional[(Int, Int)],
+      var vp8:  Optional[(Int, Int)],
+      var vp8l: Optional[(Int, Int)],
+      var anmf: Optional[(Int, Int)] )
+  extends caps.Mutable
 
   def decode(data: Data, start: Int, end: Int, riffEnd: Int): Raster raises RasterError =
     val flags = u8(data, start)
@@ -71,7 +77,7 @@ private[hallucination] object WebpExtended:
         rasterRgba(width, height, rgba)
 
   // Scans chunk headers in [position, end), recording the first ALPH/VP8/VP8L/ANMF ranges.
-  private def scan(data: Data, position0: Int, end: Int, chunks: Chunks): Unit =
+  private def scan(data: Data, position0: Int, end: Int, chunks: Chunks^): Unit =
     var position = position0
 
     while position + 8 <= end do
@@ -89,8 +95,9 @@ private[hallucination] object WebpExtended:
       position += 8 + size + (size & 1)
 
   // Decodes a lossy VP8 image, applying the ALPH alpha channel if present.
-  private def decodeLossy(data: Data, chunks: Chunks, hasAlpha: Boolean)
-  :   Raster raises RasterError =
+  private def decodeLossy(data: Data, chunks: Chunks^, hasAlpha: Boolean)
+    ( using Tactic[RasterError] )
+  :   Raster =
 
     val (vp8Start, vp8End) = chunks.vp8.or(abort(RasterError(Webp(), Reason.UnsupportedVariant)))
     val frame = Vp8Decoder.decode(data, vp8Start, vp8End)
@@ -107,27 +114,29 @@ private[hallucination] object WebpExtended:
 
   // Reads and un-filters the ALPH chunk into one alpha byte per pixel.
   private def readAlpha(data: Data, start: Int, end: Int, width: Int, height: Int)
-  :   Array[Int] raises RasterError =
+  :   scala.Array[Int] raises RasterError =
 
     val info = u8(data, start)
     val filtering = (info & 0x0c) >> 2
     val compression = info & 0x03
 
     // The stored (still filtered) alpha samples.
-    val filtered: Array[Int] =
+    val filtered: scala.Array[Int] =
       if compression == 1 then
         // Lossless-compressed alpha: a VP8L L8 image whose green channel carries the alpha.
         val reader = WebpBitReader(data, start + 1, end)
         val rgba = WebpLossless.decodeRaw(reader, width, height)
 
-        Array.tabulate(width*height): i => rgba(i*4 + 1) & 0xff
+        scala.Array.tabulate(width*height): i =>
+          rgba(i*4 + 1) & 0xff
       else if compression == 0 then
-        Array.tabulate(width*height): i => u8(data, start + 1 + i)
+        scala.Array.tabulate(width*height): i =>
+          u8(data, start + 1 + i)
       else
         abort(RasterError(Webp(), Reason.UnsupportedVariant))
 
     // Un-filter: each sample is added to its predictor (from already-decoded neighbours).
-    val alpha = new Array[Int](width*height)
+    val alpha = new scala.Array[Int](width*height)
     var y = 0
 
     while y < height do
@@ -144,7 +153,7 @@ private[hallucination] object WebpExtended:
 
   // The alpha predictor for pixel (x, y) under the given filtering method, reading previously
   // un-filtered neighbours from `alpha`.
-  private def alphaPredictor(x: Int, y: Int, width: Int, filtering: Int, alpha: Array[Int]): Int =
+  private def alphaPredictor(x: Int, y: Int, width: Int, filtering: Int, alpha: scala.Array[Int]): Int =
     inline def at(px: Int, py: Int): Int = alpha(py*width + px)
 
     filtering match
@@ -196,11 +205,11 @@ private[hallucination] object WebpExtended:
         then frame.word((y - frameY)*frameWidth + (x - frameX))
         else 0L
 
-  private def combine(width: Int, height: Int, rgb: Array[Int], alpha: Array[Int]): Raster =
+  private def combine(width: Int, height: Int, rgb: scala.Array[Int], alpha: scala.Array[Int]): Raster =
     Raster.build(width, height, Descriptor.rgba): index =>
       (rgb(index).toLong & 0xffffff) << 8 | (alpha(index) & 0xff)
 
-  private def rasterRgba(width: Int, height: Int, rgba: Array[Byte]): Raster =
+  private def rasterRgba(width: Int, height: Int, rgba: scala.Array[Byte]): Raster =
     Raster.build(width, height, Descriptor.rgba): index =>
       (rgba(index*4) & 0xffL) << 24 | (rgba(index*4 + 1) & 0xffL) << 16 |
         (rgba(index*4 + 2) & 0xffL) << 8 | (rgba(index*4 + 3) & 0xffL)
@@ -209,4 +218,4 @@ private[hallucination] object WebpExtended:
     u8(data, offset) | (u8(data, offset + 1) << 8) | (u8(data, offset + 2) << 16)
 
   private def fourcc(data: Data, offset: Int): String =
-    String(Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn
+    String(scala.Array(data(offset), data(offset + 1), data(offset + 2), data(offset + 3)), "UTF-8").nn

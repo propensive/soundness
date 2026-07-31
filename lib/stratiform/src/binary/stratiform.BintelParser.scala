@@ -46,7 +46,10 @@ import contingency.*
 // it once per read and step through its direct rim — but only stratiform's
 // read path can construct one.
 final class BintelParser private[stratiform] (input: Data):
-  private[stratiform] val data: Array[Byte] = input.asInstanceOf[Array[Byte]]
+  @scala.caps.unsafe.untrackedCaptures
+  private[stratiform] val data: scala.Array[Byte] = input.asInstanceOf[scala.Array[Byte]]
+
+  @scala.caps.unsafe.untrackedCaptures
   private[stratiform] var offset: Int = 0
 
   def directVarint()(using Tactic[BintelError]): Long =

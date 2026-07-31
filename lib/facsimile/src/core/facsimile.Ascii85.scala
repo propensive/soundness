@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -42,9 +44,9 @@ import vacuous.*
 // bytes base-85; `z` abbreviates four zero bytes; a partial final group of n characters
 // yields n−1 bytes; `~>` ends the data.
 private[facsimile] object Ascii85:
-  def decode(data: Data): Data raises PdfError =
-    val bytes = Array.newBuilder[Byte]
-    val group = new Array[Int](5)
+  def decode(data: Data)(using Tactic[PdfError]): Data =
+    val bytes = DataBuilder()
+    val group = new scala.Array[Int](5)
     var members = 0
     var done = false
     var i = 0
@@ -87,4 +89,4 @@ private[facsimile] object Ascii85:
     if members == 1 then abort(PdfError(PdfError.Reason.CorruptStream(t"ASCII85Decode")))
     if members > 1 then emit(members)
 
-    bytes.result().immutable(using Unsafe)
+    bytes.result()

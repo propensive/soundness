@@ -36,6 +36,8 @@ import java.io as ji
 
 import soundness.*
 
+import proscenium.compat.*
+
 object Tests extends Suite(m"Ultimatum Tests"):
   def run(): Unit =
     suite(m"TerminalCanvas"):
@@ -128,8 +130,8 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
     suite(m"Layout solver"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
-      def file(children: Frame*): Frame = Frame.Split(Sizing(), Axis.File, children.to(List))
-      def rank(children: Frame*): Frame = Frame.Split(Sizing(), Axis.Rank, children.to(List))
+      def file(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.File, children.to(List))
+      def rank(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Axis.Rank, children.to(List))
 
       test(m"fractions divide the axis proportionally"):
         val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
@@ -143,7 +145,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"the rounded sizes always sum to the available space"):
         val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
-        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width).foldLeft(0)(_ + _)
+        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width).fold(0)(_ + _)
       . assert(_ == 100)
 
       test(m"a child whose minimum exceeds its share is fixed at the minimum"):
@@ -158,7 +160,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a container's minimum is forced up to the sum of its children's"):
         val frame = file(cell(Sizing(1.0, minWidth = 5)), cell(Sizing(1.0, minWidth = 5)))
-        frame.measure(Axis.File)
+        frame.measure(ultimatum.Axis.File)
       . assert(_ == Limits(10, Unset))
 
       test(m"file children fill the cross axis (full height)"):
@@ -242,17 +244,17 @@ object Tests extends Suite(m"Ultimatum Tests"):
       . assert(_ == t"b")
 
       test(m"a moved or resized cell is dirty"):
-        val before = IndexedSeq(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
-        val after  = IndexedSeq(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
+        val before = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        val after  = Sequence(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
         dirtyCells(before, after, Set())
       . assert(_ == Set(0, 1))
 
       test(m"an unchanged cell is not dirty"):
-        dirtyCells(IndexedSeq(Rect(0, 0, 10, 1)), IndexedSeq(Rect(0, 0, 10, 1)), Set())
+        dirtyCells(Sequence(Rect(0, 0, 10, 1)), Sequence(Rect(0, 0, 10, 1)), Set())
       . assert(_ == Set())
 
       test(m"a content-changed cell is dirty though its rectangle is unchanged"):
-        val rects = IndexedSeq(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        val rects = Sequence(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
         dirtyCells(rects, rects, Set(1))
       . assert(_ == Set(1))
 
@@ -293,6 +295,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val root = ResizableRoot(10, 4)
 
         val resize = new Iterator[TerminalEvent]:
+          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
 
@@ -577,6 +580,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a shrink with an anchor clears from the recovered row and re-docks"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
@@ -594,6 +598,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"the anchor column selects the reflow model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
@@ -612,6 +617,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"the anchor column selects the truncate model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
@@ -630,6 +636,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"an unmatchable anchor column falls back to the full clear"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
@@ -662,6 +669,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a second resize without a fresh anchor falls back"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
@@ -727,15 +735,20 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a resize with an anchor reply recovers the block position"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var w = 6
         val root = new InlineRoot(() => w, () => 4)
 
         val events = new Iterator[TerminalEvent]:
-          private var remaining: List[() => TerminalEvent] = List(
-            () => Signal.Winch,
-            () => TerminalInfo.CursorPosition(2, 1),
-            () => { w = 4; TerminalInfo.WindowSize(4, 4) },
-            () => Keypress.Escape)
+          @scala.caps.unsafe.untrackedCaptures
+          // Capture-carrying elements do not flow through the opaque List (boxing), so
+          // this event queue deliberately stays a stdlib list.
+          private var remaining: scala.collection.immutable.List[() => TerminalEvent] =
+            scala.collection.immutable.List(
+              () => Signal.Winch,
+              () => TerminalInfo.CursorPosition(2, 1),
+              () => { w = 4; TerminalInfo.WindowSize(4, 4) },
+              () => Keypress.Escape)
 
           def hasNext = remaining.nonEmpty
 
@@ -841,10 +854,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"a WindowSize event re-tiles and fully redraws"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
+        @scala.caps.unsafe.untrackedCaptures
         var liveRows: Int = 4
         val root = new ScreenRoot(() => 10, () => liveRows)
 
         val resize = new Iterator[TerminalEvent]:
+          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
 
@@ -867,7 +882,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.append(b)
-        panes.contents.to(List) == List(a, b)
+        panes.contents.to[List] == List(a, b)
       . assert(_ == true)
 
       test(m"prepend adds a pane at the start"):
@@ -875,7 +890,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a)
         panes.prepend(b)
-        panes.contents.to(List) == List(b, a)
+        panes.contents.to[List] == List(b, a)
       . assert(_ == true)
 
       test(m"insertBefore places a pane immediately before the reference"):
@@ -884,7 +899,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertBefore(b, c)
-        panes.contents.to(List) == List(a, c, b)
+        panes.contents.to[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"insertAfter places a pane immediately after the reference"):
@@ -893,7 +908,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val c = cell()
         val panes = Panes(a, b)
         panes.insertAfter(a, c)
-        panes.contents.to(List) == List(a, c, b)
+        panes.contents.to[List] == List(a, c, b)
       . assert(_ == true)
 
       test(m"remove deletes a pane by identity"):
@@ -901,7 +916,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val b = cell()
         val panes = Panes(a, b)
         panes.remove(a)
-        panes.contents.to(List) == List(b)
+        panes.contents.to[List] == List(b)
       . assert(_ == true)
 
       // Drive a running form, append a pane mid-loop (the synthetic iterator
@@ -912,6 +927,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val panes = Panes(panel()(Out.print(t"A")))
 
         val events = new Iterator[TerminalEvent]:
+          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
           def hasNext = pending
 
@@ -997,7 +1013,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a full border adds one cell on every side to the minimum size"):
         val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
-        (bordered.measure(Axis.File).min, bordered.measure(Axis.Rank).min)
+        (bordered.measure(ultimatum.Axis.File).min, bordered.measure(ultimatum.Axis.Rank).min)
       . assert(_ == (5, 4))
 
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
@@ -1005,6 +1021,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 // the composed screen read back.
 class ResizableRoot(maxWidth: Int, maxHeight: Int)(using Stdio) extends Canvas:
   private val flow = FlowExtent(TerminalCanvas(maxWidth, maxHeight), Rect(0, 0, maxWidth, maxHeight))
+  @scala.caps.unsafe.untrackedCaptures
   private var size: (Int, Int) = (maxWidth, maxHeight)
 
   def resize(width: Int, height: Int): Unit = size = (width, height)

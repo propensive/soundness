@@ -44,10 +44,10 @@ extension [layout <: Tuple](raster: Raster by layout)
     val index = y*raster.width + x
 
     inline erasedValue[Channel.Storage[layout]] match
-      case _: Byte  => Pixel.make(raster.buffer.asInstanceOf[Array[Byte]](index)&0xffL)
-      case _: Short => Pixel.make(raster.buffer.asInstanceOf[Array[Short]](index)&0xffffL)
-      case _: Int   => Pixel.make(raster.buffer.asInstanceOf[Array[Int]](index)&0xffffffffL)
-      case _: Long  => Pixel.make(raster.buffer.asInstanceOf[Array[Long]](index))
+      case _: Byte  => Pixel.make(raster.buffer.asInstanceOf[scala.Array[Byte]](index)&0xffL)
+      case _: Short => Pixel.make(raster.buffer.asInstanceOf[scala.Array[Short]](index)&0xffffL)
+      case _: Int   => Pixel.make(raster.buffer.asInstanceOf[scala.Array[Int]](index)&0xffffffffL)
+      case _: Long  => Pixel.make(raster.buffer.asInstanceOf[scala.Array[Long]](index))
 
 extension (raster: Raster)
   // Repacks every pixel into the given layout, converting colour models where the channel sets

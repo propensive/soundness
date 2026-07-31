@@ -58,61 +58,69 @@ import stdios.virtualMachineStdio
 import termcaps.environmentTermcap
 
 package couriers:
-  given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)
+  given resend
+  :   ( courierTactic: Tactic[CourierError], online: Online, loggable: HttpEvent is Loggable,
+        client: HttpClient )
   =>  ( apiKey: Resend.ApiKey )
-  =>  Courier:
+  =>  (Courier^{courierTactic, online}) =
+    // The instance's own fresh capability is laundered; the declared result tracks its
+    // retained capabilities.
+    scala.caps.unsafe.unsafeAssumePure:
+     new Courier:
 
-    type Result = Resend.Receipt
+      type Result = Resend.Receipt
 
-    private case class Attachment(filename: Text, content: Text)
+      private case class Attachment(filename: Text, content: Text)
 
-    private case class Request
-      ( from:         EmailAddress,
-        to:           List[EmailAddress],
-        subject:      Text,
-        bcc:          List[EmailAddress],
-        cc:           List[EmailAddress],
-        scheduled_at: Optional[Text],
-        replyTo:      List[EmailAddress],
-        headers:      Map[Text, Text],
-        html:         Optional[Text],
-        text:         Optional[Text],
-        attachments:  List[Attachment] )
+      private case class Request
+        ( from:         EmailAddress,
+          to:           List[EmailAddress],
+          subject:      Text,
+          bcc:          List[EmailAddress],
+          cc:           List[EmailAddress],
+          scheduled_at: Optional[Text],
+          replyTo:      List[EmailAddress],
+          headers:      Map[Text, Text],
+          html:         Optional[Text],
+          text:         Optional[Text],
+          attachments:  List[Attachment] )
 
-    def send(message: Document[Email]): Resend.Receipt =
-      val email = message.root
-      val envelope = message.metadata
+      def send(message: Document[Email]): Resend.Receipt =
+        val email = message.root
+        val envelope = message.metadata
 
-      val attachments = email.attachments.map: attachment =>
-        Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
+        val attachments = email.attachments.map: attachment =>
+          Attachment(attachment.name, attachment.stream.read[Data].serialize[Base64])
 
-      val request =
-        Request
-          ( envelope.from,
-            envelope.to,
-            envelope.subject,
-            envelope.bcc,
-            envelope.cc,
-            Unset,
-            envelope.replyTo,
-            email.headers,
-            email.html,
-            email.text,
-            attachments )
+        val request =
+          Request
+            ( envelope.from,
+              envelope.to,
+              envelope.subject,
+              envelope.bcc,
+              envelope.cc,
+              Unset,
+              envelope.replyTo,
+              email.headers,
+              email.html,
+              email.text,
+              attachments )
 
-      def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
+        def error = CourierError(envelope.from, envelope.to.stdlib.head, envelope.subject)
 
-      mitigate:
-        case ConnectError(reason)     => Out.println(reason.communicate) yet error
-        case ParseError(_, _, reason) => Out.println(reason.describe) yet error
-        case HttpError(status, _)     => Out.println(status.communicate) yet error
-        case JsonError(reason)        => Out.println(reason.communicate) yet error
-        case MediaTypeError(_, _)     => error
+        mitigate:
+          case ConnectError(reason)     => Out.println(reason.communicate) yet error
+          case ParseError(_, _, reason) => Out.println(reason.describe) yet error
+          case HttpError(status, _)     => Out.println(status.communicate) yet error
+          case JsonError(reason)        => Out.println(reason.communicate) yet error
+          case MediaTypeError(_, _)     => error
 
-      . protect:
-          url"https://api.resend.com/emails".submit
-            ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
-            ( request.in[Json] )
+        . protect:
+           // The request and its decoding share only the resolution-scoped tactic.
+           scala.caps.unsafe.unsafeAssumeSeparate:
+            url"https://api.resend.com/emails".submit
+              ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
+              ( request.in[Json] )
 
-          . receive[Json]
-          . as[Resend.Receipt]
+            . receive[Json]
+            . as[Resend.Receipt]

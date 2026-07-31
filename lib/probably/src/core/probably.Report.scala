@@ -34,6 +34,8 @@ package probably
 
 import scala.collection.mutable as scm
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import digression.*
@@ -52,7 +54,7 @@ object Report:
         verdict:     Verdict )
     :   Report =
 
-      val metrics = ListMap(Metric.Duration -> verdict.duration.toDouble)
+      val metrics = Ledger(Metric.Duration -> verdict.duration.toDouble)
       val report2 = report.record(testId, Entry.Kind.Check, coordinates, Run(verdict, metrics))
 
       verdict match
@@ -122,9 +124,10 @@ object Report:
 // The insertion-ordered, mutex-guarded map of report lines within one suite node.
 class TestsMap():
   private val mutex: Mutex = Mutex()
-  private var tests: ListMap[TestId, ReportLine] = ListMap()
+  @scala.caps.unsafe.untrackedCaptures
+  private var tests: Ledger[TestId, ReportLine] = Ledger()
 
-  def list: List[(TestId, ReportLine)] = mutex(tests.to(List))
+  def list: List[(TestId, ReportLine)] = mutex(tests.to[List])
   def apply(testId: TestId): ReportLine = mutex(tests(testId))
 
   def update(testId: TestId, reportLine: ReportLine) = mutex:
@@ -144,7 +147,9 @@ enum ReportLine:
 // `final` so the capture checker infers a precise self-type rather than the universal capture an
 // extensible class would get.
 final class Report(using environment: Environment)(using palette: TestPalette):
+  @scala.caps.unsafe.untrackedCaptures
   private var failure0: Optional[(Throwable, Set[TestId])] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   private var pass: Boolean = false
 
   private[probably] val lines: ReportLine.Suite = ReportLine.Suite(Unset)
@@ -200,7 +205,7 @@ final class Report(using environment: Environment)(using palette: TestPalette):
   // Sets the comparison anchor of a test's entry: the axis value against which its other
   // cells are compared. A no-op if the test recorded no cells at all.
   def anchor(testId: TestId, anchor: Anchor): Report = this.also:
-    resolve(testId.suite).tests.list.find(_(0) == testId).map(_(1)).each:
+    resolve(testId.suite).tests.list.find(_(0) == testId).map(_(1)).foreach:
       case ReportLine.Item(entry) => entry.anchor = anchor
       case _: ReportLine.Suite    => ()
 

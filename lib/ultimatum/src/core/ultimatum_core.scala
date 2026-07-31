@@ -32,6 +32,8 @@
                                                                                                   */
 package ultimatum
 
+import proscenium.compat.*
+
 import anticipation.*
 import denominative.*
 import parasite.*
@@ -134,17 +136,17 @@ def border
   // The middle band: the child flanked by whichever vertical edges are requested.
   val middle =
     val edge = if left then List(verticalRule) else Nil
-    file((edge ++ List(child) ++ (if right then List(verticalRule) else Nil))*)
+    file(((edge :+ child) ::: (if right then List(verticalRule) else Nil)).stdlib*)
 
   // A horizontal band (the top or bottom): a rule flanked by whichever corners
   // are requested (a corner appears only where a vertical edge also meets it).
   def band(leftCorner: Text, rightCorner: Text): Pane =
     val start = if left then List(corner(leftCorner)) else Nil
-    file((start ++ List(horizontalRule) ++ (if right then List(corner(rightCorner)) else Nil))*)
+    file(((start :+ horizontalRule) ::: (if right then List(corner(rightCorner)) else Nil)).stdlib*)
 
   val head = if top then List(band(style.topLeft, style.topRight)) else Nil
   val foot = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
-  rank((head ++ List(middle) ++ foot)*)
+  rank(((head :+ middle) ::: foot).stdlib*)
 
 // Drive an interactive layout, looping over terminal events until the user exits.
 // Used inside `interactive`. In `Fullscreen` mode the layout takes over the
@@ -165,11 +167,14 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 
   mode match
     case Mode.Fullscreen =>
-      profanity.terminalFeatures.alternateScreenFeature:
+      // The feature body and its terminal argument are the same single-owner session.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       profanity.terminalFeatures.alternateScreenFeature:
         // A buffered root: panels composite into its in-memory grid and each present
         // diffs against what is already on screen, so unchanged cells are never
         // re-emitted (no flicker). `cursor(false)` is recorded now and applied by the
         // first present; `finish` re-shows the cursor on the way out.
+        // The root only reads the same single-owner terminal; no aliased writer.
         val root = ScreenRoot(terminal)
         root.cursor(false)
 
@@ -194,10 +199,16 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 // since the last layout, plus any whose content changed this frame. A leaf whose
 // rectangle and content are both unchanged is omitted, so it is left untouched on
 // screen — the basis of flicker-free redraw.
-def dirtyCells(previous: IndexedSeq[Rect], current: IndexedSeq[Rect], changed: Set[Int]): Set[Int] =
-  val moved = current.indices.filter: i => i >= previous.length || previous(i) != current(i)
+def dirtyCells
+  ( previous: Sequence[Rect],
+    current:  Sequence[Rect],
+    changed:  Set[Int] )
+:   Set[Int] =
 
-  moved.to(Set) ++ changed
+  val moved = (0 until current.length).filter: i =>
+    i >= previous.length || previous(i) != current(i)
+
+  Set.from(moved) ++ changed
 
 // Solve `pane` against `root` once and paint each leaf's content into its
 // rectangle (no event loop). An `InlineRoot` is sized to the height its content
@@ -217,7 +228,7 @@ def paint(root: Canvas^, pane: Pane): Unit =
   // An explicit iterator loop rather than `.each`: the per-cell closure constructs a `FlowExtent`
   // over the `root` canvas (a capability), and capture checking rejects that fresh capability
   // leaking out through the `.each` lambda's inferred parameter type.
-  val cells = pane.leaves.zip(placement.cells).iterator
+  val cells = pane.leaves.stdlib.zip(placement.cells.stdlib).iterator
   while cells.hasNext do
     val (leaf, rect) = cells.next()
     val extent = FlowExtent(root, rect)

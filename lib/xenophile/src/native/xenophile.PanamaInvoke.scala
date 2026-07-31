@@ -35,6 +35,7 @@ package xenophile
 import java.lang.foreign.*
 
 import scala.quoted.*
+import scala.collection.immutable.{List, Nil, ::}
 
 import anticipation.*
 import fulminate.*
@@ -129,7 +130,7 @@ object PanamaInvoke:
     val prototype = members.at(function).or:
       halt(m"xenophile: the foreign type $owner has no member $function")
 
-    val parameterTypes = prototype.parameters.or(Nil)
+    val parameterTypes = prototype.parameters.let(_.stdlib).or(Nil)
 
     if argumentTerms.length != parameterTypes.length then
       halt(m"xenophile: wrong number of arguments for $owner.$function")
@@ -147,14 +148,15 @@ object PanamaInvoke:
       case Foreign.Type.Named(t"bool")   => '{ValueLayout.JAVA_BOOLEAN.nn}
       case _                             => '{ValueLayout.ADDRESS.nn}
 
-    val layouts = Varargs(parameterTypes.map(layoutFor))
+    // One `appendArgumentLayouts` per parameter rather than a varargs splice: the generated
+    // splice's array cannot flow into the Java varargs formal under separation checking.
+    val base: Expr[FunctionDescriptor] = prototype.result match
+      case Foreign.Type.Named(t"void") => '{FunctionDescriptor.ofVoid().nn}
+      case result                      => '{FunctionDescriptor.of(${layoutFor(result)}).nn}
 
-    val descriptor: Expr[FunctionDescriptor] = prototype.result match
-      case Foreign.Type.Named(t"void") =>
-        '{FunctionDescriptor.ofVoid($layouts*).nn}
-
-      case result =>
-        '{FunctionDescriptor.of(${layoutFor(result)}, $layouts*).nn}
+    val descriptor: Expr[FunctionDescriptor] =
+      parameterTypes.foldLeft(base): (acc, tpe) =>
+        '{$acc.appendArgumentLayouts(${layoutFor(tpe)}).nn}
 
     def isString(tpe: Foreign.Type): Boolean = tpe match
       case Foreign.Type.Named(t"string") => true
@@ -184,10 +186,13 @@ object PanamaInvoke:
     def call(arena: Optional[Expr[Arena]]): Expr[Any] =
       val arguments = Expr.ofList(marshalled(arena))
 
+      // The `java.util.List` overload of `invokeWithArguments`, not the varargs one: the
+      // generated splice's array cannot flow into the Java varargs formal under separation
+      // checking.
       ' {
           ForeignLibrary
           . downcall(${Expr(function.s)}.tt, $descriptor)
-          . invokeWithArguments($arguments*)
+          . invokeWithArguments(scala.jdk.javaapi.CollectionConverters.asJava($arguments))
         }
 
     val invocation: Expr[Any] =

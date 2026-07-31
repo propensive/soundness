@@ -32,6 +32,8 @@
                                                                                                   */
 package cacophony
 
+import scala.{caps, math}
+
 import javax.sound.sampled as jss
 
 import anticipation.*
@@ -59,18 +61,18 @@ object Pcm:
   class PcmInput[layout] private[cacophony] (line: jss.TargetDataLine, chunkBytes: Int)
   extends caps.ExclusiveCapability:
 
-    def stream: LazyList[Audio across layout] =
-      def recur: LazyList[Audio across layout] =
-        val buffer: Array[Byte] = new Array[Byte](chunkBytes)
+    def stream: Chain[Audio across layout] =
+      def recur: Chain[Audio across layout] =
+        val buffer: scala.Array[Byte] = new scala.Array[Byte](chunkBytes)
         val count = line.read(buffer, 0, buffer.length)
 
-        if count <= 0 then LazyList() else
+        if count <= 0 then Chain() else
           val chunk =
             if count == buffer.length then buffer else java.util.Arrays.copyOf(buffer, count).nn
 
           Audio.of[layout](line.getFormat.nn, chunk) #:: recur
 
-      LazyList.defer(recur)
+      Chain.defer(recur)
 
   class PcmOutput private[cacophony] (mixerInfo: jss.Mixer.Info, name: Text, chunkBytes: Int)
   extends caps.ExclusiveCapability:
@@ -128,9 +130,9 @@ object Pcm:
       ( block: ((PcmInput[layout] & Granting[grants])^) ?=> result )
     :   result =
 
-      val rate = flags.collectFirst { case PcmFlag.Rate(hertz) => hertz }.getOrElse(44100)
-      val bits = flags.collectFirst { case PcmFlag.Bits(bits) => bits }.getOrElse(16)
-      val chunk = flags.collectFirst { case PcmFlag.Chunk(bytes) => bytes }.getOrElse(65536)
+      val rate = flags.stdlib.collectFirst { case PcmFlag.Rate(hertz) => hertz }.getOrElse(44100)
+      val bits = flags.stdlib.collectFirst { case PcmFlag.Bits(bits) => bits }.getOrElse(16)
+      val chunk = flags.stdlib.collectFirst { case PcmFlag.Chunk(bytes) => bytes }.getOrElse(65536)
 
       val bytesPerFrame = channelLayout.channels*(bits/8)
 
@@ -177,12 +179,13 @@ object Pcm:
       ( block: ((PcmOutput & Granting[grants])^) ?=> result )
     :   result =
 
-      val chunk = flags.collectFirst { case PcmFlag.Chunk(bytes) => bytes }.getOrElse(65536)
+      val chunk = flags.stdlib.collectFirst { case PcmFlag.Chunk(bytes) => bytes }.getOrElse(65536)
       block(using new PcmOutput(value.mixerInfo, value.name, chunk) with Granting[grants] {})
 
   given feedOpenable: [layout: ChannelLayout]
-  =>  Tactic[FeedError]
-  =>  ( FeedOpenable[layout]^ ) =
+  =>  (tactic: Tactic[FeedError])
+  =>  ( FeedOpenable[layout]^{tactic} ) =
     FeedOpenable[layout]
 
-  given outletOpenable: Tactic[OutletError] => ( OutletOpenable^ ) = OutletOpenable()
+  given outletOpenable: (tactic: Tactic[OutletError]) => ( OutletOpenable^{tactic} ) =
+    OutletOpenable()

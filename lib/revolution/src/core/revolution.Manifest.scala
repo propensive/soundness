@@ -32,6 +32,8 @@
                                                                                                   */
 package revolution
 
+import proscenium.compat.*
+
 import java.io as ji
 import java.util.jar as juj
 
@@ -49,18 +51,20 @@ object Manifest:
     val java = juj.Manifest(source.source[Data].inputStream)
 
     Manifest:
-      java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
+      (java.getMainAttributes.nn: _root_.java.util.Map[Object, Object]).to[List].map: (key, value) =>
         (key.toString.tt, value.toString.tt)
 
-      . to(Map)
+      . pipe(l => Map.from(l.stdlib))
 
   given streamable: Manifest is Streamable by Data over Credit = manifest =>
     zephyrine.Stream(manifest.serialize)
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:
-    entries.map: entry => (entry.key, entry.value)
-    . to(Map)
+    entries.map: entry =>
+      (entry.key, entry.value)
+
+    . pipe(Map.from(_))
 
   given addable: Manifest is Addable by ManifestEntry to Manifest = Addable: (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
@@ -68,7 +72,7 @@ object Manifest:
   given subtractable: [key <: Label, attribute <: ManifestAttribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
 
-    Subtractable: (manifest, attribute) => Manifest(manifest.entries - attribute.key)
+    Subtractable: (manifest, attribute) => Manifest(manifest.entries.removed(attribute.key))
 
 case class Manifest(entries: Map[Text, Text]):
   def apply[key <: Label: DecodableManifest](attribute: ManifestAttribute[key])
@@ -80,8 +84,9 @@ case class Manifest(entries: Map[Text, Text]):
   def serialize: Data =
     val manifest = juj.Manifest()
 
-    entries.each: (key, value) => manifest.getMainAttributes.nn.putValue(key.s, value.s)
+    entries.stdlib.each: (key, value) =>
+      manifest.getMainAttributes.nn.putValue(key.s, value.s)
 
     val out = ji.ByteArrayOutputStream()
     manifest.write(out)
-    out.toByteArray().nn.immutable(using Unsafe)
+    Array.unsafeFrozen(out.toByteArray().nn)

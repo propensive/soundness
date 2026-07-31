@@ -292,8 +292,8 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == List(t"a", t"b", t"c"))
 
       test(m"read all bytes"):
-        sh"echo 'Hello world'".exec[Data]().to(List)
-      . assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
+        sh"echo 'Hello world'".exec[Data]().to[List]
+      . assert(_ == Data(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to[List])
 
       test(m"read as String"):
         sh"echo hi".exec[String]().trim
@@ -384,7 +384,7 @@ object Tests extends Suite(m"Guillotine tests"):
       . assert(_ == ())
 
     suite(m"Stdin and stderr"):
-      test(m"pipe LazyList[Data] into stdin"):
+      test(m"pipe Chain[Data] into stdin"):
         val proc = sh"cat".fork[Text]()
         proc.stdin(Stream(Data(104, 105, 10)))
         proc.await().trim
@@ -394,7 +394,7 @@ object Tests extends Suite(m"Guillotine tests"):
         val proc = sh"sh -c 'echo err 1>&2; sleep 0.05'".fork[Unit]()
         val bytes = proc.stderr().memoize
         proc.await()
-        String(bytes.mutable(using Unsafe), "UTF-8").nn.trim
+        bytes.utf8.s.trim
       . assert(_ == "err")
 
     suite(m"Pid"):
@@ -452,7 +452,7 @@ object Tests extends Suite(m"Guillotine tests"):
         sh"echo hi"().trim
       . assert(_ == t"hi")
 
-      test(m"head() returns LazyList[Text]"):
+      test(m"head() returns Chain[Text]"):
         sh"head -n 1 /dev/null"().to(List)
       . assert(_ == Nil)
 

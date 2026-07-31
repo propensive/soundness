@@ -32,7 +32,11 @@
                                                                                                   */
 package xenophile
 
-import scala.collection.immutable.ListMap
+// Deliberate stdlib opt-out for `Map`: this dialect's parsing accumulators are map-algebraic
+// throughout; the single `parse` boundary re-wraps as the opaque `Map` (erasure-identical cast).
+import scala.collection.immutable.Map
+
+import proscenium.compat.*
 
 import anticipation.*
 import gossamer.*
@@ -47,7 +51,10 @@ import vacuous.*
 // `variant` and `resource` declarations are recognised but their bodies are skipped. Line and block
 // comments are ignored.
 object WitDialect extends Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Prototype]] =
+  def parse(source: Text): proscenium.Map[Text, proscenium.Map[Text, Prototype]] =
+    parse0(source).asInstanceOf[proscenium.Map[Text, proscenium.Map[Text, Prototype]]]
+
+  private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
     val (types, typedefs) = items(tokenize(source.s), Map(), Map(), Unset)
 
     resolve(types, typedefs)
@@ -68,7 +75,9 @@ object WitDialect extends Dialect:
     def ident(char: Char): Boolean =
       char.isLetterOrDigit || char == '_' || char == '-'
 
-    def recur(index: Int, current: String, tokens: List[String]): List[String] =
+    def recur(index: Int, current: String, tokens: scala.collection.immutable.List[String])
+    :   scala.collection.immutable.List[String] =
+
       val flushed = if current.isEmpty then tokens else current :: tokens
 
       if index >= source.length then flushed.reverse else
@@ -85,7 +94,7 @@ object WitDialect extends Dialect:
         else if char.isWhitespace then recur(index + 1, "", flushed)
         else recur(index + 1, "", char.toString :: flushed)
 
-    recur(0, "", Nil)
+    List.of(recur(0, "", Nil.stdlib))
 
   // Parses a WIT type. `name<args>` is a generic application — `option<T>` becomes the union
   // `T | none` (an `Optional`), and `list`/`tuple`/`result` stay applications. Primitive names are
@@ -113,7 +122,7 @@ object WitDialect extends Dialect:
   // `ok`/`err` arm(s) with `_`, so consumers see one uniform shape.
   private def result(args: List[Foreign.Type]): Foreign.Type =
     val unit = Foreign.Type.Named(t"_")
-    Foreign.Type.Applied(t"result", (args ++ List(unit, unit)).take(2))
+    Foreign.Type.Applied(t"result", List.of((args.stdlib ++ List(unit, unit).stdlib).take(2)))
 
   private def typeArguments(tokens: List[String], acc: List[Foreign.Type])
   :   (List[Foreign.Type], List[String]) =
@@ -127,7 +136,7 @@ object WitDialect extends Dialect:
 
         rest match
           case "," :: more => typeArguments(more, arg :: acc)
-          case ">" :: more => ((arg :: acc).reverse, more)
+          case ">" :: more => (List.of((arg :: acc).reverse), more)
           case _           => (acc.reverse, skipTo(rest, t">"))
 
   // Walks the top-level items, accumulating navigable types (records, and each interface's
@@ -177,7 +186,7 @@ object WitDialect extends Dialect:
 
     def recur
       ( todo:      List[String],
-        functions: Map[Text, Prototype],
+        functions: Ledger[Text, Prototype],
         types:     Map[Text, Map[Text, Prototype]],
         typedefs:  Map[Text, Foreign.Type] )
     :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
@@ -188,14 +197,16 @@ object WitDialect extends Dialect:
         // under this key, which a plain overwrite with the interface's (possibly empty) functions
         // would discard.
         case "}" :: rest =>
-          (types.updated(name, types.at(name).lay(functions)(_ ++ functions)), typedefs, rest)
+          val merged = types.get(name).optional.lay(functions.stdlib)(_ ++ functions.stdlib)
+          (types.updated(name, merged), typedefs, rest)
 
         case Nil =>
-          (types.updated(name, types.at(name).lay(functions)(_ ++ functions)), typedefs, Nil)
+          val merged = types.get(name).optional.lay(functions.stdlib)(_ ++ functions.stdlib)
+          (types.updated(name, merged), typedefs, Nil)
 
         case "record" :: record :: "{" :: rest =>
-          val (fields, after) = recordFields(rest, ListMap())
-          recur(after, functions, types.updated(record.tt, fields), typedefs)
+          val (fields, after) = recordFields(rest, Ledger())
+          recur(after, functions, types.updated(record.tt, fields.stdlib), typedefs)
 
         case "enum" :: alias :: "{" :: rest =>
           val (count, after) = enumerators(rest, 0)
@@ -220,8 +231,8 @@ object WitDialect extends Dialect:
           recur(skipBraces(rest, 1), functions, updated, typedefs)
 
         case "resource" :: resource :: "{" :: rest =>
-          val (methods, after) = resourceBody(rest, resource.tt, module, ListMap())
-          recur(after, functions, types.updated(resource.tt, methods), typedefs)
+          val (methods, after) = resourceBody(rest, resource.tt, module, Ledger())
+          recur(after, functions, types.updated(resource.tt, methods.stdlib), typedefs)
 
         case "resource" :: resource :: ";" :: rest =>
           val updated = types.updated(resource.tt, declaration(resource.tt, module))
@@ -252,7 +263,7 @@ object WitDialect extends Dialect:
         case _ :: rest =>
           recur(rest, functions, types, typedefs)
 
-    recur(tokens, ListMap(), types, typedefs)
+    recur(tokens, Ledger(), types, typedefs)
 
   // Walks a `resource … { … }` body: its methods become members of a type named after the
   // resource, each marked with the resource it belongs to (so an invocation can address it as
@@ -262,8 +273,8 @@ object WitDialect extends Dialect:
     ( tokens:   List[String],
       resource: Text,
       module:   Optional[Text],
-      methods:  Map[Text, Prototype] )
-  :   (Map[Text, Prototype], List[String]) =
+      methods:  Ledger[Text, Prototype] )
+  :   (Ledger[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -304,11 +315,14 @@ object WitDialect extends Dialect:
         resourceBody(rest, resource, module, methods)
 
   // The pseudo-member recording, for a memberless type declaration, the module that defines it.
+  // A `Ledger`'s underlying map, not a plain `Map(...)`: this single entry seeds the value that
+  // later `++`-merges with an interface's functions, and the LEFT operand's factory decides
+  // whether the merged map stays insertion-ordered.
   private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =
-    ListMap(t"" -> Prototype(Unset, Foreign.Type.Named(name), module))
+    Ledger(t"" -> Prototype(Unset, Foreign.Type.Named(name), module)).stdlib
 
-  private def recordFields(tokens: List[String], acc: Map[Text, Prototype])
-  :   (Map[Text, Prototype], List[String]) =
+  private def recordFields(tokens: List[String], acc: Ledger[Text, Prototype])
+  :   (Ledger[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -340,7 +354,7 @@ object WitDialect extends Dialect:
 
         after match
           case "," :: more => params(more, kind :: acc)
-          case ")" :: more => ((kind :: acc).reverse, more)
+          case ")" :: more => (List.of((kind :: acc).reverse), more)
           case _           => (acc.reverse, skipTo(after, t")"))
 
       case _ :: rest =>
@@ -356,7 +370,7 @@ object WitDialect extends Dialect:
 
     def expand(foreign: Foreign.Type): Foreign.Type = foreign match
       case Foreign.Type.Named(name) =>
-        typedefs.at(name).lay(foreign)(expand)
+        typedefs.get(name).optional.lay(foreign)(expand)
 
       case Foreign.Type.Union(members) =>
         Foreign.Type.Union(members.map(expand))
@@ -380,8 +394,8 @@ object WitDialect extends Dialect:
   // `wasi:random@0.2.0` reassembles exactly — returning the id and the tokens after the `;`.
   private def packageId(tokens: List[String]): (Text, List[String]) =
     def recur(todo: List[String], acc: List[String]): (Text, List[String]) = todo match
-      case ";" :: rest  => (acc.reverse.mkString.tt, rest)
-      case Nil          => (acc.reverse.mkString.tt, Nil)
+      case ";" :: rest  => (acc.stdlib.reverse.mkString.tt, rest)
+      case Nil          => (acc.stdlib.reverse.mkString.tt, Nil)
       case head :: rest => recur(rest, head :: acc)
 
     recur(tokens, Nil)

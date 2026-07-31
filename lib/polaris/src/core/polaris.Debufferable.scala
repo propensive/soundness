@@ -32,6 +32,8 @@
                                                                                                   */
 package polaris
 
+import proscenium.compat.*
+
 import anticipation.*
 import hypotenuse.*
 import prepositional.*
@@ -43,8 +45,8 @@ object Debufferable extends ProductDerivable[Debufferable]:
     new:
       def width: Int = byteWidth
 
-      def debuffer(buffer: Buffer): data =
-        lambda(buffer.bytes, buffer.offset).also(buffer.advance(width))
+      def debuffer(sextant: Sextant): data =
+        lambda(sextant.bytes, sextant.offset).also(sextant.advance(width))
 
   given b8: B8 is Debufferable = Debufferable(1)(_(_).bits)
   given b16: B16 is Debufferable = Debufferable(2)(B16(_, _))
@@ -64,16 +66,16 @@ object Debufferable extends ProductDerivable[Debufferable]:
   given long: Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
   class Join[derivation <: Product: ProductReflection]
-    ( val width: Int, debuffer0: Buffer -> derivation )
+    ( val width: Int, debuffer0: Sextant -> derivation )
   extends Debufferable:
     type Self = derivation
-    def debuffer(buffer: Buffer): derivation = debuffer0(buffer)
+    def debuffer(sextant: Sextant): derivation = debuffer0(sextant)
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Debufferable =
     Join[derivation]
       ( contexts[derivation]() { [field] => _.width }.sum,
-        buffer => build { [field] => context => context.debuffer(buffer) } )
+        sextant => build { [field] => context => context.debuffer(sextant) } )
 
 trait Debufferable extends Typeclass:
   def width: Int
-  def debuffer(buffer: Buffer): Self
+  def debuffer(sextant: Sextant): Self

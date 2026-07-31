@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.64.0.                                                                    ┃
+┃    Soundness, version 0.63.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,38 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package proscenium
 
-import anticipation.*
-import prepositional.*
+import scala.collection.immutable as sci
 
-// A type whose values can be tested for membership of a value (the queried type
-// is its `Operand`, bound with `by` — e.g. `List[Int] is Inclusive by Int`).
-// Backs the `collection.has(value)` extension. Distinct from `Indexable`, whose
-// `defines` answers whether a *key/index* is present rather than a *value*.
-// The single `Iterable` instance fixes the queried type to the collection's
-// *exact* element type via the `Element` match type, rather than a bounded
-// `collection <: Iterable[element]` whose covariance would widen the element to
-// `Matchable` — silently accepting `map.has(key)` (a key, not a value) or
-// `list.has(wrongType)`. With the exact element, `Map`'s element is a key/value
-// pair, so `map.has(key)` is a compile error; key membership is `Indexable`'s
-// `defines`.
-object Inclusive:
-  type Element[collection] = collection match
-    case Iterable[element] => element
+// A `Ledger` is an insertion-ordered immutable map: iteration visits entries in the order
+// they were first added, which `Map` deliberately does not promise. Backed by `sci.VectorMap`
+// rather than `sci.ListMap`: both iterate in insertion order, but `VectorMap` looks up and
+// appends in effectively constant time where `ListMap` needs a full traversal for each, and
+// the registries kept in ledgers (dialect member tables, attribute lists, test reports) grow
+// into the hundreds. Same design as `Map`: members invisible, API via typeclasses and the
+// compat surface, construction and the greppable `stdlib` bridge in the companion, casts at
+// the boundary, and deliberately NO `Conversion` to a stdlib supertype.
+object Ledger:
+  // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
+  // lambdas crashes the capture checker's boxer (boxDeeply assertion).
+  def of[key, value](map: sci.VectorMap[key, value]): Ledger[key, value] =
+    map.asInstanceOf[Ledger[key, value]]
 
-  given iterable: [collection <: Iterable[?]] => collection is Inclusive by Element[collection] =
-    (collection, value) => collection.exists(_ == value)
+  def apply[key, value](pairs: (key, value)*): Ledger[key, value] = of(sci.VectorMap(pairs*))
+  def empty[key, value]: Ledger[key, value] = of(sci.VectorMap.empty[key, value])
 
-  given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
-    (iarray, value) => iarray.exists(_ == value)
+  def from[key, value](pairs: IterableOnce[(key, value)]^): Ledger[key, value] =
+    of(sci.VectorMap.from(pairs))
 
-  given array: [element <: Matchable] => Array[element] is Inclusive by element =
-    (array, value) => array.exists(_ == value)
+  extension [key, value](ledger: Ledger[key, value])
+    inline def stdlib: sci.VectorMap[key, value] = ledger.asInstanceOf[sci.VectorMap[key, value]]
 
-  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own
-  // instance for `text.has(char)`; substring containment is `subsumes` instead.
-  given text: Text is Inclusive by Char = (text, char) => text.s.indexOf(char.toInt) >= 0
-
-trait Inclusive extends Typeclass.Pure, Operable:
-  def has(self: Self, value: Operand): Boolean
+opaque type Ledger[key, +value] = sci.VectorMap[key, value]

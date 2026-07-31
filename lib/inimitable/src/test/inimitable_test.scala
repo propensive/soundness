@@ -46,7 +46,7 @@ object Tests extends Suite(m"Inimitable Tests"):
 
       test(m"Get bytes from UUID"):
         Uuid().bytes
-      . assert(_.length == 16)
+      . assert(_.readable.length == 16)
 
       test(m"Parse a UUID at compiletime"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
@@ -65,7 +65,7 @@ object Tests extends Suite(m"Inimitable Tests"):
       . assert(_ == java.util.UUID.fromString("a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"))
 
       test(m"Get the bytes from a UUID"):
-        uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".bytes.to(List)
+        uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".bytes.to[List]
       . assert(_ == List[Byte](-96, -53, 22, -16, -44, 30, 76, 40, -122, 47, -67, 97, 100, -69, -52, -116))
 
       test(m"Convert a UUID to Text"):

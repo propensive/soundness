@@ -32,6 +32,8 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -72,7 +74,8 @@ private[facsimile] object Filter:
   // `/DecodeParms` (a dictionary, an array with nulls, or absent) into a decoding plan. Both
   // values must already be resolved: indirect references are the caller's concern.
   def chain(filter: Optional[Cos], parms: Optional[Cos])
-  :   List[(Id, Map[Text, Cos])] raises PdfError =
+  ( using Tactic[PdfError] )
+  :   List[(Id, Map[Text, Cos])] =
 
     val names: List[Text] = filter.lay(List()):
       case Cos.Name(name) =>
@@ -101,9 +104,10 @@ private[facsimile] object Filter:
       case _ =>
         abort(PdfError(PdfError.Reason.TypeMismatch(t"DecodeParms", t"a dictionary or array")))
 
-    names.zipWithIndex.map: (name, index) =>
-      val id = Id.parse(name).or(abort(PdfError(PdfError.Reason.UnknownFilter(name))))
-      (id, if index < parameters.length then parameters(index) else Map())
+    List.of:
+      names.stdlib.zipWithIndex.map: (name, index) =>
+        val id = Id.parse(name).or(abort(PdfError(PdfError.Reason.UnknownFilter(name))))
+        (id, if index < parameters.stdlib.length then parameters.stdlib(index) else Map())
 
   // A streaming plan is plain data — closures at most — because ducts, being scoped
   // capabilities, may only be minted at the `via` call site (a lambda cannot return a fresh
@@ -119,26 +123,32 @@ private[facsimile] object Filter:
   // input and decode on flush, which is immaterial at their typical sizes.
   def steps(chain: List[(Id, Map[Text, Cos])])(using tactic: Tactic[PdfError])
   :   List[Step^{tactic}] =
-    chain.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
-      val predicted = parms.at(t"Predictor").let(_.long).or(1L) > 1
+    // The steps capture `tactic`, and capture-carrying elements do not flow through the
+    // opaque `List` combinators (boxing), so the interior stays stdlib inside one `List.of`.
+    List.of:
+      chain.stdlib.takeWhile(!_(0).terminal).flatMap: (id, parms) =>
+        val predicted = parms.at(t"Predictor").let(_.long).or(1L) > 1
 
-      id match
-        case Id.Flate =>
-          if predicted then List(Step.Inflate, Step.Gather(predict(_, parms)))
-          else List(Step.Inflate)
+        id match
+          case Id.Flate =>
+            if predicted
+            then scala.collection.immutable.List(Step.Inflate, Step.Gather(predict(_, parms)))
+            else scala.collection.immutable.List(Step.Inflate)
 
-        case Id.Lzw =>
-          if predicted then List(Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)))
-          else List(Step.Unlzw(earlyChange(parms)))
+          case Id.Lzw =>
+            if predicted
+            then scala.collection.immutable.List
+              (Step.Unlzw(earlyChange(parms)), Step.Gather(predict(_, parms)))
+            else scala.collection.immutable.List(Step.Unlzw(earlyChange(parms)))
 
-        case Id.Crypt =>
-          List()
+          case Id.Crypt =>
+            scala.collection.immutable.List()
 
-        case other =>
-          List(Step.Gather(stage(_, other, parms)))
+          case other =>
+            scala.collection.immutable.List(Step.Gather(stage(_, other, parms)))
 
   // Applies a resolved filter chain eagerly, stopping at the first terminal codec.
-  def decode(data: Data, chain: List[(Id, Map[Text, Cos])]): Data raises PdfError =
+  def decode(data: Data, chain: List[(Id, Map[Text, Cos])])(using Tactic[PdfError]): Data =
     chain match
       case (id, parms) :: rest =>
         if id.terminal then data else decode(stage(data, id, parms), rest)
@@ -146,7 +156,7 @@ private[facsimile] object Filter:
       case _ =>
         data
 
-  private def stage(data: Data, id: Id, parms: Map[Text, Cos]): Data raises PdfError = id match
+  private def stage(data: Data, id: Id, parms: Map[Text, Cos])(using Tactic[PdfError]): Data = id match
     case Id.Flate     => predict(flate(data), parms)
     case Id.Lzw       => predict(lzw(data, parms), parms)
     case Id.Ascii85   => Ascii85.decode(data)
@@ -155,15 +165,15 @@ private[facsimile] object Filter:
     case Id.Crypt     => data // `Identity` until encryption arrives; `Guard` will slot in here
     case _            => data
 
-  private def lzw(data: Data, parms: Map[Text, Cos]): Data raises PdfError =
-    try Lzw.decompress(LazyList(data), earlyChange(parms)).foldLeft(IArray.empty[Byte])(_ ++ _)
+  private def lzw(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
+    try Lzw.decompress(Chain(data), earlyChange(parms)).foldLeft(Array.empty[Byte])(_ ++ _)
     catch case _: IllegalStateException =>
       abort(PdfError(PdfError.Reason.CorruptStream(t"LZWDecode")))
 
   private def earlyChange(parms: Map[Text, Cos]): Boolean =
     parms.at(t"EarlyChange").let(_.long).or(1L) == 1L
 
-  private def predict(data: Data, parms: Map[Text, Cos]): Data raises PdfError =
+  private def predict(data: Data, parms: Map[Text, Cos])(using Tactic[PdfError]): Data =
     val predictor = parms.at(t"Predictor").let(_.long).or(1L).toInt
 
     if predictor <= 1 then data else
@@ -174,28 +184,29 @@ private[facsimile] object Filter:
 
   // FlateDecode is zlib-framed deflate, but raw streams occur in the wild: on a zlib failure,
   // retry nowrap before giving up.
-  private def flate(data: Data): Data raises PdfError =
+  private def flate(data: Data)(using Tactic[PdfError]): Data =
     inflate(data, nowrap = false).or(inflate(data, nowrap = true))
     . or(abort(PdfError(PdfError.Reason.CorruptStream(t"FlateDecode"))))
 
   private def inflate(data: Data, nowrap: Boolean): Optional[Data] =
-    val builder = Array.newBuilder[Byte]
+    val builder = DataBuilder()
 
     try
       val chunks =
-        if nowrap then LazyList(data).decompress[Deflate] else LazyList(data).decompress[Zlib]
+        if nowrap then Chain(data).decompress[Deflate] else Chain(data).decompress[Zlib]
 
       // Forcing the stream incrementally means a truncated (but valid-so-far) input keeps
       // whatever it decoded before the bytes ran out, matching the eager inflater's
       // partial-on-truncation behaviour; corrupt data throws from the backend.
-      chunks.each: chunk => builder.addAll(chunk.mutable(using Unsafe))
+      chunks.each: chunk =>
+        builder.addAll(chunk)
     catch case _: IllegalStateException => ()
 
     val result = builder.result()
-    if result.length == 0 && data.length > 0 then Unset else result.immutable(using Unsafe)
+    if result.length == 0 && data.length > 0 then Unset else result
 
-  private def asciiHex(data: Data): Data raises PdfError =
-    val bytes = Array.newBuilder[Byte]
+  private def asciiHex(data: Data)(using Tactic[PdfError]): Data =
+    val bytes = DataBuilder()
     var high = -1
     var done = false
     var i = 0
@@ -215,10 +226,10 @@ private[facsimile] object Filter:
           high = -1
 
     if high >= 0 then bytes += (high << 4).toByte
-    bytes.result().immutable(using Unsafe)
+    bytes.result()
 
-  private def runLength(data: Data): Data raises PdfError =
-    val bytes = Array.newBuilder[Byte]
+  private def runLength(data: Data)(using Tactic[PdfError]): Data =
+    val bytes = DataBuilder()
     var done = false
     var i = 0
 
@@ -249,4 +260,4 @@ private[facsimile] object Filter:
 
         i += 1
 
-    bytes.result().immutable(using Unsafe)
+    bytes.result()

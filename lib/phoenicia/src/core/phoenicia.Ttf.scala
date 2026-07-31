@@ -32,6 +32,8 @@
                                                                                                   */
 package phoenicia
 
+import proscenium.compat.*
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -80,7 +82,7 @@ case class Ttf(data: Data):
   def advanceWidth(char: Char): Int raises FontError = hmtx.advanceWidth(glyph(char).id)
 
   def width(text: Text): Quantity[Ems[1]] raises FontError =
-    text.chars.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
+    text.chars.readable.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises FontError =
     hmtx.leftSideBearing(glyph(char).id)
@@ -88,7 +90,7 @@ case class Ttf(data: Data):
   lazy val tables: Map[TableTag, TableOffset] =
     (0 until numTables).flatMap: n =>
       val start = 12 + n*16
-      val tableTag = String(data.mutable(using Unsafe), start, 4, "ASCII").tt
+      val tableTag = String(Array.unsafeJvm(data), start, 4, "ASCII").tt
       val checksum = B32(data, start + 4)
       val offset = B32(data, start + 8).s32.int
       val length = B32(data, start + 12).s32.int
@@ -98,7 +100,7 @@ case class Ttf(data: Data):
         case TtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
         case _           => None
 
-    . to(Map)
+    . pipe(Map.from(_))
 
   def head: HeadTable raises FontError =
     tables.at(TtfTag.Head).let: ref =>
@@ -150,33 +152,33 @@ case class Ttf(data: Data):
   // glyphs keep empty outlines, so character mappings, metrics and glyph references remain
   // valid. Every other table is carried over unchanged.
   def subset(chars: Set[Char]): Ttf raises FontError =
-    val retained = glyphClosure(chars.map(glyph(_).id) + 0)
+    val retained = glyphClosure(Set.of(chars.stdlib.map(glyph(_).id) + 0))
     val glyphs = glyf
     val count = maxp.glyphCount
 
-    val offsets = new Array[Int](count + 1)
-    val parts = List.newBuilder[Data]
+    val offsets = new scala.Array[Int](count + 1)
+    val parts = scala.collection.immutable.List.newBuilder[Data]
     var position = 0
 
     (0 until count).each: id =>
       offsets(id) = position
 
-      if retained.contains(id) then
+      if retained.has(id) then
         val bytes = glyphs(id).bytes
         parts += bytes
         position += bytes.length
 
     offsets(count) = position
 
-    val newGlyf = new Array[Byte](position)
+    val newGlyf = Array[Byte](position)
     var written = 0
 
     parts.result().each: part =>
-      System.arraycopy(part.mutable(using Unsafe), 0, newGlyf, written, part.length)
+      newGlyf.copyFrom(part, 0, written, part.length)
       written += part.length
 
     // The rebuilt loca always uses the long format, so head's format field must agree.
-    val newLoca = new Array[Byte]((count + 1)*4)
+    val newLoca = Array[Byte]((count + 1)*4)
 
     (0 to count).each: id =>
       newLoca(id*4) = (offsets(id) >> 24).toByte
@@ -185,23 +187,25 @@ case class Ttf(data: Data):
       newLoca(id*4 + 3) = offsets(id).toByte
 
     val headRef = tables.at(TtfTag.Head).lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
-    val newHead = data.slice(headRef.offset, headRef.offset + headRef.length).mutable(using Unsafe)
+    val headData = data.slice(headRef.offset, headRef.offset + headRef.length)
+    val newHead = Array[Byte](headData.length)
+    newHead.copyFrom(headData, 0, 0, headData.length)
     (8 to 11).each { index => newHead(index) = 0 } // adjustment is recomputed on assembly
     newHead(50) = 0
     newHead(51) = 1
 
-    val carried = tables.values.to(List).flatMap: ref =>
+    val carried = tables.values.to(List).bind: ref =>
       if ref.id == TtfTag.Glyf || ref.id == TtfTag.Loca || ref.id == TtfTag.Head then Nil
       else List(ref.id.text -> data.slice(ref.offset, ref.offset + ref.length))
 
     val entries =
-      (t"glyf", newGlyf.immutable(using Unsafe)) ::
-        (t"loca", newLoca.immutable(using Unsafe)) ::
-        (t"head", newHead.immutable(using Unsafe)) :: carried
+      (t"glyf", Array.freeze(newGlyf)) ::
+        (t"loca", Array.freeze(newLoca)) ::
+        (t"head", Array.freeze(newHead)) :: (carried: List[(Text, Data)])
 
-    Ttf(Sfnt.assemble(data.slice(0, 4), entries))
+    Ttf(Sfnt.assemble(data.slice(0, 4), List.of(entries)))
 
-  def subset(text: Text): Ttf raises FontError = subset(text.chars.to(Set))
+  def subset(text: Text): Ttf raises FontError = subset(Set.from(text.chars.readable))
 
   // The transitive closure of a set of glyphs under composite-glyph components: every glyph
   // needed to render the given ones.
@@ -213,10 +217,10 @@ case class Ttf(data: Data):
         seen
 
       case head :: tail =>
-        val fresh = table(head).components.filter(!seen.contains(_))
-        expand(fresh ++ tail, seen ++ fresh)
+        val fresh = table(head).components.filter(!seen.has(_))
+        expand(List.of(fresh.stdlib ++ tail.stdlib), Set.of(seen.stdlib ++ fresh.stdlib))
 
-    expand(glyphIds.to(List), glyphIds)
+    expand(glyphIds.toList, glyphIds)
 
   // The font's PostScript name, by which PDF and PostScript documents reference it.
   def fontName: Optional[Text] = safely(name(Ttf.NameId.PostScriptName))
@@ -267,8 +271,8 @@ case class Ttf(data: Data):
   // The horizontal metrics: one (advance, bearing) pair per glyph up to `count`, after which
   // the last advance repeats — a monospaced tail — and bearings continue in their own array.
   case class HmtxTable(offset: Int, count: Int):
-    lazy val metrics: IArray[HMetrics] =
-      IArray.from:
+    lazy val metrics: Array[HMetrics]^{} =
+      Array.from:
         (0 until count).map: index =>
           HMetrics(B16(data, offset + index*4).u16.int, B16(data, offset + index*4 + 2).s16.int)
 
@@ -284,8 +288,8 @@ case class Ttf(data: Data):
   // The glyph-location index: for each glyph, the extent of its data within glyf. In the
   // short format, offsets are stored halved in sixteen bits.
   case class LocaTable(offset: Int, glyphCount: Int, longFormat: Boolean):
-    lazy val offsets: IArray[Int] =
-      IArray.from:
+    lazy val offsets: Array[Int]^{} =
+      Array.from:
         (0 to glyphCount).map: index =>
           if longFormat then B32(data, offset + index*4).s32.int
           else B16(data, offset + index*2).u16.int*2
@@ -304,7 +308,7 @@ case class Ttf(data: Data):
 
       lazy val components: List[Int] =
         if !composite then Nil else
-          val builder = List.newBuilder[Int]
+          val builder = scala.collection.immutable.List.newBuilder[Int]
           var position = start + 10
           var more = true
 
@@ -319,7 +323,7 @@ case class Ttf(data: Data):
 
             more = (flags & 0x0020) != 0
 
-          builder.result()
+          List.of(builder.result())
 
   // The maximum-profile table; only the glyph count is of interest here.
   case class MaxpTable(offset: Int):
@@ -367,7 +371,7 @@ case class Ttf(data: Data):
       ( platformId: Int, encodingId: Int, languageId: Int, nameId: Int, length: Int, start: Int ):
 
       def decode: Text =
-        val bytes = data.mutable(using Unsafe)
+        val bytes = Array.unsafeJvm(data)
 
         platformId match
           case 0 | 3 =>
@@ -377,8 +381,8 @@ case class Ttf(data: Data):
             try String(bytes, start, length, "x-MacRoman").tt
             catch case _: Exception => String(bytes, start, length, "ISO-8859-1").tt
 
-    lazy val records: IArray[Record] =
-      IArray.from:
+    lazy val records: Array[Record]^{} =
+      Array.from:
         (0 until count).map: n =>
           val base = offset + 6 + n*12
 
@@ -402,13 +406,14 @@ case class Ttf(data: Data):
         case (1, 0)  => 4
         case _       => 5
 
-      if candidates.isEmpty then Unset else candidates.minBy(rank).decode
+      if candidates.isEmpty then Unset else candidates.readable.minBy(rank).decode
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):
       val formatId: Int = B16(data, offset).u16.int
 
       private val mutex: Mutex = Mutex()
+      @scala.caps.unsafe.untrackedCaptures
       private var formatMemo: Optional[Format] = Unset
 
       def format: Format raises FontError = mutex:
@@ -431,7 +436,7 @@ case class Ttf(data: Data):
                     B16(data, idDeltasStart + n*2).s16.int,
                     B16(data, idRangeOffsetsStart + n*2).u16.int )
 
-              Format4(idRangeOffsetsStart, IArray.from(segments))
+              Format4(idRangeOffsetsStart, Array.from(segments))
 
             case 6 =>
               val first = B16(data, offset + 6).u16.int
@@ -460,7 +465,7 @@ case class Ttf(data: Data):
       // Segmented ranges over the Basic Multilingual Plane. Each segment maps by a delta, or
       // — when its range offset is nonzero — indirects into the glyph-id array which follows
       // the range offsets, addressed relative to the segment's own range-offset word.
-      case class Format4(idRangeOffsetsStart: Int, segments: IArray[Segment]) extends Format:
+      case class Format4(idRangeOffsetsStart: Int, segments: Array[Segment]^{}) extends Format:
         def glyph(char: Char): Glyph[ttf.type] =
           val index = segments.indexWhere(char <= _.end)
 
@@ -504,7 +509,7 @@ case class Ttf(data: Data):
     lazy val version = B16(data, offset).u16.int
     lazy val numTables = B16(data, offset + 2).u16.int
 
-    lazy val glyphEncodings: Seq[GlyphEncoding] = (0 until numTables).map: n =>
+    lazy val glyphEncodings: List[GlyphEncoding] = (0 until numTables).to(List).map: n =>
       val platformId = B16(data, offset + 4 + n*8).u16.int
       val encodingId = B16(data, offset + 6 + n*8).u16.int
       val subOffset = B32(data, offset + 8 + n*8).s32.int

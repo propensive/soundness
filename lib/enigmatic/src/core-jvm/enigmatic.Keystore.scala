@@ -32,6 +32,10 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
+import proscenium.compat.*
+
 import java.io as ji
 import java.security as js
 import java.util as ju
@@ -60,15 +64,15 @@ object Keystore:
 
     def aliases: List[Text] =
       val enumeration = keystore.aliases.nn
-      val builder = List.newBuilder[Text]
+      val builder = scala.collection.immutable.List.newBuilder[Text]
       while enumeration.hasMoreElements do builder += enumeration.nextElement.nn.tt
-      builder.result()
+      List.of(builder.result())
 
     // The DER-encoded (X.509) certificate stored under `alias`, if any.
     def certificate(alias: Text): Optional[Data] =
       keystore.getCertificate(alias.s) match
         case null        => Unset
-        case certificate => certificate.getEncoded.nn.immutable(using Unsafe)
+        case certificate => Array.unsafeFrozen(certificate.getEncoded.nn)
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Read-only until staged keystore writing lands.
@@ -86,7 +90,8 @@ object Keystore:
       ( block: ((KeystoreHandle & Granting[grants])^) ?=> result )
     :   result =
 
-      if mode.atoms.contains(Write) then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
+      if mode.atoms.has(Write)
+      then abort(KeystoreError(KeystoreError.Reason.WriteUnsupported))
 
       val in = ji.BufferedInputStream(ji.FileInputStream(value.generic.s))
 
@@ -104,12 +109,12 @@ object Keystore:
     // Public, and failure-wrapping: any of the JDK's load-time exceptions (bad password, bad
     // format, truncation) becomes `Unreadable`, which deliberately does not distinguish a
     // wrong password from a corrupt store.
-    def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: Array[Char] | Null)
+    def loadKeystore(keystore: js.KeyStore, in: ji.InputStream, password: scala.Array[Char] | Null)
     :   Unit =
       try keystore.load(in, password)
       catch case error: Exception => abort(KeystoreError(KeystoreError.Reason.Unreadable))
 
   given openable: [path: Abstractable across Paths to Text]
-  =>  Tactic[KeystoreError]
-  =>  ( KeystoreOpenable[path]^ ) =
+  =>  (tactic: Tactic[KeystoreError])
+  =>  ( KeystoreOpenable[path]^{tactic} ) =
     KeystoreOpenable[path]

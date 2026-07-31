@@ -32,6 +32,8 @@
                                                                                                   */
 package yossarian
 
+import scala.math
+
 import scala.reflect.*
 
 import anticipation.*
@@ -46,9 +48,9 @@ object internal:
 
   object Screen:
     def apply[styling: ClassTag](width: Int, height: Int, blank: styling): Screen[styling] =
-      val graphemes = Array.fill[Grapheme](width*height)(Grapheme(" "))
-      val styles = Array.fill[styling](width*height)(blank)
-      val links = Array.fill[Text](width*height)(t"")
+      val graphemes = scala.Array.fill[Grapheme](width*height)(Grapheme(" "))
+      val styles = scala.Array.fill[styling](width*height)(blank)
+      val links = scala.Array.fill[Text](width*height)(t"")
       new Screen(width, blank, styles, graphemes, links)
 
     // The terminal-emulator buffer: cells are `yossarian.Style` blanked to the
@@ -66,9 +68,17 @@ object internal:
   class Screen[styling]
     ( val width:      Int,
       blank:          styling,
-      styleBuffer:    Array[styling],
-      graphemeBuffer: Array[Grapheme],
-      linkBuffer:     Array[Text] ):
+      @scala.caps.unsafe.untrackedCaptures styleBuffer:    scala.Array[styling],
+      @scala.caps.unsafe.untrackedCaptures graphemeBuffer: scala.Array[Grapheme],
+      @scala.caps.unsafe.untrackedCaptures linkBuffer:     scala.Array[Text] ):
+
+    // Exclusive views for writes: the untracked fields read as read-only.
+    private inline def styleTarget: scala.Array[styling]^ = styleBuffer.asInstanceOf[scala.Array[styling]^]
+
+    private inline def graphemeTarget: scala.Array[Grapheme]^ =
+      graphemeBuffer.asInstanceOf[scala.Array[Grapheme]^]
+
+    private inline def linkTarget: scala.Array[Text]^ = linkBuffer.asInstanceOf[scala.Array[Text]^]
 
     def capacity: Int = graphemeBuffer.length
     def height: Int = capacity/width
@@ -119,7 +129,7 @@ object internal:
           graphemeBuffer.slice(index, index + text.length),
           linkBuffer.slice(index, index + text.length) )
 
-    def styles: IArray[styling] = styleBuffer.clone().immutable(using Unsafe)
+    def styles: Array[styling]^{} = Array.unsafeFrozen(styleBuffer.clone())
 
     def scroll(n: Int): Unit = scroll(n, 0, height - 1)
 
@@ -139,20 +149,23 @@ object internal:
 
       val fillStart = if n < 0 then regionStart else regionStart + length
 
-      for i <- 0 until offset do
-        styleBuffer(fillStart + i) = blank
-        graphemeBuffer(fillStart + i) = Grapheme(" ")
-        linkBuffer(fillStart + i) = t""
+      var i = 0
+
+      while i < offset do
+        styleTarget(fillStart + i) = blank
+        graphemeTarget(fillStart + i) = Grapheme(" ")
+        linkTarget(fillStart + i) = t""
+        i += 1
 
     def set(x: Ordinal, y: Ordinal, grapheme: Grapheme, style: styling, link: Text): Unit =
-      styleBuffer(offset(x, y)) = style
-      graphemeBuffer(offset(x, y)) = grapheme
-      linkBuffer(offset(x, y)) = link
+      styleTarget(offset(x, y)) = style
+      graphemeTarget(offset(x, y)) = grapheme
+      linkTarget(offset(x, y)) = link
 
     def set(cursor: Ordinal, grapheme: Grapheme, style: styling, link: Text): Unit =
-      styleBuffer(cursor.n0) = style
-      graphemeBuffer(cursor.n0) = grapheme
-      linkBuffer(cursor.n0) = link
+      styleTarget(cursor.n0) = style
+      graphemeTarget(cursor.n0) = grapheme
+      linkTarget(cursor.n0) = link
 
     def copy(): Screen[styling] =
       new Screen(width, blank, styleBuffer.clone(), graphemeBuffer.clone(), linkBuffer.clone())
@@ -198,7 +211,7 @@ object internal:
           t"C"  -> Bit.Conceal(style),
           t"R"  -> Bit.Reverse(style) )
 
-      .   map: (key, value) => if value then key else t"!$key"
+      .   remap: (key, value) => if value then key else t"!$key"
       .   join(t"[", t" ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
 
     enum Bit:

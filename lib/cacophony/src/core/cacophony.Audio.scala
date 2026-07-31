@@ -48,7 +48,8 @@ import vacuous.*
 object Audio:
   def apply[streamable: Streamable by Data over Credit](input: streamable)
   :   Audio raises AudioError =
-    val rawBytes: Array[Byte] = input.read[Data].mutable(using Unsafe)
+    // `ByteArrayInputStream` only reads the array it wraps.
+    val rawBytes: scala.Array[Byte] = Array.unsafeJvm(input.read[Data])
 
     val raw: jss.AudioInputStream =
       try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
@@ -79,22 +80,28 @@ object Audio:
         try jss.AudioSystem.getAudioInputStream(target, raw).nn
         catch case _: IllegalArgumentException => abort(AudioError(Unset))
 
-    val pcmBytes: Array[Byte] = pcm.readAllBytes.nn
+    val pcmBytes: scala.Array[Byte] = pcm.readAllBytes.nn
     val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
     pcm.close()
-    new Audio(pcmFormat, pcmBytes)
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(pcmFormat, pcmBytes)
 
-  def apply[form: Audible as audible](format: jss.AudioFormat, data: Array[Byte]): Audio in form =
-    new Audio(format, data):
-      type Form = form
+  def apply[form: Audible as audible](format: jss.AudioFormat, data: scala.Array[Byte]): Audio in form =
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(format, data):
+        type Form = form
 
-  private[cacophony] def of[layout](format: jss.AudioFormat, data: Array[Byte])
+  private[cacophony] def of[layout](format: jss.AudioFormat, data: scala.Array[Byte])
   :   Audio across layout =
 
-    new Audio(format, data):
-      type Domain = layout
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(format, data):
+        type Domain = layout
 
-  private def writeAudio(audio: Audio, formatName: Text): LazyList[Data] =
+  private def writeAudio(audio: Audio, formatName: Text): Chain[Data] =
     val ais = jss.AudioInputStream(ji.ByteArrayInputStream(audio.data), audio.format, audio.frames)
 
     val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == formatName.s).getOrElse:
@@ -107,19 +114,19 @@ object Audio:
 
   given streamable: [form: Audible]
   =>  (Audio in form) is Streamable by Data over Credit =
-    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
+    audio => zephyrine.Stream(writeAudio(audio, form.name).stdlib.iterator)
 
   given streamableAcross: [form: Audible, layout]
   =>  (Audio in form across layout) is Streamable by Data over Credit =
 
-    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
+    audio => zephyrine.Stream(writeAudio(audio, form.name).stdlib.iterator)
 
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:
     type Domain = HttpStreams
     type Result = HttpStreams.Content
 
     def genericize(audio: Audio in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(audio.source[Data].toLazyList.iterator))
+      (format.mediaType.basic, HttpStreams.Body(audio.source[Data].toProgression.stdlib.iterator))
 
   given aggregable: [format: Audible as audible] => (tactic: Tactic[AudioError])
   =>  (((Audio in format) is Aggregable by Data)^{tactic}) =
@@ -130,7 +137,8 @@ object Audio:
   =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)
 
 case class Audio
-  ( private[cacophony] val format: jss.AudioFormat, private[cacophony] val data: Array[Byte] )
+  ( private[cacophony] val format: jss.AudioFormat,
+    @scala.caps.unsafe.untrackedCaptures private[cacophony] val data: scala.Array[Byte] )
 extends Formal, Domainal:
   audio =>
 
@@ -170,6 +178,8 @@ extends Formal, Domainal:
       value
 
   def to[form: Audible as audible]: Audio in form across audio.Domain =
-    new Audio(format, data):
-      type Form   = form
-      type Domain = audio.Domain
+    // The audio privately owns its sample array; laundered to the pure class type.
+    scala.caps.unsafe.unsafeAssumePure:
+      new Audio(format, data):
+        type Form   = form
+        type Domain = audio.Domain

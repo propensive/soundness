@@ -32,6 +32,8 @@
                                                                                                   */
 package vacuous
 
+import scala.compiletime
+
 import soundness.*
 
 object Tests extends Suite(m"Vacuous Tests"):

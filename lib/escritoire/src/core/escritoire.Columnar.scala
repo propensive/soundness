@@ -39,10 +39,10 @@ import polysyllabic.*
 import vacuous.*
 
 trait Columnar:
-  def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
+  def width[text: Textual](lines: Array[text]^{}, maxWidth: Int, slack: Double)
     ( using Text is Measurable )
   :   Optional[Int]
 
-  def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)
+  def fit[text: Textual](lines: Array[text]^{}, width: Int, textAlign: TextAlignment)
     ( using Text is Measurable, Hyphenation )
-  :   IndexedSeq[text]
+  :   Sequence[text]

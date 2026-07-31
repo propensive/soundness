@@ -55,7 +55,7 @@ object Focusable:
   given domId: Name[DomId] is Focusable = Focusable(t"css selector", v => t"#$v")
 
   given cssClass: ClassList is Focusable =
-    Focusable(t"css selector", _.classes.join(t".", t".", t""))
+    Focusable(t"css selector", _.classes.stdlib.join(t".", t".", t""))
 
 trait Focusable extends Typeclass:
   def strategy: Text

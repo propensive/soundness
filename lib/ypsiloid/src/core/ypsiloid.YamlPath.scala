@@ -118,7 +118,7 @@ object YamlPath extends Root(""):
       // (`#`) keeps the default empty root so it encodes back to `#`.
       if segments.nil then YamlPath()
       else
-        val descent = segments.reverse.map(filesystem.unescape)
+        val descent = List.of(segments.stdlib.reverse.map(filesystem.unescape))
         YamlPath(Unset, Path[YamlPath, YamlPath.type, Tuple]("/", descent))
 
   given divisible: YamlPath is Divisible by Text to YamlPath =
@@ -154,7 +154,7 @@ case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = Yam
   // Serpentine's `/`, which adds at the leaf side — the wrong
   // direction for focus supplementing.
   private[ypsiloid] def prepend(segment: Text): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", path.descent :+ segment))
+    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ segment).to(List)))
 
   private[ypsiloid] def prepend(ordinal: Ordinal): YamlPath =
-    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", path.descent :+ ordinal.n0.toString.tt))
+    YamlPath(url, Path[YamlPath, YamlPath.type, Tuple]("/", (path.descent :+ ordinal.n0.toString.tt).to(List)))

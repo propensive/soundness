@@ -60,15 +60,15 @@ private[hallucination] object JpegIdct:
   // DCT, and writes the 8x8 block of samples into `output` at `outputBase`, one row every `stride`
   // bytes.
   def dequantizeAndIdct8x8
-    ( coefficients: Array[Int],
+    ( coefficients: scala.Array[Int],
       coeffBase:    Int,
-      quant:        Array[Int],
-      output:       Array[Byte],
+      quant:        scala.Array[Int],
+      output:       scala.Array[Byte],
       outputBase:   Int,
       stride:       Int )
   :   Unit =
 
-    val temp = new Array[Int](64)
+    val temp = new scala.Array[Int](64)
 
     // Pass 1: the columns.
     var i = 0
@@ -145,7 +145,7 @@ private[hallucination] object JpegIdct:
       then
         val dcterm = clamp(((s0 << 12) + xScale) >> 17)
         var c = 0
-        while c < 8 do { output(out + c) = dcterm; c += 1 }
+        while c < 8 do { writable(output)(out + c) = dcterm; c += 1 }
       else
         val s1 = temp(base + 1); val s2 = temp(base + 2); val s3 = temp(base + 3)
         val s4 = temp(base + 4); val s5 = temp(base + 5); val s6 = temp(base + 6)
@@ -177,13 +177,13 @@ private[hallucination] object JpegIdct:
         o1 += q2 + q4
         o0 += q1 + q3
 
-        output(out)     = clamp((x0 + o3) >> 17)
-        output(out + 7) = clamp((x0 - o3) >> 17)
-        output(out + 1) = clamp((x1 + o2) >> 17)
-        output(out + 6) = clamp((x1 - o2) >> 17)
-        output(out + 2) = clamp((x2 + o1) >> 17)
-        output(out + 5) = clamp((x2 - o1) >> 17)
-        output(out + 3) = clamp((x3 + o0) >> 17)
-        output(out + 4) = clamp((x3 - o0) >> 17)
+        writable(output)(out)     = clamp((x0 + o3) >> 17)
+        writable(output)(out + 7) = clamp((x0 - o3) >> 17)
+        writable(output)(out + 1) = clamp((x1 + o2) >> 17)
+        writable(output)(out + 6) = clamp((x1 - o2) >> 17)
+        writable(output)(out + 2) = clamp((x2 + o1) >> 17)
+        writable(output)(out + 5) = clamp((x2 - o1) >> 17)
+        writable(output)(out + 3) = clamp((x3 + o0) >> 17)
+        writable(output)(out + 4) = clamp((x3 - o0) >> 17)
 
       row += 1

@@ -32,6 +32,9 @@
                                                                                                   */
 package facsimile
 
+import proscenium.compat.*
+import rudiments.*
+
 import anticipation.*
 import fulminate.*
 
@@ -54,6 +57,7 @@ object PdfError:
     case CircularPageTree                             extends Reason(15)
     case Io(detail: Text)                             extends Reason(16)
     case WriteUnsupported                             extends Reason(17)
+    case MissingPage(page: Int)                       extends Reason(18)
 
   given communicable: Reason is Communicable =
     case Reason.NotPdf =>
@@ -107,6 +111,9 @@ object PdfError:
     case Reason.WriteUnsupported =>
       m"this document cannot be written (only an unencrypted, on-disk file with a valid " +
           m"cross-reference table can be edited in place)"
+
+    case Reason.MissingPage(page) =>
+      m"the document has no page $page"
 
 case class PdfError(reason: PdfError.Reason)(using Diagnostics)
 extends Error(280, reason.number)(m"the PDF could not be read because $reason")

@@ -32,6 +32,12 @@
                                                                                                   */
 package bitumen
 
+import rudiments.*
+
+import proscenium.compat.*
+
+import scala.caps
+
 import anticipation.*
 import aperture.*
 import contingency.*
@@ -65,14 +71,14 @@ class TarDataOpenable(using Tactic[TarError], Tactic[StreamError]) extends Opena
     ( block: ((TarHandle & Granting[grants])^) ?=> result )
   :   result =
 
-    if mode.atoms.contains(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
+    if mode.atoms.has(Write) then abort(TarError(TarError.Reason.WriteUnsupported))
     val entries = TarHandle.entries(value.stream, flags)
     block(using new TarHandle(entries) with Granting[grants] {})
 
 object TarHandle:
   private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^, flags: List[TarFlag])
-    ( using Tactic[TarError], Tactic[StreamError], Buffering )
-  :   Iterator[Tar.Entry]^ =
+    ( using tarTactic: Tactic[TarError], streamTactic: Tactic[StreamError], buffering: Buffering )
+  :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
 
     Tarfile.read:
       flags.headOption match

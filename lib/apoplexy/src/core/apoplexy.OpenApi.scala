@@ -156,8 +156,8 @@ object OpenApi:
             Http.Trace -> trace )
 
       verbs
-      . collect { case (method, operation) if operation.present => method -> operation.vouch }
-      . to(Map)
+      . stdlib.collect { case (method, operation) if operation.present => method -> operation.vouch }
+      . pipe(Map.from(_))
 
   object Components:
     given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])

@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.64.0.                                                                    ┃
+┃    Soundness, version 0.63.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,69 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package proscenium
 
-import language.experimental.pureFunctions
+import scala.collection.immutable as sci
 
-import scala.collection.mutable as scm
+// The third opaque collection alias: an immutable map backed by `sci.Map`. Same design as
+// `Sequence` and `Set`: members invisible, API via typeclasses (`Indexable` provides `at`/`defines`/
+// `confine`; `Traversable by (key, value)` the transforming surface), construction and the
+// greppable `stdlib` bridge in the companion, casts at the boundary, and deliberately NO
+// `Conversion` to a stdlib supertype.
+object Map:
+  // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
+  // lambdas crashes the capture checker's boxer (boxDeeply assertion).
+  def of[key, value](map: sci.Map[key, value]): Map[key, value] =
+    map.asInstanceOf[Map[key, value]]
 
-import anticipation.*
-import denominative.*
-import prepositional.*
+  def apply[key, value](pairs: (key, value)*): Map[key, value] = of(sci.Map(pairs*))
+  def empty[key, value]: Map[key, value] = of(sci.Map.empty[key, value])
 
-object Indexable:
-  given iarray: [element] => IArray[element] is Indexable:
-    type Self = IArray[element]
-    type Operand = Ordinal
-    type Result = element
+  def from[key, value](pairs: IterableOnce[(key, value)]^): Map[key, value] =
+    of(sci.Map.from(pairs))
 
-    def contains(array: IArray[element], index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < array.length
+  extension [key, value](map: Map[key, value])
+    inline def stdlib: sci.Map[key, value] = map.asInstanceOf[sci.Map[key, value]]
 
-    def access(array: IArray[element], index: Ordinal): Result = array(index.n0)
-
-  given sequence: [element] => IndexedSeq[element] is Indexable:
-    type Self = IndexedSeq[element]
-    type Operand = Ordinal
-    type Result = element
-
-    def contains(sequence: IndexedSeq[element], index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 < sequence.length
-
-    def access(sequence: IndexedSeq[element], index: Ordinal): Result = sequence(index.n0)
-
-  given text: [element] => Text is Indexable:
-    type Self = Text
-    type Operand = Ordinal
-    type Result = Char
-
-    def contains(text: Text, index: Ordinal): Boolean = index.n0 >= 0 && index.n0 < text.s.length
-    def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
-
-  given map: [key, value] => Map[key, value] is Indexable:
-    type Self = Map[key, value]
-    type Operand = key
-    type Result = value
-
-    def contains(value: Self, index: key): Boolean = value.contains(index)
-    def access(value: Self, index: key): value = value(index)
-
-  given bijection: [key, value] => Bijection[key, value] is Indexable:
-    type Self = Bijection[key, value]
-    type Operand = key
-    type Result = value
-
-    def contains(value: Self, index: key): Boolean = value.map.contains(index)
-    def access(value: Self, index: key): value = value.map(index)
-
-  given hashMap: [key, value] => scm.HashMap[key, value] is Indexable:
-    type Self = scm.HashMap[key, value]
-    type Operand = key
-    type Result = value
-
-    def contains(value: Self, index: key): Boolean = value.contains(index)
-    def access(value: Self, index: key): value = value(index)
-
-trait Indexable extends Typeclass.Pure, Operable, Resultant:
-  def contains(value: Self, index: Operand): Boolean
-  def access(value: Self, index: Operand): Result
+opaque type Map[key, +value] = sci.Map[key, value]

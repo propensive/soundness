@@ -32,6 +32,8 @@
                                                                                                   */
 package chiaroscuro
 
+import proscenium.compat.*
+
 import scala.compiletime.*
 import scala.reflect.*
 
@@ -67,7 +69,7 @@ object Contrastable:
           val map = contexts[derivation](): [field] =>
             context => label -> context.juxtaposition(dereference(left), dereference(right))
 
-          Juxtaposition.Collation(typeName, map.to(List), show(left), show(right))
+          Juxtaposition.Collation(typeName, map.to[List], show(left), show(right))
 
     inline def disjunction[derivation: SumReflection]: derivation is Contrastable =
       (left, right) =>
@@ -95,18 +97,18 @@ object Contrastable:
     given set: [element: Showable] => Set[element] is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left.show) else
-          val leftOnly: Set[Text] = (left -- right).map(_.show)
-          val rightOnly: Set[Text] = (right -- left).map(_.show)
+          val leftOnly: Set[Text] = Set.of((left.stdlib -- right.stdlib).map(_.show))
+          val rightOnly: Set[Text] = Set.of((right.stdlib -- left.stdlib).map(_.show))
 
           def describe(set: Set[Text]): Text =
-            ( if set.size > 5 then set.take(4).to(List) :+ t"…${(set.size - 4).show.subscripts}"
-              else set.to(List) )
+            ( if set.size > 5 then set.toList.take(4) :+ t"…${(set.size - 4).show.subscripts}"
+              else set.toList )
 
             . join(t"{", t", ", t"}")
 
           val message =
-            if leftOnly.nil then t"+${describe(rightOnly)}"
-            else if rightOnly.nil then t"-${describe(leftOnly)}"
+            if leftOnly.isEmpty then t"+${describe(rightOnly)}"
+            else if rightOnly.isEmpty then t"-${describe(leftOnly)}"
             else t"-${describe(leftOnly)}╱+${describe(rightOnly)}"
 
           Juxtaposition.Different(left.show, right.show, message)
@@ -148,7 +150,7 @@ object Contrastable:
     given text: Text is Contrastable.Foundation =
       (left, right) =>
         if left == right then Juxtaposition.Same(left) else
-          def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
+          def decompose(chars: Array[Char]^{}): Array[Decomposition]^{} = chars.map: char =>
             Decomposition.Primitive(t"Char", char.show, char)
 
           comparison[Char](t"Text", decompose(left.chars), decompose(right.chars), left, right)
@@ -162,7 +164,7 @@ object Contrastable:
         Juxtaposition.Different(left, right)
 
       case (Decomposition.Sequence(name, left, _), Decomposition.Sequence(rightName, right, _)) =>
-        comparison(typeName, IArray.from(left), IArray.from(right), name, rightName)
+        comparison(typeName, Array.from(left), Array.from(right), name, rightName)
 
       case (Decomposition.Product(leftName, left, _), Decomposition.Product(rightName, right, _)) =>
         val name = if leftName == rightName then leftName else t"$leftName/$rightName"
@@ -203,15 +205,15 @@ object Contrastable:
 
   def comparison[value]
     ( name:       Text,
-      left:       IArray[Decomposition],
-      right:      IArray[Decomposition],
+      left:       Array[Decomposition]^{},
+      right:      Array[Decomposition]^{},
       leftDebug:  Text,
       rightDebug: Text )
   :   Juxtaposition =
 
     if left == right then Juxtaposition.Same(leftDebug) else
-      val comparison = IArray.from:
-        diff(left, right).rdiff(_ == _, 10).changes.map:
+      val comparison = Array.from:
+        dissonance.diff(Sequence.from(left.readable), Sequence.from(right.readable)).rdiff(_ == _, 10).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
@@ -231,7 +233,7 @@ object Contrastable:
 
             label -> juxtaposition(t"", Decomposition(leftValue), Decomposition(rightValue))
 
-      Juxtaposition.Collation(name, comparison.to(List), leftDebug, rightDebug)
+      Juxtaposition.Collation(name, comparison.to[List], leftDebug, rightDebug)
 
 
   trait Foundation extends Contrastable:

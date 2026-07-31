@@ -33,5 +33,5 @@
 package turbulence
 
 object In:
-  def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
+  def read(bytes: scala.Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
   def close()(using stdio: Stdio): Unit = stdio.in.close()

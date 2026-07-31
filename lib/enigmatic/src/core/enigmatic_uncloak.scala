@@ -55,25 +55,25 @@ extension [value: Encodable in Data](value: value)
 
     algorithm.encrypt(value.bytestream, encryptor.bytes, iv)
 
-// Streaming encryption (block ciphers only) lazily transforms a `LazyList`, driving
+// Streaming encryption (block ciphers only) lazily transforms a `Chain`, driving
 // the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
 // and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
 // `uncloak` block: beyond leaking, a stream drained after the block ends would
 // read key bytes the cloak has already zeroed.
 
-extension (stream: LazyList[Data])
+extension (stream: Chain[Data])
   def encrypt[cipher <: BlockCipher](iv: InitializationVector)
     ( using encryptor: Encryptor[cipher],
             algorithm: cipher & Encryption,
             erased weakness: Permit[Weakness[cipher]],
             erased authentication: Permit[Authentication[cipher]] )
-  :   LazyList[Data] =
+  :   Chain[Data] =
 
     algorithm.encryptStream(stream, encryptor.bytes, iv)
 
-extension (stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
+extension (consume stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
   // Kernel-native streaming encryption: the pipeline-stage counterpart of the
-  // `LazyList` form above, with the same IV-prefix framing.
+  // `Chain` form above, with the same IV-prefix framing.
   def encrypt[cipher <: BlockCipher](iv: InitializationVector)
     ( using encryptor:  Encryptor[cipher],
             algorithm:  cipher & Encryption,
@@ -150,10 +150,11 @@ extension [cipher <: Cipher](key: PublicKey[cipher])
 
 extension [cipher <: Cipher](key: PrivateKey[cipher]^)
   def uncloak[result](block: Decryptor[cipher]^ ?=> result): result =
-    key.secret.uncloak: bytes => block(using Decryptor(bytes.immutable(using Unsafe)))
+    key.secret.uncloak: bytes =>
+      block(using Decryptor(Array.unsafeFrozen(bytes)))
 
 extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
   def uncloak[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?=> result): result =
     key.secret.uncloak: bytes =>
-      val data = bytes.immutable(using Unsafe)
+      val data = Array.unsafeFrozen(bytes)
       block(using Encryptor(data), Decryptor(data))

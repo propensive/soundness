@@ -32,6 +32,8 @@
                                                                                                   */
 package probably
 
+import proscenium.compat.*
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -68,7 +70,7 @@ private[probably] object AnsiRenderer:
     val columns: Int = safely(Environment.columns.as[Int]).or(120)
     val githubActions = Ci.githubActions
 
-    coverage.each(renderCoverage(_, columns))
+    coverage.foreach(renderCoverage(_, columns))
     renderTotals(document, columns, top = true)
     document.groups.each(renderGroup(_, columns, githubActions))
     if githubActions then annotations(document)
@@ -91,7 +93,7 @@ private[probably] object AnsiRenderer:
         case 1 => palette.warm
         case _ => palette.hot
 
-      val unit = units(figure.unit)
+      val unit = units.stdlib(figure.unit)
       e"${Fg(palette.foreground)}(${figure.whole}.${figure.fraction}) ${Fg(color)}($unit)"
 
   private def datum(value: Datum)(using palette: TestPalette): Teletype = value match
@@ -247,11 +249,11 @@ private[probably] object AnsiRenderer:
       // Printed with index loops rather than `grouped(_).each`/`map` closures: a lambda whose
       // parameter is a `List` and whose body uses the `Stdio` capability leaks the list's reach
       // capability into the surrounding `(using Stdio)` scope under capture checking.
-      val cells: IndexedSeq[Teletype] =
-        allStatuses.map: status =>
-          gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
+      val cells: scala.collection.immutable.IndexedSeq[Teletype] =
+        allStatuses.stdlib.map: status =>
+          (e"  ${status.symbol} ${status.describe}": Teletype).pad(20)
 
-        . to(IndexedSeq)
+        . toIndexedSeq
 
       var cell = 0
 
@@ -302,29 +304,28 @@ private[probably] object AnsiRenderer:
 
         val tableColumns2 = tableColumns.zipWithIndex.map: (column, index) =>
           val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
-          def cell(row: List[Datum]): Teletype = datum(row(index))
-          escritoire.Column[List[Datum], Teletype, Teletype](e"$Bold(${column.title})", align)(cell)
+            escritoire.Column[List[Datum], Teletype, Teletype](e"$Bold(${column.title})", align)(row => datum(row.stdlib(index)))
 
         Scaffold[List[Datum]](tableColumns2*)
         . tabulate(rows).grid(columns).render.each(Out.println(_))
 
-      case Block.Sparkline(steps, series) =>
-        val labelWidth = series.map(_.label.length).max
-        val stepWidth = steps.map(_.show.length).max + 2
+      case Block.Sparkline(steps, sequence) =>
+        val labelWidth = sequence.stdlib.map(_.label.length).max
+        val stepWidth = steps.stdlib.map(_.show.length).max + 2
 
         Out.println:
-          val headings = steps.map(_.show.pad(stepWidth, Rtl)).join
+          val headings = steps.stdlib.map(_.show.pad(stepWidth, Rtl)).join
           e"  ${Fg(palette.subdued)}(${t"N".pad(labelWidth)}$headings)"
 
-        series.zipWithIndex.each: (spark, index) =>
+        sequence.zipWithIndex.each: (spark, index) =>
           val color = accent(index)
 
           val cells: Teletype =
-            spark.cells.map: cell =>
+            spark.cells.stdlib.map: cell =>
               val absent = e"${Fg(palette.subdued)}(${t"·".pad(stepWidth, Rtl)})"
 
               cell.lay(absent): (level, subdued) =>
-                val text = Format.sparkBlocks(level - 1).pad(stepWidth, Rtl)
+                val text = Format.sparkBlocks.stdlib(level - 1).pad(stepWidth, Rtl)
                 if subdued then e"${Fg(palette.subdued)}($text)" else e"$color($text)"
 
             . join
@@ -341,15 +342,19 @@ private[probably] object AnsiRenderer:
       case Block.Histogram(title, total, frames) =>
         title.let: id => Out.println(e"$Bold(${Fg(palette.foreground)}(${id.name}))")
 
-        val max = frames.map(_.samples).maxOption.getOrElse(0L)
+        val max = frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
         val stackPalette = summon[StackTrace.Palette]
 
         // The digression convention: packages in first-appearance order take the accent
         // colours cyclically, exactly as coloured stack traces do.
         val packages: Map[Text, Color in Srgb] =
-          frames.map: frame => StackTrace.Method(frame.className, frame.method).prefix
-          . distinct.zipWithIndex.map: (prefix, index) => prefix -> accent(index)
-          . to(Map)
+          frames.map: frame =>
+            StackTrace.Method(frame.className, frame.method).prefix
+
+          . distinct.zipWithIndex.map: (prefix, index) =>
+              prefix -> accent(index)
+
+          . to[Map]
 
         // The method column is leftmost and right-aligned against the bars, so the names
         // read into their histogram rows; the plain width is measured before styling.
@@ -359,11 +364,11 @@ private[probably] object AnsiRenderer:
             val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
             method.prefix.length + 1 + cls.length + 1 + frame.method.length
 
-          . maxOption.getOrElse(0)
+          . stdlib.maxOption.getOrElse(0)
 
-        frames.each: frame =>
+        frames.stdlib.foreach: frame =>
           val method = StackTrace.Method(frame.className, frame.method)
-          val color = packages(method.prefix)
+          val color = packages.stdlib(method.prefix)
           val percent = Format.percent(Format.basisPoints(frame.samples.toDouble, total.toDouble))
           val obj = method.cls.starts(t"Ξ")
           val cls = if obj then method.cls.skip(1) else method.cls
@@ -399,7 +404,7 @@ private[probably] object AnsiRenderer:
       t"Test failed"
 
   private def annotations(document: Document)(using Stdio): Unit =
-    val details: Map[TestId, List[Verdict.Detail]] = document.failures.to(Map)
+    val details: Map[TestId, List[Verdict.Detail]] = document.failures.to[Map]
 
     document.results.each: row =>
       row.status match
@@ -425,10 +430,10 @@ private[probably] object AnsiRenderer:
       Out.println(t"─"*74)
 
       Out.println:
-        StackTrace.legend.to(List).map: (symbol, description) =>
+        StackTrace.legend.to[List].map: (symbol, description) =>
           e"$Bold(${Fg(palette.foreground)}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
 
-        . grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
+        . batched(3).map(_.join).join(e"${t"\n"}")
 
       Out.println(t"─"*74)
 
@@ -473,7 +478,7 @@ private[probably] object AnsiRenderer:
               ( escritoire.Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
                 escritoire.Column(e"Value")(_(1)) )
 
-            . tabulate(map.to(List)).grid(140).render.each(Out.println(_))
+            . tabulate(map.to[List]).grid(140).render.each(Out.println(_))
 
           case Verdict.Detail.Message(text) =>
             Out.println(text)
@@ -488,20 +493,20 @@ private[probably] object AnsiRenderer:
     val palette = summon[TestPalette]
 
     document.fatal.let: (error, active) =>
-      val explanation = active.to(List) match
+      val explanation = active.to[List] match
         case Nil => e"No tests were active when a fatal error occurred."
 
         case _ =>
           val were = if active.size == 1 then e"was" else e"were"
 
           val tests =
-            active.to(List).map: test => e"$Bold(${test.name})"
+            active.to[List].map: test => e"$Bold(${test.name})"
             . join(e"", e", ", e" and ", e"")
 
           e"A fatal error occurred while $tests $were running."
 
       if githubActions then
-        val activeNames = active.to(List).map(_.name.text).join(t", ")
+        val activeNames = active.to[List].map(_.name.text).join(t", ")
         val cause = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
 
@@ -531,12 +536,12 @@ private[probably] object AnsiRenderer:
 
         if oldHits == 0 then main else e"${palette.detail}(${oldHits.show.subscripts}) $main"
 
-    val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
+    val data = coverage.spec.readable.groupBy(_.path).toList.map: (path, branches) =>
       val hitCount: Int =
-        branches.to(List).map(_.id).map(coverage.hits.has).count(identity(_))
+        branches.map(_.id).count(coverage.hits.has)
 
       val oldHitCount: Int =
-        branches.to(List).map(_.id).map(coverage.oldHits.has).count(identity(_))
+        branches.map(_.id).count(coverage.oldHits.has)
 
       CoverageData(path, branches.size, hitCount, oldHitCount)
 
@@ -548,17 +553,17 @@ private[probably] object AnsiRenderer:
       if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"
       else e"• ${surface.juncture.shortCode}"
 
-    def render(junctures: List[Surface]): LazyList[(Surface, Teletype)] =
+    def render(junctures: List[Surface]): List[(Surface, Teletype)] =
       val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
-      diagram.nodes.zip(diagram.render(describe))
+      List.of(diagram.nodes.stdlib.zip(diagram.render(describe).stdlib).toList)
 
     val allHits = coverage.hits ++ coverage.oldHits
 
     val junctures2 =
-      coverage.structure.values.flatten
-      . to(List)
-      . filter(!_.covered(allHits))
-      . map(_.copy(children = Nil))
+      List.of:
+        coverage.structure.stdlib.values.toList.flatMap(_.stdlib)
+        . filter(!_.covered(allHits))
+        . map(_.copy(children = Nil))
 
     Scaffold[(Surface, Teletype)]
       ( escritoire.Column(e""): row =>
@@ -607,6 +612,6 @@ private[probably] object AnsiRenderer:
 
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join )
 
-    . tabulate(data).grid(columns).render.each(Out.println(_))
+    . tabulate(List.of(data)).grid(columns).render.each(Out.println(_))
 
     Out.println(e"")

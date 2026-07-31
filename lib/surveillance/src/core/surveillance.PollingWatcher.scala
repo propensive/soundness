@@ -32,6 +32,8 @@
                                                                                                   */
 package surveillance
 
+import scala.caps
+
 import java.nio.file as jnf
 
 import scala.collection.mutable as scm
@@ -42,6 +44,8 @@ import denominative.*
 import nomenclature.n
 import parasite.*, threading.platformThreading, Async.nominative
 import prepositional.*
+import proscenium.compat.*
+
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -61,15 +65,15 @@ extends Watcher:
 
   private def scan(directory: jnf.Path, filter: Text -> Boolean): Map[Text, Entry] =
     Optional(directory.toFile.nn.listFiles()).let: files =>
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(files).flatMap: file =>
+      Array.unsafeFrozen(files).toList.bind: file =>
         val entry = file.nn
         val name = entry.getName.nn.tt
 
         if filter(name)
         then List(name -> Entry(entry.isDirectory, entry.lastModified, entry.length))
-        else Nil
+        else List()
 
-      . to(Map)
+      . toMap
 
     . or(Map())
 
@@ -82,7 +86,7 @@ extends Watcher:
 
     val base = directory.toString.show
 
-    current.each: (name, entry) =>
+    current.stdlib.each: (name, entry) =>
       previous.at(name) match
         case last: Entry =>
           if !entry.directory && last != entry then spool.put(WatchEvent.Modify(base, name))
@@ -91,13 +95,13 @@ extends Watcher:
           if entry.directory then spool.put(WatchEvent.NewDirectory(base, name))
           else spool.put(WatchEvent.NewFile(base, name))
 
-    previous.each: (name, _) =>
-      if !current.contains(name) then spool.put(WatchEvent.Delete(base, name))
+    previous.stdlib.each: (name, _) =>
+      if !current.defines(name) then spool.put(WatchEvent.Delete(base, name))
 
   def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Relay[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
-    directories.each: (directory, _) =>
+    directories.stdlib.each: (directory, _) =>
       val file = directory.toFile.nn
 
       if !file.exists then abort(WatchError(WatchError.Reason.Nonexistent))
@@ -105,7 +109,8 @@ extends Watcher:
 
     val snapshots: scm.HashMap[jnf.Path, Map[Text, Entry]] = scm.HashMap()
 
-    directories.each: (directory, filter) => snapshots(directory) = scan(directory, filter)
+    directories.stdlib.each: (directory, filter) =>
+      snapshots(directory) = scan(directory, filter)
 
     // Sealed per the pure-façade convention (D6), like `NativeWatcher`: the handle is held
     // only to keep the supervised poll task alive for the registration's lifetime.
@@ -116,7 +121,7 @@ extends Watcher:
             while true do
               snooze(interval)
 
-              directories.each: (directory, filter) =>
+              directories.stdlib.each: (directory, filter) =>
                 val current = scan(directory, filter)
                 diff(directory, snapshots.at(directory).or(Map()), current, spool)
                 snapshots(directory) = current

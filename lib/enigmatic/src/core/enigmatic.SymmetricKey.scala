@@ -32,6 +32,9 @@
                                                                                                   */
 package enigmatic
 
+import scala.annotation.targetName
+import proscenium.compat.*
+
 import anticipation.*
 import gastronomy.ProcessingPermit
 import prepositional.*
@@ -42,6 +45,9 @@ object SymmetricKey:
   def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher, cloak: Cloak^)
   :   SymmetricKey[cipher]^{cloak} =
 
+    // `Cloak.cloak` zeroes the array it is given, so this keeps the write launder rather than
+    // a named read-only view: the freshly-generated key is nobody else's, but `genKey`'s
+    // frozen `Data` result cannot say so, which is why the capability is still required here.
     new SymmetricKey(cloak.cloak(cipher.genKey().mutable(using Unsafe)))
 
   // Adopt externally-supplied key material — for example a key produced by a key-
@@ -53,13 +59,13 @@ object SymmetricKey:
   // `apply` suppresses the synthetic constructor proxy, so these are the sole
   // `SymmetricKey(bytes)` constructors.
   def apply[cipher <: Cipher](bytes: Data)(using cloak: Cloak^): SymmetricKey[cipher]^{cloak} =
-    new SymmetricKey(cloak.cloak(bytes.to(Array)))
+    new SymmetricKey(cloak.cloak(bytes.readable.to(scala.Array)))
 
   // Adopt externally-supplied key material from a mutable array, which is zeroed as it is
   // cloaked, leaving the cloaked copy as the only key material. (The `@targetName`
   // disambiguates from the `Data` overload, with which it clashes after erasure.)
-  @annotation.targetName("applyMutable")
-  def apply[cipher <: Cipher](bytes: Array[Byte])(using cloak: Cloak^)
+  @targetName("applyMutable")
+  def apply[cipher <: Cipher](bytes: scala.Array[Byte])(using cloak: Cloak^)
   :   SymmetricKey[cipher]^{cloak} =
 
     new SymmetricKey(cloak.cloak(bytes))
@@ -76,4 +82,4 @@ extends PrivateKey[cipher](handle):
   // it demands the explicit `Divulgence` token. This replaces the former `Encodable` given,
   // which serialized the key material silently.
   def data(reveal: Divulgence.type): Data = secret.uncloak: bytes =>
-    bytes.clone.immutable(using Unsafe)
+    Array.unsafeFrozen(bytes.clone)

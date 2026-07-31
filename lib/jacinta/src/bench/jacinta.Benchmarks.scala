@@ -32,6 +32,8 @@
                                                                                                   */
 package jacinta
 
+import scala.sys
+
 import scala.quoted.*
 
 import ambience.*, environments.javaEnvironment, systems.javaSystem
@@ -112,8 +114,8 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // parse tokens straight into the records with `Parsable`; or use
   // Jsoniter's macro-generated direct codec (the state of the art for
   // direct-to-case-class parsing on the JVM).
-  def decodeUsersAst(): BenchUsers = LazyList(jsonBytes4).read[Json].as[BenchUsers]
-  def decodeUsersDirect(): BenchUsers = LazyList(jsonBytes4).read[BenchUsers in Json]
+  def decodeUsersAst(): BenchUsers = Chain(jsonBytes4).read[Json].as[BenchUsers]
+  def decodeUsersDirect(): BenchUsers = Chain(jsonBytes4).read[BenchUsers in Json]
   def decodeUsersDirectData(): BenchUsers = jsonBytes4.read[BenchUsers in Json]
 
   // A hand-written parser over the public reader API: the "ceiling" for
@@ -212,7 +214,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
     private def bail(): Nothing = sys.error("fused spike: unsupported input shape")
 
-    def decode(buffer: Array[Byte]): BenchUsers =
+    def decode(buffer: scala.Array[Byte]): BenchUsers =
       val limit = buffer.length
 
       inline def ws(p0: Int): Int =
@@ -415,7 +417,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       if !usersSeen then bail()
       BenchUsers(users)
 
-  lazy val jsonArray4: Array[Byte] = jsonText4.getBytes("UTF-8").nn
+  lazy val jsonArray4: scala.Array[Byte] = jsonText4.getBytes("UTF-8").nn
 
   def decodeUsersFused(): BenchUsers = FusedSpike.decode(jsonArray4)
 
@@ -424,7 +426,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
   def decodeUsersJsoniter(): JsoniterUsers =
     com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[JsoniterUsers]
-      ( jsonBytes4.mutable(using Unsafe) )(using jsoniterUsersCodec)
+      ( Array.unsafeJvm(jsonBytes4) )(using jsoniterUsersCodec)
 
   def textFor(document: Document): String = document match
     case Document.Example1 => jsonText1
@@ -440,12 +442,12 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // reference identity (the extracted document is memoized, so its identity is stable),
   // costing one comparison per iteration rather than one copy.
   private var utf8Key: String | Null = null
-  private var utf8Value: Data = IArray[Byte]()
+  private var utf8Value: Data = Array.of[Byte]()
 
   def utf8(text: String): Data =
     if utf8Key ne text then
       utf8Key = text
-      utf8Value = text.getBytes("UTF-8").nn.immutable(using Unsafe)
+      utf8Value = Array.unsafeFrozen(text.getBytes("UTF-8").nn)
 
     utf8Value
 
@@ -523,7 +525,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       // Three Merino rows exercising each `NumberMode` to visualise the
       // precision-vs-throughput trade-off on inputs that overflow the
       // in-Long fast path (every wei/gas value here is >15 nibbles).
-      bench(m"Parse file with Merino (Full / Bcd Array[Double])")
+      bench(m"Parse file with Merino (Full / Bcd scala.Array[Double])")
         (target = 1*Second, operationSize = size6):
         '{ Json.Ast.parse(jacinta.Benchmarks.jsonBytes6)(using jacinta.NumberMode.Full) }
 
@@ -561,9 +563,9 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   lazy val jsonText1: String = jsonExample1.s
   lazy val jsonText2: String = jsonExample2.s
   lazy val jsonText3: String = jsonExample3.s
-  lazy val jsonBytes1: Data = jsonText1.getBytes("UTF-8").nn.immutable(using Unsafe)
-  lazy val jsonBytes2: Data = jsonText2.getBytes("UTF-8").nn.immutable(using Unsafe)
-  lazy val jsonBytes3: Data = jsonText3.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes1: Data = Array.unsafeFrozen(jsonText1.getBytes("UTF-8").nn)
+  lazy val jsonBytes2: Data = Array.unsafeFrozen(jsonText2.getBytes("UTF-8").nn)
+  lazy val jsonBytes3: Data = Array.unsafeFrozen(jsonText3.getBytes("UTF-8").nn)
 
   // Example 4: array of 100 user records — the typical "JSON array of records"
   // pattern with a small fixed key set repeated across all elements.
@@ -581,7 +583,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     sb.append("]}")
     sb.toString.nn
 
-  lazy val jsonBytes4: Data = jsonText4.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes4: Data = Array.unsafeFrozen(jsonText4.getBytes("UTF-8").nn)
 
   // Example 5: a longer NDJSON-style log array with 500 entries; 6 keys per
   // entry, all repeating across entries. Larger than Example 4 and stresses
@@ -589,8 +591,8 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   lazy val jsonText5: String =
     val sb = new _root_.java.lang.StringBuilder
     sb.append("{\"logs\":[")
-    val levels = Array("info", "debug", "warn", "error")
-    val services = Array("auth", "api", "db", "cache", "worker")
+    val levels = scala.Array("info", "debug", "warn", "error")
+    val services = scala.Array("auth", "api", "db", "cache", "worker")
     var i = 0
     while i < 500 do
       if i > 0 then sb.append(',')
@@ -604,7 +606,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     sb.append("]}")
     sb.toString.nn
 
-  lazy val jsonBytes5: Data = jsonText5.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes5: Data = Array.unsafeFrozen(jsonText5.getBytes("UTF-8").nn)
 
   // Example 6: 50 blockchain-style transaction records exercising high-
   // precision numbers — wei values are 25-digit integers (overflowing
@@ -635,7 +637,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     sb.append("]}")
     sb.toString.nn
 
-  lazy val jsonBytes6: Data = jsonText6.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes6: Data = Array.unsafeFrozen(jsonText6.getBytes("UTF-8").nn)
 
   // Pre-parsed AST of the blockchain corpus. Many of its number literals
   // overflow the parser's 14-nibble compact-BCD path and materialise as
@@ -661,7 +663,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     sb.append(']')
     sb.toString.nn
 
-  lazy val jsonBytes7: Data = jsonText7.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes7: Data = Array.unsafeFrozen(jsonText7.getBytes("UTF-8").nn)
 
   // Example 8: 1000 small decimals — fractional values still fit the
   // compact-BCD payload, so the array stays in the unboxed form.
@@ -676,7 +678,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     sb.append(']')
     sb.toString.nn
 
-  lazy val jsonBytes8: Data = jsonText8.getBytes("UTF-8").nn.immutable(using Unsafe)
+  lazy val jsonBytes8: Data = Array.unsafeFrozen(jsonText8.getBytes("UTF-8").nn)
 
   val jsonExample1: Text = t"""
 

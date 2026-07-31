@@ -71,7 +71,8 @@ class Issuer
   def oauth(using Http.Request, Online, (HttpEvent is Loggable)^)
     ( lambda: (Issuer.Context of this.type) ?=> Http.Response )
     ( using store: OAuth, session: Session )
-  :   Http.Response raises OAuthError =
+    ( using Tactic[OAuthError] )
+  :   Http.Response =
 
     request.path match
       case OAuthPath =>
@@ -134,12 +135,20 @@ class Issuer
 
               import dynamicJsonAccess.enabled
 
-              val access = json.access_token.as[Text]
-              val refresh = safely(json.refresh_token.as[Text])
-              val scopes = json.scope.as[Text].cut(t" ")
-              val tokenType = json.token_type.as[Text] // assume `Bearer`
+              // The field decodings share only the resolution-scoped tactic; no aliased
+              // writer.
+              val access = scala.caps.unsafe.unsafeAssumeSeparate(json.access_token.as[Text])
 
-              val expiry: Optional[Long] =
+              val refresh =
+                scala.caps.unsafe.unsafeAssumeSeparate(safely(json.refresh_token.as[Text]))
+
+              val scopes =
+                scala.caps.unsafe.unsafeAssumeSeparate(json.scope.as[Text].cut(t" "))
+
+              val tokenType = // assume `Bearer`
+                scala.caps.unsafe.unsafeAssumeSeparate(json.token_type.as[Text])
+
+              val expiry: Optional[Long] = scala.caps.unsafe.unsafeAssumeSeparate:
                 safely(System.currentTimeMillis + json.expires_in.as[Long]*1000L)
 
               val state2 = state.copy(access = Authorization(access, scopes, expiry, refresh))
@@ -169,7 +178,7 @@ class Issuer
           ( client_id     = client,
             redirect_uri  = redirect,
             access_type   = t"offline",
-            scope         = scopes.flatMap(_.names).to(Set).to(List).join(t" "),
+            scope         = scopes.flatMap(_.names).distinct.to(List).join(t" "),
             state         = state.uuid.show,
             response_type = t"code" )
 

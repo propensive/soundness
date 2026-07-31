@@ -38,8 +38,10 @@ import vacuous.*
 
 trait ProcessRef:
   def pid: Pid
-  def kill(): Unit logs ExecEvent
-  def abort(): Unit logs ExecEvent
+  // Real `using` clauses rather than the `logs` sugar: a context-function result would hide
+  // the capability `this` of implementing classes, which the separation checker rejects.
+  def kill()(using (ExecEvent is Loggable)^): Unit
+  def abort()(using (ExecEvent is Loggable)^): Unit
   def alive: Boolean
   def attend(): Unit
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant]

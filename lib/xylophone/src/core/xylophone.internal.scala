@@ -32,11 +32,19 @@
                                                                                                   */
 package xylophone
 
-import language.dynamics
+import scala.collection.immutable.Seq
+import scala.collection.immutable.IndexedSeq
+
+import scala.{annotation, caps}
+
+import proscenium.compat.*
+
+import scala.language.dynamics
 
 import java.lang as jl
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.VectorMap
+import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
@@ -73,7 +81,8 @@ object internal:
         case Nil          => repr
 
     abortive:
-      var holes: Map[Ordinal, Xml.Hole] = Map()
+      var holes: scala.collection.immutable.Map[Ordinal, Xml.Hole] =
+        scala.collection.immutable.Map()
       def capture(ordinal: Ordinal, hole: Xml.Hole) = holes = holes.updated(ordinal, hole)
 
       given XmlSchema = XmlSchema.Freeform
@@ -87,30 +96,30 @@ object internal:
 
       var types: List[TypeRepr] = Nil
 
-      def checkText(array: Expr[Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
+      def checkText(array: Expr[scala.Array[Any]], pattern: TextNode, scrutinee: Expr[TextNode])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkComment(array: Expr[Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
+      def checkComment(array: Expr[scala.Array[Any]], pattern: Comment, scrutinee: Expr[Comment])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
-      def checkCdata(array: Expr[Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
+      def checkCdata(array: Expr[scala.Array[Any]], pattern: Cdata, scrutinee: Expr[Cdata])
       :   Expr[Boolean] =
 
         '{${Expr(pattern.text)} == $scrutinee.text}
 
       def checkPi
-        ( array:     Expr[Array[Any]],
+        ( array:     Expr[scala.Array[Any]],
           pattern:   ProcessingInstruction,
           scrutinee: Expr[ProcessingInstruction] )
       :   Expr[Boolean] =
 
         '{${Expr(pattern.target)} == $scrutinee.target && ${Expr(pattern.data)} == $scrutinee.data}
 
-      def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
+      def checkHeader(array: Expr[scala.Array[Any]], pattern: Header, scrutinee: Expr[Header])
       :   Expr[Boolean] =
 
         val encoding: Expr[Boolean] =
@@ -123,7 +132,7 @@ object internal:
 
         '{${Expr(pattern.version)} == $scrutinee.version && $encoding && $standalone}
 
-      def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
+      def checkFragment(array: Expr[scala.Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       :   Expr[Boolean] =
 
         val children = '{$scrutinee.nodes}
@@ -138,7 +147,7 @@ object internal:
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
-      def checkElement(array: Expr[Array[Any]], pattern: Element, scrutinee: Expr[Element])
+      def checkElement(array: Expr[scala.Array[Any]], pattern: Element, scrutinee: Expr[Element])
       :   Expr[Boolean] =
 
         def attributes(todo: List[Text])(expr: Expr[Boolean]): Expr[Boolean] = todo match
@@ -157,26 +166,28 @@ object internal:
 
           case head :: tail =>
             attributes(tail):
-              val boolean: Expr[Boolean] = pattern.attributes(head).s.absolve match
+              val boolean: Expr[Boolean] = Attributes.pick(pattern.attributes, head).s.absolve match
                 case "\u0000" =>
                   index += 1
                   types ::= TypeRepr.of[Text]
                   iterator.next()
-                  '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
+                  '{$array(${Expr(index)}) = Attributes.pick($scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)}); true}
 
                 case text: Text =>
-                  '{$scrutinee.attributes(${Expr(head)}) == ${Expr(text)}}
+                  '{Attributes.pick($scrutinee.attributes.asInstanceOf[Attributes], ${Expr(head)}) == ${Expr(text)}}
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(pattern.attributes.toList.map(_(0)))('{true})
+        val attributesChecked = attributes(Attributes.toList(pattern.attributes).map(_(0)))('{true})
 
-        val children = '{$scrutinee.children}
-
+        // The children access is quoted in one piece: splicing a `val children` Expr gives
+        // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
+        // read shim's `any.rd` receiver.
         def elements(index: Int)(expr: Expr[Boolean]): Expr[Boolean] =
           if index == pattern.children.length then expr else
             val expr2 =
-              descend(array, pattern.children(index), '{$children(${Expr(index)})}, '{true})
+              descend
+                (array, pattern.children(index), '{$scrutinee.children(${Expr(index)})}, '{true})
 
             elements(index + 1)('{$expr && $expr2})
 
@@ -188,7 +199,7 @@ object internal:
 
         '{$attributesChecked && $elementsChecked}
 
-      def descend(array: Expr[Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
+      def descend(array: Expr[scala.Array[Any]], pattern: Xml, scrutinee: Expr[Xml], expr: Expr[Boolean])
       :   Expr[Boolean] =
 
         pattern match
@@ -305,7 +316,7 @@ object internal:
 
       val result: Expr[Extrapolation[Xml]] =
         ' {
-            val extracts = new Array[Any](${Expr(holeCount)})
+            val extracts = new scala.Array[Any](${Expr(holeCount)})
             val matches: Boolean = ${descend('extracts, xml, scrutinee, '{true})}
 
             $ {
@@ -468,7 +479,8 @@ object internal:
     val insertions: Seq[Expr[Any]] = insertions0.absolve match
       case Varargs(insertions) => insertions
 
-    var holes: Map[Ordinal, Xml.Hole] = Map()
+    var holes: scala.collection.immutable.Map[Ordinal, Xml.Hole] =
+        scala.collection.immutable.Map()
     def capture(ordinal: Ordinal, hole: Hole) = holes = holes.updated(ordinal, hole)
 
     given XmlSchema = XmlSchema.Freeform
@@ -589,7 +601,7 @@ object internal:
         . iterator
 
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
-        case Fragment(children*) => children.flatMap(serialize(_))
+        case fragment: Fragment => fragment.nodes.flatMap(serialize(_))
 
         case Header(version, encoding, standalone, _) =>
           val encoding2: Expr[Optional[Text]] =
@@ -601,7 +613,7 @@ object internal:
           List('{Header(${Expr(version)}, $encoding2, $standalone2)})
 
         case Element(label, attributes, children) =>
-          val exprs = attributes.toList.map: (key, value) =>
+          val exprs = Attributes.toList(attributes).map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -613,12 +625,16 @@ object internal:
             . asExprOf[(Text, Text)]
 
           val map = '{Map(${Expr.ofList(exprs)}*)}
-          val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
+          val elements =
+            val serialized = scala.collection.immutable.ArraySeq
+            . unsafeWrapArray(children.asInstanceOf[scala.Array[Node]]).flatMap(serialize(_)).toList
+
+            '{Array.frozen(scala.IArray(${Expr.ofList(serialized)}*))}
 
           List('{Element(${Expr(label)}, Attributes.from($map), $elements)})
 
         case Comment(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -631,7 +647,7 @@ object internal:
           List('{Comment($content.tt)})
 
         case Cdata(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -644,7 +660,7 @@ object internal:
           List('{Cdata($content.tt)})
 
         case ProcessingInstruction(target, data0) =>
-          val parts = data0.cut(t"\u0000").map(_.s)
+          val parts = data0.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -660,7 +676,7 @@ object internal:
           List(iterator.next().asExprOf[Node])
 
         case TextNode(text) =>
-          val parts = text.cut(t"\u0000").map(_.s)
+          val parts = text.cut(t"\u0000").stdlib.map(_.s)
 
           def recur(parts: List[String], expr: Expr[String]): Expr[String] = parts match
             case Nil => expr
@@ -675,11 +691,11 @@ object internal:
         case Doctype(text) =>
           List('{Doctype(${Expr(text)})})
 
-      def resultType(xml: Xml): Set[String] = xml match
-        case TextNode(_)        => Set("#text")
-        case Element(tag, _, _) => Set(tag.s)
-        case Fragment(values*)  => values.to(Set).flatMap(resultType(_))
-        case _                  => Set()
+      def resultType(xml: Xml): scala.collection.immutable.Set[String] = xml match
+        case TextNode(_)        => scala.collection.immutable.Set("#text")
+        case Element(tag, _, _) => scala.collection.immutable.Set(tag.s)
+        case Fragment(values*)  => values.toSet.flatMap(resultType(_))
+        case _                  => scala.collection.immutable.Set()
 
       resultType(xml)
       . map: label => ConstantType(StringConstant(label))
@@ -755,12 +771,16 @@ object internal:
 
                 . or(halt(m"unexpected type"))
 
-    '{$tag.node(Attributes.from(${Expr.ofList(attributes)}.compact.to(Map)))}.asExprOf[result]
+    '{$tag.node(Attributes.from(Map.from(${Expr.ofList(attributes)}.compact)))}.asExprOf[result]
 
-  opaque type Attributes <: IArray[String] = IArray[String]
+  // Represented as the stdlib's immutable array, not the frozen `Array[String]^{}`:
+  // dealiasing the mutable-classified opaque gives `Attributes`-typed fields a fresh
+  // `any.rd` capability that leaks into every enclosing type. The stdlib `IArray` is pure
+  // by construction; conversions happen at the construction/`storage` edges.
+  opaque type Attributes = scala.IArray[String]
 
   object Attributes:
-    val empty: Attributes = IArray.empty[String]
+    val empty: Attributes = scala.IArray.empty[String]
 
     // `Attributes` is a `Text`-keyed map, so it indexes through the shared `at` (giving
     // `Optional`).
@@ -774,46 +794,65 @@ object internal:
     def apply(pairs: (Text, Text)*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length
-        val arr = new Array[String](n*2)
+        val buffer = Array[String](n*2)
         var i = 0
 
         pairs.foreach: pair =>
-          arr(i*2) = pair._1.s
-          arr(i*2 + 1) = pair._2.s
+          buffer(i*2) = pair._1.s
+          buffer(i*2 + 1) = pair._2.s
           i += 1
 
-        arr.immutable(using Unsafe)
+        Array.freeze(buffer).readable
 
     def from(map: Map[Text, Text]): Attributes =
-      if map.isEmpty then empty else
-        val n = map.size
-        val arr = new Array[String](n*2)
+      val entries = map.stdlib
+      if entries.isEmpty then empty else
+        val n = entries.size
+        val buffer = Array[String](n*2)
         var i = 0
 
-        map.foreach: (k, v) =>
-          arr(i*2) = k.s
-          arr(i*2 + 1) = v.s
+        entries.foreach: (k, v) =>
+          buffer(i*2) = k.s
+          buffer(i*2 + 1) = v.s
           i += 1
 
-        arr.immutable(using Unsafe)
+        Array.freeze(buffer).readable
 
-    // Construct an `Attributes` directly from an interleaved `IArray`. The
+    // Construct an `Attributes` directly from an interleaved frozen array. The
     // caller guarantees the array's length is even and that every key slot
     // (even index) holds a non-null `String`. Used by the parser, which
     // assembles the interleaved array as it tokenizes attributes.
-    private[xylophone] inline def fromInterleaved(array: IArray[String]): Attributes = array
+    private[xylophone] inline def fromInterleaved(array: Array[String]^{}): Attributes =
+      array.readable
 
     // Unwrap to the raw `Array[String]` for hot-path internal access. Safe
     // within the package: the storage is shared but never mutated outside
     // construction.
-    private[xylophone] inline def storage(attrs: Attributes): Array[String] =
-      attrs.asInstanceOf[Array[String]]
+    private[xylophone] inline def storage(attrs: Attributes): scala.Array[String] =
+      attrs.asInstanceOf[scala.Array[String]]
+
+    // The throwing lookup as a plain method: inside this file the opaque is transparent, so
+    // the stdlib `IArray` extensions intercept the extension forms; internal call sites (and
+    // the quotes compiled here) go through this instead.
+    private[xylophone] def pick(attrs: Attributes, key: Text): Text =
+      val a = storage(attrs)
+      val keyStr: String = key.s
+      val n = a.length
+      var i = 0
+
+      while i < n do
+        if a(i) == keyStr then return a(i + 1).asInstanceOf[Text]
+        i += 2
+
+      throw new NoSuchElementException(s"key not found: $key")
 
     extension (attrs: Attributes)
-      inline def size: Int = attrs.length/2
-      inline def isEmpty: Boolean = attrs.length == 0
-      inline def nonEmpty: Boolean = attrs.length > 0
-      inline def nil: Boolean = attrs.length == 0
+      // Not `inline`: expansion outside this file re-typechecks the body where the opaque
+      // is abstract, so the array operations no longer resolve.
+      def size: Int = storage(attrs).length/2
+      def isEmpty: Boolean = storage(attrs).length == 0
+      def nonEmpty: Boolean = storage(attrs).length > 0
+      def nil: Boolean = storage(attrs).length == 0
 
       def apply(key: Text): Text =
         val a = storage(attrs)
@@ -828,7 +867,7 @@ object internal:
         throw new NoSuchElementException(s"key not found: $key")
 
       // `at` without the `Indexable` detour, whose resolution is ambiguous
-      // against the `IArray` instance under the opaque bound — used by
+      // against the array instance under the opaque bound — used by
       // staged parsers' generated `@attribute` steps.
       def fetch(key: Text): Optional[Text] =
         val a = storage(attrs)
@@ -855,46 +894,52 @@ object internal:
         false
 
       def keys: Iterator[Text] =
-        val a = storage(attrs)
+        // The immutable view keeps the iterator pure (the raw array read is read-only).
+        val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
+          @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val k = a(i).asInstanceOf[Text]
+            val k = a.readable(i).asInstanceOf[Text]
             i += 2
             k
 
       def values: Iterator[Text] =
-        val a = storage(attrs)
+        val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
+          @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 1
           def hasNext: Boolean = i < a.length
 
           def next(): Text =
-            val v = a(i).asInstanceOf[Text]
+            val v = a.readable(i).asInstanceOf[Text]
             i += 2
             v
 
       def iterator: Iterator[(Text, Text)] =
-        val a = storage(attrs)
+        val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[(Text, Text)]:
+          @scala.caps.unsafe.untrackedCaptures
           private var i: Int = 0
           def hasNext: Boolean = i < a.length
 
           def next(): (Text, Text) =
-            val pair = (a(i).asInstanceOf[Text], a(i + 1).asInstanceOf[Text])
+            val pair = (a.readable(i).asInstanceOf[Text], a.readable(i + 1).asInstanceOf[Text])
             i += 2
             pair
 
-      def toMap: Map[Text, Text] =
+      def toMap: Map[Text, Text] = Map.of:
         val a = storage(attrs)
 
-        if a.length == 0 then ListMap.empty else
-          val b = ListMap.newBuilder[Text, Text]
+        // `VectorMap` (the `Ledger` substrate), so the wrapped `Map` still iterates its
+        // attributes in document order.
+        if a.length == 0 then VectorMap.empty else
+          val b = VectorMap.newBuilder[Text, Text]
           var i = 0
 
           while i < a.length do
@@ -949,10 +994,10 @@ object internal:
           i += 2
 
         if idx < 0 then attrs else
-          val nu = new Array[String](n - 2)
-          if idx > 0 then jl.System.arraycopy(a, 0, nu, 0, idx)
-          if idx < n - 2 then jl.System.arraycopy(a, idx + 2, nu, idx, n - 2 - idx)
-          nu.immutable(using Unsafe)
+          val nu = Array[String](n - 2)
+          if idx > 0 then nu.copyFrom(Array.frozen(attrs), 0, 0, idx)
+          if idx < n - 2 then nu.copyFrom(Array.frozen(attrs), idx + 2, idx, n - 2 - idx)
+          Array.freeze(nu).readable
 
       inline def `-`(key: Text): Attributes = removed(key)
 
@@ -974,16 +1019,16 @@ object internal:
           i += 2
 
         if idx >= 0 then
-          val nu = new Array[String](n)
-          jl.System.arraycopy(a, 0, nu, 0, n)
+          val nu = Array[String](n)
+          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(idx + 1) = value.s
-          nu.immutable(using Unsafe)
+          Array.freeze(nu).readable
         else
-          val nu = new Array[String](n + 2)
-          jl.System.arraycopy(a, 0, nu, 0, n)
+          val nu = Array[String](n + 2)
+          nu.copyFrom(Array.frozen(attrs), 0, 0, n)
           nu(n) = keyStr
           nu(n + 1) = value.s
-          nu.immutable(using Unsafe)
+          Array.freeze(nu).readable
 
       def `++`(other: Attributes): Attributes =
         val a = storage(attrs)
@@ -993,7 +1038,7 @@ object internal:
         else if a.length == 0 then other
         else
           val total = a.length + b.length
-          val nu = new Array[String](total)
+          val nu = Array[String](total)
           var written = 0
           var i = 0
 
@@ -1029,14 +1074,15 @@ object internal:
 
             j += 2
 
-          if written == total then nu.immutable(using Unsafe)
-          else
-            val tu = new Array[String](written)
-            jl.System.arraycopy(nu, 0, tu, 0, written)
-            tu.immutable(using Unsafe)
+          val frozen = Array.freeze(nu)
+
+          if written == total then frozen.readable else
+            val tu = Array[String](written)
+            tu.copyFrom(frozen, 0, 0, written)
+            Array.freeze(tu).readable
 
       def `++`(other: Map[Text, Text]): Attributes =
-        if other.isEmpty then attrs else attrs ++ Attributes.from(other)
+        if other.stdlib.isEmpty then attrs else attrs ++ Attributes.from(other)
 
       // Same set of (key, value) pairs (order-insensitive). Iterates the left,
       // looks up each key in the right.
@@ -1218,11 +1264,11 @@ object internal:
 
     def body
       ( reader:      Expr[XmlReader],
-        keys:        Expr[IArray[String]],
-        attrs:       Expr[IArray[Boolean]],
-        instances:   Expr[IArray[Xml.Field | Null]],
-        repeatables: Expr[IArray[Boolean]],
-        fallbacks:   Expr[IArray[Any]] )
+        keys:        Expr[Array[String]^{}],
+        attrs:       Expr[Array[Boolean]^{}],
+        instances:   Expr[Array[Xml.Field | Null]^{}],
+        repeatables: Expr[Array[Boolean]^{}],
+        fallbacks:   Expr[Array[Any]^{}] )
     :   Expr[value] =
 
       val owner = Symbol.spliceOwner
@@ -1271,7 +1317,7 @@ object internal:
         Symbol.newVal(owner, "attributes", TypeRepr.of[Attributes], Flags.EmptyFlags,
           Symbol.noSymbol)
 
-      val attributesDef = ValDef(attributesSymbol, Some('{ $reader.attributes() }.asTerm))
+      val attributesDef = ValDef(attributesSymbol, Some('{ $reader.attributes().asInstanceOf[Attributes] }.asTerm))
       val attributes = Ref(attributesSymbol).asExprOf[Attributes]
 
       val attributeSteps: List[Term] = List.range(0, arity).flatMap: index =>
@@ -1525,8 +1571,8 @@ object internal:
                           Xml.Parsable.gathered[fieldType]
                             ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing],
                               $bufferExpr match
-                                case null   => Nil
-                                case buffer => buffer.toList )
+                                case null   => proscenium.Nil
+                                case buffer => proscenium.List.of(buffer.toList) )
                       }.asTerm )
 
                 If('{ $repeatables(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
@@ -1547,10 +1593,10 @@ object internal:
     // sub-field takes its declared default or raises at its own focus,
     // mirroring the derived engine's `absentBuild`.
     def absentBody(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
-      ( keys:        Expr[IArray[String]],
-        instances:   Expr[IArray[Xml.Field | Null]],
-        repeatables: Expr[IArray[Boolean]],
-        fallbacks:   Expr[IArray[Any]] )
+      ( keys:        Expr[Array[String]^{}],
+        instances:   Expr[Array[Xml.Field | Null]^{}],
+        repeatables: Expr[Array[Boolean]^{}],
+        fallbacks:   Expr[Array[Any]^{}] )
     :   Expr[value] =
 
       val arguments: List[Term] = List.range(0, arity).map: index =>
@@ -1594,7 +1640,7 @@ object internal:
                   if $repeatables(${Expr(index)}) then
                     Xml.Parsable.focusing($foci, $keyText):
                       Xml.Parsable.gathered[fieldType]
-                        ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], Nil )
+                        ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], proscenium.Nil )
                   else $declared
                 }
 
@@ -1624,17 +1670,17 @@ object internal:
       // arrays are single lazy vals, so recursive self-references stay
       // deferred until the first parse.
       caps.unsafe.unsafeAssumePure:
-        val keys: IArray[String] =
-          Xml.Parsable.wireNames(IArray[String](${Varargs(nameExprs)}*), $renames)
+        val keys: Array[String]^{} =
+          Xml.Parsable.wireNames(Array.of[String](${Varargs(nameExprs)}*), $renames)
 
-        val attrs: IArray[Boolean] = IArray[Boolean](${Varargs(attrExprs)}*)
+        val attrs: Array[Boolean]^{} = Array.of[Boolean](${Varargs(attrExprs)}*)
 
-        lazy val instances: IArray[Xml.Field | Null] = IArray(${Varargs(instanceExprs)}*)
+        lazy val instances: Array[Xml.Field | Null]^{} = Array.of(${Varargs(instanceExprs)}*)
 
-        lazy val repeatables: IArray[Boolean] =
+        lazy val repeatables: Array[Boolean]^{} =
           instances.map { instance => instance != null && Xml.Parsable.repeats(instance) }
 
-        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs(fallbackExprs)}*)
+        lazy val fallbacks: Array[Any]^{} = Array.of[Any](${Varargs(fallbackExprs)}*)
         val fallback: Optional[() => value] = $defaultExpr
 
         new Xml.Parsable:

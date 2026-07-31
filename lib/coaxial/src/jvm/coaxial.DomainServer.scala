@@ -77,12 +77,13 @@ extension (domainSocket: DomainSocket)
 
           ()
 
-    val task = async(bindLoop.run())
+    // The loop is created and awaited under the same monitor; no aliased writer.
+    val task = scala.caps.unsafe.unsafeAssumeSeparate(async(bindLoop.run()))
 
     val service = SocketService: () =>
       bindLoop.stop()
       channel.close()
-      safely(task.await())
+      scala.caps.unsafe.unsafeAssumeSeparate(safely(task.await()))
       Log.fine(SocketEvent.Closed(domainSocket.address))
 
     try block(using service) finally service.stop()

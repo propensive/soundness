@@ -32,10 +32,15 @@
                                                                                                   */
 package stratiform
 
+import scala.sys
+
+import proscenium.compat.*
+
 import scala.language.unsafeNulls
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 
 // Loads upstream TEL test corpus from classpath resources. The corpus is
@@ -61,7 +66,7 @@ object CorpusLoader:
   def caseByStem(category: Text, stem: Text): Case =
     val source = readResource(t"/stratiform/corpus/$category/$stem.tel")
     val check = readResourceText(t"/stratiform/corpus/$category/$stem.check")
-    Case(stem, IArray.from(source), check)
+    Case(stem, source, check)
 
   // Extract the expected E-code from a negative case's stem name. Filenames
   // follow the upstream convention `e<n>-<description>.tel`; cases without
@@ -89,15 +94,15 @@ object CorpusLoader:
   def expectedCodes(testcase: Case): List[Int] =
     val fromCheck = CheckFormat.parse(testcase.check).errors.map(_.code)
     val fromName = expectedCode(testcase.stem).lay(List.empty[Int])(List(_))
-    (fromName ::: fromCheck).distinct
+    List.of(fromName.stdlib ::: fromCheck.stdlib).distinct
 
   private def readIndex(category: Text): List[Text] =
     val text = readResourceText(t"/stratiform/corpus/$category.index")
-    text.s.split('\n').toList.map(_.trim).filter(_.nonEmpty).map(Text(_))
+    text.cut(t"\n").map(_.trim).filter(_ != t"")
 
-  private def readResource(path: Text): Array[Byte] =
+  private def readResource(path: Text): Data =
     val stream = getClass.getResourceAsStream(path.s)
     if stream == null then sys.error(s"missing resource: $path")
-    try stream.readAllBytes() finally stream.close()
+    try Array.unsafeFrozen(stream.readAllBytes().nn) finally stream.close()
 
-  private def readResourceText(path: Text): Text = Text(String(readResource(path), "UTF-8"))
+  private def readResourceText(path: Text): Text = readResource(path).utf8

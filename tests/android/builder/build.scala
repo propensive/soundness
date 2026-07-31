@@ -55,7 +55,7 @@ object build:
   // The runtime classpath (facade machinery + Scala/Kotlin standard libraries) the app both
   // compiles against and is dexed with; the platform stubs are added for compilation only.
   def runtime(classpathFile: String): List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
-    Files.readAllLines(Paths.get(classpathFile)).nn.toArray.nn.to(List).map(_.toString).map:
+    Files.readAllLines(Paths.get(classpathFile)).nn.toArray.nn.to[List].map(_.toString).map:
       entry =>
         if entry.endsWith(".jar") then ClasspathEntry.Jar(entry.tt)
         else ClasspathEntry.Directory(entry.tt)
@@ -68,12 +68,12 @@ object build:
   :   Compilation[Universe.Classfile] =
 
     val sources: Map[Text, Text] =
-      Files.list(Paths.get(sourceDir)).nn.toArray.nn.to(List).map(_.toString)
+      Files.list(Paths.get(sourceDir)).nn.toArray.nn.to[List].map(_.toString)
       . filter(_.endsWith(".scala")).map: path =>
           val name = Paths.get(path).nn.getFileName.nn.toString.tt
           name -> Files.readString(Paths.get(path)).nn.tt
 
-      . to(Map)
+      . to[Map]
 
     val entries = runtime(classpathFile)
     val platform: ClasspathEntry.Jar = ClasspathEntry.Jar(androidJar.tt)

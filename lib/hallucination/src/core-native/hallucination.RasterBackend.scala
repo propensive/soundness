@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import vacuous.*
+import proscenium.compat.*
 
 // The pure-Scala backend, selected on Scala.js and WASI. The codecs themselves live in `core`
 // (so they compile, and are differentially tested against `javax.imageio`, on the JVM); this

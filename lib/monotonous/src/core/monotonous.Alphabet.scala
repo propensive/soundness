@@ -32,7 +32,13 @@
                                                                                                   */
 package monotonous
 
+import proscenium.compat.*
+
+import scala.caps
+
 import anticipation.*
+import rudiments.*
+import vacuous.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
@@ -81,8 +87,8 @@ object Alphabet:
 
           // Character lookup table for the `2^base` data symbols, so the hot
           // loop indexes an array rather than re-reading the alphabet string.
-          private val table: Array[Char] =
-            caps.unsafe.unsafeAssumePure(Array.tabulate(1 << base)(alphabet(_)))
+          private val table: scala.Array[Char] =
+            caps.unsafe.unsafeAssumePure(scala.Array.tabulate(1 << base)(alphabet(_)))
 
           private var accumulator: Int = 0
           private var accumulated: Int = 0
@@ -103,9 +109,9 @@ object Alphabet:
               targetSpace: Int )
           :   Duct.Progress =
 
-            val bytes = source.asInstanceOf[Array[Byte]]
+            val bytes = source.asInstanceOf[scala.Array[Byte]]
             // The stage's own buffer, asserted exclusive at the cast rim.
-            val chars: Array[Char]^ = target.asInstanceOf[Array[Char]^]
+            val chars: scala.Array[Char]^ = target.asInstanceOf[scala.Array[Char]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -148,7 +154,7 @@ object Alphabet:
           override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
 
-            val chars: Array[Char]^ = target.asInstanceOf[Array[Char]^]
+            val chars: scala.Array[Char]^ = target.asInstanceOf[scala.Array[Char]^]
             var produced: Int = 0
 
             if !flushing then
@@ -206,7 +212,7 @@ object Alphabet:
           // Dense decode table and the largest valid data value, for the fast
           // path: a character outside `0..dataMax` (invalid, or a pad) bails to
           // the general path, which reports the error or realigns padding.
-          private val inversions: IArray[Int] = alphabet.inversions
+          private val inversions: Array[Int]^{} = alphabet.inversions
           private val invLength: Int = inversions.length
           private val dataMax: Int = (1 << base) - 1
 
@@ -228,9 +234,9 @@ object Alphabet:
               targetSpace: Int )
           :   Duct.Progress =
 
-            val chars = source.asInstanceOf[Array[Char]]
+            val chars = source.asInstanceOf[scala.Array[Char]]
             // The stage's own buffer, asserted exclusive at the cast rim.
-            val bytes: Array[Byte]^ = target.asInstanceOf[Array[Byte]^]
+            val bytes: scala.Array[Byte]^ = target.asInstanceOf[scala.Array[Byte]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -304,12 +310,12 @@ case class Alphabet[encoding <: Serialization]
     else abort(SerializationError(position, char))
 
   lazy val inverse: Map[Char, Int] =
-    tolerance ++ chars.chars.zipWithIndex.to(Map)
+    Map.of(tolerance.stdlib ++ chars.chars.readable.zipWithIndex.toMap)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.
-  lazy val inversions: IArray[Int] =
-    val max = inverse.keysIterator.max
+  lazy val inversions: Array[Int]^{} =
+    val max = inverse.stdlib.keysIterator.max
 
-    caps.unsafe.unsafeAssumePure:
-      IArray.tabulate(max + 1): index => inverse.getOrElse(index.toChar, -1)
+    Array.tabulate(max + 1): index =>
+      inverse.at(index.toChar).or(-1)

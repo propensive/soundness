@@ -52,10 +52,15 @@ import yossarian.*
 // Subclasses supply `cursor`, `showCaret` and `flush`.
 private[ultimatum] abstract class GridSurface(initialWidth: Int, initialHeight: Int)
 extends Canvas:
+  @scala.caps.unsafe.untrackedCaptures
   protected var gridWidth: Int = initialWidth.max(1)
+  @scala.caps.unsafe.untrackedCaptures
   protected var gridHeight: Int = initialHeight.max(1)
+  @scala.caps.unsafe.untrackedCaptures
   protected var screen: Screen[StyleWord] = Screen(gridWidth, gridHeight, StyleWord.Default)
+  @scala.caps.unsafe.untrackedCaptures
   protected var col: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   protected var row: Int = 0
 
   // The physical-screen model: a copy of the grid as the last present actually drew it,
@@ -63,9 +68,13 @@ extends Canvas:
   // present can emit only the cells that differ (an unchanged overprint is a no-op).
   // It models the TERMINAL, not the compose grid: `reshape` and `clear` leave it alone
   // (they only blank what will be composed next).
+  @scala.caps.unsafe.untrackedCaptures
   protected var snapshot: Optional[Screen[StyleWord]] = Unset
+  @scala.caps.unsafe.untrackedCaptures
   protected var snapshotTop: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   protected var snapshotColumns: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   protected var invalidated: Boolean = false
 
   // Mark the next present as a full repaint: the screen can no longer be assumed to
@@ -80,11 +89,17 @@ extends Canvas:
   // The caret (hardware cursor) target and visibility, recorded by a root's `cursor`/
   // `showCaret` and applied when the frame is presented; and where the last present
   // left them, so a diffed present whose caret hasn't moved can omit placing it.
+  @scala.caps.unsafe.untrackedCaptures
   protected var caretColumn: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   protected var caretRow: Int = 0
+  @scala.caps.unsafe.untrackedCaptures
   protected var caretVisible: Boolean = true
+  @scala.caps.unsafe.untrackedCaptures
   protected var presentedCaretRow: Int = -1
+  @scala.caps.unsafe.untrackedCaptures
   protected var presentedCaretColumn: Int = -1
+  @scala.caps.unsafe.untrackedCaptures
   protected var presentedCaretVisible: Boolean = false
 
   protected val metric: Grapheme is Measurable = summon[Grapheme is Measurable]
@@ -315,7 +330,7 @@ extends Canvas:
 
   // A `Teletype` of `text` in one uniform style (sparse single-run form).
   private def styledCell(text: Text, style: StyleWord): Teletype =
-    Teletype(text, IArray(style.raw, 0L), boundaries = IArray(0))
+    Teletype(text, Array.of(style.raw, 0L), boundaries = Array.of(0))
 
   // A plain-text snapshot of the grid (rows joined by newlines), for testing and for
   // content-change detection.

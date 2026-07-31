@@ -34,6 +34,8 @@ package sedentary
 
 import java.lang as jl
 
+import proscenium.compat.*
+
 import scala.quoted.*
 
 import ambience.*
@@ -198,14 +200,14 @@ extends Rig:
 
             // Preallocate every measurement structure before the allocation snapshot, so none
             // of it pollutes the allocation-per-operation figure.
-            val ops = new Array[Long](n)
-            val histograms = new Array[Array[Long] | Null](n)
-            val threads = new Array[java.lang.Thread | Null](n)
+            val ops = new scala.Array[Long](n)
+            val histograms = new scala.Array[scala.Array[Long] | Null](n)
+            val threads = new scala.Array[java.lang.Thread | Null](n)
             val oom = new java.util.concurrent.atomic.AtomicBoolean(false)
             var k = 0
 
             while k < n do
-              histograms(k) = new Array[Long](1024)
+              histograms(k) = new scala.Array[Long](1024)
               k += 1
 
             var i = 0
@@ -315,7 +317,7 @@ extends Rig:
               k += 1
 
             // Merge the worker histograms and extract the latency percentiles.
-            val merged = new Array[Long](1024)
+            val merged = new scala.Array[Long](1024)
             k = 0
 
             while k < n do
@@ -416,7 +418,7 @@ extends Rig:
 
           if jl.System.nanoTime < 0L then jl.System.err.nn.println(sink.get)
 
-          results.toList
+          List.of(results.toList)
         }
 
     // Every step lands under the SAME test id: the probed concurrency is a coordinate on
@@ -425,7 +427,7 @@ extends Rig:
     val testId = TestId(name, suite, codepoint)
 
     if !runner.skip(testId, Entry.Kind.Stress, Nil) then
-      dispatch(body).grouped(14).to(List).each: step =>
+      dispatch(body).stdlib.grouped(14).toList.foreach: step =>
         val n = step(0).toInt
         val compliance2: Optional[Double] = if step(12) < 0L then Unset else step(12)/10000.0
         val sustained: Boolean = step(13) == 1L

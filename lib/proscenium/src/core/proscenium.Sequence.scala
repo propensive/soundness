@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.64.0.                                                                    ┃
+┃    Soundness, version 0.63.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,17 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package polaris
+package proscenium
 
-import anticipation.*
-import beneficence.*
+import scala.collection.immutable as sci
 
-// A `Buffer` is a *capability*: it carries a mutable read position, so unpacking is an effect
-// and the buffer's lifetime is the `buffer { ... }` block that introduces it. `Exclusive`
-// because two readers sharing a position would corrupt each other's decoding.
-class Buffer(private[polaris] val bytes: Data, initialPosition: Int = 0)
-extends Findable, caps.ExclusiveCapability:
-  private[polaris] var position: Int = initialPosition
+// The first opaque collection alias: an immutable indexed sequence backed by `Vector`, whose
+// members are deliberately invisible — its API is the typeclass-driven extension surface
+// (`Indexable`, `Countable`, `Traversable`, `Reshapable`, `Convertible`, …), which is total.
+// The companion holds only construction, the `stdlib` bridge, pattern support and the `Seq`
+// conversion (for vararg splices and stdlib-boundary interop); operations live with their
+// typeclasses. The boundary functions cast (`asInstanceOf`): under capture checking an identity
+// ascription fails box adaptation when the element type captures.
+object Sequence:
+  // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
+  // lambdas crashes the capture checker's boxer (boxDeeply assertion).
+  def of[element](vector: sci.Vector[element]): Sequence[element] =
+    vector.asInstanceOf[Sequence[element]]
 
-  def offset: Int = position
-  def advance(count: Int): Unit = position += count
+  def apply[element](elements: element*): Sequence[element] = of(sci.Vector(elements*))
+  def empty[element]: Sequence[element] = of(sci.Vector.empty[element])
+
+  // The parameter is capturing (`^`): iterators produced by the transforming operations capture
+  // their lambdas, and a pure parameter type would reject them. It is consumed eagerly here.
+  def from[element](elements: IterableOnce[element]^): Sequence[element] =
+    of(sci.Vector.from(elements))
+
+  def unapplySeq[element](sequence: Sequence[element]): Option[Seq[element]] = Some(sequence.stdlib)
+
+  // Deliberately NO `Conversion[Sequence[e], Seq[e]]`: with `implicitConversions` enabled
+  // globally, such a conversion applies at *member selection* too, silently re-exposing the
+  // entire partial `Seq` surface (`sequence.head` would compile again). Vararg splices work
+  // directly (`f(sequence*)`) via proscala's `spliceopaque` feature (3.9.0-RC1-p5+), which
+  // pierces an opaque alias over a Seq/Array at splice positions only; other `Seq`-boundary
+  // crossings use the explicit, greppable bridge (`sequence.stdlib`).
+
+  extension [element](sequence: Sequence[element])
+    inline def stdlib: sci.Vector[element] = sequence.asInstanceOf[sci.Vector[element]]
+
+opaque type Sequence[+element] = sci.Vector[element]

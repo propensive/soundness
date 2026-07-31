@@ -32,6 +32,10 @@
                                                                                                   */
 package acyclicity
 
+// Deliberate stdlib opt-out: `Dag`'s domain model is set-algebraic throughout (`edgeMap`,
+// `keys`, intersections, differences), and migrating it to the total surface is deferred —
+// this import shadows the opaque `Set` for the whole file, greppably.
+import scala.collection.immutable.{List, Map, Nil, Set, ::}
 import scala.collection.mutable as scm
 
 import anticipation.*
@@ -81,7 +85,7 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   @targetName("removeKey")
   infix def - (key: node): Dag[node] = Dag(edgeMap - key)
 
-  def sources: Set[node] = edgeMap.collect { case (k, v) if v.nil => k }.to(Set)
+  def sources: Set[node] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
   def edges: Set[(node, node)] = edgeMap.to(Set).flatMap: (key, values) => values.map(key -> _)
   def closure: Dag[node] = Dag(keys.map { k => k -> (reach(k) - k) }.to(Map))
   def sorted: List[node] raises DagError = sort(edgeMap, Nil).reverse
@@ -92,7 +96,8 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
 
   def has(key: node): Boolean = edgeMap.contains(key)
 
-  def traversal[node2](lambda: (Set[node2], node) => node2): Map[node, node2] raises DagError =
+  def traversal[node2](lambda: (Set[node2], node) => node2)
+  :   (Tactic[DagError]^) ?->{lambda} Map[node, node2] =
 
     sorted.fuse(Map[node, node2]()):
       state.updated(next, lambda(apply(next).map(state), next))
@@ -151,8 +156,8 @@ case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   private def sort(todo: Map[node, Set[node]], done: List[node])
   :   List[node] raises DagError =
 
-    if todo.nil then done
-    else todo.find { (k, vs) => (vs -- done).nil } match
+    if todo.isEmpty then done
+    else todo.find { (k, vs) => (vs -- done).isEmpty } match
       case None => abort(DagError(DagError.Reason.Cyclic))
 
       case Some((node, _)) =>

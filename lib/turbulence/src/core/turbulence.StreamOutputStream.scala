@@ -45,18 +45,22 @@ class StreamOutputStream() extends ji.OutputStream:
   private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val chunks: Relay[Data] = Relay()
 
-  def stream: LazyList[Data] = chunks.lazyList
+  def stream: Chain[Data] = chunks.lazyList
   def write(int: Int): Unit = buffer.append(int.toByte)
   override def close(): Unit = flush().also(chunks.stop())
 
-  override def write(bytes: Array[Byte] | Null): Unit =
+  // `OutputStream.write` lets the caller reuse or overwrite its array once the call returns,
+  // and the chunk we relay is read later by whoever consumes `stream` -- so the array must be
+  // copied, not aliased. `snapshot` does that and yields the frozen form directly. (The
+  // offset/length overload's `slice` is already a copy, so it only needs the freeze.)
+  override def write(bytes: scala.Array[Byte] | Null): Unit =
     flush()
-    if bytes != null then chunks.put(bytes.immutable(using Unsafe))
+    if bytes != null then chunks.put(bytes.snapshot)
 
-  override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
+  override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
     flush()
-    if bytes != null then chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
+    if bytes != null then chunks.put(Array.unsafeFrozen(bytes.slice(offset, offset + length)))
 
   override def flush(): Unit = if !buffer.nil then
-    chunks.put(buffer.toArray.immutable(using Unsafe))
+    chunks.put(Array.unsafeFrozen(buffer.toArray))
     buffer.clear()

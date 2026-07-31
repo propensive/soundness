@@ -71,7 +71,7 @@ object Markdown:
       type Self = Markdown of Layout
       type Operand = Text
 
-      def aggregate(stream: LazyList[Text]): Markdown of Layout = Parser.parse(stream.iterator)
+      def aggregate(stream: Chain[Text]): Markdown of Layout = Parser.parse(stream.stdlib.iterator)
 
       override def accept(stream: (zephyrine.Stream[Text] over zephyrine.Credit)^)
       :   Markdown of Layout =
@@ -136,9 +136,11 @@ object Markdown:
   // source: the output re-parses to an equal AST (modulo `line` metadata) and paragraph text is
   // word-wrapped at the contextual `Markdown.Formatting` width. The serialization machinery lives
   // in the internal `Serializer`, shared by the `Layout` and `Prose` instances.
-  given layoutShowable: Markdown.Formatting => (Markdown of Layout) is Showable = Serializer(_)
+  given layoutShowable: Markdown.Formatting => (Markdown of Layout) is Showable =
+    (markdown: Markdown of Layout) => Serializer(markdown)
 
-  given proseShowable: Markdown.Formatting => (Markdown of Prose) is Showable = Serializer(_)
+  given proseShowable: Markdown.Formatting => (Markdown of Prose) is Showable =
+    (markdown: Markdown of Prose) => Serializer(markdown)
 
   given prose: (Markdown of Prose) is Renderable:
     type Form = Phrasing
@@ -162,7 +164,8 @@ object Markdown:
 
         nodes match
           case Nil =>
-            if block then ((TextNode("\n"): Html of Flow) :: done).reverse else done.reverse
+            if block then List.of(((TextNode("\n"): Html of Flow) :: done).reverse)
+            else done.reverse
 
           case Layout.Paragraph(_, contents*) :: tail if tight =>
             val content = Fragment(contents.map(phrasing(_))*)
@@ -190,14 +193,16 @@ object Markdown:
           P(children.map(phrasing(_))*)
 
         case Layout.BulletList(line, tight, items*) =>
-          val items2 = items.map: item =>
-            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
+          val items2 = items.map: (item: List[Layout]) =>
+            if item.nil then Li
+            else Li(merge(false, item, Nil, tight)*)
 
           Ul(items2*)
 
         case Layout.OrderedList(line, start, tight, delimiter, items*) =>
-          val items2 = items.map: item =>
-            if item.nil then Li else Li(merge(false, item, Nil, tight)*)
+          val items2 = items.map: (item: List[Layout]) =>
+            if item.nil then Li
+            else Li(merge(false, item, Nil, tight)*)
 
           val start2 = start.puncture(1)
 
@@ -235,14 +240,14 @@ object Markdown:
     type Topic = Layout
 
     val linkRefs: List[Markdown.LinkRef] = linkRefs0
-    val children: Seq[Layout] = layout
+    val children: List[Layout] = List.of(layout.toList)
 
   @targetName("applyProse")
   def apply(prose: Prose*): Markdown of Prose = new Markdown:
     type Topic = Prose
 
     val linkRefs: List[Markdown.LinkRef] = Nil
-    val children: Seq[Prose] = prose
+    val children: List[Prose] = List.of(prose.toList)
 
   extension (markdown: Markdown of Layout)
     def sections: List[Markdown of Layout] =
@@ -261,14 +266,14 @@ object Markdown:
             recur(more, head :: current, done)
 
 
-      recur(markdown.children.to(List), Nil, Nil)
+      recur(markdown.children, Nil, Nil)
 
 trait Markdown:
   type Topic <: Markdown.Node
   type Domain <: Label
 
   val linkRefs: List[Markdown.LinkRef]
-  val children: Seq[Topic]
+  val children: List[Topic]
 
   override def equals(that: Any): Boolean = that match
     case that: Markdown => that.children == children

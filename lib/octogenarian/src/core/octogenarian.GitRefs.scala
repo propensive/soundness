@@ -78,7 +78,7 @@ object GitRefs extends Root(t"refs/"):
     if segment.contains(t"@{") then fail(GitRefError.Reason.ReservedSequence)
     if segment.contains(t"..") then fail(GitRefError.Reason.DoubleDot)
 
-    for ch <- List('*', '[', '\\', ' ', '^', '~', ':', '?', '/')
+    for ch <- List('*', '[', '\\', ' ', '^', '~', ':', '?', '/').stdlib
     do if segment.contains(ch) then fail(GitRefError.Reason.InvalidCharacter)
 
   // The default `text is Admissible on filesystem` from Serpentine already

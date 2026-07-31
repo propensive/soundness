@@ -32,6 +32,8 @@
                                                                                                   */
 package honeycomb
 
+import proscenium.compat.*
+
 import anticipation.*
 
 case class Attribute(label: Text, elements: Set[Text], global: Boolean):

@@ -24,7 +24,7 @@ class DiceActivity extends Activity:
     // being compiled, so only `Activity` is resolvable), and then even the final handoff to
     // the platform — `setContentView` — is a facade call, and facades never need unwrapping.
     val activity = Facade(this: Activity)
-    val faces = IArray("⚀", "⚁", "⚂", "⚃", "⚄", "⚅")
+    val faces = Array.of("⚀", "⚁", "⚂", "⚃", "⚄", "⚅")
 
     var rolls = 0
     var total = 0

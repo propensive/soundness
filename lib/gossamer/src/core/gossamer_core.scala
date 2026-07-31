@@ -32,8 +32,14 @@
                                                                                                   */
 package gossamer
 
-import language.experimental.into
-import language.experimental.pureFunctions
+import proscenium.compat.*
+
+import scala.reflect
+
+import scala.compiletime
+
+import scala.language.experimental.into
+import scala.language.experimental.pureFunctions
 
 import java.lang as jl
 import java.net.{URLEncoder, URLDecoder}
@@ -79,11 +85,11 @@ inline def appendln[textual: Textual, value](using builder: Builder[textual] aka
 
 inline def builder[value](using value: value aka "builder"): value = value()
 
-extension (module: IArray.type)
-  def build[element: ClassTag](size: Int)(lambda: Array[element]^ => Unit): IArray[element] =
-    val array: Array[element] = new Array[element](size)
-    lambda(array)
-    array.immutable(using Unsafe)
+extension (module: Array.type)
+  def build[element: ClassTag](size: Int)(lambda: scala.Array[element]^ => Unit): Array[element]^{} =
+    val array = Array[element](size)
+    lambda(array.raw)
+    Array.freeze(array)
 
 extension (module: Text.type)
   def build(block: TextBuilder aka "builder" ?=> Unit): Text =
@@ -91,13 +97,17 @@ extension (module: Text.type)
     block(using builder.aka["builder"])
     builder()
 
-  def ascii(bytes: Data): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
+  def ascii(bytes: Data): Text = new String(Array.unsafeJvm(bytes), "ASCII").tt
 
   def fill(length: Int)(lambda: Int => Char): Text =
-    val array = new Array[Char](length)
-    (0 until length).each: index => array(index) = lambda(index)
+    val buffer = Array[Char](length)
+    var index = 0
 
-    String(array).tt
+    while index < length do
+      buffer(index) = lambda(index)
+      index += 1
+
+    String(buffer.raw).tt
 
 extension (inline context: StringContext)
   transparent inline def txt(inline parts: Any*): Text =
@@ -114,9 +124,9 @@ extension (context: StringContext)
 given textDecodable: (decoder: CharDecoder) => Text is Decodable in Data = decoder.decoded(_)
 
 extension (bytes: Data)
-  def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
-  def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
-  def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
+  def utf8: Text = String(Array.unsafeJvm(bytes), "UTF-8").tt
+  def utf16: Text = String(Array.unsafeJvm(bytes), "UTF-16").tt
+  def ascii: Text = String(Array.unsafeJvm(bytes), "ASCII").tt
 
   // Printable Unicode Encoding
   def pue: Text =
@@ -140,11 +150,40 @@ extension [textual: Textual { type Result = Char }](words: Iterable[textual])
   def kebab: textual = words.join(textual("-".tt))
   def spaced: textual = words.join(textual(" ".tt))
 
+extension [textual: Textual { type Result = Char }](words: List[textual])
+  def pascal: textual = words.stdlib.pascal
+  def camel: textual = words.stdlib.camel
+  def snake: textual = words.stdlib.snake
+  def kebab: textual = words.stdlib.kebab
+  def spaced: textual = words.stdlib.spaced
+
 extension [value: {Segmentable, Countable}](value: value)
   def before(ordinal: Ordinal): value = value.segment(Prim till ordinal)
   def upto(ordinal: Ordinal): value = value.segment(Prim thru ordinal)
   def from(ordinal: Ordinal): value = value.segment(ordinal thru value.limit)
   def after(ordinal: Ordinal): value = value.segment((ordinal + 1) till value.limit)
+
+// A textual value reverses to its own type. Exposed as a factory rather than a blanket given because
+// `Reversible`'s companion (in `rudiments`) cannot reference `Textual`, so a generic given would not
+// be in implicit scope; each textual type instead publishes `given … is Reversible = reversibleTextual`
+// in its own companion (e.g. `Teletype`), which keeps the single `rudiments` `reverse` serving both
+// text and collections with no competing extension at the umbrella.
+def reversibleTextual[textual](using textual0: textual is Textual)
+:   textual is Reversible { type Result = textual } =
+  new Reversible:
+    type Self = textual
+    type Result = textual
+
+    def reverse(text: textual): textual =
+      val n = textual0.length(text)
+      val builder = textual0.builder(n)
+      var index = n - 1
+
+      while index >= 0 do
+        builder.append(textual0.single(textual0.access(text, index.z)))
+        index -= 1
+
+      builder()
 
 extension [textual: Textual](text: textual)
   inline def length: Int = textual.length(text)
@@ -152,7 +191,7 @@ extension [textual: Textual](text: textual)
 
   // FIXME
   def justify(width: Int): textual =
-    val words = text.words
+    val words = text.words.stdlib
     val extra = width - text.length
 
     def recur(word: Ordinal, spaces: Int, result: textual): textual =
@@ -179,7 +218,7 @@ extension [textual: Textual](text: textual)
   inline def tail: textual = text.skip(1, Ltr)
   inline def init: textual = text.skip(1, Rtl)
 
-  def chars: IArray[Char] = textual.text(text).s.toCharArray.nn.immutable(using Unsafe)
+  def chars: Array[Char]^{} = Array.unsafeFrozen(textual.text(text).s.toCharArray.nn)
 
   def snip(n: Int): (textual, textual) =
     (text.segment(Prim till n.z), text.segment(n.z till text.limit))
@@ -187,25 +226,14 @@ extension [textual: Textual](text: textual)
   def punch(n: Ordinal): (textual, textual) =
     (text.segment(Prim till n), text.segment((n + 1) till text.limit))
 
-  def reverse: textual =
-    val n = text.length
-    val builder = textual.builder(n)
-    var index = n - 1
-
-    while index >= 0 do
-      builder.append(textual.single(textual.access(text, index.z)))
-      index -= 1
-
-    builder()
-
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
 
-  def search(regex: Regex, overlap: Boolean = false): LazyList[textual] =
+  def search(regex: Regex, overlap: Boolean = false): Chain[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
   inline def extract[value](inline start: Ordinal = Prim)
     ( inline lambda: Scanner ?=> textual ~> value )
-  :   LazyList[value] =
+  :   Chain[value] =
 
     $ {
         gossamer.internal.extractMacro[textual, value]
@@ -319,7 +347,7 @@ extension [textual: Textual { type Result = Char }](text: textual)
   def tr(lambda: Char => Char): textual = textual.map(text)(lambda)
 
   def erase(chars: Char*): textual =
-    val set = chars.to(Set)
+    val set = chars.toSet
 
     textual.builder().build:
       textual.map(text): char =>
@@ -449,21 +477,29 @@ package proximities:
     (left, right) =>
       val m = left.s.length
       val n = right.length
-      val old = new Array[Int](n + 1)
-      val dist = new Array[Int](n + 1)
+      val old = Array[Int](n + 1)
+      val dist = Array[Int](n + 1)
+      var j = 1
 
-      for j <- 1 to n do old(j) = old(j - 1) + 1
+      while j <= n do
+        old(j) = old(j - 1) + 1
+        j += 1
 
-      for i <- 1 to m do
+      var i = 1
+
+      while i <= m do
         dist(0) = old(0) + 1
+        j = 1
 
-        for j <- 1 to n do
+        while j <= n do
           val c =
             if sensitivity.compare(left.s.charAt(i - 1), right.s.charAt(j - 1)) then 0 else 1
 
           dist(j) = (old(j - 1) + c).min(old(j) + 1).min(dist(j - 1) + 1)
+          j += 1
 
-        for j <- 0 to n do old(j) = dist(j)
+        old.copyFrom(dist, 0, 0, n + 1)
+        i += 1
 
       if m == 0 then n else dist(n)
 
@@ -501,7 +537,7 @@ extension (text: Text)
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
-  inline def sysData: IArray[Byte] = CharEncoder.system.encode(text)
+  inline def sysData: Array[Byte]^{} = CharEncoder.system.encode(text)
 
   inline def fuzzy[result]
     ( inline threshold: Double = Double.PositiveInfinity )
@@ -519,7 +555,7 @@ extension (text: Text)
   def proximity(other: Text)(using proximity: Proximity): proximity.Operand =
     proximity.distance(text, other)
 
-extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
+extension (iarray: Array[Char]^{}) def text: Text = String(Array.unsafeJvm(iarray)).tt
 
 extension [textual: {Joinable, Textual}](values: Iterable[textual])
   def join: textual = textual.join(values)
@@ -538,6 +574,34 @@ extension [textual: {Joinable, Textual}](values: Iterable[textual])
   def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
     Iterable(left, join(separator, penultimate), right).join
 
+extension [textual: {Joinable, Textual}](values: List[textual])
+  def join: textual = values.stdlib.join
+  def join(separator: textual): textual = values.stdlib.join(separator)
+
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.stdlib.join(left, separator, right)
+
+  def join(separator: textual, penultimate: textual): textual =
+    values.stdlib.join(separator, penultimate)
+
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
+    values.stdlib.join(left, separator, penultimate, right)
+
+// Opaque `Chain` is not an `Iterable`, so it needs its own `join` block bridging via
+// `stdlib` (joining forces the whole stream, which is the caller's intent here).
+extension [textual: {Joinable, Textual}](values: Chain[textual])
+  def join: textual = values.stdlib.join
+  def join(separator: textual): textual = values.stdlib.join(separator)
+
+  def join(left: textual, separator: textual, right: textual): textual =
+    values.stdlib.join(left, separator, right)
+
+  def join(separator: textual, penultimate: textual): textual =
+    values.stdlib.join(separator, penultimate)
+
+  def join(left: textual, separator: textual, penultimate: textual, right: textual): textual =
+    values.stdlib.join(left, separator, penultimate, right)
+
 extension (builder: StringBuilder)
   def add(text: Text): Unit = builder.append(text.s)
   def add(char: Char): Unit = builder.append(char)
@@ -549,16 +613,16 @@ package decimalConverters:
 
 package enumIdentification:
   given kebabCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.kebab, _.unkebab.pascal)
+    Identifiable(_.uncamel.stdlib.kebab, _.unkebab.stdlib.pascal)
 
   given snakeCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.snake, _.unsnake.pascal)
+    Identifiable(_.uncamel.stdlib.snake, _.unsnake.stdlib.pascal)
 
   given pascalCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(identity(_), identity(_))
 
   given camelCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
-    Identifiable(_.uncamel.camel, _.unsnake.pascal)
+    Identifiable(_.uncamel.stdlib.camel, _.unsnake.stdlib.pascal)
 
 package caseSensitivity:
   given caseSensitive: CaseSensitivity = _ == _

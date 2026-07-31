@@ -11,7 +11,7 @@
 ┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
-┃    Soundness, version 0.64.0.                                                                    ┃
+┃    Soundness, version 0.63.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,86 +30,68 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package pneumatic
+package murmuration
 
-// The decoder's sliding-window dictionary: a flat buffer holding recently-decoded bytes, from which
-// LZMA match copies read. `start..pos` is the not-yet-flushed run; `full` tracks the history
-// available for distance references. `setLimit` bounds how far a single decode pass may advance
-// `pos` before the caller flushes, which keeps match copies inside the buffer.
-private[pneumatic] final class LzDecoder(dictSize: Int):
-  private val buffer: Array[Byte] = new Array[Byte](dictSize)
-  private var start: Int = 0
-  private var position: Int = 0
-  private var full: Int = 0
-  private var limit: Int = 0
-  private var pendingLength: Int = 0
-  private var pendingDist: Int = 0
+import scala.collection.immutable.IndexedSeq
 
-  reset()
+import scala.reflect.ClassTag
 
-  def reset(): Unit =
-    start = 0
-    position = 0
-    full = 0
-    limit = 0
-    buffer(dictSize - 1) = 0 // so the very first back-reference reads a defined zero
+import prepositional.*
 
-  // After a dictionary reset LZMA2 may keep decoding into the same window; only the model resets.
-  def resetDictionary(): Unit = reset()
+// The rebuild relation behind the transforming operations (`map`, `filter`, `flatMap`, …): from a
+// source collection `Self`, with a *new* element type `Operand`, implicit search selects the
+// natural `Result` shape and builds it from an iterator of elements. Result shapes are chosen per
+// (source shape, new element type), which lets them be more precise than an inheritance hierarchy
+// allows: a `Map` mapped to pairs stays a `Map`, while a `Map` mapped to anything else naturally
+// yields a `List`.
+//
+// `reshape`'s parameter is a *capturing* iterator (`Iterator[Operand]^`): the iterators produced
+// by `map` et al capture the caller's lambda, and a pure parameter type would reject them. Strict
+// instances consume the iterator eagerly, so nothing escapes; `lazyList` is the deliberate
+// exception, preserving the source's laziness.
+object Reshapable extends Reshapable.Fallback:
+  // Order-preserving instances additionally extend `Stable`; order-sensitive operations
+  // (`sortBy`, `distinct`, `zip`) demand it, making them unavailable on unordered shapes
+  // rather than silently reordering.
+  trait Stable extends Reshapable
 
-  def setLimit(outMax: Int): Unit =
-    limit = if dictSize - position <= outMax then dictSize else position + outMax
+  given list: [element, element2]
+  =>  List[element] is Reshapable.Stable by element2 to List[element2] =
+    List.from(_)
 
-  def hasSpace: Boolean = position < limit
-  def hasPending: Boolean = pendingLength > 0
-  def pos: Int = position
+  given set: [element, element2] => Set[element] is Reshapable by element2 to Set[element2] =
+    Set.from(_)
 
-  def getByte(dist: Int): Int =
-    var offset = position - dist - 1
-    if dist >= position then offset += dictSize
-    buffer(offset) & 0xff
+  given sequence: [element, element2]
+  =>  Sequence[element] is Reshapable.Stable by element2 to Sequence[element2] =
+    Sequence.from(_)
 
-  def putByte(byte: Byte): Unit =
-    buffer(position) = byte
-    position += 1
-    if full < position then full = position
+  given indexedSeq: [element, element2]
+  =>  IndexedSeq[element] is Reshapable.Stable by element2 to IndexedSeq[element2] =
+    IndexedSeq.from(_)
 
-  def repeat(dist: Int, len: Int): Unit =
-    if dist < 0 || dist >= full then
-      throw IllegalStateException("the LZMA data is corrupt: invalid match distance")
+  given lazyList: [element, element2]
+  =>  Chain[element] is Reshapable.Stable by element2 to Chain[element2] =
+    Chain.from(_)
 
-    var left = if limit - position < len then limit - position else len
-    pendingLength = len - left
-    pendingDist = dist
+  // The frozen array reshapes to a frozen array: the rebuilt array is fresh, so freezing
+  // it is discharged by construction.
+  given frozenArray: [element, element2: ClassTag]
+  =>  (Array[element]^{}) is Reshapable.Stable by element2 to (Array[element2]^{}) =
+    elements => Array.unsafeFrozen(elements.toArray)
 
-    var back = position - dist - 1
-    if dist >= position then back += dictSize
+  // A `Map` rebuilt from pairs remains a `Map`…
+  given map: [key, value, key2, value2]
+  =>  Map[key, value] is Reshapable by (key2, value2) to Map[key2, value2] =
+    Map.from(_)
 
-    while left > 0 do
-      buffer(position) = buffer(back)
-      position += 1
-      back += 1
-      if back == dictSize then back = 0
-      left -= 1
+  trait Fallback:
+    // …but a `Map` rebuilt from non-pair elements naturally yields a `List` — a more precise
+    // result than the stdlib's `Iterable`. Lower priority than `map` above (companion-parent
+    // placement), so pair results still prefer the `Map` shape.
+    given mapToList: [key, value, element2]
+    =>  Map[key, value] is Reshapable.Stable by element2 to List[element2] =
+      List.from(_)
 
-    if full < position then full = position
-
-  def repeatPending(): Unit =
-    if pendingLength > 0 then repeat(pendingDist, pendingLength)
-
-  // Copy `len` literal bytes straight from a source array (an LZMA2 uncompressed chunk).
-  def copyUncompressed(source: Array[Byte], sourceOffset: Int, len: Int): Unit =
-    val copySize = if dictSize - position < len then dictSize - position else len
-    System.arraycopy(source, sourceOffset, buffer, position, copySize)
-    position += copySize
-    if full < position then full = position
-
-  // Emit everything decoded since the last flush, wrapping `pos` when it reaches the buffer end.
-  def flush(out: Array[Byte], outOffset: Int): Int =
-    val copySize = position - start
-    if position == dictSize then position = 0
-    System.arraycopy(buffer, start, out, outOffset, copySize)
-    start = position
-    copySize
-
-  def flushSize: Int = position - start
+trait Reshapable extends Typeclass.Pure, Operable, Resultant:
+  def reshape(elements: Iterator[Operand]^): Result
