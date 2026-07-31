@@ -220,8 +220,7 @@ private[hallucination] object JpegEncoder:
     marker(0xe0)
     u16(16)
 
-    "JFIF".foreach: char =>
-      u8(char.toInt)
+    "JFIF".foreach: char => u8(char.toInt)
 
     u8(0)
     u8(1); u8(2)  // version 1.02

@@ -32,6 +32,5 @@
                                                                                                   */
 package contextual
 
-
 trait Substitution[input, -value, substitution <: Label]
 extends Insertion[input, value]

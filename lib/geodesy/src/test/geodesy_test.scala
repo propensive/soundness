@@ -36,6 +36,12 @@ import soundness.*
 
 object Tests extends Suite(m"Geodesy tests"):
   def run(): Unit =
+    test(m"a whole-number literal widens to an angle in degrees"):
+      val angle = 45.deg
+      angle.show
+
+    . assert(_ == t"45.0°")
+
     test(m"render a simple angle"):
       val angle = Angle.degrees(45)
       angle.show

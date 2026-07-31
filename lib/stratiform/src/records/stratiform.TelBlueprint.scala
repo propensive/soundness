@@ -32,7 +32,6 @@
                                                                                                   */
 package stratiform
 
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -74,8 +73,7 @@ object TelBlueprint:
     TelBlueprint.intensional(_.primaryAtom)
 
   given optionalString: ("string?" is Intensional in TelBlueprint from Tel to Optional[Text]) =
-    TelBlueprint.intensional: tel =>
-      if absent(tel) then Unset else tel.primaryAtom
+    TelBlueprint.intensional: tel => if absent(tel) then Unset else tel.primaryAtom
 
   given identifier: ("identifier" is Intensional in TelBlueprint from Tel to Text) =
     TelBlueprint.intensional(_.primaryAtom)
@@ -83,8 +81,7 @@ object TelBlueprint:
   given optionalIdentifier
   :   ("identifier?" is Intensional in TelBlueprint from Tel to Optional[Text]) =
 
-    TelBlueprint.intensional: tel =>
-      if absent(tel) then Unset else tel.primaryAtom
+    TelBlueprint.intensional: tel => if absent(tel) then Unset else tel.primaryAtom
 
   given typeName: ("type-name" is Intensional in TelBlueprint from Tel to Text) =
     TelBlueprint.intensional(_.primaryAtom)
@@ -92,8 +89,7 @@ object TelBlueprint:
   given optionalTypeName
   :   ("type-name?" is Intensional in TelBlueprint from Tel to Optional[Text]) =
 
-    TelBlueprint.intensional: tel =>
-      if absent(tel) then Unset else tel.primaryAtom
+    TelBlueprint.intensional: tel => if absent(tel) then Unset else tel.primaryAtom
 
   given sigil: ("sigil" is Intensional in TelBlueprint from Tel to Char) =
     TelBlueprint.intensional: tel =>

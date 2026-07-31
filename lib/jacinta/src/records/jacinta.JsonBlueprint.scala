@@ -104,54 +104,45 @@ object JsonBlueprint:
   given optionalNumber: ("number?" is Intensional in JsonBlueprint from Json to Optional[Double]) =
     (value, params) => value.as[Optional[Double]]
 
-
   given dateTime: [instant: Instantiable across Instants from Text]
   =>  ( "date-time" is Intensional in JsonBlueprint from Json to instant ) =
 
     JsonBlueprint.intensional(_.as[Text].instantiate)
-
 
   given optionalDateTime: [instant: Instantiable across Instants from Text]
   =>  ( "date-time?" is Intensional in JsonBlueprint from Json to Optional[instant] ) =
 
     JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
-
   given date: [date: Instantiable across Dates from Text]
   =>  ( "date" is Intensional in JsonBlueprint from Json to date ) =
 
     JsonBlueprint.intensional(_.as[Text].instantiate)
-
 
   given optionalDate: [date: Instantiable across Dates from Text]
   =>  ( "date?" is Intensional in JsonBlueprint from Json to Optional[date] ) =
 
     JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
-
   given time: [time: Instantiable across Times from Text]
   =>  ( "time" is Intensional in JsonBlueprint from Json to time ) =
 
     JsonBlueprint.intensional(_.as[Text].instantiate)
-
 
   given optionalTime: [time: Instantiable across Times from Text]
   =>  ( "time?" is Intensional in JsonBlueprint from Json to Optional[time] ) =
 
     JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
-
   given duration: [duration: Instantiable across Durations from Text]
   =>  ( "duration" is Intensional in JsonBlueprint to duration ) =
 
     JsonBlueprint.intensional(_.as[Text].instantiate)
 
-
   given optionalDuration: [duration: Instantiable across Durations from Text]
   =>  ( "duration?" is Intensional in JsonBlueprint to Optional[duration] ) =
 
     JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
-
 
   given uriReference: ("uri-reference" is Intensional in JsonBlueprint from Json to Text) =
     JsonBlueprint.intensional(_.as[Text])
@@ -168,20 +159,17 @@ object JsonBlueprint:
   =
     JsonBlueprint.intensional(_.as[EmailAddress])
 
-
   given optionalEmail
   :   ( "email?" is Intensional in JsonBlueprint from Json to
             (Optional[EmailAddress] raises EmailAddressError) ) =
 
     JsonBlueprint.intensional(_.as[Optional[EmailAddress]])
 
-
   given idnEmail
   :   ( "idn-email" is Intensional in JsonBlueprint from Json to
             (EmailAddress raises EmailAddressError) ) =
 
     JsonBlueprint.intensional(_.as[EmailAddress])
-
 
   given optionalIdnEmail
   :   ( "idn-email?" is Intensional in JsonBlueprint from Json to
@@ -202,10 +190,8 @@ object JsonBlueprint:
 
     JsonBlueprint.intensional(_.as[Hostname])
 
-
   given ipv4: ("ipv4" is Intensional in JsonBlueprint from Json to (Ipv4 raises IpAddressError)) =
     JsonBlueprint.intensional(_.as[Ipv4])
-
 
   given optionalIpv4
   :   ( "ipv4?" is Intensional in JsonBlueprint from Json to
@@ -213,10 +199,8 @@ object JsonBlueprint:
 
     JsonBlueprint.intensional(_.as[Optional[Ipv4]])
 
-
   given ipv6: ("ipv6" is Intensional in JsonBlueprint from Json to (Ipv6 raises IpAddressError)) =
     JsonBlueprint.intensional(_.as[Ipv6])
-
 
   given optionalIpv6
   :   ( "ipv6?" is Intensional in JsonBlueprint from Json to
@@ -224,18 +208,15 @@ object JsonBlueprint:
 
     JsonBlueprint.intensional(_.as[Optional[Ipv6]])
 
-
   given uri: [url: Instantiable across Urls from Text]
   =>  (  "uri" is Intensional in JsonBlueprint from Json to url  ) =
 
     JsonBlueprint.intensional: value => url.instantiate(value.as[Text])
 
-
   given optionalUri: [url: Instantiable across Urls from Text]
   =>  (  "uri?" is Intensional in JsonBlueprint from Json to Optional[url]  ) =
 
     JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
-
 
   given iri: [url: Instantiable across Urls from Text]
   =>  ( "iri" is Intensional in JsonBlueprint from Json to url ) =
@@ -243,12 +224,10 @@ object JsonBlueprint:
     JsonBlueprint.intensional:
       value => url.instantiate(value.as[Text])
 
-
   given optionalIri: [url: Instantiable across Urls from Text]
   =>  (  "iri?" is Intensional in JsonBlueprint from Json to Optional[url]  ) =
 
     JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
-
 
   given iriReference: ("iri-reference" is Intensional in JsonBlueprint from Json to Text) =
     JsonBlueprint.intensional(_.as[Text])

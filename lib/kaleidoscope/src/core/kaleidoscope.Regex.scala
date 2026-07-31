@@ -76,7 +76,6 @@ object Regex:
 
     def unitary: Boolean = this == Exactly(1)
 
-
   case class Group
     ( start:      Int,
       end:        Int,

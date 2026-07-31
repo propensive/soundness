@@ -92,7 +92,6 @@ object Complex:
       (left, right) =>
         Complex[result](left.real + right.real, left.imaginary + right.imaginary)
 
-
   given subtractable
   :   [ result,
         component2,
@@ -102,7 +101,6 @@ object Complex:
     Subtractable[Complex[component], Complex[component2], Complex[result]]:
       (left, right) =>
         Complex[result](left.real - right.real, left.imaginary - right.imaginary)
-
 
   inline given multiplicable: [component, component2]
   =>  ( multiplication: component is Multiplicable by component2,
@@ -117,7 +115,6 @@ object Complex:
         Complex
           ( left.real*right.real - left.imaginary*right.imaginary,
             left.real*right.imaginary + left.imaginary*right.real )
-
 
   given divisible
   :   [ component, dividend <: Complex[component], component2, divisor <: Complex[component2] ]
@@ -140,7 +137,6 @@ object Complex:
       Complex
         ( (left.real*right.real + left.imaginary*right.imaginary)/denominator,
           (left.imaginary*right.real + (-left.real)*right.imaginary)/denominator )
-
 
   given negatable: [component: Negatable]
   =>  Complex[component] is Negatable to Complex[component.Result] = complex =>

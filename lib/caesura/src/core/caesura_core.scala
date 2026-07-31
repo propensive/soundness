@@ -117,8 +117,7 @@ private def cell(row: Dsv, name: String): Text =
   . or(t"")
 
 private def withCell(row: Dsv, name: String, value: Text): Dsv =
-  row.columns.let(_.at(name.tt)).lay(row): index =>
-    row.copy(data = row.data.updated(index, value))
+  row.columns.let(_.at(name.tt)).lay(row): index => row.copy(data = row.data.updated(index, value))
 
 given cellLens: [name <: Label: ValueOf] => (erased dynamicDsvEnabler: DynamicDsvEnabler)
 =>  name is Lens from Dsv onto Text =

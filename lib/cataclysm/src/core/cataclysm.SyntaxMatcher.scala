@@ -256,8 +256,7 @@ object SyntaxMatcher:
         case ValueToken.Function(fname) :: tail if same(fname, name) =>
           val (inner, after) = split(tail)
 
-          after.lay(Nil): rest =>
-            if consume(body, inner).exists(_.nil) then List(rest) else Nil
+          after.lay(Nil): rest => if consume(body, inner).exists(_.nil) then List(rest) else Nil
 
         case _ =>
           Nil

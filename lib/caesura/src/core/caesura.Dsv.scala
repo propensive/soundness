@@ -170,16 +170,11 @@ object Dsv extends Dsv2:
 
   given text: (format: DsvFormat) => (tactic: Tactic[DsvError])
   =>  Text is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"Text", t""): cell =>
-        cell
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"Text", t""): cell => cell
 
   given string: (format: DsvFormat) => (tactic: Tactic[DsvError])
   =>  String is Decodable in Dsv =
-    caps.unsafe.unsafeAssumePure: dsv =>
-      decodeCell(dsv, t"String", ""): cell =>
-        cell.s
-
+    caps.unsafe.unsafeAssumePure: dsv => decodeCell(dsv, t"String", ""): cell => cell.s
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
   =>  value is Decodable in Dsv =
@@ -190,7 +185,6 @@ object Dsv extends Dsv2:
   =>  value is Encodable in Dsv =
 
     EncodableDerivation.derived[value]
-
 
   given showable: (format: DsvFormat) => Dsv is Showable = dsv =>
     val cells =
@@ -305,8 +299,7 @@ object Dsv extends Dsv2:
           type Self = value
 
           def parse(reader: DsvReader^, offset: Int): value =
-            reader.cell(offset).lay(reader.absent()): cell =>
-              decodable.decoded(cell)
+            reader.cell(offset).lay(reader.absent()): cell => decodable.decoded(cell)
 
     given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
     =>  ( field: => inner is Dsv.Field )
@@ -420,8 +413,7 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.indices.all: index =>
-        data(index) == row.data(index)
+      data.length == row.data.length && data.indices.all: index => data(index) == row.data(index)
 
     case _ =>
       false

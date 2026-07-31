@@ -50,13 +50,11 @@ package strategies:
   given throwSafely: [error <: Hazard: CanThrow, success] => (ThrowTactic[error, success]^) =
     ThrowTactic()
 
-
   given mitigation: [error <: Hazard, error2 <: Hazard: Mitigable to error]
   =>  (tactic: Tactic[error]^)
   =>  ( Tactic[error2]^ ) =
 
     scala.caps.unsafe.unsafeAssumeSeparate(tactic.contramap(error2.mitigate(_)))
-
 
   // Like `ThrowTactic`, these ambient strategies are `caps.Unscoped`: they capture no scoped
   // capability (they throw or terminate in place), so a use-site instantiation may flow into the
@@ -150,8 +148,7 @@ def attempt[error <: Hazard](using erased void: Void)[success]
   ( using Diagnostics )
 :   Attempt[success, error] =
 
-  boundary: label ?=>
-    Attempt.Success(block(using AttemptTactic(label)))
+  boundary: label ?=> Attempt.Success(block(using AttemptTactic(label)))
 
 
 def amalgamate[error <: Hazard](using erased void: Void)[success]
@@ -159,8 +156,7 @@ def amalgamate[error <: Hazard](using erased void: Void)[success]
   ( using Diagnostics )
 :   success | error =
 
-  boundary: label ?=>
-    block(using AmalgamateTactic(label))
+  boundary: label ?=> block(using AmalgamateTactic(label))
 
 
 def abortive[error <: Error](using Quotes)[success]
@@ -255,7 +251,6 @@ def defer[result, error <: Hazard](body: Tactic[error]^ ?=> result)
 
 transparent inline def recover(inline handler: PartialFunction[Exception, Any]): Recovery[?] =
   ${contingency.internal.recoverBuild('handler)}
-
 
 transparent inline def mitigate(inline handler: PartialFunction[Exception, Any]): Mitigation[?] =
   ${contingency.internal.mitigateBuild('handler)}

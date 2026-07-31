@@ -56,7 +56,6 @@ object Framable:
       def next(): data = ready.asInstanceOf[data].also:
         ready = Unset
 
-
 trait Framable extends Typeclass, Operable:
   // The framed iterator lazily pulls from `input`, so it honestly captures it (and `input` is
   // tracked as a capability, since the underlying stream may itself capture, e.g. a live socket).

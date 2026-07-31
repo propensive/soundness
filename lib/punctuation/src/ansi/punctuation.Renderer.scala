@@ -109,7 +109,6 @@ object Renderer:
     case Prose.HtmlInline(html) =>
       e"${Fg(palette.subdued)}($html)"
 
-
   // For image alt-text and similar uses where we need the plain text inside
   // an inline subtree without any markup.
   private def plainTextOf(node: Prose): Text = node match
@@ -125,7 +124,6 @@ object Renderer:
     case Prose.Image(_, title, children*) =>
       val inner = children.map(plainTextOf(_)).to(List).join
       if inner.length == 0 then title.or(t"") else inner
-
 
   // -- block ---------------------------------------------------------------
 
@@ -175,9 +173,7 @@ object Renderer:
       val innerBlocks = children.map(layoutLines(_, innerWidth)).filter(_.nonEmpty)
       val joined = interleaveBlanks(innerBlocks.to(List))
 
-      joined.map: line =>
-        if line.plain.length == 0 then bar
-        else bar + Space + line
+      joined.map: line => if line.plain.length == 0 then bar else bar + Space + line
 
     case Layout.BulletList(_, tight, items*) =>
       renderList(items.to(List), tight, width, _ => bullet(palette))
@@ -209,10 +205,8 @@ object Renderer:
         case Nil            => Nil
         case lines @ _ :: _ => if lines.last.plain.length == 0 then lines.dropRight(1) else lines
 
-
   private def bullet(palette: MarkdownPalette): Teletype =
     e"${Fg(palette.subdued)}(•)"
-
 
   // Renders a list, dispatching to the marker-generator `marker` (called with
   // the zero-based index). Continuation lines of each item are hung off the
@@ -253,7 +247,6 @@ object Renderer:
   private def concatItems(blocks: List[List[Teletype]]): List[Teletype] =
     blocks.flatten
 
-
   // Concatenate per-block line lists with a single blank line between blocks.
   private def interleaveBlanks(blocks: List[List[Teletype]]): List[Teletype] =
     blocks match
@@ -261,17 +254,14 @@ object Renderer:
       case head :: Nil  => head
       case head :: tail => head ::: Teletype.empty :: interleaveBlanks(tail)
 
-
   // Prefix a single line's content with `prefix` (no newlines should appear
   // in `line`).
   private def indent(line: Teletype, prefix: Text): Teletype =
     if line.plain.length == 0 then Teletype(prefix) else Teletype(prefix)+line
 
-
   // Join a list of lines into one Teletype with embedded newlines.
   private def joinLines(lines: List[Teletype]): Teletype =
     lines.join(Newline)
-
 
   // Wrap an inline `Teletype` into width-bounded lines, applying soft
   // hyphenation via `polysyllabic` when a single word would overflow but a
@@ -351,8 +341,7 @@ object Renderer:
             col = wlen
             flush()
 
-    segment.cut(t" ").each: word =>
-      placeWord(word)
+    segment.cut(t" ").each: word => placeWord(word)
 
     if col > 0 then flush()
 

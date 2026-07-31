@@ -157,8 +157,7 @@ private[facsimile] object Xref:
       if i == last then Unset else (parseInt(chunk, i, last), i)
 
     digits(objAt).let: (generation, genStart) =>
-      digits(genStart).let: (number, numberStart) =>
-        (number, generation, numberStart)
+      digits(genStart).let: (number, numberStart) => (number, generation, numberStart)
 
   private def parseInt(chunk: Data, start: Int, end: Int): Int =
     var value = 0
@@ -186,7 +185,9 @@ private[facsimile] object Xref:
       List.range(0, count).map: _ =>
         (lexer.next(), lexer.next()) match
           case (CosToken.Integral(number), CosToken.Integral(_)) => number.toInt
-          case _ => abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
+
+          case _ =>
+            abort(PdfError(PdfError.Reason.CorruptStream(t"ObjStm")))
 
     . or(List())
 
@@ -207,9 +208,7 @@ private[facsimile] object Xref:
           case _ =>
             None
 
-      . headOption.map: (number, generation) =>
-          Map(t"Root" -> Cos.Ref(number, generation))
-
+      . headOption.map: (number, generation) => Map(t"Root" -> Cos.Ref(number, generation))
       . getOrElse(Map())
 
   // The last `trailer` dictionary in the file, if any (classic-xref files have one even when

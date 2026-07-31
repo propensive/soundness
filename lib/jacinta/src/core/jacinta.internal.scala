@@ -167,8 +167,7 @@ object internal:
     import quotes.reflect.*
     val members = Map.of(refinements(self.asTerm.tpe.widen))
 
-    members.at(t"Topic").let: position =>
-      (position, members.at(t"Origin").or(position))
+    members.at(t"Topic").let: position => (position, members.at(t"Origin").or(position))
 
   def select(self: Expr[Json], field: Expr[String]): Macro[Json] =
 
@@ -641,9 +640,7 @@ object internal:
   private def arrayElements(arr: Array[Any]^{}): Array[Any]^{} =
     val n = arr.length
 
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
-    then arr.take(n - 1)
-    else arr
+    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.take(n - 1) else arr
 
   private def hasMarker(s: String): Boolean =
     var i = 0
@@ -665,7 +662,6 @@ object internal:
         part
 
     (cleaned, spreads)
-
 
   import Bcd.*
 
@@ -987,8 +983,7 @@ object internal:
 
         case arr: (Array[Any]^{}) @unchecked =>
           // Heterogeneous array or object, distinguished by parity.
-          if (arr.length & 1) == 0 then serializeObject(arr)
-          else serializeArray(arrayElements(arr))
+          if (arr.length & 1) == 0 then serializeObject(arr) else serializeArray(arrayElements(arr))
 
         case other =>
           halt(m"unexpected JSON AST node ${other.toString.tt}")
@@ -1048,26 +1043,22 @@ object internal:
 
           case s: String =>
             ' {
-                $accept && $scrutinee.isString &&
-                  $scrutinee.asInstanceOf[String] == ${Expr(s)}
+                $accept && $scrutinee.isString && $scrutinee.asInstanceOf[String] == ${Expr(s)}
               }
 
           case b: Boolean =>
             ' {
-                $accept && $scrutinee.isBoolean &&
-                  $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
+                $accept && $scrutinee.isBoolean && $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
               }
 
           case l: Long =>
             ' {
-                $accept && $scrutinee.isLong &&
-                  $scrutinee.asInstanceOf[Long] == ${Expr(l)}
+                $accept && $scrutinee.isLong && $scrutinee.asInstanceOf[Long] == ${Expr(l)}
               }
 
           case d: Double =>
             ' {
-                $accept && $scrutinee.isDouble &&
-                  $scrutinee.asInstanceOf[Double] == ${Expr(d)}
+                $accept && $scrutinee.isDouble && $scrutinee.asInstanceOf[Double] == ${Expr(d)}
               }
 
           case bcd: scala.Array[Long] @unchecked =>
@@ -1211,8 +1202,7 @@ object internal:
             var k = 0
 
             while k < pairs do
-              if arr(k*2) == MarkerString then c += 1
-              else c += countHolesIn(arr(k*2 + 1))
+              if arr(k*2) == MarkerString then c += 1 else c += countHolesIn(arr(k*2 + 1))
 
               k += 1
 
@@ -1379,7 +1369,6 @@ object internal:
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
 
-
   // ── Staged parser generation ──────────────────────────────────────────────
   // Generates a monomorphic `Json.Parsable` for a case class: field values
   // live in typed locals, keys dispatch through a precomputed `KeyTable`
@@ -1410,19 +1399,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a case class; sums and other types use "+
+        ("jacinta: staged parsing requires a case class; sums and other types use " +
           "`Json.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a top-level or object-nested case class; "+
+        ("jacinta: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Json.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("jacinta: staged parsing requires a single parameter list; use "+
+        ("jacinta: staged parsing requires a single parameter list; use " +
           "`Json.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -1451,15 +1440,13 @@ object internal:
       val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
         ++ fields.flatMap(_.annotations)
 
-      !annotated.exists { annotation =>
-        annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+      !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
 
     def packedName(index: Int): Option[(Long, Long)] =
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 &&
-        name.forall { char => char >= ' ' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall: char => char >= ' ' && char < 127
 
       if !packs then None else
         var low = 0L
@@ -1468,8 +1455,7 @@ object internal:
 
         while position < length do
           val byte = name.charAt(position).toLong & 0xFF
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
           position += 1
 
         Some((low, high))
@@ -1482,7 +1468,7 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for field ${fieldNames(index)}: "+
+              (s"jacinta: no Json.Field instance for field ${fieldNames(index)}: " +
                 fieldTypes(index).show)
 
     def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
@@ -1664,10 +1650,7 @@ object internal:
         Apply(applied, slots.stdlib.map { slot => Ref(slot) })
 
       Block
-        ( '{ $reader.openObject() }.asTerm
-            :: slotDefs ::: seenDefs
-            ::: loop
-            ::: absents,
+        ( '{ $reader.openObject() }.asTerm :: slotDefs ::: seenDefs ::: loop ::: absents,
           construct )
       . asExprOf[value]
 
@@ -1746,7 +1729,7 @@ object internal:
 
     if !children.forall { child => child.isClassDef && child.flags.is(Flags.Case) } then
       report.errorAndAbort
-        ("jacinta: staged sum parsing requires every variant to be a case class; singleton "+
+        ("jacinta: staged sum parsing requires every variant to be a case class; singleton " +
           "variants use `Json.Parsable.derived`")
 
     val variantTypes: scala.collection.immutable.List[TypeRepr] = children.map(_.typeRef)
@@ -1758,13 +1741,13 @@ object internal:
         case '[variantType] =>
           Expr.summon[variantType is Json.Field].getOrElse:
             report.errorAndAbort
-              (s"jacinta: no Json.Field instance for variant ${variantNames(index)}: "+
+              (s"jacinta: no Json.Field instance for variant ${variantNames(index)}: " +
                 variantTypes(index).show)
 
     val discriminableExpr: Expr[value is Discriminable in Json] =
       Expr.summon[value is Discriminable in Json].getOrElse:
         report.errorAndAbort
-          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like "+
+          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like " +
             "`jacinta.discriminables.jsonByKindDiscriminable`")
 
     val nameExprs = variantNames.map { name => Expr(name) }

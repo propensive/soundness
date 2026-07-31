@@ -62,7 +62,6 @@ object Composable:
           ( { origin => right(left(origin)) },
             { (origin, value) => left(origin) = right(left(origin)) = value } )
 
-
 // `composition` accepts capturing operands and yields a capturing result (`Result^`): composing a
 // fallible (capturing) optic yields a capturing optic. The fallibility *requirement* is enforced
 // separately, through the fallible optic given demanding a `Tactic` when it is summoned.

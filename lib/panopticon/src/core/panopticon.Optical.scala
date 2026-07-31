@@ -81,8 +81,7 @@ object Optical:
       val predicate: element -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
 
       Optic: (origin, lambda) =>
-        origin.map: value =>
-          if predicate(value) then lambda(value) else value
+        origin.map: value => if predicate(value) then lambda(value) else value
 
 trait Optical:
   type Self

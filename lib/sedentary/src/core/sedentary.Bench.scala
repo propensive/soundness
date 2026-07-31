@@ -61,13 +61,11 @@ import superlunary.*
 import symbolism.*
 import vacuous.*
 
-
 case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice) extends Rig:
   type Result[output] = output
   type Form = Text
   type Target = Path on Linux
   type Transport = Json
-
 
   // Captures the benchmark's name and settings; the returned plan is applied to a quoted
   // body directly (a single measurement) or spread `over` one or two axes, one measurement
@@ -117,8 +115,7 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input =>
-      unsafely(device.invoke(stage.target, input))
+    stage.remote: input => unsafely(device.invoke(stage.target, input))
 
 object Bench:
   // The staged measurement harness, shared by every cell of every plan: warmup, doubling
@@ -355,8 +352,7 @@ object Bench:
 
           val coordinates = List(first.coordinate(left), second.coordinate(right))
 
-          if probe.isDefinedAt((left, right))
-             && !runner.skip(testId, Entry.Kind.Bench, coordinates)
+          if probe.isDefinedAt((left, right)) && !runner.skip(testId, Entry.Kind.Bench, coordinates)
           then
             val results0 =
               bench.dispatch(Bench.measured(iterations, warmups, target)(body((left, right))))

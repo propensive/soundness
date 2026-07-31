@@ -128,8 +128,7 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
     var col = 0
 
     while i < n && col < indent && (s.charAt(i) == ' ' || s.charAt(i) == '\t') do
-      if s.charAt(i) == ' ' then col += 1
-      else col += 4 - (col & 3)
+      if s.charAt(i) == ' ' then col += 1 else col += 4 - (col & 3)
 
       i += 1
 
@@ -204,8 +203,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
   private var joinedText: String = ""
 
   private def joined: Text =
-    if linkRefEnd >= joinedText.length then t""
-    else Text(joinedText.substring(linkRefEnd).nn)
+    if linkRefEnd >= joinedText.length then t"" else Text(joinedText.substring(linkRefEnd).nn)
 
   // Try to consume leading link reference definitions from the joined
   // paragraph text. CommonMark allows LRDs to span multiple lines, so the
@@ -242,8 +240,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
   def finish(refs: LinkRefs): Optional[Layout] =
     extractLinkRefs(refs)
 
-    if linkRefEnd >= joinedText.length then Unset
-    else Layout.Paragraph(line, Prose.Textual(joined))
+    if linkRefEnd >= joinedText.length then Unset else Layout.Paragraph(line, Prose.Textual(joined))
 
   // Setext headings rewrite an open paragraph as a heading; the underline
   // line itself is consumed by the dispatcher. Link reference definitions
@@ -284,8 +281,7 @@ final class IndentedCodeBlockBuilder(val line: Ordinal) extends LeafBuilder:
   def addLine(text: Text): Unit = content += text
 
   def finish(refs: LinkRefs): Optional[Layout] =
-    while content.nonEmpty && ParserSupport.isBlank(content.last) do
-      content.dropRightInPlace(1)
+    while content.nonEmpty && ParserSupport.isBlank(content.last) do content.dropRightInPlace(1)
 
     val builder = new StringBuilder
 

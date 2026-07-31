@@ -239,8 +239,7 @@ class Http2ServerConnection(duplex: Duplex^)(using Monitor, Probate):
         val writer = daemon:
           val duplex0 = duplex0Ref.asInstanceOf[Duplex^]
 
-          outbound0.stream.records.each: frame =>
-            duplex0.send(zephyrine.Stream(frame.serialize))
+          outbound0.stream.records.each: frame => duplex0.send(zephyrine.Stream(frame.serialize))
 
         val frameReaderRef: AnyRef =
           FrameReader(duplexRef.asInstanceOf[Duplex^].source).asInstanceOf[AnyRef]

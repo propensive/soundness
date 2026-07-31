@@ -63,7 +63,7 @@ setting. A language code decodes to a `Locale`, falling back to English for a co
 recognised:
 
 ```scala
-val locale = t"fr".decode[Locale[en & pl & fr & de & es]]
+val locale = t"fr".as[Locale[en & pl & fr & de & es]]
 ```
 
 With that locale in scope, every polyglot covering those languages reads in the user's language,

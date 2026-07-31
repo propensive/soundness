@@ -43,11 +43,12 @@ given Colorimetry = colorimetry.daylight
 ### Color spaces
 
 Each model is a type whose fields are its coordinates, given as fractions between 0
-and 1. A color is constructed directly in whichever model is convenient:
+and 1 — except hue, which is a point on a circle and is given as an `Angle`. A color
+is constructed directly in whichever model is convenient:
 
 ```scala
 val red = Srgb(0.8, 0.2, 0.2)
-val slate = Hsl(0.58, 0.3, 0.4)
+val slate = Hsl(208.8.deg, 0.3, 0.4)
 ```
 
 `Srgb`, `Hsl`, `Hsv`, `Cielab`, `Xyz`, `Cmy` and `Cmyk` are the models available, and a
@@ -58,8 +59,8 @@ value in any of them is a `Color`.
 The `in` method converts a color to another model:
 
 ```scala
-val lab = red.in[Cielab]
-val back = lab.in[Srgb]      // the original red, within rounding
+val lab = red.to[Cielab]
+val back = lab.to[Srgb]      // the original red, within rounding
 ```
 
 Conversions compose, so a color reaches any model from any other, passing through the
@@ -85,11 +86,62 @@ Two colors mix into one, by default halfway between them, or in any ratio:
 
 ```scala
 Srgb(0.2, 0.4, 0.6).mix(Srgb(0.8, 0.6, 0.4))        // Srgb(0.5, 0.5, 0.5)
-WebColors.Ivory.in[Cielab].mix(WebColors.DeepPink.in[Cielab])
+WebColors.Ivory.to[Cielab].mix(WebColors.DeepPink.to[Cielab])
 ```
 
 Mixing in sRGB blends the screen values; mixing in CIELAB blends what the eye perceives,
 which gives a more natural midpoint between two colors.
+
+### Mixing by parts
+
+`mix` takes two colors at a time. To combine several, multiply each by the number of
+parts of it going into the mixture and add them up, the way a painter measures paint
+onto a palette. A mixing mode is chosen by importing one:
+
+```scala
+import mixing.proportional
+
+5*WebColors.Red + 3*WebColors.Yellow   // Srgb(1, 0.375, 0) — an orange
+```
+
+`5*Red` is a `Daub`: an amount of a color, which is still that color — one part of red
+and five parts of red are both red. A `Daub` is a `Color`, so a mixture converts,
+renders and measures like any other, and the parts matter only when more paint is added:
+
+```scala
+val mixture = 5*WebColors.Red + 3*WebColors.Yellow
+mixture.to[Cielab]
+mixture.to[Hsl].hue.degrees   // 22.5
+```
+
+Parts are proportions, so `5*Red + 3*Yellow` and `50*Red + 30*Yellow` are the same color,
+and a third daub is weighted against the total so far rather than against its neighbour:
+
+```scala
+1*WebColors.Red + 1*WebColors.Lime + 1*WebColors.Blue   // an even third of each
+```
+
+### Mixing modes
+
+`proportional` averages the colors, which is what `mix` does. The other modes are the
+blend modes of Photoshop and GIMP — `multiply`, `screen`, `overlay`, `hardLight`,
+`softLight`, `darken`, `lighten`, `colorDodge`, `colorBurn`, `difference`, `exclusion`,
+`linearDodge` and `linearBurn` — and each is imported the same way:
+
+```scala
+import mixing.multiply
+
+1*WebColors.Yellow + 1*WebColors.Cyan   // Srgb(0.5, 1, 0) — a green, as paint mixes
+```
+
+A daub's share of the total parts acts as its opacity: the mode is applied at full
+strength and the result mixed back in that proportion, exactly as a layer's opacity
+slider works. Only `proportional` is therefore commutative — under any other mode
+`5*Red + 3*Yellow` differs from `3*Yellow + 5*Red`, just as reordering two layers does.
+
+Every mode but `proportional` reads coordinates as fractions of full intensity, so they
+are offered only for sRGB, CMY and CMYK. Asking for `multiply` in CIELAB, where lightness
+runs to 100, will not compile rather than quietly meaning something else.
 
 ### Adjusting
 
@@ -97,17 +149,26 @@ Hue, saturation and lightness are what a person reaches for to adjust a color, s
 operations live on `Hsl` and `Hsv`. Convert into one, adjust, and convert back:
 
 ```scala
-val tomato = WebColors.Tomato.in[Hsl]
+val tomato = WebColors.Tomato.to[Hsl]
 
-tomato.rotate(180).in[Srgb]     // the complementary color
-tomato.lighten(0.2).in[Srgb]    // a fifth of the way toward white
-tomato.desaturate.in[Srgb]      // the same lightness, no color
+tomato.rotate(180.deg).to[Srgb]   // the complementary color
+tomato.lighten(0.2).to[Srgb]      // a fifth of the way toward white
+tomato.desaturate.to[Srgb]        // the same lightness, no color
 ```
 
-`rotate` turns the hue by a number of degrees, `complement` turns it halfway round,
+`rotate` turns the hue by an `Angle`, so the unit is written down rather than assumed:
+`180.deg` and `π.rad` are the same half-turn. `complement` is that half-turn.
 `saturate` and `desaturate` push saturation to its extremes, and `lighten` and `darken`
 move lightness by a fraction. On `Hsv`, `tint`, `shade` and `tone` mix toward white,
 toward black, or both.
+
+A hue is a point on a circle rather than a quantity, so a rotation always lands back in
+the range the eye reads as a color: turning past a full circle, or backwards past zero,
+wraps round.
+
+```scala
+tomato.rotate((-30).deg).hue.degrees   // 339.1, never negative
+```
 
 ### Perceptual distance
 
@@ -115,7 +176,7 @@ CIELAB exists so that the distance between two colors matches how different they
 `delta` gives that distance:
 
 ```scala
-WebColors.DeepPink.in[Cielab].delta(WebColors.Tomato.in[Cielab])
+WebColors.DeepPink.to[Cielab].delta(WebColors.Tomato.to[Cielab])
 ```
 
 A small delta means two colors are hard to tell apart; a large one means they contrast.
@@ -146,5 +207,29 @@ conversion within its scope uses it, and none has to name it:
 ```scala
 given Colorimetry = colorimetry.incandescentTungsten
 
-WebColors.Ivory.in[Cielab]   // computed for tungsten light
+WebColors.Ivory.to[Cielab]   // computed for tungsten light
 ```
+
+### Pixel layouts
+
+A colour on screen is not usually a triple of doubles but a packed integer, and how it is packed
+varies: eight bits per channel with or without alpha, five-six-five for a 16-bit display, ten bits
+per channel for high dynamic range, a single channel for greyscale. A *layout* states that packing
+as a tuple of channel types, most significant first, and the compiler works out the rest:
+
+```scala
+type Rgb565 = (Red[5], Green[6], Blue[5])
+
+compiletime.constValue[Channel.TotalBits[Rgb]]      // 24
+summon[Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
+summon[Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+```
+
+Each channel's shift and mask follow from its position in the tuple, computed as the code
+compiles, so reading a channel from a packed pixel is a single shift-and-mask instruction with no
+runtime dispatch. A `Pixel[layout]` is an unboxed integer carrying the packed value, and converts
+to and from `Chroma`, `Srgb` and `Cmyk` exactly where its layout supports it — a layout with no
+alpha channel has no alpha to read.
+
+This is what [images](images.md) use to give a raster typed pixel access, and it is where a
+colour computed in one of the perceptual spaces above ends up when it reaches a screen.

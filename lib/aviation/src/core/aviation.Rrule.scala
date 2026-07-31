@@ -77,8 +77,7 @@ object Rrule:
     ( using order: Ordering[point] )
   :   Chain[point] =
 
-    val capped = until.lay(stream): limit =>
-      stream.takeWhile(!order.gt(_, limit))
+    val capped = until.lay(stream): limit => stream.takeWhile(!order.gt(_, limit))
 
     count.lay(capped)(capped.take)
 
@@ -91,8 +90,7 @@ object Rrule:
   private def code(weekday: Weekday): Text = weekdayCodes.stdlib(weekday.ordinal)
 
   private def renderDay(entry: WeekdayOrdinal): Text =
-    entry.ordinal.lay(code(entry.weekday)): ordinal =>
-      t"$ordinal${code(entry.weekday)}"
+    entry.ordinal.lay(code(entry.weekday)): ordinal => t"$ordinal${code(entry.weekday)}"
 
   given encodable: [point: Encodable in Text] => Rrule[point] is Encodable in Text = rule =>
     def part(condition: Boolean, text: => Text): List[Text] =

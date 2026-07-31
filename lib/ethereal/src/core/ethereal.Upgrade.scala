@@ -98,8 +98,7 @@ object Upgrade:
         val name: Text = System.properties.ethereal.name[Text]()
 
         val dataHome: Path on Linux =
-          if isWindows then Directories.cacheHome[Path on Linux]
-          else Xdg.dataHome[Path on Linux]
+          if isWindows then Directories.cacheHome[Path on Linux] else Xdg.dataHome[Path on Linux]
 
         val pendingDir: Path on Linux = dataHome/name
         pendingDir.create[Directory](CreateFlag.Parents, CreateFlag.Replace)

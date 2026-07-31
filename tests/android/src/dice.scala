@@ -55,7 +55,7 @@ class DiceActivity extends Activity:
     // Each roll advances the hue by the golden angle; iridescence converts HSV to sRGB, and
     // the platform packs the channels.
     def dieColor(roll: Int): Int =
-      val srgb = Hsv((roll*0.381966) % 1.0, 0.65, 0.75).to[Srgb]
+      val srgb = Hsv(Angle.turns(roll*0.381966).principal, 0.65, 0.75).to[Srgb]
 
       android.graphics.Color.rgb
         ((srgb.red*255).toInt, (srgb.green*255).toInt, (srgb.blue*255).toInt)

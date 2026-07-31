@@ -79,6 +79,25 @@ case class Latitude(degrees: Double)
 given Latitude is Randomizable = summon[Double is Randomizable].map(d => Latitude(d % 90))
 ```
 
+Where field-by-field generation *is* right, an instance derives from the type, so a case class of
+randomizable fields is randomizable and a sealed hierarchy picks among its variants — which is
+what property-based [testing](testing.md) needs to generate values of an arbitrary type.
+
+### Reproducing a run
+
+A failing randomized test is worth nothing if it cannot be run again. Under
+`seededRandomization` the whole scope is a function of its `Seed`, so recording the seed of a
+failing run and supplying it again reproduces exactly the same values — including the sizes of
+generated collections, which are drawn from the same generator:
+
+```scala
+Seed(42L).stochastic:
+  arbitrary[List[Int]]()
+```
+
+Nesting is deterministic too: a scope's generator is derived from its enclosing one, so restoring
+the outer seed restores the inner sequence.
+
 ### Shuffling and coin-tosses
 
 A `Random` in scope also shuffles a sequence and answers a fair coin-toss, the small conveniences

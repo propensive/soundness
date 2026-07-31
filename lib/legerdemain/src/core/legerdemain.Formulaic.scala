@@ -78,7 +78,6 @@ object Formulaic extends ProductDerivable[Formulaic]:
 
       List(Fieldset(Legend(legend): Html of Flow, Fragment(content*): Html of Flow))
 
-
 trait Formulaic extends Typeclass:
   def fields
     ( pointer:     Pointer,

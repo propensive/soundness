@@ -46,4 +46,4 @@ object LspError:
     case Reason.InvalidParams => m"the parameters were not valid for the requested method"
 
 case class LspError(reason: LspError.Reason)(using Diagnostics)
-extends Error(631, reason.number)(m"the LSP operation failed because $reason")
+extends Error(147, reason.number)(m"the LSP operation failed because $reason")

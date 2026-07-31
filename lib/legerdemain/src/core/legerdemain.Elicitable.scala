@@ -67,7 +67,6 @@ object Elicitable extends Elicitable2:
           List.from(enumerable.values.toSeq.map(enumerable.name(_))),
           value )
 
-
   given reference: [entity <: Entity: {Listable, Showable, Referenceable}]
   =>  entity.Operand is Encodable in Text
   =>  Reference[entity] is Elicitable:

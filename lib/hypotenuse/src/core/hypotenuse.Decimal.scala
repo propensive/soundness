@@ -125,8 +125,7 @@ object decimalInternal:
       var point = false
       var bad = false
 
-      while index < length && !bad
-          && (input.charAt(index).isDigit || input.charAt(index) == '.') do
+      while index < length && !bad && (input.charAt(index).isDigit || input.charAt(index) == '.') do
         if input.charAt(index) == '.' then
           if point then bad = true else point = true
         else

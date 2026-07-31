@@ -173,9 +173,7 @@ object LayeredDagDiagram:
 
       val width: Int =
         val cols = layouts.iterator.flatMap: lay =>
-          lay.state.keys.iterator ++
-            lay.nodeCol.values.iterator ++
-            lay.prevNodeCol.values.iterator
+          lay.state.keys.iterator ++ lay.nodeCol.values.iterator ++ lay.prevNodeCol.values.iterator
 
         cols.maxOption.fold(1)(_ + 1)
 
@@ -240,9 +238,7 @@ object LayeredDagDiagram:
     val nodeColSet = layout.nodeCol.values.to(Set)
 
     (0 until width).map: c =>
-      if nodeColSet(c) then Node
-      else if layout.continuing.contains(c) then Vertical
-      else Space
+      if nodeColSet(c) then Node else if layout.continuing.contains(c) then Vertical else Space
 
     . to(List)
 

@@ -46,7 +46,6 @@ object PublicKey:
 
   given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes
 
-
 case class PublicKey[cipher <: Cipher](bytes: Data):
   def verify[encodable: Encodable in Data](value: encodable, signature: Signature[cipher])
     ( using algorithm: cipher & Signing, erased weakness: ProcessingPermit[Weakness[cipher]] )

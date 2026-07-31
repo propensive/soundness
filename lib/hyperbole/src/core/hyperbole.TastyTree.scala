@@ -69,7 +69,6 @@ object TastyTree:
 
     . stdlib.to(List)
 
-
   given teletypeable: (palette: TastyPalette) => TastyTree is Teletypeable =
     tastyTree =>
 
@@ -95,7 +94,6 @@ object TastyTree:
       . grid(10000)
       . render
       . join(e"\n")
-
 
 case class TastyTree
   ( tag:          Char,

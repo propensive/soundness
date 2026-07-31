@@ -364,8 +364,7 @@ private[cataclysm] object SelectorParser:
       ws()
       eat(')')
 
-      if element then Simple.PseudoElement(name, argument)
-      else Simple.PseudoClass(name, argument)
+      if element then Simple.PseudoElement(name, argument) else Simple.PseudoClass(name, argument)
 
     private def pseudoArgument(name: Text): PseudoArgument =
       val key: String = name.s.toLowerCase.nn
@@ -410,8 +409,7 @@ private[cataclysm] object SelectorParser:
         if datum == 'n' || datum == 'N' then
           nTerm(sign, digits)
         else
-          digits.lay(unexpected()): value =>
-            (0, sign*value)
+          digits.lay(unexpected()): value => (0, sign*value)
 
     private def nTerm(sign: Int, digits: Optional[Int]): (Int, Int) =
       cursor.advance()
@@ -429,9 +427,7 @@ private[cataclysm] object SelectorParser:
     private def signOpt(): Int =
       val datum = cursor.peek
 
-      if datum == '+' then advanceValue(1)
-      else if datum == '-' then advanceValue(-1)
-      else 1
+      if datum == '+' then advanceValue(1) else if datum == '-' then advanceValue(-1) else 1
 
     private def advanceValue(value: Int): Int =
       cursor.advance()

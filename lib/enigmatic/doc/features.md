@@ -1,5 +1,8 @@
 - symmetric encryption with AES
 - asymmetric encryption/decryption using RSA
-- signing with DSA
-- AES, RSA and DSA key generation
+- signing with RSA, ECDSA and DSA
+- AES, RSA, ECDSA and DSA key generation
 - calculation of HMACs for SHA-256, SHA-1 and MD5
+- an ASN.1 value model with a canonical DER encoder and a strict DER decoder
+- byte-exact round-tripping of X.509 certificates, PKCS#10 requests and other DER content
+- generation of self-signed X.509 certificates, with v3 extensions

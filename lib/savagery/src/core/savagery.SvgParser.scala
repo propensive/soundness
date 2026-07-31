@@ -56,7 +56,6 @@ object SvgParser:
     nodes.stdlib.collectFirst { case e: Element if e.label == t"svg" => e }.getOrElse:
       abort(SvgError(SvgError.Reason.NotAnSvg(t"<missing>")))
 
-
   def rootElement(xml: Xml)(using Tactic[SvgError]): Element = xml match
     case e: Element if e.label == t"svg" => e
     case Fragment(nodes*)                => findSvg(nodes.to(List))
@@ -64,11 +63,9 @@ object SvgParser:
     case other =>
       abort(SvgError(SvgError.Reason.NotAnSvg(labelOf(other))))
 
-
   private def numAttr(elem: Element, name: Text, default: Float = 0.0f): Float =
     elem.attributes.at(name).let: text => safely(text.as[Double].toFloat).or(default)
     . or(default)
-
 
   def decodeSvg(elem: Element)(using Tactic[SvgError]): Svg =
     val width = numAttr(elem, t"width")
@@ -95,7 +92,6 @@ object SvgParser:
     walk(elem)
     Svg(width, height, List.of(defs.toList), List.of(figures.toList))
 
-
   private def decodeFigure(elem: Element)(using Tactic[SvgError]): Optional[Figure] =
     elem.label match
       case t"rect"    => decodeRectangle(elem)
@@ -104,13 +100,11 @@ object SvgParser:
       case t"path"    => decodePath(elem)
       case _          => Unset
 
-
   private def decodeRectangle(elem: Element): Rectangle =
     Rectangle
       ( Point(numAttr(elem, t"x"), numAttr(elem, t"y")),
        numAttr(elem, t"width"),
        numAttr(elem, t"height") )
-
 
   private def decodeCircle(elem: Element): Ellipse =
     val cx = numAttr(elem, t"cx")
@@ -118,14 +112,12 @@ object SvgParser:
     val r = numAttr(elem, t"r")
     Ellipse(Point(cx, cy), r, r, Angle(0))
 
-
   private def decodeEllipse(elem: Element): Ellipse =
     val cx = numAttr(elem, t"cx")
     val cy = numAttr(elem, t"cy")
     val rx = numAttr(elem, t"rx")
     val ry = numAttr(elem, t"ry")
     Ellipse(Point(cx, cy), rx, ry, Angle(0))
-
 
   private def decodePath(elem: Element)(using Tactic[SvgError]): Outline =
     val d = elem.attributes.at(t"d").or(t"")
@@ -167,7 +159,6 @@ object SvgParser:
     val offset: 0.0 ~ 1.0 = NumericRange.apply[0.0, 1.0](clamped)
     val colorText = elem.attributes.at(t"stop-color").or(t"#000000")
     Stop(offset, parseColor(colorText))
-
 
   // SVG path-data tokeniser + dispatcher. Supports M/m, L/l, H/h, V/v, C/c, Q/q, Z/z.
   // Absolute H/V are converted to relative shifts (lossy — Savagery has no
@@ -290,7 +281,6 @@ object SvgParser:
 
     List.of(ops.toList)
 
-
   // Transform list parser. Recognises translate/scale/rotate/skewX/skewY/matrix.
   // Unknown function names are silently skipped.
   private def parseTransforms(t: Text): List[Transform] =
@@ -367,7 +357,6 @@ object SvgParser:
           if pos == nameStart then pos += 1 // avoid infinite loop on stray punctuation
 
     List.of(xs.toList)
-
 
   // Color parser: handles #rgb, #rrggbb, rgb(r,g,b), and a few named colours.
   private def parseColor(c: Text)(using Tactic[SvgError]): Color in Srgb =

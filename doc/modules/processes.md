@@ -75,6 +75,28 @@ and read exactly as a single command:
 (sh"echo 'Hello world'" | sh"sed s/e/a/g").exec[Text]().trim   // t"Hallo world"
 ```
 
+Pipelines flatten rather than nest, so a three-stage pipeline is one pipeline of three commands
+however it was assembled, and a pipeline piped into a command extends it:
+
+```scala
+(sh"echo a" | sh"cat" | sh"wc").commands.length   // 3
+```
+
+### Commands inside commands
+
+A command substituted into another is escaped as a single argument, which is what invoking a shell
+requires and what hand-built command strings get wrong:
+
+```scala
+val inner = sh"echo 'Hello world'"
+sh"sh -c '$inner'".exec[Text]().trim   // t"Hello world"
+
+Command(t"echo", t"a b").escape        // t"'echo' 'a b'"
+```
+
+An argument containing a space, a quote or a metacharacter is therefore carried through
+untouched — there is no point at which it becomes a string a shell might re-split.
+
 ### Forking
 
 `fork` starts the command without waiting, returning a `Job` that can be awaited for its result,
@@ -84,8 +106,37 @@ inspected, or stopped:
 val job = sh"sleep 5".fork[Unit]()
 job.alive        // true
 job.abort()      // ask it to stop
+job.kill()       // insist
 job.await()      // block for the result
 ```
+
+`exec` blocks until the command finishes; `fork` returns as soon as it has started, which is the
+whole difference between the two. A `Job` also exposes the operating-system process behind it —
+its `pid`, and the process object itself — for the occasions where a signal must be sent or a
+process tree inspected:
+
+```scala
+job.pid          // Pid(…), rendered as ↯1234
+job.process      // the underlying OS process
+```
+
+A `Pid` is a distinct type rather than a number, so it cannot be confused with an exit code or a
+file descriptor, and it renders and parses in its own form.
+
+### Failure
+
+A command that cannot be run at all — a missing binary, a directory that is not executable —
+raises an `ExecError` carrying the command that failed, so the error names what was attempted
+rather than reporting an operating-system errno:
+
+```scala
+capture[ExecError](sh"no-such-binary".exec[Text]()).command.arguments.head
+// t"no-such-binary"
+```
+
+A command that runs and *fails* is a different matter: its exit status is part of its result, and
+what a non-zero status means is the caller's decision. Asking for an `Exit` gives the status
+itself; asking for a `Text` or a stream gives the output, with the status available alongside.
 
 ### An implied output type
 

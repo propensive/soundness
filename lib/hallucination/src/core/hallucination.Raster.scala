@@ -155,12 +155,10 @@ object Raster:
     def width(raster: Raster): Int = raster.width
     def height(raster: Raster): Int = raster.height
 
-
   given aggregable: [format: Rasterizable as rasterizable] => (tactic: Tactic[RasterError])
   =>  ( ((Raster in format) is Aggregable by Data)^{tactic} ) =
 
     rasterizable.read(_)
-
 
   given aggregable2: (tactic: Tactic[RasterError])
   =>  ( (Raster is Aggregable by Data)^{tactic} ) = Raster(_)
@@ -191,8 +189,7 @@ extends Formal, Operable:
   def to[format: Rasterizable]: Raster in format = asInstanceOf[Raster in format]
 
   def crop(left: Int = 0, bottom: Int = 0, top: Int = 0, right: Int = 0): Raster =
-    remap(width - left - right, height - top - bottom): (x, y) =>
-      (x + left, y + top)
+    remap(width - left - right, height - top - bottom): (x, y) => (x + left, y + top)
 
   def flipX: Raster = remap(width, height): (x, y) => (width - 1 - x, y)
   def flipY: Raster = remap(width, height): (x, y) => (x, height - 1 - y)
@@ -216,32 +213,28 @@ extends Formal, Operable:
       case buffer: scala.Array[Byte] =>
         val buffer2 = new scala.Array[Byte](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
       case buffer: scala.Array[Short] =>
         val buffer2 = new scala.Array[Short](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
       case buffer: scala.Array[Int] =>
         val buffer2 = new scala.Array[Int](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 
       case buffer: scala.Array[Long] =>
         val buffer2 = new scala.Array[Long](width2*height2)
 
-        Raster.fill(width2, height2): (x, y, index2) =>
-          buffer2(index2) = buffer(index(x, y))
+        Raster.fill(width2, height2): (x, y, index2) => buffer2(index2) = buffer(index(x, y))
 
         new Raster(width2, height2, buffer2, descriptor)
 

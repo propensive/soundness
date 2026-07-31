@@ -49,6 +49,20 @@ object ScanAll:
 
     . toList
 
+    // Mechanical-fix mode for SN-247: emit, for every flagged site, the raw
+    // byte region `[start, end)` and the one-line rendering the checker
+    // measured — a driver substitutes exactly that string, so the joined
+    // form is byte-for-byte what was width-checked.
+    if ruleFilter == Some("--fix-247") then
+      files.foreach: path =>
+        val text           = Files.readString(path).nn
+        val (tree, source) = Parsing.parse(path.toString, text)
+
+        Necessity.extract(tree, source, text).foreach: site =>
+          println(s"${path}\t${site.start}\t${site.end}\t${site.rendering}")
+
+      return
+
     files.foreach: path =>
       val s    = path.toString
       val text = Files.readString(path).nn

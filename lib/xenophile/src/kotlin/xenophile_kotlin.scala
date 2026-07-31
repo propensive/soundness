@@ -43,7 +43,8 @@ transparent inline def companion[kotlinType]: Any = ${KotlinFacade.companion[kot
 // The facade of a Kotlin `object` singleton: `singleton[Typography].quote`.
 transparent inline def singleton[kotlinType]: Any = ${KotlinFacade.singleton[kotlinType]}
 
-// The facade of an `enum class` entry: `entry[RegexOption](t"IGNORE_CASE")`.
-transparent inline def entry[kotlinType](inline name: String): Any =
-  ${KotlinFacade.entry[kotlinType]('name)}
-
+// The facade of an `enum class` entry: `enumEntry[RegexOption](t"IGNORE_CASE")`. Not `entry`:
+// that name is already exported into the `soundness` package by galilei, and a wildcard
+// `import soundness.*` would resolve the collision by classpath order.
+transparent inline def enumEntry[kotlinType](inline name: String): Any =
+  ${KotlinFacade.enumEntry[kotlinType]('name)}

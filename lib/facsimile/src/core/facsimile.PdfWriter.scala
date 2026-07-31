@@ -175,8 +175,7 @@ private[facsimile] object PdfWriter:
       // The writer thunks share only this append pass's own accumulators.
       scala.caps.unsafe.unsafeAssumeSeparate(appendObject(pdf, raw, ascii, value))
 
-    pdf.xref.startxref.let: previous =>
-      ascii(t" /Prev $previous")
+    pdf.xref.startxref.let: previous => ascii(t" /Prev $previous")
 
     ascii(t" >>\nstartxref\n$xrefOffset\n%%EOF\n")
 

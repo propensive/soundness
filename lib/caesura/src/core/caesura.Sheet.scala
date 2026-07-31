@@ -61,7 +61,6 @@ object Sheet:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
-
   given abstractable: (CharEncoder, DsvFormat)
   =>  Sheet is Abstractable across HttpStreams to HttpStreams.Content =
 
@@ -80,7 +79,6 @@ object Sheet:
           dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
 
         (mediaType, HttpStreams.Body(stream.toProgression.iterator))
-
 
   given tabular: Sheet is Tabular[Text]:
     type Element = Dsv
@@ -123,7 +121,6 @@ object Sheet:
   given showable: DsvFormat => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text over Credit = sheet =>
     Stream(sheet.rows.iterator.map(_.show+t"\n"))
-
 
   // Parse rows from a pull endpoint as a single-consumer iterator, one
   // block-credit refill per chunk. Each call builds a fresh parser over the
@@ -197,7 +194,6 @@ object Sheet:
         val row = pending.or(Iterator.empty.next())
         pending = Unset
         row
-
 
   private[caesura] class Parser(load: () => Optional[Text])
     ( using format: DsvFormat, tactic: Tactic[DsvError] )

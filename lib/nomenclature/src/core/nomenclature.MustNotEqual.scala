@@ -37,7 +37,6 @@ import fulminate.*
 
 object MustNotEqual
 extends Rule
-  ( { text =>
-        if text == "".tt then m"must not be empty" else m"must not equal $text" }, _ != _ )
+  ( { text => if text == "".tt then m"must not be empty" else m"must not equal $text" }, _ != _ )
 
 sealed trait MustNotEqual[text <: Label] extends Check[text]

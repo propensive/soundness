@@ -37,6 +37,8 @@ import javax.crypto as jc, javax.crypto.spec.*
 import proscenium.compat.*
 
 import anticipation.*
+import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
@@ -101,6 +103,110 @@ object JavaStdlibCrypto extends Crypto:
 
       val spec = jss.RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
       Array.unsafeFrozen(keyFactory().generatePublic(spec).nn.getEncoded.nn)
+
+  def rsaSignature(digest: Text): Crypto.SignatureScheme =
+    new Signatory(t"${digest}withRSA", t"RSA"):
+      def generateKeyPair(bits: Int): Data =
+        val generator = js.KeyPairGenerator.getInstance("RSA").nn
+        generator.initialize(bits)
+
+        generator.generateKeyPair().nn.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
+
+      def privateToPublic(privateKey: Data): Data = JavaStdlibCrypto.rsa.privateToPublic(privateKey)
+
+  // ECDSA over a NIST prime curve. The curve is chosen by key size, since `KeyPairGenerator` needs
+  // a curve name rather than a bit count for EC; P-521 really is 521 bits, not 512.
+  def ecdsa(digest: Text): Crypto.SignatureScheme =
+    new Signatory(t"${digest}withECDSA", t"EC"):
+      def generateKeyPair(bits: Int): Data =
+        val curve = bits match
+          case 256 => "secp256r1"
+          case 384 => "secp384r1"
+          case 521 => "secp521r1"
+          case _   => panic(m"there is no NIST prime curve of $bits bits")
+
+        val generator = js.KeyPairGenerator.getInstance("EC").nn
+        generator.initialize(jss.ECGenParameterSpec(curve), js.SecureRandom())
+        val pair = generator.generateKeyPair().nn
+
+        val privateKey = pair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
+        val publicKey = pair.getPublic.nn.getEncoded.nn.immutable(using Unsafe)
+
+        embedPublicKey(privateKey, publicKey)
+
+      def privateToPublic(privateKey: Data): Data = extractPublicKey(privateKey)
+
+  // An EC public key is `d·G`, and recovering it from the scalar `d` needs curve arithmetic that
+  // neither `KeyFactory` nor `BigInteger` will do — and that this module has no business
+  // reimplementing. RFC 5915 provides for the public key to be carried alongside the scalar, in an
+  // optional `[1] EXPLICIT BIT STRING`, which is what OpenSSL emits and what the JDK accepts but
+  // does not itself write. Embedding it at generation makes `privateToPublic` a lookup.
+  //
+  // `PrivateKeyInfo` is `SEQUENCE { version, algorithm, OCTET STRING }`, whose octets hold RFC
+  // 5915's `ECPrivateKey`; `SubjectPublicKeyInfo` is `SEQUENCE { algorithm, BIT STRING }` with the
+  // same `algorithm` field, so no part of it has to be rebuilt.
+  private def embedPublicKey(privateKey: Data, publicKey: Data): Data =
+    val bits = decode(publicKey) match
+      case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
+      case _                                            => panic(m"the EC public key was bad")
+
+    decode(privateKey) match
+      case Asn1.Sequence(List(version, algorithm, Asn1.OctetString(inner))) =>
+        val extended: Asn1 = decode(inner) match
+          case Asn1.Sequence(elements) => Asn1.Sequence(elements :+ Asn1.Tagged(1, true, bits))
+          case _                       => panic(m"the EC private key was not an ECPrivateKey")
+
+        val octets = Asn1.OctetString(extended.in[Der].data)
+        val info: Asn1 = Asn1.Sequence(List(version, algorithm, octets))
+
+        info.in[Der].data
+
+      case _ => panic(m"the EC private key was not a PrivateKeyInfo")
+
+  private def extractPublicKey(privateKey: Data): Data =
+    decode(privateKey) match
+      case Asn1.Sequence(List(_, algorithm, Asn1.OctetString(inner))) =>
+        val bits = decode(inner) match
+          case Asn1.Sequence(elements) => elements.collectFirst:
+            case Asn1.Tagged(1, true, bits: Asn1.BitString) => bits
+
+          case _ => None
+
+        bits match
+          case Some(bits) =>
+            val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
+            info.in[Der].data
+
+          case None =>
+            panic(m"the EC private key carried no public key")
+
+      case _ => panic(m"the EC private key was not a PrivateKeyInfo")
+
+  // Key material this module generated itself; a failure to parse it back is a defect, not an
+  // input error.
+  private def decode(data: Data): Asn1 = unsafely(Der(data).as[Asn1])
+
+  // The shared shape of the two digest-parameterized signature schemes: a JCE `Signature`
+  // transformation and a `KeyFactory` for the key algorithm. Key generation and public-key
+  // recovery differ per algorithm and are left abstract.
+  private abstract class Signatory(transformation: Text, algorithm: Text)
+  extends Crypto.SignatureScheme:
+    private def instance(): js.Signature = js.Signature.getInstance(transformation.s).nn
+    private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance(algorithm.s).nn
+
+    def sign(data: Data, privateKey: Data): Data =
+      val sig = instance()
+      sig.initSign(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey))))
+      sig.update(Array.unsafeJvm(data))
+
+      sig.sign().nn.immutable(using Unsafe)
+
+    def verify(data: Data, signature0: Data, publicKey: Data): Boolean =
+      val sig = instance()
+      sig.initVerify(keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey))))
+      sig.update(Array.unsafeJvm(data))
+
+      sig.verify(Array.unsafeJvm(signature0))
 
   def dsa: Crypto.SignatureScheme = new Crypto.SignatureScheme:
     private def signature(): js.Signature = js.Signature.getInstance("DSA").nn

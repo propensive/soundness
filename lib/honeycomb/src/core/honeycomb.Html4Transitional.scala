@@ -318,7 +318,6 @@ object Html4Transitional:
   given vspace: ("vspace" is Attribute on "applet" | "img" | "object" of PositiveInt) = attribute()
   given nowrap: ("nowrap" is Attribute on "td" | "th" of Presence) = attribute()
 
-
 class Html4Transitional() extends Dom:
   import Html4Transitional.*
 
@@ -361,7 +360,6 @@ class Html4Transitional() extends Dom:
       parent.admissible.has(child.label) || insertable(parent).exists(recur(_))
 
     insertable(parent).stdlib.find(recur(_)).optional
-
 
   // Elements
   val A = Tag.transparent["a", "", Html4Transitional]()

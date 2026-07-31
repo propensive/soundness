@@ -514,20 +514,17 @@ def monotonic()(using clock: MonotonicClock): Instant over Monotonic = clock()
 def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
   (now() in timezone).date
 
-
 given base60Extractable: [text <: Text] => (Text is Extractable to Int)
 =>  text is Extractable to Base60 =
 
   case As[Int](value: Base60) => value
   case _                      => Unset
 
-
 given base24Extractable: [text <: Text] => (Text is Extractable to Int)
 =>  text is Extractable to Base24 =
 
   case As[Int](value: Base24) => value
   case _                      => Unset
-
 
 object TimeEvent:
   given communicable: TimeEvent is Communicable =

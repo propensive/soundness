@@ -300,7 +300,6 @@ object internal:
 
       }
 
-
   // The type lambda `[result] => (Tactic[E1], …, Tactic[En]) ?=> result` capturing the handled
   // error types of a `recover`/`mitigate`/`accrue` handler, so `.protect` injects one tactic each.
   private def tacticLambda(using Quotes)(handler: Expr[PartialFunction[Exception, Any]])
@@ -484,8 +483,7 @@ object internal:
           try Right:
             $ {
                 val tactics =
-                  cases.map: (_, _) =>
-                    '{acc}.asTerm
+                  cases.map: (_, _) => '{acc}.asTerm
 
                 val contextTypeRepr = TypeRepr.of[context[result]]
                 val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head

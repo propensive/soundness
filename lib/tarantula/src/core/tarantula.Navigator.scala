@@ -53,7 +53,6 @@ trait Navigator(name: Text):
   def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^
   def stop(server: Server)(using (HttpEvent is Loggable)^, (ExecEvent is Loggable)^): Unit
 
-
   // Explicit `using` evidence instead of stacked `logs` sugar: the fresh `Server` capability
   // bound in the body cannot cross the nested context-function results the sugar desugars to
   // (the stacked-raises convention; see rep/DECISIONS.md).

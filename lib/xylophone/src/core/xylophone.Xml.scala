@@ -1791,7 +1791,6 @@ object Xml extends Tag.Container
       writeXml(producer, formatting, node, 0)
       if formatting.trailingNewline then producer.put("\n")
 
-
   private enum Token:
     case Close, Comment, Empty, Open, Header, Cdata, Pi, Doctype
 
@@ -1813,12 +1812,10 @@ object Xml extends Tag.Container
   given string: [label >: "#text" <: Label] => Conversion[String, Xml of label] =
     string => TextNode(string.tt).of[label]
 
-
   given conversion3: [label <: Label, content >: label <: Label]
   =>  Conversion[Xml of label, Xml of content] =
 
     _.of[content]
-
 
   given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
     _.of[content]

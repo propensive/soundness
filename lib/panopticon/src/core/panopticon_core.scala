@@ -48,8 +48,7 @@ extension [value](value: value)
     ( lambdas: ((Optic from value onto value) ->{C} value ->{C} value)* )
   :   value =
 
-    lambdas.foldLeft(value): (value, lambda) =>
-      lambda(Optic.identity)(value)
+    lambdas.foldLeft(value): (value, lambda) => lambda(Optic.identity)(value)
 
 extension [value](left: value)
   def compose[operand, result](right: operand^)

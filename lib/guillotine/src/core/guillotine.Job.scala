@@ -60,7 +60,6 @@ object Job:
 
     (process, stream) => process.stdin(stream)
 
-
   given writableText: [command <: Label, result, job <: Job[command, result]^]
   =>  (streamCut: Emit[StreamError])
   =>  ((job is Writable by Text)^{streamCut}) =
@@ -69,7 +68,6 @@ object Job:
       process.stdin
         ( stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]
           . via(hieroglyph.CharEncoder.system).asInstanceOf[(Stream[Data] over Credit)^] )
-
 
 // A `Job` is a *capability*: it is the live handle to a running subprocess (its streams and
 // its lifecycle), tracked fresh from `fork()`. `Exclusive` because a subprocess's stdio has

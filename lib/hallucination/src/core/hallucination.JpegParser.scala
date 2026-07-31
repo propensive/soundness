@@ -267,8 +267,7 @@ private[hallucination] object JpegParser:
     val successiveLow = approximation & 0x0f
 
     if frame.coding == JpegCoding.Progressive then
-      if spectralEnd > 63 || spectralStart > spectralEnd ||
-        (spectralStart == 0 && spectralEnd != 0)
+      if spectralEnd > 63 || spectralStart > spectralEnd || (spectralStart == 0 && spectralEnd != 0)
       then bad()
 
       if spectralStart != 0 && componentCount != 1 then bad()

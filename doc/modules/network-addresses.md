@@ -37,7 +37,7 @@ as typed members:
 ```scala
 url"https://example.com:8080/path?query=1#top"
 
-t"https://example.com/".decode[HttpUrl]
+t"https://example.com/".as[HttpUrl]
 ```
 
 A hole in the interpolator substitutes a value in the right place — a number becomes the port, a text
@@ -65,12 +65,12 @@ ip"192.168.0.0.0.1"   // does not compile: too many groups
 
 ### Email addresses
 
-An email address is written with `email"…"` and parsed from text with `decode`, validated against the
+An email address is written with `email"…"` and parsed from text with `as`, validated against the
 rules for a well-formed address:
 
 ```scala
 email"test@example.com"
-t"simple@example.com".decode[EmailAddress]
+t"simple@example.com".as[EmailAddress]
 ```
 
 ### Ports
@@ -86,6 +86,47 @@ tcp"443"
 
 An unused ephemeral port is obtained from the operating system with `Port[Tcp]()`.
 
+### Subnets
+
+A subnet is written with its prefix length, and checked as the code compiles. Host bits below the
+prefix are masked away, so a subnet written carelessly is corrected rather than misinterpreted:
+
+```scala
+subnet"192.168.0.0/24"
+subnet"255.123.143.0/12".show   // t"255.112.0.0/12" — the host bits masked
+subnet"2001:db8::/32"
+```
+
+A subnet answers whether an address falls within it, which is what an access rule or a
+routing decision needs, and it is a value rather than a pair of strings to compare by hand.
+
+### Named services
+
+The well-known services have names, and those names are checked against the service registry —
+including which transport each is registered for. Asking for a service over the wrong transport
+does not compile:
+
+```scala
+tcp"smtp"      // Port[Tcp](25)
+udp"docker"    // does not compile: Docker is registered over TCP
+```
+
+### Interfaces and ephemeral ports
+
+The machine's own network interfaces enumerate as typed values, each reporting whether it is a
+loopback, and each addressable by name:
+
+```scala
+import urticose.NetworkInterface
+
+NetworkInterface.all()
+NetworkInterface.all().exists(_.loopback)
+```
+
+`Port[Tcp]()` with no number allocates an unused port, which is what a test server or a
+dynamically-bound service needs — and the port it returns is one that can actually be bound,
+rather than a guess that may race with another process.
+
 ### MAC addresses
 
 A MAC address is written with `mac"…"` and decoded from text, validated as six hexadecimal groups:
@@ -96,7 +137,7 @@ mac"01-23-45-ab-cd-ef"
 
 ### Parsing at runtime
 
-Every identifier that has a literal form also decodes from text with `decode`, naming the target type.
+Every identifier that has a literal form also decodes from text with `as`, naming the target type.
 A value that does not conform raises a typed error — an `HostnameError`, an `IpAddressError`, an
 `EmailAddressError` — that names precisely what was wrong, so a program validating user input can
 report the fault rather than merely rejecting the value.

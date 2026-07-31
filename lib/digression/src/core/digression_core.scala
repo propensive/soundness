@@ -32,8 +32,11 @@
                                                                                                   */
 package digression
 
-
-extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
+// The resolver is taken here, rather than summoned inside `StackTrace`, so that it is the
+// caller's scope which decides whether frames are resolved; summoning it any deeper would find
+// only the default, and silently do nothing.
+extension (error: Throwable)
+  def stackTrace(using StackTrace.Resolver): StackTrace = StackTrace(error)
 
 extension (inline context: StringContext)
   inline def fqcn(): Fqcn = ${digression.internal.fqcn('context)}

@@ -81,7 +81,6 @@ trait Yaml2:
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_))
         . or(Yaml.ast(Yaml.Ast(Unset)))
 
-
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( tactic: Tactic[YamlError] )
   =>  ( decodable: => (inner is Decodable in Yaml)^ )
@@ -90,7 +89,6 @@ trait Yaml2:
     // the by-name inner codec (every given that includes a tactic is a capability;
     // Jon, 2026-07-12).
     yaml => if yaml.root == Unset then Unset else decodable.decoded(yaml)
-
 
   // See `decodeMapping`: the `Tactic` is summoned at the SAM and passed to a stable helper, rather
   // than re-summoned via `provide` inside the SAM (which would capture the `yaml` parameter).
@@ -896,8 +894,7 @@ object Yaml extends Yaml2, Dynamic:
         while i < xs.length do
           val item = xs(i).asInstanceOf[AnyRef]
 
-          if !(item eq arrayPad) then
-            h = h*31 + deepHash(xs(i).asInstanceOf[Yaml.Ast])
+          if !(item eq arrayPad) then h = h*31 + deepHash(xs(i).asInstanceOf[Yaml.Ast])
 
           i += 1
 
@@ -997,12 +994,10 @@ object Yaml extends Yaml2, Dynamic:
           expected(YamlPrimitive.Decimal) yet jacinta.Bcd(BigDecimal(0))
 
       def string(using Tactic[YamlError]): Text =
-        if isString then yaml.asInstanceOf[String].tt
-        else expected(YamlPrimitive.Str) yet t""
+        if isString then yaml.asInstanceOf[String].tt else expected(YamlPrimitive.Str) yet t""
 
       def boolean(using Tactic[YamlError]): Boolean =
-        if isBoolean then yaml.asInstanceOf[Boolean]
-        else expected(YamlPrimitive.Bool) yet false
+        if isBoolean then yaml.asInstanceOf[Boolean] else expected(YamlPrimitive.Bool) yet false
 
       def primitive: YamlPrimitive = Yaml.primitive(yaml)
 
@@ -1270,8 +1265,7 @@ object Yaml extends Yaml2, Dynamic:
 
   given unit: (tactic: Tactic[YamlError])
   =>  ((Unit is Decodable in Yaml)^{tactic}) = yaml =>
-    if yaml.root.isNull then ()
-    else primitiveFault(yaml, YamlPrimitive.Null, ())
+    if yaml.root.isNull then () else primitiveFault(yaml, YamlPrimitive.Null, ())
 
   // Alias counterparts of `iterable`/`iterableEncodable`: the opaque prelude
   // collections do not conform to `Iterable`, so each alias gets its own
@@ -1314,8 +1308,7 @@ object Yaml extends Yaml2, Dynamic:
           val n = xs.length
 
           val effective =
-            if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then n - 1
-            else n
+            if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then n - 1 else n
 
           val builder = factory.newBuilder
           var i = 0
@@ -1378,8 +1371,7 @@ object Yaml extends Yaml2, Dynamic:
           Map.empty
 
   given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
-    if yaml.root.isAbsent || yaml.root.isNull then None
-    else Some(value.decoded(yaml))
+    if yaml.root.isAbsent || yaml.root.isNull then None else Some(value.decoded(yaml))
 
   // ── Encodable givens ────────────────────────────────────────────────────
 
@@ -1393,7 +1385,6 @@ object Yaml extends Yaml2, Dynamic:
       def encoded(value: Option[value]): Yaml = value match
         case None        => Yaml.ast(Yaml.Ast(Unset))
         case Some(value) => encodable.encode(value)
-
 
   given integralEncodable: [integral: Integral] => integral is Encodable in Yaml =
     int => Yaml.ast(Yaml.Ast(integral.toLong(int)))
@@ -1435,7 +1426,6 @@ object Yaml extends Yaml2, Dynamic:
       val items = Array.from(values.map(encodable.encode(_).root))
       Yaml.ast(Yaml.Ast.Sequence(items))
 
-
   given mapEncodable: [key: Encodable in Text, element]
   =>  ( encodable: (element is Encodable in Yaml)^ )
   =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
@@ -1449,7 +1439,6 @@ object Yaml extends Yaml2, Dynamic:
       i += 1
 
     Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))
-
 
   // ── Discriminator support for sum-type derivation ───────────────────────
 
@@ -1546,7 +1535,6 @@ object Yaml extends Yaml2, Dynamic:
               Yaml.ast(Yaml.Ast.mapFromAnyArray(Array.freeze(arr)))
 
           case _ => yaml
-
 
   // ── Parser entry-points ─────────────────────────────────────────────────
 
@@ -2231,11 +2219,9 @@ object Yaml extends Yaml2, Dynamic:
       val sawDirectives = parseDirectivesIfAny()
       val explicitStart = consumeOptionalDocumentStart()
 
-      if sawDirectives && !explicitStart then
-        errorAt(Issue.DirectiveWithoutDocumentStart)
+      if sawDirectives && !explicitStart then errorAt(Issue.DirectiveWithoutDocumentStart)
 
-      if explicitStart && more && peek == Hash then
-        while more && peek != Newline do advance()
+      if explicitStart && more && peek == Hash then while more && peek != Newline do advance()
 
       if !explicitStart || (more && peek == Newline) then
         if more && peek == Newline then advance()
@@ -2296,22 +2282,19 @@ object Yaml extends Yaml2, Dynamic:
 
         val explicitStart = consumeOptionalDocumentStart()
 
-        if sawDirectives && !explicitStart then
-          errorAt(Issue.DirectiveWithoutDocumentStart)
+        if sawDirectives && !explicitStart then errorAt(Issue.DirectiveWithoutDocumentStart)
         // After a `...` footer, a bare document (no `---`) is allowed;
         // otherwise every doc beyond the first needs a directives-end
         // marker.
         if
-          !firstDoc && more && !explicitStart && !atDocumentBoundary &&
-            !lastDocEndedWithFooter
+          !firstDoc && more && !explicitStart && !atDocumentBoundary && !lastDocEndedWithFooter
         then errorAt(Issue.MissingDocumentStart)
         // After a `---` marker we may be on the same line as the body;
         // otherwise the body is on a fresh line whose leading whitespace
         // determines the indent. A trailing `# comment` on the marker
         // line is metadata: consume it so the body parses from the next
         // line.
-        if explicitStart && more && peek == Hash then
-          while more && peek != Newline do advance()
+        if explicitStart && more && peek == Hash then while more && peek != Newline do advance()
 
         val sameLineAsMarker = explicitStart && more && peek != Newline
 
@@ -2383,15 +2366,12 @@ object Yaml extends Yaml2, Dynamic:
 
           val explicitStart = consumeOptionalDocumentStart()
 
-          if sawDirectives && !explicitStart then
-            errorAt(Issue.DirectiveWithoutDocumentStart)
+          if sawDirectives && !explicitStart then errorAt(Issue.DirectiveWithoutDocumentStart)
           if
-            !firstDoc && more && !explicitStart && !atDocumentBoundary &&
-              !lastDocEndedWithFooter
+            !firstDoc && more && !explicitStart && !atDocumentBoundary && !lastDocEndedWithFooter
           then errorAt(Issue.MissingDocumentStart)
 
-          if explicitStart && more && peek == Hash then
-            while more && peek != Newline do advance()
+          if explicitStart && more && peek == Hash then while more && peek != Newline do advance()
 
           val sameLineAsMarker = explicitStart && more && peek != Newline
 
@@ -2515,8 +2495,7 @@ object Yaml extends Yaml2, Dynamic:
             val parts = argText.split("\\s+").nn.asInstanceOf[scala.Array[String]]
             if parts.length != 1 then errorAt(Issue.YamlDirectiveTooManyArguments)
 
-            if !parts(0).matches("\\d+\\.\\d+") then
-              errorAt(Issue.YamlDirectiveInvalidVersion)
+            if !parts(0).matches("\\d+\\.\\d+") then errorAt(Issue.YamlDirectiveInvalidVersion)
 
           case "TAG" =>
             val parts = argText.split("\\s+").nn.asInstanceOf[scala.Array[String]]
@@ -2630,8 +2609,7 @@ object Yaml extends Yaml2, Dynamic:
     private update def parseNode(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
       skipSpaces()
 
-      if !more then Yaml.Ast.Null
-      else parseNodeHere(indent)
+      if !more then Yaml.Ast.Null else parseNodeHere(indent)
 
     private update def parseNodeHere(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
       // `prefixesConsumed` and `lastNodeHadAnchor` are parser-wide fields
@@ -2657,8 +2635,7 @@ object Yaml extends Yaml2, Dynamic:
         if hasPrefix && (headByte == Newline || headByte == -1 || headByte == Hash) then
           // A trailing comment after the prefix is line metadata; the
           // value is on the next line.
-          if headByte == Hash then
-            while more && peek != Newline do advance()
+          if headByte == Hash then while more && peek != Newline do advance()
 
           if more && peek == Newline then advance()
           skipBlankAndCommentLines()
@@ -2672,8 +2649,7 @@ object Yaml extends Yaml2, Dynamic:
           lastNodeHadAnchor = false
           val v = pickValueOrNull(blockParentIndent, childIndent, lineStart)
 
-          if !anchorName.nil && lastNodeHadAnchor then
-            errorAt(Issue.TwoAnchorsOnSameNode)
+          if !anchorName.nil && lastNodeHadAnchor then errorAt(Issue.TwoAnchorsOnSameNode)
 
           v
         else if headByte == -1 then
@@ -2891,14 +2867,11 @@ object Yaml extends Yaml2, Dynamic:
             nextByte == Space || nextByte == Tab || nextByte == Newline ||
               nextByte == Return || nextByte == -1
           then
-            if onDocStartLine then
-              errorAt(Issue.BlockMappingOnDocumentStartLine)
+            if onDocStartLine then errorAt(Issue.BlockMappingOnDocumentStartLine)
 
-            if inInlineMappingValue then
-              errorAt(Issue.ChainedMappingValueOnSingleLine)
+            if inInlineMappingValue then errorAt(Issue.ChainedMappingValueOnSingleLine)
 
-            if lastScalarSpannedLines then
-              errorAt(Issue.MultilineImplicitKey)
+            if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
             val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
 
@@ -2967,14 +2940,11 @@ object Yaml extends Yaml2, Dynamic:
       val textValue = readPlainScalarText(indent)
 
       if sawMappingColon then
-        if onDocStartLine then
-          errorAt(Issue.BlockMappingOnDocumentStartLine)
+        if onDocStartLine then errorAt(Issue.BlockMappingOnDocumentStartLine)
 
-        if inInlineMappingValue then
-          errorAt(Issue.ChainedMappingValueOnSingleLine)
+        if inInlineMappingValue then errorAt(Issue.ChainedMappingValueOnSingleLine)
 
-        if lastScalarSpannedLines then
-          errorAt(Issue.MultilineImplicitKey)
+        if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
         // The plain text is the first key of a block mapping. Any tag
         // or anchor read by consumeNodePrefixes belongs to the key, not
         // the mapping.
@@ -3145,9 +3115,7 @@ object Yaml extends Yaml2, Dynamic:
           // leading and trailing per-line whitespace is stripped before
           // folding.
           while
-            stringCursor > 0 &&
-              (chars(stringCursor - 1) == ' ' ||
-                chars(stringCursor - 1) == '\t')
+            stringCursor > 0 && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t')
           do stringCursor -= 1
 
           if newlineCount == 1 then appendChar(' ')
@@ -3261,11 +3229,9 @@ object Yaml extends Yaml2, Dynamic:
       if i + 1 < len && s.charAt(i) == '0' then
         val p = s.charAt(i + 1)
 
-        if p == 'x' || p == 'X' then
-          return parseRadix(s, i + 2, 16, negative)
+        if p == 'x' || p == 'X' then return parseRadix(s, i + 2, 16, negative)
 
-        if p == 'o' || p == 'O' then
-          return parseRadix(s, i + 2, 8, negative)
+        if p == 'o' || p == 'O' then return parseRadix(s, i + 2, 8, negative)
 
       // Decimal: pure digits only (no leading zeroes except "0").
       val first = s.charAt(i)
@@ -3588,8 +3554,7 @@ object Yaml extends Yaml2, Dynamic:
     // indent — otherwise the quoted scalar is mis-indented.
     private update def consumeMultilineFold()(using Tactic[ParseError]): Unit =
       while
-        stringCursor > 0 &&
-          (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t')
+        stringCursor > 0 && (chars(stringCursor - 1) == ' ' || chars(stringCursor - 1) == '\t')
       do stringCursor -= 1
 
       lastScalarSpannedLines = true
@@ -3613,11 +3578,9 @@ object Yaml extends Yaml2, Dynamic:
           done = true
 
       if newlineCount > 0 && more then
-        if atDocumentBoundary then
-          errorAt(Issue.DocumentMarkerInsideMultilineScalar)
+        if atDocumentBoundary then errorAt(Issue.DocumentMarkerInsideMultilineScalar)
 
-        if spaces <= blockParentIndent then
-          errorAt(Issue.ScalarContinuationUnderIndented)
+        if spaces <= blockParentIndent then errorAt(Issue.ScalarContinuationUnderIndented)
 
       if newlineCount == 1 then appendChar(' ')
       else
@@ -3851,8 +3814,7 @@ object Yaml extends Yaml2, Dynamic:
 
       if !more then Yaml.Ast.Null
       else
-        if atDocumentBoundary then
-          errorAt(Issue.DocumentMarkerInFlowContext)
+        if atDocumentBoundary then errorAt(Issue.DocumentMarkerInFlowContext)
 
         consumeNodePrefixes()
         val anchorName = prefixAnchor
@@ -3865,8 +3827,7 @@ object Yaml extends Yaml2, Dynamic:
 
         val value =
           if headByte == -1 then Yaml.Ast.Null
-          else if headByte == Comma || headByte == CloseBracket ||
-            headByte == CloseBrace then
+          else if headByte == Comma || headByte == CloseBracket || headByte == CloseBrace then
             // The flow node is empty — caller will consume the terminator.
             Yaml.Ast.Null
           else if headByte == Colon && {
@@ -4072,8 +4033,7 @@ object Yaml extends Yaml2, Dynamic:
               advance()
               val s = parseDoubleQuoted()
 
-              if lastScalarSpannedLines then
-                errorAt(Issue.MultilineImplicitKey)
+              if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
               s
 
@@ -4081,8 +4041,7 @@ object Yaml extends Yaml2, Dynamic:
               advance()
               val s = parseSingleQuoted()
 
-              if lastScalarSpannedLines then
-                errorAt(Issue.MultilineImplicitKey)
+              if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
               s
 
@@ -4102,11 +4061,9 @@ object Yaml extends Yaml2, Dynamic:
             case _ =>
               val keyText = readPlainScalarText(indent)
 
-              if !sawMappingColon then
-                errorAt(Issue.PlainScalarAtMappingIndentWithoutColon)
+              if !sawMappingColon then errorAt(Issue.PlainScalarAtMappingIndentWithoutColon)
 
-              if lastScalarSpannedLines then
-                errorAt(Issue.MultilineImplicitKey)
+              if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
               resolvePlainScalar(keyText)
 
@@ -4143,16 +4100,14 @@ object Yaml extends Yaml2, Dynamic:
             while more && (peek == Space || peek == Tab) do advance()
             // Trailing comment after `- ` — treat as an empty same-line
             // value, so the item is on the next more-indented line.
-            if more && peek == Hash then
-              while more && peek != Newline do advance()
+            if more && peek == Hash then while more && peek != Newline do advance()
 
             if more && peek == Newline then
               advance()
               skipBlankAndCommentLines()
               val childIndent = consumeLeadingSpaces()
 
-              if childIndent <= indent then Yaml.Ast.Null
-              else parseNodeHere(childIndent)
+              if childIndent <= indent then Yaml.Ast.Null else parseNodeHere(childIndent)
             else
               parseNodeHere(indent + 2)
           else if next == Newline || next == -1 then
@@ -4161,8 +4116,7 @@ object Yaml extends Yaml2, Dynamic:
             skipBlankAndCommentLines()
             val childIndent = consumeLeadingSpaces()
 
-            if childIndent <= indent then Yaml.Ast.Null
-            else parseNodeHere(childIndent)
+            if childIndent <= indent then Yaml.Ast.Null else parseNodeHere(childIndent)
           else
             // shouldn't happen
             parseNodeHere(indent + 2)
@@ -4279,8 +4233,7 @@ object Yaml extends Yaml2, Dynamic:
       while more && (peek == Space || peek == Tab) do advance()
       // Trailing comment on the `?` marker line — consume so the parse
       // continues on the next line as if the marker stood alone.
-      if more && peek == Hash then
-        while more && peek != Newline do advance()
+      if more && peek == Hash then while more && peek != Newline do advance()
 
       val key: Yaml.Ast =
         if !more || peek == Newline then
@@ -4363,8 +4316,7 @@ object Yaml extends Yaml2, Dynamic:
           val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
 
           if
-            next == Space || next == Tab || next == Newline ||
-              next == Return || next == -1
+            next == Space || next == Tab || next == Newline || next == Return || next == -1
           then errorAt(Issue.BlockSequenceOnMappingKeyLine)
 
         val saved = inInlineMappingValue
@@ -4390,8 +4342,7 @@ object Yaml extends Yaml2, Dynamic:
       inInlineMappingValue = false
 
       val result =
-        if !more then Yaml.Ast.Null
-        else pickValueOrNullBody(parentIndent, childIndent, lineStart)
+        if !more then Yaml.Ast.Null else pickValueOrNullBody(parentIndent, childIndent, lineStart)
 
       inInlineMappingValue = savedInline
       result
@@ -4525,13 +4476,11 @@ object Yaml extends Yaml2, Dynamic:
             blanksPending = 0
           else
             // Plain blank line.
-            if baseIndent < 0 && spaces > maxLeadingBlankSpaces then
-              maxLeadingBlankSpaces = spaces
+            if baseIndent < 0 && spaces > maxLeadingBlankSpaces then maxLeadingBlankSpaces = spaces
 
             appendChar('\n')
 
-            if literal || lastNonBlankType != BlockLineType.None then
-              blanksPending += 1
+            if literal || lastNonBlankType != BlockLineType.None then blanksPending += 1
 
           advance()
         else
@@ -4597,21 +4546,18 @@ object Yaml extends Yaml2, Dynamic:
 
       // For folded mode the per-line scheme leaves no trailing newline;
       // add one so chomping rules see a uniform "final break".
-      if !literal && stringCursor > 0 && chars(stringCursor - 1) != '\n' then
-        appendChar('\n')
+      if !literal && stringCursor > 0 && chars(stringCursor - 1) != '\n' then appendChar('\n')
 
       chomp match
         case BlockChomp.Strip =>
-          while stringCursor > 0 && chars(stringCursor - 1) == '\n' do
-            stringCursor -= 1
+          while stringCursor > 0 && chars(stringCursor - 1) == '\n' do stringCursor -= 1
 
         case BlockChomp.Clip =>
           // Keep at most one trailing newline. If the buffer is entirely
           // newlines (no real content), reduce to empty.
           var lastContent = stringCursor
 
-          while lastContent > 0 && chars(lastContent - 1) == '\n' do
-            lastContent -= 1
+          while lastContent > 0 && chars(lastContent - 1) == '\n' do lastContent -= 1
 
           stringCursor = if lastContent == 0 then 0 else lastContent + 1
 
@@ -4813,8 +4759,7 @@ object Yaml extends Yaml2, Dynamic:
 
       val value: Yaml.Ast =
         if hasPrefix && (headByte == Newline || headByte == -1 || headByte == Hash) then
-          if headByte == Hash then
-            while more && peek != Newline do advance()
+          if headByte == Hash then while more && peek != Newline do advance()
 
           if more && peek == Newline then advance()
           skipBlankAndCommentLines()
@@ -4823,8 +4768,7 @@ object Yaml extends Yaml2, Dynamic:
           lastNodeHadAnchor = false
           val v = pickValueOrNullTracked(blockParentIndent, childIndent, lineStart, indexOut)
 
-          if !anchorName.nil && lastNodeHadAnchor then
-            errorAt(Issue.TwoAnchorsOnSameNode)
+          if !anchorName.nil && lastNodeHadAnchor then errorAt(Issue.TwoAnchorsOnSameNode)
           // pickValueOrNullTracked has emitted the descriptor for `v` into
           // indexOut already. Skip the trailing primitive emission below.
           return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
@@ -5032,14 +4976,11 @@ object Yaml extends Yaml2, Dynamic:
               nextByte == Space || nextByte == Tab || nextByte == Newline ||
                 nextByte == Return || nextByte == -1
             then
-              if onDocStartLine then
-                errorAt(Issue.BlockMappingOnDocumentStartLine)
+              if onDocStartLine then errorAt(Issue.BlockMappingOnDocumentStartLine)
 
-              if inInlineMappingValue then
-                errorAt(Issue.ChainedMappingValueOnSingleLine)
+              if inInlineMappingValue then errorAt(Issue.ChainedMappingValueOnSingleLine)
 
-              if lastScalarSpannedLines then
-                errorAt(Issue.MultilineImplicitKey)
+              if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
               val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
 
@@ -5081,14 +5022,11 @@ object Yaml extends Yaml2, Dynamic:
       val keyLength = (scalarEndMark - startMark).toInt
 
       if sawMappingColon then
-        if onDocStartLine then
-          errorAt(Issue.BlockMappingOnDocumentStartLine)
+        if onDocStartLine then errorAt(Issue.BlockMappingOnDocumentStartLine)
 
-        if inInlineMappingValue then
-          errorAt(Issue.ChainedMappingValueOnSingleLine)
+        if inInlineMappingValue then errorAt(Issue.ChainedMappingValueOnSingleLine)
 
-        if lastScalarSpannedLines then
-          errorAt(Issue.MultilineImplicitKey)
+        if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
         val rawKey = resolvePlainScalar(textValue)
         val tagged = if headTag.nil then rawKey else applyTag(headTag, rawKey)
@@ -5133,8 +5071,7 @@ object Yaml extends Yaml2, Dynamic:
             advance()
             while more && (peek == Space || peek == Tab) do advance()
 
-            if more && peek == Hash then
-              while more && peek != Newline do advance()
+            if more && peek == Hash then while more && peek != Newline do advance()
 
             if more && peek == Newline then
               advance()
@@ -5287,8 +5224,7 @@ object Yaml extends Yaml2, Dynamic:
               advance()
               val s = parseDoubleQuoted()
 
-              if lastScalarSpannedLines then
-                errorAt(Issue.MultilineImplicitKey)
+              if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
               s
 
@@ -5296,8 +5232,7 @@ object Yaml extends Yaml2, Dynamic:
               advance()
               val s = parseSingleQuoted()
 
-              if lastScalarSpannedLines then
-                errorAt(Issue.MultilineImplicitKey)
+              if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
               s
 
@@ -5317,11 +5252,9 @@ object Yaml extends Yaml2, Dynamic:
             case _ =>
               val keyText = readPlainScalarText(indent)
 
-              if !sawMappingColon then
-                errorAt(Issue.PlainScalarAtMappingIndentWithoutColon)
+              if !sawMappingColon then errorAt(Issue.PlainScalarAtMappingIndentWithoutColon)
 
-              if lastScalarSpannedLines then
-                errorAt(Issue.MultilineImplicitKey)
+              if lastScalarSpannedLines then errorAt(Issue.MultilineImplicitKey)
 
               resolvePlainScalar(keyText)
 
@@ -5623,8 +5556,7 @@ object Yaml extends Yaml2, Dynamic:
         emitNullHere(indexOut)
         Yaml.Ast.Null
       else
-        if atDocumentBoundary then
-          errorAt(Issue.DocumentMarkerInFlowContext)
+        if atDocumentBoundary then errorAt(Issue.DocumentMarkerInFlowContext)
         // Capture start after the initial flow-whitespace skip but
         // before prefix consumption, so the descriptor spans anchor/tag.
         syncTo()
@@ -5643,8 +5575,7 @@ object Yaml extends Yaml2, Dynamic:
           if headByte == -1 then
             emitNullHere(indexOut)
             Yaml.Ast.Null
-          else if headByte == Comma || headByte == CloseBracket ||
-            headByte == CloseBrace then
+          else if headByte == Comma || headByte == CloseBracket || headByte == CloseBrace then
             emitNullHere(indexOut)
             Yaml.Ast.Null
           else if headByte == Colon && {
@@ -5767,8 +5698,7 @@ object Yaml extends Yaml2, Dynamic:
       advance() // ?
       while more && (peek == Space || peek == Tab) do advance()
 
-      if more && peek == Hash then
-        while more && peek != Newline do advance()
+      if more && peek == Hash then while more && peek != Newline do advance()
 
       // Capture key start
       val (keyStartLine, keyStartColumn, keyStartMark) =
@@ -5837,8 +5767,7 @@ object Yaml extends Yaml2, Dynamic:
       // remove it and replace with just the 3-int header.
       // Capture the descriptor's slot 3 (sourceLength) as keyLength.
       val keyDescStart =
-        if scratch.length >= 4 then scratch.length - keyDescriptorSize(scratch)
-        else 0
+        if scratch.length >= 4 then scratch.length - keyDescriptorSize(scratch) else 0
 
       val keyLengthForHeader =
         if scratch.length > keyDescStart + 3 then scratch(keyDescStart + 3) else 0
@@ -5938,8 +5867,7 @@ object Yaml extends Yaml2, Dynamic:
           val next = if pos + 1 < bufEnd then bytes(pos + 1) else -1
 
           if
-            next == Space || next == Tab || next == Newline ||
-              next == Return || next == -1
+            next == Space || next == Tab || next == Newline || next == Return || next == -1
           then errorAt(Issue.BlockSequenceOnMappingKeyLine)
 
         val saved = inInlineMappingValue

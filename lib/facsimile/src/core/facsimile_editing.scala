@@ -166,8 +166,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
       dict = dict.updated(t"A", Cos.Dictionary(action))
 
-    destination.let: dest =>
-      dict = dict.updated(t"Dest", destinationArray(pdf, dest))
+    destination.let: dest => dict = dict.updated(t"Dest", destinationArray(pdf, dest))
 
     val ref = pdf.allocate(Cos.Dictionary(dict))
 
@@ -187,11 +186,9 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
     var root: Map[Text, Cos] =
       Map(t"Type" -> Cos.Name(t"Outlines"), t"Count" -> Cos.Integral(total.toLong))
 
-    first.let: ref =>
-      root = root.updated(t"First", ref)
+    first.let: ref => root = root.updated(t"First", ref)
 
-    last.let: ref =>
-      root = root.updated(t"Last", ref)
+    last.let: ref => root = root.updated(t"Last", ref)
 
     pdf.put(rootRef.number, Cos.Dictionary(root))
 
@@ -219,8 +216,7 @@ extension (pdf: (Pdf & Granting[Grant.Write])^)
 
     var entries = Map(t"Type" -> Cos.Name(t"Page"), t"Parent" -> rootRef, t"MediaBox" -> box)
 
-    resources.let: value =>
-      entries = entries.updated(t"Resources", value)
+    resources.let: value => entries = entries.updated(t"Resources", value)
 
     if operators.nonEmpty then
       val stream = pdf.allocate(pdf.newBody(Map(), ContentWriter.write(operators)))
@@ -304,16 +300,13 @@ private def buildOutline
       if index > 0 then dict = dict.updated(t"Prev", refs(index - 1))
       if index < refs.length - 1 then dict = dict.updated(t"Next", refs(index + 1))
 
-      childFirst.let: first =>
-        dict = dict.updated(t"First", first)
+      childFirst.let: first => dict = dict.updated(t"First", first)
 
-      childLast.let: last =>
-        dict = dict.updated(t"Last", last)
+      childLast.let: last => dict = dict.updated(t"Last", last)
 
       if childCount > 0 then dict = dict.updated(t"Count", Cos.Integral(childCount.toLong))
 
-      bookmark.destination.let: dest =>
-        dict = dict.updated(t"Dest", destinationArray(pdf, dest))
+      bookmark.destination.let: dest => dict = dict.updated(t"Dest", destinationArray(pdf, dest))
 
       pdf.put(ref.number, Cos.Dictionary(dict))
 

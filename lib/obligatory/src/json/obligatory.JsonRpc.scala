@@ -56,7 +56,6 @@ import zephyrine.*
 
 import httpBackends.virtualMachine
 
-
 object JsonRpc:
   private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
 

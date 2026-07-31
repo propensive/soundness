@@ -559,8 +559,7 @@ object Tels extends Tels2:
       a.length == b.length && (0 until a.length).forall: i => eq(a(i), b(i))
 
     private def structEq(a: Struct, b: Struct): Boolean =
-      seqEq(a.members, b.members, memberEq) &&
-        seqEq(a.validators, b.validators, textEq)
+      seqEq(a.members, b.members, memberEq) && seqEq(a.validators, b.validators, textEq)
 
     private def textEq(a: Text, b: Text): Boolean = a == b
 

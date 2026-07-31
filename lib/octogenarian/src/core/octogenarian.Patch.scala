@@ -56,17 +56,14 @@ object Patch:
 
     files.to(List)
 
-
   // Flattens every hunk's edits into a single Dissonance Diff[Text].
   def asDiff(file: FileDiff): Diff[Text] =
     Diff(file.hunks.stdlib.flatMap(_.edits.stdlib)*)
-
 
   private def parseHunkRange(text: Text): (Int, Int) = text.cut(t",") match
     case List(start)        => (start.s.toInt, 1)
     case List(start, count) => (start.s.toInt, count.s.toInt)
     case _                  => (0, 0)
-
 
   private def parseFile(header: Text, body: List[Text]): FileDiff =
     case class State
@@ -155,6 +152,5 @@ object Patch:
         finalState.newPath,
         finalState.changeKind,
         finalState.hunks.reverse )
-
 
 case class Patch(files: List[FileDiff])

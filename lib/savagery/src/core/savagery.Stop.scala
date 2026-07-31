@@ -32,7 +32,6 @@
                                                                                                   */
 package savagery
 
-
 import anticipation.*
 import cardinality.*
 import gossamer.*

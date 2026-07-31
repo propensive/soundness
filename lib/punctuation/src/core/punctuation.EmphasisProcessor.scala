@@ -167,12 +167,10 @@ private[punctuation] object EmphasisProcessor:
     val right = isRightFlanking(prevChar, nextChar)
 
     val canOpen =
-      if char == '*' then left
-      else left && (!right || isUnicodePunctuation(prevChar))
+      if char == '*' then left else left && (!right || isUnicodePunctuation(prevChar))
 
     val canClose =
-      if char == '*' then right
-      else right && (!left || isUnicodePunctuation(nextChar))
+      if char == '*' then right else right && (!left || isUnicodePunctuation(nextChar))
 
     (if canOpen then 1 else 0) | (if canClose then 2 else 0)
 

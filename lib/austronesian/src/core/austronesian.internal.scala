@@ -127,7 +127,6 @@ object internal:
     =>  sequence[element] is Encodable in Pojo =
       list.asInstanceOf[sequence[element] is Encodable in Pojo]
 
-
     given text2: Text is Decodable:
       type Form = Pojo
 
@@ -167,7 +166,6 @@ object internal:
       type Form = Pojo
 
       inline def decoded(value: Pojo): Boolean = value.asInstanceOf[Boolean]
-
 
     // The element decoder is taken by-name (not as a context bound) so that a type recursive
     // through a collection (`case class Tree(…, children: List[Tree])`) derives: wisteria's

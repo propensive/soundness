@@ -241,8 +241,7 @@ object Dictionary:
       while sl < alpha do
         val c = alphabet.char(sl)
 
-        n.children.get(c).foreach: child =>
-          childrenArr(i*alpha + sl) = ids(child)
+        n.children.get(c).foreach: child => childrenArr(i*alpha + sl) = ids(child)
 
         sl += 1
 

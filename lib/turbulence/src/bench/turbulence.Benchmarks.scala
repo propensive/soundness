@@ -148,9 +148,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
   // ZIO's unsafe-run entry point, wrapping each ZIO benchmark's effect.
   def runZio[A](effect: zio.ZIO[Any, Throwable, A]): A =
-    zio.Unsafe.unsafe: unsafe ?=>
-      zio.Runtime.default.unsafe.run(effect).getOrThrow()
-
+    zio.Unsafe.unsafe:: unsafe ?=> zio.Runtime.default.unsafe.run(effect).getOrThrow()
   // A fixed-capacity `Buffering`, for the block-size sweep.
   def buffering(n: Int): Buffering = new Buffering:
     def capacity(substrate: Substrate): Int = n

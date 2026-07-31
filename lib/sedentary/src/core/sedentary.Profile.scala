@@ -56,7 +56,6 @@ import serpentine.*
 import superlunary.*
 import vacuous.*
 
-
 // A profile test: where `Bench` measures how fast a fragment runs and `Stress` how it
 // scales, `Profile` measures where its time goes. The body is run repeatedly on a single
 // thread for a fixed wall-clock window while an in-process JFR recording samples execution;
@@ -207,5 +206,4 @@ extends Rig:
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input =>
-      unsafely(device.invoke(stage.target, input, heap, cpus))
+    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus))

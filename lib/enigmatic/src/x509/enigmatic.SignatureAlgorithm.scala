@@ -30,73 +30,34 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package stenography
-
-import java.nio.charset as jnc
+package enigmatic
 
 import anticipation.*
-import denominative.*
-import rudiments.*
-import symbolism.*
+import gossamer.*
 import vacuous.*
 
-object Typename:
-  def fromUrl(text: Text): Typename = apply(text.s.replaceAll("~", "#").nn.tt)
+// The `AlgorithmIdentifier` that names a cipher-and-digest pair in a certificate. It is a property
+// of the pair, not of either alone: `sha256WithRSAEncryption` and `sha384WithRSAEncryption` are
+// different object identifiers over the same key type.
+object SignatureAlgorithm:
+  // RSASSA-PKCS1-v1_5 identifiers live under the PKCS#1 arc, and RFC 3279 requires the parameters
+  // field to be present and NULL — not absent.
+  given rsa: [bits <: 1024 | 2048 | 3072 | 4096] => Rsa[bits] is SignatureAlgorithm = digest =>
+    arc(digest, t"SHA256" -> 11, t"SHA384" -> 12, t"SHA512" -> 13).let: last =>
+      Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, last)), Asn1.Null))
 
-  def apply(text: Text): Typename =
-    def recur(i: Ordinal, start: Ordinal, typename: Optional[Typename]): Typename =
-      def next = text.segment(start thru i - 1)
+  // ECDSA identifiers live under the ANSI X9.62 arc, and RFC 5758 requires the parameters field to
+  // be absent, since the curve is already named by the public key.
+  given ecdsa: [bits <: 256 | 384 | 521] => Ecdsa[bits] is SignatureAlgorithm = digest =>
+    arc(digest, t"SHA256" -> 2, t"SHA384" -> 3, t"SHA512" -> 4).let: last =>
+      Asn1.Sequence(List(Asn1.ObjectId(List(1, 2, 840, 10045, 4, 3, last))))
 
-      text.at(i) match
-        case Unset => typename.lay(Typename.Top(next))(Typename.Term(_, next))
-        case '.'   => recur(i + 1, i + 1, typename.lay(Typename.Top(next))(Typename.Term(_, next)))
-        case '#'   => recur(i + 1, i + 1, typename.lay(Typename.Top(next))(Typename.Type(_, next)))
-        case char  => recur(i + 1, start, typename)
+  private def arc(digest: SignatureDigest, entries: (Text, Int)*): Optional[Int] =
+    entries.find(_(0) == digest.token).map(_(1)).getOrElse(Unset)
 
-    recur(Prim, Prim, Unset)
+trait SignatureAlgorithm:
+  type Self
 
-
-enum Typename:
-  case Top(name: Text)
-  case Term(parent0: Typename, name: Text)
-  case Type(parent0: Typename, name: Text)
-
-  def name: Text
-  def child(name: Text, isType: Boolean) = if isType then Type(this, name) else Term(this, name)
-  def qualified: Text = text(using Imports.empty)
-
-  def companionObject: Typename = this match
-    case Type(parent, name) => Term(parent, name)
-    case other              => other
-
-  def companionType: Typename = this match
-    case Term(parent, name) => Type(parent, name)
-    case other              => other
-
-  def parent: Optional[Typename] = this match
-    case Type(parent, _) => parent
-    case Term(parent, _) => parent
-    case Top(_)          => Unset
-
-  def symbol(typeSymbol: Text = "#", termSymbol: Text = "."): Text = parent match
-    case Type(_, _) => typeSymbol
-    case Term(_, _) => termSymbol
-    case Top(_)     => termSymbol
-    case _          => ""
-
-  def render: Text = this match
-    case Top(name)          => name
-    case Type(parent, name) => s"${parent.render}${symbol("⌗")}$name".tt
-    case Term(parent, name) => s"${parent.render}${symbol("⌗")}$name".tt
-
-  def url: Text =
-    val name2 = java.net.URLEncoder.encode(name.s, jnc.StandardCharsets.UTF_8).nn.tt
-
-    this match
-      case Top(_)          => name2
-      case Type(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
-      case Term(parent, _) => s"${parent.url}${symbol("~")}$name2".tt
-
-  def text(using imports: Imports): Text =
-    if imports.hasDirect(this) then name else parent.lay(name): parent =>
-      if imports.has(parent) then name else s"${parent.text}${symbol("#")}$name".tt
+  // `Unset` when the cipher and digest have no object identifier between them, which a caller
+  // turns into a `CertificateError` rather than an encoding that no verifier would recognize.
+  def identifier(digest: SignatureDigest): Optional[Asn1]

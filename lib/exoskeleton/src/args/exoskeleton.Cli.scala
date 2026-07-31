@@ -116,7 +116,6 @@ trait Cli extends Console, caps.ExclusiveCapability:
 
     loop(signalHandlers.get.nn)
 
-
   def parameter[operand: Interpretable](flag: Flag)(using (? <: operand) is Discoverable)
   :   Optional[operand]
 

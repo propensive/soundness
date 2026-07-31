@@ -100,8 +100,7 @@ object ScalaKeywords:
   // `class C(` and friends. Reversed order: the `(`'s branch on `Term` then the keyword.
   private val parameterHeads: List[(Element, KeywordPattern)] =
     List(t"def", t"given", t"extension", t"class", t"trait", t"enum", t"case class")
-    . map: keyword =>
-        word(keyword) -> KeywordPattern(parameter)
+    . map: keyword => word(keyword) -> KeywordPattern(parameter)
 
   val pattern: KeywordPattern =
     KeywordPattern
@@ -109,8 +108,7 @@ object ScalaKeywords:
         List
          ( // Statement boundaries: everything that can begin a statement, plus the
            // continuations that may lawfully start a fresh line (`else`, `catch`, `end`…).
-           Element.Exact(Lexeme.Break) ->
-             leaf(statement ++ continuation ++ Set(t"end", t"case")),
+           Element.Exact(Lexeme.Break) -> leaf(statement ++ continuation ++ Set(t"end", t"case")),
 
            Element.Exact(Lexeme.Start) -> leaf(statement),
            glyph(t";") -> leaf(statement),
@@ -152,8 +150,7 @@ object ScalaKeywords:
                              glyph(t",") -> leaf(Set(), Expectation.TypeIdentifier),
                              word(t"val") -> leaf(Set(), Expectation.TypeIdentifier),
                              word(t"var") -> leaf(Set(), Expectation.TypeIdentifier),
-                             word(t"def") ->
-                               leaf(Set(), Expectation.TypeIdentifier) ) ) ) ),
+                             word(t"def") -> leaf(Set(), Expectation.TypeIdentifier) ) ) ) ),
            glyph(t"@") -> leaf(Set(t"inline"), Expectation.TypeIdentifier),
            glyph(t"<:") -> leaf(Set(), Expectation.TypeIdentifier),
            glyph(t">:") -> leaf(Set(), Expectation.TypeIdentifier),
@@ -173,11 +170,9 @@ object ScalaKeywords:
                     Element.Exact(Lexeme.Typal) ->
                       KeywordPattern(Keywords(expression), parameterHeads),
                     Element.Exact(Lexeme.Close(Bracket.Square)) -> KeywordPattern(parameter),
-                    Element.Exact(Lexeme.Close(Bracket.Round)) ->
-                      KeywordPattern(parameter) ) ),
+                    Element.Exact(Lexeme.Close(Bracket.Round)) -> KeywordPattern(parameter) ) ),
 
-           Element.Exact(Lexeme.Open(Bracket.Square)) ->
-             leaf(Set(), Expectation.TypeIdentifier),
+           Element.Exact(Lexeme.Open(Bracket.Square)) -> leaf(Set(), Expectation.TypeIdentifier),
 
            glyph(t",") ->
              leaf
@@ -234,8 +229,7 @@ object ScalaKeywords:
            word(t"lazy") -> leaf(Set(t"val")),
            word(t"open") -> leaf(Set(t"class")),
            word(t"opaque") -> leaf(Set(t"type", t"infix")),
-           word(t"infix") -> leaf(Set(t"def", t"type", t"class", t"trait", t"enum",
-               t"abstract")),
+           word(t"infix") -> leaf(Set(t"def", t"type", t"class", t"trait", t"enum", t"abstract")),
 
            // After bare `inline`, a definition or an inline conditional may follow; after
            // `transparent inline`, only a definition can.
@@ -244,8 +238,7 @@ object ScalaKeywords:
                ( Keywords(Set(t"def", t"given", t"val", t"if", t"match", t"infix")),
                  List(word(t"transparent") -> leaf(Set(t"def", t"given"))) ),
            word(t"transparent") -> leaf(Set(t"inline", t"trait", t"def", t"class")),
-           word(t"implicit") -> leaf(Set(t"val", t"def", t"class", t"object", t"lazy",
-               t"final")),
+           word(t"implicit") -> leaf(Set(t"val", t"def", t"class", t"object", t"lazy", t"final")),
 
            word(t"using") -> leaf(Set(t"erased", t"inline", t"val", t"var")),
            word(t"erased") -> leaf(Set(t"given", t"val", t"inline")),

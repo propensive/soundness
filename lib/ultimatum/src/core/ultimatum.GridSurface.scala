@@ -146,8 +146,7 @@ extends Canvas:
 
   // Imprint any styled content cell-by-cell (the seamless entry for all text types).
   protected def imprint[content: Imprintable](content: content): Unit =
-    summon[content is Imprintable].cells(content): (grapheme, style) =>
-      putCell(grapheme, style)
+    summon[content is Imprintable].cells(content): (grapheme, style) => putCell(grapheme, style)
 
   def move(column: Ordinal, row2: Ordinal): Unit =
     col = column.n0.min(gridWidth - 1).max(0)

@@ -74,8 +74,7 @@ object Diagnostic:
         render(Diagnostic.Resolving(other.name, Unset, List(other)), headline)
 
   private def labelled(label: Optional[Text]): Teletype =
-    label.lay(e""): text =>
-      e" \e[38;5;243m($Italic($text))\e[0m"
+    label.lay(e""): text => e" \e[38;5;243m($Italic($text))\e[0m"
 
   private def line(node: Diagnostic): Teletype = node match
     case Diagnostic.Found(name, label, _) =>

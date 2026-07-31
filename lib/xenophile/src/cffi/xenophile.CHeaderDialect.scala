@@ -191,8 +191,7 @@ object CHeaderDialect extends Dialect:
 
         val after = skipStatement(skipBraces(body, 1))
 
-        val updated = name.lay(typedefs): word =>
-          typedefs.updated(word, Foreign.Type.Named(t"int"))
+        val updated = name.lay(typedefs): word => typedefs.updated(word, Foreign.Type.Named(t"int"))
 
         declarations(after, structs, functions, updated)
 

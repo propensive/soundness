@@ -50,13 +50,11 @@ object internal extends Hellenism2:
     def apply(javaClass: Class[?]): ClassRef = javaClass
     inline def apply[template <: AnyKind]: ClassRef = ${hellenism.internal.makeClass[template]}
 
-
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
 
     def classpathEntry: Optional[ClasspathEntry] =
       ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
-
 
   def classpath(context: Expr[StringContext]): Macro[Resource] =
     import quotes.reflect.*
@@ -94,7 +92,6 @@ object internal extends Hellenism2:
 
     Refinement(TypeRepr.of[Resource], "Locus", TypeBounds(locus, locus)).asType.absolve match
       case '[type result <: Resource; result] => '{$resource.asInstanceOf[result]}
-
 
 trait Hellenism2:
   def makeClass[template <: AnyKind: Type]: Macro[ClassRef] =

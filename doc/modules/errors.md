@@ -22,11 +22,15 @@ response. And in both, the error is often reduced to a string, which loses the s
 would let a program inspect or react to it.
 
 Soundness keeps the failure in the type and the detail in the value. An error is a value
-carrying a typed [message](expressive-errors.md); a method advertises the errors it can raise
+carrying a typed [message](../philosophy/expressive-errors.md); a method advertises the errors it can raise
 in its return type; and the decision of what to do belongs to the caller, expressed as a
 contextual strategy. Because the strategy is an ordinary given, one body of fallible code
-serves every response. The names come from the `soundness` package, with a diagnostics choice
-that decides whether errors capture stack traces:
+serves every response — which is the whole of the
+[error-handling](../philosophy/error-handling.md) principle, and the reason fallible calls
+still read as ordinary [direct-style](../philosophy/direct-style.md) code.
+
+The names come from the `soundness` package, with a diagnostics choice that decides whether
+errors capture stack traces:
 
 ```scala
 import soundness.*
@@ -116,6 +120,73 @@ accrue(Invalid(Nil)) { (all, error) => all.add(error) }:
 
 Each field is checked even if an earlier one failed, and the accumulated `Invalid` carries all
 the problems at once.
+
+### Saying where a failure was
+
+An accumulated list of errors is only useful if each one says where it came from. A *focus* is the
+position within a structure that the code is currently working on, and `track` maintains it as a
+traversal descends. Under `validate`, a recorded error is paired with the focus at the moment it
+was raised:
+
+```scala
+Pointer(t"a")(t"b")(t"c").text   // t"a.b.c"
+```
+
+The pointer type is chosen by the structure being traversed — a `JsonPointer` for
+[JSON](json.md), a path for [XML](xml.md), a column for [CSV](csv.md) — so the position is
+reported in the vocabulary of the data rather than as an index into something internal. This is
+the machinery beneath every "which field failed" report in the format modules.
+
+### Inspecting a failure directly
+
+Three related operations turn a failure into a value rather than a control-flow event.
+
+`capture` runs a block that is expected to fail and returns the error, which is what a test
+asserting on a failure needs. A block that succeeds is itself an error — an `ExpectationError` —
+since the test was checking the wrong thing:
+
+```scala
+capture[PortError](connect(80)).port
+```
+
+`attempt` makes no such demand, returning an `Attempt` that is either a success carrying the value
+or a failure carrying the error, for code that must branch on both:
+
+```scala
+attempt[PortError](connect(80))   // Attempt.Success(…) or Attempt.Failure(…)
+```
+
+`amalgamate` combines several fallible computations, gathering their errors into one.
+
+### Deferring a fallible computation
+
+A fallible computation cannot be stored as an ordinary value, because its ability to fail is part
+of its type and needs a tactic to discharge. `defer` holds the unapplied body, and applying it
+runs it against whatever tactic is in scope *then*:
+
+```scala
+val held = defer(riskyOperation())
+
+recover:
+  case error => fallback
+. protect:
+    held()
+```
+
+Each application re-evaluates the body, so a deferred computation is a recipe rather than a cached
+result — which is what makes it usable under a different strategy each time.
+
+### Translating and escalating
+
+`Mitigable` is the typeclass behind `mitigate`: an instance says how one error type becomes
+another, and importing `strategies.mitigation` applies it automatically where a caller expects the
+outer type. A low-level failure therefore reaches an API boundary already translated into that
+boundary's vocabulary, without every call site restating the translation.
+
+Two further strategies sit at the ends of the range. `throwUnsafely` throws, with no capability
+required, which suits prototyping and scripts. `throwSafely` also throws, but demands a `CanThrow`
+capability, so the possibility remains visible in the types. Between them sit the recovering,
+accruing and optional strategies, and the choice is always at the call site.
 
 ### Diagnostics
 

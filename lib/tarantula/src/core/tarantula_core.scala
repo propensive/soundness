@@ -32,5 +32,4 @@
                                                                                                   */
 package tarantula
 
-
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]

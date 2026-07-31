@@ -68,8 +68,7 @@ private[hallucination] object WebpEncoder:
     val padded = frame.length + (frame.length & 1)
     val out = ji.ByteArrayOutputStream()
 
-    def fourcc(text: String): Unit = text.foreach: char =>
-      out.write(char.toInt)
+    def fourcc(text: String): Unit = text.foreach: char => out.write(char.toInt)
 
     def u32(value: Int): Unit =
       out.write(value & 0xff); out.write((value >>> 8) & 0xff)

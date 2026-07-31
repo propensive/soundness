@@ -77,12 +77,10 @@ object internal:
       field.info.asType.absolve match
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
-
   // All flattened paths of `product`, depth-first, with the empty root path "" at index 0. A
   // `Proxy`'s `id` indexes into this list, so navigation from the root (`id` 0, path "") resolves
   // each field correctly — distinguishing the root from the first field (which both collided at 0).
   def paths[product: Type](using Quotes): List[String] = "" :: fieldNames[product]("")
-
 
   // The flattened field types, aligned with `paths`: index 0 is the whole `product`, then each
   // field's type depth-first, matching the order `fieldNames` flattens labels.
@@ -90,8 +88,7 @@ object internal:
     import quotes.reflect.*
 
     def recur(repr: TypeRepr): List[TypeRepr] =
-      repr.typeSymbol.caseFields.flatMap: field =>
-        field.info :: recur(field.info)
+      repr.typeSymbol.caseFields.flatMap: field => field.info :: recur(field.info)
 
     TypeRepr.of[product] :: recur(TypeRepr.of[product])
 

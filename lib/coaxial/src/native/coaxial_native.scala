@@ -347,7 +347,6 @@ package socketBackends:
 
       courier.socket.send(packet)
 
-
 // Applies `SocketOption`s to freshly-constructed sockets and resolves a `MacAddress` to a network
 // interface. The Java socket kinds share no common Scala interface for `setOption`/`setSoTimeout`,
 // so each is adapted to a small `Configurable` and the option-mapping is written once. Options a

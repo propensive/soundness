@@ -242,8 +242,7 @@ object internal:
             else
               val substituted = resultOf(symbol.info.appliedTo(args))
 
-              if substituted <:< target then Some(Matched(symbol, typeParams, pairs))
-              else None
+              if substituted <:< target then Some(Matched(symbol, typeParams, pairs)) else None
 
         . nextOption()
 
@@ -266,9 +265,7 @@ object internal:
       val bindings = unify(raw, target, typeParams.toSet)
 
       val unified: List[List[TypeRepr]] =
-        if typeParams.forall(bindings.contains)
-        then List(typeParams.map(bindings))
-        else Nil
+        if typeParams.forall(bindings.contains) then List(typeParams.map(bindings)) else Nil
 
       val applied: List[List[TypeRepr]] = target.dealias match
         case AppliedType(_, args) if args.length == typeParams.length => List(args)
@@ -469,7 +466,6 @@ object internal:
                 case _ =>
                   missing(repr, Nil)
 
-
             // The `Apply @unchecked` test matches non-`Apply` trees too (the
             // unchecked bind skips the runtime check), so a `TypeApply` — e.g.
             // from a polymorphic given whose using-clause failed — reaches
@@ -505,7 +501,6 @@ object internal:
 
             case _ =>
               missing(repr, Nil)
-
 
     // Convert the compiler-typed search `Result` into the format-neutral,
     // pre-rendered `Diagnostic` model the shared renderer consumes.

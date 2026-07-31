@@ -120,7 +120,5 @@ package syntaxHighlighting:
     . join(e"", e"\n", markup)
 
   given unnumberedTeletypeable: ScalaSyntaxPalette => SourceCode is Teletypeable = source =>
-    (source.offset to source.lastLine).map: lineNo =>
-      source(lineNo).map(_.teletype).join
-
+    (source.offset to source.lastLine).map: lineNo => source(lineNo).map(_.teletype).join
     . join(e"\n")

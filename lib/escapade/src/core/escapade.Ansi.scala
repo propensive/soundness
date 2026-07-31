@@ -162,8 +162,7 @@ object Ansi extends Ansi2:
       if text.hyperlinks.nonEmpty then
         text.hyperlinks.stdlib.each: (k, v) => hyperlinks(n + k) = v
 
-      if text.insertions.nonEmpty then
-        text.insertions.each: (k, v) => insertions(n + k) = v
+      if text.insertions.nonEmpty then text.insertions.each: (k, v) => insertions(n + k) = v
 
     def addInsertion(position: Int, content: Text): Unit =
       insertions.updateWith(position):
@@ -201,7 +200,6 @@ object Ansi extends Ansi2:
 
     def applyOnce(transform: Transform): Unit =
       currentStyle = transform(currentStyle)
-
 
   object Runtime:
     import unsafeExceptions.canThrowAny

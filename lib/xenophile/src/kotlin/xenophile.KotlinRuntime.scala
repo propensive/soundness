@@ -68,9 +68,7 @@ object KotlinRuntime:
       owner.getMethods.nn.find: method =>
         method.nn.getName == name && method.nn.getParameterCount == arguments.length
 
-      . map: method =>
-          jli.MethodHandles.lookup.nn.unreflect(method.nn).nn
-
+      . map: method => jli.MethodHandles.lookup.nn.unreflect(method.nn).nn
       . getOrElse(throw IllegalStateException(s"xenophile: no $name bridge on ${owner.getName}")))
 
     // The `java.util.List` overload, not the varargs one: an array splice cannot flow into

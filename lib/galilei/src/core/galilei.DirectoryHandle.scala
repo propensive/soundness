@@ -71,8 +71,7 @@ trait DirectoryHandle extends caps.ExclusiveCapability:
   // Public: called from transparent-inline subtree operations, where a `private` member's
   // inline-accessor bridge would fail capture checking.
   def resolve(path: Path on Plane): Path on Under =
-    path.descent.reverse.foldLeft(stem): (parent, name) =>
-      parent.child(name)(using Unsafe)
+    path.descent.reverse.foldLeft(stem): (parent, name) => parent.child(name)(using Unsafe)
 
 // A named class rather than an anonymous given instance, for the reasons documented on
 // `FileOpenable`. Opening verifies that the entry exists and is a directory, so a handle

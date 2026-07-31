@@ -102,8 +102,7 @@ trait Textual extends Typeclass.Pure, Countable, Segmentable, Zeroic, Indexable:
   def lastIndexOf(text: Self, sub: Text): Optional[Ordinal] =
     if sub.s.isEmpty then Unset else
       def recur(start: Ordinal, last: Optional[Ordinal]): Optional[Ordinal] =
-        indexOf(text, sub, start).lay(last): found =>
-          recur(found + 1, found)
+        indexOf(text, sub, start).lay(last): found => recur(found + 1, found)
 
       recur(Prim, Unset)
 

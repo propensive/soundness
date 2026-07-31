@@ -194,8 +194,7 @@ object bintelInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -210,7 +209,7 @@ object bintelInternal:
         result match
           case instance: BintelInlinable =>
             report.info
-              ( s"stratiform: staged summon for ${TypeRepr.of[field].show} took "+
+              ( s"stratiform: staged summon for ${TypeRepr.of[field].show} took " +
                 s"${duration}ms" )
 
             Some(instance)
@@ -343,7 +342,7 @@ object bintelInternal:
 
     def reject(shape: String): Nothing =
       report.errorAndAbort
-        (s"stratiform: the field `$fieldName` of ${TypeRepr.of[product].show} is $shape, "+
+        (s"stratiform: the field `$fieldName` of ${TypeRepr.of[product].show} is $shape, " +
           "which the BinTEL parser generator does not support; use `Bintel.read`")
 
     builtinKind(tpe) match
@@ -499,8 +498,8 @@ object bintelInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"stratiform: ${tpe.show} is not an inlinable BinTEL struct (a non-generic, "+
-          "top-level or object-nested case class with a single parameter list and no "+
+        (s"stratiform: ${tpe.show} is not an inlinable BinTEL struct (a non-generic, " +
+          "top-level or object-nested case class with a single parameter list and no " +
           "`@name` renames); use `Bintel.read`")
 
     val classSymbol = tpe.classSymbol.get
@@ -665,8 +664,7 @@ object bintelInternal:
 
         def focusedOver[result: Type](raw: Expr[result]): Expr[result] =
           '{
-            if $focused then Tel.Parsable.focusing($foci, $keyword)($raw)
-            else $raw
+            if $focused then Tel.Parsable.focusing($foci, $keyword)($raw) else $raw
           }
 
         val rhs: Term = plans(index) match
@@ -864,8 +862,7 @@ object bintelInternal:
 
     cache.active += TypeRepr.of[sum].dealias.show
 
-    try sumBody0[sum](reader, cache)
-    finally cache.active -= TypeRepr.of[sum].dealias.show
+    try sumBody0[sum](reader, cache) finally cache.active -= TypeRepr.of[sum].dealias.show
 
   private def sumBody0[sum: Type](reader: Expr[BintelReader], cache: Cache)(using Quotes)
   :   Expr[sum] =
@@ -874,7 +871,7 @@ object bintelInternal:
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"stratiform: ${TypeRepr.of[sum].show} is not an inlinable BinTEL sum (a "+
+        (s"stratiform: ${TypeRepr.of[sum].show} is not an inlinable BinTEL sum (a " +
           "non-generic sealed type whose variants are all case classes); use `Bintel.read`")
 
     val arity = variants.length
@@ -956,7 +953,7 @@ object bintelInternal:
       else
         summonViaStaging[value].getOrElse:
           report.errorAndAbort
-            (s"stratiform: ${tpe.show} is not an inlinable BinTEL struct or sum; use "+
+            (s"stratiform: ${tpe.show} is not an inlinable BinTEL struct or sum; use " +
               "`Bintel.read`")
         . asInstanceOf[BintelInlinable { type Self = value }]
 

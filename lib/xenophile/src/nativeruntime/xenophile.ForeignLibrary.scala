@@ -65,8 +65,7 @@ object ForeignLibrary:
   def register(paths: Text*): Unit =
     def attempt(remaining: List[Text]): CVoidPtr = remaining match
       case path :: rest =>
-        val handle = Zone.acquire: zone =>
-          dlopen(toCString(path.s)(using zone), RTLD_NOW)
+        val handle = Zone.acquire: zone => dlopen(toCString(path.s)(using zone), RTLD_NOW)
 
         if handle == null then attempt(rest) else handle
 

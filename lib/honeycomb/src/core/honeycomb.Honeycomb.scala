@@ -105,7 +105,6 @@ object Honeycomb:
 
             elements(index + 1)('{$expr && $expr2})
 
-
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
@@ -231,7 +230,6 @@ object Honeycomb:
           case fragment@Fragment(nodes*) =>
             val checked = checkFragment(array, fragment, '{$scrutinee.asInstanceOf[Fragment]})
             '{$expr && $scrutinee.isInstanceOf[Fragment] && $checked}
-
 
       val result: Expr[Extrapolation[Html]] =
         ' {

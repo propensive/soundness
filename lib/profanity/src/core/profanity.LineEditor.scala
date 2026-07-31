@@ -165,8 +165,7 @@ extends Question[Text]:
 
         case Ctrl(Left) =>
           val position2 =
-            ((position - 2 `max` 0) to 0 by -1).seek: index =>
-              value.at(index.z) == ' '
+            ((position - 2 `max` 0) to 0 by -1).seek: index => value.at(index.z) == ' '
 
           copy(position0 = position2.lay(0)(_ + 1))
 

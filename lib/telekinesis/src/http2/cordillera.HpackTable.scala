@@ -134,8 +134,7 @@ class HpackTable(initialMaxSize: Int = 4096):
     evict()
 
   private def evict(): Unit =
-    while currentSize > maxSize && entries.nonEmpty do
-      currentSize -= entries.removeLast().size
+    while currentSize > maxSize && entries.nonEmpty do currentSize -= entries.removeLast().size
 
   // Insert at the front (most recent). An entry larger than the whole table
   // clears it and is itself not stored (RFC 7541 §4.4).
@@ -150,5 +149,4 @@ class HpackTable(initialMaxSize: Int = 4096):
     else
       val dynamicIndex = index - HpackTable.static.length - 1
 
-      if dynamicIndex >= 0 && dynamicIndex < entries.length then entries(dynamicIndex)
-      else Unset
+      if dynamicIndex >= 0 && dynamicIndex < entries.length then entries(dynamicIndex) else Unset

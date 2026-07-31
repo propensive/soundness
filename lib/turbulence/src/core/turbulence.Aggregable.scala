@@ -107,7 +107,6 @@ object Aggregable:
 
       builder.toString.tt
 
-
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
   =>  Chain[element2] is Aggregable by element =
 

@@ -53,6 +53,30 @@ dag.descendants(8)     // the sub-graph beneath 8
 dag.invert             // the graph with every edge reversed
 ```
 
+`ancestors` is the counterpart of `descendants`, giving what depends on a node rather than what it
+depends on, and `lineage` gives both together — the node's whole causal neighbourhood, which is
+what "why is this here, and what breaks if I remove it" asks for.
+
+`sources` gives the nodes with no dependencies, which is where a build or an installation starts,
+and `subgraph` restricts the graph to a chosen set of nodes.
+
+Everything that could encounter a cycle says so: `sorted`, `reachable`, `descendants` and their
+kin raise a `DagError`, since a cyclic graph has no topological order and no finite reachable set.
+`hasCycle` asks the question directly, for code that would rather check than handle.
+
+### Folding over a graph
+
+A traversal computes a value for every node from the values of the nodes it depends on, in an
+order that guarantees the dependencies are computed first:
+
+```scala
+dag.traversal[Int]((childValues, node) => childValues.sum + 1)
+```
+
+This is the shape of most real work over a dependency graph — computing a build order's costs,
+propagating a version constraint, accumulating a transitive set — expressed once rather than as a
+hand-written recursion with its own visited-set bookkeeping.
+
 ### Closure and reduction
 
 The transitive `closure` adds an edge wherever a path exists; the transitive `reduction` removes

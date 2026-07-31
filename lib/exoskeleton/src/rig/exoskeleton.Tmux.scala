@@ -148,8 +148,7 @@ object Tmux:
         enter(Ht)
         var count = 0
 
-        while init === screenshot().screen && count < 150 do
-          delay(0.01*Second) yet (count += 1)
+        while init === screenshot().screen && count < 150 do delay(0.01*Second) yet (count += 1)
 
         if init !== screenshot().screen then
           var prev = screenshot().screen

@@ -63,8 +63,7 @@ object PseudoHeaders:
           HpackEntry(t":authority", authority),
           HpackEntry(t":path", request.target) )
 
-    val regular = request.textHeaders.map: header =>
-      HpackEntry(header.key.lower, header.value)
+    val regular = request.textHeaders.map: header => HpackEntry(header.key.lower, header.value)
 
     List.of(pseudo.stdlib ++ regular.stdlib)
 

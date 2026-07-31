@@ -35,9 +35,17 @@ package enigmatic
 import anticipation.*
 
 object Rsa:
-  given value: [bits <: 1024 | 2048: ValueOf] => (crypto: Crypto) => Rsa[bits] = Rsa(crypto.rsa)
+  given value: [bits <: 1024 | 2048 | 3072 | 4096: ValueOf]
+  =>  ( digest: SignatureDigest, crypto: Crypto )
+  =>  Rsa[bits] =
+    Rsa(crypto.rsa, crypto.rsaSignature(digest.token))
 
-class Rsa[bits <: 1024 | 2048: ValueOf](cipher: Crypto.PublicKeyCipher) extends Cipher, Encryption:
+// RSA both encrypts and signs. The two are distinct primitives sharing one key pair: `encrypt`
+// and `decrypt` use raw RSA, while `sign` and `verify` use RSASSA-PKCS1-v1_5 over the digest
+// named by the ambient `SignatureDigest` (SHA-256 unless overridden).
+class Rsa[bits <: 1024 | 2048 | 3072 | 4096: ValueOf]
+  ( cipher: Crypto.PublicKeyCipher, scheme: Crypto.SignatureScheme )
+extends Cipher, Encryption, Signing:
   type Size = bits
 
   def keySize: bits = valueOf[bits]
@@ -47,3 +55,7 @@ class Rsa[bits <: 1024 | 2048: ValueOf](cipher: Crypto.PublicKeyCipher) extends 
   // RSA uses no initialization vector; the explicit `iv` is ignored.
   def encrypt(bytes: Data, key: Data, iv: InitializationVector): Data = cipher.encrypt(bytes, key)
   def genKey(): Data = cipher.generateKeyPair(keySize)
+  def sign(data: Data, keyData: Data): Data = scheme.sign(data, keyData)
+
+  def verify(data: Data, signature: Data, keyData: Data): Boolean =
+    scheme.verify(data, signature, keyData)

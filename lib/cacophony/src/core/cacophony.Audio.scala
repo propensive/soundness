@@ -121,7 +121,6 @@ object Audio:
 
     audio => zephyrine.Stream(writeAudio(audio, form.name).stdlib.iterator)
 
-
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:
     type Domain = HttpStreams
     type Result = HttpStreams.Content
@@ -133,7 +132,6 @@ object Audio:
   =>  (((Audio in format) is Aggregable by Data)^{tactic}) =
 
     audible.read(_)
-
 
   given aggregable2: (tactic: Tactic[AudioError])
   =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)

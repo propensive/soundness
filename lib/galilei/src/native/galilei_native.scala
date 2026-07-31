@@ -182,8 +182,7 @@ package filesystemBackends:
           val process =
             new ProcessBuilder("mkfifo", Path.encodable.encode(path).s).start().nn
 
-          if process.waitFor() != 0
-          then abort(IoError(path, Operation.Create, Reason.Unsupported))
+          if process.waitFor() != 0 then abort(IoError(path, Operation.Create, Reason.Unsupported))
 
       def delete(path: Path on Plane)(using Tactic[IoError]): Unit =
         protect(path, Operation.Delete)(jnf.Files.delete(javaPath(path)))

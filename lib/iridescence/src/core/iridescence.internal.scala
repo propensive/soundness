@@ -44,7 +44,6 @@ object internal:
   def rgbMacro(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
   :   Expr[Chroma] =
 
-
     val parts: List[String] =
       context.value.getOrElse:
         halt(m"the StringContext extension method parameter does not appear to be inline")
@@ -56,8 +55,7 @@ object internal:
     val raw: String = parts.head
 
     val hex: String =
-      if raw.length == 7 && raw.startsWith("#") then raw.substring(1).nn
-      else raw
+      if raw.length == 7 && raw.startsWith("#") then raw.substring(1).nn else raw
 
     def isHex(ch: Char): Boolean =
       ch.isDigit || ((ch | 32) >= 'a' && (ch | 32) <= 'f')

@@ -60,7 +60,7 @@ object Multiplicable:
     (multiplicand, multiplier) => multiplicand*multiplier
 
   given short: Short is Multiplicable by Short to Short = Multiplicable:
-    (multiplicand, multiplier) => (multiplicand*multiplier).toByte
+    (multiplicand, multiplier) => (multiplicand*multiplier).toShort
 
   given byte: Byte is Multiplicable by Byte to Byte = Multiplicable:
     (multiplicand, multiplier) => (multiplicand*multiplier).toByte

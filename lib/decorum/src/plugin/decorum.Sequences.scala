@@ -353,8 +353,7 @@ object Sequences:
     val hasCatch  = !tr.handler.isEmpty && handlerSp.exists
     val hasFin    = !tr.finalizer.isEmpty && finSp.exists
     val catchOffset =
-      if !hasCatch then -1
-      else findKeyword(content, exprSp.end, handlerSp.end, "catch")
+      if !hasCatch then -1 else findKeyword(content, exprSp.end, handlerSp.end, "catch")
     if catchOffset >= 0 then
       elems +=
         makeElem
@@ -408,9 +407,7 @@ object Sequences:
       then source.offsetToLine(bodyStart) + 1
       else line
     val bodyCol =
-      if bodyStart >= 0 && bodyStart <= content.length
-      then source.column(bodyStart) + 1
-      else col
+      if bodyStart >= 0 && bodyStart <= content.length then source.column(bodyStart) + 1 else col
     val bodyIndented = bodyLine > bodyAnchorLine
     SeqElem(label, line, col, startsLine, bodyLine, bodyCol, bodyIndented)
 
@@ -481,11 +478,7 @@ object Sequences:
 
     val end = content.length
     var i   = from
-    while i < end && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do
-      i += 1
+    while i < end && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do i += 1
     if i < end && content.charAt(i) == '\n' then i += 1
-    while i < end && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do
-      i += 1
-    if i < end then i
-    else if bodySp.exists then bodySp.start
-    else from
+    while i < end && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do i += 1
+    if i < end then i else if bodySp.exists then bodySp.start else from

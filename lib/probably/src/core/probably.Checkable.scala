@@ -43,16 +43,13 @@ object Checkable:
   given iarray: [left, right] => (Array[left]^{}) is Checkable against (Array[right]^{}) =
     (left, right) => left.sameElements(right.asInstanceOf[Array[left]^{}])
 
-
   given stream: [left, right] => (left is Checkable against right)
   =>  Chain[left] is Checkable against Chain[right] =
 
     _.zip(_).all(_ === _)
 
-
   given tolerance2: [value] => value is Checkable against Tolerance[value] =
     (value, tolerance) => tolerance.covers(value)
-
 
   inline given commensurable: [value: Commensurable against value]
   =>  value is Checkable against value =

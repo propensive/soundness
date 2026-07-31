@@ -82,3 +82,25 @@ case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year
 A format's derivation reads these through the same typeclass — the per-format rename overriding the
 bare default — which is why one annotation serves [JSON](json.md), [XML](xml.md),
 [YAML](yaml.md) and the rest identically.
+
+### Reaching fields by name
+
+Alongside annotations, a case class's fields can be reached by name at runtime, with the mapping
+generated as the code compiles rather than by reflection. A `Dereferenceable` gives the field
+names, one field's value by name, and the whole record as a map:
+
+```scala
+val fields = summon[Employee is Dereferenceable to Any]
+
+fields.names(employee)          // the field names, in declaration order
+fields.select(employee, t"code")
+fields.members(employee)        // name to value
+```
+
+The instance is parameterized by the type the fields yield, so a record whose fields are all
+`Text` dereferences to `Text` rather than to `Any` — which is what makes a generic renderer or a
+template engine able to read a value's fields without casting.
+
+Because the mapping is a compiled table of accessors, reaching a field costs a method call, and a
+name the type does not have is discovered where the table is built rather than by a reflective
+lookup failing at runtime.

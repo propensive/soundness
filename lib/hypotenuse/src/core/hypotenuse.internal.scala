@@ -78,12 +78,10 @@ object internal:
 
     inline given underlying: Underlying[F64, Double] = caps.unsafe.unsafeErasedValue
 
-
     inline given canEqual: CanEqual
       [ F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte ] =
 
       caps.unsafe.unsafeErasedValue
-
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
       (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) |
@@ -191,12 +189,10 @@ object internal:
 
     inline given underlying: Underlying[F32, Float] = caps.unsafe.unsafeErasedValue
 
-
     inline given canEqual: CanEqual
       [ F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte ] =
 
       caps.unsafe.unsafeErasedValue
-
 
     inline given orderable: F32 is Orderable:
       inline def compare
@@ -208,8 +204,7 @@ object internal:
 
         inline if greaterThan
         then
-          inline if strict then (left: Float) > (right: Float)
-          else (left: Float) >= (right: Float)
+          inline if strict then (left: Float) > (right: Float) else (left: Float) >= (right: Float)
         else
           inline if strict then (left: Float) < (right: Float)
           else (left: Float) <= (right: Float)
@@ -277,12 +272,10 @@ object internal:
 
     inline given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
 
-
     inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
-
 
     given fromDigits: FromDigits[S64]:
       inline def fromDigits(digits: String): S64 = ${hypotenuse.protointernal.parseS64('digits)}
@@ -338,12 +331,10 @@ object internal:
 
     inline given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
 
-
     inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
-
 
     given fromDigits: FromDigits[S32]:
       inline def fromDigits(digits: String): S32 = ${hypotenuse.protointernal.parseS32('digits)}
@@ -399,13 +390,11 @@ object internal:
 
     inline given underlying: Underlying[S16, Short] = caps.unsafe.unsafeErasedValue
 
-
     inline given canEqual: CanEqual[S16,
                                     F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int |
                                       Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
-
 
     given fromDigits: FromDigits[S16]:
       inline def fromDigits(digits: String): S16 = ${hypotenuse.protointernal.parseS16('digits)}
@@ -424,8 +413,7 @@ object internal:
 
         inline if greaterThan
         then
-          inline if strict then (left: Short) > (right: Short)
-          else (left: Short) >= (right: Short)
+          inline if strict then (left: Short) > (right: Short) else (left: Short) >= (right: Short)
         else
           inline if strict then (left: Short) < (right: Short)
           else (left: Short) <= (right: Short)
@@ -465,12 +453,10 @@ object internal:
 
     inline given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
 
-
     inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
       Int | Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
-
 
     given fromDigits: FromDigits[S8]:
       inline def fromDigits(digits: String): S8 = ${hypotenuse.protointernal.parseS8('digits)}
@@ -576,7 +562,6 @@ object internal:
 
     inline def apply(inline byte: Byte): B8 = byte
 
-
   extension (s64: S64)
     @targetName("absS64")
     inline def abs: S64 = math.abs(s64)
@@ -624,7 +609,6 @@ object internal:
         if right == 0 then left else recur(right, left%right)
 
       recur(s64, right)
-
 
   extension (s32: S32)
     @targetName("plusS32")
@@ -682,7 +666,6 @@ object internal:
         if right == 0 then left else recur(right, left%right)
 
       recur(s32, right)
-
 
   extension (s16: S16)
     @targetName("plusS16")
@@ -744,7 +727,6 @@ object internal:
 
       recur(s16, right)
 
-
   extension (s8: S8)
     @targetName("plusS8")
     inline infix def + (right: Conversion.into[S8])(using overflow: CheckOverflow)
@@ -800,7 +782,6 @@ object internal:
     @targetName("bitsS8")
     inline def bits: B8 = s8
 
-
     @targetName("gcdS8")
     def gcd(right: S8): S8 =
       @tailrec
@@ -808,7 +789,6 @@ object internal:
         if right == 0 then left else recur(right, (left%right).toByte)
 
       recur(s8, right)
-
 
   extension (bitmap: B8)
     @targetName("bitsB8")
@@ -902,7 +882,6 @@ object internal:
 
     def s8: S8 = bitmap
     def u8: U8 = bitmap
-
 
   extension (bitmap: B16)
     @targetName("bitsB16")
@@ -1000,7 +979,6 @@ object internal:
     def s16: S16 = bitmap
     def u16: U16 = bitmap
 
-
   extension (bitmap: B32)
     @targetName("bitsB32")
     inline def apply(inline interval: Interval): B32 =
@@ -1096,7 +1074,6 @@ object internal:
 
     def s32: S32 = bitmap
     def u32: U32 = bitmap
-
 
   extension (bitmap: B64)
     @targetName("bitsB64")
@@ -1201,7 +1178,6 @@ object internal:
     def s64: S64 = bitmap
     def u64: U64 = bitmap
 
-
   extension (f64: F64)
     @targetName("doubleF64")
     inline def double: Double = f64
@@ -1283,7 +1259,6 @@ object internal:
 
     @targetName("predecessorF64")
     inline def predecessor: F64 = Math.nextDown(double)
-
 
   extension (f32: F32)
     @targetName("floatF32")
@@ -1367,7 +1342,6 @@ object internal:
     @targetName("predecessorF32")
     inline def predecessor: F32 = Math.nextDown(float)
 
-
   extension (u64: U64)
     @targetName("bitsU64")
     inline def bits: B64 = u64
@@ -1411,7 +1385,6 @@ object internal:
       def recur(left: U64, right: U64): U64 = if right == 0 then left else recur(right, left%right)
 
       recur(u64, right)
-
 
   extension (u32: U32)
     @targetName("plusU32")
@@ -1468,7 +1441,6 @@ object internal:
       def recur(left: U32, right: U32): U32 = if right == 0 then left else recur(right, left%right)
 
       recur(u32, right)
-
 
   extension (u16: U16)
     @targetName("plusU16")
@@ -1536,7 +1508,6 @@ object internal:
         if right == 0 then left else recur(right, (left%right).toShort)
 
       recur(u16, right)
-
 
   extension (u8: U8)
     @targetName("plusU8")

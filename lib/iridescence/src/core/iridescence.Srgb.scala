@@ -32,6 +32,7 @@
                                                                                                   */
 package iridescence
 
+import geodesy.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
@@ -62,7 +63,7 @@ object Srgb:
       val delta = max - min
       val lightness = (max + min)/2
 
-      if delta == 0 then Hsl(0, 0, lightness) else
+      if delta == 0 then Hsl(Angle(0), 0, lightness) else
         val saturation = if lightness < 0.5 then delta/(max + min) else delta/(2 - max - min)
         val dRed = ((max - color.red)/6 + delta/2)/delta
         val dGreen = ((max - color.green)/6 + delta/2)/delta
@@ -73,7 +74,7 @@ object Srgb:
           else if max == color.green then 1.0/3 + dRed - dBlue
           else 2.0/3 + dGreen - dRed
 
-        Hsl(unitary(hue), saturation, lightness)
+        Hsl(Angle.turns(hue).principal, saturation, lightness)
 
   given hsv: Srgb is Perceptual in Hsv =
     color =>
@@ -81,7 +82,7 @@ object Srgb:
       val value = color.red max color.green max color.blue
       val delta = value - min
 
-      if delta == 0 then Hsv(0, 0, value)
+      if delta == 0 then Hsv(Angle(0), 0, value)
       else
         val saturation = delta/value
         val dr = ((value - color.red)/6 + delta/2)/delta
@@ -93,7 +94,7 @@ object Srgb:
           else if value == color.green then 1.0/3 + dr - db
           else 2.0/3 + dg - dr
 
-        Hsv(unitary(hue), saturation, value)
+        Hsv(Angle.turns(hue).principal, saturation, value)
 
 case class Srgb(red: Double, green: Double, blue: Double) extends Color:
   type Form = Srgb

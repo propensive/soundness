@@ -74,6 +74,41 @@ socket.duplex: duplex =>
   duplex.stream.head
 ```
 
+### Sessions
+
+A *session* is the same idea stated as a scope: `session` opens a connection to the target, lends
+it to the block, and closes it when the block ends. The result type is quantified outside the
+block, so a value still borrowing the live connection cannot escape it, while a memoized value
+can:
+
+```scala
+endpoint.session: connection ?=>
+  converse(connection)
+```
+
+This is what an [HTTP session](http-client.md) is built on, and how concurrent requests multiplex
+on one HTTP/2 connection without a parked daemon: the loan and the scope coincide.
+
+### TLS
+
+A TLS connection is made through a secure endpoint, with the trust policy a contextual value. The
+handshake may offer [ALPN](https://en.wikipedia.org/wiki/Application-Layer_Protocol_Negotiation)
+protocols, in preference order, and the protocol the peer selected is reported back on the
+connection — the seam an HTTP client uses to choose between an HTTP/2 and an HTTP/1.1 driver over
+one socket. Offering nothing preserves the plain-TLS handshake that `wss` peers expect.
+
+### Choosing a backend
+
+Nothing above names a platform API. The primitive operations each role needs — bind and accept,
+connect and converse, receive and reply, dispatch a datagram — are gathered into a
+`SocketBackend`, and the loops that compose them stay platform-neutral. The
+`java.nio.channels` implementation is `socketBackends.virtualMachine`, and backends over
+`wasi:sockets` and over Scala Native's sockets supply the same operations, so the same protocol
+code runs on the JVM, inside a WebAssembly component, and in a native binary. An operation a
+backend cannot support — Unix-domain sockets or TLS on WASI — raises the appropriate error rather
+than approximating it. Narrowing the platform's surface to a seam this small is
+[decoupling](../philosophy/decoupling.md) applied within a module.
+
 ### Socket options
 
 The socket options of the underlying platform — `SO_REUSEADDR`, keep-alive, buffer sizes, timeouts —
@@ -83,7 +118,45 @@ TCP-only option cannot be applied to a UDP socket:
 ```scala
 import socketOptions.reuseAddressSocketOption
 import socketOptions.keepAliveSocketOption
+import socketOptions.broadcastSocketOption
 ```
+
+Options are collected from scope as a set rather than passed at each call, so a program's socket
+policy is stated once. `SO_REUSEADDR` for a server that must restart without waiting out
+`TIME_WAIT`, `SO_BROADCAST` for a UDP socket that sends to a broadcast address, `TCP_NODELAY` for
+a protocol that must not wait for Nagle's algorithm, buffer sizes and timeouts — each is typed by
+the transports that accept it, and a backend silently skips an option its platform does not
+support rather than failing.
+
+### Messages and their conversions
+
+What a socket sends and receives is not bytes but values. `Transmissible` says how a value becomes
+bytes on the way out, and `Ingressive` how bytes become a value on the way in, so a protocol is
+written in its own vocabulary:
+
+```scala
+Ingressive.bytes         // received as raw Data
+Ingressive.text          // decoded through the character encoding in scope
+Ingressive.decoder[Port] // decoded to any type with a Decodable instance
+```
+
+A `Port` received over the wire is therefore a `Port`, validated on arrival, rather than text to
+be checked later.
+
+### Conversations as state machines
+
+`exchange` drives a client-side protocol as a state machine: each received message yields a
+`Control` saying what happens next. `Continue` carries the new state — or none, leaving it
+unchanged — and `Terminate` ends the conversation:
+
+```scala
+socket.exchange(initial):
+  case (state, message) =>
+    if done(message) then Terminate else Continue(next(state, message))
+```
+
+Writing a protocol this way keeps its states explicit, rather than implied by where control
+happens to be in a sequence of interleaved reads and writes.
 
 ### Errors
 

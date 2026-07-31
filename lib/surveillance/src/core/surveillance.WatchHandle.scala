@@ -85,5 +85,4 @@ extends Openable:
   :   result =
 
     val watch = Watch(value)
-    try block(using new WatchHandle(watch) with Granting[grants] {})
-    finally watch.unregister()
+    try block(using new WatchHandle(watch) with Granting[grants] {}) finally watch.unregister()

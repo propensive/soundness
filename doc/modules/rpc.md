@@ -95,7 +95,35 @@ length prefix, a `Content-Length` header as LSP uses, or line endings:
 stream.iterator.frames[LengthPrefix]     // length-prefixed messages
 input.iterator.frames[ContentLength]     // header-framed messages, byte-counted
 lines.iterator.frames[CrLf]              // CRLF-separated lines
+lines.iterator.frames[Linefeed]          // or bare linefeeds, or CR alone
+framed.iterator.frames[GrpcFraming]      // gRPC's flag byte and 4-byte length
+```
+
+Framing is independent of how the bytes arrive. A message split across three chunks, two messages
+in one chunk, and a final message with no terminator are all handled, because the framer keeps its
+own position rather than assuming chunk boundaries mean anything:
+
+```scala
+LazyList(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
+// List("one", "two", "three")
 ```
 
 A truncated or malformed frame raises a `FrameError` naming what was wrong, so a protocol failure
 is a diagnosis rather than a hang.
+
+### Verifying a wire format
+
+A protocol implementation that only round-trips against itself proves nothing: two matching bugs
+look exactly like correctness. The HTTP/2 and gRPC codecs are therefore checked against *golden
+bytes* — the exact octets each frame must serialize to, written out in the tests — as well as
+round-tripped. A gRPC message's framing is one flag byte and a four-byte length, and the encoder
+is checked to produce exactly that:
+
+```scala
+GrpcFraming.encode(payload)   // 00 00 00 00 05, then the payload
+```
+
+HPACK's header compression is verified against every example in
+[RFC 7541](https://datatracker.ietf.org/doc/html/rfc7541)'s appendices, with and without Huffman
+coding, and the `Huffman` codec against the strings the specification tabulates. Where a
+specification publishes vectors, they are what the implementation is measured against.

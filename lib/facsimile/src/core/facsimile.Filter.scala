@@ -250,8 +250,7 @@ private[facsimile] object Filter:
 
         i += length + 1
       else
-        if i >= data.length
-        then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
+        if i >= data.length then abort(PdfError(PdfError.Reason.CorruptStream(t"RunLengthDecode")))
 
         var j = 0
 

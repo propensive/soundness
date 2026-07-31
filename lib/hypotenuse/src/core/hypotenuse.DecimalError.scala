@@ -38,4 +38,4 @@ import anticipation.*
 import fulminate.*
 
 case class DecimalError(text: Text)(using Diagnostics)
-extends Error(869, 0)(m"$text is not a representable decimal number")
+extends Error(740, 0)(m"$text is not a representable decimal number")

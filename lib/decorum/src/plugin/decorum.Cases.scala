@@ -135,9 +135,10 @@ object Cases:
         // True when the `=>` is the first non-whitespace token on its line.
         val arrowLineStart = source.startOfLine(arrowOffset)
         var aw = arrowLineStart
-        while aw < arrowOffset
-              && (content.charAt(aw) == ' ' || content.charAt(aw) == '\t')
+
+        while aw < arrowOffset && (content.charAt(aw) == ' ' || content.charAt(aw) == '\t')
         do aw += 1
+
         val arrowAloneOnLine = aw == arrowOffset
         // True if the body begins on a fresh line after `=>` (dotty's body
         // span often opens at the `=>` token itself, so we scan the source

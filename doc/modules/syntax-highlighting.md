@@ -75,3 +75,26 @@ Scala.highlight(source, caret = source.length.z).completions
 
 Because the proposals come from the same compiler that will eventually compile the code, they are
 never guesses.
+
+Members after a `.` are the easy case. A bare identifier being typed is harder, because the
+statement containing it does not typecheck — that is precisely its state while it is being
+written — and a batch compilation discards the tree. Completions therefore come from the
+compiler's interactive driver, which keeps error trees, so in-scope terms and types complete
+wherever the caret is, and in a type position the offers are narrowed to types, modules and
+packages.
+
+### Completing keywords and dynamic members
+
+Two kinds of proposal the compiler cannot make are supplied alongside its own.
+
+*Keywords* are grammatical, not semantic: what may follow depends on the tokens before the caret,
+not on any symbol table. A trie over reversed token contexts, derived from a corpus of real Scala
+and looking back only as far as remains relevant, answers what keywords could come next and what
+the grammar expects there — so `case ` offers what a case may begin with, and a position that
+must be a type offers no keywords at all.
+
+*Dynamic* members have no symbols to offer at all. Where the caret sits on a selection whose
+qualifier derives from `scala.Dynamic`, the type's companion is asked which members its
+refinement admits, if it implements the interface for saying so. That is how a
+[foreign](foreign-interop.md) value completes with the members its foreign declarations name, and
+how any `Dynamic` type can offer honest completions rather than none.

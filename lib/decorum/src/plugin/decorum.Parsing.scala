@@ -33,6 +33,7 @@
 package decorum
 
 import dotty.tools.dotc.ast.untpd
+import dotty.tools.dotc.config.Settings
 import dotty.tools.dotc.core.Contexts.{Context, ContextBase}
 import dotty.tools.dotc.parsing.Parsers
 import dotty.tools.dotc.reporting.{Diagnostic, Reporter}
@@ -44,14 +45,31 @@ object Parsing:
   private class SilentReporter extends Reporter:
     def doReport(dia: Diagnostic)(using Context): Unit = ()
 
+  // The language features the build enables globally (see `build.mill`).
+  // The standalone parser must match the in-compiler parse — without
+  // `relaxedLambdaSyntax`, for example, a one-line `f: x => body` colon
+  // lambda misparses as a type ascription and misleads the tree rules.
+  private val languageFeatures: List[String] =
+    List
+      ( "experimental.modularity", "experimental.dependent",
+        "experimental.relaxedLambdaSyntax", "experimental.genericNumberLiterals",
+        "experimental.into", "experimental.erasedDefinitions", "implicitConversions",
+        "experimental.saferExceptions", "experimental.strictEqualityPatternMatching",
+        "experimental.subCases", "experimental.multiSpreads" )
+
   // Parse the given source text into an untyped Scala 3 AST. Returns the
   // tree paired with its SourceFile. If parsing throws, returns the empty
   // tree — callers should treat that as "no structural info available".
   def parse(file: String, text: String): (untpd.Tree, SourceFile) =
     val source = SourceFile.virtual(file, text)
     try
-      val base   = new ContextBase
-      val ctx    = base.initialCtx.fresh.setReporter(new SilentReporter).setSource(source)
+      val base = new ContextBase
+      val ctx  = base.initialCtx.fresh.setReporter(new SilentReporter).setSource(source)
+
+      ctx.setSetting
+        ( ctx.settings.language,
+          languageFeatures.map(Settings.Setting.ChoiceWithHelp(_, "")) )
+
       val parser = new Parsers.Parser(source)(using ctx)
       (parser.parse(), source)
     catch case _: Throwable => (untpd.EmptyTree, source)

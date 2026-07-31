@@ -62,5 +62,4 @@ object AdaptiveSupervisor extends ThreadSupervisor:
     catch case error: UnsupportedOperationException => false
 
   def fork(name: () => Optional[Text])(block: => Unit): Strand =
-    if virtual then VirtualSupervisor.fork(name)(block)
-    else PlatformSupervisor.fork(name)(block)
+    if virtual then VirtualSupervisor.fork(name)(block) else PlatformSupervisor.fork(name)(block)

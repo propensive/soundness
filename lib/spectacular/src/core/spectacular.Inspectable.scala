@@ -61,8 +61,7 @@ object Inspectable extends Inspectable2:
 
     inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
-        [variant <: derivation] => variant =>
-          contextual.give(variant.inspect)
+        [variant <: derivation] => variant => contextual.give(variant.inspect)
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
   given long: Long is Inspectable = long => (long.toString+"L").tt
@@ -144,19 +143,16 @@ object Inspectable extends Inspectable2:
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).stdlib.mkString("⟨ ", " ", " ⟩").tt
 
-
   given indexedSeq: [element] => (inspectable: => element is Inspectable)
   =>  IndexedSeq[element] is Inspectable =
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).mkString("⟨ ", " ", " ⟩ᵢ").tt
-
 
   given list: [element] => (inspectable: => element is Inspectable)
   =>  List[element] is Inspectable =
 
     val insp: () -> (element is Inspectable) = caps.unsafe.unsafeAssumePure(() => inspectable)
     _.map(insp().text(_)).mkString("[", ", ", "]").tt
-
 
   given array: [element] => (inspectable: => element is Inspectable)
   =>  scala.Array[element] is Inspectable =
@@ -169,7 +165,6 @@ object Inspectable extends Inspectable2:
         (subscript+insp().text(value).s).tt
 
       . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
-
 
   given arraySeq: [element] => (inspectable: => element is Inspectable)
   =>  scm.ArraySeq[element] is Inspectable =
@@ -198,7 +193,6 @@ object Inspectable extends Inspectable2:
 
       recur(stream, 3)
 
-
   given iarray: [element] => (inspectable: => element is Inspectable)
   =>  (Array[element]^{}) is Inspectable =
 
@@ -210,7 +204,6 @@ object Inspectable extends Inspectable2:
         subscript+insp().text(value).s.tt
 
       . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
-
 
   private def arrayPrefix(string: String): String =
     val brackets = string.count(_ == '[')

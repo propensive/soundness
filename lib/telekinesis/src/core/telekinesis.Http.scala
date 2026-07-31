@@ -243,9 +243,7 @@ object Http:
         . join(t"\n          ")
 
       val params: Text =
-        request.query.values.map: (key, value) =>
-          t"$key = \"$value\""
-
+        request.query.values.map: (key, value) => t"$key = \"$value\""
         . join(t"\n          ")
 
       Ledger[Text, Text](
@@ -583,7 +581,6 @@ object Http:
       case Body.Empty           => Iterator.empty[Data].stream
       case Body.Flowing(source) => source()
 
-
   // A request body with no bytes; each call constructs a fresh, already-empty
   // pull endpoint, matching the re-materializable contract of `body` thunks.
   def emptyBody(): (Stream[Data] over Credit)^ = Iterator.empty[Data].stream
@@ -633,7 +630,6 @@ object Http:
     lazy val textCookies: Map[Text, Text] = Map.from:
       headers.cookie.stdlib.flatMap: (cookie: List[Cookie.Value]) =>
         cookie.stdlib.map { value => value.name -> value.value }
-
 
   // The swappable transport that physically sends a single request and returns
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
@@ -1025,7 +1021,6 @@ object Http:
     def successBody: Optional[(Stream[Data] over Credit)^] =
       if status.category != Http.Status.Category.Successful then Unset
       else body.stream
-
 
     def receive[body](using receivable: (body is Receivable)^): body =
       receivable.read(this)

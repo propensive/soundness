@@ -74,13 +74,11 @@ object Computable:
 
   given unit: Unit is Computable = exitStatus.map(_ => ())
 
-
   given instantiable: [instantiable]
   =>  ( evidence: (instantiable is Instantiable across Paths from Text)^ )
   =>  ((instantiable is Computable)^{evidence}) =
 
     text.map: text => evidence(text.trim)
-
 
 trait Computable extends Typeclass:
   def compute(process: Subprocess^): Self

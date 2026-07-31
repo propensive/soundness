@@ -55,8 +55,7 @@ object Xenophile:
 
     val grammar = origin.typeSymbol.typeMember("Grammar")
 
-    if !grammar.exists
-    then halt(m"xenophile: the source language does not define a `Grammar`")
+    if !grammar.exists then halt(m"xenophile: the source language does not define a `Grammar`")
 
     val dialectType = origin.memberType(grammar) match
       case TypeBounds(_, hi) => hi
@@ -224,8 +223,7 @@ object Xenophile:
           "Origin",
           TypeBounds(origin, origin) )
 
-    locus.lay(base): locusRepr =>
-      Refinement(base, "Locus", TypeBounds(locusRepr, locusRepr))
+    locus.lay(base): locusRepr => Refinement(base, "Locus", TypeBounds(locusRepr, locusRepr))
 
   // Builds the `Expression` for a single method argument. Every argument arrives as a `Foreign`
   // (either already, or converted from a Scala value at the call site by the `converter`

@@ -257,7 +257,6 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   import Parser.*
 
-
   // Parser-local snapshot (see comment above).
   private var bytes:  scala.Array[Byte] = null.asInstanceOf[scala.Array[Byte]]
   private var pos:    Int = 0
@@ -372,9 +371,6 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     bcdIntBufferId = -1
     indexBufferId = -1
     rootIndex = null
-
-
-
 
   // ──────────────────────────────────────────────────────────────────────────
   // Substrate.
@@ -3231,9 +3227,6 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
 
   private[jacinta] update def directFail(issue: Issue)(using Tactic[ParseError]): Nothing =
     errorAt(issue)
-
-
-
 
   // No INLINE member may read this field: the synthesized `inline$cursor` accessor's
   // exclusive result type acts as a template-level hider that bars other member

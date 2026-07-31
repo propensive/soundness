@@ -244,11 +244,7 @@ object LaneDagDiagram:
 
     val continuing = state.filter{ (_, lane) => lane.target != current }.keys.to(Set)
 
-    (0 until width).map: c =>
-      if c == col then Node
-      else if continuing(c) then Vertical
-      else Space
-
+    (0 until width).map: c => if c == col then Node else if continuing(c) then Vertical else Space
     . to(List)
 
   given printable: [node: Showable] => (style: LaneDagStyle[Text])
@@ -303,8 +299,7 @@ case class LaneDagDiagram[node](lines: List[(List[DagTile], Optional[node])]):
       val nodeIdx = tiles.indexOf(Node)
 
       val glyphs: Map[Int, line] =
-        if nodeIdx < 0 then Map.empty
-        else node.let{ n => Map(nodeIdx -> glyph(n)) }.or(Map.empty)
+        if nodeIdx < 0 then Map.empty else node.let{ n => Map(nodeIdx -> glyph(n)) }.or(Map.empty)
 
       style.serialize
         ( proscenium.List.of(tiles), glyphs, proscenium.List.of(widths), node.let(label) )

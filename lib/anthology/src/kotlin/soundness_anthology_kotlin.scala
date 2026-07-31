@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export anthology.{Kotlinc, KotlinVersions}
+export anthology.Kotlinc
+
+package kotlincOptions:
+  export anthology.kotlincOptions.*

@@ -101,4 +101,3 @@ trait FilesystemBackend extends Planar:
   def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
     ( using Tactic[IoError] )
   :   result
-

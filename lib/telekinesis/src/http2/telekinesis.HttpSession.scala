@@ -102,12 +102,10 @@ object HttpSession:
 
       val length: Optional[Int] =
         head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
-        . lay(Unset: Optional[Int]): text =>
-            safely(Integer.parseInt(text.s.trim.nn))
+        . lay(Unset: Optional[Int]): text => safely(Integer.parseInt(text.s.trim.nn))
 
       val bodiless: Boolean =
-        request.method == Http.Head || code == 204 || code == 304 ||
-          (code >= 100 && code < 200)
+        request.method == Http.Head || code == 204 || code == 304 || (code >= 100 && code < 200)
 
       if bodiless then head.status(head.headers, Http.Body.Empty) else
         // The framed body is lent, not drained: it streams zero-copy off the

@@ -68,7 +68,6 @@ package jsonPointerRegistries:
 
         . protect(url.fetch().receive[Json])
 
-
 extension (json: Json)
   // Runtime-checks `json` against the schema for `topic`, then re-types it as a
   // schema-typed `Json of topic from topic`. The phantom `Topic` records the

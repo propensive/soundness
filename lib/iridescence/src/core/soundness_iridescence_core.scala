@@ -36,10 +36,10 @@ package soundness
 // channel machinery via `iridescence.Channel`.
 export
   iridescence
-  . { Alpha, Blue, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, Colorimetry, Cyan, dark, Green,
-      Grey, Hsl, Hsv, Key, light, Magenta, Palette, Perceptual, Pixel, pixel, PixelOpaque, Red,
-      rgb, Rgb, Rgba, Rgb12, Rgb12Opaque, Rgb32, rgb32, Rgb32Opaque, Solarized, Spectrum, Srgb,
-      Theme, WebColors, Xyz, Yellow }
+  . { Alpha, Blendable, Blue, Brightness, Cielab, Cmy, Cmyk, Cmyk8, Color, Colorimetry, Cyan, dark,
+      Daub, Green, Grey, Hsl, Hsv, Key, light, Magenta, Mixing, Palette, Perceptual, Pixel, pixel,
+      PixelOpaque, Red, rgb, Rgb, Rgba, Rgb12, Rgb12Opaque, Rgb32, rgb32, Rgb32Opaque, Solarized,
+      Spectrum, Srgb, Theme, Tonal, WebColors, Xyz, Yellow }
 
 package colorimetry:
   export
@@ -53,6 +53,12 @@ package colorimetry:
 
 package luminosity:
   export iridescence.luminosity.{darkBrightness, lightBrightness}
+
+package mixing:
+  export
+    iridescence.mixing
+    . { colorBurn, colorDodge, darken, difference, exclusion, hardLight, lighten, linearBurn,
+        linearDodge, multiply, overlay, proportional, screen, softLight }
 
 package themes:
   export iridescence.themes.solarizedTheme

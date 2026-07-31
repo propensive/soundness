@@ -86,7 +86,6 @@ def halt(d: Int, message: Message)(using quotes: Quotes): Nothing =
   val body = if detectColor then message.colorText.s else message.text.s
   report.errorAndAbort(errorPrefix(d, 0, detectColor)+body)
 
-
 def halt(d: Int, message: Message, position: Matchable)(using quotes: Quotes): Nothing =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
@@ -96,7 +95,6 @@ def halt(d: Int, message: Message, position: Matchable)(using quotes: Quotes): N
     case null                     => report.errorAndAbort(text)
     case pos: Position @unchecked => report.errorAndAbort(text, pos)
     case _                        => report.errorAndAbort(text)
-
 
 def halt(d: Int, reason: Clarification, message: Message)(using quotes: Quotes): Nothing =
   import quotes.reflect.*
@@ -131,7 +129,6 @@ def warn(d: Int, message: Message)(using quotes: Quotes): Unit =
   val body = if detectColor then message.colorText.s else message.text.s
   report.warning(errorPrefix(d, 0, detectColor)+body)
 
-
 def warn(d: Int, message: Message, position: Matchable)(using quotes: Quotes): Unit =
   import quotes.reflect.*
   val body = if detectColor then message.colorText.s else message.text.s
@@ -141,7 +138,6 @@ def warn(d: Int, message: Message, position: Matchable)(using quotes: Quotes): U
     case null                     => report.warning(text)
     case pos: Position @unchecked => report.warning(text, pos)
     case _                        => report.warning(text)
-
 
 def warn(d: Int, reason: Clarification, message: Message)(using quotes: Quotes): Unit =
   import quotes.reflect.*

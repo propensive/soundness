@@ -167,7 +167,6 @@ object protointernal extends anteprotointernal:
   extension [base <: AnyUnit, quanta <: Quanta[base]](count: quanta)
     def long: Long = count
 
-
   extension [base <: AnyUnit, quanta <: Quanta[base]](inline count: quanta)
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
 
@@ -182,7 +181,6 @@ object protointernal extends anteprotointernal:
 
     transparent inline def divide(inline multiplier: Double): Any =
       ${abacist.internal.multiplyQuanta('count, 'multiplier, true)}
-
 
     transparent inline def collapse(inline length: Int): Any =
       ${abacist.internal.collapse[quanta]('count, 'length)}

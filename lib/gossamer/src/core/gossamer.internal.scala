@@ -118,7 +118,6 @@ object internal:
   def t(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =
     textInterpolator(context, insertions, normalize = false)
 
-
   def txt(context: Expr[StringContext], insertions: Expr[Seq[Any]]): Macro[Text] =
     textInterpolator(context, insertions, normalize = true)
 
@@ -334,9 +333,7 @@ object internal:
                 while it.hasNext do
                   it.next()(from, $text) match
                     case Some(candidate) =>
-                      best.let: existing =>
-                        if candidate(0) < existing(0) then best = candidate
-
+                      best.let: existing => if candidate(0) < existing(0) then best = candidate
                       . or:
                         best = candidate
 
@@ -404,8 +401,7 @@ object internal:
         case Some(s) => '{Text(${Expr(s)})}
         case None    => halt(m"fuzzy case patterns must be a string literal or `t\"…\"` literal")
 
-    val nonWildcardThunks = nonWildcard.map: cd =>
-      '{() => ${cd.rhs.asExprOf[result]}}
+    val nonWildcardThunks = nonWildcard.map: cd => '{() => ${cd.rhs.asExprOf[result]}}
 
     val wildcardThunk = wildcard.map: cd =>
       val matchTerm = Match(text.asTerm, List(cd))

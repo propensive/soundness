@@ -53,25 +53,25 @@ private[facsimile] object StandardFonts:
       else baseFont.s
 
     name match
-      case "Helvetica" | "Arial" | "ArialMT"        => Standard.Helvetica
-      case "Helvetica-Bold" | "Arial-BoldMT"        => Standard.HelveticaBold
-      case "Helvetica-Oblique" | "Arial-ItalicMT"   => Standard.HelveticaOblique
-      case "Helvetica-BoldOblique"                  => Standard.HelveticaBoldOblique
-      case "Arial-BoldItalicMT"                     => Standard.HelveticaBoldOblique
-      case "Times-Roman" | "TimesNewRomanPSMT"      => Standard.TimesRoman
-      case "Times-Bold" | "TimesNewRomanPS-BoldMT"  => Standard.TimesBold
-      case "Times-Italic"                           => Standard.TimesItalic
-      case "TimesNewRomanPS-ItalicMT"               => Standard.TimesItalic
-      case "Times-BoldItalic"                       => Standard.TimesBoldItalic
-      case "TimesNewRomanPS-BoldItalicMT"           => Standard.TimesBoldItalic
+      case "Helvetica" | "Arial" | "ArialMT"           => Standard.Helvetica
+      case "Helvetica-Bold" | "Arial-BoldMT"           => Standard.HelveticaBold
+      case "Helvetica-Oblique" | "Arial-ItalicMT"      => Standard.HelveticaOblique
+      case "Helvetica-BoldOblique"                     => Standard.HelveticaBoldOblique
+      case "Arial-BoldItalicMT"                        => Standard.HelveticaBoldOblique
+      case "Times-Roman" | "TimesNewRomanPSMT"         => Standard.TimesRoman
+      case "Times-Bold" | "TimesNewRomanPS-BoldMT"     => Standard.TimesBold
+      case "Times-Italic"                              => Standard.TimesItalic
+      case "TimesNewRomanPS-ItalicMT"                  => Standard.TimesItalic
+      case "Times-BoldItalic"                          => Standard.TimesBoldItalic
+      case "TimesNewRomanPS-BoldItalicMT"              => Standard.TimesBoldItalic
       case "Courier" | "CourierNew" | "CourierNewPSMT" => Standard.Courier
-      case "Courier-Bold" | "CourierNewPS-BoldMT"   => Standard.CourierBold
+      case "Courier-Bold" | "CourierNewPS-BoldMT"      => Standard.CourierBold
       case "Courier-Oblique" | "CourierNewPS-ItalicMT" => Standard.CourierOblique
-      case "Courier-BoldOblique"                    => Standard.CourierBoldOblique
-      case "CourierNewPS-BoldItalicMT"              => Standard.CourierBoldOblique
-      case "Symbol"                                 => Standard.Symbol
-      case "ZapfDingbats"                           => Standard.ZapfDingbats
-      case _                                        => Unset
+      case "Courier-BoldOblique"                       => Standard.CourierBoldOblique
+      case "CourierNewPS-BoldItalicMT"                 => Standard.CourierBoldOblique
+      case "Symbol"                                    => Standard.Symbol
+      case "ZapfDingbats"                              => Standard.ZapfDingbats
+      case _                                           => Unset
 
   // The width of a code in thousandths of an em.
   def width(standard: Standard, code: Int): Double = standard match

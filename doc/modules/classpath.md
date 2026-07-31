@@ -49,7 +49,7 @@ handle passed by hand; the `given Classloader` supplies the context. A resource 
 equally be built from text at runtime by decoding it:
 
 ```scala
-t"/scala/Option.class".decode[Path on Classpath]
+t"/scala/Option.class".as[Path on Classpath]
 ```
 
 A classpath path is _substantiable_, meaning its existence can be tested before it is read,
@@ -71,7 +71,7 @@ A `LocalClasspath` is the classpath as a list of entries. The running program's 
 the value of the `java.class.path` property, which decodes to one:
 
 ```scala
-val classpath = System.properties.java.`class`.path().decode[LocalClasspath]
+val classpath = System.properties.java.`class`.path().as[LocalClasspath]
 ```
 
 Its `entries` are typed: a `ClasspathEntry` is a `Directory`, a `Jar`, a `Url`, or the

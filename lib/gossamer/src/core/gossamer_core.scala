@@ -471,7 +471,6 @@ package proximities:
     val distance = jaroProximity.distance(left, right)
     distance + scale*prefixProximity.distance(left, right).min(4)*(1.0 - distance)
 
-
   given levenshteinProximity: (sensitivity: CaseSensitivity)
   =>  (Proximity { type Triangulable = true }) by Int =
 
@@ -503,7 +502,6 @@ package proximities:
         i += 1
 
       if m == 0 then n else dist(n)
-
 
   given normalizedLevenshteinProximity: CaseSensitivity => Proximity by Double =
     (left, right) =>

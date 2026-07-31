@@ -181,7 +181,6 @@ package executives:
             val focus1 =
               if shell == Shell.Bash && rest.lastOption == Some(t"=") then focus0 + 1 else focus0
 
-
             def read(todo: List[Text], flag: Boolean, done: List[Text]): List[Text] = todo match
               case Nil                                 => done.reverse
               case t"=" :: tail if shell == Shell.Bash => read(tail, false, done)

@@ -75,14 +75,16 @@ and decoder from the fields, so a value converts to an object and back:
 ```scala
 case class Person(name: Text, age: Int)
 
-Person(t"Alice", 30).json.show   // t"""{"name":"Alice","age":30}"""
+Person(t"Alice", 30).in[Json].show   // t"""{"name":"Alice","age":30}"""
 
 t"""{"name": "Bob", "age": 40}""".read[Json].as[Person]
 // Person(t"Bob", 40)
 ```
 
-The `json` method encodes any value for which an encoder is derived, and `show`
-renders the result. Nested case classes and collections of them derive in turn, so a
+The `in[Json]` method encodes any value for which an encoder is derived, and `show`
+renders the result. (`in` is the general codec vocabulary: `value.in[Format]` encodes
+and `value.as[Type]` decodes, whatever the format.) Nested case classes and
+collections of them derive in turn, so a
 whole structure converts in one step. Decoding straight from text to a type combines
 the two:
 
@@ -94,6 +96,19 @@ t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
 // Crew(List(Person(t"Bob", 40)), Person(t"Carol", 25), None)
 ```
 
+This is not a shorthand for parsing and then decoding. A type with a `Json.Parsable` instance is
+read *directly* from the source: the parser is composed for that type as the code compiles, and
+fields are taken from the token stream as they arrive, so no `Json` tree is ever built. What is
+saved is the whole intermediate structure — allocation, boxing, and a second traversal:
+
+```scala
+object Person:
+  given parsable: Person is Json.Parsable = Json.Parsable.derived
+```
+
+The tree route remains for documents whose shape is not known in advance, or where the tree is
+itself the point.
+
 ### Optional fields and defaults
 
 A field typed as `Optional` (or `Option`) is omitted from the output when it is
@@ -102,7 +117,7 @@ absent, and supplied as `Unset` (or `None`) when missing on the way in:
 ```scala
 case class Profile(name: Text, age: Optional[Int])
 
-Profile(t"Eve", Unset).json.show   // t"""{"name":"Eve"}"""
+Profile(t"Eve", Unset).in[Json].show   // t"""{"name":"Eve"}"""
 ```
 
 A field with a default takes that default when the document omits it:
@@ -122,7 +137,7 @@ want a different one:
 ```scala
 case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
 
-Record(t"Ann", 1984).json.show   // t"""{"first_name":"Ann","yob":1984}"""
+Record(t"Ann", 1984).in[Json].show   // t"""{"first_name":"Ann","yob":1984}"""
 ```
 
 ### Tagged unions
@@ -138,7 +153,7 @@ enum Shape:
   case Circle(radius: Double)
   case Square(side: Double)
 
-(Shape.Circle(1.0): Shape).json.show
+(Shape.Circle(1.0): Shape).in[Json].show
 // t"""{"radius":1.0,"kind":"Circle"}"""
 ```
 
@@ -152,13 +167,41 @@ t"""{"radius":1.0,"kind":"Circle"}""".read[Json].as[Shape]   // Shape.Circle(1.0
 `@name` renames a case's discriminator value just as it renames a field, so the wire
 form and the Scala name can differ.
 
+A discriminator field alongside the case's own fields is only one of the conventions in use, and
+the others are chosen by a `Discriminable` given rather than by writing a codec. A *wrapper*
+encoding puts the whole variant inside a single-key object named for the case:
+
+```scala
+given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+
+(Shape.Circle(1.0): Shape).in[Json].show
+// t"""{"Circle":{"radius":1.0}}"""
+```
+
+An *envelope* encoding names the tag field and the payload field:
+
+```scala
+given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+
+(Shape.Square(2.0): Shape).in[Json].show
+// t"""{"type":"Square","value":{"side":2.0}}"""
+```
+
+Each works both through the tree and through [direct parsing](#case-classes-and-enumerations),
+and direct parsing does not require the tag to come first: a document whose `type` field trails
+its `value` reads just as one whose tag leads. A wrapper object with more than one key is not a
+valid variant, and raises `JsonError.Reason.Absent` rather than guessing which key was meant.
+
+Anything more exotic is a `Discriminable` written by hand — three methods saying how to attach a
+tag, how to read one, and how to reach the variant — and codecs derived from it work unchanged.
+
 ### Building JSON
 
 Beyond encoding a typed value, a `Json` value can be assembled directly. `Json.make`
 builds an object from named arguments, each itself a `Json`:
 
 ```scala
-Json.make(a = 1.json, b = t"two".json, c = true.json).show
+Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show
 // t"""{"a":1,"b":"two","c":true}"""
 ```
 
@@ -173,7 +216,7 @@ j"""{"a": $x}"""        // an object with a from a value
 val xs = List(2, 3, 4)
 j"""[1, $xs*]"""        // [1, 2, 3, 4]
 
-val rest: Map[Text, Json] = Map(t"b" -> 2.json, t"c" -> 3.json)
+val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
 j"""{"a": 1, $rest}"""  // {"a": 1, "b": 2, "c": 3}
 ```
 
@@ -259,8 +302,8 @@ case class Role(name: Text)
 case class Entity(name: Text, age: Int, roles: List[Role])
 case class Org(name: Text, leader: Entity)
 
-val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).json
-org.lens(_.leader.age = 41.json).as[Org]
+val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).in[Json]
+org.lens(_.leader.age = 41.in[Json]).as[Org]
 // the leader's age updated to 41
 ```
 
@@ -271,7 +314,7 @@ indented formatting adds newlines and indentation for reading:
 
 ```scala
 import formatting.indentedJsonFormatting
-List(1, 2, 3).json.show   // pretty-printed across several lines
+List(1, 2, 3).in[Json].show   // pretty-printed across several lines
 ```
 
 ### Errors
@@ -293,6 +336,21 @@ than thrown at the first, and each is tagged with a [JSON Pointer](https://en.wi
 to the field that failed — `#/age` and `#/email` for two missing fields — so a whole
 document's problems can be reported at once.
 
+The pointer comes from a *focus* the decoder maintains as it descends, and which an accruing
+strategy reads through `prior`. Decoding a contact whose person and address are each wrong in
+two places yields four errors, pointed at `#/person/age`, `#/person/email` and so on — the whole
+tree's faults in one pass, each locatable, rather than the first fault and nothing else:
+
+```scala
+Validate[Issues, [r] =>> r raises JsonError, Json.Focus]
+  ( Issues(),
+    { case error: JsonError => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+. protect(document.as[Contact])
+```
+
+Missing and wrong-typed fields accrue together, and a field that is absent contributes exactly
+one error rather than one per attempt to read it.
+
 ### Inspecting the structure
 
 Two equal documents compare equal regardless of the order of their object keys, and a
@@ -311,27 +369,48 @@ Json.unseal(t"42".read[Json]).isLong          // true
 Json.unseal(t""""x"""".read[Json]).primitive  // JsonPrimitive.String
 ```
 
+The predicates are finer than the primitives: `isLong` and `isDouble` distinguish the two
+numeric representations, and `isNumber` covers both, so code that cares about the difference can
+ask, and code that does not need not. `isString`, `isBoolean`, `isNull`, `isObject` and `isArray`
+complete the set.
+
 ### Numbers and precision
 
-JSON numbers have no inherent precision limit, and Soundness can keep them exact. The
-number mode in scope decides how parsed numbers are stored: `fullNumberMode` retains
-every digit as a binary-coded decimal, while `doubleNumberMode` keeps a `Double` where
-that is enough. The mode is chosen by import:
+JSON numbers have no inherent precision limit, and most parsers quietly impose one. The number
+mode in scope decides what happens to a number too long to hold in the parser's fast path — about
+fifteen digits — while everything shorter is decoded identically whatever the mode:
 
 ```scala
 import numberModes.fullNumberMode
 ```
 
+`fullNumberMode` keeps every digit, accumulating them as a binary-coded decimal at the cost of an
+allocation for that number. It is the default, because losing digits silently is the wrong thing
+to do by default.
+
+`doubleNumberMode` drops the overflow and computes a `Double` from the leading digits — matching
+what Jawn, Circe, Jsoniter and Jackson do — which is the mode to choose for a like-for-like
+throughput comparison, or where the data is known to be within a double's range.
+
+`bcdNumberMode` also drops the overflow but emits the raw packed accumulator with no allocation
+at all. The `Long` it yields carries BCD nibbles rather than the number's value, so it is
+throughput at the price of treating those numbers as opaque.
+
 ### NDJSON
 
 [Newline-delimited JSON](https://en.wikipedia.org/wiki/JSON_streaming) — a stream of
-independent documents, one per line — is represented by `Ndjson`, which wraps a stream
-of `Json` values:
+independent documents, one per line — needs no type of its own. A source is split into
+records at its line boundaries with `delineate`, and each record is read as `Json`:
 
 ```scala
-val stream = Stream(t"1".read[Json], t"2".read[Json], t"3".read[Json])
-Ndjson(stream).stream.map(_.as[Int]).to(List)   // List(1, 2, 3)
+import lineSeparation.adaptiveLinefeedLineSeparation
+
+t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to(List)
+// List(1, 2, 3)
 ```
+
+Because each line is read independently, the values need not share a shape; a
+heterogeneous log reads just as well as a uniform one.
 
 ### JSON Pointers
 
@@ -363,6 +442,16 @@ val tracked = Json.parseTracked(t"{\n  \"a\": 42\n}")
 tracked.locate(JsonPointer()(t"a")).let(_.line)   // 2
 ```
 
+A position covers the whole of the value it names, so a negative number's extent includes its
+minus sign, and an object or array is located as the span from its opening brace to its closing
+one. `locateKey` gives the position of the *key* matching the final segment rather than its
+value, which is what underlining a misspelled field name needs.
+
+A pointer that does not resolve — a key the document lacks, an index past the end of an array —
+returns `Unset` rather than raising, so probing a document for a position is safe. Under ordinary,
+untracked parsing every `locate` returns `Unset`, which is how a program that does not want the
+cost pays none of it.
+
 ### Schemas
 
 A [JSON Schema](https://en.wikipedia.org/wiki/JSON_Schema) describes the permitted
@@ -370,7 +459,7 @@ shape of a document. Soundness derives a schema from a Scala type, and a schema 
 renders to a standard JSON Schema document:
 
 ```scala
-(JsonSchema.Integer(): JsonSchema).json.show   // contains "type":"integer"
+(JsonSchema.Integer(): JsonSchema).in[Json].show   // contains "type":"integer"
 ```
 
 A field can carry a description for the generated schema with the `@memo` annotation,
@@ -408,10 +497,53 @@ alice.verify[Employee].name.as[Text]   // t"Alice"
 
 alice.verify[Employee].nope            // does not compile: no such field
 alice.verify[Employee].name(0)         // does not compile: name is not an array
+alice.verify[Employee].name.deeper     // does not compile: a scalar has no fields
 ```
+
+Navigation runs to any depth, through nested objects and into arrays, with each step checked:
+
+```scala
+posting.verify[Posting].workplace.city.as[Text]
+squad.verify[Squad].members(1).name.as[Text]
+```
+
+Verified navigation needs no `dynamicJsonAccess` import — the schema, not a blanket enabler, is
+what licenses it. Reaching a field of an *unverified* document still requires the enabler, and
+the error says so, so the two kinds of access cannot be confused.
 
 This closes the usual gap in working with JSON: a path through a document is checked
 against the type it is supposed to have, before the program runs.
+
+### Overriding one field's encoder
+
+A derived encoder uses, for each field, whatever instance is in scope for that field's type — and
+a given in scope changes every field of that type at once, which is rarely what a single
+awkward field calls for. A `Specific` names the path instead, so an override applies along one
+spine and nowhere else:
+
+```scala
+val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+given (Firm is Specific over Json.Encodable) =
+  specifically:
+    case root.deputy.name() => shout
+
+Firm(Worker(t"ann", 30), Worker(t"bob", 40)).in[Json].show
+// t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}"""
+```
+
+The boss's name is untouched: only the path named is overridden. A path ending at a collection
+takes an encoder for the collection, so re-deriving it against a local given re-encodes its
+elements — the way to change how the members of one list are written without changing that type
+everywhere:
+
+```scala
+given (Crew is Specific over Json.Encodable) =
+  specifically:
+    case root.members() =>
+      given Worker is Json.Encodable = nameOnly
+      summon[List[Worker] is Json.Encodable]
+```
 
 ### Typed records from a schema
 
@@ -441,9 +573,9 @@ types of its date-and-time library. An `Instant` and a `Duration` travel as a wh
 number of milliseconds:
 
 ```scala
-import chronometries.posix
+import chronometries.unix
 
-Instant(1700000000000L).json.show                       // t"1700000000000"
+Instant(1700000000000L).in[Json].show                       // t"1700000000000"
 t"5000".read[Json].as[Duration].value                   // 5.0
 ```
 

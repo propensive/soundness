@@ -188,8 +188,7 @@ package httpBackends:
       var chunks: List[Data] = Nil
 
       try
-        while true do
-          chunks = stream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
+        while true do chunks = stream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
       catch case error: WitError => ()
 
       streamHandle.dispose()
@@ -238,8 +237,7 @@ object WasiHttpServer:
     var chunks: List[Data] = Nil
 
     try
-      while true do
-        chunks = inputStream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
+      while true do chunks = inputStream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
     catch case error: WitError => ()
 
     streamHandle.dispose()

@@ -46,8 +46,7 @@ import doms.html.whatwg, whatwg.*
 
 object Combobox:
   given renderable: Combobox is Renderable in Phrasing = combobox =>
-    val items = combobox.options.map: option =>
-      whatwg.Option(value = option)
+    val items = combobox.options.map: option => whatwg.Option(value = option)
 
     val id = unsafely(Name[DomId](combobox.name))
 

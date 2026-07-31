@@ -144,7 +144,6 @@ object internal:
 
             elements(index + 1)('{$expr && $expr2})
 
-
         elements(0):
           '{$scrutinee.nodes.length == ${Expr(pattern.nodes.length)}}
 
@@ -308,7 +307,6 @@ object internal:
 
           case Doctype(_) =>
             halt(m"DOCTYPE patterns are not supported in extractors")
-
 
       // Every `$`-substitution in the pattern is one captured value, whether or
       // not the parser emitted a structural `Hole` for it (comment/CDATA/PI
@@ -1107,8 +1105,7 @@ object internal:
               if b(j) == k then found = j
               j += 2
 
-            if found < 0 then ok = false
-            else if va != b(found + 1) then ok = false
+            if found < 0 then ok = false else if va != b(found + 1) then ok = false
 
             i += 2
 
@@ -1160,19 +1157,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a case class; sums and other types use "+
+        ("xylophone: staged parsing requires a case class; sums and other types use " +
           "`Xml.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a top-level or object-nested case class; "+
+        ("xylophone: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Xml.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("xylophone: staged parsing requires a single parameter list; use "+
+        ("xylophone: staged parsing requires a single parameter list; use " +
           "`Xml.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -1214,8 +1211,7 @@ object internal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 &&
-        name.forall { char => char >= '!' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall { char => char >= '!' && char < 127 }
 
       if !packs then None else
         var low = 0L
@@ -1224,8 +1220,7 @@ object internal:
 
         while position < length do
           val byte = name.charAt(position).toLong & 0xFF
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
           position += 1
 
         Some((low, high))
@@ -1238,7 +1233,7 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Xml.Field].getOrElse:
             report.errorAndAbort
-              (s"xylophone: no Xml.Field instance for field ${fieldNames(index)}: "+
+              (s"xylophone: no Xml.Field instance for field ${fieldNames(index)}: " +
                 fieldTypes(index).show)
 
     def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
@@ -1312,8 +1307,7 @@ object internal:
         ValDef(seens(index), Some(Literal(BooleanConstant(false))))
 
       val bufferDefs = List.range(0, arity).flatMap: index =>
-        buffers(index).map: symbol =>
-          ValDef(symbol, Some('{ null }.asTerm))
+        buffers(index).map: symbol => ValDef(symbol, Some('{ null }.asTerm))
 
       val unit = Literal(UnitConstant())
 

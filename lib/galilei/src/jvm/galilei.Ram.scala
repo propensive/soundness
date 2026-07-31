@@ -155,8 +155,7 @@ object Ram:
           try
             val write = mode.atoms.has(Write)
             val handle = new RamHandle(channel, write, size) with Granting[grants] {}
-            try block(using handle)
-            finally if write then handle.flush()
+            try block(using handle) finally if write then handle.flush()
           finally lock.foreach { held => if held != null then held.release() }
         finally channel.close()
 
@@ -210,8 +209,7 @@ object Ram:
             channel.write(jn.ByteBuffer.wrap(scala.Array[Byte](0)).nn, size - 1)
 
             val handle = new RamHandle(channel, true, size) with Granting[Grant.Read & Grant.Write] {}
-            try block(using handle)
-            finally handle.flush()
+            try block(using handle) finally handle.flush()
           catch case throwable: Throwable =>
             try backend.deleteIfExists(value) catch case _: Exception => ()
             throw throwable

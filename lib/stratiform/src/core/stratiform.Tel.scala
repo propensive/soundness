@@ -1750,8 +1750,7 @@ object Tel extends Tel2:
 
       val sigil = document.pragma.let(_.sigil.or('#')).or('#')
 
-      document.interpreterDirective.let: payload =>
-        out("#!" + payload.s)
+      document.interpreterDirective.let: payload => out("#!" + payload.s)
 
       document.pragma.let: pragma =>
         val parts = scala.collection.mutable.ArrayBuffer.empty[String]
@@ -2062,7 +2061,6 @@ object Tel extends Tel2:
       // non-EOF, zero-indent lines.
       var separator:     Boolean = false
 
-
   // Holds an exclusive cursor in a field, so the parser is itself a capability
   // (fresh per instance; one per thread via the pool).
   private[stratiform] final class Parser() extends caps.ExclusiveCapability, caps.Mutable:
@@ -2241,8 +2239,7 @@ object Tel extends Tel2:
             if digit < 0 || digit > 9 || result < multMin then ok = false
             else
               result *= 10L
-              if result < limit + digit then ok = false
-              else { result -= digit; i += 1 }
+              if result < limit + digit then ok = false else { result -= digit; i += 1 }
 
           if ok then directPrimaryLongVal = if negative then result else -result
           ok
@@ -2271,8 +2268,7 @@ object Tel extends Tel2:
       while newCap < needed do newCap *= 2
       val newArena = new scala.Array[Byte](newCap)
 
-      if inFlightLen > 0 then
-        System.arraycopy(atomArena, inFlightStart, newArena, 0, inFlightLen)
+      if inFlightLen > 0 then System.arraycopy(atomArena, inFlightStart, newArena, 0, inFlightLen)
 
       // The cast erases the fresh array's capture: it is confined to this parser.
       atomArena0 = newArena.asInstanceOf[AnyRef]
@@ -2483,8 +2479,7 @@ object Tel extends Tel2:
     update def moreSlow(): Boolean =
       syncTo()
 
-      if cursor.more then { syncFrom(); true }
-      else { syncFrom(); false }
+      if cursor.more then { syncFrom(); true } else { syncFrom(); false }
 
     private inline def peek: Byte = bytes(pos)
 
@@ -2564,9 +2559,7 @@ object Tel extends Tel2:
         val v = Parser.longView(bytes, pos)
 
         val combined =
-          Parser.matchByte(v, rA) |
-            Parser.matchByte(v, rB) |
-            Parser.matchByte(v, rC)
+          Parser.matchByte(v, rA) | Parser.matchByte(v, rB) | Parser.matchByte(v, rC)
 
         if combined != 0L then
           pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
@@ -2596,8 +2589,7 @@ object Tel extends Tel2:
           return
 
         pos += 8
-      while pos < bufEnd && bytes(pos) != a && bytes(pos) != b &&
-        bytes(pos) != c && bytes(pos) != d
+      while pos < bufEnd && bytes(pos) != a && bytes(pos) != b && bytes(pos) != c && bytes(pos) != d
       do pos += 1
 
     // ── Errors ────────────────────────────────────────────────────────────────
@@ -2977,8 +2969,7 @@ object Tel extends Tel2:
             val pragmaStartAbs = cursor.position.n0
 
             // §19.5 AllowOversize: record the cap breach but keep parsing the pragma.
-            if pragmaStartAbs >= 4096 then
-              recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
+            if pragmaStartAbs >= 4096 then recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
 
             val pragmaMk = beginMark()
             while more && peek != LF && peek != CR do advance()
@@ -2986,8 +2977,7 @@ object Tel extends Tel2:
             syncTo()
             val pragmaEndAbs = cursor.position.n0
 
-            if pragmaEndAbs > 4096 then
-              recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
+            if pragmaEndAbs > 4096 then recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
 
             consumeLineEnding()
             prevLineWasBoundary = true
@@ -3093,8 +3083,7 @@ object Tel extends Tel2:
       if parts.head != "tel" then recoverAt(Reason.PragmaNotFirst, line, 1)(())
 
       val version =
-        if parts.length >= 2 then parseVersion(parts(1), line)
-        else (1, 0)
+        if parts.length >= 2 then parseVersion(parts(1), line) else (1, 0)
 
       // §19.5 IgnoreExtraPragmaAtoms: only parts 2 and 3 are read below, so excess
       // atoms are already ignored once the error is recorded.
@@ -3460,8 +3449,7 @@ object Tel extends Tel2:
 
       // Compound loop.
       var keepLoop = true
-      while keepLoop && !head.eof && !head.separator && !head.blank &&
-        head.indentLevels == indent
+      while keepLoop && !head.eof && !head.separator && !head.blank && head.indentLevels == indent
       do
         if isCommentBody() || isTabulationBody() then keepLoop = false
         else
@@ -3512,8 +3500,7 @@ object Tel extends Tel2:
             if extraAtom.present then pushAtom(extraAtom.vouch)
 
             val children =
-              if extraAtom.absent && tabulation.absent then parseChildren(indent)
-              else EmptyBlocks
+              if extraAtom.absent && tabulation.absent then parseChildren(indent) else EmptyBlocks
 
             val atoms = takeAtoms(atomScratchIx - atomsStart)
             pushCompound(Tel.Compound(compoundKeyword, atoms, compoundRemark, children))
@@ -3833,8 +3820,7 @@ object Tel extends Tel2:
                 else
                   ensureLookahead(3)
                   val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
-                  afterSigil == SP.toInt &&
-                    (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+                  afterSigil == SP.toInt && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
               if isRemark then
                 // Remark terminates column validation.
                 while more && peek != LF && peek != CR do { advance(); col += 1 }
@@ -3968,8 +3954,7 @@ object Tel extends Tel2:
               lineNo = savedLineNo
               var i = 0
 
-              while i < firstBlankSnapshot._1 && more && peek == SP do
-                advance(); i += 1
+              while i < firstBlankSnapshot._1 && more && peek == SP do advance(); i += 1
 
               true
         else if head.leadingSpaces >= sourceIndent then
@@ -4079,8 +4064,7 @@ object Tel extends Tel2:
             // delimiter's leading separator, not part of the payload. Strip the
             // trailing '\n' we appended for the previous payload line (if any),
             // then consume the optional EOL after the delimiter.
-            if sb.length > 0 && sb.charAt(sb.length - 1) == '\n' then
-              sb.setLength(sb.length - 1)
+            if sb.length > 0 && sb.charAt(sb.length - 1) == '\n' then sb.setLength(sb.length - 1)
 
             if more then
               advance()  // consume LF (may be absent at EOF)
@@ -4238,8 +4222,7 @@ object Tel extends Tel2:
             val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
 
             val softSpaceAfter =
-              afterSigil == SP.toInt &&
-                (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+              afterSigil == SP.toInt && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
             if softSpaceAfter then
               // Consume sigil + space, then read remark text until LF/CR.
               advance()  // sigil
@@ -4288,8 +4271,7 @@ object Tel extends Tel2:
       // consumed at least the keyword.)
       // §19.5 StripTrailing: the keyword/atoms already exclude the trailing space,
       // so recording the error and continuing yields the stripped line.
-      if remark.absent && more && (peek == LF || peek == CR) &&
-        pos > 0 && bytes(pos - 1) == SP
+      if remark.absent && more && (peek == LF || peek == CR) && pos > 0 && bytes(pos - 1) == SP
       then recoverAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)(())
 
       consumeLineEnding()
@@ -4352,8 +4334,7 @@ object Tel extends Tel2:
             slot = (slot + 1) & 0x3F
             probes += 1
 
-        if result != null then Text(result)
-        else Text(sliceText(startMark))
+        if result != null then Text(result) else Text(sliceText(startMark))
 
     // As `readKeyword`, but for the packed-dispatch step: the keyword is
     // *not* interned or sliced when it packs — the fingerprint the scan
@@ -4647,8 +4628,7 @@ object Tel extends Tel2:
               readKeywordFast()
 
               // The same E102 check against the packed form of `tel`.
-              if mayBeMisplacedPragma && directKeywordLen == 3
-                && directKeywordLow == 0x6C6574L
+              if mayBeMisplacedPragma && directKeywordLen == 3 && directKeywordLow == 0x6C6574L
               then recoverAt(Reason.PragmaNotFirst, directEntryLine, 1)(())
 
             hasConsumedNonBlankLine = true
@@ -5039,7 +5019,6 @@ object Tel extends Tel2:
       compoundScratchIx = savedCompoundIx
       blockScratchIx = savedBlockIx
       substance
-
 
 class Tel private[stratiform]
   ( private[stratiform] val subtree:       Tel.Subtree,

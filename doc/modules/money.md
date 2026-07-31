@@ -4,9 +4,11 @@
 
 Money is a fixed-point amount of a particular currency, and Soundness keeps the currency in the
 type: a `Money in "EUR"` and a `Money in "GBP"` cannot be added together, because adding euros to
-pounds is not a sum but a mistake. Within a currency, amounts add, subtract, scale, divide and
-compare; an amount splits into equal shares without losing a penny; and a price carries its tax
-alongside its principal.
+pounds is not a sum but a mistake. Parameterizing by the currency is how an
+[impossible state](../philosophy/impossible-states.md) is ruled out by the type.
+
+Within a currency, amounts add, subtract, scale, divide and compare; an amount splits into
+equal shares without losing a penny; and a price carries its tax alongside its principal.
 
 Thirty-seven currencies come defined, each a value that constructs amounts, and rendering an
 amount uses either its symbol or its ISO code, chosen by a style in scope.
@@ -83,6 +85,10 @@ val priced = Gbp(2.30).tax(0.2)   // Price(Gbp(2.30), Gbp(0.46))
 priced.inclusive                  // Gbp(2.76)
 ```
 
+Tax rounds *up* to the minor unit, which is what tax authorities require and what a naive
+rounding gets wrong in exactly the cases that matter: twenty per cent of £2.94 is £0.588, charged
+as £0.59 rather than £0.58.
+
 A `Price` deliberately has no `show`: whether to display the inclusive or exclusive amount is a
 decision the application must make explicitly, by showing the member it means.
 
@@ -113,3 +119,10 @@ isin"GB00BH4HKS39"          // a valid ISIN
 isin"GB00BH4HKS3"           // does not compile: wrong length
 Luhn.check(17893729974L)    // true
 ```
+
+An `IsinError` says which rule was broken — the length, the country prefix, the permitted
+characters, or the Luhn check on the final digit — so a rejected identifier can be reported
+precisely rather than as "invalid".
+
+An `Isin` is an opaque type over a `Long`, so a validated identifier costs nothing to hold or
+compare, and cannot be confused with an unvalidated string.

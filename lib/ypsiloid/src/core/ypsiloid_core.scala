@@ -198,7 +198,6 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
 
 given showable: Yaml.Formatting => Yaml is Showable = Yaml.unseal(_).show
 
-
 extension (inline context: StringContext)
   transparent inline def y: Interpolation = interpolation[Yaml](context)
   transparent inline def yp: Interpolation = interpolation[YamlPath](context)

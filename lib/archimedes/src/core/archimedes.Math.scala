@@ -73,7 +73,6 @@ object Math:
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)
       MathmlParser.decodeMath(MathmlParser.rootElement(xml))
 
-
   given loadable: (XmlSchema)
   =>  (parseTactic: Tactic[ParseError])
   =>  (xmlTactic: Tactic[XmlError])
@@ -91,7 +90,6 @@ object Math:
 
       Document[Math](parsedMath, encoding)
 
-
   given showable: [doc <: Document[Math]] => doc is Showable =
     document =>
       val header = Header(t"1.0", document.metadata.name, Unset)
@@ -101,7 +99,6 @@ object Math:
         case Fragment(nodes*) => Fragment((header +: nodes)*)
 
       full.show
-
 
   given renderable: (Math is Renderable { type Form = "math" }) = math =>
     val pairs = math.attributePairs.stdlib.map { case (key, value) => (key, value: Optional[Text]) }
@@ -139,8 +136,7 @@ object Math:
   // A quantity renders its magnitude as `<mn>` followed by each unit as `<mi>`
   // (or `<msup>` when the exponent is not 1), joined by invisible multiplication.
   inline given quantity: [units <: Measure] => Quantity[units] is Encodable in Math =
-    QuantityEncodable[units]: quantity =>
-      Math(quantityMathml(quantity.value, quantity.units))
+    QuantityEncodable[units]: quantity => Math(quantityMathml(quantity.value, quantity.units))
 
   given complex: [component: Encodable in Math] => Complex[component] is Encodable in Math =
     value => Math(Mrow(List(value.real.mathml, Mo(t"+"), value.imaginary.mathml, Mi(t"i"))))
@@ -174,7 +170,6 @@ object Math:
   private def fenced(inner: Mathml, open: Text, close: Text): Mathml =
     val stretchy = List(t"stretchy" -> t"true")
     Mrow(List(Mo(open, stretchy), inner, Mo(close, stretchy)))
-
 
 case class Math
   ( contents:   List[Mathml],

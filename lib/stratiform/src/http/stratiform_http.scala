@@ -49,5 +49,4 @@ package postables:
 
 package servables:
   given telServable: (encoder: CharEncoder) => Tel is Servable =
-    Servable[Tel](_ => telMediaType): value =>
-      Http.Body.Fixed(encoder.encoded(value.show))
+    Servable[Tel](_ => telMediaType): value => Http.Body.Fixed(encoder.encoded(value.show))

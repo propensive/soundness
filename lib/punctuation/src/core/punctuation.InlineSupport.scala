@@ -131,8 +131,7 @@ private[punctuation] object InlineSupport:
             existsNonSpace(noNewlines)
 
         val stripped =
-          if needsTrim then noNewlines.substring(1, noNewlines.length - 1).nn
-          else noNewlines
+          if needsTrim then noNewlines.substring(1, noNewlines.length - 1).nn else noNewlines
 
         return CodeSpanMatch(Text(stripped), i)
 
@@ -163,8 +162,7 @@ private[punctuation] object InlineSupport:
     while keep && i < end do
       val c = s.charAt(i)
 
-      if c == '>' || c <= 0x20 || c == '<' then keep = false
-      else i += 1
+      if c == '>' || c <= 0x20 || c == '<' then keep = false else i += 1
 
     if i >= end || s.charAt(i) != '>' then return Unset
     val content = s.substring(start + 1, i).nn
@@ -428,16 +426,14 @@ private[punctuation] object InlineSupport:
       var i = start + 4
 
       while i + 2 < end do
-        if s.charAt(i) == '-' && s.charAt(i + 1) == '-' && s.charAt(i + 2) == '>' then
-          return i + 3
+        if s.charAt(i) == '-' && s.charAt(i + 1) == '-' && s.charAt(i + 2) == '>' then return i + 3
         i += 1
       -1
     else if start + 9 < end && s.regionMatches(start + 2, "[CDATA[", 0, 7) then
       var i = start + 9
 
       while i + 2 < end do
-        if s.charAt(i) == ']' && s.charAt(i + 1) == ']' && s.charAt(i + 2) == '>' then
-          return i + 3
+        if s.charAt(i) == ']' && s.charAt(i + 1) == ']' && s.charAt(i + 2) == '>' then return i + 3
         i += 1
       -1
     else if start + 2 < end && isAsciiUpper(s.charAt(start + 2)) then
@@ -465,8 +461,7 @@ private[punctuation] object InlineSupport:
     i += 1
     while i < end && (isAsciiAlnum(s.charAt(i)) || s.charAt(i) == '-') do i += 1
 
-    while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
-      i += 1
+    while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do i += 1
 
     if i < end && s.charAt(i) == '>' then i + 1 else -1
 
@@ -483,26 +478,21 @@ private[punctuation] object InlineSupport:
     while !done && !failed do
       val before = i
 
-      while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
-        i += 1
+      while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do i += 1
 
       if i >= end then failed = true
       else if s.charAt(i) == '>' then done = true
       else if s.charAt(i) == '/' then
-        if i + 1 < end && s.charAt(i + 1) == '>' then { i += 2; return i }
-        else failed = true
+        if i + 1 < end && s.charAt(i + 1) == '>' then { i += 2; return i } else failed = true
       else
         // attribute requires preceding whitespace
         if i == before then failed = true
         else
           val attrEnd = parseHtmlAttribute(s, i, end)
 
-          if attrEnd < 0 then failed = true
-          else i = attrEnd
+          if attrEnd < 0 then failed = true else i = attrEnd
 
-    if failed then -1
-    else if done then i + 1
-    else -1
+    if failed then -1 else if done then i + 1 else -1
 
   private inline def isAttrNameChar(c: Char): Boolean =
     isAsciiAlnum(c) || c == '_' || c == '.' || c == ':' || c == '-'
@@ -522,14 +512,12 @@ private[punctuation] object InlineSupport:
     // Optional value
     val nameEnd = i
 
-    while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
-      i += 1
+    while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do i += 1
 
     if i < end && s.charAt(i) == '=' then
       i += 1
 
-      while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do
-        i += 1
+      while i < end && (s.charAt(i) == ' ' || s.charAt(i) == '\t' || s.charAt(i) == '\n') do i += 1
 
       if i >= end then return -1
       val q = s.charAt(i)

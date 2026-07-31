@@ -65,7 +65,6 @@ object internal:
   // calendar layer only ever sees that `Int` JDN, so it is unaffected by this representation.
   private[aviation] final val MillisPerDay: Long = 86_400_000L
 
-
   extension (anniversary: Anniversary)
     inline def day: Day = anniversary%64
 
@@ -89,7 +88,6 @@ object internal:
 
     def apply(month: Month, day: Day): Anniversary = ((month.ordinal << 6) + day).toShort
 
-
     given showable: (endianness: Endianness, months: Months, separation: DateSeparation)
     =>  Anniversary is Showable =
 
@@ -100,16 +98,13 @@ object internal:
           case Endianness.LittleEndian => t"${anniversary.day}${separation.separator}$month"
           case _                       => t"$month${separation.separator}${anniversary.day}"
 
-
   extension (year: Year)
     @targetName("yearValue")
     inline def apply(): Int = year
 
-
   extension (day: Day)
     @targetName("dayValue")
     inline def apply(): Int = day
-
 
   object Year extends Radix.Irregular:
     inline def apply(year: Int): Year = year
@@ -163,7 +158,6 @@ object internal:
       halt(m"${name.tt} is not a valid timezone identifier")
 
     '{unsafely(Timezone(${Expr(name)}.tt))}
-
 
   // A timestamp literal classified by its precision. The `ts"…"` macro maps each case to a
   // distinct result type: a bare year to `Year`, a year-month to `Monthstamp`, a date to
@@ -272,8 +266,7 @@ object internal:
 
       val parsed = jdnOf(calendars.gregorianCalendar, year.nn.toInt, month.nn.toInt, day.nn.toInt)
 
-      parsed.flatMap: jdn =>
-        isoTime(jdn, hour.nn.toInt, minute.nn.toInt, secondValue, nanos, zone)
+      parsed.flatMap: jdn => isoTime(jdn, hour.nn.toInt, minute.nn.toInt, secondValue, nanos, zone)
 
     case _ =>
       Left(m"$text is not a valid ISO 8601 timestamp")
@@ -396,7 +389,6 @@ object internal:
         '{ Timespan(${Expr(years)}, ${Expr(months)}, ${Expr(weeks)}, ${Expr(days)},
               ${Expr(hours)}, ${Expr(minutes)}, Quantity(${Expr(seconds)})) }
 
-
   // Compile-time `rec"R[n]/<start>/<period>"` literal — an ISO 8601 repeating interval. The start
   // is parsed by the timestamp parser (so its precise `Date`/`Timestamp`/`Moment` type flows out
   // via the transparent inline), and the period by the duration parser, tagged with the Gregorian
@@ -464,7 +456,6 @@ object internal:
 
       case _ =>
         halt(m"a recurrence literal must have the form `R[n]/<start>/<period>`")
-
 
   // The inline `Monthstamp - day` operator splices here. When the year, month and day are all
   // compile-time literals (the `2012-Mar-8` form), validate the date against the Gregorian
@@ -582,7 +573,6 @@ object internal:
       case _ =>
         runtime
 
-
   def validTime(time: Expr[Double], pm: Boolean): Macro[Clockface] =
     import quotes.reflect.*
 
@@ -608,4 +598,3 @@ object internal:
 
       case _ =>
         halt(735, m"expected a literal double value")
-

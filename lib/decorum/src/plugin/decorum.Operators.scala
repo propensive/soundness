@@ -52,7 +52,8 @@ case class OpInfo
     anchorIndent: Int,
     rightLine:    Int,
     rightCol:     Int,
-    multiline:    Boolean )
+    multiline:    Boolean,
+    opOffset:     Int )
 
 object Operators:
   // Walk the untyped tree and emit one `OpInfo` per *symbolic* infix-operator
@@ -81,8 +82,7 @@ object Operators:
     def lineIndent(offset: Int): Int =
       val lineStart = source.startOfLine(offset)
       var i         = lineStart
-      while i < content.length && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do
-        i += 1
+      while i < content.length && (content.charAt(i) == ' ' || content.charAt(i) == '\t') do i += 1
       i - lineStart
 
     // `anchor` >= 0 means an enclosing chain has already fixed the indent;
@@ -137,10 +137,10 @@ object Operators:
     val rightLine   = source.offsetToLine(rightStart) + 1
     val rightCol    = source.column(rightStart) + 1
     val multiline   = leftEndLine != rightLine
-    Some(OpInfo(opLine, opCol, leftEndLine, anchorIndent, rightLine, rightCol, multiline))
+    Some(OpInfo(opLine, opCol, leftEndLine, anchorIndent, rightLine, rightCol, multiline, osp.start))
 
   // True iff every character of `text` is a symbolic-operator character.
-  // Mirrors `Checker.isSymbolicOperator`; replicated here so each extractor
+  // Mirrors `Scans.isSymbolicOperator`; replicated here so each extractor
   // stays self-contained.
   private def isSymbolicOperator(text: String): Boolean =
     text.nonEmpty && text.forall: c =>

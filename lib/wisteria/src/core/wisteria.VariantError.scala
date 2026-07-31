@@ -42,7 +42,6 @@ object VariantError:
         wisteria.internal.sumName[derivation],
         wisteria.internal.variantLabelList[derivation] )
 
-
 case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)
 extends Error
   ( m"""

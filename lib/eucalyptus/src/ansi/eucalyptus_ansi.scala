@@ -42,7 +42,6 @@ import prepositional.*
 import spectacular.*
 import symbolism.*
 
-
 package logFormats:
   given teletypeableLogFormat: (palette: LogPalette) => Level is Teletypeable = level =>
     val color = level match
@@ -71,7 +70,6 @@ package logFormats:
 
           (first :: lines.tail.map(indent+_)).join(e"\n")
       catch case error: Throwable => e"${error.stackTrace.show}"
-
 
 type LogPalette = Palette:
   type Form = Srgb

@@ -49,7 +49,6 @@ class Proxy[key, value, +id <: Nat](index: Int) extends Selectable, Dynamic, Fin
   transparent inline def selectDynamic(key: String): value | Proxy[key, value, Nat] =
     ${internal.dereference[key, value, id]('key)}
 
-
   def id: Int = index
   inline def apply()(using catalog: Catalog[key, value]): value = catalog.values(index)
   inline def unapply(scrutinee: Proxy[key, value, Nat]): Boolean = scrutinee.id == index

@@ -241,7 +241,6 @@ extension (body: HttpStreams.Body)
                 limit0 = data.length
                 if limit0 == 0 then refill(demand) else limit0
 
-
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
 
@@ -291,7 +290,6 @@ extension [element](stream: Chain[element])
         if last == next then recur(last, more) else next #:: recur(next, more)
 
     stream.flow(Chain())(next #:: recur(next, more))
-
 
   // `next`/`more` are bound with `aka`-label refinements; under capture checking the
   // labelled singleton type does not simplify away in every position (the aka-Tagged/

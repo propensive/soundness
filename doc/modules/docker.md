@@ -46,14 +46,14 @@ digests the format requires:
 ```scala
 def entry(name: Text, content: Text): Tar.Entry =
   Tar.Entry.File
-   ( path  = name.decode[Relative on Tar],
+   ( path  = name.as[Relative on Tar],
      mode  = UnixMode(),
      user  = UnixUser(0),
      group = UnixGroup(0),
      mtime = 0.bits.u32,
-     data  = LazyList(content.data) )
+     data  = TarBody(content.in[Data]) )
 
-val layer = Layer(Tarfile(LazyList(entry(t"hello.txt", t"hello world\n"))))
+val layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
 ```
 
 An `Image` assembles one or more layers with a configuration — the command to run, the
@@ -78,6 +78,23 @@ image.manifest     // the OCI manifest tying config and layers together
 `image.archive` is the whole image as an OCI tar layout — the form a runtime imports. Read
 as bytes and written to a file, it produces an image that `docker load` or containerd will
 accept.
+
+### Reading an image
+
+An existing OCI archive — a file or a block of bytes — is read by *opening* it, which makes
+its contents available for the duration of a scope and no longer:
+
+```scala
+archive.open[Image](): handle ?=>
+  handle.index                                    // the top-level index
+  handle.manifest                                 // the manifest it names
+  handle.imageConfig                              // the image configuration
+  handle.verified(handle.manifest.layers.head)    // a layer, digest-checked
+```
+
+Reaching a layer three ways makes the cost explicit: `compressed` yields the stored bytes
+untouched, `layer` decompresses them as a stream, and `verified` decompresses and checks the
+content against the digest the manifest declares, raising an `OciError` if they disagree.
 
 ### Connecting to a daemon
 

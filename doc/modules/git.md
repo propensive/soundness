@@ -93,3 +93,52 @@ A `GitBranch`, `GitTag` and `GitHash` name the three kinds of reference, and a `
 them or a relative expression such as `Refspec.head()` for `HEAD`. Because each is its own type, an
 operation that expects a branch will not accept a tag, and a hash carries the guarantee that it is a
 well-formed forty-character identifier.
+
+Reference names follow Git's own rules — no leading dot, no `..`, no control characters, no
+trailing `.lock`, and the rest — checked as [names](names.md) on their own plane, so an invalid
+branch name is rejected where it is written rather than by Git at the point of use.
+
+### Diffs
+
+`diff` reports changes as structured values rather than as patch text to re-parse. Each `FileDiff`
+carries the paths on both sides, the kind of change — added, modified, deleted, renamed, copied —
+and its hunks, each hunk a list of edits:
+
+```scala
+val files = worktree.diff().to(List)
+files.head.changeKind      // ChangeKind.Modified
+files.head.hunks.flatMap(_.edits)
+```
+
+The same parser reads a patch from anywhere — a file, an email, a code-review comment — so a tool
+that inspects or applies patches works with values, including the awkward cases: renames with
+similarity indices, binary files, mode changes, and files with no trailing newline.
+
+### Merging, cherry-picking and reverting
+
+`merge` takes the reference to merge and a fast-forward policy, so whether a merge commit is
+created is stated rather than inherited from configuration:
+
+```scala
+worktree.merge(GitBranch(t"feature"), ff = FastForward.Only)
+worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
+```
+
+`cherryPick` and `revert` apply and undo a single commit's changes. A conflict is a typed failure
+naming the paths that conflict, rather than a non-zero exit status and a message to parse.
+
+### Remotes, notes and the reflog
+
+Remotes are added, listed and removed as values, each reporting its name and URL. Notes attach
+arbitrary text to a commit without altering it, in a chosen namespace, which is how build
+attestations, review state and other out-of-band metadata travel with a repository:
+
+```scala
+worktree.repo.addRemote(t"origin", t"git@example.com:foo/bar.git")
+
+worktree.repo.notes.add(hash, t"a note body")
+worktree.repo.notes.show(hash)   // Unset where there is no note
+```
+
+`reflog` gives the local history of where a reference has pointed, newest first — the record that
+makes a mistaken reset recoverable.

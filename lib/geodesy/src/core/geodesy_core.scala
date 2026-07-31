@@ -34,18 +34,18 @@ package geodesy
 
 import scala.math
 
+import gossamer.*
 import hypotenuse.*
+import spectacular.*
 import symbolism.*
 
-export geodesy.internal.{Location, Angle}
+export geodesy.internal.Location
 
-val Degree = Angle(π/180.0)
-val ArcMinute = Degree/60.0
-val ArcSecond = ArcMinute/60.0
-
-extension (double: Double)
-  def rad: Angle = Angle(double)
-  def deg: Angle = Degree*double
+// `Angle` lives in the `angle` component, below the text stack, so its companion cannot carry
+// this instance; it is imported by name, as `given`s in this repository always are.
+given angleShowable: Angle is Showable = angle =>
+  given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
+  t"${angle.degrees}°"
 
 export CardinalWind.{North, South, East, West}
 export IntercardinalWind.{Northeast, Southeast, Southwest, Northwest}

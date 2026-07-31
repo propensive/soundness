@@ -65,8 +65,7 @@ private[hallucination] object RasterBackend:
 
   def encode(format: Rasterizable, raster: Raster): Data =
     // WebP has no `javax.imageio` writer, so the pure lossless encoder is used on every platform.
-    if format.name.s == "WEBP" then WebpCodec.encode(raster) else
-      encodeImageIo(format, raster)
+    if format.name.s == "WEBP" then WebpCodec.encode(raster) else encodeImageIo(format, raster)
 
   private def encodeImageIo(format: Rasterizable, raster: Raster): Data =
     val alpha = format.alpha && raster.descriptor.hasAlpha

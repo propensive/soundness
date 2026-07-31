@@ -54,7 +54,6 @@ object OAuth:
 
     def expired: Boolean = expiry.let(System.currentTimeMillis > _).or(false)
 
-
 class OAuth() extends Findable:
   private val data: scm.HashMap[Session, OAuth.State] = scm.HashMap()
 

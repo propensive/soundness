@@ -66,7 +66,9 @@ object stagedInternal:
   inline def fieldInstance[fieldType]: fieldType is Xml.Parsing =
     scala.compiletime.summonFrom:
       case parsable: (`fieldType` is Xml.Parsable) => parsable
-      case _ => scala.compiletime.summonInline[fieldType is Xml.Field]
+
+      case _ =>
+        scala.compiletime.summonInline[fieldType is Xml.Field]
 
   // ── Expansion-time environment ─────────────────────────────────────────
 
@@ -214,8 +216,7 @@ object stagedInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val target =
             r2.Refinement
@@ -269,7 +270,7 @@ object stagedInternal:
   // ladder works with the delegate so generator identities stay
   // recognizable.
   private def unwrap(instance: Inlinable): Inlinable = instance match
-    case derived: Inlinable.ForXml[?] => derived.delegate.asInstanceOf[Inlinable]
+    case derived: Inlinable.ForXml[?]  => derived.delegate.asInstanceOf[Inlinable]
     case other                         => other
 
   // The runtime tiers, resolved with a reflection-level implicit search at
@@ -426,8 +427,7 @@ object stagedInternal:
 
           def rebuild(shape: TypeShape): r2.TypeRepr =
             val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
-            if shape.arguments.isEmpty then base
-            else base.appliedTo(shape.arguments.map(rebuild))
+            if shape.arguments.isEmpty then base else base.appliedTo(shape.arguments.map(rebuild))
 
           val xml = r2.TypeRepr.of[Xml]
 
@@ -627,8 +627,8 @@ object stagedInternal:
 
     if !productSupported(tpe) then
       report.errorAndAbort
-        (s"xylophone: ${tpe.show} is not an inlinable product (a non-generic, top-level or "+
-          "object-nested case class with a single parameter list and no `@name` or "+
+        (s"xylophone: ${tpe.show} is not an inlinable product (a non-generic, top-level or " +
+          "object-nested case class with a single parameter list and no `@name` or " +
           "`@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
 
     val classSymbol = tpe.classSymbol.get
@@ -646,8 +646,7 @@ object stagedInternal:
       val name = fieldNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 16 &&
-        name.forall { char => char >= '!' && char < 127 }
+      val packs = length > 0 && length <= 16 && name.forall { char => char >= '!' && char < 127 }
 
       if !packs then None else
         var low = 0L
@@ -656,8 +655,7 @@ object stagedInternal:
 
         while position < length do
           val byte = name.charAt(position).toLong & 0xFF
-          if position < 8 then low |= byte << (position*8)
-          else high |= byte << ((position - 8)*8)
+          if position < 8 then low |= byte << (position*8) else high |= byte << ((position - 8)*8)
           position += 1
 
         Some((low, high))
@@ -1162,7 +1160,7 @@ object stagedInternal:
 
     val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
       report.errorAndAbort
-        (s"xylophone: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed "+
+        (s"xylophone: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed " +
           "type whose variants are all case classes without annotations)")
 
     val arity = variants.length
@@ -1224,8 +1222,8 @@ object stagedInternal:
 
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
-        (s"xylophone: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, "+
-          "top-level or object-nested case class with a single parameter list and no `@name` "+
+        (s"xylophone: ${TypeRepr.of[value].show} is not an inlinable product (a non-generic, " +
+          "top-level or object-nested case class with a single parameter list and no `@name` " +
           "or `@attribute` annotations); use `Xml.Parsable.staged` or `derived`")
 
     '{

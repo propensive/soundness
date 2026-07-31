@@ -73,8 +73,7 @@ extends Encodable, Findable:
     def recur(todo: Chain[Text], offset: Int = 0): Chain[Data] =
       val count = in.remaining
 
-      if !todo.nil then
-        in.put(todo.head.s, offset, offset + count.min(todo.head.s.length - offset))
+      if !todo.nil then in.put(todo.head.s, offset, offset + count.min(todo.head.s.length - offset))
 
       in.flip()
       val status = encoder.encode(in, out, todo.nil).nn

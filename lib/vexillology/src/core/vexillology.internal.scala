@@ -44,7 +44,6 @@ object internal:
   object Flags:
     def apply[enumeration](): Flags[enumeration] = 0L
 
-
   extension [enumeration: Enumerable](flags: Flags[enumeration])
     def apply(value: enumeration & Singleton): Boolean =
 

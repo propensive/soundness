@@ -59,7 +59,6 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
         given random0: (Random^{random}) = random
         List.fill(size.generate(random))(randomizable.randomize(random))
 
-
   given set: [element] => (randomizable: => element is Randomizable) => (size: RandomSize)
   =>  Set[element] is Randomizable =
 
@@ -70,7 +69,6 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
         given random0: (Random^{random}) = random
         Set.from(List.fill(size.generate(random))(randomizable.randomize(random)).stdlib)
 
-
   given iarray: [element] => (randomizable: => element is Randomizable) => (tag: ClassTag[element])
   =>  ( size: RandomSize )
   =>  (Array[element]^{}) is Randomizable =
@@ -80,7 +78,6 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
       random =>
         given random0: (Random^{random}) = random
         Array.fill(size.generate(random))(randomizable.randomize(random))
-
 
   given double: Distribution => Double is Randomizable = summon[Distribution].transform(_)
 

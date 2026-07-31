@@ -109,8 +109,7 @@ class Form
       (0 until leaves.length).collect:
         case i if leaves(i).isInstanceOf[Pane.Widget] => i
 
-    val stays = focused.lay(false): widget =>
-      focuses.indexWhere(_ eq widget) >= 0
+    val stays = focused.lay(false): widget => focuses.indexWhere(_ eq widget) >= 0
 
     if !stays then focused = if focuses.isEmpty then Unset else focuses(0)
 

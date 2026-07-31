@@ -526,7 +526,6 @@ trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
 
   def scalacOptions = Task:
     settings.scalaOptions
-      ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
       :+ s"-Xplugin:${larceny.plugin.assembly().path}"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
 trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
@@ -564,16 +563,17 @@ object soundness extends Toolchain:
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core)
 
-  object data extends Bundle(caesura.core, dissonance.core, enigmatic.core, facsimile.core,
-    gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
+  object data extends Bundle(caesura.core, dissonance.core, enigmatic.asn1, enigmatic.core,
+    facsimile.core, gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
     stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
+    enigmatic.x509,
     stratiform.binary, stratiform.records, bitumen.core, bitumen.jvm, breviloquence.core, distillate.core,
     embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
-    charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
+    charisma.core, geodesy.angle, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
     quantitative.core, quantitative.units)
 
   object test extends Bundle(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
@@ -830,6 +830,17 @@ object anthology extends Library:
     override def scalaJs = false // wraps the Java compiler tooling
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  // Drives the Kotlin compiler through `kotlin-compiler-embeddable`, presenting the same
+  // interface as `Scalac` and `Javac`. As with the Scala compiler in `scala`, the dependency is
+  // compile-only: the caller supplies the compiler it wants to drive. That also keeps 28,000
+  // classfiles out of every downstream assembly — enough to push the umbrella test assembly past
+  // the 65,535-entry limit at which a JAR must become ZIP64, which ethereal's runner cannot read.
+  object kotlin extends Component(core):
+    override def scalaJs = false // wraps the Kotlin compiler
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+    def compileMvnDeps = Seq(mvn"org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.10")
+
   object linker extends Component(core, zeppelin.core, revolution.core, eucalyptus.core):
     override def scalaJs = false // JAR packaging and the engine-independent `Linker` machinery
     override def scalacOptions = Task:
@@ -856,7 +867,8 @@ object anthology extends Library:
     override def scalaJs = false // packages Android applications (`java.security`, `zeppelin`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(`scala`, `java`, core, linker, link, nir, dex, apk, spectacular.core):
+  object test
+  extends Tests(`scala`, `java`, kotlin, core, linker, link, nir, dex, apk, spectacular.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1274,16 +1286,30 @@ object embarcadero extends Library:
       settings.sep(settings.maxInlines(super.scalacOptions(), "64"))
 
 object enigmatic extends Library:
+  // The ASN.1 value model and canonical DER codec: pure byte manipulation with no crypto provider
+  // and no platform APIs, so — unlike every other component here — it cross-compiles to Scala.js
+  // and Scala Native as well as the JVM. `core` depends on it so `Pem` can bridge to `Der`.
+  object asn1 extends Component(distillate.core, gossamer.core, monotonous.core, turbulence.core,
+    zephyrine.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The platform split mirrors gastronomy's: the cipher/key/PEM model is platform-neutral, while
   // the `JavaStdlibCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
   // `java.security` on the JVM (`core-jvm`) and against panicking stubs on native (`core-native`,
   // where the OpenSSL provider is the real implementation).
-  object core extends Component(aperture.core, gastronomy.core):
+  object core extends Component(aperture.core, gastronomy.core, asn1):
     override def scalaJs = false // `javax.crypto` has no JS analogue (and no OpenSSL either)
     override def scalaNative = true // but native has the OpenSSL provider
     // `core-jvm` also holds the off-heap/encrypting cloaks (`java.lang.foreign`).
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // X.509 certificates: ASN.1 assembly over `core`'s ciphers, plus aviation for validity periods,
+  // whose transitive dependencies nothing that only wants ciphers and PEM should have to carry.
+  object x509 extends Component(core, aviation.core):
+    override def scalaJs = false // transitively JVM-only, through `core`
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object cose extends Component(core, breviloquence.core):
@@ -1299,7 +1325,7 @@ object enigmatic extends Library:
     override def nativeModuleDeps = super.nativeModuleDeps :+ xenophile.scalanative.native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cose, openssl):
+  object test extends Tests(core, cose, openssl, x509):
     // Not `settings.cc`: the suite's `NoPadding` tests trip the tactic-capturing
     // padding given (pure `using cipher` params can't accept capturing evidence
     // yet); `CaptureTests` opts into capture checking per-file instead. `-Ycc-new`
@@ -1559,10 +1585,17 @@ object gastronomy extends Library:
       settings.sep(super.scalacOptions())
 
 object geodesy extends Library:
-  object core extends Component(gossamer.core):
+  // The `Angle` type and its arithmetic, split from `core` because it needs nothing but
+  // `hypotenuse` (π and floor-mod) and `symbolism` (the operator typeclasses), while `core` sits
+  // on the text stack for rendering and geohashing. Modules below that stack — `iridescence`,
+  // whose hue is an angle — depend on this component alone.
+  object angle extends Component(hypotenuse.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core):
+  object core extends Component(angle, gossamer.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, angle):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1583,7 +1616,6 @@ object gigantism extends Library:
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
-    override def enabled = false
 
 object gnossienne extends Library:
   object core extends Component(distillate.core, adversaria.core):
@@ -1703,7 +1735,16 @@ object hyperbole extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(core, quantitative.units, mandible.core):
+  // Resolves the frames of a runtime stack trace against the TASTy written beside the classfiles,
+  // naming the source definitions the compiled names were derived from. Split from `core` because
+  // it reads TASTy files rather than introspecting trees during macro expansion, but it shares
+  // `core`'s dependency on the compiler, which supplies the header and name-table readers.
+  object stacks extends Component(core, galilei.jvm, hellenism.jvm):
+    override def scalaJs = false // depends on JVM-only `hyperbole.core` and the filesystem
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+
+  object test extends Tests(core, stacks, quantitative.units, mandible.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -1733,7 +1774,8 @@ object inimitable extends Library:
       settings.sep(super.scalacOptions())
 
 object iridescence extends Library:
-  object core extends Component(contextual.core, anticipation.color, hypotenuse.core):
+  object core extends
+    Component(contextual.core, anticipation.color, hypotenuse.core, geodesy.angle):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2645,6 +2687,11 @@ object zeppelin extends Library:
   object test extends Tests(core, imperial.core, diuretic.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
+  object bench extends Benchmarks(core, gastronomy.core, monotonous.core, breviloquence.core):
+    def mvnDeps = Seq(
+      mvn"io.bullet::borer-core:1.16.1",
+      mvn"io.bullet::borer-derivation:1.16.1"
+    )
 
 object ziggurat extends Library:
   object core
@@ -2874,7 +2921,7 @@ object wasm extends Module:
     // The `wasi*Api`/backend-given imports are load-bearing only inside the deferred `invoke`
     // expansions, which dotty's usage tracking cannot see — same false-positive class as the
     // `-Wconf:origin` entries in `settings.scalaOptions`, silenced wholesale for this module.
-    def scalacOptions = settings.cc(settings.scalaOptions :+ "-Wconf:origin=.*wasi.*:s")
+    def scalacOptions = settings.sep(settings.scalaOptions :+ "-Wconf:origin=.*wasi.*:s")
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "src")
 
     override def moduleDeps = Seq(

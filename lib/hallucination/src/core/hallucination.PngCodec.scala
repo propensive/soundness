@@ -58,8 +58,7 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises RasterError =
     try
       val signed =
-        data.length >= 8 && signature.indices.forall: index =>
-          u8(data, index) == signature(index)
+        data.length >= 8 && signature.indices.forall: index => u8(data, index) == signature(index)
 
       if !signed then abort(RasterError(Png(), Reason.BadSignature))
 
@@ -260,8 +259,7 @@ private[hallucination] object PngCodec:
 
       if interlace == 0
       then
-        decodePass(0, width, height): (x, y) =>
-          y*width + x
+        decodePass(0, width, height): (x, y) => y*width + x
       else
         // Adam7: seven passes, each a subsampling of the image.
         val passes = List((0, 0, 8, 8), (4, 0, 8, 8), (0, 4, 4, 8), (2, 0, 4, 4), (0, 2, 2, 4),

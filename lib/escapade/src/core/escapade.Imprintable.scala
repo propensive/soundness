@@ -43,8 +43,7 @@ object Imprintable:
   private def graphemeCells(text: Text, style: StyleWord)(lambda: (Grapheme, StyleWord) => Unit)
   :   Unit =
 
-    Writing(text).graphemes.each: grapheme =>
-      lambda(grapheme, style)
+    Writing(text).graphemes.each: grapheme => lambda(grapheme, style)
 
   given text: Text is Imprintable:
     def cells(self: Text)(lambda: (Grapheme, StyleWord) => Unit): Unit =
@@ -52,8 +51,7 @@ object Imprintable:
 
   given writing: Writing is Imprintable:
     def cells(self: Writing)(lambda: (Grapheme, StyleWord) => Unit): Unit =
-      self.graphemes.each: grapheme =>
-        lambda(grapheme, StyleWord.Default)
+      self.graphemes.each: grapheme => lambda(grapheme, StyleWord.Default)
 
   given ascii: Ascii is Imprintable:
     def cells(self: Ascii)(lambda: (Grapheme, StyleWord) => Unit): Unit =

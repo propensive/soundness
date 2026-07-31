@@ -57,8 +57,7 @@ object Selection:
   val all: Selection = Selection(Nil, Nil, Nil, false)
 
   private def hex(text: Text): Boolean =
-    text.length == 6 && text.s.forall: char =>
-      char.isDigit || (char >= 'a' && char <= 'f')
+    text.length == 6 && text.s.forall: char => char.isDigit || (char >= 'a' && char <= 'f')
 
   private def identifier(text: Text): Boolean =
     text.length > 0 && Character.isJavaIdentifierStart(text.s.charAt(0)) &&
@@ -86,8 +85,7 @@ object Selection:
         constraint => selection.copy(constraints = selection.constraints :+ constraint)
 
   private def term(argument: Text): Term =
-    if identifier(argument) || hex(argument) then Term.Identifier(argument)
-    else Term.Glob(argument)
+    if identifier(argument) || hex(argument) then Term.Identifier(argument) else Term.Glob(argument)
 
   private def constraint(argument: Text): Optional[Constraint] =
     def split(operator: Text): Optional[(Text, Text)] =
@@ -95,8 +93,7 @@ object Selection:
       if index <= 0 then Unset else (argument.keep(index), argument.skip(index + operator.length))
 
     def bound(operator: Text)(make: (Text, Double) => Constraint): Optional[Constraint] =
-      split(operator).let: (axis, value) =>
-        number(value).let(make(axis, _))
+      split(operator).let: (axis, value) => number(value).let(make(axis, _))
 
     bound(t"<=")(Constraint.Most(_, _, true))
     . or(bound(t">=")(Constraint.Least(_, _, true)))
@@ -145,8 +142,7 @@ case class Selection
 
     terms.exists:
       case Selection.Term.Identifier(name) =>
-        chain.exists: link =>
-          link.id == name || link.moniker.lay(false)(_ == name)
+        chain.exists: link => link.id == name || link.moniker.lay(false)(_ == name)
 
       case Selection.Term.Glob(pattern) =>
         val regex = Selection.globRegex(pattern)

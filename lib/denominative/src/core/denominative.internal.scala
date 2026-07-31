@@ -63,7 +63,6 @@ object internal:
     inline infix def till (right: Ordinal): Interval = Interval(ordinal, right - 1)
     inline infix def span (right: Int): Interval = Interval(ordinal, ordinal + right - 1)
 
-
   extension (inline ordinal: Ordinal)
     inline def le(inline right: Ordinal): Boolean = (ordinal: Int) <= (right: Int)
 
@@ -83,7 +82,6 @@ object internal:
       then ordinal.asInstanceOf[Ordinal in value.type]
       else Unset
 
-
   object Ordinal:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal
     inline def uniary(inline cardinal: Int): Ordinal = cardinal - 1
@@ -92,7 +90,6 @@ object internal:
     given subtractable: Ordinal is Subtractable by Ordinal to Int = Subtractable(_ - _)
     given subtractable2: Ordinal is Subtractable by Int to Ordinal = Subtractable(_ - _)
     given ordering: Ordering[Ordinal] = Ordering[Int]
-
 
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt
@@ -130,7 +127,6 @@ object internal:
 
     inline def nil: Boolean = size == 0
 
-
   object Interval:
     inline def sized(inline start: Int, inline count: Int): Interval =
       if count <= 0 then 0L else (start.toLong & 0xffffffffL) << 32 | (count.toLong & 0xffffffffL)
@@ -142,7 +138,6 @@ object internal:
 
     inline def apply(inline start: Ordinal, inline end: Ordinal): Interval =
       sized(start.n0, end.n0 - start.n0 + 1)
-
 
   extension (span: Span)
     inline def bits: Long = span
@@ -204,7 +199,6 @@ object internal:
       case Span.Mode.Line   => true
       case Span.Mode.Region => ((span >>> 14) & 0x7ffL) == 0L
       case _                => false
-
 
   object Span:
     enum Mode derives CanEqual:

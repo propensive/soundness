@@ -97,3 +97,9 @@ trait Crypto:
   def aes: Crypto.SymmetricCipher
   def rsa: Crypto.PublicKeyCipher
   def hmac(algorithm: Text): Crypto.Mac
+
+  // RSASSA-PKCS1-v1_5 over the named digest, e.g. `t"SHA256"`. Signing is baseline rather than
+  // structural, unlike `dsa` and `ecdsa`, because `Rsa` itself both encrypts and signs, and its
+  // given asks only for a `Crypto`; a provider offering RSA encryption but not RSA signatures is
+  // not a combination worth expressing.
+  def rsaSignature(digest: Text): Crypto.SignatureScheme

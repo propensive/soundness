@@ -62,7 +62,6 @@ import workingDirectories.javaWorkingDirectory
 
 import filesystemBackends.virtualMachine
 
-
 object Enclave:
   // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
   // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).

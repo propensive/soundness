@@ -63,7 +63,6 @@ object Decomposable extends Decomposable2:
   trait Base extends Decomposable:
     def decomposition(value: Self): Decomposition
 
-
   // The collection instances below retain their resolution-scoped element decomposers,
   // which share each instance's given-resolution lifetime; laundered pure per the
   // codec-thunk seal pattern (see rep/DECISIONS.md).
@@ -82,7 +81,6 @@ object Decomposable extends Decomposable2:
     caps.unsafe.unsafeAssumePure: sequence =>
         Decomposition.Sequence(t"Sequence", sequence.stdlib.map(decomposable.decomposition(_)), sequence)
 
-
   given iarray: [element]
   =>  ( decomposable: => element is Decomposable )
   =>  (Array[element]^{}) is Decomposable =
@@ -93,10 +91,8 @@ object Decomposable extends Decomposable2:
             iarray.toSeq.map(decomposable.decomposition(_)),
             iarray )
 
-
 trait Decomposable extends Typeclass:
   def decomposition(value: Self): Decomposition
-
 
 trait Decomposable2 extends Decomposable3:
   inline given derived: [entity] => entity is Decomposable = summonFrom:

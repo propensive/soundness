@@ -32,7 +32,6 @@
                                                                                                   */
 package savagery
 
-
 import anticipation.*
 import gossamer.*
 import xylophone.*

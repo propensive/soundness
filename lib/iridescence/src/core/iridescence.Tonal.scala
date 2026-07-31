@@ -30,7 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package decorum
+package iridescence
 
-enum Phase:
-  case License, Package, AfterPackage, Imports, Body
+// Marks a space whose coordinates all run from 0 to 1, which is what every mixing mode except
+// `proportional` assumes: `multiply` is a product of coordinates and `screen` a product of their
+// complements, and neither describes anything where a coordinate can be 100 or negative. `Cielab`
+// and `Xyz` therefore have no instance, so they mix proportionally or not at all.
+object Tonal:
+  given srgb: Srgb is Tonal = new Tonal:
+    type Self = Srgb
+
+  given cmy: Cmy is Tonal = new Tonal:
+    type Self = Cmy
+
+  given cmyk: Cmyk is Tonal = new Tonal:
+    type Self = Cmyk
+
+trait Tonal:
+  type Self <: Color

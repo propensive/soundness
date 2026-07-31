@@ -99,8 +99,7 @@ object internal:
     val segments: List[Text] = subtype.cut(t"+")
 
     val badChar: Option[Char] = segments.iterator.flatMap: seg =>
-      seg.chars.find: c =>
-        c.isWhitespace || c.isControl || specials.has(c)
+      seg.chars.find: c => c.isWhitespace || c.isControl || specials.has(c)
 
     . nextOption()
 

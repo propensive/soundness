@@ -54,7 +54,6 @@ import serpentine.*
 import interfaces.paths.pathOnLinux
 import systems.javaSystem
 
-
 trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:
   type Result[output]
   type Transport <: Object

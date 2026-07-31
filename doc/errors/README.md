@@ -12,4 +12,14 @@ coloured if the compiler's `-color` setting is on.
 
 Each error is documented in a markdown file at `<d>.md`. When an
 error has variants, every `SN-d.e` is documented as a sub-section
-of the same `<d>.md` file.
+of the same `<d>.md` file, or — where there are more than a handful —
+as a row of a table.
+
+A code is never reused. When an error is removed, its page stays, marked
+`(retired)`, saying what became of it: a reference to the code from an
+older release still resolves, and the number cannot be allocated again
+by accident.
+
+Every page names the source file its error is raised from. It does not
+give a line number, since a line number is invalidated by any edit above
+it and nothing checks that it is still right.

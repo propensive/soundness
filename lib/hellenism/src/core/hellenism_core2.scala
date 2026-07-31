@@ -32,5 +32,4 @@
                                                                                                   */
 package hellenism
 
-
 export hellenism.internal.ClassRef

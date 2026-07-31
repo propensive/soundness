@@ -132,7 +132,6 @@ extension [value: Encodable in Data](value: value)
   def serialize[scheme <: Serialization](using encodable: Serializable in scheme): Text =
     encodable.encode(value.bytestream)
 
-
 // The streaming forms of `serialize`/`deserialize`: base-N codecs applied as
 // pull stages, in place of `via(summon[Alphabet[scheme]])`.
 extension (consume stream: (Stream[Data] over Credit)^)

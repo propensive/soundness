@@ -50,8 +50,7 @@ extension (text: Text)
   def bind(lambda: Char => Text): Text =
     val builder: StringBuilder = StringBuilder()
 
-    text.s.toCharArray.nn.foreach: char =>
-      builder.append(lambda(char).s)
+    text.s.toCharArray.nn.foreach: char => builder.append(lambda(char).s)
 
     builder.toString.tt
 

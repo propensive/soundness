@@ -283,9 +283,7 @@ private[punctuation] object Serializer:
     children.each(prose(buf, _))
     val out = buf.text
 
-    if out.length == 0 then out
-    else if blockStart(out.s.charAt(0)) then t"\\$out"
-    else out
+    if out.length == 0 then out else if blockStart(out.s.charAt(0)) then t"\\$out" else out
 
   // Render one inline construct (code span, emphasis, link, …) to a `Text`, emitted as a single
   // unbreakable unit by the paragraph word-wrapper.

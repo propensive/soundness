@@ -111,8 +111,7 @@ object NetworkInterface:
   private def inet(address: jn.InetAddress): Ipv4 | Ipv6 =
     val bytes = address.getAddress.nn
 
-    if bytes.length == 4 then ipv4(address)
-    else Ipv6(longOf(bytes, 0), longOf(bytes, 8))
+    if bytes.length == 4 then ipv4(address) else Ipv6(longOf(bytes, 0), longOf(bytes, 8))
 
   private def ipv4(address: jn.InetAddress): Ipv4 =
     val bytes = address.getAddress.nn

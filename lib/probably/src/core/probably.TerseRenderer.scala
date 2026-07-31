@@ -111,8 +111,7 @@ private[probably] object TerseRenderer:
 
   private def renderBlock(block: Block, columns: Int)(using Stdio): Unit = block match
     case Block.Table(title, tableColumns, rows) =>
-      title.let: id =>
-        Out.println(t"${id.id}  ${id.name.text}")
+      title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
       val tableColumns2 = tableColumns.zipWithIndex.map: (column, index) =>
         val align = if column.numeric then TextAlignment.Right else TextAlignment.Left
@@ -142,8 +141,7 @@ private[probably] object TerseRenderer:
       Out.println(t"")
 
     case Block.Histogram(title, total, frames) =>
-      title.let: id =>
-        Out.println(t"${id.id}  ${id.name.text}")
+      title.let: id => Out.println(t"${id.id}  ${id.name.text}")
 
       val max = frames.stdlib.map(_.samples).maxOption.getOrElse(0L)
 
@@ -161,14 +159,13 @@ private[probably] object TerseRenderer:
 
   private def formatFrame(frame: StackTrace.Frame): Text =
     val ln = frame.line.let(_.toString.tt).or(t"?")
-    t"  at ${frame.method.cls}.${frame.method.method} (${frame.file}:$ln)"
+    t"  at ${frame.displaySegment}.${frame.displayMethod} (${frame.file}:$ln)"
 
   private def renderFailures(document: Document, columns: Int)(using Stdio): Unit =
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
 
-    val failures = document.results.filter: row =>
-      failureStatuses.has(row.status)
+    val failures = document.results.filter: row => failureStatuses.has(row.status)
 
     if failures.nonEmpty then
       Out.println(t"")

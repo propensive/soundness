@@ -77,8 +77,7 @@ object NativeWatcher extends Watcher:
     serviceMutex:
       serviceValue.or:
         jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
-          WatchService(watchService, pollLoop(watchService)).tap: service =>
-            serviceValue = service
+          WatchService(watchService, pollLoop(watchService)).tap: service => serviceValue = service
 
   // Deliberately stdlib: `PathWatch` elements capture the spool, and capture-carrying
   // elements do not flow through the opaque `Set` combinators (boxing).

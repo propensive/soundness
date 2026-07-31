@@ -108,8 +108,7 @@ object Tokenizer:
         // Code token.
         val isCharLiteral =
           (i + 2 < text.length && text.charAt(i + 2) == '\'')
-            || (i + 3 < text.length && text.charAt(i + 1) == '\\'
-                  && text.charAt(i + 3) == '\'')
+            || (i + 3 < text.length && text.charAt(i + 1) == '\\' && text.charAt(i + 3) == '\'')
             || (i + 7 < text.length && text.charAt(i + 1) == '\\'
                   && text.charAt(i + 2) == 'u' && text.charAt(i + 7) == '\'')
         if isCharLiteral then

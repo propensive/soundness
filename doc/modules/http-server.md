@@ -6,11 +6,12 @@ An HTTP server is a handler: a function from a request to a response, served on 
 runs one with a single expression — the handler reads the ambient request, matches on its method
 and path, and returns a typed response whose `Content-Type` follows from the value it carries. The
 raw-socket backend speaks modern HTTP/1.1 — keep-alive, pipelining, chunked bodies, TLS,
-`100-continue` and protocol upgrades — on a virtual thread per connection.
+`100-continue` and protocol upgrades — on a virtual thread per connection, and speaks HTTP/2 on
+any connection whose TLS handshake negotiates it.
 
 Above HTTP/1.1 sit the neighbouring protocols: [WebSockets](https://en.wikipedia.org/wiki/WebSocket)
-upgrade a request into a message stream handled as a state machine, and an HTTP/2 client speaks
-h2c for the gRPC-style protocols that require it.
+upgrade a request into a message stream handled as a state machine, and HTTP/2 multiplexes many
+requests over one connection, for browsers and for the gRPC-style protocols that require it.
 
 ### On serving HTTP
 
@@ -87,10 +88,32 @@ The implementation handles the protocol's sharp edges — masking, fragmentation
 UTF-8 validation, close codes — and conforms to the
 [Autobahn](https://github.com/crossbario/autobahn-testsuite) test suite.
 
+### Request and response bodies
+
+A request body is a stream, not a block of bytes that must arrive before the handler runs: a
+large upload is consumed as it is received, and a response body is framed off its stream
+block by block, so neither side is held in memory. The body belongs to the handler's scope —
+it is the connection's, and the connection ends — so a handler that wants to keep a body past
+its response memoizes it explicitly.
+
 ### HTTP/2
 
-An HTTP/2 connection speaks cleartext h2c with prior knowledge — the flavour gRPC and other
-multiplexed protocols use between services — with full
-[HPACK](https://datatracker.ietf.org/doc/html/rfc7541) header compression. It slots in as an
-[HTTP client](http-client.md) transport over an `Http2.Endpoint`, and carries the
+A TLS listening socket offers `h2` then `http/1.1` by ALPN, and a connection that negotiates
+`h2` is driven by the HTTP/2 engine instead of the HTTP/1.1 keep-alive loop. The handler
+contract is unchanged, so an existing application serves HTTP/2 with no alteration:
+
+```scala
+supervise:
+  SocketServer(8443, ssl = sslContext).handle:
+    Http.Response(Http.Ok)(t"Hello over h2!")
+```
+
+Each client-initiated stream is handled on its own virtual thread, so requests multiplexed on
+one connection run concurrently. The engine implements flow control, trailers, and full
+[HPACK](https://datatracker.ietf.org/doc/html/rfc7541) header compression, and tolerates the
+frame types it does not act on — `PRIORITY`, `PUSH_PROMISE`, extensions — rather than failing
+the connection.
+
+Cleartext h2c with prior knowledge — the flavour used between services — is spoken over an
+`Http2.Endpoint`, which is also an [HTTP client](http-client.md) transport, and carries the
 [gRPC](rpc.md) support built on top of it.

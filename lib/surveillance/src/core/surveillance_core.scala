@@ -48,4 +48,3 @@ package watchers:
 
   def polling[duration: Abstractable across Durations to Long](interval: duration): Watcher =
     PollingWatcher(interval)
-

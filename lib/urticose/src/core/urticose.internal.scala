@@ -100,10 +100,8 @@ object internal:
 
       def apply(text: Text): DnsLabel = text
 
-
     extension (label: DnsLabel)
       def text: Text = label
-
 
     object Ipv4:
       inline given underlying: Underlying[Ipv4, Int] = !!
@@ -215,12 +213,10 @@ object internal:
       def apply[transport]()(using allocatable: transport is Allocatable): Port over transport =
         allocatable.unused().asInstanceOf[Port over transport]
 
-
     extension (port: Port)
       def number: Int = port
 
       def privileged: Boolean = port < 1024
-
 
     extension (macAddress: MacAddress)
       def byte0: Int = (macAddress >>> 40).toInt
@@ -235,7 +231,6 @@ object internal:
         List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.hex.pad(2, Rtl, '0')).join(t"-")
 
       def long: Long = macAddress
-
 
     extension (ip: Ipv4)
       def byte0: Int = ip >>> 24
@@ -395,7 +390,6 @@ object internal:
           abort(IpAddressError(SubnetWrongFormat(other.stdlib.length)))
 
   case class Ipv6Subnet(ipv6: Ipv6, size: Int)
-
 
   def emailAddress(context: Expr[StringContext]): Macro[EmailAddress] = abortive:
     val text: Text = context.valueOrAbort.parts.head.tt

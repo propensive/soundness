@@ -231,8 +231,7 @@ package columnar:
         lines.each: line =>
           val count = (line.length - 1)/width + 1
 
-          (0 until count).each: index =>
-            result = line.segment((width*index).z span width) :: result
+          (0 until count).each: index => result = line.segment((width*index).z span width) :: result
 
         Sequence.of(result.stdlib.reverse.toVector)
 

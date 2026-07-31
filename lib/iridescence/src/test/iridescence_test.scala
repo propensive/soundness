@@ -48,7 +48,7 @@ object Tests extends Suite(m"Iridescence tests"):
         && left.blue === (right.blue +/- 0.01)
 
       given Hsv is Checkable against Hsv = (left, right) =>
-        left.hue === (right.hue +/- 0.05)
+        left.hue.turns === (right.hue.turns +/- 0.05)
         && left.saturation === (right.saturation +/- 0.05)
         && left.value === (right.value +/- 0.05)
 
@@ -96,68 +96,80 @@ object Tests extends Suite(m"Iridescence tests"):
 
     suite(m"Hsl manipulation"):
       test(m"saturate stays in Hsl"):
-        Hsl(0.5, 0.3, 0.4).saturate
-      . assert(_ == Hsl(0.5, 1.0, 0.4))
+        Hsl(180.deg, 0.3, 0.4).saturate
+      . assert(_ == Hsl(180.deg, 1.0, 0.4))
 
       test(m"desaturate stays in Hsl"):
-        Hsl(0.5, 0.3, 0.4).desaturate
-      . assert(_ == Hsl(0.5, 0.0, 0.4))
+        Hsl(180.deg, 0.3, 0.4).desaturate
+      . assert(_ == Hsl(180.deg, 0.0, 0.4))
 
-      test(m"rotate wraps around 360 degrees"):
-        Hsl(0.5, 0.3, 0.4).rotate(360).hue
-      . assert(_ == 0.5)
+      test(m"rotate by a full turn leaves the hue alone"):
+        Hsl(180.deg, 0.3, 0.4).rotate(360.deg).hue.degrees
+      . assert(_ === 180.0 +/- 1e-9)
 
-      test(m"rotate by 180 produces the complement"):
-        Hsl(0.25, 0.3, 0.4).rotate(180).hue
-      . assert(_ == 0.75)
+      test(m"rotate by 180 degrees produces the complement"):
+        Hsl(90.deg, 0.3, 0.4).rotate(180.deg).hue.degrees
+      . assert(_ === 270.0 +/- 1e-9)
+
+      test(m"rotate backwards past zero wraps to the top of the circle"):
+        Hsl(90.deg, 0.3, 0.4).rotate((-135).deg).hue.degrees
+      . assert(_ === 315.0 +/- 1e-9)
+
+      test(m"rotate backwards onto zero does not wrap to a full turn"):
+        Hsl(90.deg, 0.3, 0.4).rotate((-90).deg).hue.degrees
+      . assert(_ === 0.0 +/- 1e-9)
 
       test(m"complement matches a 180-degree rotation"):
-        Hsl(0.25, 0.3, 0.4).complement
-      . assert(_ == Hsl(0.25, 0.3, 0.4).rotate(180))
+        Hsl(90.deg, 0.3, 0.4).complement
+      . assert(_ == Hsl(90.deg, 0.3, 0.4).rotate(180.deg))
 
       test(m"pure has maximum saturation at mid lightness"):
-        Hsl(0.3, 0.2, 0.7).pure
-      . assert(_ == Hsl(0.3, 1.0, 0.5))
+        Hsl(108.deg, 0.2, 0.7).pure
+      . assert(_ == Hsl(108.deg, 1.0, 0.5))
 
       test(m"lighten moves halfway toward 1"):
-        Hsl(0.5, 0.3, 0.4).lighten(0.5).lightness
+        Hsl(180.deg, 0.3, 0.4).lighten(0.5).lightness
       . assert(_ == 0.7)
 
       test(m"darken moves halfway toward 0"):
-        Hsl(0.5, 0.3, 0.4).darken(0.5).lightness
+        Hsl(180.deg, 0.3, 0.4).darken(0.5).lightness
       . assert(_ == 0.2)
 
     suite(m"Hsv manipulation"):
       test(m"saturate stays in Hsv"):
-        Hsv(0.5, 0.3, 0.4).saturate
-      . assert(_ == Hsv(0.5, 1.0, 0.4))
+        Hsv(180.deg, 0.3, 0.4).saturate
+      . assert(_ == Hsv(180.deg, 1.0, 0.4))
 
       test(m"desaturate stays in Hsv"):
-        Hsv(0.5, 0.3, 0.4).desaturate
-      . assert(_ == Hsv(0.5, 0.0, 0.4))
+        Hsv(180.deg, 0.3, 0.4).desaturate
+      . assert(_ == Hsv(180.deg, 0.0, 0.4))
+
+      test(m"rotate by 120 degrees advances a third of a turn"):
+        Hsv(90.deg, 0.3, 0.4).rotate(120.deg).hue.degrees
+      . assert(_ === 210.0 +/- 1e-9)
 
       test(m"complement matches a 180-degree rotation"):
-        Hsv(0.25, 0.3, 0.4).complement
-      . assert(_ == Hsv(0.25, 0.3, 0.4).rotate(180))
+        Hsv(90.deg, 0.3, 0.4).complement
+      . assert(_ == Hsv(90.deg, 0.3, 0.4).rotate(180.deg))
 
       test(m"pure has maximum saturation and value"):
-        Hsv(0.3, 0.2, 0.7).pure
-      . assert(_ == Hsv(0.3, 1.0, 1.0))
+        Hsv(108.deg, 0.2, 0.7).pure
+      . assert(_ == Hsv(108.deg, 1.0, 1.0))
 
       test(m"shade(0) is a no-op"):
-        Hsv(0.5, 0.3, 0.4).shade(0)
-      . assert(_ == Hsv(0.5, 0.3, 0.4))
+        Hsv(180.deg, 0.3, 0.4).shade(0)
+      . assert(_ == Hsv(180.deg, 0.3, 0.4))
 
       test(m"shade(1) drives value to 0"):
-        Hsv(0.5, 0.3, 0.4).shade(1).value
+        Hsv(180.deg, 0.3, 0.4).shade(1).value
       . assert(_ == 0.0)
 
       test(m"tint(0) is a no-op"):
-        Hsv(0.5, 0.3, 0.4).tint(0)
-      . assert(_ == Hsv(0.5, 0.3, 0.4))
+        Hsv(180.deg, 0.3, 0.4).tint(0)
+      . assert(_ == Hsv(180.deg, 0.3, 0.4))
 
       test(m"tint(1) drives saturation to 0"):
-        Hsv(0.5, 0.3, 0.4).tint(1).saturation
+        Hsv(180.deg, 0.3, 0.4).tint(1).saturation
       . assert(_ == 0.0)
 
     suite(m"Srgb manipulation"):
@@ -172,6 +184,136 @@ object Tests extends Suite(m"Iridescence tests"):
       test(m"mix at 0.5 averages the channels"):
         Srgb(0.2, 0.4, 0.6).mix(Srgb(0.8, 0.6, 0.4))
       . assert(_ == Srgb(0.5, 0.5, 0.5))
+
+    suite(m"Proportional mixing"):
+      import mixing.proportional
+
+      given Srgb is Checkable against Srgb = (left, right) =>
+        left.red === (right.red +/- 1e-9)
+        && left.green === (right.green +/- 1e-9)
+        && left.blue === (right.blue +/- 1e-9)
+
+      test(m"one part of a color is that color"):
+        (1*Srgb(0.2, 0.4, 0.6)).to[Srgb]
+      . assert(_ == Srgb(0.2, 0.4, 0.6))
+
+      test(m"five parts of a color is still that color"):
+        (5*Srgb(0.2, 0.4, 0.6)).to[Srgb]
+      . assert(_ == Srgb(0.2, 0.4, 0.6))
+
+      test(m"equal parts average the channels"):
+        (1*Srgb(0.2, 0.4, 0.6) + 1*Srgb(0.8, 0.6, 0.4)).to[Srgb]
+      . assert(_ === Srgb(0.5, 0.5, 0.5))
+
+      test(m"unequal parts weight the mix"):
+        (3*Srgb(0.0, 0.0, 0.0) + 1*Srgb(1.0, 1.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.25, 0.25, 0.25))
+
+      test(m"parts are proportions, not absolutes"):
+        (30*Srgb(0.0, 0.0, 0.0) + 10*Srgb(1.0, 1.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.25, 0.25, 0.25))
+
+      test(m"a third daub is weighted against the running total"):
+        (1*Srgb(1.0, 0, 0) + 1*Srgb(0, 1.0, 0) + 1*Srgb(0, 0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(1.0/3, 1.0/3, 1.0/3))
+
+      test(m"proportional mixing is commutative"):
+        (5*Srgb(0.2, 0.4, 0.6) + 3*Srgb(0.8, 0.6, 0.4)).to[Srgb]
+      . assert(_ === (3*Srgb(0.8, 0.6, 0.4) + 5*Srgb(0.2, 0.4, 0.6)).to[Srgb])
+
+      test(m"fractional parts mix"):
+        (0.5*Srgb(0.0, 0.0, 0.0) + 0.5*Srgb(1.0, 1.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.5, 0.5, 0.5))
+
+      test(m"a daub converts to another space"):
+        (1*Srgb(0.0, 0.0, 0.0) + 1*Srgb(1.0, 1.0, 1.0)).to[Cmy]
+      . assert(_ == Cmy(0.5, 0.5, 0.5))
+
+      test(m"CIELAB mixes on its own coordinates"):
+        (1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)).to[Cielab]
+      . assert(_ == Cielab(20, 10, 5))
+
+      // `WebColors` entries are typed `Color in Srgb` rather than `Srgb`, so these also pin the
+      // inference that normalizes both spellings to the same `Daub[Srgb]`.
+      test(m"five parts red and three parts yellow make an orange"):
+        (5*WebColors.Red + 3*WebColors.Yellow).to[Srgb]
+      . assert(_ === Srgb(1, 0.375, 0))
+
+      test(m"a mixture of named colors converts to another space"):
+        (5*WebColors.Red + 3*WebColors.Yellow).to[Hsl].hue.degrees
+      . assert(_ === 22.5 +/- 1e-9)
+
+      test(m"a named color and a literal color mix together"):
+        (5*WebColors.Red + 3*Srgb(1, 1, 0)).to[Srgb]
+      . assert(_ === Srgb(1, 0.375, 0))
+
+    suite(m"Mixing modes"):
+      given Srgb is Checkable against Srgb = (left, right) =>
+        left.red === (right.red +/- 1e-9)
+        && left.green === (right.green +/- 1e-9)
+        && left.blue === (right.blue +/- 1e-9)
+
+      test(m"multiply darkens toward the product of the channels"):
+        import mixing.multiply
+        (1*Srgb(1.0, 0.5, 0.5) + 1*Srgb(0.5, 0.5, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.75, 0.375, 0.5))
+
+      test(m"screen lightens toward white"):
+        import mixing.screen
+        (1*Srgb(0.5, 0.5, 0.5) + 1*Srgb(0.5, 0.5, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.625, 0.625, 0.625))
+
+      test(m"darken pulls each channel toward the lower of the two"):
+        import mixing.darken
+        (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.2, 0.6, 0.5))
+
+      test(m"lighten pulls each channel toward the higher of the two"):
+        import mixing.lighten
+        (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.4, 0.8, 0.5))
+
+      test(m"difference pulls each channel toward the gap between them"):
+        import mixing.difference
+        (1*Srgb(0.2, 0.8, 0.5) + 1*Srgb(0.6, 0.4, 0.5)).to[Srgb]
+      . assert(_ === Srgb(0.3, 0.6, 0.25))
+
+      test(m"a mode acts in proportion to the added daub's share"):
+        import mixing.multiply
+        (3*Srgb(1.0, 1.0, 1.0) + 1*Srgb(0.0, 0.0, 0.0)).to[Srgb]
+      . assert(_ === Srgb(0.75, 0.75, 0.75))
+
+      test(m"a smaller share of the same daub moves the backdrop less"):
+        import mixing.multiply
+        (9*Srgb(1.0, 1.0, 1.0) + 1*Srgb(0.0, 0.0, 0.0)).to[Srgb]
+      . assert(_ === Srgb(0.9, 0.9, 0.9))
+
+      test(m"a mode other than proportional is not commutative"):
+        import mixing.difference
+        (3*Srgb(0.8, 0.8, 0.8) + 1*Srgb(0.2, 0.2, 0.2)).to[Srgb]
+      . assert(_ === Srgb(0.75, 0.75, 0.75))
+
+      test(m"the same two daubs in the other order give a different color"):
+        import mixing.difference
+        (1*Srgb(0.2, 0.2, 0.2) + 3*Srgb(0.8, 0.8, 0.8)).to[Srgb]
+      . assert(_ === Srgb(0.5, 0.5, 0.5))
+
+      test(m"yellow and cyan multiply to a green, as paint mixes"):
+        import mixing.multiply
+        (1*WebColors.Yellow + 1*WebColors.Cyan).to[Srgb]
+      . assert(_ === Srgb(0.5, 1, 0))
+
+      test(m"a daub of no parts takes no part in the mix"):
+        import mixing.multiply
+        (0*Srgb(1.0, 0.0, 0.0) + 1*Srgb(0.0, 0.0, 1.0)).to[Srgb]
+      . assert(_ === Srgb(0.0, 0.0, 1.0))
+
+      test(m"a channel mode is rejected in a space with unbounded coordinates"):
+        demilitarize:
+          import mixing.multiply
+          1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)
+        . map(_.message)
+      . assert(!_.nil)
 
     suite(m"Cielab manipulation"):
       test(m"delta to self is zero"):

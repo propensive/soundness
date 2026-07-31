@@ -51,8 +51,7 @@ private[phoenicia] object Sfnt:
     val searchRange = (1 << entrySelector)*16
     val tablesStart = 12 + count*16
 
-    val total = tablesStart + sorted.sumBy: entry =>
-      padded(entry(1).length)
+    val total = tablesStart + sorted.sumBy: entry => padded(entry(1).length)
 
     val buffer = Array[Byte](total)
 
@@ -83,8 +82,7 @@ private[phoenicia] object Sfnt:
 
       sum
 
-    (0 until 4).each: index =>
-      buffer(index) = version(index)
+    (0 until 4).each: index => buffer(index) = version(index)
 
     putU16(4, count)
     putU16(6, searchRange)
@@ -99,8 +97,7 @@ private[phoenicia] object Sfnt:
       val directory = 12 + index*16
       val tagBytes = tag.s.getBytes("US-ASCII").nn
 
-      (0 until 4).each: position =>
-        buffer(directory + position) = tagBytes(position)
+      (0 until 4).each: position => buffer(directory + position) = tagBytes(position)
 
       buffer.copyFrom(table, 0, offset, table.length)
       putU32(directory + 4, checksum(offset, table.length))

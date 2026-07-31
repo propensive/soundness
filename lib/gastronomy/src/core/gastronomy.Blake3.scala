@@ -146,7 +146,7 @@ object Blake3:
       val o = offset + 4*i
 
       words(i) =
-        (bytes(o)     & 0xff)         |
+        (bytes(o)     & 0xff) |
           ((bytes(o + 1) & 0xff) <<  8) |
           ((bytes(o + 2) & 0xff) << 16) |
           ((bytes(o + 3) & 0xff) << 24)

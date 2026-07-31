@@ -1103,8 +1103,7 @@ private[pneumatic] final class Deflater(level0: Int, nowrap: Boolean) extends De
           matchLength = longestMatch(hashHead)
           // longestMatch sets matchStart
 
-          if matchLength == MinMatch && strstart - matchStart > 4096
-          then matchLength = MinMatch - 1
+          if matchLength == MinMatch && strstart - matchStart > 4096 then matchLength = MinMatch - 1
           // If prevMatch is also MinMatch, matchStart is garbage but we will ignore the current
           // match anyway.
 

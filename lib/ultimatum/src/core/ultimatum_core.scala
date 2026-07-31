@@ -178,8 +178,7 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
         val root = ScreenRoot(terminal)
         root.cursor(false)
 
-        try Form(root, mode, pane, wake).run(terminal.eventIterator())
-        finally root.finish()
+        try Form(root, mode, pane, wake).run(terminal.eventIterator()) finally root.finish()
 
     case Mode.Inline =>
       // A deferred resize repaint is woken by posting a `Redraw` after the remaining

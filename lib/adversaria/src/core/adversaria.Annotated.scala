@@ -45,7 +45,6 @@ object Annotated:
 
     ${adversaria.internal.general[topic, self, plane, limit]}
 
-
   trait Fields extends Annotated:
     def fields: Map[Text, Set[Operand]]
 

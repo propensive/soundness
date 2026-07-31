@@ -109,11 +109,11 @@ object PdfError:
       m"an I/O operation failed: $detail"
 
     case Reason.WriteUnsupported =>
-      m"this document cannot be written (only an unencrypted, on-disk file with a valid "+
+      m"this document cannot be written (only an unencrypted, on-disk file with a valid " +
           m"cross-reference table can be edited in place)"
 
     case Reason.MissingPage(page) =>
       m"the document has no page $page"
 
 case class PdfError(reason: PdfError.Reason)(using Diagnostics)
-extends Error(728, reason.number)(m"the PDF could not be read because $reason")
+extends Error(280, reason.number)(m"the PDF could not be read because $reason")

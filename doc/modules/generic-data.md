@@ -27,7 +27,7 @@ import soundness.*
 
 ### Encoding and decoding
 
-A value encodes with `pojo`, and decodes back with `decode` — fallibly, since the receiving side
+A value encodes with `pojo`, and decodes back with `as` — fallibly, since the receiving side
 must state the type it expects, and the data may not match:
 
 ```scala
@@ -37,7 +37,7 @@ case class Group(persons: List[Person], size: Int)
 val group = Group(List(Person(t"John", 30), Person(t"Jane", 25)), 2)
 
 val transportable = group.pojo         // arrays, strings and boxes only
-safely(transportable.decode[Group])    // the original Group, on the other side
+safely(transportable.as[Group])    // the original Group, on the other side
 ```
 
 Nested case classes, collections and enumerations all derive their conversions, so any data-shaped
@@ -57,3 +57,20 @@ Person(t"John", 30).pojo    // Array("John", 30)
 Because both sides derive the codec from the same type definition, the encoding needs no schema on
 the wire — but it also means both sides must agree on that definition, and a mismatch surfaces as
 a typed `PojoError` when decoding, not as silent corruption.
+
+`Pojo` is an opaque type over the JDK types it permits, so a `Pojo` cannot be confused with an
+arbitrary `Object`, and the only way to produce one is through an encoder. Decoding is fallible
+and says so: `as` needs an error strategy, and a shape that does not match the expected type
+raises rather than casting and hoping.
+
+### Where it is used
+
+The obvious case is a classloader boundary. Code loaded in an isolated loader — a plugin, a
+compiled fragment, a sandboxed extension — shares the JDK's classes with its host and nothing else,
+so the JDK's classes are exactly the vocabulary the two can speak.
+
+The same reasoning applies across a process boundary, which is what [staged](staging.md) remote
+execution uses: the arguments to a staged computation are encoded here, sent, and decoded on the
+far side against the type the staged code expects. Nothing about the representation is specific to
+either use, so any boundary that can carry boxed primitives, strings and object arrays can carry a
+Scala value.

@@ -55,8 +55,7 @@ trait CommonFormattable extends Formattable:
   def classes(accent: Accent, role: Optional[Role]): ClassList =
     def cssClass(name: Text): Name[CssClass] = unsafely(Name[CssClass](name))
 
-    val roleClass: Optional[Name[CssClass]] = role.let: role =>
-      cssClass(role.show.lower)
+    val roleClass: Optional[Name[CssClass]] = role.let: role => cssClass(role.show.lower)
 
     ClassList(Set(cssClass(accent.show.lower)) ++ roleClass.option)
 

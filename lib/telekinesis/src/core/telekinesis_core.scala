@@ -63,4 +63,3 @@ extension (url: into[HttpUrl])
   def query(query: Query): HttpUrl =
     val query2 = url.query.let(query ++ _.as[Query]).or(query)
     Url(url.origin, url.location, query2.encode, url.fragment)
-

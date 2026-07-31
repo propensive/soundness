@@ -6,7 +6,8 @@ Soundness represents physical quantities — a distance, a mass, a speed — as 
 that carry their [units](https://en.wikipedia.org/wiki/Units_of_measurement) in
 their type. Adding a distance to a time is a compile error; multiplying a distance
 by a force gives a quantity whose units are worked out for you; and a quantity
-costs nothing at runtime beyond the `Double` it wraps.
+costs nothing at runtime beyond the `Double` it wraps. That last property is a
+design constraint rather than an optimization; see [zero cost](../philosophy/zero-cost.md).
 
 ### On quantities
 
@@ -106,12 +107,12 @@ width*depth         // 1.8288 square metres
 
 ### Converting
 
-A quantity converts explicitly to another compatible unit with `in`, naming the
+A quantity converts explicitly to another compatible unit with `to`, naming the
 target unit family:
 
 ```scala
-(3*Foot).in[Metres]   // 0.9144 metres
-(3*Metre).in[Feet]    // 9.8425… feet
+(3*Foot).to[Metres]   // 0.9144 metres
+(3*Metre).to[Feet]    // 9.8425… feet
 ```
 
 `normalize` does the same, written with the fully-powered unit type:
@@ -282,7 +283,7 @@ like any other:
 import temperatureScales.celsiusScale
 (zero[Temperature] + 300*Kelvin).show   // t"26.9 °C"
 
-(Fahrenheit(100) - zero[Temperature]).in[Rankines].show   // t"560 °R"
+(Fahrenheit(100) - zero[Temperature]).to[Rankines].show   // t"560 °R"
 ```
 
 Reading the same temperature on a different scale is a matter of importing a
@@ -337,6 +338,18 @@ def displacement
 :   Quantity[Metres[1]] =
   initial*time + 0.5*accel*time*time
 ```
+
+### What it costs at runtime
+
+None of this survives to the bytecode. A `Quantity` is an opaque type over a `Double`, its units
+exist only in the type, and every operation is `inline`, so a dimensional calculation compiles to
+the same arithmetic instructions the equivalent bare `Double` arithmetic would produce — no
+boxing, no wrapper objects, and no virtual dispatch to a typeclass.
+
+That is a property worth checking rather than asserting, and it is checked: the test suite
+inspects the compiled bytecode of representative calculations and fails if a typeclass dispatch
+appears where inlined arithmetic should be. A performance guarantee that is only claimed tends to
+stop being true.
 
 Both terms of the sum come out as a distance — a velocity times a time, and an
 acceleration times a time squared — so the addition type-checks and the result is a

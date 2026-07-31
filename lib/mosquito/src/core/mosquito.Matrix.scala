@@ -99,7 +99,6 @@ object Matrix:
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
 
-
   given subtractable
   :   [ a,
         rows <: Int,
@@ -608,10 +607,8 @@ object Matrix:
     def eigenvalues(using ValueOf[n]): Optional[Vector[Double, n]] =
       matrix.eigensystem.let(_(0))
 
-
     def eigenvectors(using ValueOf[n]): Optional[Matrix[Double, n, n]] =
       matrix.eigensystem.let(_(1))
-
 
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: Array[element]^{} ):
@@ -630,7 +627,6 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     new Vector[element, columns](arr)
 
-
   def column(index: Int): Vector[element, rows] =
     val arr = Array.build[Any](rows): array =>
       var i = 0
@@ -640,7 +636,6 @@ class Matrix[element, rows <: Int, columns <: Int]
         i += 1
 
     new Vector[element, rows](arr)
-
 
   def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
     val arr = Array.build[element](rows*columns): array =>

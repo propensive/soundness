@@ -69,4 +69,28 @@ An equation knows whether its two sides contain the same atoms:
 ```
 
 Since each side is a typed multiset of atoms rather than text, balance is a real check, computed
-from the structure.
+from the structure. `atoms` gives that multiset for either side, so a formula reports its own
+composition — the element counts across every molecule and coefficient it contains — which is what
+computing a molar mass or checking a proposed reaction needs.
+
+### The reaction arrows
+
+Five arrows are available, and they mean different things rather than being stylistic variants:
+`-->` for a net forward reaction, `<->` for a reversible one, `<=>` for a reaction proceeding in
+both directions, `<~>` for one at equilibrium, and `===` for a statement of equality between two
+formulas. Which arrow a chemist writes carries information, and the equation keeps it.
+
+### Charge and state
+
+An ion carries its charge as part of the molecule, so a charged species is a distinct value from
+its neutral counterpart and the two cannot be confused when balancing. Physical state is
+annotation rather than identity — it affects how a species renders, not what it is — so
+`H₂O(aq)` and `H₂O(l)` describe the same substance in different conditions.
+
+### Building blocks
+
+`Molecular` and `Formulable` are the two typeclasses the operators are defined over: anything
+molecular can be bonded with `*` and multiplied by a coefficient, and anything formulable can be
+added with `+` and joined into an equation. An element is molecular, a molecule is molecular, and
+both are formulable, which is why an element, a molecule and a full formula can all appear on
+either side of an equation without conversion.

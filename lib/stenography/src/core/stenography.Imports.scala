@@ -37,6 +37,6 @@ import scala.collection.immutable as sci
 object Imports:
   val empty: Imports = Imports(sci.Set(), sci.Set())
 
-case class Imports(typenames: sci.Set[Typename], direct: sci.Set[Typename]):
-  def has(typename: Typename): Boolean = typenames.contains(typename)
-  def hasDirect(typename: Typename): Boolean = direct.contains(typename)
+case class Imports(designators: sci.Set[Designator], direct: sci.Set[Designator]):
+  def has(designator: Designator): Boolean = designators.contains(designator)
+  def hasDirect(designator: Designator): Boolean = direct.contains(designator)

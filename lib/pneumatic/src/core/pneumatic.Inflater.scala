@@ -666,7 +666,6 @@ private[pneumatic] final class Inflater(nowrap: Boolean) extends InflateEngine:
     ( bl: Int, bd: Int, tl: scala.Array[Int]^{this}, tlIndex: Int, td: scala.Array[Int]^{this}, tdIndex: Int )
   :   Int =
 
-
     var t = 0       // temporary pointer
     var tp = tl     // temporary pointer
     var tpIndex = 0 // temporary pointer

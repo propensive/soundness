@@ -59,7 +59,6 @@ object Path:
     type Topic = EmptyTuple
     type Limit = %.type
 
-
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
   =>  (tactic: Tactic[PathError])
   =>  (((Path on filesystem) is Decodable in Text)^{tactic}) =
@@ -70,7 +69,6 @@ object Path:
       val parts2 = if parts.last == t"" then parts.init else parts
 
       Path(root, List.of(parts2.reverse.map(filesystem.unescape(_))))
-
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
   =>  (tactic: Tactic[PathError])
@@ -83,10 +81,8 @@ object Path:
 
       Path(root, List.of(parts2.reverse.map(filesystem.unescape(_))))
 
-
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
     path.descent.to(List).prim.or(path.root)
-
 
   given trustedInstantiable: [filesystem: Filesystem]
   =>  ( radical: Tactic[PathError] ?=> Radical on filesystem )
@@ -98,14 +94,12 @@ object Path:
       given Radical on filesystem = radical
       trusted.text.as[Path on filesystem]
 
-
   given instantiable: [filesystem: Filesystem]
   =>  Radical on filesystem
   =>  (tactic: Tactic[PathError])
   =>  (((Path on filesystem) is Instantiable across Paths from Text)^{tactic}) =
 
     _.as[Path on filesystem]
-
 
   def unplatformed[root, topic <: Tuple](root: Text, descent: Text*): Path of topic under root =
     new Path(root, descent*):
@@ -132,21 +126,17 @@ object Path:
   given communicable: [filesystem: Filesystem] => Path on filesystem is Communicable =
     path => Message(path.encode)
 
-
   given generic: [filesystem: Filesystem, path <: Path on filesystem]
   =>  path is Abstractable across Paths to Text =
 
     _.encode
 
-
   private def conversion[from, to](lambda: from -> to): Conversion[from, to] = lambda(_)
-
 
   inline given convert: [topic, root, filesystem, path <: Path of topic under root]
   =>  Conversion[path, Path of topic on filesystem under root] =
 
     conversion(_.on[filesystem])
-
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
   =>  ( radical: root is Radical on filesystem )
@@ -165,7 +155,6 @@ object Path:
 
     transparent inline def toward[target <: Path: Precise](target: target): Optional[Relative] =
       ${serpentine.internal.toward[path, target]('left, 'target)}
-
 
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple
@@ -219,8 +208,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
         check[tail, filesystem](List.of(path.stdlib.tail))
 
       case _ =>
-        path.each: element =>
-          infer[Text is Admissible on filesystem].check(element)
+        path.each: element => infer[Text is Admissible on filesystem].check(element)
 
   inline def on[filesystem]: Path of Topic under Limit on filesystem = summonFrom:
     case given (`filesystem` =:= Plane) =>

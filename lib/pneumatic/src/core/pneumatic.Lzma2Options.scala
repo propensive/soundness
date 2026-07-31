@@ -93,8 +93,7 @@ private[pneumatic] object Lzma2Options:
     val lp = props % 5
     val pb = props / 5
 
-    if lc + lp > 4 then
-      throw IllegalStateException("the LZMA data is corrupt: lc + lp exceeds 4")
+    if lc + lp > 4 then throw IllegalStateException("the LZMA data is corrupt: lc + lp exceeds 4")
 
     (lc, lp, pb)
 

@@ -60,7 +60,37 @@ styled.buffer.style(Prim, Prim).foreground   // Chroma(100, 150, 200)
 ```
 
 The cursor position, its visibility, and the window title set by the application are read from the
-terminal state directly.
+terminal state directly:
+
+```scala
+pty.state.cursor       // where the cursor sits
+pty.state.hideCursor   // whether DECTCEM hid it
+pty.state.title        // the title set by an OSC sequence
+```
+
+The window title arrives through an operating-system-command sequence, terminated by either the
+bell character or a string terminator, and both spellings are accepted, since applications use
+both.
+
+### What is understood
+
+The emulator covers the vocabulary a real application uses. Text and cursor movement — including
+carriage return, line feed, backspace and tabs advancing to the next eight-column stop — and the
+positioning, erasing and scrolling sequences behave as a terminal's do: `ED 2` clears the screen,
+`EL 2` clears the line, and the cursor save and restore pair works as `DECSC` and `DECRC`.
+
+Styling comes through `SGR`: the attribute flags, the sixteen palette colours with their bright
+variants as distinct entries, the 256-colour palette, and 24-bit colour. Resetting with `SGR 0`
+affects the cells written afterwards, not those already on screen, exactly as a terminal does.
+
+DEC private modes are honoured where they change what a test would observe — `?25` hiding and
+showing the cursor — and silently ignored where they do not, so an application that switches to
+the alternate screen buffer is not derailed by an emulator that refuses the sequence. Sequences
+carrying arbitrary payloads — `DCS`, `APC`, `PM`, `SOS` — are absorbed up to their terminator
+rather than interpreted, which is what a terminal that does not implement them does.
+
+`RIS` resets the terminal to its initial state, so a test can start a fresh scenario without
+building a new emulator.
 
 ### Reports
 

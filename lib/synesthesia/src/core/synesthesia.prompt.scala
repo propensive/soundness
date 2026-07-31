@@ -32,5 +32,4 @@
                                                                                                   */
 package synesthesia
 
-
 case class prompt() extends StaticAnnotation

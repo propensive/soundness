@@ -90,8 +90,7 @@ object SumDerivation:
         val array = new scala.Array[result](valueOf[Tuple.Size[Variants]])
 
         choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
-          [variant <: derivation] => context ?=>
-            array(index) = lambda[variant](context)
+          [variant <: derivation] => context ?=> array(index) = lambda[variant](context)
 
         array.immutable(using Unsafe)
 
@@ -199,8 +198,7 @@ object SumDerivation:
       val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
 
       fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
-        [variant <: derivation] => variant =>
-          lambda[variant](variant)
+        [variant <: derivation] => variant => lambda[variant](variant)
 
       . vouch
 

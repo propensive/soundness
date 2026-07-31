@@ -37,7 +37,6 @@ import contingency.*
 import vacuous.*
 import proscenium.compat.*
 
-
 // Composable edit DSL built atop the primitive Mutation.Op interpreter
 // (§22.5). A `Revision` is an ordered op-log; revisions compose with `++`
 // to form longer sequences and apply to a `Tel` value with `revision(tel)`

@@ -67,7 +67,6 @@ object internal:
               case None =>
                 halt(865, m"could not find a contextual Parametric value for ${key.valueOrAbort}")
 
-
           val encodable = Expr.summon[valueType is Encodable in Query].getOrElse:
             halt
               ( 790,

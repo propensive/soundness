@@ -57,3 +57,32 @@ fuller.hits(t"goodbye")   // false, almost certainly
 
 The asymmetry is the contract: a Bloom filter suits exactly those places where a false *yes* costs
 a redundant check, and a false *no* would be a bug.
+
+### Choosing the parameters
+
+The two numbers given at construction are the expected number of elements and the tolerable
+false-positive rate, and from them the bit-array size and the number of hash functions follow by
+the standard formulae. Stating the intent rather than the parameters means the two cannot
+disagree — a filter sized for a hundred elements at one in a thousand is exactly that.
+
+The consequence of getting the *expected size* wrong is worth knowing: a filter given far more
+elements than it was built for degrades gracefully in the sense that it keeps working, but its
+false-positive rate rises above the one requested. It is a promise about a filter used as
+intended, not a guarantee that holds however it is filled.
+
+### Where the bits come from
+
+The hash algorithm is part of the filter's type, and the bit positions are derived from a single
+digest, extended by rehashing where more bits are needed than one digest provides. That means the
+algorithm in scope decides the filter's behaviour, and two filters over the same elements agree
+only if they agree on the algorithm.
+
+Because elements enter through the ordinary [hashing](hashing.md) machinery, a case class is
+usable as an element with no preparation, and a filter over a structured key needs no
+serialization step written for it.
+
+### Immutability
+
+`+` and `++` return new filters rather than mutating in place, so a filter is safe to share across
+threads and to hold in a data structure. Building one from a large collection with `++` is a
+single pass, rather than the sequence of copies that repeated `+` would suggest.

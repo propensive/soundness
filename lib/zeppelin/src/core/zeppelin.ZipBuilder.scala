@@ -92,8 +92,7 @@ class JarBuilder private[zeppelin] (using Tactic[ZipError]) extends ZipBuilder:
     insert(Zip.Entry(ZipBuilder.manifestRef, text))
 
   private def wrap(line: Text): Text =
-    if line.s.length <= 70 then line
-    else t"${line.s.take(70)}\r\n ${wrap(line.s.drop(70).tt)}"
+    if line.s.length <= 70 then line else t"${line.s.take(70)}\r\n ${wrap(line.s.drop(70).tt)}"
 
 object ZipBuilder:
   private[zeppelin] val manifestRef: Path on Zip =

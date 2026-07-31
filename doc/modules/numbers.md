@@ -10,7 +10,8 @@ the checking is opt-in, paid for only where it is wanted.
 
 Bounded types go further: a number can carry its permitted range in its type, so a value
 outside `[0, 1]` is a compile error where it is written, and arithmetic on bounded numbers
-works out the range of the result.
+works out the range of the result. A range in the type is the plainest way to make an
+[impossible state](../philosophy/impossible-states.md) unrepresentable.
 
 ### On numbers
 
@@ -66,6 +67,15 @@ Division by zero is checked the same way, by importing `arithmeticOptions.divisi
 after which `/` may raise a `DivisionError`. Where the check is not imported, the operations
 keep their bare machine behaviour and cost nothing.
 
+The two checks are independent, so a program that must not wrap but is content to trust its
+divisors imports only the first. Both are `inline`, and the unchecked forms compile to the same
+instructions the hardware would have executed anyway — the choice costs nothing where it is not
+taken.
+
+Overflow detection is exact rather than approximate: it distinguishes the cases where a signed
+addition genuinely overflows from those where it merely crosses zero, so a sum of the most
+negative value with itself is caught while ordinary negative arithmetic is not disturbed.
+
 ### Bit manipulation
 
 The `B*` types are for treating a number as a set of bits. They carry the shifts, rotations
@@ -79,7 +89,22 @@ flags.hex           // t"000000f0"
 ```
 
 `<<<` and `>>>` rotate rather than shift, `~` inverts, and individual bits are read and
-written with `bit`, `set`, `clear` and `flip`.
+written with `bit`, `set`, `clear` and `flip`. Bits are addressed by
+[ordinal](https://en.wikipedia.org/wiki/Ordinal_number) — `Prim` is the first, `Sec` the second —
+so a bit index cannot be confused with the off-by-one convention of whichever specification is
+being implemented:
+
+```scala
+B64(Data(0, 0, 0, 0, 0, 0, 0, 6)).bit(Sec)   // true
+```
+
+Rendering a bit pattern pads to the type's width rather than dropping leading zeros, so the
+number of characters says which type produced it:
+
+```scala
+(-1: Byte).hex       // t"ff", two characters
+(-1: Byte).binary    // eight characters
+```
 
 ### Mathematics
 
@@ -97,6 +122,23 @@ negative remainder:
 The trigonometric and logarithmic functions are available as plain functions — `cos`, `sin`,
 `exp`, `ln`, `log10` — alongside the constants `π`, `euler` and `φ`.
 
+`**` widens rather than truncating: raising a `Short` to a power that exceeds a `Short`'s range
+gives the right answer rather than a wrapped one, and a fractional exponent gives a fractional
+result:
+
+```scala
+(200: Short) ** 2.0    // 40000.0, not a truncated Short
+(1000: Short) ** 1.5
+```
+
+The collection statistics are extension methods too. `median` finds the middle value without
+sorting the whole collection — a selection algorithm rather than a sort — and averages the two
+middle values where the count is even:
+
+```scala
+Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median   // 7.0
+```
+
 ### Comparisons
 
 Comparisons chain as they do in mathematics, so a value can be tested against two bounds at
@@ -105,6 +147,41 @@ once, and `min`, `max` and the collection reductions `minimum` and `maximum` rea
 ```scala
 List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)   // List(1.3)
 ```
+
+### Arbitrary precision
+
+Where a value must be exact and no fixed width will do — a monetary total, a coordinate in a
+document, a figure read from a file that promised nothing about its size — a `Decimal` holds a
+sign, an arbitrary magnitude and a decimal scale:
+
+```scala
+Decimal(1234567890123L)
+Decimal(-1234567, 4)      // -123.4567
+Decimal(0.1)              // raises a DecimalError if the double is not exact
+Decimal.parse(t"-12.34e+2")
+```
+
+A decimal literal written in source becomes a `Decimal` directly where one is expected, and
+`text` renders it back, so the round trip is exact:
+
+```scala
+Decimal(-1234567, 4).text   // t"-123.4567"
+```
+
+Values are canonical: trailing zeros are absorbed into the scale as a value is constructed, and
+zero has one representation, so two numerically equal decimals are the same value. There is no
+counterpart of `BigDecimal`'s trap where `equals` and `compareTo` disagree.
+
+Division cannot always be exact, so it says what it wants: a scale and a rounding mode, given
+rather than assumed.
+
+```scala
+left.divide(right, scale = 10, Decimal.Rounding.HalfEven)
+```
+
+The implementation is pure Scala rather than a wrapper over the JVM's `BigDecimal`, so decimals
+work on every platform — and nothing in it depends on 64-bit-native arithmetic, which matters
+where `Long` is emulated.
 
 ### Bounded numbers
 

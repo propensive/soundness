@@ -86,8 +86,8 @@ object Showable:
     stenography.internal.name[meta](using _)
 
   given stackTrace: StackTrace is Showable = stack =>
-    val methodWidth = stack.frames.map(_.method.method.s.length).stdlib.maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.method.className.s.length).stdlib.maxOption.getOrElse(0)
+    val methodWidth = stack.frames.map(_.displayMethod.s.length).stdlib.maxOption.getOrElse(0)
+    val classWidth = stack.frames.map(_.displayClass.s.length).stdlib.maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).stdlib.maxOption.getOrElse(0)
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
@@ -95,19 +95,19 @@ object Showable:
     val root = stack.frames.fold(init):
       case (msg, frame) =>
         val obj = frame.method.className.s.endsWith("#")
-        val drop = if obj then 1 else 0
+        val drop = if frame.source.absent && obj then 1 else 0
         val file = (" "*(fileWidth - frame.file.s.length))+frame.file
-        val dot = if obj then ".".tt else "#".tt
-        val className = frame.method.className.s.dropRight(drop)
+        val dot = if frame.source.present || obj then ".".tt else "#".tt
+        val className = frame.displayClass.s.dropRight(drop)
         val classPad = (" "*(classWidth - className.length)).tt
-        val method = frame.method.method
+        val method = frame.displayMethod
         val methodPad = (" "*(methodWidth - method.s.length)).tt
         val line = frame.line.let(_.show).or("?".tt)
+        val code = frame.source.let(_.code).lay("".tt)(code => s"\n       $code".tt)
 
-        s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line".tt
+        s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line$code".tt
 
-    stack.cause.lay(root): cause =>
-      s"$root\ncaused by:\n$cause".tt
+    stack.cause.lay(root): cause => s"$root\ncaused by:\n$cause".tt
 
 trait Showable extends Communicable:
   def text(value: Self): Text

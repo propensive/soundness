@@ -49,7 +49,6 @@ import spectacular.*
 import urticose.*
 import vacuous.*
 
-
 object internal:
   def methodNames[interface: Type]: Macro[Set[Text]] =
     import quotes.reflect.*
@@ -60,8 +59,7 @@ object internal:
       val annotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
       annotations.exists(_.tpe.typeSymbol == rpcType)
 
-    . map: method =>
-        Expr(method.name.tt)
+    . map: method => Expr(method.name.tt)
 
     '{Set(${Varargs(names)}*)}
 
@@ -85,8 +83,7 @@ object internal:
             case Unset =>
               val response = json.as[JsonRpc.Response]
 
-              response.id.let: id =>
-                JsonRpc.receive(id.as[Text], response.result)
+              response.id.let: id => JsonRpc.receive(id.as[Text], response.result)
 
               Unset
 
@@ -294,7 +291,6 @@ object internal:
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
 
-
     Block(modDef.toList, Ref(module)).asExprOf[interface]
 
   def client[interface: Type](rpc: Expr[JsonRpc]): Macro[interface] =
@@ -400,6 +396,5 @@ object internal:
       })
 
     val modDef = ClassDef.module(module, parents, body = defDefs)
-
 
     Block(modDef.toList, Ref(module)).asExprOf[interface]

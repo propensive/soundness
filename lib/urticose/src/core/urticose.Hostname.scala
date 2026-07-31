@@ -58,8 +58,7 @@ object Hostname:
   given toExpr: ToExpr[Hostname]:
     def apply(hostname: Hostname)(using Quotes): Expr[Hostname] =
       val labels = Varargs:
-        hostname.dnsLabels.map: label =>
-          '{DnsLabel(${Expr(label.text)})}
+        hostname.dnsLabels.map: label => '{DnsLabel(${Expr(label.text)})}
 
       '{Hostname($labels*)}
 

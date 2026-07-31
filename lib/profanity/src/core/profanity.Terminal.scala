@@ -114,8 +114,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
 
     Environment.terminalBg.cut(t"/") match
       case red :: green :: blue :: Nil =>
-        if Terminal.dark(hex(red), hex(green), hex(blue)) then Brightness.Dark
-        else Brightness.Light
+        if Terminal.dark(hex(red), hex(green), hex(blue)) then Brightness.Dark else Brightness.Light
 
       case _ =>
         abort(EnvironmentError(t"TERMINAL_BG"))
@@ -241,8 +240,7 @@ extends Interactivity[TerminalEvent], caps.ExclusiveCapability:
                 // The unambiguous `?`-form report, should a terminal volunteer it
                 // for a plain query: consume the outstanding anchor expectation so
                 // the size reply that follows stays correctly classified.
-                if metrics0.reports.peek() == Terminal.Report.Anchor
-                then metrics0.reports.poll()
+                if metrics0.reports.peek() == Terminal.Report.Anchor then metrics0.reports.poll()
                 events0.put(position)
 
               case bgColor@TerminalInfo.BgColor(red, green, blue) =>

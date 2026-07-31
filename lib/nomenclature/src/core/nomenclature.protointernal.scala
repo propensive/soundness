@@ -172,7 +172,7 @@ object protointernal:
           if acc.exists(_ =:= self) then acc else self :: acc
 
     if planes.isEmpty
-    then halt(914, m"the name $name is not a valid identifier in any namespace in scope")
+    then halt(876, m"the name $name is not a valid identifier in any namespace in scope")
     else planes.reduce(AndType(_, _)).asType.absolve match
       case '[type plane; plane] => '{${Expr(name)}.asInstanceOf[Name[plane]]}
 
@@ -256,6 +256,5 @@ object protointernal:
 
       case _ =>
         halt(613, m"Could not access constraint")
-
 
     '{${Expr(name)}.asInstanceOf[Name[plane]]}

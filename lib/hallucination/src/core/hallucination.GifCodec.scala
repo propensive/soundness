@@ -227,8 +227,7 @@ private[hallucination] object GifCodec:
       write8(value&0xff)
       write8(value >> 8)
 
-    "GIF89a".tt.s.foreach: char =>
-      write8(char.toInt)
+    "GIF89a".tt.s.foreach: char => write8(char.toInt)
 
     write16(width)
     write16(height)

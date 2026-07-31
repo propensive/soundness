@@ -202,13 +202,13 @@ object Tests extends Suite(m"Delicious Tests"):
       val placeholder =
         Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, Unset, t"Bad.Local")
 
-      val list = Syntax.Simple(Typename(t"scala.collection.immutable.List"))
+      val list = Syntax.Simple(Designator(t"scala.collection.immutable.List"))
       val syntax =
         Syntax.Application(list, List(Syntax.Primitive(t"\"⟨scala-diag:0⟩\"")), false)
 
       Reifier.substitute(syntax, List(placeholder))
     . assert(_ == Syntax.Application
-        ( Syntax.Simple(Typename(t"scala.collection.immutable.List")),
+        ( Syntax.Simple(Designator(t"scala.collection.immutable.List")),
           List(Syntax.Symbolic(t"Bad.Local")),
           false ))
 

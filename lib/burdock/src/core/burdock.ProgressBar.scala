@@ -68,8 +68,7 @@ object ProgressBar:
     val remainder: Int = eighths%8
 
     val head: Text =
-      if remainder == 0 then t""
-      else partials.at(Ordinal.zerary(remainder - 1)).let(_.show).or(t"")
+      if remainder == 0 then t"" else partials.at(Ordinal.zerary(remainder - 1)).let(_.show).or(t"")
 
     val used: Int = full + (if remainder == 0 then 0 else 1)
     val bar: Text = t"█"*full + head + t" "*(width - used)

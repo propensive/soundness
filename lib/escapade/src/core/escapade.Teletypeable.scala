@@ -50,12 +50,10 @@ object Teletypeable:
   given teletype: Teletype is Teletypeable = identity(_)
   given text: Text is Teletypeable = text => Teletype(text)
 
-
   given colorable: [value: {Showable as showable, Colorable as colorable}]
   =>  value is Teletypeable =
 
     value => e"${value.color}(${value.show})"
-
 
   given message: Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
     level match
@@ -69,8 +67,8 @@ object Teletypeable:
 
   given showable: [value: Showable] => value is Teletypeable = value => Teletype(value.show)
 
-  given exception: (Text is Measurable) => Exception is Teletypeable = exception =>
-    summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
+  given exception: (Text is Measurable, StackTrace.Resolver) => Exception is Teletypeable =
+    exception => summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
 
   given error: Error is Teletypeable = _.message.teletype
 
@@ -123,29 +121,40 @@ object Teletypeable:
       List.of:
         stack.frames.fold((List.empty[Row].stdlib, t"", t"")):
           case ((acc, lastClass, lastFile), frame) =>
-            val sameClass = frame.method.className == lastClass
+            val sameClass = frame.displayClass == lastClass
             val sameFile = frame.file == lastFile
-            (Row(frame, sameClass, sameFile) :: acc, frame.method.className, frame.file)
+            (Row(frame, sameClass, sameFile) :: acc, frame.displayClass, frame.file)
 
         . _1.reverse
 
+    // A frame the compiler generated—a bridge, a forwarder, an initializer—is rarely what the
+    // reader is looking for, so it stays legible but recedes.
+    def plumbing(row: Row): Boolean = row.frame.source.lay(false)(_.kind.plumbing)
+
     def classCell(row: Row): Teletype =
       val frame = row.frame
-      val obj = frame.method.cls.starts(t"Ξ")
-      val methodCls = if obj then frame.method.cls.skip(1) else frame.method.cls
+      val obj = frame.displaySegment.starts(t"Ξ")
+      val methodCls = if obj then frame.displaySegment.skip(1) else frame.displaySegment
       val color = packages(frame.method.prefix)
 
-      if row.sameClass
-      then e"${palette.subdue(color, 0.85)}(${frame.method.prefix}.$methodCls)"
+      if row.sameClass || plumbing(row)
+      then e"${palette.subdue(color, 0.85)}(${frame.displayPrefix}.$methodCls)"
       else
-        e"${palette.subdue(color, 0.5)}(${frame.method.prefix}.$Bold($color($methodCls)))"
+        e"${palette.subdue(color, 0.5)}(${frame.displayPrefix}.$Bold($color($methodCls)))"
 
     def dotCell(row: Row): Teletype =
-      val ch = if row.frame.method.cls.starts(t"Ξ") then t"." else t"⌗"
+      // A resolved frame names a chain of source definitions, which is joined with dots however
+      // the chain happens to have been compiled.
+      val resolved = row.frame.source.present
+      val ch = if resolved || row.frame.displaySegment.starts(t"Ξ") then t"." else t"⌗"
       e"${palette.separator}($ch)"
 
     def methodCell(row: Row): Teletype =
-      e"${palette.method}(${row.frame.method.method})"
+      val color = if plumbing(row) then palette.subdue(palette.method, 0.85) else palette.method
+      e"$color(${row.frame.displayMethod})"
+
+    def codeCell(row: Row): Teletype =
+      e"${palette.subdue(palette.file, 0.7)}(${row.frame.source.let(_.code).or(t"")})"
 
     def fileCell(row: Row): Teletype =
       val color = if row.sameFile then palette.subdue(palette.file, 0.85) else palette.file
@@ -162,7 +171,10 @@ object Teletypeable:
           Column(e"")(methodCell),
           Column(e"", textAlign = TextAlignment.Right)(fileCell),
           Column(e"")(_ => e"${palette.separator}(:)"),
-          Column(e"", textAlign = TextAlignment.Right)(lineCell) )
+          Column(e"", textAlign = TextAlignment.Right)(lineCell),
+          // The quoted source is the first thing to go when the terminal is too narrow for it:
+          // everything else in the row is needed to identify the frame at all.
+          Column(e"", sizing = columnar.Collapsible(0.5))(codeCell) )
 
     given style: TableStyle =
       TableStyle
@@ -183,13 +195,12 @@ object Teletypeable:
     val allLines = init :: (tableLines: List[Teletype])
     val root = (allLines: Iterable[Teletype]).join(e"\n")
 
-    stack.cause.lay(root): cause =>
-      e"$root\n${palette.message}(caused by:)\n$cause"
+    stack.cause.lay(root): cause => e"$root\n${palette.message}(caused by:)\n$cause"
 
   given frame: (Text is Measurable) => (palette: StackTrace.Palette)
   =>  StackTrace.Frame is Teletypeable = frame =>
 
-    val className = e"${palette.method}(${frame.method.className.fit(40, Rtl)})"
+    val className = e"${palette.method}(${frame.displayClass.fit(40, Rtl)})"
     val method = e"${palette.method}(${frame.method.method.fit(40)})"
     val file = e"${palette.file}(${frame.file.fit(18, Rtl)})"
     val line = e"${palette.line}(${frame.line.let(_.show).or(t"?")})"

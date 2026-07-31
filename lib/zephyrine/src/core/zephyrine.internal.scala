@@ -52,8 +52,7 @@ object internal:
               $checks
               $cursor.next()
 
-              $cursor.lay($otherwise): datum =>
-                if datum != ${Expr(char)} then $otherwise
+              $cursor.lay($otherwise): datum => if datum != ${Expr(char)} then $otherwise
             }
 
         recur(index + 1, checks2)
@@ -98,7 +97,6 @@ object internal:
     inline given charDatum:  CanEqual[Char, Datum] = !!
     inline given datumDatum: CanEqual[Datum, Datum] = !!
 
-
     extension (datum: Datum)
       // The underlying `Int` representation. Use sparingly — anywhere it
       // leaks the `Datum` distinction is lost.
@@ -106,4 +104,3 @@ object internal:
 
       // `true` if the cursor that produced this `Datum` was exhausted.
       inline def isEnd: Boolean = datum == Datum.End
-

@@ -170,7 +170,6 @@ object internal:
     def copy(): Screen[styling] =
       new Screen(width, blank, styleBuffer.clone(), graphemeBuffer.clone(), linkBuffer.clone())
 
-
   extension (style: Style)
     def bold: Boolean = Style.Bit.Bold(style)
 
@@ -183,7 +182,6 @@ object internal:
     def reverse: Boolean = Style.Bit.Reverse(style)
     def foreground: Chroma = Style.Foreground(style)
     def background: Chroma = Style.Background(style)
-
 
   object Style:
     def apply(): Style = Foreground(0L) = Chroma(255, 255, 255)

@@ -38,6 +38,18 @@ import strategies.throwUnsafely
 val document = Parser.parse(t"# Title\n\nSome **bold** text.")
 ```
 
+Markdown also parses incrementally from a [stream](streams.md), reading lines as they arrive
+rather than holding the source. Only the tree, and each paragraph's deferred raw text, is
+retained, so a long document is parsed without ever being materialized:
+
+```scala
+val streamed = Parser.parse(source)
+readme.read[Markdown of Layout]
+```
+
+The whole CommonMark conformance suite passes through the streaming entry, one character per
+chunk, so a document split at any point parses to the same tree as the whole text.
+
 ### Rendering to HTML
 
 A parsed document renders to HTML with `html`, and the result shows as an HTML string. A block

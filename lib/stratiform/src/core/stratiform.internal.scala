@@ -229,7 +229,6 @@ object internal:
         case _ =>
           '{Unset}
 
-
       val lineEndingsExpr: Expr[Tel.LineEndings] = document.lineEndings match
         case Tel.LineEndings.Lf   => '{Tel.LineEndings.Lf}
         case Tel.LineEndings.Crlf => '{Tel.LineEndings.Crlf}
@@ -351,8 +350,7 @@ object internal:
       var i = 0
 
       while i < pattern.compounds.length do
-        if !matchCompound(pattern.compounds(i), input.compounds(i), marker, out) then
-          return false
+        if !matchCompound(pattern.compounds(i), input.compounds(i), marker, out) then return false
 
         i += 1
 
@@ -505,19 +503,19 @@ object internal:
 
     if !classSymbol.flags.is(Flags.Case) then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a case class; sums and other types use "+
+        ("stratiform: staged parsing requires a case class; sums and other types use " +
           "`Tel.Parsable.derived`")
 
     if classSymbol.owner.isTerm then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a top-level or object-nested case class; "+
+        ("stratiform: staged parsing requires a top-level or object-nested case class; " +
           "method-local classes use `Tel.Parsable.derived`")
 
     val ctor = classSymbol.primaryConstructor
 
     if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
       report.errorAndAbort
-        ("stratiform: staged parsing requires a single parameter list; use "+
+        ("stratiform: staged parsing requires a single parameter list; use " +
           "`Tel.Parsable.derived`")
 
     val fields = classSymbol.caseFields
@@ -546,8 +544,7 @@ object internal:
       val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
         ++ fields.flatMap(_.annotations)
 
-      !annotated.exists { annotation =>
-        annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+      !annotated.exists { annotation => annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
 
     val wireNames: List[String] = fieldNames.map { name => Tel.camelToKebab(name).s }
 
@@ -555,8 +552,7 @@ object internal:
       val name = wireNames(index)
       val length = name.length
 
-      val packs = length > 0 && length <= 8 &&
-        name.forall { char => char >= '!' && char <= '~' }
+      val packs = length > 0 && length <= 8 && name.forall: char => char >= '!' && char <= '~'
 
       if !packs then None else
         var word = 0L
@@ -576,7 +572,7 @@ object internal:
         case '[fieldType] =>
           Expr.summon[fieldType is Tel.Field].getOrElse:
             report.errorAndAbort
-              (s"stratiform: no Tel.Field instance for field ${fieldNames(index)}: "+
+              (s"stratiform: no Tel.Field instance for field ${fieldNames(index)}: " +
                 fieldTypes(index).show)
 
     def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
@@ -623,8 +619,7 @@ object internal:
         ValDef(seens(index), Some(Literal(BooleanConstant(false))))
 
       val bufferDefs = List.range(0, arity).flatMap: index =>
-        buffers(index).map: symbol =>
-          ValDef(symbol, Some('{ null }.asTerm))
+        buffers(index).map: symbol => ValDef(symbol, Some('{ null }.asTerm))
 
       val unit = Literal(UnitConstant())
 

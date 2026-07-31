@@ -37,7 +37,6 @@ import scala.collection.immutable.{Map, Set}
 
 import scala.collection.mutable as scm
 
-
 object Poset:
   def apply[element: PartiallyOrdered](elements: element*): Poset[element] =
     new Poset(elements.to(Set))

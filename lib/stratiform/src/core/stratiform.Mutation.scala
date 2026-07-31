@@ -344,8 +344,7 @@ object Mutation:
 
       b += 1
 
-    if oldIndex < 0 || oldIndex >= positions.length ||
-      newIndex < 0 || newIndex >= positions.length
+    if oldIndex < 0 || oldIndex >= positions.length || newIndex < 0 || newIndex >= positions.length
     then abort(MutationError(Reason.PointerNotFound))
 
     if oldIndex == newIndex then blocks

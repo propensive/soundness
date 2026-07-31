@@ -159,8 +159,7 @@ object LineSeparation:
                 val char = chars(sourceOffset + consumed)
 
                 if first == 10 then
-                  if char == '\r' then { consumed += 1; act(stage.lfcr) }
-                  else act(stage.lf)
+                  if char == '\r' then { consumed += 1; act(stage.lfcr) } else act(stage.lf)
                 else
                   if char == '\n' then { consumed += 1; act(stage.crlf) }
                   else act(stage.cr)
@@ -215,8 +214,7 @@ object LineSeparation:
 
               // A dangling separator-initial char at end-of-stream resolves as
               // its bare single-char sequence.
-              if pending == 10 then act(stage.lf)
-              else if pending == 13 then act(stage.cr)
+              if pending == 10 then act(stage.lf) else if pending == 13 then act(stage.cr)
               pending = 0
 
               if emitted > 0 then

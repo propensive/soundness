@@ -22,9 +22,11 @@ element may be nested in any other, attributes are arbitrary strings, and a docu
 that violates the specification is discovered, if at all, only when a browser renders
 it wrongly.
 
-Soundness encodes the specification in the types. Each tag is a value whose type knows
-its name, what it may contain, and what attributes it admits, and the rules of the
-specification are enforced where the markup is written. The vocabulary, the
+Soundness encodes the specification in the types, so an invalid document becomes an
+[impossible state](../philosophy/impossible-states.md) rather than something to validate
+afterwards. Each tag is a value whose type knows its name, what it may contain, and what
+attributes it admits, and the rules of the specification are enforced where the markup is
+written. The vocabulary, the
 containment rules, and the parsing and emitting behaviour all come from a contextual
 description of the specification — currently the
 [WHATWG HTML Living Standard](https://html.spec.whatwg.org/), what most people mean by

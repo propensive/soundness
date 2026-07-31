@@ -143,7 +143,6 @@ object Producer:
 
       def next(): medium = ready.asInstanceOf[medium])
 
-
 // A producer is a stateful capability: writing requires an exclusive reference, and the
 // root classification here lets `Intake` (and every other implementation) mark its
 // writes as update methods.

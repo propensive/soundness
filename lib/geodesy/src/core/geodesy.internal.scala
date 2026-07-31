@@ -45,7 +45,6 @@ object internal:
   private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)
 
   opaque type Location = Long
-  opaque type Angle = Double
 
   object Location:
     given encodable: Location is Encodable in Text = location =>
@@ -54,53 +53,21 @@ object internal:
     private def fromAngle(latitude: Angle, longitude: Angle): Location =
       (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
 
-    private def encodeLatitude(latitude: Angle): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
+    private def encodeLatitude(latitude: Angle): Int =
+      (latitude.radians*2*Int.MaxValue/math.Pi).toInt
 
     private def encodeLongitude(longitude: Angle): Int =
-      ((longitude - math.Pi)*Int.MaxValue/math.Pi).toInt
+      ((longitude.radians - math.Pi)*Int.MaxValue/math.Pi).toInt
 
     def apply(latitude: Angle, longitude: Angle): Location = fromAngle(latitude, longitude)
 
     def apply(north: Int, east: Int): Location =
-      fromAngle(Degree*north/1000000.0, Degree*((360.0 + east/1000000.0)%360.0))
-
-  object Angle:
-    private val c = 2*π
-
-    def apply(value: Double): Angle = value
-    def degrees(value: Double): Angle = value*π/180
-
-    given addable: Angle is Addable by Angle to Angle = Addable: (left, right) => (left + right)%c
-
-    given subtractable: Angle is Subtractable by Angle to Angle =
-      Subtractable: (left, right) => (c + left - right)%c
-
-    given multiplicable: Angle is Multiplicable by Double to Angle =
-      Multiplicable: (left, right) => (left*right)%c
-
-    given divisible: Angle is Divisible by Double to Angle =
-      Divisible: (left, right) => (left/right)%c
-
-    given multiplicable2: Double is Multiplicable by Angle to Angle =
-      Multiplicable: (left, right) => (left*right)%c
-
-    given showable: Angle is Showable = angle =>
-      given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)
-      t"${angle.degrees}°"
-
-
-  extension (angle: Angle)
-    def degrees: Double = angle*180/π
-
-    def radians: Double = angle
-    def principal: Angle = angle%%(2*π)
-    def canonical: Angle = (angle + π).principal - π
-
+      fromAngle(Degree*north.toDouble/1000000.0, Degree*((360.0 + east/1000000.0)%360.0))
 
   extension (left: Location)
-    def latitude: Angle = ((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*π
+    def latitude: Angle = Angle(((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*π)
 
-    def longitude: Angle = (left & 0xffffffffL).toInt.toDouble/Int.MaxValue*π + π
+    def longitude: Angle = Angle((left & 0xffffffffL).toInt.toDouble/Int.MaxValue*π + π)
     def pair: (Angle, Angle) = (latitude, longitude)
 
     def geohash(length: Int): Text =
@@ -139,22 +106,24 @@ object internal:
           "0123456789bcdefghjkmnpqrstuvwxyz".charAt((binary >> ((length - index - 1)*5)&31).toInt)
 
     def surfaceDistance(right: Location): Angle =
-      val dLat = math.abs(left.latitude - right.latitude)
-      val dLng = math.abs(left.longitude - right.longitude)
+      val lat0 = left.latitude.radians
+      val lat1 = right.latitude.radians
+      val dLat = math.abs(lat0 - lat1)
+      val dLng = math.abs(left.longitude.radians - right.longitude.radians)
 
       val a =
-        math.pow(math.sin(dLat/2), 2) +
-          math.cos(left.latitude)*math.cos(right.latitude)*math.pow(math.sin(dLng/2), 2)
+        math.pow(math.sin(dLat/2), 2) + math.cos(lat0)*math.cos(lat1)*math.pow(math.sin(dLng/2), 2)
 
-      2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
+      Angle(2*math.atan2(math.sqrt(a), math.sqrt(1 - a)))
 
     def bearing[compass: Directional](right: Location): compass =
-      val dLng = math.abs(left.longitude - right.longitude)
+      val lat0 = left.latitude.radians
+      val lat1 = right.latitude.radians
+      val dLng = math.abs(left.longitude.radians - right.longitude.radians)
 
       val result: Double =
         math.atan2
-          ( math.sin(dLng)*math.cos(right.latitude),
-            math.cos(left.latitude)*math.sin(right.latitude) -
-              math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng) )
+          ( math.sin(dLng)*math.cos(lat1),
+            math.cos(lat0)*math.sin(lat1) - math.sin(lat0)*math.cos(lat1)*math.cos(dLng) )
 
       compass.direction(Angle(result))

@@ -818,8 +818,7 @@ object WasmInvoke:
     import quotes.reflect.*
 
     def camel(part: String): String =
-      if part.isEmpty then part
-      else part.substring(0, 1).nn.toUpperCase.nn + part.substring(1).nn
+      if part.isEmpty then part else part.substring(0, 1).nn.toUpperCase.nn + part.substring(1).nn
 
     val base = definedIn.s.split("@").nn.head.toString
     val namespace = base.split(":").nn.head.toString
