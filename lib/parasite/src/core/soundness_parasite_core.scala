@@ -34,7 +34,7 @@ package soundness
 
 export
   parasite
-  . { AdaptiveSupervisor, async, Async, AsyncError, cancel, Chain, Probate, Daemon, daemon, delay,
+  . { AdaptiveSupervisor, async, Async, AsyncError, cancel, Probate, Daemon, daemon, delay,
       Destruction, Fault, Fulfillment, hibernate, Hook, intercept,
       Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
       relent, retry, RetryError, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task, task,

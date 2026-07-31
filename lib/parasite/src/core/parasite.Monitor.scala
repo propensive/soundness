@@ -92,7 +92,7 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
     workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[scala.collection.immutable.Set[Worker^{}]])
 
   def name: Optional[Name[Async]]
-  def chain: Optional[Chain]
+  def chain: List[Codepoint]
   def stack: Text
   def daemon: Boolean
   def attend()(using Monitor^): Unit = promise.attend()
@@ -167,7 +167,7 @@ trait ThreadSupervisor extends Supervisor:
 class Root(val supervisor: Supervisor) extends Monitor:
   type Result = Unit
 
-  def chain: Optional[Chain] = Unset
+  def chain: List[Codepoint] = List()
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
   def name: Optional[Name[Async]] = supervisor.name
@@ -199,7 +199,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
   parent.addWorker(this)
 
-  def chain: Chain = Chain(frame, parent.chain)
+  def chain: List[Codepoint] = frame :: parent.chain
   def evaluate(worker: Worker): Result
   def supervisor: Supervisor = parent.supervisor
   def apply(): Optional[Result] = promise()
