@@ -2922,7 +2922,14 @@ object wasm extends Module:
     // The `wasi*Api`/backend-given imports are load-bearing only inside the deferred `invoke`
     // expansions, which dotty's usage tracking cannot see — same false-positive class as the
     // `-Wconf:origin` entries in `settings.scalaOptions`, silenced wholesale for this module.
-    def scalacOptions = settings.sep(settings.scalaOptions :+ "-Wconf:origin=.*wasi.*:s")
+    //
+    // `settings.cc`, not `settings.sep`: separation checking here re-checks the WASI backends'
+    // *inline* bodies at this summoning site, where the exclusivity of a `proscenium.Array` cannot
+    // be re-established (a JDK `InputStream.read` array parameter arrives read-only, and the
+    // backends' `Data` results widen to `^{caps.any.rd}`). Each of those bodies is already
+    // separation-checked in its own module; the harness is not library surface. Restore this if a
+    // merge from a branch where every module is `sep` flips it back.
+    def scalacOptions = settings.cc(settings.scalaOptions :+ "-Wconf:origin=.*wasi.*:s")
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "src")
 
     override def moduleDeps = Seq(
