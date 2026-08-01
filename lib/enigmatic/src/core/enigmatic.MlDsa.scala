@@ -30,27 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package enigmatic
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Cloak, Crypto, CryptoError, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, KeystoreError,
-      MlDsa, NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      SignatureDigest, Symmetric, SymmetricKey, TripleDes, uncloak }
+import scala.reflect.Selectable.reflectiveSelectable
 
-package signatureDigests:
-  export enigmatic.signatureDigests.{sha256Signature, sha384Signature, sha512Signature}
+import anticipation.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+// ML-DSA (FIPS 204), the module-lattice signature scheme standardized from CRYSTALS-Dilithium,
+// in its three parameter sets: 44, 65 and 87 (the dimensions of the matrix A, e.g. 6×5 for
+// ML-DSA-65). It signs the message directly (the "pure" variant), so no `SignatureDigest`
+// participates. Like `Ecdsa`, it is not part of the mandatory provider baseline, so it is
+// reached through a structural refinement, and a provider that does not offer it is a compile
+// error at the use site rather than a failure at run time.
+object MlDsa:
+  given value: [level <: 44 | 65 | 87: ValueOf]
+  =>  ( crypto: Crypto { def mlDsa(level: Int): Crypto.SignatureScheme } )
+  =>  MlDsa[level] =
+    MlDsa(crypto.mlDsa(valueOf[level]))
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+class MlDsa[level <: 44 | 65 | 87: ValueOf](scheme: Crypto.SignatureScheme)
+extends Cipher, Signing:
+  type Size = level
+
+  def keySize: level = valueOf[level]
+  def genKey(): Data = scheme.generateKeyPair(keySize)
+  def privateToPublic(keyData: Data): Data = scheme.privateToPublic(keyData)
+  def sign(data: Data, keyData: Data): Data = scheme.sign(data, keyData)
+
+  def verify(data: Data, signature: Data, keyData: Data): Boolean =
+    scheme.verify(data, signature, keyData)
