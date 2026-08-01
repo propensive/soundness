@@ -174,8 +174,8 @@ extends Rig:
 
       val hotspots =
         Hotspots
-          ( results.head.s.toLong,
-            results.tail.map: line =>
+          ( results.prim.let(_.s.toLong).or(0L),
+            results.drop(1).map: line =>
               line.cut(t"\t") match
                 case count :: className :: method :: Nil =>
                   Hotspots.Frame

@@ -68,7 +68,11 @@ object Pax:
         raise(TarError(TarError.Reason.BadPaxRecord(data)))
         pos = data.length
       else
-        val length = data.slice(pos, lengthEnd).ascii.s.toInt
+        // The scanned slice is all ASCII digits, so the only way `toInt` can fail is an
+        // overflowing run of digits; fall back to 0 so the `length < 1` check below rejects it.
+        val length =
+          try data.slice(pos, lengthEnd).ascii.s.toInt
+          catch case _: NumberFormatException => 0
 
         if length < 1 || pos + length > data.length || data(pos + length - 1) != '\n'.toByte
         then
