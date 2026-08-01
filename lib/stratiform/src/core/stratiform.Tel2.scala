@@ -147,13 +147,14 @@ trait Tel2 extends Tel3:
 
   inline given decodable: [value] => value is Tel.Decodable = summonFrom:
     case given (`value` is Decodable in Text) =>
-      Tel.Decodable(() => Morphology.Str)(provide[Tactic[TelError]](_.primaryAtom.as[value]))
+      Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar):
+        provide[Tactic[TelError]](_.primaryAtom.as[value])
 
     case given Reflection[`value`] => DecodableDerivation.derived
 
   inline given encodable: [value] => value is Tel.Encodable = summonFrom:
     case given (`value` is Encodable in Text) =>
-      Tel.Encodable(() => Morphology.Str): v => Tel.scalar(v.encode)
+      Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): v => Tel.scalar(v.encode)
 
     case given Reflection[`value`] => EncodableDerivation.derived
 
@@ -407,28 +408,30 @@ trait Tel2 extends Tel3:
   // the atom text rather than a JSON AST.
 
   given textDecodable: (tactic: Tactic[TelError]) => ((Text is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Str): tel => primitiveFault(tel, t"Text", t""): atom => atom
+    Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
+      primitiveFault(tel, t"Text", t""): atom => atom
 
   given stringDecodable: (tactic: Tactic[TelError]) => ((String is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Str): tel => primitiveFault(tel, t"String", ""): atom => atom.s
+    Tel.Decodable(() => Morphology.Str, Tel.Nature.Scalar): tel =>
+      primitiveFault(tel, t"String", ""): atom => atom.s
 
   given intDecodable: (tactic: Tactic[TelError]) => ((Int is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Int", 0): atom =>
         try atom.s.toInt catch case _: NumberFormatException => Unset
 
   given longDecodable: (tactic: Tactic[TelError]) => ((Long is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Long", 0L): atom =>
         try atom.s.toLong catch case _: NumberFormatException => Unset
 
   given doubleDecodable: (tactic: Tactic[TelError]) => ((Double is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Real): tel =>
+    Tel.Decodable(() => Morphology.Real, Tel.Nature.Scalar): tel =>
       primitiveFault(tel, t"Double", 0.0): atom =>
         try atom.s.toDouble catch case _: NumberFormatException => Unset
 
   given booleanDecodable: (tactic: Tactic[TelError]) => ((Boolean is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(() => Morphology.Bool): tel =>
+    Tel.Decodable(() => Morphology.Bool, Tel.Nature.Flag): tel =>
       primitiveFault(tel, t"Boolean", false): atom =>
         atom.s match
           case "true"  => true
@@ -438,22 +441,22 @@ trait Tel2 extends Tel3:
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(() => Morphology.Any)(identity(_))
 
   given textEncodable: Text is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Str): text => Tel.scalar(text)
+    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Str): s => Tel.scalar(Text(s))
+    Tel.Encodable(() => Morphology.Str, Tel.Nature.Scalar): s => Tel.scalar(Text(s))
 
   given intEncodable: Int is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole): i => Tel.scalar(Text(i.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): i => Tel.scalar(Text(i.toString))
 
   given longEncodable: Long is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Whole): l => Tel.scalar(Text(l.toString))
+    Tel.Encodable(() => Morphology.Whole, Tel.Nature.Scalar): l => Tel.scalar(Text(l.toString))
 
   given doubleEncodable: Double is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Real): d => Tel.scalar(Text(d.toString))
+    Tel.Encodable(() => Morphology.Real, Tel.Nature.Scalar): d => Tel.scalar(Text(d.toString))
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Bool): b => Tel.scalar(Text(b.toString))
+    Tel.Encodable(() => Morphology.Bool, Tel.Nature.Flag): b => Tel.scalar(Text(b.toString))
 
   given telEncodable: Tel is Tel.Encodable = Tel.Encodable(() => Morphology.Any)(identity(_))
 
@@ -465,15 +468,29 @@ trait Tel2 extends Tel3:
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Tel.Encodable )
   =>  value is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Opt(encodable.shape())): opt =>
-      opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(_.encode)
+    new Tel.Encodable:
+      type Self = value
+      def shape(): Morphology = Morphology.Opt(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+
+      def encoded(opt: value): Tel =
+        opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(encodable.encoded(_))
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  Tactic[TelError]
-  =>  ( decodable: -> (inner is Tel.Decodable) )
+  =>  ( decodable0: -> (inner is Tel.Decodable) )
   =>  value is Tel.Decodable =
-    Tel.Decodable(() => Morphology.Opt(decodable.shape())): telVal =>
-      if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset else decodable.decoded(telVal)
+    new Tel.Decodable:
+      type Self = value
+      def shape(): Morphology = Morphology.Opt(decodable0.shape())
+      override def nature: Tel.Nature = decodable0.nature
+      override def optional: Boolean = true
+      override def absent()(using Tactic[TelError]): value = Unset
+
+      def decoded(telVal: Tel): value =
+        if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
+        else decodable0.decoded(telVal)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
   // Document-rooted Tel whose children are the elements' compounds; the product
@@ -508,6 +525,8 @@ trait Tel2 extends Tel3:
       type Self = collection[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): collection[element] =
         val builder = factory.newBuilder
@@ -534,6 +553,8 @@ trait Tel2 extends Tel3:
       type Self = list[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): list[element] =
         val builder = scala.collection.immutable.List.newBuilder[element]
@@ -556,6 +577,8 @@ trait Tel2 extends Tel3:
       type Self = set[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): set[element] =
         val builder = scala.collection.immutable.Set.newBuilder[element]
@@ -578,6 +601,8 @@ trait Tel2 extends Tel3:
       type Self = sequence[element]
       def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
+      override def nature: Tel.Nature = element0.nature
+      override def optional: Boolean = true
 
       def decoded(telVal: Tel): sequence[element] =
         val builder = Vector.newBuilder[element]

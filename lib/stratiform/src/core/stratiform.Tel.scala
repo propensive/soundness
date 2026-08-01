@@ -112,17 +112,35 @@ object Tel extends Tel2:
       tel.as[topic]
       tel.asInstanceOf[Tel of topic from topic]
 
+  // How a value of a codec's type occupies a compound line's atom positions,
+  // approximating §20.2's member classification from Scala types alone
+  // (issue #1694): `Scalar` is atom-assignable and never skipped, `Flag`
+  // (Boolean) is atom-assignable when the atom text equals the keyword, and
+  // `Struct` (a nested record, sum, or map) can only be filled by a keyword
+  // child. The schema-less approximation diverges from §20.2 in documented
+  // ways: an all-singleton enum decodes through its text codec and so is
+  // `Scalar`, not Flag-shaped, and non-singleton sums are `Struct` even
+  // where a schema's all-Flag select would be atom-assignable.
+  enum Nature:
+    case Scalar, Flag, Struct
+
   object Encodable:
     // The shape is an explicit, nameable thunk (not by-name) so the instance's
     // capture set can name it: an honest result rather than a laundered-pure one.
     // Mirrors jacinta's `Json.Encodable.apply` (see rep/DECISIONS.md).
-    def apply[value](shape0: () => Morphology)(lambda: (value -> Tel)^)
+    def apply[value]
+      ( shape0:    () => Morphology,
+        nature0:   Tel.Nature = Tel.Nature.Struct,
+        optional0: Boolean = false )
+      ( lambda: (value -> Tel)^ )
     :   ((value is Tel.Encodable)^{shape0, lambda}) =
 
       new Tel.Encodable:
         type Self = value
         def encoded(value: value): Tel = lambda(value)
         def shape(): Morphology = shape0()
+        override def nature: Tel.Nature = nature0
+        override def optional: Boolean = optional0
 
   // A TEL encoder/decoder that also carries the format-neutral `Morphology` of exactly
   // what it reads/writes, so a fused `Encodable & Schematic` / `Decodable &
@@ -134,15 +152,29 @@ object Tel extends Tel2:
     type Form = Tel
     def shape(): Morphology
 
+    // The §20.2 member classification of this encoder's type — see
+    // `Tel.Nature`. Conservatively `Struct` unless overridden.
+    def nature: Tel.Nature = Tel.Nature.Struct
+
+    // True when a field of this type may be legitimately absent (an
+    // `Optional` wrapper), mirroring `Decodable.optional`.
+    def optional: Boolean = false
+
   object Decodable:
     // Explicit shape thunk, as in `Tel.Encodable.apply`.
-    def apply[value](shape0: () => Morphology)(decoder: (value is distillate.Decodable in Tel)^)
+    def apply[value]
+      ( shape0:    () => Morphology,
+        nature0:   Tel.Nature = Tel.Nature.Struct,
+        optional0: Boolean = false )
+      ( decoder: (value is distillate.Decodable in Tel)^ )
     :   ((value is Tel.Decodable)^{shape0, decoder}) =
 
       new Tel.Decodable:
         type Self = value
         def decoded(tel: Tel): value = decoder.decoded(tel)
         def shape(): Morphology = shape0()
+        override def nature: Tel.Nature = nature0
+        override def optional: Boolean = optional0
 
   trait Decodable extends distillate.Decodable:
     type Form = Tel
@@ -152,6 +184,23 @@ object Tel extends Tel2:
     // decoder gathers all same-keyword sibling compounds for such a field and hands
     // them here as a Document; other fields read a single matching compound.
     def repeatable: Boolean = false
+
+    // The §20.2 member classification of this decoder's type — see
+    // `Tel.Nature`. Drives the derived product decoder's positional atom
+    // pre-pass. Conservatively `Struct` (never atom-assignable) unless
+    // overridden.
+    def nature: Tel.Nature = Tel.Nature.Struct
+
+    // True when a field of this type may be legitimately absent (an
+    // `Optional` wrapper): with a declared default, this makes the field
+    // non-required for the §20.2 step 3a skip rule.
+    def optional: Boolean = false
+
+    // What a field of this type yields when no child compound carries its
+    // keyword — the AST counterpart of `Parsing.absent`. The default
+    // replicates the derivation's historical fallback: decode an empty node
+    // (primitives raise `Absent` from it).
+    def absent()(using Tactic[TelError]): Self = decoded(Tel.empty)
 
   // The shared substance of `Tel.Parsable` and `Tel.Field`, mirroring
   // jacinta's `Json.Parsing`. The two subtraits add nothing: they exist so
@@ -179,6 +228,26 @@ object Tel extends Tel2:
     // occurrence by the derived product parser — the direct counterpart of
     // `Tel.Decodable.repeatable`.
     def repeatable: Boolean = false
+
+    // The §20.2 member classification of this parser's type — see
+    // `Tel.Nature`. Drives the derived product parser's positional atom
+    // pre-pass. Conservatively `Struct` unless overridden.
+    def nature: Tel.Nature = Tel.Nature.Struct
+
+    // True when a field of this type may be legitimately absent (an
+    // `Optional` wrapper), mirroring `Tel.Decodable.optional`.
+    def optional: Boolean = false
+
+    // Parse one positionally-assigned atom as this field's value. Only
+    // meaningful for `Scalar`-natured instances; the default reports the
+    // §20.2 step 3c mismatch.
+    def parseAtom(text: Text)(using Tactic[TelError]): Self =
+      abort(TelError(TelError.Reason.AtomAtNonAssignablePos))
+
+    // The value of a `Flag`-natured field made present by a bare atom
+    // matching its keyword.
+    def parseFlag()(using Tactic[TelError]): Self =
+      abort(TelError(TelError.Reason.AtomAtNonAssignablePos))
 
     def parse(reader: TelReader^, indent: Int): Self
 
@@ -249,13 +318,20 @@ object Tel extends Tel2:
           type Self = value
           def shape(): Morphology = decodable.shape()
           override def repeatable: Boolean = true
+          override def nature: Tel.Nature = decodable.nature
+          override def optional: Boolean = decodable.optional
 
           def parse(reader: TelReader^, indent: Int): value =
             decodable.decoded(reader.value(indent))
 
           override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
-          override def absent()(using Tactic[TelError]): value = decodable.decoded(Tel.empty)
+          override def absent()(using Tactic[TelError]): value = decodable.absent()
           def parseElement(reader: TelReader^, indent: Int): Any = reader.value(indent)
+
+          // A positional atom becomes a synthetic one-atom compound, exactly
+          // the element form `gathered` re-assembles into its document.
+          def parseAtomElement(text: Text)(using Tactic[TelError]): Any =
+            Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
           def gathered(elements: List[Any]): value =
             val compounds = Array.from:
@@ -268,12 +344,20 @@ object Tel extends Tel2:
         new Tel.Parsable:
           type Self = value
           def shape(): Morphology = decodable.shape()
+          override def nature: Tel.Nature = decodable.nature
+          override def optional: Boolean = decodable.optional
 
           def parse(reader: TelReader^, indent: Int): value =
             decodable.decoded(reader.value(indent))
 
           override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
-          override def absent()(using Tactic[TelError]): value = decodable.decoded(Tel.empty)
+          override def absent()(using Tactic[TelError]): value = decodable.absent()
+
+          // The AST bridge for a positional atom: decode a synthetic
+          // one-atom compound, as the derived decoder hands one over.
+          override def parseAtom(text: Text)(using Tactic[TelError]): value =
+            decodable.decoded:
+              Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
 
     // The one-line opt-in to direct parsing for a structural type:
     // `given MyType is Tel.Parsable = Tel.Parsable.derived` — a
@@ -304,7 +388,11 @@ object Tel extends Tel2:
         override def parse(reader: TelReader^): value = field0.parse(reader)
         def shape(): Morphology = field0.shape()
         override def repeatable: Boolean = field0.repeatable
+        override def nature: Tel.Nature = field0.nature
+        override def optional: Boolean = field0.optional
         override def absent()(using Tactic[TelError]): value = field0.absent()
+        override def parseAtom(text: Text)(using Tactic[TelError]): value = field0.parseAtom(text)
+        override def parseFlag()(using Tactic[TelError]): value = field0.parseFlag()
 
     // The element-wise hooks of a repeatable (collection) parser. The
     // derived product parser gathers each same-keyword occurrence through
@@ -316,6 +404,12 @@ object Tel extends Tel2:
     private[stratiform] trait Gathering:
       self: Tel.Parsing^ =>
       def parseElement(reader: TelReader^, indent: Int): Any
+
+      // One element built from a positionally-assigned atom: §19.2 lets a
+      // repeatable member's occurrences split between inline atoms on the
+      // parent line and later same-keyword children.
+      def parseAtomElement(text: Text)(using Tactic[TelError]): Any
+
       def gathered(elements: List[Any]): Self
 
     // The synthetic document the AST derivation hands to a repeatable
@@ -340,8 +434,12 @@ object Tel extends Tel2:
           type Self = collection[element]
           def shape(): Morphology = Morphology.Arr(field.shape())
           override def repeatable: Boolean = true
+          override def nature: Tel.Nature = field.nature
+          override def optional: Boolean = true
 
           def parseElement(reader: TelReader^, indent: Int): Any = field.parse(reader, indent)
+
+          def parseAtomElement(text: Text)(using Tactic[TelError]): Any = field.parseAtom(text)
 
           def gathered(elements: List[Any]): collection[element] =
             val builder = factory.newBuilder
@@ -383,6 +481,8 @@ object Tel extends Tel2:
         new Tel.Parsable:
           type Self = value
           def shape(): Morphology = Morphology.Opt(field.shape())
+          override def nature: Tel.Nature = field.nature
+          override def optional: Boolean = true
 
           def parse(reader: TelReader^, indent: Int): value =
             if reader.hasSubstance then field.parse(reader, indent)
@@ -391,6 +491,11 @@ object Tel extends Tel2:
               Unset
 
           override def absent()(using Tactic[TelError]): value = Unset
+
+          override def parseAtom(text: Text)(using Tactic[TelError]): value =
+            field.parseAtom(text)
+
+          override def parseFlag()(using Tactic[TelError]): value = field.parseFlag()
 
     // Sentinel for the derived product parser's value buffer: a slot still
     // `AbsentSlot` after the entry loop had no matching keyword
@@ -642,7 +747,11 @@ object Tel extends Tel2:
       override def parse(reader: TelReader^): value = source.parse(reader)
       def shape(): Morphology = source.shape()
       override def repeatable: Boolean = source.repeatable
+      override def nature: Tel.Nature = source.nature
+      override def optional: Boolean = source.optional
       override def absent()(using Tactic[TelError]): value = source.absent()
+      override def parseAtom(text: Text)(using Tactic[TelError]): value = source.parseAtom(text)
+      override def parseFlag()(using Tactic[TelError]): value = source.parseFlag()
 
     def apply[value](parsing: (value is Tel.Parsing)^)
     :   ((value is Tel.Field)^{parsing}) =
@@ -1623,6 +1732,7 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = value
       def shape(): Morphology = shape0
+      override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): value =
         reader.atom().lay(reader.fault(TelError.Reason.Absent) yet sentinel): atom =>
@@ -1631,6 +1741,10 @@ object Tel extends Tel2:
 
       override def absent()(using Tactic[TelError]): value =
         raise(TelError(TelError.Reason.Absent)) yet sentinel
+
+      override def parseAtom(text: Text)(using Tactic[TelError]): value =
+        convert(text).or:
+          raise(TelError(TelError.Reason.NotScalar(text, expected))) yet sentinel
 
   given textParsable: Text is Tel.Parsable =
     primitiveParsable(Morphology.Str, t"Text", t""): atom => atom
@@ -1654,6 +1768,7 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = Int
       def shape(): Morphology = Morphology.Whole
+      override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Int =
         reader.int().lay(Parsable.scalarFault(reader, t"Int", 0))(identity)
@@ -1661,16 +1776,25 @@ object Tel extends Tel2:
       override def absent()(using Tactic[TelError]): Int =
         raise(TelError(TelError.Reason.Absent)) yet 0
 
+      override def parseAtom(text: Text)(using Tactic[TelError]): Int =
+        val parsed = try Optional(text.s.toInt) catch case _: NumberFormatException => Unset
+        parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Int"))) yet 0)
+
   given longParsable: Long is Tel.Parsable =
     new Tel.Parsable:
       type Self = Long
       def shape(): Morphology = Morphology.Whole
+      override def nature: Tel.Nature = Tel.Nature.Scalar
 
       def parse(reader: TelReader^, indent: Int): Long =
         reader.long().lay(Parsable.scalarFault(reader, t"Long", 0L))(identity)
 
       override def absent()(using Tactic[TelError]): Long =
         raise(TelError(TelError.Reason.Absent)) yet 0L
+
+      override def parseAtom(text: Text)(using Tactic[TelError]): Long =
+        val parsed = try Optional(text.s.toLong) catch case _: NumberFormatException => Unset
+        parsed.or(raise(TelError(TelError.Reason.NotScalar(text, t"Long"))) yet 0L)
 
   given doubleParsable: Double is Tel.Parsable =
     primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
@@ -1680,12 +1804,19 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = Boolean
       def shape(): Morphology = Morphology.Bool
+      override def nature: Tel.Nature = Tel.Nature.Flag
 
       def parse(reader: TelReader^, indent: Int): Boolean =
         reader.boolean().lay(Parsable.scalarFault(reader, t"Boolean", false))(identity)
 
       override def absent()(using Tactic[TelError]): Boolean =
         raise(TelError(TelError.Reason.Absent)) yet false
+
+      override def parseAtom(text: Text)(using Tactic[TelError]): Boolean =
+        if text == t"true" then true else if text == t"false" then false
+        else raise(TelError(TelError.Reason.NotScalar(text, t"Boolean"))) yet false
+
+      override def parseFlag()(using Tactic[TelError]): Boolean = true
 
   // `Tel` reads itself directly through the AST bridge — the direct
   // counterpart of `telDecodable`.
@@ -1734,9 +1865,11 @@ object Tel extends Tel2:
     new Tel.Parsable:
       type Self = value
       def shape(): Morphology = Morphology.Str
+      override def nature: Tel.Nature = Tel.Nature.Scalar
       def parse(reader: TelReader^, indent: Int): value = codec.decoded(reader.atom().or(t""))
       override def parse(reader: TelReader^): value = codec.decoded(t"")
       override def absent()(using Tactic[TelError]): value = codec.decoded(t"")
+      override def parseAtom(text: Text)(using Tactic[TelError]): value = codec.decoded(text)
 
   // `source.read[List[Tel]]` / `read[Chain[Tel]]` for a multi-document source
   // (§6.1). `List[Tel]` parses every document eagerly; `Chain[Tel]` parses
