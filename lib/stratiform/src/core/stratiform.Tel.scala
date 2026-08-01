@@ -4872,12 +4872,78 @@ object Tel extends Tel2:
       val extraAtom: Optional[Tel.Atom] =
         if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
 
+      // §14/§15 append the source/literal atom to the atom sequence: when the
+      // line itself carried no inline atom, it is the entry's first atom and
+      // supplies the primary.
+      if !directPrimaryPresent then extraAtom match
+        case Tel.Atom.Source(text)     => capturePrimaryFromText(text.s)
+        case Tel.Atom.Literal(_, text) => capturePrimaryFromText(text.s)
+        case _                         => ()
+
       // Mirror `directCompound`: children are parsed (and here discarded) only
       // when no source/literal atom and no tabulation intervened; otherwise a
       // following deeper line is over-indented and fails with the same reason.
       if !tabulated && extraAtom.absent then parseChildren(indent)
       else if !head.eof && !head.separator && !head.blank && head.indentLevels > indent
       then errorAt(directOverIndentReason, head.startLine, 1)
+
+    // Parses an optional `-` and one to eighteen digits — exactly the
+    // spellings `parseArenaLong` accepts — or Unset.
+    private def parsedTextLong(text: String): Optional[Long] =
+      val negative = text.startsWith("-")
+      val start = if negative then 1 else 0
+      val digits = text.length - start
+
+      if digits < 1 || digits > 18 then Unset else
+        var index = start
+        var accumulator = 0L
+        var ok = true
+
+        while ok && index < text.length do
+          val ch = text.charAt(index)
+
+          if ch < '0' || ch > '9' then ok = false else
+            accumulator = accumulator*10 + (ch - '0')
+            index += 1
+
+        if ok then Optional(if negative then -accumulator else accumulator) else Unset
+
+    // Capture the primary slot from a source/literal atom's text, mirroring
+    // `parseCompoundLineRest`'s per-mode capture of the first inline atom.
+    private update def capturePrimaryFromText(value: String): Unit =
+      directPrimaryPresent = true
+      directPrimaryOk = false
+      directPrimaryText = null
+
+      directPrimaryMode match
+        case PrimaryLong =>
+          parsedTextLong(value) match
+            case parsed: Long =>
+              directPrimaryLongVal = parsed
+              directPrimaryOk = true
+
+            case _ => directPrimaryText = value
+
+        case PrimaryInt =>
+          parsedTextLong(value) match
+            case parsed: Long
+                 if parsed >= Int.MinValue && parsed <= Int.MaxValue =>
+              directPrimaryLongVal = parsed
+              directPrimaryOk = true
+
+            case _ => directPrimaryText = value
+
+        case PrimaryBoolean =>
+          if value == "true" then
+            directPrimaryBoolVal = true
+            directPrimaryOk = true
+          else if value == "false" then
+            directPrimaryBoolVal = false
+            directPrimaryOk = true
+          else directPrimaryText = value
+
+        case _ =>
+          directPrimaryText = value
 
     // The leaf fast path, entered with the cursor right after the keyword:
     // handles the dominant data shapes — a bare `keyword` line, and
@@ -5027,9 +5093,10 @@ object Tel extends Tel2:
                     directPrimaryText = sliceText(atomStart)
                     finish()
 
-    // The entry's primary atom as text — the first inline atom's, or Unset when
-    // the line carries none (a source/literal atom never supplies it), mirroring
-    // `Tel#primaryAtom`. Backs the `Text`/text-codec primitive readers.
+    // The entry's primary atom as text — the first atom's, of any presentation
+    // form (a source/literal atom supplies it when the line itself carries no
+    // inline atom), mirroring `Tel#primaryAtom`. Backs the `Text`/text-codec
+    // primitive readers.
     private[stratiform] update def directAtomText()(using Tactic[TelError]): Optional[Text] =
       consumeDirectEntry(PrimaryText)
       val captured = directPrimaryText
@@ -5103,10 +5170,10 @@ object Tel extends Tel2:
     private[stratiform] update def directDocument()(using Tactic[TelError]): Tel =
       Tel.make(Tel.Document(Unset, Unset, lineEndings, parseChildren(-1)))
 
-    // Peek whether the current entry has substance — an inline atom on its
-    // line, or a child compound beneath it — the exact test the AST's
-    // `optionalDecodable` performs (a source/literal atom is not an inline
-    // atom and contributes none). The entry is parsed in full under a mark
+    // Peek whether the current entry has substance — an atom of any
+    // presentation form (§14/§15 append source/literal atoms to the atom
+    // sequence), or a child compound beneath it — the exact test the AST's
+    // `optionalDecodable` performs. The entry is parsed in full under a mark
     // and then rewound, restoring every piece of parser state the parse
     // touched, so the caller can still consume the entry either way.
     private[stratiform] update def directEntrySubstance()(using Tactic[TelError]): Boolean = inHold:
@@ -5129,14 +5196,8 @@ object Tel extends Tel2:
 
       val compound = directCompound(directEntryIndent)
 
-      var hasInlineAtom = false
-      var index = 0
-
-      while index < compound.atoms.length do
-        if compound.atoms(index).isInstanceOf[Tel.Atom.Inline] then hasInlineAtom = true
-        index += 1
-
-      val substance = hasInlineAtom || compound.children.exists(_.compounds.length > 0)
+      val substance =
+        compound.atoms.length > 0 || compound.children.exists(_.compounds.length > 0)
 
       syncTo()
       cursor.cue(mk)
@@ -5211,15 +5272,29 @@ extends scala.Dynamic, Documentary, Topical, Original:
     case c: Tel.Compound  => c.keyword
     case _: Tel.Document  => t""
 
-  // Flat list of inline atom texts attached to this node. For the document
-  // root this is always empty since the root has no atoms.
+  // Flat list of atom texts attached to this node, in atom order: inline
+  // atoms first, then the source or literal atom if one follows the line
+  // (§14/§15 append it to the same atom sequence). For the document root
+  // this is always empty since the root has no atoms.
   def atomTexts: Array[Text]^{} = subtree match
-    case c: Tel.Compound => Array.frozen(c.atoms.readable.collect { case Tel.Atom.Inline(text, _) => text })
+    case c: Tel.Compound =>
+      Array.frozen:
+        c.atoms.readable.map:
+          case Tel.Atom.Inline(text, _)  => text
+          case Tel.Atom.Source(text)     => text
+          case Tel.Atom.Literal(_, text) => text
+
     case _: Tel.Document => Array.empty
 
-  // First inline atom text or empty string if none. Used by primitive
-  // Decodable instances which interpret a compound's first atom as its
-  // scalar value.
+  // The node's atoms in presentation order (all three forms); empty for the
+  // document root.
+  private[stratiform] def atoms: Array[Tel.Atom]^{} = subtree match
+    case c: Tel.Compound => c.atoms
+    case _: Tel.Document => Array.empty
+
+  // First atom text (of any presentation form) or empty string if none.
+  // Used by primitive Decodable instances which interpret a compound's
+  // first atom as its scalar value.
   def primaryAtom: Text =
     if atomTexts.isEmpty then t"" else atomTexts(0)
 

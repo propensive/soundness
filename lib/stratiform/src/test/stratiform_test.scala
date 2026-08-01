@@ -415,6 +415,26 @@ object Tests extends Suite(m"Stratiform Tests"):
         (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
       . assert(_ == (Tests.OptField(1, t"hello"), true))
 
+      test(m"A source atom supplies a scalar field, equally on both paths"):
+        val doc = t"name\n    Alice\n    Smith\nage 30\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Alice\nSmith", 30), true))
+
+      test(m"A literal atom supplies a scalar field, equally on both paths"):
+        val doc = t"name\n      ---\nAlice  Smith\n      ---\nage 30\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Alice  Smith", 30), true))
+
+      test(m"A source atom supplies a numeric field, equally on both paths"):
+        val doc = t"name Amy\nage\n    30\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Amy", 30), true))
+
+      test(m"A source atom gives an Optional field substance, equally on both paths"):
+        val doc = t"x 1\nnote\n    hello there\n"
+        (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
+      . assert(_ == (Tests.OptField(1, t"hello there"), true))
+
       test(m"Unknown keywords are skipped, including their child subtrees"):
         t"name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
         . read[Tests.Person in Tel]
