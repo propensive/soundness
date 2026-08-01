@@ -30,139 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import gastronomy.*
+import gossamer.*
+import hieroglyph.*
+import stratiform.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+// Domain-separated hashing per §7.1 of the LIRA specification: every hash the format defines is
+// `BLAKE3-256(utf8(domain) ++ 0x00 ++ content)`, with the domain string carrying the `lira/1`
+// format epoch. Atom domains additionally carry the full discipline identifier, so atoms from
+// different disciplines — or different versions of one discipline — can never collide.
+object LiraHash:
+  val epoch: Text = t"lira/1"
+  val size: Int = 32
+
+  // The `0x00` byte separating the domain from the content; a fresh byte array is
+  // zero-initialized, so freezing a unit array yields it directly.
+  private val separator: Data = Array.freeze(Array[Byte](1))
+
+  enum Domain:
+    case Blob, Snapshot, Manifest, Key, Derivative
+    case Atom(discipline: Text)
+
+    def text: Text = this match
+      case Blob             => t"$epoch:blob"
+      case Snapshot         => t"$epoch:snapshot"
+      case Manifest         => t"$epoch:manifest"
+      case Key              => t"$epoch:key"
+      case Derivative       => t"$epoch:derivative"
+      case Atom(discipline) => t"$epoch:atom:$discipline"
+
+  def apply(domain: Domain, content: Data): Data =
+    val prefix: Data = charEncoders.utf8Encoder.encoded(domain.text)
+    val buffer = Array[Byte](prefix.length + 1 + content.length)
+    System.arraycopy(Array.unsafeJvm(prefix), 0, buffer.raw, 0, prefix.length)
+    System.arraycopy(Array.unsafeJvm(content), 0, buffer.raw, prefix.length + 1, content.length)
+
+    Blake3.hashOf(Array.freeze(buffer))
+
+  // The textual form of any LIRA hash: 32 BASE-256 characters (§7).
+  def text(hash: Data): Text = Base256.encode(hash)
+
+  // The hash of the empty byte string in the blob domain, pinned as a golden value guarding the
+  // stability of the domain-separation construction itself.
+  val emptyBlob: Text = t"ǢjЪ6ДľIẈḟžЭŠГȕJЂĘґƟḁsЬțДǶṛḠẄήϋƧЪ"

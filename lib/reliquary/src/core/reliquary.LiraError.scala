@@ -30,139 +30,50 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import fulminate.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+// The validity rules of the LIRA specification, one `Reason` per L-code. Warn-only findings
+// (decorative-version mismatches, unreferenced blobs) are never raised as errors; they are
+// reported as `LiraAdvisory` values instead.
+object LiraError:
+  enum Reason(val number: Int) extends Clarification:
+    case InvalidManifest(detail: Text)  extends Reason(101)
+    case PayloadOverflow(limit: Long)   extends Reason(102)
+    case BlobsUnordered                 extends Reason(103)
+    case MissingBlob(hash: Text)        extends Reason(104)
+    case PayloadHash                    extends Reason(105)
+    case InvalidTree(detail: Text)      extends Reason(106)
+    case OverlayNotMinimal(path: Text)  extends Reason(107)
+    case ApiDivergence(detail: Text)    extends Reason(108)
+    case LineageMismatch                extends Reason(109)
+    case UngradedSuccessor              extends Reason(110)
+    case DuplicateModule(module: Text)  extends Reason(111)
+    case NamespaceClash(space: Text)    extends Reason(112)
+    case AbsentDependency(module: Text) extends Reason(113)
+    case Unsatisfiable(module: Text)    extends Reason(114)
+    case BadDirective                   extends Reason(115)
+    case SigilSpecified                 extends Reason(116)
+
+  given communicable: Reason is Communicable =
+    case Reason.InvalidManifest(detail)  => m"the manifest is not a valid lira document: $detail"
+    case Reason.PayloadOverflow(limit)   => m"the payload exceeded its declared length of $limit"
+    case Reason.BlobsUnordered           => m"the blob stream is not sorted and duplicate-free"
+    case Reason.MissingBlob(hash)        => m"the blob $hash is absent from the payload"
+    case Reason.PayloadHash              => m"the payload hash does not match its declared value"
+    case Reason.InvalidTree(detail)      => m"a tree metadata blob is invalid: $detail"
+    case Reason.OverlayNotMinimal(path)  => m"the overlay is not minimal at $path"
+    case Reason.ApiDivergence(detail)    => m"the universes do not present one API: $detail"
+    case Reason.LineageMismatch          => m"the last lineage entry is not this snapshot"
+    case Reason.UngradedSuccessor        => m"the release is not a patch or minor successor"
+    case Reason.DuplicateModule(module)  => m"the buildpath contains $module more than once"
+    case Reason.NamespaceClash(space)    => m"the namespace $space is claimed by two modules"
+    case Reason.AbsentDependency(module) => m"the dependency $module is not on the buildpath"
+    case Reason.Unsatisfiable(module)    => m"no release of $module satisfies the requirement"
+    case Reason.BadDirective             => m"the interpreter directive is not byte-exact"
+    case Reason.SigilSpecified           => m"a lira manifest must not specify a sigil"
+
+case class LiraError(reason: LiraError.Reason)(using Diagnostics)
+extends Error(640, reason.number)(m"the LIRA operation failed because $reason")

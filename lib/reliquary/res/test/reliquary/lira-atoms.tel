@@ -1,0 +1,24 @@
+tel 1.0
+
+# The Atoms metadata-blob schema (LIRA specification §10.4): one discipline's atom listing,
+# sorted by ascending value hash. Mirror of the hand-encoded `LiraSchemas.atoms`.
+
+name lira-atoms
+
+record Atom
+  field class AtomClass
+  field hash Hash
+  field key String
+
+scalar Hash
+  validate base-256-hash
+
+scalar DisciplineId
+  validate discipline-id
+
+scalar AtomClass
+  validate atom-class
+
+document
+  field discipline DisciplineId
+  field atom Atom optional repeatable
