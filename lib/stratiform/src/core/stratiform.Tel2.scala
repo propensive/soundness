@@ -332,7 +332,13 @@ trait Tel2 extends Tel3:
           provide[Foci[Tel.Focus]]:
             provide[Tactic[TelError]]:
               provide[Tactic[VariantError]]:
-                val variant: Tel = Tel.make(telVal.childCompounds.head)
+                val compounds = telVal.childCompounds
+
+                // A sum position with no child compound carries no variant to
+                // dispatch on: a decode-layer absence, not a crash.
+                if compounds.nil then abort(TelError(TelError.Reason.Absent))
+
+                val variant: Tel = Tel.make(compounds.head)
                 val variantKeyword: Text = labels.at(variant.keyword).or(variant.keyword)
 
                 delegate(variantKeyword): [variant <: derivation] =>

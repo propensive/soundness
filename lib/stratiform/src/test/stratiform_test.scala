@@ -303,6 +303,10 @@ object Tests extends Suite(m"Stratiform Tests"):
         shape.encode.as[Tests.Shape2]
       . assert(_ == Tests.Shape2.Dot)
 
+      test(m"decoding a sum from an empty node raises Absent, not a crash"):
+        capture[TelError](t"\n".read[Tel].as[Tests.Shape2]).reason
+      . assert(_ == TelError.Reason.Absent)
+
       val tree =
         Tests.Tree(t"root", List(Tests.Tree(t"a", Nil),
             Tests.Tree(t"b", List(Tests.Tree(t"c", Nil)))))
