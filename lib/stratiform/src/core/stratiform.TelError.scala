@@ -192,6 +192,9 @@ object TelError:
       case NotScalar(value, expected) =>
         m"the value $value could not be parsed as $expected"
 
+      case NestingLimitExceeded =>
+        m"the document nesting exceeds the supported limit of 256"
+
     // The §19.5 recovery strategy for a parse/validation reason, or `Unset` for a
     // decode reason (E4xx), which accrues through `Foci` rather than the parser's
     // recovery model.
@@ -235,8 +238,9 @@ object TelError:
         | ValidatorRejected | FlagWithContent =>
         Recovery.IgnoreErroneousNode
 
-      // E4xx decode reasons have no parser-level recovery.
-      case Absent | NotScalar(_, _) =>
+      // E4xx decode reasons and implementation-reserved resource errors have
+      // no parser-level recovery.
+      case Absent | NotScalar(_, _) | NestingLimitExceeded =>
         Unset
 
   enum Reason(val number: Int) extends Clarification:
@@ -302,6 +306,10 @@ object TelError:
     // recovery model, so they carry no `Recovery` strategy.
     case Absent                                 extends Reason(401)
     case NotScalar(value: Text, expected: Text) extends Reason(402)
+
+    // Implementation-reserved (§20.2 assigns no TEL error code): resource
+    // limits that are properties of the implementation, not the document.
+    case NestingLimitExceeded                   extends Reason(501)
 
 case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
   ( using Diagnostics )

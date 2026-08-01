@@ -674,9 +674,15 @@ object Tel extends Tel2:
 
       raise(TelError(reason)) yet continuation
 
+    // §20.2 RECOMMENDED defence against pathologically deep documents: type
+    // assignment fail-stops beyond this many levels of compound nesting. It
+    // carries no E-code because it is a property of the implementation, not
+    // of the document.
+    private val nestingLimit = 256
+
     def assign(tel: Tel, schema: Tels): Tel.Element raises TelError tracks Tel.Focus =
       val compounds: Array[Tel.Compound]^{} = tel.subtree.children.bind(_.compounds)
-      val rootChildren = assignChildren(compounds, schema.document, schema)
+      val rootChildren = assignChildren(compounds, schema.document, schema, 1)
 
       val rootElements =
         applyConstraints(schema.document, Array.empty[Tel.Element], rootChildren, schema)
@@ -956,7 +962,8 @@ object Tel extends Tel2:
     private def assignChildren
       ( compounds: Array[Tel.Compound]^{},
        parent:    Struct,
-       schema:    Tels )
+       schema:    Tels,
+       depth:     Int )
     :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
 
       val km = keywordMap(parent, schema)
@@ -985,7 +992,7 @@ object Tel extends Tel2:
 
               currentMember = entry.ordinal
 
-            results += assignCompound(compound, entry, schema)
+            results += assignCompound(compound, entry, schema, depth)
 
           case None => recoverNode(Reason.UnknownKeyword)(())
 
@@ -1064,8 +1071,11 @@ object Tel extends Tel2:
     private def assignCompound
       ( compound: Tel.Compound,
        entry:    KeywordEntry,
-       schema:   Tels )
+       schema:   Tels,
+       depth:    Int )
     :   Tel.Element raises TelError tracks Tel.Focus =
+
+      if depth > nestingLimit then abort(TelError(Reason.NestingLimitExceeded))
 
       val resolved = resolveType(entry.entryType, schema)
 
@@ -1073,7 +1083,7 @@ object Tel extends Tel2:
         case s: Struct =>
           val atomElements = assignAtoms(compound.atoms, s, schema)
           val childCompounds: Array[Tel.Compound]^{} = compound.children.bind(_.compounds)
-          val childElements = assignChildren(childCompounds, s, schema)
+          val childElements = assignChildren(childCompounds, s, schema, depth + 1)
           val allElements = applyConstraints(s, atomElements, childElements, schema)
           Tel.Element.Node(entry.flatIndex, s, allElements)
 

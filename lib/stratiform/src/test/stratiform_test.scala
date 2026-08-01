@@ -961,6 +961,52 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == TelError.Reason.RequiredMemberAbsent)
 
+      // A self-referential schema describing arbitrarily deep nesting, for
+      // the §20.2 recursion-depth limit.
+      val treeSchema = Tels(
+        name     = t"tree",
+        document = Tels.Struct(
+          members = Array.of(Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"node", Tels.Reference(t"Node"), Unset )),
+          validators = Array.empty),
+        layers   = Array.empty,
+        sigil    = Unset,
+        records  = Array.of(Tels.RecordDefinition(
+          t"Node",
+          Array.of(Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"node", Tels.Reference(t"Node"), Unset )),
+          Array.empty)),
+        scalars  = Array.empty,
+        selects  = Array.empty)
+
+      def deepDocument(levels: Int): Tel =
+        val sb = new java.lang.StringBuilder
+        var n = 0
+
+        while n < levels do
+          var s = 0
+
+          while s < n*2 do
+            sb.append(' ')
+            s += 1
+
+          sb.append("node\n")
+          n += 1
+
+        sb.toString.tt.read[Tel]
+
+      test(m"nesting beyond 256 levels fail-stops type assignment"):
+        capture[TelError](Tel.Type.assign(deepDocument(300), treeSchema)).reason
+      . assert(_ == TelError.Reason.NestingLimitExceeded)
+
+      test(m"nesting within the depth limit assigns"):
+        Tel.Type.assign(deepDocument(10), treeSchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 1)
+
     suite(m"Atom phase (§20.2 step 3)"):
       // Wraps the record under test as the single root member `item`: the
       // document root never carries atoms (§20.2), so the atom phase is
