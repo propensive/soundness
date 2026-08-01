@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export reliquary.{Derivative, LiraAssembler, Materializer}
+export anthology.LiraBundle

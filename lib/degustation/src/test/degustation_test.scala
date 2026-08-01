@@ -86,11 +86,19 @@ object Tests extends Suite(m"Degustation Tests"):
     val classpath = LocalClasspath(jars.map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
     val libraryPaths = jars.map { jar => Text(jar.toString) }
 
-    def compile(source: Text): (List[Text], List[Text]) =
+    def compileWith(source: Text, deps: LocalClasspath, libs: scala.List[Text], sjs: Boolean)
+    :   (List[Text], List[Text], Text) =
+
       supervise:
         val out: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
         Files.createDirectories(Paths.get(out.encode.s))
-        val process = Scalac[3.9](List())(classpath)(Map(t"fixture.scala" -> source), out)
+
+        val process =
+          if sjs then
+            Scalac[3.9](List()).targeting[Universe.Sjsir]
+              (deps)(Map(t"fixture.scala" -> source), out)
+          else Scalac[3.9](List())(deps)(Map(t"fixture.scala" -> source), out)
+
         process.complete()
 
         val tastyFiles = Files.walk(Paths.get(out.encode.s)).nn.iterator.nn.asScala
@@ -98,7 +106,11 @@ object Tests extends Suite(m"Degustation Tests"):
           . filter { path => path.toString.endsWith(".tasty") }
           . map { path => Text(path.toString) }
 
-        (List.from(tastyFiles), List.from(Text(out.encode.s) :: libraryPaths))
+        (List.from(tastyFiles), List.from(Text(out.encode.s) :: libs), out.encode)
+
+    def compile(source: Text): (List[Text], List[Text]) =
+      val (tastyFiles, classpath0, _) = compileWith(source, classpath, libraryPaths, false)
+      (tastyFiles, classpath0)
 
     def listing(source: Text): scala.List[(Text, Text)] =
       val (tastyFiles, classpath0) = compile(source)
@@ -265,6 +277,83 @@ object Tests extends Suite(m"Degustation Tests"):
        ScalaTasty.claims(TreePath(t"fixture/Alpha.class"), Array.freeze(Array[Byte](0))),
        ScalaTasty.claims(TreePath(t"readme.md"), Array.freeze(Array[Byte](0))))
     . assert(_ == (true, true, false))
+
+    test(m"a jvm-only lira assembles from a real compilation and verifies"):
+      import reliquary.*
+      val (_, _, out) = compileWith(fixture, classpath, libraryPaths, false)
+
+      val compilation =
+        Compilation[Universe.Classfile](unsafely(out.s.tt.as[soundness.Path on Linux]), classpath)
+
+      val input = LiraBundle.jvm(compilation)
+      val registry = Discipline.Registry(List(ScalaTasty))
+
+      val bytes = LiraAssembler.assemble
+        ( t"fixture-core",
+          List(input),
+          registry,
+          toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
+          owns      = List(t"fixture"),
+          classpath = { _ => List.from(Text(out.s) :: libraryPaths) } )
+
+      val lira = Lira.read(bytes)
+      val report = Verification.install(lira)
+
+      (lira.manifest.module,
+       lira.manifest.api.stdlib.map(_.discipline),
+       lira.manifest.section.stdlib.map(_.universe),
+       lira.manifest.section.stdlib.forall(_.derivative.present),
+       report.atomizations.stdlib.map(_.discipline))
+    . assert(_ == (t"fixture-core", scala.List(t"scala-tasty/1"), scala.List(t"jvm"), true,
+        scala.List(t"scala-tasty/1")))
+
+    val sjsJars = scala.List("scala3-library_sjs1.jar", "scalajs-scalalib_2.13.jar")
+      . map(lib.resolve(_).nn)
+      . filter(Files.exists(_))
+      . ++ (Files.list(lib).nn.iterator.nn.asScala.to(scala.List).filter: path =>
+          val name = path.getFileName.nn.toString
+          name.startsWith("scalajs-library_2.13") || name.startsWith("scalajs-javalib"))
+
+    if sjsJars.size >= 3 then
+      val sjsClasspath = LocalClasspath
+        ((jars ++ sjsJars).map { jar => ClasspathEntry.Jar(jar.toString.tt) }*)
+
+      val sjsLibraryPaths = (jars ++ sjsJars).map { jar => Text(jar.toString) }
+
+      test(m"a two-universe lira upholds the cross-universe invariant"):
+        import reliquary.*
+        val (_, _, jvmOut) = compileWith(fixture, classpath, libraryPaths, false)
+        val (_, _, sjsOut) = compileWith(fixture, sjsClasspath, sjsLibraryPaths, true)
+
+        val jvmInput = LiraBundle.jvm(Compilation[Universe.Classfile]
+          (unsafely(jvmOut.s.tt.as[soundness.Path on Linux]), classpath))
+
+        val sjsInput = LiraBundle.sjsir(Compilation[Universe.Sjsir]
+          (unsafely(sjsOut.s.tt.as[soundness.Path on Linux]), sjsClasspath))
+
+        val registry = Discipline.Registry(List(ScalaTasty))
+
+        def contextClasspath(universe: Text): List[Text] =
+          if universe == t"sjsir" then List.from(Text(sjsOut.s) :: sjsLibraryPaths)
+          else List.from(Text(jvmOut.s) :: libraryPaths)
+
+        val bytes = LiraAssembler.assemble
+          ( t"fixture-core",
+            List(jvmInput, sjsInput),
+            registry,
+            toolchain = List(LiraBundle.tool[Universe.Classfile](t"3.9.0")),
+            classpath = contextClasspath(_) )
+
+        val lira = Lira.read(bytes)
+        val report = Verification.install(lira)
+        val sjsSection = lira.manifest.section.stdlib.find(_.universe == t"sjsir")
+
+        (lira.manifest.section.stdlib.map(_.universe),
+         report.materialized.stdlib.map(_(0)),
+         report.materialized.stdlib.find(_(0) == t"sjsir")
+           . map(_(1).entries.stdlib.exists(_.path.text.s.endsWith(".sjsir"))))
+      . assert(_ == (scala.List(t"jvm", t"sjsir"), scala.List(t"jvm", t"sjsir"),
+          scala.Some(true)))
 
     test(m"the discipline adapter atomizes tasty and holds binaries atomless"):
       import reliquary.*
