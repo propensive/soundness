@@ -34,7 +34,10 @@ package anthology
 
 import scala.language.adhocExtensions
 
+import dotty.tools.dotc as dtd
+import dotty.tools.dotc.core as dtdc
 import dotty.tools.dotc.reporting.*
+import dotty.tools.dotc.sbt.interfaces as dtdsi
 
 import anticipation.*
 import denominative.*
@@ -156,3 +159,43 @@ private[anthology] def notice(diagnostic: Diagnostic): Notice =
   . nn
   . orElse(Notice(importance, file, message, Unset, markup))
   . nn
+
+// A reporter which relays each diagnostic to the given `CompileProcess` as a `Notice`.
+private[anthology] def processReporter(process: CompileProcess)
+  ( using loggable: (CompileEvent is Loggable)^ )
+:   (Reporter & UniqueMessagePositions & HideNonSensicalMessages)^{loggable} =
+
+  new Reporter with UniqueMessagePositions with HideNonSensicalMessages:
+    def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
+      Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
+      process.put(notice(diagnostic))
+
+// A callback which relays whole-percentage progress to the given `CompileProcess`, and
+// polls it for cancellation.
+private[anthology] def progressCallback(process: CompileProcess): dtdsi.ProgressCallback =
+  new dtdsi.ProgressCallback:
+    @scala.caps.unsafe.untrackedCaptures
+    private var last: Int = -1
+
+    override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
+    :   Unit =
+
+      ()
+
+    override def progress
+      ( current:      Int,
+        total:        Int,
+        currentStage: String | Null,
+        nextStage:    String | Null )
+    :   Boolean =
+
+      val int = (100.0*current/total).toInt
+
+      if int > last then
+        last = int
+
+        process.put
+          ( CompileProgress
+            ( last/100.0, if currentStage == null then t"null" else currentStage.tt ) )
+
+      process.continue

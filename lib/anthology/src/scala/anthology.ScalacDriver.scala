@@ -32,109 +32,36 @@
                                                                                                   */
 package anthology
 
-import proscenium.compat.*
-
 import scala.language.adhocExtensions
-
-import scala.annotation.targetName
-import scala.util.control as suc
 
 import dotty.tools.dotc as dtd
 import dotty.tools.dotc.core as dtdc
-import dotty.tools.dotc.interfaces as dtdi
-import dotty.tools.dotc.util as dtdu
 
-import ambience.*
 import anticipation.*
-import contingency.*
-import digression.*
-import gossamer.*
-import hellenism.*
-import nomenclature.n
-import parasite.*, Async.nominative
-import prepositional.*
 import rudiments.*
 
-object Scalac:
-  type Versions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6 | 3.7 | 3.8 | 3.9
+// Exposes the protected `Driver` machinery — `setup` (argument processing into a fresh
+// context, loading the classpath's symbol table) and `finish` (post-run hooks) — to both
+// the stateless `Scalac#apply` path and warm `ScalacSession`s.
+private[anthology] class ScalacDriver() extends dtd.Driver:
+  def baseContext(arguments: List[Text])(using (CompileEvent is Loggable)^)
+  :   scala.Option[dtdc.Contexts.Context] =
 
-  case class Option[-version <: Versions](flags: Text*)
+    val context = initCtx.fresh
+    Log.info(CompileEvent.Running(arguments))
 
-  private val mutex: Mutex = Mutex()
-  @scala.caps.unsafe.untrackedCaptures
-  private var Scala3: dtd.Compiler = new dtd.Compiler()
+    // The argument array crosses into the compiler through a Java-side copy: `toArray`'s
+    // result carries a read capability the pure formal rejects.
+    val args = java.util.ArrayList[String]()
 
-  def refresh(): Unit = mutex { Scala3 = new dtd.Compiler() }
-  def compiler(): dtd.Compiler = Scala3
+    arguments.each: argument =>
+      args.add(argument.s)
+      ()
 
-  // Preserves the single-type-argument call form, `Scalac[3.6](options)`, which targets the
-  // classfile universe.
-  @targetName("applyClassfile")
-  def apply[version <: Versions](options: List[Option[version]])
-  :   Scalac[version, Universe.Classfile] =
+    setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]],
+        context)
 
-    new Scalac(options)
+    . map(_(1))
 
-case class Scalac[version <: Scalac.Versions, universe <: Universe] private
-  ( options: List[Scalac.Option[version]] ):
-
-  def commandLineArguments: List[Text] = options.bind(_.flags)
-
-  def targeting[universe2 <: Universe]: Scalac[version, universe2] = new Scalac(options)
-
-  // Retargets this configuration at the universe from which the given artifact is produced,
-  // for callers who think in terms of the end product rather than its intermediate form.
-  def producing[artifact <: Artifact](using provenance: Provenance[artifact])
-  :   Scalac[version, provenance.Origin] =
-
-    new Scalac(options)
-
-
-  def apply
-    ( classpath: LocalClasspath )
-    [ path: Abstractable across Paths to Text ]
-    ( sources: Map[Text, Text], out: path )
-    ( using System, Monitor, Probate, Universe.Emission[universe] )
-    ( using Tactic[CompilerError], (CompileEvent is Loggable)^ )
-  :   CompileProcess =
-
-    val scalacProcess: CompileProcess = CompileProcess()
-    val reporter = processReporter(scalacProcess)
-
-    val arguments: List[Text] =
-      summon[Universe.Emission[universe]].flags :::
-        List(t"-d", out.generic, t"-classpath", classpath()) :::
-        commandLineArguments :::
-        List(t"")
-
-    val driver = ScalacDriver()
-    val currentContext = driver.baseContext(arguments).get
-
-    given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
-      context
-      . setReporter(reporter)
-      . setCompilerCallback(new dtdi.CompilerCallback {})
-      . setProgressCallback(progressCallback(scalacProcess))
-
-    val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
-      sources.stdlib.toList.map: (name, content) =>
-        dtdu.SourceFile.virtual(name.s, content.s)
-
-    scalacProcess.put:
-      // The run compiles under this process's own compiler and reporter; no aliased
-      // writer.
-      scala.caps.unsafe.unsafeAssumeSeparate:
-       task(n"scalac"):
-        try
-          Scalac.compiler().newRun.tap: run =>
-            run.compileSources(sourceFiles)
-            if !reporter.hasErrors then driver.finishRun(Scalac.Scala3, run)
-
-          scalacProcess.put
-            ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
-
-        catch case suc.NonFatal(error) =>
-          scalacProcess.put(CompileResult.Crash(error.stackTrace))
-          Scalac.refresh()
-
-    scalacProcess
+  def finishRun(compiler: dtd.Compiler, run: dtd.Run)(using dtdc.Contexts.Context): Unit =
+    finish(compiler, run)
