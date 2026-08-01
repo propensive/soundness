@@ -886,6 +886,64 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == TelError.Reason.FlagWithContent)
 
+      // Two repeatable scalar members, for the §20.2 step 4c contiguity rule.
+      val contiguitySchema = Tels(
+        name     = t"doc",
+        document = Tels.Struct(
+          members = Array.of(
+            Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
+               t"a", Tels.Scalar(Array.of(t"string")), Unset ),
+            Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
+               t"b", Tels.Scalar(Array.of(t"string")), Unset )),
+          validators = Array.empty),
+        layers   = Array.empty,
+        sigil    = Unset,
+        records  = Array.empty,
+        scalars  = Array.empty,
+        selects  = Array.empty)
+
+      test(m"non-contiguous member children raise E309"):
+        val doc = t"a x\na y\nb z\na w\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, contiguitySchema)).reason
+      . assert(_ == TelError.Reason.MembersNonContiguous)
+
+      test(m"contiguous runs of repeatable members do not raise E309"):
+        val doc = t"a x\na y\nb z\n".read[Tel]
+        Tel.Type.assign(doc, contiguitySchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 3)
+
+      // A repeatable all-Flag SelectRef: its variants share a member index,
+      // so they interleave freely without E309.
+      val repeatableStatusSchema = Tels(
+        name     = t"status",
+        document = Tels.Struct(
+          members = Array.of(Tels.SelectRef
+           ( required   = Tels.Polarity.Implicit,
+             repeatable = Tels.Polarity.Loose,
+             reference  = t"Status" )),
+          validators = Array.empty),
+        layers   = Array.empty,
+        sigil    = Unset,
+        records  = Array.empty,
+        scalars  = Array.empty,
+        selects  = Array.of(Tels.SelectDefinition(
+          name     = t"Status",
+          variants = Array.of(
+            Tels.Variant(t"active",   Tels.Flag),
+            Tels.Variant(t"archived", Tels.Flag)),
+          validators = Array.empty)))
+
+      test(m"interleaved variants of one SelectRef do not raise E309"):
+        val doc = t"active\narchived\nactive\n".read[Tel]
+        Tel.Type.assign(doc, repeatableStatusSchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 3)
+
     suite(m"Atom phase (§20.2 step 3)"):
       // Wraps the record under test as the single root member `item`: the
       // document root never carries atoms (§20.2), so the atom phase is

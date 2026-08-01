@@ -737,18 +737,22 @@ object Tel extends Tel2:
         case other => other
 
     private case class KeywordEntry
-      ( memberIndex: Int,
-        entryType:   Type,
-        member:      Member,
-        variant:     Optional[Variant] = Unset )
+      ( flatIndex: Int,
+        ordinal:   Int,
+        entryType: Type,
+        member:    Member,
+        variant:   Optional[Variant] = Unset )
 
-    // Builds a map from keyword Text → KeywordEntry where `memberIndex`
+    // Builds a map from keyword Text → KeywordEntry where `flatIndex`
     // is the **flat keyword index** per BinTEL §5: each Field
     // contributes 1 entry, each SelectRef contributes 1 entry per
     // variant in the referenced SelectDefinition. The flat index
     // identifies the unique keyword position in the parent's flat-
     // keyword sequence — used as the `keywordIndex` of every
-    // Tel.Element produced from this parent.
+    // Tel.Element produced from this parent. `ordinal` is the member
+    // index in `parent.members`: all variants of one SelectRef share
+    // it, which is what lets them interleave under the §20.2 step 4c
+    // contiguity rule.
     private def keywordMap(parent: Struct, schema: Tels)
     :   Map[Text, KeywordEntry] raises TelError =
 
@@ -759,7 +763,7 @@ object Tel extends Tel2:
       while idx < parent.members.length do
         parent.members(idx) match
           case f: Tels.Field =>
-            builder(f.keyword) = KeywordEntry(flatIdx, f.fieldType, f)
+            builder(f.keyword) = KeywordEntry(flatIdx, idx, f.fieldType, f)
             flatIdx += 1
 
           case s: SelectRef =>
@@ -772,7 +776,7 @@ object Tel extends Tel2:
               val variant = selectDef.variants(v)
 
               builder(variant.keyword) =
-                KeywordEntry(flatIdx + v, variant.variantType, s, Optional(variant))
+                KeywordEntry(flatIdx + v, idx, variant.variantType, s, Optional(variant))
 
               v += 1
 
@@ -957,6 +961,8 @@ object Tel extends Tel2:
 
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
+      var currentMember = -1
+      val seenMembers = scala.collection.mutable.HashSet.empty[Int]
       var i = 0
 
       while i < compounds.length do
@@ -965,8 +971,23 @@ object Tel extends Tel2:
         // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
         // emit no element, so remaining siblings are still validated.
         km.get(compound.keyword) match
-          case Some(entry) => results += assignCompound(compound, entry, schema)
-          case None        => recoverNode(Reason.UnknownKeyword)(())
+          case Some(entry) =>
+            // §20.2 step 4c: all children of one member must form a single
+            // contiguous run; variants of one SelectRef share an ordinal and
+            // so interleave freely. Returning to an earlier member's run is
+            // E309, reported once per returned-to run; the child is still
+            // assigned.
+            if entry.ordinal != currentMember then
+              if currentMember >= 0 then seenMembers += currentMember
+
+              if seenMembers.contains(entry.ordinal)
+              then recoverNode(Reason.MembersNonContiguous)(())
+
+              currentMember = entry.ordinal
+
+            results += assignCompound(compound, entry, schema)
+
+          case None => recoverNode(Reason.UnknownKeyword)(())
 
         i += 1
 
@@ -1032,7 +1053,7 @@ object Tel extends Tel2:
           val childCompounds: Array[Tel.Compound]^{} = compound.children.bind(_.compounds)
           val childElements = assignChildren(childCompounds, s, schema)
           val allElements = applyConstraints(s, atomElements, childElements, schema)
-          Tel.Element.Node(entry.memberIndex, s, allElements)
+          Tel.Element.Node(entry.flatIndex, s, allElements)
 
         case s: Scalar =>
           // §20.2 step 1: a Scalar-typed compound is a leaf with at most one
@@ -1051,17 +1072,17 @@ object Tel extends Tel2:
 
           .getOrElse(t"")
 
-          Tel.Element.Value(entry.memberIndex, s, text)
+          Tel.Element.Value(entry.flatIndex, s, text)
 
         case Flag =>
           if compound.atoms.nonEmpty || compound.children.nonEmpty then
             recoverNode(Reason.FlagWithContent)(())
 
-          Tel.Element.Node(entry.memberIndex, Flag, Array.empty)
+          Tel.Element.Node(entry.flatIndex, Flag, Array.empty)
 
         case _: Reference =>
           recoverNode(Reason.UnresolvedReference):
-            Tel.Element.Node(entry.memberIndex, Flag, Array.empty)
+            Tel.Element.Node(entry.flatIndex, Flag, Array.empty)
 
   // Validator infrastructure per §21 of the TEL specification.
   object Validator:
