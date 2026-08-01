@@ -2849,6 +2849,7 @@ object Tests extends Suite(m"Stratiform Tests"):
     RecordsTests()
     VerifyTests()
     AccrualTests()
+    PositionalTests()
 
     suite(m"BinTEL direct parsing (BintelInlinable)"):
       given (Tests.Person is Bintel.Parsable) = BintelInlinable.parsable[Tests.Person]
