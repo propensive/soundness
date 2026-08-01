@@ -33,47 +33,31 @@
 package reliquary
 
 import anticipation.*
-import fulminate.*
+import contingency.*
+import pneumatic.*
+import zephyrine.*
 
-// The validity rules of the LIRA specification, one `Reason` per L-code. Warn-only findings
-// (decorative-version mismatches, unreferenced blobs) are never raised as errors; they are
-// reported as `LiraAdvisory` values instead.
-object LiraError:
-  enum Reason(val number: Int) extends Clarification:
-    case InvalidManifest(detail: Text)   extends Reason(101)
-    case PayloadLength(limit: Long)      extends Reason(102)
-    case InvalidBlobStream(detail: Text) extends Reason(103)
-    case MissingBlob(hash: Text)         extends Reason(104)
-    case PayloadHash                     extends Reason(105)
-    case InvalidTree(detail: Text)       extends Reason(106)
-    case OverlayNotMinimal(path: Text)   extends Reason(107)
-    case ApiDivergence(detail: Text)     extends Reason(108)
-    case LineageMismatch                 extends Reason(109)
-    case UngradedSuccessor               extends Reason(110)
-    case DuplicateModule(module: Text)   extends Reason(111)
-    case NamespaceClash(space: Text)     extends Reason(112)
-    case AbsentDependency(module: Text)  extends Reason(113)
-    case Unsatisfiable(module: Text)     extends Reason(114)
-    case BadDirective                    extends Reason(115)
-    case SigilSpecified                  extends Reason(116)
+import LiraError.Reason
 
-  given communicable: Reason is Communicable =
-    case Reason.InvalidManifest(detail)   => m"the manifest is not a valid lira document: $detail"
-    case Reason.PayloadLength(limit)      => m"the payload length is not the declared $limit"
-    case Reason.InvalidBlobStream(detail) => m"the blob stream is invalid: $detail"
-    case Reason.MissingBlob(hash)         => m"the blob $hash is absent from the payload"
-    case Reason.PayloadHash               => m"the payload hash is not its declared value"
-    case Reason.InvalidTree(detail)       => m"a tree metadata blob is invalid: $detail"
-    case Reason.OverlayNotMinimal(path)   => m"the overlay is not minimal at $path"
-    case Reason.ApiDivergence(detail)     => m"the universes do not present one API: $detail"
-    case Reason.LineageMismatch           => m"the last lineage entry is not this snapshot"
-    case Reason.UngradedSuccessor         => m"the release is not a patch or minor successor"
-    case Reason.DuplicateModule(module)   => m"the buildpath contains $module more than once"
-    case Reason.NamespaceClash(space)     => m"the namespace $space is claimed by two modules"
-    case Reason.AbsentDependency(module)  => m"the dependency $module is not on the buildpath"
-    case Reason.Unsatisfiable(module)     => m"no release of $module satisfies the requirement"
-    case Reason.BadDirective              => m"the interpreter directive is not byte-exact"
-    case Reason.SigilSpecified            => m"a lira manifest must not specify a sigil"
+// The compression envelope (§8.1) around the blob stream. The compressed bytes are not part of
+// any identity: `payload.hash` is the blob-domain hash of the *decompressed* stream (§8.4), so
+// two files differing only in compressor output carry equal implementation identities. The
+// declared decompressed length is enforced as a hard limit (L102) and the declared hash is
+// verified (L105).
+//
+// pneumatic's Brotli engine materializes the whole stream to decode it, so the length cap is
+// currently enforced on the materialized result; when a streaming Brotli decoder lands, this is
+// the seam at which decompression should abort mid-stream instead.
+object LiraPayload:
 
-case class LiraError(reason: LiraError.Reason)(using Diagnostics)
-extends Error(640, reason.number)(m"the LIRA operation failed because $reason")
+  def compress(blobStream: Data): Data = blobStream.compress[Brotli]
+
+  def hash(blobStream: Data): Data = LiraHash(LiraHash.Domain.Blob, blobStream)
+
+  def decompress(compressed: Data, length: Long, declaredHash: Data): Data raises LiraError =
+    val result = compressed.decompress[Brotli]
+
+    if result.length.toLong != length then abort(LiraError(Reason.PayloadLength(length)))
+    if Blob.compare(hash(result), declaredHash) != 0 then abort(LiraError(Reason.PayloadHash))
+
+    result

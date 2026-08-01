@@ -33,47 +33,77 @@
 package reliquary
 
 import anticipation.*
+import contingency.*
 import fulminate.*
+import gossamer.*
+import rudiments.*
+import stratiform.*
 
-// The validity rules of the LIRA specification, one `Reason` per L-code. Warn-only findings
-// (decorative-version mismatches, unreferenced blobs) are never raised as errors; they are
-// reported as `LiraAdvisory` values instead.
-object LiraError:
-  enum Reason(val number: Int) extends Clarification:
-    case InvalidManifest(detail: Text)   extends Reason(101)
-    case PayloadLength(limit: Long)      extends Reason(102)
-    case InvalidBlobStream(detail: Text) extends Reason(103)
-    case MissingBlob(hash: Text)         extends Reason(104)
-    case PayloadHash                     extends Reason(105)
-    case InvalidTree(detail: Text)       extends Reason(106)
-    case OverlayNotMinimal(path: Text)   extends Reason(107)
-    case ApiDivergence(detail: Text)     extends Reason(108)
-    case LineageMismatch                 extends Reason(109)
-    case UngradedSuccessor               extends Reason(110)
-    case DuplicateModule(module: Text)   extends Reason(111)
-    case NamespaceClash(space: Text)     extends Reason(112)
-    case AbsentDependency(module: Text)  extends Reason(113)
-    case Unsatisfiable(module: Text)     extends Reason(114)
-    case BadDirective                    extends Reason(115)
-    case SigilSpecified                  extends Reason(116)
+import LiraError.Reason
 
-  given communicable: Reason is Communicable =
-    case Reason.InvalidManifest(detail)   => m"the manifest is not a valid lira document: $detail"
-    case Reason.PayloadLength(limit)      => m"the payload length is not the declared $limit"
-    case Reason.InvalidBlobStream(detail) => m"the blob stream is invalid: $detail"
-    case Reason.MissingBlob(hash)         => m"the blob $hash is absent from the payload"
-    case Reason.PayloadHash               => m"the payload hash is not its declared value"
-    case Reason.InvalidTree(detail)       => m"a tree metadata blob is invalid: $detail"
-    case Reason.OverlayNotMinimal(path)   => m"the overlay is not minimal at $path"
-    case Reason.ApiDivergence(detail)     => m"the universes do not present one API: $detail"
-    case Reason.LineageMismatch           => m"the last lineage entry is not this snapshot"
-    case Reason.UngradedSuccessor         => m"the release is not a patch or minor successor"
-    case Reason.DuplicateModule(module)   => m"the buildpath contains $module more than once"
-    case Reason.NamespaceClash(space)     => m"the namespace $space is claimed by two modules"
-    case Reason.AbsentDependency(module)  => m"the dependency $module is not on the buildpath"
-    case Reason.Unsatisfiable(module)     => m"no release of $module satisfies the requirement"
-    case Reason.BadDirective              => m"the interpreter directive is not byte-exact"
-    case Reason.SigilSpecified            => m"a lira manifest must not specify a sigil"
+// The decompressed payload of a `.lira` file (§8.2): a sequence of `uvarint(length) ++ bytes`
+// records in ascending bytewise order of their blob hashes, with no duplicates. Hashes are never
+// stored: a reader recomputes them while scanning, and that recomputation is the integrity
+// check. Writing is deterministic: any permutation of the same blobs serializes identically.
+object BlobStream:
 
-case class LiraError(reason: LiraError.Reason)(using Diagnostics)
-extends Error(640, reason.number)(m"the LIRA operation failed because $reason")
+  def write(blobs: List[Data]): Data =
+    val distinct = scala.collection.mutable.LinkedHashMap[Text, Blob]()
+
+    blobs.each: data =>
+      val hash = LiraHash(LiraHash.Domain.Blob, data)
+      distinct.getOrElseUpdate(LiraHash.text(hash), Blob(hash, data))
+
+    val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a.hash, b.hash) < 0
+    val lengths = sorted.map: blob => Varint.encode(blob.data.length.toLong)
+    val total = sorted.zip(lengths).map { (blob, length) => blob.data.length + length.length }.sum
+    val buffer = Array[Byte](total)
+    var offset = 0
+
+    sorted.zip(lengths).foreach: (blob, length) =>
+      System.arraycopy(Array.unsafeJvm(length), 0, buffer.raw, offset, length.length)
+      offset += length.length
+      System.arraycopy(Array.unsafeJvm(blob.data), 0, buffer.raw, offset, blob.data.length)
+      offset += blob.data.length
+
+    Array.freeze(buffer)
+
+  def read(data: Data): Blobstore raises LiraError =
+    val blobs = scala.collection.mutable.ListBuffer[Blob]()
+    var previous: Data | Null = null
+    var offset = 0
+
+    while offset < data.length do
+      val decoded =
+        import errorDiagnostics.emptyDiagnostics
+
+        mitigate:
+          case _: VarintError =>
+            LiraError(Reason.InvalidBlobStream(t"a record length is malformed"))
+
+        . protect(Varint.decode(data, offset))
+
+      val length = decoded.value
+
+      if length > Int.MaxValue.toLong || decoded.next + length.toInt > data.length
+      then abort(LiraError(Reason.InvalidBlobStream(t"a record overruns the end of the stream")))
+
+      val content = Array[Byte](length.toInt)
+      System.arraycopy(Array.unsafeJvm(data), decoded.next, content.raw, 0, length.toInt)
+      val bytes = Array.freeze(content)
+      val hash = LiraHash(LiraHash.Domain.Blob, bytes)
+
+      if previous != null then
+        val order = Blob.compare(previous.nn, hash)
+
+        if order == 0
+        then abort(LiraError(Reason.InvalidBlobStream(t"two records have equal hashes")))
+
+        if order > 0
+        then abort(LiraError(Reason.InvalidBlobStream(t"records are not in ascending hash order")))
+
+      blobs += Blob(hash, bytes)
+      previous = hash
+      offset = decoded.next + length.toInt
+
+    Blobstore(List.from(blobs))

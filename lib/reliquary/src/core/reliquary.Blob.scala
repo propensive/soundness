@@ -33,47 +33,21 @@
 package reliquary
 
 import anticipation.*
-import fulminate.*
 
-// The validity rules of the LIRA specification, one `Reason` per L-code. Warn-only findings
-// (decorative-version mismatches, unreferenced blobs) are never raised as errors; they are
-// reported as `LiraAdvisory` values instead.
-object LiraError:
-  enum Reason(val number: Int) extends Clarification:
-    case InvalidManifest(detail: Text)   extends Reason(101)
-    case PayloadLength(limit: Long)      extends Reason(102)
-    case InvalidBlobStream(detail: Text) extends Reason(103)
-    case MissingBlob(hash: Text)         extends Reason(104)
-    case PayloadHash                     extends Reason(105)
-    case InvalidTree(detail: Text)       extends Reason(106)
-    case OverlayNotMinimal(path: Text)   extends Reason(107)
-    case ApiDivergence(detail: Text)     extends Reason(108)
-    case LineageMismatch                 extends Reason(109)
-    case UngradedSuccessor               extends Reason(110)
-    case DuplicateModule(module: Text)   extends Reason(111)
-    case NamespaceClash(space: Text)     extends Reason(112)
-    case AbsentDependency(module: Text)  extends Reason(113)
-    case Unsatisfiable(module: Text)     extends Reason(114)
-    case BadDirective                    extends Reason(115)
-    case SigilSpecified                  extends Reason(116)
+object Blob:
+  // Ascending bytewise order of §8.2: unsigned lexicographic comparison, shorter-is-lesser on a
+  // shared prefix. (BASE-256 text order does not agree with byte order, so hashes are always
+  // compared in their raw form.)
+  def compare(left: Data, right: Data): Int =
+    val limit = if left.length < right.length then left.length else right.length
+    var index = 0
 
-  given communicable: Reason is Communicable =
-    case Reason.InvalidManifest(detail)   => m"the manifest is not a valid lira document: $detail"
-    case Reason.PayloadLength(limit)      => m"the payload length is not the declared $limit"
-    case Reason.InvalidBlobStream(detail) => m"the blob stream is invalid: $detail"
-    case Reason.MissingBlob(hash)         => m"the blob $hash is absent from the payload"
-    case Reason.PayloadHash               => m"the payload hash is not its declared value"
-    case Reason.InvalidTree(detail)       => m"a tree metadata blob is invalid: $detail"
-    case Reason.OverlayNotMinimal(path)   => m"the overlay is not minimal at $path"
-    case Reason.ApiDivergence(detail)     => m"the universes do not present one API: $detail"
-    case Reason.LineageMismatch           => m"the last lineage entry is not this snapshot"
-    case Reason.UngradedSuccessor         => m"the release is not a patch or minor successor"
-    case Reason.DuplicateModule(module)   => m"the buildpath contains $module more than once"
-    case Reason.NamespaceClash(space)     => m"the namespace $space is claimed by two modules"
-    case Reason.AbsentDependency(module)  => m"the dependency $module is not on the buildpath"
-    case Reason.Unsatisfiable(module)     => m"no release of $module satisfies the requirement"
-    case Reason.BadDirective              => m"the interpreter directive is not byte-exact"
-    case Reason.SigilSpecified            => m"a lira manifest must not specify a sigil"
+    while index < limit do
+      val difference = (left(index) & 0xff) - (right(index) & 0xff)
+      if difference != 0 then return difference
+      index += 1
 
-case class LiraError(reason: LiraError.Reason)(using Diagnostics)
-extends Error(640, reason.number)(m"the LIRA operation failed because $reason")
+    left.length - right.length
+
+// One record of the blob stream: a byte string and its identity, `hash("lira/1:blob", bytes)`.
+case class Blob(hash: Data, data: Data)

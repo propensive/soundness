@@ -45,10 +45,17 @@ import stratiform.*
 import turbulence.*
 import vacuous.*
 
+import monotonous.*
 import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
+import alphabets.hexLowerCase
 import Tel.given
 
 object Tests extends Suite(m"Reliquary Tests"):
+  // The pinned serialization of the two-blob stream `["a", "bc"]` (golden bytes of §8.2):
+  // `uvarint(1) ++ "a" ++ uvarint(2) ++ "bc"`, records in ascending blob-hash order.
+  val goldenStream: Text = t"0161026263"
+
   def encode(text: Text): Data = charEncoders.utf8Encoder.encoded(text)
 
   def resource(name: Text): Data =
@@ -183,3 +190,110 @@ object Tests extends Suite(m"Reliquary Tests"):
       test(m"atom classes are rigid or replaceable"):
         List(t"rigid", t"replaceable", t"other").map { value => valid(t"atom-class", value) }
       . assert(_ == List(true, true, false))
+
+    suite(m"Blob stream"):
+      def concat(left: Data, right: Data): Data =
+        val buffer = Array[Byte](left.length + right.length)
+        System.arraycopy(Array.unsafeJvm(left), 0, buffer.raw, 0, left.length)
+        System.arraycopy(Array.unsafeJvm(right), 0, buffer.raw, left.length, right.length)
+        Array.freeze(buffer)
+
+      def blobHash(data: Data): Text = LiraHash.text(LiraHash(LiraHash.Domain.Blob, data))
+
+      val blobA = encode(t"alpha content")
+      val blobB = encode(t"beta")
+      val blobC = encode(t"gamma payload bytes")
+
+      test(m"a written stream reads back and resolves every blob"):
+        val store = BlobStream.read(BlobStream.write(List(blobA, blobB, blobC)))
+
+        List(blobA, blobB, blobC).map: blob =>
+          val hash = LiraHash(LiraHash.Domain.Blob, blob)
+          blobHash(store.resolve(hash)) == blobHash(blob)
+      . assert(_ == List(true, true, true))
+
+      test(m"any permutation of the same blobs serializes identically"):
+        val one = BlobStream.write(List(blobA, blobB, blobC)).serialize[Hex]
+        val two = BlobStream.write(List(blobC, blobA, blobB)).serialize[Hex]
+        one == two
+      . assert(identity)
+
+      test(m"duplicate blobs are stored once"):
+        val once = BlobStream.write(List(blobA, blobB)).serialize[Hex]
+        val twice = BlobStream.write(List(blobA, blobB, blobA)).serialize[Hex]
+        once == twice
+      . assert(identity)
+
+      test(m"a two-blob stream matches its pinned serialization"):
+        BlobStream.write(List(encode(t"a"), encode(t"bc"))).serialize[Hex]
+      . assert(_ == Tests.goldenStream)
+
+      test(m"records out of hash order are rejected"):
+        val hashA = LiraHash(LiraHash.Domain.Blob, blobA)
+        val hashB = LiraHash(LiraHash.Domain.Blob, blobB)
+        val (low, high) = if Blob.compare(hashA, hashB) < 0 then (blobA, blobB) else (blobB, blobA)
+        val stream = concat(BlobStream.write(List(high)), BlobStream.write(List(low)))
+
+        capture[LiraError](BlobStream.read(stream)).reason match
+          case LiraError.Reason.InvalidBlobStream(_) => true
+          case _                                     => false
+      . assert(identity)
+
+      test(m"duplicate records in a stream are rejected"):
+        val single = BlobStream.write(List(blobA))
+
+        capture[LiraError](BlobStream.read(concat(single, single))).reason match
+          case LiraError.Reason.InvalidBlobStream(_) => true
+          case _                                     => false
+      . assert(identity)
+
+      test(m"a truncated stream is rejected"):
+        val stream = BlobStream.write(List(blobA, blobB))
+        val short = Array[Byte](stream.length - 1)
+        System.arraycopy(Array.unsafeJvm(stream), 0, short.raw, 0, stream.length - 1)
+
+        capture[LiraError](BlobStream.read(Array.freeze(short))).reason match
+          case LiraError.Reason.InvalidBlobStream(_) => true
+          case _                                     => false
+      . assert(identity)
+
+      test(m"resolving an absent hash is an L104 error"):
+        val store = BlobStream.read(BlobStream.write(List(blobA)))
+
+        capture[LiraError](store.resolve(LiraHash(LiraHash.Domain.Blob, blobB))).reason match
+          case LiraError.Reason.MissingBlob(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"unreferenced blobs are reported"):
+        val store = BlobStream.read(BlobStream.write(List(blobA, blobB)))
+        store.unreferenced(Set(blobHash(blobA)))
+      . assert(_ == List(blobHash(blobB)))
+
+    suite(m"Compression envelope"):
+      val stream = BlobStream.write(List(encode(t"payload blob one"), encode(t"and blob two")))
+
+      test(m"a compressed payload decompresses to the original stream"):
+        val compressed = LiraPayload.compress(stream)
+        val result = LiraPayload.decompress(compressed, stream.length.toLong, LiraPayload.hash(stream))
+        result.serialize[Hex] == stream.serialize[Hex]
+      . assert(identity)
+
+      test(m"a payload longer than declared is an L102 error"):
+        val compressed = LiraPayload.compress(stream)
+
+        capture[LiraError]
+         (LiraPayload.decompress(compressed, stream.length.toLong - 1, LiraPayload.hash(stream)))
+        . reason match
+            case LiraError.Reason.PayloadLength(_) => true
+            case _                                 => false
+      . assert(identity)
+
+      test(m"a payload with the wrong declared hash is an L105 error"):
+        val compressed = LiraPayload.compress(stream)
+        val wrong = LiraHash(LiraHash.Domain.Blob, encode(t"something else"))
+
+        capture[LiraError](LiraPayload.decompress(compressed, stream.length.toLong, wrong)).reason match
+          case LiraError.Reason.PayloadHash => true
+          case _                            => false
+      . assert(identity)

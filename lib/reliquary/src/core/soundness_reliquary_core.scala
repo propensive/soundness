@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export reliquary.{LiraError, LiraHash, LiraSchemas, LiraValidators}
+export reliquary.{Blob, BlobStream, Blobstore, LiraError, LiraHash, LiraPayload,
+    LiraSchemas, LiraValidators}
