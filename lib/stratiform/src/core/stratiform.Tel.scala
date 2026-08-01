@@ -803,6 +803,43 @@ object Tel extends Tel2:
 
         case _: Exclude => false
 
+    private def selectDefinitionOf(select: SelectRef, schema: Tels)
+    :   SelectDefinition raises TelError =
+
+      schema.selects.find(_.name == select.reference).getOrElse:
+        abort(TelError(Reason.UnresolvedReference))
+
+    // Effective polarity per §20: `required` unless declared `Loose`.
+    private def requiredOf(member: Member): Boolean = member match
+      case f: Tels.Field => f.required != Polarity.Loose
+      case s: SelectRef  => s.required != Polarity.Loose
+      case _: Exclude    => false
+
+    private def repeatableOf(member: Member): Boolean = member match
+      case f: Tels.Field => f.repeatable == Polarity.Loose
+      case s: SelectRef  => s.repeatable == Polarity.Loose
+      case _: Exclude    => false
+
+    // Flag-shaped per §20.2 step 3a: a Field resolving to Flag, or a
+    // SelectRef all of whose variants resolve to Flag.
+    private def flagShaped(member: Member, schema: Tels): Boolean raises TelError =
+      member match
+        case f: Tels.Field =>
+          resolveType(f.fieldType, schema) match
+            case Flag => true
+            case _    => false
+
+        case s: SelectRef => atomAssignable(s, schema)
+        case _: Exclude   => false
+
+    private def keywordMatches(member: Member, text: Text, schema: Tels)
+    :   Boolean raises TelError =
+
+      member match
+        case f: Tels.Field => f.keyword == text
+        case s: SelectRef  => selectDefinitionOf(s, schema).variants.exists(_.keyword == text)
+        case _: Exclude    => false
+
     // Track both the member position (`pos` in parent.members) and the
     // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
     // uses flat positions per BinTEL §5.
@@ -810,7 +847,7 @@ object Tel extends Tel2:
       ( atoms:  Array[Tel.Atom]^{},
        parent: Struct,
        schema: Tels )
-    :   Array[Tel.Element]^{} raises TelError =
+    :   Array[Tel.Element]^{} raises TelError tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var pos = 0
@@ -832,12 +869,39 @@ object Tel extends Tel2:
           case Tel.Atom.Source(t)     => t
           case Tel.Atom.Literal(_, t) => t
 
-        var consumed = false
+        // §20.2 step 3a: advance past non-required members that cannot take
+        // this atom — those that are not atom-assignable, or are Flag-shaped
+        // with a keyword the atom's text does not match. A Scalar member is
+        // never skipped; a required member is never skipped.
+        var scanning = true
 
-        while !consumed && pos < parent.members.length do
-          if !atomAssignable(parent.members(pos), schema) then
-            flatPos += flatWidthOf(parent.members(pos))
+        while scanning && pos < parent.members.length do
+          val member = parent.members(pos)
+
+          val skippable = member match
+            case _: Exclude => true
+
+            case _ =>
+              !requiredOf(member)
+              && (!atomAssignable(member, schema)
+                  || (flagShaped(member, schema) && !keywordMatches(member, atomText, schema)))
+
+          if skippable then
+            flatPos += flatWidthOf(member)
             pos += 1
+          else scanning = false
+
+        if pos >= parent.members.length then
+          // §20.2 step 3b: more atoms than assignable member positions.
+          // Recovery drops the whole excess run, reported once.
+          recoverNode(Reason.TooManyAtoms)(())
+          i = atoms.length
+        else
+          if !atomAssignable(parent.members(pos), schema) then
+            // §20.2 step 3c: an atom arrived at a required member that can
+            // only be filled by compound children. Recovery drops the atom;
+            // the member may still be filled by a child.
+            recoverNode(Reason.AtomAtNonAssignablePos)(())
           else
             parent.members(pos) match
               case f: Tels.Field =>
@@ -849,23 +913,22 @@ object Tel extends Tel2:
                       flatPos += 1
                       pos += 1
 
-                    consumed = true
-
                   case Flag =>
                     if atomText == f.keyword then
                       results += Tel.Element.Node(flatPos, Flag, Array.empty)
-                      flatPos += 1
-                      pos += 1
-                      consumed = true
-                    else
-                      flatPos += 1
-                      pos += 1
 
-                  case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
+                      if f.repeatable != Polarity.Loose then
+                        flatPos += 1
+                        pos += 1
+                    else
+                      // §20.2 step 3d: a required Flag member's atom must
+                      // match its keyword. Recovery drops the atom.
+                      recoverNode(Reason.AtomFlagKeywordMismatch)(())
+
+                  case _ => () // unreachable behind `atomAssignable`
 
               case s: SelectRef =>
-                val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
-                  abort(TelError(Reason.UnresolvedReference))
+                val selectDef = selectDefinitionOf(s, schema)
 
                 selectDef.variants.readable.zipWithIndex.find(_._1.keyword == atomText) match
                   case Some((_, variantOffset)) =>
@@ -875,18 +938,14 @@ object Tel extends Tel2:
                       flatPos += selectDef.variants.length
                       pos += 1
 
-                    consumed = true
-
                   case None =>
-                    flatPos += selectDef.variants.length
-                    pos += 1
+                    // §20.2 step 3d: no variant keyword matches the atom at a
+                    // required all-Flag SelectRef. Recovery drops the atom.
+                    recoverNode(Reason.AtomVariantUnmatched)(())
 
-              case _ =>
-                flatPos += flatWidthOf(parent.members(pos))
-                pos += 1
+              case _: Exclude => () // consumed by the skip scan
 
-        if !consumed then abort(TelError(Reason.AtomFlagKeywordMismatch))
-        i += 1
+          i += 1
 
       Array.from(results)
 

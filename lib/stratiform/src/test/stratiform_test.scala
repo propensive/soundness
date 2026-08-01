@@ -871,6 +871,128 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == TelError.Reason.UnknownKeyword)
 
+    suite(m"Atom phase (§20.2 step 3)"):
+      // Wraps the record under test as the single root member `item`: the
+      // document root never carries atoms (§20.2), so the atom phase is
+      // exercised one level down.
+      def itemSchema
+        ( members: Array[Tels.Member],
+          selects: Array[Tels.SelectDefinition] = Array.empty )
+      :   Tels =
+
+        Tels(
+          name     = t"test",
+          document = Tels.Struct(
+            members = Array.of(Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+               t"item", Tels.Reference(t"Item"), Unset )),
+            validators = Array.empty),
+          layers   = Array.empty,
+          sigil    = Unset,
+          records  = Array.of(Tels.RecordDefinition(t"Item", members, Array.empty)),
+          scalars  = Array.empty,
+          selects  = selects)
+
+      // Projects the `item` node's children to (keywordIndex, text) pairs,
+      // with flags carrying empty text.
+      def project(root: Tel.Element) = root match
+        case Tel.Element.Node(_, _, children) if children.readable.length == 1 =>
+          children.readable(0) match
+            case Tel.Element.Node(_, _, inner) =>
+              inner.readable.collect:
+                case Tel.Element.Value(idx, _, text) => (idx, text)
+                case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
+              .toList
+
+            case _ => Nil
+
+        case _ => Nil
+
+      test(m"atom skips optional flag and fills scalar (worked example)"):
+        val schema = itemSchema(Array.of(
+          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset),
+          Tels.Field(Tels.Polarity.Loose, Tels.Polarity.Implicit, t"b", Tels.Flag, Unset),
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"c", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item a xyz\n".read[Tel], schema))
+      . assert(_ == List((0, t""), (2, t"xyz")))
+
+      test(m"repeatable scalar consumes every remaining atom"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"label", Tels.Scalar(Array.of(t"string")), Unset ),
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Loose,
+             t"values", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item lbl 1 2 3\n".read[Tel], schema))
+      . assert(_ == List((0, t"lbl"), (1, t"1"), (1, t"2"), (1, t"3")))
+
+      test(m"optional scalar is never skipped (§20.8)"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"first", Tels.Scalar(Array.of(t"string")), Unset ),
+          Tels.Field
+           ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+             t"second", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item hello\n".read[Tel], schema))
+      . assert(_ == List((0, t"hello")))
+
+      test(m"source atom participates in positional assignment"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"body", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        project(Tel.Type.assign(t"item\n    payload\n".read[Tel], schema))
+      . assert(_ == List((0, t"payload")))
+
+      test(m"excess atoms raise E302"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"only", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        capture[TelError](Tel.Type.assign(t"item x y\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.TooManyAtoms)
+
+      test(m"atom at required struct-typed member raises E303"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"address", Tels.Struct(Array.empty, Array.empty), Unset )))
+
+        capture[TelError](Tel.Type.assign(t"item x\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.AtomAtNonAssignablePos)
+
+      test(m"unmatched variant at required SelectRef raises E304"):
+        val schema = itemSchema(
+          Array.of(Tels.SelectRef
+           ( required   = Tels.Polarity.Implicit,
+             repeatable = Tels.Polarity.Implicit,
+             reference  = t"Status" )),
+          selects = Array.of(Tels.SelectDefinition(
+            name     = t"Status",
+            variants = Array.of(
+              Tels.Variant(t"active",   Tels.Flag),
+              Tels.Variant(t"archived", Tels.Flag)),
+            validators = Array.empty)))
+
+        capture[TelError](Tel.Type.assign(t"item pending\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.AtomVariantUnmatched)
+
+      test(m"mismatched atom at required flag raises E305"):
+        val schema = itemSchema(Array.of(
+          Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"a", Tels.Flag, Unset)))
+
+        capture[TelError](Tel.Type.assign(t"item xyz\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.AtomFlagKeywordMismatch)
+
     suite(m"Schema default-field"):
       // Like `personSchema`, but the required `name` field carries a default,
       // so a document omitting it is filled with the default rather than
