@@ -30,9 +30,97 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline, Overlay, Section, Snapshot,
-    TreeEntry, TreePath}
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import stratiform.*
+import turbulence.*
+
+import LiraError.Reason
+
+// The Atoms metadata blob (§10.4): one discipline's atom listing, one row per atom in ascending
+// value-hash order, with the key in human-readable form for diagnostics (the key text
+// participates in no hash, but it is what assembly-time reference resolution matches against).
+object AtomsBlob:
+
+  def encode(atomization: Atomization): Data =
+    val rows = atomization.atoms.stdlib.map: atom =>
+      s"atom ${atom.atomClass.keyword}  ${LiraHash.text(atom.valueHash)}  ${atom.key}"
+
+    val body = rows.mkString("\n")
+    val header = s"tel 1.0 ${LiraSchemas.atomsSignature}\n\ndiscipline ${atomization.discipline}"
+    val text = Text(if rows.isEmpty then s"$header\n" else s"$header\n\n$body\n")
+    charEncoders.utf8Encoder.encoded(text)
+
+  def decode(data: Data): Atomization raises LiraError =
+    import Tels.Decoder.validate
+
+    val document =
+      import errorDiagnostics.emptyDiagnostics
+
+      mitigate:
+        case TelError(reason, _) =>
+          LiraError(Reason.InvalidManifest(t"the atoms blob is invalid: $reason"))
+
+      . protect:
+          val tel = data.read[Tel]
+          tel.validate(using LiraSchemas.atoms, LiraValidators.registry)
+          tel
+
+    val discipline =
+      document.childCompounds.readable.find(_.keyword == t"discipline")
+      . map: compound => atomTexts(compound)
+      . flatMap(_.headOption)
+      . getOrElse(abort(badBlob(t"the discipline identifier is missing")))
+
+    val rows = document.childCompounds.readable.filter(_.keyword == t"atom").toVector
+
+    val atoms = rows.map: compound =>
+      val atoms0 = atomTexts(compound)
+
+      if atoms0.length != 3 then abort(badBlob(t"an atom row does not have exactly three atoms"))
+
+      val atomClass = AtomClass.parse(atoms0(0)) match
+        case atomClass: AtomClass => atomClass
+        case _                    => abort(badBlob(t"an atom class is malformed"))
+
+      val hash =
+        import errorDiagnostics.emptyDiagnostics
+
+        mitigate:
+          case Base256Error(_) => badBlob(t"an atom hash is malformed")
+
+        . protect(Base256.decodeStrict(atoms0(1)))
+
+      Atom(atoms0(2), atomClass, hash)
+
+    var index = 1
+
+    while index < atoms.length do
+      if Blob.compare(atoms(index - 1).valueHash, atoms(index).valueHash) > 0
+      then abort(badBlob(t"rows are not in ascending value-hash order"))
+
+      index += 1
+
+    import errorDiagnostics.emptyDiagnostics
+
+    mitigate:
+      case DisciplineError(_, reason) => badBlob(t"the listing is inconsistent: $reason")
+
+    . protect(Atomization.of(discipline, List.from(atoms)))
+
+  private def badBlob(detail: Text): LiraError =
+    import errorDiagnostics.emptyDiagnostics
+    LiraError(Reason.InvalidManifest(t"the atoms blob is invalid: $detail"))
+
+  private def atomTexts(compound: Tel.Compound): scala.collection.immutable.Vector[Text] =
+    compound.atoms.readable.collect:
+      case Tel.Atom.Inline(text, _)  => text
+      case Tel.Atom.Source(text)     => text
+      case Tel.Atom.Literal(_, text) => text
+
+    . toVector

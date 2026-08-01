@@ -30,9 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline, Overlay, Section, Snapshot,
-    TreeEntry, TreePath}
+import anticipation.*
+import contingency.*
+
+object Discipline:
+  // What a compiler-based discipline needs beyond the content itself: which universe is being
+  // atomized, and the dependency classpath materialized from the buildpath (entries as textual
+  // paths, so the core stays platform-light).
+  case class Context(universe: Text, classpath: List[Text] = List())
+
+  // An ordered set of disciplines. Content is claimed by the first discipline whose `claims`
+  // accepts it; anything left unclaimed falls to `opaque/1` (§11.3), so nothing in a LIRA file
+  // is ever outside the compatibility algebra.
+  class Registry(disciplines: List[Discipline]):
+    def atomize(content: List[(TreePath, Data)], context: Context)
+    :   List[Atomization] raises DisciplineError =
+
+      val all = disciplines.stdlib :+ OpaqueDiscipline
+      var remaining = content.stdlib
+
+      val results = all.map: discipline =>
+        val (claimed, rest) = remaining.partition: (path, data) => discipline.claims(path, data)
+        remaining = rest
+        (discipline, claimed)
+
+      List.from:
+        results.filter { (_, claimed) => !claimed.isEmpty }.map: (discipline, claimed) =>
+          discipline.atomize(List.from(claimed), context)
+
+// A named, versioned canonicalization procedure (§11): the single language-specific plug-in
+// point of the format. Atomization must be a pure function of the content's semantic model —
+// independent of file ordering, timestamps, tool versions and fresh names — and obey the
+// folding principle (§10.3).
+trait Discipline:
+  def id: Text
+  def claims(path: TreePath, data: Data): Boolean
+
+  def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+  :   Atomization raises DisciplineError

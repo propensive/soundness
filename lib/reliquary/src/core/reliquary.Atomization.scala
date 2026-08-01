@@ -30,9 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline, Overlay, Section, Snapshot,
-    TreeEntry, TreePath}
+import anticipation.*
+import contingency.*
+import rudiments.*
+
+object Atomization:
+  // Establishes atomization invariants: atoms sorted by ascending value hash (the order of every
+  // atom listing, §10.4) and keys unique within the discipline.
+  def of(discipline: Text, atoms: List[Atom]): Atomization raises DisciplineError =
+    val sorted = atoms.stdlib.sortWith: (a, b) => Blob.compare(a.valueHash, b.valueHash) < 0
+    val seen = scala.collection.mutable.HashSet[Text]()
+
+    sorted.foreach: atom =>
+      if !seen.add(atom.key)
+      then abort(DisciplineError(discipline, DisciplineError.Reason.Duplicate(atom.key)))
+
+    Atomization(discipline, List.from(sorted))
+
+// One discipline's atomization of one body of content: the atom set, sorted by ascending value
+// hash. Union across disciplines is well-defined because value hashes are domain-separated by
+// the full discipline identifier (§7.1).
+case class Atomization private(discipline: Text, atoms: List[Atom]):
+  def rigid: List[Atom] = atoms.filter(_.atomClass == AtomClass.Rigid)
+  def replaceable: List[Atom] = atoms.filter(_.atomClass == AtomClass.Replaceable)

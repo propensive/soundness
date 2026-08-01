@@ -30,9 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline, Overlay, Section, Snapshot,
-    TreeEntry, TreePath}
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+
+// The normative `opaque/1` discipline (§11.3): the entire content item is a single rigid atom
+// whose key is its path and whose canonical encoding is its bytes. Any change is a removal plus
+// an addition — a major event. This is the required default for content no other discipline
+// claims: unknown content is merely maximally conservative, never outside the algebra.
+object OpaqueDiscipline extends Discipline:
+  def id: Text = t"opaque/1"
+  def claims(path: TreePath, data: Data): Boolean = true
+
+  def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+  :   Atomization raises DisciplineError =
+
+    val atoms = content.map: (path, data) =>
+      Atom(path.text, AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(id), data))
+
+    Atomization.of(id, atoms)

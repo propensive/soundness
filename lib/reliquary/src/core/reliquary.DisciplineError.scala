@@ -30,9 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline, Overlay, Section, Snapshot,
-    TreeEntry, TreePath}
+import anticipation.*
+import fulminate.*
+
+object DisciplineError:
+  enum Reason(val number: Int) extends Clarification:
+    case Malformed(detail: Text)  extends Reason(1)
+    case Duplicate(key: Text)     extends Reason(2)
+    case Unresolved(name: Text)   extends Reason(3)
+    case Nondeterminism(detail: Text) extends Reason(4)
+
+  given communicable: Reason is Communicable =
+    case Reason.Malformed(detail)      => m"the content could not be atomized: $detail"
+    case Reason.Duplicate(key)         => m"the key $key was produced twice"
+    case Reason.Unresolved(name)       => m"the reference $name resolves to nothing atomized"
+    case Reason.Nondeterminism(detail) => m"the canonicalization is unstable: $detail"
+
+case class DisciplineError(discipline: Text, reason: DisciplineError.Reason)(using Diagnostics)
+extends Error(641, reason.number)(m"the discipline $discipline failed because $reason")

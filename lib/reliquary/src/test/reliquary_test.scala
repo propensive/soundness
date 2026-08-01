@@ -404,3 +404,117 @@ object Tests extends Suite(m"Reliquary Tests"):
           case LiraError.Reason.OverlayNotMinimal(_) => true
           case _                                     => false
       . assert(identity)
+
+    suite(m"Atoms and snapshots"):
+      def item(path: Text, content: Text): (TreePath, Data) = (TreePath(path), encode(content))
+
+      def hex(data: Data): Text = data.serialize[Hex]
+
+      object Special extends Discipline:
+        def id: Text = t"special/1"
+        def claims(path: TreePath, data: Data): Boolean = path.text.s.endsWith(".special")
+
+        def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+        :   Atomization raises DisciplineError =
+
+          val atoms = content.map: (path, data) =>
+            Atom(path.text, AtomClass.Replaceable, LiraHash(LiraHash.Domain.Atom(id), data))
+
+          Atomization.of(id, atoms)
+
+      val context = Discipline.Context(t"jvm")
+      val content = List(item(t"a/One.class", t"one"), item(t"b/Two.class", t"two"))
+
+      test(m"opaque atomization is order-insensitive"):
+        val one = OpaqueDiscipline.atomize(content, context)
+        val two = OpaqueDiscipline.atomize(content.reverse, context)
+        hex(AtomsBlob.encode(one)) == hex(AtomsBlob.encode(two))
+      . assert(identity)
+
+      test(m"opaque atoms are rigid and keyed by path"):
+        val atoms = OpaqueDiscipline.atomize(content, context).atoms
+
+        atoms.map { atom => (atom.key, atom.atomClass) }.stdlib.toSet
+        == scala.collection.immutable.Set
+            ((t"a/One.class", AtomClass.Rigid), (t"b/Two.class", AtomClass.Rigid))
+      . assert(identity)
+
+      test(m"opaque atom hashes are domain-separated from blob hashes"):
+        val atom = OpaqueDiscipline.atomize(List(item(t"x", t"content")), context).atoms.stdlib.head
+        LiraHash.text(atom.valueHash) != LiraHash.text(LiraHash(LiraHash.Domain.Blob, encode(t"content")))
+      . assert(identity)
+
+      test(m"the registry partitions content between disciplines"):
+        val mixed = List.from(content.stdlib :+ item(t"c/Three.special", t"three"))
+        val results = Discipline.Registry(List(Special)).atomize(mixed, context)
+
+        results.map { atomization => (atomization.discipline, atomization.atoms.stdlib.size) }
+        . stdlib
+      . assert(_ == scala.List((t"special/1", 1), (t"opaque/1", 2)))
+
+      test(m"an atoms blob round-trips through its canonical encoding"):
+        val atomization = OpaqueDiscipline.atomize(content, context)
+        hex(AtomsBlob.encode(AtomsBlob.decode(AtomsBlob.encode(atomization))))
+        == hex(AtomsBlob.encode(atomization))
+      . assert(identity)
+
+      test(m"an empty atoms listing round-trips"):
+        val atomization = OpaqueDiscipline.atomize(List(), context)
+        AtomsBlob.decode(AtomsBlob.encode(atomization)).atoms.stdlib.size
+      . assert(_ == 0)
+
+      test(m"atoms blob rows out of hash order are rejected"):
+        val one = LiraHash(LiraHash.Domain.Atom(t"opaque/1"), encode(t"1"))
+        val two = LiraHash(LiraHash.Domain.Atom(t"opaque/1"), encode(t"2"))
+        val (low, high) = if Blob.compare(one, two) < 0 then (one, two) else (two, one)
+
+        val rowOne = t"atom rigid  ${LiraHash.text(high)}  key-one"
+        val rowTwo = t"atom rigid  ${LiraHash.text(low)}  key-two"
+        val doc =
+          t"tel 1.0 ${LiraSchemas.atomsSignature}\n\ndiscipline opaque/1\n\n$rowOne\n$rowTwo\n"
+
+        capture[LiraError](AtomsBlob.decode(encode(doc))).reason match
+          case LiraError.Reason.InvalidManifest(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"a malformed atom class is rejected"):
+        val hash = LiraHash.text(LiraHash(LiraHash.Domain.Atom(t"opaque/1"), encode(t"1")))
+
+        val row = t"atom solid  $hash  key-one"
+        val doc = t"tel 1.0 ${LiraSchemas.atomsSignature}\n\ndiscipline opaque/1\n\n$row\n"
+
+        capture[LiraError](AtomsBlob.decode(encode(doc))).reason match
+          case LiraError.Reason.InvalidManifest(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"duplicate keys within a discipline are rejected"):
+        val atom = Atom(t"same", AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(t"x/1"), encode(t"1")))
+        val other = Atom(t"same", AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(t"x/1"), encode(t"2")))
+
+        capture[DisciplineError](Atomization.of(t"x/1", List(atom, other))).reason match
+          case DisciplineError.Reason.Duplicate(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"snapshots are permutation-invariant"):
+        val one = Snapshot(List(OpaqueDiscipline.atomize(content, context)))
+        val two = Snapshot(List(OpaqueDiscipline.atomize(content.reverse, context)))
+        LiraHash.text(one) == LiraHash.text(two)
+      . assert(identity)
+
+      test(m"snapshots deduplicate value hashes across atomizations"):
+        val atomization = OpaqueDiscipline.atomize(content, context)
+        val once = Snapshot(List(atomization))
+        val twice = Snapshot(List(atomization, atomization))
+        LiraHash.text(once) == LiraHash.text(twice)
+      . assert(identity)
+
+      test(m"a changed atom value changes the snapshot"):
+        val one = Snapshot(List(OpaqueDiscipline.atomize(content, context)))
+
+        val changed = List(item(t"a/One.class", t"one-changed"), item(t"b/Two.class", t"two"))
+        val two = Snapshot(List(OpaqueDiscipline.atomize(changed, context)))
+        LiraHash.text(one) != LiraHash.text(two)
+      . assert(identity)

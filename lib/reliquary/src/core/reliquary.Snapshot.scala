@@ -30,9 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline, Overlay, Section, Snapshot,
-    TreeEntry, TreePath}
+import anticipation.*
+
+// A release's API identity (§12.1): the hash of its sorted atom set. The atom set is the union
+// of every `api` record's atoms — well-defined across disciplines because atom value hashes are
+// domain-separated — and the snapshot is the `lira/1:snapshot` hash of the distinct value
+// hashes, sorted ascending bytewise and concatenated as raw 32-byte values.
+object Snapshot:
+
+  def apply(atomizations: List[Atomization]): Data =
+    val hashes = atomizations.stdlib.flatMap(_.atoms.stdlib).map(_.valueHash)
+
+    val distinct = scala.collection.mutable.LinkedHashMap[Text, Data]()
+    hashes.foreach: hash => distinct.getOrElseUpdate(LiraHash.text(hash), hash)
+
+    val sorted = distinct.values.toList.sortWith: (a, b) => Blob.compare(a, b) < 0
+    val buffer = Array[Byte](sorted.size * LiraHash.size)
+    var offset = 0
+
+    sorted.foreach: hash =>
+      System.arraycopy(Array.unsafeJvm(hash), 0, buffer.raw, offset, LiraHash.size)
+      offset += LiraHash.size
+
+    LiraHash(LiraHash.Domain.Snapshot, Array.freeze(buffer))
