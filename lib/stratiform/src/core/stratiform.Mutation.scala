@@ -35,11 +35,8 @@ package stratiform
 import murmuration.*
 import proscenium.compat.*
 
-import scala.math
-
 import anticipation.*
 import contingency.*
-import denominative.*
 import gossamer.*
 import vacuous.*
 
@@ -56,8 +53,48 @@ import MutationError.Reason
 //   - Op.Insert — pointer addresses the *parent* compound (the
 //     compound whose children list receives the new entry). An empty
 //     pointer means "insert at the document root".
+//   - Op.InsertIntoBlock, ReorderWithinGroup, ReorderGroups,
+//     ResizeTabulation — pointer addresses the *parent* compound; the
+//     operation's own indices select among that parent's blocks or
+//     member groups.
+//
+// Addressing. The spec's compound paths are `(block_index,
+// compound_index)` pairs; a `Tel.Pointer` step is a keyword plus an
+// occurrence index, which identifies the same compound (every compound
+// has a keyword, and flat occurrence order is bijective with block and
+// compound indices) while staying meaningful across unrelated edits. A
+// spec block path is expressed as a parent pointer plus `blockIndex`,
+// and an atom path as a target pointer plus `atomIndex` in presentation
+// order (atoms precede compound children in semantic order, §18.3).
+// Pointers are resolved against the document an op is applied to:
+// callers must not reuse occurrence-indexed pointers across mutations
+// that move, add or remove compounds of the same keyword.
+//
+// Schema-dependent preconditions are out of scope here, exactly as in
+// the reference implementation: the `required` checks of `delete` and
+// `unset-flag`, the `repeatable` check of `set-flag` beyond simple
+// presence, `update-value`'s §21 helper-method validation, `replace`'s
+// member-equivalence and well-typedness, and schema-level E309 for
+// `reorder-groups`. A schema-aware layer can perform them before
+// delegating to these primitives.
 
 object Mutation:
+  // §22.2 `reorder-groups` is a directed move: the addressed group's
+  // blocks are placed immediately before or immediately after the other
+  // group's blocks.
+  enum Placement:
+    case Before, After
+
+  // A schema-free description of a struct member for the §22.3 canonical
+  // `construct` algorithm: a scalar member with its present occurrences
+  // (one occurrence models a non-repeatable member, several a repeatable
+  // one, none an absent member that terminates the inline run), a flag
+  // member, or a ready-made compound child.
+  enum Member:
+    case Value(keyword: Text, occurrences: List[Text])
+    case Flag(keyword: Text)
+    case Child(compound: Tel.Compound)
+
   enum Op:
     case UpdateAtom(pointer: Tel.Pointer, atomIndex: Int, text: Text)
     case Insert(pointer: Tel.Pointer, compound: Tel.Compound)
@@ -70,6 +107,14 @@ object Mutation:
     case SetFlag(pointer: Tel.Pointer, keyword: Text)
     case UnsetFlag(pointer: Tel.Pointer, keyword: Text)
 
+    // §22.2 `insert-into-block` — append a compound to the `compounds`
+    // list of block `blockIndex` of the parent at `parentPointer`: the
+    // natural way to add a row to a tabulated block. Each inline atom of
+    // the new compound is one column value; the tabulation must have
+    // sufficient column capacity (apply `resize-tabulation` first if
+    // not), and the row is re-padded to the block's marker offsets.
+    case InsertIntoBlock(parentPointer: Tel.Pointer, blockIndex: Int, compound: Tel.Compound)
+
     // §22.2 `reorder-within-group` — within the parent at
     // `parentPointer`, move the compound at occurrence `oldIndex` of
     // `keyword` to occurrence `newIndex` (zero-based within the
@@ -79,21 +124,36 @@ object Mutation:
       ( parentPointer: Tel.Pointer, keyword: Text, oldIndex: Int, newIndex: Int )
 
     // §22.2 `reorder-groups` — within the parent at `parentPointer`,
-    // swap the relative order of all compounds with `firstKeyword`
-    // and all compounds with `secondKeyword`. The two groups must
-    // each be contiguous before and after (E309).
-    case ReorderGroups(parentPointer: Tel.Pointer, firstKeyword: Text, secondKeyword: Text)
+    // move the member group of `keyword` to immediately before or after
+    // the member group of `otherKeyword`. Whole blocks move where the
+    // groups occupy disjoint blocks, so attached comments, tabulations
+    // and blank lines travel with their group. Both groups must be
+    // contiguous before and after (E309). The spec addresses the groups
+    // by member index; keywords are the schema-free equivalent, as in
+    // the reference implementation.
+    case ReorderGroups
+      ( parentPointer: Tel.Pointer,
+        keyword:       Text,
+        otherKeyword:  Text,
+        placement:     Placement = Placement.Before )
 
     // §22.2 `resize-tabulation` — recompute `markerOffsets` of the
     // tabulation in block `blockIndex` of the parent at `parentPointer`
-    // using the §22.2 minimal-offsets algorithm, then re-pad every row.
-    case ResizeTabulation(parentPointer: Tel.Pointer, blockIndex: Int)
+    // using the normative minimal-offsets algorithm, then re-pad every
+    // row. `plannedRows` are rows about to be added (via
+    // `insert-into-block`), whose column widths the new offsets must
+    // also accommodate.
+    case ResizeTabulation
+      ( parentPointer: Tel.Pointer,
+        blockIndex:    Int,
+        plannedRows:   Array[Tel.Compound]^{} = Array.empty[Tel.Compound] )
 
   private def pointerOf(op: Op): Tel.Pointer = op match
     case Op.UpdateAtom(p, _, _)            => p
     case Op.Insert(p, _)                   => p
     case Op.InsertBefore(p, _)             => p
     case Op.InsertAfter(p, _)              => p
+    case Op.InsertIntoBlock(p, _, _)       => p
     case Op.Delete(p)                      => p
     case Op.Replace(p, _)                  => p
     case Op.AttachRemark(p, _)             => p
@@ -101,8 +161,8 @@ object Mutation:
     case Op.SetFlag(p, _)                  => p
     case Op.UnsetFlag(p, _)                => p
     case Op.ReorderWithinGroup(p, _, _, _) => p
-    case Op.ReorderGroups(p, _, _)         => p
-    case Op.ResizeTabulation(p, _)         => p
+    case Op.ReorderGroups(p, _, _, _)      => p
+    case Op.ResizeTabulation(p, _, _)      => p
 
   def apply(tel: Tel, op: Op): Tel raises MutationError =
     // The document's resolved sigil (§8.3) feeds the inline-safe predicate
@@ -141,16 +201,19 @@ object Mutation:
 
     if idx >= steps.length then op match
       case Op.Insert(_, compound) =>
-        rewrap(subtree, appendCompound(subtree.children, compound))
+        rewrap(subtree, insertNatural(subtree.children, compound))
+
+      case Op.InsertIntoBlock(_, blockIndex, compound) =>
+        rewrap(subtree, insertIntoBlock(subtree.children, blockIndex, compound, idx))
 
       case Op.ReorderWithinGroup(_, keyword, oldI, newI) =>
         rewrap(subtree, reorderWithinGroup(subtree.children, keyword, oldI, newI))
 
-      case Op.ReorderGroups(_, firstKw, secondKw) =>
-        rewrap(subtree, reorderGroups(subtree.children, firstKw, secondKw))
+      case Op.ReorderGroups(_, keyword, otherKeyword, placement) =>
+        rewrap(subtree, reorderGroups(subtree.children, keyword, otherKeyword, placement))
 
-      case Op.ResizeTabulation(_, blockIndex) =>
-        rewrap(subtree, resizeTabulation(subtree.children, blockIndex))
+      case Op.ResizeTabulation(_, blockIndex, plannedRows) =>
+        rewrap(subtree, resizeTabulation(subtree.children, blockIndex, plannedRows, idx))
 
       case _ => abort(MutationError(Reason.PointerNotFound))
 
@@ -160,14 +223,28 @@ object Mutation:
 
       val isTargetOp = op match
         case _: Op.Insert             => false
+        case _: Op.InsertIntoBlock    => false
         case _: Op.ReorderWithinGroup => false
         case _: Op.ReorderGroups      => false
         case _: Op.ResizeTabulation   => false
         case _                        => true
 
       if isTargetOp && idx == steps.length - 1 then
-        val updatedBlock = applyToTarget(subtree.children(blockIdx), localIdx, op, sigil)
-        rewrap(subtree, subtree.children.updated(blockIdx, updatedBlock))
+        val replacement = applyToTarget(subtree.children(blockIdx), localIdx, op, sigil)
+        val children = subtree.children
+
+        val spliced =
+          if replacement.length > 0
+          then children.take(blockIdx) ++ replacement ++ children.drop(blockIdx + 1)
+          else
+            // The op emptied the block (§22.2 `delete`): the block and its
+            // comments go, but its trailing blank lines — which include a
+            // nested subtree's final line ending — are absorbed by the
+            // preceding block, or kept as bare blank lines when the block
+            // was a compound's only child block.
+            removeBlock(children, blockIdx, subtree.isInstanceOf[Tel.Compound])
+
+        rewrap(subtree, spliced)
       else
         val targetBlock = subtree.children(blockIdx)
         val targetCompound = targetBlock.compounds(localIdx)
@@ -220,60 +297,151 @@ object Mutation:
     (foundBlock, foundLocal)
 
   // Apply a target-addressed op to the compound at `localIdx` within
-  // `block`, returning the rewritten block. Ops may produce zero, one, or
-  // two compounds in place of the target (e.g. Delete -> 0, InsertBefore
-  // -> 2).
+  // `block`, returning the blocks that replace the target's block: none
+  // when the op empties it (§22.2 `delete` removes an emptied block with
+  // its attached comments), one for an in-place rewrite, or two when a
+  // sibling is inserted next to a tabulated block.
   private def applyToTarget(block: Tel.Block, localIdx: Int, op: Op, sigil: Char)
-  :   Tel.Block raises MutationError =
+  :   Array[Tel.Block]^{} raises MutationError =
 
     val target = block.compounds(localIdx)
 
-    val replacement: Array[Tel.Compound]^{} = op match
+    def splice(replacement: Array[Tel.Compound]^{}): Array[Tel.Block]^{} =
+      val compounds =
+        block.compounds.take(localIdx) ++ replacement ++ block.compounds.drop(localIdx + 1)
+
+      if compounds.length == 0 then Array.empty
+      else Array.of(block.copy(compounds = compounds))
+
+    op match
       case Op.UpdateAtom(_, atomIndex, text) =>
-        Array.of(updateAtomAt(target, atomIndex, text, sigil))
+        splice(Array.of(updateAtomAt(target, atomIndex, text, sigil)))
 
       case Op.Delete(_) =>
-        Array.empty
+        splice(Array.empty)
 
       case Op.Replace(_, compound) =>
-        Array.of(compound)
+        // §22.2: the replacement retains the original compound's remark. A
+        // replacement carrying its own remark keeps it — `construct` never
+        // produces one, so the two readings coincide for constructed
+        // payloads.
+        splice(Array.of(compound.copy(remark = compound.remark.or(target.remark))))
 
       case Op.AttachRemark(_, text) =>
-        Array.of(target.copy(remark = text))
+        splice(Array.of(target.copy(remark = text)))
 
       case Op.RemoveRemark(_) =>
-        if target.remark.absent then abort(MutationError(Reason.RemarkAbsent))
-        Array.of(target.copy(remark = Unset))
+        // Removing an absent remark produces an identical document, so it
+        // succeeds as the identity (§22.2).
+        if target.remark.absent then Array.of(block)
+        else splice(Array.of(target.copy(remark = Unset)))
 
       case Op.InsertBefore(_, compound) =>
-        Array.of(compound, target)
+        // §22.2: the same block as the sibling, unless that block is
+        // tabulated — then a new block immediately before it, whose blank
+        // line keeps the new compound from being read as a row.
+        if block.tabulation.present
+        then Array.of(Tel.Block(Array.empty, Unset, Array.of(compound), 1), block)
+        else splice(Array.of(compound, target))
 
       case Op.InsertAfter(_, compound) =>
-        Array.of(target, compound)
+        // As `insert-before`; the tabulated block's blank line stops it
+        // absorbing the new compound as a row (§16.2), and the new block
+        // takes over the original separation from following content.
+        if block.tabulation.present
+        then Array.of
+              ( block.copy(trailingBlankLines = 1),
+                Tel.Block(Array.empty, Unset, Array.of(compound), block.trailingBlankLines) )
+        else splice(Array.of(target, compound))
 
       case Op.SetFlag(_, keyword) =>
-        val present = target.children.flatMap(_.compounds).exists(_.keyword == keyword)
-        if present then abort(MutationError(Reason.FlagAlreadySet))
-        val flag = Tel.Compound(keyword, Array.empty, Unset, Array.empty)
-        Array.of(target.copy(children = appendCompound(target.children, flag)))
+        val inlinePresent = target.atoms.exists:
+          case Tel.Atom.Inline(text, _) => text == keyword
+          case _                        => false
+
+        val childPresent = target.children.flatMap(_.compounds).exists(_.keyword == keyword)
+        if inlinePresent || childPresent then abort(MutationError(Reason.FlagAlreadySet))
+
+        // §22.2 placement conditions (a) and (b) reference schema member
+        // order; the schema-free sufficient condition is that the target
+        // has no compound children (and no source/literal atom, which
+        // would end the inline line). The atom is hard-space-preceded
+        // when the line is already in hard-space mode (§10.3), else
+        // soft-space-preceded.
+        val inlinePlaceable =
+          target.children.length == 0 && !target.atoms.exists:
+            case Tel.Atom.Inline(_, _) => false
+            case _                     => true
+
+        if inlinePlaceable then
+          val hard = target.atoms.exists:
+            case Tel.Atom.Inline(text, spaces) => spaces >= 2 || text.s.indexOf(' ') >= 0
+            case _                             => false
+
+          val flagAtom = Tel.Atom.Inline(keyword, if hard then 2 else 1)
+          splice(Array.of(target.copy(atoms = target.atoms :+ flagAtom)))
+        else
+          val flag = Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+          splice(Array.of(target.copy(children = insertNatural(target.children, flag))))
 
       case Op.UnsetFlag(_, keyword) =>
-        val present = target.children.flatMap(_.compounds).exists(_.keyword == keyword)
-        if !present then abort(MutationError(Reason.FlagNotSet))
+        // An inline-atom flag is removed from the atom list, preserving
+        // every other atom's preceding spaces (§22.2); a compound-child
+        // flag is removed by the `delete` rules, so an emptied child
+        // block disappears. Only flag-shaped compounds (no atoms, no
+        // children) qualify. An absent flag is the identity.
+        var atomIdx = -1
+        var i = 0
 
-        val updated = target.children.map: b =>
-          b.copy(compounds = b.compounds.filterNot(_.keyword == keyword))
+        while atomIdx < 0 && i < target.atoms.length do
+          target.atoms(i) match
+            case Tel.Atom.Inline(text, _) => if text == keyword then atomIdx = i
+            case _                        => ()
 
-        Array.of(target.copy(children = updated))
+          i += 1
 
-      case Op.Insert(_, _) | Op.ReorderWithinGroup(_, _, _, _) | Op.ReorderGroups(_, _, _)
-        | Op.ResizeTabulation(_, _) =>
+        if atomIdx >= 0 then
+          val atoms = target.atoms.take(atomIdx) ++ target.atoms.drop(atomIdx + 1)
+          splice(Array.of(target.copy(atoms = atoms)))
+        else
+          var foundBlock = -1
+          var foundLocal = -1
+          var b = 0
+
+          while foundBlock < 0 && b < target.children.length do
+            val cs = target.children(b).compounds
+            var c = 0
+
+            while foundBlock < 0 && c < cs.length do
+              val candidate = cs(c)
+
+              if candidate.keyword == keyword && candidate.atoms.length == 0
+                && candidate.children.length == 0
+              then
+                foundBlock = b
+                foundLocal = c
+
+              c += 1
+
+            b += 1
+
+          if foundBlock < 0 then Array.of(block)
+          else
+            val childBlock = target.children(foundBlock)
+
+            val remaining =
+              childBlock.compounds.take(foundLocal) ++ childBlock.compounds.drop(foundLocal + 1)
+
+            val children =
+              if remaining.length == 0 then removeBlock(target.children, foundBlock, true)
+              else target.children.updated(foundBlock, childBlock.copy(compounds = remaining))
+
+            splice(Array.of(target.copy(children = children)))
+
+      case Op.Insert(_, _) | Op.InsertIntoBlock(_, _, _) | Op.ReorderWithinGroup(_, _, _, _)
+        | Op.ReorderGroups(_, _, _, _) | Op.ResizeTabulation(_, _, _) =>
         // unreachable: handled in transform's container-mode arm
         abort(MutationError(Reason.PointerNotFound))
-
-    val before = block.compounds.take(localIdx)
-    val after = block.compounds.drop(localIdx + 1)
-    block.copy(compounds = before ++ replacement ++ after)
 
   // §22.3 `update-value` — replace the atomIndex-th atom's text (counting
   // every atom form). The atom's *form* is subject to the §22.2 Atom-form
@@ -297,8 +465,15 @@ object Mutation:
   // form whose §22.2 predicate holds.
   private def escalateAtom(current: Tel.Atom, value: Text, sigil: Char): Tel.Atom =
     current match
-      case Tel.Atom.Inline(_, _) =>
-        if inlineSafe(value, sigil) then Tel.Atom.Inline(value, inlinePrecedingSpaces(value))
+      case Tel.Atom.Inline(_, spaces) =>
+        if inlineSafe(value, sigil) then
+          // §22.2: all presentation details not targeted by the operation
+          // are retained — including the atom's preceding spaces, so an
+          // identity update leaves tabulation padding intact. The count
+          // only escalates to a hard space when the new value introduces
+          // an internal space.
+          val kept = if value.s.indexOf(' ') >= 0 && spaces < 2 then 2 else spaces
+          Tel.Atom.Inline(value, kept)
         else if sourceSafe(value) then Tel.Atom.Source(value)
         else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
 
@@ -309,18 +484,219 @@ object Mutation:
       case Tel.Atom.Literal(delimiter, _) =>
         Tel.Atom.Literal(literalDelimiter(value, delimiter), value)
 
-  // Append `compound` to the last block of `blocks`. If `blocks` is empty
-  // a fresh block is created. Trailing blank lines on the existing last
-  // block are preserved.
-  private def appendCompound(blocks: Array[Tel.Block]^{}, compound: Tel.Compound)
+  // §22.2 `insert` — the natural position for a compound's member:
+  // immediately after the last existing compound with the same keyword,
+  // within the same block when that block is untabulated; in a new block
+  // immediately after it when it is tabulated (rows are column-padded, so
+  // splicing a plain compound in would break the geometry); or in a fresh
+  // trailing block when no member group exists yet.
+  private def insertNatural(blocks: Array[Tel.Block]^{}, compound: Tel.Compound)
   :   Array[Tel.Block]^{} =
 
-    if blocks.length == 0
-    then Array.of(Tel.Block(Array.empty, Unset, Array.of(compound), 0))
+    var lastB = -1
+    var lastC = -1
+    var b = 0
+
+    while b < blocks.length do
+      val cs = blocks(b).compounds
+      var c = 0
+
+      while c < cs.length do
+        if cs(c).keyword == compound.keyword then
+          lastB = b
+          lastC = c
+
+        c += 1
+
+      b += 1
+
+    if lastB < 0 then
+      // No member group yet: a fresh trailing block. The previous last
+      // block's trailing blank lines (which include the document's final
+      // line ending) transfer to the new block, so the document's end is
+      // unchanged; a tabulated last block additionally keeps one blank
+      // line so the new compound isn't read as a row (§16.2).
+      if blocks.length == 0
+      then Array.of(Tel.Block(Array.empty, Unset, Array.of(compound), 1))
+      else
+        val lastIdx = blocks.length - 1
+        val last = blocks(lastIdx)
+        val fresh = Tel.Block(Array.empty, Unset, Array.of(compound), last.trailingBlankLines)
+        val separation = if last.tabulation.present then 1 else 0
+        blocks.updated(lastIdx, last.copy(trailingBlankLines = separation)) :+ fresh
     else
-      val lastIdx = blocks.length - 1
-      val last = blocks(lastIdx)
-      blocks.updated(lastIdx, last.copy(compounds = last.compounds :+ compound))
+      val block = blocks(lastB)
+
+      if block.tabulation.present then
+        val separated = block.copy(trailingBlankLines = 1)
+        val fresh = Tel.Block(Array.empty, Unset, Array.of(compound), block.trailingBlankLines)
+        blocks.take(lastB) ++ Array.of(separated, fresh) ++ blocks.drop(lastB + 1)
+      else
+        val cs = block.compounds
+        val compounds = cs.take(lastC + 1) ++ Array.of(compound) ++ cs.drop(lastC + 1)
+        blocks.updated(lastB, block.copy(compounds = compounds))
+
+  // Remove the emptied block at `blockIdx`, discarding its comments
+  // (§22.2 `delete`) but not its trailing blank lines: they merge into
+  // the preceding block, or — when the removed block was a compound's
+  // only child block — remain as a bare run of blank lines, since a
+  // nested subtree's last block carries the following line ending.
+  private def removeBlock(blocks: Array[Tel.Block]^{}, blockIdx: Int, nested: Boolean)
+  :   Array[Tel.Block]^{} =
+
+    val removed = blocks(blockIdx)
+
+    if blockIdx > 0 then
+      val previous = blocks(blockIdx - 1)
+
+      val trailing =
+        if removed.trailingBlankLines > previous.trailingBlankLines
+        then removed.trailingBlankLines else previous.trailingBlankLines
+
+      val absorbed = previous.copy(trailingBlankLines = trailing)
+      blocks.take(blockIdx - 1) ++ Array.of(absorbed) ++ blocks.drop(blockIdx + 1)
+    else if blocks.length == 1 && nested && removed.trailingBlankLines > 0
+    then Array.of(Tel.Block(Array.empty, Unset, Array.empty, removed.trailingBlankLines))
+    else blocks.drop(1)
+
+  // §22.2 `insert-into-block` — append a compound to an existing block's
+  // `compounds` list. For a tabulated block, every column value (the
+  // keyword, then one column per inline atom) must fit its column span
+  // with the two-space gap intact — otherwise the caller must
+  // `resize-tabulation` first — and the row is re-padded so each column
+  // value starts exactly at its marker offset (§16.2 E117).
+  private def insertIntoBlock
+    ( blocks: Array[Tel.Block]^{}, blockIndex: Int, compound: Tel.Compound, indent: Int )
+  :   Array[Tel.Block]^{} raises MutationError =
+
+    if blockIndex < 0 || blockIndex >= blocks.length
+    then abort(MutationError(Reason.PointerNotFound))
+
+    val block = blocks(blockIndex)
+
+    val padded = block.tabulation.let: tab =>
+      val offsets = tab.markerOffsets
+      val vs = incomingRowWidths(compound, offsets.length)
+      var col = 0
+
+      while col < offsets.length - 1 do
+        if vs(col) > offsets(col + 1) - offsets(col) - 2
+        then abort(MutationError(Reason.TabulationOverflow))
+
+        col += 1
+
+      repadIncoming(compound, offsets, indent)
+
+    . or(compound)
+
+    blocks.updated(blockIndex, block.copy(compounds = block.compounds :+ padded))
+
+  // Width of `text` in code points: the spec measures column geometry in
+  // code points. (The parser records marker offsets in bytes and the
+  // serializer pads in UTF-16 units, so the three agree only within
+  // ASCII; the spec's unit is the most defensible of the three here.)
+  private def codePoints(text: Text): Int = text.s.codePointCount(0, text.s.length)
+
+  // Column widths of an *existing* (parsed, column-aligned) row: column 0
+  // is the keyword-and-pre-column portion, extended by soft-space atoms;
+  // each hard-space atom starts the next column, extended by any
+  // following soft-space atoms of its phrase. A source or literal atom
+  // ends the inline row.
+  private def existingRowWidths(compound: Tel.Compound, columns: Int): scala.Array[Int] =
+    val vs = new scala.Array[Int](columns)
+    var col = 0
+    var width = codePoints(compound.keyword)
+    var i = 0
+    var stop = false
+
+    while i < compound.atoms.length && !stop do
+      compound.atoms(i) match
+        case Tel.Atom.Inline(text, spaces) =>
+          if spaces >= 2 && col + 1 < columns then
+            if width > vs(col) then vs(col) = width
+            col += 1
+            width = codePoints(text)
+          else width += spaces + codePoints(text)
+
+        case _ => stop = true
+
+      i += 1
+
+    if width > vs(col) then vs(col) = width
+    vs
+
+  // Column widths of an *incoming* row (as built by `construct` or
+  // `Revision.compound`): each inline atom is one successive column
+  // value, regardless of its preceding spaces.
+  private def incomingRowWidths(compound: Tel.Compound, columns: Int): scala.Array[Int] =
+    val vs = new scala.Array[Int](columns)
+    vs(0) = codePoints(compound.keyword)
+    var col = 0
+    var i = 0
+    var stop = false
+
+    while i < compound.atoms.length && !stop do
+      compound.atoms(i) match
+        case Tel.Atom.Inline(text, _) =>
+          if col + 1 < columns then
+            col += 1
+            vs(col) = codePoints(text)
+          else vs(col) += 2 + codePoints(text)
+
+        case _ => stop = true
+
+      i += 1
+
+    vs
+
+  // Re-pad an existing row to fresh marker offsets: each hard-space atom
+  // (a column start) receives exactly the gap that lands it on its
+  // marker; soft-space atoms keep their spacing.
+  private def repadExisting
+    ( compound: Tel.Compound, offsets: Array[Int]^{}, indent: Int )
+  :   Tel.Compound =
+
+    var cursor = 2*indent + codePoints(compound.keyword)
+    var col = 0
+
+    val atoms = compound.atoms.map:
+      case Tel.Atom.Inline(text, spaces) =>
+        if spaces >= 2 && col + 1 < offsets.length then
+          col += 1
+          val gap = offsets(col) - cursor
+          cursor = offsets(col) + codePoints(text)
+          Tel.Atom.Inline(text, gap)
+        else
+          cursor += spaces + codePoints(text)
+          Tel.Atom.Inline(text, spaces)
+
+      case other => other
+
+    compound.copy(atoms = atoms)
+
+  // Re-pad an incoming row (one column value per inline atom) to the
+  // block's marker offsets.
+  private def repadIncoming
+    ( compound: Tel.Compound, offsets: Array[Int]^{}, indent: Int )
+  :   Tel.Compound =
+
+    var cursor = 2*indent + codePoints(compound.keyword)
+    var col = 0
+
+    val atoms = compound.atoms.map:
+      case Tel.Atom.Inline(text, _) =>
+        if col + 1 < offsets.length then
+          col += 1
+          val gap = offsets(col) - cursor
+          cursor = offsets(col) + codePoints(text)
+          Tel.Atom.Inline(text, gap)
+        else
+          cursor += 2 + codePoints(text)
+          Tel.Atom.Inline(text, 2)
+
+      case other => other
+
+    compound.copy(atoms = atoms)
 
   // §22.2 `reorder-within-group`. Locate every occurrence of `keyword`
   // across `blocks`, build the member group as a flat sequence of
@@ -377,167 +753,212 @@ object Mutation:
 
       Array.from(out)
 
-  // §22.2 `reorder-groups`. Verify both keyword groups are contiguous
-  // in `blocks` (else E309 violation), then swap their relative
-  // order. Each group's compounds and surrounding block boundaries
-  // are preserved.
+  // §22.2 `reorder-groups`. Verify both keyword groups exist and are
+  // contiguous in flat order (E309, before and after), then move the
+  // `keyword` group to immediately before or after the `otherKeyword`
+  // group. When the two groups occupy disjoint block sets, whole blocks
+  // move, so attached comments, tabulations and blank-line counts travel
+  // with their group; when both live in a single shared block, the
+  // compounds are reordered within it. Any other arrangement is
+  // block-level interleaving and is rejected.
   private def reorderGroups
-    ( blocks: Array[Tel.Block]^{}, firstKeyword: Text, secondKeyword: Text )
+    ( blocks: Array[Tel.Block]^{}, keyword: Text, otherKeyword: Text, placement: Placement )
   :   Array[Tel.Block]^{} raises MutationError =
 
-    // A "group" here is the contiguous run of compounds with a given
-    // keyword. We rebuild the children block list with the two groups
-    // swapped in member position.
-    val compoundsByBlock = blocks.map[Array[Tel.Compound]^{}](_.compounds)
+    // Verify flat contiguity of a group and report the block indices it
+    // touches and whether every touched block holds only this group.
+    def survey(kw: Text): (scala.List[Int], Boolean) =
+      var present = false
+      var finished = false
+      var interleaved = false
+      var homogeneous = true
+      val touched = scala.collection.mutable.ArrayBuffer.empty[Int]
+      var b = 0
 
-    // Walk all compounds in flat order, recording for each compound
-    // its absolute index and whether it belongs to a tracked group.
-    val flat = scala.collection.mutable.ArrayBuffer.empty[(Int, Int, Tel.Compound)]
-    var b = 0
+      while b < blocks.length do
+        val cs = blocks(b).compounds
+        var c = 0
+        var touches = false
 
-    while b < blocks.length do
-      val cs = compoundsByBlock(b)
-      var c = 0
+        while c < cs.length do
+          if cs(c).keyword == kw then
+            if finished then interleaved = true
+            present = true
+            touches = true
+          else if present then finished = true
 
-      while c < cs.length do
-        flat += ((b, c, cs(c)))
-        c += 1
+          c += 1
 
-      b += 1
+        if touches then
+          touched += b
+          if cs.exists(_.keyword != kw) then homogeneous = false
 
-    // Verify contiguity for each group (or absent).
-    def runRange(kw: Text): Optional[(Int, Int)] =
-      val indices = flat.zipWithIndex.collect:
-        case ((_, _, cmp), idx) if cmp.keyword == kw => idx
+        b += 1
 
-      if indices.nil then Unset
-      else if indices.last - indices.head + 1 != indices.length
-      then abort(MutationError(Reason.PointerNotFound))
-      else (indices.head, indices.last): Optional[(Int, Int)]
+      if !present || interleaved then abort(MutationError(Reason.PointerNotFound))
+      (touched.toList, homogeneous)
 
-    val firstRange = runRange(firstKeyword)
-    val secondRange = runRange(secondKeyword)
+    val (movingBlocks, movingHomogeneous) = survey(keyword)
+    val (otherBlocks, _) = survey(otherKeyword)
 
-    (firstRange, secondRange) match
-      case (f: (Int, Int) @unchecked, s: (Int, Int) @unchecked) =>
-        // Swap positions: the earlier-positioned group moves to where
-        // the later one was, preserving counts.
-        val (a, b) = if f._1 < s._1 then (f, s) else (s, f)
-        val before = flat.toList.take(a._1)
-        val groupA = flat.toList.slice(a._1, a._2 + 1)
-        val between = flat.toList.slice(a._2 + 1, b._1)
-        val groupB = flat.toList.slice(b._1, b._2 + 1)
-        val after  = flat.toList.drop(b._2 + 1)
+    if movingBlocks == otherBlocks && movingBlocks.length == 1 then
+      // Both groups share one block: reorder its compounds.
+      val blockIdx = movingBlocks.head
+      val block = blocks(blockIdx)
+      val cs = block.compounds
 
-        val reordered = (before ++ groupB ++ between ++ groupA ++ after).map(_._3)
+      def run(kw: Text): (Int, Int) =
+        var first = -1
+        var last = -1
+        var c = 0
 
-        // Rewrite each block, preserving the original block sizes.
-        val out = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
-        var p = 0
-        var bi = 0
+        while c < cs.length do
+          if cs(c).keyword == kw then
+            if first < 0 then first = c
+            last = c
 
-        while bi < blocks.length do
-          val sz = compoundsByBlock(bi).length
-          val cs = Array.from(reordered.slice(p, p + sz))
-          out += blocks(bi).copy(compounds = cs)
-          p += sz
-          bi += 1
+          c += 1
+
+        (first, last)
+
+      val (ms, me) = run(keyword)
+      val (os, oe) = run(otherKeyword)
+      val moving = cs.drop(ms).take(me - ms + 1)
+      val removed = cs.take(ms) ++ cs.drop(me + 1)
+
+      val insertAt = placement match
+        case Placement.Before => if ms < os then os - moving.length else os
+        case Placement.After  => if ms < os then oe + 1 - moving.length else oe + 1
+
+      val compounds = removed.take(insertAt) ++ moving ++ removed.drop(insertAt)
+      blocks.updated(blockIdx, block.copy(compounds = compounds))
+
+    else if movingBlocks.exists(otherBlocks.contains) || !movingHomogeneous
+    then abort(MutationError(Reason.PointerNotFound))
+    else
+      // Disjoint block sets: move the whole blocks of the `keyword`
+      // group. Each seam created by the move gets at least one blank
+      // line of separation, so adjacent blocks don't merge (and a
+      // following tabulation header can't absorb a preceding compound
+      // line) on re-parse.
+      def separated(block: Tel.Block): Tel.Block =
+        if block.trailingBlankLines == 0 then block.copy(trailingBlankLines = 1) else block
+
+      val moving = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
+      val pruned = scala.collection.mutable.ArrayBuffer.empty[(Int, Tel.Block)]
+      var b = 0
+
+      while b < blocks.length do
+        if movingBlocks.contains(b) then moving += blocks(b) else pruned += ((b, blocks(b)))
+        b += 1
+
+      val anchor = placement match
+        case Placement.Before => pruned.indexWhere { (idx, _) => otherBlocks.contains(idx) }
+        case Placement.After  => pruned.lastIndexWhere { (idx, _) => otherBlocks.contains(idx) } + 1
+
+      val out = scala.collection.mutable.ArrayBuffer.empty[Tel.Block]
+      pruned.take(anchor).foreach { (_, block) => out += block }
+      moving.foreach { block => out += block }
+      pruned.drop(anchor).foreach { (_, block) => out += block }
+
+      // Identity: the groups were already in the requested arrangement.
+      val unchanged =
+        out.length == blocks.length && {
+          var same = true
+          var i = 0
+
+          while same && i < blocks.length do
+            if out(i) ne blocks(i) then same = false
+            i += 1
+
+          same
+        }
+
+      if unchanged then blocks
+      else
+        // Blank-line separation at the three new seams: before and after
+        // the moved run, and at the vacated position (the block that
+        // preceded the first moved block, when it now has a successor).
+        val movedFirst = anchor
+        val movedLast = anchor + moving.length - 1
+        if movedFirst > 0 then out(movedFirst - 1) = separated(out(movedFirst - 1))
+        if movedLast < out.length - 1 then out(movedLast) = separated(out(movedLast))
+
+        if movingBlocks.head > 0 then
+          val vacated = blocks(movingBlocks.head - 1)
+          var v = 0
+
+          while v < out.length - 1 do
+            if out(v) eq vacated then out(v) = separated(out(v))
+            v += 1
+
+        // The final block keeps the document's original end separation: a
+        // block moved to the end would otherwise turn its former
+        // inter-group blank lines into stray trailing blanks.
+        if out(out.length - 1) ne blocks(blocks.length - 1) then
+          val end = blocks(blocks.length - 1).trailingBlankLines
+          out(out.length - 1) = out(out.length - 1).copy(trailingBlankLines = end)
 
         Array.from(out)
 
-      case _ =>
-        // Either group not present — nothing to reorder. Spec says
-        // both groups should exist for this op to be meaningful; we
-        // treat a missing group as PointerNotFound.
-        abort(MutationError(Reason.PointerNotFound))
-
-  // §22.2 `resize-tabulation`. Recompute the `markerOffsets` of the
-  // tabulation in `blocks(blockIndex)` using the minimal-offsets
-  // algorithm: column i's marker is positioned to leave the previous
-  // column its full width plus exactly two spaces of inter-column gap.
-  // All existing row content is re-padded with spaces so atom
-  // positions align with the new column starts.
-  private def resizeTabulation(blocks: Array[Tel.Block]^{}, blockIndex: Int)
+  // §22.2 `resize-tabulation`, by the normative minimal-offsets
+  // algorithm: with v_i the widest column-i value (column 0 being the
+  // keyword-and-pre-column portion, and `plannedRows` counted alongside
+  // the existing rows) and h_i the heading text width,
+  //
+  //   w_i = max(v_i, h_i + 2)          (a heading occupies sigil, space,
+  //                                     heading — h_i + 2 — from its marker)
+  //   markerOffsets(0) = 2 × indent
+  //   markerOffsets(i) = markerOffsets(i-1) + w_(i-1) + 2
+  //
+  // then every existing row is re-padded so its column values start
+  // exactly at the new offsets. Headings need no model change: the
+  // serializer re-pads them from the offsets. A block without a
+  // tabulation is rejected.
+  private def resizeTabulation
+    ( blocks:      Array[Tel.Block]^{},
+      blockIndex:  Int,
+      plannedRows: Array[Tel.Compound]^{},
+      indent:      Int )
   :   Array[Tel.Block]^{} raises MutationError =
 
     if blockIndex < 0 || blockIndex >= blocks.length
     then abort(MutationError(Reason.PointerNotFound))
 
     val block = blocks(blockIndex)
+    val tab = block.tabulation.or(abort(MutationError(Reason.PointerNotFound)))
+    val n = tab.markerOffsets.length
+    val widths = new scala.Array[Int](n)
+    var col = 0
 
-    block.tabulation.let: tab =>
-      // Compute widths column-by-column: per spec, w_0 is the keyword
-      // column's max width (keywords of all rows, plus heading 0); w_i
-      // (i ≥ 1) is the i-th atom's max width across all rows, plus
-      // heading_i.
-      val n = tab.markerOffsets.length
+    while col < n do
+      widths(col) = codePoints(tab.headings(col)) + 2
+      col += 1
 
-      def textWidth(text: Text): Int = text.s.length
-
-      val widths = new scala.Array[Int](n)
-      var col = 0
-
-      while col < n do
-        widths(col) = textWidth(tab.headings(col))
-        col += 1
-
-      // Keyword column = column 0; subsequent atoms map to columns 1..n-1.
-      block.compounds.foreach: c =>
-        val kwWidth = textWidth(c.keyword)
-        if kwWidth > widths(0) then widths(0) = kwWidth
-        var ai = 0
-        var colIdx = 1
-
-        while ai < c.atoms.length && colIdx < n do
-          c.atoms(ai) match
-            case Tel.Atom.Inline(text, _) =>
-              val w = textWidth(text)
-              if w > widths(colIdx) then widths(colIdx) = w
-              colIdx += 1
-
-            case _ => ()
-
-          ai += 1
-
-      // Minimal-offsets algorithm:
-      //   markerOffsets[0] = w_0 + 2
-      //   markerOffsets[i] = markerOffsets[i-1] + 1 + w_i + 2
-      val newOffsets = new scala.Array[Int](n)
-      newOffsets(0) = widths(0) + 2
-      var i = 1
+    def fold(vs: scala.Array[Int]): Unit =
+      var i = 0
 
       while i < n do
-        newOffsets(i) = newOffsets(i - 1) + 1 + widths(i) + 2
+        if vs(i) > widths(i) then widths(i) = vs(i)
         i += 1
 
-      // Re-pad each row's atoms so the i-th inline atom starts at
-      // markerOffsets[i]. The keyword stays at column 0; precedingSpaces
-      // on each inline atom is set to the gap between the previous
-      // atom's end and the new column start.
-      val newCompounds = block.compounds.map: c =>
-        var cursor = textWidth(c.keyword)
-        var colIdx = 1
+    block.compounds.foreach { compound => fold(existingRowWidths(compound, n)) }
+    plannedRows.foreach { compound => fold(incomingRowWidths(compound, n)) }
 
-        val newAtoms = c.atoms.map: a =>
-          a match
-            case Tel.Atom.Inline(text, _) if colIdx < n =>
-              val targetStart = newOffsets(colIdx)
-              val gap = math.max(2, targetStart - cursor)
-              val padded = Tel.Atom.Inline(text, gap)
-              cursor = targetStart + textWidth(text)
-              colIdx += 1
-              padded
+    val newOffsets = new scala.Array[Int](n)
+    newOffsets(0) = 2*indent
+    var i = 1
 
-            case other => other
+    while i < n do
+      newOffsets(i) = newOffsets(i - 1) + widths(i - 1) + 2
+      i += 1
 
-        c.copy(atoms = newAtoms)
+    val offsets = newOffsets.asInstanceOf[Array[Int]^{}]
+    val compounds = block.compounds.map(repadExisting(_, offsets, indent))
 
-      blocks.updated(blockIndex,
-        block.copy
-         ( tabulation = Tel.Tabulation(newOffsets.asInstanceOf[Array[Int]^{}], tab.headings),
-           compounds  = newCompounds ))
-
-    .or(blocks)
+    blocks.updated
+      ( blockIndex,
+        block.copy(tabulation = Tel.Tabulation(offsets, tab.headings), compounds = compounds) )
 
   // §22.3 `construct` — produce a fresh compound from a keyword and a
   // sequence of scalar atom texts, choosing each atom's form by the §22.2
@@ -550,6 +971,79 @@ object Mutation:
       Array.from(atoms.collect { case value if value.s.nonEmpty => chooseAtomForm(value, '#') })
 
     Tel.Compound(keyword, atomNodes, Unset, Array.empty)
+
+  def construct(keyword: Text, members: List[Member]): Tel.Compound =
+    construct(keyword, members, '#')
+
+  // §22.2 `construct` — the full canonical-presentation algorithm over a
+  // member description, iterated in member order (§22.3):
+  //
+  //  1. The inline run: leading single-occurrence scalar members with
+  //     non-empty, inline-safe values become inline atoms, and flag
+  //     members contribute their keyword as an inline atom; both
+  //     continue the run. Any other member — absent, repeatable, not
+  //     inline-safe, or a ready-made child — terminates it.
+  //  2. A repeatable scalar member that terminates the run goes all
+  //     inline when *every* occurrence is inline-safe; otherwise every
+  //     occurrence becomes a compound child (occurrences are never
+  //     split).
+  //  3. All remaining members serialize as compound children with
+  //     explicit keywords, atom forms chosen by §22.3 escalation, in a
+  //     single block with no comments, tabulation, or blank lines. An
+  //     empty scalar value has no faithful atom form and becomes a
+  //     bare-keyword child.
+  //
+  // Inline atoms are soft-space-preceded up to the first value that
+  // contains a space; that atom and every later one are hard-space-
+  // preceded, since a single hard space puts the whole rest of the line
+  // into hard-space mode (§10.3) — the spec's per-atom rule, extended so
+  // the construction re-parses to the same atoms. The document's sigil
+  // feeds the inline-safety check, so a custom-sigil document never
+  // receives a value that would re-parse as a remark.
+  def construct(keyword: Text, members: List[Member], sigil: Char): Tel.Compound =
+    val inlineTexts = scala.collection.mutable.ArrayBuffer.empty[Text]
+    val children = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
+    var inRun = true
+
+    def scalarChild(kw: Text, value: Text): Tel.Compound =
+      if value.s.isEmpty then Tel.Compound(kw, Array.empty, Unset, Array.empty)
+      else Tel.Compound(kw, Array.of(chooseAtomForm(value, sigil)), Unset, Array.empty)
+
+    members.stdlib.foreach:
+      case Member.Flag(kw) =>
+        if inRun then inlineTexts += kw
+        else children += Tel.Compound(kw, Array.empty, Unset, Array.empty)
+
+      case Member.Child(compound) =>
+        inRun = false
+        children += compound
+
+      case Member.Value(kw, occurrences) =>
+        val os = occurrences.stdlib
+
+        if inRun && os.length == 1 && os.head.s.nonEmpty && inlineSafe(os.head, sigil)
+        then inlineTexts += os.head
+        else if inRun && os.length > 1
+          && os.forall { o => o.s.nonEmpty && inlineSafe(o, sigil) }
+        then
+          os.foreach { o => inlineTexts += o }
+          inRun = false
+        else
+          inRun = false
+          os.foreach { o => children += scalarChild(kw, o) }
+
+    var hard = false
+
+    val atoms = Array.from[Tel.Atom]:
+      inlineTexts.map: text =>
+        if text.s.indexOf(' ') >= 0 then hard = true
+        Tel.Atom.Inline(text, if hard then 2 else 1)
+
+    val childBlocks: Array[Tel.Block]^{} =
+      if children.length == 0 then Array.empty
+      else Array.of(Tel.Block(Array.empty, Unset, Array.from(children), 0))
+
+    Tel.Compound(keyword, atoms, Unset, childBlocks)
 
   // §22.3 atom-form escalation: the first form in inline -> source ->
   // literal whose §22.2 safety predicate the value satisfies.
@@ -591,27 +1085,36 @@ object Mutation:
       ok
 
   // §22.2 source-safe: non-empty; no empty line (hence no leading/trailing
-  // LF and no run of two or more LFs); no line ending in a space (source
-  // atoms strip trailing spaces, §14); and the first line does not begin
-  // with a space (the first line's indentation is stripped, §14).
+  // LF and no run of two or more LFs); no line ending in a White_Space
+  // character (source atoms strip trailing spaces, §14, and any other
+  // trailing whitespace is visually indistinguishable); and the first
+  // line does not begin with a space (the first line's indentation is
+  // stripped, §14).
   private def sourceSafe(value: Text): Boolean =
     val s = value.s
 
     if s.isEmpty then false
     else if s.charAt(0) == '\n' || s.charAt(s.length - 1) == '\n' then false
-    else if s.charAt(0) == ' ' || s.charAt(s.length - 1) == ' ' then false
+    else if s.charAt(0) == ' ' || whitespace(s.charAt(s.length - 1)) then false
     else
       var i = 0
       var ok = true
 
       while ok && i < s.length do
         if s.charAt(i) == '\n' then
-          if s.charAt(i - 1) == ' ' then ok = false        // trailing space on a line
+          if whitespace(s.charAt(i - 1)) then ok = false   // trailing whitespace on a line
           else if s.charAt(i + 1) == '\n' then ok = false  // empty interior line
 
         i += 1
 
       ok
+
+  // The Unicode White_Space property. `Character.isWhitespace` omits the
+  // no-break spaces (U+00A0, U+2007, U+202F) and NEL (U+0085); the union
+  // covers White_Space in full (plus the U+001C–1F separators, which are
+  // safe to over-reject).
+  private def whitespace(c: Char): Boolean =
+    Character.isWhitespace(c) || c == '\u0085' || c == '\u00A0' || c == '\u2007' || c == '\u202F'
 
   // §22.3 literal delimiter: the shortest run of `-`, starting from
   // `initial`, that does not collide with a line of the value at any

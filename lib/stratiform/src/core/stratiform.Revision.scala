@@ -85,6 +85,12 @@ object Revision:
     def insertAfter(compound: Tel.Compound): Revision =
       Revision.single(Mutation.Op.InsertAfter(pointer, compound))
 
+    // §22.2 `insert-into-block` — pointer addresses the parent; append
+    // `compound` as a row of the `blockIndex`-th child block, re-padded
+    // to the block's tabulation if it has one.
+    def insertIntoBlock(blockIndex: Int, compound: Tel.Compound): Revision =
+      Revision.single(Mutation.Op.InsertIntoBlock(pointer, blockIndex, compound))
+
     def attachRemark(text: Text): Revision =
       Revision.single(Mutation.Op.AttachRemark(pointer, text))
 
@@ -101,23 +107,35 @@ object Revision:
     def reorderWithinGroup(keyword: Text, oldIndex: Int, newIndex: Int): Revision =
       Revision.single(Mutation.Op.ReorderWithinGroup(pointer, keyword, oldIndex, newIndex))
 
-    // §22.2 `reorder-groups` — pointer addresses the parent; swap
-    // the relative order of all compounds with `firstKeyword` and
-    // all compounds with `secondKeyword`.
-    def reorderGroups(firstKeyword: Text, secondKeyword: Text): Revision =
-      Revision.single(Mutation.Op.ReorderGroups(pointer, firstKeyword, secondKeyword))
+    // §22.2 `reorder-groups` — pointer addresses the parent; move the
+    // member group of `keyword` immediately before (default) or after
+    // the member group of `otherKeyword`.
+    def reorderGroups(keyword: Text, otherKeyword: Text): Revision =
+      reorderGroups(keyword, otherKeyword, Mutation.Placement.Before)
+
+    def reorderGroups(keyword: Text, otherKeyword: Text, placement: Mutation.Placement)
+    :   Revision =
+      Revision.single(Mutation.Op.ReorderGroups(pointer, keyword, otherKeyword, placement))
 
     // §22.2 `resize-tabulation` — pointer addresses the parent;
     // recompute marker offsets for the tabulation in `blockIndex`-th
-    // child block via the minimal-offsets algorithm.
-    def resizeTabulation(blockIndex: Int): Revision =
-      Revision.single(Mutation.Op.ResizeTabulation(pointer, blockIndex))
+    // child block via the minimal-offsets algorithm, accommodating any
+    // `plannedRows` about to be inserted.
+    def resizeTabulation(blockIndex: Int, plannedRows: Tel.Compound*): Revision =
+      Revision.single
+        ( Mutation.Op.ResizeTabulation(pointer, blockIndex, Array.from(plannedRows)) )
 
   // §22.2 `construct` — build a fresh compound from a keyword and a
   // sequence of scalar atom texts, picking inline / source / literal
   // atom forms via the §22.3 escalation algorithm.
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
     Mutation.construct(keyword, atoms*)
+
+  // §22.2 `construct` over a full member description: the §22.3
+  // canonical-presentation algorithm, producing inline atoms for the
+  // leading run and compound children for the rest.
+  def construct(keyword: Text, members: List[Mutation.Member]): Tel.Compound =
+    Mutation.construct(keyword, members)
 
   private def single(op: Mutation.Op): Revision = new Revision(Array.of(op))
 
