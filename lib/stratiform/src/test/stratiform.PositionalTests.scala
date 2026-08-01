@@ -54,6 +54,8 @@ case class PFlags(active: Boolean, verbose: Optional[Boolean]) derives CanEqual
 case class PPair(first: Optional[Text], second: Optional[Text]) derives CanEqual
 case class PPairBox(pair: PPair) derives CanEqual
 case class PNote(body: Text) derives CanEqual
+case class PGuard(flag: Boolean, word: Text) derives CanEqual
+case class PGuardBox(item: PGuard) derives CanEqual
 
 object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
   def run(): Unit =
@@ -208,3 +210,65 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
         val value = PNote(t"line one\nline two")
         value.encode.show.s.tt.read[PNote in Tel] == value
       . assert(identity)
+
+    suite(m"Canonical construction (§22.2)"):
+      given canonicalRecipient: (PRecipient is Tel.Parsable) = Tel.Parsable.derived
+      given canonicalDelivery: (PDelivery is Tel.Parsable) = Tel.Parsable.derived
+      given canonicalLog: (PLog is Tel.Parsable) = Tel.Parsable.derived
+      given canonicalLogBook: (PLogBook is Tel.Parsable) = Tel.Parsable.derived
+      given canonicalPair: (PPair is Tel.Parsable) = Tel.Parsable.derived
+      given canonicalPairBox: (PPairBox is Tel.Parsable) = Tel.Parsable.derived
+      given canonicalGuard: (PGuard is Tel.Parsable) = Tel.Parsable.derived
+      given canonicalGuardBox: (PGuardBox is Tel.Parsable) = Tel.Parsable.derived
+
+      // The canonical text must reparse to the same value on both paths.
+      inline def reparses[value](value0: value)
+        (using value is Tel.Encodable, value is Tel.Decodable, value is Tel.Parsable)
+      :   Boolean =
+        val printed = Tel.canonical(value0).show.s.tt
+        printed.read[Tel].as[value] == value0 && printed.read[value in Tel] == value0
+
+      test(m"a nested record's leading scalars go inline"):
+        Tel.canonical(PDelivery(PRecipient(t"Acme", t"HQ")))
+          .childCompounds.readable.head.atoms.length
+      . assert(_ == 2)
+
+      test(m"the canonical form reparses to the value on both paths"):
+        reparses(PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")))
+      . assert(identity)
+
+      test(m"a repeatable's occurrences all go inline and reparse"):
+        val doc = Tel.canonical(PLogBook(PLog(t"lbl", List(1, 2, 3))))
+        (doc.childCompounds.readable.head.atoms.length,
+         reparses(PLogBook(PLog(t"lbl", List(1, 2, 3)))))
+      . assert(_ == (4, true))
+
+      test(m"a single-occurrence repeatable takes the child form"):
+        val doc = Tel.canonical(PLogBook(PLog(t"lbl", List(7))))
+        (doc.childCompounds.readable.head.atoms.length,
+         reparses(PLogBook(PLog(t"lbl", List(7)))))
+      . assert(_ == (1, true))
+
+      test(m"an absent optional scalar terminates the inline run"):
+        val doc = Tel.canonical(PPairBox(PPair(Unset, t"x")))
+        (doc.childCompounds.readable.head.atoms.length,
+         reparses(PPairBox(PPair(Unset, t"x"))))
+      . assert(_ == (0, true))
+
+      test(m"an elided false flag lets the run continue and skip on decode"):
+        val doc = Tel.canonical(PGuardBox(PGuard(false, t"hello")))
+        (doc.childCompounds.readable.head.atoms.length,
+         reparses(PGuardBox(PGuard(false, t"hello"))))
+      . assert(_ == (1, true))
+
+      test(m"a true flag joins the run as its keyword"):
+        val doc = Tel.canonical(PGuardBox(PGuard(true, t"hello")))
+        (doc.childCompounds.readable.head.atoms.length,
+         reparses(PGuardBox(PGuard(true, t"hello"))))
+      . assert(_ == (2, true))
+
+      test(m"a value colliding with an elided flag keyword takes child form"):
+        val doc = Tel.canonical(PGuardBox(PGuard(false, t"flag")))
+        (doc.childCompounds.readable.head.atoms.length,
+         reparses(PGuardBox(PGuard(false, t"flag"))))
+      . assert(_ == (0, true))

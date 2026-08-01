@@ -78,6 +78,23 @@ private[stratiform] def collectionDocument[value]
   Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
       Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
 
+// As `collectionDocument`, but embedding each element in its §22.2 canonical child form
+// (`constructed`), so nested records keep their inline runs under `Tel.canonical`.
+private[stratiform] def constructedDocument[value]
+    (values: Iterable[value])(using encodable: value is Tel.Encodable)
+:   Tel =
+
+  val compounds: Array[Tel.Compound]^{} = Array.from:
+    values.flatMap: element =>
+      encodable.constructed(element).subtree match
+        case compound: Tel.Compound => List(compound).stdlib
+
+        case document: Tel.Document =>
+          document.children.flatMap(_.compounds).toSeq
+
+  Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
+      Array.of(Tel.Block(Array.empty, Unset, compounds, 0))))
+
 // Re-keys a replacement compound to the original child's keyword (so a positional optic update
 // preserves field identity).
 private[stratiform] def rewrap(original: Tel.Compound, replacement: Tel): Tel.Compound =

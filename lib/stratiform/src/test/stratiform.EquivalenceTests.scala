@@ -131,6 +131,11 @@ object EquivalenceTests extends Suite(m"Stratiform schema/codec equivalence test
               ("#/0/1", "2") ) )
       . assert(identity)
 
+      test(m"the canonical form validates against the derived schema"):
+        val doc = Tel.canonical(PDelivery(PRecipient(t"Acme Corporation", t"1 Acme Way")))
+        validateAssign(doc, Tels.tels[PDelivery](t"delivery")).items.length
+      . assert(_ == 0)
+
       test(m"a source atom agrees across codecs and type assignment"):
         equivalent[PNote]
          ( t"body\n    line one\n    line two\n",

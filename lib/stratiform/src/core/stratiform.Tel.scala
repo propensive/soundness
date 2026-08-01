@@ -160,6 +160,26 @@ object Tel extends Tel2:
     // `Optional` wrapper), mirroring `Decodable.optional`.
     def optional: Boolean = false
 
+    // The §22.2 canonical child form of a value — for derived products, the
+    // compound carrying its leading inline atom run (`Mutation.construct`);
+    // identical to `encoded` unless overridden. This is the embedding form
+    // a canonicalizing parent uses for its nested values.
+    def constructed(value: Self): Tel = encoded(value)
+
+    // The §22.2 canonical presentation rooted as a document (the root
+    // carries no atoms, §20.2): for derived products, the member fields as
+    // top-level children whose own nested records carry inline runs.
+    // Identical to `constructed` unless overridden.
+    def canonicalized(value: Self): Tel = constructed(value)
+
+  // The §22.2 canonical presentation of a value: `.encode` keeps the fully
+  // keyword-child wire form (which typed navigation and the optics rely on);
+  // this opt-in rendering puts leading scalar and flag fields of each nested
+  // record in atom position per §22.2 `construct`. Both forms decode to the
+  // same value (§19.1).
+  def canonical[value](value: value)(using encodable: value is Tel.Encodable): Tel =
+    encodable.canonicalized(value)
+
   object Decodable:
     // Explicit shape thunk, as in `Tel.Encodable.apply`.
     def apply[value]
@@ -615,7 +635,10 @@ object Tel extends Tel2:
         private lazy val keys: Array[String]^{} = fields.map(_(0))
 
         // Per-field positional profiles for the §19.2 atom pre-pass,
-        // computed from the same table as the keyword dispatch.
+        // computed from the same table as the keyword dispatch. A Flag
+        // field is never required: its absence parses `false`, so the skip
+        // rule may pass over it — which the canonical encoder relies on
+        // when it elides a false flag from a run.
         private lazy val profiles: Array[Positional.Profile]^{} =
           fields.map: (key, parsing, fallback) =>
             val actual = unwrap(parsing)
@@ -624,7 +647,8 @@ object Tel extends Tel2:
               ( Text(key),
                 actual.nature,
                 actual.repeatable,
-                required = !(actual.optional || fallback.asInstanceOf[Optional[Any]].present) )
+                required = actual.nature != Tel.Nature.Flag
+                           && !(actual.optional || fallback.asInstanceOf[Optional[Any]].present) )
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =

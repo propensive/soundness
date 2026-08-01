@@ -280,11 +280,15 @@ trait Tel2 extends Tel3:
       lazy val profiles: Array[Positional.Profile]^{} =
         contexts[derivation]():
           [field] => context =>
+            // A Flag field is never required: its absence decodes `false`,
+            // so the skip rule may pass over it — which the canonical
+            // encoder relies on when it elides a false flag from a run.
             Positional.Profile
               ( renames.at(label).or(Tel.camelToKebab(label.s)),
                 context.nature,
                 context.repeatable,
-                required = !(context.optional || default[Optional[field]].present) )
+                required = context.nature != Tel.Nature.Flag
+                           && !(context.optional || default[Optional[field]].present) )
 
       // The object `Morphology` is built from the field decoders' own shapes (a single
       // inlined `contexts` traversal — kept here, not factored out, so it does not
@@ -414,19 +418,22 @@ trait Tel2 extends Tel3:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Encodable =
 
-      Tel.Encodable({ () =>
-        val fields: List[(Text, Morphology)] =
-          contexts[derivation](): [field] => context => (label, context.shape())
-          . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+      // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
+      // verbatim; an unannotated field falls back to its camel→kebab form.
+      lazy val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
-        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
-      }):
-        value =>
+      new Tel.Encodable:
+        type Self = derivation
+
+        def shape(): Morphology =
+          val fields: List[(Text, Morphology)] =
+            contexts[derivation](): [field] => context => (label, context.shape())
+            . toList // direct shim, not `to[List]`: inline re-elaboration freshens the array
+
+          Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+
+        def encoded(value: derivation): Tel =
           val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
-
-          // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
-          // verbatim; an unannotated field falls back to its camel→kebab form.
-          val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
           fields(value): [field] =>
             fieldValue =>
@@ -463,6 +470,106 @@ trait Tel2 extends Tel3:
 
           Tel.compound(t"", Array.empty, Array.from(compounds))
 
+        // The §22.2 member description of a value, in field order — the
+        // input to `Mutation.construct` for the canonical forms below.
+        private def membersOf(value: derivation)
+        :   scala.collection.immutable.List[Mutation.Member] =
+
+          val members = scala.collection.mutable.ListBuffer.empty[Mutation.Member]
+          val elidedFlags = scala.collection.mutable.HashSet.empty[Text]
+
+          fields(value): [field] =>
+            fieldValue =>
+              val keyword: Text = renames.at(label).or(Tel.camelToKebab(label.s))
+
+              contextual.nature match
+                case Tel.Nature.Flag =>
+                  val encoded = contextual.encode(fieldValue)
+
+                  encoded.subtree match
+                    case c: Tel.Compound =>
+                      if encoded.primaryAtom == t"true"
+                      then members += Mutation.Member.Flag(keyword)
+                      else if encoded.primaryAtom == t"false" && !contextual.optional
+                      then elidedFlags += keyword
+                      else members += Mutation.Member.Child(c.copy(keyword = keyword))
+
+                    case _ => elidedFlags += keyword
+
+                case Tel.Nature.Scalar =>
+                  val encoded = contextual.encode(fieldValue)
+
+                  encoded.subtree match
+                    case c: Tel.Compound =>
+                      val text = encoded.primaryAtom
+
+                      // A value colliding with a preceding elided flag's
+                      // keyword would set that flag on re-decode; the child
+                      // form sidesteps the collision.
+                      if elidedFlags.contains(text)
+                      then members += Mutation.Member.Child:
+                        Tel.Compound(keyword, c.atoms, Unset, Array.empty)
+                      else members += Mutation.Member.Value(keyword, List(text))
+
+                    case d: Tel.Document =>
+                      // A repeatable scalar field: all occurrences inline or
+                      // none (§22.2). A single occurrence still terminates
+                      // the run — a repeatable member holds its atom
+                      // position and would consume any atom that followed —
+                      // so it takes the child form. An empty collection (or
+                      // Unset Optional) contributes nothing but breaks the
+                      // run, exactly like an absent Scalar member.
+                      val children = d.children.bind(_.compounds)
+
+                      if children.length == 0 then members += Mutation.Member.Break
+                      else if children.length == 1
+                      then members += Mutation.Member.Child(children(0).copy(keyword = keyword))
+                      else
+                        var collision = false
+                        val texts = scala.collection.mutable.ListBuffer.empty[Text]
+
+                        children.each: child =>
+                          val text =
+                            if child.atoms.length == 0 then t""
+                            else Positional.text(child.atoms(0))
+
+                          if elidedFlags.contains(text) then collision = true
+                          texts += text
+
+                        if collision then children.each: child =>
+                          members += Mutation.Member.Child(child.copy(keyword = keyword))
+                        else members += Mutation.Member.Value(keyword, List.of(texts.toList))
+
+                case Tel.Nature.Struct =>
+                  val encoded = contextual.constructed(fieldValue)
+
+                  encoded.subtree match
+                    case c: Tel.Compound =>
+                      members += Mutation.Member.Child(c.copy(keyword = keyword))
+
+                    case d: Tel.Document =>
+                      val children = d.children.bind(_.compounds)
+
+                      if children.length == 0 then members += Mutation.Member.Break
+                      else children.each: child =>
+                        members += Mutation.Member.Child(child.copy(keyword = keyword))
+
+          members.toList
+
+        // The canonical child form: this record's compound with its §22.2
+        // leading inline run, for embedding under a keyword.
+        override def constructed(value: derivation): Tel =
+          Tel.make(Mutation.construct(t"", List.of(membersOf(value)), '#'))
+
+        // The canonical document form: the root carries no atoms (§20.2),
+        // so a leading `Break` suppresses the root's own run while nested
+        // records keep theirs.
+        override def canonicalized(value: derivation): Tel =
+          val compound =
+            Mutation.construct(t"", List.of(Mutation.Member.Break :: membersOf(value)), '#')
+
+          Tel.make(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, compound.children))
+
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Encodable =
       // A sum encodes as a document whose single child compound is the chosen variant,
       // keyed by the variant's (kebab-cased) name with the variant's fields as its own
@@ -471,13 +578,30 @@ trait Tel2 extends Tel3:
       // round-trips identically to the same document parsed from text. The codec-carried
       // shape stays permissive (`Any`); the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
-      Tel.Encodable(() => Morphology.Any):
-        value =>
+      new Tel.Encodable:
+        type Self = derivation
+        def shape(): Morphology = Morphology.Any
+
+        def encoded(value: derivation): Tel =
           variant(value): [variant <: derivation] =>
             v =>
               val keyword: Text = Tel.camelToKebab(label.s)
 
               contextual.encode(v).subtree match
+                case compound: Tel.Compound =>
+                  Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
+
+                case other =>
+                  Tel.make(other)
+
+        // The canonical child form: the chosen variant in its own §22.2
+        // construct form, so a record variant carries its inline run.
+        override def constructed(value: derivation): Tel =
+          variant(value): [variant <: derivation] =>
+            v =>
+              val keyword: Text = Tel.camelToKebab(label.s)
+
+              contextual.constructed(v).subtree match
                 case compound: Tel.Compound =>
                   Tel.compound(t"", Array.empty, Array.of(compound.copy(keyword = keyword)))
 
@@ -574,6 +698,9 @@ trait Tel2 extends Tel3:
       def encoded(opt: value): Tel =
         opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(encodable.encoded(_))
 
+      override def constructed(opt: value): Tel =
+        opt.let(_.asInstanceOf[inner]).lay(emptyDocument)(encodable.constructed(_))
+
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  Tactic[TelError]
   =>  ( decodable0: -> (inner is Tel.Decodable) )
@@ -604,18 +731,41 @@ trait Tel2 extends Tel3:
   // Re-keys an encoded value's compound (or wraps a document) under `keyword`.
   given listEncodable: [list <: List, element] => (encodable: -> (element is Tel.Encodable))
   =>  list[element] is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values.stdlib)(using encodable)
+    new Tel.Encodable:
+      type Self = list[element]
+      def shape(): Morphology = Morphology.Arr(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+      def encoded(values: list[element]): Tel = collectionDocument(values.stdlib)(using encodable)
+
+      override def constructed(values: list[element]): Tel =
+        constructedDocument(values.stdlib)(using encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: -> (element is Tel.Encodable))
   =>  set[element] is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values.stdlib)(using encodable)
+    new Tel.Encodable:
+      type Self = set[element]
+      def shape(): Morphology = Morphology.Arr(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+      def encoded(values: set[element]): Tel = collectionDocument(values.stdlib)(using encodable)
+
+      override def constructed(values: set[element]): Tel =
+        constructedDocument(values.stdlib)(using encodable)
 
   given seriesEncodable: [sequence <: Sequence, element] => (encodable: -> (element is Tel.Encodable))
   =>  sequence[element] is Tel.Encodable =
-    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
-      collectionDocument(values.stdlib)(using encodable)
+    new Tel.Encodable:
+      type Self = sequence[element]
+      def shape(): Morphology = Morphology.Arr(encodable.shape())
+      override def nature: Tel.Nature = encodable.nature
+      override def optional: Boolean = true
+
+      def encoded(values: sequence[element]): Tel =
+        collectionDocument(values.stdlib)(using encodable)
+
+      override def constructed(values: sequence[element]): Tel =
+        constructedDocument(values.stdlib)(using encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],

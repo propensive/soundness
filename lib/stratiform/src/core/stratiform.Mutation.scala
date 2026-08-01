@@ -89,11 +89,15 @@ object Mutation:
   // `construct` algorithm: a scalar member with its present occurrences
   // (one occurrence models a non-repeatable member, several a repeatable
   // one, none an absent member that terminates the inline run), a flag
-  // member, or a ready-made compound child.
+  // member, a ready-made compound child, or `Break` — an absent member
+  // that contributes nothing but terminates the inline run (§22.2: an
+  // absent Scalar member ends the run, because the atom phase never skips
+  // a Scalar position).
   enum Member:
     case Value(keyword: Text, occurrences: List[Text])
     case Flag(keyword: Text)
     case Child(compound: Tel.Compound)
+    case Break
 
   enum Op:
     case UpdateAtom(pointer: Tel.Pointer, atomIndex: Int, text: Text)
@@ -1017,6 +1021,9 @@ object Mutation:
       case Member.Child(compound) =>
         inRun = false
         children += compound
+
+      case Member.Break =>
+        inRun = false
 
       case Member.Value(kw, occurrences) =>
         val os = occurrences.stdlib
