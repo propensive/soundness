@@ -30,10 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Buildpath, Discipline, DisciplineError, Grade, Lineage, Lira, LiraAdvisory,
-    LiraDelta, LiraError, LiraHash, LiraManifest, LiraPayload, LiraSchemas, LiraTree,
-    LiraUniverse, LiraValidators, ManifestSigning, OpaqueDiscipline, Overlay, Publication,
-    Replacement, Section, Snapshot, TreeEntry, TreePath, UsesBlob, Verification, Versioning}
+import contingency.*
+import revolution.Semver
+import vacuous.*
+
+// Version assignment: publishing is the act of taking a development release — identified purely
+// by its hashes — and assigning it the next version number the algebra dictates, then
+// re-signing the manifest. The payload is untouched, so assignment never rebuilds and the
+// implementation identity is unchanged; the signed manifest, binding module, version, lineage,
+// snapshot and payload hash under one quantum-safe signature, *is* the assignment record.
+object Publication:
+
+  def assign
+    ( release:    Lira,
+      previous:   Optional[Lira],
+      published:  List[LiraManifest],
+      forceMajor: Boolean                        = false,
+      sign:       LiraManifest => LiraManifest   = identity(_) )
+  :   LiraManifest raises LiraError =
+
+    val atoms = Verification.install(release).atomizations
+    val snapshot = Snapshot(atoms)
+
+    val manifest = previous match
+      case previous: Lira =>
+        val previousAtoms = Verification.install(previous).atomizations
+        val grade = Grade.between(previousAtoms, atoms)
+
+        val previousVersion =
+          previous.manifest.version.or(abort(LiraError(LiraError.Reason.VersionRequired)))
+
+        val version = Versioning.expected(previousVersion, grade)
+
+        val lineage =
+          Versioning.extendLineage(previous.manifest.lineage, snapshot, grade, forceMajor)
+
+        release.manifest.copy(version = version, lineage = lineage)
+
+      case _ =>
+        // A module's first published release: the initial development series begins at 0.0.0's
+        // first minor, and its lineage is this snapshot alone.
+        release.manifest.copy(version = Semver(0, 1, 0), lineage = List(snapshot))
+
+    Buildpath.publishable(manifest, published)
+    sign(manifest)

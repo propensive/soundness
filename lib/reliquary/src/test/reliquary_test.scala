@@ -891,3 +891,285 @@ object Tests extends Suite(m"Reliquary Tests"):
         Verification.install(back)
         back.manifest.signature.stdlib.size
       . assert(_ == 1)
+
+    suite(m"Buildpath and publication"):
+      import revolution.Semver
+
+      def payloadStub(seed: Text): LiraManifest.Payload =
+        LiraManifest.Payload(t"brotli", 1L, blob(encode(seed)))
+
+      def stub
+        ( module:  Text,
+          lineage: List[Data],
+          owns:    List[Text]                    = List(),
+          deps:    List[LiraManifest.Dependency] = List(),
+          version: Optional[Semver]              = Unset,
+          section: List[Section]                 = List() )
+      :   LiraManifest =
+
+        LiraManifest
+          ( module     = module,
+            version    = version,
+            lineage    = lineage,
+            owns       = owns,
+            api        = List(),
+            dependency = deps,
+            section    = section,
+            payload    = payloadStub(module) )
+
+      val snapOne = LiraHash(LiraHash.Domain.Snapshot, encode(t"one"))
+      val snapTwo = LiraHash(LiraHash.Domain.Snapshot, encode(t"two"))
+
+      test(m"two releases of one module are L111"):
+        val path = Buildpath(List(stub(t"alpha", List(snapOne)), stub(t"alpha", List(snapTwo))))
+
+        capture[LiraError](path.validate(t"jvm")).reason match
+          case LiraError.Reason.DuplicateModule(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"nested namespace claims are L112"):
+        val path = Buildpath(List(
+          stub(t"alpha", List(snapOne), owns = List(t"gossamer")),
+          stub(t"beta", List(snapTwo), owns = List(t"gossamer.text"))))
+
+        capture[LiraError](path.validate(t"jvm")).reason match
+          case LiraError.Reason.NamespaceClash(_) => true
+          case _                                  => false
+      . assert(identity)
+
+      test(m"disjoint namespace claims pass"):
+        val path = Buildpath(List(
+          stub(t"alpha", List(snapOne), owns = List(t"gossamer")),
+          stub(t"beta", List(snapTwo), owns = List(t"gossamers"))))
+
+        path.validate(t"jvm").stdlib.size
+      . assert(_ == 0)
+
+      test(m"an absent dependency is L113"):
+        val needy = stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"missing", snapTwo)))
+
+        capture[LiraError](Buildpath(List(needy)).validate(t"jvm")).reason match
+          case LiraError.Reason.AbsentDependency(_) => true
+          case _                                    => false
+      . assert(identity)
+
+      test(m"a universe-scoped dependency binds only its universes"):
+        val needy = stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"missing", snapTwo, universe = List(t"nir"))))
+
+        val path = Buildpath(List(needy))
+        val jvm = path.validate(t"jvm").stdlib.size
+
+        val nir = capture[LiraError](path.validate(t"nir")).reason match
+          case LiraError.Reason.AbsentDependency(_) => true
+          case _                                    => false
+
+        (jvm, nir)
+      . assert(_ == (0, true))
+
+      test(m"lineage membership satisfies a requirement"):
+        val provider = stub(t"beta", List(snapOne, snapTwo))
+        val needy = stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"beta", snapOne)))
+
+        Buildpath(List(needy, provider)).validate(t"jvm").stdlib.size
+      . assert(_ == 0)
+
+      test(m"a requirement outside the lineage is L114"):
+        val provider = stub(t"beta", List(snapTwo))
+        val needy = stub(t"alpha", List(snapOne),
+          deps = List(LiraManifest.Dependency(t"beta", snapOne)))
+
+        capture[LiraError](Buildpath(List(needy, provider)).validate(t"jvm")).reason match
+          case LiraError.Reason.Unsatisfiable(_) => true
+          case _                                 => false
+      . assert(identity)
+
+      test(m"a diamond resolves iff one lineage contains both snapshots"):
+        val provider = stub(t"omega", List(snapOne, snapTwo))
+        val left = stub(t"alpha", List(blob(encode(t"al"))),
+          deps = List(LiraManifest.Dependency(t"omega", snapOne)))
+
+        val right = stub(t"beta", List(blob(encode(t"be"))),
+          deps = List(LiraManifest.Dependency(t"omega", snapTwo)))
+
+        Buildpath(List(left, right, provider)).validate(t"jvm").stdlib.size
+      . assert(_ == 0)
+
+      test(m"a build pin must match the implementation identity"):
+        val provider = stub(t"beta", List(snapOne))
+        val pinned = stub(t"alpha", List(snapTwo), deps = List(
+          LiraManifest.Dependency(t"beta", snapOne, build = blob(encode(t"other")))))
+
+        capture[LiraError](Buildpath(List(pinned, provider)).validate(t"jvm")).reason match
+          case LiraError.Reason.Unsatisfiable(_) => true
+          case _                                 => false
+      . assert(identity)
+
+      test(m"a matching build pin passes"):
+        val provider = stub(t"beta", List(snapOne))
+        val pinned = stub(t"alpha", List(snapTwo), deps = List(
+          LiraManifest.Dependency(t"beta", snapOne, build = provider.payload.hash)))
+
+        Buildpath(List(pinned, provider)).validate(t"jvm").stdlib.size
+      . assert(_ == 0)
+
+      test(m"a version hint disagreement is advisory only"):
+        val provider = stub(t"beta", List(snapOne), version = Semver(2, 0, 0))
+        val needy = stub(t"alpha", List(snapTwo), deps = List(
+          LiraManifest.Dependency(t"beta", snapOne, version = Semver(1, 0, 0))))
+
+        Buildpath(List(needy, provider)).validate(t"jvm").stdlib.size
+      . assert(_ == 1)
+
+      test(m"a derivative hash resolves to its declaring release"):
+        val derivative = blob(encode(t"the canonical jar"))
+        val holder = stub(t"alpha", List(snapOne), section = List(
+          Section(t"jvm", tree = blob(encode(t"tree")), derivative = derivative)))
+
+        val path = Buildpath(List(holder, stub(t"beta", List(snapTwo))))
+        path.byDerivative(derivative).let(_.module).or(t"absent")
+      . assert(_ == t"alpha")
+
+      test(m"a development release is unpublishable (L117)"):
+        capture[LiraError](Buildpath.publishable(stub(t"alpha", List(snapOne)), List())).reason
+      . assert(_ == LiraError.Reason.VersionRequired)
+
+      test(m"a build pin is unpublishable (L118)"):
+        val pinned = stub(t"alpha", List(snapOne), version = Semver(0, 0, 0), deps = List(
+          LiraManifest.Dependency(t"beta", snapTwo, build = blob(encode(t"pin")))))
+
+        capture[LiraError](Buildpath.publishable(pinned, List())).reason match
+          case LiraError.Reason.BuildPinned(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"an unpublished dependency is unpublishable (L119)"):
+        val needy = stub(t"alpha", List(snapOne), version = Semver(0, 0, 0),
+          deps = List(LiraManifest.Dependency(t"beta", snapTwo)))
+
+        capture[LiraError](Buildpath.publishable(needy, List())).reason match
+          case LiraError.Reason.UnpublishedDependency(_) => true
+          case _                                         => false
+      . assert(identity)
+
+      test(m"a minor number defying the lineage is unpublishable (L120)"):
+        val wrong = stub(t"alpha", List(snapOne, snapTwo), version = Semver(1, 3, 0))
+
+        capture[LiraError](Buildpath.publishable(wrong, List())).reason match
+          case LiraError.Reason.VersionProjection(_) => true
+          case _                                     => false
+      . assert(identity)
+
+      def makeRelease(api: scala.List[(Text, Text)], extra: scala.List[(Text, Text)]): Data =
+        val context = Discipline.Context(t"jvm")
+        val registry = Discipline.Registry(List())
+        val apiItems = api.map { pair => (TreePath(pair(0)), encode(pair(1))) }
+        val extraItems = extra.map { pair => (TreePath(pair(0)), encode(pair(1))) }
+        val atomizations = registry.atomize(List.from(apiItems), context)
+        val atomsData = AtomsBlob.encode(atomizations.stdlib.head)
+        val snapshot = Snapshot(atomizations)
+
+        val entries = (apiItems ++ extraItems).map: pair =>
+          TreeEntry(pair(0), blob(pair(1)))
+
+        val tree = LiraTree.of(List.from(entries))
+
+        val manifest = LiraManifest
+          ( module    = t"assignee",
+            lineage   = List(snapshot),
+            toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+            api       = List(LiraManifest.Api(t"opaque/1", blob(atomsData))),
+            section   = List(Section(t"jvm", tree = blob(tree.encode))),
+            payload   = payloadStub(t"replaced") )
+
+        val blobs = (apiItems ++ extraItems).map { pair => pair(1) }
+        Lira.assemble(manifest, List.from(blobs :+ tree.encode :+ atomsData))
+
+      val versionOne = scala.List((t"a/A.class", t"alpha one"))
+
+      def published(): Lira =
+        val dev = Lira.read(makeRelease(versionOne, scala.Nil))
+        val assigned = Publication.assign(dev, Unset, List())
+        val stream = LiraPayload.decompress
+          (dev.compressed, dev.manifest.payload.length, dev.manifest.payload.hash)
+
+        Lira.read(Lira.assemble(assigned, BlobStream.read(stream).blobs.map(_.data)))
+
+      test(m"a first release is assigned 0.1.0 with a fresh lineage"):
+        val manifest = Publication.assign(Lira.read(makeRelease(versionOne, scala.Nil)), Unset,
+          List())
+
+        (manifest.version.let(_.minor).or(-1L), manifest.lineage.stdlib.size)
+      . assert(_ == (1L, 1))
+
+      test(m"a rigid addition is assigned the next minor version"):
+        val base = published()
+        val dev = Lira.read
+          (makeRelease(versionOne :+ (t"a/B.class", t"beta"), scala.Nil))
+
+        val manifest = Publication.assign(dev, base, List(base.manifest))
+        (manifest.version, manifest.lineage.stdlib.size)
+      . assert(_ == (Semver(0, 2, 0), 2))
+
+      test(m"an implementation-only change is assigned the next patch version"):
+        val base = published()
+        val dev = Lira.read(makeRelease(versionOne, scala.List((t"doc/readme.md", t"docs"))))
+        val manifest = Publication.assign(dev, base, List(base.manifest))
+        (manifest.version, manifest.lineage.stdlib.size)
+      . assert(_ == (Semver(0, 1, 1), 1))
+
+      test(m"a rigid removal is refused without an explicit major"):
+        val base = published()
+        val dev = Lira.read(makeRelease(scala.List((t"a/C.class", t"gamma")), scala.Nil))
+
+        capture[LiraError](Publication.assign(dev, base, List(base.manifest))).reason
+      . assert(_ == LiraError.Reason.UngradedSuccessor)
+
+      test(m"an explicit major begins a fresh lineage"):
+        val base = published()
+        val dev = Lira.read(makeRelease(scala.List((t"a/C.class", t"gamma")), scala.Nil))
+        val manifest = Publication.assign(dev, base, List(base.manifest), forceMajor = true)
+        (manifest.version, manifest.lineage.stdlib.size)
+      . assert(_ == (Semver(0, 2, 0), 1))
+
+      test(m"a used-set closes over replaceable references"):
+        val rigid = Atom(t"target", AtomClass.Rigid,
+          LiraHash(LiraHash.Domain.Atom(t"x/1"), encode(t"rigid")))
+
+        val inline = Atom(t"caller[inline]", AtomClass.Replaceable,
+          LiraHash(LiraHash.Domain.Atom(t"x/1"), encode(t"body")),
+          references = List(AtomReference.Own(t"target")))
+
+        val dependency = Atomization.of(t"x/1", List(rigid, inline))
+        val closure = UsesBlob.closure(List(inline.valueHash), List((t"dep", dependency)))
+
+        val expected = scala.collection.immutable.Set
+          (LiraHash.text(inline.valueHash), LiraHash.text(rigid.valueHash))
+
+        closure.stdlib.map { hash => LiraHash.text(hash) }.toSet == expected
+      . assert(identity)
+
+      test(m"a uses blob round-trips"):
+        val atoms = List(blob(encode(t"u1")), blob(encode(t"u2")))
+        val (module, back) = UsesBlob.decode(UsesBlob.encode(t"dep", atoms))
+        (module, back.stdlib.size)
+      . assert(_ == (t"dep", 2))
+
+      test(m"spanning holds iff the candidate carries every used atom"):
+        val one = Atom(t"a", AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(t"x/1"), encode(t"1")))
+        val two = Atom(t"b", AtomClass.Rigid, LiraHash(LiraHash.Domain.Atom(t"x/1"), encode(t"2")))
+
+        (UsesBlob.spanning(List(one.valueHash), List(one, two)),
+         UsesBlob.spanning(List(one.valueHash, two.valueHash), List(one)))
+      . assert(_ == (true, false))
+
+      test(m"staleness detects replaced atoms in the used-set"):
+        val old = blob(encode(t"old"))
+        val neo = blob(encode(t"new"))
+
+        (UsesBlob.staleness(List(old), List(Replacement(old, neo))),
+         UsesBlob.staleness(List(neo), List(Replacement(old, neo))))
+      . assert(_ == (true, false))
