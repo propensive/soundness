@@ -821,7 +821,7 @@ object anthology extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object `scala` extends Component(core):
+  object `scala` extends Component(core, aperture.core):
     override def scalaJs = false // wraps the Scala compiler (dotty)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))

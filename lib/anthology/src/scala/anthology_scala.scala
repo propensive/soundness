@@ -199,3 +199,15 @@ private[anthology] def progressCallback(process: CompileProcess): dtdsi.Progress
             ( last/100.0, if currentStage == null then t"null" else currentStage.tt ) )
 
       process.continue
+
+// Sugar for compiling within a session scope, `sources.compile()`, delegating to the
+// contextual session handle's own method.
+extension (sources: Map[Text, Text])
+  inline def compile()(using session: ScalacSession^)
+  :   ScalacSession.Process^{session, scala.caps.any} =
+
+    session.compile(sources)
+
+// The contextual session handle, `transparent inline` so its precise, scoped type
+// survives the summon.
+transparent inline def compilation(using session: ScalacSession^): session.type = session

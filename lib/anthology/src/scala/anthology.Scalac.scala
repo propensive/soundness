@@ -75,6 +75,22 @@ object Scalac:
 
     new Scalac(options)
 
+  object Setup:
+    given sessional: [version <: Versions, universe <: Universe]
+    =>  ( system:   System,
+          emission: Universe.Emission[universe],
+          tactic:   Tactic[CompilerError],
+          loggable: (CompileEvent is Loggable)^ )
+    =>  ( ScalacSessional[version, universe]^{tactic, loggable, scala.caps.any} ) =
+
+      ScalacSessional()
+
+  // A compiler configuration bound to a classpath: the target of a warm compiler session,
+  // `scalac.on(classpath).session`, which retains the classpath's loaded symbol table
+  // across the session's compiles.
+  case class Setup[version <: Versions, universe <: Universe]
+    ( scalac: Scalac[version, universe], classpath: LocalClasspath )
+
 case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   ( options: List[Scalac.Option[version]] ):
 
@@ -88,6 +104,9 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   :   Scalac[version, provenance.Origin] =
 
     new Scalac(options)
+
+  def on(classpath: LocalClasspath): Scalac.Setup[version, universe] =
+    Scalac.Setup(this, classpath)
 
 
   def apply
