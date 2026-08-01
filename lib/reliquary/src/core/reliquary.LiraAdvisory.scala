@@ -30,9 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, Grade, Lineage, LiraAdvisory, LiraDelta, LiraError,
-    LiraHash, LiraPayload, LiraSchemas, LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline,
-    Overlay, Replacement, Section, Snapshot, TreeEntry, TreePath, Versioning}
+import anticipation.*
+import revolution.*
+
+// Warn-only findings (§12.4 and §8.2): never raised as errors, reported alongside successful
+// operations for tools to surface.
+enum LiraAdvisory:
+  case NotNumeric(version: Semver)
+  case VersionMismatch(declared: Semver, expected: Semver)
+  case UnreferencedBlobs(hashes: List[Text])

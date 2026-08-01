@@ -518,3 +518,145 @@ object Tests extends Suite(m"Reliquary Tests"):
         val two = Snapshot(List(OpaqueDiscipline.atomize(changed, context)))
         LiraHash.text(one) != LiraHash.text(two)
       . assert(identity)
+
+    suite(m"Grades, lineage and versioning"):
+      import revolution.Semver
+
+      def atom(key: Text, atomClass: AtomClass, content: Text): Atom =
+        Atom(key, atomClass, LiraHash(LiraHash.Domain.Atom(t"x/1"), encode(content)))
+
+      def release(atoms: Atom*): List[Atomization] =
+        List(Atomization.of(t"x/1", List.from(atoms)))
+
+      val base = release(atom(t"a", AtomClass.Rigid, t"1"), atom(t"b", AtomClass.Replaceable, t"2"))
+
+      test(m"an identical atom set grades as a patch"):
+        Grade.between(base, base)
+      . assert(_ == Grade.Patch)
+
+      test(m"a pure rigid addition grades as minor"):
+        val next = release(
+          atom(t"a", AtomClass.Rigid, t"1"),
+          atom(t"b", AtomClass.Replaceable, t"2"),
+          atom(t"c", AtomClass.Rigid, t"3"))
+
+        Grade.between(base, next)
+      . assert(_ == Grade.Minor)
+
+      test(m"a replaceable value change with a surviving key grades as minor"):
+        val next = release(
+          atom(t"a", AtomClass.Rigid, t"1"),
+          atom(t"b", AtomClass.Replaceable, t"2-changed"))
+
+        Grade.between(base, next)
+      . assert(_ == Grade.Minor)
+
+      test(m"a rigid removal grades as major"):
+        Grade.between(base, release(atom(t"b", AtomClass.Replaceable, t"2")))
+      . assert(_ == Grade.Major)
+
+      test(m"a rigid value change grades as major"):
+        val next = release(
+          atom(t"a", AtomClass.Rigid, t"1-changed"),
+          atom(t"b", AtomClass.Replaceable, t"2"))
+
+        Grade.between(base, next)
+      . assert(_ == Grade.Major)
+
+      test(m"a replaceable removal grades as major"):
+        Grade.between(base, release(atom(t"a", AtomClass.Rigid, t"1")))
+      . assert(_ == Grade.Major)
+
+      val snapshot = Snapshot(base)
+      val older = Snapshot(release(atom(t"a", AtomClass.Rigid, t"1")))
+
+      test(m"a lineage ending in the release's snapshot passes L109"):
+        Lineage.check(List(older, snapshot), snapshot)
+        true
+      . assert(identity)
+
+      test(m"a lineage not ending in the release's snapshot fails L109"):
+        capture[LiraError](Lineage.check(List(snapshot, older), snapshot)).reason
+      . assert(_ == LiraError.Reason.LineageMismatch)
+
+      test(m"an empty lineage fails L109"):
+        capture[LiraError](Lineage.check(List(), snapshot)).reason
+      . assert(_ == LiraError.Reason.LineageMismatch)
+
+      test(m"lineage membership decides satisfaction"):
+        val absent = Snapshot(release(atom(t"z", AtomClass.Rigid, t"9")))
+
+        (Lineage.contains(List(older, snapshot), older),
+         Lineage.contains(List(older, snapshot), absent))
+      . assert(_ == (true, false))
+
+      test(m"a minor step appends its snapshot to the lineage"):
+        Versioning.extendLineage(List(older), snapshot, Grade.Minor).stdlib
+        . map { hash => LiraHash.text(hash) }
+      . assert(_ == scala.List(LiraHash.text(older), LiraHash.text(snapshot)))
+
+      test(m"a patch step leaves the lineage unchanged"):
+        Versioning.extendLineage(List(older), older, Grade.Patch).stdlib.size
+      . assert(_ == 1)
+
+      test(m"a major step without explicit request is refused (L110)"):
+        capture[LiraError](Versioning.extendLineage(List(older), snapshot, Grade.Major)).reason
+      . assert(_ == LiraError.Reason.UngradedSuccessor)
+
+      test(m"a requested major step begins a fresh lineage"):
+        Versioning.extendLineage(List(older), snapshot, Grade.Major, forceMajor = true).stdlib
+        . map { hash => LiraHash.text(hash) }
+      . assert(_ == scala.List(LiraHash.text(snapshot)))
+
+      test(m"a delta records additions and replacements"):
+        val next = release(
+          atom(t"a", AtomClass.Rigid, t"1"),
+          atom(t"b", AtomClass.Replaceable, t"2-changed"),
+          atom(t"c", AtomClass.Rigid, t"3"))
+
+        val delta = LiraDelta.compute(base, next)
+        (delta.add.stdlib.size, delta.replace.stdlib.size)
+      . assert(_ == (2, 1))
+
+      test(m"a delta round-trips through its canonical encoding"):
+        val next = release(
+          atom(t"a", AtomClass.Rigid, t"1"),
+          atom(t"b", AtomClass.Replaceable, t"2-changed"),
+          atom(t"c", AtomClass.Rigid, t"3"))
+
+        val delta = LiraDelta.compute(base, next)
+        val back = LiraDelta.decode(delta.encode)
+        back.encode.serialize[Hex] == delta.encode.serialize[Hex]
+      . assert(identity)
+
+      test(m"an empty delta round-trips"):
+        val delta = LiraDelta.compute(base, base)
+        val back = LiraDelta.decode(delta.encode)
+        (back.add.stdlib.size, back.replace.stdlib.size)
+      . assert(_ == (0, 0))
+
+      test(m"the algebra assigns patch, minor and major versions"):
+        val version = Semver(1, 2, 3)
+
+        (Versioning.expected(version, Grade.Patch),
+         Versioning.expected(version, Grade.Minor),
+         Versioning.expected(version, Grade.Major))
+      . assert(_ == (Semver(1, 2, 4), Semver(1, 3, 0), Semver(2, 0, 0)))
+
+      test(m"suffixed versions are not numeric"):
+        (Versioning.numeric(Semver(1, 2, 3)),
+         Versioning.numeric(Semver(1, 2, 3, prerelease = List(t"RC1"))))
+      . assert(_ == (true, false))
+
+      test(m"a version matching the projection raises no advisory"):
+        Versioning.advisories(Semver(1, 3, 0), Semver(1, 2, 3), Grade.Minor).stdlib.size
+      . assert(_ == 0)
+
+      test(m"a version defying the projection raises an advisory"):
+        Versioning.advisories(Semver(1, 2, 4), Semver(1, 2, 3), Grade.Minor).stdlib
+      . assert(_ == scala.List(LiraAdvisory.VersionMismatch(Semver(1, 2, 4), Semver(1, 3, 0))))
+
+      test(m"a suffixed version raises a not-numeric advisory"):
+        val suffixed = Semver(1, 2, 3, prerelease = List(t"RC1"))
+        Versioning.advisories(suffixed, Unset, Grade.Patch).stdlib
+      . assert(_ == scala.List(LiraAdvisory.NotNumeric(Semver(1, 2, 3, prerelease = List(t"RC1")))))

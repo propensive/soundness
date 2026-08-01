@@ -30,9 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, Grade, Lineage, LiraAdvisory, LiraDelta, LiraError,
-    LiraHash, LiraPayload, LiraSchemas, LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline,
-    Overlay, Replacement, Section, Snapshot, TreeEntry, TreePath, Versioning}
+import anticipation.*
+import contingency.*
+
+import LiraError.Reason
+
+// A module's verifiable version history within one major series (§12.2): the snapshots of its
+// releases, oldest first, each appearing once (patches do not append). Every compatibility
+// question reduces to membership in, or relations between, lineages.
+object Lineage:
+
+  // L109: the final entry must equal the release's own snapshot.
+  def check(lineage: List[Data], snapshot: Data): Unit raises LiraError =
+    val entries = lineage.stdlib
+
+    if entries.isEmpty || Blob.compare(entries.last, snapshot) != 0
+    then abort(LiraError(Reason.LineageMismatch))
+
+  // §13.2: a candidate release satisfies a requirement iff the required snapshot appears in the
+  // candidate's lineage.
+  def contains(lineage: List[Data], required: Data): Boolean =
+    lineage.stdlib.exists: snapshot => Blob.compare(snapshot, required) == 0

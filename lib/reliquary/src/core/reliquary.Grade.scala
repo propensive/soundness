@@ -30,9 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, Grade, Lineage, LiraAdvisory, LiraDelta, LiraError,
-    LiraHash, LiraPayload, LiraSchemas, LiraTree, LiraUniverse, LiraValidators, OpaqueDiscipline,
-    Overlay, Replacement, Section, Snapshot, TreeEntry, TreePath, Versioning}
+import anticipation.*
+
+object Grade:
+  private def entries(atomizations: List[Atomization])
+  :   scala.collection.immutable.Set[(Text, AtomClass, Text)] =
+
+    atomizations.stdlib.flatMap(_.atoms.stdlib).map: atom =>
+      (atom.key, atom.atomClass, LiraHash.text(atom.valueHash))
+
+    . toSet
+
+  // §12.3: the grade of a successor release relative to its predecessor. `Patch` is API
+  // identity; `Minor` is pure rigid extension plus replaceable churn (every replaceable key of
+  // the predecessor survives, unchanged or replaced); anything else is `Major` and must begin a
+  // fresh lineage.
+  def between(previous: List[Atomization], next: List[Atomization]): Grade =
+    val before = entries(previous)
+    val after = entries(next)
+
+    if before == after then Patch
+    else
+      val rigidKept = before.filter(_(1) == AtomClass.Rigid).subsetOf:
+        after.filter(_(1) == AtomClass.Rigid)
+
+      val keysBefore = before.filter(_(1) == AtomClass.Replaceable).map(_(0))
+      val keysAfter = after.filter(_(1) == AtomClass.Replaceable).map(_(0))
+
+      if rigidKept && keysBefore.subsetOf(keysAfter) then Minor else Major
+
+enum Grade:
+  case Patch, Minor, Major
