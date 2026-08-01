@@ -2163,7 +2163,11 @@ object reliquary extends Library:
     override def scalaJs = false // stratiform.binary is transitively JVM-only
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core)
+  object derive extends Component(core, zeppelin.core, hellenism.jvm, galilei.jvm):
+    override def scalaJs = false // filesystem materialization and zip derivation
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
+  object test extends Tests(core, derive, imperial.core)
 
 object revolution extends Library:
   object core extends Component(serpentine.core, turbulence.core):

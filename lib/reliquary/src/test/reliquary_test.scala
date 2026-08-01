@@ -56,6 +56,10 @@ object Tests extends Suite(m"Reliquary Tests"):
   // `uvarint(1) ++ "a" ++ uvarint(2) ++ "bc"`, records in ascending blob-hash order.
   val goldenStream: Text = t"0161026263"
 
+  // The pinned `lira/1:derivative` hash of the two-entry canonical jar built by the derivative
+  // suite: a golden value locking the Stored zip profile byte-for-byte.
+  val goldenDerivative: Text = t"ωӟMſÔǽƒJMôҷЖǣΞYǣЭOЫǿ3ωḡm3ќḞήUШďå"
+
   def encode(text: Text): Data = charEncoders.utf8Encoder.encoded(text)
 
   def resource(name: Text): Data =
@@ -1173,3 +1177,65 @@ object Tests extends Suite(m"Reliquary Tests"):
         (UsesBlob.staleness(List(old), List(Replacement(old, neo))),
          UsesBlob.staleness(List(neo), List(Replacement(old, neo))))
       . assert(_ == (true, false))
+
+    suite(m"Derivative artifacts"):
+      import distillate.*
+      import galilei.*
+      import prepositional.*
+      import serpentine.*
+
+      def store(datas: List[Data]): Blobstore = BlobStream.read(BlobStream.write(datas))
+
+      val tree = LiraTree.of(List(
+        TreeEntry(TreePath(t"a/A.class"), blob(classA)),
+        TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA))))
+
+      test(m"derivation is byte-deterministic"):
+        val blobstore = store(List(classA, tastyA))
+        val one = Derivative.jar(tree, blobstore).serialize[Hex]
+        val two = Derivative.jar(tree, blobstore).serialize[Hex]
+        one == two
+      . assert(identity)
+
+      test(m"the derivative hash matches its pinned value"):
+        LiraHash.text(Derivative.hash(tree, store(List(classA, tastyA))))
+      . assert(_ == Tests.goldenDerivative)
+
+      test(m"the derivative jar is readable by java.util.zip"):
+        val data = Derivative.jar(tree, store(List(classA, tastyA)))
+
+        val input = java.util.zip.ZipInputStream
+          (java.io.ByteArrayInputStream(Array.unsafeJvm(data)))
+
+        val names = scala.collection.mutable.ArrayBuffer[String]()
+        var entry = input.getNextEntry()
+
+        while entry != null do
+          names += entry.nn.getName().nn
+          entry = input.getNextEntry()
+
+        input.close()
+        names.toList
+      . assert(_ == scala.List("a/A.class", "a/A.tasty"))
+
+      test(m"materialization builds a classpath of cached derivative jars"):
+        val cache = unsafely:
+          t"/tmp/reliquary-test-${java.lang.System.nanoTime}".as[Path on Linux]
+
+        val lira = Lira.read(makeLira())
+        val first = Materializer.classpath(List(lira), t"jvm", cache)
+        val second = Materializer.classpath(List(lira), t"jvm", cache)
+
+        (first.entries.stdlib.size, first.entries.stdlib == second.entries.stdlib)
+      . assert(_ == (1, true))
+
+      test(m"materialization refuses a universe with no section"):
+        val cache = unsafely:
+          t"/tmp/reliquary-test-${java.lang.System.nanoTime}".as[Path on Linux]
+
+        val lira = Lira.read(makeLira())
+
+        capture[LiraError](Materializer.classpath(List(lira), t"nir", cache)).reason match
+          case LiraError.Reason.InvalidManifest(_) => true
+          case _                                   => false
+      . assert(identity)
