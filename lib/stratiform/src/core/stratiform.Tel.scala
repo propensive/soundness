@@ -659,6 +659,14 @@ object Tel extends Tel2:
   trait Field extends Parsing
 
   // Type assignment algorithm per §20.2 of the TEL specification.
+  //
+  // Document-conformance violations (E301-E311) go through `recoverNode` and
+  // so record-and-continue under an accrual boundary, per §19.5; schema
+  // errors (E210/E218) abort, because a malformed schema offers no document-
+  // level recovery. Out of scope here: §20.1 schema-validity checking (E2xx
+  // beyond reference resolution), tabulation-aware column assignment, and
+  // diagnostic spans — a TelError raised during assignment carries no
+  // position.
   object Type:
     import TelError.Reason
     import Tels.*
