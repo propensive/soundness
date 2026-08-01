@@ -297,3 +297,110 @@ object Tests extends Suite(m"Reliquary Tests"):
           case LiraError.Reason.PayloadHash => true
           case _                            => false
       . assert(identity)
+
+    suite(m"Trees and overlays"):
+      def entry(path: Text, content: Text): TreeEntry =
+        TreeEntry(TreePath(path), LiraHash(LiraHash.Domain.Blob, encode(content)))
+
+      def same(left: LiraTree, right: LiraTree): Boolean =
+        left.encode.serialize[Hex] == right.encode.serialize[Hex]
+
+      val root = LiraTree.of(List(
+        entry(t"a/One.class", t"one"),
+        entry(t"a/One.tasty", t"one-tasty"),
+        entry(t"b/Two.class", t"two")))
+
+      test(m"a traversal path is rejected"):
+        capture[LiraError](TreePath(t"../evil")).reason match
+          case LiraError.Reason.InvalidTree(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"tree entries sort identically regardless of input order"):
+        val reordered = LiraTree.of(List(
+          entry(t"b/Two.class", t"two"),
+          entry(t"a/One.tasty", t"one-tasty"),
+          entry(t"a/One.class", t"one")))
+
+        same(reordered, root)
+      . assert(identity)
+
+      test(m"a duplicate path is rejected"):
+        capture[LiraError](LiraTree.of(List(entry(t"a/x", t"1"), entry(t"a/x", t"2")))).reason match
+          case LiraError.Reason.InvalidTree(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"a tree round-trips through its canonical encoding"):
+        same(LiraTree.decode(root.encode), root)
+      . assert(identity)
+
+      test(m"an empty tree round-trips"):
+        same(LiraTree.decode(LiraTree.empty.encode), LiraTree.empty)
+      . assert(identity)
+
+      test(m"rows out of ascending path order are rejected on decode"):
+        val hash = LiraHash.text(LiraHash(LiraHash.Domain.Blob, encode(t"x")))
+        val doc = t"tel 1.0 ${LiraSchemas.treeSignature}\n\nentry b/x  $hash\nentry a/x  $hash\n"
+
+        capture[LiraError](LiraTree.decode(encode(doc))).reason match
+          case LiraError.Reason.InvalidTree(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"a traversal path in a document is rejected on decode"):
+        val hash = LiraHash.text(LiraHash(LiraHash.Domain.Blob, encode(t"x")))
+        val doc = t"tel 1.0 ${LiraSchemas.treeSignature}\n\nentry ../evil  $hash\n"
+
+        capture[LiraError](LiraTree.decode(encode(doc))).reason match
+          case LiraError.Reason.InvalidTree(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"materialization applies deletions, replacements and additions"):
+        val overlay = LiraTree.of(List(
+          entry(t"a/One.class", t"one-sjsir"),
+          entry(t"c/Three.sjsir", t"three")))
+
+        val delete = List(TreePath(t"b/Two.class"))
+
+        val expected = LiraTree.of(List(
+          entry(t"a/One.class", t"one-sjsir"),
+          entry(t"a/One.tasty", t"one-tasty"),
+          entry(t"c/Three.sjsir", t"three")))
+
+        same(Overlay.materialize(root, delete, overlay), expected)
+      . assert(identity)
+
+      test(m"diff produces the minimal overlay that materializes back"):
+        val target = LiraTree.of(List(
+          entry(t"a/One.class", t"one-sjsir"),
+          entry(t"a/One.tasty", t"one-tasty"),
+          entry(t"c/Three.sjsir", t"three")))
+
+        val (overlay, delete) = Overlay.diff(root, target)
+
+        val counts = (overlay.entries.stdlib.size, delete.stdlib.size)
+        val back = same(Overlay.materialize(root, delete, overlay), target)
+        (counts, back)
+      . assert(_ == ((2, 1), true))
+
+      test(m"diffing a tree against itself is empty"):
+        val (overlay, delete) = Overlay.diff(root, root)
+        (overlay.entries.stdlib.size, delete.stdlib.size)
+      . assert(_ == (0, 0))
+
+      test(m"a delete of an absent root path is L107"):
+        capture[LiraError](Overlay.materialize(root, List(TreePath(t"absent")), LiraTree.empty))
+        . reason match
+            case LiraError.Reason.OverlayNotMinimal(_) => true
+            case _                                     => false
+      . assert(identity)
+
+      test(m"an overlay entry identical to the root is L107"):
+        val overlay = LiraTree.of(List(entry(t"a/One.class", t"one")))
+
+        capture[LiraError](Overlay.materialize(root, List(), overlay)).reason match
+          case LiraError.Reason.OverlayNotMinimal(_) => true
+          case _                                     => false
+      . assert(identity)

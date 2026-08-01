@@ -30,7 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Blob, BlobStream, Blobstore, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, Overlay, Section, TreeEntry, TreePath}
+import anticipation.*
+import gossamer.*
+import vacuous.*
+
+object LiraUniverse:
+  def parse(keyword: Text): Optional[LiraUniverse] = keyword.s match
+    case "jvm"   => Jvm
+    case "sjsir" => Sjsir
+    case "nir"   => Nir
+    case _       => Unset
+
+// The universes of the base `lira` schema: the library-composition worlds a section's content
+// belongs to. The vocabulary is open (§9.4) — universes beyond these arrive as TEL schema
+// layers, and sections of unknown universes are held opaque and never materialized.
+enum LiraUniverse:
+  case Jvm, Sjsir, Nir
+
+  def keyword: Text = this match
+    case Jvm   => t"jvm"
+    case Sjsir => t"sjsir"
+    case Nir   => t"nir"

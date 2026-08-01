@@ -30,7 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Blob, BlobStream, Blobstore, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, Overlay, Section, TreeEntry, TreePath}
+import anticipation.*
+import vacuous.*
+
+// One compiled view of a release (§9): a universe keyword (kept textual so sections of unknown,
+// layered universes survive as opaque data), the tree blob's hash, the overlay-delete list, the
+// variant dependency snapshots (§9.5), and the canonical derivative artifact's hash (§13.6).
+case class Section
+  ( universe:   Text,
+    tree:       Data,
+    delete:     List[TreePath]  = List(),
+    against:    List[Data]      = List(),
+    derivative: Optional[Data]  = Unset ):
+
+  def known: Optional[LiraUniverse] = LiraUniverse.parse(universe)

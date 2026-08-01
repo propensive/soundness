@@ -30,7 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Blob, BlobStream, Blobstore, LiraError, LiraHash, LiraPayload, LiraSchemas,
-    LiraTree, LiraUniverse, LiraValidators, Overlay, Section, TreeEntry, TreePath}
+import contingency.*
+import rudiments.*
+import vacuous.*
+
+import LiraError.Reason
+
+// Overlay semantics (§9.3): a non-root section's materialized form is
+//
+//   materialize(overlay) = (root − overlay.delete) ⊕ overlay.tree
+//
+// An overlay carries only content absent from, or differing from, the root; `diff` constructs
+// exactly that minimal overlay, and `materialize` refuses non-minimal input (L107), keeping
+// platform divergence visible in the manifest rather than buried in the payload.
+object Overlay:
+
+  def materialize(root: LiraTree, delete: List[TreePath], overlay: LiraTree)
+  :   LiraTree raises LiraError =
+
+    delete.each: path =>
+      if root.get(path).absent then abort(LiraError(Reason.OverlayNotMinimal(path.text)))
+
+    overlay.entries.each: entry =>
+      root.get(entry.path).let: existing =>
+        if Blob.compare(existing.blob, entry.blob) == 0
+        then abort(LiraError(Reason.OverlayNotMinimal(entry.path.text)))
+
+    val deleted = delete.map(_.text).stdlib.toSet
+
+    val kept = root.entries.filter: entry =>
+      !deleted.contains(entry.path.text) && overlay.get(entry.path).absent
+
+    LiraTree.of(List.from(kept.stdlib ++ overlay.entries.stdlib))
+
+  // The producer inverse: the minimal `(tree, delete)` pair such that
+  // `materialize(root, delete, tree) == target`.
+  def diff(root: LiraTree, target: LiraTree): (LiraTree, List[TreePath]) raises LiraError =
+    val delete = root.entries.filter { entry => target.get(entry.path).absent }.map(_.path)
+
+    val changed = target.entries.filter: entry =>
+      root.get(entry.path) match
+        case existing: TreeEntry => Blob.compare(existing.blob, entry.blob) != 0
+        case _                   => true
+
+    (LiraTree.of(changed), delete)
