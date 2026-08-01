@@ -485,7 +485,11 @@ object Tel extends Tel2:
           override def optional: Boolean = true
 
           def parse(reader: TelReader^, indent: Int): value =
-            if reader.hasSubstance then field.parse(reader, indent)
+            // A bare entry means `Unset` for most types, but a Flag-natured
+            // inner reads it as flag presence (`Optional[Boolean]` of
+            // `true`) — the AST `optionalDecodable`'s test exactly.
+            if reader.hasSubstance || field.nature == Tel.Nature.Flag
+            then field.parse(reader, indent)
             else
               reader.skipEntry(indent)
               Unset
@@ -606,6 +610,18 @@ object Tel extends Tel2:
         private lazy val fields: Array[(String, Tel.Parsing, Any)]^{} = fields0()
         private lazy val keys: Array[String]^{} = fields.map(_(0))
 
+        // Per-field positional profiles for the §19.2 atom pre-pass,
+        // computed from the same table as the keyword dispatch.
+        private lazy val profiles: Array[Positional.Profile]^{} =
+          fields.map: (key, parsing, fallback) =>
+            val actual = unwrap(parsing)
+
+            Positional.Profile
+              ( Text(key),
+                actual.nature,
+                actual.repeatable,
+                required = !(actual.optional || fallback.asInstanceOf[Optional[Any]].present) )
+
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
             fields.map { (key, parser, _) => (Text(key), parser.shape()) }.to[List]
@@ -626,18 +642,23 @@ object Tel extends Tel2:
           -1
 
         // The value of a record field is its children, one level deeper than
-        // its own entry line.
+        // its own entry line — after the entry line's own atoms fill fields
+        // positionally (§19.2).
         def parse(reader: TelReader^, indent: Int): derivation =
-          reader.finishLine()
-          parseFields(reader, indent + 1)
+          parseFields(reader, indent + 1, reader.lineAtoms())
 
-        // A whole document's fields sit at indent zero.
-        override def parse(reader: TelReader^): derivation = parseFields(reader, 0)
+        // A whole document's fields sit at indent zero; the root carries no
+        // atoms (§20.2).
+        override def parse(reader: TelReader^): derivation =
+          parseFields(reader, 0, Array.empty)
 
-        private def parseFields(reader: TelReader^, indent: Int): derivation =
+        private def parseFields(reader: TelReader^, indent: Int, atoms: Array[Tel.Atom]^{})
+        :   derivation =
+
           val entries = fields
           val count = entries.length
           val values = new scala.Array[Any](count)
+          val atomFilled = new scala.Array[Boolean](count)
           var index = 0
 
           while index < count do
@@ -647,6 +668,43 @@ object Tel extends Tel2:
           // With the inert default `Foci`, per-field `focus` wrapping would
           // observably do nothing, so the hot loop skips it.
           val focused = foci.active
+
+          // §19.2 positional pre-pass (issue #1694): the entry line's atoms
+          // fill fields in declaration order before the keyword loop, so a
+          // repeatable field's later same-keyword children append after them
+          // (§18.3 step 4 — atoms precede children).
+          if atoms.length > 0 then
+            val assigned = Positional.assign(atoms, profiles)(using tactic)
+            var slot = 0
+
+            while slot < assigned.length do
+              val slotAtoms = assigned(slot).stdlib
+
+              if slotAtoms.nonEmpty then
+                val parsing = unwrap(entries(slot)(1))
+
+                inline def positioned[result](inline block: => result): result =
+                  if focused then focus(descend(prior, Text(keys(slot))))(block) else block
+
+                parsing match
+                  case gathering: Gathering if parsing.repeatable =>
+                    val buffer = scala.collection.mutable.ListBuffer.empty[Any]
+
+                    slotAtoms.foreach: atom =>
+                      buffer += positioned(gathering.parseAtomElement(Positional.text(atom)))
+
+                    values(slot) = buffer
+
+                  case _ =>
+                    atomFilled(slot) = true
+
+                    values(slot) =
+                      if parsing.nature == Tel.Nature.Flag
+                      then positioned(parsing.parseFlag())
+                      else positioned(parsing.parseAtom(Positional.text(slotAtoms.head)))
+
+              slot += 1
+
           var next: Optional[Text] = reader.keyword(indent)
 
           while next.present do
@@ -677,9 +735,14 @@ object Tel extends Tel2:
 
                 case _ =>
                   // A non-repeatable field keeps its first occurrence — the
-                  // AST's `field()` semantics — and skips the rest.
-                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
-                  then reader.skipEntry(indent)
+                  // AST's `field()` semantics — and skips the rest. When the
+                  // first fill came from a positional atom, the duplicate is
+                  // §20.2 step 5c's E308 (the atom wins).
+                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot) then
+                    if atomFilled(found)
+                    then raise(TelError(TelError.Reason.NonRepeatableTooMany))(using tactic)
+
+                    reader.skipEntry(indent)
                   else values(found) =
                     if focused
                     then focus(descend(prior, Text(keys(found)))):
@@ -1807,10 +1870,14 @@ object Tel extends Tel2:
       override def nature: Tel.Nature = Tel.Nature.Flag
 
       def parse(reader: TelReader^, indent: Int): Boolean =
-        reader.boolean().lay(Parsable.scalarFault(reader, t"Boolean", false))(identity)
+        // Flag semantics (§20): a present entry with no atom is the bare
+        // flag form, meaning `true`; a present-but-unparseable atom is
+        // still `NotScalar`, exactly as on the AST path.
+        reader.boolean().lay(
+          if reader.primaryPresent then Parsable.scalarFault(reader, t"Boolean", false) else true
+        )(identity)
 
-      override def absent()(using Tactic[TelError]): Boolean =
-        raise(TelError(TelError.Reason.Absent)) yet false
+      override def absent()(using Tactic[TelError]): Boolean = false
 
       override def parseAtom(text: Text)(using Tactic[TelError]): Boolean =
         if text == t"true" then true else if text == t"false" then false
@@ -5286,6 +5353,47 @@ object Tel extends Tel2:
       if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
         head.indentLevels > indent
       then errorAt(directOverIndentReason, head.startLine, 1)
+
+    // As `directFinishLine`, but capturing the entry line's atoms — including
+    // the source/literal continuation, which §14/§15 append to the atom
+    // sequence — for the derived record parser's §19.2 positional pre-pass.
+    private[stratiform] update def directFinishLineAtoms()(using Tactic[TelError])
+    :   Array[Tel.Atom]^{} =
+
+      val spaces = directEntrySpaces
+      val indent = directEntryIndent
+      val tabulated = directTabulation.present
+
+      // A record entry is usually a bare `keyword` line: nothing to scan.
+      val bare = inHold:
+        if more && (peek == LF || peek == CR) then
+          consumeLineEnding()
+          compoundLineRemark = Unset
+          true
+        else false
+
+      val atomsStart = atomScratchIx
+      if !bare then parseCompoundLineRest(directEntryLine)
+      prevContentLeadingSpaces = spaces
+      prevLineWasBoundary = false
+      fillHead()
+
+      val extraAtom: Optional[Tel.Atom] =
+        if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
+
+      extraAtom match
+        case atom: Tel.Atom => pushAtom(atom)
+        case _              => ()
+
+      val atoms = takeAtoms(atomScratchIx - atomsStart)
+
+      // As in `directFinishLine`: after a source/literal atom or on a
+      // tabulated row, a deeper line is over-indented.
+      if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
+        head.indentLevels > indent
+      then errorAt(directOverIndentReason, head.startLine, 1)
+
+      atoms
 
     // Skip the whole entry — line remainder, continuation and subtree —
     // discarding it. Used for unknown keywords and duplicate non-repeatable
