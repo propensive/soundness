@@ -1013,26 +1013,48 @@ object Tel extends Tel2:
             case Some(sd) => sd.variants.length
             case None     => 0
 
+      def indexOf(element: Tel.Element): Int = element match
+        case Tel.Element.Node(idx, _, _)  => idx.or(-1)
+        case Tel.Element.Value(idx, _, _) => idx
+
       var memberIdx = 0
       var flatStart = 0
 
       while memberIdx < parent.members.length do
-        val width = flatWidth(parent.members(memberIdx))
+        val member = parent.members(memberIdx)
+        val width = flatWidth(member)
 
-        parent.members(memberIdx) match
-          case f: Tels.Field if f.required != Polarity.Loose =>
-            val filled = results.exists:
-              case Tel.Element.Node(idx, _, _)  => idx == Optional(flatStart)
-              case Tel.Element.Value(idx, _, _) => idx == flatStart
+        // §20.2 step 5a: atoms and compound children assigned to the member
+        // count against the same budget. A member's elements all carry flat
+        // keyword indexes within its flat range.
+        val fillCount = results.count: element =>
+          val idx = indexOf(element)
+          idx >= flatStart && idx < flatStart + width
 
-            if !filled then resolveType(f.fieldType, schema) match
+        member match
+          case f: Tels.Field =>
+            if requiredOf(f) && fillCount == 0 then resolveType(f.fieldType, schema) match
               case s: Scalar => f.default match
                 case t: Text => results += Tel.Element.Value(flatStart, s, t)
                 case _       => recoverNode(Reason.RequiredMemberAbsent)(())
 
               case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 
-          case _ => ()
+            // §20.2 step 5c; recovery reports the document invalid but
+            // retains every occurrence.
+            if !repeatableOf(f) && fillCount > 1
+            then recoverNode(Reason.NonRepeatableTooMany)(())
+
+          case s: SelectRef =>
+            // §20.2 step 5b: defaults exist only on Scalar Fields, so an
+            // absent required SelectRef is always E307.
+            if requiredOf(s) && fillCount == 0
+            then recoverNode(Reason.RequiredMemberAbsent)(())
+
+            if !repeatableOf(s) && fillCount > 1
+            then recoverNode(Reason.NonRepeatableTooMany)(())
+
+          case _: Exclude => ()
 
         flatStart += width
         memberIdx += 1

@@ -944,6 +944,23 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _                                => -1
       . assert(_ == 3)
 
+      test(m"non-repeatable member filled twice raises E308"):
+        val doc = t"name Alice\nname Bob\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == TelError.Reason.NonRepeatableTooMany)
+
+      test(m"repeatable member filled three times is accepted"):
+        val doc = t"a x\na y\na z\nb w\n".read[Tel]
+        Tel.Type.assign(doc, contiguitySchema) match
+          case Tel.Element.Node(_, _, children) => children.readable.length
+          case _                                => -1
+      . assert(_ == 4)
+
+      test(m"absent required SelectRef raises E307"):
+        val doc = t"\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
+      . assert(_ == TelError.Reason.RequiredMemberAbsent)
+
     suite(m"Atom phase (§20.2 step 3)"):
       // Wraps the record under test as the single root member `item`: the
       // document root never carries atoms (§20.2), so the atom phase is
@@ -1065,6 +1082,15 @@ object Tests extends Suite(m"Stratiform Tests"):
 
         capture[TelError](Tel.Type.assign(t"item xyz\n".read[Tel], schema)).reason
       . assert(_ == TelError.Reason.AtomFlagKeywordMismatch)
+
+      test(m"atom plus child for a non-repeatable member raises E308"):
+        val schema = itemSchema(Array.of(
+          Tels.Field
+           ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+             t"only", Tels.Scalar(Array.of(t"string")), Unset )))
+
+        capture[TelError](Tel.Type.assign(t"item x\n  only y\n".read[Tel], schema)).reason
+      . assert(_ == TelError.Reason.NonRepeatableTooMany)
 
     suite(m"Schema default-field"):
       // Like `personSchema`, but the required `name` field carries a default,
