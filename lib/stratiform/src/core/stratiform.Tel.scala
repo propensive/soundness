@@ -372,10 +372,14 @@ object Tel extends Tel2:
     // through packed-`Long` literal comparisons, and whose record is built by
     // a direct constructor call — no `Array[Any]` buffer, no `Mirror`, no
     // per-field boxing. Semantics (wire keywords, gathering, first-match-wins
-    // duplicates, defaults, absents, error foci) mirror `derived` exactly;
-    // the generated instance's `shape()` is `Morphology.Any`. Requires a
-    // top-level or object-nested case class with a single parameter list —
-    // sums, method-local classes and other shapes use `derived`.
+    // duplicates, defaults, absents, error foci) mirror `derived` exactly,
+    // EXCEPT that a staged record parser does not yet run the §19.2
+    // positional atom pre-pass (#1694): a record entry's own inline atoms
+    // are discarded, as all paths did before the fix. Use `derived` for
+    // documents that put field values in atom position. The generated
+    // instance's `shape()` is `Morphology.Any`. Requires a top-level or
+    // object-nested case class with a single parameter list — sums,
+    // method-local classes and other shapes use `derived`.
     inline def staged[value]: value is Tel.Parsable =
       ${ stratiform.internal.stagedParsable[value]('{ adversaria.relabelling[value, Tel] }) }
 
