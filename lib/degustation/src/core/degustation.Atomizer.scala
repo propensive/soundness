@@ -239,6 +239,12 @@ object Atomizer:
 
     def carrier(symbol: Symbol): Boolean = symbol.name.contains("$package")
 
+    // The owner component of a member's key: a top-level definition's `$package` carrier is
+    // folded away, so the key names the package directly.
+    def ownerKeyOf(classSymbol: Symbol): String =
+      if carrier(classSymbol) then classSymbol.owner.fullName.stripSuffix("$")
+      else classSymbol.fullName
+
     def excluded(symbol: Symbol): Boolean =
       val flags = symbol.flags
 
@@ -246,12 +252,20 @@ object Atomizer:
       val internal = flags.is(Flags.Artifact) || symbol.isLocalDummy || symbol.isNoSymbol
       hidden || internal
 
-    def record(key: String, replaceable: Boolean, encoding: java.io.ByteArrayOutputStream)
+    def record
+      ( key:         String,
+        replaceable: Boolean,
+        encoding:    java.io.ByteArrayOutputStream,
+        references:  scala.List[String] = scala.Nil )
     :   Unit =
 
       if atoms.contains(key) then throw Unencodable(s"duplicate key $key")
       val data = Array.unsafeFrozen(encoding.toByteArray.nn)
-      atoms(key) = ScalaAtom(Text(key), replaceable, data)
+
+      val listed = List.from:
+        references.map: reference => ScalaReference.Own(Text(reference))
+
+      atoms(key) = ScalaAtom(Text(key), replaceable, data, listed)
 
     // --- members ------------------------------------------------------------------------------
 
@@ -276,13 +290,235 @@ object Atomizer:
 
     def inlineAtom(ownerKey: String, symbol: Symbol): Unit =
       // The body of an inline or macro definition is copied into consumers at their compile
-      // time: a replaceable atom (LIRA §10.2), keyed by the declaration. The canonical body
-      // encoding and reference collection follow in a later change; until then the value is the
-      // declaration's own encoding, marked replaceable.
+      // time: a replaceable atom (LIRA §10.2), keyed by the declaration, whose value is the
+      // canonical encoding of the body tree — local names alpha-normalized, every outward
+      // reference fully qualified — and whose reference list names everything the body splices
+      // into consumers, for used-set closure (LIRA §13.4).
       val out = java.io.ByteArrayOutputStream()
       tag(out, 'i')
-      encodeType(out, symbol.info, scala.Nil)
-      record(keyOf(ownerKey, symbol) + "[inline]", replaceable = true, out)
+
+      val locals = scala.collection.mutable.HashMap[Symbol, Int]()
+      val references = scala.collection.mutable.TreeSet[String]()
+
+      def local(member: Symbol): Boolean =
+        var current = member
+        var found = false
+
+        while !found && !current.isNoSymbol do
+          if current == symbol then found = true
+          current = if current.isNoSymbol then current else current.owner
+
+        found
+
+      def reference(member: Symbol): Unit =
+        if !member.isNoSymbol && !member.isPackageDef && !member.owner.isNoSymbol
+        then
+          if member.isClassDef || member.isTypeDef then references += member.fullName else
+            references += keyOf(ownerKeyOf(member.owner), member)
+
+            // Closure through nested inlining: using an inline member copies its body too.
+            if member.flags.is(Flags.Inline) || member.flags.is(Flags.Macro)
+            then references += keyOf(ownerKeyOf(member.owner), member) + "[inline]"
+
+      def name(member: Symbol): Unit =
+        if local(member) then
+          tag(out, 'l')
+          uvarint(out, locals.getOrElseUpdate(member, locals.size).toLong)
+        else
+          tag(out, 'g')
+          utf8(out, member.fullName + signatureText(member))
+          reference(member)
+
+      def term(tree: Tree): Unit = tree match
+        case Inlined(_, bindings, body) =>
+          tag(out, 'I')
+          uvarint(out, bindings.length.toLong)
+          bindings.foreach(term)
+          term(body)
+
+        case Ident(_) =>
+          tag(out, 'x')
+          name(tree.symbol)
+
+        case Select(qualifier, _) =>
+          tag(out, '.')
+          term(qualifier)
+          name(tree.symbol)
+
+        case Literal(constant) =>
+          tag(out, 'k')
+          utf8(out, constant.getClass.getName.nn + ":" + constant.show)
+
+        case This(_) =>
+          tag(out, 'z')
+          utf8(out, tree.symbol.fullName)
+
+        case New(tpt) =>
+          tag(out, 'n')
+          encodeType(out, tpt.tpe, scala.Nil)
+
+        case Apply(fun, arguments) =>
+          tag(out, 'a')
+          term(fun)
+          uvarint(out, arguments.length.toLong)
+          arguments.foreach(term)
+
+        case TypeApply(fun, arguments) =>
+          tag(out, 'y')
+          term(fun)
+          uvarint(out, arguments.length.toLong)
+          arguments.foreach: argument => encodeType(out, argument.tpe, scala.Nil)
+
+        case Typed(expression, tpt) =>
+          tag(out, ':')
+          term(expression)
+          encodeType(out, tpt.tpe, scala.Nil)
+
+        case Block(statements, expression) =>
+          tag(out, '{')
+          uvarint(out, statements.length.toLong)
+          statements.foreach(term)
+          term(expression)
+
+        case If(condition, positive, negative) =>
+          tag(out, '?')
+          term(condition)
+          term(positive)
+          term(negative)
+
+        case matched @ Match(scrutinee, cases) =>
+          tag(out, if matched.isInline then 'M' else 'm')
+          term(scrutinee)
+          uvarint(out, cases.length.toLong)
+          cases.foreach(term)
+
+        case SummonFrom(cases) =>
+          tag(out, 'f')
+          uvarint(out, cases.length.toLong)
+          cases.foreach(term)
+
+        case CaseDef(pattern, guard, rhs) =>
+          tag(out, 'e')
+          term(pattern)
+
+          guard match
+            case scala.Some(condition) => term(condition)
+            case scala.None            => tag(out, '0')
+
+          term(rhs)
+
+        case Bind(_, pattern) =>
+          tag(out, 'b')
+          uvarint(out, locals.getOrElseUpdate(tree.symbol, locals.size).toLong)
+          term(pattern)
+
+        case Unapply(fun, implicits, patterns) =>
+          tag(out, 'u')
+          term(fun)
+          uvarint(out, implicits.length.toLong)
+          implicits.foreach(term)
+          uvarint(out, patterns.length.toLong)
+          patterns.foreach(term)
+
+        case Alternatives(patterns) =>
+          tag(out, '/')
+          uvarint(out, patterns.length.toLong)
+          patterns.foreach(term)
+
+        case Wildcard() =>
+          tag(out, '_')
+
+        case TypedOrTest(inner, tpt) =>
+          tag(out, 'o')
+          term(inner)
+          encodeType(out, tpt.tpe, scala.Nil)
+
+        case While(condition, body) =>
+          tag(out, 'w')
+          term(condition)
+          term(body)
+
+        case Assign(lhs, rhs) =>
+          tag(out, '=')
+          term(lhs)
+          term(rhs)
+
+        case Return(expression, _) =>
+          tag(out, 'j')
+          term(expression)
+
+        case Try(expression, cases, finalizer) =>
+          tag(out, 'q')
+          term(expression)
+          uvarint(out, cases.length.toLong)
+          cases.foreach(term)
+
+          finalizer match
+            case scala.Some(effect) => term(effect)
+            case scala.None         => tag(out, '0')
+
+        case Repeated(elements, tpt) =>
+          tag(out, '*')
+          uvarint(out, elements.length.toLong)
+          elements.foreach(term)
+          encodeType(out, tpt.tpe, scala.Nil)
+
+        case Closure(target, _) =>
+          tag(out, '\\')
+          term(target)
+
+        case NamedArg(argName, argument) =>
+          tag(out, '$')
+          utf8(out, argName)
+          term(argument)
+
+        case valDef: ValDef =>
+          tag(out, 'V')
+          uvarint(out, locals.getOrElseUpdate(valDef.symbol, locals.size).toLong)
+          encodeType(out, valDef.tpt.tpe, scala.Nil)
+
+          valDef.rhs match
+            case scala.Some(rhs) => term(rhs)
+            case scala.None      => tag(out, '0')
+
+        case defDef: DefDef =>
+          tag(out, 'D')
+          uvarint(out, locals.getOrElseUpdate(defDef.symbol, locals.size).toLong)
+
+          defDef.termParamss.foreach: clause =>
+            clause.params.foreach: param =>
+              uvarint(out, locals.getOrElseUpdate(param.symbol, locals.size).toLong)
+
+          encodeType(out, defDef.returnTpt.tpe, scala.Nil)
+
+          defDef.rhs match
+            case scala.Some(rhs) => term(rhs)
+            case scala.None      => tag(out, '0')
+
+        case tpt: TypeTree =>
+          tag(out, 'T')
+          encodeType(out, tpt.tpe, scala.Nil)
+
+        case _ =>
+          throw Unencodable(s"term ${tree.getClass.getName}")
+
+      symbol.tree match
+        case defDef: DefDef =>
+          defDef.termParamss.foreach: clause =>
+            clause.params.foreach: param =>
+              uvarint(out, locals.getOrElseUpdate(param.symbol, locals.size).toLong)
+
+          defDef.rhs match
+            case scala.Some(body) => term(body)
+            case scala.None       => tag(out, '0')
+
+        case valDef: ValDef => valDef.rhs match
+          case scala.Some(body) => term(body)
+          case scala.None       => tag(out, '0')
+
+        case _ => tag(out, '0')
+
+      record(keyOf(ownerKey, symbol) + "[inline]", replaceable = true, out, references.toList)
 
     def typeMemberAtom(ownerKey: String, symbol: Symbol): Unit =
       val out = java.io.ByteArrayOutputStream()
@@ -306,9 +542,7 @@ object Atomizer:
     def classAtoms(symbol: Symbol): Unit =
       if !excluded(symbol) then
         val isCarrier = carrier(symbol)
-
-        val ownerKey =
-          if isCarrier then symbol.owner.fullName.stripSuffix("$") else symbol.fullName
+        val ownerKey = ownerKeyOf(symbol)
 
         if !isCarrier then templateAtom(symbol)
 
@@ -396,4 +630,15 @@ object Atomizer:
       case _                            => ()
 
     roots.foreach(walk)
-    atoms.values.toList
+
+    // References were collected as bare keys; those matching an atom of this module are `Own`,
+    // the rest `Foreign`, resolved against dependencies at assembly time.
+    val keys = atoms.keySet.toSet
+
+    atoms.values.toList.map: atom =>
+      val classified = List.from:
+        atom.references.stdlib.map:
+          case ScalaReference.Own(key) if !keys.contains(key.s) => ScalaReference.Foreign(key)
+          case reference                                        => reference
+
+      atom.copy(references = classified)

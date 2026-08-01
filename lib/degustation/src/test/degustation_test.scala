@@ -181,6 +181,50 @@ object Tests extends Suite(m"Degustation Tests"):
       grown(t"fixture.Openish") != baseline.toMap.apply(t"fixture.Openish")
     . assert(identity)
 
+    test(m"an inline body change is isolated to the replaceable atom"):
+      val changed = Text(fixture.s.replace("inline def double(n: Int): Int = n * 2",
+          "inline def double(n: Int): Int = n + n").nn)
+
+      val grown = listing(changed).toMap
+      val before = baseline.toMap
+      val inlineKey = before.keySet.find(_.s.endsWith("[inline]")).get
+
+      before.keySet == grown.keySet
+      && before(inlineKey) != grown(inlineKey)
+      && before.keySet.filter(_ != inlineKey).forall { key => before(key) == grown(key) }
+    . assert(identity)
+
+    test(m"an inline body references what it splices"):
+      val source: Text =
+        t"""|package refs
+            |
+            |def helper(n: Int): Int = n + 1
+            |inline def outer(n: Int): Int = helper(n) * 2
+            |inline def nested(n: Int): Int = outer(n) + 1
+            |""".s.stripMargin.tt
+
+      val (tastyFiles, classpath0) = compile(source)
+      val atoms = Inspection.atomize(tastyFiles, classpath0).stdlib
+
+      def refs(prefix: String): scala.collection.immutable.Set[String] =
+        atoms
+        . find { atom => atom.key.s.startsWith(prefix) && atom.key.s.endsWith("[inline]") }
+        . map:
+            _.references.stdlib.map:
+              case ScalaReference.Own(key)     => s"own:$key"
+              case ScalaReference.Foreign(key) => s"foreign:$key"
+            . toSet
+
+        . getOrElse(scala.collection.immutable.Set())
+
+      val outerRefs = refs("refs.outer(")
+      val nestedRefs = refs("refs.nested(")
+
+      (outerRefs.exists(_.startsWith("own:refs.helper(")),
+       outerRefs.exists(_.startsWith("foreign:")),
+       nestedRefs.exists { ref => ref.startsWith("own:refs.outer(") && ref.endsWith("[inline]") })
+    . assert(_ == (true, true, true))
+
     test(m"adding a sealed child changes the sealed template's atom"):
       val extended = Text(fixture.s.replace("object Beta extends Choice",
           "object Beta extends Choice\ncase class Gamma(y: Int) extends Choice").nn)
@@ -188,6 +232,30 @@ object Tests extends Suite(m"Degustation Tests"):
       val grown = listing(extended).toMap
       grown(t"fixture.Choice") != baseline.toMap.apply(t"fixture.Choice")
     . assert(identity)
+
+    // A corpus soak: the build's own compiled output for a foundational module, atomized twice.
+    // Skipped when the build output is not present (e.g. a partial checkout).
+    val corpus = Paths.get("out", "vacuous", "core", "compile.dest", "classes").nn
+
+    if Files.isDirectory(corpus) then
+      val corpusTasty = Files.walk(corpus).nn.iterator.nn.asScala.to(scala.List)
+        . filter { path => path.toString.endsWith(".tasty") }
+        . map { path => Text(path.toString) }
+
+      val corpusClasspath = List.from(Text(corpus.toString) :: libraryPaths)
+
+      test(m"a real module's TASTy atomizes without vocabulary gaps"):
+        Inspection.atomize(List.from(corpusTasty), corpusClasspath).stdlib.size
+      . assert(_ > 0)
+
+      test(m"a real module's atomization is deterministic"):
+        def once(): scala.List[(Text, Text)] =
+          Inspection.atomize(List.from(corpusTasty), corpusClasspath).stdlib
+          . map { atom => (atom.key, atom.encoding.serialize[Hex]) }
+          . sortBy(_(0).s)
+
+        once() == once()
+      . assert(identity)
 
     test(m"the discipline adapter claims tasty and derived binaries"):
       import reliquary.*
