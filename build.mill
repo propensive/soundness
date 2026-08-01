@@ -2228,7 +2228,8 @@ object scintillate extends Library:
 object sedentary extends Library:
   object core
   extends Component
-    (superlunary.jvm, anthology.linker, diuretic.core, parasite.core, quantitative.units):
+    (superlunary.jvm, anthology.linker, diuretic.core, parasite.core, quantitative.units,
+     aperture.core):
     override def scalaJs = false // benchmarking via JVM-only `superlunary`/`anthology`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")

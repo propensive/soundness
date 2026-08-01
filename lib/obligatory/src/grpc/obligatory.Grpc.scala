@@ -32,9 +32,16 @@
                                                                                                   */
 package obligatory
 
+import scala.caps
+
 import anticipation.*
+import coaxial.*
+import contingency.*
+import cordillera.*
 import fulminate.*
 import gossamer.*
+import parasite.*
+import spectacular.*
 import vacuous.*
 
 // The gRPC vocabulary. Grouped under `Grpc` so its generic names — `Status`,
@@ -72,6 +79,23 @@ object Grpc:
   // `/<package>.<Service>/<Method>`, e.g. `/grpc.health.v1.Health/Check`.
   case class Method(service: Text, rpc: Text):
     def path: Text = t"/$service/$rpc"
+
+  object Endpoint:
+    given sessional: [endpoint: {Connectable, Showable}]
+    =>  ( monitor:    Monitor,
+          probate:    Probate,
+          asyncError: Tactic[AsyncError],
+          loggable:   (SocketEvent is Loggable)^ )
+    =>  ( GrpcSessional[endpoint]^{monitor, asyncError, loggable, caps.any} ) =
+
+      GrpcSessional()
+
+  // A gRPC endpoint: the target of a scoped channel, `Grpc.Endpoint(endpoint).session:
+  // channel ?=> …`, whose underlying HTTP/2 connection lives exactly as long as the
+  // block — no parked daemon holds the connection open, because the loan and the scope
+  // coincide.
+  case class Endpoint[endpoint: {Connectable, Showable}]
+    ( endpoint: Http2.Endpoint[endpoint], defaults: Metadata = Metadata() )
 
   // Custom call metadata: arbitrary key/value pairs sent as HTTP/2 headers
   // alongside the gRPC pseudo-headers (e.g. containerd's `containerd-namespace`).

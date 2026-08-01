@@ -284,28 +284,45 @@ given wsClient: ( online:            Online,
 
     def receive(connection: WsConnection)
     :   (zephyrine.Stream[Data] over zephyrine.Credit)^{this, caps.any} =
-      given Masking = connection.masking
 
-      val messages =
-        Reader
-          ( () => connection.inbound.asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^],
-            connection.channel )
-        . messages.map(_.bytes)
-
-      // One reassembled message per refill window: chunk boundaries frame messages.
-      zephyrine.Stream(messages.stdlib.iterator)
+      connection.messages
 
     def transmit
       ( connection: WsConnection,
         consume input: (zephyrine.Stream[Data] over zephyrine.Credit)^ )
     :   Unit =
+
       // One `transmit` carries one message = one complete frame, masked at the
       // `Channel` boundary; see `Transmissible`.
-      connection.channel.enqueue(input.memoize)
+      connection.send(input)
 
-    def close(connection: WsConnection): Unit =
-      given Masking = connection.masking
-      safely(connection.channel.enqueue(Frame.Close(1000, Data()).encode))
-      connection.channel.stop()
-      safely(connection.pump.attend())
-      connection.duplex.close()
+    def close(connection: WsConnection): Unit = connection.close()
+
+// A scoped WebSocket session: the connection — handshake completed, frame pump running —
+// is lent to the lambda for free-form `send`/`messages` use, and closed (with a `1000`
+// Close frame) when the scope ends. For state-machine-style consumption, `url.react` and
+// `url.exchange` remain the natural forms; the session serves interactions that do not
+// fit a per-message handler. A named instance class rather than an anonymous given: an
+// anonymous subclass would freshen the capability types in its inferred `Result` member.
+class WsSessional
+  ( using duplexable: ((WsUrl is Duplexable) { type Output = Data
+                                               type Connection = WsConnection })^,
+          monitor:    Monitor )
+extends Sessional:
+  type Self = WsUrl
+
+  // A fresh capability (`^`, not `^{caps.any}`): each `session` call's handle is its own
+  // existential, so returning it (or anything capturing it) from the block is a level
+  // violation the capture checker rejects.
+  type Result = WsConnection^
+
+  def session[result](target: WsUrl)(lambda: (session: Result) ?=> result): result =
+    val connection = duplexable.connect(target, Unset)
+    try lambda(using connection) finally connection.close()
+
+given wsSessional: ( duplexable: ((WsUrl is Duplexable) { type Output = Data
+                                                          type Connection = WsConnection })^,
+                     monitor:    Monitor )
+=>  (WsSessional^{duplexable, monitor, caps.any}) =
+
+  WsSessional()
