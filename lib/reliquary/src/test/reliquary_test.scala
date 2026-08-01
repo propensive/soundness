@@ -448,6 +448,15 @@ object Tests extends Suite(m"Reliquary Tests"):
           case _                                     => false
       . assert(identity)
 
+      test(m"a deleted-and-re-added path is L107"):
+        val overlay = LiraTree.of(List(entry(t"a/One.class", t"one-other")))
+        val delete = List(TreePath(t"a/One.class"))
+
+        capture[LiraError](Overlay.materialize(root, delete, overlay)).reason match
+          case LiraError.Reason.OverlayNotMinimal(_) => true
+          case _                                     => false
+      . assert(identity)
+
     suite(m"Atoms and snapshots"):
       def item(path: Text, content: Text): (TreePath, Data) = (TreePath(path), encode(content))
 

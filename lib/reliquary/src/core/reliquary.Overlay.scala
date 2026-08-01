@@ -53,6 +53,10 @@ object Overlay:
     delete.each: path =>
       if root.get(path).absent then abort(LiraError(Reason.OverlayNotMinimal(path.text)))
 
+      // A deleted-and-re-added path is a replacement spelled redundantly; overlays are minimal
+      // by construction, so the redundant spelling is invalid.
+      if overlay.get(path).present then abort(LiraError(Reason.OverlayNotMinimal(path.text)))
+
     overlay.entries.each: entry =>
       root.get(entry.path).let: existing =>
         if Blob.compare(existing.blob, entry.blob) == 0
