@@ -34,6 +34,7 @@ package reliquary
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import pneumatic.*
 import zephyrine.*
 
@@ -55,7 +56,9 @@ object LiraPayload:
   def hash(blobStream: Data): Data = LiraHash(LiraHash.Domain.Blob, blobStream)
 
   def decompress(compressed: Data, length: Long, declaredHash: Data): Data raises LiraError =
-    val result = compressed.decompress[Brotli]
+    val result =
+      try compressed.decompress[Brotli] catch case error: Exception =>
+        abort(LiraError(Reason.InvalidBlobStream(t"the payload does not decompress")))
 
     if result.length.toLong != length then abort(LiraError(Reason.PayloadLength(length)))
     if Blob.compare(hash(result), declaredHash) != 0 then abort(LiraError(Reason.PayloadHash))

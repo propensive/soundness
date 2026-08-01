@@ -660,3 +660,148 @@ object Tests extends Suite(m"Reliquary Tests"):
         val suffixed = Semver(1, 2, 3, prerelease = List(t"RC1"))
         Versioning.advisories(suffixed, Unset, Grade.Patch).stdlib
       . assert(_ == scala.List(LiraAdvisory.NotNumeric(Semver(1, 2, 3, prerelease = List(t"RC1")))))
+
+    suite(m"Container and verification"):
+      import revolution.Semver
+
+      val classA = encode(t"class A bytecode")
+      val tastyA = encode(t"class A tasty")
+      val sjsirA = encode(t"class A sjsir")
+
+      def blob(data: Data): Data = LiraHash(LiraHash.Domain.Blob, data)
+
+      def makeLira(): Data =
+        val context = Discipline.Context(t"jvm")
+        val registry = Discipline.Registry(List())
+
+        val rootTree = LiraTree.of(List(
+          TreeEntry(TreePath(t"a/A.class"), blob(classA)),
+          TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA))))
+
+        val overlayTree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.sjsir"), blob(sjsirA))))
+
+        val atomizations = registry.atomize(
+          List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.tasty"), tastyA)), context)
+
+        val atomsData = AtomsBlob.encode(atomizations.stdlib.head)
+        val snapshot = Snapshot(atomizations)
+
+        val manifest = LiraManifest(
+          module    = t"example-core",
+          version   = Semver(0, 1, 0),
+          lineage   = List(snapshot),
+          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+          owns      = List(t"example"),
+          api       = List(LiraManifest.Api(t"opaque/1", blob(atomsData))),
+          section   = List(
+            Section(t"jvm", tree = blob(rootTree.encode)),
+            Section(t"sjsir", tree = blob(overlayTree.encode),
+              delete = List(TreePath(t"a/A.class")))),
+          payload   = LiraManifest.Payload(t"brotli", 0L, blob(encode(t""))))
+
+        Lira.assemble(manifest,
+          List(classA, tastyA, sjsirA, rootTree.encode, overlayTree.encode, atomsData))
+
+      test(m"an assembled lira reads back and verifies"):
+        val report = Verification.install(Lira.read(makeLira()))
+        report.materialized.stdlib.map { pair => pair(0) }
+      . assert(_ == scala.List(t"jvm", t"sjsir"))
+
+      test(m"assembly is byte-deterministic"):
+        makeLira().serialize[Hex] == makeLira().serialize[Hex]
+      . assert(identity)
+
+      test(m"the manifest round-trips through its rendering"):
+        val lira = Lira.read(makeLira())
+        val rendered = encode(lira.manifest.render)
+        val tail = encode(t"##\n")
+        val buffer = Array[Byte](rendered.length + tail.length + lira.compressed.length)
+        System.arraycopy(Array.unsafeJvm(rendered), 0, buffer.raw, 0, rendered.length)
+        System.arraycopy(Array.unsafeJvm(tail), 0, buffer.raw, rendered.length, tail.length)
+
+        System.arraycopy(Array.unsafeJvm(lira.compressed), 0, buffer.raw,
+          rendered.length + tail.length, lira.compressed.length)
+
+        Lira.read(Array.freeze(buffer)).manifest.render == lira.manifest.render
+      . assert(identity)
+
+      test(m"the sjsir overlay materializes without the deleted classfile"):
+        val report = Verification.install(Lira.read(makeLira()))
+        val sjsir = report.materialized.stdlib.find { pair => pair(0) == t"sjsir" }
+
+        sjsir.map { pair => pair(1).entries.map(_.path.text).stdlib }
+      . assert(_ == scala.Some(scala.List(t"a/A.sjsir", t"a/A.tasty")))
+
+      test(m"a corrupted directive is L115"):
+        val data = makeLira().mutable(using Unsafe)
+        data(0) = '?'.toByte
+
+        capture[LiraError](Lira.read(Array.unsafeFrozen(data))).reason
+      . assert(_ == LiraError.Reason.BadDirective)
+
+      test(m"a manifest with a sigil in its pragma is L116"):
+        val body = t"#!/usr/bin/env lira\ntel 1.0 ${LiraSchemas.liraSignature} !\n\nmodule x\n##\n"
+
+        capture[LiraError](Lira.read(encode(body))).reason match
+          case LiraError.Reason.SigilSpecified      => true
+          case LiraError.Reason.InvalidManifest(_)  => false
+          case _                                    => false
+      . assert(identity)
+
+      test(m"a missing separator is rejected"):
+        // truncate the file to just the directive line, which contains no separator
+        val data = makeLira()
+        val short = Array[Byte](20)
+        System.arraycopy(Array.unsafeJvm(data), 0, short.raw, 0, 20)
+
+        capture[LiraError](Lira.read(Array.freeze(short))).reason match
+          case LiraError.Reason.InvalidManifest(_) => true
+          case _                                   => false
+      . assert(identity)
+
+      test(m"a wrong declared payload hash is caught at verification"):
+        val lira = Lira.read(makeLira())
+        val wrong = lira.manifest.payload.copy(hash = blob(encode(t"wrong")))
+        val tampered = lira.copy(manifest = lira.manifest.copy(payload = wrong))
+
+        capture[LiraError](Verification.install(tampered)).reason
+      . assert(_ == LiraError.Reason.PayloadHash)
+
+      test(m"a wrong declared payload length is caught at verification"):
+        val lira = Lira.read(makeLira())
+        val payload = lira.manifest.payload
+        val wrong = payload.copy(length = payload.length + 1)
+        val tampered = lira.copy(manifest = lira.manifest.copy(payload = wrong))
+
+        capture[LiraError](Verification.install(tampered)).reason match
+          case LiraError.Reason.PayloadLength(_) => true
+          case _                                 => false
+      . assert(identity)
+
+      test(m"a dangling atoms reference is L104"):
+        val lira = Lira.read(makeLira())
+        val wrong = List(LiraManifest.Api(t"opaque/1", blob(encode(t"absent"))))
+        val tampered = lira.copy(manifest = lira.manifest.copy(api = wrong))
+
+        capture[LiraError](Verification.install(tampered)).reason match
+          case LiraError.Reason.MissingBlob(_) => true
+          case _                               => false
+      . assert(identity)
+
+      test(m"a lineage not ending in the snapshot is L109"):
+        val lira = Lira.read(makeLira())
+        val tampered = lira.copy(manifest = lira.manifest.copy(lineage = List(blob(encode(t"x")))))
+
+        capture[LiraError](Verification.install(tampered)).reason
+      . assert(_ == LiraError.Reason.LineageMismatch)
+
+      test(m"a corrupted compressed payload is rejected"):
+        val data = makeLira().mutable(using Unsafe)
+        data(data.length - 1) = (data(data.length - 1) ^ 0x55).toByte
+
+        capture[LiraError](Verification.install(Lira.read(Array.unsafeFrozen(data)))).reason match
+          case LiraError.Reason.InvalidBlobStream(_) => true
+          case LiraError.Reason.PayloadHash          => true
+          case LiraError.Reason.PayloadLength(_)     => true
+          case _                                     => false
+      . assert(identity)

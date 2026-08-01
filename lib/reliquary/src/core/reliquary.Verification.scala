@@ -30,10 +30,78 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, Grade, Lineage, Lira, LiraAdvisory, LiraDelta,
-    LiraError, LiraHash, LiraManifest, LiraPayload, LiraSchemas, LiraTree, LiraUniverse,
-    LiraValidators, OpaqueDiscipline, Overlay, Replacement, Section, Snapshot, TreeEntry,
-    TreePath, Verification, Versioning}
+import anticipation.*
+import contingency.*
+import vacuous.*
+
+// Verification is re-execution of the construction, bottom-up (§16). `install` performs the
+// language-blind steps every consumer runs: payload decompression and hashing (1), blob-stream
+// integrity and reference resolution (2), tree and overlay rules (3), and the snapshot/lineage
+// check (5). Re-atomization (4), lineage-step grading (6) and signatures (7) are layered on
+// separately: the first two need disciplines and the predecessor, the last needs key material.
+object Verification:
+
+  case class Report
+    ( blobstore:     Blobstore,
+      atomizations:  List[Atomization],
+      materialized:  List[(Text, LiraTree)],
+      advisories:    List[LiraAdvisory] )
+
+  def install(lira: Lira): Report raises LiraError =
+    val manifest = lira.manifest
+
+    // Steps 1–2: decompress within the declared length, verify the payload hash, and re-derive
+    // every blob identity while checking stream order (L102–L105).
+    val stream =
+      LiraPayload.decompress(lira.compressed, manifest.payload.length, manifest.payload.hash)
+
+    val store = BlobStream.read(stream)
+    val referenced = scala.collection.mutable.Set[Text]()
+
+    def resolve(hash: Data): Data raises LiraError =
+      referenced += LiraHash.text(hash)
+      store.resolve(hash)
+
+    // Step 4's input: the declared atom listings must at least resolve and parse; comparing
+    // them against re-atomized content is the publish-time extension.
+    val atomizations = List.from:
+      manifest.api.stdlib.map: api => AtomsBlob.decode(resolve(api.atoms))
+
+    manifest.delta.let: hash => LiraDelta.decode(resolve(hash))
+
+    manifest.dependency.stdlib.foreach: dependency => dependency.uses.let(resolve(_))
+
+    // Step 3: tree path rules (L106) on every section; every tree blob and content blob must
+    // resolve (L104); overlays of known universes materialize against the root under the
+    // minimality rules (L107). Unknown universes stay opaque (§9.4).
+    val trees = manifest.section.stdlib.map: section =>
+      (section, LiraTree.decode(resolve(section.tree)))
+
+    for
+      pair  <- trees
+      entry <- pair(1).entries.stdlib
+    do resolve(entry.blob)
+
+    val materialized =
+      if trees.isEmpty then scala.Nil
+      else
+        val (rootSection, rootTree) = trees.head
+        val known = trees.tail.filter: pair => pair(0).known.present
+
+        val results = known.map: pair =>
+          (pair(0).universe, Overlay.materialize(rootTree, pair(0).delete, pair(1)))
+
+        (rootSection.universe, rootTree) :: results.toList
+
+    // Step 5: the snapshot recomputed from the atom listings must equal the last lineage entry.
+    Lineage.check(manifest.lineage, Snapshot(atomizations))
+
+    val unreferenced = store.unreferenced(Set.from(referenced))
+
+    val advisories =
+      if unreferenced.stdlib.isEmpty then List()
+      else List(LiraAdvisory.UnreferencedBlobs(unreferenced))
+
+    Report(store, atomizations, List.from(materialized), advisories)
