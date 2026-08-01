@@ -34,11 +34,14 @@ Everything on this roadmap serves one philosophy, elaborated in the
 - **Migration-first stability.** APIs change whenever a better or safer design exists. Stability
   comes not from freezing APIs but from making migration cheap: every breaking change ships with
   instructions precise enough for an agent to execute.
-- **A trusted toolchain.** Building, testing, exploring and distributing Soundness code happens
-  through its own tools — `fury`, `fume`, `flame`, `fluence`, the `exegesis` LSP server and the
-  `synesthesia` MCP server — with releases that are attested, predictable and verifiable, and
-  libraries distributed as LIRA files that are guaranteed to compose safely. TEL is the
-  configuration language wherever configuration is needed.
+- **A trusted toolchain.** Building, testing, debugging, exploring and distributing Soundness
+  code happens through its own tools — `fury`, `fume`, `flame`, `fluence`, the `exegesis` LSP
+  server, a Soundness-native debugger and the `synesthesia` MCP server — with releases that are
+  attested, predictable and verifiable, and libraries distributed as LIRA files that are
+  guaranteed to compose safely. TEL is the configuration language wherever configuration is
+  needed. Soundness is built with the Proscala compiler, which is modifiable whenever safety
+  demands it, under one constraint: published artifacts stay readable from the mainline Scala
+  compiler.
 
 ## How to read this roadmap
 
@@ -88,18 +91,21 @@ The rules that keep this document trustworthy:
    zero; capture checking, separation checking and declared errors hold without exemption; the
    compiler fork is sustainable.
 3. **[Platform parity](platforms.md)** (`plat`) — building for JavaScript, Native, WASI and
-   Android is no harder than for the JVM, with only inherent exclusions, verified in CI.
+   Android is no harder than for the JVM, with only inherent exclusions, verified in CI; the
+   browser is a first-class application target, with web APIs behind typed facades.
 4. **[API coherence](api.md)** (`api`) — one name means one thing; variations are parameters;
    the exported surface is deliberate rather than accidental.
 5. **[Documentation and learnability](documentation.md)** (`doc`) — one documentation system,
    complete coverage, published API docs, and a path from nothing to a working application that
    an agent can follow.
-6. **[The toolchain](tooling.md)** (`tool`) — flame, fury, fume, fluence, the LSP server and the
-   MCP server together replace every Maven-era tool.
+6. **[The toolchain](tooling.md)** (`tool`) — flame, fury, fume, fluence, the LSP server, the
+   debugger and the MCP server together replace every Maven-era tool, with coverage and
+   benchmarks tracked for every commit in git notes.
 7. **[Distribution and release](distribution.md)** (`dist`) — attested, changelogged releases;
-   the migration-instruction convention; LIRA from specification to primary channel.
+   the migration-instruction convention; LIRA from specification to sole channel, retiring
+   Maven Central.
 8. **[Standards breadth](breadth.md)** (`brd`) — the remaining standards a production team
-   expects: JOSE, TOML, WebAuthn, GraphQL, QUIC, IMAP.
+   expects: JOSE, TOML, WebAuthn, QUIC, IMAP.
 
 ## Dependencies
 
@@ -119,11 +125,12 @@ refactoring them is the fix.
 are listed here and never appear as items, because no `Done when:` command of ours can close
 them:
 
-- The scala-wasm fork of `wit-bindgen` is upstreamed, or vendored in-tree with tests
-  (gates `plat-4`).
 - WASI's standard interfaces mature far enough to express full HTTP and UDP (gates `plat-4`).
-- Upstream acceptance of capture-checking and separation-checking fixes from the
-  `propensive/proscala` fork (gates `safety-5`).
+
+The compiler is deliberately *not* on this list: Soundness is built with Proscala, and the
+freedom to modify it — for capture-checking fixes, for the Wasm backend, for whatever safety
+demands — is assumed throughout this roadmap, bounded only by the requirement that published
+artifacts remain readable from mainline Scala (`safety-5`).
 
 ## The gate
 
@@ -144,7 +151,7 @@ new: each entry cites a track item, and the item's `Done when:` command is the a
 11. A scripted LSP editor session passes in CI (`tool-3`).
 12. Every breaking change in the last ten consecutive releases shipped with agent-executable
     migration instructions (`dist-2`).
-13. Every release is published to both Maven Central and LIRA, attested (`dist-7`).
+13. Every release is published as attested LIRA files (`dist-7`).
 14. JOSE, TOML and WebAuthn are shipped (`brd-1`, `brd-2`, `brd-3`).
 
 And one integrative criterion, which is the point of the exercise:
@@ -155,10 +162,10 @@ And one integrative criterion, which is the point of the exercise:
 
 ### Beyond the gate
 
-The gate is not the horizon. Past it lie: LIRA as the primary distribution channel with Maven
-Central as a mirror (`dist-8`); QUIC/HTTP-3 and IMAP (`brd-5`, `brd-6`); WASI at full parity once
-its external gates lift (`plat-4`, `plat-5`); and the compiler fork's features living upstream
-(`safety-5`).
+The gate is not the horizon. Past it lie: Maven Central publishing retired, leaving LIRA as
+the sole channel (`dist-8`); QUIC/HTTP-3 and IMAP (`brd-4`, `brd-5`); WASI at full parity once
+its external gate lifts (`plat-4`, `plat-5`); and the fork's mainline-readability guarantee
+enforced in CI (`safety-5`).
 
 ## For AI agents
 

@@ -56,8 +56,10 @@ Baseline: 7 WASI backends; HTTP is GET-only, sockets are TCP-only (measured 2026
 
 The WASI slice — environment, clock, random, sockets, filesystem, HTTP, stdio — proves the WIT
 component-model approach; parity requires the full HTTP method set, UDP, and backends for every
-module whose domain WASI can express. This item is gated externally: the scala-wasm fork of
-`wit-bindgen` must be upstreamed or vendored in-tree, and WASI's own interfaces must mature.
+module whose domain WASI can express. The compiler side of this is within reach: Soundness is
+built with Proscala, so the Wasm backend and the binding generation (today an out-of-tree
+`wit-bindgen` fork, to be vendored) are ours to fix. The genuinely external gate is WASI
+itself: its interfaces must mature far enough to express what the backends need.
 
 Done when: the manifest's WASI column matches the JavaScript column except where the exclusion
 reason names a missing WASI capability. Interim gauge:
@@ -75,3 +77,17 @@ manifest's reasons are themselves the completion signal.
 
 Done when: every exclusion reason in `doc/compatibility.tsv` describes an inherent platform
 limitation, and a reason vocabulary check in CI enforces the distinction.
+
+## plat-6: the browser is a first-class application target
+
+Horizon: mid
+
+Compiling for JavaScript is necessary but not sufficient: a website built with Soundness
+should be written in Soundness end-to-end, with the front-end in Scala.js and every web API —
+DOM, fetch, storage, media — reached through typed facades generated from WebIDL by
+xenophile, over querencia's typed DOM. No hand-written JavaScript, no untyped `js.Dynamic`
+seams. The proof is dogfood: soundness.dev's own front-end, served by the in-tree website,
+built this way.
+
+Done when: the soundness.dev front-end ships as Soundness-compiled Scala.js, with all web API
+access through generated typed facades, and builds in the ordinary build.

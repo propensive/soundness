@@ -8,11 +8,14 @@ as guarantees. Every `caps.unsafe` call is a place where the checker was overrul
 each one is a standing IOU against the safety claim.
 
 The escape hatches are therefore this track's central measure. Some are genuine debt with a
-known retirement recipe; others are blocked on defects in the capture checker itself, which is
-why Soundness compiles with the `propensive/proscala` fork, and why the `rep/` directory
-maintains minimal reproductions of each blocker class. The track ends when the grep for
-`caps.unsafe` returns nothing, and when depending on a forked compiler is either unnecessary or
-demonstrably cheap.
+known retirement recipe; others are blocked on defects in the capture checker itself — and
+those defects are ours to fix, because Soundness is built with the Proscala compiler by
+design. The compiler is modifiable whenever capability or effect checking demands it; the
+`rep/` directory maintains minimal reproductions of each blocker class as the queue of fixes.
+The one constraint is compatibility outward: whatever Proscala does, the artifacts Soundness
+publishes must remain readable by the mainline Scala compiler. The track ends when the grep
+for `caps.unsafe` returns nothing, and that readability guarantee is enforced rather than
+assumed.
 
 ## safety-1: retire `untrackedCaptures`
 
@@ -61,16 +64,17 @@ Done when:
 
     git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l    # 0
 
-## safety-5: fork sustainability
+## safety-5: the fork is an asset, not a trap
 
 Horizon: long
 
-Soundness must not depend forever on a compiler only it maintains. Either the fork's
-capture-checking and separation-checking fixes are accepted upstream and `build.mill` consumes
-a stock release, or rebasing the fork onto each upstream release is a documented procedure with
-a measured, bounded cost.
+Building with Proscala is a design decision, not debt: the freedom to fix the capture checker
+is what makes zero escape hatches reachable at all. What keeps that freedom safe is downstream
+readability — every published artifact remains consumable from a project built with the
+mainline Scala compiler — and a rebase onto each upstream release whose cost is known rather
+than feared.
 
-Done when: `build.mill`'s toolchain references an upstream Scala release; or
+Done when: a CI test consumes published Soundness artifacts from a mainline-Scala project, and
 `rep/` documents the rebase procedure and the measured cost of the two most recent rebases.
 
 ## safety-6: separation checking without exemption

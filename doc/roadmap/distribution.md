@@ -13,8 +13,8 @@ exists; what makes that tenable is that every breaking change ships with instruc
 enough for an agent to execute against a downstream codebase. Beyond it lies distribution
 itself: LIRA — one file per library release carrying every compiled representation, with a TEL
 manifest, API-derived versioning and verifiable signatures — is specified but unimplemented,
-and is intended eventually to replace Maven Central as the primary channel. The gate requires
-only that dual publishing works; replacement lies beyond it.
+and replaces Maven Central. The gate requires attested LIRA publishing to be live; switching
+Maven Central publishing off lies just beyond it.
 
 ## dist-1: releases are changelogged
 
@@ -83,26 +83,28 @@ and a transparency log, at minimum-viable scale.
 Done when: a `.lira` file's signature, namespace and transparency-log inclusion are all
 verified by a single command shipped with the tooling.
 
-## dist-7: dual publishing
+## dist-7: LIRA publishing, attested
 
 Horizon: mid
 Needs: dist-3
 
-Every release is published to both Maven Central and LIRA, both attested under the existing
-git-note discipline. This is the gate's requirement: the new channel proven alongside the old,
-with no user forced to move.
+Every release is published as `.lira` files, attested under the same git-note discipline as
+the build itself. This is the gate's requirement: the channel that replaces Maven Central,
+live and verifiable.
 
-Done when: a release ships to both channels, attested, and `make verify-attest` covers both.
+Done when: a release ships to LIRA, attested, and `make verify-attest` covers the published
+artifacts.
 
-## dist-8: LIRA primary
+## dist-8: Maven Central retired
 
 Horizon: long
 Needs: dist-5, dist-6, dist-7
 
-Beyond the gate: fury resolves dependencies from LIRA by default, and a fresh project builds
-with zero Maven resolution. Maven Central remains as a mirror for the ecosystems that need it.
+Beyond the gate: fury resolves dependencies from LIRA, a fresh project builds with zero Maven
+resolution, and the release pipeline no longer publishes to Maven Central at all.
 
-Done when: a fresh fury project builds and runs with the Maven resolver disabled.
+Done when: the release script contains no Maven Central publishing step, and a fresh fury
+project builds and runs with the Maven resolver disabled.
 
 ## dist-9: trust is verifiable by outsiders
 

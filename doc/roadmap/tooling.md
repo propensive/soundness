@@ -4,8 +4,9 @@ Soundness code should be written, built, tested, explored and debugged with tool
 its philosophy — total, honest, native-feeling — rather than through a Maven-era toolchain that
 predates every idea the platform embodies. The end-state is a developer, human or agent, who
 never leaves the ecosystem: flame for exploration, fury for building, fume for testing,
-fluence for finding APIs, the exegesis LSP server inside any editor, and the synesthesia MCP
-server giving agents the same access programmatically.
+fluence for finding APIs, the exegesis LSP server inside any editor, a debugger that speaks
+Soundness rather than Java, and the synesthesia MCP server giving agents the same access
+programmatically.
 
 The pieces are in different states, and the roadmap is honest about which. exegesis and
 synesthesia are working modules in this repository. flame exists as a separate, active project
@@ -113,3 +114,39 @@ Every ecosystem tool that needs configuration reads TEL, with stratiform as the 
 implementation. No tool in the ecosystem asks for YAML, JSON or HOCON configuration.
 
 Done when: no ecosystem tool's own configuration surface accepts any format but TEL.
+
+## tool-10: a debugger that speaks Soundness
+
+Horizon: mid → long
+
+Debugging a running application should feel native, not hosted: breakpoints, stepping and
+inspection through a Debug Adapter Protocol server, with inspected values rendered as their
+Soundness types — the same no-Java-encodings discipline `core-5` applies to traces, applied
+to live state.
+
+Done when: a scripted DAP session — set a breakpoint, step, inspect a value rendered in
+Soundness terms — passes against a running Soundness application in CI.
+
+## tool-11: coverage is tracked
+
+Horizon: mid
+Needs: tool-2
+
+probably already measures coverage; fume makes it a tracked property rather than a one-off
+report: unit-test coverage recorded for every commit, stored in git notes alongside the test
+reports, so the trend is queryable and a regression is visible at review time.
+
+Done when: every CI run records coverage in a git note, and a single command reports the
+coverage delta between any two commits.
+
+## tool-12: benchmarks on every commit
+
+Horizon: mid
+Needs: tool-2
+
+The benchmark suites run for every commit, with results stored in git notes under the same
+discipline as test reports and attestations, so performance history travels with the
+repository and regressions are caught when they land, not when users notice.
+
+Done when: every commit on the main branch carries a benchmark git note, and a single command
+reports the benchmark delta between any two commits.

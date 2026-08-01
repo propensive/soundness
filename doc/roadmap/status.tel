@@ -46,8 +46,8 @@ item
   track core
   horizon mid
   status open
-  baseline  235 files touch scala.Array or scala.IArray (2026-08-01)
-  criterion  allowlist enforced in the ordinary build; grep minus allowlist == 0
+  baseline  2244 while-do loops across 330 Scala files (2026-08-01)
+  criterion  no collection exposes a partial indexed apply (issue #1666); the indexing while-loop pattern is drained
 
 item
   id core-5
@@ -100,7 +100,7 @@ item
   track safety
   horizon long
   status open
-  criterion  build.mill consumes an upstream Scala release, or the rebase procedure and its measured cost are documented in rep/
+  criterion  CI consumes published artifacts from a mainline-Scala project; rep/ documents the rebase procedure and the cost of the two most recent rebases
 
 item
   id safety-6
@@ -148,6 +148,13 @@ item
   status open
   needs plat-4
   criterion  every exclusion reason in doc/compatibility.tsv is inherent; a reason-vocabulary check enforces it in CI
+
+item
+  id plat-6
+  track platforms
+  horizon mid
+  status open
+  criterion  the soundness.dev front-end ships as Soundness-compiled Scala.js with all web API access through generated typed facades, in the ordinary build
 
 item
   id api-1
@@ -324,6 +331,29 @@ item
   criterion  no ecosystem tool accepts any configuration format but TEL
 
 item
+  id tool-10
+  track tooling
+  horizon mid-long
+  status open
+  criterion  scripted DAP session (breakpoint, step, inspect with Soundness-rendered values) passes against a running application in CI
+
+item
+  id tool-11
+  track tooling
+  horizon mid
+  status open
+  needs tool-2
+  criterion  every CI run records coverage in a git note; one command reports the coverage delta between any two commits
+
+item
+  id tool-12
+  track tooling
+  horizon mid
+  status open
+  needs tool-2
+  criterion  every commit on main carries a benchmark git note; one command reports the benchmark delta between any two commits
+
+item
   id dist-1
   track distribution
   horizon near
@@ -374,7 +404,7 @@ item
   horizon mid
   status open
   needs dist-3
-  criterion  a release ships to Maven Central and LIRA, attested; make verify-attest covers both
+  criterion  a release ships to LIRA, attested; make verify-attest covers the published artifacts
 
 item
   id dist-8
@@ -384,7 +414,7 @@ item
   needs dist-5
   needs dist-6
   needs dist-7
-  criterion  a fresh fury project builds and runs with the Maven resolver disabled
+  criterion  the release script contains no Maven Central publishing step; a fresh fury project builds and runs with the Maven resolver disabled
 
 item
   id dist-9
@@ -418,19 +448,12 @@ item
 item
   id brd-4
   track breadth
-  horizon mid
-  status open
-  criterion  GraphQL module ships with tests, SN pages and a topic; passes the specification validation examples
-
-item
-  id brd-5
-  track breadth
   horizon long
   status open
   criterion  QUIC/HTTP-3 module ships with tests, SN pages and a topic; interoperates with reference peers
 
 item
-  id brd-6
+  id brd-5
   track breadth
   horizon long
   status open

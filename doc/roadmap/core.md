@@ -59,18 +59,24 @@ Done when:
 
     git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0
 
-## core-4: raw arrays confined to a declared boundary
+## core-4: indexed access is total by construction
 
 Horizon: mid
-Baseline: 235 files touch `scala.Array` or `scala.IArray` (measured 2026-08-01)
+Baseline: 2244 `while … do` loops across 330 Scala files (measured 2026-08-01)
 
-Raw arrays are legitimate at JDK and erasure boundaries and nowhere else. The boundary must be
-declared, not assumed: a checked-in allowlist of files permitted to touch raw arrays, so that
-every use is either inherent or visible debt. The allowlist then shrinks to the inherent set.
+The `var i = 0; while i < length` pattern is maximally efficient and maximally unsafe: the
+index is just an `Int`, unconstrained by the collection it indexes. The design in
+[#1666](https://github.com/propensive/soundness/issues/1666) makes indexing total by
+construction: an index typed `Ordinal in collection.type` can only exist in range, so the
+`inline` `apply` taking it is total at zero cost, while an unqualified `Ordinal` reaches only
+the fallback `apply` returning `Optional`. Iteration then flows through inline combinators
+that supply dependently-typed ordinals, compiling to the same bytecode as the loops they
+replace.
 
-Done when: an allowlist file exists, is enforced by a check in the ordinary build, and
+Done when: no collection in `lib/` exposes a partial indexed `apply`, and the indexing
+`while`-loop pattern is drained. Interim gauge:
 
-    git grep -lE 'scala\.(Array|IArray)' -- lib | grep -vFf etc/array-boundary.txt | wc -l    # 0
+    git grep -E 'while .* do( |$)' -- 'lib/**/*.scala' | wc -l    # 2244 and falling
 
 ## core-5: nothing Java-shaped at debug time
 

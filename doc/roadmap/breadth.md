@@ -6,12 +6,12 @@ X.509, COSE, iCalendar, OAuth 2, OpenAPI, LSP, MCP and dozens more, with RFC cit
 code. But batteries-included is judged by what a production team reaches for and fails to
 find. This track is a fixed target list, drained in order of how often that reach happens.
 
-The list is deliberately closed: six standards, chosen because each completes a story the
+The list is deliberately closed: five standards, chosen because each completes a story the
 platform already tells. JOSE/JWT is the largest hole — token-based authentication is ubiquitous,
 and the neighbouring pieces (COSE, OAuth 2, X.509) already exist. TOML is table stakes for
-interoperating with the wider tooling world. WebAuthn completes web authentication. GraphQL
-completes the API-serving story. QUIC/HTTP-3 and IMAP round out transport and mail. Only the
-first three sit inside the production-readiness gate; the rest lie beyond it. A row is complete
+interoperating with the wider tooling world. WebAuthn completes web authentication.
+QUIC/HTTP-3 and IMAP round out transport and mail. Only the first three sit inside the
+production-readiness gate; the rest lie beyond it. A row is complete
 when its module ships with tests, error pages and a topic guide — the same bar as every other
 module, because a battery that is undocumented or partial is not included, merely present.
 
@@ -20,9 +20,8 @@ module, because a battery that is undocumented or partial is not included, merel
 | brd-1 | JOSE: JWS, JWE, JWK, JWT (RFC 7515–7519) | near | yes |
 | brd-2 | TOML | near | yes |
 | brd-3 | WebAuthn | mid | yes |
-| brd-4 | GraphQL | mid | no |
-| brd-5 | QUIC and HTTP/3 (RFC 9000, RFC 9114) | long | no |
-| brd-6 | IMAP (RFC 9051) | long | no |
+| brd-4 | QUIC and HTTP/3 (RFC 9000, RFC 9114) | long | no |
+| brd-5 | IMAP (RFC 9051) | long | no |
 
 ## brd-1: JOSE
 
@@ -55,17 +54,7 @@ The COSE support it depends on already exists.
 Done when: the module ships with tests, `SN-` error pages and a `doc/modules/` topic, and a
 scripted registration-and-assertion ceremony passes against a reference authenticator.
 
-## brd-4: GraphQL
-
-Horizon: mid
-
-Schema, parsing, validation and execution, with the same compile-time checking the platform
-applies to HTML and SQL-shaped problems.
-
-Done when: the module ships with tests, `SN-` error pages and a `doc/modules/` topic, and
-passes the GraphQL specification's validation examples.
-
-## brd-5: QUIC and HTTP/3
+## brd-4: QUIC and HTTP/3
 
 Horizon: long
 
@@ -75,7 +64,7 @@ below them.
 Done when: the module ships with tests, `SN-` error pages and a `doc/modules/` topic, and
 interoperates with a reference HTTP/3 server and client.
 
-## brd-6: IMAP
+## brd-5: IMAP
 
 Horizon: long
 
