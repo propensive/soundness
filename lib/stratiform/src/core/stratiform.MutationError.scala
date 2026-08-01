@@ -43,16 +43,16 @@ object MutationError:
     given communicable: Reason is Communicable =
       case PointerNotFound       => m"the pointer does not resolve to a compound"
       case AtomIndexOutOfRange   => m"the atom index is out of range for the target compound"
-      case RemarkAbsent          => m"the target compound has no remark to remove"
       case FlagAlreadySet        => m"the flag is already set on the target compound"
-      case FlagNotSet            => m"the flag is not set on the target compound"
+      case TabulationOverflow    => m"the tabulation has insufficient column capacity for the row"
+      case WriteUnsupported      => m"the source of the document does not support writing"
 
   enum Reason(val number: Int) extends Clarification:
     case PointerNotFound     extends Reason(1)
     case AtomIndexOutOfRange extends Reason(2)
-    case RemarkAbsent        extends Reason(3)
-    case FlagAlreadySet      extends Reason(4)
-    case FlagNotSet          extends Reason(5)
+    case FlagAlreadySet      extends Reason(3)
+    case TabulationOverflow  extends Reason(4)
+    case WriteUnsupported    extends Reason(5)
 
 case class MutationError(reason: MutationError.Reason)(using Diagnostics)
 extends Error(606, reason.ordinal)(m"the mutation failed because $reason")

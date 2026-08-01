@@ -43,8 +43,10 @@ import inimitable.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import turbulence.Aggregable
 import turbulence.Eof
 import turbulence.Readable
+import turbulence.Writable
 import vacuous.*
 
 import IoError.Operation
@@ -73,6 +75,17 @@ object Platform:
         Array.unsafeFrozen(jnf.Files.readAllBytes(path.javaPath).nn)
 
       readable.read(bytes)
+
+  // Write a path in its entirety as a single, direct operation, replacing any existing
+  // content: the typeclass counterpart of the eager `path.write(...)` extension, so that
+  // generic writers — such as the write-back of `open[Tel]` — resolve for any
+  // `Path on <platform>` with no import.
+  given pathWritable: [plane <: Platform: Filesystem]
+  =>  ( tactic: Tactic[IoError] )
+  =>  (((Path on plane) is Writable by Data)^{tactic}) =
+    (path, stream) =>
+      val bytes: Data = summon[Data is Aggregable by Data].accept(stream)
+      path.protect(Operation.Write)(jnf.Files.write(path.javaPath, Array.unsafeJvm(bytes)))
 
   // The `Openable` instance for the `File` form. Placed here (rather than in `File`'s
   // companion) so that it is anchored by the *path* type: `path.open[File](...)` resolves with

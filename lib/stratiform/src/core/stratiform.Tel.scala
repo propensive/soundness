@@ -42,6 +42,7 @@ import scala.collection.Factory
 import scala.language.dynamics
 
 import anticipation.*
+import aperture.*
 import contingency.*
 import distillate.*
 import gossamer.*
@@ -70,6 +71,18 @@ object Tel extends Tel2:
   // `object Tel` below as their canonical location).
   type Error = TelError
   val Error: TelError.type = TelError
+
+  // The `Openable` instance for a writable TEL source:
+  // `source.open[Tel](Read & Write)` parses on entry, offers the §22.2
+  // machine operations on the handle, and writes the document back on
+  // normal scope close when it was mutated (or unconditionally with
+  // `TelFlag.Force`). Takes priority over `Tel2.telViewOpenable`
+  // whenever the source is also writable.
+  given telOpenable: [source]
+  =>  ( readable: (source is Readable to Tel)^,
+        writable: (source is Writable by Data)^ )
+  =>  (TelOpenable[source]^{readable, writable}) =
+    TelOpenable[source]()
 
   // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
   // identifying the field being decoded (and, for parser-phase errors, an

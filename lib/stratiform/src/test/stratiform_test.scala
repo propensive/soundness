@@ -40,9 +40,11 @@ import java.lang as jl
 
 import adversaria.name
 import anticipation.*
+import aperture.*
 import contingency.*
 import denominative.*
 import fulminate.*
+import larceny.*
 import gastronomy.*
 import gossamer.*
 import hieroglyph.*
@@ -98,6 +100,17 @@ object Tests extends Suite(m"Stratiform Tests"):
     case Rectangle(width: Int, height: Int)
     case Dot
 
+  // An in-memory writable TEL source for the `open[Tel]` suite: readable
+  // through its current content, and counting each write-back.
+  class Cell(@scala.caps.unsafe.untrackedCaptures var content: Text):
+    @scala.caps.unsafe.untrackedCaptures var writes: Int = 0
+
+  given cellStreamable: Cell is Streamable by Text over Credit = cell => Stream(cell.content)
+
+  given cellWritable: Cell is Writable by Data = (cell, stream) =>
+    val bytes = summon[Data is Aggregable by Data].accept(stream)
+    cell.content = Text(jl.String(Array.unsafeJvm(bytes), java.nio.charset.StandardCharsets.UTF_8))
+    cell.writes += 1
 
   def run(): Unit =
     suite(m"Positive corpus"):
@@ -1114,17 +1127,58 @@ object Tests extends Suite(m"Stratiform Tests"):
         result.document.vouch.show
       . assert(_ == t"name Charlie\n")
 
-      test(m"SetFlag attaches a flag-typed child compound"):
+      test(m"SetFlag places an inline atom on a childless compound (§22.2)"):
         val tel    = doc("opt\n")
         val ptr    = Tel.Pointer.of(t"opt")
         val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"enabled"))
         result.document.vouch.show
-      . assert(_ == t"opt\n  enabled\n")
+      . assert(_ == t"opt enabled\n")
+
+      test(m"SetFlag extends an existing inline-atom line"):
+        val tel    = doc("opts fast\n")
+        val ptr    = Tel.Pointer.of(t"opts")
+        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"safe"))
+        result.document.vouch.show
+      . assert(_ == t"opts fast safe\n")
+
+      test(m"SetFlag places a compound child when compound children exist"):
+        val tel    = doc("opt\n  sub x\n")
+        val ptr    = Tel.Pointer.of(t"opt")
+        val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"enabled"))
+        result.document.vouch.show
+      . assert(_ == t"opt\n  sub x\n  enabled\n")
+
+      test(m"SetFlag rejects a flag already present as an inline atom"):
+        val tel = doc("opts fast\n")
+        val ptr = Tel.Pointer.of(t"opts")
+        capture[MutationError](Mutation(tel, Mutation.Op.SetFlag(ptr, t"fast"))).reason
+      . assert(_ == MutationError.Reason.FlagAlreadySet)
 
       test(m"UnsetFlag removes a previously set flag"):
         val tel    = doc("opt\n  enabled\n")
         val ptr    = Tel.Pointer.of(t"opt")
         val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"enabled"))
+        result.document.vouch.show
+      . assert(_ == t"opt\n")
+
+      test(m"UnsetFlag removes an inline-atom flag, preserving other atoms"):
+        val tel    = doc("opts fast safe\n")
+        val ptr    = Tel.Pointer.of(t"opts")
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"safe"))
+        result.document.vouch.show
+      . assert(_ == t"opts fast\n")
+
+      test(m"UnsetFlag ignores a same-keyword compound that is not flag-shaped"):
+        val tel    = doc("opt\n  enabled x\n")
+        val ptr    = Tel.Pointer.of(t"opt")
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"enabled"))
+        result.document.vouch.show
+      . assert(_ == t"opt\n  enabled x\n")
+
+      test(m"UnsetFlag of an absent flag is the identity (§22.2)"):
+        val tel    = doc("opt\n")
+        val ptr    = Tel.Pointer.of(t"opt")
+        val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"missing"))
         result.document.vouch.show
       . assert(_ == t"opt\n")
 
@@ -1162,11 +1216,19 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[MutationError](Mutation(tel, op)).reason
       . assert(_ == MutationError.Reason.PointerNotFound)
 
-      test(m"ReorderGroups swaps contiguous member groups"):
+      test(m"ReorderGroups moves a group after another within a shared block"):
         val tel = doc("name Alice\nname Bob\nage 30\nage 31\n")
-        val op  = Mutation.Op.ReorderGroups(Tel.Pointer.Empty, t"name", t"age")
+        val op  = Mutation.Op.ReorderGroups
+                    (Tel.Pointer.Empty, t"name", t"age", Mutation.Placement.After)
         Mutation(tel, op).document.vouch.show
       . assert(_ == t"age 30\nage 31\nname Alice\nname Bob\n")
+
+      test(m"ReorderGroups before the current position is the identity (§22.2)"):
+        val tel = doc("name Alice\nage 30\n")
+        val op  = Mutation.Op.ReorderGroups
+                    (Tel.Pointer.Empty, t"name", t"age", Mutation.Placement.Before)
+        Mutation(tel, op).document.vouch.show
+      . assert(_ == t"name Alice\nage 30\n")
 
       test(m"ReorderGroups raises when a group is missing"):
         val tel = doc("name Alice\n")
@@ -1297,6 +1359,153 @@ object Tests extends Suite(m"Stratiform Tests"):
           case Tel.Atom.Literal(_, text) => text
           case _                         => t""
       . assert(_ == crCollision)
+
+      test(m"RemoveRemark of an absent remark is the identity (§22.2)"):
+        val tel    = doc("a 1\n")
+        val ptr    = Tel.Pointer.of(t"a")
+        val result = Mutation(tel, Mutation.Op.RemoveRemark(ptr))
+        result.document.vouch.show
+      . assert(_ == t"a 1\n")
+
+      test(m"Replace retains the original compound's remark (§22.2)"):
+        val tel    = doc("email a@x  # personal\n")
+        val replacement = Tel.Compound
+                           (t"email", Array.of(Tel.Atom.Inline(t"b@x", 1)), Unset, Array.empty)
+        val ptr    = Tel.Pointer.of(t"email")
+        val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
+        result.document.vouch.show
+      . assert(_ == t"email b@x  # personal\n")
+
+      test(m"Delete removes an emptied block with its attached comments (§22.2)"):
+        val tel    = doc("# note\na 1\n\nb 2\n")
+        val ptr    = Tel.Pointer.of(t"a")
+        val result = Mutation(tel, Mutation.Op.Delete(ptr))
+        result.document.vouch.show
+      . assert(_ == t"b 2\n")
+
+      test(m"Insert takes the natural position after the last same-member compound"):
+        val tel    = doc("a 1\na 2\n\nb 3\n")
+        val nine   = Tel.Compound(t"a", Array.of(Tel.Atom.Inline(t"9", 1)), Unset, Array.empty)
+        val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, nine))
+        result.document.vouch.show
+      . assert(_ == t"a 1\na 2\na 9\n\nb 3\n")
+
+      test(m"UpdateAtom preserves tabulation padding (§22.2 identity rule)"):
+        val tel    = doc("# Name  # Age\nAlice   30\n")
+        val ptr    = Tel.Pointer.of(t"Alice")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"31"))
+        result.document.vouch.show
+      . assert(_ == t"# Name  # Age\nAlice   31\n")
+
+      test(m"UpdateAtom escalates a tab-before-LF value past source form (§22.2)"):
+        val tel    = doc("note text\n")
+        val ptr    = Tel.Pointer.of(t"note")
+        val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line1\t\nline2"))
+        result.childCompounds.readable.head.atoms.readable.head match
+          case _: Tel.Atom.Literal => "literal"
+          case _: Tel.Atom.Source  => "source"
+          case _: Tel.Atom.Inline  => "inline"
+      . assert(_ == "literal")
+
+      test(m"InsertAfter a tabulated row opens a new block after the table (§22.2)"):
+        val tel    = doc("# Name  # Age\nAlice   30\n")
+        val note   = Tel.Compound(t"note", Array.of(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
+        val result = Mutation(tel, Mutation.Op.InsertAfter(Tel.Pointer.of(t"Alice"), note))
+        result.document.vouch.show
+      . assert(_ == t"# Name  # Age\nAlice   30\n\nnote x\n")
+
+      test(m"InsertBefore a tabulated row opens a new block before the table (§22.2)"):
+        val tel    = doc("# Name  # Age\nAlice   30\n")
+        val note   = Tel.Compound(t"note", Array.of(Tel.Atom.Inline(t"x", 1)), Unset, Array.empty)
+        val result = Mutation(tel, Mutation.Op.InsertBefore(Tel.Pointer.of(t"Alice"), note))
+        result.document.vouch.show
+      . assert(_ == t"note x\n\n# Name  # Age\nAlice   30\n")
+
+      test(m"InsertIntoBlock appends a re-padded row to a tabulated block"):
+        val tel    = doc("# Name  # Age\nAlice   30\nBob     25\n")
+        val row    = Revision.compound(t"Carol", t"40")
+        val result = Mutation(tel, Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row))
+        result.document.vouch.show
+      . assert(_ == t"# Name  # Age\nAlice   30\nBob     25\nCarol   40\n")
+
+      test(m"InsertIntoBlock rejects a row exceeding column capacity"):
+        val tel = doc("# Name  # Age\nAlice   30\n")
+        val row = Revision.compound(t"Christopher", t"40")
+        capture[MutationError]
+          (Mutation(tel, Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row))).reason
+      . assert(_ == MutationError.Reason.TabulationOverflow)
+
+      test(m"ResizeTabulation shrinks offsets to the normative minimum (§22.2)"):
+        val tel    = doc("# Name    # Age\nAl        30\n")
+        val result = Mutation(tel, Mutation.Op.ResizeTabulation(Tel.Pointer.Empty, 0))
+        result.document.vouch.show
+      . assert(_ == t"# Name  # Age\nAl      30\n")
+
+      test(m"ResizeTabulation of a nested block starts at twice the indent"):
+        val tel    = doc("person\n  # Name    # Age\n  Al        30\n")
+        val result = Mutation(tel, Mutation.Op.ResizeTabulation(Tel.Pointer.of(t"person"), 0))
+        result.document.vouch.show
+      . assert(_ == t"person\n  # Name  # Age\n  Al      30\n")
+
+      test(m"ResizeTabulation accommodates planned rows, then InsertIntoBlock fits"):
+        val tel = doc("# Name  # Age\nAl      30\n")
+        val row = Revision.compound(t"Christopher", t"40")
+
+        val result = Mutation
+                      ( tel,
+                        List
+                         ( Mutation.Op.ResizeTabulation(Tel.Pointer.Empty, 0, Array.of(row)),
+                           Mutation.Op.InsertIntoBlock(Tel.Pointer.Empty, 0, row) ) )
+
+        result.document.vouch.show
+      . assert(_ == t"# Name       # Age\nAl           30\nChristopher  40\n")
+
+      test(m"ResizeTabulation of a block without a tabulation is rejected"):
+        val tel = doc("a 1\n")
+        capture[MutationError]
+          (Mutation(tel, Mutation.Op.ResizeTabulation(Tel.Pointer.Empty, 0))).reason
+      . assert(_ == MutationError.Reason.PointerNotFound)
+
+      test(m"ReorderGroups moves whole blocks with their comments (§22.2)"):
+        val tel = doc("# emails\ne 1\n\n# phones\np 2\n")
+        val op  = Mutation.Op.ReorderGroups
+                    (Tel.Pointer.Empty, t"p", t"e", Mutation.Placement.Before)
+        Mutation(tel, op).document.vouch.show
+      . assert(_ == t"# phones\np 2\n\n# emails\ne 1\n")
+
+      test(m"Construct over members: inline run, flags, and child fallback (§22.3)"):
+        val c = Mutation.construct
+                 ( t"person",
+                   List
+                    ( Mutation.Member.Value(t"name", List(t"Alice Smith")),
+                      Mutation.Member.Flag(t"active"),
+                      Mutation.Member.Value(t"bio", List(t"line1\nline2")) ) )
+
+        val tel    = doc("")
+        val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, c))
+        result.document.vouch.show
+      . assert(_ == t"person  Alice Smith  active\n  bio\n      line1\n      line2\n")
+
+      test(m"Construct over members: repeatable occurrences stay together (§22.3)"):
+        val c = Mutation.construct
+                 ( t"opts",
+                   List
+                    ( Mutation.Member.Value(t"tag", List(t"a", t"b")),
+                      Mutation.Member.Value(t"note", List(t"x")) ) )
+
+        val tel    = doc("")
+        val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, c))
+        result.document.vouch.show
+      . assert(_ == t"opts a b\n  note x\n")
+
+      test(m"Construct over members: an empty value becomes a bare-keyword child"):
+        val c = Mutation.construct
+                 (t"entry", List(Mutation.Member.Value(t"note", List(t""))))
+
+        val tel    = doc("")
+        val result = Mutation(tel, Mutation.Op.Insert(Tel.Pointer.Empty, c))
+        result.document.vouch.show
+      . assert(_ == t"entry\n  note\n")
 
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
@@ -1450,6 +1659,132 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel = doc("name Alice\n")
         tel.edited(Revision.noop).document.vouch.show
       . assert(_ == t"name Alice\n")
+
+    suite(m"Opening documents"):
+      def cell(source: String): Cell = new Cell(source.tt)
+
+      test(m"A Text source opens read-only by default"):
+        t"name Alice\n".open[Tel]() { handle ?=> handle.current.show }
+      . assert(_ == t"name Alice\n")
+
+      test(m"Metadata reports the line endings under the Read grant"):
+        t"name Alice\r\n".open[Tel]() { handle ?=> handle.metadata.vouch.lineEndings }
+      . assert(_ == Tel.LineEndings.Crlf)
+
+      test(m"Mutating through a writable handle writes back on close"):
+        val source = cell("name Alice\n")
+
+        source.open[Tel](Read & Write): handle ?=>
+          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+
+        source.content
+      . assert(_ == t"name Bob\n")
+
+      test(m"A composed revision applies through the handle"):
+        val source = cell("name Alice\n")
+
+        source.open[Tel](Read & Write): handle ?=>
+          handle.revise
+            ( Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
+             ++ Revision.at(Tel.Pointer.Empty).insert(Revision.compound(t"email", t"b@x")) )
+
+        source.content
+      . assert(_ == t"name Bob\nemail b@x\n")
+
+      test(m"Presentation details survive open, mutate, and write-back"):
+        val source = cell("# comment\nname Alice  # remark\n\n# Name  # Age\nAl      30\n")
+
+        source.open[Tel](Read & Write): handle ?=>
+          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+
+        source.content
+      . assert(_ == t"# comment\nname Bob  # remark\n\n# Name  # Age\nAl      30\n")
+
+      test(m"A rejected operation aborts at its call site"):
+        val source = cell("name Alice\n")
+
+        source.open[Tel](Read & Write): handle ?=>
+          capture[MutationError](handle.remove(Tel.Pointer.of(t"missing"))).reason
+      . assert(_ == MutationError.Reason.PointerNotFound)
+
+      test(m"A rejected operation leaves the document intact for further edits"):
+        val source = cell("name Alice\n")
+
+        source.open[Tel](Read & Write): handle ?=>
+          capture[MutationError](handle.remove(Tel.Pointer.of(t"missing")))
+          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+
+        source.content
+      . assert(_ == t"name Bob\n")
+
+      test(m"An unmutated document is not rewritten"):
+        val source = cell("name Alice\n")
+        source.open[Tel](Read & Write) { handle ?=> () }
+        source.writes
+      . assert(_ == 0)
+
+      test(m"The Force flag rewrites an unmutated document"):
+        val source = cell("name Alice\n")
+        source.open[Tel](Read & Write, TelFlag.Force) { handle ?=> () }
+        (source.writes, source.content)
+      . assert(_ == (1, t"name Alice\n"))
+
+      test(m"An exception escaping the block writes nothing back"):
+        val source = cell("name Alice\n")
+
+        try
+          source.open[Tel](Read & Write): handle ?=>
+            handle.update(Tel.Pointer.of(t"name"), t"Bob")
+            throw jl.RuntimeException("boom")
+        catch case _: jl.RuntimeException => ()
+
+        (source.content, source.writes)
+      . assert(_ == (t"name Alice\n", 0))
+
+      test(m"Write mode on an unwritable source is refused"):
+        capture[MutationError](t"name Alice\n".open[Tel](Write) { () }).reason
+      . assert(_ == MutationError.Reason.WriteUnsupported)
+
+      test(m"Mutation without the Write grant does not compile"):
+        demilitarize:
+          val source = new Cell(t"name Alice\n")
+          source.open[Tel]() { handle ?=> handle.update(Tel.Pointer.of(t"name"), t"Bob") }
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+      test(m"Reading without the Read grant does not compile"):
+        demilitarize:
+          val source = new Cell(t"name Alice\n")
+          source.open[Tel](Write) { handle ?=> handle.current.show }
+        . map(_.message)
+      . assert(_.nonEmpty)
+
+    suite(m"Opening file paths"):
+      import galilei.*
+      import serpentine.*
+      import inimitable.*
+      import galilei.filesystemBackends.virtualMachine
+      import galilei.filesystemOptions.deleteRecursively.enabled
+
+      test(m"A file path opened Read & Write writes the mutation back"):
+        val dest: Path on Linux = (% / "tmp" / Uuid().show).on[Linux]
+        dest.write(t"name Alice\n")
+
+        dest.open[Tel](Read & Write): handle ?=>
+          handle.update(Tel.Pointer.of(t"name"), t"Bob")
+
+        // The decoder is scoped to the read alone: an ambient `CharDecoder`
+        // alongside the file-level `CharEncoder` would make turbulence's
+        // codec adapters compete with galilei's direct `pathWritable` when
+        // the `open` above resolves its write-back instance.
+        val result = locally:
+          import charDecoders.utf8Decoder
+          import textSanitizers.skipSanitizer
+          dest.read[Text]
+
+        dest.delete()
+        result
+      . assert(_ == t"name Bob\n")
 
     suite(m"Negative corpus (E1xx parsing)"):
       CorpusLoader.negative.each: testcase =>

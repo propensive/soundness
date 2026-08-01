@@ -43,6 +43,7 @@ import scala.compiletime.*
 
 import adversaria.*
 import anticipation.*
+import aperture.*
 import contextual.*
 import contingency.*
 import denominative.*
@@ -85,6 +86,16 @@ private[stratiform] def primitiveFault[value]
     raise(TelError(TelError.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
 
 trait Tel2 extends Tel3:
+  // The read-only `Openable` instance: any source parseable as `Tel` may
+  // be opened, but a `Write` mode is refused at open time. Lower
+  // priority than `Tel.telOpenable`, which wins whenever the source also
+  // supports write-back.
+  given telViewOpenable: [source]
+  =>  ( readable: (source is Readable to Tel)^,
+        mutationError: Tactic[MutationError] )
+  =>  (TelViewOpenable[source]^{readable, mutationError}) =
+    TelViewOpenable[source]()
+
   // Field-keyed lens: a name `<: Label` resolves to a Lens from `Tel`
   // onto `Tel`. The getter delegates to `selectDynamic`; the setter
   // routes through `Tel.modify`, which replaces an existing child
