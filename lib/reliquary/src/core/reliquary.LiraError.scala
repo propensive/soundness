@@ -60,6 +60,9 @@ object LiraError:
     case BuildPinned(module: Text)           extends Reason(118)
     case UnpublishedDependency(module: Text) extends Reason(119)
     case VersionProjection(expected: Text)   extends Reason(120)
+    case BadSignature(signer: Text)           extends Reason(121)
+    case UnknownAlgorithm(name: Text)         extends Reason(122)
+    case UnknownKey(fingerprint: Text)        extends Reason(123)
 
   given communicable: Reason is Communicable =
     case Reason.InvalidManifest(detail)       => m"the manifest is invalid: $detail"
@@ -82,6 +85,9 @@ object LiraError:
     case Reason.BuildPinned(module)           => m"the dependency $module is pinned to a build"
     case Reason.UnpublishedDependency(module) => m"the dependency $module is unpublished"
     case Reason.VersionProjection(expected)   => m"the version is not the projection $expected"
+    case Reason.BadSignature(signer)          => m"the signature by $signer does not verify"
+    case Reason.UnknownAlgorithm(name)        => m"the signature algorithm $name is unknown"
+    case Reason.UnknownKey(fingerprint)       => m"no key matches the fingerprint $fingerprint"
 
 case class LiraError(reason: LiraError.Reason)(using Diagnostics)
 extends Error(640, reason.number)(m"the LIRA operation failed because $reason")

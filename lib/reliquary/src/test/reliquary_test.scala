@@ -65,6 +65,45 @@ object Tests extends Suite(m"Reliquary Tests"):
     Array.unsafeFrozen(bytes)
 
   def run(): Unit =
+    val classA = encode(t"class A bytecode")
+    val tastyA = encode(t"class A tasty")
+    val sjsirA = encode(t"class A sjsir")
+
+    def blob(data: Data): Data = LiraHash(LiraHash.Domain.Blob, data)
+
+    def makeLira(): Data =
+      val context = Discipline.Context(t"jvm")
+      val registry = Discipline.Registry(List())
+
+      val rootTree = LiraTree.of(List(
+        TreeEntry(TreePath(t"a/A.class"), blob(classA)),
+        TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA))))
+
+      val overlayTree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.sjsir"), blob(sjsirA))))
+
+      val atomizations = registry.atomize(
+        List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.tasty"), tastyA)), context)
+
+      val atomsData = AtomsBlob.encode(atomizations.stdlib.head)
+      val snapshot = Snapshot(atomizations)
+
+      val manifest = LiraManifest(
+        module    = t"example-core",
+        version   = revolution.Semver(0, 1, 0),
+        lineage   = List(snapshot),
+        toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
+        owns      = List(t"example"),
+        api       = List(LiraManifest.Api(t"opaque/1", blob(atomsData))),
+        section   = List(
+          Section(t"jvm", tree = blob(rootTree.encode)),
+          Section(t"sjsir", tree = blob(overlayTree.encode),
+            delete = List(TreePath(t"a/A.class")))),
+        payload   = LiraManifest.Payload(t"brotli", 0L, blob(encode(t""))))
+
+      Lira.assemble(manifest,
+        List(classA, tastyA, sjsirA, rootTree.encode, overlayTree.encode, atomsData))
+
+
     val schemas = List(
       (t"lira",       LiraSchemas.lira,  LiraSchemas.liraSignature),
       (t"lira-tree",  LiraSchemas.tree,  LiraSchemas.treeSignature),
@@ -662,46 +701,6 @@ object Tests extends Suite(m"Reliquary Tests"):
       . assert(_ == scala.List(LiraAdvisory.NotNumeric(Semver(1, 2, 3, prerelease = List(t"RC1")))))
 
     suite(m"Container and verification"):
-      import revolution.Semver
-
-      val classA = encode(t"class A bytecode")
-      val tastyA = encode(t"class A tasty")
-      val sjsirA = encode(t"class A sjsir")
-
-      def blob(data: Data): Data = LiraHash(LiraHash.Domain.Blob, data)
-
-      def makeLira(): Data =
-        val context = Discipline.Context(t"jvm")
-        val registry = Discipline.Registry(List())
-
-        val rootTree = LiraTree.of(List(
-          TreeEntry(TreePath(t"a/A.class"), blob(classA)),
-          TreeEntry(TreePath(t"a/A.tasty"), blob(tastyA))))
-
-        val overlayTree = LiraTree.of(List(TreeEntry(TreePath(t"a/A.sjsir"), blob(sjsirA))))
-
-        val atomizations = registry.atomize(
-          List((TreePath(t"a/A.class"), classA), (TreePath(t"a/A.tasty"), tastyA)), context)
-
-        val atomsData = AtomsBlob.encode(atomizations.stdlib.head)
-        val snapshot = Snapshot(atomizations)
-
-        val manifest = LiraManifest(
-          module    = t"example-core",
-          version   = Semver(0, 1, 0),
-          lineage   = List(snapshot),
-          toolchain = List(LiraManifest.Tool(t"scala", t"3.9.0")),
-          owns      = List(t"example"),
-          api       = List(LiraManifest.Api(t"opaque/1", blob(atomsData))),
-          section   = List(
-            Section(t"jvm", tree = blob(rootTree.encode)),
-            Section(t"sjsir", tree = blob(overlayTree.encode),
-              delete = List(TreePath(t"a/A.class")))),
-          payload   = LiraManifest.Payload(t"brotli", 0L, blob(encode(t""))))
-
-        Lira.assemble(manifest,
-          List(classA, tastyA, sjsirA, rootTree.encode, overlayTree.encode, atomsData))
-
       test(m"an assembled lira reads back and verifies"):
         val report = Verification.install(Lira.read(makeLira()))
         report.materialized.stdlib.map { pair => pair(0) }
@@ -805,3 +804,90 @@ object Tests extends Suite(m"Reliquary Tests"):
           case LiraError.Reason.PayloadLength(_)     => true
           case _                                     => false
       . assert(identity)
+
+    suite(m"Manifest signing"):
+      import enigmatic.{MlDsa, Signing}
+      import gastronomy.providers.javaStdlibProvider
+
+      val mlDsa65: MlDsa[65] = summon[MlDsa[65]]
+      val privateKey = mlDsa65.genKey()
+      val publicKey = mlDsa65.privateToPublic(privateKey)
+      val otherPrivate = mlDsa65.genKey()
+      val otherPublic = mlDsa65.privateToPublic(otherPrivate)
+
+      def schemes(algorithm: Text): Optional[Signing] =
+        if algorithm == t"ml-dsa-65" then mlDsa65 else Unset
+
+      def signed(): LiraManifest =
+        val manifest = Lira.read(makeLira()).manifest
+
+        ManifestSigning.sign
+          (manifest, t"jon.pretty@propensive.com", t"ml-dsa-65", mlDsa65, privateKey, publicKey)
+
+      test(m"a signed manifest verifies against the signer's key"):
+        ManifestSigning.verify(signed(), ManifestSigning.Keyring(List(publicKey)), schemes)
+        true
+      . assert(identity)
+
+      test(m"the signing input is unchanged by signing"):
+        val manifest = Lira.read(makeLira()).manifest
+        val one = LiraHash.text(ManifestSigning.input(manifest))
+        val two = LiraHash.text(ManifestSigning.input(signed()))
+        one == two
+      . assert(identity)
+
+      test(m"a counter-signed manifest verifies both signatures"):
+        val twice = ManifestSigning.sign
+          (signed(), t"co@example.com", t"ml-dsa-65", mlDsa65, otherPrivate, otherPublic)
+
+        ManifestSigning.verify
+          (twice, ManifestSigning.Keyring(List(publicKey, otherPublic)), schemes)
+
+        twice.signature.stdlib.size
+      . assert(_ == 2)
+
+      test(m"a tampered manifest fails signature verification"):
+        val tampered = signed().copy(module = t"impostor-core")
+        val keyring = ManifestSigning.Keyring(List(publicKey))
+
+        capture[LiraError](ManifestSigning.verify(tampered, keyring, schemes)).reason match
+          case LiraError.Reason.BadSignature(_) => true
+          case _                                => false
+      . assert(identity)
+
+      test(m"an unknown algorithm is rejected, never ignored"):
+        val record = signed().signature.stdlib.head.copy(algorithm = t"quantum-magic")
+        val manifest = signed().copy(signature = List(record))
+        val keyring = ManifestSigning.Keyring(List(publicKey))
+
+        capture[LiraError](ManifestSigning.verify(manifest, keyring, schemes)).reason match
+          case LiraError.Reason.UnknownAlgorithm(_) => true
+          case _                                    => false
+      . assert(identity)
+
+      test(m"an unknown key fingerprint is rejected"):
+        val keyring = ManifestSigning.Keyring(List(otherPublic))
+
+        capture[LiraError](ManifestSigning.verify(signed(), keyring, schemes)).reason match
+          case LiraError.Reason.UnknownKey(_) => true
+          case _                              => false
+      . assert(identity)
+
+      test(m"a signed lira survives assembly, reading and verification"):
+        val lira = Lira.read(makeLira())
+        val stream = LiraPayload.decompress
+          (lira.compressed, lira.manifest.payload.length, lira.manifest.payload.hash)
+
+        val store = BlobStream.read(stream)
+        val blobs = store.blobs.map(_.data)
+
+        val resigned = ManifestSigning.sign
+          (lira.manifest, t"jon.pretty@propensive.com", t"ml-dsa-65", mlDsa65, privateKey,
+           publicKey)
+
+        val bytes = Lira.assemble(resigned, blobs)
+        val back = Lira.read(bytes)
+        ManifestSigning.verify(back.manifest, ManifestSigning.Keyring(List(publicKey)), schemes)
+        Verification.install(back)
+        back.manifest.signature.stdlib.size
+      . assert(_ == 1)

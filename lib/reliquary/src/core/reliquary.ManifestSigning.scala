@@ -30,10 +30,100 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package reliquary
 
-export reliquary.{Atom, AtomClass, Atomization, AtomReference, AtomsBlob, Blob, BlobStream,
-    Blobstore, Discipline, DisciplineError, Grade, Lineage, Lira, LiraAdvisory, LiraDelta,
-    LiraError, LiraHash, LiraManifest, LiraPayload, LiraSchemas, LiraTree, LiraUniverse,
-    LiraValidators, ManifestSigning, OpaqueDiscipline, Overlay, Replacement, Section, Snapshot,
-    TreeEntry, TreePath, Verification, Versioning}
+import anticipation.*
+import contingency.*
+import enigmatic.Signing
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import stratiform.*
+import turbulence.*
+import vacuous.*
+
+import LiraError.Reason
+
+// Manifest signing (§15). The signed message is
+//
+//   hash("lira/1:manifest", BinTEL(manifest with all signature fields removed))
+//
+// Signing the canonical BinTEL encoding — never source text — makes signatures immune to
+// reformatting, and removing the signature fields first means signing and counter-signing never
+// perturb the signed bytes. The payload is covered transitively through `payload.hash`; every
+// metadata blob and section is covered through the hash tower.
+object ManifestSigning:
+
+  // The verifier's trusted public keys, matched by `lira/1:key` fingerprint. Key distribution
+  // is out of band (§15.3); keys are in the algorithm's standard encoding as produced by
+  // enigmatic (SPKI for ML-DSA).
+  case class Keyring(keys: List[Data]):
+    def find(fingerprint: Data): Optional[Data] =
+      def matches(key: Data): Boolean =
+        Blob.compare(fingerprint, ManifestSigning.fingerprint(key)) == 0
+
+      keys.stdlib.find(matches).getOrElse(Unset)
+
+  def fingerprint(publicKey: Data): Data = LiraHash(LiraHash.Domain.Key, publicKey)
+
+  // The signing input: the manifest's semantic model, minus signatures, canonically encoded.
+  // The typed manifest is re-rendered and re-assigned rather than mutated as presentation —
+  // BinTEL encodes only the semantic model, so this is signature-equivalent for every
+  // conforming manifest of the base schema.
+  def input(manifest: LiraManifest): Data raises LiraError =
+    val stripped = manifest.copy(signature = List())
+    val data = charEncoders.utf8Encoder.encoded(stripped.render)
+
+    val bytes =
+      import errorDiagnostics.emptyDiagnostics
+
+      mitigate:
+        case _: TelError    => LiraError(Reason.InvalidManifest(t"the manifest does not re-parse"))
+        case _: BintelError => LiraError(Reason.InvalidManifest(t"the manifest does not encode"))
+
+      . protect:
+          val document = data.utf8.load[Tel]
+          val element = Tel.Type.assign(document.root, LiraSchemas.lira)
+          Bintel.encode(element, LiraSchemas.lira)
+
+    LiraHash(LiraHash.Domain.Manifest, bytes)
+
+  // Appends one signature record; the existing records are untouched, so co-signing is stable.
+  def sign
+    ( manifest:   LiraManifest,
+      signer:     Text,
+      algorithm:  Text,
+      scheme:     Signing,
+      privateKey: Data,
+      publicKey:  Data )
+  :   LiraManifest raises LiraError =
+
+    val value = Base256.encode(scheme.sign(input(manifest), privateKey))
+    val record = LiraManifest.Signature(signer, algorithm, fingerprint(publicKey), value)
+    manifest.copy(signature = List.from(manifest.signature.stdlib :+ record))
+
+  // Verification step 7 (§16): every signature present must verify; a signature whose algorithm
+  // the verifier does not implement is rejected, never ignored (§15.1).
+  def verify(manifest: LiraManifest, keyring: Keyring, scheme: Text => Optional[Signing])
+  :   Unit raises LiraError =
+
+    val message = input(manifest)
+
+    manifest.signature.stdlib.foreach: record =>
+      val signing = scheme(record.algorithm) match
+        case signing: Signing => signing
+        case _                => abort(LiraError(Reason.UnknownAlgorithm(record.algorithm)))
+
+      val publicKey = keyring.find(record.key).or:
+        abort(LiraError(Reason.UnknownKey(LiraHash.text(record.key))))
+
+      val signature =
+        import errorDiagnostics.emptyDiagnostics
+
+        mitigate:
+          case _: Base256Error => LiraError(Reason.BadSignature(record.signer))
+
+        . protect(Base256.decodeStrict(record.value))
+
+      if !signing.verify(message, signature, publicKey)
+      then abort(LiraError(Reason.BadSignature(record.signer)))
