@@ -49,10 +49,14 @@ import anticipation.*
 import aperture.*
 import contingency.*
 import digression.*
+import distillate.*
 import gossamer.*
+import hellenism.*
 import prepositional.*
 import proscenium.compat.*
 import rudiments.*
+import serpentine.*
+import spectacular.*
 
 object ScalacSession:
   // The process of a compile within a session. Compilation output is kept in memory (the
@@ -62,22 +66,27 @@ object ScalacSession:
   // by the time the process is returned.
   class Process private[anthology] (output: dtio.VirtualDirectory) extends CompileProcess():
     // Every artifact the compile emitted — classfiles, TASTy, `.sjsir`, `.nir` — keyed by
-    // its classpath-relative path. Empty if the compile failed before the back-end ran.
-    def classfiles: Map[Text, Data] =
-      def walk(dir: dtio.AbstractFile, prefix: Text): scala.List[(Text, Data)] =
+    // its location on the classpath this output constitutes. Empty if the compile failed
+    // before the back-end ran.
+    def classfiles: Map[Path on Classpath, Data] =
+      def walk(dir: dtio.AbstractFile, prefix: Text): scala.List[(Path on Classpath, Data)] =
         dir.iterator.toList.flatMap: file =>
-          val path: Text = if prefix == t"" then file.name.tt else t"$prefix/${file.name}"
+          val path: Text = t"$prefix/${file.name}"
+
           if file.isDirectory then walk(file, path)
-          // Fresh from `toByteArray`, so no writer is retained.
-          else scala.List((path, Array.unsafeFrozen(file.toByteArray)))
+          // The compiler emits names which are valid classpath elements, so decoding
+          // cannot fail; the bytes are fresh from `toByteArray`, so no writer is retained.
+          else scala.List((unsafely(path.as[Path on Classpath]), Array.unsafeFrozen(file.toByteArray)))
 
       Map.from(walk(output, t""))
 
     def save[path: Abstractable across Paths to Text](directory: path): Unit =
       val root = jnf.Paths.get(directory.generic.s).nn
 
-      classfiles.stdlib.foreach: (name, data) =>
-        val target = root.resolve(name.s).nn
+      classfiles.stdlib.foreach: (path, data) =>
+        // The classpath root renders as empty text, so `encode` is already the
+        // `directory`-relative form, `pkg/Name.class`.
+        val target = root.resolve(path.encode.s).nn
         jnf.Files.createDirectories(target.getParent.nn)
         // `Files.write` only reads its array argument.
         jnf.Files.write(target, Array.unsafeJvm(data))

@@ -345,7 +345,21 @@ object Tests extends Suite(m"Anthology Tests"):
           Scalac[3.8](Nil).on(classpath).session:
             val process = alpha.compile()
             process.complete()
-            process.classfiles.stdlib.contains(t"Alpha.class")
+            process.classfiles.stdlib.contains(t"/Alpha.class".as[Path on Classpath])
+        . assert(_ == true)
+
+        test(m"A session compile's updates report progress and completion"):
+          Scalac[3.8](Nil).on(classpath).session:
+            val process = alpha.compile()
+            process.complete()
+
+            var progressed: Int = 0
+
+            process.updates.records.each:
+              case CompileProcess.Update.Progressed(_) => progressed += 1
+              case CompileProcess.Update.Noticed(_)    => ()
+
+            progressed > 0
         . assert(_ == true)
 
         val saved: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
