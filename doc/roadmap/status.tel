@@ -1,0 +1,437 @@
+# Machine-readable index of roadmap items. One `item` record per item across the
+# eight track files in doc/roadmap/. This file is the single source of status:
+# the prose files never claim completion; they link here.
+#
+# Fields:
+#   id         the permanent item identifier (never reused)
+#   track      the track file the item belongs to (without .md)
+#   horizon    near | near-mid | mid | mid-long | long
+#   status     open | done
+#   needs      hard dependency, intra- or cross-track (repeated)
+#   baseline   measured starting point, with measurement date
+#   criterion  the Done-when command or observable fact (authority: the track file)
+#
+# Multi-token values use hard-space mode: a double space after the keyword.
+
+tel 1.0
+
+item
+  id core-1
+  track core
+  horizon near
+  status open
+  baseline  16 files use sorted/ordered stdlib collections (2026-08-01)
+  criterion  git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l == 0
+
+item
+  id core-2
+  track core
+  horizon near-mid
+  status open
+  needs core-1
+  baseline  475 files import proscenium.compat; the compat file is 551 lines (2026-08-01)
+  criterion  git grep -l 'import proscenium.compat' -- lib | wc -l == 0, and the compat file has no members
+
+item
+  id core-3
+  track core
+  horizon near-mid
+  status open
+  needs core-1
+  baseline  219 files import scala.collection, 170 of them scala.collection.mutable (2026-08-01)
+  criterion  git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l == 0
+
+item
+  id core-4
+  track core
+  horizon mid
+  status open
+  baseline  235 files touch scala.Array or scala.IArray (2026-08-01)
+  criterion  allowlist enforced in the ordinary build; grep minus allowlist == 0
+
+item
+  id core-5
+  track core
+  horizon mid-long
+  status open
+  criterion  test suite asserts no Java encodings in rendered traces, values and type names
+
+item
+  id core-6
+  track core
+  horizon long
+  status open
+  criterion  totality audit runs in CI and reports zero violations
+
+item
+  id safety-1
+  track safety
+  horizon near
+  status open
+  baseline  288 untrackedCaptures occurrences (2026-08-01)
+  criterion  git grep -o untrackedCaptures -- lib | wc -l == 0
+
+item
+  id safety-2
+  track safety
+  horizon near
+  status open
+  baseline  323 unsafeAssumeSeparate, 273 unsafeAssumePure, 45 unsafeErasedValue (2026-08-01)
+  criterion  every remaining caps.unsafe occurrence names a rep/ case; script reports zero unannotated
+
+item
+  id safety-3
+  track safety
+  horizon mid
+  status open
+  criterion  the rep/ capturing-raises reproduction compiles cleanly under the current toolchain
+
+item
+  id safety-4
+  track safety
+  horizon mid-long
+  status open
+  needs safety-3
+  baseline  929 caps.unsafe occurrences in total (2026-08-01)
+  criterion  git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l == 0
+
+item
+  id safety-5
+  track safety
+  horizon long
+  status open
+  criterion  build.mill consumes an upstream Scala release, or the rebase procedure and its measured cost are documented in rep/
+
+item
+  id safety-6
+  track safety
+  horizon long
+  status open
+  baseline  3 components compile without full separation checking (2026-08-01)
+  criterion  no component in build.mill compiles with anything weaker than settings.sep
+
+item
+  id plat-1
+  track platforms
+  horizon near
+  status open
+  baseline  94 of 132 modules build for JavaScript, 86 for Native (2026-08-01)
+  criterion  CI regenerates doc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
+
+item
+  id plat-2
+  track platforms
+  horizon near-mid
+  status open
+  criterion  make attest includes the Android stage; CI records a signed APK per release
+
+item
+  id plat-3
+  track platforms
+  horizon mid
+  status open
+  needs plat-1
+  criterion  no JavaScript or Native exclusion in the manifest has a non-inherent reason; Native link check covers every Native-capable module
+
+item
+  id plat-4
+  track platforms
+  horizon mid-long
+  status open
+  baseline  7 WASI backends; HTTP GET-only; sockets TCP-only (2026-08-01)
+  criterion  the manifest WASI column matches the JavaScript column except where the reason names a missing WASI capability
+
+item
+  id plat-5
+  track platforms
+  horizon long
+  status open
+  needs plat-4
+  criterion  every exclusion reason in doc/compatibility.tsv is inherent; a reason-vocabulary check enforces it in CI
+
+item
+  id api-1
+  track api
+  horizon near
+  status open
+  criterion  the C1 section of doc/api-reduction-candidates.md is empty
+
+item
+  id api-2
+  track api
+  horizon near
+  status open
+  criterion  the C4-homonym and C4-synonym sections are empty; a same-name-same-thing check runs in the ordinary build
+
+item
+  id api-3
+  track api
+  horizon mid
+  status open
+  criterion  the C2, C3 and C3b sections are empty
+
+item
+  id api-4
+  track api
+  horizon mid
+  status open
+  criterion  naming-conformance sweep reports zero deviations and runs in the ordinary build
+
+item
+  id api-5
+  track api
+  horizon long
+  status open
+  needs api-1
+  needs api-2
+  needs api-3
+  criterion  doc/api-reduction-candidates.md no longer exists
+
+item
+  id api-6
+  track api
+  horizon long
+  status open
+  needs dist-2
+  criterion  the dist-2 CI check enforced on every surface-changing pull request for ten consecutive releases
+
+item
+  id doc-1
+  track documentation
+  horizon near
+  status open
+  baseline  121 error types carry SN codes, 39 do not; 233 error pages (2026-08-01)
+  criterion  parity check in CI; git grep -hE 'extends +Error\((m"|[a-z])' -- lib | wc -l == 0
+
+item
+  id doc-2
+  track documentation
+  horizon near
+  status open
+  criterion  grep -c 'Stub' doc/standards/messages.md == 0
+
+item
+  id doc-3
+  track documentation
+  horizon near
+  status open
+  baseline  92 files say "built by Fury"; 35 of 133 modules have no lib/*/doc/ (2026-08-01)
+  criterion  git grep -l 'built by Fury' | wc -l == 0, and no lib/*/doc/ directory remains
+
+item
+  id doc-4
+  track documentation
+  horizon mid
+  status open
+  baseline  91 topics in doc/modules/; 35 modules undocumented (2026-08-01)
+  criterion  coverage script in the ordinary build reports zero uncovered modules
+
+item
+  id doc-5
+  track documentation
+  horizon mid
+  status open
+  baseline  every published docJar is empty (2026-08-01)
+  criterion  every published component has non-empty API documentation, published per release
+
+item
+  id doc-6
+  track documentation
+  horizon mid
+  status open
+  criterion  web/res/content/ contains no hand-maintained duplicate of any doc/ page
+
+item
+  id doc-7
+  track documentation
+  horizon long
+  status open
+  criterion  link check verifies each philosophy page is referenced from the topic guides of the modules embodying it
+
+item
+  id doc-8
+  track documentation
+  horizon long
+  status open
+  needs tool-2
+  needs tool-4
+  criterion  the from-nothing walkthrough is executed by an agent in CI and recorded per release
+
+item
+  id tool-1
+  track tooling
+  horizon near
+  status open
+  baseline  flame builds against 0.62.0; current release 0.64.0 (2026-08-01)
+  criterion  flame CI builds against every new release before it is announced
+
+item
+  id tool-2
+  track tooling
+  horizon near-mid
+  status open
+  baseline  fume does not exist; 3 suites disabled: cosmopolite, legerdemain, orthodoxy (2026-08-01)
+  criterion  fume runs the full suite in CI; grep -c 'enabled = false' build.mill == 0
+
+item
+  id tool-3
+  track tooling
+  horizon near-mid
+  status open
+  criterion  scripted LSP editor-session test passes in CI
+
+item
+  id tool-4
+  track tooling
+  horizon mid
+  status open
+  criterion  fury build builds Soundness from a clean checkout, attestation-equal to the Mill build
+
+item
+  id tool-5
+  track tooling
+  horizon mid
+  status open
+  criterion  scripted MCP session resolves an SN code, a module topic and a roadmap item status, in CI
+
+item
+  id tool-6
+  track tooling
+  horizon mid
+  status open
+  criterion  probably ships forAll-style generation with shrinking, or a philosophy page documents the axes/spread design
+
+item
+  id tool-7
+  track tooling
+  horizon long
+  status open
+  needs doc-5
+  criterion  fluence answers name, type and signature queries against the current release
+
+item
+  id tool-8
+  track tooling
+  horizon long
+  status open
+  criterion  a fume run can be watched live in a browser; the git-note report matches the stream
+
+item
+  id tool-9
+  track tooling
+  horizon long
+  status open
+  criterion  no ecosystem tool accepts any configuration format but TEL
+
+item
+  id dist-1
+  track distribution
+  horizon near
+  status open
+  baseline  no changelog; release notes live in pull-request bodies (2026-08-01)
+  criterion  changelog exists; release.sh fails when the released version has no entry
+
+item
+  id dist-2
+  track distribution
+  horizon near
+  status open
+  criterion  doc/standards/migration.md exists without a stub marker; CI rejects breaking-labelled PRs lacking conforming instructions
+
+item
+  id dist-3
+  track distribution
+  horizon near-mid
+  status open
+  criterion  the LIRA reference implementation round-trips a Soundness release byte-identically in a scripted test
+
+item
+  id dist-4
+  track distribution
+  horizon mid
+  status open
+  needs doc-5
+  criterion  versions are computed from the extracted API surface; an incompatible change forces the version it should
+
+item
+  id dist-5
+  track distribution
+  horizon mid
+  status open
+  needs tool-4
+  criterion  fury publish produces and publishes signed .lira files for a real release
+
+item
+  id dist-6
+  track distribution
+  horizon mid-long
+  status open
+  criterion  signature, namespace and transparency-log inclusion verified by a single shipped command
+
+item
+  id dist-7
+  track distribution
+  horizon mid
+  status open
+  needs dist-3
+  criterion  a release ships to Maven Central and LIRA, attested; make verify-attest covers both
+
+item
+  id dist-8
+  track distribution
+  horizon long
+  status open
+  needs dist-5
+  needs dist-6
+  needs dist-7
+  criterion  a fresh fury project builds and runs with the Maven resolver disabled
+
+item
+  id dist-9
+  track distribution
+  horizon long
+  status open
+  criterion  a scripted third-party verification with public data only passes for the latest release
+
+item
+  id brd-1
+  track breadth
+  horizon near
+  status open
+  criterion  JOSE module ships with tests, SN pages and a topic; round-trips RFC 7515/7516 example vectors
+
+item
+  id brd-2
+  track breadth
+  horizon near
+  status open
+  criterion  TOML module ships with tests, SN pages and a topic; passes the TOML compliance suite
+
+item
+  id brd-3
+  track breadth
+  horizon mid
+  status open
+  needs brd-1
+  criterion  WebAuthn module ships with tests, SN pages and a topic; scripted ceremony passes against a reference authenticator
+
+item
+  id brd-4
+  track breadth
+  horizon mid
+  status open
+  criterion  GraphQL module ships with tests, SN pages and a topic; passes the specification validation examples
+
+item
+  id brd-5
+  track breadth
+  horizon long
+  status open
+  criterion  QUIC/HTTP-3 module ships with tests, SN pages and a topic; interoperates with reference peers
+
+item
+  id brd-6
+  track breadth
+  horizon long
+  status open
+  criterion  IMAP module ships with tests, SN pages and a topic; scripted session passes against a reference server
