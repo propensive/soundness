@@ -30,140 +30,72 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package degustation
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    degustation.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    escritoire.Tests()
-    ethereal.Tests()
-    eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    reliquary.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import reliquary.*
+import rudiments.*
 
-object FailingTests extends Suite(m"Failing tests"):
-  def run(): Unit =
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+import errorDiagnostics.emptyDiagnostics
+
+// The `scala-tasty/1` discipline, adapted to reliquary's SPI. It claims `.tasty` files — the
+// interface carrier shared by the `jvm`, `sjsir` and `nir` universes — for atomization, and
+// claims the derived binaries (`.class`, `.sjsir`, `.nir`) *atomless*: their interface is
+// exactly the TASTy's, so they contribute no atoms of their own and never fall through to
+// `opaque/1`, where every rebuild would register as a major event.
+object ScalaTasty extends Discipline:
+  def id: Text = t"scala-tasty/1"
+
+  private val atomless: scala.List[String] = scala.List(".class", ".sjsir", ".nir")
+
+  def claims(path: TreePath, data: Data): Boolean =
+    val name = path.text.s
+    name.endsWith(".tasty") || atomless.exists: suffix => name.endsWith(suffix)
+
+  def atomize(content: List[(TreePath, Data)], context: Discipline.Context)
+  :   Atomization raises DisciplineError =
+
+    val tasty = content.stdlib.filter: pair => pair(0).text.s.endsWith(".tasty")
+
+    if tasty.isEmpty then Atomization.of(id, List()) else
+      // The compiler's unpickler reads files, so the claimed `.tasty` content is written to a
+      // throwaway directory for the duration of the inspection.
+      val directory = java.nio.file.Files.createTempDirectory("degustation").nn
+
+      try
+        val files = tasty.map: pair =>
+          val target = directory.resolve(pair(0).text.s).nn
+          java.nio.file.Files.createDirectories(target.getParent.nn)
+          java.nio.file.Files.write(target, Array.unsafeJvm(pair(1)))
+          Text(target.toString)
+
+        val scalaAtoms =
+          mitigate:
+            case DegustationError(reason) =>
+              DisciplineError(id, DisciplineError.Reason.Malformed(t"$reason"))
+
+          . protect(Inspection.atomize(List.from(files), context.classpath))
+
+        val atoms = scalaAtoms.map: atom =>
+          val references = atom.references.map:
+            case ScalaReference.Own(key)     => AtomReference.Own(key)
+            case ScalaReference.Foreign(key) => AtomReference.Foreign(key)
+
+          Atom
+            ( atom.key,
+              if atom.replaceable then AtomClass.Replaceable else AtomClass.Rigid,
+              LiraHash(LiraHash.Domain.Atom(id), atom.encoding),
+              references )
+
+        Atomization.of(id, atoms)
+
+      finally
+        val paths = java.nio.file.Files.walk(directory).nn
+
+        paths.sorted(java.util.Comparator.reverseOrder).nn.forEach: path =>
+          java.nio.file.Files.deleteIfExists(path)
+
+        paths.close()
