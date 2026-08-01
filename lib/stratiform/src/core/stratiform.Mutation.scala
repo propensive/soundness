@@ -1046,8 +1046,10 @@ object Mutation:
     Tel.Compound(keyword, atoms, Unset, childBlocks)
 
   // §22.3 atom-form escalation: the first form in inline -> source ->
-  // literal whose §22.2 safety predicate the value satisfies.
-  private def chooseAtomForm(value: Text, sigil: Char): Tel.Atom =
+  // literal whose §22.2 safety predicate the value satisfies. Also used by
+  // the derived encoders (`Tel2.scalar`), so an encoded multi-line value
+  // reparses.
+  private[stratiform] def chooseAtomForm(value: Text, sigil: Char): Tel.Atom =
     if inlineSafe(value, sigil) then Tel.Atom.Inline(value, inlinePrecedingSpaces(value))
     else if sourceSafe(value) then Tel.Atom.Source(value)
     else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)

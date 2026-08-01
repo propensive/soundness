@@ -433,7 +433,23 @@ trait Tel2 extends Tel3:
               val encoded = contextual.encode(fieldValue)
               val keyword = renames.at(label).or(Tel.camelToKebab(label.s))
 
-              encoded.subtree match
+              // Flag encoding (§20): `true` is the bare keyword and a plain
+              // `false` flag is omitted, since decoding reads absence as
+              // false. An `Optional[Boolean]`'s `false` stays explicit, so
+              // Unset / true / false remain distinguishable (omitted / bare
+              // keyword / `keyword false`); its Unset encodes an empty
+              // document and emits nothing below.
+              if contextual.nature == Tel.Nature.Flag then
+                encoded.subtree match
+                  case c: Tel.Compound =>
+                    if encoded.primaryAtom == t"true"
+                    then compounds += Tel.Compound(keyword, Array.empty, Unset, Array.empty)
+                    else if encoded.primaryAtom == t"false" && !contextual.optional
+                    then ()
+                    else compounds += c.copy(keyword = keyword)
+
+                  case _ => ()
+              else encoded.subtree match
                 case c: Tel.Compound =>
                   compounds += c.copy(keyword = keyword)
 
@@ -737,8 +753,14 @@ trait Tel2 extends Tel3:
 
   // Helpers used by encoders to construct Tel values.
 
+  // The §22.3 atom-form escalation (inline -> source -> literal) keeps every
+  // encoded value reparseable — a multi-line or space-edged Text can never be
+  // an inline atom. The default `#` sigil is assumed, matching the documents
+  // the encoder produces (it never emits a pragma overriding it). An empty
+  // text stays an empty inline atom: presentationally it serializes as no
+  // atom, but the value level distinguishes present-empty from absent.
   def scalar(text: Text): Tel =
-    Tel.make(Tel.Compound(t"", Array.of(Tel.Atom.Inline(text, 1)), Unset, Array.empty))
+    Tel.make(Tel.Compound(t"", Array.of(Mutation.chooseAtomForm(text, '#')), Unset, Array.empty))
 
   def compound
     ( keyword: Text, atoms: Array[Tel.Atom]^{}, compounds: Array[Tel.Compound]^{} )

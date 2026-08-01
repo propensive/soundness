@@ -39,6 +39,7 @@ import proscenium.compat.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
+import Tel.given
 
 // Positional-assignment fixtures (§19.2, issue #1694). The positional cases
 // nest the record one level down, because the document root never carries
@@ -52,6 +53,7 @@ case class PLogBook(log: PLog) derives CanEqual
 case class PFlags(active: Boolean, verbose: Optional[Boolean]) derives CanEqual
 case class PPair(first: Optional[Text], second: Optional[Text]) derives CanEqual
 case class PPairBox(pair: PPair) derives CanEqual
+case class PNote(body: Text) derives CanEqual
 
 object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
   def run(): Unit =
@@ -160,3 +162,49 @@ object PositionalTests extends Suite(m"Stratiform positional assignment tests"):
       test(m"excess atoms raise E302 on the direct path"):
         capture[TelError](t"item a xyz extra\n".read[PHolder in Tel]).reason
       . assert(_ == TelError.Reason.TooManyAtoms)
+
+    suite(m"Encoder atom forms and flags (§22.3)"):
+      given PNote is Tel.Parsable = Tel.Parsable.derived
+      given PFlags2: (PFlags is Tel.Parsable) = Tel.Parsable.derived
+
+      test(m"a multi-line Text encodes as a source atom and reparses"):
+        val value = PNote(t"line one\nline two")
+        val sourceForm =
+          value.encode.childCompounds.readable.head.atoms(0).isInstanceOf[Tel.Atom.Source]
+
+        (value.encode.show.s.tt.read[Tel].as[PNote] == value, sourceForm)
+      . assert(_ == (true, true))
+
+      test(m"an unsafe payload escalates to a literal atom and reparses"):
+        val value = PNote(t"para one\n\npara two")
+        val literalForm =
+          value.encode.childCompounds.readable.head.atoms(0).isInstanceOf[Tel.Atom.Literal]
+
+        (value.encode.show.s.tt.read[Tel].as[PNote] == value, literalForm)
+      . assert(_ == (true, true))
+
+      test(m"a true flag encodes as the bare keyword"):
+        val doc = PFlags(true, Unset).encode
+        (doc.childCompounds.readable.length, doc.childCompounds.readable.head.keyword,
+         doc.childCompounds.readable.head.atoms.length)
+      . assert(_ == (1, t"active", 0))
+
+      test(m"a false flag is omitted and an optional false stays explicit"):
+        val doc = PFlags(false, false).encode
+        (doc.childCompounds.readable.length, doc.childCompounds.readable.head.keyword)
+      . assert(_ == (1, t"verbose"))
+
+      test(m"every flag combination round-trips through serialized text"):
+        val values = List
+         ( PFlags(true, Unset), PFlags(false, Unset), PFlags(true, true),
+           PFlags(false, false), PFlags(true, false), PFlags(false, true) )
+
+        values.all: value =>
+          val printed = value.encode.show.s.tt
+          printed.read[Tel].as[PFlags] == value && printed.read[PFlags in Tel] == value
+      . assert(identity)
+
+      test(m"a multi-line Text round-trips on the direct path too"):
+        val value = PNote(t"line one\nline two")
+        value.encode.show.s.tt.read[PNote in Tel] == value
+      . assert(identity)
