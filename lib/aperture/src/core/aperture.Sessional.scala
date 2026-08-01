@@ -30,39 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package aperture
 
-import scala.caps
-
-import anticipation.*
 import prepositional.*
-import spectacular.*
 
-// A connection-oriented scope: `target.session(lambda)` opens a live connection
-// to the target, lends it to `lambda` for its duration, and closes it when the
-// lambda ends — whether it returns or throws. The `result` type parameter is
-// quantified outside the lambda, so a value borrowing the session (e.g. a
-// response streaming from the live connection) cannot escape the scope; only
-// session-independent values may leave. Instances at the transport layer lend a
-// raw `Duplex`; protocol layers (e.g. HTTP) lend richer session handles over
+// A stateful interaction scope: `target.session(lambda)` establishes a live session with the
+// target — a network connection, a warm compiler, a remote device — lends it to `lambda` for
+// its duration, and disposes of it when the lambda ends, whether it returns or throws. The
+// `result` type parameter is quantified outside the lambda, so a value borrowing the session
+// (e.g. a response streaming from the live connection) cannot escape the scope; only
+// session-independent values may leave. An instance is written `target is Sessional to
+// Handle`, in the same way that a value may be `Decodable in Json`; handles are expected to
+// be capabilities, confined to the block by capture checking. Instances at a transport layer
+// lend a raw connection; richer layers (e.g. HTTP) lend protocol-aware session handles over
 // the same shape.
-object Sessionable:
-  // Any `Connectable` endpoint hosts a transport-level session, lending its
-  // persistent `Duplex` connection. This is the typeclass form of the `duplex`
-  // loan, to which it delegates.
-  given connectable: [endpoint: {Connectable, Showable}]
-  =>  (loggable: (SocketEvent is Loggable)^)
-  =>  ((endpoint is Sessionable { type Session = Duplex })^{loggable, caps.any}) =
-
-   new Sessionable:
-    type Self = endpoint
-    type Session = Duplex
-
-    def session[result](target: endpoint)(lambda: (session: Session) ?=> result): result =
-      target.duplex: duplex =>
-        lambda(using duplex)
-
-trait Sessionable extends Typeclass:
-  type Session
-
-  def session[result](target: Self)(lambda: (session: Session) ?=> result): result
+trait Sessional extends Typeclass, Resultant:
+  def session[result](target: Self)(lambda: (session: Result) ?=> result): result

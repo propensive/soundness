@@ -54,19 +54,19 @@ import vacuous.*
 import zephyrine.*
 
 // A named instance class rather than an anonymous given: an anonymous subclass
-// would freshen the capability types in its inferred `Session` member.
-class UrlSessionable[url <: HttpUrl]
+// would freshen the capability types in its inferred `Result` member.
+class UrlSessional[url <: HttpUrl]
   ( using online:       Online,
           backend:      SocketBackend,
           options:      Every[SocketOption.Tcp],
           buffering:    Buffering,
           tls:          Tls,
           connectError: Tactic[ConnectError] )
-extends Sessionable:
+extends Sessional:
   type Self = url
-  type Session = HttpSession^{caps.any}
+  type Result = HttpSession^{caps.any}
 
-  def session[result](target: url)(lambda: (session: Session) ?=> result): result =
+  def session[result](target: url)(lambda: (session: Result) ?=> result): result =
     import ConnectError.Reason.*
 
     val scheme: Text = target.scheme.name
@@ -128,15 +128,15 @@ extends Sessionable:
 // opened once, lent to the lambda as an `HttpSession`, and closed when the
 // scope ends. Bounded like `Fetchable.httpUrl` so `url"https://..."` literals
 // (whose types are scheme-refined subtypes of `HttpUrl`) resolve the instance.
-given httpUrlSessionable: [url <: HttpUrl]
+given httpUrlSessional: [url <: HttpUrl]
 =>  (online: Online)
 =>  ( backend:      SocketBackend,
       options:      Every[SocketOption.Tcp],
       buffering:    Buffering,
       tls:          Tls,
       connectError: Tactic[ConnectError] )
-=>  (UrlSessionable[url]^{online, connectError, caps.any}) =
-  UrlSessionable[url]()
+=>  (UrlSessional[url]^{online, connectError, caps.any}) =
+  UrlSessional[url]()
 
 // Open the TLS connection for an `https` exchange, offering `h2` and `http/1.1`
 // by ALPN, and mapping handshake and connection failures onto `ConnectError`.
