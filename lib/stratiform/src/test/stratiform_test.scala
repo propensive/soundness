@@ -871,6 +871,21 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == TelError.Reason.UnknownKeyword)
 
+      test(m"scalar compound with two atoms raises E302"):
+        val doc = t"name Alice Bob\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == TelError.Reason.TooManyAtoms)
+
+      test(m"scalar compound with a child raises E301"):
+        val doc = t"name Alice\n  extra x\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, personSchema)).reason
+      . assert(_ == TelError.Reason.NonStructCompound)
+
+      test(m"flag compound with an atom raises E311"):
+        val doc = t"active foo\n".read[Tel]
+        capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
+      . assert(_ == TelError.Reason.FlagWithContent)
+
     suite(m"Atom phase (§20.2 step 3)"):
       // Wraps the record under test as the single root member `item`: the
       // document root never carries atoms (§20.2), so the atom phase is

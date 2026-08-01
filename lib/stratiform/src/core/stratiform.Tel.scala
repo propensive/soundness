@@ -1035,6 +1035,15 @@ object Tel extends Tel2:
           Tel.Element.Node(entry.memberIndex, s, allElements)
 
         case s: Scalar =>
+          // §20.2 step 1: a Scalar-typed compound is a leaf with at most one
+          // atom (of any presentation form) and no compound children. Extra
+          // atoms are E302 and children are E301; recovery keeps the first
+          // atom and ignores the children.
+          if compound.atoms.length > 1 then recoverNode(Reason.TooManyAtoms)(())
+
+          if compound.children.exists(_.compounds.nonEmpty)
+          then recoverNode(Reason.NonStructCompound)(())
+
           val text = compound.atoms.headOption.map:
             case Tel.Atom.Inline(t, _)  => t
             case Tel.Atom.Source(t)     => t
