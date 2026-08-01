@@ -49,8 +49,13 @@ object Unattributive:
   // given truth: Boolean is Attributive to Truth = (key, value) =>
   //   (key, if value then t"true" else t"false")
 
-  given int: Whatwg.Integral is Unattributive to Optional[Int] = _.let(_.s.toInt)
-  given positiveInt: Whatwg.PositiveInt is Unattributive to Optional[Int] = _.let(_.s.toInt)
+  given int: Whatwg.Integral is Unattributive to Optional[Int] =
+    _.lay(Unset): text =>
+      try text.s.toInt catch case _: NumberFormatException => Unset
+
+  given positiveInt: Whatwg.PositiveInt is Unattributive to Optional[Int] =
+    _.lay(Unset): text =>
+      try text.s.toInt catch case _: NumberFormatException => Unset
 
   given cssClassList: Whatwg.CssClassList is Unattributive to List[Text] =
     _.let(_.cut(t" ")).or(Nil)
