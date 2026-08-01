@@ -42,8 +42,6 @@ import scala.util.control as suc
 import dotty.tools.dotc as dtd
 import dotty.tools.dotc.core as dtdc
 import dotty.tools.dotc.interfaces as dtdi
-import dotty.tools.dotc.reporting.*
-import dotty.tools.dotc.sbt.interfaces as dtdsi
 import dotty.tools.dotc.util as dtdu
 
 import ambience.*
@@ -77,6 +75,22 @@ object Scalac:
 
     new Scalac(options)
 
+  object Setup:
+    given sessional: [version <: Versions, universe <: Universe]
+    =>  ( system:   System,
+          emission: Universe.Emission[universe],
+          tactic:   Tactic[CompilerError],
+          loggable: (CompileEvent is Loggable)^ )
+    =>  ( ScalacSessional[version, universe]^{tactic, loggable, scala.caps.any} ) =
+
+      ScalacSessional()
+
+  // A compiler configuration bound to a classpath: the target of a warm compiler session,
+  // `scalac.on(classpath).session`, which retains the classpath's loaded symbol table
+  // across the session's compiles.
+  case class Setup[version <: Versions, universe <: Universe]
+    ( scalac: Scalac[version, universe], classpath: LocalClasspath )
+
 case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   ( options: List[Scalac.Option[version]] ):
 
@@ -91,6 +105,9 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
 
     new Scalac(options)
 
+  def on(classpath: LocalClasspath): Scalac.Setup[version, universe] =
+    Scalac.Setup(this, classpath)
+
 
   def apply
     ( classpath: LocalClasspath )
@@ -101,91 +118,42 @@ case class Scalac[version <: Scalac.Versions, universe <: Universe] private
   :   CompileProcess =
 
     val scalacProcess: CompileProcess = CompileProcess()
+    val reporter = processReporter(scalacProcess)
 
-    object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
-      def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
-        Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
-        scalacProcess.put(notice(diagnostic))
+    val arguments: List[Text] =
+      summon[Universe.Emission[universe]].flags :::
+        List(t"-d", out.generic, t"-classpath", classpath()) :::
+        commandLineArguments :::
+        List(t"")
 
-    val callbackApi = new dtdi.CompilerCallback {}
+    val driver = ScalacDriver()
+    val currentContext = driver.baseContext(arguments).get
 
-    object ProgressApi extends dtdsi.ProgressCallback:
-      @scala.caps.unsafe.untrackedCaptures
-      private var last: Int = -1
+    given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
+      context
+      . setReporter(reporter)
+      . setCompilerCallback(new dtdi.CompilerCallback {})
+      . setProgressCallback(progressCallback(scalacProcess))
 
+    val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
+      sources.stdlib.toList.map: (name, content) =>
+        dtdu.SourceFile.virtual(name.s, content.s)
 
-      override def informUnitStarting(stage: String | Null, unit: dtd.CompilationUnit | Null)
-      :   Unit =
-
-        ()
-
-
-      override def progress
-        ( current:      Int,
-          total:        Int,
-          currentStage: String | Null,
-          nextStage:    String | Null )
-      :   Boolean =
-
-        val int = (100.0*current/total).toInt
-
-        if int > last then
-          last = int
+    scalacProcess.put:
+      // The run compiles under this process's own compiler and reporter; no aliased
+      // writer.
+      scala.caps.unsafe.unsafeAssumeSeparate:
+       task(n"scalac"):
+        try
+          Scalac.compiler().newRun.tap: run =>
+            run.compileSources(sourceFiles)
+            if !reporter.hasErrors then driver.finishRun(Scalac.Scala3, run)
 
           scalacProcess.put
-            ( CompileProgress
-              ( last/100.0, if currentStage == null then t"null" else currentStage.tt ) )
+            ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
 
-        scalacProcess.continue
+        catch case suc.NonFatal(error) =>
+          scalacProcess.put(CompileResult.Crash(error.stackTrace))
+          Scalac.refresh()
 
-    object driver extends dtd.Driver:
-      val currentContext =
-        val context = initCtx.fresh
-        //val pluginParams = plugins
-        //val jsParams =
-
-        val arguments: List[Text] =
-          summon[Universe.Emission[universe]].flags :::
-            List(t"-d", out.generic, t"-classpath", classpath()) :::
-            commandLineArguments :::
-            List(t"")
-
-        Log.info(CompileEvent.Running(arguments))
-        // The argument array crosses into the compiler through a Java-side copy: `toArray`'s
-        // result carries a read capability the pure formal rejects.
-        val args = java.util.ArrayList[String]()
-        arguments.each { argument => args.add(argument.s); () }
-        setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]], context)
-        . map(_(1)).get
-
-      def run(): CompileProcess =
-        given dtdc.Contexts.Context = currentContext.fresh.pipe: context =>
-          context
-          . setReporter(reporter)
-          . setCompilerCallback(callbackApi)
-          . setProgressCallback(ProgressApi)
-
-        val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
-          sources.stdlib.toList.map: (name, content) =>
-            dtdu.SourceFile.virtual(name.s, content.s)
-
-        scalacProcess.put:
-          // The run compiles under this process's own compiler and reporter; no aliased
-          // writer.
-          scala.caps.unsafe.unsafeAssumeSeparate:
-           task(n"scalac"):
-            try
-              Scalac.compiler().newRun.tap: run =>
-                run.compileSources(sourceFiles)
-                if !reporter.hasErrors then finish(Scalac.Scala3, run)
-
-              scalacProcess.put
-                ( if reporter.hasErrors then CompileResult.Failure else CompileResult.Success )
-
-            catch case suc.NonFatal(error) =>
-              scalacProcess.put(CompileResult.Crash(error.stackTrace))
-              Scalac.refresh()
-
-        scalacProcess
-
-    driver.run()
+    scalacProcess

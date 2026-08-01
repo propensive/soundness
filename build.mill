@@ -821,7 +821,7 @@ object anthology extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
 
-  object `scala` extends Component(core):
+  object `scala` extends Component(core, aperture.core):
     override def scalaJs = false // wraps the Scala compiler (dotty)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -1130,7 +1130,7 @@ object chiaroscuro extends Library:
       settings.sep(super.scalacOptions())
 
 object coaxial extends Library:
-  object core extends Component(urticose.core, frontier.core, turbulence.core):
+  object core extends Component(urticose.core, frontier.core, turbulence.core, aperture.core):
     // The native `SocketBackend` (`socketBackends.native`) is folded into the native cross via
     // `nativeSources` (as galilei's filesystem backend is): TCP and UDP over Scala Native's
     // `java.net` sockets, with Unix-domain sockets and TLS unsupported for now.
@@ -2228,7 +2228,8 @@ object scintillate extends Library:
 object sedentary extends Library:
   object core
   extends Component
-    (superlunary.jvm, anthology.linker, diuretic.core, parasite.core, quantitative.units):
+    (superlunary.jvm, anthology.linker, diuretic.core, parasite.core, quantitative.units,
+     aperture.core):
     override def scalaJs = false // benchmarking via JVM-only `superlunary`/`anthology`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")

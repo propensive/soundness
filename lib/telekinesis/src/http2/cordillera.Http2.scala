@@ -393,18 +393,18 @@ object Http2:
   // body, an open `Http2Stream` — cannot escape the scope; memoized values may.
   // Concurrent `fetch`es within the scope multiplex on the one connection.
   // A named instance class rather than an anonymous given: an anonymous
-  // subclass would freshen the capability types in its inferred `Session`
+  // subclass would freshen the capability types in its inferred `Result`
   // member, which then fails to match the declared refinement.
-  class EndpointSessionable[endpoint: {Connectable, Showable}]
+  class EndpointSessional[endpoint: {Connectable, Showable}]
     ( using monitor:    Monitor,
             probate:    Probate,
             asyncError: Tactic[AsyncError],
             loggable:   (SocketEvent is Loggable)^ )
-  extends Sessionable:
+  extends Sessional:
     type Self = Endpoint[endpoint]
-    type Session = Http2Connection^{caps.any}
+    type Result = Http2Connection^{caps.any}
 
-    def session[result](target: Endpoint[endpoint])(lambda: (session: Session) ?=> result)
+    def session[result](target: Endpoint[endpoint])(lambda: (session: Result) ?=> result)
     :   result =
 
       target.endpoint.duplex: duplex =>
@@ -412,13 +412,13 @@ object Http2:
         connection.start()
         try lambda(using connection) finally connection.close()
 
-  given sessionable: [endpoint: {Connectable, Showable}]
+  given sessional: [endpoint: {Connectable, Showable}]
   =>  ( monitor:    Monitor,
         probate:    Probate,
         asyncError: Tactic[AsyncError],
         loggable:   (SocketEvent is Loggable)^ )
-  =>  (EndpointSessionable[endpoint]^{monitor, asyncError, loggable, caps.any}) =
-    EndpointSessionable[endpoint]()
+  =>  (EndpointSessional[endpoint]^{monitor, asyncError, loggable, caps.any}) =
+    EndpointSessional[endpoint]()
 
   // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
   // It captures the ambient `Monitor`/`Probate` from this given's context — the

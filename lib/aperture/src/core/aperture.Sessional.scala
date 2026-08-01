@@ -34,44 +34,15 @@ package aperture
 
 import prepositional.*
 
-// Refines a type's `Grants` member; `Mode granting Grant.Read` reads naturally.
-infix type granting [refined <: { type Grants <: Grant }, grants <: Grant] =
-  refined { type Grants = grants }
-
-val Read: Mode granting Grant.Read = new Mode { type Grants = Grant.Read }
-
-// `Write` alone does not confer read access: open with `Read & Write` for both.
-val Write: Mode granting Grant.Write = new Mode { type Grants = Grant.Write }
-
-val Exclusive: Mode granting Grant.Exclusive = new Mode { type Grants = Grant.Exclusive }
-
-extension [target](value: target)
-  // Opens `value` in form `form`: `path.open[Directory]()`, or `path.open[File](Read & Write)`.
-  // The form may be omitted when the target has a unique `Openable` instance; with several,
-  // the ambiguity error lists the alternatives. Flags — of the instance's `Operand` type, so
-  // target-specific — follow the mode. The handle is provided as a contextual value to the
-  // block, and capture checking prevents it, or anything derived from it, from escaping.
-  def open[form](using o: (target is Openable in form)^)
-  :   (Opener { val openable: o.type })^{o} =
-
-    Opener(o, value)
-
-  // Creates `value` in form `form`: `path.create[Directory]()` for an empty artifact, or
-  // `path.create[Zip]() { ... }` to author its contents, committed when the scope closes.
-  def create[form](using c: (target is Creatable in form)^)
-  :   (Creator { val creatable: c.type })^{c} =
-
-    Creator(c, value)
-
-  // Open a session on the target: the handle (of whatever kind the target's
-  // `Sessional` instance provides) is available within `lambda`, and is
-  // disposed of when the scope ends. Values borrowing the session cannot escape
-  // it. Inline, with the instance as a capturing using-parameter ahead of the
-  // lambda: the instance's capabilities and its concrete `Result` type flow
-  // through from the use site, where a non-inline def would mint fresh roots
-  // the capability-carrying instance cannot flow into.
-  transparent inline def session[result](using sessional: (target is Sessional)^)
-    ( lambda: (session: sessional.Result) ?=> result )
-  :   result =
-
-    sessional.session(value)(lambda)
+// A stateful interaction scope: `target.session(lambda)` establishes a live session with the
+// target — a network connection, a warm compiler, a remote device — lends it to `lambda` for
+// its duration, and disposes of it when the lambda ends, whether it returns or throws. The
+// `result` type parameter is quantified outside the lambda, so a value borrowing the session
+// (e.g. a response streaming from the live connection) cannot escape the scope; only
+// session-independent values may leave. An instance is written `target is Sessional to
+// Handle`, in the same way that a value may be `Decodable in Json`; handles are expected to
+// be capabilities, confined to the block by capture checking. Instances at a transport layer
+// lend a raw connection; richer layers (e.g. HTTP) lend protocol-aware session handles over
+// the same shape.
+trait Sessional extends Typeclass, Resultant:
+  def session[result](target: Self)(lambda: (session: Result) ?=> result): result

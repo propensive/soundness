@@ -34,6 +34,7 @@ package sedentary
 
 import ambience.*
 import anticipation.*
+import aperture.*
 import contingency.*
 import eucalyptus.*
 import galilei.*
@@ -70,14 +71,15 @@ trait BenchmarkDevice extends Findable:
 
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
 
-class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
-  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
-    safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(BenchError())
+object NetworkDevice:
+  given sessional: (error: Tactic[BenchError]) => NetworkDeviceSessional =
+    NetworkDeviceSessional()
 
-  def invoke
-    ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
-      cpus: Optional[Int] = Unset )
-  :   Text raises BenchError =
+  // The measurement JVM's invocation, shared by the per-call and session forms; see
+  // `BenchmarkDevice.invoke` for the meaning of `heap` and `cpus`.
+  private[sedentary] def measurement
+    ( path: Path on Linux, input: Text, heap: Optional[Text], cpus: Optional[Int] )
+  :   Command =
 
     val size = heap.or(t"1g")
 
@@ -85,25 +87,92 @@ class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
 
     val processors = cpus.lay(List[Text]()): n => List(t"-XX:ActiveProcessorCount=$n")
 
-    val command =
-      sh"""
-        $pin
-        java
-          -XX:+AlwaysPreTouch
-          -Xms$size
-          -Xmx$size
-          -XX:CICompilerCount=2
-          -XX:+UseSerialGC
-          $processors
-          -jar ${path.name}
-          '$input'
-          2> /dev/null
-      """
+    sh"""
+      $pin
+      java
+        -XX:+AlwaysPreTouch
+        -Xms$size
+        -Xmx$size
+        -XX:CICompilerCount=2
+        -XX:+UseSerialGC
+        $processors
+        -jar ${path.name}
+        '$input'
+        2> /dev/null
+    """
+
+  // A benchmark device multiplexing every operation over one OpenSSH ControlMaster
+  // connection (`device.session`), so `deploy`, `invoke` and `undeploy` skip the per-call
+  // SSH handshake the plain `NetworkDevice` pays.
+  class Session private[sedentary] (device: NetworkDevice, socket: Text)
+  extends BenchmarkDevice:
+    def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+      val user = device.user
+      val host = device.host
+
+      safely(sh"scp -o ControlPath=$socket $path $user@$host:$uuid.jar".exec[Exit]())
+      . lest(BenchError())
+
+    def invoke
+      ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
+        cpus: Optional[Int] = Unset )
+    :   Text raises BenchError =
+
+      val user = device.user
+      val host = device.host
+      val command = NetworkDevice.measurement(path, input, heap, cpus)
+
+      safely(sh"""ssh -o ControlPath=$socket $user@$host ${command.escape}""".exec[Text]())
+      . lest(BenchError())
+
+    def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+      val user = device.user
+      val host = device.host
+
+      safely(sh"ssh -o ControlPath=$socket $user@$host rm $path".exec[Text]())
+      . lest(BenchError())
+
+class NetworkDevice(val user: Text, val host: Hostname) extends BenchmarkDevice:
+  def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+    val user = this.user
+    val host = this.host
+    safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(BenchError())
+
+  def invoke
+    ( path: Path on Linux, input: Text, heap: Optional[Text] = Unset,
+      cpus: Optional[Int] = Unset )
+  :   Text raises BenchError =
+
+    val user = this.user
+    val host = this.host
+    val command = NetworkDevice.measurement(path, input, heap, cpus)
 
     safely(sh"""ssh $user@$host ${command.escape}""".exec[Text]()).lest(BenchError())
 
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
+    val user = this.user
+    val host = this.host
     safely(sh"ssh $user@$host rm $path".exec[Text]()).lest(BenchError())
+
+// A scoped session on a `NetworkDevice`: an OpenSSH ControlMaster connection is opened
+// (and authenticated) once, the multiplexing `Session` device is lent to the lambda, and
+// the master connection is closed when the scope ends. A named instance class rather than
+// an anonymous given, matching the capture-checked instances elsewhere; this module is
+// not yet capture-checked, so the handle carries no capability annotations here.
+class NetworkDeviceSessional(using error: Tactic[BenchError]) extends Sessional:
+  type Self = NetworkDevice
+  type Result = NetworkDevice.Session
+
+  def session[result](target: NetworkDevice)(lambda: (session: Result) ?=> result): result =
+    val user = target.user
+    val host = target.host
+    val socket: Text = t"/tmp/sedentary-${Uuid()}.ssh"
+
+    safely(sh"ssh -M -N -f -o ControlPath=$socket $user@$host".exec[Exit]())
+    . lest(BenchError())
+
+    try lambda(using NetworkDevice.Session(target, socket))
+    finally safely(sh"ssh -O exit -o ControlPath=$socket $user@$host".exec[Exit]()).let(_ => ())
 
 object LocalhostDevice extends BenchmarkDevice:
   def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()

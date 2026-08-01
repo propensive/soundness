@@ -30,39 +30,38 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package anthology
 
-import scala.caps
+import scala.language.adhocExtensions
+
+import dotty.tools.dotc as dtd
+import dotty.tools.dotc.core as dtdc
 
 import anticipation.*
-import prepositional.*
-import spectacular.*
+import rudiments.*
 
-// A connection-oriented scope: `target.session(lambda)` opens a live connection
-// to the target, lends it to `lambda` for its duration, and closes it when the
-// lambda ends — whether it returns or throws. The `result` type parameter is
-// quantified outside the lambda, so a value borrowing the session (e.g. a
-// response streaming from the live connection) cannot escape the scope; only
-// session-independent values may leave. Instances at the transport layer lend a
-// raw `Duplex`; protocol layers (e.g. HTTP) lend richer session handles over
-// the same shape.
-object Sessionable:
-  // Any `Connectable` endpoint hosts a transport-level session, lending its
-  // persistent `Duplex` connection. This is the typeclass form of the `duplex`
-  // loan, to which it delegates.
-  given connectable: [endpoint: {Connectable, Showable}]
-  =>  (loggable: (SocketEvent is Loggable)^)
-  =>  ((endpoint is Sessionable { type Session = Duplex })^{loggable, caps.any}) =
+// Exposes the protected `Driver` machinery — `setup` (argument processing into a fresh
+// context, loading the classpath's symbol table) and `finish` (post-run hooks) — to both
+// the stateless `Scalac#apply` path and warm `ScalacSession`s.
+private[anthology] class ScalacDriver() extends dtd.Driver:
+  def baseContext(arguments: List[Text])(using (CompileEvent is Loggable)^)
+  :   scala.Option[dtdc.Contexts.Context] =
 
-   new Sessionable:
-    type Self = endpoint
-    type Session = Duplex
+    val context = initCtx.fresh
+    Log.info(CompileEvent.Running(arguments))
 
-    def session[result](target: endpoint)(lambda: (session: Session) ?=> result): result =
-      target.duplex: duplex =>
-        lambda(using duplex)
+    // The argument array crosses into the compiler through a Java-side copy: `toArray`'s
+    // result carries a read capability the pure formal rejects.
+    val args = java.util.ArrayList[String]()
 
-trait Sessionable extends Typeclass:
-  type Session
+    arguments.each: argument =>
+      args.add(argument.s)
+      ()
 
-  def session[result](target: Self)(lambda: (session: Session) ?=> result): result
+    setup(args.toArray(new scala.Array[String | Null](0)).nn.asInstanceOf[scala.Array[String]],
+        context)
+
+    . map(_(1))
+
+  def finishRun(compiler: dtd.Compiler, run: dtd.Run)(using dtdc.Contexts.Context): Unit =
+    finish(compiler, run)

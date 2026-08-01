@@ -222,6 +222,24 @@ object Tests extends Suite(m"Obligatory Tests"):
           channel.unary[Ping, Pong](method, Ping(t"ping")).message
       . assert(_ == t"pong")
 
+      test(m"a scoped channel session makes a unary call and tears down with the scope"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+
+          runServer(serverSide, (hpack, id) =>
+            List
+              ( okHeaders(hpack, id),
+                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
+                trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
+
+          Grpc.Endpoint(Http2.Endpoint(Loopback(clientSide), t"localhost")).session: channel ?=>
+            channel.unary[Ping, Pong](method, Ping(t"ping")).message
+      . assert(_ == t"pong")
+
       test(m"a non-Ok trailing status raises a GrpcError"):
         supervise:
           val (clientSide, serverSide) = pair()

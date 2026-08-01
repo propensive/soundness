@@ -148,6 +148,38 @@ object Tests extends Suite(m"Anthology Tests"):
         summon[Linkage[Artifact.Wasi[0.2]]]
     . assert(_.nonEmpty)
 
+    test(m"A well-formed compiler session block compiles cleanly"):
+      demilitarize:
+        val classpath: LocalClasspath = ???
+
+        Scalac[3.8](Nil).on(classpath).session:
+          val process = compilation.compile(Map(t"a.scala" -> t"class A"))
+          process.errors
+
+        ()
+    . assert(_ == Nil)
+
+    // Aspirational: the handle's fresh capability and the borrow expressed in `compile`'s
+    // result type record the intent, but rejecting these statically awaits further
+    // separation-checker support (as telekinesis's `HttpSession.fetch` notes for its own
+    // borrow).
+    test(m"A compiler session handle cannot escape its scope"):
+      demilitarize:
+        val classpath: LocalClasspath = ???
+        val leaked = Scalac[3.8](Nil).on(classpath).session(compilation)
+      . map(_.message)
+    . aspire(_.nonEmpty)
+
+    test(m"A live compile process cannot span a further compile"):
+      demilitarize:
+        val classpath: LocalClasspath = ???
+
+        Scalac[3.8](Nil).on(classpath).session:
+          val process1 = compilation.compile(Map(t"a.scala" -> t"class A"))
+          val process2 = compilation.compile(Map(t"b.scala" -> t"class B"))
+          process1.errors
+    . aspire(_.nonEmpty)
+
     test(m"WASI 0.3 is not linkable even with the 0.2 prerequisites"):
       demilitarize:
         given WasiToolchain = ???
@@ -290,6 +322,57 @@ object Tests extends Suite(m"Anthology Tests"):
 
               try zipfile.entries.nn.asScala.exists(_.getName == "classes.dex")
               finally zipfile.close()
+        . assert(_ == true)
+
+        // Warm-session compilations: one retained compiler context across several compiles.
+        val alpha = Map(t"alpha.scala" -> t"class Alpha:\n  def x: Int = 42\n")
+        val beta = Map(t"beta.scala" -> t"class Beta:\n  def alpha: Alpha = Alpha()\n")
+
+        test(m"A session's second compile sees the first compile's symbols"):
+          Scalac[3.8](Nil).on(classpath).session:
+            alpha.compile().complete()
+            compilation.compile(beta).complete()
+        . assert(_ == CompileResult.Success)
+
+        test(m"A failed compile leaves the session usable"):
+          Scalac[3.8](Nil).on(classpath).session:
+            val bad = Map(t"gamma.scala" -> t"class Gamma:\n  def x: Int = \"nope\"\n")
+            val failure = bad.compile().complete()
+            (failure, alpha.compile().complete())
+        . assert(_ == (CompileResult.Failure, CompileResult.Success))
+
+        test(m"A session compile exposes its classfiles in memory"):
+          Scalac[3.8](Nil).on(classpath).session:
+            val process = alpha.compile()
+            process.complete()
+            process.classfiles.stdlib.contains(t"/Alpha.class".as[Path on Classpath])
+        . assert(_ == true)
+
+        test(m"A session compile's updates report progress and completion"):
+          Scalac[3.8](Nil).on(classpath).session:
+            val process = alpha.compile()
+            process.complete()
+
+            var progressed: Int = 0
+
+            process.updates.records.each:
+              case CompileProcess.Update.Progressed(_) => progressed += 1
+              case CompileProcess.Update.Noticed(_)    => ()
+
+            progressed > 0
+        . assert(_ == true)
+
+        val saved: soundness.Path on Linux = unsafely(temporaryDirectory / Uuid())
+        Files.createDirectories(Paths.get(saved.encode.s))
+
+        test(m"Saved session output appears on disk"):
+          Scalac[3.8](Nil).on(classpath).session:
+            alpha.compile().complete()
+            val process = beta.compile()
+            process.complete()
+            process.save(saved)
+
+          Files.exists(Paths.get(saved.encode.s).nn.resolve("Beta.class"))
         . assert(_ == true)
 
     // The native counterpart—compile with the Scala Native plugin, link with clang, and run the

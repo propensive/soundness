@@ -30,48 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package aperture
+package coaxial
 
+import scala.caps
+
+import anticipation.*
 import prepositional.*
+import spectacular.*
 
-// Refines a type's `Grants` member; `Mode granting Grant.Read` reads naturally.
-infix type granting [refined <: { type Grants <: Grant }, grants <: Grant] =
-  refined { type Grants = grants }
+// Any `Connectable` endpoint hosts a transport-level session, lending its
+// persistent `Duplex` connection. This is the typeclass form of the `duplex`
+// loan, to which it delegates. Top-level rather than companion-anchored: the
+// `Sessional` trait itself lives in aperture, which cannot know transports,
+// so `import coaxial.*` (which every socket consumer already has) brings this
+// instance into scope.
+given connectableSessional: [endpoint: {Connectable, Showable}]
+=>  (loggable: (SocketEvent is Loggable)^)
+=>  ((endpoint is Sessional to Duplex)^{loggable, caps.any}) =
 
-val Read: Mode granting Grant.Read = new Mode { type Grants = Grant.Read }
+ new Sessional:
+  type Self = endpoint
+  type Result = Duplex
 
-// `Write` alone does not confer read access: open with `Read & Write` for both.
-val Write: Mode granting Grant.Write = new Mode { type Grants = Grant.Write }
-
-val Exclusive: Mode granting Grant.Exclusive = new Mode { type Grants = Grant.Exclusive }
-
-extension [target](value: target)
-  // Opens `value` in form `form`: `path.open[Directory]()`, or `path.open[File](Read & Write)`.
-  // The form may be omitted when the target has a unique `Openable` instance; with several,
-  // the ambiguity error lists the alternatives. Flags — of the instance's `Operand` type, so
-  // target-specific — follow the mode. The handle is provided as a contextual value to the
-  // block, and capture checking prevents it, or anything derived from it, from escaping.
-  def open[form](using o: (target is Openable in form)^)
-  :   (Opener { val openable: o.type })^{o} =
-
-    Opener(o, value)
-
-  // Creates `value` in form `form`: `path.create[Directory]()` for an empty artifact, or
-  // `path.create[Zip]() { ... }` to author its contents, committed when the scope closes.
-  def create[form](using c: (target is Creatable in form)^)
-  :   (Creator { val creatable: c.type })^{c} =
-
-    Creator(c, value)
-
-  // Open a session on the target: the handle (of whatever kind the target's
-  // `Sessional` instance provides) is available within `lambda`, and is
-  // disposed of when the scope ends. Values borrowing the session cannot escape
-  // it. Inline, with the instance as a capturing using-parameter ahead of the
-  // lambda: the instance's capabilities and its concrete `Result` type flow
-  // through from the use site, where a non-inline def would mint fresh roots
-  // the capability-carrying instance cannot flow into.
-  transparent inline def session[result](using sessional: (target is Sessional)^)
-    ( lambda: (session: sessional.Result) ?=> result )
-  :   result =
-
-    sessional.session(value)(lambda)
+  def session[result](target: endpoint)(lambda: (session: Result) ?=> result): result =
+    target.duplex: duplex =>
+      lambda(using duplex)

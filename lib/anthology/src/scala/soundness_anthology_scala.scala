@@ -34,7 +34,8 @@ package soundness
 
 export
   anthology
-  . { CompileFlag, JavaVersion, LanguageFeature, Scalac, Unused, UnusedFeature, WarningFlag }
+  . { compilation, compile, CompileFlag, JavaVersion, LanguageFeature, Scalac, ScalacSession,
+      ScalacSessional, Unused, UnusedFeature, WarningFlag }
 
 package scalacOptions:
   export anthology.scalacOptions.*
