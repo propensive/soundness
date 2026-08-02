@@ -147,13 +147,13 @@ object Mcp:
     recover:
       case error: ParseError =>
         Http.Response(Http.Ok):
-          JsonRpc.error(-32700, t"Parse error: ${error.message}".show).in[Json]
+          JsonRpc.failure(-32700, t"Parse error: ${error.message}".show)
 
         . mcpSessionId = id
 
       case error: JsonError =>
         Http.Response(Http.Ok):
-          JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).in[Json]
+          JsonRpc.failure(-32600, t"Invalid request: ${error.message}".show)
 
         . mcpSessionId = id
 
@@ -207,7 +207,7 @@ object Mcp:
         catch
           case error: Throwable =>
             Http.Response(Http.Ok):
-              JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).in[Json]
+              JsonRpc.failure(-32603, t"Internal error: ${error.toString}".show)
 
 
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)

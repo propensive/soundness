@@ -298,3 +298,23 @@ object Tests extends Suite(m"Obligatory Tests"):
           val echo = Grpc.remote[Echo](channel, t"echo.Echo")
           echo.call(Ping(t"ping")).message
       . assert(_ == t"pong")
+
+    suite(m"JSON-RPC error responses"):
+      import dynamicJsonAccess.enabled
+      import Json.jsonEncodableInText
+
+      test(m"a failure carries the fault in the error member"):
+        JsonRpc.failure(-32601, t"Method not found", 7.in[Json]).error.code.as[Int]
+      . assert(_ == -32601)
+
+      test(m"a failure echoes the failing request's id"):
+        JsonRpc.failure(-32601, t"Method not found", 7.in[Json]).id.as[Int]
+      . assert(_ == 7)
+
+      test(m"a failure has no result member"):
+        JsonRpc.failure(-32601, t"Method not found", 7.in[Json]).encode
+      . assert(!_.contains(t"result"))
+
+      test(m"an unknowable id is an explicit null"):
+        JsonRpc.failure(-32700, t"Parse error").encode
+      . assert(_.contains(t"\"id\":null"))

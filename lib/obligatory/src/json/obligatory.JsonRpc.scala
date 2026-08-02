@@ -69,9 +69,17 @@ object JsonRpc:
 
   case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
   case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
+  case class Failure(code: Int, message: Text, data: Optional[Json] = Unset)
 
-  def error(code: Int, message: Text): Response =
-    Response("2.0", Map(t"code" -> code.in[Json], t"message" -> message.in[Json]).in[Json], Unset)
+  // A specification-correct error response: the fault is carried in the `error` member (not
+  // `result`), and `id` echoes the failing request's id — as an explicit JSON `null`, as the
+  // specification requires, when the request was unparseable and its id unknowable.
+  def failure(code: Int, message: Text, id: Optional[Json] = Unset): Json =
+    Map
+     ( t"jsonrpc" -> t"2.0".in[Json],
+       t"error"   -> Failure(code, message).in[Json],
+       t"id"      -> id.or(Json.ast(Json.Ast(Json.JsonNull))) )
+    . in[Json]
 
   def notification(target: JsonRpc, method: Text, payload: Json): Promise[Unit] =
 

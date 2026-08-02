@@ -540,7 +540,7 @@ trait LspServer() extends Lsp:
 
     summon[Stdio].in.source[Data].toProgression.stdlib.iterator.frames[ContentLength].each: frame =>
       try dispatch(frame.utf8.as[Json]).let(put)
-      catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").in[Json])
+      catch case error: Exception => put(JsonRpc.failure(-32603, t"Internal error"))
 
     writer.cancel()
 
