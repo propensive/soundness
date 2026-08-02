@@ -206,7 +206,17 @@ object Atomizer:
           encodeType(out, tpe.rhs, binders)
 
         case _ =>
-          throw Unencodable(s"type ${tpe.getClass.getName}")
+          // dotc's lazy placeholder for cyclically-referenced types (`LazyRef`) leaks
+          // through the reflection layer with no reflect-level extractor: dereference it
+          // and encode the underlying type, which is what consumers observe. The immediate
+          // underlying is always a proper type (typically a named reference), so this
+          // cannot recurse unboundedly.
+          if tpe.getClass.getName.nn.endsWith("LazyRef") then
+            val context = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
+            val lazyRef = tpe.asInstanceOf[dotty.tools.dotc.core.Types.LazyRef]
+            encodeType(out, lazyRef.ref(using context).asInstanceOf[TypeRepr], binders)
+          else
+            throw Unencodable(s"type ${tpe.getClass.getName}")
 
     def denylisted(fullName: String): Boolean =
       val diagnostic = scala.collection.immutable.Set(
@@ -376,8 +386,17 @@ object Atomizer:
 
         case Block(statements, expression) =>
           tag(out, '{')
-          uvarint(out, statements.length.toLong)
-          statements.foreach(term)
+
+          // Imports and exports among a body's statements are purely lexical: every
+          // reference this encoding emits is already fully-qualified, so they carry no
+          // semantic content and fold into nothing, like positions.
+          val retained = statements.filter:
+            case _: Import => false
+            case _: Export => false
+            case _         => true
+
+          uvarint(out, retained.length.toLong)
+          retained.foreach(term)
           term(expression)
 
         case If(condition, positive, negative) =>
